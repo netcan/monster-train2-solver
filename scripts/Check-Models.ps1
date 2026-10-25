@@ -209,6 +209,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-standby-etch-paired-boss-replay-calibration.mt2f',
     'player-standby-etch-final-boss-calibration.mt2f',
     'player-standby-etch-final-boss-replay-calibration.mt2f',
+    'player-preview-birth-binding-calibration.mt2f',
+    'player-preview-birth-binding-replay-calibration.mt2f',
+    'full-battle-random-campaign-09-ring8-budget10000-loss.mt2f',
     'full-battle-random-campaign-10-ring2-budget10000-search.mt2f',
     'full-battle-random-campaign-10-ring2-budget10000-replay.mt2f',
     'full-battle-random-campaign-10-ring3-budget10000-search.mt2f',
@@ -1503,6 +1506,7 @@ $branchPairGates = @{
     'player-corrupt-rage-room-calibration.mt2f' = '--corrupt-room-attachment-only'
     'player-standby-etch-paired-boss-calibration.mt2f' = '--first-of-kin-exhaust-only'
     'player-standby-etch-final-boss-calibration.mt2f' = '--first-of-kin-exhaust-only'
+    'player-preview-birth-binding-calibration.mt2f' = '--preview-birth-binding-only'
     'player-triggered-corruption-calibration.mt2f' = '--triggered-corruption-only'
     'player-triggered-corruption-relic-calibration.mt2f' = '--triggered-corruption-relic-only'
     'player-draft-upgrade-combat-calibration.mt2f' = '--draft-upgrade-combat-only'

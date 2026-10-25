@@ -17,9 +17,15 @@
 用户已要求不再构建 Mac 包。Mac 实机加载、字体和交互仍属外部验收项，未计为已完成，
 也不阻塞上述 Windows 开发。
 
-相关定向检查还发现旧`full-battle-persistent-enchantment-summons.mt2f`第4次出牌
-有保留单位`Enchantment.Bound`偏差。0.2.86与0.2.87均在完全相同字段失败，
-属于既有缺口，需用独立原生观察定位；本批未将该检查计为通过。
+第九组终战0.2.90实际默认36输入已完整验收，29次出牌、7次结束回合后败北，
+四项失败计数全零；继续找胜路。第十组第六战已推进到第46输入，ReturnedSoul
+返回Benediction时漏加临时Freeze，保留45输入前缀与独立原生观察，待修。
+
+旧`full-battle-persistent-enchantment-summons.mt2f`第4次出牌的
+`Enchantment.Bound`偏差已在0.2.91修复；旧整场15次出牌／5次结束回合通过。
+新原生双进程逐一确认六处绑定偏差消失，所有15次出牌／5次结束回合的完整后继
+与RNG匹配；但四处战斗内部快照偏差在修复前后相同，仍待处理，不能计整场校准
+全通过。字段、记录位置与复现入口见[预览出生光环绑定](../tests/fixtures/notes/combat/preview-birth-binding.md)。
 
 新增 [随机组合整局验收](random-campaign-validation.md)：从第一战连续执行实际默认建议，
 逐战独立原生复放并保留正常奖励和地图进度；单场胜利不记为整局通关。

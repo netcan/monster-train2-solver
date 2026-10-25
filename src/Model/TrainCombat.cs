@@ -82,6 +82,14 @@ namespace MonsterTrain2Poju.Model
             BattleSpawnPoints? points = source.Context?.SpawnPoints;
             if (points == null) return source;
             var active = source.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToHashSet();
+            // MonsterManager destroys temporary player births on preview reset.
+            // Their frame completion is separate from real combat deaths, which
+            // remain in the managers' removal lists until ProcessRemovals.
+            if (completedDestructionIds != null)
+                completedDestructionIds = completedDestructionIds.Concat(points.Units.Where(point => point.SpawnedInPreview &&
+                    !active.Contains(point.UnitId) && source.Context!.Enchantments?.RetainedUnits.Any(actor =>
+                        actor.Unit.Id == point.UnitId && actor.Unit.Team == CombatTeam.Player && actor.Unit.DeathState?.IsDestroyed == true) == true)
+                    .Select(point => point.UnitId)).Distinct().ToArray();
             // LastFeeder is a Unity object reference. It becomes null after its
             // removed owner's frame destruction, even when the food survives.
             // Keep explicitly retained objects whose destruction has not finished.

@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 3 && args[0] == "--preview-birth-binding-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    PreviewBirthBindingChecks.Native(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--first-of-kin-exhaust-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5711,6 +5718,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-consume-kill-copy-replay-calibration.mt2f"));
     using var observation = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-consume-kill-copy-observation-calibration.mt2f"));
     ConsumeKillCopyChecks.Pair(source.RootElement, replay.RootElement, observation.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-preview-birth-binding-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-preview-birth-binding-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-preview-birth-binding-replay-calibration.mt2f"));
+    PreviewBirthBindingChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string family in new[] { "player-standby-etch-paired-boss", "player-standby-etch-final-boss" })
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith(family + "-", StringComparison.OrdinalIgnoreCase))
