@@ -80,6 +80,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-06-ring2-budget10000-replay.mt2f',
     'full-battle-random-campaign-06-ring1-budget10000-search.mt2f',
     'full-battle-random-campaign-06-ring1-budget10000-replay.mt2f',
+    'player-consume-kill-copy-calibration.mt2f',
+    'player-consume-kill-copy-observation-calibration.mt2f',
+    'player-consume-kill-copy-replay-calibration.mt2f',
     'player-juice-ritual-calibration.mt2f',
     'player-juice-ritual-observation-calibration.mt2f',
     'player-juice-ritual-replay-calibration.mt2f',
@@ -1354,6 +1357,7 @@ $branchPairGates = @{
     'player-natural-hydra-graft-equipment-calibration.mt2f' = '--natural-hydra-graft-pair-only'
     'player-infusion-trigger-merge-calibration.mt2f' = '--infusion-trigger-merge-pair-only'
     'player-juice-ritual-calibration.mt2f' = '--juice-ritual-pair-only'
+    'player-consume-kill-copy-calibration.mt2f' = '--consume-kill-copy-pair-only'
     'player-generated-discard-guard-calibration.mt2f' = '--generated-discard-guard-pair-only'
     'player-ephemeral-consume-order-calibration.mt2f' = '--ephemeral-consume-order-pair-only'
     'player-status-callback-room-sync-calibration.mt2f' = '--status-callback-room-sync-pair-only'
@@ -1380,7 +1384,8 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
         $replayPath = Get-TestFixturePath ($sourceName -replace '-calibration\.mt2f$', '-replay-calibration.mt2f')
         $pairArguments = @($branchPairGates[$sourceName], $sourcePath, $replayPath)
         if ($sourceName -in @('player-heal-combat-removal-calibration.mt2f', 'player-despawn-frame-removal-calibration.mt2f',
-            'player-destroyed-feeder-calibration.mt2f', 'player-juice-ritual-calibration.mt2f')) {
+            'player-destroyed-feeder-calibration.mt2f', 'player-juice-ritual-calibration.mt2f',
+            'player-consume-kill-copy-calibration.mt2f')) {
             $pairArguments += Get-TestFixturePath ($sourceName -replace '-calibration\.mt2f$', '-observation-calibration.mt2f')
         }
         dotnet $checker @pairArguments

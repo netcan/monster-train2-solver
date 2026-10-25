@@ -64,10 +64,24 @@ namespace MonsterTrain2Poju.Model
             if (triggers.Any(trigger => trigger.Actions[0].Type == "GenerateUpgradedCopy") &&
                 (descriptor!.Definition.HasStartingUpgrades != false || descriptor.Purified || descriptor.PermanentGraft || descriptor.AuthoredCastEffects.Count != 0 ||
                  descriptor.PermanentReplacements.Count != 0 || card.EffectCounters?.Count > 0 ||
-                 descriptor.SourceTraits == null || descriptor.BaseTraits.Count != descriptor.SourceTraits.Count ||
-                 descriptor.BaseTraits.Where((trait, index) => trait.RuntimeType != descriptor.SourceTraits[index].Type).Any()))
+                 descriptor.SourceTraits == null || CopyBaseTraits(card).Count != descriptor.SourceTraits.Count ||
+                 CopyBaseTraits(card).Where((trait, index) => trait.RuntimeType != descriptor.SourceTraits[index].Type).Any()))
                 return "Card OnKill self-copy requires unchanged original base traits, no starting upgrades and a simple spell creation definition.";
             return null;
+        }
+
+        private static System.Collections.Generic.IReadOnlyList<CardTraitValue> CopyBaseTraits(CardInstanceState card)
+        {
+            CardMaskDescriptor d = card.MaskDescriptor!;
+            // Native creates the authored card first, then copies permanent
+            // upgrades. The merchant Consume trait belongs to that second step.
+            if (card.DataId == "e48d1711-fdff-41d4-b2a0-bc8f8b2bf8dd" && d.SourceTraits != null &&
+                d.BaseTraits.Count == d.SourceTraits.Count + 1 && d.BaseTraits.Last().RuntimeType == "CardTraitExhaustState" &&
+                card.Permanent.Upgrades.Count(upgrade => upgrade.DataId == "83e2c6c5-8ebf-4160-8818-fdae82d2abfe") == 1 &&
+                card.Permanent.Upgrades.SelectMany(upgrade => upgrade.Lifecycle?.AddedTraits ?? Array.Empty<CardTraitValue>())
+                    .Select(trait => trait.RuntimeType).SequenceEqual(new[] { "CardTraitExhaustState" }))
+                return d.BaseTraits.Take(d.BaseTraits.Count - 1).ToArray();
+            return d.BaseTraits;
         }
 
         internal static CombatContext Apply(CombatContext context, CardInstanceState card, bool preview, bool deployment,
@@ -148,7 +162,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     CardGenerationRule rule = effect.Generation!;
                     CardMaskDescriptor d = card.MaskDescriptor!;
-                    var original = new CardMaskDescriptor(d.Definition, d.BaseCost, d.BaseTraits, d.AuthoredCastEffects,
+                    var original = new CardMaskDescriptor(d.Definition, d.BaseCost, CopyBaseTraits(card), d.AuthoredCastEffects,
                         sourceTraits: d.SourceTraits, killTriggers: d.KillTriggers);
                     var creation = new CardCreationRule(card.DataId, CardModifiers.Empty(), null, Array.Empty<string>(),
                         card.DamageScalingTraits, card.StatusScalingTraits, card.UnitUpgradeScalingTraits, card.CapacityScalingTraits,
