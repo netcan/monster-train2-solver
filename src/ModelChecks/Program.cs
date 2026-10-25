@@ -1,6 +1,20 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length == 2 && args[0] == "--status-callback-room-sync-native-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    StatusCallbackRoomSyncChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--status-callback-room-sync-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    StatusCallbackRoomSyncChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--ephemeral-consume-order-native-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -5070,6 +5084,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-friendly-relic-piercing-replay-calibration.mt2f"));
     FriendlyRelicPiercingChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-status-callback-room-sync-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-status-callback-room-sync-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-status-callback-room-sync-replay-calibration.mt2f"));
+    StatusCallbackRoomSyncChecks.Pair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-ephemeral-consume-order-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-ephemeral-consume-order-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

@@ -3658,8 +3658,13 @@ namespace MonsterTrain2Poju.Model
                             paramInt: queued.ParamInt, paramInt2: queued.ParamInt2, paramString: queued.ParamString,
                             triggerCount: queued.TriggerCount, lastSpawnedOverrideUnitId: queued.LastSpawnedOverrideUnitId,
                             captureAllDispatches: traceAllDispatches);
+                        // A prior strike may have killed a preview-born unit whose
+                        // retained world snapshot still has its initial HP. Publish
+                        // current deaths before the status callback reimports it.
+                        RoomCombatState statusRoom = EnchantmentWorldModel.Sync(PhysicalRoom(),
+                            units.Where(unit => !unit.Alive || !unit.InRoom).Select(unit => unit.Freeze()).ToArray(), ExternalEnchantmentUnits());
                         RoomCombatResult relicEffect = RelicStatusAddedEffectModel.ApplyAfterTrigger(
-                            new RoomCombatResult(CurrentRoom(), RoomOutcome.Exchanged, 0, new List<CombatEvent>()), callback);
+                            new RoomCombatResult(statusRoom, RoomOutcome.Exchanged, 0, new List<CombatEvent>()), callback);
                         if (!relicEffect.Supported) { unsupportedReason = relicEffect.UnsupportedReason; break; }
                         ImportEnchantmentRoom(relicEffect.State!);
                         events.AddRange(relicEffect.Events);
