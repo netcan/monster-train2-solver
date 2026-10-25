@@ -203,6 +203,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-deathwish-enchantment-registry-replay-calibration.mt2f',
     'player-pyre-ascension-queue-calibration.mt2f',
     'player-pyre-ascension-queue-replay-calibration.mt2f',
+    'player-corrupt-rage-room-calibration.mt2f',
+    'player-corrupt-rage-room-replay-calibration.mt2f',
     'full-battle-random-campaign-10-ring2-budget10000-search.mt2f',
     'full-battle-random-campaign-10-ring2-budget10000-replay.mt2f',
     'full-battle-random-campaign-10-ring3-budget10000-search.mt2f',
@@ -1494,6 +1496,7 @@ $branchPairGates = @{
     'player-floor-transition-piercing-calibration.mt2f' = '--floor-transition-piercing-only'
     'player-deathwish-enchantment-registry-calibration.mt2f' = '--enchantment-preview-death-only'
     'player-pyre-ascension-queue-calibration.mt2f' = '--pyre-ascension-queue-only'
+    'player-corrupt-rage-room-calibration.mt2f' = '--corrupt-room-attachment-only'
     'player-triggered-corruption-calibration.mt2f' = '--triggered-corruption-only'
     'player-triggered-corruption-relic-calibration.mt2f' = '--triggered-corruption-relic-only'
     'player-draft-upgrade-combat-calibration.mt2f' = '--draft-upgrade-combat-only'

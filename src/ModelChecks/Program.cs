@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length is 2 or 3 && args[0] == "--corrupt-room-attachment-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) CorruptRoomAttachmentChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); CorruptRoomAttachmentChecks.Native(source.RootElement, replay.RootElement); }
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--pyre-ascension-queue-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5697,6 +5704,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-consume-kill-copy-replay-calibration.mt2f"));
     using var observation = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-consume-kill-copy-observation-calibration.mt2f"));
     ConsumeKillCopyChecks.Pair(source.RootElement, replay.RootElement, observation.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-corrupt-rage-room-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-corrupt-rage-room-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-corrupt-rage-room-replay-calibration.mt2f"));
+    CorruptRoomAttachmentChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-pyre-ascension-queue-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-pyre-ascension-queue-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

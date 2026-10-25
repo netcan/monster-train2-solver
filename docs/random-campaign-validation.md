@@ -1132,6 +1132,12 @@ TrainSteward后，Deathwish专用更新只应临时跳过光环调用，旧模�
 [薪火终局与升层队列](../tests/fixtures/notes/combat/pyre-ascension-queue.md)。
 继续筛选最后一战胜路，并校准该档案中尚未支持的RageRoom起始腐化签名。
 
+第九组第八战RageRoom8的起始腐化升级也已在0.2.89完成5输入独立原生
+双进程校准：先增加楼层腐化1→2（上限4保持），再安装一次房间挂件，
+能量保持1。仅放开该牌、类型及原始升级签名，七个拒绝控制和既有24输入
+腐化装备回放通过。详见[RageRoom腐化校准](../tests/fixtures/notes/combat/corrupt-rage-room.md)。
+终战改进搜索已纳入这张房间牌；尚未计成原生胜利。
+
 定向检查入口：
 
 ```powershell
