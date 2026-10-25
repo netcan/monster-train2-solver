@@ -1,5 +1,19 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--unit-ability-duality-counterexample-only")
+{
+    UnitAbilityDualityChecks.Counterexample(args[1]);
+    return;
+}
+if (args.Length == 3 && args[0] == "--unit-ability-duality-pair-only")
+{
+    if (string.Equals(Path.GetFullPath(args[1]), Path.GetFullPath(args[2]), StringComparison.OrdinalIgnoreCase))
+        throw new InvalidOperationException("Unit ability calibration requires two distinct native archives.");
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    UnitAbilityDualityChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--terminal-companion-roster-only")
 {
     TerminalCompanionRosterChecks.Native(args[1]);
@@ -5789,6 +5803,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("fu
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-native-covenant-03-ring6-refined-replay.mt2f"));
     RandomCampaignChecks.RefinedPair(source.RootElement, replay.RootElement, 424242, 3, 5, "Banished", "Pyreborne", 35);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-unit-ability-duality-counterexample.mt2f"))
+    UnitAbilityDualityChecks.Counterexample(path);
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-terminal-companion-roster-counterexample.mt2f"))
     TerminalCompanionRosterChecks.Native(path);
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-relic-damage-tower-", StringComparison.OrdinalIgnoreCase))

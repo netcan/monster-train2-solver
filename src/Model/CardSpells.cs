@@ -640,7 +640,8 @@ namespace MonsterTrain2Poju.Model
                         chooseDiscard: effect.ChooseDiscard, transferAttackMultiplier: effect.TransferAttackMultiplier,
                         statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
                         healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
-                        sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe);
+                        sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe,
+                        ignoreDualism: effect.IgnoreDualism);
                 }
                 if (effect.Type == "DuplicateCard")
                 {
@@ -2800,7 +2801,8 @@ namespace MonsterTrain2Poju.Model
                 chooseDiscard: effect.ChooseDiscard, transferAttackMultiplier: effect.TransferAttackMultiplier,
                 statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
                 healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
-                sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe);
+                sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe,
+                ignoreDualism: effect.IgnoreDualism);
         }
         private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {
@@ -3047,10 +3049,16 @@ namespace MonsterTrain2Poju.Model
                     return StatusApplicationModel.Apply(state, target.Id, status.WithStacks(added), sourceCardId,
                         overrideImmunity: effect.Target == "Pyre", fromEffectType: "CardEffectMultiplyStatusEffect");
                 }
-                return StatusApplicationModel.Apply(state, target.Id, effect.Statuses[0], sourceCardId,
+                CombatStatus incoming = effect.Statuses[0];
+                bool duality = effect.Type == "AddStatus" && sourceHasDuality && !effect.IgnoreDualism;
+                if (duality && incoming.Id != "armor" && incoming.DisplayCategory == null)
+                    return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
+                        "Unit ability Duality requires captured status display-category metadata.");
+                return StatusApplicationModel.Apply(state, target.Id, incoming, sourceCardId,
                     overrideImmunity: effect.Target == "Pyre", fromEffectType: effect.Type == "SpawnOrStatus"
                         ? "CardEffectSpawnMonsterOrAddStatusEffect" : null,
-                    allowStackModifiers: effect.Type != "SpawnOrStatus" || !effect.DisallowStatusStackModifiers);
+                    allowStackModifiers: effect.Type != "SpawnOrStatus" || !effect.DisallowStatusStackModifiers,
+                    doubleForDuality: duality && (incoming.Id == "armor" || incoming.DisplayCategory is "Positive" or "Negative"));
             }
             if (effect.Type == "AbilityTeleport") return Unchanged(state);
             if (target.Statuses.Any(status => status.Id == "immobile")) return Unchanged(state);

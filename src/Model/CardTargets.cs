@@ -214,7 +214,8 @@ namespace MonsterTrain2Poju.Model
                 corruptionAdd: effect.CorruptionAdd, chooseDiscard: effect.ChooseDiscard,
                 transferAttackMultiplier: effect.TransferAttackMultiplier, statusTransfer: effect.StatusTransfer,
                 unitTriggerKind: effect.UnitTriggerKind, healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
-                sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe), Array.Empty<int>());
+                sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe,
+                ignoreDualism: effect.IgnoreDualism), Array.Empty<int>());
             if (result.Supported && effect.Target == "RandomInRoom")
                 result = new CardTargets(result.UnitIds.Where(id => train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Id == id && !PyreBaneModel.ExcludedFromRoomMode(unit, effect.Target))).ToArray());
