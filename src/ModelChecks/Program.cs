@@ -5805,6 +5805,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("fu
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-unit-ability-duality-counterexample.mt2f"))
     UnitAbilityDualityChecks.Counterexample(path);
+foreach (string path in args.Where(path => Path.GetFileName(path) is
+    "player-unit-ability-duality-calibration.mt2f" or "player-unit-ability-duality-replay-calibration.mt2f")
+    .Select(path => ModelJson.RelatedFixture(path, "player-unit-ability-duality-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-unit-ability-duality-replay-calibration.mt2f"));
+    UnitAbilityDualityChecks.Pair(source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-terminal-companion-roster-counterexample.mt2f"))
     TerminalCompanionRosterChecks.Native(path);
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-relic-damage-tower-", StringComparison.OrdinalIgnoreCase))
