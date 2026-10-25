@@ -22,6 +22,10 @@ pwsh -NoProfile -File scripts/Run-RandomCampaign.ps1 `
 选择同一份已构建原生载荷，避免隔离修复验收时覆盖主工作区输出。启动前核对
 Probe／Advisor的Model及FixtureArchive依赖哈希；正常存档、奖励和地图流程仍归主工作区管理。
 正常奖励复演同样支持`-NativeWorker 1..4`，沿用整场探针的四个隔离游戏目录和运行中进程检查。
+`Run-RandomCampaign.ps1`同样支持`-NativeBuildRoot <工作树> -SkipBuild`，将同一份
+已构建原生载荷贯穿开局、源战斗和独立奖励重放，并把解析后的路径记录到收据。
+模型检查仍使用当前主工作区。开发其他工具时可沿用隔离载荷，避免中途重建主
+工作区依赖使长流程因哈希不一致而中断；各原生脚本的依赖哈希检查保持启用。
 指定 `-InputProfile .probe-runs/<checkpoint>` 可继续同一种子、难度和组合的
 未完成隔离检查点。失败记录和各战接受记录写入独立的
 `.probe-runs/random-campaign-*/campaign-result.json` 与 `accepted-rings.jsonl`。

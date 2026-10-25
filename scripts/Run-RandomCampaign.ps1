@@ -10,11 +10,14 @@ param(
     [string] $NewRunFromProfile = '',
     [ValidateRange(1, 2)][int] $NativeWorker = 2,
     [ValidateRange(60, 3600)][int] $TimeoutSeconds = 1200,
+    [string] $NativeBuildRoot = '',
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
 if ($PrimaryClan -ieq $SecondaryClan) { throw 'Starting clans must differ.' }
 if ($InputProfile -and $NewRunFromProfile) { throw 'Choose either an unfinished InputProfile or an idle NewRunFromProfile.' }
+if ($NativeBuildRoot -and -not $SkipBuild) { throw 'NativeBuildRoot requires prebuilt native binaries with SkipBuild.' }
+if ($NativeBuildRoot) { $NativeBuildRoot = (Resolve-Path -LiteralPath $NativeBuildRoot).Path }
 $workspace = Split-Path $PSScriptRoot -Parent
 $profilesRoot = [IO.Path]::GetFullPath((Join-Path $workspace '.probe-runs')).TrimEnd('\')
 if (-not $SkipBuild) {
@@ -25,6 +28,7 @@ if (-not $SkipBuild) {
 }
 $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
 function Invoke-Native([string] $Script, [hashtable] $Parameters) {
+    if ($NativeBuildRoot) { $Parameters.NativeBuildRoot = $NativeBuildRoot }
     $result = $null
     & (Join-Path $PSScriptRoot $Script) @Parameters | ForEach-Object {
         $line = $_.ToString()
@@ -69,7 +73,7 @@ function Record([object] $Entry) {
     [IO.File]::AppendAllText($journal, ($Entry | ConvertTo-Json -Depth 10 -Compress) + [Environment]::NewLine)
 }
 $receipt = [ordered]@{ Schema=1; PrimaryClan=$PrimaryClan; SecondaryClan=$SecondaryClan; Seed=$Seed; Rank=$Rank
-    WholeBattle=$true; SearchWorkers=2; TimeLimitMs=$TimeLimitMs; Journal=$journal; InputProfile=$InputProfile
+    WholeBattle=$true; SearchWorkers=2; TimeLimitMs=$TimeLimitMs; Journal=$journal; InputProfile=$InputProfile; NativeBuildRoot=$NativeBuildRoot
     NewRunFromProfile=$NewRunFromProfile; StartingRing=$resumeDistance+1; LastAcceptedRing=$resumeDistance; NativeCampaignWon=$false; NativeVictoryType=$null
     Outcome='Running'; FailureRing=$null; Failure=$null; SourceProfile=$null; NextInputProfile=$InputProfile }
 Record ([pscustomobject]$receipt)
