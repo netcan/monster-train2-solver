@@ -16,7 +16,7 @@ param(
     [switch] $OuterBossTurns,
     [switch] $OuterBossBirth,
     [switch] $StoryProgressionOnly,
-    [ValidateRange(1, 2)] [int] $NativeWorker = 1,
+    [ValidateRange(1, 4)] [int] $NativeWorker = 1,
     [ValidateRange(60, 7200)] [int] $TimeoutSeconds = 1800,
     [string] $NativeBuildRoot = '',
     [switch] $SkipBuild
@@ -51,7 +51,7 @@ if ($NativeBuildRoot) {
     }
 }
 $profilesRoot = [IO.Path]::GetFullPath((Join-Path $workspace '.probe-runs')).TrimEnd('\')
-$gameRoot = Join-Path $workspace $(if ($NativeWorker -eq 1) { '.sandbox-game' } else { '.sandbox-game-worker2' })
+$gameRoot = Join-Path $workspace $(if ($NativeWorker -eq 1) { '.sandbox-game' } else { ".sandbox-game-worker$NativeWorker" })
 $executable = Join-Path $gameRoot 'MonsterTrain2.exe'
 if (Get-CimInstance Win32_Process -Filter "Name='MonsterTrain2.exe'" | Where-Object ExecutablePath -EQ $executable) {
     throw "Worker $NativeWorker is already running."
