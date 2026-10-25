@@ -693,8 +693,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-if ($NativeBuildRoot -and (-not $UnsupportedBranchInput -or -not $SkipBuild)) {
-    throw 'NativeBuildRoot requires a prebuilt UnsupportedBranchInput component observation with SkipBuild.'
+if ($NativeBuildRoot -and -not $SkipBuild) {
+    throw 'NativeBuildRoot requires prebuilt native binaries with SkipBuild.'
 }
 if ($ProfileCapture -and -not $PlayerAdvisor) { throw 'ProfileCapture requires the separately loaded PlayerAdvisor.' }
 if ($AdvisorFloorBrowse -and (-not $PlayerAdvisor -or -not $RollingAdvice)) {
