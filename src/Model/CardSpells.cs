@@ -2146,7 +2146,7 @@ namespace MonsterTrain2Poju.Model
         private static bool ActorIsLive(CombatUnit unit) => unit.Health > 0 && unit.DeathState?.IsDestroyed != true &&
             unit.DeathState?.IsDespawned != true;
 
-        private static TrainCombatState ReplaceExternalActor(TrainCombatState source, int roomIndex, CombatUnit actor)
+        internal static TrainCombatState ReplaceExternalActor(TrainCombatState source, int roomIndex, CombatUnit actor)
         {
             CombatContext context = source.Context!;
             bool live = ActorIsLive(actor);

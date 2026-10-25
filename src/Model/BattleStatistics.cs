@@ -160,6 +160,12 @@ namespace MonsterTrain2Poju.Model
 
         public BattleStatistics WithEndTurnEnergy(int energy) => Copy(energy: energy);
         public BattleStatistics WithLastAttackDamage(int damage) => Copy(lastDamage: damage);
+        internal BattleStatistics RetainPreviewQueries(BattleStatistics preview) => Copy(
+            // Native preview restores actors, but GetStatValue's deckStats refresh
+            // and the last-attack scalar are shared with the live battle.
+            values: preview.StoredCards == null ? Values : Values.Where(value => preview.StoredCards.Contains(value.CardId)).ToArray(),
+            tracked: preview.StoredCards == null ? TrackedCards : TrackedCards.Concat(preview.StoredCards).Distinct().ToArray(),
+            stored: preview.StoredCards, lastDamage: preview.LastAttackDamageDealt);
         internal BattleStatistics ClearHandPlayHistory() => Copy(
             handPlayed: HandCardsPlayedThisTurn == null ? null : Array.Empty<int>(),
             handLast: HandCardsPlayedLastTurn == null ? null : Array.Empty<int>());

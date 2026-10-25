@@ -43,6 +43,15 @@ internal static class BattleStatisticsChecks
             preview.State.Context.Statistics.Value(4, "TimesExhausted") == 0 &&
             preview.State.Context.Statistics.LastAttackDamageDealt == 12,
             "Native preview must preserve death counters while updating last attack damage.");
+        var lazy = new BattleStatistics([new(1, "ThisTurn", "TimesPlayed", 2)], [], [], [], [], [], [],
+            0, 0, 0, 12, 0, trackedCards: [1, 2], storedCards: [1]);
+        var queriedPreview = lazy.RefreshOwnedCards([1, 2]).Spawn(0, ["champion"]).Death(true, 1).WithLastAttackDamage(19);
+        var retained = lazy.RetainPreviewQueries(queriedPreview);
+        Require(retained.StoredCards!.SequenceEqual(new[] { 1, 2 }) && retained.TrackedCards.SequenceEqual(new[] { 1, 2 }) &&
+            retained.Value(1, "TimesPlayed") == 2 && retained.Value(1, "HeroesKilled") == 0 &&
+            retained.MonstersDeadThisTurn == 0 && retained.SpawnedThisTurnPerFloor.Count == 0 && retained.LastAttackDamageDealt == 19 &&
+            lazy.RetainPreviewQueries(lazy.WithLastAttackDamage(7)).StoredCards!.SequenceEqual(new[] { 1 }) &&
+            lazy.StoredCards!.SequenceEqual(new[] { 1 }), "Preview queries lost empty entries, leaked events or refreshed without a query.");
         var spell = CardSpellModel.Apply(new RoomCombatState(0, false, [enemy], [], context),
             [new CardActionEffect("Damage", "DropTargetCharacter", 7, true, false, [])], 1, 7);
         Require(spell.State!.Context!.Statistics!.Value(7, "HeroesKilled") == 1 &&

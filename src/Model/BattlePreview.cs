@@ -180,7 +180,7 @@ namespace MonsterTrain2Poju.Model
                             card.RawPlayedRoomUnitIds != null && !card.RawPlayedRoomUnitIds.SequenceEqual(captured.RawPlayedRoomUnitIds!)))
                         previewContext = previewContext.WithCard(card.WithRoomCacheState(captured.PlayedRoomUnitIds, captured.RawPlayedRoomUnitIds));
                 }
-                previewContext = previewContext.WithStatistics(previewContext.Statistics!.WithLastAttackDamage(preview.State!.Context!.Statistics!.LastAttackDamageDealt));
+                previewContext = previewContext.WithStatistics(previewContext.Statistics!.RetainPreviewQueries(preview.State!.Context!.Statistics!));
                 if (previewContext.LifeLinks != null) previewContext = previewContext.WithLifeLinks(preview.State.Context.LifeLinks);
                 if (originalPoints?.NextPreviewCopyId.HasValue == true && preview.State.Context.SpawnPoints != null)
                     previewContext = previewContext.WithSpawnPoints(preview.State.Context.SpawnPoints);
@@ -197,7 +197,7 @@ namespace MonsterTrain2Poju.Model
                 if (context.LifeLinks != null && previewPyre == null || preview.State.Units.Concat(preview.RetainedUnits)
                     .Any(unit => unit.Health <= 0 && (unit.EndsBattleOnDeath || unit.IsPyre))) break;
             }
-            context = context.WithStatistics(context.Statistics!.WithLastAttackDamage(previewContext.Statistics!.LastAttackDamageDealt));
+            context = context.WithStatistics(context.Statistics!.RetainPreviewQueries(previewContext.Statistics!));
             if (source.Context!.LifeLinks != null) context = context.WithLifeLinks(source.Context.LifeLinks);
             if (originalPoints?.NextPreviewCopyId.HasValue == true)
                 context = context.WithSpawnPoints(BattleSpawnPoints.EndPreview(originalPoints, previewContext.SpawnPoints!, clearBirths: true));

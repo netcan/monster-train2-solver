@@ -298,8 +298,18 @@ namespace MonsterTrain2Poju.Model
                     if (!callback.IsDeathRoomFocus && input.UnitId == 0 && state.Context?.QueryFrame?.SelectedRoomIndex != null)
                         state = CardSpellModel.WithContext(state, state.Context.WithQueryFrame(
                             state.Context.QueryFrame.With(selectedRoomIndex: callback.RoomIndex)));
-                    return Accept(RoomCombatModel.ApplyQueuedCharacterTrigger(
-                        state.Rooms.Single(room => room.RoomIndex == callback.RoomIndex), callback, queue.Add));
+                    // This queue is also used by relic damage after a card play.
+                    // Tower callbacks need all current floors even without a clone.
+                    var borrowed = state.Rooms.Where(room => room.RoomIndex != callback.RoomIndex)
+                        .SelectMany(room => room.Units.Select(unit => (room.RoomIndex, Unit: unit))).ToArray();
+                    RoomCombatResult fired = RoomCombatModel.ApplyQueuedCharacterTrigger(
+                        state.Rooms.Single(room => room.RoomIndex == callback.RoomIndex), callback, queue.Add,
+                        externalTargets: borrowed);
+                    if (!Accept(fired)) return false;
+                    foreach (var target in borrowed)
+                        state = CardSpellModel.ReplaceExternalActor(state, target.RoomIndex,
+                            fired.RetainedUnits.Single(unit => unit.Id == target.Unit.Id));
+                    return true;
                 },
                 callback =>
                 {

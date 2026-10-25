@@ -145,7 +145,16 @@ namespace MonsterTrain2Poju.Model
                 status = status.WithStacks(attack / divisor);
             }
             if (perLastAttack)
+            {
+                // Native GetStatValue refreshes deckStats even for this scalar.
+                if (context.Statistics!.StoredCards != null)
+                {
+                    var query = StatisticQueryModel.Evaluate(context, new CardStatisticQuery("LastAttackDamageDealt"));
+                    if (!query.Supported) return Unsupported(query.UnsupportedReason!);
+                    context = query.Context!;
+                }
                 status = status.WithStacks(context.Statistics!.LastAttackDamageDealt / (action.Value == 0 ? 1 : action.Value));
+            }
             bool duality = effect.Type != "CardEffectMultiplyStatusEffect" && !isFromHiddenTrigger &&
                 scaling?.IgnoreDualism != true && actor.Status("duality")?.Stacks > 0;
             if (duality && status.Id != "armor" && status.DisplayCategory == null)

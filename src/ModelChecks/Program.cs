@@ -1,5 +1,27 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--relic-damage-tower-roster-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 3)
+    {
+        using var replay = ModelJson.ReadFixture(args[2]);
+        RelicDamageTowerRosterChecks.Native(source.RootElement, replay.RootElement);
+    }
+    else RelicDamageTowerRosterChecks.Native(source.RootElement);
+    return;
+}
+if (args.Length is 2 or 3 && args[0] == "--last-attack-statistic-refresh-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 3)
+    {
+        using var replay = ModelJson.ReadFixture(args[2]);
+        LastAttackStatisticRefreshChecks.Native(source.RootElement, replay.RootElement);
+    }
+    else LastAttackStatisticRefreshChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length == 4 && args[0] == "--juice-tome-pair-only")
 {
     using var refused = ModelJson.ReadFixture(args[1]);
@@ -5754,6 +5776,20 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-spell-harvest-tower-replay-calibration.mt2f"));
     SpellHarvestTowerChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-relic-damage-tower-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-relic-damage-tower-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-relic-damage-tower-replay-calibration.mt2f"));
+    RelicDamageTowerRosterChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-last-attack-statistic-refresh-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-last-attack-statistic-refresh-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-last-attack-statistic-refresh-replay-calibration.mt2f"));
+    LastAttackStatisticRefreshChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-spell-angel-death-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-spell-angel-death-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

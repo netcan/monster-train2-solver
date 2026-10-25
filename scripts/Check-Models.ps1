@@ -101,6 +101,10 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-spell-angel-death-replay-calibration.mt2f',
     'player-spell-harvest-tower-calibration.mt2f',
     'player-spell-harvest-tower-replay-calibration.mt2f',
+    'player-relic-damage-tower-calibration.mt2f',
+    'player-relic-damage-tower-replay-calibration.mt2f',
+    'player-last-attack-statistic-refresh-calibration.mt2f',
+    'player-last-attack-statistic-refresh-replay-calibration.mt2f',
     'player-triggered-corruption-calibration.mt2f',
     'player-triggered-corruption-replay-calibration.mt2f',
     'player-triggered-corruption-relic-calibration.mt2f',
@@ -1591,6 +1595,8 @@ $branchPairGates = @{
     'player-corrupt-restricted-holdover-calibration.mt2f' = '--corrupt-restricted-state-pair-only'
     'player-terminal-enemy-slot-calibration.mt2f' = '--terminal-enemy-slot-pair-only'
     'player-destroyed-feeder-calibration.mt2f' = '--destroyed-feeder-pair-only'
+    'player-relic-damage-tower-calibration.mt2f' = '--relic-damage-tower-roster-only'
+    'player-last-attack-statistic-refresh-calibration.mt2f' = '--last-attack-statistic-refresh-only'
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
     -not $branchPairGates.ContainsKey(($_ -replace '-(?:replay|observation)-calibration\.mt2f$', '-calibration.mt2f'))
