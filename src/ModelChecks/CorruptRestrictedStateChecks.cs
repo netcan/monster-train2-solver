@@ -11,14 +11,30 @@ internal static class CorruptRestrictedStateChecks
         var before = last.GetProperty("Before").Deserialize<BattleTurnState>()!;
         var after = last.GetProperty("Actual").Deserialize<BattleTurnState>()!;
         CardInstanceState card = before.Spawn.Train.Context!.FindCard(10)!;
-        Require(rows.Length == 11 && card.DataId == "ae114dc4-d08f-4909-a2ad-d99215661463" &&
+        Require(card.DataId == "ae114dc4-d08f-4909-a2ad-d99215661463" &&
             card.MaskDescriptor!.BaseTraits.Select(trait => trait.RuntimeType).SequenceEqual([
-                CardCorruptRestrictedModel.Trait, CardCorruptStateModel.Trait]) &&
+                CardCorruptRestrictedModel.Trait, CardCorruptStateModel.Trait]), "Wrong original merchant Corrupt card.");
+        if (rows.Length == 11) Require(
             before.Spawn.Train.Context.RoomCapacities!.Single(room => room.RoomIndex == 0).Corruption == 3 &&
             after.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 0).Corruption == 5 &&
             before.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0).Units.Single(unit => unit.Id == 7).Health == 3 &&
             !after.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == 7),
             "Missing native merchant Corrupt/restriction1, pre-play add/subtract and on-kill refill.");
+        else
+        {
+            var upgrade = card.Temporary.Upgrades.Single(item => item.DataId == "2d744be5-cf16-4126-83fa-d6df9d99229c");
+            Require(rows.Length == 62 && upgrade.AssetKey == "WurmReturnEnhanceCorrupt" &&
+                upgrade.Lifecycle!.AddedTraits.Select(trait => trait.RuntimeType).SequenceEqual([
+                    CardCorruptStateModel.Trait, "CardTraitExhaustState"]) &&
+                CardExhaustModel.RefreshTraits(card).CombinedTraits!.Count(trait => trait.RuntimeType == CardCorruptStateModel.Trait) == 1 &&
+                CardExhaustModel.HasConsume(card) &&
+                before.Spawn.Train.Context.RoomCapacities!.Single(room => room.RoomIndex == 1).Corruption == 8 &&
+                after.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 1).Corruption == 8 &&
+                before.Spawn.Train.Rooms.Single(room => room.RoomIndex == 1).Units.Single(unit => unit.Id == 28).Health == 30 &&
+                after.Spawn.Train.Rooms.Single(room => room.RoomIndex == 1).Units.Single(unit => unit.Id == 28).Health == 17 &&
+                after.Spawn.Train.Context.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(token => token.InstanceId == 10),
+                "Returned Corrupt must deduplicate its trait, keep Consume, match damage and exhaust ownership.");
+        }
         bool queriesPresent = fixture.TryGetProperty("CorruptRestrictedState", out FixtureValue evidence) && evidence.ValueKind != FixtureKind.Null;
         Require(queriesPresent || last.GetProperty("Expected").ValueKind == FixtureKind.Null,
             "Repaired native run must include independently restored eligibility queries.");
@@ -42,7 +58,7 @@ internal static class CorruptRestrictedStateChecks
                     "Native/model Corrupt presence credit or integer overflow differs.");
             }
         }
-        Console.WriteLine("CORRUPT-RESTRICTED-STATE PASS:11 native inputs/full successors/RNG; merchant Corrupt before restriction1, kill refill3->5; restored eligibility controls when captured; immutable parents.");
+        Console.WriteLine($"CORRUPT-RESTRICTED-STATE PASS:{rows.Length} native inputs/full successors/RNG; merchant/returned Corrupt deduplication, Consume and restored eligibility controls; immutable parents.");
     }
     internal static void Pair(FixtureValue source, FixtureValue replay)
     {

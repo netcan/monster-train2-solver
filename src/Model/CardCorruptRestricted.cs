@@ -39,6 +39,16 @@ namespace MonsterTrain2Poju.Model
                 return "Uncalibrated Corrupt Restricted parameters or source-room eligibility.";
             CardTraitValue[] corrupt = combined.Where(trait => trait.RuntimeType == CardCorruptStateModel.Trait).ToArray();
             var corruptUpgrades = card.Permanent.Upgrades.Where(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == CardCorruptStateModel.Trait) == true).ToArray();
+            var temporaryCorrupt = card.Temporary.Upgrades.Where(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == CardCorruptStateModel.Trait) == true).ToArray();
+            // The observed return upgrade adds Corrupt and Consume definitions.
+            // RefreshTraits deduplicates Corrupt against its installed base state.
+            bool calibratedReturn = temporaryCorrupt.Length == 0 || temporaryCorrupt.Length == 1 &&
+                temporaryCorrupt[0].DataId == "2d744be5-cf16-4126-83fa-d6df9d99229c" &&
+                temporaryCorrupt[0].AssetKey == "WurmReturnEnhanceCorrupt" &&
+                temporaryCorrupt[0].Lifecycle!.AddedTraits.Select(trait => trait.RuntimeType)
+                    .SequenceEqual(new[] { CardCorruptStateModel.Trait, "CardTraitExhaustState" }) &&
+                temporaryCorrupt[0].Lifecycle!.AddedTraits.All(trait => trait.DeclaredName == trait.RuntimeType &&
+                    trait.ParamInt == 0 && trait.DefinitionParamInt == 0);
             if (corrupt.Length > 0 && !(card.DataId == "ae114dc4-d08f-4909-a2ad-d99215661463" &&
                 descriptor.Definition.CardType == "Spell" && active[0].ParamInt == 1 &&
                 corrupt.Length == 1 && corrupt[0].DeclaredName == CardCorruptStateModel.Trait &&
@@ -48,7 +58,7 @@ namespace MonsterTrain2Poju.Model
                 !descriptor.PermanentReplacements.Any(rule => rule.OldName == CardCorruptStateModel.Trait || rule.NewRuntimeType == CardCorruptStateModel.Trait) &&
                 corruptUpgrades.Length == 1 && corruptUpgrades[0].DataId == "bdb7a38c-18de-4461-beb8-c27fdbdc5f62" &&
                 corruptUpgrades[0].AssetKey == "TraitCorruptwIcon" && corruptUpgrades[0].Lifecycle!.AddedTraits.Count == 1 &&
-                !card.Temporary.Upgrades.Any(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == CardCorruptStateModel.Trait) == true)))
+                calibratedReturn))
                 return "Corrupt State's additional eligibility and pre-play ordering require native calibration.";
             amount = active[0].ParamInt;
             return null;

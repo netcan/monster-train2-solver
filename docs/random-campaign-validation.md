@@ -386,6 +386,11 @@ Windows当前已安装0.2.45，源修订 `ab989012`，载荷与上述第五组�
 NativePassed和OriginalFilesUnchanged为true，新增战斗数均为0。
 这是构筑策略调整后的新分支，旧第三至六战结果仍完整保留，不能与其拼接为通关。
 
+0.2.49同时关闭第四组第六战离线分支的返回牌保护：已有商店腐化的限制1法术
+临时获得`WurmReturnEnhanceCorrupt`时，原生腐化特性去重、消耗仍生效。
+两次独立原生观察的62输入完整状态／预测／RNG及四个恢复式资格查询通过，
+保留原始拒绝记录。见[返回牌腐化去重](../tests/fixtures/notes/cards/corrupt-restricted-return.md)。
+
 定向检查入口：
 
 ```powershell
