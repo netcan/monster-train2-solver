@@ -65,6 +65,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-outer-boss-death-statistics-replay-calibration.mt2f',
     'full-battle-random-campaign-08-ring3-refined-search.mt2f',
     'full-battle-random-campaign-08-ring3-refined-replay.mt2f',
+    'full-battle-metagame-campaign-ring3-refined-search.mt2f',
+    'full-battle-metagame-campaign-ring3-refined-replay.mt2f',
     'full-battle-random-campaign-08-ring1-budget10000-search.mt2f',
     'full-battle-random-campaign-08-ring1-budget10000-replay.mt2f',
     'full-battle-random-campaign-08-ring2-budget10000-search.mt2f',

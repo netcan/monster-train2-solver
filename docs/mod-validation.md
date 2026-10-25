@@ -1,18 +1,20 @@
 # Player Mod validation · 2026-10-25
 
-Current Windows installation:0.2.70, committed source`5e83829a`. Banished/Pyreborne
-Ring1 passes actual10000ms advice and independent frozen native replay:
-21 inputs,16 plays,5 EndTurns,Pyre80,23 publications,3 searches and751
-independent card-mask contexts. Every root,successor,forecast and RNG matches;
-all four failure counters are zero. This includes the removed ability caster
-Self-status repair, plus the earlier Pyre-payment and Conduit-capture fixes.
+Current Windows installation:0.2.72, committed source`46552f41`. Banished/Pyreborne
+retained-metagame Ring3 passes an offline improved frozen route and independent
+native replay:41 inputs,33 plays,8 EndTurns,Pyre37,155 independent card-mask
+contexts and16 train stages per process. Every root,successor,forecast and RNG
+matches; all four failure counters are zero. Both processes execute a frozen
+policy with zero new search/publications: this is not default-budget strategy
+acceptance. The payload includes the removed ability caster Self-status repair,
+unboxed-hand Conduit callbacks and masked outer-boss death statistics.
 
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
-its next launch loads0.2.70. Backup/receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261025-201103/installation.json`.
-Package:`results/mod-dist/PojuAdvisor-0.2.70-Windows-20261025-201103.zip`,SHA256
-`9283081d882ea5fc69c0952ad77adf069a098876b86c26223600fba010c2d1a6`.
+its next launch loads0.2.72. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261025-203411/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.72-Windows-20261025-203411.zip`,SHA256
+`680228402981f0b140dde0bb19fe4b7f1fc7d00739f55217badac3e7cd8bc91f`.
 No Mac package or full regression was run. Random eight-battle acceptance is
 still incomplete; historical sections below describe earlier installations.
 

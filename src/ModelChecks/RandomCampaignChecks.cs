@@ -22,6 +22,12 @@ internal static class RandomCampaignChecks
             }
             return;
         }
+        if (path.EndsWith("full-battle-metagame-campaign-ring3-refined-search.mt2f", StringComparison.Ordinal))
+        {
+            using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
+            RefinedPair(source.RootElement, replay.RootElement, 424245, 0, 2, "Banished", "Pyreborne", 41);
+            return;
+        }
         if (path.EndsWith("full-battle-random-campaign-08-ring3-refined-search.mt2f", StringComparison.Ordinal))
         {
             using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));

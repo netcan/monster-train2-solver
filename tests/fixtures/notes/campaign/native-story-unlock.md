@@ -121,3 +121,26 @@ checkpoint is preserved for offline strategy improvement, with no Ring4 claim.
 An independent30s/4096-node-cap root search also predicts defeat after44 steps
 (1250 expanded nodes); its complete state/RNG replay passes. This is a bounded
 strategy counterexample, not a proof that the battle has no winning route.
+
+### Retained-profile Ring3 improvement · 0.2.72
+
+The iterative offline tool composes two improvements among28 complete
+candidates, finding a41-input model win (Pyre37). Native validation exposed
+the [masked outer-boss death statistics](../combat/outer-boss-death-statistics.md)
+boundary. After that repair, the full source and independent frozen native
+replay both win:33 plays,8 EndTurns,16 train stages, all roots/successors/
+forecasts/RNG and four zero failure counters. Source runtime101.89s,155
+independent card-mask contexts and83 pure captures. This is an offline policy
+win, not default10000ms strategy acceptance; the44-input default loss stays.
+
+The curated pair is
+`campaign/progression/full-battle-metagame-campaign-ring3-refined-*`.
+Native rewards/merchant/map continuation enters Ring4, with input save SHA256
+`0ff1758a0468b8d49e00c434cc6e200528bfee13170ea5bbfb7356fa402908ed`.
+`campaign-metagame-ring4.zip` contains56 hash-verified payload/history files,
+SHA256`e72c2addd953e2f2b18de215b5ee8d1dd371872eed8dce7a0ff8c1fecdcd8e4a`.
+Checking Ring2, Ring3 and Ring4 checkpoints in order preserves all16 earlier
+counters, hearts, features and dialogues, with no battle simulations. Latest
+UnitsMoved183,StewardDamage1408,CoinsSpent1660,Debuffs127,MagicPower410,
+PyreDamage163. This profile resumes actual10000ms/two-worker advice at Ring4;
+no natural true-final victory is claimed.
