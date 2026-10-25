@@ -91,6 +91,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-consume-kill-copy-calibration.mt2f',
     'player-sacrifice-preview-calibration.mt2f',
     'player-sacrifice-preview-replay-calibration.mt2f',
+    'player-pyre-max-health-calibration.mt2f',
+    'player-pyre-max-health-replay-calibration.mt2f',
     'player-consume-kill-copy-observation-calibration.mt2f',
     'player-consume-kill-copy-replay-calibration.mt2f',
     'player-juice-ritual-calibration.mt2f',
@@ -1369,6 +1371,7 @@ $branchPairGates = @{
     'player-juice-ritual-calibration.mt2f' = '--juice-ritual-pair-only'
     'player-consume-kill-copy-calibration.mt2f' = '--consume-kill-copy-pair-only'
     'player-sacrifice-preview-calibration.mt2f' = '--sacrifice-preview-pair-only'
+    'player-pyre-max-health-calibration.mt2f' = '--pyre-max-health-pair-only'
     'player-generated-discard-guard-calibration.mt2f' = '--generated-discard-guard-pair-only'
     'player-ephemeral-consume-order-calibration.mt2f' = '--ephemeral-consume-order-pair-only'
     'player-status-callback-room-sync-calibration.mt2f' = '--status-callback-room-sync-pair-only'

@@ -268,6 +268,10 @@ namespace MonsterTrain2Poju.Model
                     // Native IOverrideDraftRarityRelicEffect is consulted only by
                     // reward drafts. Its acquired deck is already in battle state.
                     if (effect == "RelicEffectOverrideCardDraftRarity") continue;
+                    // The sealed acquire effect changes Pyre HP/max HP before
+                    // battle. Both values are already in the captured Pyre;
+                    // it has no combat callback to replay in search branches.
+                    if (effect == "RelicEffectModifyTowerMaxHealth") continue;
                     // Sealed IMerchantRelicEffect supplies a price multiplier only;
                     // it has no battle callbacks, including for CheaperMerchants.
                     if (effect == "RelicEffectModifyMerchantAllCosts") continue;
