@@ -456,7 +456,8 @@ namespace MonsterTrain2Poju.Model
                             .Where(unit => unit.Health > 0 && unit.IsSpawning != true).Select(unit => unit.Id).ToArray())));
                 CardTargets targets = Collect(state, collectionRoom, effect, last, initial, dropPosition, index, definitions, isTesting: true,
                     pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId, sourceCardId: sourceCardId,
-                    lastSacrificedUnitId: lastSacrificedUnitId, hasPriorTargets: priorTargets != null);
+                    lastSacrificedUnitId: lastSacrificedUnitId, hasPriorTargets: priorTargets != null,
+                    retainedSelf: retained.GetValueOrDefault(selfUnitId));
                 if (!targets.Supported) return UnsupportedTrain(targets.UnsupportedReason!);
                 string? damageTargetError = null;
                 if (!CardTargetModel.IsRandom(effect.Target))
@@ -493,7 +494,8 @@ namespace MonsterTrain2Poju.Model
                 }
                 targets = Collect(state, collectionRoom, effect, last, initial, dropPosition, index, definitions,
                     pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId, sourceCardId: sourceCardId,
-                    lastSacrificedUnitId: lastSacrificedUnitId, hasPriorTargets: priorTargets != null);
+                    lastSacrificedUnitId: lastSacrificedUnitId, hasPriorTargets: priorTargets != null,
+                    retainedSelf: retained.GetValueOrDefault(selfUnitId));
                 if (!targets.Supported) return UnsupportedTrain(targets.UnsupportedReason!);
                 damageTargetError = DamagePerHpTargetError(state, effect, targets, selfUnitId);
                 if (damageTargetError != null) return UnsupportedTrain(damageTargetError);
@@ -2511,8 +2513,16 @@ namespace MonsterTrain2Poju.Model
         private static CardTargets Collect(TrainCombatState state, int roomIndex, CardActionEffect effect, IReadOnlyList<int> last,
             CombatUnit? initial, int dropPosition, int index, BattlePlayRules? definitions, bool isTesting = false,
             IReadOnlyDictionary<int, int>? pendingDeadRooms = null, IReadOnlyDictionary<int, int>? positions = null, int selfUnitId = 0,
-            int sourceCardId = 0, int lastSacrificedUnitId = 0, bool hasPriorTargets = false)
+            int sourceCardId = 0, int lastSacrificedUnitId = 0, bool hasPriorTargets = false, CombatUnit? retainedSelf = null)
         {
+            // A completed OnShift death removes the native ability caster before
+            // the following scalar status effects collect Self again. Keep the
+            // rejection for unknown actors and other retained-actor effects.
+            if (effect.Target == "Self" && effect.Type is "AddStatus" or "AddStatusPerOtherEffect" &&
+                retainedSelf?.Health <= 0 && retainedSelf.DeathState?.HasFinishedDying == true &&
+                retainedSelf.DeathState.IsBeingRemoved &&
+                state.Rooms.SelectMany(room => room.Units).All(unit => unit.Id != selfUnitId))
+                return new CardTargets(Array.Empty<int>());
             if (effect.Type == "CopyLastTurn")
             {
                 IReadOnlyList<int> cards = CardLastTurnCopyModel.EligibleCards(state.Context!, effect, out string? error);

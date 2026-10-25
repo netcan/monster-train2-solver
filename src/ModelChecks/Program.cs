@@ -1,6 +1,15 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length is 2 or 3 && args[0] == "--removed-ability-self-only")
+{
+    UnitTriggerUpgradeChecks.Run();
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) RemovedAbilitySelfChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); RemovedAbilitySelfChecks.Pair(source.RootElement, replay.RootElement); }
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--pyre-payment-world-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5397,6 +5406,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-pyre-payment-world-replay-calibration.mt2f"));
     PyrePaymentWorldChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-removed-ability-self-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-removed-ability-self-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-removed-ability-self-replay-calibration.mt2f"));
+    RemovedAbilitySelfChecks.Pair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-card-type-sequence-reset-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-card-type-sequence-reset-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
