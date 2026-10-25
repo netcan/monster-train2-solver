@@ -195,6 +195,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-juice-justcause-calibration.mt2f',
     'player-juice-justcause-observation-calibration.mt2f',
     'player-juice-justcause-replay-calibration.mt2f',
+    'player-corrupt-equipment-calibration.mt2f',
+    'player-corrupt-equipment-replay-calibration.mt2f',
     'full-battle-random-campaign-10-ring2-budget10000-search.mt2f',
     'full-battle-random-campaign-10-ring2-budget10000-replay.mt2f',
     'full-battle-random-campaign-10-ring3-budget10000-search.mt2f',
@@ -1478,6 +1480,7 @@ $branchPairGates = @{
     'player-juice-ritual-calibration.mt2f' = '--juice-ritual-pair-only'
     'player-juice-fracture-calibration.mt2f' = '--juice-fracture-pair-only'
     'player-juice-justcause-calibration.mt2f' = '--juice-justcause-pair-only'
+    'player-corrupt-equipment-calibration.mt2f' = '--corrupt-equipment-only'
     'player-triggered-corruption-calibration.mt2f' = '--triggered-corruption-only'
     'player-triggered-corruption-relic-calibration.mt2f' = '--triggered-corruption-relic-only'
     'player-draft-upgrade-combat-calibration.mt2f' = '--draft-upgrade-combat-only'
