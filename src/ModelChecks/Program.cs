@@ -1837,6 +1837,23 @@ if (args.Length == 2 && args[0] == "--mixalot-only")
     MixalotChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--pre-discard-spell-rng-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 3)
+    {
+        using var replay = ModelJson.ReadFixture(args[2]);
+        PreDiscardSpellRngChecks.Native(source.RootElement, replay.RootElement);
+    }
+    else PreDiscardSpellRngChecks.Native(source.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--stronger-corruption-copy-effects-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    StrongerCorruptionCopyChecks.Effects(source.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--stronger-corruption-copy-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

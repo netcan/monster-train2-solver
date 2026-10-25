@@ -785,7 +785,10 @@ namespace MonsterTrain2Poju.Model
             else if (rule.Effect == "Spell" || rule.Effect == "Equipment")
             {
                 if (action.PlayerPosition != -1) return Illegal("A spell does not take a summon position.");
-                SpellCastCheck cast = CardSpellModel.TestPlay(CardSpellModel.WithContext(train, castingContext), action.RoomIndex,
+                // Keep the pre-play ownership snapshot for cast tests, but not
+                // its RNG from before pre-discard relics made their random test.
+                SpellCastCheck cast = CardSpellModel.TestPlay(CardSpellModel.WithContext(train,
+                    castingContext.WithBattleRng(context.BattleRng)), action.RoomIndex,
                     rule.Effects, action.TargetUnitId, source.PlayRules, sourceCardId: card.InstanceId);
                 if (!cast.Supported) return Unsupported(cast.UnsupportedReason!);
                 if (!cast.CanPlay) return Illegal("Every effect failed its cast test or a required effect failed.");
