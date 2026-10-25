@@ -620,3 +620,9 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll `
 完整败局使用 `--random-campaign-source-only <source.mt2f> <seed> <rank> <distance>
 <primary> <secondary>`，仍检查原生逐步状态、预测、RNG 与面板证据。
 机制不支持或不完整档案不能通过此入口冒充一个已验证的策略败局。
+
+跨修复继续的多份收据可用 `scripts/Check-RandomCampaignChain.ps1 -Journal <收据数组>`
+统一校验。默认要求连续八战、原生标准通关和完整胜局历史；`-ThroughRing 4`
+只验前四战，输出明确标记未通关。该检查复用逐战通过的独立原生重放收据，
+核对原档案／存档哈希、逐战输入输出连续性、相同种族／种子／难度／预算，
+及每对进程三份DLL一致；不重跑战斗模拟。前四战连续链已通过。
