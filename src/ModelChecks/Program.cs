@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length is 2 or 3 && args[0] == "--first-of-kin-exhaust-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) FirstOfKinExhaustChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); FirstOfKinExhaustChecks.Native(source.RootElement, replay.RootElement); }
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--corrupt-room-attachment-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5704,6 +5711,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-consume-kill-copy-replay-calibration.mt2f"));
     using var observation = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-consume-kill-copy-observation-calibration.mt2f"));
     ConsumeKillCopyChecks.Pair(source.RootElement, replay.RootElement, observation.RootElement);
+}
+foreach (string family in new[] { "player-standby-etch-paired-boss", "player-standby-etch-final-boss" })
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith(family + "-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, family + "-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, family + "-replay-calibration.mt2f"));
+    FirstOfKinExhaustChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-corrupt-rage-room-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-corrupt-rage-room-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

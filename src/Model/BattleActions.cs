@@ -1152,12 +1152,16 @@ namespace MonsterTrain2Poju.Model
                     context, room.Preview, room.ActiveCompanionBossIds);
             }).ToArray();
             context = UnitStandbyModel.ReturnReady(context);
-            context = EquipmentModel.ReturnUnattached(context, new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id)));
             piles = context.OtherPiles?.ToArray() ?? piles;
             rooms = rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions,
                 context, room.Preview, room.ActiveCompanionBossIds)).ToArray();
             var living = new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
             train = new TrainCombatState(rooms, train.Movement.Where(rule => living.Contains(rule.UnitId)).ToArray(), train.EnemySlotsPerRoom, context);
+            TrainCombatResult returnedEquipment = EquipmentModel.ReturnUnattached(train, action.RoomIndex);
+            if (!returnedEquipment.Supported) return Unsupported(returnedEquipment.UnsupportedReason!);
+            train = returnedEquipment.State!; context = train.Context!; piles = context.OtherPiles?.ToArray() ?? piles;
+            if (returnedEquipment.Outcome != RoomOutcome.Exchanged) outcome = returnedEquipment.Outcome;
+            terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
             if (consumedOnPlay && !terminal)
             {
                 TrainCombatResult exhausted = CardPlayedTriggerModel.Exhausted(train, action.RoomIndex);

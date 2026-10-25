@@ -93,13 +93,14 @@ namespace MonsterTrain2Poju.Model
             return new CardUpgradeModifier("", "", new CardStatModifier(damage, health), statuses, false, false, false, 0, 0,
                 Array.Empty<string>(), maskMetadata: mask, lifecycle: lifecycle);
         }
-        internal static CombatContext ReturnCard(CombatContext context, EquipmentStandbyCondition condition)
+        internal static CombatContext ReturnCard(CombatContext context, EquipmentStandbyCondition condition,
+            bool removeStandby = true)
         {
             CardPileState? standby = context.OtherPiles?.FirstOrDefault(pile => pile.Name == "Standby");
             CardToken? card = standby?.Cards.FirstOrDefault(item => item.InstanceId == condition.CardId);
             if (card == null) return context; // Terminal clearing or an earlier return.
             CardCycleState cards = context.Cards;
-            CardPileState[] piles = context.OtherPiles!.Select(pile => pile == standby ? CardPileModel.Remove(pile, card.InstanceId) : pile.Name == "Exhausted" ? CardPileModel.Remove(pile, card.InstanceId) : pile).ToArray();
+            CardPileState[] piles = context.OtherPiles!.Select(pile => pile == standby && removeStandby ? CardPileModel.Remove(pile, card.InstanceId) : pile.Name == "Exhausted" ? CardPileModel.Remove(pile, card.InstanceId) : pile).ToArray();
             CardInstanceState? instance = context.FindCard(card.InstanceId);
             bool intactGraft = instance?.MaskDescriptor?.BaseTraits.Concat(instance.MaskDescriptor.TemporaryTraits)
                 .Any(trait => trait.RuntimeType == CardGraftedEquipmentModel.Trait && trait.GraftSevered == false) == true;
@@ -137,6 +138,36 @@ namespace MonsterTrain2Poju.Model
                 if (condition != null && !livingIds.Contains(condition.HostUnitId)) context = ReturnCard(context, condition);
             }
             return context;
+        }
+
+        internal static TrainCombatResult ReturnUnattached(TrainCombatState source, int fallbackRoom)
+        {
+            TrainCombatState state = source;
+            var results = new List<RoomCombatResult>();
+            RoomOutcome outcome = RoomOutcome.Exchanged;
+            CardToken[] snapshot = source.Context?.OtherPiles?.FirstOrDefault(pile => pile.Name == "Standby")?.Cards.ToArray()
+                ?? Array.Empty<CardToken>();
+            foreach (CardToken token in snapshot)
+            {
+                CombatContext context = state.Context!;
+                EquipmentStandbyCondition? condition = context.OtherPiles?.FirstOrDefault(pile => pile.Name == "Standby")?
+                    .EquipmentConditions?.FirstOrDefault(item => item.CardId == token.InstanceId);
+                if (condition == null || state.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == condition.HostUnitId)) continue;
+                // A death-local equipment check suppresses CardExhausted. This
+                // later global check runs it, before removing the standby entry.
+                context = ReturnCard(context, condition, removeStandby: false);
+                state = CardSpellModel.WithContext(state, context);
+                if (context.OtherPiles!.Any(pile => pile.Name == "Exhausted" && pile.Cards.Any(card => card.InstanceId == token.InstanceId)))
+                {
+                    TrainCombatResult fired = CardPlayedTriggerModel.Exhausted(state, fallbackRoom);
+                    if (!fired.Supported) return fired;
+                    state = fired.State!; results.AddRange(fired.RoomResults);
+                    if (fired.Outcome != RoomOutcome.Exchanged) outcome = fired.Outcome;
+                }
+                state = CardSpellModel.WithContext(state, state.Context!.WithOtherPiles(state.Context.OtherPiles!
+                    .Select(pile => pile.Name == "Standby" ? CardPileModel.Remove(pile, token.InstanceId) : pile).ToArray()));
+            }
+            return new TrainCombatResult(state, outcome, results);
         }
     }
 }

@@ -1138,6 +1138,14 @@ TrainSteward后，Deathwish专用更新只应临时跳过光环调用，旧模�
 腐化装备回放通过。详见[RageRoom腐化校准](../tests/fixtures/notes/combat/corrupt-rage-room.md)。
 终战改进搜索已纳入这张房间牌；尚未计成原生胜利。
 
+0.2.90继续修复全局装备归堆漏掉Etch：第十组第六战42输入和第九组终战
+30输入均已完成独立原生双进程复验。死亡时仍挂在宿主上的装备检查会抑制
+消耗触发；先前卸下、等待宿主移除的装备在下一回合全局检查时会触发。
+原预测漏掉两次／一次Plus15Attack，现完整后继、预测与RNG逐步匹配，
+并通过返手、宿主存活、所选楼层及幂等控制。旧装备消耗／溢出／触发场景
+相关回归通过。详见[装备归堆与Etch](../tests/fixtures/notes/combat/equipment-standby-etch.md)。
+这些校准没有记为整场获胜；从原有连续存档继续实际默认验收。
+
 定向检查入口：
 
 ```powershell

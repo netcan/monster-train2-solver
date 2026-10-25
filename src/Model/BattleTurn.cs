@@ -614,8 +614,14 @@ namespace MonsterTrain2Poju.Model
             spawn = WithTrain(spawn, train, turn, spawn.Rng);
             context = train.Context!;
             context = UnitStandbyModel.ReturnReady(context);
-            context = EquipmentModel.ReturnUnattached(context, new HashSet<int>(train.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id)));
             train = WithContext(train, context, false);
+            TrainCombatResult returnedEquipment = EquipmentModel.ReturnUnattached(train, source.SelectedRoom);
+            if (!returnedEquipment.Supported) return Unsupported(returnedEquipment.UnsupportedReason!);
+            if (!RouteDeadUnits(train, returnedEquipment)) return Unsupported("Equipment return deaths require standby card routing.");
+            train = returnedEquipment.State!;
+            context = train.Context!;
+            spawn = WithTrain(spawn, train, turn, spawn.Rng);
+            if (Terminal(returnedEquipment.Outcome)) return Finish(returnedEquipment.Outcome, 0, moon);
             if (context.Relics?.Any(owner => owner.EffectTypes.Contains(RelicResourceModel.PileStartTurn)) == true)
             {
                 TrainSpellResult pileStart = RelicPileStartTurnModel.Apply(train, outputPlayRules);
