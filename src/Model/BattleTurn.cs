@@ -93,22 +93,30 @@ namespace MonsterTrain2Poju.Model
 
         internal static IReadOnlyList<string> AfterActionInteractions(BattleTurnState source, CombatContext context)
         {
-            if (!source.ExternalInteractions.Any(IsDeferredPersistentDiscard)) return source.ExternalInteractions;
+            var interactions = ActionInteractions(source).ToList();
             foreach (CardToken token in context.Cards.Hand)
             {
                 CardInstanceState? instance = context.FindCard(token.InstanceId);
                 if (instance?.MaskDescriptor == null) return source.ExternalInteractions;
                 try
                 {
-                    if (CardBranchMaskModel.Resolve(instance).Traits.Any(trait => trait is "CardTraitPersistent" or "CardTraitFreeze"))
-                        return source.ExternalInteractions;
+                    var traits = CardBranchMaskModel.Resolve(instance).Traits;
+                    if (traits.Contains("CardTraitPersistent"))
+                    {
+                        interactions.Add("CardTraitPersistent Discard callback");
+                        interactions.Add("CardTraitPersistent discard routing");
+                    }
+                    if (traits.Contains("CardTraitFreeze")) interactions.Add("CardTraitFreeze discard routing");
                 }
                 catch (InvalidOperationException)
                 {
                     return source.ExternalInteractions;
                 }
             }
-            return ActionInteractions(source);
+            // Generated cards can introduce these native hand-discard guards
+            // even when the previous capture had none. Derive them from the
+            // complete post-action hand instead of only removing old guards.
+            return interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray();
         }
 
         // Room changes refresh the native combat preview before the selected action.

@@ -58,6 +58,10 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-04-ring3-budget10000-replay.mt2f',
     'full-battle-random-campaign-04-ring4-budget10000-search.mt2f',
     'full-battle-random-campaign-04-ring4-budget10000-replay.mt2f',
+    'full-battle-random-campaign-05-ring1-budget10000-search.mt2f',
+    'full-battle-random-campaign-05-ring1-budget10000-replay.mt2f',
+    'full-battle-random-campaign-05-ring2-budget10000-search.mt2f',
+    'full-battle-random-campaign-05-ring2-budget10000-replay.mt2f',
     'player-feeding-spell-routing-calibration.mt2f',
     'player-feeding-spell-routing-replay-calibration.mt2f',
     'player-authored-consume-copy-calibration.mt2f',
@@ -98,6 +102,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-corrupt-source-alignment-replay-calibration.mt2f',
     'player-guaranteed-status-preview-calibration.mt2f',
     'player-guaranteed-status-preview-replay-calibration.mt2f',
+    'player-generated-discard-guard-calibration.mt2f',
+    'player-generated-discard-guard-replay-calibration.mt2f',
     'player-destroyed-feeder-calibration.mt2f',
     'player-destroyed-feeder-replay-calibration.mt2f',
     'player-destroyed-feeder-observation-calibration.mt2f',
@@ -1252,6 +1258,7 @@ $branchPairGates = @{
     'player-relic-attachment-replacement-calibration.mt2f' = '--relic-attachment-replacement-pair-only'
     'player-corrupt-source-alignment-calibration.mt2f' = '--corrupt-source-alignment-pair-only'
     'player-guaranteed-status-preview-calibration.mt2f' = '--guaranteed-status-preview-pair-only'
+    'player-generated-discard-guard-calibration.mt2f' = '--generated-discard-guard-pair-only'
     'player-destroyed-feeder-calibration.mt2f' = '--destroyed-feeder-pair-only'
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object {
