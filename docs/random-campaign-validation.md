@@ -39,7 +39,7 @@ Underlegion、LazarusLeague、Hellhorned、Awoken、Stygian、Umbra、Remnant、
 | 2 | Pyreborne / Banished | 1862997127 | 提升至10000ms后前四战双胜；第五战59输入原生败局，预测／状态／RNG和失败计数均通过 |
 | 3 | Remnant / Awoken | 295400568 | 从开局10000ms，前五战双胜；第六战56输入原生败局，预测／状态／RNG和失败计数均通过 |
 | 4 | Hellhorned / Wurmkin | 770862752 | 前四战10000ms双胜；第五战50输入局部优化冻结路线原生双胜；第六战0.2.46完整44输入实际败北 |
-| 5 | Stygian / LazarusLeague | 972508374 | 从开局10000ms，前四战源局和独立复放双胜，第四战薪火100不变；继续第五战 |
+| 5 | Stygian / LazarusLeague | 972508374 | 从开局10000ms，前五战源局和独立复放双胜，第五战51输入／42次出牌／9次结束回合；继续第六战 |
 
 两组首战各自的源局／独立复放已归档在 `tests/fixtures/campaign/random/`，
 以 `full-battle-random-campaign-01-ring1-*` 与 `02-ring1-*` 命名。
