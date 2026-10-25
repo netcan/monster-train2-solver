@@ -23,8 +23,13 @@ and coefficient. Changed definitions gain an additional guard; changed ID,
 asset,statistics,traits or trigger signatures remain unsupported. The raw
 `Upgrade room modifiers` marker remains captured so direct live-unit
 upgrade/removal APIs retain their protection. This calibration opens only
-the original unit-card birth path. Ring7 full-battle advice is being verified
-from both continuous checkpoints; no complete random campaign is claimed.
+the original unit-card birth path. Both continuous Ring7 checkpoints now
+complete actual10000ms/two-worker default advice:66 inputs,56 plays and10
+EndTurns each. All states,forecasts,RNG and four failure counters match;
+both are terminal defeats and archived separately. An offline54-input
+candidate wins in a fresh native process with Pyre34; independent replay
+and normal campaign progression are still required. No complete random
+campaign is claimed.
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --card-corruption-attack-upgrade-only `

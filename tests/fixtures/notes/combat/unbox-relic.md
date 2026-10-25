@@ -30,11 +30,13 @@ The floor0 tactical route completes66 inputs,55 plays/11 EndTurns,in two
 native processes with Pyre82. The actual10000ms/two-worker default also
 completes54 inputs,43 plays/11 EndTurns,in two native processes with Pyre2.
 Full forecasts,state and RNG agree; every failure counter is zero. Normal
-rewards and maps reach separate Ring7 checkpoints,each at Pyre120. The six
+rewards and maps reach separate Ring7 checkpoints: default Pyre58,refined
+Pyre120. The six
 default victories pass their uninterrupted checkpoint chain; the refined
-six-battle chain is separately marked mixed. Ring7 is blocked by the newly
-purchased AddWurmScaleDamage room-modifier upgrade. No full random campaign
-is claimed.
+six-battle chain is separately marked mixed. The newly purchased
+AddWurmScaleDamage room-modifier upgrade is calibrated in0.2.97; both Ring7
+default runs complete66 inputs with all failure counters zero but lose.
+No full random campaign is claimed.
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --unbox-relic-only `
