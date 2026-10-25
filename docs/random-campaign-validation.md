@@ -44,7 +44,7 @@ Underlegion、LazarusLeague、Hellhorned、Awoken、Stygian、Umbra、Remnant、
 | 6 | Hellhorned / LazarusLeague | 1848503146 | 前五战10000ms实际建议及独立原生复放双胜；0.2.66第六战完整62输入原生败局，状态／预测／RNG与四项零失败通过；30秒根搜索也判败，未证明无胜法。 |
 | 7 | LazarusLeague / Pyreborne | 243930257 | 前四战10000ms实际建议与独立原生复放双胜、连续链通过；第五战45输入实际败北，完整状态／预测／RNG一致。30秒根搜索仍判败，未证明无胜法；尚未完整通关。 |
 | 8 | Umbra / Stygian | 1347120220 | 第一、二、四、五战10000ms实际建议与独立复放双胜；第三战默认63输入败局保留，离线改进61输入／薪火24原生双胜。第六战双天使53输入实际败北，状态／预测／RNG及四项零失败通过；离线继续筛选，尚未完整通关。 |
-| 9 | Wurmkin / Hellhorned | 771950956 | 首战腐化毒偏差已修复并8输入双进程校准；0.2.73实际10000ms首战18输入／薪火80原生双胜，正常奖励地图进入第二战；不改写前八组失败。 |
+| 9 | Wurmkin / Hellhorned | 771950956 | 首战腐化毒偏差已修复并8输入双进程校准；0.2.73实际10000ms首战18输入／薪火80原生双胜。第二战遇到原生法强／腐化限制加商店复制升级，已保留零前缀拒绝并做原生观察，继续校准；不改写前八组失败。 |
 
 两组首战各自的源局／独立复放已归档在 `tests/fixtures/campaign/random/`，
 以 `full-battle-random-campaign-01-ring1-*` 与 `02-ring1-*` 命名。
@@ -864,6 +864,13 @@ RNG一致且四项零失败。源局250.01秒、55次发布、4份搜索指标�
 接受收据`random-campaign-20261025-205700-e1f8cb76/accepted-rings.jsonl`。
 两份整场、两份腐化毒组件和元进度第五战默认败局登记后目录为1600份；
 只执行相关组件和已接受战斗检查，未跑全量回归。
+
+21:00已将这对原生胜局实际使用的0.2.73安装到当前Windows游戏，源修订
+`8c9faebd`，67个受保护文件不变，F10／10000ms／双线程配置保留。包
+`results/mod-dist/PojuAdvisor-0.2.73-Windows-20261025-210032.zip`，SHA256
+`c78a48b245ae760013458343e4ff3f2e90aaaa38c93bb87bf89a05524efcb2d9`。
+收据`BepInEx/PojuBackups/RandomCampaign-20261025-210032/installation.json`。
+没有构建Mac包，也没有把尚待校准的第二战计为通过。
 
 定向检查入口：
 

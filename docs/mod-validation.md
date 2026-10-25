@@ -1,20 +1,20 @@
 # Player Mod validation · 2026-10-25
 
-Current Windows installation:0.2.72, committed source`46552f41`. Banished/Pyreborne
-retained-metagame Ring3 passes an offline improved frozen route and independent
-native replay:41 inputs,33 plays,8 EndTurns,Pyre37,155 independent card-mask
-contexts and16 train stages per process. Every root,successor,forecast and RNG
-matches; all four failure counters are zero. Both processes execute a frozen
-policy with zero new search/publications: this is not default-budget strategy
-acceptance. The payload includes the removed ability caster Self-status repair,
-unboxed-hand Conduit callbacks and masked outer-boss death statistics.
+Current Windows installation:0.2.73, committed source`8c9faebd`. The ninth
+random Wurmkin/Hellhorned sample passes actual10000ms/two-worker whole-battle
+advice and independent frozen native replay:18 inputs,13 plays,5 EndTurns,
+Pyre80 and9 train stages per process. Every root,successor,forecast and RNG
+matches; all four failure counters are zero. Source advice publishes20 times
+with158 pure captures. The payload includes current-corruption poison damage,
+removed ability caster Self-status,unboxed-hand Conduit callbacks and masked
+outer-boss death statistics.
 
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
-its next launch loads0.2.72. Backup/receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261025-203411/installation.json`.
-Package:`results/mod-dist/PojuAdvisor-0.2.72-Windows-20261025-203411.zip`,SHA256
-`680228402981f0b140dde0bb19fe4b7f1fc7d00739f55217badac3e7cd8bc91f`.
+its next launch loads0.2.73. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261025-210032/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.73-Windows-20261025-210032.zip`,SHA256
+`c78a48b245ae760013458343e4ff3f2e90aaaa38c93bb87bf89a05524efcb2d9`.
 No Mac package or full regression was run. Random eight-battle acceptance is
 still incomplete; historical sections below describe earlier installations.
 
