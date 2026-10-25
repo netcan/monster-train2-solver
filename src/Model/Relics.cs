@@ -268,6 +268,10 @@ namespace MonsterTrain2Poju.Model
                     // Native IOverrideDraftRarityRelicEffect is consulted only by
                     // reward drafts. Its acquired deck is already in battle state.
                     if (effect == "RelicEffectOverrideCardDraftRarity") continue;
+                    // Sealed IAddStartingUpgradeToCardDrafts is called only
+                    // by CardDraftScreen. Acquired permanent upgrades are
+                    // already captured; battle branches never draft rewards.
+                    if (effect == "RelicEffectAddStartingUpgradeToCardDrafts") continue;
                     // The sealed acquire effect changes Pyre HP/max HP before
                     // battle. Both values are already in the captured Pyre;
                     // it has no combat callback to replay in search branches.
