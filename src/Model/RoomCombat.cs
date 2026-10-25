@@ -2895,7 +2895,6 @@ namespace MonsterTrain2Poju.Model
                     FireTriggers(actor, "OnAttacking", overrideTarget: target);
                 // Native queues Slay before lifesteal and retaliation, for every damage type
                 // with a character attacker, including damage from a character effect.
-                if (!target.Alive && !target.DeathFinished && target.Count("undying") <= 0 && !UpdateEnchantments(target.Source.Id)) return;
                 if (actor != null && !actor.Despawned && !actor.Removed && !target.Alive) FireTriggers(actor, "OnKill", dyingCharacter: target);
                 if (actor != null && !actor.Despawned && !actor.Removed && damage > 0 && actor.Count("avarice") > 0)
                 {
@@ -2962,6 +2961,10 @@ namespace MonsterTrain2Poju.Model
                     if (!drained.Supported) { unsupportedReason = drained.UnsupportedReason; return; }
                     MergeSummon(drained);
                 }
+                // CharacterState.CheckDeathCardTriggers updates the dying
+                // enchanter after character Slay and hit callbacks. Removing a
+                // Silence aura earlier incorrectly enables the killer's Slay.
+                if (!target.Alive && !target.DeathFinished && target.Count("undying") <= 0 && !UpdateEnchantments(target.Source.Id)) return;
                 if (!target.Alive && !target.DeathFinished && sourceCardId > 0 &&
                     context?.FindCard(sourceCardId)?.MaskDescriptor?.KillTriggers?.Count > 0)
                 {

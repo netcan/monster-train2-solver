@@ -1,6 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
 
+if (args.Length is 2 or 3 && args[0] == "--slay-enchantment-order-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) SlayEnchantmentOrderChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); SlayEnchantmentOrderChecks.Native(source.RootElement, replay.RootElement); }
+    return;
+}
 if (args.Length == 2 && args[0] == "--sentry-only")
 {
     SentryChecks.Run();
