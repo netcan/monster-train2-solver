@@ -415,6 +415,15 @@ alternatives as defeats. All batches had zero unsupported attempts. Counts
 include repeated alternatives at the resumed decision and are not a unique
 or exhaustive search-space total. This is a diagnostic result, not an
 impossibility proof.
+The suffix-preserving improver subsequently found a48-input model win in the
+Wurmkin/Hellhorned random Ring8 counterexample. Both independent native
+processes execute the39 card plays/nine EndTurns unchanged with zero search,
+Pyre1 and matching full forecasts/state/RNG. Native rewards reach an eight-win
+Standard settlement; the continuous mixed-route chain and completed-save
+archive/restore pass. This is the first complete random campaign acceptance,
+not an all-default-budget result. The natural Covenant3 Ring6 counterexample
+improved from61 to49 inputs across two suffix batches but still predicts
+defeat; no additional native games were spent on those losing routes.
 Three fixed-floor baselines and the10000ms default root search also predict
 defeat. The subsequent actual0.2.28 native59-input defeat confirms the root
 can run without a model mismatch, not that no winning policy exists.

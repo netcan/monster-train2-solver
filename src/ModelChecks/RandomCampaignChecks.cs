@@ -25,6 +25,18 @@ internal static class RandomCampaignChecks
             RefinedPair(source.RootElement, replay.RootElement, 1895012796, 0, 5, "Banished", "Wurmkin", 66);
             return;
         }
+        if (path.EndsWith("full-battle-random-campaign-09-ring8-refined-suffix-search.mt2f", StringComparison.Ordinal))
+        {
+            using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
+            RefinedPair(source.RootElement, replay.RootElement, 771950956, 0, 7, "Wurmkin", "Hellhorned", 48);
+            foreach (var fixture in new[] { source.RootElement, replay.RootElement })
+            {
+                var final = fixture.GetProperty("RollingDecisions").EnumerateArray().Last().GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                Require(final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 1,
+                    "Changed curated final-battle win: expected Pyre1.");
+            }
+            return;
+        }
         if (path.EndsWith("full-battle-random-campaign-09-ring7-refined-order-search.mt2f", StringComparison.Ordinal))
         {
             using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
