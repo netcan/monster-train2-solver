@@ -189,7 +189,7 @@ namespace MonsterTrain2Poju.Model
             }
             if (source.MoonPhase != "Full" && source.MoonPhase != "New") return Unsupported("Unmodeled moon phase.");
             string? membershipError = CardPileModel.ValidateMembership(source.Spawn.Train.Context.Cards, source.OtherPiles,
-                source.Spawn.Train.Context.NextCardId);
+                source.Spawn.Train.Context.NextCardId, source.Spawn.Train.Context);
             if (membershipError != null) return Unsupported(membershipError);
             int[] spawners = source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                 .Where(unit => unit.SpawnerCardId > 0).Select(unit => unit.SpawnerCardId).ToArray();

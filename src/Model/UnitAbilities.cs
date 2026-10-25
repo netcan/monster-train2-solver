@@ -87,7 +87,7 @@ namespace MonsterTrain2Poju.Model
             if (rule.CardType == "Spell")
                 effectiveCost = (int)Math.Clamp((long)rule.Cost + RoomCapacityModel.SpellCostDelta(context, action.RoomIndex), 0L, 99L);
             int paid = rule.CostType == "ConsumeRemainingEnergy" ? source.Energy : effectiveCost;
-            error = CardSpellModel.UnisolatedUiRangeReason(source) ?? CardPileModel.ValidateMembership(context.Cards, source.OtherPiles, context.NextCardId);
+            error = CardSpellModel.UnisolatedUiRangeReason(source) ?? CardPileModel.ValidateMembership(context.Cards, source.OtherPiles, context.NextCardId, context);
             if (error != null) return Unsupported(error);
             train = CardSpellModel.WithContext(train, context);
             SpellCastCheck cast = rule.Effect == "Null" ? new SpellCastCheck(true, battleRngAfterTests: context.BattleRng) :

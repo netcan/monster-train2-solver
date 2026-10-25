@@ -45,7 +45,7 @@ namespace MonsterTrain2Poju.Model
             if (source.OtherPiles == null && piles?.Any(pile => pile.ExhaustConditions?.Count > 0) == true)
                 return Unsupported("Consume standby callbacks require captured context piles.");
             int[] pending = (pendingExhaustedCards ?? Array.Empty<int>()).ToArray();
-            string? membershipError = CardPileModel.ValidateMembership(source.Cards, piles ?? Array.Empty<CardPileState>(), source.NextCardId);
+            string? membershipError = CardPileModel.ValidateMembership(source.Cards, piles ?? Array.Empty<CardPileState>(), source.NextCardId, source);
             if (membershipError != null) return Unsupported(membershipError);
             if (piles != null)
             {

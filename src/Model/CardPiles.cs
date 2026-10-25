@@ -6,7 +6,8 @@ namespace MonsterTrain2Poju.Model
 {
     public static class CardPileModel
     {
-        public static string? ValidateMembership(CardCycleState cards, IReadOnlyList<CardPileState> piles, int nextCardId)
+        public static string? ValidateMembership(CardCycleState cards, IReadOnlyList<CardPileState> piles, int nextCardId,
+            CombatContext? context = null)
         {
             CardToken[] primary = cards.Hand.Concat(cards.Draw).Concat(cards.Discard)
                 .Concat(piles.Where(pile => pile.Name != "DiscardBuffer").SelectMany(pile => pile.Cards)).ToArray();
@@ -14,6 +15,15 @@ namespace MonsterTrain2Poju.Model
                 // Ephemeral gives two purge references; SelfPurge plus Ephemeral gives three.
                 !(group.Count() is 2 or 3 && group.Select(card => card.DataId).Distinct().Count() == 1 &&
                     piles.Any(pile => pile.Name == "Purged" && pile.Cards.Count(card => card.InstanceId == group.Key) == group.Count())) &&
+                // Ephemeral purges twice before a later Consume trait exhausts the
+                // same object. These native references coexist after standby returns.
+                !(group.Count() == 3 && group.Select(card => card.DataId).Distinct().Count() == 1 &&
+                    piles.Where(pile => pile.Name == "Purged").Sum(pile => pile.Cards.Count(card => card.InstanceId == group.Key)) == 2 &&
+                    piles.Where(pile => pile.Name == "Exhausted").Sum(pile => pile.Cards.Count(card => card.InstanceId == group.Key)) == 1 &&
+                    context?.FindCard(group.Key) is CardInstanceState consumed &&
+                    consumed.DataId == group.First().DataId && CardExhaustModel.EphemeralDiscardPrecedesConsume(consumed) &&
+                    (consumed.ExhaustState?.UpgradeTrait?.ExhaustedCardId == group.Key ||
+                     consumed.ExhaustState?.BaseTraits.Any(trait => trait.ExhaustedCardId == group.Key) == true)) &&
                 !(group.Count() == 2 && group.Select(card => card.DataId).Distinct().Count() == 1 &&
                     piles.Any(pile => pile.Name == "Exhausted" && pile.Cards.Any(card => card.InstanceId == group.Key)) &&
                     piles.Any(pile => pile.Name == "Standby" && pile.Cards.Any(card => card.InstanceId == group.Key) &&

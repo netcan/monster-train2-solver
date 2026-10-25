@@ -512,7 +512,7 @@ namespace MonsterTrain2Poju.Model
                     return Illegal("The card excludes the target team.");
             }
             else if (action.TargetUnitId != 0) return Illegal("This card does not take a unit target.");
-            string? membershipError = CardPileModel.ValidateMembership(context.Cards, source.OtherPiles, context.NextCardId);
+            string? membershipError = CardPileModel.ValidateMembership(context.Cards, source.OtherPiles, context.NextCardId, context);
             if (membershipError != null) return Unsupported(membershipError);
             if (source.OtherPiles.Select(pile => pile.Name).Distinct().Count() != source.OtherPiles.Count)
                 return Unsupported("Duplicate card piles.");
@@ -989,6 +989,11 @@ namespace MonsterTrain2Poju.Model
             bool consumedOnPlay = !skipNaturalDiscard && consumeSuppression != RelicSuppressExhaustModel.Trait && discardInstance != null && CardExhaustModel.ShouldExhaustOnPlayedDiscard(discardInstance);
             bool ephemeralPurgeCallbacks = !skipNaturalDiscard && rule.Destination == "Purged" && discardInstance?.MaskDescriptor != null &&
                 CardBranchMaskModel.Resolve(discardInstance).Traits.Contains("CardTraitEphemeral", StringComparer.Ordinal);
+            bool ephemeralBeforeConsume = consumedOnPlay && ephemeralPurgeCallbacks &&
+                CardExhaustModel.EphemeralDiscardPrecedesConsume(discardInstance!);
+            if (ephemeralBeforeConsume && train.Rooms.SelectMany(room => room.Units)
+                .Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "CardExhausted")))
+                return Unsupported("Ephemeral before Consume with reactive exhaustion triggers requires native callback-order calibration.");
             if (consumedOnPlay && rule.HandConsumeInteractions?.Count > 0)
                 return Unsupported(string.Join("; ", rule.HandConsumeInteractions));
             if (consumedOnPlay && rule.Effect == "SpawnMonster" &&
@@ -1130,7 +1135,10 @@ namespace MonsterTrain2Poju.Model
             }
             if (consumedOnPlay)
             {
-                context = ephemeralPurgeCallbacks
+                // A later installed Consume trait runs after Ephemeral's
+                // discard purge. Its new standby entry then returns normally,
+                // recording the second exhaustion instead of being purged.
+                context = ephemeralPurgeCallbacks && !ephemeralBeforeConsume
                     ? context.WithOtherPiles(context.OtherPiles!.Select(pile => pile.Name is "Standby" or "Exhausted"
                         ? CardPileModel.Remove(pile, card.InstanceId) : pile).ToArray())
                     : CardExhaustModel.ReturnReady(context);
