@@ -44,7 +44,7 @@ Underlegion、LazarusLeague、Hellhorned、Awoken、Stygian、Umbra、Remnant、
 | 6 | Hellhorned / LazarusLeague | 1848503146 | 前五战10000ms实际建议及独立原生复放双胜；0.2.66第六战完整62输入原生败局，状态／预测／RNG与四项零失败通过；30秒根搜索也判败，未证明无胜法。 |
 | 7 | LazarusLeague / Pyreborne | 243930257 | 前四战10000ms实际建议与独立原生复放双胜、连续链通过；第五战45输入实际败北，完整状态／预测／RNG一致。30秒根搜索仍判败，未证明无胜法；尚未完整通关。 |
 | 8 | Umbra / Stygian | 1347120220 | 第一、二、四、五战10000ms实际建议与独立复放双胜；第三战默认63输入败局保留，离线改进61输入／薪火24原生双胜。第六战双天使53输入实际败北，状态／预测／RNG及四项零失败通过；离线继续筛选，尚未完整通关。 |
-| 9 | Wurmkin / Hellhorned | 771950956 | 第一、四战实际10000ms分别18输入／薪火80及30输入／薪火89原生双胜。第二战默认七次结束回合败局及第三战默认10输入败局保留；离线第二战24输入／薪火80、第三战37输入／薪火67均原生双胜。连续进入第五战，离线胜局不计为默认搜索胜利。 |
+| 9 | Wurmkin / Hellhorned | 771950956 | 第一、四、五战实际10000ms分别18输入／薪火80、30输入／薪火89及43输入／薪火40原生双胜。第二、三战旧默认败局及离线双胜保留，当前版本实际默认重跑。第六战部署UpgradedDrafts签名尚待校准；未完整通关。 |
 
 两组首战各自的源局／独立复放已归档在 `tests/fixtures/campaign/random/`，
 以 `full-battle-random-campaign-01-ring1-*` 与 `02-ring1-*` 命名。
@@ -970,6 +970,13 @@ RNG、18个列车阶段、六个Juice边界及四项零失败全部通过。第1
 `RelicEffectAddStartingUpgradeToCardDrafts`，零输入，未计为完整败局。
 该签名另行按原生生命周期校准。第二、三战相同10000ms根搜索现分别得到24输入／
 薪火80和37输入／薪火80模型胜路，正从第二战原生检查点实际重跑；旧败局不改写。
+
+22:48已将第五战实际默认双胜的0.2.81交付当前Windows游戏，编译源`c4b8c014`。
+三份DLL与两边原生进程完全一致，67个受保护文件不变。包
+`results/mod-dist/PojuAdvisor-0.2.81-Windows-20261025-224838.zip`，SHA256
+`dccefe216fd7ef39debc230b691cc421410dcacfc4c439ee1717c2f74d5d9a59`；
+收据`BepInEx/PojuBackups/RandomCampaign-20261025-224838/installation.json`。
+F10／10000ms／双线程配置保留，没有构建Mac包。
 
 定向检查入口：
 

@@ -1,21 +1,22 @@
 # Player Mod validation · 2026-10-25
 
-Current Windows installation:0.2.80, committed source`0367b2e8`. The ninth
-random Wurmkin/Hellhorned sample's fourth battle passes actual10000ms advice
-and independent native replay:30 inputs,23 plays,7 EndTurns,Pyre89 and13 train
+Current Windows installation:0.2.81, committed source`c4b8c014`. The ninth
+random Wurmkin/Hellhorned sample's fifth battle passes actual10000ms advice
+and independent native replay:43 inputs,34 plays,9 EndTurns,Pyre40 and18 train
 stages per process. Every root,successor,forecast and RNG matches; all four
 failure counters are zero. The earlier second/third-battle default losses
 and offline-refined wins remain recorded separately.
-The payload includes merchant Juice/Corrupt Fracture support,full-train spell
-death callbacks and queued Champion Strike corruption callbacks, each with
-focused independent native calibration.
+The payload includes friendly room-damage scoring that preserves the champion,
+merchant Juice/Corrupt Fracture support,full-train spell death callbacks and
+queued Champion Strike corruption callbacks. The original default friendly-fire
+defeat and separate43-step/Pyre6 frozen victory remain retained.
 
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
-its next launch loads0.2.80. Backup/receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261025-223136/installation.json`.
-Package:`results/mod-dist/PojuAdvisor-0.2.80-Windows-20261025-223136.zip`,SHA256
-`91008587926e8e93fa305fd9041aed0dcc0cb81e5f7550b7f80f981b62a5fcd5`.
+its next launch loads0.2.81. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261025-224838/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.81-Windows-20261025-224838.zip`,SHA256
+`dccefe216fd7ef39debc230b691cc421410dcacfc4c439ee1717c2f74d5d9a59`.
 No Mac package or full regression was run. Random eight-battle acceptance is
 still incomplete; historical sections below describe earlier installations.
 
