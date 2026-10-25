@@ -1,10 +1,14 @@
 # Native regression fixtures
 
-Current manifest inventory (2026-10-26): 1710 archives,
+Current manifest inventory (2026-10-26): 1712 archives,
 224/224 original relic owners (100%): 206 battle
 owners, seventeen campaign-interface owners and one native no-op.
 
 ## Directory layout
+
+The eight-input damage-target pair preserves a native fifteen-health kill
+instead of an entirely shielded cast; see
+[damage-only shield targets](notes/planning/spell-shield-target.md).
 
 The31-input Silence/Slay pair preserves native aura-update ordering;
 see [character Slay before dying-aura updates](notes/combat/slay-enchantment-order.md).

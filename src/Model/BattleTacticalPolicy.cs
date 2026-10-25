@@ -74,14 +74,25 @@ namespace MonsterTrain2Poju.Model
                 // An unfavorable team is not a fallback target. Keep those
                 // legal sacrifice/Incant branches in the full enumerator, but
                 // let this seed defer rather than buff an enemy or hurt an ally.
+                SupportedActionCandidate? shieldBreakingFallback = null;
                 foreach (PlayCardAction action in Inputs(choice.token, rule).Where(action => Rank(action, rule) > UnwantedTargetRank)
                     .OrderByDescending(action => Rank(action, rule)).ThenBy(action => action.TargetUnitId))
                 {
                     BattleActionResult result = Play(source, action);
-                    if (result.Supported) return new SupportedActionCandidate(action, result);
+                    if (result.Supported)
+                    {
+                        var candidate = new SupportedActionCandidate(action, result);
+                        // Prefer actual injury over spending a damage-only card
+                        // entirely on shields. If every target blocks it, keep
+                        // the original legal shield-breaking cast as a fallback.
+                        if (OnlyBreaksShield(source, action, rule, result.State!))
+                        { shieldBreakingFallback ??= candidate; continue; }
+                        return candidate;
+                    }
                     if (result.Rejection == ActionRejection.Unsupported)
                         omitted.Add(new UnsupportedActionAttempt(action, result.Reason ?? "Unsupported tactical-seed action."));
                 }
+                if (shieldBreakingFallback != null) return shieldBreakingFallback;
             }
             BattleActionEnumeration abilities = Abilities();
             return abilities.SupportedCandidates.Where(candidate => !ExposesChampion(candidate) && !EmptyGoldReward(candidate) &&
@@ -216,6 +227,20 @@ namespace MonsterTrain2Poju.Model
                 }
                 return value;
             }
+        }
+        private static bool OnlyBreaksShield(BattleTurnState before, PlayCardAction action, CardPlayRule rule, BattleTurnState after)
+        {
+            if (rule.OnCastEffects.Count != 0 || rule.Effects.Count == 0 || rule.Effects.Any(effect =>
+                effect.Type != "Damage" || effect.Value <= 0 ||
+                effect.Target is not ("DropTargetCharacter" or "LastTargetedCharacters"))) return false;
+            CombatUnit? target = before.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex)
+                .Units.FirstOrDefault(unit => unit.Id == action.TargetUnitId);
+            if (target?.Team != CombatTeam.Enemy ||
+                !target.Statuses.Any(status => status.Stacks > 0 && status.Id is "spell shield" or "damage shield")) return false;
+            CombatUnit? remaining = after.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .FirstOrDefault(unit => unit.Id == target.Id);
+            return remaining != null && remaining.Health >= target.Health &&
+                (remaining.Status("armor")?.Stacks ?? 0) >= (target.Status("armor")?.Stacks ?? 0);
         }
         private static bool TowerDebuff(CardPlayRule rule) => rule.Effects.Any(effect => effect.Target == "Tower" &&
             effect.Statuses.Any(status => status.DisplayCategory == "Negative"));

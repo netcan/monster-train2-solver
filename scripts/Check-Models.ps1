@@ -68,6 +68,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-retained-sentry-target-replay-calibration.mt2f',
     'player-slay-enchantment-order-calibration.mt2f',
     'player-slay-enchantment-order-replay-calibration.mt2f',
+    'player-spell-shield-target-calibration.mt2f',
+    'player-spell-shield-target-replay-calibration.mt2f',
     'player-corrupt-poison-combat-calibration.mt2f',
     'player-corrupt-poison-combat-replay-calibration.mt2f',
     'player-stronger-corruption-copy-calibration.mt2f',
@@ -1540,6 +1542,7 @@ $branchPairGates = @{
     'player-corruption-attack-upgrade-calibration.mt2f' = '--card-corruption-attack-upgrade-only'
     'player-retained-sentry-target-calibration.mt2f' = '--retained-sentry-target-only'
     'player-slay-enchantment-order-calibration.mt2f' = '--slay-enchantment-order-only'
+    'player-spell-shield-target-calibration.mt2f' = '--spell-shield-target-only'
     'player-recursion-permafrost-calibration.mt2f' = '--recursion-draw-callbacks-only'
     'player-triggered-corruption-calibration.mt2f' = '--triggered-corruption-only'
     'player-triggered-corruption-relic-calibration.mt2f' = '--triggered-corruption-relic-only'

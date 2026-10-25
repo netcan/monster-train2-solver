@@ -4027,6 +4027,13 @@ if (args.Length == 2 && args[0] == "--tactical-shift-safety-only")
     TacticalShiftChecks.LethalRestoration(fixture.RootElement);
     return;
 }
+if (args.Length == 3 && args[0] == "--spell-shield-target-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    SpellShieldTargetChecks.Native(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--planner-deployment-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -5746,6 +5753,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-outer-boss-death-statistics-replay-calibration.mt2f"));
     OuterBossDeathStatisticsChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-spell-shield-target-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-spell-shield-target-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-spell-shield-target-replay-calibration.mt2f"));
+    SpellShieldTargetChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-slay-enchantment-order-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-slay-enchantment-order-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
