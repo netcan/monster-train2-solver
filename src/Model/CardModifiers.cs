@@ -384,6 +384,7 @@ namespace MonsterTrain2Poju.Model
             (upgrade.Lifecycle?.ReplacedAssets.Count > 0
                 ? upgrade.ExternalInteractions.Where(interaction => interaction != "Upgrade replacements")
                 : upgrade.ExternalInteractions)
+            .Where(interaction => interaction != CardCorruptionAttackUpgradeModel.Guard || !CardCorruptionAttackUpgradeModel.Known(upgrade))
             .Concat((upgrade.Lifecycle?.Triggers ?? Array.Empty<CardLifecycleTrigger>()).SelectMany(trigger =>
                 trigger.Type != "OnCast" && !(RelicPerkeoModel.IsConversionUpgrade(upgrade) && RelicPerkeoModel.IsConversionTrigger(trigger))
                     ? new[] { "Unsupported card upgrade trigger " + trigger.Type } :
@@ -495,7 +496,7 @@ namespace MonsterTrain2Poju.Model
                     Math.Max(1, Math.Min(4, UpgradedStat(original.EquipmentLimit, "EquipmentLimit", true, modifiers))),
                     original.CanBeHealed, original.IsClone, original.Upgrades, original.HealthFromUpgrades, original.SpawnerMatchesDefinition,
                     original.DamageBuffFromStatusEffects, original.MagebladeDamagePerMagicPower, original.StatusAttackModifiers,
-                    original.IsChampion, original.SelfAttackRules, original.RoomResources, original.RoomStatuses, original.RoomTriggerCounts, original.SpawnCopySubtype,
+                    original.IsChampion, CardCorruptionAttackUpgradeModel.BirthRules(original.SelfAttackRules, cardUpgrades), original.RoomResources, original.RoomStatuses, original.RoomTriggerCounts, original.SpawnCopySubtype,
                     instance.MaskDescriptor?.GraftedEquipment ?? original.Graft, original.SynergizeStatuses, original.Sentry, original.TroopAura);
                 int? nextTriggerId = unit.NextTriggerId;
                 var triggers = unit.Triggers.ToList();

@@ -254,7 +254,15 @@ namespace MonsterTrain2Poju.Probe
                 if (upgradeDepth > 16) interactions.Add("Recursive upgrade trigger definitions");
                 else triggers = upgrade.GetTriggerUpgrades().Select(trigger => EnemySpawningProbe.TriggerDefinition(trigger, interactions)).ToArray();
             }
-            if (!roomAttachmentUnitUpgrade && upgrade.GetRoomModifierUpgrades().Count > 0) interactions.Add("Upgrade room modifiers");
+            if (!roomAttachmentUnitUpgrade && upgrade.GetRoomModifierUpgrades().Count > 0)
+            {
+                interactions.Add("Upgrade room modifiers");
+                if (upgrade.GetCardUpgradeDataId() == CardCorruptionAttackUpgradeModel.DataId &&
+                    (upgrade.GetRoomModifierUpgrades().Count != 1 || upgrade.GetAssetName() != CardCorruptionAttackUpgradeModel.AssetKey ||
+                     upgrade.GetRoomModifierUpgrades()[0].GetRoomStateModifierClassName() != CardCorruptionAttackUpgradeModel.Type ||
+                     upgrade.GetRoomModifierUpgrades()[0].GetParamInt() != 5))
+                    interactions.Add("Changed original corruption-attack room modifier definition");
+            }
             if (!filtersAlreadyApplied && upgrade.GetFilters().Count > 0) interactions.Add("Upgrade card filters");
             if (upgrade.GetUpgradesToRemove().Count > 0 && !discardCleanup) interactions.Add("Upgrade replacements");
             bool boilerplateArmor = CardBranchMaskProbe.Enabled && upgrade.GetCardUpgradeDataId() == "29ec3d1a-190f-4aef-a9f3-3ce696c7fd09" &&
