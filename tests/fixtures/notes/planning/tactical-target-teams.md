@@ -80,3 +80,32 @@ including decision11 from empty room2 to occupied room0. Its independently
 replayed40-input/7-EndTurn result remains defeat (512 nodes/21.39s). This is a
 policy improvement/control, not a new native victory or a claim that incidental
 Incant growth has been optimized. Windows remains installed at0.2.58.
+
+## Friendly room damage · 0.2.81
+
+Random09 Wurmkin/Hellhorned Ring5 actual10000ms advice loses after43 inputs.
+At input10 (turn1),Inferno19 deals120 room damage on floor0 and kills champion2
+and Carver5 along with two enemies. Both cheap policy seeds previously ranked
+this mixed-team spell by enemy count because RoomDamageValue excluded player
+targets. The retained native counterexample is
+`campaign/random/full-battle-random-campaign-09-ring5-budget10000-loss.mt2f`.
+
+The estimate now subtracts visible friendly damage and lost attack strength,
+with an additional cost for killing the champion. It uses CardTargetModel's
+actual target set for Room/FrontInRoom; no card-name exception or legal-action
+pruning is added. Both seeds avoid the destructive floor,while an enemy-only
+control still selects it. The original lethal cast remains legal and exactly
+replays its native successor/state/RNG. This check failed before the fix.
+Existing16 target-team,four ability-team,and front-damage controls also pass.
+
+Recomputing the exact captured decision with10000ms/two workers/256 shared
+nodes changes a38-step model defeat into a34-step model win at Pyre40.
+Both plans independently replay their complete state/RNG. A separate offline
+43-step/Pyre6 route has one complete native victory; independent replay and
+the corrected actual-default full battle are separately pending. Neither
+model result is counted as an actual-default native campaign win.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --friendly-room-damage-policy-only tests/fixtures/campaign/random/full-battle-random-campaign-09-ring5-budget10000-loss.mt2f
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --tactical-target-only
+```
