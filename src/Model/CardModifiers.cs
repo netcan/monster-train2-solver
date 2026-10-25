@@ -514,7 +514,8 @@ namespace MonsterTrain2Poju.Model
             // Native Infusion/CraftedSpike cards merge equal upgrade triggers in
             // first-occurrence order. Scale their base payload before applying
             // magic power, rather than repeating effects around other upgrades.
-            bool mergeTriggers = instance.MaskDescriptor != null && CardBranchMaskModel.Resolve(instance).Traits
+            bool mergeTriggers = cardUpgrades.Any(upgrade => upgrade.Lifecycle?.Triggers.Any(trigger => trigger.Type == "OnCast") == true) &&
+                instance.MaskDescriptor != null && CardBranchMaskModel.Resolve(instance).Traits
                 .Any(trait => trait is "CardTraitInfusion" or "CardTraitCraftedSpike");
             CardActionEffect[] triggerEffects = mergeTriggers
                 ? cardUpgrades.Select((upgrade, index) => (upgrade, index))

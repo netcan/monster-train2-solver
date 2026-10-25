@@ -21,6 +21,17 @@ definitions and scales base action payloads before spell-power resolution.
 Ordinary cards retain separate upgrade triggers; numeric upgrade records and
 their ordering remain intact.
 
+Skip the additional effective-trait query if no upgrade has an OnCast trigger.
+An isolated build replayed the same27-input native pair and resolved all26
+card instances at the recorded failure root without changing the result hash
+`39b9f2b7be07ca3a32abe1c0b8a70ca58c827bc15c901bd183847ae6f52dfb18`
+or mutating the parent. Three warmed26000-query trials in separate PowerShell
+processes measured baseline allocations693824768bytes versus565864768bytes
+after the guard (18.4% less); last-two timings were802.95/816.50ms versus
+688.62/705.34ms. This is a query microbenchmark including harness overhead,
+not a game-frame or whole-search performance claim. Active native campaign
+DLLs remained pinned while the isolated build was measured.
+
 The original0.2.61 diagnostic and independent0.2.62 replay execute the same27
 native inputs (26 prefix inputs plus the mismatching cast). Every current
 successor/full state/RNG matches both native processes. The original255HP
