@@ -872,6 +872,13 @@ if (args.Length == 2 && args[0] == "--natural-ring7-tactics-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--tactical-ability-target-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TacticalTargetChecks.NativeAbilityBoundary(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--tactical-target-only")
 {
     TacticalTargetChecks.Run();
@@ -4794,6 +4801,7 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-dea
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-dead-caster-status-replay-calibration.mt2f"));
     DeadCasterStatusChecks.Pair(source.RootElement, replay.RootElement);
+    TacticalTargetChecks.NativeAbilityBoundary(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-harvester-birth-calibration.mt2f"))
 {

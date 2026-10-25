@@ -80,7 +80,18 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             BattleActionEnumeration abilities = Abilities();
-            return abilities.SupportedCandidates.FirstOrDefault(candidate => !ExposesChampion(candidate) && !EmptyGoldReward(candidate));
+            return abilities.SupportedCandidates.Where(candidate => !ExposesChampion(candidate) && !EmptyGoldReward(candidate) &&
+                AbilityRank(candidate) > UnwantedTargetRank).OrderByDescending(AbilityRank).FirstOrDefault();
+
+            double AbilityRank(SupportedActionCandidate candidate)
+            {
+                CardInstanceState? card = candidate.Result.State?.Spawn.Train.Context?.FindCard(candidate.Action.CardInstanceId);
+                CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card?.DataId);
+                // Apply the same preferred-team rule to a targeted ability as to
+                // a hand card. The full enumerator retains legal sacrifice casts.
+                return rule == null || candidate.Action.TargetUnitId == 0 ? 0 :
+                    Rank(candidate.Action, CardModifierModel.Resolve(rule, card!));
+            }
 
             BattleActionEnumeration Abilities()
             {

@@ -1,5 +1,22 @@
 # Tactical seed target teams
 
+On2026-10-25 the same preference was extended to targeted unit/room abilities.
+Previously their seed path took the first legal enumerated activation without
+the hand-card target check. The full enumerator still retains self-targeted
+damage for deliberate sacrifice combinations; only the seed's preference changes.
+Non-targeted abilities keep their existing order.
+
+The Ring5 native dead-caster observation supplies the control root. After four
+legal model hand plays, the seed selects champion2's ability against enemy10,
+preserves the champion, and still exposes the legal self-kill to the full search.
+This control verifies full parent immutability and is registered with the native
+observation pair. The16 existing hand-card target controls and pure ability
+controls pass. This is a model policy check, not a new native campaign victory.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --tactical-ability-target-only tests/fixtures/combat/units/player-dead-caster-status-calibration.mt2f
+```
+
 The bounded planner's tactical seed previously assigned an unfavorable team a
 low finite rank, then cast at that target anyway after preferred targets were
 absent or illegal. A legal negative-status spell could debuff an ally; a positive

@@ -1,9 +1,36 @@
 using MonsterTrain2Poju.Model;
+using MonsterTrain2Poju.Fixtures;
+using System.Text.Json;
 
 internal static class TacticalTargetChecks
 {
+    internal static void NativeAbilityBoundary(FixtureValue fixture)
+    {
+        BattleTurnState root = fixture.GetProperty("Rows").EnumerateArray().Last().GetProperty("Before").Deserialize<BattleTurnState>()!;
+        using var keys = new BattleStateKeys();
+        string parent = keys.Key(root);
+        BattleTurnState current = root;
+        SupportedActionCandidate? choice = null;
+        int handPlays = 0;
+        while (handPlays < 18 && (choice = BattleTacticalPolicy.Choose(current, out _))?.Action.ActivatorUnitId == 0)
+        {
+            current = choice.Result.State!;
+            handPlays++;
+        }
+        CombatUnit? target = current.Spawn.Train.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == choice?.Action.TargetUnitId);
+        if (choice?.Action.ActivatorUnitId != 2 || target?.Team != CombatTeam.Enemy || target.Id != 10 ||
+            choice.Result.State!.Spawn.Train.Rooms.SelectMany(room => room.Units).All(unit => unit.Id != 2) || keys.Key(root) != parent)
+            throw new InvalidOperationException($"Tactical ability must hit the low-health enemy and preserve its champion; chosen={JsonSerializer.Serialize(choice?.Action)}.");
+        PlayCardAction self = new(27, 2, targetUnitId: 2, activatorUnitId: 2);
+        if (!BattleActionModel.EnumerateActions(current).SupportedActions.Any(action =>
+            JsonSerializer.Serialize(action) == JsonSerializer.Serialize(self)))
+            throw new InvalidOperationException("The legal self-targeted ability must remain available to the full search.");
+        Console.WriteLine($"TACTICAL-ABILITY-TARGET PASS: native failure root plus {handPlays} legal hand plays targets enemy10, preserves champion2, keeps the legal sacrifice branch and immutable parent; model policy control.");
+    }
+
     internal static void Run()
     {
+        AbilityTargets();
         foreach (var (negative, damage, roomDamage) in new[] { (true, false, false), (true, true, false),
             (false, false, false), (false, false, true) })
         foreach (bool onCast in new[] { false, true })
@@ -60,5 +87,31 @@ internal static class TacticalTargetChecks
                 throw new InvalidOperationException($"Tactical status targeted the wrong team or changed its root: negative={negative}, onCast={onCast}, target={chosen?.Action.TargetUnitId}.");
         }
         Console.WriteLine("TACTICAL-TARGET PASS: 16 main/on-cast status/damage/mixed-effect cases; absent targets defer the seed without pruning legal cross-team branches; immutable full-state/RNG replays.");
+    }
+
+    private static void AbilityTargets()
+    {
+        foreach (bool damage in new[] { false, true })
+        foreach (bool preferredTeamLegal in new[] { false, true })
+        {
+            BattleTurnState original = UnitAbilityChecks.Root();
+            var effects = new[] { new CardActionEffect(damage ? "Damage" : "AddStatus", "DropTargetCharacter", damage ? 1 : 0,
+                damage ? preferredTeamLegal : true, damage || preferredTeamLegal,
+                damage ? [] : [new CombatStatus("armor", 2, displayCategory: "Positive")]) };
+            var rules = new BattlePlayRules(original.PlayRules!.Rooms.Where(rule => original.Spawn.Train.Rooms.Any(room => room.RoomIndex == rule.RoomIndex)).ToArray(),
+                [new CardPlayRule("skill", "skill", 1, "Spell", "Discard", null, [],
+                effects, upgradeInteractions: [], ability: new("Unit", false, true), cardType: "Spell", isAnyAbility: true)]);
+            var root = new BattleTurnState(original.Spawn, original.Energy, original.EnergyPerTurn, original.DrawPerTurn,
+                original.ForgePoints, original.DragonsHoard, original.MoonPhase, original.RngStreams, original.OtherPiles,
+                original.ExternalInteractions, rules);
+            using var keys = new BattleStateKeys();
+            string parent = keys.Key(root);
+            SupportedActionCandidate? choice = BattleTacticalPolicy.Choose(root, out _);
+            int wanted = damage ? 11 : 10, unwanted = damage ? 10 : 11;
+            if ((preferredTeamLegal ? choice?.Action.TargetUnitId != wanted : choice != null) ||
+                !BattleActionModel.EnumerateActions(root).SupportedActions.Any(action => action.TargetUnitId == unwanted) || keys.Key(root) != parent)
+                throw new InvalidOperationException($"Tactical ability targeted the wrong team or pruned a legal branch: damage={damage}, preferredLegal={preferredTeamLegal}, chosen={choice?.Action.TargetUnitId}.");
+        }
+        Console.WriteLine("TACTICAL-ABILITY-TEAMS PASS: four targeted damage/buff and absent-legal-target controls; legal cross-team activations retained, immutable parents.");
     }
 }
