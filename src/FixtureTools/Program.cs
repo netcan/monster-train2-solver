@@ -23,10 +23,11 @@ else if (args.Length == 3 && args[0] == "plan-once")
 {
     OfflineBattleSearch.Single(args[1], args[2]);
 }
-else if (args.Length is >= 4 and <= 6 && args[0] == "plan-root")
+else if (args.Length is >= 4 and <= 7 && args[0] == "plan-root")
 {
     OfflineRootSearch.Run(args[1], args[2], int.Parse(args[3]),
-        args.Length >= 5 ? int.Parse(args[4]) : 0, args.Length == 6 ? int.Parse(args[5]) : 2);
+        args.Length >= 5 ? int.Parse(args[4]) : 0, args.Length >= 6 ? int.Parse(args[5]) : 2,
+        args.Length == 7 ? int.Parse(args[6]) : 256);
 }
 else if (args.Length == 2 && args[0] == "verify-root-plan")
 {
@@ -132,7 +133,7 @@ else if (args.Length == 3 && args[0] == "pack-directory")
 else
 {
     Console.Error.WriteLine("Diagnostics: extract-unsupported-branch <recorded.mt2f> <new-output.mt2f> <exact-rejection-reason>");
-    Console.Error.WriteLine("Player root: plan-root <capture.mt2f> <new-output.mt2f> <milliseconds> [decision-index] [workers] | verify-root-plan <prediction.mt2f> | freeze-root-plan <prediction.mt2f> <new-output.mt2f>");
+    Console.Error.WriteLine("Player root: plan-root <capture.mt2f> <new-output.mt2f> <milliseconds> [decision-index] [workers] [shared-nodes] | verify-root-plan <prediction.mt2f> | freeze-root-plan <prediction.mt2f> <new-output.mt2f>; nodes default256, other node budgets are offline experiments.");
     Console.Error.WriteLine("Counterexample: refine-policy <native.mt2f> <new-winning-output.mt2f> <milliseconds> [start-decision] [last-decision]; bounded single-decision alternatives followed by legal tactical choices, model prediction only.");
     Console.Error.WriteLine("Predicted counterexample: refine-prediction <native.mt2f> <verified-prediction.mt2f> <new-winning-output.mt2f> <milliseconds> [start-decision] [last-decision]; validates native input hash/root and independently replays the baseline before exploring.");
     Console.Error.WriteLine("Search: solve-exact <input.mt2f> <new-output.mt2f> <max-nodes> <milliseconds> [EndTurn-horizon] | plan-belief <input.mt2f> <new-output.mt2f> <max-worlds> <decisions> <max-nodes> <milliseconds> [native-Turns-index] | verify-belief <policy.mt2f>");

@@ -26,6 +26,26 @@ bounds are rejected; these artifacts explicitly require native validation and
 are not added to the native evidence inventory. Search time excludes capture,
 archive serialization and independent replay, and remains a soft budget.
 
+An optional final `[shared-nodes]` argument accepts1..4096, default256. This is
+an offline diagnostic experiment: it does not change the player's node budget.
+The archive explicitly records RequestedMaxNodes and verification requires
+Options.MaxNodes and ExpandedNodes to stay within it. Older archives without
+this field retain the fixed256-node validation. Time/workers and every other
+player option remain unchanged, and full-state/RNG replay is still required.
+
+```powershell
+dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll plan-root <capture.mt2f> .probe-runs/root512.mt2f 30000 0 2 512
+```
+
+The natural random05 Ring7 repaired0.2.60 root remains a40-input/7-EndTurn
+model defeat:256 nodes/14.18s,512 nodes/20.65s, and a1024-node cap reaching
+270 nodes at the30.82s soft limit. The512 route is exactly the256 route;
+neither larger cap establishes a win. These individual timings are not a
+scaling benchmark. Both new results pass separate-process full-state/RNG
+replay, and the older fixed256 archive still verifies. Node counts0/4097,
+an altered node declaration and output overwrite are rejected; the existing
+prediction hash stays unchanged. No player default or native evidence changes.
+
 A complete terminal root plan can be exported directly for native execution:
 
 ```powershell
