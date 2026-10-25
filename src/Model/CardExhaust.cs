@@ -63,7 +63,7 @@ namespace MonsterTrain2Poju.Model
         internal static string? PermanentUpgradeError(CardInstanceState card, CardUpgradeModifier upgrade)
         {
             if (card.MaskDescriptor == null && (upgrade.Lifecycle?.AddedTraits.Any(trait =>
-                trait.RuntimeType is CardRetainModel.Trait or CardCorruptStateModel.Trait) == true ||
+                trait.RuntimeType is CardRetainModel.Trait or CardCorruptStateModel.Trait or CardCopyOnPlayModel.Trait) == true ||
                 upgrade.Lifecycle?.RemovedRuntimeTypes.Any(type => type is "CardTraitEphemeral" or "CardTraitCopyOnPlay") == true))
                 return "Permanent trait installation/removal requires captured branch-owned trait state.";
             if (card.MaskDescriptor == null && upgrade.Lifecycle?.AddedTraits.Any(trait =>

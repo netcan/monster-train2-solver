@@ -36,12 +36,12 @@ namespace MonsterTrain2Poju.Model
                     return Unsupported("Nested boxed-card copies require native calibration.");
                 // CardState(data, setupStartingUpgrades:false), followed by both copies.
                 var creation = new CardCreationRule(definition.DataId, CardModifiers.Empty(), definition.EffectCounters,
-                    definition.ExternalInteractions, definition.DamageScalingTraits, definition.StatusScalingTraits,
+                    definition.ExternalInteractions, BindDamageTraits(definition), definition.StatusScalingTraits,
                     definition.UnitUpgradeScalingTraits, definition.CapacityScalingTraits, definition.EquippedUnitId,
                     definition.MaskDescriptor, definition.ForgeCountScalingTraits, definition.CanBeCopied,
                     definition.TrainHealScalingTraits);
                 var template = new CardInstanceState(0, definition.DataId, boxed.Permanent, boxed.Temporary, 0, 0, 0,
-                    definition.ExternalInteractions, maskDescriptor: definition.MaskDescriptor);
+                    definition.ExternalInteractions, maskDescriptor: definition.MaskDescriptor, canBeCopied: definition.CanBeCopied);
                 CardGenerationResult generated = CardGenerationModel.ApplyCachedCopy(context, creation, template);
                 if (!generated.Supported) return generated;
                 context = generated.Context!;
@@ -56,6 +56,18 @@ namespace MonsterTrain2Poju.Model
             }
             return new CardGenerationResult(context, added);
         }
+        // Cached definition queries have no owning CardState. Setup binds the
+        // newly unboxed card's type before its scaling traits are queried.
+        private static IReadOnlyList<ScalingDamageTrait>? BindDamageTraits(CardCreationRule definition) =>
+            definition.DamageScalingTraits?.Select(trait =>
+            {
+                CardStatisticQuery query = trait.Query;
+                return new ScalingDamageTrait(new CardStatisticQuery(query.Type, query.Duration,
+                    query.TypeMatchDataIds, query.SubtypeMatchDataIds, query.SubtypeIsNone, query.Subtype,
+                    query.SpecificCardDataId, query.SourceRawCost, query.VariableCost, query.TargetTeam,
+                    query.CurrentCostCardModifiersOnly, definition.MaskDescriptor?.Definition.CardType == "Spell", query.StatusIds),
+                    trait.DamagePerStat, trait.Multiplier, trait.AddToDamage);
+            }).ToArray();
         private static CardGenerationResult Unsupported(string error) => new(null, Array.Empty<CardToken>(), error);
     }
 }
