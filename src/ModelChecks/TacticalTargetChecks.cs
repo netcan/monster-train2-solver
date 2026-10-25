@@ -30,6 +30,7 @@ internal static class TacticalTargetChecks
 
     internal static void Run()
     {
+        FrontDamageTargets();
         AbilityTargets();
         foreach (var (negative, damage, roomDamage) in new[] { (true, false, false), (true, true, false),
             (false, false, false), (false, false, true) })
@@ -87,6 +88,40 @@ internal static class TacticalTargetChecks
                 throw new InvalidOperationException($"Tactical status targeted the wrong team or changed its root: negative={negative}, onCast={onCast}, target={chosen?.Action.TargetUnitId}.");
         }
         Console.WriteLine("TACTICAL-TARGET PASS: 16 main/on-cast status/damage/mixed-effect cases; absent targets defer the seed without pruning legal cross-team branches; immutable full-state/RNG replays.");
+    }
+
+    private static void FrontDamageTargets()
+    {
+        // A large hidden backline must not make its one-HP front look better
+        // than a real five-damage hit, nor should an empty preferred floor win.
+        var rng = UnityRng.Seed(424244);
+        var context = new CombatContext(new CardCycleState([new(1, "front")], [], [], rng, 0, []), rng, 0, 2, 10);
+        var weakFront = new CombatUnit(1, "front", CombatTeam.Enemy, 1, 1, 1, true, false, false, []);
+        var backline = new CombatUnit(2, "back", CombatTeam.Enemy, 1, 100, 100, true, false, false, []);
+        var target = new CombatUnit(3, "target", CombatTeam.Enemy, 1, 7, 7, true, false, false, []);
+        var rooms = Enumerable.Range(0, 3).Select(index => new RoomCombatState(index, false,
+            index == 0 ? [weakFront, backline] : index == 1 ? [target] : [], [], context)).ToArray();
+        var train = new TrainCombatState(rooms, [], 4, context);
+        var spawn = new EnemySpawnState(train, [new EnemyWave([new EnemyGroup([])])], [-1], 1,
+            false, rng, 4, [], 0, false, 2, 1, 1, []);
+        var rule = new CardPlayRule("front", "front", 0, "Spell", "Discard", null, [],
+            effects: [new("Damage", "FrontInRoom", 5, allowEnemy: true, allowPlayer: false, [])], cardType: "Spell");
+        var rules = new BattlePlayRules(Enumerable.Range(0, 3).Select(index => new RoomPlayRule(index, 5, 7, enabled: true, summonBlocked: false, isPyre: false)).ToArray(), [rule]);
+        var root = new BattleTurnState(spawn, 3, 3, 5, 0, 0, "New", [],
+            [new("Standby", []), new("Exhausted", []), new("Purged", [])], [], rules);
+        using var keys = new BattleStateKeys();
+        string parent = keys.Key(root);
+        foreach (bool tactical in new[] { false, true })
+        {
+            var choice = tactical ? BattleTacticalPolicy.Choose(root, out _) : BattleHeuristicPolicy.Choose(root, out _);
+            var expected = BattleActionModel.PlayCard(root, new PlayCardAction(1, 1));
+            if (choice?.Action.RoomIndex != 1 || !expected.Supported ||
+                keys.Key(choice.Result.State!) != keys.Key(expected.State!) ||
+                choice.Result.State!.Spawn.Train.Rooms.Single(room => room.RoomIndex == 1).Units.Single().Health != 2 ||
+                keys.Key(root) != parent || !BattleActionModel.EnumerateActions(root).SupportedActions.Any(action => action.RoomIndex == 2))
+                throw new InvalidOperationException($"Front damage must hit a real front, preserve the untouched backline/root and retain legal empty-room branches: tactical={tactical}, choice={JsonSerializer.Serialize(choice?.Action)}, direct={expected.Reason}.");
+        }
+        Console.WriteLine("TACTICAL-FRONT-DAMAGE PASS: both seeds choose five damage over a one-HP front/large backline or empty preferred floor; full successor/RNG and legal empty-room branch preserved.");
     }
 
     private static void AbilityTargets()

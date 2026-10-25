@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Advisor
     public sealed class AdvisorPlugin : BaseUnityPlugin
     {
         public const string PluginId = "netcan.monstertrain2.advisor";
-        public const string Version = "0.2.60";
+        public const string Version = "0.2.61";
         private Harmony? harmony;
         private BattleAdvisorOverlay? overlay;
         private bool updateLogged;

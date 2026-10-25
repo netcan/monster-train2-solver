@@ -109,13 +109,15 @@ namespace MonsterTrain2Poju.Model
 
         internal static double? RoomDamageValue(BattleTurnState source, PlayCardAction action, CardPlayRule rule)
         {
-            // Estimate a single room damage effect against visible health/armor
-            // instead of treating every enemy alike.
+            // Estimate deterministic room damage against visible health/armor.
+            // Front attacks can legally be cast into an empty preferred floor;
+            // rank the actual selected front instead of treating that as useful.
             // This only orders legal candidates; the model still executes and
             // verifies the chosen successor, including all damage callbacks.
             if (rule.Effects.Count != 1 || rule.OnCastEffects.Count != 0) return null;
             CardActionEffect effect = rule.Effects[0];
-            if (effect.Type != "Damage" || effect.Target != "Room" || !effect.AllowEnemy || effect.AllowPlayer || effect.Value <= 0)
+            if (effect.Type != "Damage" || effect.Target is not ("Room" or "FrontInRoom") ||
+                !effect.AllowEnemy || effect.AllowPlayer || effect.Value <= 0)
                 return null;
             CardTargets targets = CardTargetModel.Collect(source.Spawn.Train, action.RoomIndex, effect, Array.Empty<int>(), firstEffect: true);
             if (!targets.Supported) return null;

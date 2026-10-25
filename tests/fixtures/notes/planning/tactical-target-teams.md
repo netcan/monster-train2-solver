@@ -64,3 +64,19 @@ Package: `results/mod-dist/PojuAdvisor-0.2.24-Windows-20261025-014355.zip`, SHA2
 ./scripts/Check-DefaultAdvice.ps1 -Case Targets -SkipBuild
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --natural-ring7-planner-only tests/fixtures/campaign/progression/full-battle-natural-ring7-copy-on-play.mt2f
 ```
+
+## Front-targeted damage · 0.2.61
+
+The repaired random05 Ring7 route still casts StarterIceSpear into an empty
+top floor: RoomDamageValue handled Room damage but omitted FrontInRoom. Both
+policy seeds now rank the actual deterministic front through CardTargetModel.
+A one-HP front with a100-HP backline does not outrank a real five-damage hit;
+the empty preferred floor no longer wins. Two focused controls verify complete
+successors/RNG, immutable parents and preservation of legal empty-room casts.
+The existing16 target cases and four ability-team controls still pass.
+
+The30000ms/512-node repaired natural root changes four IceSpear placements,
+including decision11 from empty room2 to occupied room0. Its independently
+replayed40-input/7-EndTurn result remains defeat (512 nodes/21.39s). This is a
+policy improvement/control, not a new native victory or a claim that incidental
+Incant growth has been optimized. Windows remains installed at0.2.58.
