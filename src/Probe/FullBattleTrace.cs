@@ -260,25 +260,45 @@ namespace MonsterTrain2Poju.Probe
             value is CharacterState unit && identities.ContainsKey(unit);
 #if DEVELOPMENT_PROBE
         private readonly HashSet<CardState> recoveredEquipmentOwners = new HashSet<CardState>();
+        private readonly HashSet<CardState> recoveredDyingEquipmentOwners = new HashSet<CardState>();
+        private readonly HashSet<CardState> retainedManagedEquipmentOwners = new HashSet<CardState>();
         internal readonly List<object> EquipmentOwnerRecoveries = new List<object>();
 #endif
         internal int EquippedUnitId(CardState card)
         {
             CharacterState? unit = card.EquippedCharacter;
+#if DEVELOPMENT_PROBE
+            if (!ReferenceEquals(unit, null) && unit == null && retainedManagedEquipmentOwners.Add(card))
+                log.LogInfo("EQUIPMENT-MANAGED-OWNER card=" + CardId(card) + " owner=" + UnitId(unit!) + " unityAlive=False");
+#endif
             // ClearCardPlayPreview clears the card's back-reference even when
             // the real unit still owns that equipment. Read its primary list;
             // never write back into native state or use preview equipment.
-            if (unit == null && card.IsEquipmentCard())
+            // Intermediate combat retains dying owners until native removal
+            // clears their primary equipment list. Settled player decisions
+            // still discard every dead/destroyed equipment owner.
+            if (ReferenceEquals(unit, null) && card.IsEquipmentCard())
             {
-                unit = identities.Keys.FirstOrDefault(owner => owner != null && !owner.IsDestroyed && !owner.PreviewMode &&
-                    (!normalizeDestroyedAttacker || owner.IsAlive) && owner.GetNonPreviewEquipment().Contains(card));
+                unit = identities.Keys.FirstOrDefault(owner => !ReferenceEquals(owner, null) && !owner.PreviewMode &&
+                    (!normalizeDestroyedAttacker || owner != null && !owner.IsDestroyed && owner.IsAlive) &&
+                    owner.GetNonPreviewEquipment().Contains(card));
 #if DEVELOPMENT_PROBE
                 if (unit != null && projection.TryGetCardId(card, out int cardId) && recoveredEquipmentOwners.Add(card))
                     EquipmentOwnerRecoveries.Add(new { CardInstanceId = cardId, RawOwnerId = 0,
-                        EquipmentOwnerId = UnitId(unit), Preview = unit.PreviewMode });
+                        EquipmentOwnerId = UnitId(unit), Preview = unit.PreviewMode,
+                        Destroyed = unit.IsDestroyed, Canonical = normalizeDestroyedAttacker });
+                if (unit != null && unit.IsDestroyed && projection.TryGetCardId(card, out int dyingCardId) &&
+                    recoveredDyingEquipmentOwners.Add(card))
+                {
+                    EquipmentOwnerRecoveries.Add(new { CardInstanceId = dyingCardId, RawOwnerId = 0,
+                        EquipmentOwnerId = UnitId(unit), Preview = unit.PreviewMode,
+                        Destroyed = true, Canonical = normalizeDestroyedAttacker });
+                    log.LogInfo("EQUIPMENT-DYING-OWNER card=" + dyingCardId + " owner=" + UnitId(unit) + " canonical=" + normalizeDestroyedAttacker);
+                }
 #endif
             }
-            return unit == null || normalizeDestroyedAttacker && (unit.IsDestroyed || !unit.IsAlive) ? 0 : UnitId(unit);
+            return ReferenceEquals(unit, null) || normalizeDestroyedAttacker && (unit == null || unit.IsDestroyed || !unit.IsAlive)
+                ? 0 : UnitId(unit!);
         }
         private readonly Dictionary<string, string> roomAttachmentTriggerKeys = new Dictionary<string, string>();
         internal string UpgradeKey(string nativeKey)
@@ -1644,6 +1664,7 @@ namespace MonsterTrain2Poju.Probe
                 BattleDistance = AllGameManagers.Instance!.GetSaveManager().GetCurrentDistance(),
 #if DEVELOPMENT_PROBE
                 NativeRunInput = nativeRunInput,
+                EquipmentOwnerRecoveries = EquipmentOwnerRecoveries.ToArray(),
 #endif
                 Advisor = BattleAdvisorOverlay.Active?.Evidence,
 #if DEVELOPMENT_PROBE
