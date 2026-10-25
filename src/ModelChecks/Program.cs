@@ -1,5 +1,18 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--slay-corruption-callback-native-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    SlayCorruptionCallbackChecks.Native(source.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--slay-corruption-callback-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    SlayCorruptionCallbackChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--undying-copy-effects-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5302,6 +5315,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-undying-copy-effects-replay-calibration.mt2f"));
     UndyingCopyOnPlayChecks.EffectsPair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-slay-corruption-callback-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-slay-corruption-callback-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-slay-corruption-callback-replay-calibration.mt2f"));
+    SlayCorruptionCallbackChecks.Pair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-discard-holdover-return-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-discard-holdover-return-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

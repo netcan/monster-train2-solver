@@ -72,8 +72,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static CombatContext Apply(CombatContext context, CardInstanceState card, bool preview, bool deployment,
             int attackerUnitId, CombatUnit dying, System.Collections.Generic.IReadOnlyList<CombatUnit> activeUnits,
-            Func<CombatContext, RelicPyreAttackRefreshResult> refreshGold, RoomCombatState selectedRoom,
-            Func<CombatContext, CardActionEffect, (CombatContext? Context, string? Error)> applySpawnOrStatus, out string? error)
+            Func<CombatContext, RelicPyreAttackRefreshResult> refreshGold,
+            Func<CombatContext, CardActionEffect, (CombatContext? Context, string? Error)> applyQueuedEffect, out string? error)
         {
             error = Validate(card);
             if (error != null) return context;
@@ -102,10 +102,10 @@ namespace MonsterTrain2Poju.Model
                     if (context.EnergyState?.PyreAlive == null) { error = "Card OnKill resources require captured Pyre liveness."; return context; }
                     if (context.EnergyState.PyreAlive == false) continue;
                 }
-                if (effect.Type == "SpawnOrStatus")
+                if (effect.Type is "SpawnOrStatus" or "AdjustCorruption")
                 {
-                    var applied = applySpawnOrStatus(context, effect);
-                    if (applied.Context == null) { error = applied.Error ?? "Card OnKill spawn-or-status failed."; return context; }
+                    var applied = applyQueuedEffect(context, effect);
+                    if (applied.Context == null) { error = applied.Error ?? "Card OnKill queued effect failed."; return context; }
                     context = applied.Context;
                 }
                 else if (effect.Type == "BuffSourceSpellDamage")
@@ -118,15 +118,6 @@ namespace MonsterTrain2Poju.Model
                     error = EnergyModel.Validate(context);
                     if (error != null) return context;
                     context = EnergyModel.Apply(context, "GainEnergy", effect.Value);
-                }
-                else if (effect.Type == "AdjustCorruption")
-                {
-                    var room = new RoomCombatState(selectedRoom.RoomIndex, deployment, selectedRoom.Units,
-                        selectedRoom.ExternalInteractions, context, preview, selectedRoom.ActiveCompanionBossIds);
-                    var train = new TrainCombatState(new[] { room }, Array.Empty<EnemyMovement>(), 1, context);
-                    RoomCorruptionResult changed = RoomCorruptionModel.Apply(train, room.RoomIndex, effect);
-                    if (!changed.Supported) { error = changed.UnsupportedReason; return context; }
-                    context = changed.Context!;
                 }
                 else if (effect.Type == "RewardGold")
                 {

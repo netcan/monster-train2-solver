@@ -2964,10 +2964,11 @@ namespace MonsterTrain2Poju.Model
                     context = CardKillTriggerModel.Apply(context, killSource, source.Preview, source.Deployment,
                         actor?.Source.Id ?? 0, target.Freeze(), units.Select(unit => unit.Freeze()).Concat(
                             context.Enchantments?.Rooms.SelectMany(room => room.Units) ?? Array.Empty<CombatUnit>()).ToArray(),
-                        RefreshGold, CurrentRoom(), (current, effect) =>
+                        RefreshGold, (current, effect) =>
                         {
                             context = current;
-                            bool applied = ApplyTriggeredSpawnOrStatus(target, effect, "OnKill", sourceCardId);
+                            bool applied = effect.Type == "AdjustCorruption" ? ApplyCardKillCorruption(effect) :
+                                ApplyTriggeredSpawnOrStatus(target, effect, "OnKill", sourceCardId);
                             return (applied ? context : null, unsupportedReason);
                         }, out string? killError);
                     if (killError != null) { unsupportedReason = killError; return; }
@@ -2980,6 +2981,36 @@ namespace MonsterTrain2Poju.Model
                 // CharacterState restores HP after hit/death callbacks, without invoking Heal.
                 if (!target.DeathFinished && hpAfterPyreResurrection > 0)
                     target.Health = hpAfterPyreResurrection;
+            }
+
+            private bool ApplyCardKillCorruption(CardActionEffect effect)
+            {
+                RoomCombatState room = CurrentRoom();
+                var train = new TrainCombatState(new[] { room }, Array.Empty<EnemyMovement>(), 1, context);
+                // A card's Slay coroutine drains each unit callback before committing
+                // the room's corruption, while the lethal victim is still retained.
+                bool callbacks = room.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "CorruptionAdded"));
+                if (callbacks && (runningTriggerQueue || enqueueCharacterTrigger != null))
+                { unsupportedReason = "Nested card Slay corruption queues require native calibration."; return false; }
+                if (context?.Relics?.Any(relic => relic.EffectTypes.Any(type => type is
+                    "RelicEffectDamageOnCorruptionAdded" or "RelicEffectDrawOnCorruptionAdded" or
+                    "RelicEffectAddStatusEffectOnCorruptionAdded")) == true)
+                { unsupportedReason = "CorruptionAdded relic callbacks are not modeled."; return false; }
+                RoomCorruptionResult changed = RoomCorruptionModel.Apply(train, room.RoomIndex, effect, runUnitCallbacks: true);
+                if (!changed.Supported) { unsupportedReason = changed.UnsupportedReason; return false; }
+                var before = context!.RoomCapacities!;
+                foreach (var addition in changed.Additions)
+                    foreach (WorkingUnit actor in units.Where(unit => unit.Alive && unit.InRoom && !unit.Removed &&
+                        unit.Triggers.Any(trigger => trigger.Kind == "CorruptionAdded")).ToArray())
+                        for (int stack = 0; stack < addition.Count && actor.Alive && !actor.Removed; stack++)
+                        {
+                            FireTriggers(actor, "CorruptionAdded");
+                            if (unsupportedReason != null) return false;
+                        }
+                if (!before.SequenceEqual(context.RoomCapacities!))
+                { unsupportedReason = "Nested corruption callbacks require a fresh native ordering calibration."; return false; }
+                context = context.WithRoomCapacities(changed.Context!.RoomCapacities!);
+                return true;
             }
 
             private WorkingUnit? NextTrampleTarget(WorkingUnit attacked)
