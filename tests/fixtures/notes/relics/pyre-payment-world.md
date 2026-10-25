@@ -26,5 +26,14 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll `
 The existing original native Pyre-payment battle (31 actions,6 turn checks),
 25-card policy chain and pure affordability, X-cost, owner stacking, callback,
 preview, lethal-payment and isolation checks pass. This closes the combination
-mismatch; sample8 still requires a complete actual battle and independent
-replay before Ring2 acceptance. Full regression was not repeated.
+mismatch. The committed0.2.69 payload also passes sample8 Ring2 actual advice
+and independent frozen native replay:34 inputs,29 plays,5 EndTurns,Pyre71,
+36 publications,3 searches,1296 independent mask contexts and10 train checks
+per process. Roots,successors,forecasts and RNG match; all four failure counts
+are zero. Full regression was not repeated.
+
+The separate observer assembly must enable Conduit capture from the explicit
+player-probe environment flag as well as its assembly-local player-session
+flag. The first full trial won but recorded58 unsupported observer stages;
+it remains rejected. The corrected capture passes the complete independent
+pair above without changing the player's Conduit rules.

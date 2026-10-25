@@ -1,18 +1,18 @@
 # Player Mod validation · 2026-10-25
 
-Current Windows installation:0.2.55, committed source`156121e4`. The champion-
-preserving Stygian/LazarusLeague fourth battle passes two independent native
-processes:37 inputs,30 plays,7 EndTurns,Pyre99,39 publications,6 searches and
-1327 independent card-mask contexts. Every root, successor, forecast and RNG
-matches; all four failure counters are zero. This includes the exact-prefix
-floor-browse continuation repair and calibrated X-cost Undying copy traits.
+Current Windows installation:0.2.69, committed source`9bb08bd1`. Umbra/Stygian
+Ring2 passes actual10000ms advice and independent frozen native replay:
+34 inputs,29 plays,5 EndTurns,Pyre71,36 publications,3 searches and1296
+independent card-mask contexts. Every root,successor,forecast and RNG matches;
+all four failure counters are zero. This includes the Pyre-health payment /
+enchantment-world repair and complete Conduit capture in the separate observer.
 
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
-its next launch loads0.2.55. Backup/receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261025-151549/installation.json`.
-Package:`results/mod-dist/PojuAdvisor-0.2.55-Windows-20261025-151549.zip`,SHA256
-`9f7f909cc5b1b0b29d565ae22f2cdf03811543076df9dbd44884a8b78602cb27`.
+its next launch loads0.2.69. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261025-194633/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.69-Windows-20261025-194633.zip`,SHA256
+`cb209fdc882e7ea7c8a72b3bd452c21ee9ab100b87599fd5db00e322cae6e886`.
 No Mac package or full regression was run. Random eight-battle acceptance is
 still incomplete; historical sections below describe earlier installations.
 
