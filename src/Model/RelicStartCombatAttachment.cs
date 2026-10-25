@@ -47,6 +47,12 @@ namespace MonsterTrain2Poju.Model
                 RoomCapacityState? room = context.RoomCapacities.SingleOrDefault(item => item.RoomIndex == roomIndex);
                 RoomCapacityAttachmentState[] attachments = room?.Attachments?.Where(item =>
                     item.DataId == upgradeId && item.AssetKey == upgradeKey).ToArray() ?? Array.Empty<RoomCapacityAttachmentState>();
+                // This relic installs once. A later card can replace that
+                // ordinary slot; require the captured creation ordinal and a
+                // current card-owned replacement instead of the retired slot.
+                if (room?.IsPyre == false && attachments.Length == 0 && room.AttachmentsAddedFromCards > 0 &&
+                    room.Attachments?.Count == 1 && room.Attachments.All(item => item.AttachmentType == 0 &&
+                        context.CardInstances?.Any(card => card.DataId == item.DataId) == true)) continue;
                 if (room?.IsPyre != false || attachments.Length != 1)
                     return "Incomplete original start-of-combat room attachment state.";
                 RoomCapacityAttachmentState attachment = attachments[0];
