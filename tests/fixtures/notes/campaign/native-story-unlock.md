@@ -44,3 +44,33 @@ observation use `Run-CampaignProgress.ps1 -StoryProgressionOnly -InputProfile`
 with a restored profile. Natural unlock and subsequent true-final victory
 remain open acceptance goals; existing controlled true-final model/player
 pairs retain their separate scope.
+
+## Retaining one profile across new runs · 2026-10-25
+
+`Run-CampaignProgress.ps1 -NewRunFromProfile <idle-profile> -StopBeforeRing 1`
+now clones the native post-EndGame profile, then starts a new run through the
+original UI. It rejects active campaigns and combinations with resume, replay
+or story-only observation. `Run-RandomCampaign.ps1` accepts the same option;
+`-InputProfile` continues to mean resuming an unfinished campaign.
+
+The restored completed Fragile profile was used to start native seed424245.
+The driver follows the original SkipDialogue input and confirmation, allowing
+the game's coroutine to mark the dialogue completed and grant any reward.
+All16 previously recorded cumulative tracked values remained identical,
+completed dialogues increased0→1 and the additional hearts remained0/9.
+The source profile and player's real files remained unchanged. This proves
+the cross-run entry works, not that the unlock thresholds or another campaign
+have been completed.
+
+`saves/campaign/campaign-metagame-new-run.zip` contains the new Ring1 entry,
+44 hash-verified native payload/history files and the source-profile bindings.
+SHA256 `248f0e98702a4b8feadd3a6f63a05fe1f6db7cee242a92ddf4eae5fdcfd162fa`.
+The checker restores both archives, verifies the native new-run audit, idle
+source hashes, preserved cumulative values, hearts, features and dialogues,
+with no battle simulations:
+
+```powershell
+pwsh -NoProfile -File scripts/Check-NativeMetagameContinuation.ps1 `
+  -CompletedArchive tests/fixtures/saves/campaign/campaign-completed-fragile.zip `
+  -OpeningArchive tests/fixtures/saves/campaign/campaign-metagame-new-run.zip
+```
