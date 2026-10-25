@@ -5782,6 +5782,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-spell-harvest-tower-replay-calibration.mt2f"));
     SpellHarvestTowerChecks.Native(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("full-battle-native-covenant-03-ring6-refined-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "full-battle-native-covenant-03-ring6-refined-search.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-native-covenant-03-ring6-refined-replay.mt2f"));
+    RandomCampaignChecks.RefinedPair(source.RootElement, replay.RootElement, 424242, 3, 5, "Banished", "Pyreborne", 35);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-terminal-companion-roster-counterexample.mt2f"))
     TerminalCompanionRosterChecks.Native(path);
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-relic-damage-tower-", StringComparison.OrdinalIgnoreCase))

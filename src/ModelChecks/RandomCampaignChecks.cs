@@ -329,6 +329,16 @@ internal static class RandomCampaignChecks
             // an offline-selected policy and must not count as default-search wins.
             int metadataBudget = fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay").GetProperty("TimeLimitMs").GetInt32();
             Input(fixture, seed, rank, distance, primary, secondary, metadataBudget, validateSearchSettings: false);
+            if (rank > 0)
+                foreach (FixtureValue row in fixture.GetProperty("RollingDecisions").EnumerateArray())
+                foreach (string field in new[] { "Root", "Actual" })
+                {
+                    CombatRelicState[] owners = row.GetProperty(field).Deserialize<BattleTurnState>()!.Spawn.Train.Context!
+                        .Relics!.Where(owner => owner.IsCovenant == true).ToArray();
+                    Require(owners.Length == rank && TrueFinalBossCovenantModel.CalibratedOrdinaryWaveOwners(owners) &&
+                        owners.Select((owner, index) => owner.AssetKey!.StartsWith($"Covenant{index + 1:D2}_", StringComparison.Ordinal)).All(match => match),
+                        "Refined natural campaign changed its original cumulative Covenant owners.");
+                }
             Require(inputCount > 0 && fixture.GetProperty("NativeWon").GetBoolean() &&
                 fixture.GetProperty("RollingDecisions").GetArrayLength() == inputCount &&
                 fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay").GetProperty("Published").GetInt32() == 0,
