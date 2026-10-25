@@ -1,11 +1,11 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.103, committed source`d94735b4627a63ce7816ce4503ab51500a4ceccc`.
+Current Windows installation:0.2.104, committed source`58d7b9e9ea13d69ad20c5ab1bccb6ae8f52e4fdd`.
 The exact release payload passes the eleventh random Stygian/Awoken sample's
-first battle with actual10000ms/two-worker advice and independent native
-replay:26 inputs,21 plays,5 EndTurns,Pyre80 and9 train stages per process.
+fifth battle with actual10000ms/two-worker advice and independent native
+replay:41 inputs,34 plays,7 EndTurns,Pyre100 and13 train stages per process.
 Every root,successor,forecast and RNG matches; all four failure counters are
-zero. Source`20261026-044657-40c89db0` and replay`20261026-044809-2802125f`
+zero. Source`20261026-051956-b1158e7d` and replay`20261026-052342-ab772a9c`
 bind the three installed DLL hashes to the committed build.
 
 Since0.2.84 the payload includes native-calibrated equipment Etch, returned
@@ -55,15 +55,24 @@ Version0.2.103 calibrates Corrupt Exile's Diadem before equipment replacement:
 32 identical inputs in independent native processes,corruption5->6,max4,
 energy4->3 and size3->1. Complete state/RNG,eight immutable branches,eight
 signature guards and prior Corrupt equipment/room-attachment pairs pass.
+Version0.2.104 calibrates merchant Juice on MagicJuice. The original global
+deployment refusal is preserved;14 paired native inputs confirm spell
+weakness2->4 on three enemies, zero cost, Consume and12 source-attributed
+status stacks. Eight immutable branches,ten signature guards and prior Juice
+pairs pass. The full fifth battle also contains an actual upgraded cast.
+The eleventh sample's five-battle default-budget continuous chain passes.
+Version0.2.105's recipient-based room-debuff ordering passes focused native,
+filter/immunity and existing target controls; its full default-battle
+qualification is in progress.
 
 The installed three DLLs match both accepted native processes. All67 protected
 save/config/other-mod files retain their hashes. The real game was stopped;
-its next launch loads0.2.103. Backup/receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261026-045420/installation.json`.
-Package:`results/mod-dist/PojuAdvisor-0.2.103-Windows-20261026-045420.zip`,SHA256
-`8fba2af3871b852d9ef9860c60dd2fcd5433d56961c8f1c06fbffa3802d9c6cf`.
-No Mac package or full regression was run. Random eight-battle acceptance is
-still incomplete; historical sections below describe earlier installations.
+its next launch loads0.2.104. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261026-052759/installation.json`.
+Package:`results/mod-dist/PojuAdvisor-0.2.104-Windows-20261026-052759.zip`,SHA256
+`04239749c83479a88cd0cba933f33c3192d845855b043a3af3234173689d83e9`.
+No Mac package or full regression was run. A full random clear at the default
+search budget is still unaccepted; historical sections describe earlier installations.
 
 Windows0.2.25 passes the original third-spell magic-power / moon spell
 composition with a 15-boundary component, a 22-play complete controlled win,
