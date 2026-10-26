@@ -1,6 +1,22 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.128, clean source`0d0456bfc5a421f67f68be3435bb80c7d78c3adf`.
+Current Windows installation:0.2.134, clean source`44eef50b93e407ddb5f8650a5eaa9aa823d5916c`.
+The thirteenth sample's sixth battle again passes independent native processes:
+58 frozen inputs,47 plays,11 EndTurns,Pyre56 with no damage,21 train stages,
+identical complete states/forecasts/RNG and four zero failure counters.
+Versions129–134 include empty-teammate copy gating, original Fracture recasts,
+X room-status target ranking, consumed/retained JustCause copies, intrinsic consumed
+EchoInfusion and Corrupt Bloodsuit equipment. Each has focused native pairs.
+Installed at15:16 with67 protected files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.134-Windows-20261026-151621.zip`,SHA256
+`3566fca7943bb9004d5df320182379e71129ff38732f2f76a7dfb54636245e4b`.
+The mixed six-ring chain and32-file Ring7 checkpoint restore pass. Actual10000ms
+Ring7 advice completes42 inputs without model discrepancies but loses; that trace
+is curated. Development0.2.135 adds a28-input native pair for consumed Challenge
+copies and has not replaced this installation. No default-budget campaign clear
+is claimed. No Mac package was built.
+
+Previous Windows installation:0.2.128, clean source`0d0456bfc5a421f67f68be3435bb80c7d78c3adf`.
 The thirteenth sample's sixth battle passes independent native processes with
 58 frozen inputs,47 plays,11 EndTurns,Pyre56 and no damage,21 train stages,
 identical complete states/forecasts/RNG and four zero failure counters.
