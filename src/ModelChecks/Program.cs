@@ -4517,6 +4517,9 @@ if (args.Length == 2 && args[0] == "--unplayed-card-effects-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
     BattleTurnChecks.UnplayedCardEffects(fixture.RootElement);
+    BattleTurnChecks.Native(fixture.RootElement);
+    BattleActionChecks.Native(fixture.RootElement);
+    TrainCombatChecks.Native(fixture.RootElement);
     int schema = fixture.RootElement.GetProperty("Schema").GetInt32();
     Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={schema} bytes={new FileInfo(args[1]).Length} uniqueNodes={fixture.UniqueNodeCount}");
     return;

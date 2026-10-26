@@ -124,12 +124,17 @@ namespace MonsterTrain2Poju.Model
                     CardInstanceState? instance = preparedTrain.Context!.FindCard(item.Card.InstanceId);
                     if (instance == null) return new TrainCombatResult(null, RoomOutcome.Unsupported, Array.Empty<RoomCombatResult>(), "Missing preview unplayed card instance.");
                     CardPlayRule rule = CardModifierModel.Resolve(item.Rule!, instance);
-                    // The original TitanCurse upgrade explicitly disables preview application.
-                    // It still executes normally in BattleTurnModel's real unplayed phase.
-                    if (!rule.HasUnsupportedUnplayedTriggers && rule.DataId == "17fef621-2bb7-4847-b41d-52a89795c784" &&
-                        rule.OnUnplayedNegativeEffects.Count == 1 && rule.OnUnplayedNegativeEffects[0] is
+                    // These original effects explicitly disable preview application.
+                    // They still execute in BattleTurnModel's real unplayed phase.
+                    bool previewDisabled = rule.OnUnplayedNegativeEffects.Count == 1 &&
+                        (rule.DataId == "17fef621-2bb7-4847-b41d-52a89795c784" &&
+                        rule.OnUnplayedNegativeEffects[0] is
                             { Type: "UpgradeDeckSpells", Lifetime: "TemporaryUntilEndOfBattle", Upgrade:
-                                { DataId: "f37fb903-28d6-4d49-b50e-9226f4854816" } })
+                                { DataId: "f37fb903-28d6-4d49-b50e-9226f4854816" } } ||
+                        rule.DataId == "4d1f27af-3122-4a08-87e3-5ef5a14ced94" && rule.OnUnplayedNegativeEffects[0] is
+                            { Type: "GenerateUpgradedCopy", Generation: { RequireCopyableSource: true,
+                                DeterministicPoolSelection: true, Destination: "DiscardPile" } });
+                    if (!rule.HasUnsupportedUnplayedTriggers && previewDisabled)
                     {
                         if (instance.PlayedRoomUnitIds != null)
                         {
