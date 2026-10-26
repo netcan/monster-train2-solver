@@ -26,6 +26,7 @@ namespace MonsterTrain2Poju.Probe
             public BattleSpawnPoints Canonical { get; set; } = null!;
             public int[] LivingUnitIds { get; set; } = Array.Empty<int>();
             public bool Terminal { get; set; }
+            public bool CanonicalDecision { get; set; }
             public bool? Won { get; set; }
             public int[] RetiringEnemyIds { get; set; } = Array.Empty<int>();
             public PlaneSnapshot Planes { get; set; } = null!;
@@ -187,11 +188,19 @@ namespace MonsterTrain2Poju.Probe
             // Victory cleanup can retire a remaining enemy before its visual
             // coroutine clears the slot. Keep the raw plane below and apply
             // its already observed logical removal to the terminal enemy slot.
-            var canonical = new BattleSpawnPoints(decisionGroups, references.Select(point => active.Contains(point.UnitId) ? point :
-                new UnitSpawnPointState(point.UnitId, null, null, point.OuterBoss, point.SpawnedInPreview)).ToArray(), copies.Count + 1);
+            var canonical = trace.CanonicalDecisionCapture
+                ? new BattleSpawnPoints(decisionGroups, references.Select(point => active.Contains(point.UnitId) ? point :
+                    new UnitSpawnPointState(point.UnitId, null, null, point.OuterBoss, point.SpawnedInPreview)).ToArray(), copies.Count + 1)
+                // StopCombat unwinds room/train iterators before the decision frame.
+                // Preserve their raw owner pointers and copied groups; only the proven
+                // terminal enemy-slot retirement applies at this earlier boundary.
+                : new BattleSpawnPoints(raw.Groups.Select(group => group.PreviewCopyId.HasValue ? group :
+                    decisionGroups.Single(primary => primary.RoomIndex == group.RoomIndex && primary.Team == group.Team)).ToArray(),
+                    references, copies.Count + 1);
             int[] allCopies = CopyIds(planes.SelectMany(unit => new[] { unit.Primary, unit.Preview, unit.Temporary })
                 .Where(state => state != null).Cast<UnitSpawnPointState>()).Concat(currentCopies).Distinct().OrderBy(id => id).ToArray();
-            if (!AdvisorRuntime.PlayerSession) Decisions.Add(new DecisionRecord { Raw = raw, Canonical = canonical, LivingUnitIds = living, Terminal = terminal, Won = trace.TerminalObservationOutcome, RetiringEnemyIds = retiringEnemyIds,
+            if (!AdvisorRuntime.PlayerSession) Decisions.Add(new DecisionRecord { Raw = raw, Canonical = canonical, LivingUnitIds = living, Terminal = terminal,
+                CanonicalDecision = trace.CanonicalDecisionCapture, Won = trace.TerminalObservationOutcome, RetiringEnemyIds = retiringEnemyIds,
                 Planes = new PlaneSnapshot { Groups = groups.Concat(allCopies.Select(id => CopyGroup(trace, id))).ToArray(),
                     Units = planes.ToArray(), CurrentCopyIds = currentCopies.ToArray() } });
             return canonical;
