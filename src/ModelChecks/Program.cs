@@ -6212,6 +6212,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-moonbeam-copy-lifecycle-replay-calibration.mt2f"));
     MoonbeamCopyChecks.Lifecycle(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-retired-actor-frame-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-retired-actor-frame-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var ownerDeath = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-original-isolated-squad-leader-owner-death.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-retired-actor-frame-replay-calibration.mt2f"));
+    RetiredActorFrameChecks.Native(source.RootElement, ownerDeath.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-retained-player-preview-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-retained-player-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

@@ -26,6 +26,16 @@ internal static class RetiredActorFrameChecks
         {
             Require(replay.Value.GetProperty("Mismatches").GetInt32() == 0 &&
                 replay.Value.GetProperty("CaptureFailures").GetInt32() == 0, "Independent native frame replay still mismatches.");
+            var independentPhase = replay.Value.GetProperty("TrainPhases")[17];
+            var independentBefore = independentPhase.GetProperty("Before").Deserialize<TrainCombatState>()!;
+            var independentActual = independentPhase.GetProperty("Actual").Deserialize<TrainCombatState>()!;
+            Require(independentPhase.GetProperty("Kind").GetString() == "Ascend" &&
+                independentPhase.GetProperty("Turn").GetInt32() == 8 && new[] { 48, 50 }.All(id =>
+                    independentBefore.Context!.Enchantments!.RetainedUnits.Any(actor => actor.Unit.Id == id &&
+                        actor.Preview && actor.Unit.DeathState?.IsDestroyed == true && actor.Unit.Modifiers!.Upgrades.Count == 1) &&
+                    independentActual.Context!.Enchantments!.RetainedUnits.Any(actor => actor.Unit.Id == id &&
+                        actor.Unit.DeathState is { IsDestroyed: true, HasStatisticsListener: false } && actor.Unit.Modifiers!.Upgrades.Count == 0)),
+                "Independent replay omitted the pending destruction frame witness.");
             TrainCombatChecks.Native(replay.Value);
         }
         Console.WriteLine("RETIRED-ACTOR-FRAME PASS:22 original train phases and43 actual native inputs recomputed, original phase17 mismatch retained; " +

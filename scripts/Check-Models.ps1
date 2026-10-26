@@ -268,6 +268,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-troop-enchantment-noop-replay-calibration.mt2f',
     'player-retained-player-preview-calibration.mt2f',
     'player-retained-player-preview-replay-calibration.mt2f',
+    'player-retired-actor-frame-calibration.mt2f',
+    'player-retired-actor-frame-replay-calibration.mt2f',
     'player-moon-conduit-birth-order-calibration.mt2f',
     'player-moon-conduit-birth-order-replay-calibration.mt2f',
     'player-moon-null-boss-relic-calibration.mt2f',
@@ -1721,6 +1723,19 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     $moonArguments = @('--angel-duo-moon-birth-only') + @($angelMoonNames | ForEach-Object { Get-TestFixturePath $_ })
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @moonArguments
     if ($LASTEXITCODE -ne 0) { throw 'Focused angel duo moon birth pair failed.' }
+    return
+}
+$retiredFrameNames = @('player-retired-actor-frame-calibration.mt2f', 'player-retired-actor-frame-replay-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $retiredFrameNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Retired actor frame checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --retired-actor-frame-only `
+        (Get-TestFixturePath $retiredFrameNames[0]) `
+        (Get-TestFixturePath 'full-battle-original-isolated-squad-leader-owner-death.mt2f') `
+        (Get-TestFixturePath $retiredFrameNames[1])
+    if ($LASTEXITCODE -ne 0) { throw 'Focused retired actor frame replay failed.' }
     return
 }
 if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-terminal-coroutine-planes-counterexample-calibration.mt2f') {
