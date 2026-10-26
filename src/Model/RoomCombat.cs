@@ -2987,7 +2987,14 @@ namespace MonsterTrain2Poju.Model
                 if (!target.Alive && !target.DeathFinished)
                 {
                     if (!TryRevive(actor, target, sourceCardId))
-                        Death(actor, target, sourceCardId, deferRemoval: runningTriggerQueue || nativeCardDamage);
+                    {
+                        // Retaliation finishes inside the outer victim's damage
+                        // coroutine. Its dead attacker revives before the native
+                        // removal batch updates other enchanters' target maps.
+                        WorkingUnit? revivingActor = kind == "Spikes" && actor != null && !actor.Alive && actor.Count("undying") > 0 ? actor : null;
+                        Death(actor, target, sourceCardId, deferRemoval: runningTriggerQueue || nativeCardDamage || revivingActor != null,
+                            waitForRevival: revivingActor);
+                    }
                 }
                 // CharacterState restores HP after hit/death callbacks, without invoking Heal.
                 if (!target.DeathFinished && hpAfterPyreResurrection > 0)
@@ -3157,10 +3164,11 @@ namespace MonsterTrain2Poju.Model
                 }
             }
 
-            private readonly List<(WorkingUnit Unit, bool Return, bool RelicDamage)> deferredDamageDeaths = new List<(WorkingUnit, bool, bool)>();
+            private readonly List<(WorkingUnit Unit, bool Return, bool RelicDamage, WorkingUnit? WaitForRevival)> deferredDamageDeaths = new List<(WorkingUnit, bool, bool, WorkingUnit?)>();
 
             private void Death(WorkingUnit? actor, WorkingUnit target, int sourceCardId, bool deferRemoval = false, bool sacrifice = false,
-                bool immediateHarvest = false, bool doNotFullyRemove = false, bool returnSpawnerAfterQueue = false)
+                bool immediateHarvest = false, bool doNotFullyRemove = false, bool returnSpawnerAfterQueue = false,
+                WorkingUnit? waitForRevival = null)
             {
                 if (target.DeathFinished) return;
                 if (!source.Preview && target.Health == 0 && TrueFinalBossTerminalCombatModel.SupportsRoot(source, target.Source.Id,
@@ -3215,7 +3223,7 @@ namespace MonsterTrain2Poju.Model
                     preservePhysicalPoint: doNotFullyRemove, captureAllDispatches: traceAllDispatches));
                 else
                 {
-                    if (deferRemoval) deferredDamageDeaths.Add((target, deferReturn, false));
+                    if (deferRemoval) deferredDamageDeaths.Add((target, deferReturn, false, waitForRevival));
                     else
                     {
                         FireTriggers(target, "OnDeath");
@@ -3734,8 +3742,9 @@ namespace MonsterTrain2Poju.Model
                     }
                 }
                 if (stoppedByRemotePyreDamage) { runningTriggerQueue = holdPreviewTriggerQueue; return; }
-                var removing = deferredDamageDeaths.OrderBy(dead => dead.Unit.Source.Team).ThenBy(dead => dead.Unit.Source.Id).ToArray();
-                deferredDamageDeaths.Clear();
+                var removing = deferredDamageDeaths.Where(dead => dead.WaitForRevival == null || dead.WaitForRevival.Alive)
+                    .OrderBy(dead => dead.Unit.Source.Team).ThenBy(dead => dead.Unit.Source.Id).ToArray();
+                deferredDamageDeaths.RemoveAll(dead => dead.WaitForRevival == null || dead.WaitForRevival.Alive);
                 // Native still removes temporary dead characters while its
                 // trigger queue is held; their callbacks stay in the preview queue.
                 runningTriggerQueue = holdPreviewTriggerQueue;
@@ -4304,7 +4313,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     WorkingUnit dead = units.Single(target => target.Source.Id == callback.Unit.Id);
                     dead.Apply(callback.Unit); dead.DeathFinished = true;
-                    deferredDamageDeaths.Add((dead, callback.ReturnSpawnerAfterQueue, true));
+                    deferredDamageDeaths.Add((dead, callback.ReturnSpawnerAfterQueue, true, null));
                 }
                 else QueueCallback(callback.WithRelicDamageRemoval());
             }

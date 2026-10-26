@@ -181,6 +181,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-unowned-relic-copy-replay-calibration.mt2f',
     'player-revived-sacrifice-attribution-calibration.mt2f',
     'player-revived-sacrifice-attribution-replay-calibration.mt2f',
+    'player-retaliation-revival-calibration.mt2f',
     'player-unbox-conduit-replay-calibration.mt2f',
     'player-outer-boss-death-statistics-calibration.mt2f',
     'player-outer-boss-death-statistics-replay-calibration.mt2f',
@@ -1670,6 +1671,15 @@ if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-terminal-comp
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --terminal-companion-roster-only (Get-TestFixturePath $selectedFixtureNames[0])
     if ($LASTEXITCODE -ne 0) { throw 'Terminal companion counterexample check failed.' }
+    return
+}
+if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-retaliation-revival-calibration.mt2f') {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Retaliation revival checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --retaliation-revival-only (Get-TestFixturePath $selectedFixtureNames[0])
+    if ($LASTEXITCODE -ne 0) { throw 'Retaliation revival native check failed.' }
     return
 }
 $branchPairGates = @{

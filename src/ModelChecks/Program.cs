@@ -251,6 +251,12 @@ if (args.Length == 3 && args[0] == "--post-battle-reward-combat-pair-only")
     PostBattleRewardCombatChecks.Pair(source.RootElement, replay.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--retaliation-revival-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    RetaliationRevivalChecks.Original(document.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--unowned-relic-copy-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5865,6 +5871,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-revived-sacrifice-attribution-replay-calibration.mt2f"));
     RevivedSacrificeAttributionChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-retaliation-revival-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    RetaliationRevivalChecks.Original(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-triggered-corruption-relic-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-triggered-corruption-relic-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
