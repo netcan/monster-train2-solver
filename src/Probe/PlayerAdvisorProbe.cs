@@ -573,8 +573,22 @@ namespace MonsterTrain2Poju.Probe
             // identity space; translate chosen inputs by native object identity.
             BattleTurnState root = Capture();
             using var keys = new BattleStateKeys();
+            if (!session.MatchesCurrentRoot(root))
+            {
+                var observations = ((IEnumerable<SelectionAdviceReuse.Observation>)AccessTools.Field(typeof(BattleAdviceSession),
+                    "reuseObservations").GetValue(session)).Select(item => new { item.Room, item.Root }).ToArray();
+                using var diagnostic = MonsterTrain2Poju.Capture.NativeFixtureCapture.Capture(new
+                {
+                    Schema = 1, EvidenceKind = "NativeAdviceRootMismatch", PublishedRoot = Advice.Root, ActualRoot = root,
+                    StoredRootKey = Advice.RootKey, PublishedRootKey = keys.Key(Advice.Root), ActualRootKey = keys.Key(root),
+                    Observations = observations
+                });
+                using var stream = System.IO.File.Create(System.IO.Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                    "player-advice-root-mismatch.mt2f"));
+                diagnostic.Write(stream);
+            }
             Require(session.MatchesCurrentRoot(root), "player advice is stale: " +
-                UnitPlayModelProbe.FirstDifference(BattleTurnProbe.Comparable(Advice.Root), BattleTurnProbe.Comparable(root), "$"));
+                UnitPlayModelProbe.FirstDifference(JObject.FromObject(Advice.Root), JObject.FromObject(root), "$"));
             return (bool)Call("ReadyFor", root)!;
         }
         private static bool CurrentIsNull() => Field<BattleAdviceSession>("session").Current == null;

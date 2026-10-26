@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--prepared-selection-publication-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    PreparedSelectionPublicationChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--sentient-draw-upgrade-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6334,6 +6340,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-sentient-draw-upgrade-replay-calibration.mt2f"));
     SentientDrawUpgradeChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-prepared-selection-publication-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    PreparedSelectionPublicationChecks.Native(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-unsupported-card-ranking-calibration.mt2f"))
 {

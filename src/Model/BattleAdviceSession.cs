@@ -74,13 +74,15 @@ namespace MonsterTrain2Poju.Model
 
         // A view change records only its order. No hashing, model traversal,
         // worker cancellation or publication happens until a gameplay capture.
-        public void BrowseRoom(int roomIndex)
+        public void BrowseRoom(int roomIndex) => BrowseRoom(roomIndex, false);
+
+        internal void BrowseRoom(int roomIndex, bool force)
         {
             if (disposed) throw new ObjectDisposedException(nameof(BattleAdviceSession));
             if (roomIndex < 0) throw new ArgumentOutOfRangeException(nameof(roomIndex));
             var previous = reuseObservations.Count > 0 ? reuseObservations[reuseObservations.Count - 1] : null;
             int previousRoom = previous?.Root?.SelectedRoom ?? previous?.Room ?? observed?.SelectedRoom ?? -1;
-            if (previousRoom != roomIndex) reuseObservations.Add(new SelectionAdviceReuse.Observation(roomIndex));
+            if (force || previousRoom != roomIndex) reuseObservations.Add(new SelectionAdviceReuse.Observation(roomIndex));
         }
 
         // Used only by isolated native acceptance, which supplies a fresh full

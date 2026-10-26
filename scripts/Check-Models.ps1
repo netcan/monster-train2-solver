@@ -571,6 +571,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-sweep-boss-preview-stop-replay-calibration.mt2f',
     'player-outer-boss-attachment-birth-calibration.mt2f',
     'player-unsupported-card-ranking-calibration.mt2f',
+    'player-prepared-selection-publication-calibration.mt2f',
     'player-sentient-draw-upgrade-calibration.mt2f',
     'player-sentient-draw-upgrade-replay-calibration.mt2f',
     'player-outer-boss-attachment-birth-replay-calibration.mt2f',
@@ -2063,12 +2064,15 @@ if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-retaliation-r
     return
 }
 if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
-    $selectedFixtureNames[0] -eq 'player-unsupported-card-ranking-calibration.mt2f') {
+    $selectedFixtureNames[0] -in @('player-unsupported-card-ranking-calibration.mt2f', 'player-prepared-selection-publication-calibration.mt2f')) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
         if ($LASTEXITCODE -ne 0) { throw 'Unsupported ranking checker build failed.' }
     }
-    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --unsupported-card-ranking-only $fixtures[0]
+    $mode = if ($selectedFixtureNames[0] -eq 'player-unsupported-card-ranking-calibration.mt2f') {
+        '--unsupported-card-ranking-only'
+    } else { '--prepared-selection-publication-only' }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') $mode $fixtures[0]
     if ($LASTEXITCODE -ne 0) { throw 'Unsupported card ranking check failed.' }
     return
 }

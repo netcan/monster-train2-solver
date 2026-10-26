@@ -451,7 +451,12 @@ namespace MonsterTrain2Poju.Probe
                             throw new InvalidOperationException("Snapshot preparation ran on the native main thread.");
                         LastPreparationMs = prepared.Elapsed.TotalMilliseconds; PreparedObservations++;
                         session.Observe(prepared, preparationCaptureElapsed);
-                        selectionPending = false; captureNeeded = false;
+                        bool viewChanged = browseOnly && !preparationObservation.Equals(currentObservation);
+                        // This view event happened after the prepared snapshot,
+                        // even when an older worker already recorded that room.
+                        // Keep it after the new worker's committed prefix.
+                        if (viewChanged) RecordSelection(force: true);
+                        selectionPending = viewChanged; captureNeeded = false;
                         publicationChecked = session.Current?.RootKey == prepared.RootKey;
                     }
                 }
@@ -833,11 +838,11 @@ namespace MonsterTrain2Poju.Probe
             selectionReadyAt = Time.realtimeSinceStartup + .12f;
         }
 
-        private void RecordSelection()
+        private void RecordSelection(bool force = false)
         {
             int room = AllGameManagers.Instance.GetRoomManager().GetSelectedRoom();
             if (room < 0) return;
-            session.BrowseRoom(room); BrowseSelections++;
+            session.BrowseRoom(room, force); BrowseSelections++;
         }
 
         public void Dispose()
