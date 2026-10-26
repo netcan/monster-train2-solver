@@ -209,3 +209,14 @@ deployments under0.2.80 (floor0,floor1,and strength-first floor2) independently
 replay to complete model defeats with62,44,and61 inputs respectively. None
 is sent through a redundant native battle; these outcomes do not prove that
 Ring6 is unwinnable.
+
+With0.2.112, the per-decision bounded sweep resumes the verified v8 model
+route from input24. It completes150 of151 candidates,87 joint alternatives,
+zero unsupported, and finds two losing improvements (one joint). The exported
+58-input route independently replays full state/forecast/RNG: the two surviving
+bosses have10 and422 health, combined432 versus the previous452. Search plus
+independent export takes132.95s under a120s soft budget. This remains a model
+defeat, not a native victory or a natural-unlock acceptance. A following90s
+scan from input0 reaches input44 and completes77/77 candidates with no further
+improvement or unsupported branches; no new output or redundant native loss
+replay is produced. Extra hearts remain0/9 at the last accepted checkpoint.
