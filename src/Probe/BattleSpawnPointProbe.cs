@@ -188,15 +188,21 @@ namespace MonsterTrain2Poju.Probe
             // Victory cleanup can retire a remaining enemy before its visual
             // coroutine clears the slot. Keep the raw plane below and apply
             // its already observed logical removal to the terminal enemy slot.
+            UnitSpawnPointState[] coroutineReferences = references.Select(point =>
+                retiring.Contains(point.UnitId) || point.SpawnedInPreview && !active.Contains(point.UnitId)
+                    ? new UnitSpawnPointState(point.UnitId, null, null, point.OuterBoss, point.SpawnedInPreview) : point).ToArray();
+            var coroutineCopies = coroutineReferences.SelectMany(point => new[] { point.Current, point.LastKnown })
+                .Where(point => point?.PreviewCopyId != null).Select(point => point!.PreviewCopyId!.Value).ToHashSet();
             var canonical = trace.CanonicalDecisionCapture
                 ? new BattleSpawnPoints(decisionGroups, references.Select(point => active.Contains(point.UnitId) ? point :
                     new UnitSpawnPointState(point.UnitId, null, null, point.OuterBoss, point.SpawnedInPreview)).ToArray(), copies.Count + 1)
                 // StopCombat unwinds room/train iterators before the decision frame.
-                // Preserve their raw owner pointers and copied groups; only the proven
-                // terminal enemy-slot retirement applies at this earlier boundary.
-                : new BattleSpawnPoints(raw.Groups.Select(group => group.PreviewCopyId.HasValue ? group :
+                // Preserve real corpse pointers; keep the existing logical retirement
+                // of terminal enemies and destroyed preview births at this boundary.
+                : new BattleSpawnPoints(raw.Groups.Where(group => !group.PreviewCopyId.HasValue ||
+                    coroutineCopies.Contains(group.PreviewCopyId.Value)).Select(group => group.PreviewCopyId.HasValue ? group :
                     decisionGroups.Single(primary => primary.RoomIndex == group.RoomIndex && primary.Team == group.Team)).ToArray(),
-                    references, copies.Count + 1);
+                    coroutineReferences, copies.Count + 1);
             int[] allCopies = CopyIds(planes.SelectMany(unit => new[] { unit.Primary, unit.Preview, unit.Temporary })
                 .Where(state => state != null).Cast<UnitSpawnPointState>()).Concat(currentCopies).Distinct().OrderBy(id => id).ToArray();
             if (!AdvisorRuntime.PlayerSession) Decisions.Add(new DecisionRecord { Raw = raw, Canonical = canonical, LivingUnitIds = living, Terminal = terminal,
