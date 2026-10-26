@@ -67,6 +67,15 @@ Underlegion、LazarusLeague、Hellhorned、Awoken、Stygian、Umbra、Remnant、
 见[空队友法术复制](../tests/fixtures/notes/cards/monster-spell-no-teammates.md)。
 Windows已安装版本仍为0.2.128；此机制校准不计第七战胜局。
 
+开发版0.2.130–133继续补齐Fracture腐化遗物副本、X费楼层状态目标排序、
+JustCause腐化／留存／消耗组合及EchoInfusion先天／腐化／消耗组合。
+前三项分别9／9／18输入独立原生配对通过；EchoInfusion已有腐化和零腐化
+两组各9输入独立配对，完整状态／RNG、一次原牌回调与遗物计数均一致。
+见[EchoInfusion组合](../tests/fixtures/notes/cards/intrinsic-infusion.md)。
+0.2.131／132同入口实际10000ms建议分别39／37输入后败北，完整状态／预测／RNG、
+14列车阶段与四项零失败通过，两个原件均已归档。第七战仍无已接受胜局，
+继续离线策略筛选；机制组件通过不等于整场获胜，也未作为新Windows交付。
+
 0.2.122补齐第六战带先天升级的WurmkinSpike复制签名和永久特性安装：
 原始部署拒绝及实际施放的8输入反例均独立原生双进程校准。
 第五战同一34输入胜路也在0.2.122完整双胜，薪火56，17列车阶段，完整

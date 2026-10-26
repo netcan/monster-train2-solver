@@ -6061,6 +6061,16 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-wurmkin-spike-copy-deployment-replay-calibration.mt2f"));
     WurmkinSpikeCopyChecks.Deployment(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-intrinsic-infusion-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, Path.GetFileName(path).Contains("-zero-", StringComparison.OrdinalIgnoreCase)
+        ? "player-intrinsic-infusion-zero-calibration.mt2f" : "player-intrinsic-infusion-calibration.mt2f"))
+    .Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path,
+        Path.GetFileName(path).Replace("-calibration.mt2f", "-replay-calibration.mt2f")));
+    IntrinsicInfusionChecks.Native(source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-justcause-consume-copy-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-justcause-consume-copy-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
