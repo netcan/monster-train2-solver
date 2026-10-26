@@ -8,6 +8,20 @@ internal static class RandomCampaignChecks
     internal static void Curated(string path)
     {
         using var source = ModelJson.ReadFixture(path);
+        if (path.EndsWith("full-battle-random-campaign-14-ring3-release149-refined-search.mt2f", StringComparison.Ordinal))
+        {
+            using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
+            RefinedPair(source.RootElement, replay.RootElement, 934692550, 0, 2, "Underlegion", "LunaCoven", 34);
+            foreach (FixtureValue fixture in new[] { source.RootElement, replay.RootElement })
+            {
+                var rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+                var final = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                Require(rows.Count(row => row.GetProperty("IsEndTurn").GetBoolean()) == 9 &&
+                    final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 32,
+                    "Fourteenth sample Ring3 refinement must retain25 plays/9EndTurns and native Pyre32.");
+            }
+            return;
+        }
         if (path.EndsWith("full-battle-random-campaign-13-ring7-release137-refined-loss.mt2f", StringComparison.Ordinal))
         {
             FixtureValue fixture = source.RootElement;

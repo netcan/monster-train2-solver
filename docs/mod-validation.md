@@ -23,7 +23,12 @@ and four zero failure counters, but loses with206 bossHP. The native loss is pre
 for strategy work. Development0.2.149 also skips the original Soul Savior preview
 copy effect; the older combined curse/copy fixture passes7turns/11plays and full
 state checks. Fresh native control also passes14 train stages and the complete
-policy chain,Pyre57 with all four failure counters zero. Installed build remains0.2.143.
+policy chain,Pyre57 with all four failure counters zero. A34-input offline refinement
+of Ring3 now wins in independent native processes:25plays/9EndTurns,Pyre32,18 train
+stages and identical full states/forecasts/RNG. Both native traces bind the exact
+frozen prediction.58 normal reward events reach Ring4; the mixed three-ring chain
+and20-file checkpoint restore(19payloads)pass. Ring4 currently rejects BossEmber
+during moon hand refresh and is not accepted. Installed build remains0.2.143.
 No default-budget campaign clear is claimed.
 No Mac package was built. See[terminal capture evidence](../tests/fixtures/notes/combat/terminal-coroutine-planes.md).
 
