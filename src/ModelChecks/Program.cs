@@ -251,6 +251,14 @@ if (args.Length == 3 && args[0] == "--post-battle-reward-combat-pair-only")
     PostBattleRewardCombatChecks.Pair(source.RootElement, replay.RootElement);
     return;
 }
+if (args.Length is 3 or 4 && args[0] == "--player-egg-catalog-only")
+{
+    using var missing = ModelJson.ReadFixture(args[1]);
+    using var complete = ModelJson.ReadFixture(args[2]);
+    if (args.Length == 3) PlayerEggCatalogChecks.Native(missing.RootElement, complete.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[3]); PlayerEggCatalogChecks.Native(missing.RootElement, complete.RootElement, replay.RootElement); }
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--spent-monster-spell-relic-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -5913,6 +5921,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-justcause-monster-spell-replay-calibration.mt2f"));
     JustCauseMonsterSpellChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-egg-catalog-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-egg-catalog-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var missing = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-egg-catalog-missing-observation.mt2f"));
+    using var complete = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-egg-catalog-replay-calibration.mt2f"));
+    PlayerEggCatalogChecks.Native(missing.RootElement, complete.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-spent-monster-spell-relic-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-spent-monster-spell-relic-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

@@ -199,6 +199,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-wurmkin-spike-copy-replay-calibration.mt2f',
     'player-spent-monster-spell-relic-calibration.mt2f',
     'player-spent-monster-spell-relic-replay-calibration.mt2f',
+    'player-egg-catalog-missing-observation.mt2f',
+    'player-egg-catalog-calibration.mt2f',
+    'player-egg-catalog-replay-calibration.mt2f',
     'player-unowned-relic-copy-calibration.mt2f',
     'player-unowned-relic-copy-replay-calibration.mt2f',
     'player-revived-sacrifice-attribution-calibration.mt2f',
@@ -1877,6 +1880,19 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { -not $moo
         } else { dotnet $checker $gate $path }
         if ($LASTEXITCODE -ne 0) { throw 'Focused moon threshold acceptance failed.' }
     }
+    return
+}
+$playerEggCatalogNames = @('player-egg-catalog-missing-observation.mt2f',
+    'player-egg-catalog-calibration.mt2f', 'player-egg-catalog-replay-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $playerEggCatalogNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Player egg catalog checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --player-egg-catalog-only `
+        (Get-TestFixturePath $playerEggCatalogNames[0]) (Get-TestFixturePath $playerEggCatalogNames[1]) `
+        (Get-TestFixturePath $playerEggCatalogNames[2])
+    if ($LASTEXITCODE -ne 0) { throw 'Focused player egg catalog calibration failed.' }
     return
 }
 if ($Workers -gt 1) {
