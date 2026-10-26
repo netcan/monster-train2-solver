@@ -1,5 +1,14 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 3 or 5 && args[0] == "--fragile-moon-birth-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var birth = ModelJson.ReadFixture(args[2]);
+    using var replay = args.Length == 5 ? ModelJson.ReadFixture(args[3]) : null;
+    using var replayBirth = args.Length == 5 ? ModelJson.ReadFixture(args[4]) : null;
+    FragileMoonBirthChecks.Native(source.RootElement, birth.RootElement, replay?.RootElement, replayBirth?.RootElement);
+    return;
+}
 if (args.Length == 4 && args[0] == "--double-juice-spike-only")
 {
     using var refusal = ModelJson.ReadFixture(args[1]);
@@ -6523,6 +6532,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-dou
     using var source = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-double-juice-spike-calibration.mt2f"));
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-double-juice-spike-replay-calibration.mt2f"));
     DoubleJuiceSpikeChecks.Native(refusal.RootElement, source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-fragile-moon-birth-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var birth = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "fragile-moon-creation-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-fragile-moon-birth-replay-calibration.mt2f"));
+    using var replayBirth = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "fragile-moon-creation-replay-calibration.mt2f"));
+    FragileMoonBirthChecks.Native(source.RootElement, birth.RootElement, replay.RootElement, replayBirth.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-stasis-shatter-counterexample-calibration.mt2f"))
 {

@@ -36,7 +36,8 @@ namespace MonsterTrain2Poju.Model
             int moon = train.Context?.QueryFrame?.MoonPhase ?? 0;
             bool calibratedMoon = battle.MoonPhaseTrackingActive == true &&
                 (actor.Unit.AssetKey is "Boss_Level3_Fleshweaver_Corruption" or "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth" or
-                    "Boss_Level3_Arkion_SiphonRage" or "Boss_Level6_Cael_DamageShield") && moon == 2 &&
+                    "Boss_Level3_Arkion_SiphonRage" or "Boss_Level6_Cael_DamageShield" ||
+                    actor.Unit is { AssetKey: "Boss_Level8_Fragile", BaseAttack: 30, Attack: 30, Health: 3000, MaxHealth: 3000 }) && moon == 2 &&
                 !actor.Unit.Triggers.Any(trigger => trigger.Kind is "OnMoonLit" or "OnMoonlitLost" or
                     "OnMoonShade" or "OnMoonshadeLost" or "OnMoonPhaseShift");
             if (actor.ExternalInteractions.Count > 0) return Fail(string.Join("; ", actor.ExternalInteractions));

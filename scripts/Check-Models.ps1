@@ -149,6 +149,10 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-untouchable-room-calibration.mt2f',
     'player-untouchable-room-replay-calibration.mt2f',
     'player-cael-moon-birth-calibration.mt2f',
+    'player-fragile-moon-birth-calibration.mt2f',
+    'fragile-moon-creation-calibration.mt2f',
+    'player-fragile-moon-birth-replay-calibration.mt2f',
+    'fragile-moon-creation-replay-calibration.mt2f',
     'cael-moon-creation-calibration.mt2f',
     'player-cael-moon-birth-replay-calibration.mt2f',
     'cael-moon-creation-replay-calibration.mt2f',
@@ -1843,6 +1847,17 @@ $untouchableFrontNames = @('player-untouchable-front-relic-counterexample-calibr
 $stasisShatterNames = @('player-stasis-shatter-counterexample-calibration.mt2f', 'player-stasis-shatter-calibration.mt2f', 'player-stasis-shatter-replay-calibration.mt2f')
 $tripleJuiceNames = @('player-triple-juice-spike-refusal-calibration.mt2f', 'player-triple-juice-spike-calibration.mt2f', 'player-triple-juice-spike-replay-calibration.mt2f')
 $doubleJuiceNames = @('player-double-juice-spike-refusal-calibration.mt2f', 'player-double-juice-spike-calibration.mt2f', 'player-double-juice-spike-replay-calibration.mt2f')
+$fragileMoonNames = @('player-fragile-moon-birth-calibration.mt2f', 'fragile-moon-creation-calibration.mt2f', 'player-fragile-moon-birth-replay-calibration.mt2f', 'fragile-moon-creation-replay-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $fragileMoonNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Fragile moon checker build failed.' }
+    }
+    $fragileArguments = @('--fragile-moon-birth-only') + @($fragileMoonNames | ForEach-Object { Get-TestFixturePath $_ })
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @fragileArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Focused Fragile moon pair failed.' }
+    return
+}
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $doubleJuiceNames }).Count -eq 0) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
