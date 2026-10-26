@@ -295,6 +295,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-remote-preview-frame-counterexample-calibration.mt2f',
     'player-remote-preview-frame-replay-calibration.mt2f',
     'full-battle-random-campaign-14-ring6-release157-refined-loss.mt2f',
+    'full-battle-random-campaign-14-ring6-release165-refined-loss.mt2f',
     'player-moon-conduit-birth-order-calibration.mt2f',
     'player-moon-conduit-birth-order-replay-calibration.mt2f',
     'player-moon-null-boss-relic-calibration.mt2f',
@@ -1761,6 +1762,15 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
         (Get-TestFixturePath 'full-battle-original-isolated-squad-leader-owner-death.mt2f') `
         (Get-TestFixturePath $retiredFrameNames[1])
     if ($LASTEXITCODE -ne 0) { throw 'Focused retired actor frame replay failed.' }
+    return
+}
+if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'full-battle-random-campaign-14-ring6-release165-refined-loss.mt2f') {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Complete native battle checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --complete-native-battle-only $fixtures[0]
+    if ($LASTEXITCODE -ne 0) { throw 'Focused complete native battle failed.' }
     return
 }
 if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'full-battle-random-campaign-14-ring6-release157-refined-loss.mt2f') {
