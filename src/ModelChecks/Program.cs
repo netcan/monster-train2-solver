@@ -1,5 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 4 && args[0] == "--inherent-juice-spike-only")
+{
+    using var refusal = ModelJson.ReadFixture(args[1]);
+    using var source = ModelJson.ReadFixture(args[2]);
+    using var replay = ModelJson.ReadFixture(args[3]);
+    InherentJuiceSpikeChecks.Native(refusal.RootElement, source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--unbox-moon-relic-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6565,6 +6573,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-unb
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-unbox-moon-relic-replay-calibration.mt2f"));
     UnboxMoonRelicChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-inherent-juice-spike-refusal-calibration.mt2f"))
+{
+    using var refusal = ModelJson.ReadFixture(path);
+    using var source = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-inherent-juice-spike-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-inherent-juice-spike-replay-calibration.mt2f"));
+    InherentJuiceSpikeChecks.Native(refusal.RootElement, source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-room-upgrade-provenance-counterexample-calibration.mt2f"))
 {
