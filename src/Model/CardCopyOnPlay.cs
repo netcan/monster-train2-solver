@@ -9,6 +9,8 @@ namespace MonsterTrain2Poju.Model
         public const string UpgradeId = "a75fc092-ca72-476b-b518-01e9ecb8d6a3";
         public const string UndyingSpellId = "7168ed36-de03-41db-a36f-79b54b121341";
         public const string StrongerCorruptionSpellId = "4de04eeb-76d9-4ad0-b5cd-8c2b997395f5";
+        public const string WurmkinSpikeSpellId = "83c87c23-39a9-4c92-a6d0-3f640c35534d";
+        public const string IntrinsicSpikeUpgradeId = "62ea77cc-4f97-476f-9ccc-a23e28bc788d";
         public const string PermafrostUpgradeId = "e0af4fe5-75c0-4017-ae5e-5a87099aa6c5";
         public static bool Present(CardInstanceState card) => card.MaskDescriptor != null &&
             (card.MaskDescriptor.BaseTraits.Concat(card.MaskDescriptor.TemporaryTraits).Any(trait => trait.RuntimeType == Trait) ||
@@ -19,7 +21,7 @@ namespace MonsterTrain2Poju.Model
         {
             if (descriptor.SourceTraits == null) return false;
             if (descriptor.SourceTraits.Count == 0) return true;
-            if (SupportedUndyingSource(descriptor) || SupportedStrongerCorruptionSource(descriptor)) return true;
+            if (SupportedUndyingSource(descriptor) || SupportedStrongerCorruptionSource(descriptor) || SupportedWurmkinSpikeSource(descriptor)) return true;
             if (descriptor.SourceTraits.Count != 1 || descriptor.BaseTraits.Count == 0) return false;
             CardSourceTrait authored = descriptor.SourceTraits[0];
             CardTraitValue runtime = descriptor.BaseTraits[0];
@@ -78,6 +80,50 @@ namespace MonsterTrain2Poju.Model
                     return false;
             }
             return true;
+        }
+
+        private static bool SupportedWurmkinSpikeSource(CardMaskDescriptor descriptor)
+        {
+            if (descriptor.Definition.DataId != WurmkinSpikeSpellId || descriptor.Definition.CardType != "Spell" ||
+                !descriptor.Definition.XCost || descriptor.SourceTraits?.Count != 2 || descriptor.BaseTraits.Count < 2) return false;
+            for (int index = 0; index < 2; index++)
+            {
+                CardSourceTrait authored = descriptor.SourceTraits[index];
+                CardTraitValue runtime = descriptor.BaseTraits[index];
+                string type = index == 0 ? "CardTraitExhaustState" : "CardTraitScalingAddStatusEffect";
+                int value = index == 0 ? 0 : 6;
+                if (authored.Type != type || authored.Int != value || authored.Int2 != 0 || authored.Int3 != 0 ||
+                    authored.Bool || authored.Str != "" || authored.Float != (index == 0 ? 0 : 1) || authored.Scaling != (index == 1) ||
+                    authored.TrackedValue != (index == 0 ? "SubtypeInDeck" : "PlayedCost") || authored.EntryDuration != "ThisTurn" ||
+                    authored.StatusQueryTeam != null || authored.StatusQueryStatuses != null || authored.HandCostTargetType != null ||
+                    authored.DeploymentDrawFlag != null || authored.SpecificCardDataId != null || authored.MoonPhaseUpgrade != null ||
+                    authored.KillTargetTeam != null || authored.KillTargetSubtype != null || authored.QueryCardType != null ||
+                    (index == 0 ? authored.StatusEffectIds != null : authored.StatusEffectIds?.SequenceEqual(new[] { "corrupt_poison" }) != true) ||
+                    runtime.RuntimeType != type || runtime.DeclaredName != type || runtime.ParamInt != value || runtime.DefinitionParamInt != value ||
+                    runtime.StackMode != 0 || !runtime.Removable || runtime.DefinitionRemovable != true || runtime.TemporaryReplacement) return false;
+            }
+            return true;
+        }
+
+        internal static bool SupportedIntrinsicSpike(CardInstanceState card)
+        {
+            if (card.MaskDescriptor is not { } descriptor || !SupportedWurmkinSpikeSource(descriptor)) return false;
+            bool Ordinary(CardTraitValue trait) => trait.RuntimeType == "CardTraitIntrinsicState" && trait.DeclaredName == trait.RuntimeType &&
+                trait.ParamInt == 0 && trait.DefinitionParamInt == 0 && trait.StackMode == 0 && trait.Removable &&
+                trait.DefinitionRemovable == true && !trait.TemporaryReplacement;
+            var installed = descriptor.BaseTraits.Where(trait => trait.RuntimeType == "CardTraitIntrinsicState").ToArray();
+            var upgrades = card.Permanent.Upgrades.Where(upgrade => upgrade.DataId == IntrinsicSpikeUpgradeId).ToArray();
+            if (installed.Length != 1 || !Ordinary(installed[0]) || upgrades.Length != 1) return false;
+            var upgrade = upgrades[0];
+            return upgrade.AssetKey == "TraitInherentSpellReduceCost" && !upgrade.RemoveOnDiscard && !upgrade.Unique &&
+                !upgrade.ExcludeFromClones && upgrade.UnhealedHealth == 0 && upgrade.DamageBuff == 0 &&
+                !upgrade.RestrictSizeToRoomCapacity && !upgrade.MagicPowerTraitScalingOnly && upgrade.AbilityUpgrade == null &&
+                (upgrade.TriggerUpgrades?.Count ?? 0) == 0 && upgrade.Statuses.Count == 0 && !CardModifierModel.UpgradeInteractions(upgrade).Any() &&
+                upgrade.Stats.Cost == -1 && upgrade.Stats.XCost == 1 &&
+                new[] { "Damage", "Health", "Heal", "Size", "EquipmentLimit", "UpgradeSlotCount" }.All(stat => upgrade.Stats.Value(stat) == 0) &&
+                upgrade.Lifecycle is { } lifecycle && lifecycle.AddedTraits.Count == 1 && Ordinary(lifecycle.AddedTraits[0]) &&
+                lifecycle.RemovedRuntimeTypes.Count == 0 && lifecycle.ReplacedAssets.Count == 0 && lifecycle.Triggers.Count == 0 &&
+                !lifecycle.AvoidClobbering && lifecycle.TraitsModified.Count == 0;
         }
 
         internal static bool SupportedPermafrost(CardInstanceState card)
@@ -146,6 +192,8 @@ namespace MonsterTrain2Poju.Model
             if (!SupportedSourceTraits(card.MaskDescriptor!) ||
                 card.MaskDescriptor.BaseTraits.Any(trait => trait.RuntimeType is not (Trait or "CardTraitExhaustState") &&
                     !(SupportedUndyingSource(card.MaskDescriptor) && trait.RuntimeType == "CardTraitScalingAddStatusEffect") &&
+                    !(SupportedWurmkinSpikeSource(card.MaskDescriptor) && trait.RuntimeType == "CardTraitScalingAddStatusEffect") &&
+                    !(trait.RuntimeType == "CardTraitIntrinsicState" && SupportedIntrinsicSpike(card)) &&
                     !(SupportedStrongerCorruptionSource(card.MaskDescriptor) && trait.RuntimeType is "CardTraitStrongerMagicPower" or "CardTraitCorruptRestricted") &&
                     !(trait.RuntimeType == "CardTraitPermafrost" && SupportedPermafrost(card))) ||
                 card.MaskDescriptor.TemporaryTraits.Count > 1 || card.MaskDescriptor.TemporaryTraits.Any(trait =>
