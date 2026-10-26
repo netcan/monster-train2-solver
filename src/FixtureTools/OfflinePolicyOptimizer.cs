@@ -246,6 +246,10 @@ internal static partial class OfflineBattleSearch
                     best = score; final = branch; outcome = result; route = steps.ToArray();
                     prefixes = prefixes.Take(index + 1).Concat(tailStates.Take(tailStates.Count - 1)).ToList();
                     Require(prefixes.Count == route.Length, "Improved prefix cache lost a model-owned successor.");
+                    // With a retained suffix, an identical input prefix can
+                    // now finish differently against the improved remainder.
+                    // Dedupe only within one incumbent, not across changed tails.
+                    if (retainSuffix) tried.Clear();
                     improvements++; improved = true;
                     if (alternative.Steps.Length == 2) pairImprovements++;
                     Console.WriteLine($"IMPROVE-POLICY pass={pass} decision={index} outcome={outcome} merit={best:F3} " +

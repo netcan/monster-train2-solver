@@ -47,6 +47,14 @@ dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll improve-win `
 第一个决策点。参数末尾新增1..256的候选数；先在当前决策尝试有限条完整路线，
 再转到后续决策。后续迭代跳过已试过的输入，继续尝试余下候选。
 
+保留后续输入的模式下，去重只对当前完整基线有效。一旦找到改进并替换后半段，
+便清空旧候选记录：相同前缀接上新后半段可能得到不同终局，不能继续当成重复。
+不保留后续输入的模式仍沿用原去重；只接受严格改进和完整独立复演的要求不变。
+
+同一第十三组第七战53输入基线，从第8输入开始，90秒／12轮／宽度4／每点2候选
+的修正前后对照均完成37条完整候选，三次改进，导出同一51输入败局，逐字节一致。
+两个结果均通过完整后继／预测／RNG独立复演；该对照不宣称提速或取得新胜局。
+
 ```powershell
 dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll improve-sweep `
   <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> 120000 8 0 4 2
