@@ -40,7 +40,11 @@ namespace MonsterTrain2Poju.Probe
         private readonly HashSet<string> auditedMerchantOffers = new HashSet<string>();
         private readonly HashSet<string> auditedStoryOffers = new HashSet<string>();
         private readonly HashSet<string> unselectableMerchantOffers = new HashSet<string>();
+        private readonly HashSet<string> unselectableStoryChoices = new HashSet<string>();
         private string? pendingMerchantOffer;
+        private string? pendingStoryChoice;
+        private DeckScreen? enteringDeck;
+        private float deckReadyAt;
 
         internal CampaignProgressScenario(ManualLogSource log, bool afterBattle = false)
         {
@@ -146,6 +150,8 @@ namespace MonsterTrain2Poju.Probe
                     deck = save.GetDeckState().Select(CardDescription).ToList() });
             }
             IScreen screen = screens.GetScreen(screens.GetTopScreen());
+            if (screen is not DeckScreen) enteringDeck = null;
+            if (screen is MapScreen) pendingStoryChoice = null;
             if (screen is CharacterDialogueScreen characterDialogue)
             {
                 // Follow the normal skip-confirmation flow: its coroutine owns
@@ -222,12 +228,17 @@ namespace MonsterTrain2Poju.Probe
             }
             if (screen is DeckScreen deck)
             {
+                // Card UIs are initialized by staggered native appearance callbacks.
+                // An empty candidate list on the first frame is not an empty reward.
+                if (!ReferenceEquals(enteringDeck, deck))
+                { enteringDeck = deck; deckReadyAt = Time.realtimeSinceStartup + 1.5f; return; }
+                if (Time.realtimeSinceStartup < deckReadyAt || Field<bool>(deck, "waitingForAnimation")) return;
                 var mode = Field<DeckScreen.Mode>(deck, "mode");
                 string source = Field<GrantableRewardData.Source>(deck, "rewardSource").ToString();
                 if (deck.GetSelectedCardIndex() >= 0)
                 {
                     if (Click(deck.GetConfirmButton(), "confirm-deck-choice", new { mode = mode.ToString(),
-                        source })) pendingMerchantOffer = null;
+                        source })) { pendingMerchantOffer = null; pendingStoryChoice = null; }
                     return;
                 }
                 var infos = Field<IEnumerable>(deck, "cardInfos").Cast<object>();
@@ -240,11 +251,20 @@ namespace MonsterTrain2Poju.Probe
                         card = CardDescription(card.GetCardState()), mode = mode.ToString(),
                         source, allowChampion = Field<bool>(deck, "allowSelectChampion"),
                         eligible = candidates.Select(x => CardDescription(x.GetCardState())).ToList() })) return;
-                if (Click(deck.GetCloseButton(), "close-deck") && pendingMerchantOffer != null)
+                if (Click(deck.GetCloseButton(), "close-deck", new { mode = mode.ToString(), source }))
                 {
-                    unselectableMerchantOffers.Add(pendingMerchantOffer);
-                    Record("decline-unselectable-upgrade", new { offer = pendingMerchantOffer });
-                    pendingMerchantOffer = null;
+                    if (pendingStoryChoice != null)
+                    {
+                        unselectableStoryChoices.Add(pendingStoryChoice);
+                        Record("decline-unselectable-story-choice", new { choice = pendingStoryChoice, mode = mode.ToString(), source });
+                        pendingStoryChoice = null;
+                    }
+                    if (pendingMerchantOffer != null)
+                    {
+                        unselectableMerchantOffers.Add(pendingMerchantOffer);
+                        Record("decline-unselectable-upgrade", new { offer = pendingMerchantOffer });
+                        pendingMerchantOffer = null;
+                    }
                 }
                 return;
             }
@@ -263,10 +283,13 @@ namespace MonsterTrain2Poju.Probe
                 for (int choice = 0; choice < 8; choice++)
                 {
                     int i = lastChoice ? 7 - choice : choice;
+                    string choiceKey = save.GetCurrentDistance() + ":" + Field<StoryEventData>(story, "storyContent").GetID() + ":" + i;
                     if (story.FindChoiceItemButton(i) is StoryChoiceItem item && item.conditionsPassed &&
+                        !unselectableStoryChoices.Contains(choiceKey) &&
                         (!safeAlternative || !SacrificesChampion(item, save)) &&
                         Click(item.button, "event-choice", new { index = i, text = item.choiceText,
-                            order = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_STORY_CHOICE_ORDER") ?? "First" })) return;
+                            order = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_STORY_CHOICE_ORDER") ?? "First" }))
+                    { pendingStoryChoice = choiceKey; return; }
                 }
                 story.TryToFastForward(); return;
             }
