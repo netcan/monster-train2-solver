@@ -8,15 +8,18 @@ internal static class RandomCampaignChecks
     internal static void Curated(string path)
     {
         using var source = ModelJson.ReadFixture(path);
-        if (path.EndsWith("full-battle-random-campaign-13-ring3-refined-search.mt2f", StringComparison.Ordinal))
+        if (path.EndsWith("full-battle-random-campaign-13-ring3-refined-search.mt2f", StringComparison.Ordinal) ||
+            path.EndsWith("full-battle-random-campaign-13-ring5-refined-search.mt2f", StringComparison.Ordinal))
         {
+            bool ring5 = path.EndsWith("-ring5-refined-search.mt2f", StringComparison.Ordinal);
+            int expectedPyre = ring5 ? 56 : 6;
             using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
-            RefinedPair(source.RootElement, replay.RootElement, 1184964217, 0, 2, "Banished", "Wurmkin", 34);
+            RefinedPair(source.RootElement, replay.RootElement, 1184964217, 0, ring5 ? 4 : 2, "Banished", "Wurmkin", 34);
             foreach (var fixture in new[] { source.RootElement, replay.RootElement })
             {
                 var final = fixture.GetProperty("RollingDecisions").EnumerateArray().Last().GetProperty("Actual").Deserialize<BattleTurnState>()!;
-                Require(final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 6,
-                    "Changed thirteenth sample winning refinement: expected Pyre6.");
+                Require(final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == expectedPyre,
+                    "Changed thirteenth sample winning refinement: expected Pyre" + expectedPyre);
             }
             return;
         }
