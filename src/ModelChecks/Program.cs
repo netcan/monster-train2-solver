@@ -6176,6 +6176,30 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-room-death-preview-identity-replay-calibration.mt2f"));
     RoomDeathPreviewIdentityChecks.Native(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-moonbeam-copy-deployment-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-moonbeam-copy-deployment-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-moonbeam-copy-deployment-replay-calibration.mt2f"));
+    MoonbeamCopyChecks.Deployment(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-moonbeam-copy-lifecycle-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-moonbeam-copy-lifecycle-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-moonbeam-copy-lifecycle-replay-calibration.mt2f"));
+    MoonbeamCopyChecks.Lifecycle(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-angel-duo-moon-birth-", StringComparison.OrdinalIgnoreCase) ||
+    Path.GetFileName(path).StartsWith("angel-duo-moon-creation-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-angel-duo-moon-birth-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var birth = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "angel-duo-moon-creation-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-angel-duo-moon-birth-replay-calibration.mt2f"));
+    using var replayBirth = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "angel-duo-moon-creation-replay-calibration.mt2f"));
+    AngelDuoMoonBirthChecks.Native(source.RootElement, birth.RootElement, replay.RootElement, replayBirth.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-outer-boss-moon-", StringComparison.OrdinalIgnoreCase) ||
     Path.GetFileName(path).StartsWith("outer-boss-moon-creation-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-outer-boss-moon-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

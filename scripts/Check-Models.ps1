@@ -260,6 +260,10 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-outer-boss-moon-replay-calibration.mt2f',
     'outer-boss-moon-creation-calibration.mt2f',
     'outer-boss-moon-creation-replay-calibration.mt2f',
+    'player-angel-duo-moon-birth-calibration.mt2f',
+    'angel-duo-moon-creation-calibration.mt2f',
+    'player-angel-duo-moon-birth-replay-calibration.mt2f',
+    'angel-duo-moon-creation-replay-calibration.mt2f',
     'player-moon-conduit-birth-order-calibration.mt2f',
     'player-moon-conduit-birth-order-replay-calibration.mt2f',
     'player-moon-null-boss-relic-calibration.mt2f',
@@ -1701,6 +1705,18 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     $moonArguments = @('--outer-boss-moon-birth-only') + @($outerMoonNames | ForEach-Object { Get-TestFixturePath $_ })
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @moonArguments
     if ($LASTEXITCODE -ne 0) { throw 'Focused outer-boss moon birth pair failed.' }
+    return
+}
+$angelMoonNames = @('player-angel-duo-moon-birth-calibration.mt2f', 'angel-duo-moon-creation-calibration.mt2f',
+    'player-angel-duo-moon-birth-replay-calibration.mt2f', 'angel-duo-moon-creation-replay-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $angelMoonNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Angel duo moon birth checker build failed.' }
+    }
+    $moonArguments = @('--angel-duo-moon-birth-only') + @($angelMoonNames | ForEach-Object { Get-TestFixturePath $_ })
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @moonArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Focused angel duo moon birth pair failed.' }
     return
 }
 if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-terminal-coroutine-planes-counterexample-calibration.mt2f') {

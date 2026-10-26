@@ -67,7 +67,7 @@ identical full states/forecasts/RNG and four zero failure counters.39normal
 reward events reach Ring6; the mixed five-ring chain and28-file checkpoint
 restore(27payloads)pass. Ring6 is being evaluated; see
 [Moonbeam evidence](../tests/fixtures/notes/cards/moonbeam-copy.md).
-The installation mentioned in this historical record was0.2.143; current150 is above.
+The installation mentioned in this historical record was0.2.143; current151 is above.
 No default-budget campaign clear is claimed.
 No Mac package was built. See[terminal capture evidence](../tests/fixtures/notes/combat/terminal-coroutine-planes.md).
 

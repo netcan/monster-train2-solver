@@ -20,4 +20,8 @@ GainBonusOnThreeCardsPlayed在回合开始清空列表、出牌时推进类型�
 
 定向入口`--angel-duo-moon-birth-only <source> <birth> [replay replayBirth]`。
 源局两输入、完整出生组件、状态／控制器／RNG通过；六个错误月相、变体、月相触发、
-回调顺序、传播数值和序列能量控制均保持拒绝。独立原生重放和第六战胜局待验收。
+回调顺序、传播数值和序列能量控制均保持拒绝。独立修正进程
+`.probe-runs/full-battle-units-spells-and-junk-20261026-193118-ecdf7022`的两输入和出生
+组件均通过，完整状态、控制器、物理槽位和RNG匹配。四份原件已归档到
+`tests/fixtures/bosses/outer/`，可用`Check-Models.ps1 -Fixture player-angel-duo-moon-birth-calibration.mt2f`
+定向执行。旧满月Fleshweaver出生及月光束复制对照通过。第六战整场仍待验收。
