@@ -2031,6 +2031,13 @@ if (args.Length is 2 or 3 && args[0] == "--titan-curse-preview-only")
     TitanCursePreviewChecks.Native(source.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--troop-birth-addition-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    TroopBirthAdditionChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--conduit-retirement-battle-only")
 {
     ConduitRetirementChecks.CompletedBattle(args[1]);
