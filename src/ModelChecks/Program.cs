@@ -6153,6 +6153,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replayBirth = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "outer-boss-moon-creation-replay-calibration.mt2f"));
     OuterBossMoonBirthChecks.Native(source.RootElement, birth.RootElement, replay.RootElement, replayBirth.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-moon-conduit-birth-order-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-moon-conduit-birth-order-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-moon-conduit-birth-order-replay-calibration.mt2f"));
+    MoonConduitBirthOrderChecks.Native(source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-moon-null-boss-relic-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-moon-null-boss-relic-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
