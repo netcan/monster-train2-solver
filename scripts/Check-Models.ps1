@@ -287,6 +287,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-troop-combat-birth-replay-calibration.mt2f',
     'player-troop-last-haste-calibration.mt2f',
     'player-troop-last-haste-replay-calibration.mt2f',
+    'player-troop-write-world-calibration.mt2f',
+    'player-troop-write-world-replay-calibration.mt2f',
     'player-remote-preview-frame-calibration.mt2f',
     'player-remote-preview-frame-counterexample-calibration.mt2f',
     'player-remote-preview-frame-replay-calibration.mt2f',
@@ -1778,6 +1780,17 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     $remoteFrameArguments = @('--remote-preview-frame-only') + @($remoteFrameNames | ForEach-Object { Get-TestFixturePath $_ })
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @remoteFrameArguments
     if ($LASTEXITCODE -ne 0) { throw 'Focused remote preview frame pair failed.' }
+    return
+}
+$troopWriteNames = @('player-troop-write-world-calibration.mt2f', 'player-troop-write-world-replay-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $troopWriteNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Troop write world checker build failed.' }
+    }
+    $writeArguments = @('--troop-write-world-only') + @($troopWriteNames | ForEach-Object { Get-TestFixturePath $_ })
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @writeArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Focused troop write world pair failed.' }
     return
 }
 $troopLastHasteNames = @('player-troop-last-haste-calibration.mt2f', 'player-troop-last-haste-replay-calibration.mt2f')
