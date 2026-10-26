@@ -131,7 +131,7 @@ namespace MonsterTrain2Poju.Model
                 source = new TrainCombatState(source.Rooms.Select(room => room.WithUnits(room.Units.Select(unit =>
                     unit.WithoutDestroyedFeeder(destroyedFeeders)).ToArray())).ToArray(), source.Movement,
                     source.EnemySlotsPerRoom, source.Context);
-            return CardSpellModel.WithContext(source, context);
+            return CardSpellModel.WithContext(source, EnchantmentWorldModel.PruneRetiredBirthActors(context));
         }
 
         private static CombatUnit AfterDestruction(CombatUnit unit)
