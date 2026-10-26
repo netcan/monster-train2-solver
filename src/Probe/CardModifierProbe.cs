@@ -257,8 +257,8 @@ namespace MonsterTrain2Poju.Probe
             if (!roomAttachmentUnitUpgrade && upgrade.GetRoomModifierUpgrades().Count > 0)
             {
                 interactions.Add("Upgrade room modifiers");
-                if (upgrade.GetCardUpgradeDataId() == CardSentientDrawUpgradeModel.DataId &&
-                    (upgrade.GetAssetName() != CardSentientDrawUpgradeModel.AssetKey ||
+                if ((upgrade.GetCardUpgradeDataId() is CardSentientDrawUpgradeModel.DataId or CardSentientDrawUpgradeModel.SecondDataId) &&
+                    (!CardSentientDrawUpgradeModel.KnownIdentity(upgrade.GetCardUpgradeDataId(), upgrade.GetAssetName()) ||
                      upgrade.GetRoomModifierUpgrades().Count != 1 ||
                      upgrade.GetRoomModifierUpgrades()[0].GetRoomStateModifierClassName() != UnitRoomResourceModel.Draw ||
                      upgrade.GetRoomModifierUpgrades()[0].GetParamInt() != 1 ||

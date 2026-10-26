@@ -587,6 +587,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-conduit-view-continuation-calibration.mt2f',
     'player-sentient-draw-upgrade-calibration.mt2f',
     'player-sentient-draw-upgrade-replay-calibration.mt2f',
+    'player-sentient-draw-upgrade2-calibration.mt2f',
+    'player-sentient-draw-upgrade2-replay-calibration.mt2f',
     'player-outer-boss-attachment-birth-replay-calibration.mt2f',
     'player-discard-holdover-return-calibration.mt2f',
     'player-discard-holdover-return-replay-calibration.mt2f',
@@ -2124,6 +2126,7 @@ if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
 }
 $branchPairGates = @{
     'player-sentient-draw-upgrade-calibration.mt2f' = '--sentient-draw-upgrade-only'
+    'player-sentient-draw-upgrade2-calibration.mt2f' = '--sentient-draw-upgrade-only'
     'player-effect-test-rng-calibration.mt2f' = '--hand-highlight-rng-pair-only'
     'player-hand-highlight-test-rng-calibration.mt2f' = '--hand-highlight-rng-pair-only'
     'player-unit-ability-duality-calibration.mt2f' = '--unit-ability-duality-pair-only'
