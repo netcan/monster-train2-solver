@@ -160,6 +160,10 @@ namespace MonsterTrain2Poju.Model
                     false, current.Resolving, cardCreation: current.CardCreation, definition: current.Definition);
                 state = Replace(state, Copy(actor, Normalize(current), actor.Triggers, actor.NextTriggerId));
             }
+            // Subsequent manager callbacks refresh their actors from the shared
+            // world. Publish the final definition/common-trigger removal too;
+            // status removal only synchronized the earlier intermediate state.
+            state = EnchantmentWorldModel.Sync(state);
             if (deferCallbacks) return new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: callbacks);
             return Drain() ? new RoomCombatResult(state, outcome, 0, events) : result;
 

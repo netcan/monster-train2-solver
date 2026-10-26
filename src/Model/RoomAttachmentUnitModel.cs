@@ -234,10 +234,11 @@ namespace MonsterTrain2Poju.Model
                 {
                     bool remove = current.Status("untouchable") != null;
                     if (remove ? !IsApplied(current, attachment) : !Affected(current, attachment, state.Context) || IsApplied(current, attachment)) continue;
-                    if (attachment.AssetKey != "EnchantedChamber" || attachment.CharacterUpgrades is not { Count: 1 } ||
+                    if (attachment.CharacterUpgrades is not { Count: 1 } ||
                         attachment.CharacterUpgrades[0] is not CardUpgradeModifier upgrade ||
-                        upgrade.DataId != "68d8696e-ec20-425e-b23d-8a0b9da0dfaf" ||
-                        upgrade.Stats.Damage != 0 || upgrade.Stats.Health != 0 || upgrade.Stats.Size != 0 ||
+                        !(attachment.AssetKey == "EnchantedChamber" && upgrade.DataId == "68d8696e-ec20-425e-b23d-8a0b9da0dfaf" && upgrade.Stats.Damage == 0 ||
+                          attachment.AssetKey == "FightClub" && upgrade.DataId == "f93ac9f7-45d2-47a4-a159-a1b326bd047f" && upgrade.Stats.Damage == 15) ||
+                        upgrade.Stats.Health != 0 || upgrade.Stats.Size != 0 ||
                         upgrade.UnhealedHealth != 0 || upgrade.DamageBuff != 0 || upgrade.ExternalInteractions.Count > 0 ||
                         upgrade.Statuses.Count > 0 || upgrade.TriggerUpgrades?.Count > 0 || upgrade.AbilityUpgrade != null)
                         return Fail("Untouchable room attachment payload requires independent native calibration.");

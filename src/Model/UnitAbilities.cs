@@ -182,6 +182,9 @@ namespace MonsterTrain2Poju.Model
             }
             // Native clears resolving and played-cost queries after both team queues.
             if (!roomAbility) train = Resolving(train, actorId, false);
+            RoomAttachmentUnitSyncResult targetability = RoomAttachmentUnitModel.SynchronizeTargetability(source.Spawn.Train, train);
+            if (!targetability.Supported) return Unsupported(targetability.UnsupportedReason!);
+            train = targetability.State!;
             context = train.Context!;
             context = context.WithStatistics(context.Statistics?.WithPlayedCost(cache.Card.InstanceId, null));
             // Ability cards do not go through CardManager.OnCardPlayed's global
