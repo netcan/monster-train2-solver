@@ -49,6 +49,7 @@ namespace MonsterTrain2Poju.Model
         {
             internal readonly Dictionary<(int, int, int, int, int, int, int?), BattleActionResult> Actions = new Dictionary<(int, int, int, int, int, int, int?), BattleActionResult>();
             internal readonly Dictionary<(int, int, CombatTeam?, string), BattleActionResult> IllegalInputs = new Dictionary<(int, int, CombatTeam?, string), BattleActionResult>();
+            internal readonly Dictionary<(int Card, int Room), BattleActionResult> UnaffordableCards = new Dictionary<(int, int), BattleActionResult>();
             internal readonly Dictionary<(int?, bool), BattleActionEnumeration> Enumerations = new Dictionary<(int?, bool), BattleActionEnumeration>();
             internal readonly Dictionary<int, (SupportedActionCandidate? Candidate, IReadOnlyList<UnsupportedActionAttempt> Omitted)> Tactical = new Dictionary<int, (SupportedActionCandidate?, IReadOnlyList<UnsupportedActionAttempt>)>();
             internal BattleActionEnumeration? Abilities;
@@ -58,11 +59,29 @@ namespace MonsterTrain2Poju.Model
         internal BattleActionResult Play(BattleTurnState source, PlayCardAction action)
         {
             requests++;
-            // Selection payload order is significant. Leave complex selections
-            // with the full model rather than keying them incompletely.
-            if (!enabled || action.RecursionSelections.Count != 0 || action.MixSelections.Count != 0)
+            if (!enabled)
             { simulated++; return BattleActionModel.PlayCard(source, action); }
             var entry = For(source);
+            // Direct card cost is checked before target/position/selection
+            // effects. Reuse only an observed exact cost rejection, scoped to
+            // this immutable decision and room; abilities and spawn-point
+            // inputs have different earlier checks and must bypass this cache.
+            bool direct = action.ActivatorUnitId == 0 && !action.ActivatorRoomIndex.HasValue && action.TargetSpawnPointIndex == -1;
+            var costKey = (action.CardInstanceId, action.RoomIndex);
+            if (direct && entry.UnaffordableCards.TryGetValue(costKey, out var unaffordable))
+            { filtered++; return unaffordable; }
+            void RememberCost(BattleActionResult rejected)
+            {
+                if (direct && rejected.Rejection == ActionRejection.Illegal && rejected.Reason == "Insufficient energy.")
+                    entry.UnaffordableCards[costKey] = rejected;
+            }
+            // Successful complex choices still require their complete payload.
+            if (action.RecursionSelections.Count != 0 || action.MixSelections.Count != 0)
+            {
+                simulated++;
+                var selected = BattleActionModel.PlayCard(source, action);
+                RememberCost(selected); return selected;
+            }
             var key = (action.CardInstanceId, action.RoomIndex, action.PlayerPosition, action.TargetUnitId,
                 action.ActivatorUnitId, action.TargetSpawnPointIndex, action.ActivatorRoomIndex);
             if (entry.Actions.TryGetValue(key, out var result)) { cached++; return result; }
@@ -73,6 +92,7 @@ namespace MonsterTrain2Poju.Model
             if (illegal != null && entry.IllegalInputs.TryGetValue(family, out result))
             { filtered++; return result; }
             simulated++; result = BattleActionModel.PlayCard(source, action);
+            RememberCost(result);
             if (entry.Actions.Count < 256) entry.Actions.Add(key, result);
             // The first representative must actually reach this exact legality
             // rejection. Preserve earlier unsupported diagnostics and modifiers.

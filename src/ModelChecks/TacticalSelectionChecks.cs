@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 
@@ -42,5 +43,72 @@ internal static class TacticalSelectionChecks
     private static void Require(bool condition, string message)
     {
         if (!condition) throw new InvalidOperationException(message);
+    }
+
+    internal static void CostRejections(FixtureValue fixture)
+    {
+        var rows = fixture.GetProperty("RollingDecisions").EnumerateArray();
+        foreach (var row in rows)
+        {
+            var root = row.GetProperty("Root").Deserialize<BattleTurnState>()!;
+            if (root.Energy != 0) continue;
+            foreach (var card in root.Spawn.Train.Context!.Cards.Hand)
+            foreach (var room in root.PlayRules!.Rooms)
+            {
+                var input = new PlayCardAction(card.InstanceId, room.RoomIndex);
+                var rejected = BattleActionModel.PlayCard(root, input);
+                if (rejected.Rejection != ActionRejection.Illegal || rejected.Reason != "Insufficient energy.") continue;
+                var workspace = new BattleSearchWorkspace();
+                workspace.Play(root, input);
+                foreach (var other in new[] {
+                    new PlayCardAction(card.InstanceId, room.RoomIndex, 99, int.MaxValue),
+                    new PlayCardAction(card.InstanceId, room.RoomIndex, recursionSelections:
+                        new[] { new CardRecursionSelection(99, new[] { 1 }) }),
+                    new PlayCardAction(card.InstanceId, room.RoomIndex, mixSelections:
+                        new[] { new ElixirMixSelection(99, 0, 99) }) })
+                {
+                    var plain = BattleActionModel.PlayCard(root, other);
+                    int before = workspace.Metrics.SimulatedCandidates;
+                    var cached = workspace.Play(root, other);
+                    Require(plain.Rejection == cached.Rejection && plain.Reason == cached.Reason &&
+                        cached.State == null && workspace.Metrics.SimulatedCandidates == before,
+                        "Cost rejection differed or simulated target/choice effects before payment.");
+                }
+                foreach (var other in new[] {
+                    new PlayCardAction(card.InstanceId, room.RoomIndex, targetSpawnPointIndex: 0),
+                    new PlayCardAction(card.InstanceId, room.RoomIndex, activatorRoomIndex: room.RoomIndex) })
+                {
+                    int before = workspace.Metrics.SimulatedCandidates;
+                    var plain = BattleActionModel.PlayCard(root, other);
+                    var actual = workspace.Play(root, other);
+                    Require(plain.Rejection == actual.Rejection && plain.Reason == actual.Reason &&
+                        workspace.Metrics.SimulatedCandidates == before + 1,
+                        "Ability/spawn-point inputs reused a direct-card cost rejection.");
+                }
+                var changed = JsonNode.Parse(JsonSerializer.Serialize(root, ModelJson.Options))!;
+                changed["Energy"] = 99;
+                changed["Spawn"]!["Train"]!["Context"]!["QueryFrame"]!["Energy"] = 99;
+                var affordable = changed.Deserialize<BattleTurnState>(ModelJson.Options)!;
+                int simulations = workspace.Metrics.SimulatedCandidates;
+                var fresh = BattleActionModel.PlayCard(affordable, input);
+                var retried = workspace.Play(affordable, input);
+                Require(fresh.Reason != "Insufficient energy." && fresh.Rejection == retried.Rejection &&
+                    fresh.Reason == retried.Reason && workspace.Metrics.SimulatedCandidates == simulations + 1,
+                    "Changed decision energy reused an earlier rejection.");
+                var full = BattleActionModel.EnumerateActions(root);
+                var optimized = new BattleSearchWorkspace().Enumerate(root);
+                Require(JsonSerializer.Serialize(full.UnsupportedAttempts) == JsonSerializer.Serialize(optimized.UnsupportedAttempts) &&
+                    JsonSerializer.Serialize(full.SupportedActions) == JsonSerializer.Serialize(optimized.SupportedActions),
+                    "Cost caching changed the complete legal frontier or unsupported diagnostics.");
+                using var keys = new BattleStateKeys();
+                for (int i = 0; i < full.SupportedCandidates.Count; i++)
+                    Require(full.SupportedCandidates[i].Result.Outcome == optimized.SupportedCandidates[i].Result.Outcome &&
+                        keys.Key(full.SupportedCandidates[i].Result.State!) == keys.Key(optimized.SupportedCandidates[i].Result.State!),
+                        "Cost caching changed a legal successor/RNG.");
+                Console.WriteLine("COST-REJECTION PASS: exact observed rejection, choice/target independence, changed energy, ability/spawn-point bypass and complete frontier/state/RNG identity.");
+                return;
+            }
+        }
+        throw new InvalidOperationException("Missing native zero-energy cost witness.");
     }
 }

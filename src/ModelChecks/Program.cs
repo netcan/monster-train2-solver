@@ -1775,6 +1775,12 @@ if (args.Length == 2 && args[0] == "--tactical-selection-cache-only")
     TacticalSelectionChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--cost-rejection-cache-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TacticalSelectionChecks.CostRejections(fixture.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--parallel-planner-merge-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -6295,6 +6301,7 @@ foreach (string path in args.Where(path => Path.GetFileName(path) ==
 {
     using var fixture = ModelJson.ReadFixture(path);
     TacticalSelectionChecks.Native(fixture.RootElement);
+    TacticalSelectionChecks.CostRejections(fixture.RootElement);
 }
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase) &&
     !path.Contains("parallel-planner-merge-model-", StringComparison.Ordinal) &&
