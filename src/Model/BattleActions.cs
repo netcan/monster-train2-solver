@@ -413,6 +413,8 @@ namespace MonsterTrain2Poju.Model
             if (uiRangeError != null) return Unsupported(uiRangeError);
             if (rule == null) return Unsupported("Missing play definition for " + card.DataId);
             CardInstanceState? playingInstance = context.CardInstances?.FirstOrDefault(item => item.InstanceId == card.InstanceId);
+            if (playingInstance != null && LazarusJuiceSpikeModel.Known(playingInstance))
+                return Unsupported("Native LazarusLeague Spike doubles paid-energy undying after scaling.");
             // Native Unplayable rejects the attempt before card effects or Forge upgrades run.
             if (playingInstance?.MaskDescriptor != null && CardExhaustModel.RefreshTraits(playingInstance)
                 .CombinedTraits?.Any(trait => trait.RuntimeType == "CardTraitUnplayable") == true)

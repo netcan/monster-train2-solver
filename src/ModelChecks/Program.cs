@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--lazarus-juice-spike-only")
+{
+    using var refusal = ModelJson.ReadFixture(args[1]);
+    LazarusJuiceSpikeChecks.Native(refusal.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 or 4 && args[0] == "--echo-juice-spike-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6649,6 +6655,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-com
     CombatVictoryStatisticsChecks.Native(fixture.RootElement, replay.RootElement, retention.RootElement);
     RoomCombatChecks.NativeRoomOnly(path);
     RoomCombatChecks.NativeRoomOnly(ModelJson.RelatedFixture(path, "player-combat-victory-cache-retention-counterexample-calibration.mt2f"));
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-lazarus-juice-spike-deployment-refusal-calibration.mt2f"))
+{
+    using var refusal = ModelJson.ReadFixture(path);
+    LazarusJuiceSpikeChecks.Native(refusal.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-juice-spike-copy-calibration.mt2f"))
 {

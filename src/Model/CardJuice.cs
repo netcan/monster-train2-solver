@@ -45,6 +45,8 @@ namespace MonsterTrain2Poju.Model
         {
             if (!Present(card)) return null;
             if (card.MaskDescriptor == null) return "Juice requires captured card traits.";
+            if (card.DataId == LazarusJuiceSpikeModel.DataId)
+                return LazarusJuiceSpikeModel.Known(card) ? null : "Juice with this card or ordered scaling traits requires native calibration.";
             // Original Lifesteal/Scorch,Ritual of Battle,and calibrated merchant owners.
             // Ordered scaling callbacks and other owners remain explicit gaps.
             var traits = CardExhaustModel.RefreshTraits(card).CombinedTraits!;
