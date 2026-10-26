@@ -91,3 +91,7 @@ dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll improve-sweep `
 这些完整路线的独立复演通过，均未计原生胜局。Covenant3第52输入后另用60秒
 确定性枚举探索508节点／506终局，零不支持，未找到胜局，但搜索未穷尽；
 `terminalOptimal=false`、`horizonOptimal=false`，不构成无胜法证明。
+
+0.2.112调查还从Covenant3第40输入起，以120秒、每点两候选、第二输入宽度8
+扫描后半场；53条路线全部完整、35条双输入候选、零不支持、零改进，不导出新件。
+保留首领499生命的既有最好模型败局，未重复原生运行这批败路。
