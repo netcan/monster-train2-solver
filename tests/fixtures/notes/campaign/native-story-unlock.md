@@ -220,3 +220,9 @@ defeat, not a native victory or a natural-unlock acceptance. A following90s
 scan from input0 reaches input44 and completes77/77 candidates with no further
 improvement or unsupported branches; no new output or redundant native loss
 replay is produced. Extra hearts remain0/9 at the last accepted checkpoint.
+
+Under0.2.166, bounded complete alternatives with coupled actions complete195
+of196 candidates in180s,27 paired actions,zero unsupported branches and four
+strict improvements. Independent export verifies59 inputs,one boss killed,
+the other393 health. It remains a model defeat; no redundant native loss is
+run and no new natural-unlock or extra-heart acceptance is claimed.
