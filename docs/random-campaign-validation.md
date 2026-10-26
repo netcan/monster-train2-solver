@@ -106,8 +106,12 @@ RNG及四项零失败通过，原始玩家／输入文件不变。两个败局�
 混合七战链`Simulations=0`、`AllRingsUseDefaultBudget=false`，未计全默认通关。
 `results/campaign-checkpoints/random12-ring8-refined114.zip`含36文件，SHA256
 `a86c514eb72b53e876346d5a84131eaacde947c073f2b5be06a0932fb2d7cc21`，
-独立恢复35项载荷匹配。终战实际默认在零输入处被
-`RelicEffectAddPostBattleReward on VoidPortal`保护拒绝；保留原件并校准该边界。
+独立恢复35项载荷匹配。终战0.2.114实际默认在零输入处被
+`RelicEffectAddPostBattleReward on VoidPortal`保护拒绝；原件保留。
+0.2.115仅放开该原生战后奖励效果，原拒绝／修复后的首个部署EndTurn已在独立
+原生双进程完成完整状态／RNG校准，未知伴随效果和另一奖励类型仍拒绝。
+原有108组战后奖励收集检查通过；继续相同检查点的实际终战，未计通关。
+见[战后奖励遗物战斗边界](../tests/fixtures/notes/campaign/post-battle-reward-combat.md)。
 
 0.2.114已提交载荷`84bfb625`的首战实际10000ms／双线程24输入、薪火80
 原生双胜，19次出牌、五次结束回合、九列车阶段，完整状态／预测／RNG和

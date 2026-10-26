@@ -170,6 +170,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-triggered-corruption-relic-replay-calibration.mt2f',
     'player-draft-upgrade-combat-calibration.mt2f',
     'player-draft-upgrade-combat-replay-calibration.mt2f',
+    'player-post-battle-reward-combat-calibration.mt2f',
+    'player-post-battle-reward-combat-replay-calibration.mt2f',
     'player-unbox-conduit-replay-calibration.mt2f',
     'player-outer-boss-death-statistics-calibration.mt2f',
     'player-outer-boss-death-statistics-replay-calibration.mt2f',
@@ -1723,6 +1725,7 @@ $branchPairGates = @{
     'player-triggered-corruption-calibration.mt2f' = '--triggered-corruption-only'
     'player-triggered-corruption-relic-calibration.mt2f' = '--triggered-corruption-relic-only'
     'player-draft-upgrade-combat-calibration.mt2f' = '--draft-upgrade-combat-only'
+    'player-post-battle-reward-combat-calibration.mt2f' = '--post-battle-reward-combat-pair-only'
     'player-consume-kill-copy-calibration.mt2f' = '--consume-kill-copy-pair-only'
     'player-sacrifice-preview-calibration.mt2f' = '--sacrifice-preview-pair-only'
     'player-pyre-max-health-calibration.mt2f' = '--pyre-max-health-pair-only'
