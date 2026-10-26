@@ -103,6 +103,12 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-17-ring2-covenant3-release174-budget10000-search.mt2f',
     'full-battle-random-campaign-17-ring2-covenant3-release174-budget10000-replay.mt2f',
     'player-ability-presentation-mutation-calibration.mt2f',
+    'full-battle-random-campaign-16-ring5-release175-budget10000-search.mt2f',
+    'full-battle-random-campaign-16-ring5-release175-budget10000-replay.mt2f',
+    'player-fleshweaver-merchant-birth-calibration.mt2f',
+    'fleshweaver-merchant-creation-calibration.mt2f',
+    'player-fleshweaver-merchant-birth-replay-calibration.mt2f',
+    'fleshweaver-merchant-creation-replay-calibration.mt2f',
     'full-battle-random-campaign-16-ring2-release173-budget10000-search.mt2f',
     'full-battle-random-campaign-16-ring2-release173-budget10000-replay.mt2f',
     'player-arkion-moon-birth-calibration.mt2f',
@@ -1780,6 +1786,18 @@ if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-ability-prese
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --ability-presentation-only $fixtures[0]
     if ($LASTEXITCODE -ne 0) { throw 'Focused ability presentation counterexample failed.' }
+    return
+}
+$fleshweaverMerchantNames = @('player-fleshweaver-merchant-birth-calibration.mt2f', 'fleshweaver-merchant-creation-calibration.mt2f',
+    'player-fleshweaver-merchant-birth-replay-calibration.mt2f', 'fleshweaver-merchant-creation-replay-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $fleshweaverMerchantNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Fleshweaver merchant birth checker build failed.' }
+    }
+    $birthArguments = @('--fleshweaver-merchant-birth-only') + @($fleshweaverMerchantNames | ForEach-Object { Get-TestFixturePath $_ })
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @birthArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Focused Fleshweaver merchant birth pair failed.' }
     return
 }
 $arkionMoonNames = @('player-arkion-moon-birth-calibration.mt2f', 'arkion-moon-creation-calibration.mt2f',

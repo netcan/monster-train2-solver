@@ -30,11 +30,17 @@ internal static class AbilityPresentationChecks
         Require(keys.Key(published) != keys.Key(actual), "The real allocator/cache mutation must remain keyed.");
         if (repaired.HasValue)
         {
-            var player = repaired.Value.GetProperty("PlayerAdvisor");
-            Require(player.GetProperty("SkillPresentationChecks").GetInt32() > 0 &&
-                player.GetProperty("ColdSkillPresentationChecks").GetInt32() > 0 &&
-                player.GetProperty("Overlay").GetProperty("Failures").GetInt32() == 0,
-                "Missing full-state/RNG-pure expanded and collapsed cold-cache native render checks.");
+            Require(repaired.Value.GetProperty("NativeCompleted").GetBoolean(), "Original native prefix did not finish.");
+            var render = repaired.Value.GetProperty("SkillPresentation");
+            var renderRoot = render.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            Require(ModelJson.Difference(JsonSerializer.Serialize(published, ModelJson.Options),
+                    JsonSerializer.Serialize(renderRoot, ModelJson.Options)) == null &&
+                render.GetProperty("Before").ContentEquals(render.GetProperty("After")) &&
+                render.GetProperty("Steps").GetArrayLength() == 5 && render.GetProperty("Outcome").GetInt32() == (int)RoomOutcome.BattleWon &&
+                render.GetProperty("Expanded").GetString()!.Contains("【单位技能】") &&
+                render.GetProperty("SearchesBefore").ContentEquals(render.GetProperty("SearchesAfter")) &&
+                render.GetProperty("GenerationBefore").ContentEquals(render.GetProperty("GenerationAfter")),
+                "Original winning suffix did not render both modes without native state/RNG/planning changes.");
         }
         Console.WriteLine("ABILITY-PRESENTATION PASS: exact native cold-cache mutation remains keyed; complete restored state/RNG; repairedNative=" + repaired.HasValue);
     }

@@ -35,7 +35,7 @@ namespace MonsterTrain2Poju.Probe
             if (!OuterBossPhaseProbe.Supports(data))
                 interactions.Add("Outer-boss definition or action signature requires separate calibration.");
             AllGameManagers managers = AllGameManagers.Instance;
-            bool covenantsSupported = CovenantBirthStatProbe.OuterBossCalibrated(managers.GetSaveManager(), data);
+            bool covenantsSupported = CovenantBirthStatProbe.OuterBossStatsCalibrated(managers.GetSaveManager());
             if (!covenantsSupported)
                 interactions.Add("Outer-boss OnSpawn Covenant effects require separate calibration.");
             if (!substitutionsSupported)
@@ -88,7 +88,7 @@ namespace MonsterTrain2Poju.Probe
                 {
                     if (row.Created == null) throw new InvalidOperationException("Native outer-boss creation callback was missing.");
                     var interactions = new List<string>();
-                    if (!CovenantBirthStatProbe.OuterBossCalibrated(AllGameManagers.Instance.GetSaveManager(), row.Created.GetSourceCharacterData()))
+                    if (!CovenantBirthStatProbe.OuterBossStatsCalibrated(AllGameManagers.Instance.GetSaveManager()))
                         interactions.Add("Outer-boss OnSpawn Covenant effects require separate calibration.");
                     CombatUnit unit = FullBattleTrace.Active!.CaptureUnit(row.Created, interactions);
                     row.Definition = unit;

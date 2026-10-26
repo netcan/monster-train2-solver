@@ -65,6 +65,12 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             object? equipmentPreviewClear = null;
+            object? skillPresentation = null;
+            if (request.GetProperty("Reason").GetString() == "Native skill presentation must not create ability cards.")
+                skillPresentation = PlayerAdvisorProbe.VerifySkillPresentation(actual,
+                    request.GetProperty("SkillPresentationSteps").EnumerateArray().Select(value =>
+                        new BattleSearchStep(Read<PlayCardAction?>(value.GetProperty("Action")),
+                            value.GetProperty("IsEndTurn").GetBoolean())).ToArray());
             if (request.GetProperty("Reason").GetString() == "Native equipment preview clears the card-side owner while unit membership persists.")
             {
                 FullBattleTrace trace = FullBattleTrace.Active!;
@@ -86,6 +92,7 @@ namespace MonsterTrain2Poju.Probe
                 PlayerAdvisor = PlayerAdvisorProbe.Evidence,
                 EquipmentOwnerRecoveries = FullBattleTrace.Active!.EquipmentOwnerRecoveries.ToArray(),
                 EquipmentPreviewClear = equipmentPreviewClear,
+                SkillPresentation = skillPresentation,
                 FloorTransitionPiercing = CaptureFloorTransitionPiercing(),
                 RoomAttachmentMovement = roomAttachmentMovement.ToArray(),
                 TriggeredCorruption = TriggeredCorruptionProbe.Records.ToArray(),

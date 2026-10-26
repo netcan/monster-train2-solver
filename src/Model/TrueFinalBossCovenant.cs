@@ -91,7 +91,8 @@ namespace MonsterTrain2Poju.Model
                 // Owner identities/effect signatures and birth origins remain
                 // validated below; this encounter is not limited to rank two.
                 OuterBossDefinitions.IsArkionPyre(asset) ||
-                (OuterBossDefinitions.IsArkionRage(asset) || asset == "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth") &&
+                (OuterBossDefinitions.IsArkionRage(asset) || asset == "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth" ||
+                    asset == "Boss_Level3_Fleshweaver_Corruption") &&
                     NaturalMerchantOwners(owners) ||
                 (OuterBossDefinitions.IsAngelDuo(asset) || OuterBossDefinitions.IsCael(asset) ||
                     OuterBossDefinitions.IsArkionPyre(asset) || OuterBossDefinitions.IsArkionRage(asset) || OuterBossDefinitions.IsArkionPush(asset) ||

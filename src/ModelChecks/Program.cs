@@ -2206,6 +2206,15 @@ if (args.Length is 3 or 5 && args[0] == "--arkion-moon-birth-only")
     ArkionMoonBirthChecks.Native(source.RootElement, birth.RootElement, replay?.RootElement, replayBirth?.RootElement);
     return;
 }
+if (args.Length is 3 or 5 && args[0] == "--fleshweaver-merchant-birth-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var birth = ModelJson.ReadFixture(args[2]);
+    using var replay = args.Length == 5 ? ModelJson.ReadFixture(args[3]) : null;
+    using var replayBirth = args.Length == 5 ? ModelJson.ReadFixture(args[4]) : null;
+    FleshweaverMerchantBirthChecks.Native(source.RootElement, birth.RootElement, replay?.RootElement, replayBirth?.RootElement);
+    return;
+}
 if (args.Length is 3 or 5 && args[0] == "--outer-boss-moon-birth-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6382,6 +6391,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-abi
 {
     using var source = ModelJson.ReadFixture(path);
     AbilityPresentationChecks.Native(source.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-fleshweaver-merchant-birth-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var birth = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "fleshweaver-merchant-creation-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-fleshweaver-merchant-birth-replay-calibration.mt2f"));
+    using var replayBirth = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "fleshweaver-merchant-creation-replay-calibration.mt2f"));
+    FleshweaverMerchantBirthChecks.Native(source.RootElement, birth.RootElement, replay.RootElement, replayBirth.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-prepared-selection-publication-calibration.mt2f"))
 {

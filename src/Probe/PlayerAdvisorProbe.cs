@@ -562,6 +562,57 @@ namespace MonsterTrain2Poju.Probe
             return false;
         }
 
+        internal static object VerifySkillPresentation(BattleTurnState root, BattleSearchStep[] steps)
+        {
+            Resolve();
+            BattleTurnState state = root;
+            RoomOutcome outcome = RoomOutcome.Exchanged;
+            foreach (BattleSearchStep step in steps)
+            {
+                if (step.IsEndTurn)
+                {
+                    BattleTurnResult next = BattleTurnModel.EndTurn(state);
+                    Require(next.Supported, next.UnsupportedReason ?? "skill suffix unsupported");
+                    state = next.State!; outcome = next.Outcome;
+                }
+                else
+                {
+                    BattleActionResult next = BattleActionModel.PlayCard(state, step.Action!);
+                    Require(next.Supported, next.Reason ?? "skill suffix unsupported");
+                    state = next.State!; outcome = next.Outcome;
+                }
+            }
+            Require(outcome == RoomOutcome.BattleWon && steps.Any(step => step.Action?.ActivatorUnitId > 0),
+                "expected the original complete winning skill suffix");
+            var plan = new BattlePlanResult(state, outcome, steps, BattlePlanner.Evaluate(state, outcome),
+                steps.Count(step => step.IsEndTurn), 0, 0, 0, TimeSpan.Zero, false, false, false, false, true, Array.Empty<UnsupportedActionAttempt>(), null);
+            using var keys = new BattleStateKeys();
+            var rendered = new BattleAdvice(root, keys.Key(root), plan, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero,
+                System.Diagnostics.Stopwatch.GetTimestamp());
+            var session = Field<BattleAdviceSession>("session");
+            long searches = session.SearchCount, generation = session.Generation;
+            bool expanded = Field<bool>("showFullPlan");
+            string[] texts = new string[2];
+            try
+            {
+                int index = 0;
+                foreach (bool mode in new[] { true, false })
+                {
+                    AccessTools.Field(type!, "showFullPlan").SetValue(advisor, mode);
+                    texts[index++] = (string)Call("Describe", rendered)!;
+                    Require(keys.Key(Capture()) == rendered.RootKey && session.SearchCount == searches && session.Generation == generation,
+                        "rendering the original skill suffix changed native state/RNG or planning");
+                }
+            }
+            finally { AccessTools.Field(type!, "showFullPlan").SetValue(advisor, expanded); }
+            Require(texts[0].Contains("【单位技能】") && root.Spawn.Train.Context!.AbilityCardCache!.Count == 0,
+                "missing original cold-cache skill label");
+            log!.LogInfo("PLAYER-SKILL-PRESENTATION-PURE-PASS originalWinningSteps=" + steps.Length + " modes=2 searches=" + searches);
+            return new { Before = root, After = Capture(), Steps = steps, Outcome = outcome,
+                Expanded = texts[0], Collapsed = texts[1], SearchesBefore = searches, SearchesAfter = session.SearchCount,
+                GenerationBefore = generation, GenerationAfter = session.Generation };
+        }
+
         private static bool Ready()
         {
             BattleAdviceSession session = Field<BattleAdviceSession>("session");

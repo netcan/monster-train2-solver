@@ -10,6 +10,7 @@ frozen native replay followed by normal rewards/map navigation.
 | 2 | 0.2.171 | 26 / 21 / 5 | 9 | 52 |
 | 3 | 0.2.172 | 41 / 34 / 7 | 13 | 66 |
 | 4 | 0.2.174 | 40 / 33 / 7 | 13 | 58 |
+| 5 | 0.2.175 | 34 / 27 / 7 | 14 | 39 |
 
 Both full-state/forecast/RNG comparisons and all four failure counters pass.
 Ring2 ends with Pyre80; its normal successor save SHA256 is
@@ -37,8 +38,18 @@ The four-ring uninterrupted save/DLL/receipt chain passes without simulations.
 The exact accepted0.2.174 payload was installed on Windows at02:00; protected
 saves/configuration/other mods remain unchanged. No campaign clear is claimed.
 
+Ring5's clean0.2.175 default source and independent native replay both win with
+Pyre97,14train stages and all four failure counters zero.39normal events reach
+Ring6; successor save SHA256
+41C22BC61321990548B72681B341E140696F2BC7AF4118E00A3918119AF77A98.
+This34-input route does not itself reproduce the previous35-input skill-cache
+publication counterexample. Its exact remaining five-step winning skill suffix
+is under separate native presentation-purity acceptance. Ring6's newly observed
+outer-boss moon birth remains guarded; no Ring6 win is claimed.
+
 Acceptance journals: random-campaign-20261027-004637-7c66e619 and
 random-campaign-20261027-011828-188c3278 and
 random-campaign-20261027-013254-b0e8a219 and
-random-campaign-20261027-015020-ea8a125a. No offline improvement was used for
+random-campaign-20261027-015020-ea8a125a and
+random-campaign-20261027-020942-866a483e. No offline improvement was used for
 any accepted ring. Real saves/configuration/other mods remain unchanged.

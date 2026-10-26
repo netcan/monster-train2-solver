@@ -62,15 +62,13 @@ namespace MonsterTrain2Poju.Probe
             return result;
         }
 
-        internal static bool OuterBossCalibrated(SaveManager save, CharacterData data)
+        internal static bool OuterBossStatsCalibrated(SaveManager save)
         {
             if (save.GetCovenantsForSpawnPattern().Count == 0) return true;
-            // Projection and modeled creation share the same identity/effect
-            // boundary, including cumulative Arkion Pyre Covenants.
-            CombatRelicState[] owners = save.GetCovenants().Select(owner => new CombatRelicState(
-                owner.GetRelicDataID(), owner.GetSourceRelicData().name,
-                owner.GetEffects().Select(effect => effect.GetType().Name).ToArray(), isCovenant: true)).ToArray();
-            if (!TrueFinalBossCovenantModel.CalibratedOuterBossOwners(owners, data.GetAssetKey())) return false;
+            // Capture the already calibrated, read-only Covenant stat query.
+            // Creation and placement separately reject uncalibrated boss/owner
+            // combinations in the model; retain the native stats for their
+            // isolated calibration rather than dropping this evidence.
             return save.GetCovenantsForSpawnPattern().Select(owner => owner.GetRelicDataID()).SequenceEqual(
                 save.GetCovenants().Select(owner => owner.GetRelicDataID())) &&
                 WavesCalibrated(save);
