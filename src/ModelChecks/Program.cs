@@ -6082,6 +6082,16 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-wurmkin-spike-copy-deployment-replay-calibration.mt2f"));
     WurmkinSpikeCopyChecks.Deployment(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-echoes-past-recast-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, Path.GetFileName(path).Contains("-zero-", StringComparison.OrdinalIgnoreCase)
+        ? "player-echoes-past-recast-zero-calibration.mt2f" : "player-echoes-past-recast-calibration.mt2f"))
+    .Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path,
+        Path.GetFileName(path).Replace("-calibration.mt2f", "-replay-calibration.mt2f")));
+    EchoesPastRecastChecks.Native(source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-challenge-recast-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-challenge-recast-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

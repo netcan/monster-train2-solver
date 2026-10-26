@@ -213,6 +213,10 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-intrinsic-infusion-zero-replay-calibration.mt2f',
     'player-challenge-recast-calibration.mt2f',
     'player-challenge-recast-replay-calibration.mt2f',
+    'player-echoes-past-recast-calibration.mt2f',
+    'player-echoes-past-recast-replay-calibration.mt2f',
+    'player-echoes-past-recast-zero-calibration.mt2f',
+    'player-echoes-past-recast-zero-replay-calibration.mt2f',
     'player-corrupt-bloodsuit-calibration.mt2f',
     'player-corrupt-bloodsuit-replay-calibration.mt2f',
     'player-wurmkin-spike-copy-deployment-calibration.mt2f',
@@ -1826,6 +1830,8 @@ $branchPairGates = @{
     'player-intrinsic-infusion-calibration.mt2f' = '--intrinsic-infusion-only'
     'player-intrinsic-infusion-zero-calibration.mt2f' = '--intrinsic-infusion-only'
     'player-challenge-recast-calibration.mt2f' = '--challenge-recast-only'
+    'player-echoes-past-recast-calibration.mt2f' = '--echoes-past-recast-only'
+    'player-echoes-past-recast-zero-calibration.mt2f' = '--echoes-past-recast-only'
     'player-wurmkin-spike-copy-deployment-calibration.mt2f' = '--wurmkin-spike-copy-deployment-only'
     'player-wurmkin-spike-copy-calibration.mt2f' = '--wurmkin-spike-copy-only'
     'player-spent-monster-spell-relic-calibration.mt2f' = '--spent-monster-spell-relic-only'
