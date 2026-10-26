@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--moremass-moon-birth-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    MoreMassMoonBirthChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 or 4 && args[0] == "--echo-waxen-spike-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6634,6 +6641,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-ech
     using var endTurn = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-waxen-spike-endturn-calibration.mt2f"));
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-waxen-spike-endturn-replay-calibration.mt2f"));
     EchoWaxenSpikeChecks.Native(source.RootElement, endTurn.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-moremass-moon-birth-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    MoreMassMoonBirthChecks.Native(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-room-upgrade-provenance-counterexample-calibration.mt2f"))
 {
