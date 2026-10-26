@@ -198,6 +198,29 @@ namespace MonsterTrain2Poju.Probe
         }
 
         private static T Read<T>(FixtureValue value) => PlannerReplayScenario.Read<T>(value);
+        internal static IEnumerator ObserveTroop(RoomStateTroopUnitUpgradeModifier modifier, RoomState room, IEnumerator operation)
+        {
+            bool observing = waiting && rows.Count > 0 && rows.Last().Boundary &&
+                request.GetProperty("Reason").GetString() ==
+                    "Battle preview floor 1: Combined troop upgrades and enchantment source ordering require native calibration.";
+            object? before = observing ? TroopSnapshot() : null;
+            while (operation.MoveNext()) yield return operation.Current;
+            if (observing) rows.Last().TroopUpdates.Add(new { Before = before, After = TroopSnapshot() });
+
+            object TroopSnapshot()
+            {
+                var trace = FullBattleTrace.Active!;
+                var units = new List<CharacterState>();
+                room.AddCharactersToList(units, Team.Type.Monsters);
+                return new { Preview = AllGameManagers.Instance!.GetSaveManager().PreviewMode, Room = room.GetRoomIndex(),
+                    Cache = ((List<CharacterState>)AccessTools.Field(modifier.GetType(), "cachedAffectedTargets")
+                        .GetValue(modifier)).Select(trace.UnitId).ToArray(),
+                    Units = units.Select(unit => new { Id = trace.UnitId(unit), Asset = unit.GetSourceCharacterData().GetAssetKey(),
+                        Attack = unit.GetAttackDamageWithoutStatusEffectBuffs(), Horde = unit.GetStatusEffectStacks("horde"),
+                        Trample = unit.GetStatusEffectStacks("trample"),
+                        Upgrades = unit.GetAppliedCardUpgrades().Select(upgrade => upgrade.GetCardUpgradeDataId()).ToArray() }).ToArray() };
+            }
+        }
         internal static IEnumerator ObserveDamage(CardEffectState effect, CardEffectParams args, IEnumerator operation)
         {
             if (waiting && rows.Count > 0 && rows.Last().Boundary &&
@@ -232,6 +255,7 @@ namespace MonsterTrain2Poju.Probe
             public object? RoomAttachmentsBefore { get; set; }
             public object? RoomAttachmentsAfter { get; set; }
             public List<object> DamageEffects { get; } = new List<object>();
+            public List<object> TroopUpdates { get; } = new List<object>();
         }
     }
 
@@ -248,6 +272,15 @@ namespace MonsterTrain2Poju.Probe
         {
             if (UnsupportedBranchObservation.Enabled)
                 __result = UnsupportedBranchObservation.ObserveDamage(cardEffectState, cardEffectParams, __result);
+        }
+    }
+    [HarmonyPatch(typeof(RoomStateTroopUnitUpgradeModifier), nameof(RoomStateTroopUnitUpgradeModifier.OnUnitOrderPossiblyChanged))]
+    internal static class UnsupportedBranchTroopObservation
+    {
+        private static void Postfix(RoomStateTroopUnitUpgradeModifier __instance, RoomState room, ref IEnumerator __result)
+        {
+            if (UnsupportedBranchObservation.Enabled)
+                __result = UnsupportedBranchObservation.ObserveTroop(__instance, room, __result);
         }
     }
 }
