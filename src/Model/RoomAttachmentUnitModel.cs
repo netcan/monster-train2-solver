@@ -217,6 +217,40 @@ namespace MonsterTrain2Poju.Model
             return new RoomAttachmentUnitSyncResult(state);
         }
 
+        internal static RoomAttachmentUnitSyncResult SynchronizeTargetability(TrainCombatState before, TrainCombatState after)
+        {
+            if (after.Context?.RoomCapacities?.Any(room => room.Attachments?.Count > 0) != true)
+                return new RoomAttachmentUnitSyncResult(after);
+            TrainCombatState state = after;
+            foreach (RoomCombatState oldRoom in before.Rooms)
+            foreach (CombatUnit previous in oldRoom.Units)
+            {
+                RoomCombatState? room = state.Rooms.FirstOrDefault(item => item.RoomIndex == oldRoom.RoomIndex &&
+                    item.Units.Any(unit => unit.Id == previous.Id));
+                CombatUnit? current = room?.Units.FirstOrDefault(unit => unit.Id == previous.Id);
+                if (current == null || (previous.Status("untouchable") != null) == (current.Status("untouchable") != null)) continue;
+                foreach (RoomCapacityAttachmentState attachment in state.Context?.RoomCapacities?
+                    .FirstOrDefault(item => item.RoomIndex == room!.RoomIndex)?.Attachments ?? Array.Empty<RoomCapacityAttachmentState>())
+                {
+                    bool remove = current.Status("untouchable") != null;
+                    if (remove ? !IsApplied(current, attachment) : !Affected(current, attachment, state.Context) || IsApplied(current, attachment)) continue;
+                    if (attachment.AssetKey != "EnchantedChamber" || attachment.CharacterUpgrades is not { Count: 1 } ||
+                        attachment.CharacterUpgrades[0] is not CardUpgradeModifier upgrade ||
+                        upgrade.DataId != "68d8696e-ec20-425e-b23d-8a0b9da0dfaf" ||
+                        upgrade.Stats.Damage != 0 || upgrade.Stats.Health != 0 || upgrade.Stats.Size != 0 ||
+                        upgrade.UnhealedHealth != 0 || upgrade.DamageBuff != 0 || upgrade.ExternalInteractions.Count > 0 ||
+                        upgrade.Statuses.Count > 0 || upgrade.TriggerUpgrades?.Count > 0 || upgrade.AbilityUpgrade != null)
+                        return Fail("Untouchable room attachment payload requires independent native calibration.");
+                    RoomCombatState changed = room!;
+                    if (!ApplyUpgrade(ref changed, current.Id, attachment, upgrade, remove, out string? error)) return Fail(error!);
+                    state = WithRoom(state, changed);
+                    room = state.Rooms.Single(item => item.RoomIndex == room!.RoomIndex);
+                    current = room.Units.Single(unit => unit.Id == previous.Id);
+                }
+            }
+            return new RoomAttachmentUnitSyncResult(state);
+        }
+
         private static bool SameAttachment(RoomCapacityState? left, RoomCapacityState? right)
         {
             RoomCapacityAttachmentState? a = left?.Attachments?.SingleOrDefault();

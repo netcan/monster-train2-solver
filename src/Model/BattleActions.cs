@@ -1175,6 +1175,9 @@ namespace MonsterTrain2Poju.Model
             }
             // CardManager.OnCardPlayed refreshes auras after discard/cost clearing,
             // then drains their callbacks before the UI combat preview can start.
+            RoomAttachmentUnitSyncResult targetability = RoomAttachmentUnitModel.SynchronizeTargetability(source.Spawn.Train, train);
+            if (!targetability.Supported) return Unsupported(targetability.UnsupportedReason!);
+            train = targetability.State!; context = train.Context!;
             TrainCombatResult cardCompleted = EnchantmentWorldModel.UpdateAll(train);
             if (!cardCompleted.Supported) return Unsupported(cardCompleted.UnsupportedReason!);
             train = cardCompleted.State!; context = train.Context!;

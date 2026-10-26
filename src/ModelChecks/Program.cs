@@ -1,5 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 4 && args[0] == "--untouchable-room-attachment-only")
+{
+    using var battle = ModelJson.ReadFixture(args[1]);
+    using var source = args.Length == 4 ? ModelJson.ReadFixture(args[2]) : null;
+    using var replay = args.Length == 4 ? ModelJson.ReadFixture(args[3]) : null;
+    UntouchableRoomAttachmentChecks.Native(battle.RootElement, source?.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 3 or 4 && args[0] == "--ability-cache-continuation-only")
 {
     using var mismatch = ModelJson.ReadFixture(args[1]);
@@ -6432,6 +6440,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-aut
     using var source = ModelJson.ReadFixture(path);
     using var prefix = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-auto-focus-no-preview-prefix-calibration.mt2f"));
     AutomaticFocusPreviewChecks.Native(source.RootElement, prefix.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-untouchable-room-counterexample-calibration.mt2f"))
+{
+    using var battle = ModelJson.ReadFixture(path);
+    using var source = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-untouchable-room-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-untouchable-room-replay-calibration.mt2f"));
+    UntouchableRoomAttachmentChecks.Native(battle.RootElement, source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-moon-silence-reset-counterexample-calibration.mt2f"))
 {

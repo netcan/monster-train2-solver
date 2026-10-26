@@ -112,6 +112,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-moon-silence-reset-counterexample-calibration.mt2f',
     'player-moon-silence-reset-calibration.mt2f',
     'player-moon-silence-reset-replay-calibration.mt2f',
+    'player-untouchable-room-counterexample-calibration.mt2f',
+    'player-untouchable-room-calibration.mt2f',
+    'player-untouchable-room-replay-calibration.mt2f',
     'player-cael-moon-birth-calibration.mt2f',
     'cael-moon-creation-calibration.mt2f',
     'player-cael-moon-birth-replay-calibration.mt2f',
@@ -1801,6 +1804,17 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     $refinedArguments = @('--random-refined-campaign-pair-only') + @($sample17RefinedNames | ForEach-Object { Get-TestFixturePath $_ }) + @('278140591','3','2','Hellhorned','Banished','34')
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @refinedArguments
     if ($LASTEXITCODE -ne 0) { throw 'Focused refined campaign pair failed.' }
+    return
+}
+$untouchableRoomNames = @('player-untouchable-room-counterexample-calibration.mt2f', 'player-untouchable-room-calibration.mt2f', 'player-untouchable-room-replay-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $untouchableRoomNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Untouchable room checker build failed.' }
+    }
+    $untouchableArguments = @('--untouchable-room-attachment-only') + @($untouchableRoomNames | ForEach-Object { Get-TestFixturePath $_ })
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @untouchableArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Focused Untouchable room pair failed.' }
     return
 }
 $moonSilenceNames = @('player-moon-silence-reset-counterexample-calibration.mt2f', 'player-moon-silence-reset-calibration.mt2f', 'player-moon-silence-reset-replay-calibration.mt2f')
