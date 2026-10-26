@@ -251,6 +251,13 @@ if (args.Length == 3 && args[0] == "--post-battle-reward-combat-pair-only")
     PostBattleRewardCombatChecks.Pair(source.RootElement, replay.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--justcause-monster-spell-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) JustCauseMonsterSpellChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); JustCauseMonsterSpellChecks.Native(source.RootElement, replay.RootElement); }
+    return;
+}
 if (args.Length == 2 && args[0] == "--retaliation-revival-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

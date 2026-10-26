@@ -135,12 +135,13 @@ namespace MonsterTrain2Poju.Model
             int targetId, int sourceCardId, BattlePlayRules definitions, IReadOnlyList<CardPileState>? otherPiles, int selfUnitId = 0,
             int targetSpawnPointIndex = -1, IReadOnlyList<CardRecursionSelection>? recursionSelections = null, bool onCastEffects = false,
             bool onUnplayedNegativeEffects = false, IReadOnlyList<ElixirMixSelection>? mixSelections = null,
-            IReadOnlyList<int>? priorTargets = null, int? abilityRoomIndex = null)
+            IReadOnlyList<int>? priorTargets = null, int? abilityRoomIndex = null, bool resolveLiveEffects = true)
             => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, true, otherPiles,
                 selfUnitId, deferFinalCallbacks: true, targetSpawnPointIndex: targetSpawnPointIndex,
                 recursionSelections: recursionSelections, onCastEffects: onCastEffects,
                 onUnplayedNegativeEffects: onUnplayedNegativeEffects, mixSelections: mixSelections,
-                priorTargets: priorTargets, playerActionPhase: true, abilityRoomIndex: abilityRoomIndex);
+                priorTargets: priorTargets, playerActionPhase: true, abilityRoomIndex: abilityRoomIndex,
+                resolveLiveEffects: resolveLiveEffects);
 
         internal static TrainSpellResult ApplyCachedEffects(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
             int sourceCardId, int selfUnitId, BattlePlayRules? definitions) =>
