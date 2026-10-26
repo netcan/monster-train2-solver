@@ -13,22 +13,33 @@ namespace MonsterTrain2Poju.Model
             // A prior floor's temporary boss-kill preview can leave an unowned
             // Fun Guy in its copied group. The next real combat yields a frame
             // before damage, completing that pending player object destruction.
+            bool removedTroopOwner = world.RetainedUnits.Any(actor => actor.Unit is
+                { AssetKey: "MonsterSquadLeader", Health: <= 0, DeathState.IsDestroyed: true, Modifiers.TroopAura: not null } &&
+                actor.Unit.Modifiers.Upgrades is [{ AssetKey: "InfectoryEffect_Upgrade" }]);
             var pending = world.RetainedUnits.Where(actor => actor.Preview && actor.RoomIndex != roomIndex &&
                 actor.Unit is { Team: CombatTeam.Player, AssetKey: "MonsterFunguy", SpawnerCardId: 0,
                     Health: > 0, DeathState.IsDestroyed: false } && actor.Unit.Status("horde")?.Stacks == 1 &&
-                actor.Unit.Status("trample")?.Stacks == 2 && actor.Unit.Modifiers?.Upgrades.Count == 3 &&
-                actor.Unit.Modifiers.Upgrades.Count(upgrade => upgrade.AssetKey == "SquadLeader_Upgrade") == 2 &&
-                actor.Unit.Modifiers.Upgrades.Count(upgrade => upgrade.AssetKey == "InfectoryEffect_Upgrade") == 1 &&
+                (actor.Unit.Status("trample")?.Stacks == 2 && actor.Unit.Modifiers?.Upgrades.Count == 3 &&
+                    actor.Unit.Modifiers.Upgrades.Count(upgrade => upgrade.AssetKey == "SquadLeader_Upgrade") == 2 &&
+                    actor.Unit.Modifiers.Upgrades.Count(upgrade => upgrade.AssetKey == "InfectoryEffect_Upgrade") == 1 ||
+                    removedTroopOwner && actor.Unit.Status("trample") == null &&
+                        actor.Unit.Modifiers?.Upgrades is [{ AssetKey: "InfectoryEffect_Upgrade" }]) &&
                 points.Units.Any(point => point.UnitId == actor.Unit.Id && point.SpawnedInPreview &&
                     point.Current?.PreviewCopyId != null)).ToArray();
             if (pending.Length == 0) return context;
             var ids = pending.Select(actor => actor.Unit.Id).ToHashSet();
+            bool troopOwnerRemoval = removedTroopOwner && pending.Any(actor => actor.Unit.Modifiers!.Upgrades.Count == 1);
             var retained = world.RetainedUnits.Select(actor => ids.Contains(actor.Unit.Id) ? CancelPlayer(actor) :
-                // Real card-backed players removed on the previous floor share
-                // that wait. Cardless Horde removals keep their raw managed state.
-                actor.Unit.Team == CombatTeam.Player && actor.Unit.AssetKey == "MonsterSporelauncher" && actor.Unit.SpawnerCardId > 0 &&
+                // Native waits settle the observed Sporelauncher death, or the
+                // Steward/Fun Guy deaths preceding the retired troop owner.
+                // That owner's own raw collection survives until the next frame.
+                actor.Unit.Team == CombatTeam.Player &&
                     actor.Unit.DeathState?.IsDestroyed == true && actor.Unit.Health <= 0 &&
-                    actor.Unit.Modifiers?.Upgrades is [{ AssetKey: "InfectoryEffect_Upgrade" }]
+                    (actor.Unit.AssetKey == "MonsterSporelauncher" && actor.Unit.SpawnerCardId > 0 &&
+                        actor.Unit.Modifiers?.Upgrades is [{ AssetKey: "InfectoryEffect_Upgrade" }] ||
+                    troopOwnerRemoval && actor.Unit.AssetKey is "TrainStewardSmall" or "MonsterFunguy" &&
+                        actor.Unit.Modifiers?.Upgrades.Any(upgrade => upgrade.AssetKey == "InfectoryEffect_Upgrade") == true &&
+                        actor.Unit.Modifiers.Upgrades.All(upgrade => upgrade.AssetKey is "InfectoryEffect_Upgrade" or "SquadLeader_Upgrade"))
                     ? new EnchantmentRetainedUnit(actor.Unit.AfterDestruction().WithoutRemovedAttacker(new HashSet<int>()),
                         actor.RoomIndex, actor.Preview) : actor).ToArray();
             return context.WithSpawnPoints(points.ClearDestroyedPreviewBirths(ids)).WithEnchantments(new EnchantmentWorld(

@@ -141,8 +141,9 @@ namespace MonsterTrain2Poju.Model
             if (!activePair || source.EnchanterIds.Count == 2) return activePair;
             // The next native wave retains the old, destroyed Haste owner in
             // its source registry after unbinding it. It contributes no writes
-            // to this preview; keep its captured state and identity intact.
-            return source.Preview && source.RetainedUnits.Count(actor => source.EnchanterIds.Contains(actor.Unit.Id) &&
+            // to the observed primary or preview birth; keep its captured state
+            // and identity intact. Primary births still require a current point.
+            return source.RetainedUnits.Count(actor => source.EnchanterIds.Contains(actor.Unit.Id) &&
                 !enchanters.Any(active => active.Unit.Id == actor.Unit.Id) && actor.RoomIndex == -1 && !actor.Preview &&
                 Signature(actor.Unit, "EnchanterT1_Speed", CombatTeam.Enemy, "haste", 1, 2, true, false, bound: false)) == 1;
 
