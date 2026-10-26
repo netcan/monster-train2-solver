@@ -245,6 +245,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-unobserved-preview-birth-replay-calibration.mt2f',
     'player-room-death-preview-identity-calibration.mt2f',
     'player-room-death-preview-identity-replay-calibration.mt2f',
+    'player-room-slay-status-calibration.mt2f',
+    'player-room-slay-status-replay-calibration.mt2f',
     'player-room-death-retained-cleanup-calibration.mt2f',
     'player-room-death-retained-cleanup-replay-calibration.mt2f',
     'player-zero-energy-x-policy-calibration.mt2f',
@@ -1887,6 +1889,7 @@ $branchPairGates = @{
     'player-spent-monster-spell-relic-calibration.mt2f' = '--spent-monster-spell-relic-only'
     'player-unobserved-preview-birth-calibration.mt2f' = '--unobserved-preview-birth-only'
     'player-room-death-preview-identity-calibration.mt2f' = '--room-death-preview-identity-only'
+    'player-room-slay-status-calibration.mt2f' = '--room-slay-status-only'
     'player-room-death-retained-cleanup-calibration.mt2f' = '--room-death-retained-cleanup-only'
     'player-zero-energy-x-policy-calibration.mt2f' = '--zero-energy-x-policy-only'
     'player-x-room-status-policy-calibration.mt2f' = '--x-room-status-policy-only'

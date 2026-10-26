@@ -921,7 +921,7 @@ if ($TrueFinalBossBirth) {
 if ($OuterBossBirth -and -not $OuterBossTurns) { throw '-OuterBossBirth requires -OuterBossTurns.' }
 if ($OuterBossPyre -and -not $OuterBossTurns) { throw '-OuterBossPyre requires -OuterBossTurns.' }
 if ($UnsupportedBranchInput) {
-    $allowed = @('UnsupportedBranchInput', 'InputProfile', 'BattleDistance', 'OuterBossTurns', 'PhysicalSpawnPoints',
+    $allowed = @('UnsupportedBranchInput', 'InputProfile', 'BattleDistance', 'OuterBossTurns', 'OuterBossBirth', 'PhysicalSpawnPoints',
         'BranchCardMasks', 'SettleDeathDissolves', 'SettleCardAnimations', 'GameSpeed', 'TimeoutSeconds', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction')
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'UnsupportedBranchInput observes an original checkpoint without scenario controls.' }
     if ($RollingInput -or $Planner -or -not $InputProfile) { throw 'UnsupportedBranchInput requires an immutable native InputProfile and its own observation mode.' }
