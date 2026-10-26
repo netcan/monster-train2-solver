@@ -1989,6 +1989,13 @@ if (args.Length is 2 or 3 && args[0] == "--room-death-preview-identity-only")
     RoomDeathPreviewIdentityChecks.Native(source.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--room-death-retained-cleanup-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    RoomDeathRetainedCleanupChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--parallel-planner-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -6088,6 +6095,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-room-death-preview-identity-replay-calibration.mt2f"));
     RoomDeathPreviewIdentityChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-room-death-retained-cleanup-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-room-death-retained-cleanup-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-room-death-retained-cleanup-replay-calibration.mt2f"));
+    RoomDeathRetainedCleanupChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-egg-catalog-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-egg-catalog-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
