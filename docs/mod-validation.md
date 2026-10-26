@@ -48,7 +48,17 @@ the older null-boss moon control passes. Actual10000ms/two-worker Ring4 wins in
 independent native processes:39inputs/30plays/9EndTurns,Pyre74,18train stages and
 identical full states/forecasts/RNG,four zero failure counters.57normal reward
 events reach Ring5; the mixed four-ring chain and24-file checkpoint restore
-(23payloads)pass. Ring5 currently rejects an authored-trait/copy combination.
+(23payloads)pass. Development151 calibrates the Ring5 Moonbeam application/Consume/
+copy combination through separate deployment and7-input independent native pairs.
+The latter naturally draws turn4 Moonbeam,casts atX4 with inherited+20 magic,
+then casts/purges itsX0 replacement copy. Full successors/RNG and four immutable
+copy branches match. Original Moonbeam X0/1/3,intrinsic WurmkinSpike copy,and
+BossEmber moon controls pass. Actual10000ms/two-worker Ring5 now wins in both
+independent native processes:40inputs/31plays/9EndTurns,Pyre73,17train stages,
+identical full states/forecasts/RNG and four zero failure counters.39normal
+reward events reach Ring6; the mixed five-ring chain and28-file checkpoint
+restore(27payloads)pass. Ring6 is being evaluated; see
+[Moonbeam evidence](../tests/fixtures/notes/cards/moonbeam-copy.md).
 The installation mentioned in this historical record was0.2.143; current150 is above.
 No default-budget campaign clear is claimed.
 No Mac package was built. See[terminal capture evidence](../tests/fixtures/notes/combat/terminal-coroutine-planes.md).

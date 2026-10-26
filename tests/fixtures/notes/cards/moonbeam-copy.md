@@ -30,4 +30,8 @@ still run. No extra copy is produced by playing the replacement copy.
 Focused entries are `--moonbeam-copy-deployment-only` and
 `--moonbeam-copy-lifecycle-only`. Original Moonbeam X0/1/3,old intrinsic
 WurmkinSpike copy,and BossEmber moon refresh controls pass. This is component
-acceptance,not a Ring5 win. Actual10000ms/two-worker Ring5 is being evaluated.
+acceptance. Separate actual10000ms/two-worker Ring5 now passes a40-input native
+pair,31plays/9EndTurns,Pyre73,17train stages,full states/forecasts/RNG and four
+zero failure counters.39normal reward events reach Ring6; the mixed five-ring
+chain and28-file checkpoint restore(27payloads)pass. This remains an unfinished
+campaign with an offline-refined third battle,not an all-default-budget clear.
