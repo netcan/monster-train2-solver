@@ -8,6 +8,7 @@ frozen native replay followed by normal rewards/map navigation.
 | --- | --- | --- | --- | --- |
 | 1 | 0.2.169 | 26 / 21 / 5 | 9 | 52 |
 | 2 | 0.2.171 | 26 / 21 / 5 | 9 | 52 |
+| 3 | 0.2.172 | 41 / 34 / 7 | 13 | 66 |
 
 Both full-state/forecast/RNG comparisons and all four failure counters pass.
 Ring2 ends with Pyre80; its normal successor save SHA256 is
@@ -16,11 +17,15 @@ The first EndTurn retains a verified winning suffix with zero new search time.
 One later automatic search is still being investigated, rather than declared
 fixed for every turn. The released DLLs match both accepted native processes.
 
-Ring3 starts from that normal save, but planning rejects Arkion SiphonRage
-birth under active moon tracking. This is an open modeling signature, not a
-native win or campaign clear. Its original deployment and rejection are retained
-in full-battle-units-spells-and-junk-20261027-012311-7d62c0ed.
+Ring3's Arkion SiphonRage full-moon birth was calibrated against two independent
+native boundaries. Its complete default source and independent frozen native
+replay then win with Pyre80, all full states/forecasts/RNG and13train stages.
+66normal events reach Ring4; save SHA256
+9122D0AAB5C721FBE75B8777BFAC0C92CC9FDBF38FF88C163159AA395104BD24.
+Ring4's naturally upgraded SentientDrawOnRevenge2 remains guarded at deployment
+and is being calibrated separately. No Ring4 win or campaign clear is claimed.
 
 Acceptance journals: random-campaign-20261027-004637-7c66e619 and
-random-campaign-20261027-011828-188c3278. No offline improvement was used for
-either accepted ring. Real saves/configuration/other mods remain unchanged.
+random-campaign-20261027-011828-188c3278 and
+random-campaign-20261027-013254-b0e8a219. No offline improvement was used for
+any accepted ring. Real saves/configuration/other mods remain unchanged.
