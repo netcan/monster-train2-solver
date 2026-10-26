@@ -10,5 +10,10 @@ original rejected deployment input and its actual native successor. The
 known exact card signature now allows that deployment to replay, with full
 state/RNG checks and ten modified-signature rejections. The actual card26
 cast remains guarded until its separate original native observation exists.
-No card cost, exhaust behavior or status multiplier is inferred from the
-one deployment input. This component is not a battle win.
+The separate `player-lazarus-juice-spike-cast-calibration.mt2f` records six
+legal prefix inputs and the actual card26 cast. On turn1 it spends4 ember,
+scales the zero-base undying amount to4, doubles to8 and applies it to unit5
+on room0. The card exhausts once and records its paid cost and play count.
+All seven native successors/full forecasts/RNG and four immutable parallel
+cast branches pass. Actual casting is now enabled for this exact signature;
+the independent native replay is still pending. This is not a battle win.

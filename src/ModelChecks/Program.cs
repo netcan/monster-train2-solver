@@ -1,9 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
-if (args.Length == 2 && args[0] == "--lazarus-juice-spike-only")
+if (args.Length is 2 or 3 or 4 && args[0] == "--lazarus-juice-spike-only")
 {
     using var refusal = ModelJson.ReadFixture(args[1]);
-    LazarusJuiceSpikeChecks.Native(refusal.RootElement);
+    using var cast = args.Length >= 3 ? ModelJson.ReadFixture(args[2]) : null;
+    using var replay = args.Length == 4 ? ModelJson.ReadFixture(args[3]) : null;
+    LazarusJuiceSpikeChecks.Native(refusal.RootElement, cast?.RootElement, replay?.RootElement);
     return;
 }
 if (args.Length is 2 or 3 or 4 && args[0] == "--echo-juice-spike-only")
@@ -6659,7 +6661,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-com
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-lazarus-juice-spike-deployment-refusal-calibration.mt2f"))
 {
     using var refusal = ModelJson.ReadFixture(path);
-    LazarusJuiceSpikeChecks.Native(refusal.RootElement);
+    using var cast = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-lazarus-juice-spike-cast-calibration.mt2f"));
+    LazarusJuiceSpikeChecks.Native(refusal.RootElement, cast.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-juice-spike-copy-calibration.mt2f"))
 {

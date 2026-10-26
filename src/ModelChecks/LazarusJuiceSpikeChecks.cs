@@ -5,7 +5,7 @@ using MonsterTrain2Poju.Model;
 internal static class LazarusJuiceSpikeChecks
 {
     internal const string Reason = "Native LazarusLeague Spike doubles paid-energy undying after scaling.";
-    internal static void Native(FixtureValue refusal)
+    internal static void Native(FixtureValue refusal, FixtureValue? cast = null, FixtureValue? replay = null)
     {
         const string oldReason = "Juice with this card or ordered scaling traits requires native calibration.";
         var rows = NativeBranchObservationChecks.Replay(refusal, oldReason);
@@ -36,7 +36,39 @@ internal static class LazarusJuiceSpikeChecks
             Require(!LazarusJuiceSpikeModel.Known(unknown) && CardJuiceModel.Validate(unknown) != null,
                 "Unknown Lazarus Juice signature admitted: " + control);
         }
-        Console.WriteLine("LAZARUS-JUICE-SPIKE DEPLOYMENT PASS: original native refusal/full successor/RNG and ten signature guards; actual cast remains guarded.");
+        if (cast.HasValue)
+        {
+            var first = NativeBranchObservationChecks.Replay(cast.Value, Reason);
+            Require(first.Length == 7 && NativeBranchObservationChecks.Key(root) ==
+                NativeBranchObservationChecks.Key(first[0].GetProperty("Before").Deserialize<BattleTurnState>()!),
+                "Missing original deployment and six native prefix inputs.");
+            var before = first[^1].GetProperty("Before").Deserialize<BattleTurnState>()!;
+            var after = first[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            var action = first[^1].GetProperty("Action").Deserialize<PlayCardAction>()!;
+            CombatUnit Target(BattleTurnState state) => state.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.TargetUnitId);
+            var played = after.Spawn.Train.Context!.FindCard(26)!;
+            Require(before.Spawn.Turn == 1 && before.Energy == 4 && after.Energy == 0 &&
+                action.CardInstanceId == 26 && action.RoomIndex == 0 && action.TargetUnitId == 5 &&
+                Target(after).Status("undying")!.Stacks == (Target(before).Status("undying")?.Stacks ?? 0) + 8 &&
+                played.LastPlayedCost == 4 && played.PlayCount == 1 && played.ExhaustState!.BaseTraits.Single().IsExhausted &&
+                !after.Spawn.Train.Context.Cards.Hand.Any(value => value.InstanceId == 26) &&
+                after.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(value => value.InstanceId == 26),
+                "Native paid4/scaled4/double8 Undying, accounting or Consume differs.");
+            string parent = JsonSerializer.Serialize(before, ModelJson.Options);
+            Parallel.For(0, 4, _ =>
+            {
+                var result = BattleActionModel.PlayCard(before, action);
+                Require(result.Supported && NativeBranchObservationChecks.Key(result.State!) == NativeBranchObservationChecks.Key(after),
+                    "Detached Lazarus Juice cast differs.");
+            });
+            Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "Lazarus Juice mutated its parent.");
+            if (replay.HasValue)
+            {
+                NativeBranchObservationChecks.Replay(replay.Value, Reason);
+                NativeBranchObservationChecks.Pair(cast.Value, replay.Value);
+            }
+        }
+        Console.WriteLine("LAZARUS-JUICE-SPIKE PASS: original native refusal/full state/RNG, ten signature guards; nativeCast=" + cast.HasValue + "; independentPair=" + replay.HasValue);
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }
