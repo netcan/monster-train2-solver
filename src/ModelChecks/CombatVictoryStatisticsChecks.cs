@@ -75,7 +75,10 @@ internal static class CombatVictoryStatisticsChecks
                     "Independent native victory input/full state/RNG differs at" + i);
             }
         }
-        Console.WriteLine("COMBAT-VICTORY-STATISTICS PASS:37 native inputs/full state/forecast/RNG; preserved424/24 vs293/15 counterexample; exactly nine generated infusion entries removed, permanent stats retained; four immutable branches; independentPair=" + replay.HasValue);
+        // Whole-turn equality alone can hide stale shared context in lower-level
+        // room/train results. Verify every native train phase independently too.
+        TrainCombatChecks.Native(fixture);
+        Console.WriteLine("COMBAT-VICTORY-STATISTICS PASS:37 native inputs/full state/forecast/RNG and native train phases; preserved424/24 vs293/15 counterexample; exactly nine generated infusion entries removed, permanent stats retained; four immutable branches; independentPair=" + replay.HasValue);
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }

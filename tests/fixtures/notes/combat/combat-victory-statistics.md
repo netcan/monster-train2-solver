@@ -19,5 +19,14 @@ match; the entire old statistic mismatch is exactly the nine removed entries.
 The accepted57-input Ring6 win/replay and26-input Ring7 defeat from sample18
 also pass the targeted campaign checks, preserving complete state/forecast/RNG
 and original budget classification.
-Independent repaired native observation and a fresh default campaign pair remain
-required before accepting this as a released whole-battle victory.
+An independent0.2.195 native observation preserves all37 inputs, roots and
+actual successors and matches the repaired final forecast. Its curated fixture
+is component evidence. A new full-battle attempt still reports stale statistics
+at room stage36 and train phase8: fixing only EndTurn had hidden those lower
+results.0.2.196 refreshes the shared terminal combat context before the room
+result is constructed. The expanded check fails on0.2.195 (424 vs293 values)
+and passes on0.2.196: all42 native room stages and9 train phases match, including
+their contexts, while the37-input independent observation remains exact.
+Passive killcam clearing, defeat and preview retain the existing cache rules.
+A fresh default campaign source and independent normal progression replay are
+still required before release acceptance.

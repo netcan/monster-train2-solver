@@ -5836,6 +5836,12 @@ namespace MonsterTrain2Poju.Model
                 if (context != null && units.Any(unit => unit.Alive && unit.InRoom &&
                     unit.Source.Modifiers?.SelfAttackRules?.Any(rule => rule.Type == "RoomStateSelfDamagePerGoldModifier") == true))
                     context = context.WithStatistics(context.LiveStatistics);
+                // Native terminal combat snapshots already observe the post-killcam
+                // statistic membership. Keep it on the shared room context so
+                // train results agree before the outer EndTurn wrapper runs.
+                // Passive ClearCards and defeat do not imply a cache refresh.
+                if (!source.Preview && outcome == RoomOutcome.BattleWon && context?.KillCamActivated == true)
+                    context = context.WithStatistics(context.Statistics?.RefreshDeckAfterCardTerminal());
                 // The native standby predicate observes preview deaths too;
                 // the outer preview transaction restores primary card piles.
                 if (context != null && (!source.Preview || context.LifeLinks != null))

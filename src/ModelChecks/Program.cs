@@ -5,6 +5,7 @@ if (args.Length is 2 or 3 && args[0] == "--combat-victory-statistics-only")
     using var fixture = ModelJson.ReadFixture(args[1]);
     using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
     CombatVictoryStatisticsChecks.Native(fixture.RootElement, replay?.RootElement);
+    RoomCombatChecks.NativeRoomOnly(args[1]);
     return;
 }
 if (args.Length == 3 && args[0] == "--uninjured-pending-boss-only")
@@ -6611,7 +6612,9 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-inh
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-combat-victory-statistics-counterexample-calibration.mt2f"))
 {
     using var fixture = ModelJson.ReadFixture(path);
-    CombatVictoryStatisticsChecks.Native(fixture.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-combat-victory-statistics-calibration.mt2f"));
+    CombatVictoryStatisticsChecks.Native(fixture.RootElement, replay.RootElement);
+    RoomCombatChecks.NativeRoomOnly(path);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-room-upgrade-provenance-counterexample-calibration.mt2f"))
 {
