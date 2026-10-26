@@ -4803,6 +4803,7 @@ namespace MonsterTrain2Poju.Model
                 action.Type == "Null" ? targets.UnitIds.Count > 0 || action.NullTargetless :
                 action.Type == "TransferAllStatusesFromUnit" ? targets.UnitIds.Count > 0 && TriggeredStatusTransferModel.Validate(action) == null :
                 action.Type == "RemoveStatus" ? StatusRemovalModel.Test(CurrentRoom(), action, targets.UnitIds) :
+                action.Type == "AdjustAllStatusEffects" ? AllStatusAdjustmentTest(action, targets) :
                 AbilityCooldownModel.IsEffect(action.Type) || AbilityLifecycleModel.IsEffect(action.Type) ? true :
                 action.Type == "AdjustCapacity" ? !source.Preview && !battleWon && context!.AllScenarioBossesDead != true &&
                     RoomCapacityModel.Test(context, source.RoomIndex, units.Any(unit => unit.InRoom && unit.Source.Team == CombatTeam.Enemy), action.OnlyIfNoEnemies) :
@@ -4812,6 +4813,15 @@ namespace MonsterTrain2Poju.Model
                 action.Type == "Damage" ? amount >= 0 && (action.Range == null || action.Range.Max > 0) &&
                     (action.Target != "DropTargetCharacter" || targets.UnitIds.Count > 0) :
                 action.Type == "RemoveUnitUpgrade" || action.Type == "Heal" && action.Target == "Room" || targets.UnitIds.Count > 0;
+
+            private bool AllStatusAdjustmentTest(CardActionEffect action, CardTargets targets)
+            {
+                if (action.Tests?.StrictTargets != true) return true;
+                int count = CardSpellModel.TestCount(new TrainCombatState(new[] { CurrentRoom() },
+                    Array.Empty<EnemyMovement>(), 4, context), action, targets);
+                if (count < 0) { unsupportedReason = "All-status adjustment requires complete propagation metadata."; return false; }
+                return count > 0;
+            }
 
             private bool NoPlayerUnitsInActorRoom(WorkingUnit actor) => actor.InRoom &&
                 !units.Any(unit => unit.InRoom && unit.Alive && unit.Source.Team == CombatTeam.Player);

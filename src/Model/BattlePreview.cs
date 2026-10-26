@@ -124,6 +124,22 @@ namespace MonsterTrain2Poju.Model
                     CardInstanceState? instance = preparedTrain.Context!.FindCard(item.Card.InstanceId);
                     if (instance == null) return new TrainCombatResult(null, RoomOutcome.Unsupported, Array.Empty<RoomCombatResult>(), "Missing preview unplayed card instance.");
                     CardPlayRule rule = CardModifierModel.Resolve(item.Rule!, instance);
+                    // The original TitanCurse upgrade explicitly disables preview application.
+                    // It still executes normally in BattleTurnModel's real unplayed phase.
+                    if (!rule.HasUnsupportedUnplayedTriggers && rule.DataId == "17fef621-2bb7-4847-b41d-52a89795c784" &&
+                        rule.OnUnplayedNegativeEffects.Count == 1 && rule.OnUnplayedNegativeEffects[0] is
+                            { Type: "UpgradeDeckSpells", Lifetime: "TemporaryUntilEndOfBattle", Upgrade:
+                                { DataId: "f37fb903-28d6-4d49-b50e-9226f4854816" } })
+                    {
+                        if (instance.PlayedRoomUnitIds != null)
+                        {
+                            int selectedRoom = preparedTrain.Context!.QueryFrame?.SelectedRoomIndex ?? 0;
+                            preparedTrain = CardSpellModel.WithContext(preparedTrain, preparedTrain.Context.WithCard(instance.WithPlayedRoomUnits(
+                                preparedTrain.Rooms.Single(room => room.RoomIndex == selectedRoom).Units
+                                    .Where(unit => unit.Health > 0 && unit.IsSpawning != true).Select(unit => unit.Id).ToArray())));
+                        }
+                        continue;
+                    }
                     if (rule.HasUnsupportedUnplayedTriggers || rule.OnUnplayedNegativeEffects.Any(effect => effect.Type != "Damage" || effect.Target != "Pyre" || effect.Range != null))
                         return new TrainCombatResult(null, RoomOutcome.Unsupported, Array.Empty<RoomCombatResult>(), "Uncalibrated preview unplayed effect.");
                     TrainSpellResult applied = CardSpellModel.ApplyForCardPlay(preparedTrain, preparedTrain.Context.QueryFrame?.SelectedRoomIndex ?? 0,

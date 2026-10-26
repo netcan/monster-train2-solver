@@ -30,8 +30,20 @@ namespace MonsterTrain2Poju.Model
             // Native enchantment targeting reads the same live characters.
             // Rebase its retained world after changing understanding masks,
             // even when this phase has no character callbacks to drain.
+            CombatContext context = source.Context!;
+            // HeroManager retains these unplaced preview births in its active roster;
+            // the next real moon change reaches them before any new preview births.
+            if (context.Enchantments is EnchantmentWorld world && world.RetainedUnits.Any(actor => actor.RoomIndex == -1 &&
+                actor.Unit.AssetKey == "Boss_Level3_MiniFleshweaver_Corruption" && actor.Unit.Health > 0 &&
+                actor.Unit.DeathState?.IsDestroyed != true))
+                context = context.WithEnchantments(new EnchantmentWorld(world.Rooms, world.Movement, world.EnemySlotsPerRoom,
+                    world.RetainedUnits.Select(actor => actor.RoomIndex == -1 && actor.Unit.AssetKey == "Boss_Level3_MiniFleshweaver_Corruption" &&
+                        actor.Unit.Health > 0 && actor.Unit.DeathState?.IsDestroyed != true
+                        ? new EnchantmentRetainedUnit(WithPhase(actor.Unit, phase).WithMoonPhaseMask(phase), actor.RoomIndex, actor.Preview) : actor).ToArray(),
+                    world.EnchanterIds, world.AllowUpdates, world.Updating, world.Preview, world.TestRng, world.AutomaticLifecycle,
+                    world.TemporaryPreviewUnitIds));
             return EnchantmentWorldModel.Rebase(CardSpellModel.WithContext(new TrainCombatState(rooms, source.Movement,
-                source.EnemySlotsPerRoom, source.Context), source.Context!));
+                source.EnemySlotsPerRoom, context), context));
         }
     }
 }

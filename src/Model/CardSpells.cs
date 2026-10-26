@@ -2807,7 +2807,7 @@ namespace MonsterTrain2Poju.Model
                 sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe,
                 ignoreDualism: effect.IgnoreDualism);
         }
-        private static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
+        internal static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {
             if (effect.Type == "AttachEquipment" && effect.UpgradeFilters.Count > 0)
             {
