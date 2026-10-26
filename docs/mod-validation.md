@@ -1,7 +1,16 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.117, committed source`3ac012a7e8e2076693f8607652b20833b4e33a5b`.
-The exact release payload passes the twelfth random Hellhorned/LazarusLeague sample's
+Current Windows installation:0.2.119, committed source`e1556f821734f618b3016778db29f9c5daa4cb8e`.
+The exact payload passes the thirteenth random Banished/Wurmkin sample's fourth battle
+with actual10000ms/two-worker advice and independent native replay:37 inputs,29 plays,
+8 EndTurns,Pyre56 and15 train stages per process. Every root,successor,forecast and
+RNG matches,with all four failure counters zero. The completed pair receipt is reused
+only after rechecking archive and three DLL hashes. Versions118/119 fix copied JustCause
+position/statistics and multi-slot teleport order; their13/19-input native component
+pairs also pass. The fifth default battle is a36-input native defeat with no model
+discrepancy; this release does not claim universal campaign wins.
+
+Previous release0.2.117 passes the twelfth random Hellhorned/LazarusLeague sample's
 final battle in independent native processes:85 frozen inputs,74 plays,11 EndTurns,
 Pyre79 and21 train stages per process. Every root,successor,forecast and RNG matches;
 all four failure counters are zero. Source`20261026-105617-6c66109e` and replay
@@ -29,14 +38,14 @@ forecast/RNG and eight immutable branches per process. The eleventh sample's
 Pyre21 final entry now completes32 actual default inputs without a model
 discrepancy, but loses. This is a strategy limitation, not a native win.
 
-Installed at2026-10-26T11:29:08+08:00, with67 protected files unchanged.
-Package:`results/mod-dist/PojuAdvisor-0.2.117-Windows-20261026-112905.zip`,
-SHA256`34704e0700358f0d29274fd2d17ebbad14233933ac19bd8f5dd52f30e9fd0650`.
+Installed at2026-10-26T11:35:17+08:00, with67 protected files unchanged.
+Package:`results/mod-dist/PojuAdvisor-0.2.119-Windows-20261026-113515.zip`,
+SHA256`4351841c9bee47f5cf1e034e2f0fda2a4488ab57a47a889c951ef2ecdf95ad99`.
 Installed DLL SHA256 values:
 
-- Advisor:`15744cba9aa100f2d984277c6ef05303b3655cc6b1e150c6860c6887f5390fe4`
-- Model:`3d4d45d8cb98e3c8132ff4c6b21aae90959fef42180cb9e56260d9d36198a76a`
-- FixtureArchive:`2ad21d95e2c391404de563667ac45087f4ceb04a66c098baf87b33eca9f15003`
+- Advisor:`91050ce8f48faa45312e309c348119fee14d6b73dd8ad6ce7427fd06716aa262`
+- Model:`185bd57156e28b70d0b004606def491017e64061b65c988f3d56dd2b788f2eac`
+- FixtureArchive:`6cf63e2cdbfc0ad81593b8ef44c5cf971c7546b2c8cfb8645c95ed52de7dc08b`
 
 Since0.2.84 the payload includes native-calibrated equipment Etch, returned
 Permafrost draw callbacks, preview-born aura cleanup/mode and direct boss
