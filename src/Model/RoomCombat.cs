@@ -2194,6 +2194,15 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (spawned.Source.Team == CombatTeam.Player) spawned.Apply(HordeStatusModel.WithSpawning(spawned.Freeze(), true));
                 if (!ApplyBirthRelics(true)) return Finish(RoomOutcome.Unsupported);
+                int birthMoonMask = 0;
+                if (context?.QueryFrame?.MoonPhase is int moon &&
+                    MoonPhaseStatusModel.IsTracking(context, units.Select(unit => unit.Freeze())))
+                {
+                    birthMoonMask = RoomMoonPhaseModel.Effective(context, source.RoomIndex, moon);
+                    // CharacterState.Setup registers the moon before room attachments
+                    // add statuses such as Planetarium's conduit to the new actor.
+                    spawned.Apply(MoonPhaseStatusModel.WithPhase(spawned.Freeze(), moon).WithMoonPhaseMask(birthMoonMask));
+                }
                 // Native installs starting statuses and covenant effects before
                 // room attachments. Initializing afterward can erase an
                 // attachment's status while retaining its upgrade/stat record.
@@ -2205,18 +2214,15 @@ namespace MonsterTrain2Poju.Model
                     return Finish(RoomOutcome.Unsupported);
                 }
                 ImportEnchantmentRoom(attached);
-                if (context?.QueryFrame?.MoonPhase is int moon &&
-                    MoonPhaseStatusModel.IsTracking(context, units.Select(unit => unit.Freeze())))
+                if (birthMoonMask != 0)
                 {
-                    int mask = RoomMoonPhaseModel.Effective(context, source.RoomIndex, moon);
-                    spawned.Apply(MoonPhaseStatusModel.WithPhase(spawned.Freeze(), moon).WithMoonPhaseMask(mask));
                     // The native birth updates the unit's moon understanding and
                     // queues its initial phase callback before the spawn triggers.
                     // Deferred births already carry this callback in their queue.
                     if (!prepareOnly)
                     {
-                        if ((mask & 2) != 0) FireTriggers(spawned, "OnMoonLit");
-                        if ((mask & 1) != 0) FireTriggers(spawned, "OnMoonShade");
+                        if ((birthMoonMask & 2) != 0) FireTriggers(spawned, "OnMoonLit");
+                        if ((birthMoonMask & 1) != 0) FireTriggers(spawned, "OnMoonShade");
                     }
                 }
                 if (!prepareOnly || spawned.Source.Team == CombatTeam.Player)
