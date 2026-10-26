@@ -104,7 +104,10 @@ RNG及四项零失败通过，原始玩家／输入文件不变。两个败局�
 原生双胜，19次出牌、五次结束回合、九列车阶段，完整状态／预测／RNG和
 四项零失败通过；归档为`full-battle-random-campaign-12-ring1-release114-budget10000-{search,replay}.mt2f`。
 源`20261026-095201-e9073f81`耗时100.63秒，独立正常奖励复放
-`campaign-ring2-20261026-095427-aa06f28e`，原文件保持不变；安装另行核对。
+`campaign-ring2-20261026-095427-aa06f28e`，原文件保持不变。09:58已安装到
+当前Windows游戏，67项受保护文件不变；新启动加载此构建，未构建Mac包。
+包`results/mod-dist/PojuAdvisor-0.2.114-Windows-20261026-095818.zip`，SHA256
+`97dd63078052449618d7046c870d58a9434f8b0b4993a0699bc5b5ce0b1ab0e0`。
 
 0.2.111按每个决策点限制候选数的[离线胜路筛选](offline-joint-refinement.md)，
 把第十一组第七战的已验证薪火21路线进一步改善为薪火31，仍为38输入／

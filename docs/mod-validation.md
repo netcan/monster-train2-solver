@@ -1,12 +1,20 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.111, committed source`d398f7b95f218a4b17ed3c9a5bfa92bee45038b2`.
-The exact release payload passes the eleventh random Stygian/Awoken sample's
+Current Windows installation:0.2.114, committed source`84bfb6254fb3d998ee086df077844dfa0ca3d1a6`.
+The exact release payload passes the twelfth random Hellhorned/LazarusLeague sample's
 first battle with actual10000ms/two-worker advice and independent native
-replay:26 inputs,21 plays,five EndTurns,Pyre80 and nine train stages per process.
+replay:24 inputs,19 plays,five EndTurns,Pyre80 and nine train stages per process.
 Every root,successor,forecast and RNG matches; all four failure counters are
-zero. Source`20261026-080700-78b8e847` and replay`campaign-ring2-20261026-080843-49a1e593`
+zero. Source`20261026-095201-e9073f81` and replay`campaign-ring2-20261026-095427-aa06f28e`
 bind the three installed DLL hashes to the committed build.
+
+Versions0.2.113/114 avoid simulating lower-ranked complex selections after a
+legal seed input and reuse exact observed unaffordable-card rejections in
+one immutable decision/room. Across74/82 real decision states, simulations
+fall1156→957/1246→1012 with identical inputs and complete successors/RNG.
+Changed-energy,ability/spawn-point bypass and full-frontier controls pass.
+These counts do not imply equivalent wall-time savings or default-budget
+campaign clearance; both actual ring6/7 defeats remain archived.
 
 Version0.2.111 preserves the native BattleTest stream across effect legality
 queries, including hand highlights, pre-play validation and standalone
@@ -18,14 +26,14 @@ forecast/RNG and eight immutable branches per process. The eleventh sample's
 Pyre21 final entry now completes32 actual default inputs without a model
 discrepancy, but loses. This is a strategy limitation, not a native win.
 
-Installed at2026-10-26T08:11:52+08:00, with67 protected files unchanged.
-Package:`results/mod-dist/PojuAdvisor-0.2.111-Windows-20261026-081151.zip`,
-SHA256`50ded10e4e8f638f6094c1f63fe02f7f19b4e82cc6316697ab41ec468a545ef0`.
+Installed at2026-10-26T09:58:20+08:00, with67 protected files unchanged.
+Package:`results/mod-dist/PojuAdvisor-0.2.114-Windows-20261026-095818.zip`,
+SHA256`97dd63078052449618d7046c870d58a9434f8b0b4993a0699bc5b5ce0b1ab0e0`.
 Installed DLL SHA256 values:
 
-- Advisor:`ca6b9c02cdb9321c64a87e87bb66974fe48e4f6d3e324221094af771dfa82657`
-- Model:`38199748c8549120bda06b4d87a9f94591cba3b49d6331ca5b10320b1dc86ee5`
-- FixtureArchive:`99bfe02525566b2473af069b364313dcb8de3005ccaf146f81a30edb96b9dd62`
+- Advisor:`0634d76803cd42d42725c7dfeeb7aa8f0634d048e5c8d9687ef8c6e065afca78`
+- Model:`8188b49b3e220fd10870acf858472011bf09eca087c1e54ae297fe7405fc137f`
+- FixtureArchive:`83ca9ad06be03b03cf2771b38a9722e991b6b45c0091b6799a43d7194838223d`
 
 Since0.2.84 the payload includes native-calibrated equipment Etch, returned
 Permafrost draw callbacks, preview-born aura cleanup/mode and direct boss
