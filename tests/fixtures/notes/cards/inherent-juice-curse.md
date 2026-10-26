@@ -11,8 +11,9 @@ Release0.2.193 admits only the already captured TitanCurse upgrade signature
 on this exact inherent owner. All37 native states/forecasts/RNG replay correctly;
 four concurrent detached EndTurns preserve their parent. Eight controls reject
 other ID/asset/cost/damage/health/X/trait/external payloads. Existing8-input
-inherent cast and19-input double/triple curse pairs still pass. Independent
-repaired native replay is the next acceptance step, not assumed complete.
+inherent cast and19-input double/triple curse pairs still pass. An independent
+release0.2.193 process replays all37 inputs with the repaired boundary forecast,
+identical full native states/RNG and zero player capture/purity failures.
 
 The old34-step forecast now completes to49 inputs without unsupported branches,
 but remains a model defeat. This is a component repair, not a seventh-battle win.

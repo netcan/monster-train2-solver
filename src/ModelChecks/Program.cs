@@ -6591,7 +6591,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-inh
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-inherent-juice-curse-calibration.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    InherentJuiceCurseChecks.Native(source.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-inherent-juice-curse-replay-calibration.mt2f"));
+    InherentJuiceCurseChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-room-upgrade-provenance-counterexample-calibration.mt2f"))
 {

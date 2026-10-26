@@ -146,6 +146,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-inherent-juice-spike-calibration.mt2f',
     'player-inherent-juice-spike-replay-calibration.mt2f',
     'player-inherent-juice-curse-calibration.mt2f',
+    'player-inherent-juice-curse-replay-calibration.mt2f',
     'player-triple-juice-spike-calibration.mt2f',
     'player-triple-juice-spike-replay-calibration.mt2f',
     'player-triple-juice-search-failure-calibration.mt2f',
@@ -1870,7 +1871,7 @@ $doubleCurseNames = @('player-double-juice-curse-calibration.mt2f', 'player-doub
 $roomProvenanceNames = @('player-room-upgrade-provenance-counterexample-calibration.mt2f', 'player-room-upgrade-provenance-calibration.mt2f')
 $unboxMoonNames = @('player-unbox-moon-relic-calibration.mt2f', 'player-unbox-moon-relic-replay-calibration.mt2f')
 $inherentJuiceNames = @('player-inherent-juice-spike-refusal-calibration.mt2f', 'player-inherent-juice-spike-calibration.mt2f', 'player-inherent-juice-spike-replay-calibration.mt2f')
-$inherentCurseNames = @('player-inherent-juice-curse-calibration.mt2f')
+$inherentCurseNames = @('player-inherent-juice-curse-calibration.mt2f', 'player-inherent-juice-curse-replay-calibration.mt2f')
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $inherentCurseNames }).Count -eq 0) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
