@@ -94,6 +94,10 @@ SHA256`c46dd953ca371a0356e4c1ea54f59d9608310c5999e1b4c80735e921d3c22949`，
 26输入、21次出牌、五次结束回合、九列车阶段，完整状态／预测／RNG及四项
 零失败通过。原生源`20261026-084833-c2e05584`耗时70.31秒，独立复放
 `campaign-ring2-20261026-084959-89f50e54`，两者原文件均不变。
+该已验收载荷于08:53安装到当前Windows游戏，67项受保护文件不变。
+包`results/mod-dist/PojuAdvisor-0.2.112-Windows-20261026-085319.zip`，
+SHA256`06eeab2eb939d4eeaf4d60c721e43b2bed10fe9616bedc43c01ceb8fe9f046b4`，
+编译源为`428209377e01ad4d2e2b30c25499f5382265dfe9`。未构建Mac包。
 
 第十一组第七战在0.2.107补齐[预览统计查询](../tests/fixtures/notes/combat/last-attack-statistic-refresh.md)
 后，实际10000ms／双线程完整36输入（30出牌／6结束回合）仍败。
