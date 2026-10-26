@@ -11,7 +11,9 @@ internal static class TripleJuiceSearchChecks
         if (rows.Length != 22 || root.Spawn.Turn != 4) throw new InvalidOperationException("Wrong natural search failure.");
         string parent = JsonSerializer.Serialize(root, ModelJson.Options);
         var effect = root.PlayRules!.Cards.SelectMany(rule => rule.OnUnplayedNegativeEffects).Single(effect => effect.Type == "UpgradeDeckSpells");
-        var upgraded = DeckSpellUpgradeModel.Apply(root.Spawn.Train.Context!, effect, root.PlayRules);
+        var altered = JsonSerializer.SerializeToNode(effect, ModelJson.Options)!;
+        altered["Upgrade"]!["DataId"] = "unknown-curse";
+        var upgraded = DeckSpellUpgradeModel.Apply(root.Spawn.Train.Context!, altered.Deserialize<CardActionEffect>(ModelJson.Options)!, root.PlayRules);
         if (upgraded.Supported || upgraded.UnsupportedReason != "Triple Juice with this card or ordered scaling traits requires native calibration.")
             throw new InvalidOperationException("Uncalibrated post-upgrade branch lost its explicit guard: " + upgraded.UnsupportedReason);
         var options = new BattlePlannerOptions(256, 3, 8, 12, TimeSpan.FromSeconds(10),

@@ -10,5 +10,7 @@ Check the changed owner before refresh and return the explicit unsupported
 result. The original player failure archive reproduces the old aggregate stack.
 The focused check verifies the post-upgrade rejection, a complete verified
 continuation with two workers, exact prediction replay and immutable parent.
-This preserves the temporary-curse coverage boundary; it does not itself claim
-that the curse/triple-Juice combination has been modeled or the battle won.
+The guard also remains after release186 calibrates the exact native TitanCurse
+payload. Its rejection control now changes the upgrade ID to an unknown value;
+the known combination has separate30-input independent native evidence in
+[triple-juice-curse](../cards/triple-juice-curse.md). Neither check claims a battle win.

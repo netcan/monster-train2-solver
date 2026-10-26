@@ -23,6 +23,13 @@ namespace MonsterTrain2Poju.Model
             upgrade.TriggerUpgrades?.Count > 0 != true && upgrade.Lifecycle is { AddedTraits.Count: 1, RemovedRuntimeTypes.Count: 0, Triggers.Count: 0 } lifecycle &&
             lifecycle.AddedTraits[0].RuntimeType == TripleTrait && lifecycle.AddedTraits[0].DeclaredName == TripleTrait &&
             Ordinary(lifecycle.AddedTraits[0], 3);
+        private static bool KnownTitanCurse(CardUpgradeModifier upgrade) =>
+            upgrade.DataId == "f37fb903-28d6-4d49-b50e-9226f4854816" && upgrade.AssetKey == "TitanCurse_Upgrade" &&
+            upgrade.Stats.Cost == 1 && upgrade.Stats.Damage == 0 && upgrade.Stats.Health == 0 && upgrade.Stats.Heal == 0 &&
+            upgrade.Stats.Size == 0 && upgrade.Stats.XCost == 0 && upgrade.Stats.EquipmentLimit == 0 && upgrade.Stats.UpgradeSlotCount == 0 &&
+            upgrade.Statuses.Count == 0 && upgrade.UnhealedHealth == 0 && upgrade.DamageBuff == 0 && upgrade.ExternalInteractions.Count == 0 &&
+            upgrade.TriggerUpgrades?.Count > 0 != true && upgrade.AbilityUpgrade == null &&
+            upgrade.Lifecycle is { AddedTraits.Count: 0, RemovedRuntimeTypes.Count: 0, Triggers.Count: 0 };
         internal static string? Validate(CardInstanceState card)
         {
             if (!Present(card)) return null;
@@ -37,7 +44,7 @@ namespace MonsterTrain2Poju.Model
                     traits[1].RuntimeType == "CardTraitExhaustState" && Ordinary(traits[1], 0) &&
                     traits[2].RuntimeType == TripleTrait && traits[2].DeclaredName == TripleTrait && Ordinary(traits[2], 3) &&
                     card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] { "6497cd22-8c83-4b13-8578-269f4387250d", TripleUpgrade }) &&
-                    KnownTripleUpgrade(card.Permanent.Upgrades[1]) && card.Temporary.Upgrades.Count == 0 &&
+                    KnownTripleUpgrade(card.Permanent.Upgrades[1]) && card.Temporary.Upgrades.All(KnownTitanCurse) &&
                     card.StatusScalingTraits is { Count: 1 } scaling && scaling[0].Query.Type == "PlayedCost" &&
                     scaling[0].Query.Duration == "ThisBattle" && scaling[0].Query.VariableCost &&
                     scaling[0].StacksPerStat == 4 && !scaling[0].OnlyWhenSourceZero && scaling[0].Filter == 0 &&
