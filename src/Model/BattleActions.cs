@@ -921,7 +921,9 @@ namespace MonsterTrain2Poju.Model
                 preview: context.IsolatedBattlePreview == true || train.Rooms.FirstOrDefault(room =>
                     room.RoomIndex == action.RoomIndex)?.Preview == true, trainState: train, playedCardRule: rule,
                 lastTargets: lastMainTargets ?? Array.Empty<int>(), originalTargetTeam: originalTargetTeam,
-                lastDamagedUnitIds: lastDamagedUnitIds.ToArray());
+                lastDamagedUnitIds: lastDamagedUnitIds.ToArray(),
+                originalRoomCorruption: source.Spawn.Train.Context?.RoomCapacities?
+                    .FirstOrDefault(room => room.RoomIndex == action.RoomIndex)?.Corruption);
             if (!cardPlayMagicPower.Supported) return Unsupported(cardPlayMagicPower.UnsupportedReason!);
             context = cardPlayMagicPower.Context;
             train = cardPlayMagicPower.TrainState ?? CardSpellModel.WithContext(train, context);

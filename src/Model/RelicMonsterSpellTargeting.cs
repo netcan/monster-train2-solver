@@ -54,7 +54,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static RelicMonsterSpellTargetingResult Apply(TrainCombatState source, int relicIndex, int effectIndex,
             CardPlayRule playedRule, int playedCardId, int roomIndex, IReadOnlyList<int> lastTargets,
-            CombatTeam? originalTargetTeam, BattlePlayRules definitions, int currentTurn)
+            CombatTeam? originalTargetTeam, BattlePlayRules definitions, int currentTurn, int? originalRoomCorruption = null)
         {
             CombatContext context = source.Context!;
             CombatRelicState relic = context.Relics![relicIndex];
@@ -118,7 +118,8 @@ namespace MonsterTrain2Poju.Model
                     .All(stat => health.Upgrade.Stats.Value(stat) == (stat == "Health" ? 15 : 0)) &&
                 health.Upgrade is { Statuses.Count: 0, UnhealedHealth: 0, DamageBuff: 0, AbilityUpgrade: null, ExternalInteractions.Count: 0 } &&
                 health.Upgrade.TriggerUpgrades?.Count is not > 0;
-            if (!justCause && !liquidCourage && !fracture && !infusion && !challenge && (hasPositionChange || playedRule.Effects.Count != 1 || playedRule.OnCastEffects.Count != 0 ||
+            bool echoesPast = EchoesPastRecastModel.Known(playedRule);
+            if (!justCause && !liquidCourage && !fracture && !infusion && !challenge && !echoesPast && (hasPositionChange || playedRule.Effects.Count != 1 || playedRule.OnCastEffects.Count != 0 ||
                 playedRule.Effects[0].Type != "Damage" || playedRule.Effects[0].Target != "DropTargetCharacter" ||
                 playedRule.Effects[0].AllowEnemy || !playedRule.Effects[0].AllowPlayer || playedRule.Effects[0].Range != null))
                 return Unsupported(source, "Only a single fixed, Monster-targeted DropTarget damage effect without OnCast is modeled.");
@@ -149,6 +150,7 @@ namespace MonsterTrain2Poju.Model
                     upgrade is { Statuses.Count: 0, UnhealedHealth: 0, DamageBuff: 0, AbilityUpgrade: null, ExternalInteractions.Count: 0 } &&
                     upgrade.TriggerUpgrades?.Count is not > 0);
             if (card == null || card.MaskDescriptor == null || fracture && !corruptRecast || infusion && !infusionCard || challenge && !challengeCard ||
+                echoesPast && !EchoesPastRecastModel.Known(card) ||
                 !corruptRecast && !infusionCard && !challengeCard && card.Permanent.Upgrades.Count != 0 || card.Temporary.Upgrades.Count != 0)
                 return Unsupported(source, "Monster spell replication requires an owned, unupgraded card with captured mask metadata.");
             try
@@ -164,13 +166,17 @@ namespace MonsterTrain2Poju.Model
                 bool recastChallenge = challengeCard && combined?.Select(trait => trait.RuntimeType).SequenceEqual(new[] {
                     CardCorruptStateModel.Trait, "CardTraitExhaustState" }) == true && combined.All(trait =>
                         trait.DeclaredName == trait.RuntimeType && trait.ParamInt == 0 && trait.DefinitionParamInt == 0 && !trait.TemporaryReplacement);
-                if (combined?.Count > 0 && !recastConsume && !recastInfusion && !recastChallenge && !(corruptRecast && combined.Count == card!.Permanent.Upgrades.Count &&
+                if (combined?.Count > 0 && !recastConsume && !recastInfusion && !recastChallenge && !echoesPast && !(corruptRecast && combined.Count == card!.Permanent.Upgrades.Count &&
                     combined.Count(trait => trait.RuntimeType == "CardTraitCorruptState") == 1 &&
                     combined.Count(trait => trait.RuntimeType == "CardTraitRetain") == combined.Count - 1 - (consumeJustCause ? 1 : 0) &&
                     combined.Count(trait => trait.RuntimeType == "CardTraitExhaustState") == (consumeJustCause ? 1 : 0)))
                     return Unsupported(source, "Monster spell replication does not yet model copied card trait callbacks.");
             }
             catch (InvalidOperationException error) { return Unsupported(source, error.Message); }
+
+            int? finalCorruption = context.RoomCapacities?.FirstOrDefault(item => item.RoomIndex == roomIndex)?.Corruption;
+            if (echoesPast && (originalRoomCorruption == null || finalCorruption == null || originalRoomCorruption < 0))
+                return Unsupported(source, "Echoes of the Past replication requires its original room corruption snapshot.");
 
             RelicConditionRecord recorded = RelicConditionModel.Record(context, modifier.Conditions);
             if (!recorded.Supported) return Unsupported(source, recorded.UnsupportedReason!);
@@ -187,6 +193,10 @@ namespace MonsterTrain2Poju.Model
             {
                 room = source.Rooms.FirstOrDefault(item => item.RoomIndex == roomIndex);
                 if (room?.Units.Any(unit => unit.Id == targetId && unit.Health > 0) != true) continue;
+                // Native recasts temporarily restore the pre-play corruption
+                // without firing CorruptionAdded callbacks, then run both
+                // the attack scaling and corruption removal on the private card.
+                if (echoesPast) source = EchoesPastRecastModel.RestoreCorruption(source, roomIndex, originalRoomCorruption!.Value);
                 SpellCastCheck test = CardSpellModel.TestPlay(source, roomIndex, copiedEffects, targetId,
                     definitions, sourceCardId: playedCardId);
                 if (!test.Supported) return Unsupported(source, test.UnsupportedReason!);
@@ -209,6 +219,7 @@ namespace MonsterTrain2Poju.Model
                 copied++;
                 if (outcome != RoomOutcome.Exchanged) break;
             }
+            if (echoesPast) source = EchoesPastRecastModel.RestoreCorruption(source, roomIndex, finalCorruption!.Value);
             return new RelicMonsterSpellTargetingResult(source, outcome, copied);
         }
 

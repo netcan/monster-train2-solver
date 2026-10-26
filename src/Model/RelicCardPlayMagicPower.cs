@@ -74,7 +74,8 @@ namespace MonsterTrain2Poju.Model
             BattlePlayRules? definitions = null, int currentTurn = -1, int? selectedRoomIndex = null,
             bool placement = false, bool preview = false, TrainCombatState? trainState = null,
             CardPlayRule? playedCardRule = null, IReadOnlyList<int>? lastTargets = null,
-            CombatTeam? originalTargetTeam = null, IReadOnlyList<int>? lastDamagedUnitIds = null)
+            CombatTeam? originalTargetTeam = null, IReadOnlyList<int>? lastDamagedUnitIds = null,
+            int? originalRoomCorruption = null)
         {
             bool hasMagicPower = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.ModifyCardMagicPowerOnCardPlayed)) == true;
             bool hasCheaperSpellUpgrade = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.AddTempUpgradeToHandCardsIfCheaper)) == true;
@@ -166,7 +167,7 @@ namespace MonsterTrain2Poju.Model
                         RelicMonsterSpellTargetingResult spread = RelicMonsterSpellTargetingModel.Apply(
                             CardSpellModel.WithContext(trainState, context), relicIndex, effectIndex, playedCardRule,
                             playedCardId, context.QueryFrame?.SelectedRoomIndex ?? selectedRoomIndex ?? -1,
-                            lastTargets ?? Array.Empty<int>(), originalTargetTeam, definitions, currentTurn);
+                            lastTargets ?? Array.Empty<int>(), originalTargetTeam, definitions, currentTurn, originalRoomCorruption);
                         if (!spread.Supported) return Fail(context, spread.UnsupportedReason!);
                         trainState = spread.State;
                         context = trainState.Context!;
