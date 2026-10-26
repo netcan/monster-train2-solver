@@ -264,6 +264,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'angel-duo-moon-creation-calibration.mt2f',
     'player-angel-duo-moon-birth-replay-calibration.mt2f',
     'angel-duo-moon-creation-replay-calibration.mt2f',
+    'player-troop-enchantment-noop-calibration.mt2f',
+    'player-troop-enchantment-noop-replay-calibration.mt2f',
     'player-moon-conduit-birth-order-calibration.mt2f',
     'player-moon-conduit-birth-order-replay-calibration.mt2f',
     'player-moon-null-boss-relic-calibration.mt2f',
@@ -1940,6 +1942,7 @@ $branchPairGates = @{
     'player-wurmkin-spike-copy-calibration.mt2f' = '--wurmkin-spike-copy-only'
     'player-moonbeam-copy-deployment-calibration.mt2f' = '--moonbeam-copy-deployment-only'
     'player-moonbeam-copy-lifecycle-calibration.mt2f' = '--moonbeam-copy-lifecycle-only'
+    'player-troop-enchantment-noop-calibration.mt2f' = '--troop-enchantment-noop-only'
     'player-spent-monster-spell-relic-calibration.mt2f' = '--spent-monster-spell-relic-only'
     'player-unobserved-preview-birth-calibration.mt2f' = '--unobserved-preview-birth-only'
     'player-room-death-preview-identity-calibration.mt2f' = '--room-death-preview-identity-only'
