@@ -56,9 +56,7 @@ namespace MonsterTrain2Poju.Model
             finally { helper?.Join(); }
             Exception[] failures = errors.Where(error => error != null).Cast<Exception>().ToArray();
             if (failures.Length > 0) throw new AggregateException("Background battle search failed.", failures);
-            BattlePlanResult best = results.OrderByDescending(result => result.CompletedHorizon || result.UsedShorterHorizon)
-                .ThenBy(result => result.Score).ThenByDescending(result => result.TurnsCompleted)
-                .ThenBy(result => result.Steps.Count).First();
+            BattlePlanResult best = SelectBest(results);
             return new BattlePlanResult(best.State, best.Outcome, best.Steps, best.Score, best.TurnsCompleted,
                 results.Sum(result => result.ExpandedNodes), results.Sum(result => result.DuplicateStates),
                 results.Sum(result => result.BeamPruned), watch.Elapsed,
@@ -72,5 +70,10 @@ namespace MonsterTrain2Poju.Model
                 BattleSearchMetrics.Sum(results.Select(result => result.SearchMetrics)),
                 results.Any(result => result.StoppedEarly), earlyStop?.PyreHealthUpperBound);
         }
+
+        internal static BattlePlanResult SelectBest(System.Collections.Generic.IEnumerable<BattlePlanResult> results) =>
+            results.OrderByDescending(result => result.CompletedHorizon || result.UsedShorterHorizon)
+                .ThenBy(result => result.Score).ThenBy(result => BattlePlanner.PositionCost(result.State))
+                .ThenByDescending(result => result.TurnsCompleted).ThenBy(result => result.Steps.Count).First();
     }
 }

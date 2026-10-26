@@ -1769,6 +1769,13 @@ if (args.Length == 2 && args[0] == "--belief-battle-only")
     return;
 }
 
+if (args.Length == 3 && args[0] == "--parallel-planner-merge-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var alternative = ModelJson.ReadFixture(args[2]);
+    ParallelPlannerChecks.Merge(fixture.RootElement, alternative.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--parallel-planner-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -6271,7 +6278,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-har
         "full-battle-harvester-birth-calibration.mt2f"));
     HarvesterBirthChecks.Component(observation.RootElement, fixture.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "parallel-planner-merge-model-calibration.mt2f"))
+{
+    using var preferred = ModelJson.ReadFixture(path);
+    using var alternative = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "parallel-planner-merge-model-counterexample.mt2f"));
+    ParallelPlannerChecks.Merge(preferred.RootElement, alternative.RootElement);
+}
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase) &&
+    !path.Contains("parallel-planner-merge-model-", StringComparison.Ordinal) &&
     !path.EndsWith("player-room-attachment-birth-observed.mt2f", StringComparison.OrdinalIgnoreCase)).ToArray());
 foreach (string path in args.Where(path => (Path.GetFileName(path).StartsWith("full-battle-random-campaign-", StringComparison.Ordinal) ||
     Path.GetFileName(path).StartsWith("full-battle-metagame-campaign-", StringComparison.Ordinal)) &&

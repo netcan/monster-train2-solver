@@ -108,6 +108,15 @@ namespace MonsterTrain2Poju.Model
             return -hp * 1000d + Math.Max(-499d, Math.Min(499d, enemy - allies));
         }
 
+        // Keep capped public scores comparable across workers as well as within
+        // one search. This is a tie-breaker, never a substitute for win/Pyre HP.
+        internal static double PositionCost(BattleTurnState state) =>
+            state.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.Health > 0)
+                .Sum(unit => unit.IsPyre ? 0d : unit.Team == CombatTeam.Enemy ?
+                    unit.Health + (double)(unit.Status("armor")?.Stacks ?? 0) :
+                    -(Math.Max(0d, unit.Attack) * (1d + Math.Max(0, unit.Status("multistrike")?.Stacks ?? 0)) +
+                        unit.Health * .1 + Math.Max(0, unit.Status("armor")?.Stacks ?? 0) * .1));
+
         public static BattlePlanResult Plan(BattleTurnState source, Func<BattleTurnState, string> stateKey,
             BattlePlannerOptions? options = null, Func<BattleTurnState, RoomOutcome, double>? evaluate = null,
             CancellationToken cancellationToken = default)
@@ -474,11 +483,7 @@ namespace MonsterTrain2Poju.Model
                 // The public score caps positional value below a single Pyre
                 // HP. Keep useful actions distinguishable on that plateau,
                 // without changing archived scores or the survival ordering.
-                PositionCost = state.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.Health > 0)
-                    .Sum(unit => unit.IsPyre ? 0d : unit.Team == CombatTeam.Enemy ?
-                        unit.Health + (double)(unit.Status("armor")?.Stacks ?? 0) :
-                        -(Math.Max(0d, unit.Attack) * (1d + Math.Max(0, unit.Status("multistrike")?.Stacks ?? 0)) +
-                            unit.Health * .1 + Math.Max(0, unit.Status("armor")?.Stacks ?? 0) * .1));
+                PositionCost = BattlePlanner.PositionCost(state);
             }
         }
     }

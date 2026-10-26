@@ -69,6 +69,15 @@ Underlegion、LazarusLeague、Hellhorned、Awoken、Stygian、Umbra、Remnant、
 包含36文件，SHA256`db5b8dcea466db9b3c1b45e035de01505475acdf4d503a366337fadab066d822`，
 恢复后35项载荷哈希一致；之前薪火3、21入口及失败证据继续保留。
 
+薪火31入口的0.2.111实际默认10000ms／双线程终战随后完成41输入，
+35次出牌、六次结束回合、12列车阶段，仍败北。255次采集、43次发布，
+完整状态／预测／RNG及四项零失败通过，原生源耗时241.88秒、原文件不变。
+原件`20261026-083354-473ad782`已归档为
+`full-battle-random-campaign-11-ring8-pyre31-release111-budget10000-loss.mt2f`，
+SHA256`9e3f5ba10660420015ccccf876350eb1859a4e54eb2cd6a86a8de4234a25e9f0`。
+0.2.112修正[并行同分排序](../tests/fixtures/notes/planning/parallel-merge-ties.md)，
+同入口30秒／4096节点调查保留49输入路线，仍为模型败局，不计原生胜局。
+
 第十一组第七战在0.2.107补齐[预览统计查询](../tests/fixtures/notes/combat/last-attack-statistic-refresh.md)
 后，实际10000ms／双线程完整36输入（30出牌／6结束回合）仍败。
 完整状态／预测／RNG及四项零失败通过，原生源耗时215.77秒；源SHA256

@@ -3,6 +3,55 @@ using MonsterTrain2Poju.Model;
 
 internal static class ParallelPlannerChecks
 {
+    internal static void Merge(FixtureValue fixture, FixtureValue alternative)
+    {
+        foreach (var prediction in new[] { fixture, alternative })
+            Require(prediction.GetProperty("EvidenceKind").GetString() == "ModelRootPrediction" &&
+                prediction.GetProperty("NativeValidationRequired").GetBoolean(),
+                "Merge witnesses must retain their model-only evidence classification.");
+        Require(fixture.GetProperty("SourceSHA256").GetString() == alternative.GetProperty("SourceSHA256").GetString(),
+            "Merge witnesses must derive from the same source archive.");
+        BattleTurnState root = fixture.GetProperty("Root").Deserialize<BattleTurnState>()!;
+        using var keys = new BattleStateKeys();
+        string parent = keys.Key(root);
+        var playedSteps = fixture.GetProperty("Plan").GetProperty("Steps").EnumerateArray().Select(row => new BattleSearchStep(
+            row.GetProperty("Action").Deserialize<PlayCardAction>(), row.GetProperty("IsEndTurn").GetBoolean())).ToArray();
+        BattleTurnState played = BattlePlannerChecks.Replay(root, playedSteps, out RoomOutcome outcome);
+        Require(outcome == RoomOutcome.PlayerDefeated &&
+            keys.Key(played) == keys.Key(fixture.GetProperty("Plan").GetProperty("State").Deserialize<BattleTurnState>()!),
+            "Played merge witness differs from its independently replayed forecast.");
+        Require(keys.Key(alternative.GetProperty("Root").Deserialize<BattleTurnState>()!) == parent,
+            "Merge alternative must be an explicitly model-only forecast from the same complete root/RNG.");
+        FixtureValue recorded = alternative.GetProperty("Plan");
+        var idleSteps = recorded.GetProperty("Steps").EnumerateArray().Select(step => new BattleSearchStep(
+            step.GetProperty("Action").Deserialize<PlayCardAction>(), step.GetProperty("IsEndTurn").GetBoolean())).ToArray();
+        BattleTurnState idle = BattlePlannerChecks.Replay(root, idleSteps, out RoomOutcome idleOutcome);
+        Require(idleOutcome == RoomOutcome.PlayerDefeated && idleSteps.Length < playedSteps.Length &&
+            idleSteps.Count(step => step.IsEndTurn) == playedSteps.Count(step => step.IsEndTurn) &&
+            keys.Key(idle) == keys.Key(recorded.GetProperty("State").Deserialize<BattleTurnState>()!) &&
+            BattlePlanner.PositionCost(played) < BattlePlanner.PositionCost(idle),
+            $"Missing shorter, equally scored but worse terminal alternative: outcome={idleOutcome}, " +
+            $"steps={idleSteps.Length}/{playedSteps.Length}, turns={idleSteps.Count(step => step.IsEndTurn)}/{playedSteps.Count(step => step.IsEndTurn)}, " +
+            $"cost={BattlePlanner.PositionCost(played)}/{BattlePlanner.PositionCost(idle)}, " +
+            $"stateMatch={keys.Key(idle) == keys.Key(recorded.GetProperty("State").Deserialize<BattleTurnState>()!)}.");
+        BattlePlanResult Plan(BattleTurnState state, IReadOnlyList<BattleSearchStep> steps, double score) =>
+            new(state, RoomOutcome.PlayerDefeated, steps, score, steps.Count(step => step.IsEndTurn),
+                0, 0, 0, TimeSpan.Zero, false, false, false, false, true,
+                Array.Empty<UnsupportedActionAttempt>(), null, searchedToBattleEnd: true);
+        var useful = Plan(played, playedSteps, BattlePlanner.Evaluate(played, outcome));
+        var empty = Plan(idle, idleSteps, BattlePlanner.Evaluate(idle, idleOutcome));
+        Require(useful.Score == empty.Score, "Merge witness must retain the public loss score plateau.");
+        foreach (var alternatives in new[] { new[] { useful, empty }, new[] { empty, useful } })
+            Require(ReferenceEquals(ParallelBattlePlanner.SelectBest(alternatives), useful),
+                "Portfolio merge discarded the useful equal-score route for fewer steps.");
+        var primary = Plan(idle, idleSteps, useful.Score - 1);
+        Require(ReferenceEquals(ParallelBattlePlanner.SelectBest(new[] { useful, primary }), primary),
+            "Positional merge tie-breaker overrode the primary objective.");
+        Require(keys.Key(root) == parent, "Merge alternatives mutated their shared native root.");
+        Console.WriteLine($"PARALLEL-MERGE PASS: same-root complete losses, played={playedSteps.Length} shorter={idleSteps.Length}, " +
+            $"cost={BattlePlanner.PositionCost(played)}<{BattlePlanner.PositionCost(idle)}, order independence, primary score and immutable full-state/RNG replay.");
+    }
+
     internal static void NativePair(FixtureValue source, FixtureValue replay)
     {
         FloorBrowseAdviceChecks.NativePair(source, replay);
