@@ -1,17 +1,18 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.182, source`df49fde4bd6d6cbebb0fa8f7f602652757db2f70`.
-Installed at03:34 with67 protected save/config/other-mod files unchanged. Package
-`results/mod-dist/PojuAdvisor-0.2.182-Windows-20261027-033437.zip`,SHA256
-`7fda50438cc27604c8105e400fbaf539f2b097ebcd7eccb98225600291cc5d0f`.
-The exact payload wins sample18 Ring1 with33inputs,27plays/6EndTurns,Pyre80,
-11train stages and four zero failure counters. Independent frozen native replay
-matches all states/forecasts/RNG and advances normally through52events.
+Current Windows installation:0.2.186, source`8fdc8223`.
+Installed at04:32 with67 protected save/config/other-mod files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.186-Windows-20261027-043224.zip`,SHA256
+`c424db4c830d758a02a1545d48cdfc6ec06998b0f451e564167bdbf0a157c288`.
+The exact payload wins sample18 Ring3 with45inputs,36plays/9EndTurns,Pyre80,
+17train stages and four zero failure counters. Independent frozen native replay
+matches all states/forecasts/RNG and advances normally through67events.
 The three installed DLLs,compiled provenance and package were verified. The
-real game was stopped; next launch loads0.2.182. Previous DLLs and receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261027-033437/`. No Mac build was made.
-This includes the accepted ability-cache continuation, Untouchable room and
-front-unit relic fixes. Sample18 has two accepted battles; this is not a campaign clear.
+real game was stopped; next launch loads0.2.186. Previous DLLs and receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261027-043224/`. No Mac build was made.
+This includes the accepted ability-cache continuation, Untouchable room/front
+relic fixes, Stasis shatter, triple Juice and TitanCurse cost combination.
+Sample18 has three accepted battles; this is not a campaign clear.
 
 Previous Windows installation:0.2.175, source`7ab8b50c6b8538fdf527a78a58f099304758c7d6`.
 Installed at02:21 with67 protected save/config/other-mod files unchanged. Package

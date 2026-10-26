@@ -15,14 +15,16 @@ namespace MonsterTrain2Poju.Model
                 card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade =>
                     upgrade.Lifecycle?.AddedTraits.Any(trait => Juice(trait.RuntimeType)) == true)) ||
             card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade => upgrade.DataId == TripleUpgrade);
-        internal static bool KnownTripleUpgrade(CardUpgradeModifier upgrade) => upgrade.DataId == TripleUpgrade &&
-            upgrade.AssetKey == "TraitJuice3" && upgrade.Stats.Damage == 0 && upgrade.Stats.Health == 0 &&
+        internal static bool KnownTripleUpgrade(CardUpgradeModifier upgrade) => KnownJuiceUpgrade(upgrade, true);
+        private static bool KnownJuiceUpgrade(CardUpgradeModifier upgrade, bool triple) => upgrade.DataId == (triple ? TripleUpgrade : Upgrade) &&
+            upgrade.AssetKey == (triple ? "TraitJuice3" : "TraitJuice") && upgrade.Stats.Damage == 0 && upgrade.Stats.Health == 0 &&
             upgrade.Stats.Cost == 0 && upgrade.Stats.Heal == 0 && upgrade.Stats.Size == 0 && upgrade.Stats.XCost == 0 &&
             upgrade.Stats.EquipmentLimit == 0 && upgrade.Stats.UpgradeSlotCount == 0 && upgrade.Statuses.Count == 0 &&
             upgrade.UnhealedHealth == 0 && upgrade.DamageBuff == 0 && upgrade.AbilityUpgrade == null &&
             upgrade.TriggerUpgrades?.Count > 0 != true && upgrade.Lifecycle is { AddedTraits.Count: 1, RemovedRuntimeTypes.Count: 0, Triggers.Count: 0 } lifecycle &&
-            lifecycle.AddedTraits[0].RuntimeType == TripleTrait && lifecycle.AddedTraits[0].DeclaredName == TripleTrait &&
-            Ordinary(lifecycle.AddedTraits[0], 3);
+            lifecycle.AddedTraits[0].RuntimeType == (triple ? TripleTrait : Trait) &&
+            lifecycle.AddedTraits[0].DeclaredName == lifecycle.AddedTraits[0].RuntimeType &&
+            Ordinary(lifecycle.AddedTraits[0], triple ? 3 : 2);
         private static bool KnownTitanCurse(CardUpgradeModifier upgrade) =>
             upgrade.DataId == "f37fb903-28d6-4d49-b50e-9226f4854816" && upgrade.AssetKey == "TitanCurse_Upgrade" &&
             upgrade.Stats.Cost == 1 && upgrade.Stats.Damage == 0 && upgrade.Stats.Health == 0 && upgrade.Stats.Heal == 0 &&
@@ -37,19 +39,22 @@ namespace MonsterTrain2Poju.Model
             // Original Lifesteal/Scorch,Ritual of Battle,and calibrated merchant owners.
             // Ordered scaling callbacks and other owners remain explicit gaps.
             var traits = CardExhaustModel.RefreshTraits(card).CombinedTraits!;
-            if (traits.Any(trait => trait.RuntimeType == TripleTrait))
+            bool triple = traits.Any(trait => trait.RuntimeType == TripleTrait);
+            if (triple || card.DataId == "ab3c2bfa-0ad4-4be0-a050-293f4866bd65")
             {
                 bool spike = card.DataId == "ab3c2bfa-0ad4-4be0-a050-293f4866bd65" && traits.Count == 3 &&
                     traits[0].RuntimeType == "CardTraitScalingAddStatusEffect" && traits[0].DeclaredName == traits[0].RuntimeType && Ordinary(traits[0], 4) &&
                     traits[1].RuntimeType == "CardTraitExhaustState" && Ordinary(traits[1], 0) &&
-                    traits[2].RuntimeType == TripleTrait && traits[2].DeclaredName == TripleTrait && Ordinary(traits[2], 3) &&
-                    card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] { "6497cd22-8c83-4b13-8578-269f4387250d", TripleUpgrade }) &&
-                    KnownTripleUpgrade(card.Permanent.Upgrades[1]) && card.Temporary.Upgrades.All(KnownTitanCurse) &&
+                    traits[2].RuntimeType == (triple ? TripleTrait : Trait) && traits[2].DeclaredName == traits[2].RuntimeType && Ordinary(traits[2], triple ? 3 : 2) &&
+                    card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] { "6497cd22-8c83-4b13-8578-269f4387250d", triple ? TripleUpgrade : Upgrade }) &&
+                    KnownJuiceUpgrade(card.Permanent.Upgrades[1], triple) &&
+                    (triple ? card.Temporary.Upgrades.All(KnownTitanCurse) : card.Temporary.Upgrades.Count == 0) &&
                     card.StatusScalingTraits is { Count: 1 } scaling && scaling[0].Query.Type == "PlayedCost" &&
                     scaling[0].Query.Duration == "ThisBattle" && scaling[0].Query.VariableCost &&
                     scaling[0].StacksPerStat == 4 && !scaling[0].OnlyWhenSourceZero && scaling[0].Filter == 0 &&
                     scaling[0].StatusIds.SequenceEqual(new[] { "valor" });
-                return spike ? null : "Triple Juice with this card or ordered scaling traits requires native calibration.";
+                return spike ? null : triple ? "Triple Juice with this card or ordered scaling traits requires native calibration." :
+                    "Juice with this card or ordered scaling traits requires native calibration.";
             }
             bool fracture = card.DataId == "b197fdec-a77d-49f5-bc05-6233b7ce01c7" && traits.Count == 2 &&
                 traits[0].RuntimeType == "CardTraitCorruptState" && Ordinary(traits[0], 0) &&

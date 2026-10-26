@@ -1,5 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 4 && args[0] == "--double-juice-spike-only")
+{
+    using var refusal = ModelJson.ReadFixture(args[1]);
+    using var source = ModelJson.ReadFixture(args[2]);
+    using var replay = ModelJson.ReadFixture(args[3]);
+    DoubleJuiceSpikeChecks.Native(refusal.RootElement, source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--triple-juice-curse-cast-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6508,6 +6516,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-tri
     using var source = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-spike-calibration.mt2f"));
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-spike-replay-calibration.mt2f"));
     TripleJuiceSpikeChecks.Native(refused.RootElement, source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-double-juice-spike-refusal-calibration.mt2f"))
+{
+    using var refusal = ModelJson.ReadFixture(path);
+    using var source = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-double-juice-spike-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-double-juice-spike-replay-calibration.mt2f"));
+    DoubleJuiceSpikeChecks.Native(refusal.RootElement, source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-stasis-shatter-counterexample-calibration.mt2f"))
 {
