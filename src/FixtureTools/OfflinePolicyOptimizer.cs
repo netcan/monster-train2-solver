@@ -125,7 +125,8 @@ internal static partial class OfflineBattleSearch
                 // Rank already-owned successors, keeping the full neighborhood
                 // available after one best single input per card or ability.
                 var ordered = alternatives.OrderBy(candidate =>
-                    BattlePlanner.Evaluate(candidate.State, candidate.Outcome)).ToArray();
+                    BattlePlanner.Evaluate(candidate.State, candidate.Outcome))
+                    .ThenBy(candidate => perDecisionCandidateLimit > 0 ? NeighborPositionCost(candidate.State) : 0).ToArray();
                 var singles = perDecisionCandidateLimit == 0 ? Array.Empty<Step>() : ordered
                     .GroupBy(candidate => (candidate.Step.Action?.CardInstanceId ?? -1,
                         candidate.Step.Action?.ActivatorUnitId ?? 0))
@@ -152,7 +153,8 @@ internal static partial class OfflineBattleSearch
                         foreach (var attempt in next.UnsupportedAttempts)
                             Unsupported(attempt.Reason ?? "Unsupported second input.", attempt.Action, first.State, firstPrefix);
                         foreach (var second in next.SupportedCandidates.OrderBy(candidate =>
-                            BattlePlanner.Evaluate(candidate.Result.State!, candidate.Result.Outcome)).Take(secondActionWidth))
+                            BattlePlanner.Evaluate(candidate.Result.State!, candidate.Result.Outcome))
+                            .ThenBy(candidate => perDecisionCandidateLimit > 0 ? NeighborPositionCost(candidate.Result.State!) : 0).Take(secondActionWidth))
                         {
                             if (Expired() || DecisionBudgetReached()) break;
                             yield return (new[] { first.Step, new Step { Action = second.Action } },
@@ -166,7 +168,8 @@ internal static partial class OfflineBattleSearch
                             foreach (var attempt in thirds.UnsupportedAttempts)
                                 Unsupported(attempt.Reason ?? "Unsupported third input.", attempt.Action, secondState, secondPrefix);
                             foreach (var third in thirds.SupportedCandidates.OrderBy(candidate =>
-                                BattlePlanner.Evaluate(candidate.Result.State!, candidate.Result.Outcome)).Take(thirdActionWidth))
+                                BattlePlanner.Evaluate(candidate.Result.State!, candidate.Result.Outcome))
+                                .ThenBy(candidate => NeighborPositionCost(candidate.Result.State!)).Take(thirdActionWidth))
                             {
                                 if (Expired() || DecisionBudgetReached()) break;
                                 yield return (new[] { first.Step, new Step { Action = second.Action }, new Step { Action = third.Action } },
@@ -319,6 +322,13 @@ internal static partial class OfflineBattleSearch
             return state;
         }
     }
+
+    // Only breaks equal capped public scores. Keep win/Pyre ordering above
+    // this local material estimate, and preserve unlimited legacy enumeration.
+    private static double NeighborPositionCost(BattleTurnState state) =>
+        state.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.Health > 0 && !unit.IsPyre)
+            .Sum(unit => unit.Team == CombatTeam.Enemy ? unit.Health + (double)(unit.Statuses.FirstOrDefault(status => status.Id == "armor")?.Stacks ?? 0) :
+                -(Math.Max(0d, unit.Attack) * unit.Attacks + unit.Health * .1 + Math.Max(0, unit.Statuses.FirstOrDefault(status => status.Id == "armor")?.Stacks ?? 0) * .1));
 
     internal static double ImprovementMerit(BattleTurnState state, RoomOutcome result)
     {
