@@ -203,6 +203,7 @@ namespace MonsterTrain2Poju.Probe
             bool observing = waiting && rows.Count > 0 && rows.Last().Boundary &&
                 request.GetProperty("Reason").GetString() is
                     "Battle preview floor 1: Combined troop upgrades and enchantment source ordering require native calibration." or
+                    "Train combat floor 1: Combined troop upgrades and enchantment source ordering require native calibration." or
                     "Combined troop upgrades and enchantment source ordering require native calibration.";
             object? before = observing ? TroopSnapshot() : null;
             while (operation.MoveNext()) yield return operation.Current;
