@@ -6096,7 +6096,7 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-terminal-companion-roster-counterexample.mt2f"))
     TerminalCompanionRosterChecks.Native(path);
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-terminal-companion-slot-counterexample.mt2f"))
-    TerminalCompanionSlotChecks.Native(path);
+    TerminalCompanionSlotChecks.Pair(path, ModelJson.RelatedFixture(path, "player-terminal-companion-slot-replay.mt2f"));
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-terminal-companion-slot-observation.mt2f"))
 {
     using var observation = ModelJson.ReadFixture(path);

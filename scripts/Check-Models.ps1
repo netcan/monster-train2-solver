@@ -170,6 +170,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-terminal-companion-roster-counterexample.mt2f',
     'player-terminal-companion-slot-counterexample.mt2f',
     'player-terminal-companion-slot-observation.mt2f',
+    'player-terminal-companion-slot-replay.mt2f',
     'player-unit-ability-duality-counterexample.mt2f',
     'player-effect-test-rng-counterexample.mt2f',
     'player-effect-test-rng-observed.mt2f',
@@ -1707,7 +1708,9 @@ if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -in @('player-terminal-co
         if ($LASTEXITCODE -ne 0) { throw 'Terminal companion slot checker build failed.' }
     }
     $mode = if ($selectedFixtureNames[0] -eq 'player-terminal-companion-slot-observation.mt2f') { '--terminal-companion-slot-observation-only' } else { '--terminal-companion-slot-only' }
-    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') $mode (Get-TestFixturePath $selectedFixtureNames[0])
+    $nativeFiles = @((Get-TestFixturePath $selectedFixtureNames[0]))
+    if ($mode -eq '--terminal-companion-slot-only') { $nativeFiles += Get-TestFixturePath 'player-terminal-companion-slot-replay.mt2f' }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') $mode @nativeFiles
     if ($LASTEXITCODE -ne 0) { throw 'Terminal companion slot check failed.' }
     return
 }
