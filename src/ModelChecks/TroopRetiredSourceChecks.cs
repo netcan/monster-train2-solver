@@ -89,7 +89,7 @@ internal static class TroopRetiredSourceChecks
             var changed = new EnchantmentCombatState(new TrainCombatState(rooms, frame.Train.Movement, frame.Train.EnemySlotsPerRoom, frame.Train.Context),
                 retired, frame.EnchanterIds, frame.AllowUpdates, false, control != "PrimaryWrite", frame.TestRng);
             var result = TroopAuraModel.UpdateAll(changed, [6]);
-            if (control == "Observed") Require(result.Supported && result.State!.Train.Rooms[1].Units.Single(unit => unit.Id == birth.Id).Attack == 5,
+            if (control is "Observed" or "StillBound") Require(result.Supported && result.State!.Train.Rooms[1].Units.Single(unit => unit.Id == birth.Id).Attack == 5,
                 "Observed retired-source preview did not apply exactly one upgrade.");
             else Require(!result.Supported && result.UnsupportedReason == TroopEnchantmentNoOpChecks.Reason,
                 "Uncalibrated retired-source write escaped the ordering guard: " + control);

@@ -134,26 +134,29 @@ namespace MonsterTrain2Poju.Model
                 return false;
             var enchanters = source.Train.Rooms.SelectMany(floor => floor.Units.Select(unit => (floor.RoomIndex, Unit: unit)))
                 .Where(actor => source.EnchanterIds.Contains(actor.Unit.Id)).ToArray();
-            bool activePair = enchanters.Length == 2 && enchanters.Any(actor => actor.RoomIndex == room.RoomIndex &&
-                Signature(actor.Unit, "MonsterFaeMooncaller", CombatTeam.Player, "conduit", 3, 1, false, true)) &&
-                enchanters.Any(actor => actor.RoomIndex != room.RoomIndex &&
-                Signature(actor.Unit, "EnchanterT1_Speed", CombatTeam.Enemy, "haste", 1, 2, true, false));
-            if (!activePair || source.EnchanterIds.Count == 2) return activePair;
-            // The next native wave retains the old, destroyed Haste owner in
-            // its source registry after unbinding it. It contributes no writes
-            // to the observed primary or preview birth; keep its captured state
-            // and identity intact. Primary births still require a current point.
-            return source.RetainedUnits.Count(actor => source.EnchanterIds.Contains(actor.Unit.Id) &&
-                !enchanters.Any(active => active.Unit.Id == actor.Unit.Id) && actor.RoomIndex == -1 && !actor.Preview &&
-                Signature(actor.Unit, "EnchanterT1_Speed", CombatTeam.Enemy, "haste", 1, 2, true, false, bound: false)) == 1;
+            bool PlayerAura((int RoomIndex, CombatUnit Unit) actor) => actor.RoomIndex == room.RoomIndex &&
+                Signature(actor.Unit, "MonsterFaeMooncaller", CombatTeam.Player, "conduit", 3, 1, false, true);
+            if (enchanters.Length is not (1 or 2) || enchanters.Count(PlayerAura) != 1 ||
+                enchanters.Any(actor => !PlayerAura(actor) && (actor.RoomIndex == room.RoomIndex ||
+                    !Signature(actor.Unit, "EnchanterT1_Speed", CombatTeam.Enemy, "haste", 1, 2, true, false)))) return false;
+            // Native RoomManager only updates actors still in the tower. A
+            // destroyed Haste owner remains in the captured registry, both
+            // before and after its deferred binding cleanup. Keep that object
+            // unchanged; it contributes no troop writes. Never infer inactivity
+            // from the registry length, binding flag or health alone.
+            var retired = source.RetainedUnits.Where(actor => source.EnchanterIds.Contains(actor.Unit.Id) &&
+                !enchanters.Any(active => active.Unit.Id == actor.Unit.Id)).ToArray();
+            return retired.Length == source.EnchanterIds.Count - enchanters.Length && retired.All(actor =>
+                actor.RoomIndex == -1 && !actor.Preview &&
+                Signature(actor.Unit, "EnchanterT1_Speed", CombatTeam.Enemy, "haste", 1, 2, true, false, active: false));
 
             bool Signature(CombatUnit unit, string asset, CombatTeam team, string status, int count, int param,
-                bool enemy, bool player, bool bound = true)
+                bool enemy, bool player, bool active = true)
             {
                 var effects = unit.Triggers.SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null).ToArray();
                 return unit.AssetKey == asset && unit.Team == team && effects.Length == 1 &&
-                    (bound ? unit.Health > 0 && unit.DeathState?.IsDestroyed != true : unit.Health <= 0 && unit.DeathState?.IsDestroyed == true) &&
-                    effects[0].Enchantment is EnchantmentRule aura && aura.Bound == bound && !aura.HasParentCard &&
+                    (active ? unit.Health > 0 && unit.DeathState?.IsDestroyed != true : unit.Health <= 0 && unit.DeathState?.IsDestroyed == true) &&
+                    effects[0].Enchantment is EnchantmentRule aura && (!active || aura.Bound) && !aura.HasParentCard &&
                     aura.Targeting is { Type: "AddStatus", Target: "Room", Value: 0 } &&
                     aura.Targeting.Range == null && !aura.Targeting.OnlyIfNoEnemies &&
                     aura.Targeting.Filters is { Health: "Both", RequiredStatuses.Count: 0, ExcludedStatuses.Count: 0,
