@@ -14,5 +14,11 @@ release186 replay has one; both match full state, forecast and RNG across all
 30 inputs. Four detached parallel EndTurn branches match and preserve their
 parent. Unknown upgrade ID/asset, cost+2 and damage+1 remain unsupported.
 
-This calibrates the cost-upgrade boundary and resulting hand. Actual casting
-of the upgraded Spike and a complete battle win still require campaign evidence.
+Two additional31-input observations preserve the exact30-input prefix and
+cast the upgraded Spike at turn6 with3 energy. The native cast pays3, scales
+to12 then triples to36 Valor and exhausts the card. Both complete native
+trajectories and four detached branches match full state/forecast/RNG.
+
+The separate full Ring3 default-budget acceptance has45 inputs, Pyre80 and an
+independent normal replay into Ring4. That route casts Spike without a temporary
+curse; the31-input component supplies the specific upgraded-cast evidence.

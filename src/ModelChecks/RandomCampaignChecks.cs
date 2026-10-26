@@ -7,6 +7,13 @@ internal static class RandomCampaignChecks
 {
     internal static void Curated(string path)
     {
+        if (path.EndsWith("full-battle-random-campaign-16-ring7-release186-refined-search.mt2f", StringComparison.Ordinal))
+        {
+            using var native = ModelJson.ReadFixture(path);
+            using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
+            RefinedPair(native.RootElement, replay.RootElement, 1168994391, 0, 6, "Awoken", "LunaCoven", 54);
+            return;
+        }
         if (path.EndsWith("full-battle-random-campaign-17-ring3-release178-offline-search.mt2f", StringComparison.Ordinal))
         {
             using var native = ModelJson.ReadFixture(path);

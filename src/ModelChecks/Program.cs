@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--triple-juice-curse-cast-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    TripleJuiceCurseCastChecks.Native(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--triple-juice-curse-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6488,6 +6495,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-tri
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-curse-replay-calibration.mt2f"));
     TripleJuiceCurseChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-triple-juice-curse-cast-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-curse-cast-replay-calibration.mt2f"));
+    TripleJuiceCurseCastChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-triple-juice-spike-refusal-calibration.mt2f"))
 {
