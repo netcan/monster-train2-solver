@@ -213,6 +213,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-unobserved-preview-birth-replay-calibration.mt2f',
     'player-zero-energy-x-policy-calibration.mt2f',
     'player-zero-energy-x-policy-replay-calibration.mt2f',
+    'player-x-room-status-policy-calibration.mt2f',
+    'player-x-room-status-policy-replay-calibration.mt2f',
     'player-liquid-courage-recast-calibration.mt2f',
     'player-liquid-courage-recast-replay-calibration.mt2f',
     'player-monster-spell-no-teammates-calibration.mt2f',
@@ -1809,6 +1811,7 @@ $branchPairGates = @{
     'player-spent-monster-spell-relic-calibration.mt2f' = '--spent-monster-spell-relic-only'
     'player-unobserved-preview-birth-calibration.mt2f' = '--unobserved-preview-birth-only'
     'player-zero-energy-x-policy-calibration.mt2f' = '--zero-energy-x-policy-only'
+    'player-x-room-status-policy-calibration.mt2f' = '--x-room-status-policy-only'
     'player-liquid-courage-recast-calibration.mt2f' = '--liquid-courage-recast-only'
     'player-monster-spell-no-teammates-calibration.mt2f' = '--monster-spell-no-teammates-only'
     'player-fracture-recast-calibration.mt2f' = '--fracture-recast-only'
