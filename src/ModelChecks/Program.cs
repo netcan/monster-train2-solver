@@ -1989,6 +1989,16 @@ if (args.Length is 2 or 3 && args[0] == "--room-death-preview-identity-only")
     RoomDeathPreviewIdentityChecks.Native(source.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length == 4 && args[0] == "--terminal-coroutine-planes-only")
+{
+    using var counterexample = ModelJson.ReadFixture(args[1]);
+    using var source = ModelJson.ReadFixture(args[2]);
+    using var replay = ModelJson.ReadFixture(args[3]);
+    TerminalCoroutinePlaneChecks.Pair(counterexample.RootElement, source.RootElement, replay.RootElement);
+    TerminalEnemySlotChecks.Stages(args[2]);
+    TerminalEnemySlotChecks.Stages(args[3]);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--room-death-retained-cleanup-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6706,6 +6716,17 @@ foreach (string path in args.Where(path => (Path.GetFileName(path).StartsWith("f
     Path.GetFileName(path).StartsWith("full-battle-metagame-campaign-", StringComparison.Ordinal)) &&
     (path.EndsWith("-search.mt2f", StringComparison.Ordinal) || path.EndsWith("-loss.mt2f", StringComparison.Ordinal))))
     RandomCampaignChecks.Curated(path);
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-terminal-coroutine-planes-counterexample-calibration.mt2f"))
+{
+    using var counterexample = ModelJson.ReadFixture(path);
+    string sourcePath = ModelJson.RelatedFixture(path, "full-battle-random-campaign-14-ring2-release143-budget10000-search.mt2f");
+    string replayPath = ModelJson.RelatedFixture(path, "full-battle-random-campaign-14-ring2-release143-budget10000-replay.mt2f");
+    using var source = ModelJson.ReadFixture(sourcePath);
+    using var replay = ModelJson.ReadFixture(replayPath);
+    TerminalCoroutinePlaneChecks.Pair(counterexample.RootElement, source.RootElement, replay.RootElement);
+    TerminalEnemySlotChecks.Stages(sourcePath);
+    TerminalEnemySlotChecks.Stages(replayPath);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-resumed-moon-capture-counterexample.mt2f"))
 {
     using var counterexample = ModelJson.ReadFixture(path);
