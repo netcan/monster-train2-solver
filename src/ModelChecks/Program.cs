@@ -5907,6 +5907,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-justcause-monster-spell-replay-calibration.mt2f"));
     JustCauseMonsterSpellChecks.Native(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) is "player-wurmkin-spike-copy-calibration.mt2f" or "player-wurmkin-spike-copy-replay-calibration.mt2f")
+    .Select(path => ModelJson.RelatedFixture(path, "player-wurmkin-spike-copy-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-wurmkin-spike-copy-replay-calibration.mt2f"));
+    WurmkinSpikeCopyChecks.Copy(source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-wurmkin-spike-copy-deployment-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-wurmkin-spike-copy-deployment-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

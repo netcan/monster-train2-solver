@@ -14,7 +14,15 @@
 父分支。四个原生缩放参数变更及一个先天X值变更控制保持拒绝。
 既有X费不灭／冰封复制的15输入独立原生双进程回归通过。
 
-当前证据只验收部署解除拒绝；实际施放、复制继承和清除行为继续在第六战
-原生流程中核对，未据部署成功推断法术执行或整场胜利。
+第六战实际施放推进至第8输入后，0.2.121漏掉新副本35的先天基础特性。
+原生 `CardState.SetupTraitUpgrades` 会在复制永久升级时安装此特性；模型的
+永久特性安装清单未包含先天。0.2.122补齐安装，继续保留费用-1和X值+1。
+副本移入手牌，原牌进入消耗区，复制升级被短命替换，未递归复制。
+
+`player-wurmkin-spike-copy-{replay-,}calibration.mt2f` 保留原始错误预测和
+独立修复复放：8输入的完整后继／RNG及四个不变父分支全部一致。
+既有带冰封的X费不灭复制15输入双进程回归仍通过。
+这里尚不宣称该副本后续施放、清除或整场胜利，继续在整场流程中核对。
 
 运行 `scripts/Check-Models.ps1 -Fixture player-wurmkin-spike-copy-deployment-calibration.mt2f`。
+施放校准使用 `-Fixture player-wurmkin-spike-copy-calibration.mt2f`。
