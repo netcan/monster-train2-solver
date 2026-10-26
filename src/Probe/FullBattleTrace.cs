@@ -1766,6 +1766,9 @@ namespace MonsterTrain2Poju.Probe
                 TriggerRepeatBatches = ConditionalTriggerScenario.RepeatBatches,
                 RallyOperations = RallyScenario.Operations,
                 DetachedCardClones = UnitBirthProbe.Clones,
+#if DEVELOPMENT_PROBE
+                UnownedRelicCopyObservations = UnitBirthProbe.RelicCopies,
+#endif
                 TriggeredSummons = TriggeredSummonProbe.Records,
                 TriggeredSummonDamages = TriggeredSummonProbe.Damages,
                 PhysicalCompactions = BattleSpawnPointProbe.Compactions,

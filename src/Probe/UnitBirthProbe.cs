@@ -35,12 +35,61 @@ namespace MonsterTrain2Poju.Probe
             public bool Completed { get; set; }
         }
         internal static readonly List<CloneRecord> Clones = new List<CloneRecord>();
+#if DEVELOPMENT_PROBE
+        private static int relicSpellCopyDepth;
+        internal sealed class RelicCopyObservation
+        {
+            public int SourceCardId { get; set; }
+            public string SourceDataId { get; set; } = "";
+            public string? CopyDataId { get; set; }
+            public int BirthClonesBefore { get; set; }
+            public int BirthClonesAfter { get; set; }
+            public bool IndependentReference { get; set; }
+            public bool Completed { get; set; }
+            internal int PreviousDepth;
+            internal CardState Source = null!;
+        }
+        internal static readonly List<RelicCopyObservation> RelicCopies = new List<RelicCopyObservation>();
+
+        // This private recast copy is cleared by the relic before the next
+        // player decision. Observing CopyCardState as a unit birth allocated a
+        // diagnostic-only card ID and retained it forever in the trace. Record
+        // the native call without registering its transient result as a birth.
+        [HarmonyPatch(typeof(RelicEffectMonsterSpellSingleToTeamTargeting), "GenerateCardStateCopy")]
+        private static class RelicSpellCopyPatch
+        {
+            private static void Prefix(CardState cardState, out RelicCopyObservation? __state)
+            {
+                __state = null;
+                if (FullBattleTrace.Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
+                __state = new RelicCopyObservation { Source = cardState, SourceCardId = FullBattleTrace.Active.CardId(cardState),
+                    SourceDataId = cardState.GetCardDataID(), BirthClonesBefore = Clones.Count, PreviousDepth = relicSpellCopyDepth };
+                RelicCopies.Add(__state);
+                relicSpellCopyDepth++;
+            }
+            private static void Postfix(CardState __result, RelicCopyObservation? __state)
+            {
+                if (__state == null) return;
+                __state.CopyDataId = __result.GetCardDataID();
+                __state.IndependentReference = !ReferenceEquals(__state.Source, __result);
+                __state.BirthClonesAfter = Clones.Count;
+                __state.Completed = true;
+            }
+            private static void Finalizer(RelicCopyObservation? __state)
+            {
+                if (__state != null) relicSpellCopyDepth = __state.PreviousDepth;
+            }
+        }
+#endif
         [HarmonyPatch(typeof(CardManager), nameof(CardManager.CopyCardState))]
         private static class ClonePatch
         {
             private static void Prefix(CardState sourceCardState, out CloneRecord? __state)
             {
                 __state = null;
+#if DEVELOPMENT_PROBE
+                if (relicSpellCopyDepth > 0) return;
+#endif
                 if ((!MultiSummonScenario.Prepared && !TriggeredSummonProbe.Enabled && !SpawnEnchantScenario.Prepared) || FullBattleTrace.Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
                 __state = new CloneRecord { SourceCardId = FullBattleTrace.Active.CardId(sourceCardState),
                     Creation = CardGenerationProbe.Creation(AllGameManagers.Instance.GetSaveManager().GetAllGameData().FindCardData(sourceCardState.GetCardDataID())!),
