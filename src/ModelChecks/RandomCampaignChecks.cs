@@ -7,6 +7,12 @@ internal static class RandomCampaignChecks
 {
     internal static void Curated(string path)
     {
+        // Frozen losses verify their complete native trajectory without
+        // claiming the live publications required by actual-budget sources.
+        if (Path.GetFileName(path) == "full-battle-random-campaign-14-ring6-release165-refined-loss.mt2f")
+        { CompleteNativeBattleChecks.Native(path); return; }
+        if (Path.GetFileName(path) == "full-battle-random-campaign-14-ring6-release157-refined-loss.mt2f")
+        { ConduitRetirementChecks.CompletedBattle(path); return; }
         using var source = ModelJson.ReadFixture(path);
         if (path.EndsWith("full-battle-random-campaign-14-ring3-release149-refined-search.mt2f", StringComparison.Ordinal))
         {

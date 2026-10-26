@@ -6294,10 +6294,6 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-moonbeam-copy-lifecycle-replay-calibration.mt2f"));
     MoonbeamCopyChecks.Lifecycle(source.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-random-campaign-14-ring6-release165-refined-loss.mt2f"))
-    CompleteNativeBattleChecks.Native(path);
-foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-random-campaign-14-ring6-release157-refined-loss.mt2f"))
-    ConduitRetirementChecks.CompletedBattle(path);
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-remote-preview-frame-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-remote-preview-frame-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
