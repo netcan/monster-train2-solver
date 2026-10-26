@@ -63,6 +63,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-13-ring7-release137-refined-loss.mt2f',
     'full-battle-random-campaign-13-ring7-release138-budget10000-loss.mt2f',
     'pending-boss-loss-order-model-calibration.mt2f',
+    'uninjured-pending-boss-model-counterexample-calibration.mt2f',
+    'uninjured-pending-boss-model-calibration.mt2f',
     'player-resumed-moon-capture-counterexample.mt2f',
     'full-battle-random-campaign-14-ring1-release138-budget10000-search.mt2f',
     'full-battle-random-campaign-14-ring1-release138-budget10000-replay.mt2f',
@@ -2276,6 +2278,17 @@ if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-resumed-moon-
         (Get-TestFixturePath 'full-battle-random-campaign-14-ring1-release138-budget10000-search.mt2f') `
         (Get-TestFixturePath 'full-battle-random-campaign-14-ring1-release138-budget10000-replay.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Focused resumed moon capture check failed.' }
+    return
+}
+$uninjuredBossNames = @('uninjured-pending-boss-model-counterexample-calibration.mt2f', 'uninjured-pending-boss-model-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $uninjuredBossNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Uninjured pending boss checker build failed.' }
+    }
+    $uninjuredBossArguments = @('--uninjured-pending-boss-only') + @($uninjuredBossNames | ForEach-Object { Get-TestFixturePath $_ })
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @uninjuredBossArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Focused uninjured pending boss order check failed.' }
     return
 }
 if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'pending-boss-loss-order-model-calibration.mt2f') {

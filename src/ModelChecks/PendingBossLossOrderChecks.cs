@@ -46,7 +46,7 @@ internal static class PendingBossLossOrderChecks
         Require(BattlePlanner.PositionCost(beforeBoss) < BattlePlanner.PositionCost(reachedBoss) &&
             Cost(reachedBoss) < Cost(beforeBoss) && Cost(damagedBoss) < Cost(reachedBoss),
             "Equal-loss ranking still treats the pending boss as already defeated.");
-        Require(Math.Abs(Cost(beforeBoss) - BattlePlanner.PositionCost(beforeBoss) - 1e6) < .001 &&
+        Require(Math.Abs(Cost(beforeBoss) - BattlePlanner.PositionCost(beforeBoss) - 1e6 - 1100) < .001 &&
             Math.Abs(Cost(damagedBoss) - BattlePlanner.PositionCost(damagedBoss) - 372d / 1100 * 1e6) < .001,
             "Pending/live boss progress was omitted or counted twice.");
         foreach (var state in new[] { beforeBoss, reachedBoss, damagedBoss })

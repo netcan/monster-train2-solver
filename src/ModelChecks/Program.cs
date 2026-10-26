@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--uninjured-pending-boss-only")
+{
+    using var early = ModelJson.ReadFixture(args[1]);
+    using var late = ModelJson.ReadFixture(args[2]);
+    UninjuredPendingBossChecks.Run(early.RootElement, late.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--inherent-juice-curse-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -7405,6 +7412,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "pending-bo
     using var late = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-random-campaign-13-ring7-release137-refined-loss.mt2f"));
     using var prediction = ModelJson.ReadFixture(path);
     PendingBossLossOrderChecks.Run(early.RootElement, late.RootElement, prediction.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "uninjured-pending-boss-model-counterexample-calibration.mt2f"))
+{
+    using var early = ModelJson.ReadFixture(path);
+    using var late = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "uninjured-pending-boss-model-calibration.mt2f"));
+    UninjuredPendingBossChecks.Run(early.RootElement, late.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) ==
     "full-battle-random-campaign-12-ring6-release112-budget10000-loss.mt2f"))

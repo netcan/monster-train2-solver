@@ -127,7 +127,18 @@ namespace MonsterTrain2Poju.Model
             bosses += state.Spawn.Waves.Skip(state.Spawn.Phase).Sum(wave => wave.Candidates
                 .Select(group => group.Units.Count(unit => unit.Unit.IsBoss == true)).DefaultIfEmpty(0).Max());
             if (state.Spawn.QueuedOuterBoss != null || state.Spawn.QueuedTrueFinalBoss != null) bosses++;
-            return bosses * 1000000d + material;
+            // A full-health boss must also contribute its material while still
+            // pending. Otherwise equal boss fractions reward dying just before
+            // its spawn: the very same uninjured boss is cheaper off the train.
+            double PendingMaterial(EnemyDefinition definition) =>
+                Math.Max(0d, definition.Unit.Health + (double)(definition.BirthStats?.Health ?? 0)) +
+                Math.Max(0, definition.Unit.Status("armor")?.Stacks ?? 0);
+            double pending = state.Spawn.Waves.Skip(state.Spawn.Phase).Sum(wave => wave.Candidates
+                .Select(group => group.Units.Where(unit => unit.Unit.IsBoss == true).Sum(PendingMaterial)).DefaultIfEmpty(0).Max());
+            if (state.Spawn.QueuedOuterBoss != null) pending += PendingMaterial(state.Spawn.QueuedOuterBoss.Actor);
+            if (state.Spawn.QueuedTrueFinalBoss is { } final)
+                pending += final.QueuedBosses.Sum(index => PendingMaterial(final.Definitions[index]));
+            return bosses * 1000000d + material + pending;
         }
 
         public static BattlePlanResult Plan(BattleTurnState source, Func<BattleTurnState, string> stateKey,
