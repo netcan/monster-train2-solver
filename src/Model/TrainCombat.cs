@@ -336,9 +336,9 @@ namespace MonsterTrain2Poju.Model
 
         public static TrainCombatResult Ascend(TrainCombatState source)
         {
-            // HeroManager.DoTurn yields before ascending. Temporary player
-            // objects already queued for destruction finish OnDestroy in that
-            // interval; in-flight forced moves do not have this frame boundary.
+            // The native pending preview-birth reset yields before ascending.
+            // All already-destroyed objects finish OnDestroy in that interval;
+            // ordinary ascension and forced moves need not yield a frame.
             if (source.Context?.Enchantments is { AutomaticLifecycle: true } world &&
                 world.RetainedUnits.Any(actor => actor.Preview && actor.Unit.Team == CombatTeam.Player &&
                     actor.Unit.DeathState?.IsDestroyed == true &&
@@ -348,7 +348,13 @@ namespace MonsterTrain2Poju.Model
                     .Select(actor => actor.Unit.Id).ToHashSet();
                 CombatContext context = source.Context.WithEnchantments(new EnchantmentWorld(world.Rooms,
                     world.Movement, world.EnemySlotsPerRoom, world.RetainedUnits.Select(actor =>
-                        actor.Unit.DeathState?.IsDestroyed == true ? PreviewBirthModel.CancelPlayer(actor) : actor).ToArray(),
+                        actor.Unit.DeathState?.IsDestroyed == true ? new EnchantmentRetainedUnit(
+                            AfterDestruction(PreviewBirthModel.CancelPlayer(actor).Unit).WithoutRemovedAttacker(new HashSet<int>())
+                                .WithTriggers(actor.Unit.Triggers.Select(trigger => trigger.WithEffects(trigger.Effects.Select(effect =>
+                                    effect.Enchantment == null ? effect : effect.WithEnchantment(new EnchantmentRule(
+                                        effect.Enchantment.Targeting, effect.Enchantment.StatusPool, effect.Enchantment.State,
+                                        false, effect.Enchantment.HasParentCard))).ToArray())).ToArray()),
+                            -1, actor.Preview) : actor).ToArray(),
                     world.EnchanterIds, world.AllowUpdates, world.Updating, world.Preview, world.TestRng,
                     world.AutomaticLifecycle, world.TemporaryPreviewUnitIds));
                 if (context.SpawnPoints is BattleSpawnPoints points)

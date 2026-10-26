@@ -5795,6 +5795,7 @@ namespace MonsterTrain2Poju.Model
 
             private RoomCombatResult Finish(RoomOutcome outcome)
             {
+                if (context != null) context = ConduitModel.Destroyed(context, units.Select(unit => unit.Freeze()));
                 // Native attack snapshots query tracked Gold for each attached Goldtooth.
                 // After ClearCards this getter replaces the owned-card cache with the deck.
                 if (context != null && units.Any(unit => unit.Alive && unit.InRoom &&

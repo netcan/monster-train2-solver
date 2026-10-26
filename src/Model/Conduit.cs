@@ -291,6 +291,16 @@ namespace MonsterTrain2Poju.Model
             return Put(context, roomIndex, unit.Team, row.Conduit.Units.Select(value => value.UnitId == unit.Id ?
                 new ConduitUnitState(value.UnitId, value.Power, unit.Health > 0, value.Cards, value.MultipliedCards) : value).ToArray());
         }
+        internal static CombatContext Destroyed(CombatContext context, IEnumerable<CombatUnit> units)
+        {
+            if (context.ConduitRetained == null || context.ConduitRetained.Count == 0) return context;
+            // A removed/dead character can still own its private modifier. Native
+            // capture excludes it only after CharacterState.IsDestroyed becomes
+            // true, independently of room membership or dissolve completion.
+            var destroyed = units.Where(unit => unit.DeathState?.IsDestroyed == true).Select(unit => unit.Id).ToHashSet();
+            if (!context.ConduitRetained.Any(row => destroyed.Contains(row.Contributor.UnitId))) return context;
+            return context.WithConduitRetained(context.ConduitRetained.Where(row => !destroyed.Contains(row.Contributor.UnitId)).ToArray());
+        }
         internal static CombatContext? Order(CombatContext? context, int roomIndex, IReadOnlyList<CombatUnit> units)
         {
             if (!Captured(context)) return context;
