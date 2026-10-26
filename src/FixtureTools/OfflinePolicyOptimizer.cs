@@ -116,16 +116,31 @@ internal static partial class OfflineBattleSearch
                     if (ended.Supported) alternatives.Add((new Step { IsEndTurn = true }, ended.State!, ended.Outcome));
                     else Unsupported(ended.UnsupportedReason ?? "Unsupported EndTurn.", null, entry, prefix);
                 }
-                // Try the ordinary one-input alternative first, then a bounded
-                // second input. Neither input has to improve the route alone.
+                // A small decision budget must reach different cards before
+                // spending its quota on one card's targets and second inputs.
+                // Rank already-owned successors, keeping the full neighborhood
+                // available after one best single input per card or ability.
+                var ordered = alternatives.OrderBy(candidate =>
+                    BattlePlanner.Evaluate(candidate.State, candidate.Outcome)).ToArray();
+                var singles = perDecisionCandidateLimit == 0 ? Array.Empty<Step>() : ordered
+                    .GroupBy(candidate => (candidate.Step.Action?.CardInstanceId ?? -1,
+                        candidate.Step.Action?.ActivatorUnitId ?? 0))
+                    .Select(group => group.First().Step).ToArray();
+                // Neither input has to improve the route alone.
                 // Every successor is model-owned and the final export is still
                 // independently replayed from the exact native deployment.
                 IEnumerable<(Step[] Steps, BattleTurnState[] States, RoomOutcome Outcome)> Neighbors()
                 {
-                    foreach (var first in alternatives)
+                    foreach (var first in ordered.Where(candidate => singles.Contains(candidate.Step)))
                     {
                         if (Expired() || DecisionBudgetReached()) yield break;
                         yield return (new[] { first.Step }, new[] { first.State }, first.Outcome);
+                    }
+                    foreach (var first in perDecisionCandidateLimit == 0 ? alternatives : ordered.AsEnumerable())
+                    {
+                        if (Expired() || DecisionBudgetReached()) yield break;
+                        if (!singles.Contains(first.Step))
+                            yield return (new[] { first.Step }, new[] { first.State }, first.Outcome);
                         if (secondActionWidth == 0 || Expired() || DecisionBudgetReached() || first.Step.IsEndTurn || Terminal(first.Outcome) || prefix.Length >= 255) continue;
                         var firstPrefix = prefix.Append(first.Step).ToArray();
                         string firstKey = keys.Key(first.State);
@@ -256,7 +271,7 @@ internal static partial class OfflineBattleSearch
         }
         Console.WriteLine($"IMPROVE-POLICY foundWin={outcome == RoomOutcome.BattleWon} improvements={improvements} " +
             $"startDecision={startDecision} exploreCardOrder={exploreCardOrder} candidates={candidates} completed={completed} unsupported={unsupported} " +
-            $"retainSuffix={retainSuffix} improveWinningRoute={improveWinningRoute} secondActionWidth={secondActionWidth} perDecisionCandidateLimit={perDecisionCandidateLimit} visitedDecisions={visitedDecisions} lastDecision={lastDecision} pairCandidates={pairCandidates} pairImprovements={pairImprovements} retainedSteps={retainedSteps} skippedSuffixInputs={skippedSuffixInputs} timedOut={Expired()} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}; model prediction only.");
+            $"retainSuffix={retainSuffix} improveWinningRoute={improveWinningRoute} secondActionWidth={secondActionWidth} perDecisionCandidateLimit={perDecisionCandidateLimit} diverseFirstCards={perDecisionCandidateLimit > 0} visitedDecisions={visitedDecisions} lastDecision={lastDecision} pairCandidates={pairCandidates} pairImprovements={pairImprovements} retainedSteps={retainedSteps} skippedSuffixInputs={skippedSuffixInputs} timedOut={Expired()} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}; model prediction only.");
 
         BattleTurnState Replay(IEnumerable<Step> steps, out RoomOutcome terminal, List<BattleTurnState>? collect = null)
         {
