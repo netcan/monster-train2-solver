@@ -1,17 +1,17 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.174, source`27e4543b61c433943fcd44b0a80a5b0c4b968867`.
-Installed at02:00 with67 protected save/config/other-mod files unchanged. Package
-`results/mod-dist/PojuAdvisor-0.2.174-Windows-20261027-020050.zip`,SHA256
-`2f91a7b62b6e0d5b259abb9028775b8a94e881a5ff50899cbcea411f56c7baf9`.
-The exact payload wins sample16 Ring4 with40inputs,33plays/7EndTurns,Pyre100,
-13train stages and four zero failure counters. Independent frozen native replay
-matches all states/forecasts/RNG and advances normally through58events.
+Current Windows installation:0.2.175, source`7ab8b50c6b8538fdf527a78a58f099304758c7d6`.
+Installed at02:21 with67 protected save/config/other-mod files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.175-Windows-20261027-022154.zip`,SHA256
+`dc5acdbdbe6f3aa6e2b16790ab997bb185079704029b2791c80fd689733a1e1e`.
+The exact payload wins sample16 Ring5 with34inputs,27plays/7EndTurns,Pyre97,
+14train stages and four zero failure counters. Independent frozen native replay
+matches all states/forecasts/RNG and advances normally through39events.
 The three installed DLLs,compiled provenance and package were verified. The
-real game was stopped; next launch loads0.2.174. Previous DLLs and receipt:
-`BepInEx/PojuBackups/RandomCampaign-20261027-020050/`. No Mac build was made.
-This includes the second-tier original Sentient draw-upgrade birth repair and
-the previously accepted Conduit continuation fix. The four-ring uninterrupted
+real game was stopped; next launch loads0.2.175. Previous DLLs and receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261027-022154/`. No Mac build was made.
+This includes read-only future skill presentation and the previously accepted
+Sentient/Conduit fixes. The five-ring uninterrupted
 default-budget native checkpoint chain passes; this is not a campaign clear.
 
 Previous Windows installation:0.2.173, source`2827d732bb75e93efaf414b644f78b0cb6319e34`.

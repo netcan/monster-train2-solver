@@ -17,7 +17,8 @@ internal static class AbilityPresentationChecks
             before.CardRegistry!.Count == 30 && after.CardRegistry!.Count == 31 &&
             after.CardInstances!.All(card => card.InstanceId != 31), "Lost the native cold skill-cache allocation.");
         // Verify the complete counterexample, including all aliased room
-        // contexts. Only presentation's three allocator/cache fields changed.
+        // contexts. Only the three cold-cache allocator fields changed; the
+        // original caller is not established by the captured mismatch alone.
         JsonNode restored = JsonSerializer.SerializeToNode(actual, ModelJson.Options)!;
         JsonNode prior = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
         var train = restored["Spawn"]!["Train"]!;
@@ -25,7 +26,7 @@ internal static class AbilityPresentationChecks
             foreach (string field in new[] { "NextCardId", "CardRegistry", "AbilityCardCache" })
                 context[field] = prior[field]!.DeepClone();
         Require(ModelJson.Difference(JsonSerializer.Serialize(published, ModelJson.Options), restored.ToJsonString()) == null,
-            "Native presentation changed more than its cold cache factory.");
+            "Native cold-cache allocation changed additional state.");
         using var keys = new BattleStateKeys();
         Require(keys.Key(published) != keys.Key(actual), "The real allocator/cache mutation must remain keyed.");
         if (repaired.HasValue)
@@ -37,7 +38,7 @@ internal static class AbilityPresentationChecks
                     JsonSerializer.Serialize(renderRoot, ModelJson.Options)) == null &&
                 render.GetProperty("Before").ContentEquals(render.GetProperty("After")) &&
                 render.GetProperty("Steps").GetArrayLength() == 5 && render.GetProperty("Outcome").GetInt32() == (int)RoomOutcome.BattleWon &&
-                render.GetProperty("Expanded").GetString()!.Contains("【单位技能】") &&
+                render.GetProperty("Expanded").GetString()!.Contains("完整方案") &&
                 render.GetProperty("SearchesBefore").ContentEquals(render.GetProperty("SearchesAfter")) &&
                 render.GetProperty("GenerationBefore").ContentEquals(render.GetProperty("GenerationAfter")),
                 "Original winning suffix did not render both modes without native state/RNG/planning changes.");

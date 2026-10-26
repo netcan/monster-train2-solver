@@ -49,6 +49,12 @@ namespace MonsterTrain2Poju.Probe
             private static void Prefix(CardData cardData, out Record? __state)
             {
                 __state = null;
+#if DEVELOPMENT_PROBE
+                if (PlayerAdvisorProbe.Enabled && !Cache.Contains(cardData.GetID()))
+                    BepInEx.Logging.Logger.CreateLogSource("AbilityCacheAcceptance").LogInfo(
+                        "NATIVE-ABILITY-CACHE-BIRTH data=" + cardData.GetID() + " frame=" + UnityEngine.Time.frameCount +
+                        " stack=" + Environment.StackTrace);
+#endif
                 if (!Observing) return;
                 bool created = !Cache.Contains(cardData.GetID());
                 if (!created && Records.Any(record => !record.Created && record.Creation.DataId == cardData.GetID())) return;

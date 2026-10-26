@@ -582,8 +582,7 @@ namespace MonsterTrain2Poju.Probe
                     state = next.State!; outcome = next.Outcome;
                 }
             }
-            Require(outcome == RoomOutcome.BattleWon && steps.Any(step => step.Action?.ActivatorUnitId > 0),
-                "expected the original complete winning skill suffix");
+            Require(outcome == RoomOutcome.BattleWon, "expected the original complete winning suffix");
             var plan = new BattlePlanResult(state, outcome, steps, BattlePlanner.Evaluate(state, outcome),
                 steps.Count(step => step.IsEndTurn), 0, 0, 0, TimeSpan.Zero, false, false, false, false, true, Array.Empty<UnsupportedActionAttempt>(), null);
             using var keys = new BattleStateKeys();
@@ -605,8 +604,7 @@ namespace MonsterTrain2Poju.Probe
                 }
             }
             finally { AccessTools.Field(type!, "showFullPlan").SetValue(advisor, expanded); }
-            Require(texts[0].Contains("【单位技能】") && root.Spawn.Train.Context!.AbilityCardCache!.Count == 0,
-                "missing original cold-cache skill label");
+            Require(root.Spawn.Train.Context!.AbilityCardCache!.Count == 0, "missing original cold skill cache");
             log!.LogInfo("PLAYER-SKILL-PRESENTATION-PURE-PASS originalWinningSteps=" + steps.Length + " modes=2 searches=" + searches);
             return new { Before = root, After = Capture(), Steps = steps, Outcome = outcome,
                 Expanded = texts[0], Collapsed = texts[1], SearchesBefore = searches, SearchesAfter = session.SearchCount,

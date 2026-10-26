@@ -1,10 +1,11 @@
 # Skill presentation must not create native cards
 
-Sample16 Ring5,0.2.174, naturally reaches turn6 and a retained winning suffix.
-Publishing generation77 calls CharacterState.GetUnitAbilityCardState while
-describing a later skill step. That native method calls
-UnitOrRoomAbilityCardStateCache.Get, whose cold path constructs a new CardState.
-The publication's read-only display therefore changes native state itself.
+Sample16 Ring5,0.2.174,naturally reaches turn6 and a retained five-step winning
+suffix. The mismatch records a cold ability-cache allocation; its original
+caller remains unproven. The retained suffix has no unit-skill actions,so the
+earlier claim that advice rendering caused this event was not supported.
+Native CharacterTooltipHelper also calls the same cache factory. The extra
+definition belongs to FaeMeddler's ability in a card's unit template.
 
 The curated exact counterexample has NextCardId31->32,registry30->31,and an
 initially empty ability cache gaining card31,d1ab03ed-fe63-4eca-b68e-3090524f325e.
@@ -16,7 +17,10 @@ keyed and rejected; it is not a cosmetic difference to ignore.
 skill has not been created,the display uses its definition's name and omits an
 uncaptured cost. Existing cached card titles/costs retain their ordinary path.
 Neither expanding nor collapsing a future plan may allocate native skill cards.
-The isolated player driver now renders both modes against full native snapshots
-and checks that state/RNG,generation and search count stay unchanged. These
-checks are excluded from the actual player assembly. Complete clean native
-source/replay acceptance is still pending.
+The independent0.2.177 component replays all35 original native inputs to the
+exact old published root,then renders the actual five-step suffix in both modes.
+Full native state/RNG,generation and search count remain unchanged. Its suffix
+is model-verified to win; the component does not execute those final five inputs
+in native. A separate clean0.2.17534-input source/replay pair wins Ring5.
+These establish display purity and a separate winning battle. Reusing advice
+after native UI lazy cache creation remains a distinct continuation task.
