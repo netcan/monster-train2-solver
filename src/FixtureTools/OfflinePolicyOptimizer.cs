@@ -13,7 +13,7 @@ internal static partial class OfflineBattleSearch
     internal static void Improve(string input, string output, int milliseconds, int maxPasses = 4,
         string? prediction = null, int startDecision = 0, bool exploreCardOrder = false, bool retainSuffix = false,
         int secondActionWidth = 0, bool improveWinningRoute = false, int perDecisionCandidateLimit = 0,
-        int thirdActionWidth = 0)
+        int thirdActionWidth = 0, int diversificationWidth = 0, int maxDecisionCount = 256)
     {
         Require(milliseconds is >= 100 and <= 600000 && maxPasses is >= 1 and <= 16,
             "Expected100..600000ms and1..16 improvement passes.");
@@ -21,6 +21,9 @@ internal static partial class OfflineBattleSearch
         Require(thirdActionWidth is >= 0 and <= 16 && (thirdActionWidth == 0 || secondActionWidth > 0),
             "Expected0..16 third-action alternatives and a positive second-action width for triples.");
         Require(perDecisionCandidateLimit is >= 0 and <= 256, "Expected0..256 candidates per decision;0 keeps exhaustive local enumeration.");
+        Require(diversificationWidth is >= 0 and <= 16 && maxDecisionCount is >= 1 and <= 256 &&
+            (diversificationWidth == 0 || retainSuffix && perDecisionCandidateLimit > 0),
+            "Expected0..16 alternative routes and1..256 decisions; diversification requires a bounded retained suffix.");
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         string unsupportedOutput = output + ".unsupported.mt2f";
         if (retainSuffix && File.Exists(unsupportedOutput)) throw new IOException("Output already exists: " + unsupportedOutput);
@@ -56,6 +59,17 @@ internal static partial class OfflineBattleSearch
         Require(!improveWinningRoute || outcome == RoomOutcome.BattleWon,
             "Winning-route improvement requires an already verified complete model win.");
         double best = ImprovementMerit(final, outcome), initial = best;
+        // Keep the best complete route independently of the route currently
+        // being explored. A useful pair of deployment changes can make a
+        // worse complete loss after the first change. A bounded frontier lets
+        // the second change be investigated without exporting that regression.
+        var bestRoute = route;
+        var bestFinal = final;
+        var bestOutcome = outcome;
+        var frontier = new List<PolicyAlternative>();
+        var exploredRoutes = new HashSet<string>(StringComparer.Ordinal);
+        if (diversificationWidth > 0) exploredRoutes.Add(JsonSerializer.Serialize(route));
+        int diversifiedRoutes = 0;
         var watch = Stopwatch.StartNew();
         var tried = new HashSet<string>(StringComparer.Ordinal);
         int candidates = 0, completed = 0, unsupported = 0, improvements = 0;
@@ -95,7 +109,7 @@ internal static partial class OfflineBattleSearch
         for (int pass = 0; pass < maxPasses && (outcome != RoomOutcome.BattleWon || improveWinningRoute) && !Expired(); pass++)
         {
             bool improved = false;
-            for (int index = startDecision; index < prefixes.Count && !Expired(); index++)
+            for (int index = startDecision; index < Math.Min(prefixes.Count, startDecision + maxDecisionCount) && !Expired(); index++)
             {
                 visitedDecisions++; lastDecision = index;
                 int decisionCandidates = 0;
@@ -281,10 +295,29 @@ internal static partial class OfflineBattleSearch
                     if (!Terminal(result)) continue;
                     completed++;
                     double score = ImprovementMerit(branch, result);
+                    if (diversificationWidth > 0 && score >= best)
+                    {
+                        Step[] candidateRoute = steps.ToArray();
+                        string identity = JsonSerializer.Serialize(candidateRoute);
+                        if (!exploredRoutes.Contains(identity) && !frontier.Any(item => item.Identity == identity))
+                        {
+                            frontier.Add(new PolicyAlternative(identity, score, candidateRoute,
+                                prefixes.Take(index + 1).Concat(tailStates.Take(tailStates.Count - 1)).ToArray(), branch, result));
+                            frontier = frontier.OrderBy(item => item.Merit).ThenBy(item => item.Route.Length)
+                                .Take(diversificationWidth).ToList();
+                        }
+                    }
                     if (score >= best) continue;
                     best = score; final = branch; outcome = result; route = steps.ToArray();
                     prefixes = prefixes.Take(index + 1).Concat(tailStates.Take(tailStates.Count - 1)).ToList();
                     Require(prefixes.Count == route.Length, "Improved prefix cache lost a model-owned successor.");
+                    bestRoute = route; bestFinal = final; bestOutcome = outcome;
+                    if (diversificationWidth > 0)
+                    {
+                        string identity = JsonSerializer.Serialize(route);
+                        exploredRoutes.Add(identity);
+                        frontier.RemoveAll(item => item.Identity == identity);
+                    }
                     // With a retained suffix, an identical input prefix can
                     // now finish differently against the improved remainder.
                     // Dedupe only within one incumbent, not across changed tails.
@@ -302,20 +335,31 @@ internal static partial class OfflineBattleSearch
             // A bounded sweep may leave untried neighbors at every decision.
             // Later passes continue past the already-tried inputs, even when
             // the preceding pass found no strictly better complete route.
+            if (!improved && diversificationWidth > 0 && !Expired() && frontier.Count > 0)
+            {
+                PolicyAlternative alternative = frontier[0]; frontier.RemoveAt(0);
+                Require(alternative.Prefixes.Length == alternative.Route.Length,
+                    "Diversified route lost a model-owned prefix.");
+                route = alternative.Route; prefixes = alternative.Prefixes.ToList();
+                final = alternative.Final; outcome = alternative.Outcome;
+                exploredRoutes.Add(alternative.Identity); tried.Clear(); diversifiedRoutes++;
+                Console.WriteLine($"IMPROVE-DIVERSIFY pass={pass} merit={alternative.Merit:F3} best={best:F3} " +
+                    $"inputs={route.Length} frontier={frontier.Count} elapsedMs={watch.Elapsed.TotalMilliseconds:F1}");
+            }
             if (!improved && perDecisionCandidateLimit == 0) break;
         }
         // A complete losing improvement is useful for another investigation,
         // but is explicitly exported with PlayerDefeated, never called a win.
         if (best < initial)
         {
-            BattleTurnState independent = Replay(route, out RoomOutcome replayOutcome);
-            Require(replayOutcome == outcome && keys.Key(independent) == keys.Key(final) && keys.Key(root) == immutable,
+            BattleTurnState independent = Replay(bestRoute, out RoomOutcome replayOutcome);
+            Require(replayOutcome == bestOutcome && keys.Key(independent) == keys.Key(bestFinal) && keys.Key(root) == immutable,
                 "Independent improvement replay changed its complete state/RNG.");
-            Freeze(input, JsonSerializer.Serialize(route), output);
+            Freeze(input, JsonSerializer.Serialize(bestRoute), output);
         }
-        Console.WriteLine($"IMPROVE-POLICY foundWin={outcome == RoomOutcome.BattleWon} improvements={improvements} " +
+        Console.WriteLine($"IMPROVE-POLICY foundWin={bestOutcome == RoomOutcome.BattleWon} improvements={improvements} " +
             $"startDecision={startDecision} exploreCardOrder={exploreCardOrder} candidates={candidates} completed={completed} unsupported={unsupported} " +
-            $"retainSuffix={retainSuffix} improveWinningRoute={improveWinningRoute} secondActionWidth={secondActionWidth} thirdActionWidth={thirdActionWidth} perDecisionCandidateLimit={perDecisionCandidateLimit} diverseFirstCards={perDecisionCandidateLimit > 0} visitedDecisions={visitedDecisions} lastDecision={lastDecision} pairCandidates={pairCandidates} pairImprovements={pairImprovements} tripleCandidates={tripleCandidates} tripleImprovements={tripleImprovements} retainedSteps={retainedSteps} skippedSuffixInputs={skippedSuffixInputs} retargetedSuffixInputs={retargetedSuffixInputs} timedOut={Expired()} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}; model prediction only.");
+            $"retainSuffix={retainSuffix} improveWinningRoute={improveWinningRoute} secondActionWidth={secondActionWidth} thirdActionWidth={thirdActionWidth} perDecisionCandidateLimit={perDecisionCandidateLimit} diverseFirstCards={perDecisionCandidateLimit > 0} diversificationWidth={diversificationWidth} diversifiedRoutes={diversifiedRoutes} maxDecisionCount={maxDecisionCount} visitedDecisions={visitedDecisions} lastDecision={lastDecision} pairCandidates={pairCandidates} pairImprovements={pairImprovements} tripleCandidates={tripleCandidates} tripleImprovements={tripleImprovements} retainedSteps={retainedSteps} skippedSuffixInputs={skippedSuffixInputs} retargetedSuffixInputs={retargetedSuffixInputs} timedOut={Expired()} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}; model prediction only.");
 
         BattleTurnState Replay(IEnumerable<Step> steps, out RoomOutcome terminal, List<BattleTurnState>? collect = null)
         {
@@ -330,6 +374,9 @@ internal static partial class OfflineBattleSearch
             return state;
         }
     }
+
+    private sealed record PolicyAlternative(string Identity, double Merit, Step[] Route,
+        BattleTurnState[] Prefixes, BattleTurnState Final, RoomOutcome Outcome);
 
     // Earlier deployment changes can assign the old numeric actor ID to a
     // different card. Preserve a selected card's identity, including its exact

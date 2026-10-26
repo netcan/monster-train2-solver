@@ -105,6 +105,15 @@ else if (args.Length == 9 && args[0] == "improve-sweep")
         int.Parse(args[6]), exploreCardOrder: true, retainSuffix: true, secondActionWidth: int.Parse(args[7]),
         perDecisionCandidateLimit: limit);
 }
+else if (args.Length == 11 && args[0] == "improve-diverse")
+{
+    int limit = int.Parse(args[7]), count = int.Parse(args[8]), width = int.Parse(args[9]), second = int.Parse(args[10]);
+    if (limit is < 1 or > 256 || count is < 1 or > 256 || width is < 1 or > 16 || second is < 0 or > 32)
+        throw new ArgumentOutOfRangeException(nameof(limit), "Expected1..256 candidates,1..256 decisions,1..16 routes and0..32 second inputs.");
+    OfflineBattleSearch.Improve(args[1], args[3], int.Parse(args[4]), int.Parse(args[5]), args[2],
+        int.Parse(args[6]), exploreCardOrder: true, retainSuffix: true, secondActionWidth: second,
+        perDecisionCandidateLimit: limit, diversificationWidth: width, maxDecisionCount: count);
+}
 else if (args.Length is >= 4 and <= 6 && args[0] == "refine-policy")
 {
     OfflineBattleSearch.Refine(args[1], args[2], int.Parse(args[3]), args.Length >= 5 ? int.Parse(args[4]) : 0,
@@ -191,6 +200,7 @@ else
     Console.Error.WriteLine("Joint route investigation: improve-pairs <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <second-action-width:0..32>; bounded two-input alternatives, independent final replay; model prediction only.");
     Console.Error.WriteLine("Winning route investigation: improve-win <native.mt2f> <verified-winning-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <second-action-width:0..32> [candidates-per-decision:0..256]; retain complete winning improvements for the next campaign battle; model prediction only.");
     Console.Error.WriteLine("Bounded route sweep: improve-sweep <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <second-action-width:0..32> <candidates-per-decision:1..256>; share the budget across later decisions; model prediction only.");
+    Console.Error.WriteLine("Diversified route investigation: improve-diverse <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <candidates-per-decision:1..256> <decision-count:1..256> <alternative-routes:1..16> <second-action-width:0..32>; explore bounded complete losing alternatives, export only a strictly better independently replayed route; model prediction only.");
     Console.Error.WriteLine("Bounded three-input investigation: improve-triples <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <second-action-width:1..32> <third-action-width:1..16> <candidates-per-decision:1..256>; model prediction only.");
     Console.Error.WriteLine("Predicted counterexample: refine-prediction <native.mt2f> <verified-prediction.mt2f> <new-winning-output.mt2f> <milliseconds> [start-decision] [last-decision]; validates native input hash/root and independently replays the baseline before exploring.");
     Console.Error.WriteLine("Search: solve-exact <input.mt2f> <new-output.mt2f> <max-nodes> <milliseconds> [EndTurn-horizon] | plan-belief <input.mt2f> <new-output.mt2f> <max-worlds> <decisions> <max-nodes> <milliseconds> [native-Turns-index] | verify-belief <policy.mt2f>");
