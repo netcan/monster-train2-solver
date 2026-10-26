@@ -251,6 +251,13 @@ if (args.Length == 3 && args[0] == "--post-battle-reward-combat-pair-only")
     PostBattleRewardCombatChecks.Pair(source.RootElement, replay.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--justcause-retain-copy-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) JustCauseRetainCopyChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); JustCauseRetainCopyChecks.Native(source.RootElement, replay.RootElement); }
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--teleport-adjacent-order-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

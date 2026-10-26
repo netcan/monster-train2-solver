@@ -86,13 +86,15 @@ namespace MonsterTrain2Poju.Model
                 [new CardActionEffect("Null", "DropTargetCharacter", 0, false, true, []), playedRule.Effects[1]] : playedRule.Effects;
 
             CardInstanceState? card = context.FindCard(playedCardId);
-            bool corruptJustCause = justCause && card != null && card.Permanent.Upgrades.Count == 1 &&
-                card.Permanent.Upgrades[0].DataId == "83a6c9ec-0e40-48e6-8a4c-695a68b7e990" &&
-                card.Permanent.Upgrades[0].AssetKey == "TraitCorrupt" &&
-                new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }
-                    .All(stat => card.Permanent.Upgrades[0].Stats.Value(stat) == 0) &&
-                card.Permanent.Upgrades[0] is { Statuses.Count: 0, UnhealedHealth: 0, DamageBuff: 0, AbilityUpgrade: null, ExternalInteractions.Count: 0 } &&
-                card.Permanent.Upgrades[0].TriggerUpgrades?.Count is not > 0;
+            bool corruptJustCause = justCause && card != null && card.Permanent.Upgrades.Count is 1 or 2 &&
+                card.Permanent.Upgrades.Count(upgrade => upgrade.DataId == "83a6c9ec-0e40-48e6-8a4c-695a68b7e990") == 1 &&
+                card.Permanent.Upgrades.All(upgrade =>
+                    (upgrade.DataId == "83a6c9ec-0e40-48e6-8a4c-695a68b7e990" && upgrade.AssetKey == "TraitCorrupt" ||
+                     upgrade.DataId == "f43e7cdb-fa8d-4760-88bf-c6f34f72d918" && upgrade.AssetKey == "TraitRetain") &&
+                    new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }
+                        .All(stat => upgrade.Stats.Value(stat) == 0) &&
+                    upgrade is { Statuses.Count: 0, UnhealedHealth: 0, DamageBuff: 0, AbilityUpgrade: null, ExternalInteractions.Count: 0 } &&
+                    upgrade.TriggerUpgrades?.Count is not > 0);
             if (card == null || card.MaskDescriptor == null || !corruptJustCause && card.Permanent.Upgrades.Count != 0 || card.Temporary.Upgrades.Count != 0)
                 return Unsupported(source, "Monster spell replication requires an owned, unupgraded card with captured mask metadata.");
             try
@@ -101,8 +103,10 @@ namespace MonsterTrain2Poju.Model
                 var combined = CardTraitRefreshModel.Ensure(traits).Composition.CombinedTraits;
                 // Corrupt only has OnPreCardPlayed. Native recasts run OnCast
                 // and OnCardDiscarded, without calling that pre-play callback.
-                if (combined?.Count > 0 && !(corruptJustCause && combined.Count == 1 &&
-                    combined[0].RuntimeType == "CardTraitCorruptState"))
+                // Retain explicitly ignores OnCardDiscarded when isRecastCopy.
+                if (combined?.Count > 0 && !(corruptJustCause && combined.Count == card!.Permanent.Upgrades.Count &&
+                    combined.Count(trait => trait.RuntimeType == "CardTraitCorruptState") == 1 &&
+                    combined.Count(trait => trait.RuntimeType == "CardTraitRetain") == combined.Count - 1))
                     return Unsupported(source, "Monster spell replication does not yet model copied card trait callbacks.");
             }
             catch (InvalidOperationException error) { return Unsupported(source, error.Message); }
