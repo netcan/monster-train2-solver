@@ -8,7 +8,7 @@ internal static class NativeBranchObservationChecks
 
     internal static FixtureValue[] Replay(FixtureValue fixture, string reason,
         Action<BattleTurnState, BattleTurnState>? historicalBoundaryMismatch = null,
-        RoomOutcome boundaryOutcome = RoomOutcome.Exchanged)
+        RoomOutcome boundaryOutcome = RoomOutcome.Exchanged, string? historicalUnsupportedReason = null)
     {
         Require(fixture.GetProperty("Schema").GetInt32() == 1 &&
             fixture.GetProperty("EvidenceKind").GetString() == "NativeUnsupportedBranchObservation" &&
@@ -41,7 +41,7 @@ internal static class NativeBranchObservationChecks
                 "Native successor differs at " + index + ": " + ModelJson.Difference(Key(predicted, terminal), Key(actual, terminal)));
             FixtureValue expected = row.GetProperty("Expected");
             if (expected.ValueKind == FixtureKind.Null)
-                Require(boundary && row.GetProperty("UnsupportedReason").GetString() == reason,
+                Require(boundary && row.GetProperty("UnsupportedReason").GetString() == (historicalUnsupportedReason ?? reason),
                     "Only the original rejected boundary may omit its prediction.");
             else
             {

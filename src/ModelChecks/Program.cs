@@ -1,9 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
-if (args.Length == 2 && args[0] == "--echo-juice-spike-only")
+if (args.Length is 2 or 3 or 4 && args[0] == "--echo-juice-spike-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
-    EchoJuiceSpikeChecks.Native(source.RootElement);
+    using var endTurn = args.Length >= 3 ? ModelJson.ReadFixture(args[2]) : null;
+    using var replay = args.Length == 4 ? ModelJson.ReadFixture(args[3]) : null;
+    EchoJuiceSpikeChecks.Native(source.RootElement, endTurn?.RootElement, replay?.RootElement);
     return;
 }
 if (args.Length is 2 or 3 && args[0] == "--unplaced-moremass-moon-only")
@@ -6651,7 +6653,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-com
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-juice-spike-copy-calibration.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    EchoJuiceSpikeChecks.Native(source.RootElement);
+    using var endTurn = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-juice-spike-endturn-calibration.mt2f"));
+    EchoJuiceSpikeChecks.Native(source.RootElement, endTurn.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-waxen-spike-copy-calibration.mt2f"))
 {

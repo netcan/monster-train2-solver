@@ -72,7 +72,12 @@ namespace MonsterTrain2Poju.Model
             }
             else if (juiceEcho)
             {
-                return Unsupported("Triple Juice Echo repeats paid-cost scaling and its Pyre-heal OnCast upgrade.");
+                TrainSpellResult cast = CardSpellModel.ApplyForCardPlay(state, roomIndex, rule.OnCastEffects, targetId, cardId,
+                    definitions, state.Context!.OtherPiles, onCastEffects: true);
+                if (!cast.Supported) return cast;
+                state = cast.State!;
+                events.AddRange(cast.Events);
+                if (cast.Outcome != RoomOutcome.Exchanged) outcome = cast.Outcome;
             }
             foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
             {

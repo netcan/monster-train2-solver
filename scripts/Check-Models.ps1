@@ -160,6 +160,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-combat-victory-cache-retention-counterexample-calibration.mt2f',
     'player-echo-waxen-spike-copy-calibration.mt2f',
     'player-echo-juice-spike-copy-calibration.mt2f',
+    'player-echo-juice-spike-endturn-calibration.mt2f',
     'player-echo-waxen-spike-endturn-calibration.mt2f',
     'player-echo-waxen-spike-endturn-replay-calibration.mt2f',
     'player-moremass-moon-birth-calibration.mt2f',
@@ -1916,7 +1917,7 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     if ($LASTEXITCODE -ne 0) { throw 'Focused MoreMass moon birth checks failed.' }
     return
 }
-$echoJuiceNames = @('player-echo-juice-spike-copy-calibration.mt2f')
+$echoJuiceNames = @('player-echo-juice-spike-copy-calibration.mt2f', 'player-echo-juice-spike-endturn-calibration.mt2f')
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $echoJuiceNames }).Count -eq 0) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q

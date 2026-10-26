@@ -19,7 +19,7 @@ namespace MonsterTrain2Poju.Model
                 card.TrainHealScalingTraits?.Count is > 0 || card.StatusScalingTraits?.Count != 1 || effects.Count != 1)
                 return false;
             CardUpgradeModifier heal = card.Permanent.Upgrades[0];
-            if (heal.AssetKey != "TraitHealPyrePerEmber" || Stats.Any(stat => heal.Stats.Value(stat) != 0) ||
+            if (heal.DataId != "6497cd22-8c83-4b13-8578-269f4387250d" || heal.AssetKey != "TraitHealPyrePerEmber" || Stats.Any(stat => heal.Stats.Value(stat) != 0) ||
                 heal.Statuses.Count != 0 || heal.ExternalInteractions.Count != 0 || heal.AbilityUpgrade != null ||
                 heal.TriggerUpgrades?.Count is > 0 || heal.UnhealedHealth != 0 || heal.DamageBuff != 0 ||
                 heal.Lifecycle is not { AddedTraits.Count: 0, RemovedRuntimeTypes.Count: 0, Triggers.Count: 1 } lifecycle ||

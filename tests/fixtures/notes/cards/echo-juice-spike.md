@@ -11,8 +11,15 @@ The preview fires OnCast too: it heals preview Pyre HP from the live tower
 HP even when live healing is disabled. This rule is limited to the captured
 top-floor Echo with an otherwise empty, untriggered Pyre room above it.
 
-Focused checks compare every complete successor and RNG state, exercise
-four parallel immutable branches and reject five mutated card signatures.
-The prior WaxenSpike Echo pair still passes. Actual pre-combat recasting
-is deliberately guarded until a separate native EndTurn observation exists;
-copy/preview coverage does not count as a battle win or a calibrated recast.
+`player-echo-juice-spike-endturn-calibration.mt2f` extends the same route
+through actual pre-combat:47 inputs. Its original model boundary is guarded.
+Native pre-combat increases the target's valor152 to212 and heals Pyre27 to32,
+recording copied card45 after original22. Actual combat reaches turn10 with
+Pyre4. The earlier draft used the main effect list again when resolving
+OnCast; explicitly selecting OnCast avoids duplicating valor and skipping
+the heal. This draft failure was caught before enabling the real callback.
+
+Focused checks compare complete successors and RNG, exercise four parallel
+immutable cast and EndTurn branches and reject ten mutated card/relic
+signatures. The old WaxenSpike pair passes. Independent recast replay is the
+next acceptance boundary; this partial route is not a battle win.
