@@ -5853,11 +5853,18 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     PostBattleRewardCombatChecks.Pair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-unowned-relic-copy-", StringComparison.OrdinalIgnoreCase))
-    .Select(path => ModelJson.RelatedFixture(path, "player-unowned-relic-copy-observation.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-unowned-relic-copy-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-unowned-relic-copy-replay-calibration.mt2f"));
     UnownedRelicCopyChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-revived-sacrifice-attribution-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-revived-sacrifice-attribution-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-revived-sacrifice-attribution-replay-calibration.mt2f"));
+    RevivedSacrificeAttributionChecks.Pair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-triggered-corruption-relic-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-triggered-corruption-relic-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

@@ -26,7 +26,7 @@ original native copy calls matches a new observation in the same order.
 The old failed archive is preserved with13 mismatches; no old counters are
 rewritten. Sources:20261026-101321-c8c0e653 and20261026-102918-3571a5d0.
 
-Fixtures: campaign/progression/player-unowned-relic-copy-{observation,replay-calibration}.mt2f.
+Fixtures: campaign/progression/player-unowned-relic-copy[-replay]-calibration.mt2f.
 Use --unowned-relic-copy-pair-only with those two archives. This establishes
 the diagnostic boundary, not a native victory or a newly supported spell
 replication combination.
