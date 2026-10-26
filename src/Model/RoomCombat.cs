@@ -2566,6 +2566,18 @@ namespace MonsterTrain2Poju.Model
                             // Native uses IsDestroyed here. Lethal retaliation during sweep
                             // leaves the attacker object available until the group is removed.
                             Damage(actor, target, actor.Despawned ? 0 : actor.Attack, "Attack");
+                            if (source.Preview && sweep)
+                            {
+                                // RunAttack removes each preview victim while the sweep
+                                // queue stays held. HeroManager cancels the preview when
+                                // removing its last boss, before queued attack effects run.
+                                bool held = holdPreviewTriggerQueue;
+                                holdPreviewTriggerQueue = true;
+                                DrainLocalTriggerQueue();
+                                holdPreviewTriggerQueue = held;
+                                runningTriggerQueue = true;
+                                if (CombatPreviewStopped()) return;
+                            }
                         }
                     if (sweep) DrainLocalTriggerQueue();
                 }
