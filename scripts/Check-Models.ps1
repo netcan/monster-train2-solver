@@ -273,6 +273,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-generated-conduit-copy-calibration.mt2f',
     'player-generated-conduit-copy-counterexample-calibration.mt2f',
     'player-generated-conduit-copy-replay-calibration.mt2f',
+    'player-conduit-retirement-calibration.mt2f',
+    'player-conduit-retirement-counterexample-calibration.mt2f',
+    'player-conduit-retirement-replay-calibration.mt2f',
     'player-moon-conduit-birth-order-calibration.mt2f',
     'player-moon-conduit-birth-order-replay-calibration.mt2f',
     'player-moon-null-boss-relic-calibration.mt2f',
@@ -1739,6 +1742,18 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
         (Get-TestFixturePath 'full-battle-original-isolated-squad-leader-owner-death.mt2f') `
         (Get-TestFixturePath $retiredFrameNames[1])
     if ($LASTEXITCODE -ne 0) { throw 'Focused retired actor frame replay failed.' }
+    return
+}
+$conduitRetirementNames = @('player-conduit-retirement-calibration.mt2f',
+    'player-conduit-retirement-counterexample-calibration.mt2f', 'player-conduit-retirement-replay-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $conduitRetirementNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Conduit retirement checker build failed.' }
+    }
+    $retirementArguments = @('--conduit-retirement-only') + @($conduitRetirementNames | ForEach-Object { Get-TestFixturePath $_ })
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @retirementArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Focused Conduit retirement pair failed.' }
     return
 }
 $generatedConduitNames = @('player-generated-conduit-copy-calibration.mt2f',

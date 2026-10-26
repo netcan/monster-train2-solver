@@ -6228,6 +6228,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-moonbeam-copy-lifecycle-replay-calibration.mt2f"));
     MoonbeamCopyChecks.Lifecycle(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-conduit-retirement-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-conduit-retirement-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var counterexample = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-conduit-retirement-counterexample-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-conduit-retirement-replay-calibration.mt2f"));
+    ConduitRetirementChecks.Native(source.RootElement, counterexample.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-generated-conduit-copy-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-generated-conduit-copy-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
