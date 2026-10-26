@@ -244,6 +244,14 @@ if (args.Length is 2 or 3 && args[0] == "--triggered-corruption-relic-only")
     return;
 }
 
+if (args.Length == 3 && args[0] == "--post-battle-reward-combat-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    PostBattleRewardCombatChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
+
 if (args.Length is 2 or 3 && args[0] == "--draft-upgrade-combat-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
