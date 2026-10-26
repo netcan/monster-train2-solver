@@ -22,7 +22,11 @@ namespace MonsterTrain2Poju.Model
         public ConduitUnitState(int unitId, int power, bool active, IReadOnlyList<int> cards, IReadOnlyList<int> multipliedCards)
         {
             UnitId = unitId; Power = power; Active = active;
-            Cards = Array.AsReadOnly(cards.ToArray());
+            // Native ModifiedCardTracker uses dictionary membership here. Its
+            // reused free slots can reverse enumeration after discards; the
+            // only enumeration clears independent card upgrades and UI text.
+            // Preserve every identity, with a stable representation of the set.
+            Cards = Array.AsReadOnly(cards.OrderBy(id => id).ToArray());
             MultipliedCards = Array.AsReadOnly(multipliedCards.OrderBy(id => id).ToArray());
         }
     }

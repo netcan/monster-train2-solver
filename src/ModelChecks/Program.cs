@@ -2184,6 +2184,12 @@ if (args.Length is 3 or 5 && args[0] == "--angel-duo-moon-birth-only")
     AngelDuoMoonBirthChecks.Native(source.RootElement, birth.RootElement, replay?.RootElement, replayBirth?.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--conduit-view-continuation-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    ConduitViewContinuationChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length is 3 or 5 && args[0] == "--arkion-moon-birth-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
