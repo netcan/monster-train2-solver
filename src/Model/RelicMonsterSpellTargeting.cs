@@ -75,6 +75,17 @@ namespace MonsterTrain2Poju.Model
             source = CardSpellModel.WithContext(source, context);
             if (!evaluation.Passed) return new RelicMonsterSpellTargetingResult(source);
 
+            RoomCombatState? room = source.Rooms.FirstOrDefault(item => item.RoomIndex == roomIndex);
+            if (room == null) return Unsupported(source, "Monster spell replication requires its selected room.");
+            int originalTargetId = lastTargets[0];
+            int[] teammateTargets = room.Units.Where(unit => unit.Team == CombatTeam.Player && unit.Health > 0 && !unit.IsPyre &&
+                unit.Id != originalTargetId && unit.Status("untouchable") == null &&
+                unit.DeathState?.IsBeingRemoved != true && unit.DeathState?.IsDestroyed != true &&
+                unit.DeathState?.IsDespawned != true).Select(unit => unit.Id).ToArray();
+            // No teammate means no private recast or condition trigger. The
+            // original spell need not satisfy the extra copy's effect/trait guards.
+            if (teammateTargets.Length == 0) return new RelicMonsterSpellTargetingResult(source);
+
             bool hasPositionChange = playedRule.Effects.Any(effect => effect.Type is "Bump" or "FloorRearrange" or "AbilityTeleport");
             if (hasPositionChange && !playedRule.Effects.Any(effect => effect.Type is not ("Bump" or "FloorRearrange" or "AbilityTeleport")))
                 return new RelicMonsterSpellTargetingResult(source);
@@ -126,15 +137,6 @@ namespace MonsterTrain2Poju.Model
                     return Unsupported(source, "Monster spell replication does not yet model copied card trait callbacks.");
             }
             catch (InvalidOperationException error) { return Unsupported(source, error.Message); }
-
-            RoomCombatState? room = source.Rooms.FirstOrDefault(item => item.RoomIndex == roomIndex);
-            if (room == null) return Unsupported(source, "Monster spell replication requires its selected room.");
-            int originalTargetId = lastTargets[0];
-            int[] teammateTargets = room.Units.Where(unit => unit.Team == CombatTeam.Player && unit.Health > 0 && !unit.IsPyre &&
-                unit.Id != originalTargetId && unit.Status("untouchable") == null &&
-                unit.DeathState?.IsBeingRemoved != true && unit.DeathState?.IsDestroyed != true &&
-                unit.DeathState?.IsDespawned != true).Select(unit => unit.Id).ToArray();
-            if (teammateTargets.Length == 0) return new RelicMonsterSpellTargetingResult(source);
 
             RelicConditionRecord recorded = RelicConditionModel.Record(context, modifier.Conditions);
             if (!recorded.Supported) return Unsupported(source, recorded.UnsupportedReason!);
