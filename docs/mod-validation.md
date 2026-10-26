@@ -1,20 +1,21 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.134, clean source`44eef50b93e407ddb5f8650a5eaa9aa823d5916c`.
+Current Windows installation:0.2.137, clean source`0716af6f6ac32c21248d15aa519e51de07765433`.
 The thirteenth sample's sixth battle again passes independent native processes:
 58 frozen inputs,47 plays,11 EndTurns,Pyre56 with no damage,21 train stages,
 identical complete states/forecasts/RNG and four zero failure counters.
-Versions129–134 include empty-teammate copy gating, original Fracture recasts,
+Versions129–137 include empty-teammate copy gating, original Fracture recasts,
 X room-status target ranking, consumed/retained JustCause copies, intrinsic consumed
-EchoInfusion and Corrupt Bloodsuit equipment. Each has focused native pairs.
-Installed at15:16 with67 protected files unchanged. Package
-`results/mod-dist/PojuAdvisor-0.2.134-Windows-20261026-151621.zip`,SHA256
-`3566fca7943bb9004d5df320182379e71129ff38732f2f76a7dfb54636245e4b`.
+EchoInfusion, Corrupt Bloodsuit equipment, consumed Challenge recasts and Echoes
+of the Past corruption snapshots. Each mechanism has focused native pairs.
+Both policy seeds also rank corruption-scaled upgrades by their actual target gain.
+Installed at15:58 with67 protected files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.137-Windows-20261026-155829.zip`,SHA256
+`ac49dde8109ab5983052e0095e19f9142bba8fa115cbdc164162670e98435150`.
 The mixed six-ring chain and32-file Ring7 checkpoint restore pass. Actual10000ms
-Ring7 advice completes42 inputs without model discrepancies but loses; that trace
-is curated. Development0.2.135 adds a28-input native pair for consumed Challenge
-copies and has not replaced this installation. No default-budget campaign clear
-is claimed. No Mac package was built.
+Ring7 advice completes40 inputs without model discrepancies but loses; that trace
+is curated. A60-input offline route reduces Rax to372 HP and still loses. No
+default-budget campaign clear is claimed. No Mac package was built.
 
 Previous Windows installation:0.2.128, clean source`0d0456bfc5a421f67f68be3435bb80c7d78c3adf`.
 The thirteenth sample's sixth battle passes independent native processes with
