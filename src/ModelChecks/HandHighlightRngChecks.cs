@@ -162,8 +162,12 @@ internal static class HandHighlightRngChecks
     private static bool IsExecutionValidation(FixtureValue row) => row.GetProperty("Stack").GetString()!
         .Contains("CombatManager+<FireCardEffectInternal>", StringComparison.Ordinal);
 
-    private static bool IsHighlight(FixtureValue row) => row.GetProperty("Stack").GetString()!
-        .Contains("CardUI::IsPlayableAndAffectsState", StringComparison.Ordinal);
+    private static bool IsHighlight(FixtureValue row)
+    {
+        string stack = row.GetProperty("Stack").GetString()!;
+        return stack.Contains("CardUI::IsPlayableAndAffectsState", StringComparison.Ordinal) ||
+            stack.Contains("CardUI.IsPlayableAndAffectsState", StringComparison.Ordinal);
+    }
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }
 }

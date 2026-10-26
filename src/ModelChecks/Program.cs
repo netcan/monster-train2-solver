@@ -5842,11 +5842,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is
     .Select(path => ModelJson.RelatedFixture(path, "player-hand-highlight-test-rng-counterexample.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
     HandHighlightRngChecks.Counterexample(path, ModelJson.RelatedFixture(path, "player-hand-highlight-test-rng-observed.mt2f"));
 foreach (string path in args.Where(path => Path.GetFileName(path) is
-    "player-hand-highlight-test-rng-calibration.mt2f" or "player-hand-highlight-test-rng-replay-calibration.mt2f")
-    .Select(path => ModelJson.RelatedFixture(path, "player-hand-highlight-test-rng-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+    "player-hand-highlight-test-rng-calibration.mt2f" or "player-hand-highlight-test-rng-replay-calibration.mt2f" or
+    "player-effect-test-rng-calibration.mt2f" or "player-effect-test-rng-replay-calibration.mt2f")
+    .Select(path => ModelJson.RelatedFixture(path, Path.GetFileName(path).StartsWith("player-effect-", StringComparison.Ordinal)
+        ? "player-effect-test-rng-calibration.mt2f" : "player-hand-highlight-test-rng-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var source = ModelJson.ReadFixture(path);
-    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-hand-highlight-test-rng-replay-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, Path.GetFileName(path).Replace("-calibration.mt2f", "-replay-calibration.mt2f")));
     HandHighlightRngChecks.Pair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-unit-ability-duality-counterexample.mt2f"))
