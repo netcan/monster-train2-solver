@@ -10,6 +10,7 @@ namespace MonsterTrain2Poju.Model
         public const string UndyingSpellId = "7168ed36-de03-41db-a36f-79b54b121341";
         public const string StrongerCorruptionSpellId = "4de04eeb-76d9-4ad0-b5cd-8c2b997395f5";
         public const string WurmkinSpikeSpellId = "83c87c23-39a9-4c92-a6d0-3f640c35534d";
+        public const string MoonbeamSpellId = "8916c550-474d-49db-89bf-75bacdc95db4";
         public const string IntrinsicSpikeUpgradeId = "62ea77cc-4f97-476f-9ccc-a23e28bc788d";
         public const string PermafrostUpgradeId = "e0af4fe5-75c0-4017-ae5e-5a87099aa6c5";
         public static bool Present(CardInstanceState card) => card.MaskDescriptor != null &&
@@ -21,7 +22,8 @@ namespace MonsterTrain2Poju.Model
         {
             if (descriptor.SourceTraits == null) return false;
             if (descriptor.SourceTraits.Count == 0) return true;
-            if (SupportedUndyingSource(descriptor) || SupportedStrongerCorruptionSource(descriptor) || SupportedWurmkinSpikeSource(descriptor)) return true;
+            if (SupportedUndyingSource(descriptor) || SupportedStrongerCorruptionSource(descriptor) ||
+                SupportedWurmkinSpikeSource(descriptor) || SupportedMoonbeamSource(descriptor)) return true;
             if (descriptor.SourceTraits.Count != 1 || descriptor.BaseTraits.Count == 0) return false;
             CardSourceTrait authored = descriptor.SourceTraits[0];
             CardTraitValue runtime = descriptor.BaseTraits[0];
@@ -105,6 +107,24 @@ namespace MonsterTrain2Poju.Model
             return true;
         }
 
+        internal static bool SupportedMoonbeamSource(CardMaskDescriptor descriptor)
+        {
+            if (descriptor.Definition.DataId != MoonbeamSpellId || descriptor.Definition.CardType != "Spell" ||
+                !descriptor.Definition.XCost || descriptor.BaseCost != 0 || descriptor.SourceTraits?.Count != 1 ||
+                descriptor.BaseTraits.Count == 0) return false;
+            CardSourceTrait authored = descriptor.SourceTraits[0];
+            CardTraitValue runtime = descriptor.BaseTraits[0];
+            return authored.Type == CardEffectApplicationsModel.Trait && authored.Int == 1 && authored.Int2 == 0 && authored.Int3 == 0 &&
+                !authored.Bool && authored.Str == "" && authored.Float == 0 && !authored.Scaling &&
+                authored.TrackedValue == "PlayedCost" && authored.EntryDuration == "ThisTurn" &&
+                authored.StatusQueryTeam == null && authored.StatusQueryStatuses == null && authored.HandCostTargetType == null &&
+                authored.DeploymentDrawFlag == null && authored.SpecificCardDataId == null && authored.StatusEffectIds == null &&
+                authored.MoonPhaseUpgrade == null && authored.KillTargetTeam == null && authored.KillTargetSubtype == null && authored.QueryCardType == null &&
+                runtime.RuntimeType == authored.Type && runtime.DeclaredName == authored.Type && runtime.DefinitionParamInt == 1 &&
+                runtime.ParamInt == 1 && runtime.StackMode == 0 && !runtime.Removable && runtime.DefinitionRemovable == false &&
+                !runtime.TemporaryReplacement;
+        }
+
         internal static bool SupportedIntrinsicSpike(CardInstanceState card)
         {
             if (card.MaskDescriptor is not { } descriptor || !SupportedWurmkinSpikeSource(descriptor)) return false;
@@ -161,8 +181,9 @@ namespace MonsterTrain2Poju.Model
         public static bool SupportsTerminalPurge(CardInstanceState card)
         {
             if (card.MaskDescriptor is not CardMaskDescriptor descriptor || descriptor.Definition.CardType != "Spell" ||
-                !SupportedSourceTraits(descriptor) || descriptor.BaseTraits.Count > 1 ||
-                descriptor.BaseTraits.Any(trait => trait.RuntimeType != "CardTraitExhaustState" || trait.DeclaredName != "CardTraitExhaustState" ||
+                !SupportedSourceTraits(descriptor) ||
+                descriptor.BaseTraits.Skip(SupportedMoonbeamSource(descriptor) ? 1 : 0).Count() > 1 ||
+                descriptor.BaseTraits.Skip(SupportedMoonbeamSource(descriptor) ? 1 : 0).Any(trait => trait.RuntimeType != "CardTraitExhaustState" || trait.DeclaredName != "CardTraitExhaustState" ||
                     trait.ParamInt != 0 || trait.StackMode != 0) ||
                 descriptor.TemporaryTraits.Count != 0 || descriptor.PermanentReplacements.Count != 0 ||
                 card.GraftedEquipmentCardId.HasValue || Present(card)) return false;
@@ -178,7 +199,8 @@ namespace MonsterTrain2Poju.Model
             var traits = CardExhaustModel.RefreshTraits(card).CombinedTraits!.ToArray();
             return traits.Count(trait => trait.RuntimeType == "CardTraitEphemeral") == 1 &&
                 traits.Count(trait => trait.RuntimeType == "CardTraitExhaustState") <= 1 &&
-                traits.All(trait => trait.RuntimeType is "CardTraitEphemeral" or "CardTraitExhaustState") &&
+                traits.All(trait => trait.RuntimeType is "CardTraitEphemeral" or "CardTraitExhaustState" ||
+                    SupportedMoonbeamSource(descriptor) && trait.RuntimeType == CardEffectApplicationsModel.Trait) &&
                 Array.FindIndex(traits, trait => trait.RuntimeType == "CardTraitExhaustState") <
                     Array.FindIndex(traits, trait => trait.RuntimeType == "CardTraitEphemeral");
         }
@@ -193,6 +215,7 @@ namespace MonsterTrain2Poju.Model
                 card.MaskDescriptor.BaseTraits.Any(trait => trait.RuntimeType is not (Trait or "CardTraitExhaustState") &&
                     !(SupportedUndyingSource(card.MaskDescriptor) && trait.RuntimeType == "CardTraitScalingAddStatusEffect") &&
                     !(SupportedWurmkinSpikeSource(card.MaskDescriptor) && trait.RuntimeType == "CardTraitScalingAddStatusEffect") &&
+                    !(SupportedMoonbeamSource(card.MaskDescriptor) && trait.RuntimeType == CardEffectApplicationsModel.Trait) &&
                     !(trait.RuntimeType == "CardTraitIntrinsicState" && SupportedIntrinsicSpike(card)) &&
                     !(SupportedStrongerCorruptionSource(card.MaskDescriptor) && trait.RuntimeType is "CardTraitStrongerMagicPower" or "CardTraitCorruptRestricted") &&
                     !(trait.RuntimeType == "CardTraitPermafrost" && SupportedPermafrost(card))) ||

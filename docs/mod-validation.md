@@ -1,6 +1,14 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.149, clean source`b805b05cceff90c98a05399069d006c35d8a0dea`.
+Current Windows installation:0.2.150, clean source`2ce22af82c3aeded04bf88d7c44cee53a273f584`.
+Installed at19:00 with67 protected files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.150-Windows-20261026-190001.zip`,SHA256
+`2302fb1d19f53d5e30a42e06cd40a3544dce7a210e537fc7979b460c58f8c9bd`.
+The fourth-ring actual10000ms/two-worker39-input independent native pair below
+supplies release acceptance,Pyre74. Ring5 and campaign completion remain pending.
+No Mac package built.
+
+Previous Windows installation:0.2.149, clean source`b805b05cceff90c98a05399069d006c35d8a0dea`.
 Installed at18:45 with67 protected files unchanged. Package
 `results/mod-dist/PojuAdvisor-0.2.149-Windows-20261026-184524.zip`,SHA256
 `16637852c231a6002acb32fed0ddbc21439c6bb49ce02cb738055c8462a065b1`.
@@ -41,7 +49,7 @@ independent native processes:39inputs/30plays/9EndTurns,Pyre74,18train stages an
 identical full states/forecasts/RNG,four zero failure counters.57normal reward
 events reach Ring5; the mixed four-ring chain and24-file checkpoint restore
 (23payloads)pass. Ring5 currently rejects an authored-trait/copy combination.
-The installation mentioned in this historical record was0.2.143; current149 is above.
+The installation mentioned in this historical record was0.2.143; current150 is above.
 No default-budget campaign clear is claimed.
 No Mac package was built. See[terminal capture evidence](../tests/fixtures/notes/combat/terminal-coroutine-planes.md).
 
