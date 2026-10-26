@@ -79,7 +79,10 @@ namespace MonsterTrain2Poju.Model
                 if (modifierError != null) return Unsupported(modifierError);
                 CardUpgradeModifier upgrade = effect.Upgrade.WithSharedReference(null);
                 CardModifiers temporary = UnitModifierModel.Add(card.Temporary, upgrade);
-                context = CardMagicPowerModel.Refresh(context, card.WithModifiers(card.Permanent, temporary), out _);
+                CardInstanceState changed = card.WithModifiers(card.Permanent, temporary);
+                modifierError = CardModifierModel.UnsupportedReason(changed);
+                if (modifierError != null) return Unsupported(modifierError);
+                context = CardMagicPowerModel.Refresh(context, changed, out _);
                 applied.Add(card.InstanceId);
             }
             return new DeckSpellUpgradeResult(context, applied);

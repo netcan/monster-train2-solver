@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--triple-juice-search-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    TripleJuiceSearchChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length == 4 && args[0] == "--triple-juice-spike-only")
 {
     using var refused = ModelJson.ReadFixture(args[1]);
@@ -6464,6 +6470,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-aut
     using var source = ModelJson.ReadFixture(path);
     using var prefix = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-auto-focus-no-preview-prefix-calibration.mt2f"));
     AutomaticFocusPreviewChecks.Native(source.RootElement, prefix.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-triple-juice-search-failure-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    TripleJuiceSearchChecks.Native(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-triple-juice-spike-refusal-calibration.mt2f"))
 {
