@@ -16,4 +16,12 @@
 RNG和四个并行不变父分支均通过；保留原拒绝记录。额外修改Valor层数、升级
 身份或伤害的控制分支继续拒绝。这是机制校准，没有计作默认预算的整场胜利。
 
+新增合法动作后，旧 `full-battle-original-monster-spell-targeting.mt2f` 的普通
+策略会在第4个后续动作选择另一张牌。因此旧档保留为原生路线，20次动作、
+10次后续输入和4次结束回合均按原顺序核对，包含16个并行不变分支。
+另以0.2.119原生重新执行当前策略，独立归档
+`full-battle-original-monster-spell-targeting-expanded.mt2f`：22次动作、12次
+后续输入、3次结束回合，原生获胜且四项零失败；完整动作和16个并行路线
+重放通过。此处不要求不同支持范围的策略选择同一张牌，也未省略状态比较。
+
 运行 `scripts/Check-Models.ps1 -Fixture player-justcause-monster-spell-calibration.mt2f`。

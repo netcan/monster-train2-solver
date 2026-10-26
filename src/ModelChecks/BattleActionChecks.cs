@@ -977,10 +977,14 @@ internal static class BattleActionChecks
             return;
         }
         if ((fixture.TryGetProperty("ChosenIncantSpellControl", out FixtureValue chosenControl) && chosenControl.ValueKind == FixtureKind.Object) ||
-            (fixture.TryGetProperty("AngelDuoIncantControl", out FixtureValue angelControl) && angelControl.ValueKind == FixtureKind.Object))
+            (fixture.TryGetProperty("AngelDuoIncantControl", out FixtureValue angelControl) && angelControl.ValueKind == FixtureKind.Object) ||
+            (fixture.TryGetProperty("OriginalMonsterSpellTargetingPrepared", out FixtureValue monsterSpellControl) && monsterSpellControl.GetBoolean()))
         {
             // Replay the explicitly recorded legal control inputs. The native
             // control deliberately overrides the ordinary fixed policy chooser.
+            // Monster-spell copies now allow JustCause as well as direct damage.
+            // That expands the legal policy choices, while these recorded native
+            // routes remain complete state/RNG witnesses for their own inputs.
             Func<BattleTurnState, PlayCardAction?> ReplayInputs()
             {
                 int cursor = 0;
