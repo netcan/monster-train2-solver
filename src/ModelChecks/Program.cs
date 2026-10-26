@@ -5983,6 +5983,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-monster-spell-no-teammates-replay-calibration.mt2f"));
     MonsterSpellNoTeammatesChecks.Native(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-fracture-recast-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-fracture-recast-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-fracture-recast-replay-calibration.mt2f"));
+    FractureRecastChecks.Native(source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-zero-energy-x-policy-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-zero-energy-x-policy-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

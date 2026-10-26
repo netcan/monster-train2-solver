@@ -217,6 +217,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-liquid-courage-recast-replay-calibration.mt2f',
     'player-monster-spell-no-teammates-calibration.mt2f',
     'player-monster-spell-no-teammates-replay-calibration.mt2f',
+    'player-fracture-recast-calibration.mt2f',
+    'player-fracture-recast-replay-calibration.mt2f',
     'player-unowned-relic-copy-calibration.mt2f',
     'player-unowned-relic-copy-replay-calibration.mt2f',
     'player-revived-sacrifice-attribution-calibration.mt2f',
@@ -1809,6 +1811,7 @@ $branchPairGates = @{
     'player-zero-energy-x-policy-calibration.mt2f' = '--zero-energy-x-policy-only'
     'player-liquid-courage-recast-calibration.mt2f' = '--liquid-courage-recast-only'
     'player-monster-spell-no-teammates-calibration.mt2f' = '--monster-spell-no-teammates-only'
+    'player-fracture-recast-calibration.mt2f' = '--fracture-recast-only'
     'player-teleport-adjacent-order-calibration.mt2f' = '--teleport-adjacent-order-only'
     'player-unowned-relic-copy-calibration.mt2f' = '--unowned-relic-copy-pair-only'
     'player-revived-sacrifice-attribution-calibration.mt2f' = '--revived-sacrifice-attribution-pair-only'
