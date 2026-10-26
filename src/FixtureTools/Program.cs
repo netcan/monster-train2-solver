@@ -87,6 +87,16 @@ else if (args.Length is 8 or 9 && args[0] == "improve-win")
         int.Parse(args[6]), exploreCardOrder: true, retainSuffix: true, secondActionWidth: int.Parse(args[7]),
         improveWinningRoute: true, perDecisionCandidateLimit: args.Length == 9 ? int.Parse(args[8]) : 0);
 }
+else if (args.Length == 10 && args[0] == "improve-triples")
+{
+    int limit = int.Parse(args[9]);
+    int second = int.Parse(args[7]), third = int.Parse(args[8]);
+    if (limit is < 1 or > 256 || second is < 1 or > 32 || third is < 1 or > 16)
+        throw new ArgumentOutOfRangeException(nameof(limit), "Expected1..256 candidates,1..32 second inputs and1..16 third inputs.");
+    OfflineBattleSearch.Improve(args[1], args[3], int.Parse(args[4]), int.Parse(args[5]), args[2],
+        int.Parse(args[6]), exploreCardOrder: true, retainSuffix: true, secondActionWidth: second,
+        perDecisionCandidateLimit: limit, thirdActionWidth: third);
+}
 else if (args.Length == 9 && args[0] == "improve-sweep")
 {
     int limit = int.Parse(args[8]);
@@ -181,6 +191,7 @@ else
     Console.Error.WriteLine("Joint route investigation: improve-pairs <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <second-action-width:0..32>; bounded two-input alternatives, independent final replay; model prediction only.");
     Console.Error.WriteLine("Winning route investigation: improve-win <native.mt2f> <verified-winning-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <second-action-width:0..32> [candidates-per-decision:0..256]; retain complete winning improvements for the next campaign battle; model prediction only.");
     Console.Error.WriteLine("Bounded route sweep: improve-sweep <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <second-action-width:0..32> <candidates-per-decision:1..256>; share the budget across later decisions; model prediction only.");
+    Console.Error.WriteLine("Bounded three-input investigation: improve-triples <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <second-action-width:1..32> <third-action-width:1..16> <candidates-per-decision:1..256>; model prediction only.");
     Console.Error.WriteLine("Predicted counterexample: refine-prediction <native.mt2f> <verified-prediction.mt2f> <new-winning-output.mt2f> <milliseconds> [start-decision] [last-decision]; validates native input hash/root and independently replays the baseline before exploring.");
     Console.Error.WriteLine("Search: solve-exact <input.mt2f> <new-output.mt2f> <max-nodes> <milliseconds> [EndTurn-horizon] | plan-belief <input.mt2f> <new-output.mt2f> <max-worlds> <decisions> <max-nodes> <milliseconds> [native-Turns-index] | verify-belief <policy.mt2f>");
     Console.Error.WriteLine("Usage: FixtureTools plan-once <request.mt2f> <output.mt2f> | plan-battle <native.mt2f> <output.mt2f> <horizon> <milliseconds-per-decision> <deployment-room> [--tactical] [--player-continuation] | policy-battle <native.mt2f> <output.mt2f> <deployment-room> [--strength] | freeze-actions <native.mt2f> <actions.json or -> <output.mt2f> | verify-offline-plan <prediction.mt2f> | verify-offline-native <prediction.mt2f> <fresh-native.mt2f> | card-inventory <workspace> [--check] | pack <legacy.json[.gz]> <output.mt2f> | bundle-native <baseline.mt2f> <owned.mt2f> <output.mt2f> | verify <legacy> <archive> | compare-values <diagnostic.json> <native.mt2f> | benchmark-capture <fixture.mt2f> <output-directory> | pack-directory <source-dir> <output-dir> | compare-speeds <normal.mt2f> <accelerated.mt2f>");

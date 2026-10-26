@@ -12,11 +12,14 @@ internal static partial class OfflineBattleSearch
     // original route. A result is still a model prediction requiring native replay.
     internal static void Improve(string input, string output, int milliseconds, int maxPasses = 4,
         string? prediction = null, int startDecision = 0, bool exploreCardOrder = false, bool retainSuffix = false,
-        int secondActionWidth = 0, bool improveWinningRoute = false, int perDecisionCandidateLimit = 0)
+        int secondActionWidth = 0, bool improveWinningRoute = false, int perDecisionCandidateLimit = 0,
+        int thirdActionWidth = 0)
     {
         Require(milliseconds is >= 100 and <= 600000 && maxPasses is >= 1 and <= 16,
             "Expected100..600000ms and1..16 improvement passes.");
         Require(secondActionWidth is >= 0 and <= 32, "Expected0..32 second-action alternatives.");
+        Require(thirdActionWidth is >= 0 and <= 16 && (thirdActionWidth == 0 || secondActionWidth > 0),
+            "Expected0..16 third-action alternatives and a positive second-action width for triples.");
         Require(perDecisionCandidateLimit is >= 0 and <= 256, "Expected0..256 candidates per decision;0 keeps exhaustive local enumeration.");
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         string unsupportedOutput = output + ".unsupported.mt2f";
@@ -57,6 +60,7 @@ internal static partial class OfflineBattleSearch
         var tried = new HashSet<string>(StringComparer.Ordinal);
         int candidates = 0, completed = 0, unsupported = 0, improvements = 0;
         int pairCandidates = 0, pairImprovements = 0;
+        int tripleCandidates = 0, tripleImprovements = 0;
         int visitedDecisions = 0, lastDecision = -1;
         int retainedSteps = 0, skippedSuffixInputs = 0;
         var reasons = new HashSet<string>(StringComparer.Ordinal);
@@ -153,6 +157,29 @@ internal static partial class OfflineBattleSearch
                             if (Expired() || DecisionBudgetReached()) break;
                             yield return (new[] { first.Step, new Step { Action = second.Action } },
                                 new[] { first.State, second.Result.State! }, second.Result.Outcome);
+                            if (thirdActionWidth == 0 || Expired() || DecisionBudgetReached() ||
+                                Terminal(second.Result.Outcome) || prefix.Length >= 254) continue;
+                            BattleTurnState secondState = second.Result.State!;
+                            string secondKey = keys.Key(secondState);
+                            var secondPrefix = firstPrefix.Append(new Step { Action = second.Action }).ToArray();
+                            var thirds = BattleActionModel.EnumerateActions(secondState);
+                            foreach (var attempt in thirds.UnsupportedAttempts)
+                                Unsupported(attempt.Reason ?? "Unsupported third input.", attempt.Action, secondState, secondPrefix);
+                            foreach (var third in thirds.SupportedCandidates.OrderBy(candidate =>
+                                BattlePlanner.Evaluate(candidate.Result.State!, candidate.Result.Outcome)).Take(thirdActionWidth))
+                            {
+                                if (Expired() || DecisionBudgetReached()) break;
+                                yield return (new[] { first.Step, new Step { Action = second.Action }, new Step { Action = third.Action } },
+                                    new[] { first.State, secondState, third.Result.State! }, third.Result.Outcome);
+                            }
+                            if (!Expired() && !DecisionBudgetReached())
+                            {
+                                BattleTurnResult thirdEnd = BattleTurnModel.EndTurn(secondState);
+                                if (thirdEnd.Supported) yield return (new[] { first.Step, new Step { Action = second.Action }, new Step { IsEndTurn = true } },
+                                    new[] { first.State, secondState, thirdEnd.State! }, thirdEnd.Outcome);
+                                else Unsupported(thirdEnd.UnsupportedReason ?? "Unsupported third EndTurn.", null, secondState, secondPrefix);
+                            }
+                            Require(keys.Key(secondState) == secondKey, "Third input mutated its parent.");
                         }
                         if (!Expired() && !DecisionBudgetReached())
                         {
@@ -171,6 +198,7 @@ internal static partial class OfflineBattleSearch
                     if (!tried.Add(JsonSerializer.Serialize(steps))) continue;
                     candidates++; decisionCandidates++;
                     if (alternative.Steps.Length == 2) pairCandidates++;
+                    if (alternative.Steps.Length == 3) tripleCandidates++;
                     BattleTurnState branch = alternative.States[^1];
                     var tailStates = alternative.States.ToList();
                     RoomOutcome result = alternative.Outcome;
@@ -252,6 +280,7 @@ internal static partial class OfflineBattleSearch
                     if (retainSuffix) tried.Clear();
                     improvements++; improved = true;
                     if (alternative.Steps.Length == 2) pairImprovements++;
+                    if (alternative.Steps.Length == 3) tripleImprovements++;
                     Console.WriteLine($"IMPROVE-POLICY pass={pass} decision={index} outcome={outcome} merit={best:F3} " +
                         $"inputs={route.Length} changedInputs={alternative.Steps.Length} candidates={candidates} elapsedMs={watch.Elapsed.TotalMilliseconds:F1}");
                     break;
@@ -275,7 +304,7 @@ internal static partial class OfflineBattleSearch
         }
         Console.WriteLine($"IMPROVE-POLICY foundWin={outcome == RoomOutcome.BattleWon} improvements={improvements} " +
             $"startDecision={startDecision} exploreCardOrder={exploreCardOrder} candidates={candidates} completed={completed} unsupported={unsupported} " +
-            $"retainSuffix={retainSuffix} improveWinningRoute={improveWinningRoute} secondActionWidth={secondActionWidth} perDecisionCandidateLimit={perDecisionCandidateLimit} diverseFirstCards={perDecisionCandidateLimit > 0} visitedDecisions={visitedDecisions} lastDecision={lastDecision} pairCandidates={pairCandidates} pairImprovements={pairImprovements} retainedSteps={retainedSteps} skippedSuffixInputs={skippedSuffixInputs} timedOut={Expired()} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}; model prediction only.");
+            $"retainSuffix={retainSuffix} improveWinningRoute={improveWinningRoute} secondActionWidth={secondActionWidth} thirdActionWidth={thirdActionWidth} perDecisionCandidateLimit={perDecisionCandidateLimit} diverseFirstCards={perDecisionCandidateLimit > 0} visitedDecisions={visitedDecisions} lastDecision={lastDecision} pairCandidates={pairCandidates} pairImprovements={pairImprovements} tripleCandidates={tripleCandidates} tripleImprovements={tripleImprovements} retainedSteps={retainedSteps} skippedSuffixInputs={skippedSuffixInputs} timedOut={Expired()} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}; model prediction only.");
 
         BattleTurnState Replay(IEnumerable<Step> steps, out RoomOutcome terminal, List<BattleTurnState>? collect = null)
         {

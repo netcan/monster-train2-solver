@@ -121,3 +121,21 @@ dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll improve-sweep `
 搜索加独立导出共132.95秒，仍为模型败局。随后90秒从第0输入扫描到第44输入，
 77条完整候选、零不支持、零改进，不导出新件。详见
 [自然解锁档案](../tests/fixtures/notes/campaign/native-story-unlock.md)。
+
+`improve-triples`允许最多三个输入联合变化，用于需要准备两次后再打收益牌的
+局部调查；它同样保留完整后半段、有限预算和不变父状态检查。
+
+```powershell
+dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll improve-triples `
+  <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> 180000 12 42 4 4 24
+```
+
+新增参数为第二输入宽度1..32、第三输入宽度1..16、每点候选1..256；第三步
+也可结束回合。原有命令第三步宽度为0，不会扩大原邻域。每个新增输入都必须
+重新在模型父状态执行；失败分支仍独立重现，只有完整严格改进才可导出。
+
+第十三组第七战60输入／Rax372基线，从第42输入起180秒尝试444条完整路线，
+含191条三输入候选，零不支持、零改进，无新文件；不能推断没有胜法。
+旧单步末段对照均4条完整候选；旧双步末段对照均83条完整候选／67条双输入，
+均零改进、零不支持、不导出。第三宽度0／17在读取输入前拒绝，已有输出
+经SHA256核对未被覆盖。此命令仅用于离线调查，不改游戏内搜索预算。
