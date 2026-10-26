@@ -25,3 +25,13 @@ RNG和四个并行不变父分支均通过；保留原拒绝记录。额外修�
 重放通过。此处不要求不同支持范围的策略选择同一张牌，也未省略状态比较。
 
 运行 `scripts/Check-Models.ps1 -Fixture player-justcause-monster-spell-calibration.mt2f`。
+
+第十三组第五战的离线候选另遇到原卡26同时带精确 `TraitCorrupt` 与
+`TraitRetain` 两个零数值升级。原生 `CardTraitRetain.OnCardDiscarded` 明确
+忽略 `isRecastCopy`，副本不创建返回标记，原卡施放后仍正常返回。
+0.2.120支持这两个升级的精确组合，仍拒绝改变升级身份或增加伤害的分支。
+两个独立原生进程的19输入保留于 `player-justcause-retain-copy-{replay-,}calibration.mt2f`，
+完整前缀／后继／RNG、原卡返回标记、单位6和7的顺序与Valor4、四个并行
+不变父分支均通过。原13输入JustCause复制双进程检查也通过。
+
+运行 `scripts/Check-Models.ps1 -Fixture player-justcause-retain-copy-calibration.mt2f`。

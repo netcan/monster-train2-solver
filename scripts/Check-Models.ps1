@@ -186,6 +186,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-post-battle-reward-combat-replay-calibration.mt2f',
     'player-justcause-monster-spell-calibration.mt2f',
     'player-justcause-monster-spell-replay-calibration.mt2f',
+    'player-justcause-retain-copy-calibration.mt2f',
+    'player-justcause-retain-copy-replay-calibration.mt2f',
     'player-unowned-relic-copy-calibration.mt2f',
     'player-unowned-relic-copy-replay-calibration.mt2f',
     'player-revived-sacrifice-attribution-calibration.mt2f',
@@ -1758,6 +1760,7 @@ $branchPairGates = @{
     'player-draft-upgrade-combat-calibration.mt2f' = '--draft-upgrade-combat-only'
     'player-post-battle-reward-combat-calibration.mt2f' = '--post-battle-reward-combat-pair-only'
     'player-justcause-monster-spell-calibration.mt2f' = '--justcause-monster-spell-only'
+    'player-justcause-retain-copy-calibration.mt2f' = '--justcause-retain-copy-only'
     'player-teleport-adjacent-order-calibration.mt2f' = '--teleport-adjacent-order-only'
     'player-unowned-relic-copy-calibration.mt2f' = '--unowned-relic-copy-pair-only'
     'player-revived-sacrifice-attribution-calibration.mt2f' = '--revived-sacrifice-attribution-pair-only'
