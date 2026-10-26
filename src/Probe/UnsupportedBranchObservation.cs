@@ -198,6 +198,26 @@ namespace MonsterTrain2Poju.Probe
         }
 
         private static T Read<T>(FixtureValue value) => PlannerReplayScenario.Read<T>(value);
+        internal static IEnumerator ObserveDamage(CardEffectState effect, CardEffectParams args, IEnumerator operation)
+        {
+            if (waiting && rows.Count > 0 && rows.Last().Boundary &&
+                request.GetProperty("Reason").GetString() == "Native copied Moonbeam damage differs at input27." &&
+                !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
+            {
+                FullBattleTrace trace = FullBattleTrace.Active!;
+                CardState card = args.playedCard;
+                CardState parent = effect.GetParentCardState();
+                rows.Last().DamageEffects.Add(new { CardId = trace.CardId(card), ParentCardId = trace.CardId(parent),
+                    Unmodified = effect.GetUnmodifiedParamInt(), Resolved = effect.GetParamInt(),
+                    PermanentDamage = card.GetCardStateModifiers().GetCardUpgrades().Select(upgrade =>
+                        new { Id = upgrade.GetCardUpgradeDataId(), Damage = upgrade.GetAttackDamage() }).ToArray(),
+                    TemporaryDamage = card.GetTemporaryCardStateModifiers().GetCardUpgrades().Select(upgrade =>
+                        new { Id = upgrade.GetCardUpgradeDataId(), Damage = upgrade.GetAttackDamage() }).ToArray(),
+                    Targets = args.targets.Select(unit => new { Id = trace.UnitId(unit), Health = unit.GetHP() }).ToArray() });
+            }
+            try { while (operation.MoveNext()) yield return operation.Current; }
+            finally { (operation as IDisposable)?.Dispose(); }
+        }
         private sealed class Row
         {
             public BattleTurnState Before { get; set; } = null!;
@@ -211,6 +231,7 @@ namespace MonsterTrain2Poju.Probe
             public BattleTurnState? Actual { get; set; }
             public object? RoomAttachmentsBefore { get; set; }
             public object? RoomAttachmentsAfter { get; set; }
+            public List<object> DamageEffects { get; } = new List<object>();
         }
     }
 
@@ -219,6 +240,15 @@ namespace MonsterTrain2Poju.Probe
     {
         private static void Postfix(RoomState __instance, ref IEnumerator __result)
             => __result = UnsupportedBranchObservation.TraceRoomAttachmentMovement(__instance, __result);
+    }
+    [HarmonyPatch(typeof(CardEffectDamage), nameof(CardEffectDamage.ApplyEffect))]
+    internal static class UnsupportedBranchDamageObservation
+    {
+        private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
+        {
+            if (UnsupportedBranchObservation.Enabled)
+                __result = UnsupportedBranchObservation.ObserveDamage(cardEffectState, cardEffectParams, __result);
+        }
     }
 }
 #endif
