@@ -2031,6 +2031,11 @@ if (args.Length is 2 or 3 && args[0] == "--titan-curse-preview-only")
     TitanCursePreviewChecks.Native(source.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--conduit-retirement-battle-only")
+{
+    ConduitRetirementChecks.CompletedBattle(args[1]);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--troop-preview-addition-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6234,6 +6239,15 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-moonbeam-copy-lifecycle-replay-calibration.mt2f"));
     MoonbeamCopyChecks.Lifecycle(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-random-campaign-14-ring6-release157-refined-loss.mt2f"))
+    ConduitRetirementChecks.CompletedBattle(path);
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-troop-preview-addition-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-troop-preview-addition-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-troop-preview-addition-replay-calibration.mt2f"));
+    TroopPreviewAdditionChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-conduit-retirement-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-conduit-retirement-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

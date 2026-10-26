@@ -81,5 +81,25 @@ internal static class ConduitRetirementChecks
         Console.WriteLine("CONDUIT-RETIREMENT PASS:29 native inputs, continuously owned replay/full state/RNG, raw combat phases, " +
             "destroyed versus pending trackers, Permafrost draw guard and four immutable EndTurn branches; independentPair=" + replay.HasValue);
     }
+    internal static void CompletedBattle(string path)
+    {
+        using var document = ModelJson.ReadFixture(path);
+        var fixture = document.RootElement;
+        Require(!fixture.GetProperty("NativeWon").GetBoolean() &&
+            fixture.GetProperty("RollingDecisions").GetArrayLength() == 63 &&
+            fixture.GetProperty("NativeRunInput").GetProperty("Seed").GetInt32() == 934692550,
+            "Preserve the unchanged original Ring6 defeat and all63 inputs.");
+        RoomCombatChecks.NativeRoomOnly(path);
+        TrainCombatChecks.Native(fixture);
+        RollingAdviceChecks.Native(fixture);
+        var rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        var root = rows[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        var replay = BattlePlannerChecks.Replay(root, rows.Select(row => new BattleSearchStep(
+            row.GetProperty("Action").Deserialize<PlayCardAction>(), row.GetProperty("IsEndTurn").GetBoolean())).ToArray(), out var outcome);
+        Require(outcome == RoomOutcome.PlayerDefeated && NativeBranchObservationChecks.Key(replay, true) ==
+            NativeBranchObservationChecks.Key(rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!, true),
+            "Model-owned complete defeat differs from the actual native result.");
+        Console.WriteLine("CONDUIT-RETIREMENT-BATTLE PASS:63 unchanged native inputs, full raw room/train stages, forecasts/state/RNG and four zero counters; actual defeat retained.");
+    }
     private static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
 }
