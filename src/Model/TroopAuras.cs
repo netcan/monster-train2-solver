@@ -182,7 +182,7 @@ namespace MonsterTrain2Poju.Model
                 for (int i = 0; i < delta; i++)
                 {
                     if (!room.Units.Any(unit => unit.Id == targetId)) room = room.WithUnits(room.Units.Concat(new[] { retained }).ToArray());
-                    RoomCombatResult changed = UnitModifierModel.ApplyDirect(room.WithContext(room.Context?.WithEnchantments(null)),
+                    RoomCombatResult changed = UnitModifierModel.ApplyDirect(BorrowWriteWorld(room),
                         targetId, upgrade, kind == "OnTroopRemoved", upgrade.DataId, allowDyingTarget: true);
                     if (!changed.Supported) return changed;
                     callbacks.AddRange(changed.PendingCallbacks);
@@ -196,7 +196,7 @@ namespace MonsterTrain2Poju.Model
         internal static RoomCombatResult OwnerKilled(RoomCombatState source, CombatUnit owner)
         {
             TroopAuraState rule = owner.Modifiers!.TroopAura!;
-            RoomCombatState room = source.WithContext(source.Context?.WithEnchantments(null));
+            RoomCombatState room = BorrowWriteWorld(source);
             var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
             CardUpgradeModifier upgrade = rule.Upgrade.WithRuntimeIdentity(Key(owner.Id));
             foreach (int id in source.Units.Where(unit => Matches(unit, rule)).Select(unit => unit.Id))
@@ -223,5 +223,20 @@ namespace MonsterTrain2Poju.Model
         private static TrainCombatState Replace(TrainCombatState source, RoomCombatState room) => new TrainCombatState(
             source.Rooms.Select(old => old.RoomIndex == room.RoomIndex ? room : old.WithContext(room.Context)).ToArray(),
             source.Movement, source.EnemySlotsPerRoom, room.Context);
+
+        private static RoomCombatState BorrowWriteWorld(RoomCombatState room)
+        {
+            if (room.Context?.Enchantments is not { AutomaticLifecycle: true } world)
+                return room.WithContext(room.Context?.WithEnchantments(null));
+            // These direct troop writes run inside the caller's lifecycle
+            // operation. Retain the actual world for validating other captured
+            // enchanters while preventing an additional whole-train reentry.
+            var borrowed = new EnchantmentWorld(world.Rooms.Select(old => old.RoomIndex == room.RoomIndex ? room : old).ToArray(),
+                world.Movement, world.EnemySlotsPerRoom,
+                world.RetainedUnits.Where(actor => !room.Units.Any(unit => unit.Id == actor.Unit.Id)).ToArray(),
+                world.EnchanterIds, world.AllowUpdates, true, world.Preview, world.TestRng,
+                world.AutomaticLifecycle, world.TemporaryPreviewUnitIds);
+            return room.WithContext(room.Context.WithEnchantments(borrowed));
+        }
     }
 }
