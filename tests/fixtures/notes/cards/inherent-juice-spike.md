@@ -16,5 +16,6 @@ four detached cast branches retain their parent.
 Unknown ID/asset, other cost/X/damage payloads, trait order, multiplier and
 temporary upgrades reject. The already calibrated19-input double/triple
 TitanCurse pair still passes. Temporary curse composition on this new inherent
-owner is not admitted without its own evidence. This is component acceptance,
+owner was initially not admitted; its later37-input boundary is calibrated
+separately in[inherent-juice-curse.md](inherent-juice-curse.md). This is component acceptance,
 not a Ring7 victory.

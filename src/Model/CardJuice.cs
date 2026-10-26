@@ -55,7 +55,7 @@ namespace MonsterTrain2Poju.Model
                     traits[3].DeclaredName == traits[3].RuntimeType && Ordinary(traits[3], 0) &&
                     card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] { Upgrade, "62ea77cc-4f97-476f-9ccc-a23e28bc788d" }) &&
                     KnownJuiceUpgrade(card.Permanent.Upgrades[0], false) && KnownInherentXUpgrade(card.Permanent.Upgrades[1]) &&
-                    card.Temporary.Upgrades.Count == 0;
+                    card.Temporary.Upgrades.All(KnownTitanCurse);
                 bool original = traits.Count == 3 &&
                     card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] { "6497cd22-8c83-4b13-8578-269f4387250d", triple ? TripleUpgrade : Upgrade }) &&
                     KnownJuiceUpgrade(card.Permanent.Upgrades[1], triple) && card.Temporary.Upgrades.All(KnownTitanCurse);
