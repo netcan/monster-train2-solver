@@ -1989,6 +1989,13 @@ if (args.Length is 2 or 3 && args[0] == "--room-death-preview-identity-only")
     RoomDeathPreviewIdentityChecks.Native(source.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--room-slay-status-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    RoomSlayStatusChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length == 4 && args[0] == "--terminal-coroutine-planes-only")
 {
     using var counterexample = ModelJson.ReadFixture(args[1]);

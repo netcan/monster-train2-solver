@@ -1385,8 +1385,11 @@ namespace MonsterTrain2Poju.Model
                         if (effect.Type == "CardEffectAdjustAllStatusEffects")
                         {
                             CardActionEffect? adjustment = effect.Action;
-                            if (adjustment?.Type != "AdjustAllStatusEffects" || adjustment.Target != "Self" || adjustment.Range != null ||
-                                adjustment.StatusAdjustmentFilter is not (0 or 1) || adjustment.Tests?.StrictTargets != false ||
+                            bool roomSlay = trigger.Kind == "OnKill" && adjustment is { Target: "Room", Value: 1,
+                                AllowPlayer: true, AllowEnemy: false, StatusAdjustmentFilter: 1 } && adjustment.Statuses.Count == 0 &&
+                                adjustment.Tests?.StrictTargets == true;
+                            if (adjustment?.Type != "AdjustAllStatusEffects" || !roomSlay && adjustment.Target != "Self" || adjustment.Range != null ||
+                                adjustment.StatusAdjustmentFilter is not (0 or 1) || !roomSlay && adjustment.Tests?.StrictTargets != false ||
                                 adjustment.Statuses.Any(status => !KnowsStatus(status.Id)) || adjustment.Value == int.MinValue)
                                 return "Unsupported triggered all-status adjustment definition.";
                             continue;
