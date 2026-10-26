@@ -73,7 +73,10 @@ Underlegion、LazarusLeague、Hellhorned、Awoken、Stygian、Umbra、Remnant、
 含离线改进，不能冒称全默认整局通关。第七战检查点
 `results/campaign-checkpoints/random13-ring7-refined128.zip`含32文件，SHA256
 `be32c4077bf515e226c7a241d720ef6ffd272eff070d8584adec05095ccc9de9`，
-恢复后31项载荷验证通过。未引入改善整场结果的站位启发式试验已撤回。
+恢复后31项载荷验证通过。0.2.128已于13:33安装至Windows，67项受保护文件
+不变；交付复用刚完成且哈希未变的双进程／方案绑定收据，避免重复整场模拟。
+包`results/mod-dist/PojuAdvisor-0.2.128-Windows-20261026-133352.zip`，SHA256
+`d1c1eb3cab9ba3d8e829c1a7777835816c45a8bf5b0d15144fb4b6c5b826d8d1`。
 
 第十二组当前四战的输入／出牌／结束回合数分别为24／19／5、28／23／5、
 37／29／8及47／38／9，列车阶段数9、9、15、17。各自的源局和独立正常奖励复放
