@@ -62,7 +62,7 @@ internal static partial class OfflineBattleSearch
         int pairCandidates = 0, pairImprovements = 0;
         int tripleCandidates = 0, tripleImprovements = 0;
         int visitedDecisions = 0, lastDecision = -1;
-        int retainedSteps = 0, skippedSuffixInputs = 0;
+        int retainedSteps = 0, skippedSuffixInputs = 0, retargetedSuffixInputs = 0;
         var reasons = new HashSet<string>(StringComparer.Ordinal);
         void Unsupported(string reason, PlayCardAction? action, BattleTurnState failedRoot, IReadOnlyList<Step> failedPrefix)
         {
@@ -218,7 +218,8 @@ internal static partial class OfflineBattleSearch
                         while (retainSuffix && suffix < route.Length &&
                             prefixes[suffix].Spawn.Turn <= branch.Spawn.Turn && !Expired())
                         {
-                            int originalTurn = prefixes[suffix].Spawn.Turn;
+                            BattleTurnState originalEntry = prefixes[suffix];
+                            int originalTurn = originalEntry.Spawn.Turn;
                             Step next = route[suffix++];
                             if (originalTurn < branch.Spawn.Turn || !next.IsEndTurn && actions >= 18)
                             { skippedSuffixInputs++; continue; }
@@ -231,7 +232,14 @@ internal static partial class OfflineBattleSearch
                             }
                             else
                             {
-                                BattleActionResult played = BattleActionModel.PlayCard(branch, next.Action!);
+                                PlayCardAction? retained = RetainAction(originalEntry, branch, next.Action!);
+                                if (retained == null) { skippedSuffixInputs++; continue; }
+                                if (!ReferenceEquals(retained, next.Action))
+                                {
+                                    next = new Step { Action = retained };
+                                    retargetedSuffixInputs++;
+                                }
+                                BattleActionResult played = BattleActionModel.PlayCard(branch, retained);
                                 if (!played.Supported)
                                 {
                                     // Earlier changes may consume a selected
@@ -307,7 +315,7 @@ internal static partial class OfflineBattleSearch
         }
         Console.WriteLine($"IMPROVE-POLICY foundWin={outcome == RoomOutcome.BattleWon} improvements={improvements} " +
             $"startDecision={startDecision} exploreCardOrder={exploreCardOrder} candidates={candidates} completed={completed} unsupported={unsupported} " +
-            $"retainSuffix={retainSuffix} improveWinningRoute={improveWinningRoute} secondActionWidth={secondActionWidth} thirdActionWidth={thirdActionWidth} perDecisionCandidateLimit={perDecisionCandidateLimit} diverseFirstCards={perDecisionCandidateLimit > 0} visitedDecisions={visitedDecisions} lastDecision={lastDecision} pairCandidates={pairCandidates} pairImprovements={pairImprovements} tripleCandidates={tripleCandidates} tripleImprovements={tripleImprovements} retainedSteps={retainedSteps} skippedSuffixInputs={skippedSuffixInputs} timedOut={Expired()} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}; model prediction only.");
+            $"retainSuffix={retainSuffix} improveWinningRoute={improveWinningRoute} secondActionWidth={secondActionWidth} thirdActionWidth={thirdActionWidth} perDecisionCandidateLimit={perDecisionCandidateLimit} diverseFirstCards={perDecisionCandidateLimit > 0} visitedDecisions={visitedDecisions} lastDecision={lastDecision} pairCandidates={pairCandidates} pairImprovements={pairImprovements} tripleCandidates={tripleCandidates} tripleImprovements={tripleImprovements} retainedSteps={retainedSteps} skippedSuffixInputs={skippedSuffixInputs} retargetedSuffixInputs={retargetedSuffixInputs} timedOut={Expired()} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}; model prediction only.");
 
         BattleTurnState Replay(IEnumerable<Step> steps, out RoomOutcome terminal, List<BattleTurnState>? collect = null)
         {
@@ -321,6 +329,40 @@ internal static partial class OfflineBattleSearch
             Require(Terminal(terminal), "Incomplete improvement route.");
             return state;
         }
+    }
+
+    // Earlier deployment changes can assign the old numeric actor ID to a
+    // different card. Preserve a selected card's identity, including its exact
+    // instance, before reusing an input from the incumbent suffix. Cardless
+    // births and enemy waves have no unique card identity: do not guess a new
+    // actor when their original ID no longer denotes the same kind of unit.
+    internal static PlayCardAction? RetainAction(BattleTurnState original, BattleTurnState branch, PlayCardAction action)
+    {
+        var originalActors = original.Spawn.Train.Rooms.SelectMany(room => room.Units).ToArray();
+        var actors = branch.Spawn.Train.Rooms.SelectMany(room => room.Units.Select(unit => (Room: room.RoomIndex, Unit: unit)))
+            .Where(actor => actor.Unit.Health > 0 && actor.Unit.DeathState?.IsDestroyed != true).ToArray();
+        (int Room, CombatUnit Unit)? Resolve(int id)
+        {
+            CombatUnit? selected = originalActors.SingleOrDefault(unit => unit.Id == id);
+            if (selected == null) return null;
+            bool SameCard(CombatUnit unit) => unit.AssetKey == selected.AssetKey && unit.Team == selected.Team &&
+                unit.SpawnerCardId == selected.SpawnerCardId;
+            var exact = actors.Where(actor => actor.Unit.Id == id && SameCard(actor.Unit)).ToArray();
+            if (exact.Length == 1) return exact[0];
+            if (selected.SpawnerCardId <= 0) return null;
+            var matches = actors.Where(actor => SameCard(actor.Unit)).ToArray();
+            return matches.Length == 1 ? matches[0] : null;
+        }
+        var target = action.TargetUnitId == 0 ? null : Resolve(action.TargetUnitId);
+        var activator = action.ActivatorUnitId == 0 ? null : Resolve(action.ActivatorUnitId);
+        if (action.TargetUnitId != 0 && target == null || action.ActivatorUnitId != 0 && activator == null) return null;
+        int room = target?.Room ?? action.RoomIndex;
+        int targetId = target?.Unit.Id ?? 0, activatorId = activator?.Unit.Id ?? 0;
+        int? activatorRoom = action.ActivatorRoomIndex.HasValue ? activator?.Room ?? action.ActivatorRoomIndex : null;
+        if (room == action.RoomIndex && targetId == action.TargetUnitId && activatorId == action.ActivatorUnitId &&
+            activatorRoom == action.ActivatorRoomIndex) return action;
+        return new PlayCardAction(action.CardInstanceId, room, action.PlayerPosition, targetId, activatorId,
+            action.TargetSpawnPointIndex, action.RecursionSelections, action.MixSelections, activatorRoom);
     }
 
     // Only breaks equal capped public scores. Keep win/Pyre ordering above
