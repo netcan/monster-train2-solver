@@ -36,7 +36,11 @@ stages and identical full states/forecasts/RNG. Both native traces bind the exac
 frozen prediction.58 normal reward events reach Ring4; the mixed three-ring chain
 and20-file checkpoint restore(19payloads)pass. Development0.2.150 calibrates the
 original BossEmber moon-refresh boundary with a3-input independent native pair;
-the older null-boss moon control passes. Actual Ring4 acceptance continues.
+the older null-boss moon control passes. Actual10000ms/two-worker Ring4 wins in
+independent native processes:39inputs/30plays/9EndTurns,Pyre74,18train stages and
+identical full states/forecasts/RNG,four zero failure counters.57normal reward
+events reach Ring5; the mixed four-ring chain and24-file checkpoint restore
+(23payloads)pass. Ring5 currently rejects an authored-trait/copy combination.
 The installation mentioned in this historical record was0.2.143; current149 is above.
 No default-budget campaign clear is claimed.
 No Mac package was built. See[terminal capture evidence](../tests/fixtures/notes/combat/terminal-coroutine-planes.md).
