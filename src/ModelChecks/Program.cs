@@ -251,6 +251,18 @@ if (args.Length == 3 && args[0] == "--post-battle-reward-combat-pair-only")
     PostBattleRewardCombatChecks.Pair(source.RootElement, replay.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--terminal-companion-slot-only")
+{
+    if (args.Length == 2) TerminalCompanionSlotChecks.Native(args[1]);
+    else TerminalCompanionSlotChecks.Pair(args[1], args[2]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--terminal-companion-slot-observation-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TerminalCompanionSlotChecks.Observation(fixture.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--liquid-courage-recast-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

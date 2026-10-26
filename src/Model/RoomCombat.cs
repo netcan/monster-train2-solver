@@ -5786,6 +5786,21 @@ namespace MonsterTrain2Poju.Model
                 if (context != null && (!source.Preview || context.LifeLinks != null))
                     context = UnitStandbyModel.MarkDead(context, units.Where(unit => !unit.Alive).Select(unit => unit.Freeze()).ToArray());
                 var removedIds = new HashSet<int>(units.Where(unit => !unit.Alive || unit.Removed || unit.Despawned).Select(unit => unit.Source.Id));
+                if (battleWon && !source.Preview && context?.SpawnPoints is BattleSpawnPoints terminalPoints)
+                {
+                    // Victory can stop the death batch after the first companion.
+                    // Terminal captures retire the other dead enemy's logical slot,
+                    // including outside Boss anchors, without running its callbacks.
+                    var retiredEnemies = units.Where(unit => !unit.Alive && unit.Source.Team == CombatTeam.Enemy)
+                        .Select(unit => unit.Source.Id).ToHashSet();
+                    context = context.WithSpawnPoints(terminalPoints.WithState(terminalPoints.Groups.Select(group =>
+                        group.Team == CombatTeam.Enemy && !group.PreviewCopyId.HasValue
+                            ? new SpawnPointGroupState(group.RoomIndex, group.Team, group.InnerCount, group.GroupCount,
+                                group.Occupants.Select(id => retiredEnemies.Contains(id) ? 0 : id).ToArray(), group.Outside)
+                            : group).ToArray(), terminalPoints.Units.Select(point => retiredEnemies.Contains(point.UnitId)
+                            ? new UnitSpawnPointState(point.UnitId, null, null, point.OuterBoss, point.SpawnedInPreview)
+                            : point).ToArray()));
+                }
                 var localIds = units.Where(unit => !externalTurnActorIds.Contains(unit.Source.Id))
                     .Select(unit => unit.Source.Id).ToHashSet();
                 foreach (CardInstanceState card in context?.CardRegistry ?? context?.CardInstances ?? Array.Empty<CardInstanceState>())
