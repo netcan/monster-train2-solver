@@ -131,7 +131,7 @@ namespace MonsterTrain2Poju.Model
                 source = new TrainCombatState(source.Rooms.Select(room => room.WithUnits(room.Units.Select(unit =>
                     unit.WithoutDestroyedFeeder(destroyedFeeders)).ToArray())).ToArray(), source.Movement,
                     source.EnemySlotsPerRoom, source.Context);
-            return CardSpellModel.WithContext(source, EnchantmentWorldModel.PruneRetiredBirthActors(context));
+            return CardSpellModel.WithContext(source, EnchantmentWorldModel.PruneRetiredActors(context));
         }
 
         private static CombatUnit AfterDestruction(CombatUnit unit)
@@ -335,7 +335,30 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static TrainCombatResult Ascend(TrainCombatState source)
-            => Ascend(source, null, false);
+        {
+            // HeroManager.DoTurn yields before ascending. Temporary player
+            // objects already queued for destruction finish OnDestroy in that
+            // interval; in-flight forced moves do not have this frame boundary.
+            if (source.Context?.Enchantments is { AutomaticLifecycle: true } world &&
+                world.RetainedUnits.Any(actor => actor.Preview && actor.Unit.Team == CombatTeam.Player &&
+                    actor.Unit.DeathState?.IsDestroyed == true &&
+                    (actor.Unit.Modifiers?.Upgrades.Count > 0 || actor.Unit.DeathState.HasStatisticsListener)))
+            {
+                var destroyed = world.RetainedUnits.Where(actor => actor.Unit.DeathState?.IsDestroyed == true)
+                    .Select(actor => actor.Unit.Id).ToHashSet();
+                CombatContext context = source.Context.WithEnchantments(new EnchantmentWorld(world.Rooms,
+                    world.Movement, world.EnemySlotsPerRoom, world.RetainedUnits.Select(actor =>
+                        actor.Unit.DeathState?.IsDestroyed == true ? PreviewBirthModel.CancelPlayer(actor) : actor).ToArray(),
+                    world.EnchanterIds, world.AllowUpdates, world.Updating, world.Preview, world.TestRng,
+                    world.AutomaticLifecycle, world.TemporaryPreviewUnitIds));
+                if (context.SpawnPoints is BattleSpawnPoints points)
+                    context = context.WithSpawnPoints(points.WithState(points.Groups, points.Units.Select(point =>
+                        point.Current == null && destroyed.Contains(point.UnitId) ? new UnitSpawnPointState(point.UnitId,
+                            null, null, point.OuterBoss, point.SpawnedInPreview) : point).ToArray()));
+                source = CardSpellModel.WithContext(source, context);
+            }
+            return Ascend(source, null, false);
+        }
 
         internal static TrainCombatResult Ascend(TrainCombatState source, int? onlyUnitId, bool forceLoop)
         {

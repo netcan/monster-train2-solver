@@ -5847,7 +5847,7 @@ namespace MonsterTrain2Poju.Model
                     int[] destroyedBirths = context.Enchantments.RetainedUnits.Where(actor =>
                         actor.Unit.DeathState?.IsDestroyed == true).Select(actor => actor.Unit.Id).ToArray();
                     state = state.WithContext(context.WithSpawnPoints(points.ClearDestroyedPreviewBirths(destroyedBirths)));
-                    context = EnchantmentWorldModel.PruneRetiredBirthActors(state.Context!);
+                    context = EnchantmentWorldModel.PruneRetiredActors(state.Context!);
                     state = state.WithContext(context);
                 }
                 return unsupportedReason != null

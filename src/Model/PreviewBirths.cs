@@ -8,7 +8,8 @@ namespace MonsterTrain2Poju.Model
     {
         internal static EnchantmentRetainedUnit CancelPlayer(EnchantmentRetainedUnit actor)
         {
-            if (!actor.Preview || actor.Unit.Team != CombatTeam.Player || actor.Unit.DeathState?.IsDestroyed == true) return actor;
+            if (!actor.Preview || actor.Unit.Team != CombatTeam.Player || actor.Unit.DeathState is
+                { IsDestroyed: true, HasStatisticsListener: false } && actor.Unit.Modifiers?.Upgrades.Count == 0) return actor;
             // MonsterManager removes preview-born players when the full UI
             // preview is reset. HideUnit/ProcessRemovals do not fire death
             // triggers or restore numeric state; OnDestroy clears collections

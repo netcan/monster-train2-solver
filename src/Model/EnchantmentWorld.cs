@@ -119,10 +119,10 @@ namespace MonsterTrain2Poju.Model
         internal static RoomCombatState Room(RoomCombatState source, CombatContext? context) => new RoomCombatState(source.RoomIndex,
             source.Deployment, source.Units, source.ExternalInteractions, context, source.Preview, source.ActiveCompanionBossIds);
 
-        internal static CombatContext PruneRetiredBirthActors(CombatContext context)
+        internal static CombatContext PruneRetiredActors(CombatContext context)
         {
             EnchantmentWorld? world = context.Enchantments;
-            if (world?.AutomaticLifecycle != true || !RoomDeathEffectModel.RequiresBirthWorld(context)) return context;
+            if (world?.AutomaticLifecycle != true) return context;
             // A combat removal can compact the last physical slot after Sync retained
             // its former occupant. Re-evaluate ownership at the canonical frame boundary,
             // including terminal combat, without dropping preview identities or aura targets.
@@ -130,10 +130,13 @@ namespace MonsterTrain2Poju.Model
                 .SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null)
                 .SelectMany(effect => effect.Enchantment!.State.PrimaryTargets.Concat(effect.Enchantment.State.PreviewTargets))
                 .Select(target => target.UnitId).Concat(world.EnchanterIds).ToHashSet();
-            referenced.UnionWith(world.RetainedUnits.Where(actor => actor.Unit.Health > 0 &&
-                actor.Unit.DeathState?.IsDestroyed != true && actor.Unit.DeathState?.IsDespawned != true).Select(actor => actor.Unit.Id));
-            referenced.UnionWith(context.SpawnPoints?.Groups.SelectMany(group => group.Occupants) ?? Array.Empty<int>());
-            referenced.UnionWith(context.SpawnPoints?.Units.Where(unit => unit.SpawnedInPreview).Select(unit => unit.UnitId) ?? Array.Empty<int>());
+            if (RoomDeathEffectModel.RequiresBirthWorld(context))
+            {
+                referenced.UnionWith(world.RetainedUnits.Where(actor => actor.Unit.Health > 0 &&
+                    actor.Unit.DeathState?.IsDestroyed != true && actor.Unit.DeathState?.IsDespawned != true).Select(actor => actor.Unit.Id));
+                referenced.UnionWith(context.SpawnPoints?.Groups.SelectMany(group => group.Occupants) ?? Array.Empty<int>());
+                referenced.UnionWith(context.SpawnPoints?.Units.Where(unit => unit.SpawnedInPreview).Select(unit => unit.UnitId) ?? Array.Empty<int>());
+            }
             var retained = world.RetainedUnits.Where(actor => referenced.Contains(actor.Unit.Id)).ToArray();
             return retained.Length == world.RetainedUnits.Count ? context : context.WithEnchantments(new EnchantmentWorld(
                 world.Rooms, world.Movement, world.EnemySlotsPerRoom, retained, world.EnchanterIds, world.AllowUpdates,
