@@ -110,12 +110,25 @@ namespace MonsterTrain2Poju.Model
 
         // Keep capped public scores comparable across workers as well as within
         // one search. This is a tie-breaker, never a substitute for win/Pyre HP.
-        internal static double PositionCost(BattleTurnState state) =>
-            state.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.Health > 0)
+        internal static double PositionCost(BattleTurnState state, RoomOutcome outcome = RoomOutcome.Exchanged)
+        {
+            double material = state.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.Health > 0)
                 .Sum(unit => unit.IsPyre ? 0d : unit.Team == CombatTeam.Enemy ?
                     unit.Health + (double)(unit.Status("armor")?.Stacks ?? 0) :
                     -(Math.Max(0d, unit.Attack) * (1d + Math.Max(0, unit.Status("multistrike")?.Stacks ?? 0)) +
                         unit.Health * .1 + Math.Max(0, unit.Status("armor")?.Stacks ?? 0) * .1));
+            if (outcome != RoomOutcome.PlayerDefeated) return material;
+            // Equal-loss rollouts must not treat an unspawned boss as defeated.
+            // This only orders the public loss-score plateau; wins and Pyre HP
+            // keep their existing primary scores, as do nonterminal branches.
+            double bosses = state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .Where(unit => unit.Team == CombatTeam.Enemy && unit.IsBoss == true && unit.Health > 0)
+                .Sum(unit => unit.Health / (double)Math.Max(1, unit.MaxHealth));
+            bosses += state.Spawn.Waves.Skip(state.Spawn.Phase).Sum(wave => wave.Candidates
+                .Select(group => group.Units.Count(unit => unit.Unit.IsBoss == true)).DefaultIfEmpty(0).Max());
+            if (state.Spawn.QueuedOuterBoss != null || state.Spawn.QueuedTrueFinalBoss != null) bosses++;
+            return bosses * 1000000d + material;
+        }
 
         public static BattlePlanResult Plan(BattleTurnState source, Func<BattleTurnState, string> stateKey,
             BattlePlannerOptions? options = null, Func<BattleTurnState, RoomOutcome, double>? evaluate = null,
@@ -483,7 +496,7 @@ namespace MonsterTrain2Poju.Model
                 // The public score caps positional value below a single Pyre
                 // HP. Keep useful actions distinguishable on that plateau,
                 // without changing archived scores or the survival ordering.
-                PositionCost = BattlePlanner.PositionCost(state);
+                PositionCost = BattlePlanner.PositionCost(state, outcome);
             }
         }
     }

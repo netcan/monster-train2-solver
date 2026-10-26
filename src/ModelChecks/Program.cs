@@ -1966,6 +1966,14 @@ if (args.Length == 3 && args[0] == "--parallel-planner-merge-only")
     ParallelPlannerChecks.Merge(fixture.RootElement, alternative.RootElement);
     return;
 }
+if (args.Length == 4 && args[0] == "--pending-boss-loss-order-only")
+{
+    using var early = ModelJson.ReadFixture(args[1]);
+    using var late = ModelJson.ReadFixture(args[2]);
+    using var prediction = ModelJson.ReadFixture(args[3]);
+    PendingBossLossOrderChecks.Run(early.RootElement, late.RootElement, prediction.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--parallel-planner-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -6639,6 +6647,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "parallel-p
     using var preferred = ModelJson.ReadFixture(path);
     using var alternative = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "parallel-planner-merge-model-counterexample.mt2f"));
     ParallelPlannerChecks.Merge(preferred.RootElement, alternative.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "pending-boss-loss-order-model-calibration.mt2f"))
+{
+    using var early = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-random-campaign-13-ring7-release137-budget10000-loss.mt2f"));
+    using var late = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-random-campaign-13-ring7-release137-refined-loss.mt2f"));
+    using var prediction = ModelJson.ReadFixture(path);
+    PendingBossLossOrderChecks.Run(early.RootElement, late.RootElement, prediction.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) ==
     "full-battle-random-campaign-12-ring6-release112-budget10000-loss.mt2f"))

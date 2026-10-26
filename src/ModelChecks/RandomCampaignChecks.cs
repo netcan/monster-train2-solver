@@ -8,6 +8,23 @@ internal static class RandomCampaignChecks
     internal static void Curated(string path)
     {
         using var source = ModelJson.ReadFixture(path);
+        if (path.EndsWith("full-battle-random-campaign-13-ring7-release137-refined-loss.mt2f", StringComparison.Ordinal))
+        {
+            FixtureValue fixture = source.RootElement;
+            Input(fixture, 1184964217, 0, 6, "Banished", "Wurmkin", 10000, validateSearchSettings: false);
+            RollingAdviceChecks.Native(fixture);
+            TrainCombatChecks.Native(fixture);
+            var rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+            var final = rows.Last().GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            Require(!fixture.GetProperty("NativeWon").GetBoolean() && rows.Length == 60 &&
+                rows.Count(row => row.GetProperty("IsEndTurn").GetBoolean()) == 10 &&
+                rows.All(row => row.GetProperty("Mode").GetString() == "replay" && row.GetProperty("Nodes").GetInt32() == 0) &&
+                fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay").GetProperty("Published").GetInt32() == 0 &&
+                final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsBoss == true).Health == 372,
+                "Refined loss must remain the original zero-search60-input native defeat with372 bossHP.");
+            Console.WriteLine("RANDOM-CAMPAIGN-REFINED-LOSS PASS:60 frozen native inputs/50plays/10EndTurns, boss372HP; not a default-budget or victory acceptance.");
+            return;
+        }
         if (path.EndsWith("full-battle-random-campaign-13-ring3-refined-search.mt2f", StringComparison.Ordinal) ||
             path.EndsWith("full-battle-random-campaign-13-ring5-refined-search.mt2f", StringComparison.Ordinal) ||
             path.EndsWith("full-battle-random-campaign-13-ring5-release122-refined-search.mt2f", StringComparison.Ordinal) ||

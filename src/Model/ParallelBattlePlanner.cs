@@ -73,7 +73,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static BattlePlanResult SelectBest(System.Collections.Generic.IEnumerable<BattlePlanResult> results) =>
             results.OrderByDescending(result => result.CompletedHorizon || result.UsedShorterHorizon)
-                .ThenBy(result => result.Score).ThenBy(result => BattlePlanner.PositionCost(result.State))
+                .ThenBy(result => result.Score).ThenBy(result => BattlePlanner.PositionCost(result.State, result.Outcome))
                 .ThenByDescending(result => result.TurnsCompleted).ThenBy(result => result.Steps.Count).First();
     }
 }
