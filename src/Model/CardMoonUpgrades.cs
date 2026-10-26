@@ -127,6 +127,17 @@ namespace MonsterTrain2Poju.Model
         private static bool IndependentRelic(CombatRelicState relic)
         {
             if (relic.IsCovenant != false) return false;
+            // The original boss reward only changes turn/deployment energy and
+            // indexed Pyre stats. None of its four native interfaces receives
+            // moon changes or CardUpdated; acquisition is already settled.
+            if (relic.DataId == "780f977e-4007-45ae-900f-c8929b2bf000" && relic.AssetKey == "BossEmber" &&
+                relic.DisallowedInPlacementPhase == false && relic.EffectTypes.SequenceEqual(new[] {
+                    RelicResourceModel.Energy, RelicResourceModel.PyreHealth,
+                    RelicResourceModel.PyreAttack, RelicResourceModel.DeploymentEnergy }) &&
+                relic.ResourceEffects?.Count == 4 && RelicResourceModel.Validate(relic) == null &&
+                relic.ResourceEffects.All(effect => effect.Conditions.Count == 0 && !effect.CanApplyInPreviewMode &&
+                    effect.RequiredMutatorId == null && effect.ParamInt2 == 0 && effect.ParamMinInt == 0) &&
+                relic.ResourceEffects.Select(effect => effect.ParamInt).SequenceEqual(new[] { 1, 30, 10, 1 })) return true;
             // This original boss artifact contains only two null effects.
             // It has no moon or CardUpdated callback to change spell upgrades.
             if (relic.DataId == "741546e7-71a9-4817-aab9-066af7c32fcf" &&

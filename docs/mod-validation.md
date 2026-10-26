@@ -1,6 +1,13 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.143, clean source`858c2ca728de6aa58eb0f9f1d1028cafa919538c`.
+Current Windows installation:0.2.149, clean source`b805b05cceff90c98a05399069d006c35d8a0dea`.
+Installed at18:45 with67 protected files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.149-Windows-20261026-184524.zip`,SHA256
+`16637852c231a6002acb32fed0ddbc21439c6bb49ce02cb738055c8462a065b1`.
+The third-ring offline refinement below supplies the independent native release
+pair; it does not count as actual-default-budget acceptance. No Mac package built.
+
+Previous Windows installation:0.2.143, clean source`858c2ca728de6aa58eb0f9f1d1028cafa919538c`.
 Installed at17:42 with67 protected files unchanged. Package
 `results/mod-dist/PojuAdvisor-0.2.143-Windows-20261026-174215.zip`,SHA256
 `4d5dd4580f64d47040accebbbeb8dc0042ade060cbb9bd3ceec0d99c67b4da23`.
