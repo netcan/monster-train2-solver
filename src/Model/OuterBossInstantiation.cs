@@ -33,6 +33,11 @@ namespace MonsterTrain2Poju.Model
             TrainCombatState train = old.Train; OuterBossSpawnDefinition definition = source.Definition;
             EnemyDefinition actor = definition.Actor; OuterBossProgress boss = definition.Boss;
             bool duo = OuterBossDefinitions.IsAngelDuo(actor.Unit.AssetKey);
+            int moon = train.Context?.QueryFrame?.MoonPhase ?? 0;
+            bool calibratedMoon = battle.MoonPhaseTrackingActive == true &&
+                actor.Unit.AssetKey == "Boss_Level3_Fleshweaver_Corruption" && moon == 2 &&
+                !actor.Unit.Triggers.Any(trigger => trigger.Kind is "OnMoonLit" or "OnMoonlitLost" or
+                    "OnMoonShade" or "OnMoonshadeLost" or "OnMoonPhaseShift");
             if (actor.ExternalInteractions.Count > 0) return Fail(string.Join("; ", actor.ExternalInteractions));
             if (!TrueFinalBossCovenantModel.CalibratedOuterBossOwners(train.Context, actor.Unit.AssetKey))
                 return Fail("Outer-boss Covenant owners require separate calibration.");
@@ -51,7 +56,8 @@ namespace MonsterTrain2Poju.Model
                                 (actor.Unit.AssetKey == "Boss_Level3_Fleshweaver_MoreMass" ? 8 : 5) || actor.Unit.Status("mass")?.ParamInt != 2
                         : actor.Unit.Statuses.Count != 0) ||
                 actor.Unit.Ability != null || actor.Unit.Modifiers?.Upgrades.Count != 0 ||
-                actor.CompanionBoss != duo || actor.Unit.BumpRules.CompanionBoss != duo || battle.MoonPhaseTrackingActive == true)
+                actor.CompanionBoss != duo || actor.Unit.BumpRules.CompanionBoss != duo ||
+                battle.MoonPhaseTrackingActive == true && !calibratedMoon)
                 return Fail("Outer-boss instantiation requires the calibrated original definition without creation modifiers or moon tracking.");
             string? invalid = UnitIdentityModel.Validate(train.Context, train.Rooms.SelectMany(room => room.Units), old.NextUnitId);
             if (invalid != null) return Fail(invalid);
@@ -71,6 +77,8 @@ namespace MonsterTrain2Poju.Model
                 battle.ExternalInteractions, battle.PlayRules, battle.BattlePreviewEnabled, battle.UiRngIsolated,
                 battle.CanonicalDecisionReferences, battle.CanonicalPhysicalReferences, battle.SelectedRoom, battle.MoonPhaseTrackingActive);
             CombatUnit created = actor.Create(allocation.UnitId, applyBirthStats: false);
+            if (calibratedMoon)
+                created = MoonPhaseStatusModel.WithPhase(created, moon).WithMoonPhaseMask(moon);
             if (duo)
             {
                 CombatUnit[] partners = train.Rooms.SelectMany(room => room.Units)
