@@ -130,21 +130,29 @@ namespace MonsterTrain2Poju.Model
                 source.Train.Context?.SpawnPoints?.Units.Any(point => point.UnitId == targets[0] &&
                     (source.Preview ? point.SpawnedInPreview : !point.SpawnedInPreview &&
                         point.Current?.RoomIndex == room.RoomIndex && point.Current.Team == CombatTeam.Player)) != true ||
-                room.Units.Single(unit => unit.Id == targets[0]).AssetKey != "MonsterFunguy" || source.EnchanterIds.Count != 2)
+                room.Units.Single(unit => unit.Id == targets[0]).AssetKey != "MonsterFunguy" || source.EnchanterIds.Count is not (2 or 3))
                 return false;
             var enchanters = source.Train.Rooms.SelectMany(floor => floor.Units.Select(unit => (floor.RoomIndex, Unit: unit)))
                 .Where(actor => source.EnchanterIds.Contains(actor.Unit.Id)).ToArray();
-            return enchanters.Length == 2 && enchanters.Any(actor => actor.RoomIndex == room.RoomIndex &&
+            bool activePair = enchanters.Length == 2 && enchanters.Any(actor => actor.RoomIndex == room.RoomIndex &&
                 Signature(actor.Unit, "MonsterFaeMooncaller", CombatTeam.Player, "conduit", 3, 1, false, true)) &&
                 enchanters.Any(actor => actor.RoomIndex != room.RoomIndex &&
                 Signature(actor.Unit, "EnchanterT1_Speed", CombatTeam.Enemy, "haste", 1, 2, true, false));
+            if (!activePair || source.EnchanterIds.Count == 2) return activePair;
+            // The next native wave retains the old, destroyed Haste owner in
+            // its source registry after unbinding it. It contributes no writes
+            // to this preview; keep its captured state and identity intact.
+            return source.Preview && source.RetainedUnits.Count(actor => source.EnchanterIds.Contains(actor.Unit.Id) &&
+                !enchanters.Any(active => active.Unit.Id == actor.Unit.Id) && actor.RoomIndex == -1 && !actor.Preview &&
+                Signature(actor.Unit, "EnchanterT1_Speed", CombatTeam.Enemy, "haste", 1, 2, true, false, bound: false)) == 1;
 
             bool Signature(CombatUnit unit, string asset, CombatTeam team, string status, int count, int param,
-                bool enemy, bool player)
+                bool enemy, bool player, bool bound = true)
             {
                 var effects = unit.Triggers.SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null).ToArray();
-                return unit.AssetKey == asset && unit.Team == team && unit.Health > 0 && effects.Length == 1 &&
-                    effects[0].Enchantment is EnchantmentRule aura && aura.Bound && !aura.HasParentCard &&
+                return unit.AssetKey == asset && unit.Team == team && effects.Length == 1 &&
+                    (bound ? unit.Health > 0 && unit.DeathState?.IsDestroyed != true : unit.Health <= 0 && unit.DeathState?.IsDestroyed == true) &&
+                    effects[0].Enchantment is EnchantmentRule aura && aura.Bound == bound && !aura.HasParentCard &&
                     aura.Targeting is { Type: "AddStatus", Target: "Room", Value: 0 } &&
                     aura.Targeting.Range == null && !aura.Targeting.OnlyIfNoEnemies &&
                     aura.Targeting.Filters is { Health: "Both", RequiredStatuses.Count: 0, ExcludedStatuses.Count: 0,
