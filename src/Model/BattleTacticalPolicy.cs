@@ -216,6 +216,7 @@ namespace MonsterTrain2Poju.Model
                 if (effects.Any(effect => effect.Type == "FloorRearrange" && effect.Target == "DropTargetCharacter" && effect.Value == 0))
                     return target.Health + Math.Max(0, target.Status("armor")?.Stacks ?? 0) +
                         target.Triggers.Count(trigger => trigger.Kind == "OnHit") * 50;
+                if (BattleHeuristicPolicy.CorruptionUpgradeTargetValue(source, action, rule, target) is double upgrade) return upgrade;
                 return target.Team == CombatTeam.Player && !target.IsPyre
                     ? target.Attack + (target.Modifiers?.IsChampion == true ? 10000 : 0) : UnwantedTargetRank;
             }

@@ -61,6 +61,7 @@ internal static class EchoesPastRecastChecks
             Require(!BattleActionModel.PlayCard(changed, action).Supported && JsonSerializer.Serialize(changed, ModelJson.Options) == immutable,
                 "Uncalibrated Echoes passed or changed its parent: " + control);
         }
+        if (positive) CorruptionScalingPolicyChecks.Native(source);
         Console.WriteLine($"ECHOES-PAST-RECAST PASS:{rows.Length} native inputs/full state/RNG, corruption={(positive ? 3 : 0)}, three attack recipients, original-only cost/discard/play count, restored private-copy scaling and four immutable branches; independentPair={replay.HasValue}");
     }
     private static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }

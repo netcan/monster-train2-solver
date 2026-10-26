@@ -103,10 +103,37 @@ namespace MonsterTrain2Poju.Model
                 bool harmful = rule.Effects.Any(effect => effect.Type is "Damage" or "Kill" ||
                     effect.Statuses.Any(status => status.DisplayCategory == "Negative"));
                 if (harmful != (target.Team == CombatTeam.Enemy)) return -1e6;
+                if (CorruptionUpgradeTargetValue(source, action, rule, target) is double upgrade) return upgrade;
                 if (!harmful && rule.Effects.Any(effect => effect.Type == "FloorRearrange"))
                     return target.Health + Math.Max(0, target.Status("armor")?.Stacks ?? 0);
                 return harmful ? 400 - target.Health : 150 + target.Attack + (target.Modifiers?.IsChampion == true ? 500 : 0);
             }
+        }
+
+        internal static double? CorruptionUpgradeTargetValue(BattleTurnState source, PlayCardAction action,
+            CardPlayRule rule, CombatUnit target)
+        {
+            CombatContext? context = source.Spawn.Train.Context;
+            CardInstanceState? card = context?.FindCard(action.CardInstanceId);
+            if (target.Team != CombatTeam.Player || target.IsPyre || context?.QueryFrame == null ||
+                card?.UnitUpgradeScalingTraits?.Count is not > 0 || rule.OnCastEffects.Count != 0 ||
+                card.UnitUpgradeScalingTraits.Any(trait => trait.Query.Type != "CorruptionInTargetRoom" ||
+                    trait.AmountPerStat <= 0 || trait.Restriction != 0 || trait.Stat is not ("Damage" or "Health")) ||
+                rule.Effects.Count(effect => effect.Type == "UnitUpgrade") != 1 ||
+                rule.Effects.Any(effect => effect.Type != "UnitUpgrade" &&
+                    !(effect.Type == "AdjustCorruption" && effect.Target == "Room" && effect.CorruptionAdd == false))) return null;
+            CardActionEffect effect = rule.Effects.Single(effect => effect.Type == "UnitUpgrade");
+            if (effect.Target != "DropTargetCharacter" || !effect.AllowPlayer || effect.Upgrade == null || effect.ScaleUpgrade ||
+                effect.Upgrade.Statuses.Count != 0 || effect.Upgrade.TriggerUpgrades?.Count is > 0 ||
+                effect.Upgrade.ExternalInteractions.Count != 0 || effect.Upgrade.AbilityUpgrade != null) return null;
+            // Read the prospective selected room without playing the card or
+            // committing query/RNG state. A champion on an empty-corruption floor
+            // must not outrank a native positive attack/health upgrade elsewhere.
+            var scaled = UnitUpgradeScalingModel.Apply(context.WithQueryFrame(
+                context.QueryFrame.With(selectedRoomIndex: action.RoomIndex)), card.InstanceId, effect.Upgrade);
+            if (!scaled.Supported || scaled.Upgrade!.Stats.Damage < 0 || scaled.Upgrade.Stats.Health < 0) return null;
+            double gain = (double)scaled.Upgrade.Stats.Damage * target.Attacks + scaled.Upgrade.Stats.Health * .5;
+            return 150 + gain * 100 + target.Attack + (target.Modifiers?.IsChampion == true ? 10 : 0);
         }
 
         internal static double? SacrificeTargetValue(CardPlayRule rule, CombatUnit target)

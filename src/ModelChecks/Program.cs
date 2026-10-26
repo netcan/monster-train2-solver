@@ -258,6 +258,12 @@ if (args.Length is 2 or 3 && args[0] == "--intrinsic-infusion-only")
     else { using var replay = ModelJson.ReadFixture(args[2]); IntrinsicInfusionChecks.Native(source.RootElement, replay.RootElement); }
     return;
 }
+if (args.Length == 2 && args[0] == "--corruption-scaling-policy-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    CorruptionScalingPolicyChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--echoes-past-recast-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
