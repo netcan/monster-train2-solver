@@ -21,5 +21,6 @@ the heal. This draft failure was caught before enabling the real callback.
 
 Focused checks compare complete successors and RNG, exercise four parallel
 immutable cast and EndTurn branches and reject ten mutated card/relic
-signatures. The old WaxenSpike pair passes. Independent recast replay is the
-next acceptance boundary; this partial route is not a battle win.
+signatures. The old WaxenSpike pair passes. The independent recast replay
+uses the same immutable request and verifies all47 inputs, states/RNG and
+both positive pre-combat records. This partial route is not a battle win.

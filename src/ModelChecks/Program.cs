@@ -6662,13 +6662,15 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-laz
 {
     using var refusal = ModelJson.ReadFixture(path);
     using var cast = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-lazarus-juice-spike-cast-calibration.mt2f"));
-    LazarusJuiceSpikeChecks.Native(refusal.RootElement, cast.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-lazarus-juice-spike-cast-replay-calibration.mt2f"));
+    LazarusJuiceSpikeChecks.Native(refusal.RootElement, cast.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-juice-spike-copy-calibration.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
     using var endTurn = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-juice-spike-endturn-calibration.mt2f"));
-    EchoJuiceSpikeChecks.Native(source.RootElement, endTurn.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-juice-spike-endturn-replay-calibration.mt2f"));
+    EchoJuiceSpikeChecks.Native(source.RootElement, endTurn.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-waxen-spike-copy-calibration.mt2f"))
 {
