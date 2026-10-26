@@ -17,15 +17,34 @@ namespace MonsterTrain2Poju.Model
             // Preserve observed births and all enemy births. Check the allocator
             // first so ordinary preview refreshes do not scan units or cards.
             if (context.Enchantments?.AutomaticLifecycle != true || preview.NextUnitId is not int nextId ||
-                nextId <= firstUnitId || world == null || world.EnchanterIds.Count != 0 || context.SummonCatalog == null)
+                nextId <= firstUnitId || world == null || world.EnchanterIds.Count != 0 || preview.CardRegistry == null)
                 return preview;
             CardInstanceState[] newCards = preview.CardRegistry?.Where(card => card.InstanceId >= firstCardId).ToArray()
                 ?? Array.Empty<CardInstanceState>();
-            if (newCards.Length == 0 || nextId - firstUnitId != newCards.Length) return preview;
+            if (newCards.Length == 0)
+            {
+                // Infectory's room-death fallback creates an unowned character,
+                // not a spawner card. Like an unobserved egg hatch, its preview
+                // character is gone before native decision identity capture.
+                // The calibrated player snapshot has no triggered-summon
+                // observation catalog; controlled catalog captures observe
+                // these temporary actors and retain their assigned identities.
+                // Retain every other cardless birth until separately calibrated.
+                if (context.SummonCatalog != null) return preview;
+                CombatUnit[] births = world.Rooms.SelectMany(room => room.Units)
+                    .Concat(world.RetainedUnits.Select(actor => actor.Unit)).Where(unit => unit.Id >= firstUnitId).ToArray();
+                bool roomFallback = context.RoomCapacities?.SelectMany(room => room.Attachments ??
+                    Array.Empty<RoomCapacityAttachmentState>()).Any(attachment =>
+                        attachment.DataId == "e1a39d88-4a77-4399-98b2-0b81f44fe6a8" &&
+                        attachment.DeathEffect != null && RoomDeathEffectModel.Validate(attachment.DeathEffect) == null) == true;
+                if (!roomFallback || births.Length != nextId - firstUnitId || births.Any(unit =>
+                    unit.Team != CombatTeam.Player || unit.AssetKey != "MonsterFunguy" || unit.SpawnerCardId != 0)) return preview;
+            }
+            else if (context.SummonCatalog == null || nextId - firstUnitId != newCards.Length) return preview;
             if (world.Rooms.SelectMany(room => room.Units).Concat(world.RetainedUnits.Select(actor => actor.Unit))
                 .Any(unit => unit.Id >= firstUnitId && unit.Team != CombatTeam.Player ||
                     unit.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Enchantment != null))) return preview;
-            var spawnerIds = context.SummonCatalog.Units.Where(unit => unit.Unit.Team == CombatTeam.Player && unit.Fallback != null)
+            var spawnerIds = (context.SummonCatalog?.Units ?? Array.Empty<SummonUnitDefinition>()).Where(unit => unit.Unit.Team == CombatTeam.Player && unit.Fallback != null)
                 .Select(unit => unit.Fallback!.DataId).ToHashSet();
             foreach (CombatUnit actor in source.Rooms.SelectMany(room => room.Units).Where(unit =>
                 unit.Team == CombatTeam.Player && unit.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Summon != null)))

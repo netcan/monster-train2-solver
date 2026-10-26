@@ -1982,6 +1982,13 @@ if (args.Length == 4 && args[0] == "--resumed-moon-capture-only")
     ResumedMoonCaptureChecks.Pair(counterexample.RootElement, source.RootElement, replay.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--room-death-preview-identity-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    RoomDeathPreviewIdentityChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--parallel-planner-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
