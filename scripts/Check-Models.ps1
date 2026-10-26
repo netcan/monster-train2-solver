@@ -208,6 +208,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-intrinsic-infusion-replay-calibration.mt2f',
     'player-intrinsic-infusion-zero-calibration.mt2f',
     'player-intrinsic-infusion-zero-replay-calibration.mt2f',
+    'player-corrupt-bloodsuit-calibration.mt2f',
+    'player-corrupt-bloodsuit-replay-calibration.mt2f',
     'player-wurmkin-spike-copy-deployment-calibration.mt2f',
     'player-wurmkin-spike-copy-deployment-replay-calibration.mt2f',
     'player-wurmkin-spike-copy-calibration.mt2f',
@@ -1807,6 +1809,7 @@ $branchPairGates = @{
     'player-spell-shield-target-calibration.mt2f' = '--spell-shield-target-only'
     'player-boxed-copy-trait-calibration.mt2f' = '--boxed-copy-trait-only'
     'player-corrupt-diadem-calibration.mt2f' = '--corrupt-diadem-only'
+    'player-corrupt-bloodsuit-calibration.mt2f' = '--corrupt-bloodsuit-only'
     'player-recursion-permafrost-calibration.mt2f' = '--recursion-draw-callbacks-only'
     'player-triggered-corruption-calibration.mt2f' = '--triggered-corruption-only'
     'player-triggered-corruption-relic-calibration.mt2f' = '--triggered-corruption-relic-only'
