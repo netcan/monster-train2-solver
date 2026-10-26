@@ -127,6 +127,12 @@ namespace MonsterTrain2Poju.Model
         private static bool IndependentRelic(CombatRelicState relic)
         {
             if (relic.IsCovenant != false) return false;
+            // This original boss artifact contains only two null effects.
+            // It has no moon or CardUpdated callback to change spell upgrades.
+            if (relic.DataId == "741546e7-71a9-4817-aab9-066af7c32fcf" &&
+                relic.AssetKey == "Enemy_Boss_Level3_ImmortalMass_Corruption" &&
+                relic.DisallowedInPlacementPhase == false &&
+                relic.EffectTypes.SequenceEqual(new[] { "RelicEffectNull", "RelicEffectNull" })) return true;
             // Native balance/draft interfaces have no moon or card-update hook.
             if (relic.EffectTypes.All(type => type is RelicResourceModel.Draw or "RelicEffectOverrideCardDraftRarity" or "RelicEffectModifyMerchantAllCosts")) return true;
             // Opening births run in the ordered battle-start dispatcher. They
