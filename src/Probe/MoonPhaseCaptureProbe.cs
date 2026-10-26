@@ -10,6 +10,10 @@ namespace MonsterTrain2Poju.Probe
     internal static class MoonPhaseCaptureProbe
     {
         internal static bool Enabled => AdvisorRuntime.PlayerSession || RoomMoonCallbackCalibration.Enabled ||
+            // The isolation probe and live advisor compile separate copies of
+            // AdvisorRuntime. A resumed campaign has no clan override, so the
+            // probe must also read the explicit player-advisor launch setting.
+            Environment.GetEnvironmentVariable("MT2_PROBE_PLAYER_ADVISOR") == "1" ||
             !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_PRIMARY_CLAN")) ||
             !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_SECONDARY_CLAN"));
         internal static bool CaptureMasks => Enabled &&
