@@ -7,6 +7,21 @@ internal static class RandomCampaignChecks
 {
     internal static void Curated(string path)
     {
+        if (path.EndsWith("full-battle-random-campaign-18-ring7-release200-refined-search.mt2f", StringComparison.Ordinal))
+        {
+            using var native = ModelJson.ReadFixture(path);
+            using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
+            RefinedPair(native.RootElement, replay.RootElement, 1171280461, 0, 6, "Remnant", "Banished", 44);
+            foreach (var fixture in new[] { native.RootElement, replay.RootElement })
+            {
+                var rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+                var final = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                Require(rows.Count(row => row.GetProperty("IsEndTurn").GetBoolean()) == 9 &&
+                    final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 97,
+                    "Eighteenth sample Ring7 refinement must retain35 plays/9EndTurns and native Pyre97.");
+            }
+            return;
+        }
         if (path.EndsWith("full-battle-random-campaign-16-ring7-release186-refined-search.mt2f", StringComparison.Ordinal))
         {
             using var native = ModelJson.ReadFixture(path);
