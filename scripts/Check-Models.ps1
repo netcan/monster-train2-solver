@@ -50,6 +50,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-13-ring6-release127-budget10000-loss.mt2f',
     'full-battle-random-campaign-13-ring6-release128-refined-search.mt2f',
     'full-battle-random-campaign-13-ring6-release128-refined-replay.mt2f',
+    'full-battle-random-campaign-13-ring6-release134-refined-search.mt2f',
+    'full-battle-random-campaign-13-ring6-release134-refined-replay.mt2f',
     'full-battle-random-campaign-13-ring7-release128-budget10000-loss.mt2f',
     'full-battle-random-campaign-13-ring7-release131-budget10000-loss.mt2f',
     'full-battle-random-campaign-13-ring7-release132-budget10000-loss.mt2f',
@@ -209,6 +211,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-intrinsic-infusion-replay-calibration.mt2f',
     'player-intrinsic-infusion-zero-calibration.mt2f',
     'player-intrinsic-infusion-zero-replay-calibration.mt2f',
+    'player-challenge-recast-calibration.mt2f',
+    'player-challenge-recast-replay-calibration.mt2f',
     'player-corrupt-bloodsuit-calibration.mt2f',
     'player-corrupt-bloodsuit-replay-calibration.mt2f',
     'player-wurmkin-spike-copy-deployment-calibration.mt2f',
@@ -1821,6 +1825,7 @@ $branchPairGates = @{
     'player-justcause-consume-copy-calibration.mt2f' = '--justcause-consume-copy-only'
     'player-intrinsic-infusion-calibration.mt2f' = '--intrinsic-infusion-only'
     'player-intrinsic-infusion-zero-calibration.mt2f' = '--intrinsic-infusion-only'
+    'player-challenge-recast-calibration.mt2f' = '--challenge-recast-only'
     'player-wurmkin-spike-copy-deployment-calibration.mt2f' = '--wurmkin-spike-copy-deployment-only'
     'player-wurmkin-spike-copy-calibration.mt2f' = '--wurmkin-spike-copy-only'
     'player-spent-monster-spell-relic-calibration.mt2f' = '--spent-monster-spell-relic-only'

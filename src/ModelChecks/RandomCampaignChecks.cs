@@ -11,7 +11,8 @@ internal static class RandomCampaignChecks
         if (path.EndsWith("full-battle-random-campaign-13-ring3-refined-search.mt2f", StringComparison.Ordinal) ||
             path.EndsWith("full-battle-random-campaign-13-ring5-refined-search.mt2f", StringComparison.Ordinal) ||
             path.EndsWith("full-battle-random-campaign-13-ring5-release122-refined-search.mt2f", StringComparison.Ordinal) ||
-            path.EndsWith("full-battle-random-campaign-13-ring6-release128-refined-search.mt2f", StringComparison.Ordinal))
+            path.EndsWith("full-battle-random-campaign-13-ring6-release128-refined-search.mt2f", StringComparison.Ordinal) ||
+            path.EndsWith("full-battle-random-campaign-13-ring6-release134-refined-search.mt2f", StringComparison.Ordinal))
         {
             bool ring5 = path.Contains("-ring5-", StringComparison.Ordinal);
             bool ring6 = path.Contains("-ring6-", StringComparison.Ordinal);
