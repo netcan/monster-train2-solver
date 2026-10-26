@@ -116,14 +116,20 @@ namespace MonsterTrain2Poju.Model
                 [new CardActionEffect("Null", "DropTargetCharacter", 0, false, true, []), playedRule.Effects[1]] : playedRule.Effects;
 
             CardInstanceState? card = context.FindCard(playedCardId);
-            bool corruptRecast = (justCause || fracture) && card != null && card.Permanent.Upgrades.Count is 1 or 2 &&
+            bool consumeJustCause = justCause && card?.Permanent.Upgrades.Count == 3 &&
+                card.Permanent.Upgrades.Count(upgrade => upgrade.DataId == "f43e7cdb-fa8d-4760-88bf-c6f34f72d918") == 1 &&
+                card.Permanent.Upgrades.Count(upgrade => upgrade.DataId == "fb416958-813a-435b-b7ea-e428127ece20") == 1;
+            bool corruptRecast = (justCause || fracture) && card != null && card.Permanent.Upgrades.Count is >= 1 and <= 3 &&
+                (card.Permanent.Upgrades.Count != 3 || consumeJustCause) &&
                 (!fracture || card.Permanent.Upgrades.Count == 1) &&
                 card.Permanent.Upgrades.Count(upgrade => upgrade.DataId == "83a6c9ec-0e40-48e6-8a4c-695a68b7e990") == 1 &&
                 card.Permanent.Upgrades.All(upgrade =>
                     (upgrade.DataId == "83a6c9ec-0e40-48e6-8a4c-695a68b7e990" && upgrade.AssetKey == "TraitCorrupt" ||
-                     upgrade.DataId == "f43e7cdb-fa8d-4760-88bf-c6f34f72d918" && upgrade.AssetKey == "TraitRetain") &&
+                     upgrade.DataId == "f43e7cdb-fa8d-4760-88bf-c6f34f72d918" && upgrade.AssetKey == "TraitRetain" ||
+                     consumeJustCause && upgrade.DataId == "fb416958-813a-435b-b7ea-e428127ece20" && upgrade.AssetKey == "ReduceCostAddConsume") &&
                     new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }
-                        .All(stat => upgrade.Stats.Value(stat) == 0) &&
+                        .All(stat => upgrade.Stats.Value(stat) == (upgrade.DataId == "fb416958-813a-435b-b7ea-e428127ece20" ?
+                            stat == "Cost" ? -2 : stat == "XCost" ? 2 : 0 : 0)) &&
                     upgrade is { Statuses.Count: 0, UnhealedHealth: 0, DamageBuff: 0, AbilityUpgrade: null, ExternalInteractions.Count: 0 } &&
                     upgrade.TriggerUpgrades?.Count is not > 0);
             if (card == null || card.MaskDescriptor == null || fracture && !corruptRecast ||
@@ -139,7 +145,8 @@ namespace MonsterTrain2Poju.Model
                 bool recastConsume = liquidCourage && combined?.Count == 1 && combined[0].RuntimeType == "CardTraitExhaustState";
                 if (combined?.Count > 0 && !recastConsume && !(corruptRecast && combined.Count == card!.Permanent.Upgrades.Count &&
                     combined.Count(trait => trait.RuntimeType == "CardTraitCorruptState") == 1 &&
-                    combined.Count(trait => trait.RuntimeType == "CardTraitRetain") == combined.Count - 1))
+                    combined.Count(trait => trait.RuntimeType == "CardTraitRetain") == combined.Count - 1 - (consumeJustCause ? 1 : 0) &&
+                    combined.Count(trait => trait.RuntimeType == "CardTraitExhaustState") == (consumeJustCause ? 1 : 0)))
                     return Unsupported(source, "Monster spell replication does not yet model copied card trait callbacks.");
             }
             catch (InvalidOperationException error) { return Unsupported(source, error.Message); }
