@@ -1769,6 +1769,11 @@ if (args.Length == 2 && args[0] == "--belief-battle-only")
     return;
 }
 
+if (args.Length == 1 && args[0] == "--fixture-archive-only")
+{
+    FixtureArchiveChecks.Run();
+    return;
+}
 if (args.Length == 2 && args[0] == "--tactical-selection-cache-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

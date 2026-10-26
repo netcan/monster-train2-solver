@@ -122,14 +122,29 @@ public readonly struct FixtureValue
     {
         if (ValueKind != other.ValueKind) return false;
         if (ReferenceEquals(nodes, other.nodes) && Id == other.Id) return true;
-        if (ValueKind is FixtureKind.Array or FixtureKind.Object)
+        if (ValueKind is not (FixtureKind.Array or FixtureKind.Object)) return Node.Text == other.Node.Text;
+        var leftNodes = nodes; var rightNodes = other.nodes;
+        bool sameGraph = ReferenceEquals(leftNodes, rightNodes);
+        var equalPairs = new HashSet<(int Left, int Right)>();
+        return Equal(Id, other.Id);
+
+        bool Equal(int leftId, int rightId)
         {
-            if (Node.Children.Length != other.Node.Children.Length) return false;
-            for (int i = 0; i < Node.Children.Length; i++)
-                if (!new FixtureValue(nodes, Node.Children[i]).ContentEquals(new(other.nodes, other.Node.Children[i]))) return false;
+            if (sameGraph && leftId == rightId) return true;
+            ValueNode left = leftNodes[leftId], right = rightNodes[rightId];
+            if (left.Kind != right.Kind) return false;
+            if (left.Kind is not (FixtureKind.Array or FixtureKind.Object)) return left.Text == right.Text;
+            if (left.Children.Length != right.Children.Length) return false;
+            var pair = (leftId, rightId);
+            if (equalPairs.Contains(pair)) return true;
+            for (int i = 0; i < left.Children.Length; i++)
+                if (!Equal(left.Children[i], right.Children[i])) return false;
+            // A shared subtree is compared once per graph pair, rather than
+            // once per expanded JSON path. Remember only fully checked pairs;
+            // distinct documents, node pairs and calls never share this cache.
+            equalPairs.Add(pair);
             return true;
         }
-        return Node.Text == other.Node.Text;
     }
     private void Require(FixtureKind kind)
     {
@@ -144,10 +159,13 @@ public sealed class FixtureBuilder
     private readonly Dictionary<string, string> strings = new(StringComparer.Ordinal);
     public int Import(FixtureValue root)
     {
-        var imported = new Dictionary<FixtureValue, int>();
+        // This invocation imports one source graph. Its node IDs already form
+        // complete keys; default value-type hashing of FixtureValue can put
+        // every node's common array reference in the same hash bucket.
+        var imported = new Dictionary<int, int>();
         int Copy(FixtureValue value)
         {
-            if (imported.TryGetValue(value, out int existing)) return existing;
+            if (imported.TryGetValue(value.Id, out int existing)) return existing;
             int id = value.ValueKind switch
             {
                 FixtureKind.Object => Add(FixtureKind.Object, children: value.EnumerateObject().SelectMany(property => new[] { Add(FixtureKind.String, property.Name), Copy(property.Value) }).ToArray()),
@@ -156,7 +174,7 @@ public sealed class FixtureBuilder
                 FixtureKind.Number => Add(FixtureKind.Number, value.Number()),
                 _ => Add(value.ValueKind)
             };
-            imported.Add(value, id); return id;
+            imported.Add(value.Id, id); return id;
         }
         return Copy(root);
     }

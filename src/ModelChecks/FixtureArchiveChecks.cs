@@ -60,7 +60,63 @@ internal static class FixtureArchiveChecks
         using var cyclic = invalid.Build(invalidRoot, 0, new byte[32]);
         Reject(Encode(cyclic), "Cyclic/forward graph reference was accepted.");
         CheckNativeCapture();
+        CheckSharedEquality();
+        CheckLargeImport();
         Console.WriteLine("FIXTURE-ARCHIVE-CHECKS PASS: typed values, integer boundaries, exact numeric lexemes, duplicate/order/null/Unicode preservation, shared-node deduplication, deterministic archives, direct constructor defaults, 32 parallel hydrations and corruption rejection.");
+    }
+    private static void CheckSharedEquality()
+    {
+        static FixtureDocument Pyramid(string leaf, int padding, bool lateDifference = false)
+        {
+            var builder = new FixtureBuilder();
+            for (int i = 0; i < padding; i++) builder.Add(FixtureKind.String, "padding" + i);
+            int root = builder.Add(FixtureKind.String, leaf);
+            for (int i = 0; i < 48; i++) root = builder.Add(FixtureKind.Array, children: [root, root]);
+            int tail = builder.Add(FixtureKind.Number, lateDifference ? "7.0" : "7");
+            return builder.Build(builder.Add(FixtureKind.Array, children: [root, root, tail]), 0, new byte[32]);
+        }
+        using var first = Pyramid("same", 0);
+        using var second = Pyramid("same", 13);
+        using var changedLeaf = Pyramid("changed", 0);
+        using var changedTail = Pyramid("same", 13, true);
+        var completed = Task.Run(() =>
+        {
+            Require(first.RootElement.ContentEquals(second.RootElement) && second.RootElement.ContentEquals(first.RootElement),
+                "Shared equality depended on node IDs or argument order.");
+            Require(!first.RootElement.ContentEquals(changedLeaf.RootElement) &&
+                !first.RootElement.ContentEquals(changedTail.RootElement),
+                "Shared equality reused an unchecked pair, another call or normalized numeric spelling.");
+            Parallel.For(0, 32, _ => Require(first.RootElement.ContentEquals(second.RootElement),
+                "Independent comparisons shared mutable equality state."));
+        });
+        Require(completed.Wait(TimeSpan.FromSeconds(10)), "Shared equality expanded the exponential tree.");
+        completed.GetAwaiter().GetResult();
+        using var ordered = LegacyFixtureImport.Read(new MemoryStream(Encoding.UTF8.GetBytes("{\"a\":null,\"b\":false}")));
+        using var reversed = LegacyFixtureImport.Read(new MemoryStream(Encoding.UTF8.GetBytes("{\"b\":false,\"a\":null}")));
+        Require(!ordered.RootElement.ContentEquals(reversed.RootElement) &&
+            !ordered.RootElement.GetProperty("a").ContentEquals(ordered.RootElement.GetProperty("b")),
+            "Equality changed object order or scalar kinds.");
+        Console.WriteLine("FIXTURE-EQUALITY PASS: depth48 shared DAG, different node IDs, argument order, leaf/late numeric differences, independent calls and32 parallel comparisons.");
+    }
+    private static void CheckLargeImport()
+    {
+        var builder = new FixtureBuilder();
+        int[] leaves = Enumerable.Range(0, 20000).Select(index => builder.Add(FixtureKind.String, "leaf" + index)).ToArray();
+        using var source = builder.Build(builder.Add(FixtureKind.Array, children: leaves), 0, new byte[32]);
+        var imported = Task.Run(() =>
+        {
+            var target = new FixtureBuilder();
+            using var first = target.Build(target.Import(source.RootElement), 0, new byte[32]);
+            Require(first.RootElement.ContentEquals(source.RootElement) &&
+                first.RootElement[19999].GetString() == "leaf19999", "Large import changed node values/order.");
+            using var other = NativeFixtureCapture.Capture(new[] { "other graph" });
+            using var second = target.Build(target.Import(other.RootElement), 0, new byte[32]);
+            Require(second.RootElement.ContentEquals(other.RootElement) &&
+                first.RootElement[0].GetString() == "leaf0", "Import reused node IDs across documents or mutated a built graph.");
+        });
+        Require(imported.Wait(TimeSpan.FromSeconds(10)), "Large import regressed to quadratic source-node lookups.");
+        imported.GetAwaiter().GetResult();
+        Console.WriteLine("FIXTURE-IMPORT PASS:20000 distinct source nodes, order/values, separate document scopes and immutable prior graph.");
     }
     private static void CheckNativeCapture()
     {
