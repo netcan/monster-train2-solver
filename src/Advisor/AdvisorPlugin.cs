@@ -52,6 +52,7 @@ namespace MonsterTrain2Poju.Advisor
                 // Select capture hooks and preserve UI-only test RNG. PatchAll(assembly)
                 // would activate development instrumentation and is not a player entry point.
                 FullBattleTrace.InstallAdvisorPatches(harmony);
+                RoomDeathEffectProbe.InstallAdvisorPatches(harmony);
                 BattleSpawnPointProbe.InstallAdvisorPatches(harmony);
                 CardSourceTraitProbe.InstallAdvisorPatches(harmony);
                 TypedDrawProbe.InstallAdvisorPatches(harmony);

@@ -170,7 +170,11 @@ namespace MonsterTrain2Poju.Probe
             // The catalog also carries equipment definitions. Native Hydra's
             // OnEquipmentAdded consumes its equipment without summoning a unit;
             // ordinary player captures must retain that catalog as well.
-            if (!Enabled && !HasPlayerBirths && !sources.Any(card => card.GetSpawnCharacterData()?.GetTriggers()
+            // Room-death fallback characters have no source card. Their identity
+            // capture hook also observes temporary births, so retain an explicit
+            // catalog even when no ordinary triggered summon is present.
+            bool roomDeathBirths = FullBattleTrace.Active is FullBattleTrace trace && RoomDeathEffectProbe.RequiresBirthWorld(trace);
+            if (!Enabled && !HasPlayerBirths && !roomDeathBirths && !sources.Any(card => card.GetSpawnCharacterData()?.GetTriggers()
                 .SelectMany(trigger => trigger.GetEffects())
                 .Any(effect => effect.GetEffectStateName() == "CardEffectRemoveEquipment") == true)) return null;
             // Collect referenced units before building values. Capturing their triggers may

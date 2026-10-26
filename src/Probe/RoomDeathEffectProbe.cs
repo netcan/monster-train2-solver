@@ -19,6 +19,8 @@ namespace MonsterTrain2Poju.Probe
             public bool Completed { get; set; }
         }
         internal static readonly List<Record> Records = new List<Record>();
+        internal static void InstallAdvisorPatches(Harmony harmony) =>
+            harmony.CreateClassProcessor(typeof(BirthIdentityPatch)).Patch();
         [HarmonyPatch(typeof(MonsterManager), nameof(MonsterManager.CreateMonsterState))]
         private static class BirthIdentityPatch
         {
