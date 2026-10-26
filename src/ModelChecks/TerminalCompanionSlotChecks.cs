@@ -70,8 +70,21 @@ internal static class TerminalCompanionSlotChecks
         Console.WriteLine("TERMINAL-COMPANION-SLOT-PAIR PASS:59 identical actual native inputs/successors; original stale-slot forecast and clean independent victory preserved.");
     }
 
-    internal static void Observation(FixtureValue fixture) => NativeBranchObservationChecks.Replay(fixture, Reason,
-        boundaryOutcome: RoomOutcome.BattleWon);
+    internal static void Observation(FixtureValue fixture)
+    {
+        var rows = NativeBranchObservationChecks.Replay(fixture, Reason, (historical, actual) =>
+        {
+            Require(historical.Spawn.Train.Context!.SpawnPoints!.Group(3, CombatTeam.Enemy)!.Occupants[7] == 10 &&
+                actual.Spawn.Train.Context!.SpawnPoints!.Group(3, CombatTeam.Enemy)!.Occupants[7] == 0,
+                "Missing the isolated original outside-slot counterexample.");
+            var projected = JsonSerializer.SerializeToNode(historical, ModelJson.Options)!;
+            projected["Spawn"]!["Train"]!["Context"]!["SpawnPoints"]!["Groups"]![6]!["Occupants"]![7] = 0;
+            Require(Key(projected.Deserialize<BattleTurnState>(ModelJson.Options)!, true) == Key(actual, true),
+                "Isolated historical discrepancy includes another field.");
+        }, boundaryOutcome: RoomOutcome.BattleWon);
+        Require(rows.Length == 59, "Incomplete isolated terminal native chain.");
+        Console.WriteLine("TERMINAL-COMPANION-SLOT-OBSERVATION PASS:59 original native inputs/full state/RNG; isolated stale outside-slot forecast preserved.");
+    }
     private static string Key(BattleTurnState state, bool terminal = false) => NativeBranchObservationChecks.Key(state, terminal);
     private static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
 }

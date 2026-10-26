@@ -47,6 +47,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-13-ring5-release122-refined-search.mt2f',
     'full-battle-random-campaign-13-ring5-release122-refined-replay.mt2f',
     'full-battle-random-campaign-13-ring6-release122-budget10000-loss.mt2f',
+    'full-battle-random-campaign-13-ring6-release127-budget10000-loss.mt2f',
     'full-battle-random-campaign-11-ring1-budget10000-search.mt2f',
     'full-battle-random-campaign-11-ring1-budget10000-replay.mt2f',
     'full-battle-random-campaign-11-ring1-release107-budget10000-search.mt2f',
@@ -167,6 +168,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-spell-harvest-tower-replay-calibration.mt2f',
     'player-relic-damage-tower-calibration.mt2f',
     'player-terminal-companion-roster-counterexample.mt2f',
+    'player-terminal-companion-slot-counterexample.mt2f',
+    'player-terminal-companion-slot-observation.mt2f',
     'player-unit-ability-duality-counterexample.mt2f',
     'player-effect-test-rng-counterexample.mt2f',
     'player-effect-test-rng-observed.mt2f',
@@ -1696,6 +1699,16 @@ if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-unit-ability-
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --unit-ability-duality-counterexample-only (Get-TestFixturePath $selectedFixtureNames[0])
     if ($LASTEXITCODE -ne 0) { throw 'Unit ability Duality counterexample check failed.' }
+    return
+}
+if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -in @('player-terminal-companion-slot-counterexample.mt2f', 'player-terminal-companion-slot-observation.mt2f')) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Terminal companion slot checker build failed.' }
+    }
+    $mode = if ($selectedFixtureNames[0] -eq 'player-terminal-companion-slot-observation.mt2f') { '--terminal-companion-slot-observation-only' } else { '--terminal-companion-slot-only' }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') $mode (Get-TestFixturePath $selectedFixtureNames[0])
+    if ($LASTEXITCODE -ne 0) { throw 'Terminal companion slot check failed.' }
     return
 }
 if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-terminal-companion-roster-counterexample.mt2f') {
