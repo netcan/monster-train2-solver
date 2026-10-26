@@ -24,3 +24,14 @@
 源`20261026-075321-404f790b`、重放`20261026-075321-122598ca`，每个原生进程65.42秒，
 原玩家文件未变。这是原生UI测试流保护的验收，未弱化状态比较或关闭原生高亮。
 不能据此记作终战胜利或新Windows安装验收，当前安装仍为0.2.110。
+
+继续实际默认终战后，第25输入施放Icestorm时只出现测试流差异。
+`player-effect-test-rng-{counterexample,observed}.mt2f`保留完整25输入原失败件和
+独立被动观察：`CardManager.PlayAnyCard→CombatManager.TestEffects`消耗5次，
+`CombatManager.FireCardEffectInternal→GameEffectHelper.TestEffect`另消耗5次。
+高亮保护已经生效，但没有覆盖这两个非UI查询入口；实战Battle流及其他完整状态一致。
+
+开发版将测试流保护移至上述复合查询和单效果查询边界。嵌套单效果查询保留
+复合查询内部的抽样顺序，只在最外层返回时恢复；独立单效果查询也恢复测试流。
+查询原返回值、异常和实战Battle流保持原样，显式开发双流隔离仍沿用原协议。
+25输入定向反例检查及修正后独立原生验收分别记录，不把旧21输入校准当作新修复的验收。
