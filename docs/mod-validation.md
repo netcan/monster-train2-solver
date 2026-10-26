@@ -1,6 +1,21 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.169, source`b67b653f`.
+Current Windows installation:0.2.171, source`8f0c3a2400af2a3019250c8dfda17d16afb2608d`.
+Installed at01:25 with67 protected save/config/other-mod files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.171-Windows-20261027-012536.zip`,SHA256
+`2a85735417c0785865425434a67033639dfd13c939e54a573d22031582d65ab9`.
+The exact payload wins sample16 Ring2 in the actual10000ms/two-worker source
+and independent native replay:26inputs,21plays/5EndTurns,Pyre80,9train stages,
+full state/forecast/RNG identity and four zero failure counters.52normal events
+reach Ring3. The first EndTurn retains its winning suffix without another search.
+One later automatic search remains under investigation; this does not establish
+zero searches throughout a battle. All three installed DLLs,compiled provenance
+and package were verified. The real game was stopped; next launch loads0.2.171.
+Receipt and previous DLLs: `BepInEx/PojuBackups/RandomCampaign-20261027-012536/`.
+No Mac package was built. Ring3 exposes an uncalibrated Arkion moon-birth
+signature, not a completed battle or full default campaign clear.
+
+Previous Windows installation:0.2.169, source`b67b653f`.
 Installed at00:51 with67 protected save/config/other-mod files unchanged. Package
 `results/mod-dist/PojuAdvisor-0.2.169-Windows-20261027-005138.zip`,SHA256
 `8992e1c0459562c7bef2696b895aa805d47be3f4cd1b0219ba03d2f278e5fad0`.
