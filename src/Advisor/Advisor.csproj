@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>MonsterTrain2Poju.Advisor</AssemblyName>
-    <Version>0.2.200</Version>
+    <Version>0.2.201</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
@@ -14,4 +14,15 @@
     <Compile Include="../Probe/*.cs" Exclude="../Probe/ProbePlugin.cs;../Probe/NativeReplayScenario.cs;../Probe/PlayerAdvisorProbe.cs;../Probe/AdvisorPresentationProbe.cs" Link="Capture/%(Filename)%(Extension)" />
   </ItemGroup>
   <Import Project="../Probe/GameReferences.props" />
+  <Target Name="GeneratePojuPluginVersion" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <PojuPluginVersionSource>$(IntermediateOutputPath)PojuPluginVersion.g.cs</PojuPluginVersionSource>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(PojuPluginVersionSource)"
+      Lines="namespace MonsterTrain2Poju.Advisor { internal static class PojuBuildVersion { internal const string Value = &quot;$(Version)&quot;%3B } }"
+      Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <Compile Include="$(PojuPluginVersionSource)" />
+    </ItemGroup>
+  </Target>
 </Project>

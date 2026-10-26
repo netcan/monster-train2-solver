@@ -16,6 +16,12 @@ unplaced summons' moon changes. Three installed DLL hashes and compiled
 provenance match. Ring7 is an offline refined win; first six use the actual
 default budget. Ring8 continues; no new campaign clear is claimed.
 
+Source0.2.201 also removes the stale hardcoded plugin version0.2.164. The
+BepInEx attribute and POJU-READY log constant now come from the project's
+Version property through a generated intermediate source file. Release build
+and assembly metadata inspection confirm0.2.201/0.2.201.0 agree. This display
+fix is staged for the next native release; Windows remains the accepted0.2.200.
+
 Previous Windows installation:0.2.190, source`ffcfbeb7`.
 Installed at05:09 with67 protected save/config/other-mod files unchanged. Package
 `results/mod-dist/PojuAdvisor-0.2.190-Windows-20261027-050955.zip`,SHA256
