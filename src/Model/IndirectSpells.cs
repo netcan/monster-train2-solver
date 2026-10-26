@@ -24,10 +24,13 @@ namespace MonsterTrain2Poju.Model
             CardPlayRule? juiceRule = echo && EchoJuiceSpikeModel.Known(card, raw.Effects) && EchoJuiceSpikeModel.KnownRelics(context)
                 ? CardModifierModel.Resolve(raw, card) : null;
             bool juiceEcho = juiceRule != null && EchoJuiceSpikeModel.KnownOnCast(juiceRule.OnCastEffects);
-            if (!juiceEcho && raw.OnCastEffects.Count > 0 || raw.OnUnplayedNegativeEffects.Count > 0 || !waxenEcho && !juiceEcho &&
+            bool justCauseEcho = echo && EchoJustCauseModel.Known(card, raw.Effects) && EchoJuiceSpikeModel.KnownRelics(context);
+            if (!juiceEcho && raw.OnCastEffects.Count > 0 || raw.OnUnplayedNegativeEffects.Count > 0 || !waxenEcho && !juiceEcho && !justCauseEcho &&
                 (context.Relics?.Any(relic => relic.EffectTypes.Count > 0) == true || CardBranchMaskModel.Resolve(card).Traits.Any(trait =>
                     trait is not (TreasureTrait or "CardTraitStrongerMagicPower" or "CardTraitFreeze"))))
                 return Unsupported("Indirect Treasure casting with additional relic or card callbacks requires native calibration.");
+            if (justCauseEcho && !source.Rooms.Any(value => value.Preview))
+                return Unsupported("Echo Just Cause reuses the remembered physical slot before rearranging and adding valor.");
             CardPlayRule rule = juiceRule ?? CardModifierModel.Resolve(raw, card);
             int roomIndex = selectedRoom ?? context.QueryFrame?.SelectedRoomIndex ?? -1;
             RoomCombatState? room = source.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex);

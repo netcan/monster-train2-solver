@@ -160,6 +160,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-combat-victory-cache-retention-counterexample-calibration.mt2f',
     'player-echo-waxen-spike-copy-calibration.mt2f',
     'player-echo-juice-spike-copy-calibration.mt2f',
+    'player-echo-just-cause-copy-calibration.mt2f',
     'player-echo-juice-spike-endturn-calibration.mt2f',
     'player-echo-juice-spike-endturn-replay-calibration.mt2f',
     'player-lazarus-juice-spike-deployment-refusal-calibration.mt2f',
@@ -1919,6 +1920,17 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     $moreMassMoonArguments = @('--moremass-moon-birth-only') + @($moreMassMoonNames | ForEach-Object { Get-TestFixturePath $_ })
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @moreMassMoonArguments
     if ($LASTEXITCODE -ne 0) { throw 'Focused MoreMass moon birth checks failed.' }
+    return
+}
+$echoJustCauseNames = @('player-echo-just-cause-copy-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $echoJustCauseNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Echo Just Cause checker build failed.' }
+    }
+    $echoJustCauseArguments = @('--echo-just-cause-only') + @($echoJustCauseNames | ForEach-Object { Get-TestFixturePath $_ })
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @echoJustCauseArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Focused Echo Just Cause checks failed.' }
     return
 }
 $lazarusJuiceNames = @('player-lazarus-juice-spike-deployment-refusal-calibration.mt2f', 'player-lazarus-juice-spike-cast-calibration.mt2f', 'player-lazarus-juice-spike-cast-replay-calibration.mt2f')
