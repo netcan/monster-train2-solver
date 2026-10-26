@@ -109,6 +109,9 @@ internal static partial class OfflineBattleSearch
                 "placements=" + JsonSerializer.Serialize(prefix.Select(step => step.Action)));
         }
         Visit(root, 0);
+        // Independent export validation has its own cost; it must not turn a
+        // completed bounded investigation into a reported search timeout.
+        watch.Stop();
         Require(keys.Key(root) == immutable, "Deployment grid changed its native parent.");
         if (best < initial)
         {
