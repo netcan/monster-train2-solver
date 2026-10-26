@@ -16,5 +16,7 @@ EndTurns preserve the parent, and five unknown-definition controls reject.
 0.2.199 admits only that definition at the observed full-moon creation frame,
 while retaining the existing no-moon-trigger, original status/upgrade and
 identity/birth guards. The old Corruption/full-moon native pair remains a
-targeted control. Independent pinned replay and a new default third-battle
-source/reward pair remain required before whole-battle acceptance.
+targeted control and passes. The independent pinned0.2.199 replay now matches
+both original input roots, complete successors/RNG and the repaired forecast.
+The original null forecast remains preserved. A new default third-battle
+source/reward pair remains required before whole-battle acceptance.

@@ -6645,7 +6645,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-ech
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-moremass-moon-birth-calibration.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    MoreMassMoonBirthChecks.Native(source.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-moremass-moon-birth-replay-calibration.mt2f"));
+    MoreMassMoonBirthChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-room-upgrade-provenance-counterexample-calibration.mt2f"))
 {

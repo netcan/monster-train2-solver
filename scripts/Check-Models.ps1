@@ -156,6 +156,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-echo-waxen-spike-endturn-calibration.mt2f',
     'player-echo-waxen-spike-endturn-replay-calibration.mt2f',
     'player-moremass-moon-birth-calibration.mt2f',
+    'player-moremass-moon-birth-replay-calibration.mt2f',
     'full-battle-random-campaign-19-ring1-release196-budget10000-search.mt2f',
     'full-battle-random-campaign-19-ring1-release196-budget10000-replay.mt2f',
     'full-battle-random-campaign-19-ring2-release197-budget10000-search.mt2f',
@@ -1884,7 +1885,7 @@ $doubleCurseNames = @('player-double-juice-curse-calibration.mt2f', 'player-doub
 $roomProvenanceNames = @('player-room-upgrade-provenance-counterexample-calibration.mt2f', 'player-room-upgrade-provenance-calibration.mt2f')
 $unboxMoonNames = @('player-unbox-moon-relic-calibration.mt2f', 'player-unbox-moon-relic-replay-calibration.mt2f')
 $inherentJuiceNames = @('player-inherent-juice-spike-refusal-calibration.mt2f', 'player-inherent-juice-spike-calibration.mt2f', 'player-inherent-juice-spike-replay-calibration.mt2f')
-$moreMassMoonNames = @('player-moremass-moon-birth-calibration.mt2f')
+$moreMassMoonNames = @('player-moremass-moon-birth-calibration.mt2f', 'player-moremass-moon-birth-replay-calibration.mt2f')
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $moreMassMoonNames }).Count -eq 0) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q

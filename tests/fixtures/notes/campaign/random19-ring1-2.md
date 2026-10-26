@@ -18,6 +18,7 @@ cache-retention counterexample and is not the accepted route.
 The unchanged two-ring receipt/checkpoint chain passes with zero simulations.
 Ring2 input save7FCECE9FB67B704A313515002EDBA58EE48AE21D68574535002178C40C66763B.
 Next normal Ring3 save0F217F0266658855D9267B28F5F80A689119FA503A7F200F818F9A207070AC3C.
-Ring3 currently rejects the uncalibrated MoreMass Fleshweaver outer-boss
-creation with moon tracking. No complete campaign clear or new Windows package
-is claimed by these two accepted battles.
+Ring3 initially rejects the uncalibrated MoreMass Fleshweaver outer-boss
+creation with moon tracking.0.2.199 completes that two-input independent
+native component pair; the new default third-battle acceptance is running.
+No complete campaign clear or new Windows package is claimed by these battles.
