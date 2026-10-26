@@ -7,16 +7,43 @@ namespace MonsterTrain2Poju.Model
     {
         internal const string Trait = "CardTraitJuice";
         internal const string Upgrade = "0fc9f6e7-df71-4045-9867-67453769adf8";
+        internal const string TripleTrait = "CardTraitJuice3";
+        internal const string TripleUpgrade = "2f066286-dbef-449b-aa5f-b8acdcdce7aa";
+        private static bool Juice(string type) => type is Trait or TripleTrait;
         internal static bool Present(CardInstanceState card) => card.MaskDescriptor != null &&
-            (card.MaskDescriptor.BaseTraits.Concat(card.MaskDescriptor.TemporaryTraits).Any(trait => trait.RuntimeType == Trait) ||
+            (card.MaskDescriptor.BaseTraits.Concat(card.MaskDescriptor.TemporaryTraits).Any(trait => Juice(trait.RuntimeType)) ||
                 card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade =>
-                    upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == Trait) == true));
+                    upgrade.Lifecycle?.AddedTraits.Any(trait => Juice(trait.RuntimeType)) == true)) ||
+            card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade => upgrade.DataId == TripleUpgrade);
+        internal static bool KnownTripleUpgrade(CardUpgradeModifier upgrade) => upgrade.DataId == TripleUpgrade &&
+            upgrade.AssetKey == "TraitJuice3" && upgrade.Stats.Damage == 0 && upgrade.Stats.Health == 0 &&
+            upgrade.Stats.Cost == 0 && upgrade.Stats.Heal == 0 && upgrade.Stats.Size == 0 && upgrade.Stats.XCost == 0 &&
+            upgrade.Stats.EquipmentLimit == 0 && upgrade.Stats.UpgradeSlotCount == 0 && upgrade.Statuses.Count == 0 &&
+            upgrade.UnhealedHealth == 0 && upgrade.DamageBuff == 0 && upgrade.AbilityUpgrade == null &&
+            upgrade.TriggerUpgrades?.Count > 0 != true && upgrade.Lifecycle is { AddedTraits.Count: 1, RemovedRuntimeTypes.Count: 0, Triggers.Count: 0 } lifecycle &&
+            lifecycle.AddedTraits[0].RuntimeType == TripleTrait && lifecycle.AddedTraits[0].DeclaredName == TripleTrait &&
+            Ordinary(lifecycle.AddedTraits[0], 3);
         internal static string? Validate(CardInstanceState card)
         {
             if (!Present(card)) return null;
+            if (card.MaskDescriptor == null) return "Juice requires captured card traits.";
             // Original Lifesteal/Scorch,Ritual of Battle,and calibrated merchant owners.
             // Ordered scaling callbacks and other owners remain explicit gaps.
             var traits = CardExhaustModel.RefreshTraits(card).CombinedTraits!;
+            if (traits.Any(trait => trait.RuntimeType == TripleTrait))
+            {
+                bool spike = card.DataId == "ab3c2bfa-0ad4-4be0-a050-293f4866bd65" && traits.Count == 3 &&
+                    traits[0].RuntimeType == "CardTraitScalingAddStatusEffect" && traits[0].DeclaredName == traits[0].RuntimeType && Ordinary(traits[0], 4) &&
+                    traits[1].RuntimeType == "CardTraitExhaustState" && Ordinary(traits[1], 0) &&
+                    traits[2].RuntimeType == TripleTrait && traits[2].DeclaredName == TripleTrait && Ordinary(traits[2], 3) &&
+                    card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] { "6497cd22-8c83-4b13-8578-269f4387250d", TripleUpgrade }) &&
+                    KnownTripleUpgrade(card.Permanent.Upgrades[1]) && card.Temporary.Upgrades.Count == 0 &&
+                    card.StatusScalingTraits is { Count: 1 } scaling && scaling[0].Query.Type == "PlayedCost" &&
+                    scaling[0].Query.Duration == "ThisBattle" && scaling[0].Query.VariableCost &&
+                    scaling[0].StacksPerStat == 4 && !scaling[0].OnlyWhenSourceZero && scaling[0].Filter == 0 &&
+                    scaling[0].StatusIds.SequenceEqual(new[] { "valor" });
+                return spike ? null : "Triple Juice with this card or ordered scaling traits requires native calibration.";
+            }
             bool fracture = card.DataId == "b197fdec-a77d-49f5-bc05-6233b7ce01c7" && traits.Count == 2 &&
                 traits[0].RuntimeType == "CardTraitCorruptState" && Ordinary(traits[0], 0) &&
                 traits[1].RuntimeType == Trait && Ordinary(traits[1], 2) &&
@@ -49,5 +76,8 @@ namespace MonsterTrain2Poju.Model
             trait.DefinitionParamInt == parameter && trait.ParamInt == parameter && trait.Removable &&
             trait.DefinitionRemovable == true && trait.StackMode == 0 && !trait.TemporaryReplacement;
         internal static int Apply(int stacks) => unchecked(stacks + Math.Max(stacks, 0));
+        internal static int Apply(CardInstanceState owner, int stacks) =>
+            CardExhaustModel.RefreshTraits(owner).CombinedTraits!.Any(trait => trait.RuntimeType == TripleTrait)
+                ? unchecked(stacks + Math.Max(stacks, 0) * 2) : Apply(stacks);
     }
 }

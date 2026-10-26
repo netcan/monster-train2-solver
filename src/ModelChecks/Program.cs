@@ -1,5 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 4 && args[0] == "--triple-juice-spike-only")
+{
+    using var refused = ModelJson.ReadFixture(args[1]);
+    using var source = ModelJson.ReadFixture(args[2]);
+    using var replay = ModelJson.ReadFixture(args[3]);
+    TripleJuiceSpikeChecks.Native(refused.RootElement, source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length is 2 or 4 && args[0] == "--stasis-shatter-only")
 {
     using var battle = ModelJson.ReadFixture(args[1]);
@@ -6456,6 +6464,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-aut
     using var source = ModelJson.ReadFixture(path);
     using var prefix = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-auto-focus-no-preview-prefix-calibration.mt2f"));
     AutomaticFocusPreviewChecks.Native(source.RootElement, prefix.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-triple-juice-spike-refusal-calibration.mt2f"))
+{
+    using var refused = ModelJson.ReadFixture(path);
+    using var source = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-spike-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-spike-replay-calibration.mt2f"));
+    TripleJuiceSpikeChecks.Native(refused.RootElement, source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-stasis-shatter-counterexample-calibration.mt2f"))
 {

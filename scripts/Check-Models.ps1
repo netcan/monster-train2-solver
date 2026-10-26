@@ -120,6 +120,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-stasis-shatter-counterexample-calibration.mt2f',
     'player-stasis-shatter-calibration.mt2f',
     'player-stasis-shatter-replay-calibration.mt2f',
+    'player-triple-juice-spike-refusal-calibration.mt2f',
+    'player-triple-juice-spike-calibration.mt2f',
+    'player-triple-juice-spike-replay-calibration.mt2f',
     'player-untouchable-front-relic-calibration.mt2f',
     'player-untouchable-front-relic-replay-calibration.mt2f',
     'player-auto-focus-no-preview-calibration.mt2f',
@@ -1823,6 +1826,17 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
 }
 $untouchableFrontNames = @('player-untouchable-front-relic-counterexample-calibration.mt2f', 'player-untouchable-front-relic-calibration.mt2f', 'player-untouchable-front-relic-replay-calibration.mt2f')
 $stasisShatterNames = @('player-stasis-shatter-counterexample-calibration.mt2f', 'player-stasis-shatter-calibration.mt2f', 'player-stasis-shatter-replay-calibration.mt2f')
+$tripleJuiceNames = @('player-triple-juice-spike-refusal-calibration.mt2f', 'player-triple-juice-spike-calibration.mt2f', 'player-triple-juice-spike-replay-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $tripleJuiceNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Triple Juice checker build failed.' }
+    }
+    $tripleArguments = @('--triple-juice-spike-only') + @($tripleJuiceNames | ForEach-Object { Get-TestFixturePath $_ })
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @tripleArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Focused triple Juice pair failed.' }
+    return
+}
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $stasisShatterNames }).Count -eq 0) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q

@@ -95,6 +95,7 @@ namespace MonsterTrain2Poju.Probe
                 EquipmentPreviewClear = equipmentPreviewClear,
                 SkillPresentation = skillPresentation,
                 AbilityCacheWarm = abilityCacheWarm,
+                TripleJuiceCalibration = JuiceTraitProbe.TripleSamples,
                 FloorTransitionPiercing = CaptureFloorTransitionPiercing(),
                 RoomAttachmentMovement = roomAttachmentMovement.ToArray(),
                 TriggeredCorruption = TriggeredCorruptionProbe.Records.ToArray(),

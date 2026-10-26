@@ -386,6 +386,7 @@ namespace MonsterTrain2Poju.Model
                 : upgrade.ExternalInteractions)
             .Where(interaction => interaction != CardCorruptionAttackUpgradeModel.Guard ||
                 !CardCorruptionAttackUpgradeModel.Known(upgrade) && !CardSentientDrawUpgradeModel.Known(upgrade))
+            .Where(interaction => interaction != "Upgrade traits" || !CardJuiceModel.KnownTripleUpgrade(upgrade))
             .Concat((upgrade.Lifecycle?.Triggers ?? Array.Empty<CardLifecycleTrigger>()).SelectMany(trigger =>
                 trigger.Type != "OnCast" && !(RelicPerkeoModel.IsConversionUpgrade(upgrade) && RelicPerkeoModel.IsConversionTrigger(trigger))
                     ? new[] { "Unsupported card upgrade trigger " + trigger.Type } :
