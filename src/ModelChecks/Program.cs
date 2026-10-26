@@ -6632,7 +6632,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-ech
 {
     using var source = ModelJson.ReadFixture(path);
     using var endTurn = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-waxen-spike-endturn-calibration.mt2f"));
-    EchoWaxenSpikeChecks.Native(source.RootElement, endTurn.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-waxen-spike-endturn-replay-calibration.mt2f"));
+    EchoWaxenSpikeChecks.Native(source.RootElement, endTurn.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-room-upgrade-provenance-counterexample-calibration.mt2f"))
 {

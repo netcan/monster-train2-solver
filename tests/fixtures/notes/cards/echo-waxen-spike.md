@@ -25,4 +25,7 @@ inputs, four immutable cast/EndTurn branches, five card-payload rejection
 controls and four relic controls. The prior8-play/5-EndTurn isolated Echo
 Vault chain still passes, including its positive Torch replay, as does the
 2-play/5-EndTurn Smelted Treasure chain. An independent pinned0.2.198 native
-replay with positive pre-combat snapshots remains required for final pairing.
+process now repeats all49 inputs with identical complete roots/successors/RNG,
+matching forecasts and positive pre-combat snapshots. Both allies gain exactly
+20 attack/four Burnout once, enemies remain unchanged, and the cache clears.
+This completes the component pair; the eventual native route remains a loss.
