@@ -13,6 +13,15 @@ Installed at12:13 with67 protected files unchanged. Package
 The sixth battle completes55 actual default inputs and22 train stages without
 model discrepancy, but loses; that counterexample remains curated.
 
+Development build0.2.128, clean source`0d0456bfc5a421f67f68be3435bb80c7d78c3adf`,
+now passes the thirteenth sample's sixth battle in independent native processes:
+58 frozen inputs,47 plays,11 EndTurns,Pyre56 with no damage,21 train stages,
+identical complete state/forecasts/RNG and four zero failure counters.
+The mixed six-ring chain and32-file Ring7 checkpoint restore pass without new
+simulations. Actual10000ms Ring7 advice is running; Windows delivery is pending.
+The separate0.2.127 default61-input defeat remains curated. No default-budget
+campaign clearance is claimed.
+
 Previous Windows installation:0.2.119, committed source`e1556f821734f618b3016778db29f9c5daa4cb8e`.
 The exact payload passes the thirteenth random Banished/Wurmkin sample's fourth battle
 with actual10000ms/two-worker advice and independent native replay:37 inputs,29 plays,
