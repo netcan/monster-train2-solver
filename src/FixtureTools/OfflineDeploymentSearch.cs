@@ -8,11 +8,15 @@ internal static partial class OfflineBattleSearch
 {
     // Explore several simultaneous placement changes without requiring each
     // single move to improve a complete loss. Never export a truncated rollout.
-    internal static void DeploymentGrid(string input, string prediction, string output, int milliseconds, int maxCandidates)
+    internal static void DeploymentGrid(string input, string prediction, string output, int milliseconds, int maxCandidates,
+        int? firstRoom = null)
     {
         Require(milliseconds is >= 100 and <= 600000 && maxCandidates is >= 1 and <= 4096,
             "Expected100..600000ms and1..4096 deployment candidates.");
+        Require(firstRoom == null || firstRoom is >= 0 and <= 2, "Expected a first-unit room in0..2.");
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
+        string unsupportedOutput = output + ".unsupported.mt2f";
+        if (File.Exists(unsupportedOutput)) throw new IOException("Output already exists: " + unsupportedOutput);
         using var source = FixtureDocument.Read(input);
         RequireNativeInput(source.RootElement);
         Verify(prediction);
@@ -46,10 +50,33 @@ internal static partial class OfflineBattleSearch
         var prefix = new List<Step>();
         bool Expired() => watch.ElapsedMilliseconds >= milliseconds;
         bool Stop() => Expired() || candidates >= maxCandidates || bestOutcome == RoomOutcome.BattleWon;
-        void Rejected(string? reason)
+        void Rejected(string? reason, PlayCardAction? action, BattleTurnState failedRoot, IReadOnlyList<Step> failedPrefix)
         {
             unsupported++;
             if (reasons.Add(reason ?? "Unknown")) Console.WriteLine("DEPLOYMENT-UNSUPPORTED " + reason);
+            if (File.Exists(unsupportedOutput)) return;
+            string? reproduced = action == null ? BattleTurnModel.EndTurn(failedRoot).UnsupportedReason :
+                BattleActionModel.PlayCard(failedRoot, action).Reason;
+            // Enumerators can report a whole-state guard without a specific
+            // action. Keep that diagnostic, but only export an exact boundary.
+            if (reproduced != reason) return;
+            var replay = root;
+            RoomOutcome replayOutcome = RoomOutcome.Exchanged;
+            foreach (var step in failedPrefix)
+            {
+                Require(!Terminal(replayOutcome), "Deployment failure prefix follows a terminal outcome.");
+                replay = Apply(replay, step.Action, step.IsEndTurn, out replayOutcome);
+            }
+            Require(keys.Key(replay) == keys.Key(failedRoot) && keys.Key(root) == immutable,
+                "Deployment failure prefix changed the native root or failed to reach its boundary.");
+            using var failure = MonsterTrain2Poju.Capture.NativeFixtureCapture.Capture(new { Schema = 1,
+                EvidenceKind = "ModelUnsupportedBranch", SourceArchive = Path.GetFileName(input),
+                SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+                Root = root, Prefix = failedPrefix, FailedRoot = failedRoot, Action = action, IsEndTurn = action == null,
+                Reason = reason, NativeValidationRequired = true });
+            using var stream = new FileStream(unsupportedOutput, FileMode.CreateNew, FileAccess.Write);
+            failure.Write(stream);
+            Console.WriteLine($"DEPLOYMENT-BRANCH prefix={failedPrefix.Count} turn={failedRoot.Spawn.Turn} output={unsupportedOutput}; native observation required.");
         }
         void Visit(BattleTurnState state, int index)
         {
@@ -57,10 +84,10 @@ internal static partial class OfflineBattleSearch
             if (index < deployment.Length)
             {
                 var choices = BattleActionModel.EnumerateActions(state, deployment[index].Action!.CardInstanceId, includeAbilities: false);
-                foreach (var rejected in choices.UnsupportedAttempts) Rejected(rejected.Reason);
+                foreach (var rejected in choices.UnsupportedAttempts) Rejected(rejected.Reason, rejected.Action, state, prefix);
                 string parent = keys.Key(state);
                 foreach (var choice in choices.SupportedCandidates.OrderByDescending(choice => choice.Action.RoomIndex)
-                    .ThenBy(choice => choice.Action.PlayerPosition))
+                    .ThenBy(choice => choice.Action.PlayerPosition).Where(choice => index != 0 || firstRoom == null || choice.Action.RoomIndex == firstRoom))
                 {
                     if (Stop()) break;
                     if (choice.Result.Outcome != RoomOutcome.Exchanged) continue;
@@ -85,7 +112,7 @@ internal static partial class OfflineBattleSearch
                 if (played < 18)
                 {
                     choice = BattleTacticalPolicy.Choose(current, out var omitted, floor);
-                    foreach (var rejected in omitted) Rejected(rejected.Reason);
+                    foreach (var rejected in omitted) Rejected(rejected.Reason, rejected.Action, current, steps);
                 }
                 if (choice != null)
                 {
@@ -95,7 +122,7 @@ internal static partial class OfflineBattleSearch
                 else
                 {
                     var ended = BattleTurnModel.EndTurn(current);
-                    if (!ended.Supported) { Rejected(ended.UnsupportedReason); return; }
+                    if (!ended.Supported) { Rejected(ended.UnsupportedReason, null, current, steps); return; }
                     current = ended.State!; outcome = ended.Outcome;
                     steps.Add(new Step { IsEndTurn = true }); played = 0;
                 }
@@ -124,6 +151,6 @@ internal static partial class OfflineBattleSearch
         }
         Console.WriteLine($"DEPLOYMENT-GRID foundWin={bestOutcome == RoomOutcome.BattleWon} units={deployment.Length} candidates={candidates} " +
             $"completed={completed} duplicates={duplicates} unsupported={unsupported} improvements={improvements} " +
-            $"timedOut={Expired()} candidateLimit={candidates >= maxCandidates} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}; model prediction only.");
+            $"firstRoom={firstRoom?.ToString() ?? "any"} timedOut={Expired()} candidateLimit={candidates >= maxCandidates} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}; model prediction only.");
     }
 }
