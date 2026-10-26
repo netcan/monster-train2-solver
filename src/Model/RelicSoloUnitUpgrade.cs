@@ -96,7 +96,10 @@ namespace MonsterTrain2Poju.Model
                     {
                         foreach (RoomCombatState room in state.Rooms.OrderBy(item => item.RoomIndex))
                         {
-                            CombatUnit? front = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Player && !unit.IsPyre);
+                            // Native TargetHelper.FrontInRoom skips Untouchable
+                            // characters before choosing the front target.
+                            CombatUnit? front = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Player && !unit.IsPyre &&
+                                !unit.Statuses.Any(status => status.Id == "untouchable" && status.Stacks > 0));
                             if (front == null) continue;
                             if (front.Health <= 0)
                                 return Unsupported("Front-room relic upgrade cannot resolve a retained dying front unit.");

@@ -111,6 +111,10 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-17-ring4-release178-budget10000-replay.mt2f',
     'full-battle-random-campaign-17-ring5-release178-budget10000-search.mt2f',
     'full-battle-random-campaign-17-ring5-release178-budget10000-replay.mt2f',
+    'full-battle-random-campaign-17-ring6-release178-budget10000-loss.mt2f',
+    'player-untouchable-front-relic-counterexample-calibration.mt2f',
+    'player-untouchable-front-relic-calibration.mt2f',
+    'player-untouchable-front-relic-replay-calibration.mt2f',
     'player-auto-focus-no-preview-calibration.mt2f',
     'player-auto-focus-no-preview-prefix-calibration.mt2f',
     'player-moon-silence-reset-counterexample-calibration.mt2f',
@@ -1808,6 +1812,17 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     $refinedArguments = @('--random-refined-campaign-pair-only') + @($sample17RefinedNames | ForEach-Object { Get-TestFixturePath $_ }) + @('278140591','3','2','Hellhorned','Banished','34')
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @refinedArguments
     if ($LASTEXITCODE -ne 0) { throw 'Focused refined campaign pair failed.' }
+    return
+}
+$untouchableFrontNames = @('player-untouchable-front-relic-counterexample-calibration.mt2f', 'player-untouchable-front-relic-calibration.mt2f', 'player-untouchable-front-relic-replay-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $untouchableFrontNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Untouchable front relic checker build failed.' }
+    }
+    $frontArguments = @('--untouchable-front-relic-only') + @($untouchableFrontNames | ForEach-Object { Get-TestFixturePath $_ })
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @frontArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Focused Untouchable front relic pair failed.' }
     return
 }
 $untouchableRoomNames = @('player-untouchable-room-counterexample-calibration.mt2f', 'player-untouchable-room-calibration.mt2f', 'player-untouchable-room-replay-calibration.mt2f')
