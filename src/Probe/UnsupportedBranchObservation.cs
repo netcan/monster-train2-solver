@@ -201,8 +201,9 @@ namespace MonsterTrain2Poju.Probe
         internal static IEnumerator ObserveTroop(RoomStateTroopUnitUpgradeModifier modifier, RoomState room, IEnumerator operation)
         {
             bool observing = waiting && rows.Count > 0 && rows.Last().Boundary &&
-                request.GetProperty("Reason").GetString() ==
-                    "Battle preview floor 1: Combined troop upgrades and enchantment source ordering require native calibration.";
+                request.GetProperty("Reason").GetString() is
+                    "Battle preview floor 1: Combined troop upgrades and enchantment source ordering require native calibration." or
+                    "Combined troop upgrades and enchantment source ordering require native calibration.";
             object? before = observing ? TroopSnapshot() : null;
             while (operation.MoveNext()) yield return operation.Current;
             if (observing) rows.Last().TroopUpdates.Add(new { Before = before, After = TroopSnapshot() });
