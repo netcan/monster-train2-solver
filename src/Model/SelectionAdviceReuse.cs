@@ -68,6 +68,16 @@ namespace MonsterTrain2Poju.Model
         internal static VerifiedAdviceContinuation? MatchAfterObservations(BattleAdvice advice, IReadOnlyList<Observation> observations,
             BattleTurnState actual, CancellationToken token)
         {
+            // Native automatic focus can omit the preview refresh. Try that
+            // narrow transition only when the ordinary callback path fails;
+            // every observed checkpoint and the entire suffix must still match.
+            return MatchAfterObservations(advice, observations, actual, token, refreshPreview: true) ??
+                (observations.Count > 0 ? MatchAfterObservations(advice, observations, actual, token, refreshPreview: false) : null);
+        }
+
+        private static VerifiedAdviceContinuation? MatchAfterObservations(BattleAdvice advice, IReadOnlyList<Observation> observations,
+            BattleTurnState actual, CancellationToken token, bool refreshPreview)
+        {
             BattleTurnState projected = advice.Root;
             int index = 0;
             using var keys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
@@ -83,7 +93,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 else
                 {
-                    BattleTurnResult selected = BattleTurnModel.SelectRoom(projected, observation.Room);
+                    BattleTurnResult selected = BattleTurnModel.SelectRoom(projected, observation.Room, refreshPreview);
                     if (!selected.Supported) return null;
                     projected = selected.State!;
                 }

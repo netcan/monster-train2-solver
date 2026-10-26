@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--automatic-focus-preview-only")
+{
+    using var mismatch = ModelJson.ReadFixture(args[1]);
+    using var prefix = ModelJson.ReadFixture(args[2]);
+    AutomaticFocusPreviewChecks.Native(mismatch.RootElement, prefix.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--automatic-view-continuation-only")
 {
     using var mismatch = ModelJson.ReadFixture(args[1]);
@@ -6401,6 +6408,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-abi
     using var source = ModelJson.ReadFixture(path);
     using var render = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-ability-cache-display-replay-calibration.mt2f"));
     AbilityPresentationChecks.Native(source.RootElement, render.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-auto-focus-no-preview-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var prefix = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-auto-focus-no-preview-prefix-calibration.mt2f"));
+    AutomaticFocusPreviewChecks.Native(source.RootElement, prefix.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-cael-moon-birth-calibration.mt2f"))
 {

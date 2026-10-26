@@ -92,6 +92,16 @@ namespace MonsterTrain2Poju.Model
             if (Current == null) return false;
             if (reuseObservations.Count == 0)
             { using var keys = new BattleStateKeys(); return keys.Key(root) == Current.RootKey; }
+            // Automatic native focus may update only the selection frame,
+            // without the preview refresh performed by a user floor click.
+            // Accept this only against the latest recorded view and the full
+            // captured battle; all allocator, callback and RNG fields remain keyed.
+            if (reuseObservations.All(item => item.Root == null) &&
+                reuseObservations[reuseObservations.Count - 1].Room == root.SelectedRoom)
+            {
+                using var viewKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true, ignoreRoomSelection: true);
+                if (viewKeys.Key(Current.Root) == viewKeys.Key(root)) return true;
+            }
             BattleTurnState projected = Current.Root;
             foreach (var observation in reuseObservations)
             {
