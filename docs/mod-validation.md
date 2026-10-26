@@ -1,6 +1,20 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.137, clean source`0716af6f6ac32c21248d15aa519e51de07765433`.
+Current Windows installation:0.2.138, clean source`0c4432af9c28b5c27f7df6295fe17ab6d461087e`.
+Installed at16:44 with67 protected files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.138-Windows-20261026-164434.zip`,SHA256
+`40c4725b471002ae16a9f7f8cbc2df6180bd9d572a17d3f4f5837c8122088c87`.
+The fourteenth Underlegion/LunaCoven sample's first battle passes actual10000ms
+advice and independent native replay:23 inputs/18plays/5EndTurns,Pyre80 with no
+damage,9 train stages,identical complete states/forecasts/RNG and four zero failure
+counters. Resumed moon capture now reads the explicit player-advisor setting in
+the separate probe assembly. The original23 unsupported inputs are retained;
+the live player's plan and forecasts remain identical. Equal-score losses now
+include pending/live boss progress without changing the win/Pyre objective.
+Ring2 exposes an Infectory preview identity mismatch at input12 and is not accepted.
+No default-budget campaign clear is claimed. No Mac package was built.
+
+Previous Windows installation:0.2.137, clean source`0716af6f6ac32c21248d15aa519e51de07765433`.
 The thirteenth sample's sixth battle again passes independent native processes:
 58 frozen inputs,47 plays,11 EndTurns,Pyre56 with no damage,21 train stages,
 identical complete states/forecasts/RNG and four zero failure counters.
