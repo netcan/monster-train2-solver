@@ -39,7 +39,9 @@ namespace MonsterTrain2Poju.Model
                 bool changesModifiers = targets.Any(id => !rule.Targets.Contains(id)) ||
                     rule.Targets.Any(id => !targets.Contains(id) && train.Rooms.SelectMany(item => item.Units)
                         .Any(unit => unit.Id == id && unit.Health > 0 && unit.DeathState?.IsDestroyed != true));
-                if (source.EnchanterIds.Count > 0 && changesModifiers)
+                bool orderedPreview = source.EnchanterIds.Count > 0 && changesModifiers &&
+                    KnownPreviewAddition(source, room, owner, rule, targets);
+                if (source.EnchanterIds.Count > 0 && changesModifiers && !orderedPreview)
                 { error = "Combined troop upgrades and enchantment source ordering require native calibration."; break; }
                 var cache = rule.Targets.ToList();
                 foreach (int id in rule.Targets.Reverse())
@@ -66,7 +68,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     foreach (CombatStatus status in rule.Statuses)
                     {
-                        RoomCombatState targetRoom = train.Rooms.Single(room => room.Units.Any(unit => unit.Id == id));
+                        RoomCombatState targetRoom = TargetRoom(id);
                         RoomCombatResult changed = add ? StatusApplicationModel.ApplyRetained(targetRoom, id, status, 0) :
                             StatusRemovalModel.Remove(targetRoom, id, status.Id, status.Stacks);
                         if (!Accept(changed)) return false;
@@ -79,7 +81,7 @@ namespace MonsterTrain2Poju.Model
                     CardUpgradeModifier upgrade = rule.Upgrade.WithRuntimeIdentity(Key(ownerId));
                     for (int i = 0; i < count; i++)
                     {
-                        RoomCombatState targetRoom = train.Rooms.Single(room => room.Units.Any(unit => unit.Id == id));
+                        RoomCombatState targetRoom = TargetRoom(id);
                         if (!Accept(UnitModifierModel.ApplyDirect(targetRoom, id, upgrade, !add, upgrade.DataId))) return false;
                     }
                     return true;
@@ -87,12 +89,68 @@ namespace MonsterTrain2Poju.Model
                 bool Accept(RoomCombatResult changed)
                 {
                     if (!changed.Supported) { error = changed.UnsupportedReason; return false; }
-                    train = Replace(train, changed.State!); callbacks.AddRange(changed.PendingCallbacks); return true;
+                    RoomCombatState updated = changed.State!;
+                    if (orderedPreview) updated = updated.WithContext(updated.Context!.WithEnchantments(null));
+                    train = Replace(train, updated); callbacks.AddRange(changed.PendingCallbacks); return true;
+                }
+                RoomCombatState TargetRoom(int id)
+                {
+                    RoomCombatState targetRoom = train.Rooms.Single(room => room.Units.Any(unit => unit.Id == id));
+                    if (!orderedPreview) return targetRoom;
+                    // The outer pass already updated these pure status sources.
+                    // Borrow its captured world for validation while retaining
+                    // the native reentry guard throughout the troop writes.
+                    var world = new EnchantmentWorld(train.Rooms, train.Movement, train.EnemySlotsPerRoom,
+                        source.RetainedUnits, source.EnchanterIds, source.AllowUpdates, true, source.Preview,
+                        source.TestRng, true, source.TemporaryPreviewUnitIds);
+                    return targetRoom.WithContext(targetRoom.Context!.WithEnchantments(world));
                 }
             }
             return new EnchantmentCombatResult(error == null ? new EnchantmentCombatState(train, source.RetainedUnits,
                 source.EnchanterIds, source.AllowUpdates, source.Updating, source.Preview, source.TestRng) : null,
                 Array.Empty<EnchantmentRequest>(), callbacks, error);
+        }
+
+        private static bool KnownPreviewAddition(EnchantmentCombatState source, RoomCombatState room,
+            CombatUnit owner, TroopAuraState rule, IReadOnlyList<int> targets)
+        {
+            // Native Squad Leader applies its primary-cache-missing upgrade in
+            // preview too. Only this observed birth with disjoint pure status
+            // enchanters is calibrated; primary writes/departures stay guarded.
+            if (!source.Preview || !room.Preview || rule.Targets.Count != 0 || targets.Count != 1 ||
+                owner.AssetKey != "MonsterSquadLeader" || rule.Subtype != "SubtypesData_FunGuy" ||
+                rule.Upgrade.DataId != "8538457b-b33a-4a3d-9596-5929a2de5936" ||
+                rule.Upgrade.AssetKey != "SquadLeader_Upgrade" || rule.Upgrade.Stats.Damage != 2 ||
+                rule.Upgrade.Stats.Health != 0 || rule.Upgrade.Stats.Cost != 0 || rule.Upgrade.Stats.Heal != 0 ||
+                rule.Upgrade.Stats.Size != 0 || rule.Upgrade.Stats.XCost != 0 || rule.Upgrade.Stats.EquipmentLimit != 0 ||
+                rule.Upgrade.Stats.UpgradeSlotCount != 0 || rule.Upgrade.Statuses.Count != 0 ||
+                rule.Upgrade.ExternalInteractions.Count != 0 || rule.Upgrade.AbilityUpgrade != null ||
+                rule.Upgrade.TriggerUpgrades?.Count > 0 ||
+                rule.Statuses is not [{ Id: "trample", Stacks: 1, ParamInt: 0 }] ||
+                source.Train.Context?.SpawnPoints?.Units.Any(point => point.UnitId == targets[0] && point.SpawnedInPreview) != true ||
+                room.Units.Single(unit => unit.Id == targets[0]).AssetKey != "MonsterFunguy" || source.EnchanterIds.Count != 2)
+                return false;
+            var enchanters = source.Train.Rooms.SelectMany(floor => floor.Units.Select(unit => (floor.RoomIndex, Unit: unit)))
+                .Where(actor => source.EnchanterIds.Contains(actor.Unit.Id)).ToArray();
+            return enchanters.Length == 2 && enchanters.Any(actor => actor.RoomIndex == room.RoomIndex &&
+                Signature(actor.Unit, "MonsterFaeMooncaller", CombatTeam.Player, "conduit", 3, 1, false, true)) &&
+                enchanters.Any(actor => actor.RoomIndex != room.RoomIndex &&
+                Signature(actor.Unit, "EnchanterT1_Speed", CombatTeam.Enemy, "haste", 1, 2, true, false));
+
+            bool Signature(CombatUnit unit, string asset, CombatTeam team, string status, int count, int param,
+                bool enemy, bool player)
+            {
+                var effects = unit.Triggers.SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null).ToArray();
+                return unit.AssetKey == asset && unit.Team == team && unit.Health > 0 && effects.Length == 1 &&
+                    effects[0].Enchantment is EnchantmentRule aura && aura.Bound && !aura.HasParentCard &&
+                    aura.Targeting is { Type: "AddStatus", Target: "Room", Value: 0 } &&
+                    aura.Targeting.Range == null && !aura.Targeting.OnlyIfNoEnemies &&
+                    aura.Targeting.Filters is { Health: "Both", RequiredStatuses.Count: 0, ExcludedStatuses.Count: 0,
+                        IgnoreBosses: false, Subtype: "", ExcludedSubtypes.Count: 0 } &&
+                    aura.Targeting.AllowEnemy == enemy && aura.Targeting.AllowPlayer == player &&
+                    aura.StatusPool.Count == 1 && aura.StatusPool[0].Id == status && aura.StatusPool[0].Stacks == count &&
+                    aura.StatusPool[0].ParamInt == param;
+            }
         }
 
         internal static RoomCombatResult TroopChanged(RoomCombatState source, CombatUnit target, string kind, int total, int delta)
