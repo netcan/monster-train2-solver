@@ -27,6 +27,25 @@ results.0.2.196 refreshes the shared terminal combat context before the room
 result is constructed. The expanded check fails on0.2.195 (424 vs293 values)
 and passes on0.2.196: all42 native room stages and9 train phases match, including
 their contexts, while the37-input independent observation remains exact.
-Passive killcam clearing, defeat and preview retain the existing cache rules.
-A fresh default campaign source and independent normal progression replay are
-still required before release acceptance.
+The0.2.196 default first battle and independent normal progression replay both
+win with37 inputs; the same campaign's second battle wins with32 inputs but
+exposes the opposite error: a blanket victory refresh incorrectly drops five
+generated entries (330/18 predicted vs400/23 native). Preserve that second
+counterexample too. The old Smelted Treasure full native chain also rejects
+the blanket refresh and retains its74 values.
+
+An opt-in UpdateDeckStats trace on an independent first-battle native replay
+identifies the actual caller:
+`CardStatistics.IncrementStat > OnCharacterSacrificed > OnCharacterDeath`.
+The boss has five `unstable` stacks and dies through a null-source sacrifice.
+Native OnCharacterSacrificed calls IncrementStat even for a null attacking
+card, refreshing ownership without attributing a per-card statistic. Ordinary
+OnCharacterKilled skips IncrementStat for a null responsible card.
+
+Release0.2.197 models that distinction in DispatchDeathStatistics and removes
+both blanket victory workarounds from RoomCombat and BattleTurn. The check now
+requires both37-input cache removal and32-input cache retention, including
+every room/train stage and full successor/RNG; the independent37-input pair
+and old Smelted Treasure cache-retention chain remain required controls.
+The diagnostic is opt-in and reads native state only. This is not a general
+rule that victory, defeat, preview or passive killcam clearing refresh caches.

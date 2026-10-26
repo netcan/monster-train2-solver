@@ -3343,7 +3343,10 @@ namespace MonsterTrain2Poju.Model
                     BattleStatistics statistics = responsible > 0 ? context.LiveStatistics! : context.Statistics;
                     context = context.WithStatistics(statistics.Death(target.Source.Team == CombatTeam.Player,
                         responsible, requireTrackedCard: context.CardInstances?.Count == 0));
-                    if (sacrifice && sourceCardId > 0)
+                    // OnCharacterSacrificed calls IncrementStat even for a null
+                    // attacking card. That still refreshes ownership after a
+                    // burnout boss death; ordinary null-source deaths do not.
+                    if (sacrifice)
                         context = context.WithStatistics(context.LiveStatistics!.Increment(sourceCardId, "LastSacrificedMonsterStats",
                             HarvestModel.Count(target.Freeze(), "OnAnyUnitDeathOnFloor"), requireTrackedCard: context.CardInstances?.Count == 0));
                 }
@@ -5836,12 +5839,6 @@ namespace MonsterTrain2Poju.Model
                 if (context != null && units.Any(unit => unit.Alive && unit.InRoom &&
                     unit.Source.Modifiers?.SelfAttackRules?.Any(rule => rule.Type == "RoomStateSelfDamagePerGoldModifier") == true))
                     context = context.WithStatistics(context.LiveStatistics);
-                // Native terminal combat snapshots already observe the post-killcam
-                // statistic membership. Keep it on the shared room context so
-                // train results agree before the outer EndTurn wrapper runs.
-                // Passive ClearCards and defeat do not imply a cache refresh.
-                if (!source.Preview && outcome == RoomOutcome.BattleWon && context?.KillCamActivated == true)
-                    context = context.WithStatistics(context.Statistics?.RefreshDeckAfterCardTerminal());
                 // The native standby predicate observes preview deaths too;
                 // the outer preview transaction restores primary card piles.
                 if (context != null && (!source.Preview || context.LifeLinks != null))

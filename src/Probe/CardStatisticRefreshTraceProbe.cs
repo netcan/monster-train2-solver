@@ -18,10 +18,13 @@ namespace MonsterTrain2Poju.Probe
             var stored = (Dictionary<CardState, CardStatsEntry>)AccessTools.Field(typeof(CardStatistics), "deckStats").GetValue(__instance);
             var owned = AllGameManagers.Instance?.GetCardManager()?.GetAllCards(new List<CardState>());
             var missing = owned?.Where(card => !stored.ContainsKey(card)).ToArray();
-            if (missing == null || missing.Length == 0) return;
+            var current = owned?.Count > 0 ? owned : AllGameManagers.Instance?.GetSaveManager()?.GetDeckState();
+            var removed = current == null ? Array.Empty<CardState>() : stored.Keys.Except(current).ToArray();
+            if (missing == null || missing.Length == 0 && removed.Length == 0) return;
             string caller = string.Join(">", new StackTrace(1, false).GetFrames().Take(12)
                 .Select(frame => frame.GetMethod()?.DeclaringType?.FullName + "." + frame.GetMethod()?.Name));
-            UnityEngine.Debug.Log("CARD-STAT-REFRESH missing=" + string.Join(",", missing.Select(card => card.GetCardDataID())) + " caller=" + caller);
+            UnityEngine.Debug.Log("CARD-STAT-REFRESH missing=" + string.Join(",", missing.Select(card => card.GetCardDataID())) +
+                " removed=" + string.Join(",", removed.Select(card => card.GetCardDataID())) + " caller=" + caller);
         }
     }
 }

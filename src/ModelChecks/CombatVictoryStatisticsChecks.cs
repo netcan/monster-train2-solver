@@ -4,7 +4,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class CombatVictoryStatisticsChecks
 {
-    internal static void Native(FixtureValue fixture, FixtureValue? replay = null)
+    internal static void Native(FixtureValue fixture, FixtureValue? replay = null, FixtureValue? retention = null)
     {
         var rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
         Require(fixture.GetProperty("NativeWon").GetBoolean() && fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
@@ -17,6 +17,13 @@ internal static class CombatVictoryStatisticsChecks
         var actual = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         var oldStats = historical.Spawn.Train.Context!.Statistics!;
         var newStats = actual.Spawn.Train.Context!.Statistics!;
+        var terminalRoom = fixture.GetProperty("Stages").EnumerateArray().Single(stage =>
+            stage.GetProperty("Kind").GetString() == "Room" && stage.GetProperty("Predicted").GetProperty("Outcome").GetInt32() == (int)RoomOutcome.BattleWon);
+        var boss = terminalRoom.GetProperty("Before").Deserialize<RoomCombatState>()!.Units.Single(unit => unit.IsBoss == true);
+        Require(boss.Status("unstable")?.Stacks == 5 && terminalRoom.GetProperty("Predicted").GetProperty("Events").EnumerateArray()
+            .Any(item => item.GetProperty("Kind").GetString() == "Death" && item.GetProperty("Actor").GetInt32() == 0 &&
+                item.GetProperty("Target").GetInt32() == boss.Id),
+            "Missing the unstable boss's null-source sacrifice death.");
         Require(before.Spawn.Turn == 4 && historical.Spawn.Train.Context.KillCamActivated == true &&
             actual.Spawn.Train.Context.KillCamActivated == true && oldStats.TrackedCards.Count == 24 &&
             oldStats.Values.Count == 424 && newStats.TrackedCards.Count == 15 && newStats.Values.Count == 293 &&
@@ -78,7 +85,36 @@ internal static class CombatVictoryStatisticsChecks
         // Whole-turn equality alone can hide stale shared context in lower-level
         // room/train results. Verify every native train phase independently too.
         TrainCombatChecks.Native(fixture);
+        if (retention.HasValue) Retention(retention.Value);
         Console.WriteLine("COMBAT-VICTORY-STATISTICS PASS:37 native inputs/full state/forecast/RNG and native train phases; preserved424/24 vs293/15 counterexample; exactly nine generated infusion entries removed, permanent stats retained; four immutable branches; independentPair=" + replay.HasValue);
+    }
+    private static void Retention(FixtureValue fixture)
+    {
+        var rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        Require(fixture.GetProperty("NativeWon").GetBoolean() && fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
+            fixture.GetProperty("Mismatches").GetInt32() == 3 && fixture.GetProperty("Unsupported").GetInt32() == 0 &&
+            fixture.GetProperty("Pending").GetInt32() == 0 && rows.Length == 32,
+            "Missing the native ordinary victory cache-retention counterexample.");
+        var stale = rows[^1].GetProperty("Expected").Deserialize<BattleTurnState>()!.Spawn.Train.Context!.Statistics!;
+        var native = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train.Context!.Statistics!;
+        Require(stale.Values.Count == 330 && native.Values.Count == 400 && stale.TrackedCards.Count == 18 && native.TrackedCards.Count == 23 &&
+            JsonSerializer.Serialize(native.RefreshDeckAfterCardTerminal(), ModelJson.Options) == JsonSerializer.Serialize(stale, ModelJson.Options),
+            "Ordinary victory must retain the five generated-card cache entries; a blanket refresh is incorrect.");
+        var current = rows[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        string immutable = JsonSerializer.Serialize(current, ModelJson.Options);
+        var root = current;
+        foreach (var row in rows)
+        {
+            Require(NativeBranchObservationChecks.Key(current) == NativeBranchObservationChecks.Key(row.GetProperty("Root").Deserialize<BattleTurnState>()!),
+                "Cache-retention native root differs.");
+            current = BattlePlannerChecks.Replay(current, [new(row.GetProperty("Action").Deserialize<PlayCardAction>(), row.GetProperty("IsEndTurn").GetBoolean())], out var outcome);
+            Require((int)outcome == row.GetProperty("Outcome").GetInt32() && NativeBranchObservationChecks.Key(current, outcome == RoomOutcome.BattleWon) ==
+                NativeBranchObservationChecks.Key(row.GetProperty("Actual").Deserialize<BattleTurnState>()!, outcome == RoomOutcome.BattleWon),
+                "Cache-retention full native successor/RNG differs.");
+        }
+        Require(immutable == JsonSerializer.Serialize(root, ModelJson.Options), "Cache-retention replay changed its root.");
+        TrainCombatChecks.Native(fixture);
+        Console.WriteLine("COMBAT-VICTORY-CACHE-RETENTION PASS:32 native inputs/full state/RNG; retained400 values/23 cards, preserving five generated infusions; ordinary victory must not force a refresh.");
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }
