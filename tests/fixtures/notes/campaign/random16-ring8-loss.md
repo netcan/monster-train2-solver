@@ -11,3 +11,9 @@ A fresh same-budget .NET root search also completes a42-input model defeat;
 that experiment is not a native acceptance. Subsequent deployment and order
 investigations must retain the original default loss and require independent
 native verification if a winning model route is found.
+
+Release0.2.191 enables the separately native-calibrated Unboxing/Moon-hand
+relic combination. A new default10000ms/two-worker native run executes55
+inputs (47 plays/8 EndTurns), with all16 train phases and four zero counters.
+It still loses with the boss2952HP. Keep both genuine defeats; admitting the
+missing action does not establish a strategy improvement or a campaign clear.

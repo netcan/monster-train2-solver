@@ -37,6 +37,10 @@ else if (args.Length == 3 && args[0] == "freeze-root-plan")
 {
     OfflineBattleSearch.FreezeRootPlan(args[1], args[2]);
 }
+else if (args.Length is 5 or 6 && args[0] == "complete-root-plan" && (args.Length == 5 || args[5] == "--strength"))
+{
+    OfflineBattleSearch.CompleteRootPlan(args[1], args[2], args[3], int.Parse(args[4]), args.Length == 6);
+}
 else if (args.Length is >= 6 and <= 8 && args[0] == "plan-battle" &&
     args.Skip(6).All(flag => flag is "--tactical" or "--player-continuation") &&
     args.Skip(6).Distinct().Count() == args.Length - 6)
@@ -196,6 +200,7 @@ else
 {
     Console.Error.WriteLine("Diagnostics: extract-unsupported-branch <recorded.mt2f> <new-output.mt2f> <exact-rejection-reason>");
     Console.Error.WriteLine("Player root: plan-root <capture.mt2f> <new-output.mt2f> <milliseconds> [decision-index] [workers] [shared-nodes] | verify-root-plan <prediction.mt2f> | freeze-root-plan <prediction.mt2f> <new-output.mt2f>; nodes default256, other node budgets are offline experiments.");
+    Console.Error.WriteLine("Partial forecast: complete-root-plan <native.mt2f> <verified-root-prediction.mt2f> <new-output.mt2f> <deployment-room> [--strength]; preserves the entire verified prefix before policy completion; model evidence only.");
     Console.Error.WriteLine("Counterexample: refine-policy <native.mt2f> <new-winning-output.mt2f> <milliseconds> [start-decision] [last-decision]; bounded single-decision alternatives followed by legal tactical choices, model prediction only.");
     Console.Error.WriteLine("Iterated counterexample: improve-policy <native.mt2f> <new-output.mt2f> <milliseconds> [passes] [start-decision]; retain complete improvements between sweeps; exported outcome may still be a defeat and needs native validation.");
     Console.Error.WriteLine("Resume improvement: improve-prediction <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> [passes] [start-decision]; independently verifies the full baseline and binds its source hash and complete native deployment root.");
