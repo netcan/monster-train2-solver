@@ -49,7 +49,7 @@ namespace MonsterTrain2Poju.Model
                     .SequenceEqual(new[] { CardCorruptStateModel.Trait, "CardTraitExhaustState" }) &&
                 temporaryCorrupt[0].Lifecycle!.AddedTraits.All(trait => trait.DeclaredName == trait.RuntimeType &&
                     trait.ParamInt == 0 && trait.DefinitionParamInt == 0);
-            bool merchantCorrupt = card.DataId == "ae114dc4-d08f-4909-a2ad-d99215661463" &&
+            bool merchantCorrupt = (card.DataId == "ae114dc4-d08f-4909-a2ad-d99215661463" || IntrinsicConsumedInfusion(card)) &&
                 descriptor.BaseTraits.Count(trait => trait.RuntimeType == CardCorruptStateModel.Trait) == 1 &&
                 corruptUpgrades.Length == 1 && corruptUpgrades[0].DataId == "bdb7a38c-18de-4461-beb8-c27fdbdc5f62" &&
                 corruptUpgrades[0].AssetKey == "TraitCorruptwIcon" && corruptUpgrades[0].Lifecycle!.AddedTraits.Count == 1 &&
@@ -90,6 +90,24 @@ namespace MonsterTrain2Poju.Model
 
         private static bool UsesSourceRoom(CardInstanceState card) =>
             card.MaskDescriptor?.SourceTraits?.Any(trait => trait.Type == Trait && trait.Bool) == true;
+
+        internal static bool IntrinsicConsumedInfusion(CardInstanceState card) =>
+            card.DataId == "096def92-500b-4b1f-89f7-43e96aa1e54a" && card.MaskDescriptor != null &&
+            card.MaskDescriptor.BaseTraits.Select(trait => trait.RuntimeType).SequenceEqual(new[] {
+                Trait, CardCorruptStateModel.Trait, "CardTraitExhaustState", "CardTraitIntrinsicState" }) &&
+            card.MaskDescriptor.BaseTraits.All(trait => trait.DeclaredName == trait.RuntimeType &&
+                trait.ParamInt == (trait.RuntimeType == Trait ? 1 : 0) && trait.DefinitionParamInt == trait.ParamInt && !trait.TemporaryReplacement) &&
+            card.Permanent.Upgrades.Count == 3 && card.Temporary.Upgrades.Count == 0 &&
+            card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] {
+                "bdb7a38c-18de-4461-beb8-c27fdbdc5f62", "fb416958-813a-435b-b7ea-e428127ece20", "62ea77cc-4f97-476f-9ccc-a23e28bc788d" }) &&
+            card.Permanent.Upgrades.Select(upgrade => upgrade.AssetKey).SequenceEqual(new[] {
+                "TraitCorruptwIcon", "ReduceCostAddConsume", "TraitInherentSpellReduceCost" }) &&
+            card.Permanent.Upgrades.Select((upgrade, index) =>
+                new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }
+                    .All(stat => upgrade.Stats.Value(stat) == (stat == "Cost" ? index == 1 ? -2 : index == 2 ? -1 : 0 :
+                        stat == "XCost" ? index == 1 ? 2 : index == 2 ? 1 : 0 : 0)) &&
+                upgrade is { Statuses.Count: 0, UnhealedHealth: 0, DamageBuff: 0, AbilityUpgrade: null, ExternalInteractions.Count: 0 } &&
+                upgrade.TriggerUpgrades?.Count is not > 0).All(value => value);
 
         internal static RoomCorruptionResult BeforeEffects(TrainCombatState source, CardInstanceState card, int selectedRoomIndex, int? sourceRoomIndex = null)
         {

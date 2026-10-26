@@ -104,7 +104,16 @@ namespace MonsterTrain2Poju.Model
                 playedRule.OnCastEffects.Count == 0 && playedRule.Effects.Count == 1 &&
                 playedRule.Effects[0] is { Type: "AddStatus", Target: "DropTargetCharacter", AllowEnemy: true, AllowPlayer: true, Range: null } poison &&
                 poison.Statuses.Count == 1 && poison.Statuses[0].Id == "corrupt_poison" && poison.Statuses[0].Stacks == 2;
-            if (!justCause && !liquidCourage && !fracture && (hasPositionChange || playedRule.Effects.Count != 1 || playedRule.OnCastEffects.Count != 0 ||
+            bool infusion = playedRule.DataId == "096def92-500b-4b1f-89f7-43e96aa1e54a" && playedRule.AssetKey == "EchoInfusion" &&
+                playedRule.OnCastEffects.Count == 0 && playedRule.Effects.Count == 1 &&
+                playedRule.Effects[0] is { Type: "UnitUpgrade", Target: "DropTargetCharacter", AllowEnemy: true, AllowPlayer: true,
+                    Range: null, ScaleUpgrade: false, Lifetime: "TemporaryUntilEndOfBattle", Upgrade: not null } health &&
+                health.Upgrade.DataId == "02af9e5b-b5b3-46e0-bbc7-eddf4aab5823" && health.Upgrade.AssetKey == "WurmEchoInfusionHealth" &&
+                new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }
+                    .All(stat => health.Upgrade.Stats.Value(stat) == (stat == "Health" ? 15 : 0)) &&
+                health.Upgrade is { Statuses.Count: 0, UnhealedHealth: 0, DamageBuff: 0, AbilityUpgrade: null, ExternalInteractions.Count: 0 } &&
+                health.Upgrade.TriggerUpgrades?.Count is not > 0;
+            if (!justCause && !liquidCourage && !fracture && !infusion && (hasPositionChange || playedRule.Effects.Count != 1 || playedRule.OnCastEffects.Count != 0 ||
                 playedRule.Effects[0].Type != "Damage" || playedRule.Effects[0].Target != "DropTargetCharacter" ||
                 playedRule.Effects[0].AllowEnemy || !playedRule.Effects[0].AllowPlayer || playedRule.Effects[0].Range != null))
                 return Unsupported(source, "Only a single fixed, Monster-targeted DropTarget damage effect without OnCast is modeled.");
@@ -116,6 +125,7 @@ namespace MonsterTrain2Poju.Model
                 [new CardActionEffect("Null", "DropTargetCharacter", 0, false, true, []), playedRule.Effects[1]] : playedRule.Effects;
 
             CardInstanceState? card = context.FindCard(playedCardId);
+            bool infusionCard = infusion && card != null && CardCorruptRestrictedModel.IntrinsicConsumedInfusion(card);
             bool consumeJustCause = justCause && card?.Permanent.Upgrades.Count == 3 &&
                 card.Permanent.Upgrades.Count(upgrade => upgrade.DataId == "f43e7cdb-fa8d-4760-88bf-c6f34f72d918") == 1 &&
                 card.Permanent.Upgrades.Count(upgrade => upgrade.DataId == "fb416958-813a-435b-b7ea-e428127ece20") == 1;
@@ -132,8 +142,8 @@ namespace MonsterTrain2Poju.Model
                             stat == "Cost" ? -2 : stat == "XCost" ? 2 : 0 : 0)) &&
                     upgrade is { Statuses.Count: 0, UnhealedHealth: 0, DamageBuff: 0, AbilityUpgrade: null, ExternalInteractions.Count: 0 } &&
                     upgrade.TriggerUpgrades?.Count is not > 0);
-            if (card == null || card.MaskDescriptor == null || fracture && !corruptRecast ||
-                !corruptRecast && card.Permanent.Upgrades.Count != 0 || card.Temporary.Upgrades.Count != 0)
+            if (card == null || card.MaskDescriptor == null || fracture && !corruptRecast || infusion && !infusionCard ||
+                !corruptRecast && !infusionCard && card.Permanent.Upgrades.Count != 0 || card.Temporary.Upgrades.Count != 0)
                 return Unsupported(source, "Monster spell replication requires an owned, unupgraded card with captured mask metadata.");
             try
             {
@@ -143,7 +153,9 @@ namespace MonsterTrain2Poju.Model
                 // and OnCardDiscarded, without calling that pre-play callback.
                 // Retain and Consume ignore OnCardDiscarded when isRecastCopy.
                 bool recastConsume = liquidCourage && combined?.Count == 1 && combined[0].RuntimeType == "CardTraitExhaustState";
-                if (combined?.Count > 0 && !recastConsume && !(corruptRecast && combined.Count == card!.Permanent.Upgrades.Count &&
+                bool recastInfusion = infusionCard && combined?.Select(trait => trait.RuntimeType).SequenceEqual(new[] {
+                    CardCorruptRestrictedModel.Trait, CardCorruptStateModel.Trait, "CardTraitExhaustState", "CardTraitIntrinsicState" }) == true;
+                if (combined?.Count > 0 && !recastConsume && !recastInfusion && !(corruptRecast && combined.Count == card!.Permanent.Upgrades.Count &&
                     combined.Count(trait => trait.RuntimeType == "CardTraitCorruptState") == 1 &&
                     combined.Count(trait => trait.RuntimeType == "CardTraitRetain") == combined.Count - 1 - (consumeJustCause ? 1 : 0) &&
                     combined.Count(trait => trait.RuntimeType == "CardTraitExhaustState") == (consumeJustCause ? 1 : 0)))
@@ -172,8 +184,8 @@ namespace MonsterTrain2Poju.Model
                 if (!test.CanPlay) continue;
                 source = CardSpellModel.WithContext(source, source.Context!.WithBattleRng(test.BattleRngAfterTests!.Value));
                 TrainSpellResult applied = CardSpellModel.ApplyForCardPlay(source, roomIndex, copiedEffects,
-                    targetId, justCause || liquidCourage || fracture ? 0 : playedCardId, definitions, source.Context!.OtherPiles, priorTargets: [targetId],
-                    resolveLiveEffects: !justCause && !liquidCourage && !fracture);
+                    targetId, justCause || liquidCourage || fracture || infusion ? 0 : playedCardId, definitions, source.Context!.OtherPiles, priorTargets: [targetId],
+                    resolveLiveEffects: !justCause && !liquidCourage && !fracture && !infusion);
                 if (!applied.Supported) return Unsupported(source, applied.UnsupportedReason!);
                 source = applied.State!;
                 outcome = applied.Outcome;
