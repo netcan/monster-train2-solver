@@ -1,6 +1,19 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.119, committed source`e1556f821734f618b3016778db29f9c5daa4cb8e`.
+Current Windows installation:0.2.122, committed source`3b9ca2e58093a35729c64401086afa670bf0a09f`.
+The thirteenth Banished/Wurmkin sample's fifth battle passes34 frozen inputs,
+25 plays,9 EndTurns,Pyre56 and17 train stages in independent native processes.
+Every root,successor,forecast and RNG matches,with four zero failure counters.
+Versions120–122 fix Holdover private recasts and the original intrinsic WurmkinSpike
+copy signature/trait installation; their19-input and8-input native component pairs
+pass. This is an offline refined victory, not default-budget clearance.
+Installed at12:13 with67 protected files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.122-Windows-20261026-121325.zip`,SHA256
+`84c50c81ebdd2c6812540ee7313004560e8b07d23d480a62da919237407c7f95`.
+The sixth battle completes55 actual default inputs and22 train stages without
+model discrepancy, but loses; that counterexample remains curated.
+
+Previous Windows installation:0.2.119, committed source`e1556f821734f618b3016778db29f9c5daa4cb8e`.
 The exact payload passes the thirteenth random Banished/Wurmkin sample's fourth battle
 with actual10000ms/two-worker advice and independent native replay:37 inputs,29 plays,
 8 EndTurns,Pyre56 and15 train stages per process. Every root,successor,forecast and

@@ -66,6 +66,15 @@ namespace MonsterTrain2Poju.Model
                 originalTargetTeam != CombatTeam.Player)
                 return new RelicMonsterSpellTargetingResult(source);
 
+            // Native relic conditions gate both the private pre-play copy and
+            // its later recasts. Once spent, this relic cannot reject an
+            // otherwise supported spell merely because its copy is unmodeled.
+            RelicConditionEvaluation evaluation = RelicConditionModel.Evaluate(context, modifier.Conditions);
+            if (!evaluation.Supported) return Unsupported(source, evaluation.UnsupportedReason!);
+            context = evaluation.Context;
+            source = CardSpellModel.WithContext(source, context);
+            if (!evaluation.Passed) return new RelicMonsterSpellTargetingResult(source);
+
             bool hasPositionChange = playedRule.Effects.Any(effect => effect.Type is "Bump" or "FloorRearrange" or "AbilityTeleport");
             if (hasPositionChange && !playedRule.Effects.Any(effect => effect.Type is not ("Bump" or "FloorRearrange" or "AbilityTeleport")))
                 return new RelicMonsterSpellTargetingResult(source);
@@ -110,12 +119,6 @@ namespace MonsterTrain2Poju.Model
                     return Unsupported(source, "Monster spell replication does not yet model copied card trait callbacks.");
             }
             catch (InvalidOperationException error) { return Unsupported(source, error.Message); }
-
-            RelicConditionEvaluation evaluation = RelicConditionModel.Evaluate(context, modifier.Conditions);
-            if (!evaluation.Supported) return Unsupported(source, evaluation.UnsupportedReason!);
-            context = evaluation.Context;
-            source = CardSpellModel.WithContext(source, context);
-            if (!evaluation.Passed) return new RelicMonsterSpellTargetingResult(source);
 
             RoomCombatState? room = source.Rooms.FirstOrDefault(item => item.RoomIndex == roomIndex);
             if (room == null) return Unsupported(source, "Monster spell replication requires its selected room.");
