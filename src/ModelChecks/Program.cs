@@ -2031,6 +2031,14 @@ if (args.Length is 2 or 3 && args[0] == "--titan-curse-preview-only")
     TitanCursePreviewChecks.Native(source.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 3 or 4 && args[0] == "--generated-conduit-copy-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var counterexample = ModelJson.ReadFixture(args[2]);
+    using var replay = args.Length == 4 ? ModelJson.ReadFixture(args[3]) : null;
+    GeneratedConduitCopyChecks.Native(source.RootElement, counterexample.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 3 or 4 && args[0] == "--retired-actor-frame-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

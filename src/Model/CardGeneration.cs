@@ -438,6 +438,13 @@ namespace MonsterTrain2Poju.Model
                         return Unsupported("Generated card moon tracking activation outside combat requires native reset-boundary calibration.");
                     context = context.WithQueryFrame(context.QueryFrame.With(moonPhaseTrackingActive: true));
                 }
+                // TryAddCardStateImpl dispatches Drawn and Updated room
+                // modifiers after inserting a generated card into the hand.
+                // Copies need the selected floor's Conduit just like draws;
+                // selection normalization must not hide a missing upgrade when
+                // the copy is played again without changing floors.
+                if (rule.Destination == "HandPile" && !overflow)
+                    context = ConduitModel.Updated(ConduitModel.Drawn(context, new[] { card.InstanceId }), card.InstanceId);
                 // Setup/upgrade refresh builds scaling trait text in an active battle.
                 // Those native statistic queries refresh deckStats after the new card
                 // enters its pile, even when the displayed scaling value is zero.
