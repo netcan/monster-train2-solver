@@ -38,6 +38,9 @@ namespace MonsterTrain2Poju.Probe
         private static float browseStarted;
         private static int browseCaptures, browsePublications;
         private static BattleAdvice? browseAdvice;
+        private static BattleAdvice? previousReadyAdvice;
+        private static long previousReadySearches;
+        private static int researchCaptures;
         private static string? browseText, browseStatus;
         private static Color browseColor;
         private static float browseScroll;
@@ -589,7 +592,34 @@ namespace MonsterTrain2Poju.Probe
             }
             Require(session.MatchesCurrentRoot(root), "player advice is stale: " +
                 UnitPlayModelProbe.FirstDifference(JObject.FromObject(Advice.Root), JObject.FromObject(root), "$"));
-            return (bool)Call("ReadyFor", root)!;
+            if (!(bool)Call("ReadyFor", root)!) return false;
+            BattleAdvice current = Advice;
+            if (!ReferenceEquals(previousReadyAdvice, current))
+            {
+                // Isolated diagnostic only. Retain the preceding immutable
+                // publication so an unexpected search can be reproduced with
+                // its complete old suffix, rather than only the chosen input.
+                if (previousReadyAdvice != null && root.Spawn.Turn > 0 &&
+                    session.SearchCount > previousReadySearches && !current.ReusedContinuation &&
+                    !current.ReusedWinningContinuation && !current.ReusedSelection)
+                {
+                    using var diagnostic = MonsterTrain2Poju.Capture.NativeFixtureCapture.Capture(new
+                    {
+                        Schema = 1, EvidenceKind = "NativeAdviceResearch", PreviousRoot = previousReadyAdvice.Root,
+                        PreviousPlan = previousReadyAdvice.Plan, ActualRoot = root, CurrentPlan = current.Plan,
+                        PreviousSearches = previousReadySearches, CurrentSearches = session.SearchCount,
+                        Generation = session.Generation, Timing = LatestTiming
+                    });
+                    string path = System.IO.Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                        "player-advice-research-" + (++researchCaptures) + ".mt2f");
+                    using var stream = new System.IO.FileStream(path, System.IO.FileMode.CreateNew, System.IO.FileAccess.Write);
+                    diagnostic.Write(stream);
+                    log!.LogInfo("PLAYER-ADVISOR-RESEARCH-CAPTURE " + path);
+                }
+                previousReadyAdvice = current;
+                previousReadySearches = session.SearchCount;
+            }
+            return true;
         }
         private static bool CurrentIsNull() => Field<BattleAdviceSession>("session").Current == null;
         private static long GetGeneration() => Field<BattleAdviceSession>("session").Generation;
