@@ -1,6 +1,19 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.175, source`7ab8b50c6b8538fdf527a78a58f099304758c7d6`.
+Current Windows installation:0.2.182, source`df49fde4bd6d6cbebb0fa8f7f602652757db2f70`.
+Installed at03:34 with67 protected save/config/other-mod files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.182-Windows-20261027-033437.zip`,SHA256
+`7fda50438cc27604c8105e400fbaf539f2b097ebcd7eccb98225600291cc5d0f`.
+The exact payload wins sample18 Ring1 with33inputs,27plays/6EndTurns,Pyre80,
+11train stages and four zero failure counters. Independent frozen native replay
+matches all states/forecasts/RNG and advances normally through52events.
+The three installed DLLs,compiled provenance and package were verified. The
+real game was stopped; next launch loads0.2.182. Previous DLLs and receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261027-033437/`. No Mac build was made.
+This includes the accepted ability-cache continuation, Untouchable room and
+front-unit relic fixes. Sample18 has two accepted battles; this is not a campaign clear.
+
+Previous Windows installation:0.2.175, source`7ab8b50c6b8538fdf527a78a58f099304758c7d6`.
 Installed at02:21 with67 protected save/config/other-mod files unchanged. Package
 `results/mod-dist/PojuAdvisor-0.2.175-Windows-20261027-022154.zip`,SHA256
 `dc5acdbdbe6f3aa6e2b16790ab997bb185079704029b2791c80fd689733a1e1e`.

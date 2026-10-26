@@ -114,6 +114,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-17-ring6-release178-budget10000-loss.mt2f',
     'full-battle-random-campaign-18-ring1-release182-budget10000-search.mt2f',
     'full-battle-random-campaign-18-ring1-release182-budget10000-replay.mt2f',
+    'full-battle-random-campaign-18-ring2-release182.mt2f',
+    'full-battle-random-campaign-18-ring2-release182-replay.mt2f',
     'player-untouchable-front-relic-counterexample-calibration.mt2f',
     'player-untouchable-front-relic-calibration.mt2f',
     'player-untouchable-front-relic-replay-calibration.mt2f',
