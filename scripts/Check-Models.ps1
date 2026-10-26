@@ -30,6 +30,11 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-12-ring1-release114-budget10000-replay.mt2f',
     'full-battle-random-campaign-12-ring6-release113-budget10000-loss.mt2f',
     'full-battle-random-campaign-12-ring7-release113-budget10000-loss.mt2f',
+    'full-battle-random-campaign-12-ring8-release115-budget10000-loss.mt2f',
+    'full-battle-random-campaign-13-ring1-release114-budget10000-search.mt2f',
+    'full-battle-random-campaign-13-ring1-release114-budget10000-replay.mt2f',
+    'full-battle-random-campaign-13-ring2-release114-budget10000-search.mt2f',
+    'full-battle-random-campaign-13-ring2-release114-budget10000-replay.mt2f',
     'full-battle-random-campaign-11-ring1-budget10000-search.mt2f',
     'full-battle-random-campaign-11-ring1-budget10000-replay.mt2f',
     'full-battle-random-campaign-11-ring1-release107-budget10000-search.mt2f',
@@ -172,6 +177,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-draft-upgrade-combat-replay-calibration.mt2f',
     'player-post-battle-reward-combat-calibration.mt2f',
     'player-post-battle-reward-combat-replay-calibration.mt2f',
+    'player-unowned-relic-copy-observation.mt2f',
+    'player-unowned-relic-copy-replay-calibration.mt2f',
     'player-unbox-conduit-replay-calibration.mt2f',
     'player-outer-boss-death-statistics-calibration.mt2f',
     'player-outer-boss-death-statistics-replay-calibration.mt2f',
@@ -1726,6 +1733,7 @@ $branchPairGates = @{
     'player-triggered-corruption-relic-calibration.mt2f' = '--triggered-corruption-relic-only'
     'player-draft-upgrade-combat-calibration.mt2f' = '--draft-upgrade-combat-only'
     'player-post-battle-reward-combat-calibration.mt2f' = '--post-battle-reward-combat-pair-only'
+    'player-unowned-relic-copy-observation.mt2f' = '--unowned-relic-copy-pair-only'
     'player-consume-kill-copy-calibration.mt2f' = '--consume-kill-copy-pair-only'
     'player-sacrifice-preview-calibration.mt2f' = '--sacrifice-preview-pair-only'
     'player-pyre-max-health-calibration.mt2f' = '--pyre-max-health-pair-only'

@@ -251,6 +251,20 @@ if (args.Length == 3 && args[0] == "--post-battle-reward-combat-pair-only")
     PostBattleRewardCombatChecks.Pair(source.RootElement, replay.RootElement);
     return;
 }
+if (args.Length == 3 && args[0] == "--unowned-relic-copy-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    UnownedRelicCopyChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--revived-sacrifice-attribution-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    RevivedSacrificeAttributionChecks.Pair(source.RootElement, replay.RootElement);
+    return;
+}
 
 if (args.Length is 2 or 3 && args[0] == "--draft-upgrade-combat-only")
 {
@@ -5837,6 +5851,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-post-battle-reward-combat-replay-calibration.mt2f"));
     PostBattleRewardCombatChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-unowned-relic-copy-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-unowned-relic-copy-observation.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-unowned-relic-copy-replay-calibration.mt2f"));
+    UnownedRelicCopyChecks.Pair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-triggered-corruption-relic-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-triggered-corruption-relic-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
