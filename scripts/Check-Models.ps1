@@ -1012,7 +1012,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-original-isolated-frozen-totem.mt2f', 'full-battle-original-isolated-royal-whelp.mt2f',
     'full-battle-original-isolated-consumer-of-crowns.mt2f', 'full-battle-original-isolated-steelsinger.mt2f',
     'full-battle-unplayed-card-pyre-damage.mt2f',
-    'full-battle-unplayed-card-effects.mt2f', 'full-battle-train-heal.mt2f', 'full-battle-status-upgrade.mt2f',
+    'full-battle-unplayed-card-effects.mt2f', 'full-battle-unplayed-card-effects-release149.mt2f',
+    'full-battle-train-heal.mt2f', 'full-battle-status-upgrade.mt2f',
     'full-battle-overheal.mt2f', 'full-battle-corruption.mt2f', 'full-battle-corruption-unit-trigger.mt2f',
     'full-battle-corruption-carver-trigger.mt2f', 'full-battle-corruption-keeper-trigger.mt2f',
     'full-battle-corruption-relic-trigger.mt2f', 'full-battle-permanent-corruption.mt2f',
@@ -2348,7 +2349,7 @@ foreach ($fixturePath in $unplayedCardTriggerFixtures) {
 }
 
 $unplayedCardEffectsFixtures = @($fixtures | Where-Object {
-    (Split-Path -Leaf $_) -eq 'full-battle-unplayed-card-effects.mt2f'
+    (Split-Path -Leaf $_) -in @('full-battle-unplayed-card-effects.mt2f', 'full-battle-unplayed-card-effects-release149.mt2f')
 })
 foreach ($fixturePath in $unplayedCardEffectsFixtures) {
     dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --unplayed-card-effects-only $fixturePath

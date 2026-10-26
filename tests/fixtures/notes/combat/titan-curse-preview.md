@@ -19,5 +19,8 @@ HeroManager保留在列车外的两个MiniFleshweaver（9、10）仍参加下一
 效果被拒绝。0.2.149依据原生`CardEffectAddUpgradedCopy.CanApplyInPreviewMode=false`
 补齐原版Soul Savior：保留效果入口的房间缓存，预览跳过复制，真实未打出仍复制。
 该旧组合现通过7回合、11次出牌、14列车阶段及完整状态检查，原生累计策略链也一致。
+0.2.149新原生`full-battle-unplayed-card-effects-release149.mt2f`重复此组合：
+同样7回合／11出牌／14列车阶段、终局薪火57，采集／差异／不支持／待完成均为零；
+完整父状态、后继及RNG校验通过，实际未打出的升级和复制仍各自执行。
 后续11输入自然未打出边界已确认真实TitanCurse结算
 给12张合格法术加费，独立原生配对完整状态／RNG通过，见[月相空效果首领遗物](moon-null-boss-relic.md)。

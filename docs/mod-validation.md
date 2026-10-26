@@ -22,7 +22,8 @@ and26-input prior room-death pair pass. Actual10000ms/two-worker Ring3 then comp
 and four zero failure counters, but loses with206 bossHP. The native loss is preserved
 for strategy work. Development0.2.149 also skips the original Soul Savior preview
 copy effect; the older combined curse/copy fixture passes7turns/11plays and full
-state checks. Fresh native control is being checked. Installed build remains0.2.143.
+state checks. Fresh native control also passes14 train stages and the complete
+policy chain,Pyre57 with all four failure counters zero. Installed build remains0.2.143.
 No default-budget campaign clear is claimed.
 No Mac package was built. See[terminal capture evidence](../tests/fixtures/notes/combat/terminal-coroutine-planes.md).
 
