@@ -8,7 +8,7 @@ param(
     [ValidateRange(100, 30000)][int] $TimeLimitMs = 3000,
     [string] $InputProfile = '',
     [string] $NewRunFromProfile = '',
-    [ValidateRange(1, 2)][int] $NativeWorker = 2,
+    [ValidateRange(1, 4)][int] $NativeWorker = 2,
     [ValidateRange(60, 3600)][int] $TimeoutSeconds = 1200,
     [string] $NativeBuildRoot = '',
     [string] $ModelChecker = '',
