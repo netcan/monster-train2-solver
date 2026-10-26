@@ -63,6 +63,25 @@ namespace MonsterTrain2Poju.Model
                 if (rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Recursion != null || effect.SpikeRecipe != null ||
                     effect.Type is "ChooseDiscard" or "FreezeCard" or "DuplicateCard" or "MergeEquipment" or "Mix"))
                 {
+                    // This seed's rank depends on the input and captured state,
+                    // never the simulated successor. Try inputs in that same
+                    // stable order and stop at the first legal result instead
+                    // of simulating every selection on every floor. The full
+                    // action frontier and unoptimized reference stay exhaustive.
+                    if (workspace?.OptimizeSelections == true)
+                    {
+                        foreach (PlayCardAction action in Inputs(choice.token, rule)
+                            .SelectMany(action => BattleActionModel.EnumerateRecursionChoices(source, action, rule))
+                            .Where(action => Rank(action, rule) > UnwantedTargetRank)
+                            .OrderByDescending(action => Rank(action, rule)).ThenBy(action => action.TargetUnitId))
+                        {
+                            BattleActionResult result = Play(source, action);
+                            if (result.Supported) return new SupportedActionCandidate(action, result);
+                            if (result.Rejection == ActionRejection.Unsupported)
+                                omitted.Add(new UnsupportedActionAttempt(action, result.Reason ?? "Unsupported tactical-seed selection."));
+                        }
+                        continue;
+                    }
                     BattleActionEnumeration actions = workspace?.Enumerate(source, choice.token.InstanceId, false) ?? BattleActionModel.EnumerateActions(source, choice.token.InstanceId, includeAbilities: false);
                     omitted.AddRange(actions.UnsupportedAttempts);
                     SupportedActionCandidate? selected = actions.SupportedCandidates.Where(candidate => Rank(candidate.Action, rule) > UnwantedTargetRank)

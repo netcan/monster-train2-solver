@@ -34,6 +34,7 @@ namespace MonsterTrain2Poju.Model
     internal sealed class BattleSearchWorkspace
     {
         private readonly bool enabled;
+        internal bool OptimizeSelections => enabled;
         private readonly Dictionary<BattleTurnState, Entry> entries = new Dictionary<BattleTurnState, Entry>();
         private int requests, simulated, cached, filtered, turns, simulatedTurns, cachedTurns, policies;
         internal BattleSearchWorkspace(bool enabled = true) { this.enabled = enabled; }

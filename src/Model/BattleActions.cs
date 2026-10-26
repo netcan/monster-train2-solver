@@ -1284,7 +1284,7 @@ namespace MonsterTrain2Poju.Model
             }
         }
 
-        private static IEnumerable<PlayCardAction> EnumerateRecursionChoices(BattleTurnState source,
+        internal static IEnumerable<PlayCardAction> EnumerateRecursionChoices(BattleTurnState source,
             PlayCardAction action, CardPlayRule rule)
         {
             var choiceEffects = rule.Effects.Concat(rule.OnCastEffects).Select((effect, index) => (effect, index))

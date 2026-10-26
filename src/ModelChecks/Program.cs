@@ -1769,6 +1769,12 @@ if (args.Length == 2 && args[0] == "--belief-battle-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--tactical-selection-cache-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TacticalSelectionChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--parallel-planner-merge-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -6283,6 +6289,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "parallel-p
     using var preferred = ModelJson.ReadFixture(path);
     using var alternative = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "parallel-planner-merge-model-counterexample.mt2f"));
     ParallelPlannerChecks.Merge(preferred.RootElement, alternative.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) ==
+    "full-battle-random-campaign-12-ring6-release112-budget10000-loss.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    TacticalSelectionChecks.Native(fixture.RootElement);
 }
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase) &&
     !path.Contains("parallel-planner-merge-model-", StringComparison.Ordinal) &&
