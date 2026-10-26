@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--unbox-moon-relic-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    UnboxMoonRelicChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--room-upgrade-provenance-only")
 {
     using var counterexample = ModelJson.ReadFixture(args[1]);
@@ -6552,6 +6559,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-dou
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-double-juice-curse-replay-calibration.mt2f"));
     DoubleJuiceCurseChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-unbox-moon-relic-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-unbox-moon-relic-replay-calibration.mt2f"));
+    UnboxMoonRelicChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-room-upgrade-provenance-counterexample-calibration.mt2f"))
 {

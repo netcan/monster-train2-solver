@@ -25,7 +25,11 @@ namespace MonsterTrain2Poju.Model
             ShuffleResult<BoxedCardState> shuffled = source.BattleRng.Shuffle(contents);
             CombatContext context = source.WithBattleRng(shuffled.State);
             if (count == 0) return new CardGenerationResult(context, Array.Empty<CardToken>());
-            if (source.Relics?.Any(relic => relic.CardModifiers?.Any(effect => effect.ExpensiveCardUpgrade == null) == true || relic.CardHealthModifiers?.Count > 0 ||
+            // The calibrated moon relic upgrades the hand at EndTurn, not when
+            // an unboxed card is created. Its exact signature remains checked;
+            // other modifiers after copied upgrades still need calibration.
+            if (source.Relics?.Any(relic => relic.CardModifiers?.Any(effect => effect.ExpensiveCardUpgrade == null &&
+                !(effect.MoonPhaseHandUpgrade != null && RelicMoonPhaseHandUpgradeModel.CompatibleMoonSpells(relic))) == true || relic.CardHealthModifiers?.Count > 0 ||
                 relic.CardAttackModifiers?.Count > 0 || relic.MagicPowerModifiers?.Count > 0 || relic.CardTypeCosts?.Count > 0) == true)
                 return Unsupported("Unboxing with relic modifiers after copied upgrades requires native calibration.");
             var added = new List<CardToken>();
