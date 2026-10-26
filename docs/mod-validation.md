@@ -1,6 +1,21 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.138, clean source`0c4432af9c28b5c27f7df6295fe17ab6d461087e`.
+Current Windows installation:0.2.143, clean source`858c2ca728de6aa58eb0f9f1d1028cafa919538c`.
+Installed at17:42 with67 protected files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.143-Windows-20261026-174215.zip`,SHA256
+`4d5dd4580f64d47040accebbbeb8dc0042ade060cbb9bd3ceec0d99c67b4da23`.
+The fourteenth Underlegion/LunaCoven sample's second battle now passes actual
+10000ms/two-worker advice and independent native replay:26 inputs,47 room stages,
+9 train stages,identical complete states/forecasts/RNG and four zero failure counters.
+Player birth identities,room-death preview ownership and terminal coroutine planes
+are calibrated. The independent reward driver cancels an unselectable heavy-crystal
+choice,selects the eligible light-crystal upgrade through normal UI,and reaches Ring3.
+The two-battle continuous chain and16-file checkpoint restore(15 payloads) pass.
+Ring3 currently has no complete plan at10000ms: all-status trigger and moon-tracked
+outer-boss creation boundaries remain. No default-budget campaign clear is claimed.
+No Mac package was built. See[terminal capture evidence](../tests/fixtures/notes/combat/terminal-coroutine-planes.md).
+
+Previous Windows installation:0.2.138, clean source`0c4432af9c28b5c27f7df6295fe17ab6d461087e`.
 Installed at16:44 with67 protected files unchanged. Package
 `results/mod-dist/PojuAdvisor-0.2.138-Windows-20261026-164434.zip`,SHA256
 `40c4725b471002ae16a9f7f8cbc2df6180bd9d572a17d3f4f5837c8122088c87`.
