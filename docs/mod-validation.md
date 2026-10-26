@@ -1,6 +1,22 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.166, source`9c319202624b903501415aa2a63c499172b57c05`.
+Current Windows installation:0.2.169, source`b67b653f`.
+Installed at00:51 with67 protected save/config/other-mod files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.169-Windows-20261027-005138.zip`,SHA256
+`8992e1c0459562c7bef2696b895aa805d47be3f4cd1b0219ba03d2f278e5fad0`.
+The exact installed payload wins sample16 Ring1 in the actual10000ms/two-worker
+source and independent frozen native process:26inputs,21plays/5EndTurns,
+9train stages,full state/draw/forecast/RNG identity and four zero failure counters.
+52normal reward/map events reach Ring2. This includes the sweep preview fix,
+outer-boss attachment birth,guarded candidate ranking and original Sentient
+draw-upgrade birth. All three installed DLLs,compiled provenance and zip
+contents were verified. The real game was stopped; its next launch loads0.2.169.
+Receipt and previous DLLs are under
+`BepInEx/PojuBackups/RandomCampaign-20261027-005138/installation.json` and`previous/`.
+No Mac package was built. Sample16 Ring2 exposes a separate stale-advice
+counterexample under investigation; no full default campaign clear is claimed.
+
+Previous Windows installation:0.2.166, source`9c319202624b903501415aa2a63c499172b57c05`.
 Installed at00:20 with67 protected save/config/other-mod files unchanged. Package
 `results/mod-dist/PojuAdvisor-0.2.166-Windows-20261027-002023.zip`,SHA256
 `b4558e47f5b013039c76c395d8e85231afbadebbf20fac7e9c98bc614f3c3ca9`.
