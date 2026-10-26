@@ -47,7 +47,6 @@ internal static partial class OfflineBattleSearch
         int candidates = 0, completed = 0, unsupported = 0, duplicates = 0, improvements = 0;
         var visited = new HashSet<string>(StringComparer.Ordinal);
         var reasons = new HashSet<string>(StringComparer.Ordinal);
-        var prefix = new List<Step>();
         bool Expired() => watch.ElapsedMilliseconds >= milliseconds;
         bool Stop() => Expired() || candidates >= maxCandidates || bestOutcome == RoomOutcome.BattleWon;
         void Rejected(string? reason, PlayCardAction? action, BattleTurnState failedRoot, IReadOnlyList<Step> failedPrefix)
@@ -78,9 +77,9 @@ internal static partial class OfflineBattleSearch
             failure.Write(stream);
             Console.WriteLine($"DEPLOYMENT-BRANCH prefix={failedPrefix.Count} turn={failedRoot.Spawn.Turn} output={unsupportedOutput}; native observation required.");
         }
-        void Visit(BattleTurnState state, int index)
+        IEnumerable<(BattleTurnState State, Step[] Prefix)> Deployments(BattleTurnState state, int index, List<Step> prefix)
         {
-            if (Stop()) return;
+            if (Stop()) yield break;
             if (index < deployment.Length)
             {
                 var choices = BattleActionModel.EnumerateActions(state, deployment[index].Action!.CardInstanceId, includeAbilities: false);
@@ -92,15 +91,19 @@ internal static partial class OfflineBattleSearch
                     if (Stop()) break;
                     if (choice.Result.Outcome != RoomOutcome.Exchanged) continue;
                     prefix.Add(new Step { Action = choice.Action });
-                    Visit(choice.Result.State!, index + 1);
+                    foreach (var leaf in Deployments(choice.Result.State!, index + 1, prefix)) yield return leaf;
                     prefix.RemoveAt(prefix.Count - 1);
                     Require(keys.Key(state) == parent, "Deployment child changed its parent.");
                 }
-                return;
+                yield break;
             }
+            yield return (state, prefix.ToArray());
+        }
+        void Visit(BattleTurnState state, Step[] placement)
+        {
             if (!visited.Add(keys.Key(state))) { duplicates++; return; }
             candidates++;
-            var steps = prefix.ToList();
+            var steps = placement.ToList();
             var current = state;
             var outcome = RoomOutcome.Exchanged;
             int played = deployment.Length;
@@ -133,9 +136,44 @@ internal static partial class OfflineBattleSearch
             if (score >= best) return;
             best = score; bestFinal = current; bestOutcome = outcome; bestRoute = steps.ToArray(); improvements++;
             Console.WriteLine($"DEPLOYMENT-IMPROVED candidate={candidates} outcome={outcome} steps={steps.Count} merit={best:R} " +
-                "placements=" + JsonSerializer.Serialize(prefix.Select(step => step.Action)));
+                "placements=" + JsonSerializer.Serialize(placement.Select(step => step.Action)));
         }
-        Visit(root, 0);
+        if (firstRoom.HasValue)
+        {
+            foreach (var leaf in Deployments(root, 0, new List<Step>()))
+            {
+                if (Stop()) break;
+                Visit(leaf.State, leaf.Prefix);
+            }
+        }
+        else
+        {
+            // A depth-first first floor can consume the whole budget. Keep one
+            // lazy deployment stream per initial placement and visit them in
+            // turn, so the middle and bottom cores receive the same opportunity.
+            var openings = BattleActionModel.EnumerateActions(root, deployment[0].Action!.CardInstanceId, includeAbilities: false);
+            foreach (var rejected in openings.UnsupportedAttempts) Rejected(rejected.Reason, rejected.Action, root, Array.Empty<Step>());
+            var streams = openings.SupportedCandidates.Where(choice => choice.Result.Outcome == RoomOutcome.Exchanged)
+                .OrderByDescending(choice => choice.Action.RoomIndex).ThenBy(choice => choice.Action.PlayerPosition)
+                .Select(choice => Deployments(choice.Result.State!, 1,
+                    new List<Step> { new Step { Action = choice.Action } }).GetEnumerator()).ToArray();
+            try
+            {
+                bool advanced;
+                do
+                {
+                    advanced = false;
+                    foreach (var stream in streams)
+                    {
+                        if (Stop()) break;
+                        if (!stream.MoveNext()) continue;
+                        advanced = true;
+                        Visit(stream.Current.State, stream.Current.Prefix);
+                    }
+                } while (advanced && !Stop());
+            }
+            finally { foreach (var stream in streams) stream.Dispose(); }
+        }
         // Independent export validation has its own cost; it must not turn a
         // completed bounded investigation into a reported search timeout.
         watch.Stop();
