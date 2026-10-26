@@ -228,11 +228,11 @@ namespace MonsterTrain2Poju.Model
             Size, StatusImmunities, Subtypes, Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards,
             NextTriggerId, Ability, StatusDictionary, AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId,
             DeathState, BumpRules, LastFeederId, MoonPhaseMask);
-        internal CombatUnit WithMoonPhaseMask(int mask) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
+        internal CombatUnit WithMoonPhaseMask(int mask, bool reset = false) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
             AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, BumpRules, LastFeederId,
-            MoonPhaseMask.HasValue ? (MoonPhaseMask.Value & ~3) | (mask & 3) : (int?)null);
+            MoonPhaseMask.HasValue ? (reset ? 0 : MoonPhaseMask.Value & ~3) | (mask & 3) : (int?)null);
         internal CombatUnit WithSacrifice(int cardId, bool markSacrifice = true) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
@@ -3850,6 +3850,27 @@ namespace MonsterTrain2Poju.Model
                         paramInt, paramInt2, paramString, overrideTarget?.Source.Id ?? 0, lastSpawnedOverrideUnitId, exclusiveTriggerStateId));
                 if (kind == "OnDeath" && unit.Despawned) return;
                 if (!unit.Alive && kind != "OnDeath" && (unit.Source.IsBoss == true || unit.Source.EndsBattleOnDeath)) return;
+                if (kind is "OnSilence" or "OnSilenceLost" && (unit.Has("fullmoon") || unit.Has("newmoon")))
+                {
+                    // The native moon status owns these callbacks even when the
+                    // character has no authored trigger. Removing Silence resets
+                    // understanding to zero before rebuilding the effective mask.
+                    // In particular this drops the initial None(4) birth bit.
+                    CardInstanceState? spawner = context?.FindCard(unit.Source.SpawnerCardId);
+                    if (unit.Triggers.Any(trigger => trigger.Kind is "OnMoonLit" or "OnMoonlitLost" or
+                            "OnMoonShade" or "OnMoonshadeLost" or "OnMoonPhaseShift") ||
+                        spawner?.MaskDescriptor?.BaseTraits.Concat(spawner.MaskDescriptor.TemporaryTraits)
+                            .Any(trait => trait.RuntimeType.Contains("MoonPhase", StringComparison.Ordinal)) == true)
+                    { unsupportedReason = "Moon silence callbacks with character or card traits require native calibration."; return; }
+                    if (kind == "OnSilenceLost")
+                    {
+                        if (context?.QueryFrame?.MoonPhaseTrackingActive != true || context.QueryFrame.MoonPhase is not (1 or 2) ||
+                            !unit.Source.MoonPhaseMask.HasValue)
+                        { unsupportedReason = "Moon silence reset requires captured active phase and prior understanding."; return; }
+                        unit.Apply(unit.Freeze().WithMoonPhaseMask(RoomMoonPhaseModel.Effective(context, unit.RoomIndex,
+                            context.QueryFrame.MoonPhase.Value), reset: true));
+                    }
+                }
                 if (kind == "OnHit" && unit.Has("horde"))
                 {
                     RoomCombatResult casualties = HordeStatusModel.SettleHealth(UpgradeRoom(unit), unit.Source.Id);

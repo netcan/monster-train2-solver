@@ -106,6 +106,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-ability-cache-display-replay-calibration.mt2f',
     'player-auto-focus-no-preview-calibration.mt2f',
     'player-auto-focus-no-preview-prefix-calibration.mt2f',
+    'player-moon-silence-reset-counterexample-calibration.mt2f',
+    'player-moon-silence-reset-calibration.mt2f',
+    'player-moon-silence-reset-replay-calibration.mt2f',
     'player-cael-moon-birth-calibration.mt2f',
     'cael-moon-creation-calibration.mt2f',
     'player-cael-moon-birth-replay-calibration.mt2f',
@@ -1786,6 +1789,17 @@ if ($Fixture.Count -gt 0) {
 }
 # Explicit selections for this composition have complete dedicated gates.
 # Avoid starting all unrelated pure checks before a component-only request.
+$moonSilenceNames = @('player-moon-silence-reset-counterexample-calibration.mt2f', 'player-moon-silence-reset-calibration.mt2f', 'player-moon-silence-reset-replay-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $moonSilenceNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Moon Silence checker build failed.' }
+    }
+    $silenceArguments = @('--moon-silence-reset-only') + @($moonSilenceNames | ForEach-Object { Get-TestFixturePath $_ })
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @silenceArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Focused moon Silence pair failed.' }
+    return
+}
 $automaticFocusNames = @('player-auto-focus-no-preview-calibration.mt2f', 'player-auto-focus-no-preview-prefix-calibration.mt2f')
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $automaticFocusNames }).Count -eq 0) {
     if (-not $SkipBuild) {
