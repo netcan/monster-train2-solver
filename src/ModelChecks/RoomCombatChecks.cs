@@ -5,6 +5,7 @@ using MonsterTrain2Poju.Model;
 internal static class RoomCombatChecks
 {
     internal static void NativeRoomOnly(string path) => CheckNativeFixture(path, roomOnly: true);
+    internal static void NativeObservedRooms(string path) => CheckNativeFixture(path, roomOnly: true, requireTerminal: false);
 
     internal static void Run(string[] fixtures)
     {
@@ -217,16 +218,17 @@ internal static class RoomCombatChecks
     private static void Require(bool condition, string error)
     { if (!condition) throw new InvalidOperationException(error); }
 
-    private static void CheckNativeFixture(string path, bool roomOnly = false)
+    private static void CheckNativeFixture(string path, bool roomOnly = false, bool requireTerminal = true)
     {
         using FixtureDocument document = ModelJson.ReadFixture(path);
         FixtureValue fixture = document.RootElement;
         ContextReferenceChecks.Native(fixture);
-        Require(fixture.GetProperty("NativeWon").ValueKind is FixtureKind.True or FixtureKind.False,
-            "Native fixture did not reach the end of the battle.");
+        if (requireTerminal)
+            Require(fixture.GetProperty("NativeWon").ValueKind is FixtureKind.True or FixtureKind.False,
+                "Native fixture did not reach the end of the battle.");
         Require(fixture.GetProperty("CaptureFailures").GetInt32() == 0 &&
             fixture.GetProperty("Pending").GetInt32() == 0, "Fixture capture was incomplete.");
-        if (fixture.GetProperty("Schema").GetInt32() >= 12)
+        if (requireTerminal && fixture.GetProperty("Schema").GetInt32() >= 12)
             Require(fixture.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" &&
                 fixture.GetProperty("TerminalEffectsSettled").GetBoolean(), "Native terminal effects were not settled.");
         int matched = 0, unsupported = 0;

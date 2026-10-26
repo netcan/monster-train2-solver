@@ -165,6 +165,32 @@ namespace MonsterTrain2Poju.Probe
                 .SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null)
                 .SelectMany(effect => effect.Enchantment!.State.PrimaryTargets.Concat(effect.Enchantment.State.PreviewTargets))
                 .Select(target => target.UnitId).Concat(enchanters).ToHashSet();
+            // A cardless real birth can die entirely between player captures.
+            // Aura dictionaries still hold its managed object after destruction.
+            // Close only missing references, without recapturing known actors or
+            // depending on development room snapshots to have observed a birth.
+            if (referenced.Any(id => !observed.ContainsKey(id)))
+            {
+                var pending = new Queue<int>(referenced.Where(id => !observed.ContainsKey(id)));
+                while (pending.Count > 0)
+                {
+                    int id = pending.Dequeue();
+                    if (observed.ContainsKey(id)) continue;
+                    CharacterState? native = trace.KnownUnits.FirstOrDefault(actor => trace.UnitId(actor) == id);
+                    if (ReferenceEquals(native, null)) continue;
+                    using (new CharacterState.SetAllowDestroyedAccessHelper(native, onlyIfDestroyed: true))
+                    {
+                        observed[id] = (native, native.GetCurrentRoomIndex());
+                        CombatUnit unit = trace.CaptureUnit(native);
+                        if (!live.Contains(id)) retained.Add(new EnchantmentRetainedUnit(unit, native.GetCurrentRoomIndex(), native.PreviewMode));
+                        if (native.IsEnchanter) enchanters.Add(id);
+                        foreach (int target in unit.Triggers.SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null)
+                            .SelectMany(effect => effect.Enchantment!.State.PrimaryTargets.Concat(effect.Enchantment.State.PreviewTargets))
+                            .Select(target => target.UnitId))
+                            if (referenced.Add(target) && !observed.ContainsKey(target)) pending.Enqueue(target);
+                    }
+                }
+            }
             if (RoomDeathEffectProbe.RequiresBirthWorld(trace))
             {
                 referenced.UnionWith(BattleSpawnPointProbe.Capture(trace).Groups.SelectMany(group => group.Occupants));

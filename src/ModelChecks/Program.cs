@@ -2031,6 +2031,13 @@ if (args.Length is 2 or 3 && args[0] == "--titan-curse-preview-only")
     TitanCursePreviewChecks.Native(source.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 3 or 4 && args[0] == "--remote-preview-frame-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 4 ? ModelJson.ReadFixture(args[3]) : null;
+    RemotePreviewFrameChecks.Native(source.RootElement, args[2], replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--troop-birth-addition-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

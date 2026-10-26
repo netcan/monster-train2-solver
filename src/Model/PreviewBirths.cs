@@ -6,6 +6,36 @@ namespace MonsterTrain2Poju.Model
 {
     internal static class PreviewBirthModel
     {
+        internal static CombatContext CompleteRemoteCombatBirths(CombatContext context, int roomIndex)
+        {
+            if (context.Enchantments is not { AutomaticLifecycle: true, Preview: false } world ||
+                context.SpawnPoints is not BattleSpawnPoints points) return context;
+            // A prior floor's temporary boss-kill preview can leave an unowned
+            // Fun Guy in its copied group. The next real combat yields a frame
+            // before damage, completing that pending player object destruction.
+            var pending = world.RetainedUnits.Where(actor => actor.Preview && actor.RoomIndex != roomIndex &&
+                actor.Unit is { Team: CombatTeam.Player, AssetKey: "MonsterFunguy", SpawnerCardId: 0,
+                    Health: > 0, DeathState.IsDestroyed: false } && actor.Unit.Status("horde")?.Stacks == 1 &&
+                actor.Unit.Status("trample")?.Stacks == 2 && actor.Unit.Modifiers?.Upgrades.Count == 3 &&
+                actor.Unit.Modifiers.Upgrades.Count(upgrade => upgrade.AssetKey == "SquadLeader_Upgrade") == 2 &&
+                actor.Unit.Modifiers.Upgrades.Count(upgrade => upgrade.AssetKey == "InfectoryEffect_Upgrade") == 1 &&
+                points.Units.Any(point => point.UnitId == actor.Unit.Id && point.SpawnedInPreview &&
+                    point.Current?.PreviewCopyId != null)).ToArray();
+            if (pending.Length == 0) return context;
+            var ids = pending.Select(actor => actor.Unit.Id).ToHashSet();
+            var retained = world.RetainedUnits.Select(actor => ids.Contains(actor.Unit.Id) ? CancelPlayer(actor) :
+                // Real card-backed players removed on the previous floor share
+                // that wait. Cardless Horde removals keep their raw managed state.
+                actor.Unit.Team == CombatTeam.Player && actor.Unit.AssetKey == "MonsterSporelauncher" && actor.Unit.SpawnerCardId > 0 &&
+                    actor.Unit.DeathState?.IsDestroyed == true && actor.Unit.Health <= 0 &&
+                    actor.Unit.Modifiers?.Upgrades is [{ AssetKey: "InfectoryEffect_Upgrade" }]
+                    ? new EnchantmentRetainedUnit(actor.Unit.AfterDestruction().WithoutRemovedAttacker(new HashSet<int>()),
+                        actor.RoomIndex, actor.Preview) : actor).ToArray();
+            return context.WithSpawnPoints(points.ClearDestroyedPreviewBirths(ids)).WithEnchantments(new EnchantmentWorld(
+                world.Rooms, world.Movement, world.EnemySlotsPerRoom, retained, world.EnchanterIds, world.AllowUpdates,
+                world.Updating, world.Preview, world.TestRng, world.AutomaticLifecycle, world.TemporaryPreviewUnitIds));
+        }
+
         internal static EnchantmentRetainedUnit CancelPlayer(EnchantmentRetainedUnit actor)
         {
             if (!actor.Preview || actor.Unit.Team != CombatTeam.Player || actor.Unit.DeathState is

@@ -1851,6 +1851,8 @@ namespace MonsterTrain2Poju.Model
                 runningRoomCombat = true;
                 ordinaryPyreAttack = source.RoomIndex == 3 && source.Units.Any(unit => unit.IsPyre);
                 stopAfterBossRemoval = true;
+                if (!source.Preview && context != null && BothTeamsPresent())
+                    context = PreviewBirthModel.CompleteRemoteCombatBirths(context, source.RoomIndex);
                 if (updateSelectedRoom && !source.Preview && context?.QueryFrame?.SelectedRoomIndex != null &&
                     units.Any(unit => unit.Alive && unit.InRoom && unit.Source.Team == CombatTeam.Enemy) &&
                     units.Any(unit => unit.Alive && unit.InRoom && unit.Source.Team == CombatTeam.Player && !unit.Source.IsPyre))
