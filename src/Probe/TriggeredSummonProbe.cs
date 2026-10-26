@@ -15,6 +15,7 @@ namespace MonsterTrain2Poju.Probe
         private static readonly Dictionary<string, CharacterData> characters = new Dictionary<string, CharacterData>(StringComparer.Ordinal);
         private static readonly HashSet<string> enemyCharacters = new HashSet<string>(StringComparer.Ordinal);
         private static TriggeredSummonCatalog? catalog;
+        private static FullBattleTrace? catalogTrace;
         internal sealed class Record
         {
             public string Kind { get; set; } = "";
@@ -39,6 +40,23 @@ namespace MonsterTrain2Poju.Probe
         internal static readonly List<Record> Records = new List<Record>();
         private static Record? current;
         internal static bool HasEnemyBirths => DiscoverEnemyBirths();
+        // Player decks need the same authored child definitions as isolated
+        // summon scenarios, including eggs that have not entered play yet.
+        internal static bool HasPlayerBirths
+        {
+            get
+            {
+                var cards = AllGameManagers.Instance?.GetCardManager()?.GetAllCards(new List<CardState>());
+                if (cards == null) return false;
+                bool found = false;
+                foreach (CardState card in cards)
+                foreach (CardEffectData effect in card.GetSpawnCharacterData()?.GetTriggers()
+                    .SelectMany(trigger => trigger.GetEffects()) ?? Enumerable.Empty<CardEffectData>())
+                    if (effect.GetEffectStateName() == "CardEffectSpawnMonster")
+                    { Definition(effect); found = true; }
+                return found;
+            }
+        }
         internal sealed class CacheRecord
         {
             public int Turn { get; set; }
@@ -134,6 +152,8 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static TriggeredSummonCatalog? Catalog()
         {
+            if (!ReferenceEquals(catalogTrace, FullBattleTrace.Active))
+            { catalog = null; catalogTrace = FullBattleTrace.Active; }
             if (catalog != null) return catalog;
             AllGameManagers managers = AllGameManagers.Instance!;
             AllGameData all = managers.GetSaveManager().GetAllGameData();
@@ -142,7 +162,7 @@ namespace MonsterTrain2Poju.Probe
             // The catalog also carries equipment definitions. Native Hydra's
             // OnEquipmentAdded consumes its equipment without summoning a unit;
             // ordinary player captures must retain that catalog as well.
-            if (!Enabled && !sources.Any(card => card.GetSpawnCharacterData()?.GetTriggers()
+            if (!Enabled && !HasPlayerBirths && !sources.Any(card => card.GetSpawnCharacterData()?.GetTriggers()
                 .SelectMany(trigger => trigger.GetEffects())
                 .Any(effect => effect.GetEffectStateName() == "CardEffectRemoveEquipment") == true)) return null;
             // Collect referenced units before building values. Capturing their triggers may
