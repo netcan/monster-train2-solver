@@ -1,6 +1,23 @@
-# Player Mod validation · 2026-10-26
+# Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.165, clean source`e1a8af9093d1f4bba8eb3a0c8d1c08bde53aa351`.
+Current Windows installation:0.2.166, source`9c319202624b903501415aa2a63c499172b57c05`.
+Installed at00:20 with67 protected save/config/other-mod files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.166-Windows-20261027-002023.zip`,SHA256
+`b4558e47f5b013039c76c395d8e85231afbadebbf20fac7e9c98bc614f3c3ca9`.
+The exact installed payload wins sample15 Ring2 in an actual10000ms/two-worker
+source and independent frozen native process:27inputs,22plays/5EndTurns,Pyre80,
+9train phases,full state/forecast/RNG identity and four zero failure counters.
+42normal reward/map events reach Ring3. The completed native pair and payload
+hashes supply installation acceptance. Receipt and previous DLLs are under
+`BepInEx/PojuBackups/RandomCampaign-20261027-002023/installation.json` and`previous/`.
+All three installed DLLs,compiled provenance and zip contents were verified.
+The real game was stopped; its next launch loads0.2.166. No Mac package built.
+This repairs queued attack effects after lethal sweep preview cancellation;
+the25-input native component pair and older related signatures pass. Ring3
+and sample16 exposed separate open counterexamples, recorded in
+[remaining goals](remaining-goals.md); no full default campaign clear is claimed.
+
+Previous Windows installation:0.2.165, clean source`e1a8af9093d1f4bba8eb3a0c8d1c08bde53aa351`.
 Installed at23:29 with67 protected save/config/other-mod files unchanged. Package
 `results/mod-dist/PojuAdvisor-0.2.165-Windows-20261026-232914.zip`,SHA256
 `91228f3bc45a6761f8b98c735105053967025049933034e6c69b7ccd6ae50146`.

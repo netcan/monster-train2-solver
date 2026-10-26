@@ -113,8 +113,12 @@ namespace MonsterTrain2Poju.Model
             RoomCombatResult covenants = RelicSpawnStatusModel.CharacterAdded(train.Rooms[target], unit.Id, 0, true);
             if (!covenants.Supported) return Fail(covenants.UnsupportedReason!);
             if (covenants.Outcome != RoomOutcome.Exchanged) return Fail("Terminal initial Covenant callbacks require separate calibration.");
-            context = covenants.State!.Context!;
-            train = new TrainCombatState(train.Rooms.Select(room => room.RoomIndex == target ? covenants.State! :
+            RoomCombatState? attached = RoomAttachmentUnitModel.ApplyToNewCharacter(covenants.State!, unit.Id, out string? attachmentError);
+            if (attachmentError != null || attached == null)
+                return Fail(attachmentError ?? "Room attachment outer-boss birth synchronization failed.");
+            attached = EnchantmentWorldModel.Sync(attached);
+            context = attached.Context!;
+            train = new TrainCombatState(train.Rooms.Select(room => room.RoomIndex == target ? attached :
                 new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions, context,
                     room.Preview, room.ActiveCompanionBossIds)).ToArray(), movement, train.EnemySlotsPerRoom, context);
             var pending = covenants.PendingCallbacks.ToList();

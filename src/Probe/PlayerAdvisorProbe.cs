@@ -286,7 +286,8 @@ namespace MonsterTrain2Poju.Probe
                 bool branch = string.IsNullOrEmpty(input);
                 if (branch) input = Environment.GetEnvironmentVariable("MT2_PROBE_UNSUPPORTED_BRANCH");
                 if (!Enabled || string.IsNullOrEmpty(input) || cardState != null ||
-                    upgradeData.GetID() != "f93ac9f7-45d2-47a4-a159-a1b326bd047f" ||
+                    upgradeData.GetID() is not ("f93ac9f7-45d2-47a4-a159-a1b326bd047f" or
+                        "35178e4a-0880-440b-a929-de29de6e88f8") ||
                     AllGameManagers.Instance.GetSaveManager().PreviewMode) return;
                 using var document = FixtureDocument.Read(input);
                 BattleTurnState initial = PlannerReplayScenario.ReadWithoutNativeObservation<BattleTurnState>(
@@ -295,7 +296,8 @@ namespace MonsterTrain2Poju.Probe
                 RoomCapacityAttachmentState expected = initial.Spawn.Train.Context!.RoomCapacities!
                     .Single(room => room.RoomIndex == __instance.GetRoomIndex()).Attachments!
                     .Single(attachment => attachment.DataId == upgradeData.GetID());
-                Require(skipTargeting && expected.AttachmentType == (int)attachType && expected.IgnoreBosses == ignoreBosses &&
+                Require(skipTargeting && expected.AssetKey == upgradeData.name &&
+                    expected.AttachmentType == (int)attachType && expected.IgnoreBosses == ignoreBosses &&
                     expected.AffectsMonsters == trainSide.HasFlag(Team.Type.Monsters) &&
                     expected.AffectsHeroes == trainSide.HasFlag(Team.Type.Heroes) &&
                     Guid.TryParse(guid, out Guid fresh) && fresh != Guid.Empty &&
@@ -306,7 +308,8 @@ namespace MonsterTrain2Poju.Probe
                     NativeGuid = guid, ReplayGuid = expected.AttachmentId });
                 guid = expected.AttachmentId;
                 BepInEx.Logging.Logger.CreateLogSource("PlayerAdvisorAcceptance").LogInfo(
-                    "PLAYER-ADVISOR-ATTACHMENT-IDENTITY bound original FightClub identity; native values and RNG remain checked");
+                    "PLAYER-ADVISOR-ATTACHMENT-IDENTITY bound original " + upgradeData.name +
+                    " identity; native values and RNG remain checked");
             }
         }
 

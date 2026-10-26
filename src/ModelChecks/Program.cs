@@ -579,6 +579,13 @@ if (args.Length == 2 && args[0] == "--exact-browse-continuation-only")
     ExactBrowseContinuationChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--outer-boss-attachment-birth-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    OuterBossAttachmentBirthChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--sweep-boss-preview-stop-native-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6307,6 +6314,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-remote-preview-frame-replay-calibration.mt2f"));
     RemotePreviewFrameChecks.Native(source.RootElement, ModelJson.RelatedFixture(path, "player-remote-preview-frame-counterexample-calibration.mt2f"), replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-outer-boss-attachment-birth-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-outer-boss-attachment-birth-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-outer-boss-attachment-birth-replay-calibration.mt2f"));
+    OuterBossAttachmentBirthChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-sweep-boss-preview-stop-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-sweep-boss-preview-stop-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
