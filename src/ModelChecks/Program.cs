@@ -6277,6 +6277,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-remote-preview-frame-replay-calibration.mt2f"));
     RemotePreviewFrameChecks.Native(source.RootElement, ModelJson.RelatedFixture(path, "player-remote-preview-frame-counterexample-calibration.mt2f"), replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-troop-combat-birth-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-troop-combat-birth-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-troop-combat-birth-replay-calibration.mt2f"));
+    TroopCombatBirthChecks.Native(source.RootElement, ModelJson.RelatedFixture(path, "player-troop-combat-birth-counterexample-calibration.mt2f"), replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-troop-retired-source-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-troop-retired-source-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
