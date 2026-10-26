@@ -14,7 +14,10 @@ The focused pair rejects altered HP signatures; native capture also guards
 changed room modifier count, type, amount or deployment flag. Live-unit upgrade
 and removal APIs retain their unsupported guard.
 
-This pair proves birth. Draw, revenge combat and full-battle wins still need
-the resumed natural campaign; this single input is not counted as a win.
+The separate full-battle pair now passes 26 inputs, 21 plays, five EndTurns
+and nine train stages in two unchanged native processes, both wins with zero
+capture/mismatch/unsupported/pending counters. Every successor, draw, forecast
+and RNG agrees; 52 normal reward/map events advance to ring 2. The curated
+sample-16 ring-1 archives retain this broader evidence separately from birth.
 
 Run `scripts/Check-Models.ps1 -Fixture player-sentient-draw-upgrade-calibration.mt2f`.
