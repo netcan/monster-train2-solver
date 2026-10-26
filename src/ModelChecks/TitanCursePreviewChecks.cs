@@ -17,6 +17,15 @@ internal static class TitanCursePreviewChecks
             actual.Spawn.Train.Context!.Cards.Hand.Any(card => card.DataId == cardId) &&
             actual.Spawn.Train.Context.CardRegistry!.All(card => card.Temporary.Upgrades.All(upgrade => upgrade.DataId != upgradeId)),
             "Natural draw must retain TitanCurse without applying its preview-disabled deck upgrade.");
+        var context = actual.Spawn.Train.Context;
+        var curse = context.FindCard(context.Cards.Hand.Single(card => card.DataId == cardId).InstanceId)!;
+        Require(curse.PlayedRoomUnitIds?.Count == 4 && context.FindCard(4)!.PlayedRoomUnitIds?.Count == 0 &&
+            context.Enchantments!.RetainedUnits.Where(actor => actor.Unit.Id is 9 or 10)
+                .Count(actor => actor.Unit.Status("newmoon")?.Stacks == 1 && actor.Unit.MoonPhaseMask == 5) == 2 &&
+            context.Enchantments.RetainedUnits.Where(actor => actor.Unit.Id is 11 or 16)
+                .Count(actor => actor.Unit.Statuses.Count == 0 && actor.Unit.MoonPhaseMask == 4) == 2,
+            "Preview-disabled card still caches its room; failed champion target tests keep their cache, " +
+            "and only earlier unplaced enemy births receive the real moon transition.");
         if (replay.HasValue)
         {
             NativeBranchObservationChecks.Replay(replay.Value, reason);
