@@ -7,8 +7,8 @@ The one-input original native refusal is preserved with its missing forecast.
 
 Release187 admits only the captured Spike owner, ordered scaling/Exhaust/Juice
 traits, pyre-heal then TraitJuice upgrades, multiplier2 and PlayedCost/ThisBattle
-variable-cost Valor scaling4. Temporary upgrades remain uncalibrated for double
-Juice; the existing exact TitanCurse/triple signature retains its own evidence.
+variable-cost Valor scaling4. Release189 separately calibrates the exact
+[TitanCurse cost upgrade](double-juice-curse.md); other temporary payloads remain gaps.
 
 Two independent native observations preserve10 original prefix inputs then cast
 Spike12 on turn2: paid4 energy -> scaled16 -> double32 Valor. All11 inputs/full

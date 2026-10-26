@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--double-juice-curse-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    DoubleJuiceCurseChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 3 or 5 && args[0] == "--fragile-moon-birth-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6532,6 +6539,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-dou
     using var source = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-double-juice-spike-calibration.mt2f"));
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-double-juice-spike-replay-calibration.mt2f"));
     DoubleJuiceSpikeChecks.Native(refusal.RootElement, source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-double-juice-curse-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-double-juice-curse-replay-calibration.mt2f"));
+    DoubleJuiceCurseChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-fragile-moon-birth-calibration.mt2f"))
 {

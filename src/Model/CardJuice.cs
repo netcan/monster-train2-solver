@@ -48,7 +48,7 @@ namespace MonsterTrain2Poju.Model
                     traits[2].RuntimeType == (triple ? TripleTrait : Trait) && traits[2].DeclaredName == traits[2].RuntimeType && Ordinary(traits[2], triple ? 3 : 2) &&
                     card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] { "6497cd22-8c83-4b13-8578-269f4387250d", triple ? TripleUpgrade : Upgrade }) &&
                     KnownJuiceUpgrade(card.Permanent.Upgrades[1], triple) &&
-                    (triple ? card.Temporary.Upgrades.All(KnownTitanCurse) : card.Temporary.Upgrades.Count == 0) &&
+                    card.Temporary.Upgrades.All(KnownTitanCurse) &&
                     card.StatusScalingTraits is { Count: 1 } scaling && scaling[0].Query.Type == "PlayedCost" &&
                     scaling[0].Query.Duration == "ThisBattle" && scaling[0].Query.VariableCost &&
                     scaling[0].StacksPerStat == 4 && !scaling[0].OnlyWhenSourceZero && scaling[0].Filter == 0 &&
