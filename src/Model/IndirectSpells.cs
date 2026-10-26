@@ -21,11 +21,14 @@ namespace MonsterTrain2Poju.Model
             if (context == null || card == null || raw == null || raw.CardType != "Spell" || !echo && !IsTreasure(card))
                 return Unsupported("Indirect Treasure casting requires a captured original spell and trait.");
             bool waxenEcho = echo && EchoWaxenSpikeModel.Known(card, raw.Effects) && EchoWaxenSpikeModel.KnownRelics(context);
-            if (raw.OnCastEffects.Count > 0 || raw.OnUnplayedNegativeEffects.Count > 0 || !waxenEcho &&
+            CardPlayRule? juiceRule = echo && EchoJuiceSpikeModel.Known(card, raw.Effects) && EchoJuiceSpikeModel.KnownRelics(context)
+                ? CardModifierModel.Resolve(raw, card) : null;
+            bool juiceEcho = juiceRule != null && EchoJuiceSpikeModel.KnownOnCast(juiceRule.OnCastEffects);
+            if (!juiceEcho && raw.OnCastEffects.Count > 0 || raw.OnUnplayedNegativeEffects.Count > 0 || !waxenEcho && !juiceEcho &&
                 (context.Relics?.Any(relic => relic.EffectTypes.Count > 0) == true || CardBranchMaskModel.Resolve(card).Traits.Any(trait =>
                     trait is not (TreasureTrait or "CardTraitStrongerMagicPower" or "CardTraitFreeze"))))
                 return Unsupported("Indirect Treasure casting with additional relic or card callbacks requires native calibration.");
-            CardPlayRule rule = CardModifierModel.Resolve(raw, card);
+            CardPlayRule rule = juiceRule ?? CardModifierModel.Resolve(raw, card);
             int roomIndex = selectedRoom ?? context.QueryFrame?.SelectedRoomIndex ?? -1;
             RoomCombatState? room = source.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex);
             if (room == null || !echo && rule.Effects.Any(effect => effect.Target == "DropTargetCharacter"))
@@ -46,6 +49,31 @@ namespace MonsterTrain2Poju.Model
             context = state.Context!;
             BattleStatistics? statistics = context.LiveStatistics?.Increment(cardId, "TimesPlayed", requireTrackedCard: !echo);
             state = CardSpellModel.WithContext(state, context.WithStatistics(statistics).AfterCardEffects());
+            if (juiceEcho && source.Rooms.Any(value => value.Preview))
+            {
+                // PreviewCardRecast fires OnCast too. The native heal writes
+                // preview Pyre HP from live tower HP and ignores the live heal
+                // prohibition. Limit this witness to the top-floor Echo with
+                // an untouched, otherwise empty Pyre room above it.
+                RoomCombatState? tower = state.Rooms.SingleOrDefault(value => value.RoomIndex == 3);
+                CombatUnit? pyre = tower?.Units.SingleOrDefault(value => value.IsPyre);
+                if (roomIndex != 2 || tower?.Units.Count != 1 || pyre == null || pyre.Triggers.Count != 0)
+                    return Unsupported("Triple Juice Echo preview requires its calibrated empty Pyre room above the top floor.");
+                StatisticQueryResult paid = StatisticQueryModel.Evaluate(state.Context!,
+                    new CardStatisticQuery("UnmodifiedPlayedCost", variableCost: true), cardId);
+                if (!paid.Supported) return Unsupported(paid.UnsupportedReason!);
+                RelicResourceResult maximum = RelicResourceModel.GetPyreMaxHealth(paid.Context!);
+                if (!maximum.Supported) return Unsupported(maximum.UnsupportedReason!);
+                state = CardSpellModel.WithContext(state, paid.Context!);
+                var healed = EnchantmentWorldModel.Sync(tower!.WithContext(state.Context!).WithUnits(new[] {
+                    pyre.WithHealth(Math.Min(maximum.Value, unchecked(pyre.Health + paid.Value))) }));
+                state = new TrainCombatState(state.Rooms.Select(value => value.RoomIndex == 3 ? healed : value).ToArray(),
+                    state.Movement, state.EnemySlotsPerRoom, healed.Context);
+            }
+            else if (juiceEcho)
+            {
+                return Unsupported("Triple Juice Echo repeats paid-cost scaling and its Pyre-heal OnCast upgrade.");
+            }
             foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
             {
                 TrainCombatResult played = CardPlayedTriggerModel.Spell(state, team, cached,

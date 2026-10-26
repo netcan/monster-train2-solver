@@ -40,7 +40,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static bool KnownRelics(CombatContext context) => context.Relics?.All(KnownRelic) != false;
-        private static bool KnownRelic(CombatRelicState relic)
+        internal static bool KnownRelic(CombatRelicState relic)
         {
             if (relic.EffectTypes.Count == 0) return true;
             if (relic.IsCovenant != false) return false;
