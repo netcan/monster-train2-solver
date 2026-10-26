@@ -12,4 +12,8 @@
 和独立修复复放：19输入的完整后继／RNG、四个不变父分支及主动复制拒绝
 控制通过。既有JustCause返回牌主动复制19输入原生双进程回归通过。
 
+0.2.127另以独立19输入双进程校准了原版LiquidCourage的主动复制，见
+[LiquidCourage复制](liquid-courage-recast.md)。本检查的主动拒绝控制已收窄为
+改变护盾层数的未校准签名；原始0.2.123拒绝证据和已用完条件门控仍保留。
+
 运行`scripts/Check-Models.ps1 -Fixture player-spent-monster-spell-relic-calibration.mt2f`。
