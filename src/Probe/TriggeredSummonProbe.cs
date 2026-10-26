@@ -16,6 +16,8 @@ namespace MonsterTrain2Poju.Probe
         private static readonly HashSet<string> enemyCharacters = new HashSet<string>(StringComparer.Ordinal);
         private static TriggeredSummonCatalog? catalog;
         private static FullBattleTrace? catalogTrace;
+        private static FullBattleTrace? playerBirthTrace;
+        private static bool playerBirths;
         internal sealed class Record
         {
             public string Kind { get; set; } = "";
@@ -46,6 +48,12 @@ namespace MonsterTrain2Poju.Probe
         {
             get
             {
+                if (!ReferenceEquals(playerBirthTrace, FullBattleTrace.Active))
+                { playerBirths = false; playerBirthTrace = FullBattleTrace.Active; }
+                // The terminal managers can clear the deck before the final
+                // decision snapshot. Definitions discovered during this battle
+                // remain part of its projection through that terminal capture.
+                if (playerBirths) return true;
                 var cards = AllGameManagers.Instance?.GetCardManager()?.GetAllCards(new List<CardState>());
                 if (cards == null) return false;
                 bool found = false;
@@ -54,7 +62,7 @@ namespace MonsterTrain2Poju.Probe
                     .SelectMany(trigger => trigger.GetEffects()) ?? Enumerable.Empty<CardEffectData>())
                     if (effect.GetEffectStateName() == "CardEffectSpawnMonster")
                     { Definition(effect); found = true; }
-                return found;
+                return playerBirths = found;
             }
         }
         internal sealed class CacheRecord

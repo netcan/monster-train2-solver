@@ -38,9 +38,13 @@ internal static class SpentMonsterSpellRelicChecks
         var changed = owner["MonsterSpellTargetingModifiers"]![0]!["Conditions"]![0]!;
         changed["Triggered"] = false;
         changed["DurationTriggerCount"] = 0;
+        // The original LiquidCourage recast has separate native calibration.
+        // An altered shield amount still lies outside that exact signature.
+        active["PlayRules"]!["Cards"]!.AsArray().Single(item => item!["DataId"]!.GetValue<string>() == card.DataId)!
+            ["Effects"]![0]!["Statuses"]![0]!["Stacks"] = 2;
         var uncalibratedCopy = BattleActionModel.PlayCard(active.Deserialize<BattleTurnState>(ModelJson.Options)!, action);
         Require(!uncalibratedCopy.Supported && uncalibratedCopy.Reason == Reason,
-            "An active, uncalibrated LiquidCourage recast was accepted.");
+            "An active, altered LiquidCourage recast was accepted.");
         string parent = JsonSerializer.Serialize(before, ModelJson.Options);
         string native = NativeBranchObservationChecks.Key(actual);
         Parallel.For(0, 4, _ =>
