@@ -197,6 +197,8 @@ namespace MonsterTrain2Poju.Model
                 if (context.LifeLinks != null && previewPyre == null || preview.State.Units.Concat(preview.RetainedUnits)
                     .Any(unit => unit.Health <= 0 && (unit.EndsBattleOnDeath || unit.IsPyre))) break;
             }
+            previewContext = PreviewBirthModel.ForgetUnobservedPlayers(source, previewContext,
+                firstPreviewId, firstPreviewCardId, out int[] unobservedPreviewIds);
             context = context.WithStatistics(context.Statistics!.RetainPreviewQueries(previewContext.Statistics!));
             if (source.Context!.LifeLinks != null) context = context.WithLifeLinks(source.Context.LifeLinks);
             if (originalPoints?.NextPreviewCopyId.HasValue == true)
@@ -208,7 +210,7 @@ namespace MonsterTrain2Poju.Model
             {
                 EnchantmentWorld observed = previewContext.Enchantments!;
                 var actors = observed.Rooms.SelectMany(room => room.Units).Concat(observed.RetainedUnits.Select(actor => actor.Unit)).ToDictionary(unit => unit.Id);
-                int[] removed = actors.Keys.Where(id => id >= firstPreviewId).ToArray();
+                int[] removed = actors.Keys.Where(id => id >= firstPreviewId).Concat(unobservedPreviewIds).Distinct().ToArray();
                 if (previewContext.NextUnitId is int nextId) context = context.WithNextUnitId(nextId);
                 if (context.CardRegistry != null && previewContext.CardRegistry != null)
                     context = context.WithCardRegistry(context.CardRegistry.Concat(

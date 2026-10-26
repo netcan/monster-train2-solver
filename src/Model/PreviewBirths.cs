@@ -6,6 +6,45 @@ namespace MonsterTrain2Poju.Model
 {
     internal static class PreviewBirthModel
     {
+        internal static CombatContext ForgetUnobservedPlayers(TrainCombatState source, CombatContext preview,
+            int firstUnitId, int firstCardId, out int[] forgotten)
+        {
+            forgotten = Array.Empty<int>();
+            CombatContext context = source.Context!;
+            EnchantmentWorld? world = preview.Enchantments;
+            // Temporary player births without durable aura references are gone
+            // before native decision capture assigns their synthetic identities.
+            // Preserve observed births and all enemy births. Check the allocator
+            // first so ordinary preview refreshes do not scan units or cards.
+            if (context.Enchantments?.AutomaticLifecycle != true || preview.NextUnitId is not int nextId ||
+                nextId <= firstUnitId || world == null || world.EnchanterIds.Count != 0 || context.SummonCatalog == null)
+                return preview;
+            CardInstanceState[] newCards = preview.CardRegistry?.Where(card => card.InstanceId >= firstCardId).ToArray()
+                ?? Array.Empty<CardInstanceState>();
+            if (newCards.Length == 0 || nextId - firstUnitId != newCards.Length) return preview;
+            if (world.Rooms.SelectMany(room => room.Units).Concat(world.RetainedUnits.Select(actor => actor.Unit))
+                .Any(unit => unit.Id >= firstUnitId && unit.Team != CombatTeam.Player ||
+                    unit.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Enchantment != null))) return preview;
+            var spawnerIds = context.SummonCatalog.Units.Where(unit => unit.Unit.Team == CombatTeam.Player && unit.Fallback != null)
+                .Select(unit => unit.Fallback!.DataId).ToHashSet();
+            foreach (CombatUnit actor in source.Rooms.SelectMany(room => room.Units).Where(unit =>
+                unit.Team == CombatTeam.Player && unit.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Summon != null)))
+                if (context.FindCard(actor.SpawnerCardId) is CardInstanceState spawner) spawnerIds.Add(spawner.DataId);
+            if (newCards.Any(card => !spawnerIds.Contains(card.DataId))) return preview;
+            forgotten = Enumerable.Range(firstUnitId, nextId - firstUnitId).ToArray();
+            preview = preview.WithNextUnitId(firstUnitId)
+                .WithCardRegistry(preview.CardRegistry!.Where(card => card.InstanceId < firstCardId).ToArray())
+                .WithNextCardId(firstCardId).WithEnchantments(new EnchantmentWorld(world.Rooms.Select(room =>
+                    new RoomCombatState(room.RoomIndex, room.Deployment, room.Units.Where(unit => unit.Id < firstUnitId).ToArray(),
+                        room.ExternalInteractions, null, room.Preview, room.ActiveCompanionBossIds)).ToArray(), world.Movement,
+                    world.EnemySlotsPerRoom, world.RetainedUnits.Where(actor => actor.Unit.Id < firstUnitId).ToArray(),
+                    world.EnchanterIds, world.AllowUpdates, world.Updating, world.Preview, world.TestRng,
+                    world.AutomaticLifecycle, world.TemporaryPreviewUnitIds));
+            if (preview.SpawnPoints is BattleSpawnPoints points)
+                preview = preview.WithSpawnPoints(points.WithState(points.Groups, points.Units.Where(unit => unit.UnitId < firstUnitId).ToArray()));
+            return preview;
+        }
+
         internal static CombatUnit InitialPrimary(CardPlayRule definition, CardInstanceState? card, int unitId,
             IReadOnlyList<string> disabledAbilities, CombatStatus abilityMarker)
         {

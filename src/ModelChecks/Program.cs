@@ -251,6 +251,13 @@ if (args.Length == 3 && args[0] == "--post-battle-reward-combat-pair-only")
     PostBattleRewardCombatChecks.Pair(source.RootElement, replay.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--unobserved-preview-birth-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) UnobservedPreviewBirthChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); UnobservedPreviewBirthChecks.Native(source.RootElement, replay.RootElement); }
+    return;
+}
 if (args.Length is 3 or 4 && args[0] == "--player-egg-catalog-only")
 {
     using var missing = ModelJson.ReadFixture(args[1]);
