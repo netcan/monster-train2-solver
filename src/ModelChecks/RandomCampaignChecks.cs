@@ -9,9 +9,10 @@ internal static class RandomCampaignChecks
     {
         using var source = ModelJson.ReadFixture(path);
         if (path.EndsWith("full-battle-random-campaign-13-ring3-refined-search.mt2f", StringComparison.Ordinal) ||
-            path.EndsWith("full-battle-random-campaign-13-ring5-refined-search.mt2f", StringComparison.Ordinal))
+            path.EndsWith("full-battle-random-campaign-13-ring5-refined-search.mt2f", StringComparison.Ordinal) ||
+            path.EndsWith("full-battle-random-campaign-13-ring5-release122-refined-search.mt2f", StringComparison.Ordinal))
         {
-            bool ring5 = path.EndsWith("-ring5-refined-search.mt2f", StringComparison.Ordinal);
+            bool ring5 = path.Contains("-ring5-", StringComparison.Ordinal);
             int expectedPyre = ring5 ? 56 : 6;
             using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
             RefinedPair(source.RootElement, replay.RootElement, 1184964217, 0, ring5 ? 4 : 2, "Banished", "Wurmkin", 34);
