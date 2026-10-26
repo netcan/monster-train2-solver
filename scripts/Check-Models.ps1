@@ -249,6 +249,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-outer-boss-moon-replay-calibration.mt2f',
     'outer-boss-moon-creation-calibration.mt2f',
     'outer-boss-moon-creation-replay-calibration.mt2f',
+    'player-moon-null-boss-relic-calibration.mt2f',
+    'player-moon-null-boss-relic-replay-calibration.mt2f',
     'player-titan-curse-preview-calibration.mt2f',
     'player-titan-curse-preview-replay-calibration.mt2f',
     'player-room-slay-status-calibration.mt2f',
@@ -1907,6 +1909,7 @@ $branchPairGates = @{
     'player-spent-monster-spell-relic-calibration.mt2f' = '--spent-monster-spell-relic-only'
     'player-unobserved-preview-birth-calibration.mt2f' = '--unobserved-preview-birth-only'
     'player-room-death-preview-identity-calibration.mt2f' = '--room-death-preview-identity-only'
+    'player-moon-null-boss-relic-calibration.mt2f' = '--moon-null-boss-relic-only'
     'player-titan-curse-preview-calibration.mt2f' = '--titan-curse-preview-only'
     'player-room-slay-status-calibration.mt2f' = '--room-slay-status-only'
     'player-room-death-retained-cleanup-calibration.mt2f' = '--room-death-retained-cleanup-only'
