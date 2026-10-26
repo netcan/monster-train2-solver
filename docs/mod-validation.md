@@ -1,6 +1,30 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.151, clean source`6e98e952facd84d49e5c1bd11b8e4ebc39c907ca`.
+Current Windows installation:0.2.165, clean source`e1a8af9093d1f4bba8eb3a0c8d1c08bde53aa351`.
+Installed at23:29 with67 protected save/config/other-mod files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.165-Windows-20261026-232914.zip`,SHA256
+`91228f3bc45a6761f8b98c735105053967025049933034e6c69b7ccd6ae50146`.
+The exact installed payload wins the fourteenth sample's fifth ring in an actual
+10000ms/two-worker source and an independent frozen native process:41inputs,
+32plays/9EndTurns,Pyre71,17train phases,identical full states/forecasts/RNG and
+all four failure counters zero.39normal reward/map events reach Ring6. Curated
+source/replay hashes are`5759ff025e710cacff2f903cbae3d4198a223110214185a05c39319c928d59b1`
+and`f6784caf75fd80cda2257790e9757af33e948cdcc2e33a070bbc1bf7e437ba52`.
+The installation reuses these unchanged accepted archives and payload hashes;
+it does not repeat their completed battle/pair checks. Receipt and previous DLLs:
+`BepInEx/PojuBackups/RandomCampaign-20261026-232914/installation.json` and`previous/`.
+All three installed hashes,compiled provenance and package hash were rechecked.
+The real game was stopped; its next launch loads0.2.165. No Mac package built.
+
+This release includes the troop/enchantment write-world and dead-cache preview
+birth repairs.24/29-input independent native pairs,older troop death/movement
+controls and1958curated archive hashes/registrations pass. The improved Ring6
+55-input native loss also matches92room/22train phases and380complete contexts,
+but leaves395/370bossHP; it is not a win or campaign clear. Offline retained
+card-instance targeting is separately verified and does not change live advice
+execution. Current strategy gaps remain in[remaining goals](remaining-goals.md).
+
+Previous Windows installation:0.2.151, clean source`6e98e952facd84d49e5c1bd11b8e4ebc39c907ca`.
 Installed at19:21 with67 protected files unchanged. Package
 `results/mod-dist/PojuAdvisor-0.2.151-Windows-20261026-192121.zip`,SHA256
 `7dfba647258f5c7d1546b80b6d708e5fea4ab6c4525d76eb5a50c4ba72e0689a`.
