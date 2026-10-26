@@ -204,6 +204,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-egg-catalog-replay-calibration.mt2f',
     'player-unobserved-preview-birth-calibration.mt2f',
     'player-unobserved-preview-birth-replay-calibration.mt2f',
+    'player-zero-energy-x-policy-calibration.mt2f',
+    'player-zero-energy-x-policy-replay-calibration.mt2f',
     'player-unowned-relic-copy-calibration.mt2f',
     'player-unowned-relic-copy-replay-calibration.mt2f',
     'player-revived-sacrifice-attribution-calibration.mt2f',
@@ -1781,6 +1783,7 @@ $branchPairGates = @{
     'player-wurmkin-spike-copy-calibration.mt2f' = '--wurmkin-spike-copy-only'
     'player-spent-monster-spell-relic-calibration.mt2f' = '--spent-monster-spell-relic-only'
     'player-unobserved-preview-birth-calibration.mt2f' = '--unobserved-preview-birth-only'
+    'player-zero-energy-x-policy-calibration.mt2f' = '--zero-energy-x-policy-only'
     'player-teleport-adjacent-order-calibration.mt2f' = '--teleport-adjacent-order-only'
     'player-unowned-relic-copy-calibration.mt2f' = '--unowned-relic-copy-pair-only'
     'player-revived-sacrifice-attribution-calibration.mt2f' = '--revived-sacrifice-attribution-pair-only'
