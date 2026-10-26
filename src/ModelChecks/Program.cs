@@ -258,6 +258,13 @@ if (args.Length is 2 or 3 && args[0] == "--intrinsic-infusion-only")
     else { using var replay = ModelJson.ReadFixture(args[2]); IntrinsicInfusionChecks.Native(source.RootElement, replay.RootElement); }
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--challenge-recast-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) ChallengeRecastChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); ChallengeRecastChecks.Native(source.RootElement, replay.RootElement); }
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--corrupt-bloodsuit-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

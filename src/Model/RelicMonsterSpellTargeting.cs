@@ -100,6 +100,11 @@ namespace MonsterTrain2Poju.Model
                 shield.Statuses.Count == 1 && shield.Statuses[0].Id == "damage shield" && shield.Statuses[0].Stacks == 1 &&
                 playedRule.Effects[1] is { Type: "AddStatus", Target: "LastTargetedCharacters", AllowEnemy: true, AllowPlayer: true, Range: null } courage &&
                 courage.Statuses.Count == 1 && courage.Statuses[0].Id == "valor" && courage.Statuses[0].Stacks == 4;
+            bool challenge = playedRule.DataId == "7cb76384-d8e7-4b4e-a3eb-f9c5b844c941" && playedRule.AssetKey == "Challenge" &&
+                playedRule.OnCastEffects.Count == 0 && playedRule.Effects.Count == 2 &&
+                playedRule.Effects[0] is { Type: "FloorRearrange", Target: "DropTargetCharacter", Value: 0, AllowEnemy: true, AllowPlayer: true, Range: null } &&
+                playedRule.Effects[1] is { Type: "AddStatus", Target: "LastTargetedCharacters", AllowEnemy: true, AllowPlayer: true, Range: null } weakness &&
+                weakness.Statuses.Count == 1 && weakness.Statuses[0].Id == "melee weakness" && weakness.Statuses[0].Stacks == 1;
             bool fracture = playedRule.DataId == "b197fdec-a77d-49f5-bc05-6233b7ce01c7" && playedRule.AssetKey == "StarterFracture" &&
                 playedRule.OnCastEffects.Count == 0 && playedRule.Effects.Count == 1 &&
                 playedRule.Effects[0] is { Type: "AddStatus", Target: "DropTargetCharacter", AllowEnemy: true, AllowPlayer: true, Range: null } poison &&
@@ -113,19 +118,20 @@ namespace MonsterTrain2Poju.Model
                     .All(stat => health.Upgrade.Stats.Value(stat) == (stat == "Health" ? 15 : 0)) &&
                 health.Upgrade is { Statuses.Count: 0, UnhealedHealth: 0, DamageBuff: 0, AbilityUpgrade: null, ExternalInteractions.Count: 0 } &&
                 health.Upgrade.TriggerUpgrades?.Count is not > 0;
-            if (!justCause && !liquidCourage && !fracture && !infusion && (hasPositionChange || playedRule.Effects.Count != 1 || playedRule.OnCastEffects.Count != 0 ||
+            if (!justCause && !liquidCourage && !fracture && !infusion && !challenge && (hasPositionChange || playedRule.Effects.Count != 1 || playedRule.OnCastEffects.Count != 0 ||
                 playedRule.Effects[0].Type != "Damage" || playedRule.Effects[0].Target != "DropTargetCharacter" ||
                 playedRule.Effects[0].AllowEnemy || !playedRule.Effects[0].AllowPlayer || playedRule.Effects[0].Range != null))
                 return Unsupported(source, "Only a single fixed, Monster-targeted DropTarget damage effect without OnCast is modeled.");
 
             // GenerateCardStateCopy replaces position-changing effects with a
             // Monster-targeted CardEffectNULL, retaining LastTargetedCharacters
-            // for the following Valor effect without rearranging teammates.
-            IReadOnlyList<CardActionEffect> copiedEffects = justCause ?
+            // for the following status effect without rearranging teammates.
+            IReadOnlyList<CardActionEffect> copiedEffects = justCause || challenge ?
                 [new CardActionEffect("Null", "DropTargetCharacter", 0, false, true, []), playedRule.Effects[1]] : playedRule.Effects;
 
             CardInstanceState? card = context.FindCard(playedCardId);
             bool infusionCard = infusion && card != null && CardCorruptRestrictedModel.IntrinsicConsumedInfusion(card);
+            bool challengeCard = challenge && card != null && ConsumedCorruptChallenge(card);
             bool consumeJustCause = justCause && card?.Permanent.Upgrades.Count == 3 &&
                 card.Permanent.Upgrades.Count(upgrade => upgrade.DataId == "f43e7cdb-fa8d-4760-88bf-c6f34f72d918") == 1 &&
                 card.Permanent.Upgrades.Count(upgrade => upgrade.DataId == "fb416958-813a-435b-b7ea-e428127ece20") == 1;
@@ -142,8 +148,8 @@ namespace MonsterTrain2Poju.Model
                             stat == "Cost" ? -2 : stat == "XCost" ? 2 : 0 : 0)) &&
                     upgrade is { Statuses.Count: 0, UnhealedHealth: 0, DamageBuff: 0, AbilityUpgrade: null, ExternalInteractions.Count: 0 } &&
                     upgrade.TriggerUpgrades?.Count is not > 0);
-            if (card == null || card.MaskDescriptor == null || fracture && !corruptRecast || infusion && !infusionCard ||
-                !corruptRecast && !infusionCard && card.Permanent.Upgrades.Count != 0 || card.Temporary.Upgrades.Count != 0)
+            if (card == null || card.MaskDescriptor == null || fracture && !corruptRecast || infusion && !infusionCard || challenge && !challengeCard ||
+                !corruptRecast && !infusionCard && !challengeCard && card.Permanent.Upgrades.Count != 0 || card.Temporary.Upgrades.Count != 0)
                 return Unsupported(source, "Monster spell replication requires an owned, unupgraded card with captured mask metadata.");
             try
             {
@@ -155,7 +161,10 @@ namespace MonsterTrain2Poju.Model
                 bool recastConsume = liquidCourage && combined?.Count == 1 && combined[0].RuntimeType == "CardTraitExhaustState";
                 bool recastInfusion = infusionCard && combined?.Select(trait => trait.RuntimeType).SequenceEqual(new[] {
                     CardCorruptRestrictedModel.Trait, CardCorruptStateModel.Trait, "CardTraitExhaustState", "CardTraitIntrinsicState" }) == true;
-                if (combined?.Count > 0 && !recastConsume && !recastInfusion && !(corruptRecast && combined.Count == card!.Permanent.Upgrades.Count &&
+                bool recastChallenge = challengeCard && combined?.Select(trait => trait.RuntimeType).SequenceEqual(new[] {
+                    CardCorruptStateModel.Trait, "CardTraitExhaustState" }) == true && combined.All(trait =>
+                        trait.DeclaredName == trait.RuntimeType && trait.ParamInt == 0 && trait.DefinitionParamInt == 0 && !trait.TemporaryReplacement);
+                if (combined?.Count > 0 && !recastConsume && !recastInfusion && !recastChallenge && !(corruptRecast && combined.Count == card!.Permanent.Upgrades.Count &&
                     combined.Count(trait => trait.RuntimeType == "CardTraitCorruptState") == 1 &&
                     combined.Count(trait => trait.RuntimeType == "CardTraitRetain") == combined.Count - 1 - (consumeJustCause ? 1 : 0) &&
                     combined.Count(trait => trait.RuntimeType == "CardTraitExhaustState") == (consumeJustCause ? 1 : 0)))
@@ -184,8 +193,8 @@ namespace MonsterTrain2Poju.Model
                 if (!test.CanPlay) continue;
                 source = CardSpellModel.WithContext(source, source.Context!.WithBattleRng(test.BattleRngAfterTests!.Value));
                 TrainSpellResult applied = CardSpellModel.ApplyForCardPlay(source, roomIndex, copiedEffects,
-                    targetId, justCause || liquidCourage || fracture || infusion ? 0 : playedCardId, definitions, source.Context!.OtherPiles, priorTargets: [targetId],
-                    resolveLiveEffects: !justCause && !liquidCourage && !fracture && !infusion);
+                    targetId, justCause || liquidCourage || fracture || infusion || challenge ? 0 : playedCardId, definitions, source.Context!.OtherPiles, priorTargets: [targetId],
+                    resolveLiveEffects: !justCause && !liquidCourage && !fracture && !infusion && !challenge);
                 if (!applied.Supported) return Unsupported(source, applied.UnsupportedReason!);
                 source = applied.State!;
                 outcome = applied.Outcome;
@@ -202,6 +211,18 @@ namespace MonsterTrain2Poju.Model
             }
             return new RelicMonsterSpellTargetingResult(source, outcome, copied);
         }
+
+        internal static bool ConsumedCorruptChallenge(CardInstanceState card) =>
+            card.DataId == "7cb76384-d8e7-4b4e-a3eb-f9c5b844c941" && card.MaskDescriptor != null &&
+            card.Permanent.Upgrades.Count == 2 && card.Temporary.Upgrades.Count == 0 &&
+            card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] {
+                "bdb7a38c-18de-4461-beb8-c27fdbdc5f62", "fb416958-813a-435b-b7ea-e428127ece20" }) &&
+            card.Permanent.Upgrades.Select(upgrade => upgrade.AssetKey).SequenceEqual(new[] { "TraitCorruptwIcon", "ReduceCostAddConsume" }) &&
+            card.Permanent.Upgrades.Select((upgrade, index) =>
+                new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }
+                    .All(stat => upgrade.Stats.Value(stat) == (index == 1 ? stat == "Cost" ? -2 : stat == "XCost" ? 2 : 0 : 0)) &&
+                upgrade is { Statuses.Count: 0, UnhealedHealth: 0, DamageBuff: 0, AbilityUpgrade: null, ExternalInteractions.Count: 0 } &&
+                upgrade.TriggerUpgrades?.Count is not > 0).All(value => value);
 
         private static RelicMonsterSpellTargetingResult Unsupported(TrainCombatState source, string error) =>
             new RelicMonsterSpellTargetingResult(source, unsupportedReason: error);
