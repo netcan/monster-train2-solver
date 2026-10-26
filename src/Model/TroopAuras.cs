@@ -115,9 +115,12 @@ namespace MonsterTrain2Poju.Model
             CombatUnit owner, TroopAuraState rule, IReadOnlyList<int> targets)
         {
             // Native Squad Leader applies its primary-cache-missing upgrade in
-            // preview too. Only these observed births with disjoint pure status
-            // enchanters are calibrated; departures stay guarded.
-            if (source.Preview != room.Preview || rule.Targets.Count != 0 || targets.Count != 1 ||
+            // preview too. Dead cached actors do not cause a removal write and
+            // stay in the primary cache during preview; a new birth still gets
+            // its uncached upgrade. Living departures stay guarded.
+            if (source.Preview != room.Preview || targets.Count != 1 || rule.Targets.Contains(targets[0]) ||
+                rule.Targets.Any(id => !source.RetainedUnits.Any(actor => actor.Unit.Id == id &&
+                    actor.Unit.Health <= 0 && actor.Unit.DeathState?.IsDestroyed == true)) ||
                 owner.AssetKey != "MonsterSquadLeader" || rule.Subtype != "SubtypesData_FunGuy" ||
                 rule.Upgrade.DataId != "8538457b-b33a-4a3d-9596-5929a2de5936" ||
                 rule.Upgrade.AssetKey != "SquadLeader_Upgrade" || rule.Upgrade.Stats.Damage != 2 ||

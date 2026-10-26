@@ -2038,6 +2038,13 @@ if (args.Length is 3 or 4 && args[0] == "--remote-preview-frame-only")
     RemotePreviewFrameChecks.Native(source.RootElement, args[2], replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--troop-dead-cache-birth-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    TroopDeadCacheBirthChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--troop-write-world-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
