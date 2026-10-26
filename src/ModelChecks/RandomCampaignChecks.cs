@@ -8,17 +8,32 @@ internal static class RandomCampaignChecks
     internal static void Curated(string path)
     {
         using var source = ModelJson.ReadFixture(path);
-        if (path.EndsWith("full-battle-random-campaign-12-ring6-refined-search.mt2f", StringComparison.Ordinal) ||
-            path.EndsWith("full-battle-random-campaign-12-ring7-refined-search.mt2f", StringComparison.Ordinal))
+        if (path.EndsWith("full-battle-random-campaign-13-ring3-refined-search.mt2f", StringComparison.Ordinal))
         {
-            bool ring7 = path.EndsWith("-ring7-refined-search.mt2f", StringComparison.Ordinal);
             using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
-            RefinedPair(source.RootElement, replay.RootElement, 861773648, 0, ring7 ? 6 : 5, "Hellhorned", "LazarusLeague", ring7 ? 81 : 82);
+            RefinedPair(source.RootElement, replay.RootElement, 1184964217, 0, 2, "Banished", "Wurmkin", 34);
             foreach (var fixture in new[] { source.RootElement, replay.RootElement })
             {
                 var final = fixture.GetProperty("RollingDecisions").EnumerateArray().Last().GetProperty("Actual").Deserialize<BattleTurnState>()!;
-                Require(final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == (ring7 ? 110 : 90),
-                    "Changed twelfth sample winning refinement: expected Pyre" + (ring7 ? 110 : 90));
+                Require(final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 6,
+                    "Changed thirteenth sample winning refinement: expected Pyre6.");
+            }
+            return;
+        }
+        if (path.EndsWith("full-battle-random-campaign-12-ring6-refined-search.mt2f", StringComparison.Ordinal) ||
+            path.EndsWith("full-battle-random-campaign-12-ring7-refined-search.mt2f", StringComparison.Ordinal) ||
+            path.EndsWith("full-battle-random-campaign-12-ring8-refined-search.mt2f", StringComparison.Ordinal))
+        {
+            bool ring7 = path.EndsWith("-ring7-refined-search.mt2f", StringComparison.Ordinal);
+            bool ring8 = path.EndsWith("-ring8-refined-search.mt2f", StringComparison.Ordinal);
+            int expectedPyre = ring8 ? 79 : ring7 ? 110 : 90;
+            using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
+            RefinedPair(source.RootElement, replay.RootElement, 861773648, 0, ring8 ? 7 : ring7 ? 6 : 5, "Hellhorned", "LazarusLeague", ring8 ? 85 : ring7 ? 81 : 82);
+            foreach (var fixture in new[] { source.RootElement, replay.RootElement })
+            {
+                var final = fixture.GetProperty("RollingDecisions").EnumerateArray().Last().GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                Require(final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == expectedPyre,
+                    "Changed twelfth sample winning refinement: expected Pyre" + expectedPyre);
             }
             return;
         }
