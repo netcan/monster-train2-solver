@@ -23,3 +23,16 @@ The first repaired native execution completes 26 inputs and wins, with all
 four error counters zero. A clean committed build and independent native
 replay remain necessary for release. The separate automatic-view continuation
 fallback still needs work to remove a post-EndTurn search.
+
+0.2.171 also handles an automatic view missing from the recorded history when
+matching the next input prefix. It compares full gameplay state and modeled
+selection effects, then independently replays the complete remaining route
+from the actual checkpoint. The 26-input native source supplies a verified
+22-input winning suffix after the first EndTurn: one search, preserved late
+view/generation, and explicit energy/RNG divergence rejection. Pure floor
+changes retain their normal selection-reuse path. The older floor-session
+check now generates actual switches from the fixture's initial room and uses
+the current publication for its same-root settlement control.
+
+This offline concurrency evidence is separate from clean-build native release
+acceptance, which is still required.

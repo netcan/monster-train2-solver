@@ -87,6 +87,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-15-ring4-release167-budget10000-replay.mt2f',
     'full-battle-random-campaign-15-ring5-release167-budget10000-search.mt2f',
     'full-battle-random-campaign-15-ring5-release167-budget10000-replay.mt2f',
+    'full-battle-random-campaign-15-ring6-release167-budget10000-search.mt2f',
+    'full-battle-random-campaign-15-ring6-release167-budget10000-replay.mt2f',
+    'full-battle-random-campaign-15-ring7-release167-budget10000-loss.mt2f',
     'full-battle-random-campaign-16-ring1-release169-budget10000-search.mt2f',
     'full-battle-random-campaign-16-ring1-release169-budget10000-replay.mt2f',
     'player-terminal-coroutine-planes-counterexample-calibration.mt2f',
@@ -572,6 +575,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-outer-boss-attachment-birth-calibration.mt2f',
     'player-unsupported-card-ranking-calibration.mt2f',
     'player-prepared-selection-publication-calibration.mt2f',
+    'full-battle-player-automatic-view-calibration.mt2f',
     'player-sentient-draw-upgrade-calibration.mt2f',
     'player-sentient-draw-upgrade-replay-calibration.mt2f',
     'player-outer-boss-attachment-birth-replay-calibration.mt2f',
@@ -2074,6 +2078,17 @@ if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
     } else { '--prepared-selection-publication-only' }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') $mode $fixtures[0]
     if ($LASTEXITCODE -ne 0) { throw 'Unsupported card ranking check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
+    $selectedFixtureNames[0] -eq 'full-battle-player-automatic-view-calibration.mt2f') {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Automatic view checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --automatic-view-continuation-only `
+        (Get-TestFixturePath 'player-prepared-selection-publication-calibration.mt2f') $fixtures[0]
+    if ($LASTEXITCODE -ne 0) { throw 'Automatic view continuation check failed.' }
     return
 }
 $branchPairGates = @{

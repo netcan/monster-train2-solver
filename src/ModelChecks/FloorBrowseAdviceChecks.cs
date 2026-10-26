@@ -313,7 +313,10 @@ internal static class FloorBrowseAdviceChecks
             var watch = Stopwatch.StartNew();
             BattleTurnState selected = root;
             var calibrated = new Dictionary<int, (BattleTurnState Root, BattleTurnState Final)>();
-            foreach (int floor in new[] { 1, 2, 0, 2, 1, 0 })
+            // Every request must change floor, including fixtures that begin
+            // on the middle floor. A no-op retains its original publication.
+            foreach (int floor in new[] { (root.SelectedRoom + 1) % 3, (root.SelectedRoom + 2) % 3, root.SelectedRoom,
+                (root.SelectedRoom + 2) % 3, (root.SelectedRoom + 1) % 3, root.SelectedRoom })
             {
                 selected = Select(selected, floor);
                 session.Observe(session.PrepareObservationAsync(selected).GetAwaiter().GetResult()); Pump(session);
@@ -333,7 +336,8 @@ internal static class FloorBrowseAdviceChecks
                 BattleAdviceSession.Verify(prior.Root, session.Current.Plan);
             }
             Console.WriteLine($"FLOOR-BROWSE ready: 6 switches, searches=1, rebaseTotalMs={watch.Elapsed.TotalMilliseconds:F1}.");
-            session.InvalidateForInput(); session.Observe(root, original); Pump(session);
+            BattleTurnState settled = session.Current!.Root;
+            session.InvalidateForInput(); session.Observe(settled, Key(settled)); Pump(session);
             Require(calls == 1 && session.Generation > generation && session.Current!.ReusedContinuation,
                 "A settlement boundary with the same full root discarded verified advice.");
             session.Invalidate(); session.Observe(root, original); Pump(session);

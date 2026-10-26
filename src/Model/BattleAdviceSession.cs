@@ -254,7 +254,7 @@ namespace MonsterTrain2Poju.Model
                             "Captured state differs from the retained continuation.");
                     bool browsed = observations.Any(item => item.Root == null);
                     VerifiedAdviceContinuation? matched = retained?.MatchObserved(root, observations, exactFinalState: browsed);
-                    if (matched == null && candidate != null && browsed)
+                    if (matched == null && candidate != null && !SelectionAdviceReuse.SameBattle(candidate.Root, root))
                         matched = SelectionAdviceReuse.MatchAfterObservations(candidate, observations, root, token);
                     bool reusedSelection = matched == null && candidate != null && SelectionAdviceReuse.TryRebase(candidate, root,
                         retainPlans, token, out plan, out proof);

@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--automatic-view-continuation-only")
+{
+    using var mismatch = ModelJson.ReadFixture(args[1]);
+    using var battle = ModelJson.ReadFixture(args[2]);
+    AutomaticViewContinuationChecks.Native(mismatch.RootElement, battle.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--prepared-selection-publication-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6340,6 +6347,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-sentient-draw-upgrade-replay-calibration.mt2f"));
     SentientDrawUpgradeChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-automatic-view-calibration.mt2f"))
+{
+    using var mismatch = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-prepared-selection-publication-calibration.mt2f"));
+    using var battle = ModelJson.ReadFixture(path);
+    AutomaticViewContinuationChecks.Native(mismatch.RootElement, battle.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-prepared-selection-publication-calibration.mt2f"))
 {

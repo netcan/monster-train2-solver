@@ -101,6 +101,13 @@ namespace MonsterTrain2Poju.Model
                 {
                     token.ThrowIfCancellationRequested();
                     if (keys.Key(projected) == actualKey) return true;
+                    // Automatic turn focus can settle while capture preparation
+                    // is pending, before a view callback can be recorded. Match
+                    // its full gameplay state and modeled selection effects;
+                    // the complete remaining line is replayed from the native
+                    // checkpoint before it can be published.
+                    if (projected.SelectedRoom != checkpoint.SelectedRoom && SameBattle(projected, checkpoint))
+                        return true;
                     BattleSearchStep step = advice.Plan.Steps[index++];
                     if (step.IsEndTurn)
                     {
