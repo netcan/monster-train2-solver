@@ -1,6 +1,14 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.150, clean source`2ce22af82c3aeded04bf88d7c44cee53a273f584`.
+Current Windows installation:0.2.151, clean source`6e98e952facd84d49e5c1bd11b8e4ebc39c907ca`.
+Installed at19:21 with67 protected files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.151-Windows-20261026-192121.zip`,SHA256
+`7dfba647258f5c7d1546b80b6d708e5fea4ab6c4525d76eb5a50c4ba72e0689a`.
+The fifth-ring actual10000ms/two-worker40-input independent native pair below
+supplies release acceptance,Pyre73. Ring6 and campaign completion remain pending.
+No Mac package built.
+
+Previous Windows installation:0.2.150, clean source`2ce22af82c3aeded04bf88d7c44cee53a273f584`.
 Installed at19:00 with67 protected files unchanged. Package
 `results/mod-dist/PojuAdvisor-0.2.150-Windows-20261026-190001.zip`,SHA256
 `2302fb1d19f53d5e30a42e06cd40a3544dce7a210e537fc7979b460c58f8c9bd`.

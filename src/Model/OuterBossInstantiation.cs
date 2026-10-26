@@ -35,7 +35,7 @@ namespace MonsterTrain2Poju.Model
             bool duo = OuterBossDefinitions.IsAngelDuo(actor.Unit.AssetKey);
             int moon = train.Context?.QueryFrame?.MoonPhase ?? 0;
             bool calibratedMoon = battle.MoonPhaseTrackingActive == true &&
-                actor.Unit.AssetKey == "Boss_Level3_Fleshweaver_Corruption" && moon == 2 &&
+                (actor.Unit.AssetKey is "Boss_Level3_Fleshweaver_Corruption" or "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth") && moon == 2 &&
                 !actor.Unit.Triggers.Any(trigger => trigger.Kind is "OnMoonLit" or "OnMoonlitLost" or
                     "OnMoonShade" or "OnMoonshadeLost" or "OnMoonPhaseShift");
             if (actor.ExternalInteractions.Count > 0) return Fail(string.Join("; ", actor.ExternalInteractions));

@@ -2031,6 +2031,15 @@ if (args.Length is 2 or 3 && args[0] == "--titan-curse-preview-only")
     TitanCursePreviewChecks.Native(source.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 3 or 5 && args[0] == "--angel-duo-moon-birth-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var birth = ModelJson.ReadFixture(args[2]);
+    using var replay = args.Length == 5 ? ModelJson.ReadFixture(args[3]) : null;
+    using var replayBirth = args.Length == 5 ? ModelJson.ReadFixture(args[4]) : null;
+    AngelDuoMoonBirthChecks.Native(source.RootElement, birth.RootElement, replay?.RootElement, replayBirth?.RootElement);
+    return;
+}
 if (args.Length is 3 or 5 && args[0] == "--outer-boss-moon-birth-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

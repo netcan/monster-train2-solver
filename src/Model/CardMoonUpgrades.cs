@@ -127,6 +127,20 @@ namespace MonsterTrain2Poju.Model
         private static bool IndependentRelic(CombatRelicState relic)
         {
             if (relic.IsCovenant != false) return false;
+            // Sealed RelicEffectAddTrigger only installs character callbacks in
+            // OnCharacterAdded. Refreshing a spell's moon upgrade neither adds
+            // characters nor invokes those callbacks; retain ordered payload
+            // validation and the separate character/global-moon dispatchers.
+            if (relic.EffectTypes.Count > 0 && relic.EffectTypes.All(type => type == RelicModel.AddTrigger))
+                return RelicCharacterTriggerModel.Validate(relic) == null;
+            // Start-turn propagation has its own before-draw dispatcher. A
+            // moon hand refresh must retain, rather than repeat, that effect.
+            if (relic.DataId == RelicStartTurnPropagationModel.DataId && relic.ResourceEffects?.Count == 1)
+                return RelicStartTurnPropagationModel.Validate(relic, relic.ResourceEffects[0]) == null;
+            // Card-play sequence counters reset at turn start and advance only
+            // for played cards. Trait refresh must preserve their captured list.
+            if (relic.DataId == RelicCardTypeSequenceModel.DataId && relic.ResourceEffects?.Count == 1)
+                return RelicCardTypeSequenceModel.Validate(relic, relic.ResourceEffects[0]) == null;
             // The original boss reward only changes turn/deployment energy and
             // indexed Pyre stats. None of its four native interfaces receives
             // moon changes or CardUpdated; acquisition is already settled.
