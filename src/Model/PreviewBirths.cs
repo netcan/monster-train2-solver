@@ -6,6 +6,21 @@ namespace MonsterTrain2Poju.Model
 {
     internal static class PreviewBirthModel
     {
+        internal static EnchantmentRetainedUnit CancelPlayer(EnchantmentRetainedUnit actor)
+        {
+            if (!actor.Preview || actor.Unit.Team != CombatTeam.Player || actor.Unit.DeathState?.IsDestroyed == true) return actor;
+            // MonsterManager removes preview-born players when the full UI
+            // preview is reset. HideUnit/ProcessRemovals do not fire death
+            // triggers or restore numeric state; OnDestroy clears collections
+            // and statistics listeners on the retained managed object.
+            CombatUnit unit = actor.Unit.AfterDestruction();
+            UnitDeathState death = unit.DeathState ?? new UnitDeathState(false, false, false);
+            unit = unit.WithDeathState(new UnitDeathState(death.HasFinishedDying, death.IsBeingRemoved, false,
+                null, death.IsSacrifice, death.StatisticsListenerOnce.HasValue ? false : (bool?)null,
+                death.IsDespawned, true));
+            return new EnchantmentRetainedUnit(unit, -1, actor.Preview);
+        }
+
         internal static CombatContext ForgetUnobservedPlayers(TrainCombatState source, CombatContext preview,
             int firstUnitId, int firstCardId, out int[] forgotten)
         {

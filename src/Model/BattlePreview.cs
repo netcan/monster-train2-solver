@@ -261,7 +261,9 @@ namespace MonsterTrain2Poju.Model
                     source.Movement, source.EnemySlotsPerRoom, originalWorld.RetainedUnits.Select(actor =>
                         actor.Preview && actor.Unit.Team == CombatTeam.Enemy ? new EnchantmentRetainedUnit(
                             PreviewBirthModel.Restore(actors.TryGetValue(actor.Unit.Id, out CombatUnit? tested) ? tested : actor.Unit,
-                                removed, resetPreviewActionsForUnitIds: previewBossIds), -1, false) : new EnchantmentRetainedUnit(
+                                removed, resetPreviewActionsForUnitIds: previewBossIds), -1, false) :
+                        actor.Preview && actor.Unit.Team == CombatTeam.Player && originalPoints?.Units.Any(point =>
+                            point.UnitId == actor.Unit.Id && point.SpawnedInPreview) == true ? PreviewBirthModel.CancelPlayer(actor) : new EnchantmentRetainedUnit(
                             RestoreEnchantments(actor.Unit), actor.RoomIndex, actor.Preview))
                         .Concat(PreviewBirthModel.Retain(observed, firstPreviewId, removed, previewBossIds)).ToArray(),
                     originalWorld.EnchanterIds.Concat(observed.EnchanterIds).Distinct().ToArray(),

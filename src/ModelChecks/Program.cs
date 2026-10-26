@@ -2031,6 +2031,13 @@ if (args.Length is 2 or 3 && args[0] == "--titan-curse-preview-only")
     TitanCursePreviewChecks.Native(source.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--retained-player-preview-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    RetainedPlayerPreviewChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--troop-enchantment-noop-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
