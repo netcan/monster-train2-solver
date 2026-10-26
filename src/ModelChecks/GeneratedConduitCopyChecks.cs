@@ -55,8 +55,17 @@ internal static class GeneratedConduitCopyChecks
         });
         if (replay.HasValue)
         {
-            NativeBranchObservationChecks.Replay(replay.Value, Reason);
-            NativeBranchObservationChecks.Pair(source, replay.Value);
+            var other = NativeBranchObservationChecks.Replay(replay.Value, Reason);
+            Require(source.GetProperty("Request").ContentEquals(replay.Value.GetProperty("Request")) && other.Length == rows.Length,
+                "Independent diagnostic request or prefix differs.");
+            // This observation captured the native hand, including its aura,
+            // so even the old per-action forecast was correct. The archived
+            // rolling counterexample and owned replay prove the missing event.
+            for (int index = 0; index < rows.Length; index++)
+                foreach (string field in new[] { "Before", "Actual" })
+                    Require(NativeBranchObservationChecks.Key(rows[index].GetProperty(field).Deserialize<BattleTurnState>()!) ==
+                        NativeBranchObservationChecks.Key(other[index].GetProperty(field).Deserialize<BattleTurnState>()!),
+                        "Independent native state/RNG differs at " + index);
             Require(replay.Value.GetProperty("Rows")[26].GetProperty("DamageEffects")[0].GetProperty("Resolved").GetInt32() == 42,
                 "Independent native effect did not resolve42 damage.");
         }
