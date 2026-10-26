@@ -53,6 +53,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-13-ring7-release128-budget10000-loss.mt2f',
     'full-battle-random-campaign-13-ring7-release131-budget10000-loss.mt2f',
     'full-battle-random-campaign-13-ring7-release132-budget10000-loss.mt2f',
+    'full-battle-random-campaign-13-ring7-release134-budget10000-loss.mt2f',
     'full-battle-random-campaign-11-ring1-budget10000-search.mt2f',
     'full-battle-random-campaign-11-ring1-budget10000-replay.mt2f',
     'full-battle-random-campaign-11-ring1-release107-budget10000-search.mt2f',
