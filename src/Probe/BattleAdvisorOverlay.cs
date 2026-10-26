@@ -678,10 +678,11 @@ namespace MonsterTrain2Poju.Probe
                 int start = text.Length;
                 if (action.ActivatorUnitId > 0 && units.TryGetValue(action.ActivatorUnitId, out CharacterState actor))
                 {
-                    CardState? ability = actor.GetUnitAbilityCardState();
+                    CardData? definition = actor.GetUnitAbility();
+                    CardState? ability = AbilityCardProbe.Existing(definition);
                     int? cost = ability?.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(),
                         managers.GetRelicManager(), managers.GetRoomManager().GetRoom(action.RoomIndex));
-                    text.Append(AdvisorForecastPresentation.Ability(actor.GetName(), ability?.GetTitle() ?? "单位技能",
+                    text.Append(AdvisorForecastPresentation.Ability(actor.GetName(), ability?.GetTitle() ?? definition?.GetName() ?? "单位技能",
                         actor.GetCurrentRoomIndex(), cost));
                 }
                 else if (action.ActivatorUnitId > 0) text.Append("【单位技能】").Append(UnitName(action.ActivatorUnitId));

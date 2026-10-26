@@ -41,6 +41,8 @@ namespace MonsterTrain2Poju.Probe
         private static BattleAdvice? previousReadyAdvice;
         private static long previousReadySearches;
         private static int researchCaptures;
+        private static BattleAdvice? presentationChecked;
+        private static int skillPresentationChecks, coldSkillPresentationChecks;
         private static string? browseText, browseStatus;
         private static Color browseColor;
         private static float browseScroll;
@@ -98,6 +100,8 @@ namespace MonsterTrain2Poju.Probe
             InteractionsPassed,
             IdlePassed, PlanPreviewPassed,
             PendingPublicationWaits = pendingPublicationWaits,
+            SkillPresentationChecks = skillPresentationChecks,
+            ColdSkillPresentationChecks = coldSkillPresentationChecks,
             Presentation = AdvisorPresentationProbe.Enabled ? AdvisorPresentationProbe.Evidence : null,
             FloorBrowse = !BrowseEnabled ? null : new { Passed = FloorBrowsePassed, Switches = browseSwitches,
                 DuringSearch = browsingDuringSearch, WheelInput = true, CaptureFreeSwitches = captureFreeSwitches,
@@ -594,6 +598,33 @@ namespace MonsterTrain2Poju.Probe
                 UnitPlayModelProbe.FirstDifference(JObject.FromObject(Advice.Root), JObject.FromObject(root), "$"));
             if (!(bool)Call("ReadyFor", root)!) return false;
             BattleAdvice current = Advice;
+            if (!ReferenceEquals(presentationChecked, current) && current.Plan.Steps.Any(step => step.Action?.ActivatorUnitId > 0))
+            {
+                // Exercise both real render paths after publication. Calling a
+                // native skill-card factory here used to change the allocator
+                // and cache, even for skills appearing only in a future turn.
+                bool expanded = Field<bool>("showFullPlan");
+                long generation = session.Generation, searches = session.SearchCount;
+                string before = keys.Key(root);
+                try
+                {
+                    foreach (bool mode in new[] { true, false })
+                    {
+                        AccessTools.Field(type!, "showFullPlan").SetValue(advisor, mode);
+                        Call("Describe", current);
+                        Require(keys.Key(Capture()) == before && session.Generation == generation && session.SearchCount == searches,
+                            "skill presentation changed native state/RNG or restarted planning");
+                        skillPresentationChecks++;
+                        if (root.Spawn.Train.Context?.AbilityCardCache?.Count == 0) coldSkillPresentationChecks++;
+                    }
+                }
+                finally
+                {
+                    AccessTools.Field(type!, "showFullPlan").SetValue(advisor, expanded);
+                    Call("Describe", current);
+                }
+                presentationChecked = current;
+            }
             if (!ReferenceEquals(previousReadyAdvice, current))
             {
                 // Isolated diagnostic only. Retain the preceding immutable

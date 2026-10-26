@@ -12,6 +12,9 @@ namespace MonsterTrain2Poju.Probe
     {
         private static IDictionary Cache => (IDictionary)AccessTools.Field(typeof(UnitOrRoomAbilityCardStateCache), "cardStates")
             .GetValue(UnitOrRoomAbilityCardStateCache.Instance);
+        // Presentation must not call the native Get factory. Future skill
+        // steps may refer to a unit whose ability has never been displayed.
+        internal static CardState? Existing(CardData? data) => data == null ? null : Cache[data.GetID()] as CardState;
         internal static AbilityCardCacheEntry[] Capture(FullBattleTrace trace)
         {
             var entries = new List<AbilityCardCacheEntry>();

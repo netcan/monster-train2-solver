@@ -2190,6 +2190,13 @@ if (args.Length == 2 && args[0] == "--conduit-view-continuation-only")
     ConduitViewContinuationChecks.Native(source.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--ability-presentation-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var repaired = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    AbilityPresentationChecks.Native(source.RootElement, repaired?.RootElement);
+    return;
+}
 if (args.Length is 3 or 5 && args[0] == "--arkion-moon-birth-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6370,6 +6377,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battl
     using var mismatch = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-prepared-selection-publication-calibration.mt2f"));
     using var battle = ModelJson.ReadFixture(path);
     AutomaticViewContinuationChecks.Native(mismatch.RootElement, battle.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-ability-presentation-mutation-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    AbilityPresentationChecks.Native(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-prepared-selection-publication-calibration.mt2f"))
 {
