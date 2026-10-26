@@ -240,6 +240,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-egg-catalog-replay-calibration.mt2f',
     'player-unobserved-preview-birth-calibration.mt2f',
     'player-unobserved-preview-birth-replay-calibration.mt2f',
+    'player-room-death-preview-identity-calibration.mt2f',
+    'player-room-death-preview-identity-replay-calibration.mt2f',
     'player-zero-energy-x-policy-calibration.mt2f',
     'player-zero-energy-x-policy-replay-calibration.mt2f',
     'player-x-room-status-policy-calibration.mt2f',
@@ -1868,6 +1870,7 @@ $branchPairGates = @{
     'player-wurmkin-spike-copy-calibration.mt2f' = '--wurmkin-spike-copy-only'
     'player-spent-monster-spell-relic-calibration.mt2f' = '--spent-monster-spell-relic-only'
     'player-unobserved-preview-birth-calibration.mt2f' = '--unobserved-preview-birth-only'
+    'player-room-death-preview-identity-calibration.mt2f' = '--room-death-preview-identity-only'
     'player-zero-energy-x-policy-calibration.mt2f' = '--zero-energy-x-policy-only'
     'player-x-room-status-policy-calibration.mt2f' = '--x-room-status-policy-only'
     'player-liquid-courage-recast-calibration.mt2f' = '--liquid-courage-recast-only'

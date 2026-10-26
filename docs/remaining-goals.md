@@ -59,6 +59,10 @@ RNG和四项零失败通过；最新60输入完整路线已实际原生执行，
 RNG和四项零失败通过。恢复档案时旁路Probe漏读玩家会话，导致月相23项误拒绝，
 现已同步采集且保持玩家方案不变；见[恢复月相](../tests/fixtures/notes/campaign/resumed-moon-capture.md)。
 第二战第12输入出现Infectory预览出生的Context.NextUnitId差异，继续定位，未计第二战胜局。
+0.2.139已补齐该无牌来源临时出生：12输入独立原生配对、完整状态／预测／RNG、
+四个不变父分支及旧虫卵／Infectory对照通过；整场第二战推进至第26输入又出现
+实际出生的单位身份差异，正在补齐玩家采集钩子，仍未计胜局。见
+[临时出生](../tests/fixtures/notes/combat/room-death-preview-identity.md)。
 0.2.138已于16:44安装，来自干净提交`0c4432af`，67项受保护文件不变；第十四组
 第一战已独立原生双胜，安装包和当前版本见[本次交付](mod-validation.md)。
 
