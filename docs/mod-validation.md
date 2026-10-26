@@ -1,6 +1,21 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.186, source`8fdc8223`.
+Current Windows installation:0.2.190, source`ffcfbeb7`.
+Installed at05:09 with67 protected save/config/other-mod files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.190-Windows-20261027-050955.zip`,SHA256
+`3407bf6675a61e99b6cbc646de11ca22858a5286296c4e9a667eea3b05d92763`.
+The exact payload wins sample18 Ring5 with31inputs,24plays/7EndTurns,Pyre100
+and four zero failure counters. Independent frozen native replay matches every
+state/forecast/RNG and progresses normally through61reward/map events.
+The three installed DLLs,compiled provenance and package were verified using
+the completed receipt, without repeating either native battle. The real game
+was stopped; next launch loads0.2.190. Previous DLLs and receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261027-050955/`. No Mac build was made.
+This adds calibrated double Juice and its TitanCurse cost upgrade, Fragile
+full-moon birth, and stable room-upgrade provenance on retained dead units.
+Sample18 has five accepted default-budget battles; this is not a campaign clear.
+
+Previous Windows installation:0.2.186, source`8fdc8223`.
 Installed at04:32 with67 protected save/config/other-mod files unchanged. Package
 `results/mod-dist/PojuAdvisor-0.2.186-Windows-20261027-043224.zip`,SHA256
 `c424db4c830d758a02a1545d48cdfc6ec06998b0f451e564167bdbf0a157c288`.
