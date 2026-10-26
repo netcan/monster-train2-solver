@@ -129,6 +129,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-double-juice-spike-replay-calibration.mt2f',
     'player-double-juice-curse-calibration.mt2f',
     'player-double-juice-curse-replay-calibration.mt2f',
+    'player-room-upgrade-provenance-counterexample-calibration.mt2f',
+    'player-room-upgrade-provenance-calibration.mt2f',
     'player-triple-juice-spike-calibration.mt2f',
     'player-triple-juice-spike-replay-calibration.mt2f',
     'player-triple-juice-search-failure-calibration.mt2f',
@@ -1850,6 +1852,17 @@ $stasisShatterNames = @('player-stasis-shatter-counterexample-calibration.mt2f',
 $tripleJuiceNames = @('player-triple-juice-spike-refusal-calibration.mt2f', 'player-triple-juice-spike-calibration.mt2f', 'player-triple-juice-spike-replay-calibration.mt2f')
 $doubleJuiceNames = @('player-double-juice-spike-refusal-calibration.mt2f', 'player-double-juice-spike-calibration.mt2f', 'player-double-juice-spike-replay-calibration.mt2f')
 $doubleCurseNames = @('player-double-juice-curse-calibration.mt2f', 'player-double-juice-curse-replay-calibration.mt2f')
+$roomProvenanceNames = @('player-room-upgrade-provenance-counterexample-calibration.mt2f', 'player-room-upgrade-provenance-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $roomProvenanceNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Room upgrade provenance checker build failed.' }
+    }
+    $provenanceArguments = @('--room-upgrade-provenance-only') + @($roomProvenanceNames | ForEach-Object { Get-TestFixturePath $_ })
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @provenanceArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Focused native room upgrade provenance check failed.' }
+    return
+}
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $doubleCurseNames }).Count -eq 0) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q

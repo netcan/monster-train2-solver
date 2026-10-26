@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--room-upgrade-provenance-only")
+{
+    using var counterexample = ModelJson.ReadFixture(args[1]);
+    using var repaired = ModelJson.ReadFixture(args[2]);
+    RoomUpgradeProvenanceChecks.Native(counterexample.RootElement, repaired.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--double-juice-curse-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6545,6 +6552,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-dou
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-double-juice-curse-replay-calibration.mt2f"));
     DoubleJuiceCurseChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-room-upgrade-provenance-counterexample-calibration.mt2f"))
+{
+    using var counterexample = ModelJson.ReadFixture(path);
+    using var repaired = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-room-upgrade-provenance-calibration.mt2f"));
+    RoomUpgradeProvenanceChecks.Native(counterexample.RootElement, repaired.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-fragile-moon-birth-calibration.mt2f"))
 {

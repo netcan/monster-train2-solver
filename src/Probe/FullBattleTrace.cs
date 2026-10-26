@@ -315,8 +315,15 @@ namespace MonsterTrain2Poju.Probe
             // CardState.GetID() is the definition ID, shared by its copies.
             return nativeKey;
         }
+        private readonly System.Runtime.CompilerServices.ConditionalWeakTable<CardUpgradeState, object> roomAttachmentUpgradeOrigins =
+            new System.Runtime.CompilerServices.ConditionalWeakTable<CardUpgradeState, object>();
         internal CardUpgradeModifier CaptureAppliedUpgrade(CardUpgradeState upgrade, bool roomAttachmentUnitUpgrade = false)
         {
+            // Retained dead actors can still reference an old attachment's upgrade
+            // after that attachment is replaced. Its origin does not change when
+            // the room's current attachment list loses the exact native object.
+            if (roomAttachmentUnitUpgrade) roomAttachmentUpgradeOrigins.GetValue(upgrade, _ => new object());
+            else roomAttachmentUnitUpgrade = roomAttachmentUpgradeOrigins.TryGetValue(upgrade, out _);
             CardUpgradeModifier modifier = CardModifierProbe.Upgrade(upgrade, rejectFilters: false,
                 filtersAlreadyApplied: true, roomAttachmentUnitUpgrade: roomAttachmentUnitUpgrade);
             foreach (CardState card in projection.KnownCards.Where(item => item.GetCardType() == CardType.Equipment))
