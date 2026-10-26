@@ -146,7 +146,11 @@ RNG及四项零失败通过，原始玩家／输入文件不变。两个败局�
 `full-battle-random-campaign-13-ring3-refined-{search,replay}.mt2f`。
 混合三战连续链为零模拟；20文件第四战检查点SHA256
 `a39c94307042529b8eb179adade0f4c495b45d5bbbe6a049232507eb7b502938`，
-恢复19项载荷一致。第四战0.2.117实际建议第19输入的单位顺序差异待校准，
+恢复19项载荷一致。第四战0.2.117实际建议第19输入的单位顺序差异已在
+0.2.119完成19输入独立原生双进程校准，详见[技能多位置传送](../tests/fixtures/notes/cards/teleport-adjacent-order.md)。
+第三战离线候选另暴露[JustCause队友复制](../tests/fixtures/notes/cards/justcause-monster-spell.md)，
+0.2.118通过13输入独立原生双进程校准，复制保留增益并取消再次移位。
+第四战修正版实际默认10000ms搜索继续验收，
 未计第四战胜利。
 
 0.2.114已提交载荷`84bfb625`的首战实际10000ms／双线程24输入、薪火80
