@@ -10,11 +10,12 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class AbilityCardProbe
     {
-        private static IDictionary Cache => (IDictionary)AccessTools.Field(typeof(UnitOrRoomAbilityCardStateCache), "cardStates")
-            .GetValue(UnitOrRoomAbilityCardStateCache.Instance);
+        private static readonly System.Reflection.FieldInfo CacheField = AccessTools.Field(typeof(UnitOrRoomAbilityCardStateCache), "cardStates");
+        private static IDictionary Cache => (IDictionary)CacheField.GetValue(UnitOrRoomAbilityCardStateCache.Instance);
         // Presentation must not call the native Get factory. Future skill
         // steps may refer to a unit whose ability has never been displayed.
         internal static CardState? Existing(CardData? data) => data == null ? null : Cache[data.GetID()] as CardState;
+        internal static int Count => Cache.Count;
         internal static AbilityCardCacheEntry[] Capture(FullBattleTrace trace)
         {
             var entries = new List<AbilityCardCacheEntry>();

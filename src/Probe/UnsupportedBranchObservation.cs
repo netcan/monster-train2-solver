@@ -26,6 +26,7 @@ namespace MonsterTrain2Poju.Probe
         private static BattleTurnState expected = null!;
         private static readonly List<Row> rows = new List<Row>();
         private static readonly List<object> roomAttachmentMovement = new List<object>();
+        private static object? abilityCacheWarm;
         private static bool waiting;
         private static int readyFrame = -1;
         internal static bool AwaitingSettlement()
@@ -93,6 +94,7 @@ namespace MonsterTrain2Poju.Probe
                 EquipmentOwnerRecoveries = FullBattleTrace.Active!.EquipmentOwnerRecoveries.ToArray(),
                 EquipmentPreviewClear = equipmentPreviewClear,
                 SkillPresentation = skillPresentation,
+                AbilityCacheWarm = abilityCacheWarm,
                 FloorTransitionPiercing = CaptureFloorTransitionPiercing(),
                 RoomAttachmentMovement = roomAttachmentMovement.ToArray(),
                 TriggeredCorruption = TriggeredCorruptionProbe.Records.ToArray(),
@@ -153,6 +155,21 @@ namespace MonsterTrain2Poju.Probe
         {
             Initialize();
             Require(!waiting && !Completed, "Branch observation consumed an unsettled input.");
+            if (abilityCacheWarm == null && request.TryGetProperty("WarmAbilityBeforeInput", out FixtureValue warmIndex) &&
+                rows.Count == warmIndex.GetInt32())
+            {
+                BattleTurnState before = root;
+                string id = request.GetProperty("WarmAbilityDataId").GetString()!;
+                AllGameManagers managers = AllGameManagers.Instance!;
+                CardData definition = managers.GetAllGameData().FindCardData(id)!;
+                Require(definition != null && AbilityCardProbe.Existing(definition) == null, "Expected original cold ability definition.");
+                UnitOrRoomAbilityCardStateCache.Instance.Get(definition, managers.GetRelicManager(), managers.GetSaveManager());
+                root = PlayerAdvisorProbe.Capture();
+                Require(AbilityCacheAdviceReuse.TryWarm(before, root, out BattleTurnState warmed) &&
+                    Comparable(warmed) == Comparable(root), "Native cache warming differs from the modeled transition.");
+                expected = warmed;
+                abilityCacheWarm = new { BeforeInput = rows.Count, Before = before, After = root, DataId = id };
+            }
             bool boundary = rows.Count == prefix!.Length;
             Require(rows.Count <= prefix.Length, "Branch input overflow.");
             Require(Comparable(root) == Comparable(expected), "Native branch prefix root differs at " + rows.Count + ": " +

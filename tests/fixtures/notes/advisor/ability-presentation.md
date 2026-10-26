@@ -23,4 +23,12 @@ Full native state/RNG,generation and search count remain unchanged. Its suffix
 is model-verified to win; the component does not execute those final five inputs
 in native. A separate clean0.2.17534-input source/replay pair wins Ring5.
 These establish display purity and a separate winning battle. Reusing advice
-after native UI lazy cache creation remains a distinct continuation task.
+after native UI lazy cache creation was verified separately in0.2.180:
+the exact known CardCreationRule reproduces the full cache/allocator transition.
+All five remaining steps replay from the warmed native root with one session
+search. Energy,RNG,unknown definitions,changed cards and allocator divergence
+remain rejected. A controlled native process repeats the original35 inputs,
+calls the original cold-cache API,and executes all five retained inputs to win;
+every successor matches full state/RNG. This establishes the transition without
+claiming to know the old UI caller. The cheap idle detector now watches only
+cache count in addition to existing resources; ordinary browsing is unchanged.

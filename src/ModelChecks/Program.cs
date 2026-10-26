@@ -1,5 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 3 or 4 && args[0] == "--ability-cache-continuation-only")
+{
+    using var mismatch = ModelJson.ReadFixture(args[1]);
+    using var display = ModelJson.ReadFixture(args[2]);
+    using var native = args.Length == 4 ? ModelJson.ReadFixture(args[3]) : null;
+    AbilityCacheContinuationChecks.Native(mismatch.RootElement, display.RootElement, native?.RootElement);
+    return;
+}
 if (args.Length is 2 or 4 && args[0] == "--moon-silence-reset-only")
 {
     using var battle = ModelJson.ReadFixture(args[1]);
@@ -6416,6 +6424,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-abi
     using var source = ModelJson.ReadFixture(path);
     using var render = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-ability-cache-display-replay-calibration.mt2f"));
     AbilityPresentationChecks.Native(source.RootElement, render.RootElement);
+    using var win = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-ability-cache-winning-continuation-calibration.mt2f"));
+    AbilityCacheContinuationChecks.Native(source.RootElement, render.RootElement, win.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-auto-focus-no-preview-calibration.mt2f"))
 {

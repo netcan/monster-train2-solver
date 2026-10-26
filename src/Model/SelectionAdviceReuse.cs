@@ -35,6 +35,7 @@ namespace MonsterTrain2Poju.Model
         {
             using var keys = new BattleStateKeys(true, ignoreRoomSelection: true);
             if (keys.Key(left) == keys.Key(right)) return true;
+            if (AbilityCacheAdviceReuse.Matches(left, right, keys)) return true;
             if (left.SelectedRoom < 0 || right.SelectedRoom < 0 || left.SelectedRoom == right.SelectedRoom)
                 return false;
             // Native selection callbacks update Conduit/room spell upgrades and
@@ -116,7 +117,9 @@ namespace MonsterTrain2Poju.Model
                     // its full gameplay state and modeled selection effects;
                     // the complete remaining line is replayed from the native
                     // checkpoint before it can be published.
-                    if (projected.SelectedRoom != checkpoint.SelectedRoom && SameBattle(projected, checkpoint))
+                    if ((projected.SelectedRoom != checkpoint.SelectedRoom ||
+                        projected.Spawn.Train.Context?.AbilityCardCache?.Count != checkpoint.Spawn.Train.Context?.AbilityCardCache?.Count) &&
+                        SameBattle(projected, checkpoint))
                         return true;
                     BattleSearchStep step = advice.Plan.Steps[index++];
                     if (step.IsEndTurn)

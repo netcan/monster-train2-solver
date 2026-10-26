@@ -7,6 +7,13 @@ internal static class RandomCampaignChecks
 {
     internal static void Curated(string path)
     {
+        if (path.EndsWith("full-battle-random-campaign-17-ring3-release178-offline-search.mt2f", StringComparison.Ordinal))
+        {
+            using var native = ModelJson.ReadFixture(path);
+            using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
+            RefinedPair(native.RootElement, replay.RootElement, 278140591, 3, 2, "Hellhorned", "Banished", 34);
+            return;
+        }
         // Frozen losses verify their complete native trajectory without
         // claiming the live publications required by actual-budget sources.
         if (Path.GetFileName(path) == "full-battle-random-campaign-14-ring6-release165-refined-loss.mt2f")

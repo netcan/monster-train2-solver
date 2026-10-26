@@ -104,6 +104,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-17-ring2-covenant3-release174-budget10000-replay.mt2f',
     'player-ability-presentation-mutation-calibration.mt2f',
     'player-ability-cache-display-replay-calibration.mt2f',
+    'player-ability-cache-winning-continuation-calibration.mt2f',
+    'full-battle-random-campaign-17-ring3-release178-offline-search.mt2f',
+    'full-battle-random-campaign-17-ring3-release178-offline-replay.mt2f',
     'player-auto-focus-no-preview-calibration.mt2f',
     'player-auto-focus-no-preview-prefix-calibration.mt2f',
     'player-moon-silence-reset-counterexample-calibration.mt2f',
@@ -1789,6 +1792,17 @@ if ($Fixture.Count -gt 0) {
 }
 # Explicit selections for this composition have complete dedicated gates.
 # Avoid starting all unrelated pure checks before a component-only request.
+$sample17RefinedNames = @('full-battle-random-campaign-17-ring3-release178-offline-search.mt2f', 'full-battle-random-campaign-17-ring3-release178-offline-replay.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $sample17RefinedNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Refined campaign checker build failed.' }
+    }
+    $refinedArguments = @('--random-refined-campaign-pair-only') + @($sample17RefinedNames | ForEach-Object { Get-TestFixturePath $_ }) + @('278140591','3','2','Hellhorned','Banished','34')
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @refinedArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Focused refined campaign pair failed.' }
+    return
+}
 $moonSilenceNames = @('player-moon-silence-reset-counterexample-calibration.mt2f', 'player-moon-silence-reset-calibration.mt2f', 'player-moon-silence-reset-replay-calibration.mt2f')
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $moonSilenceNames }).Count -eq 0) {
     if (-not $SkipBuild) {
@@ -1811,15 +1825,18 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     if ($LASTEXITCODE -ne 0) { throw 'Focused automatic focus check failed.' }
     return
 }
-$abilityPresentationNames = @('player-ability-presentation-mutation-calibration.mt2f', 'player-ability-cache-display-replay-calibration.mt2f')
+$abilityPresentationNames = @('player-ability-presentation-mutation-calibration.mt2f', 'player-ability-cache-display-replay-calibration.mt2f', 'player-ability-cache-winning-continuation-calibration.mt2f')
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $abilityPresentationNames }).Count -eq 0) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
         if ($LASTEXITCODE -ne 0) { throw 'Ability presentation checker build failed.' }
     }
-    $presentationArguments = @('--ability-presentation-only') + @($abilityPresentationNames | ForEach-Object { Get-TestFixturePath $_ })
+    $presentationArguments = @('--ability-presentation-only') + @($abilityPresentationNames[0..1] | ForEach-Object { Get-TestFixturePath $_ })
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @presentationArguments
     if ($LASTEXITCODE -ne 0) { throw 'Focused ability presentation counterexample failed.' }
+    $cacheArguments = @('--ability-cache-continuation-only') + @($abilityPresentationNames | ForEach-Object { Get-TestFixturePath $_ })
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @cacheArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Focused native cache continuation failed.' }
     return
 }
 $caelMoonNames = @('player-cael-moon-birth-calibration.mt2f', 'cael-moon-creation-calibration.mt2f',

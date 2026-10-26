@@ -91,7 +91,8 @@ namespace MonsterTrain2Poju.Model
         {
             if (Current == null) return false;
             if (reuseObservations.Count == 0)
-            { using var keys = new BattleStateKeys(); return keys.Key(root) == Current.RootKey; }
+            { using var keys = new BattleStateKeys(); return keys.Key(root) == Current.RootKey ||
+                    AbilityCacheAdviceReuse.Matches(Current.Root, root, keys); }
             // Automatic native focus may update only the selection frame,
             // without the preview refresh performed by a user floor click.
             // Accept this only against the latest recorded view and the full
@@ -111,7 +112,8 @@ namespace MonsterTrain2Poju.Model
                 projected = selected.State!;
             }
             using var selectionKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
-            return selectionKeys.Key(projected) == selectionKeys.Key(root);
+            return selectionKeys.Key(projected) == selectionKeys.Key(root) ||
+                AbilityCacheAdviceReuse.Matches(projected, root, selectionKeys);
         }
 
         public BattleAdviceSession(BattlePlannerOptions? options = null, int maxSearchWorkers = 1)
