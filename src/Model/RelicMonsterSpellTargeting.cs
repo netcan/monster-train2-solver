@@ -100,7 +100,11 @@ namespace MonsterTrain2Poju.Model
                 shield.Statuses.Count == 1 && shield.Statuses[0].Id == "damage shield" && shield.Statuses[0].Stacks == 1 &&
                 playedRule.Effects[1] is { Type: "AddStatus", Target: "LastTargetedCharacters", AllowEnemy: true, AllowPlayer: true, Range: null } courage &&
                 courage.Statuses.Count == 1 && courage.Statuses[0].Id == "valor" && courage.Statuses[0].Stacks == 4;
-            if (!justCause && !liquidCourage && (hasPositionChange || playedRule.Effects.Count != 1 || playedRule.OnCastEffects.Count != 0 ||
+            bool fracture = playedRule.DataId == "b197fdec-a77d-49f5-bc05-6233b7ce01c7" && playedRule.AssetKey == "StarterFracture" &&
+                playedRule.OnCastEffects.Count == 0 && playedRule.Effects.Count == 1 &&
+                playedRule.Effects[0] is { Type: "AddStatus", Target: "DropTargetCharacter", AllowEnemy: true, AllowPlayer: true, Range: null } poison &&
+                poison.Statuses.Count == 1 && poison.Statuses[0].Id == "corrupt_poison" && poison.Statuses[0].Stacks == 2;
+            if (!justCause && !liquidCourage && !fracture && (hasPositionChange || playedRule.Effects.Count != 1 || playedRule.OnCastEffects.Count != 0 ||
                 playedRule.Effects[0].Type != "Damage" || playedRule.Effects[0].Target != "DropTargetCharacter" ||
                 playedRule.Effects[0].AllowEnemy || !playedRule.Effects[0].AllowPlayer || playedRule.Effects[0].Range != null))
                 return Unsupported(source, "Only a single fixed, Monster-targeted DropTarget damage effect without OnCast is modeled.");
@@ -112,7 +116,8 @@ namespace MonsterTrain2Poju.Model
                 [new CardActionEffect("Null", "DropTargetCharacter", 0, false, true, []), playedRule.Effects[1]] : playedRule.Effects;
 
             CardInstanceState? card = context.FindCard(playedCardId);
-            bool corruptJustCause = justCause && card != null && card.Permanent.Upgrades.Count is 1 or 2 &&
+            bool corruptRecast = (justCause || fracture) && card != null && card.Permanent.Upgrades.Count is 1 or 2 &&
+                (!fracture || card.Permanent.Upgrades.Count == 1) &&
                 card.Permanent.Upgrades.Count(upgrade => upgrade.DataId == "83a6c9ec-0e40-48e6-8a4c-695a68b7e990") == 1 &&
                 card.Permanent.Upgrades.All(upgrade =>
                     (upgrade.DataId == "83a6c9ec-0e40-48e6-8a4c-695a68b7e990" && upgrade.AssetKey == "TraitCorrupt" ||
@@ -121,7 +126,8 @@ namespace MonsterTrain2Poju.Model
                         .All(stat => upgrade.Stats.Value(stat) == 0) &&
                     upgrade is { Statuses.Count: 0, UnhealedHealth: 0, DamageBuff: 0, AbilityUpgrade: null, ExternalInteractions.Count: 0 } &&
                     upgrade.TriggerUpgrades?.Count is not > 0);
-            if (card == null || card.MaskDescriptor == null || !corruptJustCause && card.Permanent.Upgrades.Count != 0 || card.Temporary.Upgrades.Count != 0)
+            if (card == null || card.MaskDescriptor == null || fracture && !corruptRecast ||
+                !corruptRecast && card.Permanent.Upgrades.Count != 0 || card.Temporary.Upgrades.Count != 0)
                 return Unsupported(source, "Monster spell replication requires an owned, unupgraded card with captured mask metadata.");
             try
             {
@@ -131,7 +137,7 @@ namespace MonsterTrain2Poju.Model
                 // and OnCardDiscarded, without calling that pre-play callback.
                 // Retain and Consume ignore OnCardDiscarded when isRecastCopy.
                 bool recastConsume = liquidCourage && combined?.Count == 1 && combined[0].RuntimeType == "CardTraitExhaustState";
-                if (combined?.Count > 0 && !recastConsume && !(corruptJustCause && combined.Count == card!.Permanent.Upgrades.Count &&
+                if (combined?.Count > 0 && !recastConsume && !(corruptRecast && combined.Count == card!.Permanent.Upgrades.Count &&
                     combined.Count(trait => trait.RuntimeType == "CardTraitCorruptState") == 1 &&
                     combined.Count(trait => trait.RuntimeType == "CardTraitRetain") == combined.Count - 1))
                     return Unsupported(source, "Monster spell replication does not yet model copied card trait callbacks.");
@@ -159,8 +165,8 @@ namespace MonsterTrain2Poju.Model
                 if (!test.CanPlay) continue;
                 source = CardSpellModel.WithContext(source, source.Context!.WithBattleRng(test.BattleRngAfterTests!.Value));
                 TrainSpellResult applied = CardSpellModel.ApplyForCardPlay(source, roomIndex, copiedEffects,
-                    targetId, justCause || liquidCourage ? 0 : playedCardId, definitions, source.Context!.OtherPiles, priorTargets: [targetId],
-                    resolveLiveEffects: !justCause && !liquidCourage);
+                    targetId, justCause || liquidCourage || fracture ? 0 : playedCardId, definitions, source.Context!.OtherPiles, priorTargets: [targetId],
+                    resolveLiveEffects: !justCause && !liquidCourage && !fracture);
                 if (!applied.Supported) return Unsupported(source, applied.UnsupportedReason!);
                 source = applied.State!;
                 outcome = applied.Outcome;

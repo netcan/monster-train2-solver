@@ -251,6 +251,13 @@ if (args.Length == 3 && args[0] == "--post-battle-reward-combat-pair-only")
     PostBattleRewardCombatChecks.Pair(source.RootElement, replay.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--fracture-recast-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) FractureRecastChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); FractureRecastChecks.Native(source.RootElement, replay.RootElement); }
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--monster-spell-no-teammates-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
