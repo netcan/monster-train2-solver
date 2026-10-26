@@ -30,9 +30,11 @@ namespace MonsterTrain2Poju.Model
                 CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == token.DataId);
                 CardInstanceState? instance = context.FindCard(token.InstanceId);
                 if (rule != null && instance != null) rule = CardModifierModel.Resolve(rule, instance);
-                return (token, rule);
+                bool positiveXBonus = rule?.CostType == "ConsumeRemainingEnergy" && source.Energy == 0 && instance != null &&
+                    CardModifierModel.UpgradedStat(0, "XCost", true, instance.Permanent, instance.Temporary) > 0;
+                return (token, rule, positiveXBonus);
             }).Where(item => item.rule != null && !TowerDebuff(item.rule) &&
-                !(item.rule.CostType == "ConsumeRemainingEnergy" && source.Energy == 0))
+                !(item.rule.CostType == "ConsumeRemainingEnergy" && source.Energy == 0 && !item.positiveXBonus))
                 .OrderByDescending(item => Priority(item.rule!));
             foreach (var choice in choices)
             {
