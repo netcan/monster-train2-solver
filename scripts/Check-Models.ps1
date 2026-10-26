@@ -50,6 +50,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-13-ring6-release127-budget10000-loss.mt2f',
     'full-battle-random-campaign-13-ring6-release128-refined-search.mt2f',
     'full-battle-random-campaign-13-ring6-release128-refined-replay.mt2f',
+    'full-battle-random-campaign-13-ring7-release128-budget10000-loss.mt2f',
     'full-battle-random-campaign-11-ring1-budget10000-search.mt2f',
     'full-battle-random-campaign-11-ring1-budget10000-replay.mt2f',
     'full-battle-random-campaign-11-ring1-release107-budget10000-search.mt2f',
@@ -214,6 +215,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-zero-energy-x-policy-replay-calibration.mt2f',
     'player-liquid-courage-recast-calibration.mt2f',
     'player-liquid-courage-recast-replay-calibration.mt2f',
+    'player-monster-spell-no-teammates-calibration.mt2f',
+    'player-monster-spell-no-teammates-replay-calibration.mt2f',
     'player-unowned-relic-copy-calibration.mt2f',
     'player-unowned-relic-copy-replay-calibration.mt2f',
     'player-revived-sacrifice-attribution-calibration.mt2f',
@@ -1805,6 +1808,7 @@ $branchPairGates = @{
     'player-unobserved-preview-birth-calibration.mt2f' = '--unobserved-preview-birth-only'
     'player-zero-energy-x-policy-calibration.mt2f' = '--zero-energy-x-policy-only'
     'player-liquid-courage-recast-calibration.mt2f' = '--liquid-courage-recast-only'
+    'player-monster-spell-no-teammates-calibration.mt2f' = '--monster-spell-no-teammates-only'
     'player-teleport-adjacent-order-calibration.mt2f' = '--teleport-adjacent-order-only'
     'player-unowned-relic-copy-calibration.mt2f' = '--unowned-relic-copy-pair-only'
     'player-revived-sacrifice-attribution-calibration.mt2f' = '--revived-sacrifice-attribution-pair-only'
