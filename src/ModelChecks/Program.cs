@@ -1974,6 +1974,14 @@ if (args.Length == 4 && args[0] == "--pending-boss-loss-order-only")
     PendingBossLossOrderChecks.Run(early.RootElement, late.RootElement, prediction.RootElement);
     return;
 }
+if (args.Length == 4 && args[0] == "--resumed-moon-capture-only")
+{
+    using var counterexample = ModelJson.ReadFixture(args[1]);
+    using var source = ModelJson.ReadFixture(args[2]);
+    using var replay = ModelJson.ReadFixture(args[3]);
+    ResumedMoonCaptureChecks.Pair(counterexample.RootElement, source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--parallel-planner-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -6664,11 +6672,19 @@ foreach (string path in args.Where(path => Path.GetFileName(path) ==
 }
 RoomCombatChecks.Run(args.Where(path => !path.Contains("calibration", StringComparison.OrdinalIgnoreCase) &&
     !path.Contains("parallel-planner-merge-model-", StringComparison.Ordinal) &&
+    !path.EndsWith("player-resumed-moon-capture-counterexample.mt2f", StringComparison.Ordinal) &&
     !path.EndsWith("player-room-attachment-birth-observed.mt2f", StringComparison.OrdinalIgnoreCase)).ToArray());
 foreach (string path in args.Where(path => (Path.GetFileName(path).StartsWith("full-battle-random-campaign-", StringComparison.Ordinal) ||
     Path.GetFileName(path).StartsWith("full-battle-metagame-campaign-", StringComparison.Ordinal)) &&
     (path.EndsWith("-search.mt2f", StringComparison.Ordinal) || path.EndsWith("-loss.mt2f", StringComparison.Ordinal))))
     RandomCampaignChecks.Curated(path);
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-resumed-moon-capture-counterexample.mt2f"))
+{
+    using var counterexample = ModelJson.ReadFixture(path);
+    using var source = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-random-campaign-14-ring1-release138-budget10000-search.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-random-campaign-14-ring1-release138-budget10000-replay.mt2f"));
+    ResumedMoonCaptureChecks.Pair(counterexample.RootElement, source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path) is "player-random-campaign-02-ring3-upgrade-observed-prefix.mt2f" or
     "player-random-campaign-02-ring3-permafrost-copy-observed-prefix.mt2f" or
     "player-random-campaign-02-ring3-fixed-policy-native-win.mt2f" or

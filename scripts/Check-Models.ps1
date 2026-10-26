@@ -63,6 +63,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-13-ring7-release137-refined-loss.mt2f',
     'full-battle-random-campaign-13-ring7-release138-budget10000-loss.mt2f',
     'pending-boss-loss-order-model-calibration.mt2f',
+    'player-resumed-moon-capture-counterexample.mt2f',
+    'full-battle-random-campaign-14-ring1-release138-budget10000-search.mt2f',
+    'full-battle-random-campaign-14-ring1-release138-budget10000-replay.mt2f',
     'full-battle-random-campaign-11-ring1-budget10000-search.mt2f',
     'full-battle-random-campaign-11-ring1-budget10000-replay.mt2f',
     'full-battle-random-campaign-11-ring1-release107-budget10000-search.mt2f',
@@ -1655,6 +1658,17 @@ if ($Fixture.Count -gt 0) {
 }
 # Explicit selections for this composition have complete dedicated gates.
 # Avoid starting all unrelated pure checks before a component-only request.
+if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-resumed-moon-capture-counterexample.mt2f') {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Resumed moon capture checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --resumed-moon-capture-only $fixtures[0] `
+        (Get-TestFixturePath 'full-battle-random-campaign-14-ring1-release138-budget10000-search.mt2f') `
+        (Get-TestFixturePath 'full-battle-random-campaign-14-ring1-release138-budget10000-replay.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Focused resumed moon capture check failed.' }
+    return
+}
 if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'pending-boss-loss-order-model-calibration.mt2f') {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
