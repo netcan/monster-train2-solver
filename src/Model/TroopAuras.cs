@@ -31,9 +31,16 @@ namespace MonsterTrain2Poju.Model
                 CombatUnit? owner = room?.Units.Single(unit => unit.Id == ownerId);
                 TroopAuraState? rule = owner?.Modifiers?.TroopAura;
                 if (rule == null || owner!.Health <= 0 || owner.DeathState?.IsDestroyed == true) continue;
-                if (source.EnchanterIds.Count > 0)
-                { error = "Combined troop upgrades and enchantment source ordering require native calibration."; break; }
                 var targets = room!.Units.Where(unit => Matches(unit, rule)).Select(unit => unit.Id).ToArray();
+                // A stable target cache does not apply/remove any modifiers. In
+                // particular, a Squad Leader without Fun Guys must not reject an
+                // unrelated enemy enchanter. Keep the ordering boundary whenever
+                // a living target would actually gain or lose the troop aura.
+                bool changesModifiers = targets.Any(id => !rule.Targets.Contains(id)) ||
+                    rule.Targets.Any(id => !targets.Contains(id) && train.Rooms.SelectMany(item => item.Units)
+                        .Any(unit => unit.Id == id && unit.Health > 0 && unit.DeathState?.IsDestroyed != true));
+                if (source.EnchanterIds.Count > 0 && changesModifiers)
+                { error = "Combined troop upgrades and enchantment source ordering require native calibration."; break; }
                 var cache = rule.Targets.ToList();
                 foreach (int id in rule.Targets.Reverse())
                 {
