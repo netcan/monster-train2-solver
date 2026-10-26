@@ -996,6 +996,13 @@ if (args.Length == 3 && args[0] == "--merchant-permafrost-observation-only")
     return;
 }
 
+if (args.Length is 2 or 3 && args[0] == "--moonbeam-copy-lifecycle-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    MoonbeamCopyChecks.Lifecycle(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--moonbeam-copy-deployment-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

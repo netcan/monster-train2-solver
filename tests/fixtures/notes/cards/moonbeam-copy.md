@@ -19,7 +19,15 @@ discard callback. CopyOnPlay creates an authored card,then copies upgrades and
 installs the temporary purge/replacement upgrade. The ordinary Consume must
 still precede the copy callback; unrelated signatures remain rejected.
 
-Separate original-spell/copy execution and independent native replay are pending.
-The model's seven-input route naturally draws Moonbeam on turn4,casts it at4
-energy,creates copy31,and casts that copy at0 energy. This route alone is not
-native acceptance and is not a Ring5 win.
+Both deployment and seven-input lifecycle now pass independent native pairs:
+`player-moonbeam-copy-deployment-{replay-,}calibration.mt2f` preserves the old
+rejection and repaired forecast;`player-moonbeam-copy-lifecycle-{replay-,}calibration.mt2f`
+records natural turn4 draw,4-energy original,+20 inherited magic power,copy31,
+and its0-energy play/purge. Full successors/RNG and four immutable copy branches
+match. Zero-X does not damage enemies; normal friendly spell/exhaust callbacks
+still run. No extra copy is produced by playing the replacement copy.
+
+Focused entries are `--moonbeam-copy-deployment-only` and
+`--moonbeam-copy-lifecycle-only`. Original Moonbeam X0/1/3,old intrinsic
+WurmkinSpike copy,and BossEmber moon refresh controls pass. This is component
+acceptance,not a Ring5 win. Actual10000ms/two-worker Ring5 is being evaluated.

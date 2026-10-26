@@ -241,6 +241,10 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-wurmkin-spike-copy-deployment-replay-calibration.mt2f',
     'player-wurmkin-spike-copy-calibration.mt2f',
     'player-wurmkin-spike-copy-replay-calibration.mt2f',
+    'player-moonbeam-copy-deployment-calibration.mt2f',
+    'player-moonbeam-copy-deployment-replay-calibration.mt2f',
+    'player-moonbeam-copy-lifecycle-calibration.mt2f',
+    'player-moonbeam-copy-lifecycle-replay-calibration.mt2f',
     'player-spent-monster-spell-relic-calibration.mt2f',
     'player-spent-monster-spell-relic-replay-calibration.mt2f',
     'player-egg-catalog-missing-observation.mt2f',
@@ -1916,6 +1920,8 @@ $branchPairGates = @{
     'player-echoes-past-recast-zero-calibration.mt2f' = '--echoes-past-recast-only'
     'player-wurmkin-spike-copy-deployment-calibration.mt2f' = '--wurmkin-spike-copy-deployment-only'
     'player-wurmkin-spike-copy-calibration.mt2f' = '--wurmkin-spike-copy-only'
+    'player-moonbeam-copy-deployment-calibration.mt2f' = '--moonbeam-copy-deployment-only'
+    'player-moonbeam-copy-lifecycle-calibration.mt2f' = '--moonbeam-copy-lifecycle-only'
     'player-spent-monster-spell-relic-calibration.mt2f' = '--spent-monster-spell-relic-only'
     'player-unobserved-preview-birth-calibration.mt2f' = '--unobserved-preview-birth-only'
     'player-room-death-preview-identity-calibration.mt2f' = '--room-death-preview-identity-only'
