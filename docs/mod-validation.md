@@ -1,12 +1,15 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.114, committed source`84bfb6254fb3d998ee086df077844dfa0ca3d1a6`.
+Current Windows installation:0.2.117, committed source`3ac012a7e8e2076693f8607652b20833b4e33a5b`.
 The exact release payload passes the twelfth random Hellhorned/LazarusLeague sample's
-first battle with actual10000ms/two-worker advice and independent native
-replay:24 inputs,19 plays,five EndTurns,Pyre80 and nine train stages per process.
-Every root,successor,forecast and RNG matches; all four failure counters are
-zero. Source`20261026-095201-e9073f81` and replay`campaign-ring2-20261026-095427-aa06f28e`
-bind the three installed DLL hashes to the committed build.
+final battle in independent native processes:85 frozen inputs,74 plays,11 EndTurns,
+Pyre79 and21 train stages per process. Every root,successor,forecast and RNG matches;
+all four failure counters are zero. Source`20261026-105617-6c66109e` and replay
+`campaign-ring9-20261026-110355-15e48a48` bind the installed DLL hashes to the clean
+committed build. The game records an eight-win Standard settlement and the complete
+44-file checkpoint restores. The last three battles use offline refinement;
+this is not an all-default-budget clearance. Versions115–117 fix post-battle reward
+scope, old Sacrifice attribution after revival and nested retaliation/removal order.
 
 Versions0.2.113/114 avoid simulating lower-ranked complex selections after a
 legal seed input and reuse exact observed unaffordable-card rejections in
@@ -26,14 +29,14 @@ forecast/RNG and eight immutable branches per process. The eleventh sample's
 Pyre21 final entry now completes32 actual default inputs without a model
 discrepancy, but loses. This is a strategy limitation, not a native win.
 
-Installed at2026-10-26T09:58:20+08:00, with67 protected files unchanged.
-Package:`results/mod-dist/PojuAdvisor-0.2.114-Windows-20261026-095818.zip`,
-SHA256`97dd63078052449618d7046c870d58a9434f8b0b4993a0699bc5b5ce0b1ab0e0`.
+Installed at2026-10-26T11:29:08+08:00, with67 protected files unchanged.
+Package:`results/mod-dist/PojuAdvisor-0.2.117-Windows-20261026-112905.zip`,
+SHA256`34704e0700358f0d29274fd2d17ebbad14233933ac19bd8f5dd52f30e9fd0650`.
 Installed DLL SHA256 values:
 
-- Advisor:`0634d76803cd42d42725c7dfeeb7aa8f0634d048e5c8d9687ef8c6e065afca78`
-- Model:`8188b49b3e220fd10870acf858472011bf09eca087c1e54ae297fe7405fc137f`
-- FixtureArchive:`83ca9ad06be03b03cf2771b38a9722e991b6b45c0091b6799a43d7194838223d`
+- Advisor:`15744cba9aa100f2d984277c6ef05303b3655cc6b1e150c6860c6887f5390fe4`
+- Model:`3d4d45d8cb98e3c8132ff4c6b21aae90959fef42180cb9e56260d9d36198a76a`
+- FixtureArchive:`2ad21d95e2c391404de563667ac45087f4ceb04a66c098baf87b33eca9f15003`
 
 Since0.2.84 the payload includes native-calibrated equipment Etch, returned
 Permafrost draw callbacks, preview-born aura cleanup/mode and direct boss
