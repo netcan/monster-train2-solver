@@ -24,9 +24,13 @@ internal static class ZeroEnergyXPolicyChecks
                 before.Spawn.Train.Rooms.SelectMany(room => room.Units).Sum(unit => unit.Status("corrupt_poison")?.Stacks ?? 0),
             "Missing native zero-energy upgraded copy and its poison effect.");
         var selected = BattleTacticalPolicy.Choose(before, out _, preferredDeploymentRoom: 2);
-        Require(selected?.Action.CardInstanceId == 35 && selected.Action.RoomIndex == 2 &&
-            NativeBranchObservationChecks.Key(selected.Result.State!) == NativeBranchObservationChecks.Key(actual),
-            "Tactical seed still omits the useful zero-energy X card or changes its native successor.");
+        Require(selected?.Action.CardInstanceId == 35, "Tactical seed still omits the useful zero-energy X card.");
+        // The native witness fixes its original input. Improved room ranking
+        // may choose another legal floor; preserve the original native successor
+        // and independently verify deterministic tactical choices below.
+        var recorded = BattleActionModel.PlayCard(before, action);
+        Require(recorded.Supported && NativeBranchObservationChecks.Key(recorded.State!) == NativeBranchObservationChecks.Key(actual),
+            "The recorded zero-energy X input changed its native successor.");
         // Removing only the X bonus restores the deliberately skipped zero-X
         // case, keeping the native witness and its immutable parent untouched.
         var changed = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
@@ -52,11 +56,13 @@ internal static class ZeroEnergyXPolicyChecks
                         "Independent X-cost process changed full native state/RNG at " + index);
         }
         string parent = JsonSerializer.Serialize(before, ModelJson.Options);
-        string native = NativeBranchObservationChecks.Key(actual);
+        string selectedKey = NativeBranchObservationChecks.Key(selected!.Result.State!);
+        string selectedAction = JsonSerializer.Serialize(selected.Action);
         Parallel.For(0, 4, _ =>
         {
             var choice = BattleTacticalPolicy.Choose(before, out var omitted, 2);
-            Require(choice?.Action.CardInstanceId == 35 && NativeBranchObservationChecks.Key(choice.Result.State!) == native &&
+            Require(choice?.Action.CardInstanceId == 35 && JsonSerializer.Serialize(choice.Action) == selectedAction &&
+                NativeBranchObservationChecks.Key(choice.Result.State!) == selectedKey &&
                 JsonSerializer.Serialize(before, ModelJson.Options) == parent, "Zero-energy X seed changed full state/RNG or parent.");
         });
         Console.WriteLine("ZERO-ENERGY-X-POLICY PASS:9 native inputs/full state/RNG, useful intrinsic X bonus at zero energy, no-bonus negative control and four immutable tactical choices; independentPair=" + replay.HasValue);

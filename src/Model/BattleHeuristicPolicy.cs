@@ -135,12 +135,33 @@ namespace MonsterTrain2Poju.Model
             CardActionEffect effect = rule.Effects[0];
             if (effect.Type != "AddStatus" || effect.Target is not ("Room" or "FrontInRoom") ||
                 !effect.AllowEnemy || effect.AllowPlayer || effect.Statuses.Count == 0 ||
-                effect.Statuses.Any(status => status.DisplayCategory != "Negative" || status.Stacks <= 0)) return null;
+                effect.Statuses.Any(status => status.DisplayCategory != "Negative" || status.Stacks < 0)) return null;
+            IReadOnlyList<CombatStatus> statuses = effect.Statuses;
+            if (statuses.Any(status => status.Stacks == 0))
+            {
+                CombatContext? context = source.Spawn.Train.Context;
+                CardInstanceState? card = context?.FindCard(action.CardInstanceId);
+                if (rule.CostType != "ConsumeRemainingEnergy" || context?.QueryFrame == null ||
+                    card?.StatusScalingTraits?.Count is not > 0 || card.StatusScalingTraits.Any(trait =>
+                        trait.Query.Type != "PlayedCost" || !trait.Query.VariableCost)) return null;
+                // Native variable-cost fallback reads the prospective payment,
+                // X upgrades and selected-room modifier without playing a card.
+                context = context.WithStatistics(context.Statistics?.WithPlayedCost(card.InstanceId, null))
+                    .WithQueryFrame(context.QueryFrame.With(energy: source.Energy, selectedRoomIndex: action.RoomIndex));
+                var scaled = new List<CombatStatus>();
+                foreach (CombatStatus status in statuses)
+                {
+                    StatusScalingResult amount = StatusScalingModel.Apply(context, card.InstanceId, CombatTeam.Enemy, status.Id, status.Stacks);
+                    if (!amount.Supported || amount.Stacks <= 0) return null;
+                    scaled.Add(status.WithStacks(amount.Stacks));
+                }
+                statuses = scaled;
+            }
             CardTargets targets = CardTargetModel.Collect(source.Spawn.Train, action.RoomIndex, effect, Array.Empty<int>(), firstEffect: true);
             if (!targets.Supported) return null;
             double stacks = source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                 .Where(unit => targets.UnitIds.Contains(unit.Id) && unit.Team == CombatTeam.Enemy && unit.Health > 0)
-                .Sum(unit => effect.Statuses.Where(status => !unit.StatusImmunities.Contains(status.Id)).Sum(status => (double)status.Stacks));
+                .Sum(unit => statuses.Where(status => !unit.StatusImmunities.Contains(status.Id)).Sum(status => (double)status.Stacks));
             return stacks - Math.Abs(action.RoomIndex - preferredDeploymentRoom) * .001;
         }
 
