@@ -20,9 +20,10 @@ namespace MonsterTrain2Poju.Model
             CardPlayRule? raw = definitions.Cards.FirstOrDefault(rule => rule.DataId == card?.DataId);
             if (context == null || card == null || raw == null || raw.CardType != "Spell" || !echo && !IsTreasure(card))
                 return Unsupported("Indirect Treasure casting requires a captured original spell and trait.");
-            if (context.Relics?.Any(relic => relic.EffectTypes.Count > 0) == true || raw.OnCastEffects.Count > 0 ||
-                raw.OnUnplayedNegativeEffects.Count > 0 || CardBranchMaskModel.Resolve(card).Traits.Any(trait =>
-                    trait is not (TreasureTrait or "CardTraitStrongerMagicPower" or "CardTraitFreeze")))
+            bool waxenEcho = echo && EchoWaxenSpikeModel.Known(card, raw.Effects) && EchoWaxenSpikeModel.KnownRelics(context);
+            if (raw.OnCastEffects.Count > 0 || raw.OnUnplayedNegativeEffects.Count > 0 || !waxenEcho &&
+                (context.Relics?.Any(relic => relic.EffectTypes.Count > 0) == true || CardBranchMaskModel.Resolve(card).Traits.Any(trait =>
+                    trait is not (TreasureTrait or "CardTraitStrongerMagicPower" or "CardTraitFreeze"))))
                 return Unsupported("Indirect Treasure casting with additional relic or card callbacks requires native calibration.");
             CardPlayRule rule = CardModifierModel.Resolve(raw, card);
             int roomIndex = selectedRoom ?? context.QueryFrame?.SelectedRoomIndex ?? -1;

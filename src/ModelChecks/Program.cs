@@ -1,5 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 or 4 && args[0] == "--echo-waxen-spike-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var endTurn = args.Length >= 3 ? ModelJson.ReadFixture(args[2]) : null;
+    using var replay = args.Length == 4 ? ModelJson.ReadFixture(args[3]) : null;
+    EchoWaxenSpikeChecks.Native(source.RootElement, endTurn?.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 or 4 && args[0] == "--combat-victory-statistics-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -6619,6 +6627,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-com
     CombatVictoryStatisticsChecks.Native(fixture.RootElement, replay.RootElement, retention.RootElement);
     RoomCombatChecks.NativeRoomOnly(path);
     RoomCombatChecks.NativeRoomOnly(ModelJson.RelatedFixture(path, "player-combat-victory-cache-retention-counterexample-calibration.mt2f"));
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-waxen-spike-copy-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var endTurn = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-waxen-spike-endturn-calibration.mt2f"));
+    EchoWaxenSpikeChecks.Native(source.RootElement, endTurn.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-room-upgrade-provenance-counterexample-calibration.mt2f"))
 {

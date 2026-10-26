@@ -33,8 +33,9 @@ namespace MonsterTrain2Poju.Model
                 if (room.RoomIndex != action.RoomIndex || attachment.Echo == null || attachment.Echo.OriginalCardId == action.CardInstanceId) continue;
                 CardInstanceState card = RelicFreezeHandUpgradeModel.Played(context.FindCard(action.CardInstanceId)!);
                 context = context.WithCard(card);
+                bool waxen = EchoWaxenSpikeModel.Known(card, rule.Effects) && EchoWaxenSpikeModel.KnownRelics(context);
                 if (rule.OnCastEffects.Count > 0 || rule.OnUnplayedNegativeEffects.Count > 0 || rule.ExternalInteractions.Count > 0 ||
-                    CardBranchMaskModel.Resolve(card).Traits.Any(trait => trait != "CardTraitFreeze") || context.Relics?.Any(relic => relic.EffectTypes.Count > 0) == true)
+                    !waxen && (CardBranchMaskModel.Resolve(card).Traits.Any(trait => trait != "CardTraitFreeze") || context.Relics?.Any(relic => relic.EffectTypes.Count > 0) == true))
                     return Fail("Echo replay needs native calibration: onCast=" + rule.OnCastEffects.Count + ", unplayed=" +
                         rule.OnUnplayedNegativeEffects.Count + ", interactions=" + string.Join(";", rule.ExternalInteractions) +
                         ", traits=" + string.Join(";", CardBranchMaskModel.Resolve(card).Traits) + ", relics=" +

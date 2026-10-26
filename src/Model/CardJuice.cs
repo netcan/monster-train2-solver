@@ -25,7 +25,7 @@ namespace MonsterTrain2Poju.Model
             lifecycle.AddedTraits[0].RuntimeType == (triple ? TripleTrait : Trait) &&
             lifecycle.AddedTraits[0].DeclaredName == lifecycle.AddedTraits[0].RuntimeType &&
             Ordinary(lifecycle.AddedTraits[0], triple ? 3 : 2);
-        private static bool KnownTitanCurse(CardUpgradeModifier upgrade) =>
+        internal static bool KnownTitanCurse(CardUpgradeModifier upgrade) =>
             upgrade.DataId == "f37fb903-28d6-4d49-b50e-9226f4854816" && upgrade.AssetKey == "TitanCurse_Upgrade" &&
             upgrade.Stats.Cost == 1 && upgrade.Stats.Damage == 0 && upgrade.Stats.Health == 0 && upgrade.Stats.Heal == 0 &&
             upgrade.Stats.Size == 0 && upgrade.Stats.XCost == 0 && upgrade.Stats.EquipmentLimit == 0 && upgrade.Stats.UpgradeSlotCount == 0 &&

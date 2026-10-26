@@ -99,6 +99,7 @@ namespace MonsterTrain2Poju.Probe
                 FloorTransitionPiercing = CaptureFloorTransitionPiercing(),
                 RoomAttachmentMovement = roomAttachmentMovement.ToArray(),
                 TriggeredCorruption = TriggeredCorruptionProbe.Records.ToArray(),
+                RoomPreCombatRecords = RoomPreCombatProbe.Records.ToArray(),
                 CorruptRestrictedState = CorruptRestrictedStateCalibration.Evidence,
                 BattleTestRng = BattleTestRngProbe.Records.ToArray(),
                 TerminalSpawnPoints = BattleSpawnPointProbe.Decisions.Where(sample => sample.Terminal).ToArray() });
