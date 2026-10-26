@@ -47,3 +47,9 @@
 26输入、完整状态／预测／RNG、纯采集及四项零失败通过；分别归档
 `full-battle-random-campaign-11-ring1-release111-budget10000-{search,replay}.mt2f`。
 终战继续超过原25输入边界推进；首战胜利不替代终战策略质量验收。
+
+同入口实际默认整场已完成32输入（26出牌／6结束回合），10列车阶段，
+完整后继／预测／RNG及四项零失败通过，结果仍是PlayerDefeated。
+归档`full-battle-random-campaign-11-ring8-pyre21-release111-budget10000-loss.mt2f`，
+继续策略改进。Windows0.2.111已在08:11安装，67项受保护文件未变；
+此前两处“当前安装0.2.110／交付待验收”描述的是各组件验收当时的状态。

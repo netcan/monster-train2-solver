@@ -1,12 +1,31 @@
 # Player Mod validation · 2026-10-26
 
-Current Windows installation:0.2.110, committed source`1a087498f6a3d3fc5ec1a7954c3c9073b160b868`.
+Current Windows installation:0.2.111, committed source`d398f7b95f218a4b17ed3c9a5bfa92bee45038b2`.
 The exact release payload passes the eleventh random Stygian/Awoken sample's
 first battle with actual10000ms/two-worker advice and independent native
 replay:26 inputs,21 plays,five EndTurns,Pyre80 and nine train stages per process.
 Every root,successor,forecast and RNG matches; all four failure counters are
-zero. Source`20261026-071851-a448c4c7` and replay`campaign-ring2-20261026-072022-90e3ecd3`
+zero. Source`20261026-080700-78b8e847` and replay`campaign-ring2-20261026-080843-49a1e593`
 bind the three installed DLL hashes to the committed build.
+
+Version0.2.111 preserves the native BattleTest stream across effect legality
+queries, including hand highlights, pre-play validation and standalone
+pre-effect validation. Composite queries keep their internal random sequence;
+original query results, exceptions and the live Battle stream are retained.
+The original21/25-input counterexamples and independent passive traces remain
+archived. The final guard passes25 paired native inputs, complete state,
+forecast/RNG and eight immutable branches per process. The eleventh sample's
+Pyre21 final entry now completes32 actual default inputs without a model
+discrepancy, but loses. This is a strategy limitation, not a native win.
+
+Installed at2026-10-26T08:11:52+08:00, with67 protected files unchanged.
+Package:`results/mod-dist/PojuAdvisor-0.2.111-Windows-20261026-081151.zip`,
+SHA256`50ded10e4e8f638f6094c1f63fe02f7f19b4e82cc6316697ab41ec468a545ef0`.
+Installed DLL SHA256 values:
+
+- Advisor:`ca6b9c02cdb9321c64a87e87bb66974fe48e4f6d3e324221094af771dfa82657`
+- Model:`38199748c8549120bda06b4d87a9f94591cba3b49d6331ca5b10320b1dc86ee5`
+- FixtureArchive:`99bfe02525566b2473af069b364313dcb8de3005ccaf146f81a30edb96b9dd62`
 
 Since0.2.84 the payload includes native-calibrated equipment Etch, returned
 Permafrost draw callbacks, preview-born aura cleanup/mode and direct boss
