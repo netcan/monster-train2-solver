@@ -81,11 +81,11 @@ else if (args.Length == 8 && args[0] == "improve-pairs")
     OfflineBattleSearch.Improve(args[1], args[3], int.Parse(args[4]), int.Parse(args[5]), args[2],
         int.Parse(args[6]), exploreCardOrder: true, retainSuffix: true, secondActionWidth: int.Parse(args[7]));
 }
-else if (args.Length == 8 && args[0] == "improve-win")
+else if (args.Length is 8 or 9 && args[0] == "improve-win")
 {
     OfflineBattleSearch.Improve(args[1], args[3], int.Parse(args[4]), int.Parse(args[5]), args[2],
         int.Parse(args[6]), exploreCardOrder: true, retainSuffix: true, secondActionWidth: int.Parse(args[7]),
-        improveWinningRoute: true);
+        improveWinningRoute: true, perDecisionCandidateLimit: args.Length == 9 ? int.Parse(args[8]) : 0);
 }
 else if (args.Length == 9 && args[0] == "improve-sweep")
 {
@@ -179,7 +179,7 @@ else
     Console.Error.WriteLine("Card order investigation: improve-order <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision>; also tries other cards and unit abilities at each decision; model prediction only.");
     Console.Error.WriteLine("Retained route investigation: improve-suffix <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision>; reapplies legal recorded suffix inputs by turn before tactical fallback; model prediction only.");
     Console.Error.WriteLine("Joint route investigation: improve-pairs <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <second-action-width:0..32>; bounded two-input alternatives, independent final replay; model prediction only.");
-    Console.Error.WriteLine("Winning route investigation: improve-win <native.mt2f> <verified-winning-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <second-action-width:0..32>; retain complete winning improvements for the next campaign battle; model prediction only.");
+    Console.Error.WriteLine("Winning route investigation: improve-win <native.mt2f> <verified-winning-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <second-action-width:0..32> [candidates-per-decision:0..256]; retain complete winning improvements for the next campaign battle; model prediction only.");
     Console.Error.WriteLine("Bounded route sweep: improve-sweep <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <second-action-width:0..32> <candidates-per-decision:1..256>; share the budget across later decisions; model prediction only.");
     Console.Error.WriteLine("Predicted counterexample: refine-prediction <native.mt2f> <verified-prediction.mt2f> <new-winning-output.mt2f> <milliseconds> [start-decision] [last-decision]; validates native input hash/root and independently replays the baseline before exploring.");
     Console.Error.WriteLine("Search: solve-exact <input.mt2f> <new-output.mt2f> <max-nodes> <milliseconds> [EndTurn-horizon] | plan-belief <input.mt2f> <new-output.mt2f> <max-worlds> <decisions> <max-nodes> <milliseconds> [native-Turns-index] | verify-belief <policy.mt2f>");
