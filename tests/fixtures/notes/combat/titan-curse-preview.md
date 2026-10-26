@@ -16,5 +16,8 @@ HeroManager保留在列车外的两个MiniFleshweaver（9、10）仍参加下一
 定向入口：`scripts/Check-Models.ps1 -Fixture player-titan-curse-preview-calibration.mt2f`。
 
 旧`full-battle-unplayed-card-effects`同时含Soul Savior，0.2.145与0.2.146均在另一个预览禁用
-效果被拒绝，尚未宣称此旧组合通过。后续11输入自然未打出边界已确认真实TitanCurse结算
+效果被拒绝。0.2.149依据原生`CardEffectAddUpgradedCopy.CanApplyInPreviewMode=false`
+补齐原版Soul Savior：保留效果入口的房间缓存，预览跳过复制，真实未打出仍复制。
+该旧组合现通过7回合、11次出牌、14列车阶段及完整状态检查，原生累计策略链也一致。
+后续11输入自然未打出边界已确认真实TitanCurse结算
 给12张合格法术加费，独立原生配对完整状态／RNG通过，见[月相空效果首领遗物](moon-null-boss-relic.md)。

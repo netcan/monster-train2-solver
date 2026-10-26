@@ -11,8 +11,19 @@ Player birth identities,room-death preview ownership and terminal coroutine plan
 are calibrated. The independent reward driver cancels an unselectable heavy-crystal
 choice,selects the eligible light-crystal upgrade through normal UI,and reaches Ring3.
 The two-battle continuous chain and16-file checkpoint restore(15 payloads) pass.
-Ring3 currently has no complete plan at10000ms: all-status trigger and moon-tracked
-outer-boss creation boundaries remain. No default-budget campaign clear is claimed.
+Development0.2.144-147 now has independent native pairs for the rank-two champion
+deployment(1 input),full-moon outer-boss birth(2),TitanCurse preview(6),and the null
+boss artifact during moon hand refresh(11). The last pair also confirms the real
+unplayed curse upgrades twelve spells. At0.2.147 Ring3 reached25 inputs before a
+newborn Funguy's moon/conduit registration order differed. Development0.2.148
+corrects this order; its25-input independent native pair,older moon-upgrade control
+and26-input prior room-death pair pass. Actual10000ms/two-worker Ring3 then completes
+34 inputs(25plays/9EndTurns),18 train stages,identical complete states/forecasts/RNG
+and four zero failure counters, but loses with206 bossHP. The native loss is preserved
+for strategy work. Development0.2.149 also skips the original Soul Savior preview
+copy effect; the older combined curse/copy fixture passes7turns/11plays and full
+state checks. Fresh native control is being checked. Installed build remains0.2.143.
+No default-budget campaign clear is claimed.
 No Mac package was built. See[terminal capture evidence](../tests/fixtures/notes/combat/terminal-coroutine-planes.md).
 
 Previous Windows installation:0.2.138, clean source`0c4432af9c28b5c27f7df6295fe17ab6d461087e`.
