@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--combat-victory-statistics-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    CombatVictoryStatisticsChecks.Native(fixture.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--uninjured-pending-boss-only")
 {
     using var early = ModelJson.ReadFixture(args[1]);
@@ -6600,6 +6607,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-inh
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-inherent-juice-curse-replay-calibration.mt2f"));
     InherentJuiceCurseChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-combat-victory-statistics-counterexample-calibration.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    CombatVictoryStatisticsChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-room-upgrade-provenance-counterexample-calibration.mt2f"))
 {

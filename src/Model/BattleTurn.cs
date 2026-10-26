@@ -768,6 +768,11 @@ namespace MonsterTrain2Poju.Model
                     finalContext.KillCamActivated != false
                     ? otherPiles.Select(CardPileModel.Clear).ToArray()
                     : otherPiles;
+                // Victory's final statistic refresh follows killcam pile
+                // clearing. Native UpdateDeckStats then falls back to permanent
+                // deck membership; defeat/stalemate do not imply that refresh.
+                if (outcome == RoomOutcome.BattleWon && finalContext.KillCamActivated == true)
+                    finalContext = finalContext.WithStatistics(finalContext.Statistics?.RefreshDeckAfterCardTerminal());
                 spawn = WithTrain(spawn, CardSpellModel.WithContext(spawn.Train, finalContext.WithOtherPiles(piles)),
                     spawn.Turn, spawn.Rng);
                 int selectedRoom = finalContext.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom;

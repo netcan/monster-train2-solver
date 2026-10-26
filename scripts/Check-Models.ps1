@@ -149,6 +149,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-inherent-juice-spike-replay-calibration.mt2f',
     'player-inherent-juice-curse-calibration.mt2f',
     'player-inherent-juice-curse-replay-calibration.mt2f',
+    'player-combat-victory-statistics-counterexample-calibration.mt2f',
     'player-triple-juice-spike-calibration.mt2f',
     'player-triple-juice-spike-replay-calibration.mt2f',
     'player-triple-juice-search-failure-calibration.mt2f',
@@ -1874,6 +1875,17 @@ $roomProvenanceNames = @('player-room-upgrade-provenance-counterexample-calibrat
 $unboxMoonNames = @('player-unbox-moon-relic-calibration.mt2f', 'player-unbox-moon-relic-replay-calibration.mt2f')
 $inherentJuiceNames = @('player-inherent-juice-spike-refusal-calibration.mt2f', 'player-inherent-juice-spike-calibration.mt2f', 'player-inherent-juice-spike-replay-calibration.mt2f')
 $inherentCurseNames = @('player-inherent-juice-curse-calibration.mt2f', 'player-inherent-juice-curse-replay-calibration.mt2f')
+$combatStatisticsNames = @('player-combat-victory-statistics-counterexample-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $combatStatisticsNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Combat victory statistic checker build failed.' }
+    }
+    $combatStatisticsArguments = @('--combat-victory-statistics-only') + @($combatStatisticsNames | ForEach-Object { Get-TestFixturePath $_ })
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @combatStatisticsArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Focused combat victory statistics failed.' }
+    return
+}
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $inherentCurseNames }).Count -eq 0) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
