@@ -9,11 +9,13 @@ internal static class RandomCampaignChecks
     {
         using var source = ModelJson.ReadFixture(path);
         if (path.EndsWith("full-battle-random-campaign-11-ring7-pyre-refined-search.mt2f", StringComparison.Ordinal) ||
-            path.EndsWith("full-battle-random-campaign-11-ring7-pyre31-refined-search.mt2f", StringComparison.Ordinal))
+            path.EndsWith("full-battle-random-campaign-11-ring7-pyre31-refined-search.mt2f", StringComparison.Ordinal) ||
+            path.EndsWith("full-battle-random-campaign-11-ring7-pyre48-refined-search.mt2f", StringComparison.Ordinal))
         {
-            int expectedPyre = path.EndsWith("-pyre31-refined-search.mt2f", StringComparison.Ordinal) ? 31 : 21;
+            int expectedPyre = path.EndsWith("-pyre48-refined-search.mt2f", StringComparison.Ordinal) ? 48 :
+                path.EndsWith("-pyre31-refined-search.mt2f", StringComparison.Ordinal) ? 31 : 21;
             using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
-            RefinedPair(source.RootElement, replay.RootElement, 73751504, 0, 6, "Stygian", "Awoken", 38);
+            RefinedPair(source.RootElement, replay.RootElement, 73751504, 0, 6, "Stygian", "Awoken", expectedPyre == 48 ? 53 : 38);
             foreach (var fixture in new[] { source.RootElement, replay.RootElement })
             {
                 var final = fixture.GetProperty("RollingDecisions").EnumerateArray().Last().GetProperty("Actual").Deserialize<BattleTurnState>()!;
