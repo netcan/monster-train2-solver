@@ -96,6 +96,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-16-ring2-release171-budget10000-replay.mt2f',
     'full-battle-random-campaign-16-ring3-release172-budget10000-search.mt2f',
     'full-battle-random-campaign-16-ring3-release172-budget10000-replay.mt2f',
+    'full-battle-random-campaign-16-ring2-release173-budget10000-search.mt2f',
+    'full-battle-random-campaign-16-ring2-release173-budget10000-replay.mt2f',
     'player-arkion-moon-birth-calibration.mt2f',
     'arkion-moon-creation-calibration.mt2f',
     'player-arkion-moon-birth-replay-calibration.mt2f',

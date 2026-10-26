@@ -1,6 +1,23 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.171, source`8f0c3a2400af2a3019250c8dfda17d16afb2608d`.
+Current Windows installation:0.2.173, source`2827d732bb75e93efaf414b644f78b0cb6319e34`.
+Installed at01:50 with67 protected save/config/other-mod files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.173-Windows-20261027-015012.zip`,SHA256
+`933032878d1aed3592823e3b3055dcd277445951024b4bc22b4a0a065dcb7639`.
+The exact payload wins sample16 Ring2 with31inputs,26plays/5EndTurns,Pyre80,
+9train stages and four zero failure counters. Independent frozen native replay
+matches all states/forecasts/RNG and advances normally through50events.
+All gameplay publications reuse the winning route; the former generation55
+restart now retains its seven-input suffix with SearchMs0. All four searches
+belong to initial planning and the explicit pause/hide/refresh acceptance test,
+including its cancelled worker. No unexpected new-search capture was emitted.
+The three installed DLLs,compiled provenance and package were verified. The
+real game was stopped; next launch loads0.2.173. Previous DLLs and receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261027-015012/`. No Mac build was made.
+This includes the Arkion full-moon birth repair. The second-tier Sentient fix
+is separately under0.2.174 acceptance and is not in this installed payload.
+
+Previous Windows installation:0.2.171, source`8f0c3a2400af2a3019250c8dfda17d16afb2608d`.
 Installed at01:25 with67 protected save/config/other-mod files unchanged. Package
 `results/mod-dist/PojuAdvisor-0.2.171-Windows-20261027-012536.zip`,SHA256
 `2a85735417c0785865425434a67033639dfd13c939e54a573d22031582d65ab9`.

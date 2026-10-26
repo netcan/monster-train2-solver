@@ -14,8 +14,13 @@ Both full-state/forecast/RNG comparisons and all four failure counters pass.
 Ring2 ends with Pyre80; its normal successor save SHA256 is
 2AD2E0FAD4C74FCB1F014FA9E4818EA30D389E5AE5998ED6C7723D43F12D9F4B.
 The first EndTurn retains a verified winning suffix with zero new search time.
-One later automatic search is still being investigated, rather than declared
-fixed for every turn. The released DLLs match both accepted native processes.
+The later Conduit automatic-search counterexample is fixed in0.2.173. Its separate
+clean31-input native pair wins with Pyre80,9train stages and50normal events.
+Every gameplay publication retains the winning route, including generation55's
+seven-input suffix; all four searches belong to explicit startup/UI tests.
+These release-validation archives are distinct from the original continuous
+26-input campaign chain. Their reward successor save differs and does not replace
+the already accepted Ring3 input. The installed DLLs match their native pair.
 
 Ring3's Arkion SiphonRage full-moon birth was calibrated against two independent
 native boundaries. Its complete default source and independent frozen native
