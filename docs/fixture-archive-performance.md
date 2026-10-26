@@ -23,3 +23,8 @@ dotnet .probe-runs/checks114-dag-fast/ModelChecks.dll --fixture-archive-only
 差异、跨调用隔离与32路并发；另验证20000个独立节点的导入、跨源图ID
 隔离及先前构建图不变。原有精确数值、重复键、Unicode、原生序列化契约、
 确定性编码及畸形档案拒绝检查一并通过，未运行全量战斗回归。
+
+`Run-RandomCampaign.ps1 -ModelChecker <已构建的ModelChecks.dll>`可为新的
+隔离验收选择优化后的检查器，不必改写其他原生进程已加载的主工作区DLL。
+默认仍用主工作区检查器，实际路径及SHA256记入运行收据；原生载荷继续由
+`-NativeBuildRoot`固定。选择检查器不改变游戏输入、原生胜负或逐步校验要求。

@@ -11,6 +11,7 @@ param(
     [ValidateRange(1, 2)][int] $NativeWorker = 2,
     [ValidateRange(60, 3600)][int] $TimeoutSeconds = 1200,
     [string] $NativeBuildRoot = '',
+    [string] $ModelChecker = '',
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -26,7 +27,11 @@ if (-not $SkipBuild) {
         if ($LASTEXITCODE -ne 0) { throw "$project build failed." }
     }
 }
-$checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
+$checker = if ($ModelChecker) { (Resolve-Path -LiteralPath $ModelChecker).Path }
+    else { Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll' }
+if (-not (Test-Path -LiteralPath $checker -PathType Leaf) -or (Split-Path $checker -Leaf) -ine 'ModelChecks.dll') {
+    throw 'Expected an existing ModelChecks.dll.'
+}
 function Invoke-Native([string] $Script, [hashtable] $Parameters) {
     if ($NativeBuildRoot) { $Parameters.NativeBuildRoot = $NativeBuildRoot }
     $result = $null
@@ -75,7 +80,8 @@ function Record([object] $Entry) {
 $receipt = [ordered]@{ Schema=1; PrimaryClan=$PrimaryClan; SecondaryClan=$SecondaryClan; Seed=$Seed; Rank=$Rank
     WholeBattle=$true; SearchWorkers=2; TimeLimitMs=$TimeLimitMs; Journal=$journal; InputProfile=$InputProfile; NativeBuildRoot=$NativeBuildRoot
     NewRunFromProfile=$NewRunFromProfile; StartingRing=$resumeDistance+1; LastAcceptedRing=$resumeDistance; NativeCampaignWon=$false; NativeVictoryType=$null
-    Outcome='Running'; FailureRing=$null; Failure=$null; SourceProfile=$null; NextInputProfile=$InputProfile }
+    Outcome='Running'; FailureRing=$null; Failure=$null; SourceProfile=$null; NextInputProfile=$InputProfile
+    ModelChecker=$checker; ModelCheckerSHA256=(Get-FileHash -LiteralPath $checker).Hash }
 Record ([pscustomobject]$receipt)
 Write-Host "RANDOM-CAMPAIGN-START $PrimaryClan/$SecondaryClan seed=$Seed rank=$Rank budgetMs=$TimeLimitMs journal=$journal"
 try {
