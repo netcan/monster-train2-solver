@@ -257,6 +257,13 @@ namespace MonsterTrain2Poju.Probe
             if (!roomAttachmentUnitUpgrade && upgrade.GetRoomModifierUpgrades().Count > 0)
             {
                 interactions.Add("Upgrade room modifiers");
+                if (upgrade.GetCardUpgradeDataId() == CardSentientDrawUpgradeModel.DataId &&
+                    (upgrade.GetAssetName() != CardSentientDrawUpgradeModel.AssetKey ||
+                     upgrade.GetRoomModifierUpgrades().Count != 1 ||
+                     upgrade.GetRoomModifierUpgrades()[0].GetRoomStateModifierClassName() != UnitRoomResourceModel.Draw ||
+                     upgrade.GetRoomModifierUpgrades()[0].GetParamInt() != 1 ||
+                     upgrade.GetRoomModifierUpgrades()[0].DisallowedInDeploymentPhase))
+                    interactions.Add("Changed original Sentient draw room modifier definition");
                 if (upgrade.GetCardUpgradeDataId() == CardCorruptionAttackUpgradeModel.DataId &&
                     (upgrade.GetRoomModifierUpgrades().Count != 1 || upgrade.GetAssetName() != CardCorruptionAttackUpgradeModel.AssetKey ||
                      upgrade.GetRoomModifierUpgrades()[0].GetRoomStateModifierClassName() != CardCorruptionAttackUpgradeModel.Type ||

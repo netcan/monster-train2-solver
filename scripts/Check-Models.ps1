@@ -81,6 +81,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-15-ring1-release165-budget10000-replay.mt2f',
     'full-battle-random-campaign-15-ring2-release166-budget10000-search.mt2f',
     'full-battle-random-campaign-15-ring2-release166-budget10000-replay.mt2f',
+    'full-battle-random-campaign-15-ring3-release167-budget10000-search.mt2f',
+    'full-battle-random-campaign-15-ring3-release167-budget10000-replay.mt2f',
     'player-terminal-coroutine-planes-counterexample-calibration.mt2f',
     'full-battle-random-campaign-11-ring1-budget10000-search.mt2f',
     'full-battle-random-campaign-11-ring1-budget10000-replay.mt2f',
@@ -563,6 +565,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-sweep-boss-preview-stop-replay-calibration.mt2f',
     'player-outer-boss-attachment-birth-calibration.mt2f',
     'player-unsupported-card-ranking-calibration.mt2f',
+    'player-sentient-draw-upgrade-calibration.mt2f',
+    'player-sentient-draw-upgrade-replay-calibration.mt2f',
     'player-outer-boss-attachment-birth-replay-calibration.mt2f',
     'player-discard-holdover-return-calibration.mt2f',
     'player-discard-holdover-return-replay-calibration.mt2f',
@@ -2063,6 +2067,7 @@ if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
     return
 }
 $branchPairGates = @{
+    'player-sentient-draw-upgrade-calibration.mt2f' = '--sentient-draw-upgrade-only'
     'player-effect-test-rng-calibration.mt2f' = '--hand-highlight-rng-pair-only'
     'player-hand-highlight-test-rng-calibration.mt2f' = '--hand-highlight-rng-pair-only'
     'player-unit-ability-duality-calibration.mt2f' = '--unit-ability-duality-pair-only'
