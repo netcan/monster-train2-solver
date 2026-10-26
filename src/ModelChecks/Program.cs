@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--unsupported-card-ranking-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    UnsupportedCardRankingChecks.Run(source.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--effect-test-rng-counterexample-only")
 {
     HandHighlightRngChecks.EffectCounterexample(args[1], args[2]);
@@ -6314,6 +6320,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-remote-preview-frame-replay-calibration.mt2f"));
     RemotePreviewFrameChecks.Native(source.RootElement, ModelJson.RelatedFixture(path, "player-remote-preview-frame-counterexample-calibration.mt2f"), replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-unsupported-card-ranking-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    UnsupportedCardRankingChecks.Run(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-outer-boss-attachment-birth-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-outer-boss-attachment-birth-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

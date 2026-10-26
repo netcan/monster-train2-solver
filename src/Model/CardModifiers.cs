@@ -454,6 +454,10 @@ namespace MonsterTrain2Poju.Model
             if (graftError != null) interactions.Add(graftError);
             string? killError = CardKillTriggerModel.Validate(instance);
             if (killError != null) interactions.Add(killError);
+            // Heuristic ranking also resolves unsupported cards. Keep their
+            // captured guard instead of throwing while deriving branch traits.
+            string? maskError = instance.MaskDescriptor == null ? null : UnsupportedReason(instance);
+            if (maskError != null) interactions.Add(maskError);
             if (rule.HasKillTriggers && instance.MaskDescriptor?.KillTriggers?.Count > 0 != true)
                 interactions.Add("Card OnKill requires captured branch-owned trigger payloads.");
             if (CardExhaustModel.HasConsume(instance) && instance.ExhaustState == null) interactions.Add("Consume requires captured private trait state.");
@@ -516,7 +520,7 @@ namespace MonsterTrain2Poju.Model
             // first-occurrence order. Scale their base payload before applying
             // magic power, rather than repeating effects around other upgrades.
             bool mergeTriggers = cardUpgrades.Any(upgrade => upgrade.Lifecycle?.Triggers.Any(trigger => trigger.Type == "OnCast") == true) &&
-                instance.MaskDescriptor != null && CardBranchMaskModel.Resolve(instance).Traits
+                instance.MaskDescriptor != null && maskError == null && CardBranchMaskModel.Resolve(instance).Traits
                 .Any(trait => trait is "CardTraitInfusion" or "CardTraitCraftedSpike");
             CardActionEffect[] triggerEffects = mergeTriggers
                 ? cardUpgrades.Select((upgrade, index) => (upgrade, index))
@@ -537,7 +541,7 @@ namespace MonsterTrain2Poju.Model
             CardActionEffect[] effects = rule.Effects.Select(ResolveEffect).ToArray();
             CardActionEffect[] onCastEffects = rule.OnCastEffects.Select(ResolveEffect).Concat(triggerEffects).ToArray();
             string destination = rule.Destination;
-            IReadOnlyList<string> effectiveTraits = instance.MaskDescriptor == null || killError != null
+            IReadOnlyList<string> effectiveTraits = instance.MaskDescriptor == null || maskError != null
                 ? Array.Empty<string>() : CardBranchMaskModel.Resolve(instance).Traits;
             if (destination == "Discard" && effectiveTraits.Any(trait => trait is "CardTraitSelfPurge" or "CardTraitEphemeral"))
                 destination = "Purged";

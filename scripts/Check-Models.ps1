@@ -562,6 +562,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-sweep-boss-preview-stop-calibration.mt2f',
     'player-sweep-boss-preview-stop-replay-calibration.mt2f',
     'player-outer-boss-attachment-birth-calibration.mt2f',
+    'player-unsupported-card-ranking-calibration.mt2f',
     'player-outer-boss-attachment-birth-replay-calibration.mt2f',
     'player-discard-holdover-return-calibration.mt2f',
     'player-discard-holdover-return-replay-calibration.mt2f',
@@ -2049,6 +2050,16 @@ if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-retaliation-r
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --retaliation-revival-only (Get-TestFixturePath $selectedFixtureNames[0])
     if ($LASTEXITCODE -ne 0) { throw 'Retaliation revival native check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
+    $selectedFixtureNames[0] -eq 'player-unsupported-card-ranking-calibration.mt2f') {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Unsupported ranking checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --unsupported-card-ranking-only $fixtures[0]
+    if ($LASTEXITCODE -ne 0) { throw 'Unsupported card ranking check failed.' }
     return
 }
 $branchPairGates = @{

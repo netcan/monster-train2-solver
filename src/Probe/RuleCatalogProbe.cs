@@ -64,6 +64,16 @@ namespace MonsterTrain2Poju.Probe
                 Schema = 3,
                 CardCatalogScope = fullGameDataCatalog ? "AllGameData" : "ObservedAndReachable",
                 CharacterCatalogScope = fullGameDataCatalog ? "AllGameData" : "ObservedAndReachable",
+                ObservedCardUpgrades = cardManager.GetHand().Concat(cardManager.GetDrawPile()).Concat(cardManager.GetDiscardPile())
+                    .SelectMany(card => card.GetCardStateModifiers().GetCardUpgrades()
+                        .Concat(card.GetTemporaryCardStateModifiers().GetCardUpgrades()))
+                    .GroupBy(upgrade => upgrade.GetCardUpgradeDataId(), StringComparer.Ordinal)
+                    .Select(group => group.First()).OrderBy(upgrade => upgrade.GetCardUpgradeDataId(), StringComparer.Ordinal)
+                    .Select(upgrade => new
+                    {
+                        Id = upgrade.GetCardUpgradeDataId(), AssetKey = upgrade.GetAssetName(),
+                        RoomModifiers = upgrade.GetRoomModifierUpgrades().Select(RoomModifier).ToArray()
+                    }).ToArray(),
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 FrameBefore = frame,
                 RngBefore = before,
