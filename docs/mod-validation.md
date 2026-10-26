@@ -1,6 +1,22 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.190, source`ffcfbeb7`.
+Current Windows installation:0.2.200, source`c8354352`.
+Installed at07:15 with67 protected save/config/other-mod files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.200-Windows-20261027-071459.zip`,SHA256
+`34b35511410d44cb1df6c448c08a9b36237d1ce0c1342e9f58cb788790485e37`.
+The exact payload wins sample18 Ring7 with44inputs,35plays/9EndTurns,Pyre97
+in two independent native processes. All17train phases, state/forecast/RNG and
+four zero counters pass; normal43reward/map events reach Ring8. The receipt
+reuses the exact completed pair and both prediction bindings, without reruns.
+The real game was stopped; next launch loads0.2.200. Previous DLLs and receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261027-071459/`. No Mac build was made.
+This includes unbox/moon upgrades, inherent Juice/TitanCurse, exact null-source
+sacrifice statistics, Echo Waxen Spike, MoreMass full-moon birth and living
+unplaced summons' moon changes. Three installed DLL hashes and compiled
+provenance match. Ring7 is an offline refined win; first six use the actual
+default budget. Ring8 continues; no new campaign clear is claimed.
+
+Previous Windows installation:0.2.190, source`ffcfbeb7`.
 Installed at05:09 with67 protected save/config/other-mod files unchanged. Package
 `results/mod-dist/PojuAdvisor-0.2.190-Windows-20261027-050955.zip`,SHA256
 `3407bf6675a61e99b6cbc646de11ca22858a5286296c4e9a667eea3b05d92763`.
