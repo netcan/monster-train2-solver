@@ -1800,7 +1800,9 @@ namespace MonsterTrain2Poju.Model
                         {
                             for (int position = oldIndex; position != movementGoal; position += direction)
                             {
-                                int firstId = beforeTeam[position].Id, secondId = beforeTeam[position + direction].Id;
+                                // The activating unit advances through each adjacent
+                                // slot. Other units keep their original relative order.
+                                int firstId = target.Id, secondId = beforeTeam[position + direction].Id;
                                 SpawnPointReference? first = physical.Units.Single(unit => unit.UnitId == firstId).Current;
                                 SpawnPointReference? second = physical.Units.Single(unit => unit.UnitId == secondId).Current;
                                 if (first == null || second == null || first.RoomIndex != rearrangeRoom.RoomIndex ||
