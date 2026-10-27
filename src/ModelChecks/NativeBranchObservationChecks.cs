@@ -63,8 +63,10 @@ internal static class NativeBranchObservationChecks
         return rows;
     }
 
-    internal static void Pair(FixtureValue source, FixtureValue replay, bool originalPredictionPresent = false)
+    internal static void Pair(FixtureValue source, FixtureValue replay, bool originalPredictionPresent = false,
+        bool originalPredictionMatched = false)
     {
+        Require(!originalPredictionMatched || originalPredictionPresent, "A matching original prediction must be present.");
         Require(source.GetProperty("Request").ContentEquals(replay.GetProperty("Request")), "Independent process changed its request.");
         FixtureValue[] first = source.GetProperty("Rows").EnumerateArray().ToArray();
         FixtureValue[] second = replay.GetProperty("Rows").EnumerateArray().ToArray();
@@ -83,11 +85,11 @@ internal static class NativeBranchObservationChecks
             "Preserve the original rejection and the independently repaired forecast.");
         bool terminal = (RoomOutcome)second[^1].GetProperty("Outcome").GetInt32() is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
         if (originalPredictionPresent)
-            Require(Key(first[^1].GetProperty("Expected").Deserialize<BattleTurnState>()!, terminal) !=
-                Key(first[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!, terminal) &&
+            Require((Key(first[^1].GetProperty("Expected").Deserialize<BattleTurnState>()!, terminal) ==
+                Key(first[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!, terminal)) == originalPredictionMatched &&
                 Key(second[^1].GetProperty("Expected").Deserialize<BattleTurnState>()!, terminal) ==
                 Key(second[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!, terminal),
-                "Preserve the original mismatching forecast and the independently repaired forecast.");
+                "Preserve the declared original forecast relationship and the independently matching forecast.");
     }
 
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }

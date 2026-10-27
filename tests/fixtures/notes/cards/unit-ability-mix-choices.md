@@ -12,8 +12,11 @@ two choices. All four ordered pairs enter the frontier; the recorded0/0
 choice matches the full native successor and RNG. Four parallel enumerations
 leave their parent unchanged. Missing and out-of-range choices stay guarded.
 The existing fixed/X ability checks and both original SpikedriverFactory
-draft choices pass. Independent new-release native replay is pending.
+draft choices pass. Independent release205 native replay matches every
+root/successor, forecast and RNG. Both recordings already predict the
+explicitly chosen effects correctly; the repaired gap is enumeration.
 
 The subsequent deployment grid completes15 losing routes and reaches a
-separate Juice-signature boundary after25 inputs. That is not resolved by
-this action-frontier change and no fifth-battle victory is claimed.
+separate guard after25 inputs. The first exported candidate tries to summon
+into a full room; native CardManager rejects it with RoomFull before effects.
+It is not a legal new-mechanism witness. No fifth-battle victory is claimed.

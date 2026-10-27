@@ -44,7 +44,7 @@ internal static class UnitAbilityMixChoicesChecks
         if (replay.HasValue)
         {
             NativeBranchObservationChecks.Replay(replay.Value, Reason);
-            NativeBranchObservationChecks.Pair(source, replay.Value, originalPredictionPresent: true);
+            NativeBranchObservationChecks.Pair(source, replay.Value, originalPredictionPresent: true, originalPredictionMatched: true);
         }
         Console.WriteLine("UNIT-ABILITY-MIX-CHOICES PASS:13 native states/RNG; all four ordered draft pairs enter the frontier; four immutable parallel enumerations; missing/out-of-range guards; independentPair=" + replay.HasValue);
     }

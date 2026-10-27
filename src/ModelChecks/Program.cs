@@ -6683,7 +6683,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-com
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-unit-ability-mix-choices-calibration.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    UnitAbilityMixChoicesChecks.Native(source.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-unit-ability-mix-choices-replay-calibration.mt2f"));
+    UnitAbilityMixChoicesChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-juice-middle-preview-calibration.mt2f"))
 {
