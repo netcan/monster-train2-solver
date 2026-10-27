@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--generated-moon-tracking-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    GeneratedMoonTrackingChecks.Native(fixture.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-room-train-only")
 {
     RoomCombatChecks.NativeObservedRooms(args[1]);
@@ -7291,6 +7298,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-unb
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-unbox-moon-relic-replay-calibration.mt2f"));
     UnboxMoonRelicChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-generated-moon-tracking-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    GeneratedMoonTrackingChecks.Native(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-inherent-juice-spike-refusal-calibration.mt2f"))
 {

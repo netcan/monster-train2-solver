@@ -193,6 +193,9 @@ namespace MonsterTrain2Poju.Model
             // ordinary card or turn boundary.
             if (Terminal(outcome)) context = context.WithQueryFrame(context.QueryFrame?.With(runningCombat: false));
             train = CardSpellModel.WithContext(train, context);
+            MoonPhaseTransitionResult moonReset = GeneratedMoonTrackingModel.CompletePlayerReset(source.Spawn.Train, train);
+            if (!moonReset.Supported) return Unsupported(moonReset.UnsupportedReason!);
+            train = moonReset.State!; context = train.Context!;
             if (source.BattlePreviewEnabled && !Terminal(outcome))
             {
                 TrainCombatResult preview = BattlePreviewModel.Refresh(train, source.PlayRules);
@@ -214,7 +217,7 @@ namespace MonsterTrain2Poju.Model
                 context.OtherPiles ?? source.OtherPiles, BattleTurnModel.AfterActionInteractions(source, context), source.PlayRules, source.BattlePreviewEnabled,
                 source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
                 train.Context?.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom,
-                source.MoonPhaseTrackingActive), outcome: outcome);
+                context.QueryFrame?.MoonPhaseTrackingActive ?? source.MoonPhaseTrackingActive), outcome: outcome);
         }
 
         public static IReadOnlyList<PlayCardAction> EnumerateSupportedActivations(BattleTurnState source) =>

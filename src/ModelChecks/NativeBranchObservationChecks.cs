@@ -10,8 +10,10 @@ internal static class NativeBranchObservationChecks
         Action<BattleTurnState, BattleTurnState>? historicalBoundaryMismatch = null,
         RoomOutcome boundaryOutcome = RoomOutcome.Exchanged, string? historicalUnsupportedReason = null,
         RoomOutcome? historicalBoundaryOutcome = null,
-        Func<BattleTurnState, BattleTurnState>? revalidateHistoricalCapture = null)
+        Func<BattleTurnState, BattleTurnState>? revalidateHistoricalCapture = null,
+        Func<string, string>? normalizeComparison = null)
     {
+        string CaptureKey(BattleTurnState state, bool terminal = false) => normalizeComparison?.Invoke(Key(state, terminal)) ?? Key(state, terminal);
         Require(!historicalBoundaryOutcome.HasValue || historicalBoundaryMismatch != null,
             "A changed historical boundary outcome requires an explicit mismatch witness.");
         Require(fixture.GetProperty("Schema").GetInt32() == 1 &&
@@ -34,7 +36,7 @@ internal static class NativeBranchObservationChecks
             bool end = step.GetProperty("IsEndTurn").GetBoolean();
             BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
             BattleTurnState actual = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
-            Require(Key(current) == Key(before) && row.GetProperty("Boundary").GetBoolean() == boundary &&
+            Require(CaptureKey(current) == CaptureKey(before) && row.GetProperty("Boundary").GetBoolean() == boundary &&
                 row.GetProperty("IsEndTurn").GetBoolean() == end && row.GetProperty("Action").ContentEquals(step.GetProperty("Action")),
                 "Native chain/input differs at " + index);
             if (revalidateHistoricalCapture != null) before = revalidateHistoricalCapture(before);
@@ -42,7 +44,7 @@ internal static class NativeBranchObservationChecks
             PlayCardAction? action = step.GetProperty("Action").Deserialize<PlayCardAction>();
             BattleTurnState predicted = BattlePlannerChecks.Replay(before, [new BattleSearchStep(action, end)], out RoomOutcome outcome);
             bool terminal = boundary && boundaryOutcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
-            string predictedKey = Key(predicted, terminal), actualKey = Key(actual, terminal);
+            string predictedKey = CaptureKey(predicted, terminal), actualKey = CaptureKey(actual, terminal);
             if (outcome != (boundary ? boundaryOutcome : RoomOutcome.Exchanged) || predictedKey != actualKey)
                 throw new InvalidOperationException("Native successor differs at " + index + ": " + ModelJson.Difference(predictedKey, actualKey) +
                     "; predicted room actors=" + string.Join("/", predicted.Spawn.Train.Rooms.Select(room => string.Join(",", room.Units.Select(unit => unit.Id)))) +
@@ -57,13 +59,13 @@ internal static class NativeBranchObservationChecks
                     row.GetProperty("Outcome").GetInt32() == (int)(boundary ? historicalBoundaryOutcome ?? outcome : outcome),
                     "Historical outcome differs at " + index);
                 BattleTurnState historical = expected.Deserialize<BattleTurnState>()!;
-                string historicalKey = Key(historical, terminal);
+                string historicalKey = CaptureKey(historical, terminal);
                 if (boundary && historicalBoundaryMismatch != null && historicalKey != actualKey)
                     historicalBoundaryMismatch(historical, actual);
                 else Require(historicalKey == actualKey, "Historical prediction differs at " + index);
             }
             Require(immutable == JsonSerializer.Serialize(before, ModelJson.Options), "Replay mutated its parent.");
-            if (boundary) Require(Key(before) == Key(request.GetProperty("FailedRoot").Deserialize<BattleTurnState>()!), "Wrong failed root.");
+            if (boundary) Require(CaptureKey(before) == CaptureKey(request.GetProperty("FailedRoot").Deserialize<BattleTurnState>()!), "Wrong failed root.");
             current = actual;
         }
         FixtureValue overlay = fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay");
@@ -74,8 +76,9 @@ internal static class NativeBranchObservationChecks
     }
 
     internal static void Pair(FixtureValue source, FixtureValue replay, bool originalPredictionPresent = false,
-        bool originalPredictionMatched = false)
+        bool originalPredictionMatched = false, Func<string, string>? normalizeComparison = null)
     {
+        string CaptureKey(BattleTurnState state, bool terminal = false) => normalizeComparison?.Invoke(Key(state, terminal)) ?? Key(state, terminal);
         Require(!originalPredictionMatched || originalPredictionPresent, "A matching original prediction must be present.");
         Require(source.GetProperty("Request").ContentEquals(replay.GetProperty("Request")), "Independent process changed its request.");
         FixtureValue[] first = source.GetProperty("Rows").EnumerateArray().ToArray();
@@ -84,8 +87,8 @@ internal static class NativeBranchObservationChecks
         for (int index = 0; index < first.Length; index++)
         {
             foreach (string field in new[] { "Before", "Actual" })
-                Require(Key(first[index].GetProperty(field).Deserialize<BattleTurnState>()!) ==
-                    Key(second[index].GetProperty(field).Deserialize<BattleTurnState>()!), "Independent process changed " + field + " at " + index);
+                Require(CaptureKey(first[index].GetProperty(field).Deserialize<BattleTurnState>()!) ==
+                    CaptureKey(second[index].GetProperty(field).Deserialize<BattleTurnState>()!), "Independent process changed " + field + " at " + index);
             foreach (string field in new[] { "Action", "IsEndTurn", "Boundary" })
                 Require(first[index].GetProperty(field).ContentEquals(second[index].GetProperty(field)), "Independent input changed at " + index);
         }
@@ -95,10 +98,10 @@ internal static class NativeBranchObservationChecks
             "Preserve the original rejection and the independently repaired forecast.");
         bool terminal = (RoomOutcome)second[^1].GetProperty("Outcome").GetInt32() is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
         if (originalPredictionPresent)
-            Require((Key(first[^1].GetProperty("Expected").Deserialize<BattleTurnState>()!, terminal) ==
-                Key(first[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!, terminal)) == originalPredictionMatched &&
-                Key(second[^1].GetProperty("Expected").Deserialize<BattleTurnState>()!, terminal) ==
-                Key(second[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!, terminal),
+            Require((CaptureKey(first[^1].GetProperty("Expected").Deserialize<BattleTurnState>()!, terminal) ==
+                CaptureKey(first[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!, terminal)) == originalPredictionMatched &&
+                CaptureKey(second[^1].GetProperty("Expected").Deserialize<BattleTurnState>()!, terminal) ==
+                CaptureKey(second[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!, terminal),
                 "Preserve the declared original forecast relationship and the independently matching forecast.");
     }
 

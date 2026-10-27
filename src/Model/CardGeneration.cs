@@ -434,8 +434,8 @@ namespace MonsterTrain2Poju.Model
                     context.NextAddedTemporaryUpgrades == null ? null : Array.Empty<CardUpgradeModifier>(), context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts, context.Resources, context.MixState, context.ConduitRetained, context.LifeLinks);
                 if (creation.ActivatesMoonTracking == true && context.QueryFrame?.MoonPhaseTrackingActive == false)
                 {
-                    if (context.EnergyState?.Phase != "Combat")
-                        return Unsupported("Generated card moon tracking activation outside combat requires native reset-boundary calibration.");
+                    if (context.EnergyState?.Phase != "Combat" && !GeneratedMoonTrackingModel.KnownPlayerCreation(context, creation))
+                        return Unsupported(GeneratedMoonTrackingModel.Guard);
                     context = context.WithQueryFrame(context.QueryFrame.With(moonPhaseTrackingActive: true));
                 }
                 // TryAddCardStateImpl dispatches Drawn and Updated room

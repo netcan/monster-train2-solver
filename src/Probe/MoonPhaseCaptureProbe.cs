@@ -19,8 +19,10 @@ namespace MonsterTrain2Poju.Probe
             Environment.GetEnvironmentVariable("MT2_PROBE_PLAYER_ADVISOR") == "1" ||
             !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_PRIMARY_CLAN")) ||
             !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_SECONDARY_CLAN"));
-        internal static bool CaptureMasks => Enabled &&
-            AllGameManagers.Instance?.GetPlayerManager()?.GetHasMoonPhaseCardEffect() == true;
+        // Tracking may be enabled by a generated card during this battle.
+        // Capture the real masks and definition defaults from deployment,
+        // so enabling tracking does not change the shape of unrelated state.
+        internal static bool CaptureMasks => Enabled;
 
         private static readonly HashSet<string> Effects = new HashSet<string>(StringComparer.Ordinal)
         {

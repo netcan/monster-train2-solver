@@ -228,11 +228,11 @@ namespace MonsterTrain2Poju.Model
             Size, StatusImmunities, Subtypes, Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards,
             NextTriggerId, Ability, StatusDictionary, AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId,
             DeathState, BumpRules, LastFeederId, MoonPhaseMask);
-        internal CombatUnit WithMoonPhaseMask(int mask, bool reset = false) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
+        internal CombatUnit WithMoonPhaseMask(int mask, bool reset = false, bool initialize = false) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
             AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, BumpRules, LastFeederId,
-            MoonPhaseMask.HasValue ? (reset ? 0 : MoonPhaseMask.Value & ~3) | (mask & 3) : (int?)null);
+            MoonPhaseMask.HasValue || initialize ? (reset ? 0 : (MoonPhaseMask ?? 0) & ~3) | (mask & 3) : (int?)null);
         internal CombatUnit WithSacrifice(int cardId, bool markSacrifice = true) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,

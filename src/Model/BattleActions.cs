@@ -1203,6 +1203,9 @@ namespace MonsterTrain2Poju.Model
             TrainCombatResult cardCompleted = EnchantmentWorldModel.UpdateAll(train);
             if (!cardCompleted.Supported) return Unsupported(cardCompleted.UnsupportedReason!);
             train = cardCompleted.State!; context = train.Context!;
+            MoonPhaseTransitionResult moonReset = GeneratedMoonTrackingModel.CompletePlayerReset(source.Spawn.Train, train);
+            if (!moonReset.Supported) return Unsupported(moonReset.UnsupportedReason!);
+            train = moonReset.State!; context = train.Context!;
             if (source.BattlePreviewEnabled && !terminal)
             {
                 TrainCombatResult preview = BattlePreviewModel.Refresh(train, outputPlayRules);

@@ -42,7 +42,16 @@ namespace MonsterTrain2Poju.Probe
             if (readyFrame < 0) readyFrame = UnityEngine.Time.frameCount;
             return UnityEngine.Time.frameCount <= readyFrame + 1;
         }
-        private static string Comparable(BattleTurnState state) => BattleTurnProbe.Comparable(state).ToString(Newtonsoft.Json.Formatting.None);
+        private static string Comparable(BattleTurnState state)
+        {
+            var value = (JObject)BattleTurnProbe.Comparable(state);
+            // Older observation requests omitted inactive understanding masks.
+            // Their native default is MoonPhase.None (4). Keep raw records intact.
+            foreach (JProperty property in value.Descendants().OfType<JProperty>()
+                .Where(property => property.Name == "MoonPhaseMask" && property.Value.Type == JTokenType.Null))
+                property.Value = (int)PlayerManager.MoonPhase.None;
+            return value.ToString(Newtonsoft.Json.Formatting.None);
+        }
         private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 
         private static void Initialize()
