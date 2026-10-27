@@ -1,0 +1,258 @@
+{
+  "Schema": 1,
+  "EvidenceKind": "NativeMetagameObservation",
+  "AfterEndGame": false,
+  "StoryProgression": 0,
+  "TrueFinalBossFeatureUnlocked": false,
+  "Stories": [
+    {
+      "index": 0,
+      "asset": "CoreDialogue_010_PostFirstRun_StoryProgressionData",
+      "reward": "None",
+      "condition": "StartedRuns",
+      "hasProgress": true,
+      "current": 4,
+      "required": 1,
+      "met": true
+    },
+    {
+      "index": 1,
+      "asset": "CoreDialogue_020_FelTalosFenix_StoryProgressionData",
+      "reward": "None",
+      "condition": "UnlockedPyreHearts",
+      "hasProgress": true,
+      "current": 0,
+      "required": 1,
+      "met": false
+    },
+    {
+      "index": 2,
+      "asset": "CoreDialogue_030_HephAndFel_StoryProgressionData",
+      "reward": "UnlockChallengeRuns",
+      "condition": "UnlockedPyreHearts",
+      "hasProgress": true,
+      "current": 0,
+      "required": 2,
+      "met": false
+    },
+    {
+      "index": 3,
+      "asset": "CoreDialogue_040_HerzalReunion_StoryProgressionData",
+      "reward": "None",
+      "condition": "UnlockedPyreHearts",
+      "hasProgress": true,
+      "current": 0,
+      "required": 3,
+      "met": false
+    },
+    {
+      "index": 4,
+      "asset": "CoreDialogue_050_OutpostAttack_StoryProgressionData",
+      "reward": "None",
+      "condition": "UnlockedPyreHearts",
+      "hasProgress": true,
+      "current": 0,
+      "required": 4,
+      "met": false
+    },
+    {
+      "index": 5,
+      "asset": "CoreDialogue_060_WarCouncill_StoryProgressionData",
+      "reward": "None",
+      "condition": "UnlockedPyreHearts",
+      "hasProgress": true,
+      "current": 0,
+      "required": 5,
+      "met": false
+    },
+    {
+      "index": 6,
+      "asset": "CoreDialogue_070_ClanReturn_StoryProgressionData",
+      "reward": "None",
+      "condition": "UnlockedPyreHearts",
+      "hasProgress": true,
+      "current": 0,
+      "required": 6,
+      "met": false
+    },
+    {
+      "index": 7,
+      "asset": "CoreDialogue_070_ClanReturn_StoryProgressionDataB",
+      "reward": "UnlockCrew",
+      "condition": "UnlockedPyreHearts",
+      "hasProgress": true,
+      "current": 0,
+      "required": 6,
+      "met": false
+    },
+    {
+      "index": 8,
+      "asset": "CoreDialogue_070_ClanReturn_StoryProgressionDataC",
+      "reward": "None",
+      "condition": "UnlockedPyreHearts",
+      "hasProgress": true,
+      "current": 0,
+      "required": 6,
+      "met": false
+    },
+    {
+      "index": 9,
+      "asset": "CoreDialogue_080_PyreVision_StoryProgressionData",
+      "reward": "None",
+      "condition": "UnlockedPyreHearts",
+      "hasProgress": true,
+      "current": 0,
+      "required": 7,
+      "met": false
+    },
+    {
+      "index": 10,
+      "asset": "CoreDialogue_090_HerzalTruth_StoryProgressionData",
+      "reward": "None",
+      "condition": "UnlockedPyreHearts",
+      "hasProgress": true,
+      "current": 0,
+      "required": 8,
+      "met": false
+    },
+    {
+      "index": 11,
+      "asset": "CoreDialogue_100_SeraphReunion_StoryProgressionData",
+      "reward": "UnlockTrueFinalBoss",
+      "condition": "UnlockedPyreHearts",
+      "hasProgress": true,
+      "current": 0,
+      "required": 9,
+      "met": false
+    },
+    {
+      "index": 12,
+      "asset": "CoreDialogue_110_PostFinalBoss_StoryProgressionData",
+      "reward": "None",
+      "condition": "DefeatedTrueFinalBoss",
+      "hasProgress": false,
+      "current": 0,
+      "required": 0,
+      "met": false
+    }
+  ],
+  "PyreHearts": [
+    {
+      "asset": "PyreHeartStarter",
+      "condition": "None",
+      "hasProgress": false,
+      "current": 0,
+      "required": 0,
+      "met": false,
+      "unlocked": true
+    },
+    {
+      "asset": "PyreHeartPact",
+      "condition": "BattlesWonWithTrial",
+      "hasProgress": true,
+      "current": 0,
+      "required": 7,
+      "met": false,
+      "unlocked": false
+    },
+    {
+      "asset": "PyreHeartLife",
+      "condition": "PyreDamage",
+      "hasProgress": true,
+      "current": 326,
+      "required": 475,
+      "met": false,
+      "unlocked": false
+    },
+    {
+      "asset": "PyreHeartMalicka",
+      "condition": "NumChallengesWon",
+      "hasProgress": true,
+      "current": 0,
+      "required": 1,
+      "met": false,
+      "unlocked": false
+    },
+    {
+      "asset": "PyreHeartWyngh",
+      "condition": "UnitsMoved",
+      "hasProgress": true,
+      "current": 109,
+      "required": 225,
+      "met": false,
+      "unlocked": false
+    },
+    {
+      "asset": "PyreHeartFhyra",
+      "condition": "CoinsSpents",
+      "hasProgress": true,
+      "current": 3605,
+      "required": 20000,
+      "met": false,
+      "unlocked": false
+    },
+    {
+      "asset": "PyreHeartAquath",
+      "condition": "MagicPowerBonusDamage",
+      "hasProgress": true,
+      "current": 460,
+      "required": 12000,
+      "met": false,
+      "unlocked": false
+    },
+    {
+      "asset": "PyreHeartBogworm",
+      "condition": "DebuffsApplied",
+      "hasProgress": true,
+      "current": 169,
+      "required": 3200,
+      "met": false,
+      "unlocked": false
+    },
+    {
+      "asset": "PyreHeartTime",
+      "condition": "CardsFrozen",
+      "hasProgress": true,
+      "current": 0,
+      "required": 25,
+      "met": false,
+      "unlocked": false
+    },
+    {
+      "asset": "PyreHeartHerzal",
+      "condition": "DamageDoneByTrainStewards",
+      "hasProgress": true,
+      "current": 2105,
+      "required": 10000,
+      "met": false,
+      "unlocked": false
+    },
+    {
+      "asset": "PyreHeartSavagery",
+      "condition": "DefeatedTrueFinalBoss",
+      "hasProgress": false,
+      "current": 0,
+      "required": 0,
+      "met": false,
+      "unlocked": false
+    },
+    {
+      "asset": "PyreHeartDominion",
+      "condition": "DefeatedTrueFinalBoss",
+      "hasProgress": false,
+      "current": 0,
+      "required": 0,
+      "met": false,
+      "unlocked": false
+    },
+    {
+      "asset": "PyreHeartEntropy",
+      "condition": "DefeatedTrueFinalBoss",
+      "hasProgress": false,
+      "current": 0,
+      "required": 0,
+      "met": false,
+      "unlocked": false
+    }
+  ]
+}

@@ -4,6 +4,18 @@
 `UnlockedPyreHearts >= 9`，还需实际推进相应剧情对话。这个计数不含默认
 `PyreHeartStarter`。标准八战通关本身不能替代这些条件。
 
+2026-10-28重新检查第25组第七战入口的累计档案，额外薪火之心仍为0/9，
+剧情索引0、真终局未解锁。当前值为Pact0/7、Life326/475、Malicka0/1、
+Wyngh109/225、Fhyra3605/20000、Aquath460/12000、Bogworm169/3200、
+Time0/25、Herzal2105/10000；这些是同一继承分支的原生值，不合并其他分支。
+[本次原生快照](../tests/fixtures/evidence/campaign/native-story-progression-random25-ring7.json)
+SHA256为`00be69a29c1ce1cff31abe4187a422753323cdc218dfc5c3167268755a0667ca`。
+观察进程`campaign-story-20261028-053525-dc6c47e8`只读完成两个审计事件，
+原输入及真实玩家文件未变；输入存档SHA256为
+`aed7c6ab0bce1a5d4a0757db3c21ef084bf4d3f0662c00c504da63221bcb1610`，
+原生元档案SHA256为`3d87a66abd82725714bb45f4e60d515a7b830e5a1f240d0d487a20d85e36c215`。
+下面保留早期独立档案的基线，不能将其进度与本次相加。
+
 在已经验收的 seed424242 标准通关存档上，以只读进程加载原生数据，得到
 额外薪火之心 0/9、剧情索引 0、真终局功能未解锁。原生条件如下：
 
