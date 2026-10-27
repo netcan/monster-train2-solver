@@ -36,7 +36,7 @@ namespace MonsterTrain2Poju.Model
             // HandleRoomUnitOrderPossiblyChanged. Its departure-room attachment
             // upgrades remain registered through terminal tower combat.
             BumpResult moved = BumpModel.Apply(train, new[] { boss.UnitId }, 1, battle.PlayRules.Rooms,
-                0, null, synchronizeRoomAttachments: false);
+                0, null, outerBossActionMovement: true, synchronizeRoomAttachments: false);
             if (!moved.Supported) return Fail(moved.UnsupportedReason!);
             if (moved.Outcome != RoomOutcome.Exchanged) return Fail("Terminal outer-boss Pyre-entry movement requires separate calibration.");
             train = moved.State!;

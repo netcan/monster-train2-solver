@@ -28,7 +28,22 @@ internal static class RelentlessCompanionBumpChecks
                 "Blocked companion movement differs from complete native successor/forecast/RNG.");
         });
         Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "Blocked companion movement mutated its parent.");
-        Console.WriteLine("RELENTLESS-COMPANION-BUMP COUNTEREXAMPLE PASS:63rd native input, paired companion/outer-boss remains on floor1, full successor/forecast/RNG and four immutable branches.");
+        var automatic = rows[52];
+        var automaticBefore = automatic.GetProperty("Root").Deserialize<BattleTurnState>()!;
+        var automaticActual = automatic.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        Require(automatic.GetProperty("IsEndTurn").GetBoolean() && automaticBefore.Spawn.Turn == 7 &&
+            automaticActual.Spawn.Turn == 8 && automaticActual.Spawn.Train.Rooms[0].Units.Any(unit => unit.Id == 11),
+            "Lost native companion/controller movement before the paid-card boundary.");
+        string automaticParent = JsonSerializer.Serialize(automaticBefore, ModelJson.Options);
+        string automaticExpected = NativeBranchObservationChecks.Key(automaticActual);
+        Parallel.For(0, 4, index =>
+        {
+            var result = BattlePlannerChecks.Replay(automaticBefore, [new BattleSearchStep(null, true)], out var outcome);
+            Require(outcome == RoomOutcome.Exchanged && NativeBranchObservationChecks.Key(result) == automaticExpected,
+                "Card movement restriction incorrectly blocked automatic boss movement.");
+        });
+        Require(automaticParent == JsonSerializer.Serialize(automaticBefore, ModelJson.Options), "Automatic boss movement mutated its parent.");
+        Console.WriteLine("RELENTLESS-COMPANION-BUMP COUNTEREXAMPLE PASS:53rd automatic movement and63rd blocked card, full successor/forecast/RNG and eight immutable branches.");
     }
 
     internal static void Native(FixtureValue source, FixtureValue? replay = null)
