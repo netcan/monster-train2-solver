@@ -218,3 +218,8 @@ The original Pyre63 checkpoint/save hash remains unchanged. A fresh complete
 joint-deployment grid examines30 candidates with zero unknowns and improves
 the model loss to39 inputs/boss2824HP. Early card-order diversification now
 starts from this exact Pyre63 native root; it is offline evidence only.
+
+That bounded early-order batch finishes300 complete candidates/zero unknowns,
+preserving three improvements to34 inputs/boss2781HP. All exported successors,
+forecasts and RNG replay independently. It remains a model defeat; additional
+health and local ordering improvements have not produced a final-battle win.
