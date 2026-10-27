@@ -6919,6 +6919,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-eph
     using var source = ModelJson.ReadFixture(path);
     EphemeralEquipmentRoutingChecks.Counterexample(source.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-preview-death-spawn-shift-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-preview-death-spawn-shift-replay-calibration.mt2f"));
+    PreviewDeathSpawnShiftChecks.Native(source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-ephemeral-equipment-calibration.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);

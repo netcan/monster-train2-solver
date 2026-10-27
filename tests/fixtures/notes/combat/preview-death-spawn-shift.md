@@ -1,0 +1,19 @@
+# Retained actors during preview death-spawn shifts
+
+Sample20 Underlegion/LunaCoven, seed1043013037/Covenant0, Ring6's unchanged
+110219-cf2a6848 checkpoint. A tactical middle-floor route reaches a native
+50-input prefix, then rejects EndTurn8-to9 because copied player points still
+reference35 while the birth-position scope has filtered out removed actors.
+The original51-input observation122157-9dd81000 preserves that rejection.
+
+Release224 supplies every engine-owned actor's captured lifecycle to the
+physical birth operation. The live room roster remains unchanged; this
+supplies existing actors' health/despawn/destruction fields while the copied
+points shift and compact. Unknown physical occupants still reject.
+
+Independent process123442-64be15d8 executes the exact unchanged51 inputs.
+Both complete successor/forecast/RNG chains, four immutable EndTurn branches
+and the unknown-occupant guard pass. This is component evidence, not a
+sixth-battle win. Existing35/49-input Green Recruit and54-input Ephemeral
+equipment pairs also pass. The previously rejected middle- and upper-floor
+model routes now complete; both remain losses pending strategy refinement.

@@ -519,6 +519,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-green-recruit-endturn-identity-counterexample-calibration.mt2f',
     'player-green-recruit-endturn-identity-calibration.mt2f',
     'player-green-recruit-endturn-identity-replay-calibration.mt2f',
+    'player-preview-death-spawn-shift-calibration.mt2f',
+    'player-preview-death-spawn-shift-replay-calibration.mt2f',
     'player-ephemeral-equipment-counterexample-calibration.mt2f',
     'player-ephemeral-equipment-calibration.mt2f',
     'player-ephemeral-equipment-replay-calibration.mt2f',
@@ -2087,6 +2089,17 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -ne 'p
         (Get-TestFixturePath 'player-ascend-deferred-destruction-counterexample-calibration.mt2f') `
         (Get-TestFixturePath 'full-battle-random-campaign-20-ring3-release215-budget10000-search.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Focused Ascend destruction checks failed.' }
+    return
+}
+$previewDeathShiftNames = @('player-preview-death-spawn-shift-calibration.mt2f', 'player-preview-death-spawn-shift-replay-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $previewDeathShiftNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Preview death-spawn shift checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --preview-death-spawn-shift-only `
+        (Get-TestFixturePath $previewDeathShiftNames[0]) (Get-TestFixturePath $previewDeathShiftNames[1])
+    if ($LASTEXITCODE -ne 0) { throw 'Focused preview death-spawn shift native pair failed.' }
     return
 }
 $ephemeralEquipmentNames = @('player-ephemeral-equipment-counterexample-calibration.mt2f', 'player-ephemeral-equipment-calibration.mt2f', 'player-ephemeral-equipment-replay-calibration.mt2f')
