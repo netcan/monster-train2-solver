@@ -17,6 +17,8 @@ using the already resolved size and captured capacity. Four immutable
 parallel branches classify the candidate as Illegal; the full-room input
 is absent from both legal and unsupported frontiers. The original38-input
 native defeat still replays completely, and the calibrated Lazarus Juice
-pair/fixed-X abilities pass. Independent rejection replay is pending.
+pair/fixed-X abilities pass. Independent release206 rejection replay
+matches every full native root/successor, forecast and RNG; both native
+processes reject RoomFull without changing the complete state.
 The next exported candidate is a direct Lazarus Spike cast, rather than
 the invalid summon; that separate boundary still requires native proof.

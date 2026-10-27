@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--lazarus-juice-conduit-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    LazarusJuiceConduitChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--summon-capacity-rejection-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6687,10 +6694,16 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-com
     RoomCombatChecks.NativeRoomOnly(path);
     RoomCombatChecks.NativeRoomOnly(ModelJson.RelatedFixture(path, "player-combat-victory-cache-retention-counterexample-calibration.mt2f"));
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-lazarus-juice-conduit-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    LazarusJuiceConduitChecks.Native(source.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-summon-capacity-rejection-calibration.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    SummonCapacityRejectionChecks.Native(source.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-summon-capacity-rejection-replay-calibration.mt2f"));
+    SummonCapacityRejectionChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-unit-ability-mix-choices-calibration.mt2f"))
 {
