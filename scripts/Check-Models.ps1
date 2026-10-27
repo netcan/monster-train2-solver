@@ -197,6 +197,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-22-ring4-release236-budget10000-replay.mt2f',
     'full-battle-random-campaign-22-ring4-release237-budget10000-search.mt2f',
     'full-battle-random-campaign-22-ring4-release237-budget10000-replay.mt2f',
+    'full-battle-random-campaign-22-ring5-release237-budget10000-loss.mt2f',
+    'player-targeted-damage-calibration.mt2f',
+    'player-targeted-damage-replay-calibration.mt2f',
     'player-moon-burnout-relic-calibration.mt2f',
     'player-moon-burnout-relic-replay-calibration.mt2f',
     'player-duplicate-retain-order-calibration.mt2f',
@@ -2704,6 +2707,20 @@ if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'pending-boss-loss-or
         (Get-TestFixturePath 'full-battle-random-campaign-13-ring7-release137-budget10000-loss.mt2f') `
         (Get-TestFixturePath 'full-battle-random-campaign-13-ring7-release137-refined-loss.mt2f') $fixtures[0]
     if ($LASTEXITCODE -ne 0) { throw 'Focused pending boss loss order check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-targeted-damage-calibration.mt2f', 'player-targeted-damage-replay-calibration.mt2f') }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Targeted damage checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --targeted-damage-only `
+        (Get-TestFixturePath 'full-battle-random-campaign-22-ring6-release235-budget10000-loss.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Focused targeted damage counterexample check failed.' }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --targeted-damage-alternative-only `
+        (Get-TestFixturePath 'player-targeted-damage-calibration.mt2f') `
+        (Get-TestFixturePath 'player-targeted-damage-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Focused targeted damage native pair failed.' }
     return
 }
 if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'parallel-opening-portfolio-model-calibration.mt2f') {

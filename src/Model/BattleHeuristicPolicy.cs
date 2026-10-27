@@ -15,6 +15,7 @@ namespace MonsterTrain2Poju.Model
             unsupported = omitted;
             CombatContext? context = source.Spawn.Train.Context;
             if (context == null || source.PlayRules == null) return null;
+            var targetedDamage = new TargetedDamagePolicy(source);
             var choices = context.Cards.Hand.Select(card =>
             {
                 CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(rule => rule.DataId == card.DataId);
@@ -107,6 +108,7 @@ namespace MonsterTrain2Poju.Model
                 if (SacrificeTargetValue(rule, target) is double sacrifice) return sacrifice;
                 if (AttackBuffDamagePolicy.TargetValue(rule, target) is double buffDamage) return buffDamage;
                 if (BurnoutHealPolicy.TargetValue(rule, target) is double burnoutHeal) return burnoutHeal;
+                if (targetedDamage.TargetValue(action, rule, target) is double spellDamage) return spellDamage;
                 bool harmful = rule.Effects.Any(effect => effect.Type is "Damage" or "Kill" ||
                     effect.Statuses.Any(status => status.DisplayCategory == "Negative"));
                 if (harmful != (target.Team == CombatTeam.Enemy)) return -1e6;

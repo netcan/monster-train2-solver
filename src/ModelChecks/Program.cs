@@ -2268,6 +2268,19 @@ if (args.Length == 1 && args[0] == "--tactical-target-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--targeted-damage-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    TargetedDamageChecks.Native(document.RootElement);
+    return;
+}
+if (args.Length is 2 or 3 && args[0] == "--targeted-damage-alternative-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    TargetedDamageChecks.Alternative(document.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--attack-buff-damage-target-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -7050,6 +7063,18 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-bur
 {
     using var source = ModelJson.ReadFixture(path);
     BurnoutHealTargetChecks.Alternative(source.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-random-campaign-22-ring6-release235-budget10000-loss.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    TargetedDamageChecks.Native(source.RootElement);
+}
+if (args.FirstOrDefault(path => Path.GetFileName(path) is "player-targeted-damage-calibration.mt2f" or
+    "player-targeted-damage-replay-calibration.mt2f") is string damagePath)
+{
+    using var source = ModelJson.ReadFixture(ModelJson.RelatedFixture(damagePath, "player-targeted-damage-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(damagePath, "player-targeted-damage-replay-calibration.mt2f"));
+    TargetedDamageChecks.Alternative(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) is "player-triple-juice-consume-cleanse-calibration.mt2f" or "player-triple-juice-consume-cleanse-replay-calibration.mt2f" or
     "player-triple-juice-consume-cleanse-cast-calibration.mt2f" or "player-triple-juice-consume-cleanse-cast-replay-calibration.mt2f")

@@ -19,6 +19,7 @@ namespace MonsterTrain2Poju.Model
             var omitted = new List<UnsupportedActionAttempt>(); unsupported = omitted;
             CombatContext? context = source.Spawn.Train.Context;
             if (context == null || source.PlayRules == null) return null;
+            var targetedDamage = new TargetedDamagePolicy(source);
             BattleActionEnumeration? cachedAbilities = null;
             bool protectedChampion = source.Spawn.Train.Rooms.Any(room =>
                 room.Units.Any(unit => unit.Team == CombatTeam.Enemy && unit.IsBoss == true) &&
@@ -196,6 +197,7 @@ namespace MonsterTrain2Poju.Model
                 if (BattleHeuristicPolicy.SacrificeTargetValue(rule, target) is double sacrifice) return sacrifice;
                 if (AttackBuffDamagePolicy.TargetValue(rule, target) is double buffDamage) return buffDamage;
                 if (BurnoutHealPolicy.TargetValue(rule, target) is double burnoutHeal) return burnoutHeal;
+                if (targetedDamage.TargetValue(action, rule, target) is double spellDamage) return spellDamage;
                 CardActionEffect[] effects = rule.Effects.Concat(rule.OnCastEffects).ToArray();
                 // Only effects on the selected actor determine its team.
                 // Room-wide enemy damage may accompany an allied-target buff.
