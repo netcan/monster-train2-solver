@@ -29,6 +29,11 @@ and immutable roots also pass within the existing3000ms focused control. The
 narrow damage policy preserves the Ring6 bottom route through turn8; its73-input
 model result still loses at boss1548HP and is not counted as a strategy win.
 
+The actual default10000ms/two-worker release238 Ring6 run now finishes33 inputs/
+5 EndTurns at Cael1585HP, versus the previous same-checkpoint1706HP loss. Full
+native states/forecasts/RNG and four zero failure counts match. It is curated as
+a defeat, not a victory. No assumption of monotonically better full routes is made.
+
 Release237's stronger Ring4 opening remains an accepted57-input/Pyre37 pair;
 its subsequent Ring5 default47-input/8-EndTurn defeat at boss302HP is retained
 separately. A single-battle improvement does not establish a campaign win.

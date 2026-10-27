@@ -147,7 +147,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 lastScreen = state;
                 Record("screen", new { state, gold = save.GetGold(), pyre = m!.GetPlayerManager().GetTowerHP(),
-                    deck = save.GetDeckState().Select(CardDescription).ToList() });
+                    deck = save.GetDeckState()?.Select(CardDescription).ToList() });
             }
             IScreen screen = screens.GetScreen(screens.GetTopScreen());
             if (screen is not DeckScreen) enteringDeck = null;
