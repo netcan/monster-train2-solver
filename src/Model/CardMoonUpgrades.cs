@@ -127,6 +127,11 @@ namespace MonsterTrain2Poju.Model
         private static bool IndependentRelic(CombatRelicState relic)
         {
             if (relic.IsCovenant != false) return false;
+            // This original reward-only effect changes trial gold after combat.
+            // It receives neither moon transitions nor CardUpdated callbacks.
+            if (relic.DataId == "07bdefdb-03b8-4159-b74b-be85f68c4c56" && relic.AssetKey == "ApplyUnitUpgradeWhenRich" &&
+                relic.DisallowedInPlacementPhase == false &&
+                relic.EffectTypes.SequenceEqual(new[] { "RelicEffectModifyTrialGoldRewards" })) return true;
             // Sealed RelicEffectAddTrigger only installs character callbacks in
             // OnCharacterAdded. Refreshing a spell's moon upgrade neither adds
             // characters nor invokes those callbacks; retain ordered payload
