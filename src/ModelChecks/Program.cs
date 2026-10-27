@@ -7593,6 +7593,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-discard-equipment-turn-replay-calibration.mt2f"));
     DiscardEquipmentTurnChecks.Native(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-titanskin-hit-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-titanskin-hit-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-titanskin-hit-replay-calibration.mt2f"));
+    TitanSkinHitChecks.Native(source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-mirrored-meddler-moon-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-mirrored-meddler-moon-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
