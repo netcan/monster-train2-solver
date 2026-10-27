@@ -19,6 +19,17 @@ not evidence of a subsequent live three-stack trigger or a seventh victory.
 
 `--underlegion-third-troop-upgrade-only` verifies the full native birth state,
 forecast/RNG, four immutable branches and ten changed-signature guards. The
-original first/second-tier independent pairs remain controls. A fresh captured
-world and fixed-build independent native birth still require validation; the
-original no-world source must remain unchanged.
+original first/second-tier independent pairs remain controls. Fixed279
+ae1b37ce independently captures034907-65d8e1a1 with the automatic shared world
+enabled. Its complete native birth/forecast/RNG matches; after comparing the
+newly captured world separately, every historical native field matches the
+unchanged278 source. Both requests bind their complete native roots; explicit
+optional defaults in the typed original request are not gameplay differences.
+Request metadata/action and the original rejection remain unchanged.
+
+Source25465bytes/SHA256
+aa53c8b58dc0d3883f1f176199e0b264e77b6b12840dc9d7b1412a9b9cc0b2eb;
+replay24137bytes/SHA256
+ba88eda43261d967a85243f19132c07c4b6e055f5f022283736e8b41b1370ee2.
+The registered focused gate always checks both observations. This still does
+not replace subsequent live three-stack events or full seventh-battle acceptance.

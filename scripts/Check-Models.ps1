@@ -270,6 +270,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-underlegion-troop-upgrade-replay-calibration.mt2f',
     'player-underlegion-second-troop-upgrade-calibration.mt2f',
     'player-underlegion-third-troop-upgrade-calibration.mt2f',
+    'player-underlegion-third-troop-upgrade-replay-calibration.mt2f',
     'player-underlegion-second-troop-upgrade-replay-calibration.mt2f',
     'player-moon-trial-gold-relic-calibration.mt2f',
     'player-moon-trial-gold-relic-replay-calibration.mt2f',
@@ -3119,13 +3120,14 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     if ($LASTEXITCODE -ne 0) { throw 'Focused Moon trial-gold native pair failed.' }
     return
 }
-if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-underlegion-third-troop-upgrade-calibration.mt2f') {
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-underlegion-third-troop-upgrade-calibration.mt2f', 'player-underlegion-third-troop-upgrade-replay-calibration.mt2f') }).Count -eq 0) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
         if ($LASTEXITCODE -ne 0) { throw 'Third-tier Underlegion upgrade checker build failed.' }
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --underlegion-third-troop-upgrade-only `
-        (Get-TestFixturePath 'player-underlegion-third-troop-upgrade-calibration.mt2f')
+        (Get-TestFixturePath 'player-underlegion-third-troop-upgrade-calibration.mt2f') `
+        (Get-TestFixturePath 'player-underlegion-third-troop-upgrade-replay-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Third-tier Underlegion upgrade check failed.' }
     return
 }

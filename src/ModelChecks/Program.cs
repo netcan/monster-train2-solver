@@ -8099,10 +8099,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-corruption-attack-upgrade-replay-calibration.mt2f"));
     CardCorruptionAttackUpgradeChecks.Native(source.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) == "player-underlegion-third-troop-upgrade-calibration.mt2f"))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-underlegion-third-troop-upgrade-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-underlegion-third-troop-upgrade-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var fixture = ModelJson.ReadFixture(path);
-    UnderlegionThirdTroopUpgradeChecks.Native(fixture.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-underlegion-third-troop-upgrade-replay-calibration.mt2f"));
+    UnderlegionThirdTroopUpgradeChecks.Native(fixture.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-underlegion-second-troop-upgrade-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-underlegion-second-troop-upgrade-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

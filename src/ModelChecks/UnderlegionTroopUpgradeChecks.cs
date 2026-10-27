@@ -78,8 +78,11 @@ internal static class UnderlegionTroopUpgradeChecks
         var oldRequest = JsonSerializer.SerializeToNode(source.GetProperty("Request").ToObjectGraph())!;
         var newRequest = JsonSerializer.SerializeToNode(replay.GetProperty("Request").ToObjectGraph())!;
         foreach (string field in new[] { "Root", "FailedRoot" }) {
-            Require(source.GetProperty("Request").GetProperty(field).ContentEquals(oldRow.GetProperty("Before")) &&
-                replay.GetProperty("Request").GetProperty(field).ContentEquals(newRow.GetProperty("Before")),
+            // Requests built from typed states explicitly serialize optional
+            // defaults that the native recorder omits. Bind the complete model
+            // state rather than requiring identical archive object members.
+            Require(Key(source.GetProperty("Request").GetProperty(field)) == Key(oldRow.GetProperty("Before")) &&
+                Key(replay.GetProperty("Request").GetProperty(field)) == Key(newRow.GetProperty("Before")),
                 "Birth request does not bind its own native root.");
             newRequest[field] = oldRequest[field]!.DeepClone();
         }
@@ -89,6 +92,7 @@ internal static class UnderlegionTroopUpgradeChecks
             newRow.GetProperty("UnsupportedReason").ValueKind == FixtureKind.Null &&
             oldRow.GetProperty("Action").ContentEquals(newRow.GetProperty("Action")),
             "Independent capture changed request/input or erased the old rejection.");
+        static string Key(FixtureValue value) => NativeBranchObservationChecks.Key(value.Deserialize<BattleTurnState>()!);
     }
 
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
