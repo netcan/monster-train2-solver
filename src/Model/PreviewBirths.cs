@@ -80,7 +80,7 @@ namespace MonsterTrain2Poju.Model
                 ?? Array.Empty<CardInstanceState>();
             if (newCards.Length == 0)
             {
-                // Infectory's room-death fallback creates an unowned character,
+                // Infectory and the original Green Recruit death fallback create an unowned character,
                 // not a spawner card. Like an unobserved egg hatch, its preview
                 // character is gone before native decision identity capture.
                 // The calibrated player snapshot has no triggered-summon
@@ -94,7 +94,14 @@ namespace MonsterTrain2Poju.Model
                     Array.Empty<RoomCapacityAttachmentState>()).Any(attachment =>
                         attachment.DataId == "e1a39d88-4a77-4399-98b2-0b81f44fe6a8" &&
                         attachment.DeathEffect != null && RoomDeathEffectModel.Validate(attachment.DeathEffect) == null) == true;
-                if (!roomFallback || births.Length != nextId - firstUnitId || births.Any(unit =>
+                bool recruitFallback = source.Rooms.SelectMany(room => room.Units).Any(unit =>
+                    unit is { AssetKey: "MonsterGenerousHost", Team: CombatTeam.Player } &&
+                    context.FindCard(unit.SpawnerCardId)?.DataId == "c052c567-1e3c-4f36-a6cd-89b0648b9475" &&
+                    unit.Triggers is [{ Kind: "OnDeath", Effects: [{ Type: "CardEffectSpawnMonsterOrAddStatusEffect", Action:
+                        { Type: "SpawnOrStatus", Target: "Room", Value: 4, AllowPlayer: true, AllowEnemy: false, Range: null,
+                            Statuses: [{ Id: "horde", Stacks: 4 }], Filters.Subtype: "SubtypesData_Horde",
+                            SpawnFallbackUnit: { AssetKey: "MonsterFunguy", BaseAttack: 3, Health: 4 } } }] }]);
+                if (!(roomFallback || recruitFallback) || births.Length != nextId - firstUnitId || births.Any(unit =>
                     unit.Team != CombatTeam.Player || unit.AssetKey != "MonsterFunguy" || unit.SpawnerCardId != 0)) return preview;
             }
             else if (context.SummonCatalog == null || nextId - firstUnitId != newCards.Length) return preview;
