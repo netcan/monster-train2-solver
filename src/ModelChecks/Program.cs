@@ -954,6 +954,13 @@ if (args.Length is 2 or 3 && args[0] == "--champion-troop-titanskin-only")
     ChampionTroopTitanskinChecks.Native(source.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--third-troop-fragile-buff-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    ThirdTroopFragileBuffChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--enemy-statistics-listeners-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -7367,6 +7374,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-inactive-fragile-moon-birth-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-inactive-fragile-moon-birth-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
     InactiveOuterBossMoonBirthChecks.Native(path, ModelJson.RelatedFixture(path, "player-inactive-fragile-moon-birth-replay-calibration.mt2f"));
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-third-troop-fragile-buff-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    ThirdTroopFragileBuffChecks.Native(source.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("parallel-lower-opening-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "parallel-lower-opening-model-counterexample.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

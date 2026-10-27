@@ -872,6 +872,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-consume-equipment-order-calibration.mt2f',
     'player-consume-equipment-order-replay-calibration.mt2f',
     'player-champion-troop-titanskin-calibration.mt2f',
+    'player-third-troop-fragile-buff-calibration.mt2f',
     'player-champion-troop-titanskin-replay-calibration.mt2f',
     'player-champion-troop-titanskin-many-sources-calibration.mt2f',
     'player-champion-troop-titanskin-many-sources-replay-calibration.mt2f',
@@ -2169,6 +2170,15 @@ if ($Fixture.Count -gt 0) {
 }
 # Explicit selections for this composition have complete dedicated gates.
 # Avoid starting all unrelated pure checks before a component-only request.
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -ne 'player-third-troop-fragile-buff-calibration.mt2f' }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Third troop Fragile checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --third-troop-fragile-buff-only (Get-TestFixturePath 'player-third-troop-fragile-buff-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Third troop Fragile native check failed.' }
+    return
+}
 $inactiveBossMoonNames = @('player-inactive-fragile-moon-birth-calibration.mt2f', 'player-inactive-fragile-moon-birth-replay-calibration.mt2f')
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $inactiveBossMoonNames }).Count -eq 0) {
     if (-not $SkipBuild) {

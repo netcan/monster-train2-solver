@@ -123,16 +123,18 @@ namespace MonsterTrain2Poju.Model
         private static bool KnownChampionAddition(EnchantmentCombatState source, RoomCombatState room,
             CombatUnit owner, TroopAuraState rule, IReadOnlyList<int> targets)
         {
-            // Native second-tier champion writes two HP per Horde stack after
-            // the enemy-only Titanskin pass. An uncached preview birth receives
-            // that write on every refresh; only primary mode commits the cache.
+            // Native tier-two/Titanskin preview births receive repeated HP
+            // writes; the tier-three/Fragile observation covers primary mode.
             // These sources affect disjoint teams. Other enchantments, living
             // departures and modified champion auras retain the ordering guard.
             CardUpgradeModifier upgrade = rule.Upgrade;
+            bool second = upgrade.DataId == CardUnderlegionTroopUpgradeModel.SecondAuraUpgradeId &&
+                upgrade.AssetKey == CardUnderlegionTroopUpgradeModel.SecondAuraUpgradeKey && upgrade.Stats.Health == 2;
+            bool third = upgrade.DataId == CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId &&
+                upgrade.AssetKey == CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeKey && upgrade.Stats.Health == 3;
             if (source.Preview != room.Preview || owner.AssetKey != "MonsterChampionUnderlegion1" ||
                 owner.Team != CombatTeam.Player || rule.Subtype != CardUnderlegionTroopUpgradeModel.NoneSubtype ||
-                rule.Statuses.Count != 0 || upgrade.DataId != CardUnderlegionTroopUpgradeModel.SecondAuraUpgradeId ||
-                upgrade.AssetKey != CardUnderlegionTroopUpgradeModel.SecondAuraUpgradeKey || upgrade.Stats.Health != 2 ||
+                rule.Statuses.Count != 0 || (!second && !third) ||
                 new[] { "Damage", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }
                     .Any(stat => upgrade.Stats.Value(stat) != 0) ||
                 upgrade.Statuses.Count != 0 || upgrade.ExternalInteractions.Count != 0 ||
@@ -150,7 +152,25 @@ namespace MonsterTrain2Poju.Model
                 source.Train.Context?.SpawnPoints?.Units.Any(point => point.UnitId == id &&
                     (source.Preview ? point.SpawnedInPreview : !point.SpawnedInPreview &&
                         point.Current?.RoomIndex == room.RoomIndex && point.Current.Team == CombatTeam.Player)) != true)) return false;
-            return OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
+            return third ? !source.Preview && OnlyFragileBuffSource(source) :
+                OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
+        }
+
+        private static bool OnlyFragileBuffSource(EnchantmentCombatState source)
+        {
+            if (source.EnchanterIds.Count != 1) return false;
+            CombatUnit? owner = source.Train.Rooms.SelectMany(room => room.Units)
+                .SingleOrDefault(unit => unit.Id == source.EnchanterIds[0]);
+            if (owner is not { AssetKey: "Boss_Level8_Fragile", Team: CombatTeam.Enemy, MaxHealth: 3000 } ||
+                owner.Health <= 0 || owner.DeathState?.IsDestroyed == true) return false;
+            var effects = owner.Triggers.SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null).ToArray();
+            return effects.Length == 1 && effects[0].Enchantment is
+                { Bound: true, HasParentCard: false, StatusPool.Count: 1 } aura &&
+                aura.Targeting is { Type: "AddStatus", Target: "Room", Value: 0, Range: null, OnlyIfNoEnemies: false,
+                    AllowEnemy: true, AllowPlayer: false,
+                    Filters: { Health: "Both", RequiredStatuses.Count: 0, ExcludedStatuses.Count: 0,
+                        IgnoreBosses: false, Subtype: "", ExcludedSubtypes.Count: 0 } } &&
+                aura.StatusPool[0] is { Id: "buff", Stacks: 3, ParamInt: 2 };
         }
 
         internal static bool OnlyTitanskinSources(IReadOnlyList<RoomCombatState> rooms,
