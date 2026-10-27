@@ -23,6 +23,15 @@ across all22 inputs. It uses pinned release231 (the same effect model),
 profile142051-bc670472; the new seed choice is checked separately on232.
 This is a strategy witness, not a new native battle victory.
 
+Subsequent complete release232 acceptance independently wins the same third
+battle under actual10000ms/two-worker advice:46 inputs/38plays/8EndTurns,
+Pyre53. The normal-reward frozen replay also wins with identical complete
+roots, successors, forecasts and RNG,16 train phases per process, four zero
+counters and unchanged original files.66 normal reward/map events reach
+Ring4. The original release231 default defeat remains retained. These wins
+extend sample22 to three default-budget accepted battles, not an eight-ring
+clear; see the separate random22 campaign note for bindings.
+
 Both seed choices and eight parallel calls leave the native root unchanged.
 Ten model controls cover full-health non-Burnout deferral, ordinary healing,
 urgent full-health Burnout, damage output at equal expiry and an unhealable

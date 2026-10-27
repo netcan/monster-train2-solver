@@ -39,6 +39,14 @@ hero beside a39ATK/33HP Lady with Burnout1. Release232 fixes both seed target
 rankings; independent native22-input component142051-bc670472 preserves
 the first21 inputs and confirms Lady health33->56/Burnout1->10. Full state,
 forecasts and RNG agree. Ten additional model controls and eight immutable
-native-root choices pass. Fresh full-battle acceptance is the next step;
-the component alone is not counted as a victory.
-No Ring3 or full-campaign win is claimed.
+native-root choices pass. Fresh actual10000ms/two-worker release232 source
+142818-8a4d5c78 and independent normal-reward replay143322-1c5d235e both win
+in46 inputs/38plays/8EndTurns with Pyre53. All roots, successors, forecasts
+and RNG match, including16 train phases per process and four zero counters.
+Overlay48 publications/285 captures/purity0;66 normal reward/map events
+produce Ring4 save78F8BECBDCD091EF6BB6FE0A514C2E13FCAAF2BAE78FAA4E8A8E2B1D042B6FC1.
+Both archives are curated; journal142817-6bdd173b binds the pair with frozen
+checkerDDE69CE8843F761CD5E7E1D0ADB4CAB3C3D82BACDF4DEB80B12C4205ECAC363E.
+This is a fresh default-budget victory, distinct from the parallel offline
+46-input positive route. The first three default links pass without refinements.
+Ring4 is undergoing actual default acceptance. No full-campaign win is claimed.
