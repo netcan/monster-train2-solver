@@ -1598,6 +1598,13 @@ if (args.Length is 8 or 9 && args[0] == "--random-campaign-pair-only")
     RandomCampaignChecks.Pair(source.RootElement, replay.RootElement, int.Parse(args[3]), int.Parse(args[4]), int.Parse(args[5]), args[6], args[7], args.Length == 9 ? int.Parse(args[8]) : 3000);
     return;
 }
+if (args.Length is 8 or 9 && args[0] == "--random-campaign-defeat-pair-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    RandomCampaignChecks.DefeatPair(source.RootElement, replay.RootElement, int.Parse(args[3]), int.Parse(args[4]), int.Parse(args[5]), args[6], args[7], args.Length == 9 ? int.Parse(args[8]) : 3000);
+    return;
+}
 
 if (args.Length == 1 && args[0] == "--advice-history-only")
 {

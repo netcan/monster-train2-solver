@@ -9,6 +9,7 @@ param(
     [string] $InputProfile = '',
     [string] $NewRunFromProfile = '',
     [string] $BattleReplay = '',
+    [switch] $CompleteDefeat,
     [string[]] $ExcludeUpgradeTrait = @(),
     [switch] $SkipMerchantPurchases,
     [ValidateSet('First', 'Last')] [string] $StoryChoiceOrder = 'First',
@@ -22,6 +23,9 @@ param(
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
+if ($CompleteDefeat -and (-not $BattleReplay -or -not $InputProfile)) {
+    throw 'CompleteDefeat requires a settled native BattleReplay and its original InputProfile.'
+}
 if ($NativeBuildRoot -and -not $SkipBuild) {
     throw 'NativeBuildRoot requires prebuilt native binaries with SkipBuild.'
 }
@@ -93,11 +97,11 @@ if ($BattleReplay) {
         $kindValue = [MonsterTrain2Poju.Fixtures.FixtureValue]::new()
         if ($sourceRoot.TryGetProperty('EvidenceKind', [ref]$kindValue) -and
             $kindValue.GetString() -in @('ModelPrediction', 'NativeDeploymentObservation')) {
-            throw 'Campaign continuation needs a settled native victory, not a model prediction or deployment observation.'
+            throw 'Campaign continuation needs a settled native outcome, not a model prediction or deployment observation.'
         }
-        if (-not $sourceRoot.GetProperty('NativeWon').GetBoolean() -or -not $sourceRoot.GetProperty('TerminalEffectsSettled').GetBoolean() -or
+        if ($sourceRoot.GetProperty('NativeWon').GetBoolean() -ne (-not $CompleteDefeat) -or -not $sourceRoot.GetProperty('TerminalEffectsSettled').GetBoolean() -or
             @('CaptureFailures', 'Mismatches', 'Unsupported', 'Pending').Where({ $sourceRoot.GetProperty($_).GetInt32() -ne 0 }).Count -gt 0) {
-            throw 'Campaign continuation needs a settled native victory with all four failure counters zero.'
+            throw 'Campaign continuation needs the declared settled native outcome with all four failure counters zero; defeat requires CompleteDefeat.'
         }
         $playerValue = [MonsterTrain2Poju.Fixtures.FixtureValue]::new()
         if ($sourceDocument.RootElement.TryGetProperty('PlayerAdvisor', [ref]$playerValue) -and
@@ -153,6 +157,7 @@ $inputMetagameHash = (Get-FileHash -LiteralPath (Join-Path $source 'metagameSave
     OuterBossTurns = [bool]$OuterBossTurns; OuterBossBirth = [bool]$OuterBossBirth;
     StoryProgressionOnly = [bool]$StoryProgressionOnly;
     BattleReplay = $BattleReplay; PlayerReplay = $playerReplay;
+    CompleteDefeat = [bool]$CompleteDefeat;
     BattleReplaySHA256 = $(if ($BattleReplay) { (Get-FileHash -LiteralPath $BattleReplay -Algorithm SHA256).Hash } else { $null }) } |
     ConvertTo-Json | Set-Content -LiteralPath (Join-Path $profile 'campaign-input.json')
 $playerCheckPlugin = $null; $playerConfigPath = $null; $playerConfigBackup = $null
@@ -214,6 +219,7 @@ if ($InputProfile) { $settings.MT2_PROBE_RESUME_RUN = '1' }
 if ($BattleReplay) {
     $settings.MT2_PROBE_SCENARIO = 'native-replay'
     $settings.MT2_PROBE_CAMPAIGN_AFTER_REPLAY = '1'
+    $settings.MT2_PROBE_CAMPAIGN_COMPLETE_DEFEAT = $(if ($CompleteDefeat) { '1' } else { '0' })
     $settings.MT2_PROBE_BATTLE_DISTANCE = [string]$inputSave.runState.distance
     $settings.MT2_PROBE_FULL_BATTLE = '1'
     $settings.MT2_PROBE_FULL_BATTLE_POLICY = 'units-spells-and-junk'
@@ -255,7 +261,7 @@ if ($BattleReplay -and (Test-Path -LiteralPath (Join-Path $profile 'full-battle.
     $document = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'full-battle.mt2f'))
     try { $trace = $document.RootElement.ToObjectGraph() } finally { $document.Dispose() }
     $decisions = @($trace['RollingDecisions'])
-    $replayPassed = $trace['NativeWon'] -eq $true -and $trace['TerminalEffectsSettled'] -eq $true -and
+    $replayPassed = $trace['NativeWon'] -eq (-not $CompleteDefeat) -and $trace['TerminalEffectsSettled'] -eq $true -and
         $trace['CaptureFailures'] -eq 0 -and $trace['Mismatches'] -eq 0 -and $trace['Unsupported'] -eq 0 -and $trace['Pending'] -eq 0 -and
         $decisions.Count -gt 0 -and @($decisions | Where-Object { $_['Mode'] -ne 'replay' -or $_['Nodes'] -ne 0 -or
             $_['Difference'] -or $null -eq $_['Actual'] }).Count -eq 0
@@ -270,7 +276,29 @@ $inputUnchanged = (Get-FileHash -LiteralPath (Join-Path $source 'saves/save-sing
     (Get-FileHash -LiteralPath (Join-Path $source 'metagameSave.json')).Hash -ceq $inputMetagameHash
 $passed = $process.ExitCode -eq 0 -and $audit.Count -gt 0 -and $audit[-1].kind -eq 'complete' -and $unchanged -and $inputUnchanged -and $replayPassed
 $runOutcome = @($audit | Where-Object kind -EQ 'run-outcome')
+if ($CompleteDefeat) {
+    $completedPath = Join-Path $profile 'completed-save-singlePlayer.json'
+    $idle = Get-Content -LiteralPath $savePath -Raw | ConvertFrom-Json
+    $completed = if (Test-Path -LiteralPath $completedPath) { Get-Content -LiteralPath $completedPath -Raw | ConvertFrom-Json } else { $null }
+    $battleOutcomes = @($audit | Where-Object kind -EQ 'battle-outcome')
+    $battles = @($runOutcome | ForEach-Object { $_.data.battles })
+    $defeatSettled = $runOutcome.Count -eq 1 -and $runOutcome[0].data.won -eq $false -and
+        $runOutcome[0].data.nativeVictory -eq $false -and $runOutcome[0].data.cheat -eq $false -and
+        $runOutcome[0].data.distance -eq $inputSave.runState.distance -and
+        $runOutcome[0].data.battlesWon -eq $inputSave.runState.distance -and
+        $battles.Count -eq ([int]$inputSave.runState.distance + 1) -and
+        @($battles | Where-Object won -EQ $false).Count -eq 1 -and $battles[-1].won -eq $false -and
+        $battleOutcomes.Count -eq 1 -and $battleOutcomes[0].data.won -eq $false -and
+        $idle.gameSequence -eq 0 -and $idle.runState.distance -eq -1 -and $idle.completedBattles.Count -eq 0 -and -not $idle.wasDevCheatUsed -and
+        $null -ne $completed -and -not $completed.wasDevCheatUsed -and
+        $completed.startingConditions.seed -eq $inputSave.startingConditions.seed -and
+        $completed.startingConditions.ascensionLevel -eq $inputSave.startingConditions.ascensionLevel -and
+        $completed.completedBattles.Count -eq ([int]$inputSave.runState.distance + 1) -and
+        (Test-Path -LiteralPath (Join-Path $profile 'native-story-progression.json'))
+    $passed = $passed -and $defeatSettled
+}
 $summary = [pscustomobject]@{ Profile = $profile; NativePassed = $passed; ExitCode = $process.ExitCode;
+    CompleteDefeat = [bool]$CompleteDefeat;
     StoryProgressionOnly = [bool]$StoryProgressionOnly;
     NewRunFromProfile = [bool]$NewRunFromProfile; InputProfileUnchanged = $inputUnchanged;
     BattleReplayPassed = $replayPassed; PlayerReplay = $playerReplay;

@@ -602,6 +602,22 @@ internal static class RandomCampaignChecks
         Console.WriteLine($"RANDOM-CAMPAIGN-REFINED-PAIR PASS:{inputCount} unchanged frozen inputs, {primary}/{secondary} seed={seed} rank={rank} ring={distance + 1}, two native wins/full forecasts/state/RNG; offline refined route, not a default search-budget acceptance.");
     }
 
+    internal static void DefeatPair(FixtureValue source, FixtureValue replay, int seed, int rank, int distance, string primary, string secondary, int timeLimitMs = 3000)
+    {
+        Input(source, seed, rank, distance, primary, secondary, timeLimitMs);
+        Input(replay, seed, rank, distance, primary, secondary, timeLimitMs);
+        Require(!source.GetProperty("NativeWon").GetBoolean() && !replay.GetProperty("NativeWon").GetBoolean(),
+            "Defeat settlement requires two native defeats; never count it as a campaign win.");
+        Require(source.GetProperty("NativeRunInput").ContentEquals(replay.GetProperty("NativeRunInput")),
+            "Independent defeat replay changed the native campaign input.");
+        RollingAdviceChecks.FrozenPair(source, replay);
+        TrainCombatChecks.Native(source); TrainCombatChecks.Native(replay);
+        JuiceTraitChecks.Native(source); JuiceTraitChecks.Native(replay);
+        Require(replay.GetProperty("PlayerAdvisor").GetProperty("Overlay").GetProperty("Published").GetInt32() == 0,
+            "Defeat settlement must freeze the original inputs without a new search.");
+        Console.WriteLine($"RANDOM-CAMPAIGN-DEFEAT-PAIR PASS {primary}/{secondary} seed={seed} rank={rank} ring={distance + 1}: two native defeats, complete state/forecasts/RNG; no campaign victory.");
+    }
+
     internal static void Pair(FixtureValue source, FixtureValue replay, int seed, int rank, int distance, string primary, string secondary, int timeLimitMs = 3000)
     {
         Input(source, seed, rank, distance, primary, secondary, timeLimitMs);

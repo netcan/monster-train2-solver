@@ -36,6 +36,7 @@ namespace MonsterTrain2Poju.Probe
         private bool nativeLost;
         private bool? runWon;
         private bool runReturned;
+        private readonly bool completeDefeat;
         private readonly HashSet<string> declinedUpgrades = new HashSet<string>();
         private readonly HashSet<string> auditedMerchantOffers = new HashSet<string>();
         private readonly HashSet<string> auditedStoryOffers = new HashSet<string>();
@@ -46,9 +47,10 @@ namespace MonsterTrain2Poju.Probe
         private DeckScreen? enteringDeck;
         private float deckReadyAt;
 
-        internal CampaignProgressScenario(ManualLogSource log, bool afterBattle = false)
+        internal CampaignProgressScenario(ManualLogSource log, bool afterBattle = false, bool battleWon = true)
         {
             this.log = log; active = this;
+            completeDefeat = afterBattle && !battleWon && Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_COMPLETE_DEFEAT") == "1";
             stopRing = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_STOP_RING") ?? "5");
             seed = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_SEED") ?? "424242");
             auditPath = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "campaign-audit.jsonl");
@@ -59,7 +61,7 @@ namespace MonsterTrain2Poju.Probe
                 started = true;
                 Record("battle-replay-complete", new { decisions = RollingAdviceScenario.Records.Count,
                     archive = "full-battle.mt2f", searchNodes = RollingAdviceScenario.Records.Sum(x => x.Nodes) });
-                Record("battle-outcome", new { won = true, distance = AllGameManagers.Instance.GetSaveManager().GetCurrentDistance(),
+                Record("battle-outcome", new { won = battleWon, distance = AllGameManagers.Instance.GetSaveManager().GetCurrentDistance(),
                     pyre = AllGameManagers.Instance.GetPlayerManager().GetTowerHP() });
             }
         }
@@ -97,9 +99,10 @@ namespace MonsterTrain2Poju.Probe
                 screens.GetTopScreen() is ScreenName.GameOver or ScreenName.Unlock)
             {
                 ObserveStoryProgression(save, afterEndGame: true);
-                Finish(runWon.Value, "Native campaign completed: " + (runWon.Value ? "victory" : "defeat")); return;
+                Finish(runWon.Value || completeDefeat && !save.IsVictoriousAfterGameOver() && !SaveManager.WasDevCheatUsed,
+                    "Native campaign completed: " + (runWon.Value ? "victory" : "defeat")); return;
             }
-            if (nativeLost) { Finish(false, "Native campaign battle lost; retained pre-battle checkpoint is unchanged."); return; }
+            if (nativeLost && !completeDefeat) { Finish(false, "Native campaign battle lost; retained pre-battle checkpoint is unchanged."); return; }
             if (Time.realtimeSinceStartup > heartbeat)
             {
                 heartbeat = Time.realtimeSinceStartup + 15f;

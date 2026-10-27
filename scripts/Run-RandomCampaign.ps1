@@ -12,6 +12,7 @@ param(
     [ValidateRange(60, 3600)][int] $TimeoutSeconds = 1200,
     [string] $NativeBuildRoot = '',
     [string] $ModelChecker = '',
+    [switch] $CompleteDefeats,
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -80,6 +81,7 @@ function Record([object] $Entry) {
 $receipt = [ordered]@{ Schema=1; PrimaryClan=$PrimaryClan; SecondaryClan=$SecondaryClan; Seed=$Seed; Rank=$Rank
     WholeBattle=$true; SearchWorkers=2; TimeLimitMs=$TimeLimitMs; Journal=$journal; InputProfile=$InputProfile; NativeBuildRoot=$NativeBuildRoot
     NewRunFromProfile=$NewRunFromProfile; StartingRing=$resumeDistance+1; LastAcceptedRing=$resumeDistance; NativeCampaignWon=$false; NativeVictoryType=$null
+    CompleteDefeats=[bool]$CompleteDefeats; DefeatSettled=$false; SettlementProfile=$null
     Outcome='Running'; FailureRing=$null; Failure=$null; SourceProfile=$null; NextInputProfile=$InputProfile
     ModelChecker=$checker; ModelCheckerSHA256=(Get-FileHash -LiteralPath $checker).Hash }
 Record ([pscustomobject]$receipt)
@@ -123,6 +125,22 @@ try {
             if ($LASTEXITCODE -ne 0) { throw 'Complete defeat failed independent model/UI acceptance.' }
             $receipt.Outcome='Defeat'
             Record @{ Kind='native-defeat'; Ring=$distance+1; Source=$accepted; InputProfile=$InputProfile; InputSaveSHA256=$inputHash }
+            if ($CompleteDefeats) {
+                $settlement = Invoke-Native 'Run-CampaignProgress.ps1' @{ InputProfile=$InputProfile; BattleReplay=$trace; Seed=$Seed
+                    CompleteDefeat=$true; StopBeforeRing=$distance+2; NativeWorker=$NativeWorker; TimeoutSeconds=$TimeoutSeconds; SkipBuild=$true }
+                if (-not $settlement.NativePassed -or -not $settlement.CompleteDefeat -or -not $settlement.BattleReplayPassed -or
+                    -not $settlement.PlayerReplay -or $settlement.NativeCampaignWon -or -not $settlement.OriginalFilesUnchanged) {
+                    throw 'Native defeat did not settle normally.'
+                }
+                $replay = Join-Path $settlement.Profile 'full-battle.mt2f'
+                dotnet $checker --random-campaign-defeat-pair-only $trace $replay $Seed $Rank $distance $PrimaryClan $SecondaryClan $TimeLimitMs
+                if ($LASTEXITCODE -ne 0) { throw 'Independent frozen defeat pair check failed.' }
+                $receipt.DefeatSettled=$true; $receipt.SettlementProfile=$settlement.Profile
+                $receipt.NextInputProfile=$settlement.Profile
+                Record @{ Kind='settled-native-defeat'; Ring=$distance+1; SourceProfile=$source.Profile; ReplayProfile=$settlement.Profile
+                    SourceSha256=$accepted.TraceSha256; ReplaySha256=(Get-FileHash -LiteralPath $replay -Algorithm SHA256).Hash
+                    InputProfile=$InputProfile; InputSaveSHA256=$inputHash; Settlement=$settlement }
+            }
             break
         }
         # The second native process both freezes every winning input and makes
