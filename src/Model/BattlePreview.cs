@@ -47,7 +47,7 @@ namespace MonsterTrain2Poju.Model
             int firstPreviewId = context.NextUnitId ?? int.MaxValue;
             int firstPreviewCardId = context.NextCardId;
             bool previewBirth = false;
-            var previewActors = new Dictionary<int, CombatUnit>();
+            Dictionary<int, CombatUnit>? previewActors = null;
             var originalUnits = source.Rooms.SelectMany(room => room.Units).Where(unit => unit.Health > 0)
                 .Select(unit => unit.Id).ToHashSet();
             void CarryRoomCaches(CombatContext from)
@@ -93,7 +93,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     // A temporary birth may die on this floor and be pruned by
                     // a later floor. Preserve its definition until identity cleanup.
-                    if (unit.Id >= firstPreviewId) previewActors[unit.Id] = unit;
+                    if (unit.Id >= firstPreviewId) (previewActors ??= new Dictionary<int, CombatUnit>())[unit.Id] = unit;
                     // SacrificeCard lives outside CharacterState.PrimaryStateInformation.
                     // Preview cancellation restores HP and IsSacrifice, but keeps this reference.
                     if (unit.SacrificeCardId is int cardId) sacrificeCards[unit.Id] = cardId;
@@ -226,7 +226,8 @@ namespace MonsterTrain2Poju.Model
                     .Any(unit => unit.Health <= 0 && (unit.EndsBattleOnDeath || unit.IsPyre))) break;
             }
             previewContext = PreviewBirthModel.ForgetUnobservedPlayers(source, previewContext,
-                firstPreviewId, firstPreviewCardId, previewActors.Values, out int[] unobservedPreviewIds);
+                firstPreviewId, firstPreviewCardId, previewActors == null ? Array.Empty<CombatUnit>() : previewActors.Values,
+                out int[] unobservedPreviewIds);
             context = context.WithStatistics(context.Statistics!.RetainPreviewQueries(previewContext.Statistics!));
             if (source.Context!.LifeLinks != null) context = context.WithLifeLinks(source.Context.LifeLinks);
             if (originalPoints?.NextPreviewCopyId.HasValue == true)

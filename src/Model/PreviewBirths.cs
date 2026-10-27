@@ -6,6 +6,33 @@ namespace MonsterTrain2Poju.Model
 {
     internal static class PreviewBirthModel
     {
+        private static bool IsOriginalGreenRecruit(CombatUnit unit, CombatContext context) =>
+            unit is { AssetKey: "MonsterGenerousHost", Team: CombatTeam.Player } &&
+            context.FindCard(unit.SpawnerCardId)?.DataId == "c052c567-1e3c-4f36-a6cd-89b0648b9475" &&
+            unit.Triggers is [{ Kind: "OnDeath", Effects: [{ Type: "CardEffectSpawnMonsterOrAddStatusEffect", Action:
+                { Type: "SpawnOrStatus", Target: "Room", Value: 4, AllowPlayer: true, AllowEnemy: false, Range: null,
+                    Statuses: [{ Id: "horde", Stacks: 4 }], Filters.Subtype: "SubtypesData_Horde",
+                    SpawnFallbackUnit: { AssetKey: "MonsterFunguy", BaseAttack: 3, Health: 4 } } }] }];
+
+        internal static int[] UnobservedRoomPlayers(RoomCombatState source, CombatContext preview,
+            IEnumerable<CombatUnit> observed)
+        {
+            CombatContext context = source.Context!;
+            // Room-only captures have no actor world to retain temporary objects.
+            // The calibrated kill preview creates no card and no durable observer.
+            if (context.Enchantments != null || preview.Enchantments != null || context.SummonCatalog != null ||
+                context.NextUnitId is not int first || preview.NextUnitId is not int next || next <= first ||
+                context.NextCardId != preview.NextCardId ||
+                preview.CardRegistry?.Any(card => card.InstanceId >= context.NextCardId) == true ||
+                !source.Units.Any(unit => IsOriginalGreenRecruit(unit, context))) return Array.Empty<int>();
+            CombatUnit[] births = observed.Where(unit => unit.Id >= first).ToArray();
+            if (births.Length != next - first || births.Select(unit => unit.Id).Distinct().Count() != births.Length || births.Any(unit => unit.Id >= next ||
+                unit.Team != CombatTeam.Player || unit.AssetKey != "MonsterFunguy" || unit.SpawnerCardId != 0 ||
+                unit.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Enchantment != null)))
+                return Array.Empty<int>();
+            return births.Select(unit => unit.Id).ToArray();
+        }
+
         internal static CombatContext CompleteRemoteCombatBirths(CombatContext context, int roomIndex)
         {
             if (context.Enchantments is not { AutomaticLifecycle: true, Preview: false } world ||
@@ -95,13 +122,7 @@ namespace MonsterTrain2Poju.Model
                     Array.Empty<RoomCapacityAttachmentState>()).Any(attachment =>
                         attachment.DataId == "e1a39d88-4a77-4399-98b2-0b81f44fe6a8" &&
                         attachment.DeathEffect != null && RoomDeathEffectModel.Validate(attachment.DeathEffect) == null) == true;
-                bool recruitFallback = source.Rooms.SelectMany(room => room.Units).Any(unit =>
-                    unit is { AssetKey: "MonsterGenerousHost", Team: CombatTeam.Player } &&
-                    context.FindCard(unit.SpawnerCardId)?.DataId == "c052c567-1e3c-4f36-a6cd-89b0648b9475" &&
-                    unit.Triggers is [{ Kind: "OnDeath", Effects: [{ Type: "CardEffectSpawnMonsterOrAddStatusEffect", Action:
-                        { Type: "SpawnOrStatus", Target: "Room", Value: 4, AllowPlayer: true, AllowEnemy: false, Range: null,
-                            Statuses: [{ Id: "horde", Stacks: 4 }], Filters.Subtype: "SubtypesData_Horde",
-                            SpawnFallbackUnit: { AssetKey: "MonsterFunguy", BaseAttack: 3, Health: 4 } } }] }]);
+                bool recruitFallback = source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalGreenRecruit(unit, context));
                 if (!(roomFallback || recruitFallback) || births.Length != nextId - firstUnitId || births.Any(unit =>
                     unit.Id >= nextId || unit.Team != CombatTeam.Player || unit.AssetKey != "MonsterFunguy" || unit.SpawnerCardId != 0)) return preview;
             }

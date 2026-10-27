@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--green-recruit-room-preview-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    GreenRecruitRoomPreviewChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--green-recruit-endturn-counterexample-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

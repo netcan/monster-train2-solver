@@ -2665,9 +2665,14 @@ namespace MonsterTrain2Poju.Model
                 int[] enemyBirthIds = previewWorld == null ? Array.Empty<int>() : previewWorld.Rooms.SelectMany(room => room.Units)
                     .Concat(previewWorld.RetainedUnits.Select(retained => retained.Unit))
                     .Where(unit => unit.Id >= firstPreviewId && unit.Team == CombatTeam.Enemy).Select(unit => unit.Id).ToArray();
+                int[] unobservedPlayers = originalWorld == null ? PreviewBirthModel.UnobservedRoomPlayers(PhysicalRoom(),
+                    preview.context, preview.units.Select(unit => unit.Freeze())) : Array.Empty<int>();
                 BattleSpawnPoints? restoredPoints = context.SpawnPoints?.NextPreviewCopyId.HasValue == true ?
                     BattleSpawnPoints.EndPreview(context.SpawnPoints, preview.context.SpawnPoints!, clearBirths: false,
-                        clearBirthUnitIds: enemyBirthIds) : null;
+                        clearBirthUnitIds: enemyBirthIds.Concat(unobservedPlayers).ToArray()) : null;
+                if (restoredPoints != null && unobservedPlayers.Length > 0)
+                    restoredPoints = restoredPoints.WithState(restoredPoints.Groups,
+                        restoredPoints.Units.Where(unit => !unobservedPlayers.Contains(unit.UnitId)).ToArray());
                 if (restoredPoints != null) context = context.WithSpawnPoints(restoredPoints);
                 if (originalWorld?.AutomaticLifecycle == true)
                 {

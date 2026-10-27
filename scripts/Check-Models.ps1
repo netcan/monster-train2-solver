@@ -5193,6 +5193,10 @@ foreach ($fixturePath in $originalSecretIngredientFixtures) {
 }
 $originalGreenRecruitFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @('full-battle-original-green-recruit.mt2f', 'full-battle-original-green-recruit-settled.mt2f') })
 foreach ($fixturePath in $originalGreenRecruitFixtures) {
+    if ((Split-Path -Leaf $fixturePath) -eq 'full-battle-original-green-recruit.mt2f') {
+        dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- --green-recruit-room-preview-only $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Green Recruit room preview checks failed: $fixturePath" }
+    }
     foreach ($mode in @('--original-green-recruit-only', '--native-actions-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original Green Recruit checks failed ($mode): $fixturePath" }
