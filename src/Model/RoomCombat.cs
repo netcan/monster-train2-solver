@@ -3865,8 +3865,11 @@ namespace MonsterTrain2Poju.Model
                     // understanding to zero before rebuilding the effective mask.
                     // In particular this drops the initial None(4) birth bit.
                     CardInstanceState? spawner = context?.FindCard(unit.Source.SpawnerCardId);
+                    // Moon statuses queue only the gained/lost callbacks here.
+                    // ResetMoonPhaseUnderstanding also updates those callbacks
+                    // and card traits, but never queues a global MoonPhaseShift.
                     if (unit.Triggers.Any(trigger => trigger.Kind is "OnMoonLit" or "OnMoonlitLost" or
-                            "OnMoonShade" or "OnMoonshadeLost" or "OnMoonPhaseShift") ||
+                            "OnMoonShade" or "OnMoonshadeLost") ||
                         spawner?.MaskDescriptor?.BaseTraits.Concat(spawner.MaskDescriptor.TemporaryTraits)
                             .Any(trait => trait.RuntimeType.Contains("MoonPhase", StringComparison.Ordinal)) == true)
                     { unsupportedReason = "Moon silence callbacks with character or card traits require native calibration."; return; }

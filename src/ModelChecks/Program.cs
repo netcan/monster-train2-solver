@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--moon-silence-shift-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    MoonSilenceShiftChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is >= 2 and <= 4 && args[0] == "--lazarus-juice-multi-conduit-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
