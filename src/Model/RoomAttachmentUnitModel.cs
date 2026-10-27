@@ -222,11 +222,7 @@ namespace MonsterTrain2Poju.Model
                             previousUnit is not { AssetKey: "HeavyT2_Zealot", BaseAttack: 5, MaxHealth: 110, Size: 2,
                                 Triggers: [{ Kind: "OnAnyUnitDeathOnFloor", FireCount: 1,
                                     Effects: [{ Type: "CardEffectBuffDamage", Value: 1, Action: { Type: "BuffAttack", Target: "Self", Value: 1 } }] }] } ||
-                            removed is not { AssetKey: "InfernoRoom", DataId: "378cea0c-14e9-45fb-9918-fb853bd04a7d", CharacterUpgrades.Count: 1,
-                                PreCombat: { } preCombat } || RoomPreCombatModel.Validate(preCombat) != null ||
-                            removed.CharacterUpgrades[0] is not { AssetKey: "InfernoRoom", DataId: "96547940-8feb-4f73-b147-c763a64161c2" } original ||
-                            new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }.Any(stat => original.Stats.Value(stat) != 0) ||
-                            original.Statuses.Count != 0 || original.ExternalInteractions.Count != 0 || original.TriggerUpgrades?.Count > 0 || original.AbilityUpgrade != null ||
+                            !OriginalInferno(removed) ||
                             oldRoom.Preview || newRoom.Preview || currentUnit.Triggers.Any(trigger => trigger.Kind is
                                 "OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or "OnMoonshadeLost"))
                             return Fail("Inactive enemy room-exit moon understanding requires native calibration.");
@@ -249,12 +245,31 @@ namespace MonsterTrain2Poju.Model
                         if (!ApplyUpgrade(ref currentRoom, currentUnit.Id, added, upgrade, remove: false, out string? error))
                             return Fail(error!);
                     }
+                    if (state.Context?.QueryFrame is { MoonPhaseTrackingActive: false, MoonPhase: 2 } inactive &&
+                        previousUnit is { Team: CombatTeam.Enemy, MoonPhaseMask: 5 })
+                    {
+                        if (previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } || !OriginalInferno(added) ||
+                            oldRoom.Preview || newRoom.Preview || currentUnit.Triggers.Any(trigger => trigger.Kind is
+                                "OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or "OnMoonshadeLost"))
+                            return Fail("Inactive enemy room-entry moon understanding requires native calibration.");
+                        int mask = (previousUnit.MoonPhaseMask.Value & ~3) | inactive.MoonPhase.Value;
+                        currentRoom = currentRoom.WithUnits(currentRoom.Units.Select(unit => unit.Id == currentUnit.Id
+                            ? unit.WithMoonPhaseMask(mask) : unit).ToArray());
+                    }
                     state = WithRoom(state, currentRoom);
                     currentUnit = currentRoom.Units.Single(unit => unit.Id == previousUnit.Id);
                 }
             }
             return new RoomAttachmentUnitSyncResult(state);
         }
+
+        private static bool OriginalInferno(RoomCapacityAttachmentState attachment) =>
+            attachment is { AssetKey: "InfernoRoom", DataId: "378cea0c-14e9-45fb-9918-fb853bd04a7d", CharacterUpgrades.Count: 1,
+                PreCombat: { DisallowedInDeployment: true, FocusRoom: true, Effects.Count: 1 } preCombat } &&
+            RoomPreCombatModel.Validate(preCombat) == null &&
+            attachment.CharacterUpgrades[0] is { AssetKey: "InfernoRoom", DataId: "96547940-8feb-4f73-b147-c763a64161c2" } upgrade &&
+            new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }.All(stat => upgrade.Stats.Value(stat) == 0) &&
+            upgrade.Statuses.Count == 0 && upgrade.ExternalInteractions.Count == 0 && upgrade.TriggerUpgrades?.Count is not > 0 && upgrade.AbilityUpgrade == null;
 
         internal static RoomAttachmentUnitSyncResult SynchronizeTargetability(TrainCombatState before, TrainCombatState after)
         {

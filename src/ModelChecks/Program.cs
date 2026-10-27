@@ -985,6 +985,12 @@ if (args.Length is 2 or 3 && args[0] == "--inactive-fullmoon-inferno-exit-only")
         Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(args[1]))).ToLowerInvariant());
     return;
 }
+if (args.Length == 2 && args[0] == "--inactive-fragile-inferno-entry-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    InactiveFragileInfernoEntryChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--enemy-statistics-listeners-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -7405,6 +7411,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-inactive-fragile-inferno-exit-replay-calibration.mt2f"));
     InactiveFragileInfernoExitChecks.Native(source.RootElement, replay.RootElement,
         Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant());
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-inactive-fragile-inferno-entry-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    InactiveFragileInfernoEntryChecks.Native(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-inactive-heavy-inferno-exit-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-inactive-heavy-inferno-exit-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
