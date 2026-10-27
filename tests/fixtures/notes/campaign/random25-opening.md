@@ -21,3 +21,10 @@ random25-ring2-default262.zip has107 files, SHA256
 0982719BC528241F653055DF4446784A2798472B672E05B745C1742197CEA105;
 all106 hashed members restore. Ring2 next exposes a preview allocation
 counterexample at input9; later battles and a full default clear remain open.
+
+Windows receives this exact262 payload at23:14, replacing261. Package:
+results/mod-dist/PojuAdvisor-0.2.262-Windows-20261027-231422.zip, SHA256
+D679FBCCB39421F5171702395DB4D2C0703EBF87CF26E5A1D823BE9CF33E94F4.
+Backup/receipt:BepInEx/PojuBackups/RandomCampaign-20261027-231422.
+Three installed DLLs match both native processes; all67 protected files remain
+unchanged. No Mac build or full regression is used for this delivery.
