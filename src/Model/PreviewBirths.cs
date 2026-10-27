@@ -77,10 +77,11 @@ namespace MonsterTrain2Poju.Model
         {
             forgotten = Array.Empty<int>();
             if (source.Context?.Enchantments is not { AutomaticLifecycle: true } world ||
-                !source.Units.Any(unit => IsOriginalChampionEnemyDeath(unit, source.Context) && unit.Triggers.Count == 2 &&
+                !source.Units.Any(unit => IsOriginalGreenRecruit(unit, source.Context) ||
+                    IsOriginalChampionEnemyDeath(unit, source.Context) && unit.Triggers.Count == 2 &&
                     IsOriginalMeatShieldHeal(unit.Triggers[1], unit, source.Context))) return preview;
-            // This equipped champion's cardless fallback also disappears before
-            // identity capture in a temporary boss-kill preview. Other calibrated
+            // Original Green Recruit and this equipped champion lose their
+            // unowned fallback before boss-preview identity capture. Other
             // boss-preview players can retain aura references and stay observed.
             var train = new TrainCombatState(world.Rooms.Select(room => room.RoomIndex == source.RoomIndex
                 ? source : room.WithContext(source.Context)).ToArray(), world.Movement, world.EnemySlotsPerRoom, source.Context);
