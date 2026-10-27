@@ -169,6 +169,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-echo-juice-spike-endturn-calibration.mt2f',
     'player-echo-juice-spike-endturn-replay-calibration.mt2f',
     'player-echo-juice-middle-preview-calibration.mt2f',
+    'player-echo-juice-middle-preview-replay-calibration.mt2f',
+    'player-unit-ability-mix-choices-calibration.mt2f',
     'player-lazarus-juice-spike-deployment-refusal-calibration.mt2f',
     'player-lazarus-juice-spike-cast-calibration.mt2f',
     'player-lazarus-juice-spike-cast-replay-calibration.mt2f',
@@ -1928,7 +1930,18 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     if ($LASTEXITCODE -ne 0) { throw 'Focused MoreMass moon birth checks failed.' }
     return
 }
-$echoMiddleNames = @('player-echo-juice-middle-preview-calibration.mt2f')
+$abilityMixNames = @('player-unit-ability-mix-choices-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $abilityMixNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Unit ability Mix checker build failed.' }
+    }
+    $abilityMixArguments = @('--unit-ability-mix-choices-only') + @($abilityMixNames | ForEach-Object { Get-TestFixturePath $_ })
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @abilityMixArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Focused unit ability Mix checks failed.' }
+    return
+}
+$echoMiddleNames = @('player-echo-juice-middle-preview-calibration.mt2f', 'player-echo-juice-middle-preview-replay-calibration.mt2f')
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $echoMiddleNames }).Count -eq 0) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q

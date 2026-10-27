@@ -16,4 +16,7 @@ the observed middle/top rooms are admitted.
 
 All43 full native states/RNG and four parallel immutable branches pass.
 The existing46/47/47-input top-floor Echo pair also passes. Independent
-middle-floor native replay is pending; this is not a full battle victory.
+release204 middle-floor native replay matches all43 roots/successors,
+forecasts and RNG, with the original files unchanged. This is not a full
+battle victory. The new deployment grid completes12 routes with zero
+mechanism rejections but still loses; no strategy win is claimed.

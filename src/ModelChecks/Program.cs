@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--unit-ability-mix-choices-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    UnitAbilityMixChoicesChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--echo-juice-lower-preview-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6673,10 +6680,16 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-com
     RoomCombatChecks.NativeRoomOnly(path);
     RoomCombatChecks.NativeRoomOnly(ModelJson.RelatedFixture(path, "player-combat-victory-cache-retention-counterexample-calibration.mt2f"));
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-unit-ability-mix-choices-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    UnitAbilityMixChoicesChecks.Native(source.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-juice-middle-preview-calibration.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    EchoJuiceLowerPreviewChecks.Native(source.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-juice-middle-preview-replay-calibration.mt2f"));
+    EchoJuiceLowerPreviewChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-just-cause-copy-calibration.mt2f"))
 {

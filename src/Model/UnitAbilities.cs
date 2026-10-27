@@ -267,7 +267,8 @@ namespace MonsterTrain2Poju.Model
                     {
                         var action = new PlayCardAction(cached.Card!.InstanceId, target.RoomIndex,
                             targetUnitId: targetId, activatorUnitId: actor.Id, targetSpawnPointIndex: hasTeleport ? targetIndex : -1);
-                        foreach (PlayCardAction choice in abilityRule == null ? new[] { action } : SpikeCraftModel.Actions(abilityRule, action))
+                        foreach (PlayCardAction choice in abilityRule == null ? new[] { action } :
+                            BattleActionModel.EnumerateRecursionChoices(source, action, abilityRule))
                         {
                             BattleActionResult attempt = play?.Invoke(source, choice) ?? BattleActionModel.PlayCard(source, choice);
                             if (attempt.Supported) actions.Add(new SupportedActionCandidate(choice, attempt));
