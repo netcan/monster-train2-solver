@@ -22,6 +22,25 @@ namespace MonsterTrain2Poju.Model
                     Statuses: [{ Id: "horde", Stacks: 2 }], Filters.Subtype: "SubtypesData_Horde",
                     SpawnFallbackUnit: { AssetKey: "MonsterFunguy", BaseAttack: 3, Health: 4, Modifiers.Upgrades.Count: 0 } } }] }];
 
+        private static bool IsOriginalChampionAuraPreview(EnchantmentRetainedUnit actor, EnchantmentWorld world, CombatContext context) =>
+            world.EnchanterIds.Count == 0 && actor.Unit is { Health: 12, MaxHealth: 12, Triggers.Count: 0,
+                HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades.Count: 4 } &&
+            actor.Unit.Status("horde")?.Stacks == 2 && actor.Unit.Status("trample") == null &&
+            world.Rooms.Where(room => room.RoomIndex == actor.RoomIndex).SelectMany(room => room.Units).Any(owner =>
+                owner.Triggers is [_, { Kind: "OnHit", Effects: [{ Type: "CardEffectAddStatusEffect", Action:
+                    { Type: "AddStatus", Target: "LastAttackerCharacter", Range: null,
+                        AllowEnemy: true, AllowPlayer: true, Statuses: [{ Id: "pyregel", Stacks: 3 }] } }] }] &&
+                IsOriginalChampionEnemyDeath(owner.WithTriggers(new[] { owner.Triggers[0] }), context) &&
+                owner.Health > 0 && owner.Modifiers?.TroopAura is
+                    { Subtype: "SubtypesData_None", Statuses.Count: 0, Upgrade: { DataId: "9cb768b3-efb9-480c-819b-33882cf0908d",
+                        AssetKey: "Underlegion1RegenOnHarvest1_Upgrade", Stats.Health: 1 } } aura &&
+                !aura.Targets.Contains(actor.Unit.Id) && actor.Unit.Modifiers.Upgrades.All(upgrade =>
+                    upgrade.DataId == TroopAuraModel.Key(owner.Id) && upgrade.AssetKey == aura.Upgrade.AssetKey &&
+                    upgrade.Stats.Health == 1 && upgrade.Stats.Damage == 0 && upgrade.Stats.Cost == 0 &&
+                    upgrade.Stats.Heal == 0 && upgrade.Stats.Size == 0 && upgrade.Stats.XCost == 0 &&
+                    upgrade.Stats.EquipmentLimit == 0 && upgrade.Stats.UpgradeSlotCount == 0 && upgrade.Statuses.Count == 0 &&
+                    upgrade.ExternalInteractions.Count == 0 && upgrade.TriggerUpgrades?.Count is not > 0 && upgrade.AbilityUpgrade == null));
+
         internal static int[] UnobservedRoomPlayers(RoomCombatState source, CombatContext preview,
             IEnumerable<CombatUnit> observed)
         {
@@ -70,7 +89,8 @@ namespace MonsterTrain2Poju.Model
                     actor.Unit.HordeDefinition is { Attack: 3, Health: 4 } &&
                     world.RetainedUnits.Any(owner => owner.Unit.Health <= 0 && IsOriginalGreenRecruit(owner.Unit, context) &&
                         (owner.RoomIndex == actor.RoomIndex || points.Units.Any(point => point.UnitId == owner.Unit.Id &&
-                            point.LastKnown?.RoomIndex == actor.RoomIndex)))) &&
+                            point.LastKnown?.RoomIndex == actor.RoomIndex))) ||
+                actor.RoomIndex > roomIndex && IsOriginalChampionAuraPreview(actor, world, context)) &&
                 points.Units.Any(point => point.UnitId == actor.Unit.Id && point.SpawnedInPreview &&
                     point.Current?.PreviewCopyId != null)).ToArray();
             if (pending.Length == 0) return context;

@@ -598,6 +598,11 @@ if (args.Length is 2 or 3 && args[0] == "--discard-equipment-turn-only")
     else { using var replay = ModelJson.ReadFixture(args[2]); DiscardEquipmentTurnChecks.Native(source.RootElement, replay.RootElement); }
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--champion-aura-preview-retirement-only")
+{
+    ChampionAuraPreviewRetirementChecks.Native(args[1], args.Length == 3 ? args[2] : null);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] is "--troop-birth-world-only" or "--athane-summon-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -7281,6 +7286,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-bur
     using var source = ModelJson.ReadFixture(path);
     BurnoutHealTargetChecks.Alternative(source.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-champion-aura-preview-retirement-calibration.mt2f"))
+    ChampionAuraPreviewRetirementChecks.Native(path);
 foreach (var path in args.Where(path => Path.GetFileName(path) is "player-troop-birth-world-calibration.mt2f" or
     "player-troop-birth-world-replay-calibration.mt2f" or "player-athane-summon-calibration.mt2f" or "player-athane-summon-replay-calibration.mt2f")
     .Select(path => (Path: ModelJson.RelatedFixture(path, Path.GetFileName(path).StartsWith("player-athane-", StringComparison.Ordinal) ?
