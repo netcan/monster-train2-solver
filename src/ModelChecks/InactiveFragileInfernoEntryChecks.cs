@@ -5,7 +5,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class InactiveFragileInfernoEntryChecks
 {
-    internal static void Native(FixtureValue source)
+    internal static void Native(FixtureValue source, FixtureValue? replay = null, string? sourceHash = null)
     {
         TrainCombatChecks.Native(source);
         var actions = source.GetProperty("Actions").EnumerateArray().ToArray();
@@ -80,7 +80,27 @@ internal static class InactiveFragileInfernoEntryChecks
                 }
             }
         }
-        Console.WriteLine("INACTIVE-FRAGILE-INFERNO-ENTRY PASS: 28 actions/seven turns/train phases/full state/forecast/RNG, boss mask5->6, four immutable branches/three unknown guards; nested exchange remains separate.");
+        if (replay.HasValue)
+        {
+            const string reason = "Native inactive Fragile Inferno entry moon mask differs on the seventh turn.";
+            var rows = NativeBranchObservationChecks.Replay(replay.Value, reason);
+            var decisions = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+            Require(rows.Length == 35 && decisions.Length == 35 &&
+                replay.Value.GetProperty("Request").GetProperty("SourceSHA256").GetString() == sourceHash,
+                "Independent native replay lost its original source or input count.");
+            for (int index = 0; index < rows.Length; index++)
+            {
+                var row = rows[index]; var decision = decisions[index];
+                Require(row.GetProperty("Action").ContentEquals(decision.GetProperty("Action")) &&
+                    row.GetProperty("IsEndTurn").GetBoolean() == decision.GetProperty("IsEndTurn").GetBoolean() &&
+                    NativeBranchObservationChecks.Key(row.GetProperty("Before").Deserialize<BattleTurnState>()!) ==
+                        NativeBranchObservationChecks.Key(decision.GetProperty("Root").Deserialize<BattleTurnState>()!) &&
+                    NativeBranchObservationChecks.Key(row.GetProperty("Actual").Deserialize<BattleTurnState>()!) ==
+                        NativeBranchObservationChecks.Key(decision.GetProperty("Actual").Deserialize<BattleTurnState>()!),
+                    "Independent native input/state/RNG differs at " + index);
+            }
+        }
+        Console.WriteLine("INACTIVE-FRAGILE-INFERNO-ENTRY PASS: 28 actions/seven turns/train phases/full state/forecast/RNG, boss mask5->6, four immutable branches/three unknown guards; nested exchange remains separate; independentPair=" + replay.HasValue);
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }

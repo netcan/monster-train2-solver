@@ -10,5 +10,6 @@ focused checker verifies 28 actions, seven turns, 14 train phases, full
 state/forecast/RNG, four immutable branches and three changed-signature
 guards. The historical difference is only the boss mask. A separate nested
 Zealot exchange mismatch remains unmodeled; a native probe confirmed that the
-trigger queue is empty and not running at exchange entry. Independent replay
-and actual-budget whole-battle acceptance remain outstanding.
+trigger queue is empty and not running at exchange entry. Frozen revision
+f654d830 independently reproduced all35 inputs and complete state/forecast/RNG.
+Actual-budget whole-battle acceptance remains outstanding.
