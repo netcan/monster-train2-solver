@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--echo-waxen-relics-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    EchoWaxenRelicsChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--moon-silence-shift-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

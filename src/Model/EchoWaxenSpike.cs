@@ -39,7 +39,10 @@ namespace MonsterTrain2Poju.Model
                 status.Statuses[0].Id == "ephemeral" && status.Statuses[0].Stacks == 4;
         }
 
-        internal static bool KnownRelics(CombatContext context) => context.Relics?.All(KnownRelic) != false;
+        // Use the same sealed equipment/slot/deployment relic signatures as
+        // the calibrated Juice Echo. Its predicate calls KnownRelic below
+        // for the original base owners; it does not recurse into this method.
+        internal static bool KnownRelics(CombatContext context) => EchoJuiceSpikeModel.KnownRelics(context);
         internal static bool KnownRelic(CombatRelicState relic)
         {
             if (relic.EffectTypes.Count == 0) return true;

@@ -29,3 +29,13 @@ process now repeats all49 inputs with identical complete roots/successors/RNG,
 matching forecasts and positive pre-combat snapshots. Both allies gain exactly
 20 attack/four Burnout once, enemies remain unchanged, and the cache clears.
 This completes the component pair; the eventual native route remains a loss.
+
+Release0.2.213 also admits the sealed callback-free equipment, unit-upgrade-slot,
+deployment-energy and enemy card-addition relic signatures already calibrated
+for Juice Echo. Sample18's natural final battle supplies a41-input observation:
+Waxen Spike35 pays three ember on turn8 in room1, creates raw copy44 with its
+single Titan Curse, and advances NextCardId to45. Complete state/RNG, four
+immutable branches and four changed-relic rejection controls pass. The original
+48-input copy calibration and its nine card/relic controls still pass. Actual
+EndTurn replay under these extra relics is a separate pending boundary; this
+copy observation does not prove a winning final-battle strategy.
