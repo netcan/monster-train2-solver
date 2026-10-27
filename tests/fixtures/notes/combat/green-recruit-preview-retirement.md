@@ -25,5 +25,14 @@ All71 native room/exchange stages,17 train phases, nine full EndTurns and RNG
 now pass against the unchanged historical source. Four immutable branches and
 six scope controls pass. Existing22-input remote-preview and28-input retired
 troop-source independent pairs still pass. The original failed33-input/Pyre75
-receipt is retained; a new default native victory and independent reward replay
-remain pending.
+receipt is retained separately. Release245's new default10000ms/two-worker
+source182157-136dc51f and independent reward replay182617-be076140 both win:
+33 inputs,24 plays/nine EndTurns, Pyre75. Full state, forecast, RNG and all17
+train phases match; capture, mismatch, unsupported and pending counters are
+all zero. The replay advances58 normal reward/map events to Ring4, save SHA256
+8DDF1A2A36B7F3B0E32F1E964711EA3B327AC7BF2747FE49F2952AF9FFED3D7F.
+The first three default victories now form one accepted native save chain.
+Ring4 checkpoint random23-ring4-default245.zip has57 verified files and SHA256
+00C6770361E8B4E10EE593B989885ABC8E928ACF0E73FBA6834BBF092D8ACA94.
+The unchanged prior completed profile's21 tracked values remain retained;
+metagame continuation is checked without running another battle simulation.
