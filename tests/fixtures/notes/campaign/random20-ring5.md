@@ -8,7 +8,10 @@ with four zero counters and unchanged originals/input save. Normal41 events
 produce Ring6 checkpoint9E7F954FD8D06270195D91516DB45891CED407BBDAE21871968227D6105A1C2A.
 The first five default native save links verify without simulations.
 
-Ring6 source110527-ce395d0d is blocked before its first accepted input by the
+Ring6 source110527-ce395d0d was blocked before its first accepted input by the
 rank-three champion's room positive-status slay payload and the harvest-health
-angel's moon-aware outer-boss creation guard. Those boundaries still require
-native calibration. This evidence is five accepted battles, not a full clear.
+angel's moon-aware outer-boss creation guard. Both now have native boundary
+pairs, followed by Green Recruit preview identity pairs. The next default run
+reaches54 inputs and exposes fetched Ephemeral equipment routing, fixed by
+release223. See random20-ring6-boundaries.md for the distinct evidence and limits.
+This remains five accepted battles, not a full clear.

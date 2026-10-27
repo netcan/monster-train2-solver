@@ -6907,6 +6907,17 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-gre
     using var source = ModelJson.ReadFixture(path);
     GreenRecruitPreviewIdentityChecks.EndTurnCounterexample(source.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-ephemeral-equipment-counterexample-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    EphemeralEquipmentRoutingChecks.Counterexample(source.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-ephemeral-equipment-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-ephemeral-equipment-replay-calibration.mt2f"));
+    EphemeralEquipmentRoutingChecks.Native(source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-green-recruit-endturn-identity-calibration.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
