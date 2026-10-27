@@ -174,6 +174,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-20-ring2-release212-budget10000-replay.mt2f',
     'full-battle-random-campaign-20-ring3-release215-budget10000-search.mt2f',
     'full-battle-random-campaign-20-ring3-release215-budget10000-replay.mt2f',
+    'full-battle-random-campaign-20-ring4-release215-budget10000-search.mt2f',
+    'full-battle-random-campaign-20-ring4-release215-budget10000-replay.mt2f',
+    'full-battle-random-campaign-21-ring3-release215-budget10000-loss.mt2f',
     'player-ascend-deferred-destruction-counterexample-calibration.mt2f',
     'full-battle-random-campaign-21-ring1-release215-budget10000-search.mt2f',
     'full-battle-random-campaign-21-ring1-release215-budget10000-replay.mt2f',
@@ -202,6 +205,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-echo-waxen-relics-copy-calibration.mt2f',
     'player-echo-waxen-relics-endturn-calibration.mt2f',
     'player-echo-waxen-relics-endturn-replay-calibration.mt2f',
+    'player-echo-remnant-pact-copy-calibration.mt2f',
+    'player-echo-remnant-pact-endturn-calibration.mt2f',
+    'player-echo-remnant-pact-endturn-replay-calibration.mt2f',
     'player-echo-juice-spike-copy-calibration.mt2f',
     'player-echo-just-cause-copy-calibration.mt2f',
     'player-echo-just-cause-endturn-calibration.mt2f',
@@ -2061,6 +2067,17 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -ne 'p
         (Get-TestFixturePath 'player-ascend-deferred-destruction-counterexample-calibration.mt2f') `
         (Get-TestFixturePath 'full-battle-random-campaign-20-ring3-release215-budget10000-search.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Focused Ascend destruction checks failed.' }
+    return
+}
+$echoPactNames = @('player-echo-remnant-pact-copy-calibration.mt2f', 'player-echo-remnant-pact-endturn-calibration.mt2f', 'player-echo-remnant-pact-endturn-replay-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $echoPactNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Echo Remnant Pact checker build failed.' }
+    }
+    $echoPactArguments = @('--echo-remnant-pact-only') + @($echoPactNames | ForEach-Object { Get-TestFixturePath $_ })
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @echoPactArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Focused Echo Remnant Pact checks failed.' }
     return
 }
 $echoWaxenRelicsNames = @('player-echo-waxen-relics-copy-calibration.mt2f', 'player-echo-waxen-relics-endturn-calibration.mt2f', 'player-echo-waxen-relics-endturn-replay-calibration.mt2f')

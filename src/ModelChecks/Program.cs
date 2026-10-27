@@ -1,5 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 or 4 && args[0] == "--echo-remnant-pact-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var endTurn = args.Length >= 3 ? ModelJson.ReadFixture(args[2]) : null;
+    using var replay = args.Length == 4 ? ModelJson.ReadFixture(args[3]) : null;
+    EchoRemnantPactChecks.Native(source.RootElement, endTurn?.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--ascend-destruction-boundary-only")
 {
     using var original = ModelJson.ReadFixture(args[1]);
@@ -6815,6 +6823,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-asc
     using var original = ModelJson.ReadFixture(path);
     using var settled = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-random-campaign-20-ring3-release215-budget10000-search.mt2f"));
     AscendDestructionBoundaryChecks.Native(original.RootElement, settled.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-remnant-pact-copy-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var endTurn = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-remnant-pact-endturn-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-remnant-pact-endturn-replay-calibration.mt2f"));
+    EchoRemnantPactChecks.Native(source.RootElement, endTurn.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-waxen-relics-copy-calibration.mt2f"))
 {

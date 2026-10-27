@@ -15,3 +15,10 @@ Independent replay104414-ff5a6326 matches complete states/forecasts/RNG and
 14 train phases per process. Normal69 events produce the Ring3 input save
 E6EAA6DE386C9FA255E751EA5D144686739EA4A4E51E170B66860A9A7804EB77.
 The first two default pairs are curated. Later rings/full campaign remain pending.
+
+Ring3 default source104640-4ca0b904 ends in native defeat after45inputs,
+36plays/9EndTurns, with Fleshweaver MoreMass271HP. All18 train phases,
+complete states/forecasts/RNG and four zero counters pass. The actual loss is
+curated separately; its45-input owned frozen route also replays completely.
+Offline deployment spread covers24 previously unseen candidates and reaches
+241 remaining bossHP, still a model loss. No third-ring acceptance is claimed.

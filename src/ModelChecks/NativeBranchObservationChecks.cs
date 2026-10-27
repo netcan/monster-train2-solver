@@ -40,8 +40,9 @@ internal static class NativeBranchObservationChecks
             PlayCardAction? action = step.GetProperty("Action").Deserialize<PlayCardAction>();
             BattleTurnState predicted = BattlePlannerChecks.Replay(before, [new BattleSearchStep(action, end)], out RoomOutcome outcome);
             bool terminal = boundary && boundaryOutcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
-            Require(outcome == (boundary ? boundaryOutcome : RoomOutcome.Exchanged) && Key(predicted, terminal) == Key(actual, terminal),
-                "Native successor differs at " + index + ": " + ModelJson.Difference(Key(predicted, terminal), Key(actual, terminal)));
+            string predictedKey = Key(predicted, terminal), actualKey = Key(actual, terminal);
+            if (outcome != (boundary ? boundaryOutcome : RoomOutcome.Exchanged) || predictedKey != actualKey)
+                throw new InvalidOperationException("Native successor differs at " + index + ": " + ModelJson.Difference(predictedKey, actualKey));
             FixtureValue expected = row.GetProperty("Expected");
             if (expected.ValueKind == FixtureKind.Null)
                 Require(boundary && row.GetProperty("UnsupportedReason").GetString() == (historicalUnsupportedReason ?? reason),
@@ -52,9 +53,10 @@ internal static class NativeBranchObservationChecks
                     row.GetProperty("Outcome").GetInt32() == (int)(boundary ? historicalBoundaryOutcome ?? outcome : outcome),
                     "Historical outcome differs at " + index);
                 BattleTurnState historical = expected.Deserialize<BattleTurnState>()!;
-                if (boundary && historicalBoundaryMismatch != null && Key(historical, terminal) != Key(actual, terminal))
+                string historicalKey = Key(historical, terminal);
+                if (boundary && historicalBoundaryMismatch != null && historicalKey != actualKey)
                     historicalBoundaryMismatch(historical, actual);
-                else Require(Key(historical, terminal) == Key(actual, terminal), "Historical prediction differs at " + index);
+                else Require(historicalKey == actualKey, "Historical prediction differs at " + index);
             }
             Require(immutable == JsonSerializer.Serialize(before, ModelJson.Options), "Replay mutated its parent.");
             if (boundary) Require(Key(before) == Key(request.GetProperty("FailedRoot").Deserialize<BattleTurnState>()!), "Wrong failed root.");
