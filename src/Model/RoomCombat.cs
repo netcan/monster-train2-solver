@@ -1385,7 +1385,7 @@ namespace MonsterTrain2Poju.Model
                         if (effect.Type == "CardEffectAdjustAllStatusEffects")
                         {
                             CardActionEffect? adjustment = effect.Action;
-                            bool roomSlay = trigger.Kind == "OnKill" && adjustment is { Target: "Room", Value: 1,
+                            bool roomSlay = trigger.Kind == "OnKill" && adjustment is { Target: "Room", Value: 1 or 2,
                                 AllowPlayer: true, AllowEnemy: false, StatusAdjustmentFilter: 1 } && adjustment.Statuses.Count == 0 &&
                                 adjustment.Tests?.StrictTargets == true;
                             if (adjustment?.Type != "AdjustAllStatusEffects" || !roomSlay && adjustment.Target != "Self" || adjustment.Range != null ||
