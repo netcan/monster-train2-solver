@@ -2097,6 +2097,8 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     $echoPactArguments = @('--echo-remnant-pact-only') + @($echoPactNames | ForEach-Object { Get-TestFixturePath $_ })
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @echoPactArguments
     if ($LASTEXITCODE -ne 0) { throw 'Focused Echo Remnant Pact checks failed.' }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --endless-upgrade-target-only (Get-TestFixturePath 'player-echo-remnant-pact-copy-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Focused Endless upgrade target checks failed.' }
     return
 }
 $echoWaxenRelicsNames = @('player-echo-waxen-relics-copy-calibration.mt2f', 'player-echo-waxen-relics-endturn-calibration.mt2f', 'player-echo-waxen-relics-endturn-replay-calibration.mt2f')

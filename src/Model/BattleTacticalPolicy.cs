@@ -204,6 +204,7 @@ namespace MonsterTrain2Poju.Model
                 if (harmful) return target.Team != CombatTeam.Enemy ? UnwantedTargetRank : damaging ? 1000 - target.Health :
                     (target.IsBoss == true ? 10000 : 0) + target.Health + target.Attack * 3;
                 if (target.Team != CombatTeam.Player || target.IsPyre) return UnwantedTargetRank;
+                if (BattleHeuristicPolicy.RedundantEndlessUpgrade(source, action, rule, target)) return UnwantedTargetRank;
                 if (rule.Equipment != null)
                 {
                     double value = EquipmentValue(room, target, action.CardInstanceId);

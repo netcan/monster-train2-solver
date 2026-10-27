@@ -103,11 +103,35 @@ namespace MonsterTrain2Poju.Model
                 bool harmful = rule.Effects.Any(effect => effect.Type is "Damage" or "Kill" ||
                     effect.Statuses.Any(status => status.DisplayCategory == "Negative"));
                 if (harmful != (target.Team == CombatTeam.Enemy)) return -1e6;
+                if (RedundantEndlessUpgrade(source, action, rule, target)) return double.NegativeInfinity;
                 if (CorruptionUpgradeTargetValue(source, action, rule, target) is double upgrade) return upgrade;
                 if (!harmful && rule.Effects.Any(effect => effect.Type == "FloorRearrange"))
                     return target.Health + Math.Max(0, target.Status("armor")?.Stacks ?? 0);
                 return harmful ? 400 - target.Health : 150 + target.Attack + (target.Modifiers?.IsChampion == true ? 500 : 0);
             }
+        }
+
+        internal static bool RedundantEndlessUpgrade(BattleTurnState source, PlayCardAction action,
+            CardPlayRule rule, CombatUnit target)
+        {
+            // Endless returns a unit's spawner card once; extra persistent
+            // stacks do not add another return. Let the cheap seeds save this
+            // pure upgrade for a new recipient. Callback combinations remain
+            // legal in the complete action frontier.
+            CombatStatus? endless = target.Status("endless");
+            if (endless is not { Stacks: > 0, RemoveAllAtEnd: false, RemoveStackAtEnd: false,
+                RemoveAfterPostCombat: false, MarkedForRemovalAfterCardPlayed: false } ||
+                rule.Effects.Count != 1 || rule.OnCastEffects.Count != 0 ||
+                source.Spawn.Train.Context?.FindCard(action.CardInstanceId)?.UnitUpgradeScalingTraits?.Count is > 0 ||
+                rule.Effects[0] is not { Type: "UnitUpgrade", Target: "DropTargetCharacter", AllowPlayer: true,
+                    AllowEnemy: false, ScaleUpgrade: false, Range: null, Upgrade: not null } effect) return false;
+            CardUpgradeModifier upgrade = effect.Upgrade;
+            return upgrade.Stats is { Damage: 0, Health: 0, Cost: 0, Heal: 0, Size: 0, XCost: 0, EquipmentLimit: 0, UpgradeSlotCount: 0 } &&
+                upgrade.Statuses.Count == 1 && upgrade.Statuses[0] is { Id: "endless", Stacks: > 0 } &&
+                upgrade.UnhealedHealth == 0 && upgrade.DamageBuff == 0 && upgrade.ExternalInteractions.Count == 0 &&
+                upgrade.TriggerUpgrades?.Count is not > 0 && upgrade.AbilityUpgrade == null &&
+                (upgrade.Lifecycle == null || upgrade.Lifecycle is { AddedTraits.Count: 0, RemovedRuntimeTypes.Count: 0,
+                    Triggers.Count: 0, TraitsModified.Count: 0, ReplacedAssets.Count: 0 });
         }
 
         internal static double? CorruptionUpgradeTargetValue(BattleTurnState source, PlayCardAction action,

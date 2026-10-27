@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--endless-upgrade-target-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    EndlessUpgradeTargetChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length is 3 or 5 && args[0] == "--harvest-angel-moon-birth-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6860,6 +6866,7 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-ech
     using var endTurn = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-remnant-pact-endturn-calibration.mt2f"));
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-remnant-pact-endturn-replay-calibration.mt2f"));
     EchoRemnantPactChecks.Native(source.RootElement, endTurn.RootElement, replay.RootElement);
+    EndlessUpgradeTargetChecks.Native(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-waxen-relics-copy-calibration.mt2f"))
 {
