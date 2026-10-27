@@ -6,7 +6,7 @@ using MonsterTrain2Poju.Model;
 internal static class LazarusJuiceMultiConduitChecks
 {
     private const string Reason = "Juice with this card or ordered scaling traits requires native calibration.";
-    internal static void Native(FixtureValue source)
+    internal static void Native(FixtureValue source, FixtureValue? cast = null, FixtureValue? replay = null)
     {
         var rows = NativeBranchObservationChecks.Replay(source, Reason);
         Require(rows.Length == 20, "Expected19 native prefix inputs and the Aurora summon.");
@@ -42,7 +42,52 @@ internal static class LazarusJuiceMultiConduitChecks
                 "Twin-source hand refresh differs from complete native state/RNG.");
         });
         Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "Twin-source refresh mutated its parent.");
-        Console.WriteLine("LAZARUS-JUICE-MULTI-CONDUIT PASS:20 native inputs/state/RNG, two distinct5+5 sources, six guards and four immutable branches; cast pair pending.");
+        if (cast.HasValue)
+        {
+            CheckCast(cast.Value);
+            var castRows = cast.Value.GetProperty("Rows").EnumerateArray().ToArray();
+            for (int index = 0; index < rows.Length; index++)
+            {
+                foreach (var field in new[] { "Before", "Actual" })
+                    Require(NativeBranchObservationChecks.Key(rows[index].GetProperty(field).Deserialize<BattleTurnState>()!) ==
+                        NativeBranchObservationChecks.Key(castRows[index].GetProperty(field).Deserialize<BattleTurnState>()!),
+                        "The dual-source cast changed its original native prefix: " + index);
+                foreach (var field in new[] { "Action", "IsEndTurn" })
+                    Require(rows[index].GetProperty(field).ContentEquals(castRows[index].GetProperty(field)), "The cast changed its prefix input.");
+            }
+            if (replay.HasValue)
+            {
+                CheckCast(replay.Value);
+                NativeBranchObservationChecks.Pair(cast.Value, replay.Value, originalPredictionPresent: true, originalPredictionMatched: true);
+            }
+        }
+        Require(!replay.HasValue || cast.HasValue, "A cast replay needs its source.");
+        Console.WriteLine("LAZARUS-JUICE-MULTI-CONDUIT PASS:20 original native inputs/state/RNG, distinct5+5 sources, six guards/four immutable branches; castObserved=" + cast.HasValue + " independentCastPair=" + replay.HasValue);
+    }
+    private static void CheckCast(FixtureValue fixture)
+    {
+        var rows = NativeBranchObservationChecks.Replay(fixture, Reason);
+        Require(rows.Length == 21, "Expected20 native inputs followed by the actual twin-Conduit Juice cast.");
+        var before = rows[^1].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var after = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        var action = rows[^1].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        var card = after.Spawn.Train.Context!.FindCard(13)!;
+        Require(before.Spawn.Turn == 2 && before.Energy == 3 && action.CardInstanceId == 13 &&
+            action.RoomIndex == 2 && action.TargetUnitId == 3 && before.Spawn.Train.Context!.FindCard(13)!.Temporary.Upgrades.Count == 2 &&
+            after.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == 3).Status("undying")?.Stacks ==
+                (before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == 3).Status("undying")?.Stacks ?? 0) + 6 &&
+            card.LastPlayedCost == 3 && card.PlayCount == 1 && card.Temporary.Upgrades.Count == 0 &&
+            card.ExhaustState!.BaseTraits.Single().IsExhausted &&
+            after.OtherPiles.Single(pile => pile.Name == "Exhausted").Cards.Any(token => token.InstanceId == 13),
+            "Two Conduit5 upgrades must preserve paid3/double6 Undying, Consume and cleared temporary modifiers.");
+        string parent = JsonSerializer.Serialize(before, ModelJson.Options);
+        Parallel.For(0, 4, _ =>
+        {
+            var result = BattleActionModel.PlayCard(before, action);
+            Require(result.Supported && NativeBranchObservationChecks.Key(result.State!) == NativeBranchObservationChecks.Key(after),
+                "The dual-source cast differs from full native state/RNG.");
+        });
+        Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "The dual-source cast mutated its parent.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

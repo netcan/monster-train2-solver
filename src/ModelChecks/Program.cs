@@ -1,9 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
-if (args.Length == 2 && args[0] == "--lazarus-juice-multi-conduit-only")
+if (args.Length is >= 2 and <= 4 && args[0] == "--lazarus-juice-multi-conduit-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
-    LazarusJuiceMultiConduitChecks.Native(source.RootElement);
+    using var cast = args.Length >= 3 ? ModelJson.ReadFixture(args[2]) : null;
+    using var replay = args.Length == 4 ? ModelJson.ReadFixture(args[3]) : null;
+    LazarusJuiceMultiConduitChecks.Native(source.RootElement, cast?.RootElement, replay?.RootElement);
     return;
 }
 if (args.Length == 2 && args[0] == "--eaten-unstable-counterexample-only")
@@ -6491,6 +6493,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-unstable-revival-replay-calibration.mt2f"));
     UnstableRevivalChecks.Pair(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-lazarus-juice-multi-conduit-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-lazarus-juice-multi-conduit-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var cast = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-lazarus-juice-multi-conduit-cast-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-lazarus-juice-multi-conduit-cast-replay-calibration.mt2f"));
+    LazarusJuiceMultiConduitChecks.Native(source.RootElement, cast.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-eaten-unstable-shield-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-eaten-unstable-shield-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
