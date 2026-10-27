@@ -31,6 +31,7 @@ namespace MonsterTrain2Poju.Probe
         private readonly HashSet<string> checkedCopyCardIds = new HashSet<string>(StringComparer.Ordinal);
         private readonly List<StageRecord> stages = new List<StageRecord>();
         private readonly List<StageHarvestRecord> stageHarvests = new List<StageHarvestRecord>();
+        private readonly List<StageDeathRecord> activeDeaths = new List<StageDeathRecord>();
         private readonly List<object> checkpoints = new List<object>();
 #if DEVELOPMENT_PROBE
         private object? nativeRunInput;
@@ -760,6 +761,8 @@ namespace MonsterTrain2Poju.Probe
                         Kind = kind,
                         TriggerQueueRunning = combat.IsRunningTriggerQueue,
                         QueuedTriggers = queued,
+                        ActiveDeaths = activeDeaths.Select(death => new StageDeathRecord
+                            { Kind = death.Kind, UnitId = death.UnitId, Started = death.Started }).ToArray(),
                         Room = room,
                         Before = before,
                         ExternalTargets = externalTargets.Select(target => new TowerTargetSnapshot
@@ -1942,6 +1945,7 @@ namespace MonsterTrain2Poju.Probe
             public string Kind { get; set; } = "";
             public bool TriggerQueueRunning { get; set; }
             public StageQueuedTrigger[] QueuedTriggers { get; set; } = Array.Empty<StageQueuedTrigger>();
+            public StageDeathRecord[] ActiveDeaths { get; set; } = Array.Empty<StageDeathRecord>();
             [JsonIgnore] public RoomState Room { get; set; } = null!;
             public RoomCombatState Before { get; set; } = null!;
             public TowerTargetSnapshot[] ExternalTargets { get; set; } = Array.Empty<TowerTargetSnapshot>();
@@ -1961,6 +1965,43 @@ namespace MonsterTrain2Poju.Probe
             public int DyingUnitId { get; set; }
             public int Count { get; set; }
             public bool CanFireTriggers { get; set; }
+        }
+
+        private sealed class StageDeathRecord
+        {
+            public string Kind { get; set; } = "";
+            public int UnitId { get; set; }
+            public bool Started { get; set; }
+        }
+
+        private static void ObserveDeath(CharacterState unit, string kind, ref IEnumerator native)
+        {
+            var trace = Active;
+            if (trace == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode ||
+                !trace.TryGetUnitId(unit, out int id)) return;
+            var record = new StageDeathRecord { Kind = kind, UnitId = id };
+            trace.activeDeaths.Add(record);
+            native = Track(native, trace, record);
+        }
+
+        private static IEnumerator Track(IEnumerator native, FullBattleTrace trace, StageDeathRecord record)
+        {
+            try { record.Started = true; while (native.MoveNext()) yield return native.Current; }
+            finally { (native as IDisposable)?.Dispose(); trace.activeDeaths.Remove(record); }
+        }
+
+        [HarmonyPatch(typeof(CharacterState), nameof(CharacterState.InnerCharacterDeath))]
+        private static class StageInnerDeathPatch
+        {
+            private static void Postfix(CharacterState __instance, ref IEnumerator __result) =>
+                ObserveDeath(__instance, "InnerCharacterDeath", ref __result);
+        }
+
+        [HarmonyPatch(typeof(CharacterState), "ApplyHarvestTriggers")]
+        private static class StageApplyHarvestPatch
+        {
+            private static void Postfix(CharacterState __instance, ref IEnumerator __result) =>
+                ObserveDeath(__instance, "ApplyHarvestTriggers", ref __result);
         }
 
         private sealed class StageHarvestRecord
