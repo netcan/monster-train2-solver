@@ -32,4 +32,5 @@ also win in53 inputs/Pyre5. Each checks16 train phases, complete state,
 forecasts/RNG and four zero counters;58 normal events create Ring5.
 The first four default-budget save links pass. Ring5 has a new moon-phase/
 relic modifier refusal, so this does not establish a complete campaign.
-The prior Windows232 delivery remains installed while233 is isolated.
+Windows233 was installed at15:13 using the same accepted Ring4 payload;
+all67 protected originals remain unchanged and the preceding232 files are backed up.

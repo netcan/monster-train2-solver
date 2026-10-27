@@ -1,22 +1,22 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.232, source`6e56684f`.
-Installed at14:38 with67 protected save/config/other-mod files unchanged.
-The exact accepted three DLLs win sample22 Ring3 with actual10000ms/two-worker
-advice:46inputs/38plays/8EndTurns,Pyre53. Independent normal-reward replay
+Current Windows installation:0.2.233, source`7af531ff`.
+Installed at15:13 with67 protected save/config/other-mod files unchanged.
+The exact accepted three DLLs win sample22 Ring4 with actual10000ms/two-worker
+advice:53inputs/45plays/8EndTurns,Pyre5. Independent normal-reward replay
 matches every full root/successor/forecast/RNG and16 train phases per process,
-with four zero counters.66 normal events create Ring4 save
-78F8BECBDCD091EF6BB6FE0A514C2E13FCAAF2BAE78FAA4E8A8E2B1D042B6FC1.
-Source142818-8a4d5c78 and replay143322-1c5d235e bind the same payload hashes.
-Package`results/mod-dist/PojuAdvisor-0.2.232-Windows-20261027-143856.zip`,SHA256
-`C621B2AD977B788C83EDB9565FB90C368F2A547D7846A10C33D54B9091E91945`.
+with four zero counters.58 normal events create Ring5 save
+3F70110D2A92C880E3E4C5BCFC503D870A992CDA0D922E7DD4E321266CF13503.
+Source144707-8b30a7a9 and replay145804-b2c1270f bind the same payload hashes.
+Package`results/mod-dist/PojuAdvisor-0.2.233-Windows-20261027-151305.zip`,SHA256
+`3FDDC2E059C893E05CF9877ED8B3995185BFC12C0D29DEBDCFEA8E53BC15D31D`.
 The real game was stopped; isolated native workers use their copied payloads.
-Next launch loads232. Previous DLLs and receipt are under
-`BepInEx/PojuBackups/RandomCampaign-20261027-143856/`.
-This includes229-232 triple-Juice/Conduit, mixed Rage target, paid outer-boss
-floor destruction and Burnout-healing target fixes. The first three sample22
-battles have default-budget accepted links. Ring4 exposes an additional
-ChaosScepter/Consume upgrade combination under investigation; no complete
+Next launch loads233. Previous DLLs and receipt are under
+`BepInEx/PojuBackups/RandomCampaign-20261027-151305/`.
+This includes229-233 triple-Juice/Conduit/ChaosScepter/Consume, mixed Rage target,
+paid outer-boss floor destruction and Burnout-healing target fixes. The first
+four sample22 battles have default-budget accepted links. Ring5 exposes a
+moon-phase/relic modifier combination under investigation; no complete
 default-budget campaign or Mac build is claimed.
 
 Previous Windows installation:0.2.210, source`85ee266c`.
