@@ -2770,6 +2770,7 @@ namespace MonsterTrain2Poju.Model
                 if (target.LastAttackerId.HasValue) target.LastAttackerId = actor != null && !actor.Source.IsPyre ? actor.Source.Id : 0;
                 int raw = damage;
                 int blocked = 0;
+                int titanSkinSoaked = 0;
                 bool direct = kind == "Attack";
                 bool attackingTrigger = direct || kind == "Trample";
                 if (applyTraits)
@@ -2875,7 +2876,9 @@ namespace MonsterTrain2Poju.Model
                     context = modifier.Context;
                     int applicableStacks = Math.Min(damage, titanSkin.Stacks);
                     int damageSoak = unchecked(unchecked(titanSkin.ParamInt + modifier.Stacks) * applicableStacks);
+                    int beforeSoak = damage;
                     damage = Math.Max(0, unchecked(damage - damageSoak));
+                    titanSkinSoaked = unchecked(beforeSoak - damage);
                 }
                 if (damage > 0 && target.Has("armor") && !cardPiercing && !unitPiercing)
                 {
@@ -2997,7 +3000,9 @@ namespace MonsterTrain2Poju.Model
                     Damage(target, actor, retaliation, "Spikes");
                 }
                 if (target.DeathFinished) return;
-                if (damage > 0 || blocked > 0) FireTriggers(target, "OnHit", paramInt: damage,
+                // CharacterState counts Titanskin soak for Revenge, separately
+                // from damageBlocked used by last-attack damage statistics.
+                if (damage > 0 || blocked > 0 || titanSkinSoaked > 0) FireTriggers(target, "OnHit", paramInt: damage,
                     paramInt2: kind == "Attack" ? 4 : kind == "Trample" ? 6 : kind == "Spikes" ? 1 : kind == "Poison" ? 2 :
                         kind == "Decay" ? 8 : kind == "CorruptPoison" ? 7 : kind == "Corruption" ? 9 : kind == "SpellOverflow" ? 10 : 0);
                 // A played spell finishes its hit queue while this victim already has its
