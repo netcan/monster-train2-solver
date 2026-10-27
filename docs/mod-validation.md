@@ -1,6 +1,22 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.260, source`b63bed54`.
+Current Windows installation:0.2.261, source`771b69b9`.
+Installed at22:36 with67 protected save/config/other-mod files unchanged.
+The exact payload wins sample24 Banished/Hellhorned Ring5 with actual10000ms/
+two-worker advice:43 inputs/34 plays/nine EndTurns,Pyre76 with no Pyre damage.
+Source222744-b45ff0e2 and independent replay223145-2dddfab1 match all complete
+roots/successors/forecasts/RNG with four zero counters and966 mask contexts.
+49 normal reward/map events heal to Pyre100 and create Ring6 save
+06B90D3DA90CFC3ABB004E7C4488CAC7EBCE9E907CF15139B9059DAE55FB990C.
+Package`results/mod-dist/PojuAdvisor-0.2.261-Windows-20261027-223625.zip`,SHA256
+`FCD33D50B1EC6A2B64AEB27B83573B9BA5E1D68CF82DA1A7821E12E7FF8CAD27`.
+All three installed DLL hashes match both native processes; the stopped real
+game loads261 next launch. Backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261027-223625/`.
+Five consecutive default-budget victories are accepted. Later rings and native
+eight-battle settlement remain open. No Mac build or full regression was run.
+
+Previous Windows installation:0.2.260, source`b63bed54`.
 Installed at22:02 with67 protected save/config/other-mod files unchanged.
 The exact accepted payload wins sample24 Banished/Hellhorned Ring2 with
 actual10000ms/two-worker advice:35 inputs/28 plays/seven EndTurns,Pyre80.

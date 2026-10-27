@@ -71,3 +71,21 @@ random24-ring5-default260.zip has90 files, SHA256
 F135A8D5E2186F55D06F9F304B13D3E7FE05958FE4884989ED5B3E0F233F2F4C;
 all89 hashed members restore. The first four actual10000ms/two-worker native
 pairs form one unchanged checkpoint chain. Later rings remain unaccepted.
+
+Release261 Ring5 source222744-b45ff0e2 and replay223145-2dddfab1 win with
+the same43 inputs/34 plays/nine EndTurns and Pyre76, with no battle damage.
+Every complete root/successor/forecast/RNG and four raw zero counters match.
+The source passes45 publications and966 complete mask contexts.49 normal
+reward/map events heal to Pyre100 and create Ring6 save
+06B90D3DA90CFC3ABB004E7C4488CAC7EBCE9E907CF15139B9059DAE55FB990C.
+random24-ring6-default261.zip has94 files, SHA256
+1A26AB5D19912C6D121AA5D33E81A93B32A5AA558D7F15FD2B477E55739B0489;
+all93 hashed members restore. Five actual10000ms/two-worker native victory
+pairs form one unchanged checkpoint chain; no offline refinement is used.
+
+The release261 payload from revision771b69b9 supersedes260 at22:36.
+Package: results/mod-dist/PojuAdvisor-0.2.261-Windows-20261027-223625.zip,
+SHA256 FCD33D50B1EC6A2B64AEB27B83573B9BA5E1D68CF82DA1A7821E12E7FF8CAD27.
+Backup/receipt: BepInEx/PojuBackups/RandomCampaign-20261027-223625.
+Three installed DLL hashes match both accepted native processes and all67
+protected files remain unchanged. Later battles and full settlement remain open.

@@ -25,4 +25,6 @@ four immutable parallel branches, four hit controls and the existing passive
 Titanskin shield/armor/piercing/magnitude controls. The separate11-input native
 floor-transition-piercing pair remains passing. Release261 fixed-build source
 222744-4d910749 independently repeats the same41 inputs and passes the full
-native pair. The complete fifth battle remains pending.
+native pair. The subsequent actual10000ms/two-worker fifth battle and its
+independent normal campaign replay win with43 inputs and Pyre76; see the
+[campaign record](../campaign/random24-opening.md). Later battles remain open.
