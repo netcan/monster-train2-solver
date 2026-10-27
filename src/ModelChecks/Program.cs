@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--preview-death-spawn-shift-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    PreviewDeathSpawnShiftChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--ephemeral-equipment-counterexample-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

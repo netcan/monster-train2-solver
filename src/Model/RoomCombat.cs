@@ -4971,7 +4971,9 @@ namespace MonsterTrain2Poju.Model
                     actor.Source.IsPyre == false && actor.Source.IsBoss != true && context!.SpawnPoints!.Units
                         .FirstOrDefault(unit => unit.UnitId == actor.Source.Id)?.Current != null;
                 UnitBirthResult born = UnitBirthModel.SpawnWithStatus(CurrentRoom(), definition, 0, 0, cardless, additional,
-                    positionActors: units.Where(unit => unit.InRoom && !unit.Removed).Select(unit => unit.Freeze()).ToArray());
+                    // A copied point can still reference a removed/dead actor until
+                    // this birth shifts and compacts it. Keep its captured lifecycle.
+                    positionActors: units.Select(unit => unit.Freeze()).ToArray());
                 if (!born.Supported && canFreeDyingActor)
                 {
                     RemovePhysicalPoint(actor);
