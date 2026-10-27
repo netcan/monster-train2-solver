@@ -192,5 +192,16 @@ All30 Ring7 joint placements finish with zero unknowns and one improvement:
 47 inputs/Pyre63, versus native57/Pyre43. Only the first unit's initial floor
 changes in the winning opening: card8 bottom, card1 top, card2 middle. The
 independent model export replays every forecast and RNG from the unchanged
-native root. Fixed release267 native replay010136-358fbd47 is in progress;
-this model route is not yet accepted as an improved native campaign pair.
+native root. Fixed release267 source010136-358fbd47 and independent normal
+replay010643-3f09e4bc both win with47 inputs/39 plays/eight EndTurns/Pyre63.
+Complete roots/successors/forecasts/RNG,15 train phases per process and four
+zero counters pass. Both native archives bind to the same frozen prediction;
+the source publishes no search and captures95 states/177 branch-mask contexts.
+Normal58 events create Ring8 save SHA256
+110C52224BF78322BDA6F7FDC5D7E1DC7E73416D6416BE3314062F9F1E4440A3.
+random24-ring8-refined267.zip has102 files,SHA256
+A29DD6492DCE2FB05E7317E2A7D0E58F10EE38B49361A0E771F078BC271D5DDD;
+all101 hashed members restore. Seven victories form one unchanged checkpoint
+chain with offline Ring6/7 explicitly identified. Actual10000ms/two-worker
+Ring8 acceptance now starts from Pyre63. The original Pyre43 default defeat
+and its independent replay remain preserved; no eight-battle clear is claimed.
