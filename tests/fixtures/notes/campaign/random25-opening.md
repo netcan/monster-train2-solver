@@ -51,3 +51,11 @@ unchanged. PackagePojuAdvisor-0.2.263-Windows-20261027-233027.zip SHA256
 backup/receiptRandomCampaign-20261027-233027. Three installed DLLs match both
 accepted Ring2 processes. See [pyregel Juice](../cards/pyregel-juice.md) for
 the next exact signature and actual16-input cast proof; Ring3 remains open.
+
+The264 default Ring3 run234859-2764f17e executes eight EndTurns and zero cards,
+then loses. Independent normal defeat settlement235052-e87b3863 matches all
+16 train phases, full state/forecasts/RNG and four zero counters; six normal
+events preserve the natural two-win/one-loss history. Both archives are kept
+as settled-loss fixtures, never a third victory. See
+[troop birth world](../combat/troop-birth-world.md) for the specific failed
+room2 deployment preview and its independently validated265 correction.

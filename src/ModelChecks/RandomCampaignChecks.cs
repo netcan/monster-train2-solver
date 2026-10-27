@@ -7,6 +7,19 @@ internal static class RandomCampaignChecks
 {
     internal static void Curated(string path)
     {
+        if (Path.GetFileName(path) == "full-battle-random-campaign-25-ring3-release264-budget10000-settled-loss.mt2f")
+        {
+            using var native = ModelJson.ReadFixture(path);
+            using var replay = ModelJson.ReadFixture(path.Replace("-loss.mt2f", "-loss-replay.mt2f", StringComparison.Ordinal));
+            DefeatPair(native.RootElement, replay.RootElement, 1860103187, 0, 2, "Underlegion", "Pyreborne", 10000);
+            foreach (var fixture in new[] { native.RootElement, replay.RootElement })
+            {
+                var rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+                Require(rows.Length == 8 && rows.All(row => row.GetProperty("IsEndTurn").GetBoolean()),
+                    "Preserve the original eight-EndTurn/zero-card native policy counterexample.");
+            }
+            return;
+        }
         if (Path.GetFileName(path) == "full-battle-random-campaign-24-ring6-refined261-search.mt2f")
         {
             using var native = ModelJson.ReadFixture(path);
