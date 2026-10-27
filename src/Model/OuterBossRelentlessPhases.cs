@@ -88,7 +88,7 @@ namespace MonsterTrain2Poju.Model
                 if (target.TargetRoom != room)
                 {
                     BumpResult moved = BumpModel.Apply(train, new[] { boss.UnitId }, target.TargetRoom - room,
-                        rules, 0, pending);
+                        rules, 0, pending, outerBossActionMovement: true);
                     if (!moved.Supported) return Fail(moved.UnsupportedReason!);
                     if (moved.Outcome != RoomOutcome.Exchanged) return Fail("Terminal relentless movement requires native phase calibration.");
                     train = moved.State!; rules = moved.RoomRules.ToArray(); pending = moved.PendingCallbacks.ToList();

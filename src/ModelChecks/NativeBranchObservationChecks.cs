@@ -42,7 +42,9 @@ internal static class NativeBranchObservationChecks
             bool terminal = boundary && boundaryOutcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
             string predictedKey = Key(predicted, terminal), actualKey = Key(actual, terminal);
             if (outcome != (boundary ? boundaryOutcome : RoomOutcome.Exchanged) || predictedKey != actualKey)
-                throw new InvalidOperationException("Native successor differs at " + index + ": " + ModelJson.Difference(predictedKey, actualKey));
+                throw new InvalidOperationException("Native successor differs at " + index + ": " + ModelJson.Difference(predictedKey, actualKey) +
+                    "; predicted room actors=" + string.Join("/", predicted.Spawn.Train.Rooms.Select(room => string.Join(",", room.Units.Select(unit => unit.Id)))) +
+                    "; native room actors=" + string.Join("/", actual.Spawn.Train.Rooms.Select(room => string.Join(",", room.Units.Select(unit => unit.Id)))));
             FixtureValue expected = row.GetProperty("Expected");
             if (expected.ValueKind == FixtureKind.Null)
                 Require(boundary && row.GetProperty("UnsupportedReason").GetString() == (historicalUnsupportedReason ?? reason),

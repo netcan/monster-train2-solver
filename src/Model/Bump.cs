@@ -89,7 +89,9 @@ namespace MonsterTrain2Poju.Model
                 if (actor.IsPyre) continue;
                 // FindBumpSpawnPoint checks the paired companion restriction
                 // before its outer-boss anchor branch; an actor can be both.
-                if (actor.BumpRules.CompanionBoss && actor.Status("relentless") != null && FindPairedBossId(actor) != 0)
+                // Boss controller actions use ForceMoveBoss directly, without
+                // the card's FindBumpSpawnPoint companion restriction.
+                if (!outerBossActionMovement && actor.BumpRules.CompanionBoss && actor.Status("relentless") != null && FindPairedBossId(actor) != 0)
                 { attempted.Add(id); continue; }
                 if (actor.BumpRules.OuterBoss)
                 {
