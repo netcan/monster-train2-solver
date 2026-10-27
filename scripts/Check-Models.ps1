@@ -842,6 +842,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-enemy-statistics-listeners-calibration.mt2f',
     'player-enemy-statistics-listeners-replay-calibration.mt2f',
     'full-battle-player-harvest-listener-snapshot-calibration.mt2f',
+    'full-battle-player-harvest-listener-snapshot-replay-calibration.mt2f',
     'player-deathwish-enchantment-registry-replay-calibration.mt2f',
     'player-pyre-ascension-queue-calibration.mt2f',
     'player-pyre-ascension-queue-replay-calibration.mt2f',
@@ -3264,12 +3265,14 @@ if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-terminal-comp
     if ($LASTEXITCODE -ne 0) { throw 'Terminal companion counterexample check failed.' }
     return
 }
-if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'full-battle-player-harvest-listener-snapshot-calibration.mt2f') {
+if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -in @('full-battle-player-harvest-listener-snapshot-calibration.mt2f', 'full-battle-player-harvest-listener-snapshot-replay-calibration.mt2f')) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
         if ($LASTEXITCODE -ne 0) { throw 'Harvest listener checker build failed.' }
     }
-    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --harvest-listener-snapshot-only (Get-TestFixturePath $selectedFixtureNames[0])
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --harvest-listener-snapshot-only `
+        (Get-TestFixturePath 'full-battle-player-harvest-listener-snapshot-calibration.mt2f') `
+        (Get-TestFixturePath 'full-battle-player-harvest-listener-snapshot-replay-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Harvest listener native check failed.' }
     return
 }

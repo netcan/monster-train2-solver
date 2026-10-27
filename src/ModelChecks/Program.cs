@@ -844,9 +844,9 @@ if (args.Length is 2 or 3 && args[0] == "--enemy-statistics-listeners-only")
     EnemyStatisticsListenerChecks.Native(source.RootElement, replay?.RootElement);
     return;
 }
-if (args.Length == 2 && args[0] == "--harvest-listener-snapshot-only")
+if (args.Length is 2 or 3 && args[0] == "--harvest-listener-snapshot-only")
 {
-    HarvestListenerSnapshotChecks.Native(args[1]);
+    HarvestListenerSnapshotChecks.Native(args[1], args.Length == 3 ? args[2] : null);
     return;
 }
 if (args.Length is 2 or 3 && args[0] == "--enchantment-boss-preview-only")
@@ -8272,8 +8272,9 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-enemy-statistics-listeners-replay-calibration.mt2f"));
     EnemyStatisticsListenerChecks.Native(source.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-player-harvest-listener-snapshot-calibration.mt2f"))
-    HarvestListenerSnapshotChecks.Native(path);
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("full-battle-player-harvest-listener-snapshot-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "full-battle-player-harvest-listener-snapshot-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+    HarvestListenerSnapshotChecks.Native(path, ModelJson.RelatedFixture(path, "full-battle-player-harvest-listener-snapshot-replay-calibration.mt2f"));
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-boss-aura-preview-pending-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-boss-aura-preview-pending-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
