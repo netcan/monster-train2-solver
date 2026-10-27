@@ -183,11 +183,12 @@ namespace MonsterTrain2Poju.Model
                     ? CardPileModel.Add(CardPileModel.Remove(pile, card.InstanceId), card) : pile).ToArray())
                 .WithStatistics(context.Statistics?.Increment(card.InstanceId, "TimesExhausted"));
         }
-        public static CombatContext ReturnReady(CombatContext context)
+        public static CombatContext ReturnReady(CombatContext context, int? onlyCardId = null)
         {
             CardPileState? standby = context.OtherPiles?.SingleOrDefault(pile => pile.Name == "Standby");
             foreach (CardExhaustStandbyCondition condition in standby?.ExhaustConditions ?? Array.Empty<CardExhaustStandbyCondition>())
             {
+                if (onlyCardId.HasValue && condition.CardId != onlyCardId.Value) continue;
                 if (condition.KeepInStandBy) continue;
                 CardToken card = standby!.Cards.Single(item => item.InstanceId == condition.CardId);
                 CardInstanceState? graft = context.FindCard(card.InstanceId);

@@ -141,15 +141,40 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static TrainCombatResult ReturnUnattached(TrainCombatState source, int fallbackRoom)
+            => ReturnStandby(source, fallbackRoom, null);
+
+        internal static TrainCombatResult ReturnAfterConsume(TrainCombatState source, int fallbackRoom, int consumedCardId)
+            => ReturnStandby(source, fallbackRoom, consumedCardId);
+
+        private static TrainCombatResult ReturnStandby(TrainCombatState source, int fallbackRoom, int? consumedCardId)
         {
             TrainCombatState state = source;
             var results = new List<RoomCombatResult>();
             RoomOutcome outcome = RoomOutcome.Exchanged;
+            bool consumedTriggered = false;
             CardToken[] snapshot = source.Context?.OtherPiles?.FirstOrDefault(pile => pile.Name == "Standby")?.Cards.ToArray()
                 ?? Array.Empty<CardToken>();
             foreach (CardToken token in snapshot)
             {
                 CombatContext context = state.Context!;
+                CardPileState? standby = context.OtherPiles?.FirstOrDefault(pile => pile.Name == "Standby");
+                if (consumedCardId.HasValue && standby?.Cards.Any(card => card.InstanceId == token.InstanceId) == true &&
+                    (token.InstanceId == consumedCardId.Value || standby.ExhaustConditions?.Any(condition =>
+                        condition.CardId == token.InstanceId && !condition.KeepInStandBy) == true))
+                {
+                    // Native CheckStandByConditions snapshots dictionary entry order.
+                    // Consume can reuse a just-freed equipment slot, after earlier
+                    // detached equipment but before later entries. Return and fire
+                    // callbacks at this position instead of exhausting it up front.
+                    state = CardSpellModel.WithContext(state, CardExhaustModel.ReturnReady(context, token.InstanceId));
+                    if (token.InstanceId == consumedCardId.Value) consumedTriggered = true;
+                    TrainCombatResult consumed = CardPlayedTriggerModel.Exhausted(state, fallbackRoom);
+                    if (!consumed.Supported) return consumed;
+                    state = consumed.State!; results.AddRange(consumed.RoomResults);
+                    if (consumed.Outcome != RoomOutcome.Exchanged) outcome = consumed.Outcome;
+                    if (outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated) break;
+                    continue;
+                }
                 EquipmentStandbyCondition? condition = context.OtherPiles?.FirstOrDefault(pile => pile.Name == "Standby")?
                     .EquipmentConditions?.FirstOrDefault(item => item.CardId == token.InstanceId);
                 if (condition == null || state.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == condition.HostUnitId)) continue;
@@ -166,6 +191,16 @@ namespace MonsterTrain2Poju.Model
                 }
                 state = CardSpellModel.WithContext(state, state.Context!.WithOtherPiles(state.Context.OtherPiles!
                     .Select(pile => pile.Name == "Standby" ? CardPileModel.Remove(pile, token.InstanceId) : pile).ToArray()));
+                if (outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated) break;
+            }
+            // Ephemeral can purge the consumed card's standby reference before
+            // this pass. Its existing post-discard exhaustion callback still runs.
+            if (consumedCardId.HasValue && !consumedTriggered && outcome is not (RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated))
+            {
+                TrainCombatResult consumed = CardPlayedTriggerModel.Exhausted(state, fallbackRoom);
+                if (!consumed.Supported) return consumed;
+                state = consumed.State!; results.AddRange(consumed.RoomResults);
+                if (consumed.Outcome != RoomOutcome.Exchanged) outcome = consumed.Outcome;
             }
             return new TrainCombatResult(state, outcome, results);
         }

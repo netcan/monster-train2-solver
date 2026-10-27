@@ -1173,10 +1173,9 @@ namespace MonsterTrain2Poju.Model
                 // A later installed Consume trait runs after Ephemeral's
                 // discard purge. Its new standby entry then returns normally,
                 // recording the second exhaustion instead of being purged.
-                context = ephemeralPurgeCallbacks && !ephemeralBeforeConsume
-                    ? context.WithOtherPiles(context.OtherPiles!.Select(pile => pile.Name is "Standby" or "Exhausted"
-                        ? CardPileModel.Remove(pile, card.InstanceId) : pile).ToArray())
-                    : CardExhaustModel.ReturnReady(context);
+                if (ephemeralPurgeCallbacks && !ephemeralBeforeConsume)
+                    context = context.WithOtherPiles(context.OtherPiles!.Select(pile => pile.Name is "Standby" or "Exhausted"
+                        ? CardPileModel.Remove(pile, card.InstanceId) : pile).ToArray());
             }
             RoomCombatState[] rooms = train.Rooms.Select(room =>
             {
@@ -1189,18 +1188,13 @@ namespace MonsterTrain2Poju.Model
                 context, room.Preview, room.ActiveCompanionBossIds)).ToArray();
             var living = new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
             train = new TrainCombatState(rooms, train.Movement.Where(rule => living.Contains(rule.UnitId)).ToArray(), train.EnemySlotsPerRoom, context);
-            TrainCombatResult returnedEquipment = EquipmentModel.ReturnUnattached(train, action.RoomIndex);
+            TrainCombatResult returnedEquipment = consumedOnPlay && !terminal
+                ? EquipmentModel.ReturnAfterConsume(train, action.RoomIndex, card.InstanceId)
+                : EquipmentModel.ReturnUnattached(train, action.RoomIndex);
             if (!returnedEquipment.Supported) return Unsupported(returnedEquipment.UnsupportedReason!);
             train = returnedEquipment.State!; context = train.Context!; piles = context.OtherPiles?.ToArray() ?? piles;
             if (returnedEquipment.Outcome != RoomOutcome.Exchanged) outcome = returnedEquipment.Outcome;
             terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
-            if (consumedOnPlay && !terminal)
-            {
-                TrainCombatResult exhausted = CardPlayedTriggerModel.Exhausted(train, action.RoomIndex);
-                if (!exhausted.Supported) return Unsupported(exhausted.UnsupportedReason!);
-                train = exhausted.State!; context = train.Context!; piles = context.OtherPiles?.ToArray() ?? piles;
-                if (exhausted.Outcome != RoomOutcome.Exchanged) outcome = exhausted.Outcome;
-            }
             // CardManager.OnCardPlayed refreshes auras after discard/cost clearing,
             // then drains their callbacks before the UI combat preview can start.
             RoomAttachmentUnitSyncResult targetability = RoomAttachmentUnitModel.SynchronizeTargetability(source.Spawn.Train, train);

@@ -25,6 +25,8 @@ namespace MonsterTrain2Poju.Probe
             "Battle preview floor 2: CorruptionAdded unit callbacks are not modeled.";
         internal static bool ObserveOrdinaryBossAuraPreview => prefix != null && request.GetProperty("Reason").GetString() ==
             "Native ordinary boss aura action outside the temporary preview roster.";
+        internal static bool ObserveStandbyOrdering => waiting && rows.Count > 0 && rows.Last().Boundary &&
+            request.GetProperty("Reason").GetString() == "Native multi-equipment host sacrifice recycle order.";
         private static BattleTurnState expected = null!;
         private static readonly List<Row> rows = new List<Row>();
         private static readonly List<object> roomAttachmentMovement = new List<object>();
@@ -99,6 +101,7 @@ namespace MonsterTrain2Poju.Probe
                 EquipmentPreviewClear = equipmentPreviewClear,
                 SkillPresentation = skillPresentation,
                 AbilityCacheWarm = abilityCacheWarm,
+                StandbyOrdering = StandbyOrderingProbe.Records,
                 EnemySummonSignatures = CaptureEnemySummonSignatures(),
                 TripleJuiceCalibration = JuiceTraitProbe.TripleSamples,
                 FloorTransitionPiercing = CaptureFloorTransitionPiercing(),
