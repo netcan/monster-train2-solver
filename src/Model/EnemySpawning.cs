@@ -287,8 +287,14 @@ namespace MonsterTrain2Poju.Model
                 // A spawn/status callback can update aura caches on a different floor.
                 // Keep every local room synchronized before the final train rebase.
                 if (context?.Enchantments?.AutomaticLifecycle == true)
+                {
+                    // A queued wave birth can create another hero (Athane's
+                    // rock). Import its movement registration with its actors
+                    // before the final rebase replaces the shared world.
+                    movement = context.Enchantments.Movement.ToList();
                     foreach (RoomCombatState shared in context.Enchantments.Rooms)
                         if (shared.RoomIndex != changed.RoomIndex) rooms[shared.RoomIndex] = shared.Units.ToList();
+                }
             }
 
             string? DrainCallbacks()

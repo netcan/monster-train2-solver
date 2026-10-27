@@ -92,6 +92,7 @@ namespace MonsterTrain2Poju.Model
     public static class EnchantmentCombatModel
     {
         public static EnchantmentCombatResult UpdateAll(EnchantmentCombatState source) => new Engine(source).All();
+        internal static EnchantmentCombatResult UpdateAll(EnchantmentCombatState source, bool automaticLifecycle) => new Engine(source, automaticLifecycle).All();
         internal static bool CanDrainWorldCallback(CombatUnit unit, string kind) => unit.Triggers
             .Where(trigger => trigger.Kind == kind).SelectMany(trigger => trigger.Effects).All(effect =>
                 effect.Type == "CardEffectRewardGold" || effect.Type == "CardEffectAddStatusEffect" &&
@@ -156,10 +157,12 @@ namespace MonsterTrain2Poju.Model
         private sealed class Engine
         {
             private EnchantmentCombatState state;
+            private readonly bool automaticLifecycle;
             private readonly List<EnchantmentRequest> requests = new List<EnchantmentRequest>();
             private readonly List<RoomCombatModel.QueuedCharacterTrigger> callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
             private string? error;
-            internal Engine(EnchantmentCombatState source) { state = source; }
+            internal Engine(EnchantmentCombatState source, bool automaticLifecycle = false)
+            { state = source; this.automaticLifecycle = automaticLifecycle; }
             internal EnchantmentCombatResult All()
             {
                 bool alreadyUpdating = state.Updating;
@@ -172,7 +175,7 @@ namespace MonsterTrain2Poju.Model
                     if (positions.Length > 0)
                     {
                         EnchantmentCombatResult troop = TroopAuraModel.UpdateAll(state,
-                            EnchantmentSourceOrderModel.Collect(state.Train.Rooms.Count, positions));
+                            EnchantmentSourceOrderModel.Collect(state.Train.Rooms.Count, positions), automaticLifecycle);
                         if (!troop.Supported) error = troop.UnsupportedReason;
                         else { state = troop.State!; callbacks.AddRange(troop.PendingCallbacks); }
                     }

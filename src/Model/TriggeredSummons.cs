@@ -62,6 +62,19 @@ namespace MonsterTrain2Poju.Model
     }
     internal static class TriggeredSummonModel
     {
+        private static bool KnownAthaneRock(SummonUnitDefinition unit) =>
+            unit.HeroDefinition is { Ascends: false, Loops: false, CompanionBoss: false, BirthStats: null,
+                Unit: { Id: 0, AssetKey: "SpikyRockT3_Chosen_Boss_BasicNonAttack", Team: CombatTeam.Enemy,
+                    BaseAttack: 0, Attack: 0, Health: 250, MaxHealth: 250, CanAttack: false, IsBoss: false,
+                    EndsBattleOnDeath: false, SpawnerCardId: 0, Size: 3, Modifiers.Upgrades.Count: 0,
+                    Statuses: [{ Id: "spikes", Stacks: 7 }], Triggers: [
+                        { Kind: "OnHit", Effects: [{ Type: "CardEffectBuffDamage", Value: 4,
+                            Action: { Type: "BuffAttack", Target: "Tower", Value: 4, AllowEnemy: true, AllowPlayer: false,
+                                Filters.Subtype: "SubtypesData_BossT3_ef0103da-a050-4ebb-af3a-b3e285db5e0c" } }] },
+                        { Kind: "OnSpawn", IgnoreSilence: true, Effects: [
+                            { Type: "CardEffectFloorRearrange", Action: { Type: "FloorRearrange", Target: "Self" } },
+                            { Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Self",
+                                Statuses: [{ Id: "immobile", Stacks: 1 }] } }] }] } };
         internal static string? Validate(RoomCombatState state, TriggeredSummonRule? rule)
         {
             TriggeredSummonCatalog? catalog = state.Context?.SummonCatalog;
@@ -72,6 +85,9 @@ namespace MonsterTrain2Poju.Model
                 catalog.Rooms.Select(room => room.RoomIndex).Distinct().Count() != catalog.Rooms.Count ||
                 rule.FirstSpawnedUnitId < 0 || rule.FirstSpawnedUnitId >= state.Context.NextUnitId)
                 return "Invalid triggered summon catalog or retained first birth.";
+            bool athane = rule.EnemyHero && rule.CharacterId.Length == 0 && rule.Pool.Count == 1 &&
+                rule.Tests is { ShouldTest: true, FailToCast: false, CancelSubsequent: false } &&
+                catalog.Units.Any(unit => unit.CharacterId == rule.Pool[0] && KnownAthaneRock(unit));
             foreach (string id in new[] { rule.CharacterId, rule.AdditionalCharacterId }.Concat(rule.Pool).Where(id => id.Length > 0))
             {
                 SummonUnitDefinition? unit = catalog.Units.FirstOrDefault(item => item.CharacterId == id);
@@ -79,7 +95,7 @@ namespace MonsterTrain2Poju.Model
                     return unit == null ? "Missing triggered summon unit definition." : "Unmodeled triggered summon definition: " + string.Join("; ", unit.ExternalInteractions);
                 if (rule.EnemyHero && (unit.HeroDefinition == null || unit.HeroDefinition.Unit.Team != CombatTeam.Enemy ||
                     unit.HeroDefinition.Unit.IsBoss == true || unit.HeroDefinition.Unit.EndsBattleOnDeath ||
-                    unit.HeroDefinition.Unit.AssetKey is not ("Boss_Level3_MiniFleshweaver_MoreMass" or
+                    !athane && unit.HeroDefinition.Unit.AssetKey is not ("Boss_Level3_MiniFleshweaver_MoreMass" or
                         "Boss_Level3_MiniFleshweaver_Corruption" or "Boss_Level3_MiniFleshweaver_Spike")))
                     return "Triggered enemy birth requires its calibrated original Fleshweaver mini definition.";
                 if (rule.EnemyHero)
@@ -88,7 +104,7 @@ namespace MonsterTrain2Poju.Model
                     if (stats != null) return stats;
                 }
             }
-            if (rule.EnemyHero && (rule.Count != 1 || rule.Pool.Count != 0 || !rule.IgnoreCardUpgrades || rule.HasParentCard ||
+            if (rule.EnemyHero && (rule.Count != 1 || rule.Pool.Count != 0 && !athane || !rule.IgnoreCardUpgrades || rule.HasParentCard ||
                 rule.AdditionalCharacterId.Length != 0 || rule.Upgrade != null || rule.FirstSpawnedUnitId != 0 ||
                 state.Context.Enchantments?.AutomaticLifecycle != true))
                 return "Triggered enemy birth requires its original single-spawn effect and complete lifecycle world.";

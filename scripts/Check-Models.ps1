@@ -277,6 +277,10 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-pyregel-juice-calibration.mt2f',
     'player-pyregel-juice-replay-calibration.mt2f',
     'player-pyregel-juice-cast-calibration.mt2f',
+    'player-troop-birth-world-calibration.mt2f',
+    'player-troop-birth-world-replay-calibration.mt2f',
+    'player-athane-summon-calibration.mt2f',
+    'player-athane-summon-replay-calibration.mt2f',
     'player-starstruck-conduit-replay-calibration.mt2f',
     'player-targeted-damage-calibration.mt2f',
     'player-targeted-damage-replay-calibration.mt2f',
@@ -2548,6 +2552,20 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
         (Get-TestFixturePath 'player-discard-equipment-turn-calibration.mt2f') `
         (Get-TestFixturePath 'player-discard-equipment-turn-replay-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Focused discard equipment turn check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-troop-birth-world-calibration.mt2f', 'player-troop-birth-world-replay-calibration.mt2f', 'player-athane-summon-calibration.mt2f', 'player-athane-summon-replay-calibration.mt2f') }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Enemy birth checker build failed.' }
+    }
+    foreach ($group in @(@('troop-birth-world','player-troop-birth-world'), @('athane-summon','player-athane-summon'))) {
+        if (@($selectedFixtureNames | Where-Object { $_.StartsWith($group[1] + '-') }).Count -eq 0) { continue }
+        dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') "--$($group[0])-only" `
+            (Get-TestFixturePath "$($group[1])-calibration.mt2f") `
+            (Get-TestFixturePath "$($group[1])-replay-calibration.mt2f")
+        if ($LASTEXITCODE -ne 0) { throw "Focused $($group[0]) check failed." }
+    }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-pyregel-juice-calibration.mt2f', 'player-pyregel-juice-replay-calibration.mt2f', 'player-pyregel-juice-cast-calibration.mt2f') }).Count -eq 0) {

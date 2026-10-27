@@ -220,7 +220,7 @@ namespace MonsterTrain2Poju.Model
                             if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                         }
             }
-            else result = EnchantmentCombatModel.UpdateAll(frame);
+            else result = EnchantmentCombatModel.UpdateAll(frame, world.AutomaticLifecycle);
             return Complete(source, result);
         }
         internal static RoomCombatResult UpdateEffect(RoomCombatState source, int sourceId, int triggerIndex, int effectIndex)

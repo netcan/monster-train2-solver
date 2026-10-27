@@ -23,7 +23,7 @@ namespace MonsterTrain2Poju.Model
         private static bool SubtypeMatches(CombatUnit unit, TroopAuraState rule) =>
             rule.Subtype == CardUnderlegionTroopUpgradeModel.NoneSubtype || unit.Subtypes.Contains(rule.Subtype);
 
-        internal static EnchantmentCombatResult UpdateAll(EnchantmentCombatState source, IReadOnlyList<int> order)
+        internal static EnchantmentCombatResult UpdateAll(EnchantmentCombatState source, IReadOnlyList<int> order, bool automaticLifecycle = false)
         {
             TrainCombatState train = source.Train;
             var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
@@ -46,6 +46,11 @@ namespace MonsterTrain2Poju.Model
                     KnownBirthAddition(source, room, owner, rule, targets);
                 if (source.EnchanterIds.Count > 0 && changesModifiers && !orderedAddition)
                 { error = "Combined troop upgrades and enchantment source ordering require native calibration."; break; }
+                // The frame strips its shared world to stay finite. A troop
+                // write still validates every actor, including enemy summoners.
+                // Borrow the caller's complete world with native reentry closed.
+                bool borrowWorld = orderedAddition || automaticLifecycle && source.EnchanterIds.Count == 0 &&
+                    room.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Effects.Any(effect => effect.Summon?.EnemyHero == true)));
                 var cache = rule.Targets.ToList();
                 foreach (int id in rule.Targets.Reverse())
                 {
@@ -93,13 +98,13 @@ namespace MonsterTrain2Poju.Model
                 {
                     if (!changed.Supported) { error = changed.UnsupportedReason; return false; }
                     RoomCombatState updated = changed.State!;
-                    if (orderedAddition) updated = updated.WithContext(updated.Context!.WithEnchantments(null));
+                    if (borrowWorld) updated = updated.WithContext(updated.Context!.WithEnchantments(null));
                     train = Replace(train, updated); callbacks.AddRange(changed.PendingCallbacks); return true;
                 }
                 RoomCombatState TargetRoom(int id)
                 {
                     RoomCombatState targetRoom = train.Rooms.Single(room => room.Units.Any(unit => unit.Id == id));
-                    if (!orderedAddition) return targetRoom;
+                    if (!borrowWorld) return targetRoom;
                     // The outer pass already updated these pure status sources.
                     // Borrow its captured world for validation while retaining
                     // the native reentry guard throughout the troop writes.

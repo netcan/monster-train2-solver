@@ -598,6 +598,24 @@ if (args.Length is 2 or 3 && args[0] == "--discard-equipment-turn-only")
     else { using var replay = ModelJson.ReadFixture(args[2]); DiscardEquipmentTurnChecks.Native(source.RootElement, replay.RootElement); }
     return;
 }
+if (args.Length is 2 or 3 && args[0] is "--troop-birth-world-only" or "--athane-summon-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    if (args[0] == "--troop-birth-world-only") TroopAuraBirthWorldChecks.Native(source.RootElement, replay?.RootElement);
+    else AthaneSummonChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--troop-birth-world-request")
+{
+    TroopAuraBirthWorldChecks.ExportRequest(args[1], args[2]);
+    return;
+}
+if (args.Length == 4 && args[0] == "--athane-summon-request")
+{
+    AthaneSummonChecks.ExportRequest(args[1], args[2], args[3]);
+    return;
+}
 if (args.Length == 3 && args[0] == "--pyregel-juice-cast-request")
 {
     PyregelJuiceChecks.ExportCastRequest(args[1], args[2]);
@@ -7262,6 +7280,18 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-bur
 {
     using var source = ModelJson.ReadFixture(path);
     BurnoutHealTargetChecks.Alternative(source.RootElement);
+}
+foreach (var path in args.Where(path => Path.GetFileName(path) is "player-troop-birth-world-calibration.mt2f" or
+    "player-troop-birth-world-replay-calibration.mt2f" or "player-athane-summon-calibration.mt2f" or "player-athane-summon-replay-calibration.mt2f")
+    .Select(path => (Path: ModelJson.RelatedFixture(path, Path.GetFileName(path).StartsWith("player-athane-", StringComparison.Ordinal) ?
+        "player-athane-summon-calibration.mt2f" : "player-troop-birth-world-calibration.mt2f"), Athane: Path.GetFileName(path).StartsWith("player-athane-", StringComparison.Ordinal)))
+    .Distinct())
+{
+    using var source = ModelJson.ReadFixture(path.Path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path.Path, path.Athane ?
+        "player-athane-summon-replay-calibration.mt2f" : "player-troop-birth-world-replay-calibration.mt2f"));
+    if (path.Athane) AthaneSummonChecks.Native(source.RootElement, replay.RootElement);
+    else TroopAuraBirthWorldChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) is "player-pyregel-juice-calibration.mt2f" or
     "player-pyregel-juice-replay-calibration.mt2f" or "player-pyregel-juice-cast-calibration.mt2f")

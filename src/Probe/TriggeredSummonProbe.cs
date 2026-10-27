@@ -18,6 +18,8 @@ namespace MonsterTrain2Poju.Probe
         private static FullBattleTrace? catalogTrace;
         private static FullBattleTrace? playerBirthTrace;
         private static bool playerBirths;
+        private static SpawnPatternData? inspectedEnemyPattern;
+        private static FullBattleTrace? inspectedEnemyTrace;
         internal sealed class Record
         {
             public string Kind { get; set; } = "";
@@ -105,9 +107,25 @@ namespace MonsterTrain2Poju.Probe
             if (pattern == null) return false;
             bool harder = (bool)AccessTools.Field(typeof(HeroManager), "harderOuterTrainBossEnabled").GetValue(heroes);
             CharacterData? data = pattern.GetOuterTrainBossCharacter(harder);
-            if (data == null || !OuterBossDefinitions.IsFleshweaver(data.GetAssetKey())) return false;
-            foreach (CardEffectData effect in data.GetTriggers().SelectMany(trigger => trigger.GetEffects())
+            if (data != null && OuterBossDefinitions.IsFleshweaver(data.GetAssetKey()))
+            {
+                foreach (CardEffectData effect in data.GetTriggers().SelectMany(trigger => trigger.GetEffects())
+                    .Where(effect => effect.GetEffectStateName() == "CardEffectSpawnHero")) Definition(effect);
+                return enemyCharacters.Count > 0;
+            }
+            // Athane is an inner wave boss. Discover its authored child before
+            // the deployment projection, rather than when the boss finally enters.
+            if (ReferenceEquals(inspectedEnemyPattern, pattern) && ReferenceEquals(inspectedEnemyTrace, FullBattleTrace.Active))
+                return false;
+            SaveManager save = AllGameManagers.Instance!.GetSaveManager();
+            var waves = new List<SpawnGroupPoolData>(); pattern.GetUnlockedWaves(save, waves);
+            foreach (CharacterData actor in waves.SelectMany(wave => ((IEnumerable)AccessTools.Field(typeof(SpawnGroupPoolData),
+                    "possibleGroups").GetValue(wave)).Cast<SpawnGroupData>())
+                .SelectMany(group => group.GetCharacters(save.GetCovenantsForSpawnPattern(), save, save.GetGeneratedBoss()))
+                .Where(actor => actor != null && actor.GetAssetKey() == "Boss_Level7_Athane").Distinct())
+            foreach (CardEffectData effect in actor.GetTriggers().SelectMany(trigger => trigger.GetEffects())
                 .Where(effect => effect.GetEffectStateName() == "CardEffectSpawnHero")) Definition(effect);
+            if (waves.Count > 0) { inspectedEnemyPattern = pattern; inspectedEnemyTrace = FullBattleTrace.Active; }
             return enemyCharacters.Count > 0;
         }
         internal static string Register(CharacterData? unit)
@@ -121,7 +139,12 @@ namespace MonsterTrain2Poju.Probe
         {
             if (effect.GetEffectStateName() == "CardEffectSpawnHero")
             {
-                if (effect.GetTargetMode() != TargetMode.Room || effect.GetTargetTeamType() != Team.Type.None) return null;
+                var pool = effect.GetParamCharacterDataPool();
+                bool athane = effect.GetTargetTeamType() == Team.Type.Heroes && effect.GetParamCharacterData() == null &&
+                    pool is { Count: 1 } && pool[0].GetAssetKey() == "SpikyRockT3_Chosen_Boss_BasicNonAttack" &&
+                    effect.GetParamInt() == 1 && !effect.GetParamBool() && effect.GetShouldTest() &&
+                    !effect.GetShouldFailToCastIfTestFails() && !effect.GetShouldCancelSubsequentEffectsIfTestFails();
+                if (effect.GetTargetMode() != TargetMode.Room || effect.GetTargetTeamType() != Team.Type.None && !athane) return null;
                 string Enemy(CharacterData? data)
                 {
                     string id = Register(data);
