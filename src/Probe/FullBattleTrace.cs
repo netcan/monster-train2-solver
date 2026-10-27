@@ -30,6 +30,7 @@ namespace MonsterTrain2Poju.Probe
             new Dictionary<CharacterState, Dictionary<CharacterTriggerState, int>>();
         private readonly HashSet<string> checkedCopyCardIds = new HashSet<string>(StringComparer.Ordinal);
         private readonly List<StageRecord> stages = new List<StageRecord>();
+        private readonly List<StageHarvestRecord> stageHarvests = new List<StageHarvestRecord>();
         private readonly List<object> checkpoints = new List<object>();
 #if DEVELOPMENT_PROBE
         private object? nativeRunInput;
@@ -1675,6 +1676,7 @@ namespace MonsterTrain2Poju.Probe
                     RelicChampionCardAfterDrawProbe.Records.Count(record => !record.Completed || record.Actual == null) +
                     OriginalBalatroEventYorickProbe.Records.Count(record => !record.Completed || record.Actual == null),
                 Stages = stages,
+                StageHarvests = stageHarvests,
                 CardCycles = cardCycles.Records,
                 TrainPhases = trainCombat.Records,
                 Spawns = spawning.Records,
@@ -1959,6 +1961,42 @@ namespace MonsterTrain2Poju.Probe
             public int DyingUnitId { get; set; }
             public int Count { get; set; }
             public bool CanFireTriggers { get; set; }
+        }
+
+        private sealed class StageHarvestRecord
+        {
+            public int[] ActiveStages { get; set; } = Array.Empty<int>();
+            public int ActorId { get; set; }
+            public int DyingUnitId { get; set; }
+            public bool FromRunningTriggerQueue { get; set; }
+            public int AttackBefore { get; set; }
+            public int? AttackAfter { get; set; }
+            public bool Completed { get; set; }
+        }
+
+        [HarmonyPatch(typeof(CharacterState), nameof(CharacterState.FireTriggers))]
+        private static class StageHarvestPatch
+        {
+            private static void Postfix(CharacterState __instance, CharacterTriggerData.Trigger trigger,
+                CharacterState dyingCharacter, bool fromRunningTriggerQueue, ref IEnumerator __result)
+            {
+                var trace = Active;
+                if (trace == null || trigger != CharacterTriggerData.Trigger.OnAnyUnitDeathOnFloor ||
+                    AllGameManagers.Instance!.GetSaveManager().PreviewMode || !trace.TryGetUnitId(__instance, out int id)) return;
+                int[] activeStages = trace.stages.Where(stage => stage.Actual == null).Select(stage => stage.Index).ToArray();
+                if (activeStages.Length == 0) return;
+                int dyingId = dyingCharacter != null && trace.TryGetUnitId(dyingCharacter, out int found) ? found : 0;
+                var record = new StageHarvestRecord { ActiveStages = activeStages, ActorId = id, DyingUnitId = dyingId,
+                    FromRunningTriggerQueue = fromRunningTriggerQueue, AttackBefore = __instance.GetAttackDamage() };
+                trace.stageHarvests.Add(record);
+                __result = Observe(__result, __instance, record);
+            }
+
+            private static IEnumerator Observe(IEnumerator native, CharacterState actor, StageHarvestRecord record)
+            {
+                try { while (native.MoveNext()) yield return native.Current; record.Completed = true; }
+                finally { (native as IDisposable)?.Dispose(); if (!actor.IsDestroyed) record.AttackAfter = actor.GetAttackDamage(); }
+            }
         }
 
         private sealed class TowerTargetSnapshot
