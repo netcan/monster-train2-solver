@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--ascend-destruction-boundary-only")
+{
+    using var original = ModelJson.ReadFixture(args[1]);
+    using var settled = ModelJson.ReadFixture(args[2]);
+    AscendDestructionBoundaryChecks.Native(original.RootElement, settled.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 or 4 && args[0] == "--echo-waxen-relics-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6802,6 +6809,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-ech
     using var endTurn = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-juice-spike-endturn-calibration.mt2f"));
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-juice-spike-endturn-replay-calibration.mt2f"));
     EchoJuiceSpikeChecks.Native(source.RootElement, endTurn.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-ascend-deferred-destruction-counterexample-calibration.mt2f"))
+{
+    using var original = ModelJson.ReadFixture(path);
+    using var settled = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-random-campaign-20-ring3-release215-budget10000-search.mt2f"));
+    AscendDestructionBoundaryChecks.Native(original.RootElement, settled.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-waxen-relics-copy-calibration.mt2f"))
 {
