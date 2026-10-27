@@ -19,7 +19,7 @@ Pyre witness and four immutable terminal branches. An optional independent
 fixed-build native replay must match every input and full successor, with only
 the explained capture-only object differing. Old native files stay unchanged.
 This gate does not accept the separate raw room42/79 placement boundaries or
-claim a seventh victory. Independent280 observation is pending.
+claim a seventh victory.
 
 281 separately checks original raw room42/exchange43 from this same immutable
 archive. Inferno kills Funguy14, combat then kills champion2, and survivor
@@ -40,3 +40,19 @@ branches each. The original six removal cases and independent56-room/14-train
 observation still pass, as does the58-input capture witness. No original record
 is rewritten. A frozen282 independent58-input route now validates the three
 separate changes together before further actual-budget strategy work.
+
+Frozen282 revision2c76eb86 independently executes all58 inputs in
+041005-b9392a87 in249.51seconds. The full58-input pair, every input/full
+successor/forecast/RNG and the exact capture-only terminal witness pass.
+The independent raw archive passes all85 room stages and20 train phases,
+including both new position boundaries. This validates the three lifecycle
+changes together; it remains a defeat, not a default-budget seventh victory.
+The registered focused gate always checks the pair, four original placement
+states and complete new raw frames together.
+
+Independent branch66238bytes/SHA256
+72d32518a11ee1c412eca4f8d175daa6c70625ac8aa590ca9a55c1622217a16b;
+raw106681bytes/SHA256
+845984b1ddf92ef3caeaa90fdde41685052e2414f7e0fb08122b0f23768be23d.
+Frozen checker SHA256
+932CF72664BE08D0EA6F5F8776A7A3C2681147806C7C1998007C665161996E3B.

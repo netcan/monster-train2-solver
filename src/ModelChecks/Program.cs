@@ -8117,11 +8117,16 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-corruption-attack-upgrade-replay-calibration.mt2f"));
     CardCorruptionAttackUpgradeChecks.Native(source.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) == "player-terminal-pyre-capture-calibration.mt2f"))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-terminal-pyre-capture-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-terminal-pyre-capture-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
-    TerminalPyreCaptureChecks.Native(path);
+    TerminalPyreCaptureChecks.Native(path, ModelJson.RelatedFixture(path, "player-terminal-pyre-capture-replay-calibration.mt2f"));
     using var fixture = ModelJson.ReadFixture(path);
     InfernoPreCombatPositionsChecks.Native(fixture.RootElement);
+    string rawPath = ModelJson.RelatedFixture(path, "player-terminal-pyre-capture-raw-replay-calibration.mt2f");
+    RoomCombatChecks.NativeObservedRooms(rawPath);
+    using var raw = ModelJson.ReadFixture(rawPath);
+    TrainCombatChecks.Native(raw.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-underlegion-third-troop-upgrade-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-underlegion-third-troop-upgrade-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

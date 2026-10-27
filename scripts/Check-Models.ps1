@@ -271,6 +271,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-underlegion-second-troop-upgrade-calibration.mt2f',
     'player-underlegion-third-troop-upgrade-calibration.mt2f',
     'player-terminal-pyre-capture-calibration.mt2f',
+    'player-terminal-pyre-capture-replay-calibration.mt2f',
+    'player-terminal-pyre-capture-raw-replay-calibration.mt2f',
     'player-underlegion-third-troop-upgrade-replay-calibration.mt2f',
     'player-underlegion-second-troop-upgrade-replay-calibration.mt2f',
     'player-moon-trial-gold-relic-calibration.mt2f',
@@ -3121,17 +3123,21 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     if ($LASTEXITCODE -ne 0) { throw 'Focused Moon trial-gold native pair failed.' }
     return
 }
-if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-terminal-pyre-capture-calibration.mt2f') {
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-terminal-pyre-capture-calibration.mt2f', 'player-terminal-pyre-capture-replay-calibration.mt2f', 'player-terminal-pyre-capture-raw-replay-calibration.mt2f') }).Count -eq 0) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
         if ($LASTEXITCODE -ne 0) { throw 'Terminal Pyre capture checker build failed.' }
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --terminal-pyre-capture-only `
-        (Get-TestFixturePath 'player-terminal-pyre-capture-calibration.mt2f')
+        (Get-TestFixturePath 'player-terminal-pyre-capture-calibration.mt2f') `
+        (Get-TestFixturePath 'player-terminal-pyre-capture-replay-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Terminal Pyre capture check failed.' }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --inferno-pre-combat-positions-only `
         (Get-TestFixturePath 'player-terminal-pyre-capture-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Inferno pre-combat positions check failed.' }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --native-room-train-only `
+        (Get-TestFixturePath 'player-terminal-pyre-capture-raw-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Fixed native room/train replay failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-underlegion-third-troop-upgrade-calibration.mt2f', 'player-underlegion-third-troop-upgrade-replay-calibration.mt2f') }).Count -eq 0) {
