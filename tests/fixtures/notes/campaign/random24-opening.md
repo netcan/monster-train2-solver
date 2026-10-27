@@ -60,3 +60,14 @@ random24-ring4-default260.zip has86 files, SHA256
 all85 hashed members restore. The independent pair is journaled before Ring4.
 Three consecutive default-budget native pairs are accepted; later rings
 and the native eight-battle settlement remain unaccepted.
+
+Release260 Ring4 source220639-087533b5 and replay221001-cf553485 win with
+the same46 inputs/37 plays/nine EndTurns and Pyre76, with no battle damage.
+Complete state/forecast/RNG and four raw zero counters match. The source's
+48 publications and995 complete mask contexts pass.47 normal reward/map
+events create Ring5 save
+5AA0E1F8662A3DE977D63220B7CCBAE2F229F760DE1909127BCCE1E6909BE625.
+random24-ring5-default260.zip has90 files, SHA256
+F135A8D5E2186F55D06F9F304B13D3E7FE05958FE4884989ED5B3E0F233F2F4C;
+all89 hashed members restore. The first four actual10000ms/two-worker native
+pairs form one unchanged checkpoint chain. Later rings remain unaccepted.

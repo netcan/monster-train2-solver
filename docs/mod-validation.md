@@ -13,10 +13,11 @@ Package`results/mod-dist/PojuAdvisor-0.2.260-Windows-20261027-220208.zip`,SHA256
 All three DLL hashes match both accepted native processes. Previous DLLs
 and receipt are under`BepInEx/PojuBackups/RandomCampaign-20261027-220208/`.
 The real game was stopped; its next launch loads260. No Mac build was made.
-Sample24 retains sample23's normally settled natural metagame and has three
+Sample24 retains sample23's normally settled natural metagame and has four
 accepted default-budget victories. Full default-budget campaign acceptance
 remains open. Ring3 has41 inputs/Pyre56,1108 mask contexts and an independent
-native pair;64 normal events enter Ring4, which is undergoing actual search.
+native pair;64 normal events enter Ring4. Ring4's46 inputs/Pyre76 have an
+independent native pair and995 mask contexts;47 normal events enter Ring5.
 
 Previous Windows installation:0.2.249, source`16fab624`.
 Installed at19:49 with67 protected save/config/other-mod files unchanged.
