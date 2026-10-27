@@ -345,6 +345,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-cael-lifesteal-moon-birth-calibration.mt2f',
     'player-cael-moon-null-relic-calibration.mt2f',
     'player-cael-moon-null-relic-replay-calibration.mt2f',
+    'player-mirrored-horde-birth-calibration.mt2f',
+    'player-mirrored-horde-birth-replay-calibration.mt2f',
     'cael-lifesteal-moon-creation-calibration.mt2f',
     'player-cael-lifesteal-moon-birth-replay-calibration.mt2f',
     'cael-lifesteal-moon-creation-replay-calibration.mt2f',
@@ -2494,6 +2496,17 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     $cacheArguments = @('--ability-cache-continuation-only') + @($abilityPresentationNames | ForEach-Object { Get-TestFixturePath $_ })
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @cacheArguments
     if ($LASTEXITCODE -ne 0) { throw 'Focused native cache continuation failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-mirrored-horde-birth-calibration.mt2f', 'player-mirrored-horde-birth-replay-calibration.mt2f') }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Mirrored Horde birth checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --mirrored-horde-birth-only `
+        (Get-TestFixturePath 'player-mirrored-horde-birth-calibration.mt2f') `
+        (Get-TestFixturePath 'player-mirrored-horde-birth-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Focused mirrored Horde birth check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-cael-moon-null-relic-calibration.mt2f', 'player-cael-moon-null-relic-replay-calibration.mt2f') }).Count -eq 0) {

@@ -19,5 +19,8 @@ copy modifiers and other generated births retain their rejection.
 
 The focused checker replays all11 complete native successors, forecasts
 and RNG, four immutable branches and seven altered signature controls.
-The independent frozen native replay is required before fixture acceptance.
+Frozen release252 at4595df36 independently replays the unchanged request in
+process200824-c309fb4b. Both complete chains and the original rejection versus
+the repaired forecast pass the focused pair checker. Both captures are
+registered under combat/units and have dedicated Check-Models dispatch.
 This component capture alone does not establish a Ring6 victory.
