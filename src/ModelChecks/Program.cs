@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--fixed-attack-equipment-target-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    FixedAttackEquipmentTargetChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--lazarus-juice-conduit-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

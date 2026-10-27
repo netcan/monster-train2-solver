@@ -228,8 +228,9 @@ namespace MonsterTrain2Poju.Model
                 if (card == null || definition == null) return 0;
                 bool front = room.Units.FirstOrDefault(item => item.Team == CombatTeam.Player && !item.IsPyre && item.Health > 0)?.Id == unit.Id;
                 double value = 0;
-                foreach (CardUpgradeModifier upgrade in definition.Upgrades.Concat(card.Permanent.Upgrades)
-                    .Concat(new[] { EquipmentModel.TemporaryAggregate(card) }))
+                var upgrades = definition.Upgrades.Concat(card.Permanent.Upgrades)
+                    .Concat(new[] { EquipmentModel.TemporaryAggregate(card) }).ToArray();
+                foreach (CardUpgradeModifier upgrade in upgrades)
                 {
                     value += upgrade.Stats.Health * .5 + upgrade.Stats.Damage * unit.Attacks;
                     value += Math.Min(unit.Size, Math.Max(0, -upgrade.Stats.Size)) * 8;
@@ -248,6 +249,16 @@ namespace MonsterTrain2Poju.Model
                         if (action?.Type == "PlayUnitTrigger") value += unit.Triggers.Count(item => item.Kind == "OnShift") * 70;
                     }
                 }
+                // A fixed attack replaces ordinary damage modifiers. Count
+                // its actual gain (or loss) across this host's strikes instead
+                // of favoring a champion whose attack the equipment lowers.
+                // Existing fixed-attack stacks require a separate stacking /
+                // replacement estimate; preserve their prior ranking here.
+                var fixedAttacks = upgrades.SelectMany(upgrade => upgrade.Statuses)
+                    .Where(status => status.Id == "fixedattack" && status.Stacks > 0).ToArray();
+                if (fixedAttacks.Length == 1 && unit.Status("fixedattack") == null)
+                    value += (fixedAttacks[0].Stacks - (double)unit.Attack -
+                        upgrades.Sum(upgrade => (double)upgrade.Stats.Damage)) * unit.Attacks;
                 return value;
             }
         }
