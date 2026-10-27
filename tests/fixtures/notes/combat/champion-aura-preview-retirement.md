@@ -22,4 +22,12 @@ forecasts/RNG now pass, with four immutable branches and seven floor/owner/
 aura/trigger/horde/upgrade/copied-point guards. Actual fixed-build default
 advice and its independent normal replay are still required for acceptance.
 
+Fixed release266 revisionf5d1a1cd now supplies that acceptance: actual default
+source002815-a54c424c and independent normal replay003330-98fa15f8 both win
+with43 inputs/34 plays/nine EndTurns/Pyre75. All complete roots, successors,
+forecasts/RNG,17 train phases per process and four raw zero counters pass.
+The source has45 publications/337 captures/zero purity failures. Both exact
+archives are curated as sample25 Ring3 release266; the historical265 three-
+difference archive above remains unchanged.
+
 Focused check: `--champion-aura-preview-retirement-only <source> [fixed-native]`.

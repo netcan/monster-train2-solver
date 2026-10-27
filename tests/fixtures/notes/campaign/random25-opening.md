@@ -59,3 +59,18 @@ events preserve the natural two-win/one-loss history. Both archives are kept
 as settled-loss fixtures, never a third victory. See
 [troop birth world](../combat/troop-birth-world.md) for the specific failed
 room2 deployment preview and its independently validated265 correction.
+
+Release266 revisionf5d1a1cd fixes the two-stack champion aura preview retirement.
+Actual default source20261028-002815-a54c424c and independent normal replay
+003330-98fa15f8 win with43 inputs/34 plays/nine EndTurns/Pyre75, complete
+roots/successors/forecasts/RNG,17 train phases per process and four zero
+counters. The source passes45 publications/337 captures/zero purity failures,
+1242 complete mask contexts and the original double-Juice callbacks.
+Normal66 reward/map events create Ring4 save SHA256
+FB61954469A16E939D43B7B5020C0EC564852C6F618250D50336D074D1FEAD40.
+random25-ring4-default266.zip has115 files, SHA256
+2CA27B0A64C23966F0B473330911256DED3F9FBD9458651E4DC37E68208A06F9;
+all114 hashed members restore. The three-battle unchanged default-budget
+checkpoint chain passes. Ring4 immediately exposes a new guarded upgrade
+room modifier; the original deployment and isolated native trigger are kept
+for calibration. No fourth win or eight-battle default clear is claimed.
