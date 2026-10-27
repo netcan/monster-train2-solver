@@ -19,4 +19,9 @@ and six changed-owner/effect/flag controls pass. Existing BossEmber and null-bos
 Moon pairs and campaign arithmetic also pass. Independent repaired native replay
 172743-2db21747 passes the same complete five-input states/forecasts/RNG. Both
 immutable archives retain the old rejection and new matching prediction.
-Actual second-battle default-budget continuation remains in progress.
+The actual second battle now passes an independent36-input/29-play/7-EndTurn
+default10000ms/two-worker victory pair, Pyre80. Both13 train phases and every
+full state/forecast/RNG match, with four zero failure counts. Normal49 events
+create Ring3 saveCFD214DAFDF751FAB32EE16519B72F62A2DB85D4254121520CDD27095F0943FD.
+The first two battles form one accepted default-budget native save chain.
+Ring3's new triple-Juice Starstruck signature remains a separate coverage gap.
