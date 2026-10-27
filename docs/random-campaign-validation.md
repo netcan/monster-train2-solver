@@ -5,6 +5,20 @@
 只有游戏自身 EndGame 给出八战全胜的 `Standard` 结算、完整档案打包和恢复校验
 通过，才记为整局通关。模型预测胜利和单场获胜均不算整局通关。
 
+2026-10-27 13:38交付Windows0.2.228，构建来源14f7a701。第20组第五战既有
+41步路线在同版源局133044-18b3453d和独立正常奖励重放133352-27093349双胜，
+完整后继/预测/RNG与两份冻结路线绑定通过；正常41项事件产生第六战存档
+C6D8924218EDE1B26414D655D1A4B67AC3A5DADEF27D032414720C90DA3A6D79。
+发布证据仍是OfflinePolicyRefinement，DefaultSearchBudgetAccepted=false。
+包为`results/mod-dist/PojuAdvisor-0.2.228-Windows-20261027-133848.zip`，SHA256
+0C251F5E0B0F813B695C91D418D8EE51ACE2DC19FAF64F7F478E32CCCE2EAD28。
+三个安装DLL与原生验收二进制一致，67项其他插件/配置/存档文件不变；旧版备份于
+`BepInEx/PojuBackups/RandomCampaign-20261027-133848`。这更新了下方历史交付状态。
+
+同一固定Random(20261025)序列的第22项为LunaCoven/Remnant、种子591468325、
+Covenant0。以0.2.228实际10000ms/双线程从第一战继续验收，保留此前所有败局；
+启动下一项本身不构成新的胜利或通关证据。
+
 2026-10-27 12:26交付Windows0.2.223，源码e40ebcd6。最新DLL对第20组第五战
 既有41步胜路重新执行原生源局及独立正常奖励重放，两边完整状态/预测/RNG通过，
 正常41项事件进入第六战。发布元数据明确记为OfflinePolicyRefinement，

@@ -44,3 +44,10 @@ MoreMass has148HP/8ATK, still a defeat. This improved loss is curated separately
 from the original45-input/271HP default loss, not accepted as Ring3 victory.
 Subsequent diverse decisions0..9 complete141 candidates without improvement;
 decision10 is unfinished and the next distinct batch starts at11.
+
+Deployment samples72..95 complete24 fresh routes without improvement; the
+next fresh deployment index is96. Subsequent mid-battle ordering reaches145HP,
+then a three-input batch reaches142HP/6ATK, still43 inputs and a model defeat.
+Its complete owned state/forecast/RNG replay passes. A later wider diverse
+batch completes329 candidates without improvement. The148HP native archive
+remains the latest actual refined loss;142HP is not native acceptance.
