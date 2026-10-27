@@ -88,10 +88,7 @@ namespace MonsterTrain2Poju.Model
             bool copyHordeBirth = !isClone && isCardless && spawnerCardId == 0 &&
                 cardStatus is { Status.Id: "horde", Status.Stacks: > 0 } &&
                 raw is { AssetKey: "MonsterFunguy", HordeDefinition.Attack: 3, HordeDefinition.Health: 4 } &&
-                source.Units.All(unit => unit.Modifiers?.SpawnCopySubtype == null) &&
-                context?.RoomCapacities?.FirstOrDefault(room => room.RoomIndex == source.RoomIndex)?.Attachments?
-                    .Where(attachment => attachment.SpawnCopySubtype != null).All(attachment =>
-                        attachment is { DataId: "83734ffd-cbaa-47f1-9809-cc4c4dac568d", AssetKey: "HallOfMirrors", SpawnCopySubtype: "" }) == true;
+                RoomSpawnCopyModel.OriginalMirrorsOnly(source);
             if (!isClone && RoomSpawnCopyModel.Active(source.WithContext(context)) && !copyHordeBirth)
                 return Unsupported("Room spawn copying on generated/triggered births requires its native phase integration.");
             CardInstanceState? card = context?.FindCard(spawnerCardId);

@@ -1911,6 +1911,18 @@ namespace MonsterTrain2Poju.Model
                         bossDead |= outcome == RoomOutcome.BattleWon;
                     }
                 }
+                if (effect.Type == "SpawnOrStatus" && targets.UnitIds.Count > 0 &&
+                    RoomSpawnCopyModel.Active(state.Rooms.Single(room => room.Units.Any(unit => unit.Id == targets.UnitIds[0]))))
+                {
+                    // Native also runs room duplication when this effect adds
+                    // stacks to an existing target instead of creating a unit.
+                    UnitCloneResult copied = RoomSpawnCopyModel.ExistingHorde(state, targets.UnitIds[0]);
+                    if (!copied.Supported) return UnsupportedTrain(copied.UnsupportedReason!);
+                    state = copied.State!; events.AddRange(copied.Events); callbacks.AddRange(copied.PendingCallbacks);
+                    if (copied.Outcome != RoomOutcome.Exchanged) outcome = copied.Outcome;
+                    positions = CardTargetModel.Positions(state);
+                    if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
+                }
                 if (effect.Type == "AddStatus" || effect.Type == "MultiplyStatus" ||
                     effect.Type == "MultiplyAllPositiveStatusEffects" || effect.Type == "AdjustAllStatusEffects" || effect.Type == "SpawnOrStatus") DrainDeaths();
             }

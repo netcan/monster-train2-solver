@@ -4968,6 +4968,15 @@ namespace MonsterTrain2Poju.Model
                     foreach (QueuedCharacterTrigger callback in applied.PendingCallbacks) QueueCallback(callback);
                     foreach (CombatEvent item in applied.Events) events.Add(new CombatEvent(round, item.Kind, item.Actor, item.Target, item.Amount));
                     battleWon |= applied.Outcome == RoomOutcome.BattleWon;
+                    RoomCombatState frame = CurrentRoom();
+                    if (RoomSpawnCopyModel.Active(frame))
+                    {
+                        UnitCloneResult copied = RoomSpawnCopyModel.ExistingHorde(new TrainCombatState(new[] { frame },
+                            Array.Empty<EnemyMovement>(), 0, frame.Context), targets[0].Id);
+                        if (!copied.Supported) { unsupportedReason = copied.UnsupportedReason; return false; }
+                        MergeSummon(new RoomCombatResult(copied.State!.Rooms.Single(), copied.Outcome, 0, copied.Events.ToList()));
+                        foreach (var callback in copied.PendingCallbacks) QueueCallback(callback);
+                    }
                     return true;
                 }
 

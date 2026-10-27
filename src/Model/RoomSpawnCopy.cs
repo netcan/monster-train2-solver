@@ -10,6 +10,25 @@ namespace MonsterTrain2Poju.Model
         internal static bool Active(RoomCombatState room) => Active(room.Context, room.RoomIndex) || room.Units.Any(unit =>
             unit.Team == CombatTeam.Player && unit.Health > 0 && unit.DeathState?.IsDestroyed != true && unit.Modifiers?.SpawnCopySubtype != null);
 
+        internal static bool OriginalMirrorsOnly(RoomCombatState room) =>
+            room.Units.All(unit => unit.Modifiers?.SpawnCopySubtype == null) &&
+            room.Context?.RoomCapacities?.FirstOrDefault(capacity => capacity.RoomIndex == room.RoomIndex)?.Attachments?
+                .Where(attachment => attachment.SpawnCopySubtype != null).All(attachment =>
+                    attachment is { DataId: "83734ffd-cbaa-47f1-9809-cc4c4dac568d", AssetKey: "HallOfMirrors", SpawnCopySubtype: "" }) == true;
+
+        internal static UnitCloneResult ExistingHorde(TrainCombatState source, int unitId)
+        {
+            RoomCombatState room = source.Rooms.Single(room => room.Units.Any(unit => unit.Id == unitId));
+            CombatUnit target = room.Units.Single(unit => unit.Id == unitId);
+            if (Active(room) && target.Modifiers?.IsClone != true &&
+                (target is not { AssetKey: "MonsterFunguy", HordeDefinition.Attack: 3, HordeDefinition.Health: 4 } ||
+                    target.Status("horde") == null || !OriginalMirrorsOnly(room)))
+                return new UnitCloneResult(null, 0, RoomOutcome.Unsupported,
+                    "Spawn-or-status room copying requires its calibrated original Funguy Horde and Hall of Mirrors.",
+                    Array.Empty<CombatEvent>(), Array.Empty<UnitCloneBoundary>(), Array.Empty<RoomCombatModel.QueuedCharacterTrigger>());
+            return PaidBirth(source, unitId, null);
+        }
+
         internal static UnitCloneResult PaidBirth(TrainCombatState source, int unitId, UnitCopyCatalog? catalog)
         {
             RoomCombatState? room = source.Rooms.SingleOrDefault(room => room.Units.Any(unit => unit.Id == unitId));
