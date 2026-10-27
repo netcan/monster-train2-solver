@@ -19,6 +19,9 @@ with a single new identity. Other birth paths retain the default phase.
 
 All seven full native successors, state/preview/RNG and four independent
 immutable branches pass. The prior11-input mirrored birth pair and seven
-scope controls also pass. Independent frozen native replay is required
-before accepting the new fixture pair. This component alone does not
+scope controls also pass. Frozen release253 atdc134e24 independently
+replays the identical request in process201845-490ca89c. Both complete
+chains and the historical mismatch versus the repaired prediction pass
+the focused pair checker; both captures are registered under combat/units.
+This component alone does not
 establish a Ring6 victory or a default eight-ring clear.
