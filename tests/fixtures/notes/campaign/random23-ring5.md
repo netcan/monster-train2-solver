@@ -1,4 +1,19 @@
-# Sample23: independent refined Ring5 victory
+# Sample23: default-budget and refined Ring5 victories
+
+Release249 source193404-eae536e6 now wins with actual10000ms/two-worker
+whole-battle advice,38 inputs/29 plays/nine EndTurns and Pyre12. Independent
+normal reward replay194051-6f4415a9 matches every root/successor/forecast/RNG
+and17 train phases each; all four raw failure counters are zero. Both full
+source and independent pair check pass. The first five rings now form one
+accepted default-budget native victory chain. No eight-ring clear is claimed.
+
+The63-event normal continuation creates Ring6 save SHA256
+82C54A1DAB96252856C93C584A1AE585788AFF65D68C15A8FC0F0DCA542A8798.
+Checkpoint results/campaign-checkpoints/random23-ring6-default249.zip has65
+files and SHA256987E1ECCA018C716DA208C0CE04B9BFE8E613CD9FB202D99BA2612587A81DA8B.
+Its unchanged native input/save hash chain retains21 prior tracked values,
+without battle simulations or edited unlocks. This new checkpoint supersedes
+the refined branch below for subsequent default-budget campaign acceptance.
 
 Underlegion/LunaCoven seed47305607, rank0, retained native profile. The first
 four rings retain their accepted10000ms/two-worker default search pairs.
