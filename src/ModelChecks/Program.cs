@@ -7040,10 +7040,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is "player-tri
     using var castReplay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-consume-cleanse-cast-replay-calibration.mt2f"));
     TripleJuiceConsumeCleanseChecks.Cast(cast.RootElement, castReplay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) == "player-moon-burnout-relic-calibration.mt2f"))
+foreach (string path in args.Where(path => Path.GetFileName(path) is "player-moon-burnout-relic-calibration.mt2f" or "player-moon-burnout-relic-replay-calibration.mt2f")
+    .Select(path => ModelJson.RelatedFixture(path, "player-moon-burnout-relic-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var source = ModelJson.ReadFixture(path);
-    MoonBurnoutRelicChecks.Native(source.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-moon-burnout-relic-replay-calibration.mt2f"));
+    MoonBurnoutRelicChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) is "player-relentless-outer-bump-calibration.mt2f" or "player-relentless-outer-bump-replay-calibration.mt2f")
     .Select(path => ModelJson.RelatedFixture(path, "player-relentless-outer-bump-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

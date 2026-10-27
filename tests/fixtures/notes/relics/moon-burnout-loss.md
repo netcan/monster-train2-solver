@@ -20,4 +20,7 @@ state/RNG remains identical. Two complete roots/successors/forecasts/RNG,
 four immutable EndTurn branches and11 unknown-signature controls pass.
 Old native Burnout1 removal still produces exactly Rage3/attack26; existing
 Moon transition/phase/unknown-callback controls pass. Independent fixed capture
-and the actual default-budget fifth battle remain pending.
+152404-682b0360 matches both complete native roots/successors/forecasts/RNG,
+preserving the original refusal and the independently matching prediction.
+The actual default-budget fifth battle is running from the same checkpoint;
+the component pair is not counted as a fifth-battle win.
