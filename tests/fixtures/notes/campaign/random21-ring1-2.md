@@ -51,3 +51,6 @@ then a three-input batch reaches142HP/6ATK, still43 inputs and a model defeat.
 Its complete owned state/forecast/RNG replay passes. A later wider diverse
 batch completes329 candidates without improvement. The148HP native archive
 remains the latest actual refined loss;142HP is not native acceptance.
+
+Fresh deployment samples96..143 add48 complete routes with no unsupported or
+improvement. Resume fresh deployment at144; retain the142HP model baseline.
