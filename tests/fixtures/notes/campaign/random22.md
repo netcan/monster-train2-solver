@@ -57,6 +57,17 @@ ChaosScepter combination: original/repaired birth pair and independent27-input
 positive cast pair pass full successors/forecasts/RNG, health24->40/40,
 Burnout0->9 and Exhausted destination. Four immutable birth/four cast branches,
 twelve unknown-signature guards and previous plain/Conduit pairs pass.
-Fresh actual10000ms/two-worker source144707-8b30a7a9 is in progress; a separate
-57-input model win is not counted as native acceptance. No Ring4 or full-
-campaign win is claimed.
+Fresh actual10000ms/two-worker source144707-8b30a7a9 and independent normal-
+reward replay145804-b2c1270f both win in53 inputs/45plays/8EndTurns with Pyre5.
+Each process verifies16 train phases, all roots/successors/forecasts/RNG,
+four zero failure counters and unchanged original files. Overlay55
+publications/434 captures/purity0;58 normal reward/map events produce Ring5
+save3F70110D2A92C880E3E4C5BCFC503D870A992CDA0D922E7DD4E321266CF13503.
+Both archives are curated and journal144707-e04715b5 binds frozen checker
+F16432022AF7FBFD7275155C5878FAC448173C590479EB62C4711DDD9C7305B6.
+The first four default-budget links pass without simulations or refinements.
+A separate57-input model win/Pyre37 remains unaccepted by native play.
+Ring5 opening150457-8f1c080a stops before its first input with
+`Moon-phase status application with relic modifiers is not modeled.`
+Its original refusal and checkpoint are retained for isolated calibration.
+No Ring5 or full-campaign win is claimed.

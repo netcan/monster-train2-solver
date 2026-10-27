@@ -27,5 +27,9 @@ particular witness caps at16 actual healing and has no Conduit bonus, so it
 does not establish an uncapped35+Conduit healing case. All27 complete roots,
 successors, forecasts and RNG match, with four immutable positive casts.
 Both birth and cast pairs are curated. Fresh actual10000ms/two-worker Ring4
-acceptance is in progress; components do not establish its battle victory.
+source144707-8b30a7a9 and independent normal-reward replay145804-b2c1270f
+also win in53 inputs/Pyre5. Each checks16 train phases, complete state,
+forecasts/RNG and four zero counters;58 normal events create Ring5.
+The first four default-budget save links pass. Ring5 has a new moon-phase/
+relic modifier refusal, so this does not establish a complete campaign.
 The prior Windows232 delivery remains installed while233 is isolated.
