@@ -571,6 +571,13 @@ if (args.Length is 2 or 3 && args[0] == "--moon-advance-consume-only")
     else { using var replay = ModelJson.ReadFixture(args[2]); MoonAdvanceConsumeChecks.Native(source.RootElement, replay.RootElement); }
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--starstruck-reduce-cost-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) StarstruckReduceCostChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); StarstruckReduceCostChecks.Native(source.RootElement, replay.RootElement); }
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--triple-juice-starstruck-cast-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

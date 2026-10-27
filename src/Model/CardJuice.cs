@@ -64,14 +64,27 @@ namespace MonsterTrain2Poju.Model
             card.Temporary.Upgrades[0] is { Unique: false, RemoveOnDiscard: false, ExcludeFromClones: false,
                 RestrictSizeToRoomCapacity: false, MagicPowerTraitScalingOnly: false, CloneDamageBase: null, CloneHealBase: null,
                 Lifecycle.ReplacedAssets.Count: 0, Lifecycle.TraitsModified.Count: 0 };
+        private static bool KnownStarstruckReduceCost(CardUpgradeModifier upgrade) =>
+            upgrade.DataId == "413e67f5-63a0-4ccc-9763-19251392cda0" && upgrade.AssetKey == "ReduceCost" &&
+            upgrade.Stats.Cost == -1 && upgrade.Stats.XCost == 1 && upgrade.Stats.Damage == 0 &&
+            upgrade.Stats.Health == 0 && upgrade.Stats.Heal == 0 && upgrade.Stats.Size == 0 &&
+            upgrade.Stats.EquipmentLimit == 0 && upgrade.Stats.UpgradeSlotCount == 0 && upgrade.Statuses.Count == 0 &&
+            !upgrade.RemoveOnDiscard && !upgrade.Unique && !upgrade.ExcludeFromClones &&
+            upgrade.UnhealedHealth == 0 && upgrade.DamageBuff == 0 && upgrade.ExternalInteractions.Count == 0 &&
+            upgrade.AbilityUpgrade == null && upgrade.TriggerUpgrades?.Count is not > 0 &&
+            upgrade.Lifecycle is { AssetKey: "ReduceCost", AddedTraits.Count: 0, RemovedRuntimeTypes.Count: 0,
+                TraitsModified.Count: 0, ReplacedAssets.Count: 0, Triggers.Count: 0 };
         private static bool KnownTripleStarstruck(CardInstanceState card, CardTraitCompositionState traits) =>
             card.DataId == "753f20a2-c625-47b3-be4b-8600b673841e" &&
             traits.CombinedTraits is { Count: 2 } combined &&
             combined[0].RuntimeType == CardMoonUpgradeModel.Trait && combined[1].RuntimeType == TripleTrait &&
             combined[1].DeclaredName == TripleTrait && Ordinary(combined[1], 3) &&
-            card.Permanent.Upgrades.Count is 1 or 2 && KnownTripleUpgrade(card.Permanent.Upgrades[0]) &&
-            card.Permanent.Upgrades.Skip(1).All(upgrade => upgrade.DataId == "12793a9c-fae4-42ab-80bb-c3274e681c19" &&
-                CardMoonUpgradeModel.KnownPayload(upgrade)) &&
+            card.Permanent.Upgrades.Count >= 1 && KnownTripleUpgrade(card.Permanent.Upgrades[0]) &&
+            (card.Permanent.Upgrades.Count is 1 or 2 && card.Permanent.Upgrades.Skip(1).All(upgrade =>
+                upgrade.DataId == "12793a9c-fae4-42ab-80bb-c3274e681c19" && CardMoonUpgradeModel.KnownPayload(upgrade)) ||
+                card.Permanent.Upgrades.Count is 2 or 3 && KnownStarstruckReduceCost(card.Permanent.Upgrades[1]) &&
+                card.Permanent.Upgrades.Skip(2).All(upgrade => upgrade.DataId == "12793a9c-fae4-42ab-80bb-c3274e681c19" &&
+                    CardMoonUpgradeModel.KnownPayload(upgrade))) &&
             card.Temporary.Upgrades.All(KnownTitanCurse) &&
             CardMoonUpgradeModel.Validate(card) == null &&
             card.DamageScalingTraits?.Count is not > 0 && card.StatusScalingTraits?.Count is not > 0 &&
