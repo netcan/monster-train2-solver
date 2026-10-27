@@ -17,7 +17,11 @@ self target and deployment rule. Unknown origin/heal controls keep their
 temporary identity. The original fifteen native successors, complete state,
 forecast/RNG, continuous model-owned prefix and four immutable branches pass.
 The historical18/17 counter and point remain explicit counterexample evidence.
-Fixed-build independent native pairing is pending; this is not a Ring6 win.
+Fixed275 revision7d32af7e independent native component024048-bac9784a
+passes all fifteen native inputs and the complete independent pair. Both
+original request and observed native states remain unchanged. Old champion
+enemy-death and room-death preview identity pairs also pass. This is not a
+Ring6 win; the actual default-budget battle continues separately.
 
 Release274 actual default10000ms/two-worker native run023623-6d8f06b4
 progresses past the former search exception and independently stops at the
