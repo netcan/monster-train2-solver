@@ -67,7 +67,8 @@ namespace MonsterTrain2Poju.Probe
             // Under the explicit isolation protocol, await only objects already
             // scheduled for destruction. Never destroy actors or run removals here.
             CharacterState[] pendingDestruction = kind == "Ascend" && DeathDissolveSettlement.Enabled
-                ? trace.KnownUnits.Where(unit => unit != null && unit.IsDestroyed &&
+                ? trace.KnownUnits.Where(unit => unit != null &&
+                    (CharacterState.DestroyedState)AccessTools.Field(typeof(CharacterState), "destroyedState").GetValue(unit) == CharacterState.DestroyedState.Destroyed &&
                     !ReferenceEquals(unit.GetWeakReference().Ref, null)).ToArray()
                 : Array.Empty<CharacterState>();
             int settlementFrames = 0;
