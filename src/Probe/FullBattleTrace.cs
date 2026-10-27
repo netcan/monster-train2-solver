@@ -32,6 +32,7 @@ namespace MonsterTrain2Poju.Probe
         private readonly List<StageRecord> stages = new List<StageRecord>();
         private readonly List<StageHarvestRecord> stageHarvests = new List<StageHarvestRecord>();
         private readonly List<StageDeathRecord> activeDeaths = new List<StageDeathRecord>();
+        private readonly List<StageRemovalRecord> stageRemovals = new List<StageRemovalRecord>();
         private readonly List<object> checkpoints = new List<object>();
 #if DEVELOPMENT_PROBE
         private object? nativeRunInput;
@@ -1680,6 +1681,7 @@ namespace MonsterTrain2Poju.Probe
                     OriginalBalatroEventYorickProbe.Records.Count(record => !record.Completed || record.Actual == null),
                 Stages = stages,
                 StageHarvests = stageHarvests,
+                StageRemovals = stageRemovals,
                 CardCycles = cardCycles.Records,
                 TrainPhases = trainCombat.Records,
                 Spawns = spawning.Records,
@@ -1972,6 +1974,53 @@ namespace MonsterTrain2Poju.Probe
             public string Kind { get; set; } = "";
             public int UnitId { get; set; }
             public bool Started { get; set; }
+        }
+
+        private sealed class StageRemovalRecord
+        {
+            public int[] ActiveStages { get; set; } = Array.Empty<int>();
+            public int[] EligibleUnitIds { get; set; } = Array.Empty<int>();
+            public bool OverrideList { get; set; }
+            public bool Started { get; set; }
+            public bool Completed { get; set; }
+        }
+
+        [HarmonyPatch(typeof(CombatManager), nameof(CombatManager.RemoveDeadCharacters))]
+        private static class StageRemovalPatch
+        {
+            private static void Postfix(List<CharacterState> overrideList, ref IEnumerator __result)
+            {
+                var trace = Active;
+                if (trace == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
+                int[] stages = trace.stages.Where(stage => stage.Actual == null).Select(stage => stage.Index).ToArray();
+                if (stages.Length == 0) return;
+                var managers = AllGameManagers.Instance!;
+                var eligible = new List<int>();
+                if (overrideList != null)
+                {
+                    foreach (var unit in overrideList)
+                        if (unit.GetHP() <= 0 && !unit.IsBeingRemoved() && trace.TryGetUnitId(unit, out int id)) eligible.Add(id);
+                }
+                else
+                {
+                    foreach (var manager in new ICharacterManager[] { managers.GetHeroManager(), managers.GetMonsterManager() })
+                        for (int i = 0; i < manager.GetNumCharacters(); i++)
+                        {
+                            var unit = manager.GetCharacter(i);
+                            if (unit.Initialized && unit.IsDead && unit.HasFinishedDying && !unit.IsBeingRemoved() &&
+                                trace.TryGetUnitId(unit, out int id)) eligible.Add(id);
+                        }
+                }
+                var record = new StageRemovalRecord { ActiveStages = stages, EligibleUnitIds = eligible.ToArray(), OverrideList = overrideList != null };
+                trace.stageRemovals.Add(record);
+                __result = Track(__result, record);
+            }
+
+            private static IEnumerator Track(IEnumerator native, StageRemovalRecord record)
+            {
+                try { record.Started = true; while (native.MoveNext()) yield return native.Current; record.Completed = true; }
+                finally { (native as IDisposable)?.Dispose(); }
+            }
         }
 
         private static void ObserveDeath(CharacterState unit, string kind, ref IEnumerator native)
