@@ -96,6 +96,16 @@ namespace MonsterTrain2Poju.Model
             CombatUnit created = actor.Create(allocation.UnitId, applyBirthStats: false);
             if (calibratedMoon)
                 created = MoonPhaseStatusModel.WithPhase(created, moon).WithMoonPhaseMask(moon);
+            else if (battle.MoonPhaseTrackingActive == false && created.MoonPhaseMask.HasValue && moon is 1 or 2)
+            {
+                // Native CharacterState.Setup always initializes understanding.
+                // Inactive tracking leaves phase statuses absent. Unknown
+                // phase callbacks still need their own native calibration.
+                if (created.Triggers.Any(trigger => trigger.Kind is "OnMoonLit" or "OnMoonlitLost" or
+                    "OnMoonShade" or "OnMoonshadeLost" or "OnMoonPhaseShift"))
+                    return Fail("Inactive outer-boss moon callbacks require native calibration.");
+                created = created.WithMoonPhaseMask(moon);
+            }
             if (duo)
             {
                 CombatUnit[] partners = train.Rooms.SelectMany(room => room.Units)

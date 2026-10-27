@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--inactive-outer-boss-moon-birth-only")
+{
+    InactiveOuterBossMoonBirthChecks.Native(args[1], args.Length == 3 ? args[2] : null);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--dusk-mantle-recruit-boss-preview-only")
 {
     UnderlegionThirdTroopPreviewChecks.Native(args[1], args.Length == 3 ? args[2] : null);
@@ -7356,6 +7361,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-pyr
     using var source = ModelJson.ReadFixture(path);
     PyregelPowerstoneJuiceChecks.Native(source.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-inactive-fragile-moon-birth-calibration.mt2f"))
+    InactiveOuterBossMoonBirthChecks.Native(path);
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("parallel-lower-opening-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "parallel-lower-opening-model-counterexample.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
