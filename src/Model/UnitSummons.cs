@@ -164,7 +164,7 @@ namespace MonsterTrain2Poju.Model
                 context, source.Preview, source.ActiveCompanionBossIds);
             RoomCombatResult result = drainBirthQueue == null ?
                 RoomCombatModel.ApplySpawnTriggers(entered, spawned.Id, spawnerCardId > 0, starting, enqueue,
-                    additionalStatus: cardStatus) :
+                    additionalStatus: cardStatus, copyHordeBeforeOrder: copyHordeBirth && RoomSpawnCopyModel.Active(entered)) :
                 RoomCombatModel.PrepareSpawnTriggers(entered, spawned.Id, spawnerCardId > 0, starting,
                     additionalStatus: cardStatus);
             if (!result.Supported) return new UnitBirthResult(result);
@@ -194,23 +194,8 @@ namespace MonsterTrain2Poju.Model
                         source.ExternalInteractions, current.WithLastSpawned(spawned.Id), source.Preview,
                         result.State.ActiveCompanionBossIds), outcome, 0, new List<CombatEvent>());
             }
-            var copyCallbacks = Array.Empty<RoomCombatModel.QueuedCharacterTrigger>();
-            if (copyHordeBirth && RoomSpawnCopyModel.Active(result.State!))
-            {
-                // CreateMonsterState invokes afterCharacterCreated (the initial
-                // Horde stacks) before its room duplication callbacks. Native
-                // CloneMonsterState adds one Horde stack without another birth
-                // or the successful ordinary-clone CardMonsterPlayed callback.
-                RoomCombatState frame = result.State!;
-                UnitCloneResult copies = RoomSpawnCopyModel.PaidBirth(new TrainCombatState(new[] { frame },
-                    Array.Empty<EnemyMovement>(), 0, frame.Context), spawned.Id, null);
-                if (!copies.Supported) return Unsupported(copies.UnsupportedReason!);
-                result = new RoomCombatResult(copies.State!.Rooms.Single(), copies.Outcome, 0, copies.Events.ToList());
-                events.AddRange(copies.Events); copyCallbacks = copies.PendingCallbacks.ToArray();
-                if (copies.Outcome != RoomOutcome.Exchanged) outcome = copies.Outcome;
-            }
-            var queue = copyCallbacks.Concat(result.State!.Units.Where(unit => unit.Team == CombatTeam.Player)
-                .Select(unit => new RoomCombatModel.QueuedCharacterTrigger(source.RoomIndex, unit, "AfterSpawnEnchant"))).ToList();
+            var queue = result.State!.Units.Where(unit => unit.Team == CombatTeam.Player)
+                .Select(unit => new RoomCombatModel.QueuedCharacterTrigger(source.RoomIndex, unit, "AfterSpawnEnchant")).ToList();
             if (isCardless)
                 queue.AddRange(result.State.Units.Where(unit => unit.Team == CombatTeam.Player && unit.Id != spawned.Id)
                     .Select(unit => new RoomCombatModel.QueuedCharacterTrigger(source.RoomIndex, unit,

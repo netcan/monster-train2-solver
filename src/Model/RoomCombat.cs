@@ -825,7 +825,7 @@ namespace MonsterTrain2Poju.Model
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, SpawnStatusApplication? additionalStatus = null,
             Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase = null,
             Func<RoomCombatState, int, IReadOnlyList<QueuedCharacterTrigger>, RoomCombatResult>? relicBirthEffect = null,
-            Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect = null)
+            Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect = null, bool copyHordeBeforeOrder = false)
         {
             string? error = Validate(state);
             CombatUnit? unit = state.Units.FirstOrDefault(item => item.Id == unitId);
@@ -835,7 +835,7 @@ namespace MonsterTrain2Poju.Model
             return new Engine(state, new List<CombatEvent>(), pendingSummonCardId: fromCard ? unit.SpawnerCardId : 0,
                 enqueueCharacterTrigger: enqueue, refreshPyre: refreshPyre, moonPhase: moonPhase,
                 relicBirthEffect: relicBirthEffect, relicCharacterEffect: relicCharacterEffect).Spawn(unitId, fromCard, startingApplications,
-                    additionalStatus: additionalStatus);
+                    additionalStatus: additionalStatus, copyHordeBeforeOrder: copyHordeBeforeOrder);
         }
 
         internal static RoomCombatResult PrepareSpawnTriggers(RoomCombatState state, int unitId, bool fromCard,
@@ -2177,7 +2177,7 @@ namespace MonsterTrain2Poju.Model
             }
 
             internal RoomCombatResult Spawn(int unitId, bool fromCard, IReadOnlyList<CombatStatus>? startingApplications = null,
-                bool prepareOnly = false, SpawnStatusApplication? additionalStatus = null)
+                bool prepareOnly = false, SpawnStatusApplication? additionalStatus = null, bool copyHordeBeforeOrder = false)
             {
                 WorkingUnit spawned = units.Single(unit => unit.Source.Id == unitId);
                 bool wasSpawning = spawned.Source.IsSpawning == true;
@@ -2227,6 +2227,20 @@ namespace MonsterTrain2Poju.Model
                         if ((birthMoonMask & 2) != 0) FireTriggers(spawned, "OnMoonLit");
                         if ((birthMoonMask & 1) != 0) FireTriggers(spawned, "OnMoonShade");
                     }
+                }
+                if (copyHordeBeforeOrder)
+                {
+                    // The scoped cardless Funguy path already installed its
+                    // initial Horde stacks. Room duplication adds its stack
+                    // before the first troop-aura room-order binding; the
+                    // queued OnTroopAdded callback remains a separate write.
+                    RoomCombatState frame = CurrentRoom();
+                    UnitCloneResult copies = RoomSpawnCopyModel.PaidBirth(new TrainCombatState(new[] { frame },
+                        Array.Empty<EnemyMovement>(), 0, frame.Context), unitId, null);
+                    if (!copies.Supported) { unsupportedReason = copies.UnsupportedReason; return Finish(RoomOutcome.Unsupported); }
+                    ImportEnchantmentRoom(copies.State!.Rooms.Single());
+                    events.AddRange(copies.Events);
+                    foreach (var callback in copies.PendingCallbacks) QueueCallback(callback);
                 }
                 if (!prepareOnly || spawned.Source.Team == CombatTeam.Player)
                 {
