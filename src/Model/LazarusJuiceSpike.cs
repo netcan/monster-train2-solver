@@ -35,7 +35,7 @@ namespace MonsterTrain2Poju.Model
                 scaling.Query.SubtypeMatchDataIds?.Count is not > 0 && scaling.StacksPerStat == 1 &&
                 !scaling.OnlyWhenSourceZero && scaling.Filter == 0 && scaling.StatusIds.SequenceEqual(new[] { "undying" });
         }
-        private static bool KnownConduit(CardUpgradeModifier upgrade) =>
+        internal static bool KnownConduit(CardUpgradeModifier upgrade) =>
             upgrade.DataId.StartsWith("conduit:", StringComparison.Ordinal) &&
             int.TryParse(upgrade.DataId.Substring(8), out int owner) && owner > 0 &&
             upgrade.DataId == "conduit:" + owner && upgrade.AssetKey == "ConduitUpgrade" &&

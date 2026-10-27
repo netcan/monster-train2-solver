@@ -54,7 +54,8 @@ namespace MonsterTrain2Poju.Model
             if (triple && card.DataId == "d4366b7c-588c-49aa-b2c6-2aeb30b0e01b" &&
                 traits.Count == 1 && traits[0].RuntimeType == TripleTrait && traits[0].DeclaredName == TripleTrait && Ordinary(traits[0], 3) &&
                 card.Permanent.Upgrades.Count == 1 && KnownTripleUpgrade(card.Permanent.Upgrades[0]) &&
-                card.Temporary.Upgrades.Count == 0 && card.MaskDescriptor.SourceTraits?.Count is not > 0 &&
+                card.Temporary.Upgrades.Count <= 1 && card.Temporary.Upgrades.All(LazarusJuiceSpikeModel.KnownConduit) &&
+                card.MaskDescriptor.SourceTraits?.Count is not > 0 &&
                 card.DamageScalingTraits?.Count is not > 0 && card.StatusScalingTraits?.Count is not > 0 &&
                 card.UnitUpgradeScalingTraits?.Count is not > 0 && card.TrainHealScalingTraits?.Count is not > 0 &&
                 card.CapacityScalingTraits?.Count is not > 0 && card.ForgeCountScalingTraits?.Count is not > 0)

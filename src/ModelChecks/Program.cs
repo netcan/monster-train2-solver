@@ -2276,6 +2276,14 @@ if (args.Length is 2 or 3 && args[0] == "--triple-juice-purifying-only")
     return;
 }
 
+if (args.Length is 2 or 3 && args[0] == "--triple-juice-purifying-cast-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    TripleJuicePurifyingCleanseChecks.Cast(source.RootElement, replay?.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--natural-movement-capture-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
