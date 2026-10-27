@@ -741,7 +741,8 @@ namespace MonsterTrain2Poju.Model
         internal static RoomCombatResult ApplyQueuedCharacterTrigger(RoomCombatState state, QueuedCharacterTrigger queued, Action<QueuedCharacterTrigger> enqueue, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
             CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
             IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
-            Func<RoomCombatState, CardActionEffect, int, BumpResult>? birthBump = null)
+            Func<RoomCombatState, CardActionEffect, int, BumpResult>? birthBump = null,
+            Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase = null)
         {
             if (RelicFloorTransitionDamageModel.TryDefer(state, queued, enqueue, out RoomCombatResult floorDamage))
                 return floorDamage;
@@ -749,7 +750,7 @@ namespace MonsterTrain2Poju.Model
                 return movementStatus;
             RoomCombatResult triggered = new Engine(state, new List<CombatEvent>(), enqueueCharacterTrigger: enqueue,
                 resetPreviewTriggers: false, refreshPyre: refreshPyre, externalPyre: externalPyre,
-                externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets, birthBump: birthBump)
+                externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets, birthBump: birthBump, moonPhase: moonPhase)
                 .TraceAllDispatches(queued.CaptureAllDispatches).QueuedTrigger(queued);
             RoomCombatResult relicStatusEffect = RelicStatusAddedEffectModel.ApplyAfterTrigger(triggered, queued);
             RoomCombatResult entered = RelicRoomEntryStatusModel.ApplyAfterEntry(relicStatusEffect, queued, enqueue);
@@ -2181,7 +2182,14 @@ namespace MonsterTrain2Poju.Model
             {
                 WorkingUnit spawned = units.Single(unit => unit.Source.Id == unitId);
                 bool wasSpawning = spawned.Source.IsSpawning == true;
-                if (context?.AbilityCardCache != null && spawned.Source.Ability?.CardCreation is CardCreationRule creation)
+                // In the original mirrored Meddler birth, CloneMonsterState copies
+                // the source card before the first ability card is materialized.
+                // Its clone birth warms the shared cache after that copy.
+                bool mirroredMeddler = spawned.Source is { AssetKey: "MonsterFaeMeddler", Modifiers.IsClone: false } &&
+                    context?.FindCard(spawned.Source.SpawnerCardId)?.DataId == "d10e2dac-fa58-4509-b0ee-112b3bf78800" &&
+                    RoomSpawnCopyModel.Active(CurrentRoom()) && RoomSpawnCopyModel.OriginalMirrorsOnly(CurrentRoom()) &&
+                    context.SpawnPoints?.FirstEmpty(source.RoomIndex, CombatTeam.Player) >= 0;
+                if (!mirroredMeddler && context?.AbilityCardCache != null && spawned.Source.Ability?.CardCreation is CardCreationRule creation)
                 {
                     AbilityCardResult cached = AbilityCardModel.Get(context, creation);
                     if (!cached.Supported) { unsupportedReason = cached.UnsupportedReason; return Finish(RoomOutcome.Unsupported); }
@@ -4006,10 +4014,11 @@ namespace MonsterTrain2Poju.Model
                                 MoonPhaseTransitionResult shifted = moonPhase(CurrentRoom(), effect.Action, unit.Source.SpawnerCardId);
                                 if (!shifted.Supported)
                                 { unsupportedReason = shifted.UnsupportedReason; break; }
-                                RoomCombatState changed = shifted.State!.Rooms.Single(room => room.RoomIndex == source.RoomIndex);
-                                context = changed.Context;
-                                foreach (CombatUnit actor in changed.Units)
-                                    units.First(item => item.Source.Id == actor.Id).Apply(actor);
+                                context = shifted.State!.Context;
+                                // Borrowed Tower actors must receive their new phase
+                                // before Finish exports them back to other floors.
+                                foreach (CombatUnit actor in shifted.State.Rooms.SelectMany(room => room.Units))
+                                    units.FirstOrDefault(item => item.Source.Id == actor.Id)?.Apply(actor);
                             }
                             else if (effect.Action != null)
                             {

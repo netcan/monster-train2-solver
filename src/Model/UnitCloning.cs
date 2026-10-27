@@ -302,9 +302,29 @@ namespace MonsterTrain2Poju.Model
                     // Tower callbacks need all current floors even without a clone.
                     var borrowed = state.Rooms.Where(room => room.RoomIndex != callback.RoomIndex)
                         .SelectMany(room => room.Units.Select(unit => (room.RoomIndex, Unit: unit))).ToArray();
+                    MoonPhaseTransitionResult AdvanceMirroredMeddler(RoomCombatState frame, CardActionEffect effect, int sourceCardId)
+                    {
+                        var phaseTrain = CardSpellModel.WithContext(new TrainCombatState(state.Rooms.Select(room =>
+                            room.RoomIndex == frame.RoomIndex ? frame : room).ToArray(), state.Movement,
+                            state.EnemySlotsPerRoom, frame.Context), frame.Context!);
+                        MoonPhaseTransitionResult shifted = MoonPhaseTransitionModel.Apply(phaseTrain, effect, sourceCardId);
+                        if (shifted.Supported) state = shifted.State!;
+                        return shifted;
+                    }
+                    bool mirroredMeddler = callback.Kind == "OnSpawn" && callback.Unit.AssetKey == "MonsterFaeMeddler" &&
+                        callback.Unit.Modifiers?.IsClone == true &&
+                        state.Context!.FindCard(callback.Unit.SpawnerCardId)?.DataId == "d10e2dac-fa58-4509-b0ee-112b3bf78800" &&
+                        RoomSpawnCopyModel.OriginalMirrorsOnly(state.Rooms.Single(room => room.RoomIndex == callback.RoomIndex));
+                    if (mirroredMeddler)
+                    {
+                        var advances = callback.Unit.Triggers.Where(trigger => trigger.Kind == "OnSpawn")
+                            .SelectMany(trigger => trigger.Effects).Where(effect => effect.Type == "CardEffectAdvanceMoonPhase").ToArray();
+                        mirroredMeddler = advances.Length == 1 && advances[0] is
+                            { Value: 1, Action: { Type: "AdvanceMoonPhase", Target: "Self", Value: 1, Range: null } };
+                    }
                     RoomCombatResult fired = RoomCombatModel.ApplyQueuedCharacterTrigger(
                         state.Rooms.Single(room => room.RoomIndex == callback.RoomIndex), callback, queue.Add,
-                        externalTargets: borrowed);
+                        externalTargets: borrowed, moonPhase: mirroredMeddler ? AdvanceMirroredMeddler : null);
                     if (!Accept(fired)) return false;
                     foreach (var target in borrowed)
                         state = CardSpellModel.ReplaceExternalActor(state, target.RoomIndex,
