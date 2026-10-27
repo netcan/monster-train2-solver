@@ -577,6 +577,13 @@ if (args.Length is 2 or 3 && args[0] == "--moon-advance-consume-only")
     else { using var replay = ModelJson.ReadFixture(args[2]); MoonAdvanceConsumeChecks.Native(source.RootElement, replay.RootElement); }
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--cael-moon-null-relic-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) CaelMoonNullRelicChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); CaelMoonNullRelicChecks.Native(source.RootElement, replay.RootElement); }
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--starstruck-conduit-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -7518,6 +7525,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-moon-conduit-birth-order-replay-calibration.mt2f"));
     MoonConduitBirthOrderChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-cael-moon-null-relic-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    CaelMoonNullRelicChecks.Native(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-moon-null-boss-relic-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-moon-null-boss-relic-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

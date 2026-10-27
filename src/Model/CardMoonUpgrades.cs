@@ -167,8 +167,10 @@ namespace MonsterTrain2Poju.Model
                 relic.ResourceEffects.Select(effect => effect.ParamInt).SequenceEqual(new[] { 1, 30, 10, 1 })) return true;
             // This original boss artifact contains only two null effects.
             // It has no moon or CardUpdated callback to change spell upgrades.
-            if (relic.DataId == "741546e7-71a9-4817-aab9-066af7c32fcf" &&
-                relic.AssetKey == "Enemy_Boss_Level3_ImmortalMass_Corruption" &&
+            if ((relic.DataId == "741546e7-71a9-4817-aab9-066af7c32fcf" &&
+                    relic.AssetKey == "Enemy_Boss_Level3_ImmortalMass_Corruption" ||
+                relic.DataId == "2424d14a-6fd6-4458-836e-75ad7315a22a" &&
+                    relic.AssetKey == "Enemy_SpawnHeroEaterFeedLifesteal") &&
                 relic.DisallowedInPlacementPhase == false &&
                 relic.EffectTypes.SequenceEqual(new[] { "RelicEffectNull", "RelicEffectNull" })) return true;
             // Native balance/draft interfaces have no moon or card-update hook.
