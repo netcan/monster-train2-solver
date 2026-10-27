@@ -19,4 +19,16 @@ Cael1772HP. All10 train phases, full states/forecasts/RNG and four zero
 counters pass. Its separate archive preserves this longer native loss;
 the Pyre12 and Pyre26 input saves are not interchangeable. A third,
 independently paired Ring5 refinement enters Ring6 with Pyre40 and is
-being evaluated separately.
+retained separately.
+
+After release210 fixes the final-eaten Unstable explosion, the Pyre40
+branch completes47inputs/41plays/6EndTurns in native defeat with Cael1772HP
+(source094052-529b1ac1). All complete state/forecast/RNG checks and four
+zero counters pass; the prior false survival forecast is gone. The47-input
+owned frozen route independently reproduces every successor and forecast.
+The release210 fifth-battle default win creates another Pyre26 save branch;
+its native Ring6 source095032-2de1c972 also loses in38inputs/33plays/5EndTurns,
+with all10 train stages, full state/forecast/RNG and four zero counters.
+Both actual-budget losses are curated independently of all earlier saves.
+Deployment refinement reaches59 model inputs but remains a loss and exposes
+a StoicPlatemail/Aurora moon-silence callback guard for native calibration.

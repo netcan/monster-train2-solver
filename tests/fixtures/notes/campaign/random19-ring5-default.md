@@ -23,3 +23,12 @@ save7F332FC6ACD3C104FC3048CB7672DF9EE91A1C5DD75B35174E6E87200DC20779.
 The separate five-ring checkpoint chain passes without simulations.
 This refined route does not replace the actual default-budget result or
 its Pyre26 save chain; neither chain is a complete campaign clear.
+
+Release210 at85ee266c independently repeats the actual10000ms/two-worker
+default victory: source094052-1935f5f3 and normal reward replay094633-9bff4dbf
+both retain43inputs/35plays/8EndTurns/Pyre26, all15 train phases, complete
+state/forecast/RNG identity and four zero counters. The accepted receipt
+and five-ring chain check reuse these processes without simulations.
+Its39 normal reward/map events create a distinct Ring6 save8573CC73D0FBADF5
+22D2E3F835DD01FED4E973D6C27712E047AB9813DC99238F. This checkpoint must not
+be substituted for the release209 Pyre26 or refined Pyre40 branches.

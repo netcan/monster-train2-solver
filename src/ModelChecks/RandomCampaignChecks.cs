@@ -22,7 +22,8 @@ internal static class RandomCampaignChecks
             }
             return;
         }
-        if (path.EndsWith("full-battle-random-campaign-19-ring5-release209-budget10000-pyre44-search.mt2f", StringComparison.Ordinal))
+        if (path.EndsWith("full-battle-random-campaign-19-ring5-release209-budget10000-pyre44-search.mt2f", StringComparison.Ordinal) ||
+            path.EndsWith("full-battle-random-campaign-19-ring5-release210-budget10000-pyre44-search.mt2f", StringComparison.Ordinal))
         {
             using var native = ModelJson.ReadFixture(path);
             using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
