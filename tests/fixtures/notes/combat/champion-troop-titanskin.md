@@ -33,3 +33,11 @@ Frozen revision3c3e1a45 independently repeats the unchanged request as
 the source's rejected final prediction and the independently repaired one.
 The unchanged Ring5 checkpoint continues under actual10000ms/two-worker
 advice. This component acceptance does not assert a new whole-battle victory.
+
+Later stronger-policy diagnosis must preserve the same policy while extracting
+its native request. `extract-unsupported-endturn ... 2 --strength` now matches
+`policy-battle ... 2 --strength`; the default remains tactical. On this unchanged
+deployment, release271's tactical continuation examines43 roots without that
+rejection, whereas the stronger continuation reaches the next composition
+after15 inputs/turn3. The exported request independently replays that exact
+prefix/root/RNG and reproduces the same EndTurn rejection before native work.

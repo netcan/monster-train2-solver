@@ -11,7 +11,7 @@ internal static partial class OfflineBattleSearch
     // Reuse recorded forecasts before spending another search/native battle.
     // This exports a replayable failure boundary, never a native successor.
     internal static void ExtractUnsupported(string input, string output, string reason,
-        bool endTurnOnly = false, int preferredRoom = 2)
+        bool endTurnOnly = false, int preferredRoom = 2, bool strength = false)
     {
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         Require(!string.IsNullOrWhiteSpace(reason), "An exact rejection reason is required.");
@@ -91,7 +91,9 @@ internal static partial class OfflineBattleSearch
             while (!Terminal(outcome) && prefix.Count < 256)
             {
                 if (Extract(current, prefix)) return;
-                SupportedActionCandidate? choice = played >= 18 ? null : BattleTacticalPolicy.Choose(current, out _, preferredRoom);
+                SupportedActionCandidate? choice = played >= 18 ? null : strength
+                    ? BattleHeuristicPolicy.Choose(current, out _, preferredRoom)
+                    : BattleTacticalPolicy.Choose(current, out _, preferredRoom);
                 var step = new Step { Action = choice?.Action, IsEndTurn = choice == null };
                 current = Apply(current, step.Action, step.IsEndTurn, out outcome);
                 prefix.Add(step); played = step.IsEndTurn ? 0 : played + 1;

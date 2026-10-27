@@ -56,11 +56,13 @@ else if (args.Length == 4 && args[0] == "extract-unsupported-branch")
 {
     OfflineBattleSearch.ExtractUnsupported(args[1], args[2], args[3]);
 }
-else if (args.Length is 4 or 5 && args[0] == "extract-unsupported-endturn")
+else if (args.Length is >= 4 and <= 6 && args[0] == "extract-unsupported-endturn" &&
+    (args.Length < 6 || args[5] == "--strength"))
 {
-    int room = args.Length == 5 ? int.Parse(args[4]) : 2;
+    int room = args.Length >= 5 ? int.Parse(args[4]) : 2;
     if (room is < 0 or > 2) throw new ArgumentOutOfRangeException(nameof(room), "Expected floor0..2.");
-    OfflineBattleSearch.ExtractUnsupported(args[1], args[2], args[3], endTurnOnly: true, preferredRoom: room);
+    OfflineBattleSearch.ExtractUnsupported(args[1], args[2], args[3], endTurnOnly: true, preferredRoom: room,
+        strength: args.Length == 6);
 }
 else if (args.Length is 4 or 5 && args[0] == "policy-battle" && (args.Length == 4 || args[4] == "--strength"))
 {
@@ -217,6 +219,7 @@ else if (args.Length == 3 && args[0] == "pack-directory")
 else
 {
     Console.Error.WriteLine("Diagnostics: extract-unsupported-branch <recorded.mt2f> <new-output.mt2f> <exact-rejection-reason>");
+    Console.Error.WriteLine("EndTurn diagnostics: extract-unsupported-endturn <native-or-deployment.mt2f> <new-output.mt2f> <exact-rejection-reason> [floor:0..2] [--strength]; match policy-battle's stronger heuristic when reproducing a deployment branch.");
     Console.Error.WriteLine("Player root: plan-root <capture.mt2f> <new-output.mt2f> <milliseconds> [decision-index] [workers] [shared-nodes] | verify-root-plan <prediction.mt2f> | freeze-root-plan <prediction.mt2f> <new-output.mt2f>; nodes default256, other node budgets are offline experiments.");
     Console.Error.WriteLine("Partial forecast: complete-root-plan <native.mt2f> <verified-root-prediction.mt2f> <new-output.mt2f> <deployment-room> [--strength]; preserves the entire verified prefix before policy completion; model evidence only.");
     Console.Error.WriteLine("Counterexample: refine-policy <native.mt2f> <new-winning-output.mt2f> <milliseconds> [start-decision] [last-decision]; bounded single-decision alternatives followed by legal tactical choices, model prediction only.");
