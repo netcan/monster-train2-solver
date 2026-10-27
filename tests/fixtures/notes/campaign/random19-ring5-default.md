@@ -32,3 +32,11 @@ and five-ring chain check reuse these processes without simulations.
 Its39 normal reward/map events create a distinct Ring6 save8573CC73D0FBADF5
 22D2E3F835DD01FED4E973D6C27712E047AB9813DC99238F. This checkpoint must not
 be substituted for the release209 Pyre26 or refined Pyre40 branches.
+
+Release212 at7a205c36 independently passes the same actual-budget battle
+acceptance: source100338-9b9bbef3 and reward replay100925-8491cf90 retain43
+inputs/35plays/8EndTurns/Pyre26, all15 train phases/full states/forecasts/RNG
+and four zero counters. Its40 normal reward/map events yield another native
+Ring6 save97C981FE782F985B10503E08FBDCBEFFF839F17FF2C4BFB63E922DEEAB2AD85A.
+This exact release payload includes the dual-Conduit and moon-Silence fixes;
+its checkpoint and acceptance receipt remain independent of prior releases.
