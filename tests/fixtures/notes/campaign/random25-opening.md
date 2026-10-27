@@ -180,3 +180,27 @@ backup/receipt`RandomCampaign-20261028-034041`.
 Ring7 source033848-cf34b6d7 rejects its initial original upgrade room modifier
 before playing any card. The pure deployment capture is preserved for native
 calibration; it does not invalidate the preceding six accepted victory pairs.
+
+Release288 revision7873a29a completes Ring7 with actual10000ms/two-worker
+advice, including the calibrated generated moon and equipped recruit boundaries.
+Source052551-d5c5bb59 and independent normal replay053440-668478dc both win:
+59 inputs/49 plays/10 EndTurns/Pyre46, complete state/forecasts/RNG,19 train
+phases each and four zero counters. Source has89 room stages,61 publications,
+423 captures/zero purity failures and1120 complete branch-mask contexts.
+No frozen external route or offline root plan drives the actual source inputs.
+
+Normal58 reward/shop/map events retain Pyre46 and produce the Ring8 checkpoint,
+save SHA256F2F0879FD43242EC85125C79EDF7070A311001F7CBAC02FAE5D49E101BF547A2.
+Natural final-boss selection isLevel8FinalBossMeleeWeakness (pool index1).
+`random25-ring8-default288.zip` has131 files, SHA256
+60EB2F3815E5BDCBC0A9639FA87E9460EAC7A404666A0B389C90B6514666E9AF;
+all130 hashed members restore. Seven actual default-budget native victory
+pairs form one unchanged checkpoint chain. Ring8 actual default advice
+continues from this exact profile; no eight-battle completion is claimed yet.
+
+Curated raw pair:
+`full-battle-random-campaign-25-ring7-release288-budget10000-{search,replay}.mt2f`.
+Source SHA256ecf2373ec702a023faf46eb11145749a7d6bcc188b8ea30318691a66b5e3d525;
+replay SHA2563013ff43e425628723ac9d8755ee594191be869fd505dc2948622f60dfe62243.
+Acceptance journal:`random-campaign-20261028-052550-c018b525/accepted-rings.jsonl`.
+Frozen checker SHA256218B4A1280BB370A9AAD519FD702D7DA91B7A8D8673A026DC79BC09FEBF25005.
