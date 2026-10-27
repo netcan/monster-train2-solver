@@ -22,4 +22,11 @@ All50 native successors,78 room stages/16 train phases, full forecast/RNG,
 four immutable EndTurn branches and nine signature controls pass. The raw
 archive is112401bytes/18892nodes/SHA256
 981b4a5be86f834d542daf0db7eb78d481458ff5e3266e1e02c912c9d472939a.
-Independent frozen native replay and completed Ring7 victory remain separate.
+Independent native replay uses frozen288 revision7873a29a, checker SHA256
+218b4a1280bb370a9aad519fd702d7da91b7a8d8673a026dc79bc09febf25005.
+The same50-input request completes in224.65seconds; original saves are unchanged.
+The62916byte/11333node replay archive has SHA256
+039dd63f65ffb75d37cd0627fd0d95eb02b4965720039a76097b30eb6a5a617c.
+Request/source binding and all50 full successor/forecast/RNG pairs pass.
+Selecting either curated archive runs the complete pair once. Completed Ring7
+victory remains separate from this component calibration.

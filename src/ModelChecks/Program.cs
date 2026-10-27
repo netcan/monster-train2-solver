@@ -7335,8 +7335,9 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-unb
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-unbox-moon-relic-replay-calibration.mt2f"));
     UnboxMoonRelicChecks.Native(source.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) == "player-dusk-mantle-recruit-boss-preview-calibration.mt2f"))
-    UnderlegionThirdTroopPreviewChecks.Native(path);
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-dusk-mantle-recruit-boss-preview-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-dusk-mantle-recruit-boss-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+    UnderlegionThirdTroopPreviewChecks.Native(path, ModelJson.RelatedFixture(path, "player-dusk-mantle-recruit-boss-preview-replay-calibration.mt2f"));
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("parallel-lower-opening-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "parallel-lower-opening-model-counterexample.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
