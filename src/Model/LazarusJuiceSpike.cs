@@ -10,8 +10,9 @@ namespace MonsterTrain2Poju.Model
         {
             string[] stats = { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" };
             if (card.DataId != DataId || card.MaskDescriptor == null || card.ExternalInteractions.Count != 0 ||
-                card.Permanent.Upgrades.Count != 1 || card.Temporary.Upgrades.Count > 1 ||
+                card.Permanent.Upgrades.Count != 1 || card.Temporary.Upgrades.Count > 2 ||
                 card.Temporary.Upgrades.Any(upgrade => !KnownConduit(upgrade)) ||
+                card.Temporary.Upgrades.Select(upgrade => upgrade.DataId).Distinct(StringComparer.Ordinal).Count() != card.Temporary.Upgrades.Count ||
                 stats.Any(stat => card.Permanent.Offsets.Value(stat) != 0 || card.Temporary.Offsets.Value(stat) != 0) ||
                 card.DamageScalingTraits?.Count is > 0 || card.UnitUpgradeScalingTraits?.Count is > 0 ||
                 card.CapacityScalingTraits?.Count is > 0 || card.ForgeCountScalingTraits?.Count is > 0 ||

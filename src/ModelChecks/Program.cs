@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--lazarus-juice-multi-conduit-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    LazarusJuiceMultiConduitChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--eaten-unstable-counterexample-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
