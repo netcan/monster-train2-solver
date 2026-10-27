@@ -5,6 +5,51 @@ using MonsterTrain2Poju.Model;
 internal static class GreenRecruitPreviewIdentityChecks
 {
     internal const string Reason = "Green Recruit's turn8 room2 deployment differs from native unit identity allocation.";
+    internal const string EndTurnReason = "Green Recruit's turn6 EndTurn differs from native preview unit identity allocation.";
+    internal static void EndTurnCounterexample(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("Mismatches").GetInt32() == 1 &&
+            new[] { "CaptureFailures", "Unsupported", "Pending" }.All(key => fixture.GetProperty(key).GetInt32() == 0),
+            "Preserve the single original EndTurn preview identity mismatch.");
+        var rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        Require(rows.Length == 35, "Missing complete34-input prefix and failed35th decision.");
+        var row = rows[^1];
+        var before = row.GetProperty("Root").Deserialize<BattleTurnState>()!;
+        var historical = row.GetProperty("Expected").Deserialize<BattleTurnState>()!;
+        var actual = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        EndTurnWitness(historical, actual);
+        Require(row.GetProperty("IsEndTurn").GetBoolean() && before.Spawn.Turn == 6 && actual.Spawn.Turn == 7,
+            "Lost the real turn6-to7 boundary.");
+        string parent = JsonSerializer.Serialize(before, ModelJson.Options);
+        Parallel.For(0, 4, index =>
+        {
+            BattleTurnState result = BattlePlannerChecks.Replay(before, [new BattleSearchStep(null, true)], out RoomOutcome outcome);
+            Require(outcome == RoomOutcome.Exchanged && NativeBranchObservationChecks.Key(result) == NativeBranchObservationChecks.Key(actual),
+                "EndTurn preview identity repair differs from full native successor/forecast/RNG.");
+        });
+        Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "EndTurn preview mutated native parent.");
+        Console.WriteLine("GREEN-RECRUIT-ENDTURN-IDENTITY PASS:35th-input counterexample and four immutable full-successor branches.");
+    }
+
+    internal static void EndTurnNative(FixtureValue source, FixtureValue? replay = null)
+    {
+        var rows = NativeBranchObservationChecks.Replay(source, EndTurnReason, EndTurnWitness);
+        Require(rows.Length == 35, "Missing independent35-input native observation.");
+        if (replay.HasValue)
+        {
+            NativeBranchObservationChecks.Replay(replay.Value, EndTurnReason);
+            NativeBranchObservationChecks.Pair(source, replay.Value, originalPredictionPresent: true);
+        }
+        Console.WriteLine("GREEN-RECRUIT-ENDTURN-IDENTITY NATIVE PASS:35 complete inputs/forecasts/RNG; independentPair=" + replay.HasValue);
+    }
+
+    private static void EndTurnWitness(BattleTurnState historical, BattleTurnState actual)
+    {
+        Require(historical.Spawn.Train.Context!.NextUnitId == 30 && actual.Spawn.Train.Context!.NextUnitId == 29 &&
+            historical.Spawn.Train.Context.SpawnPoints!.Units.Any(unit => unit.UnitId == 29 && unit.SpawnedInPreview) &&
+            actual.Spawn.Train.Context.SpawnPoints!.Units.All(unit => unit.UnitId != 29),
+            "Lost the extra unobserved preview identity29 after EndTurn.");
+    }
     internal static void Counterexample(FixtureValue fixture)
     {
         Require(fixture.GetProperty("Mismatches").GetInt32() == 1 &&

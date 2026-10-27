@@ -1,5 +1,18 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--green-recruit-endturn-counterexample-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    GreenRecruitPreviewIdentityChecks.EndTurnCounterexample(source.RootElement);
+    return;
+}
+if (args.Length is 2 or 3 && args[0] == "--green-recruit-endturn-identity-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    GreenRecruitPreviewIdentityChecks.EndTurnNative(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--green-recruit-preview-counterexample-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

@@ -64,7 +64,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static CombatContext ForgetUnobservedPlayers(TrainCombatState source, CombatContext preview,
-            int firstUnitId, int firstCardId, out int[] forgotten)
+            int firstUnitId, int firstCardId, IReadOnlyCollection<CombatUnit> observedBirths, out int[] forgotten)
         {
             forgotten = Array.Empty<int>();
             CombatContext context = source.Context!;
@@ -89,7 +89,8 @@ namespace MonsterTrain2Poju.Model
                 // Retain every other cardless birth until separately calibrated.
                 if (context.SummonCatalog != null) return preview;
                 CombatUnit[] births = world.Rooms.SelectMany(room => room.Units)
-                    .Concat(world.RetainedUnits.Select(actor => actor.Unit)).Where(unit => unit.Id >= firstUnitId).ToArray();
+                    .Concat(world.RetainedUnits.Select(actor => actor.Unit)).Concat(observedBirths)
+                    .Where(unit => unit.Id >= firstUnitId).GroupBy(unit => unit.Id).Select(group => group.First()).ToArray();
                 bool roomFallback = context.RoomCapacities?.SelectMany(room => room.Attachments ??
                     Array.Empty<RoomCapacityAttachmentState>()).Any(attachment =>
                         attachment.DataId == "e1a39d88-4a77-4399-98b2-0b81f44fe6a8" &&
@@ -102,10 +103,10 @@ namespace MonsterTrain2Poju.Model
                             Statuses: [{ Id: "horde", Stacks: 4 }], Filters.Subtype: "SubtypesData_Horde",
                             SpawnFallbackUnit: { AssetKey: "MonsterFunguy", BaseAttack: 3, Health: 4 } } }] }]);
                 if (!(roomFallback || recruitFallback) || births.Length != nextId - firstUnitId || births.Any(unit =>
-                    unit.Team != CombatTeam.Player || unit.AssetKey != "MonsterFunguy" || unit.SpawnerCardId != 0)) return preview;
+                    unit.Id >= nextId || unit.Team != CombatTeam.Player || unit.AssetKey != "MonsterFunguy" || unit.SpawnerCardId != 0)) return preview;
             }
             else if (context.SummonCatalog == null || nextId - firstUnitId != newCards.Length) return preview;
-            if (world.Rooms.SelectMany(room => room.Units).Concat(world.RetainedUnits.Select(actor => actor.Unit))
+            if (world.Rooms.SelectMany(room => room.Units).Concat(world.RetainedUnits.Select(actor => actor.Unit)).Concat(observedBirths)
                 .Any(unit => unit.Id >= firstUnitId && unit.Team != CombatTeam.Player ||
                     unit.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Enchantment != null))) return preview;
             var spawnerIds = (context.SummonCatalog?.Units ?? Array.Empty<SummonUnitDefinition>()).Where(unit => unit.Unit.Team == CombatTeam.Player && unit.Fallback != null)
