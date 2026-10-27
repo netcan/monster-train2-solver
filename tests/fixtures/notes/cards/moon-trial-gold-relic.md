@@ -17,4 +17,6 @@ nor changes the independently handled campaign gold calculation.
 All five full native successors/forecasts/RNG, four immutable parallel branches
 and six changed-owner/effect/flag controls pass. Existing BossEmber and null-boss
 Moon pairs and campaign arithmetic also pass. Independent repaired native replay
-and actual second-battle default-budget continuation remain pending.
+172743-2db21747 passes the same complete five-input states/forecasts/RNG. Both
+immutable archives retain the old rejection and new matching prediction.
+Actual second-battle default-budget continuation remains in progress.

@@ -207,6 +207,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-23-ring1-release240-budget10000-replay.mt2f',
     'player-underlegion-troop-upgrade-calibration.mt2f',
     'player-underlegion-troop-upgrade-replay-calibration.mt2f',
+    'player-moon-trial-gold-relic-calibration.mt2f',
+    'player-moon-trial-gold-relic-replay-calibration.mt2f',
     'player-targeted-damage-calibration.mt2f',
     'player-targeted-damage-replay-calibration.mt2f',
     'player-moon-burnout-relic-calibration.mt2f',
@@ -2716,6 +2718,17 @@ if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'pending-boss-loss-or
         (Get-TestFixturePath 'full-battle-random-campaign-13-ring7-release137-budget10000-loss.mt2f') `
         (Get-TestFixturePath 'full-battle-random-campaign-13-ring7-release137-refined-loss.mt2f') $fixtures[0]
     if ($LASTEXITCODE -ne 0) { throw 'Focused pending boss loss order check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-moon-trial-gold-relic-calibration.mt2f', 'player-moon-trial-gold-relic-replay-calibration.mt2f') }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Moon trial-gold checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --moon-trial-gold-relic-only `
+        (Get-TestFixturePath 'player-moon-trial-gold-relic-calibration.mt2f') `
+        (Get-TestFixturePath 'player-moon-trial-gold-relic-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Focused Moon trial-gold native pair failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-underlegion-troop-upgrade-calibration.mt2f', 'player-underlegion-troop-upgrade-replay-calibration.mt2f') }).Count -eq 0) {
