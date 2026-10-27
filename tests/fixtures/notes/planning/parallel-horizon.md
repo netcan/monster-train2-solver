@@ -26,3 +26,10 @@ Pyre5 and16 train stages. Its independent native reward replay matches every
 state/forecast/RNG transition, with all four failure counts zero. Normal58
 events produce Ring5 save6D2C913B9B0B265D24035AFE2B2F7AFE41B239C6AA684ABE9E24AA4729F4C062.
 This establishes a native passing baseline, not an improvement in surviving Pyre.
+
+The continued Ring5 default58-input/Pyre5 pair also passes17 train phases and
+complete states/forecasts/RNG. Normal39 events create Ring6 save
+8BA7C8C095F0000C8031B34D079CA12B8B53C5111BF055838DDAFD7B13251AE8.
+That branch's Ring6 default57-input/8-EndTurn native defeat leaves Cael1748HP;
+full state/forecast/RNG and all four zero failure counts pass. Both the victory
+pair and actual defeat are curated separately; there is no complete campaign win.
