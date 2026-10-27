@@ -75,3 +75,11 @@ still rejects captured interactions; the raw archive is unchanged.
 Source39056bytes/6567nodes/SHA256
 1b173e7ce742174d830745e698431303a4daecfb397d6936e78e37c0db90769a.
 Independent native replay and seventh-battle victory remain separate gates.
+
+Frozen285e711484e independently repeats the same20 inputs in native
+045501-29789c32 (84.56seconds). Full states, forecasts, RNG and unchanged
+requests match, with a supported forecast at the original rejected boundary.
+The registered gate always checks this pair. Replay39089bytes/6565nodes/SHA256
+8f13c6eb668006d4be911eb67ebea1e77f24378fcc0a4bee515efffc75f8f99b.
+Frozen checker SHA256
+e20bbf7055dee1ffd38494724ecc3e36efd78fe28a1ab71114a7cb5263c6b841.
