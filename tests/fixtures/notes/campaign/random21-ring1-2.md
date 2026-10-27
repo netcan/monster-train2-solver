@@ -30,3 +30,8 @@ candidates and no improvement. Resume fresh deployment at48; do not count any
 of these routes as native victories or replay unchanged samples.
 Release224 checks fresh deployment samples48..71:24 complete candidates,
 zero unsupported and no improvement. The next fresh deployment index is72.
+Bounded three-input refinement subsequently reaches166HP in43 inputs,
+with163 complete candidates and one strict improvement at input13. Full owned
+successor/forecast/RNG verification passes. A separate sweep starting13
+completes129 candidates through23 without improvement; the unfinished24th
+decision is retried by the next batch. These remain model losses.

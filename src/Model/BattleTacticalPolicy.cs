@@ -260,6 +260,17 @@ namespace MonsterTrain2Poju.Model
                 if (fixedAttacks.Length == 1 && unit.Status("fixedattack") == null)
                     value += (fixedAttacks[0].Stacks - (double)unit.Attack -
                         upgrades.Sum(upgrade => (double)upgrade.Stats.Damage)) * unit.Attacks;
+                // Each added strike deals the host's resulting attack. Without
+                // this term a pure Multistrike weapon was ranked only by floor
+                // preference, even when another legal host had three times the attack.
+                double addedStrikes = upgrades.SelectMany(upgrade => upgrade.Statuses)
+                    .Where(status => status.Id == "multistrike").Sum(status => (double)status.Stacks);
+                if (addedStrikes > 0 && fixedAttacks.Length <= 1 && unit.Status("fixedattack") == null)
+                {
+                    double attack = fixedAttacks.Length == 1 ? fixedAttacks[0].Stacks :
+                        unit.Attack + upgrades.Sum(upgrade => (double)upgrade.Stats.Damage);
+                    value += Math.Max(0, attack) * addedStrikes;
+                }
                 return value;
             }
         }

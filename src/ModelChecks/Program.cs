@@ -1,5 +1,17 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--multistrike-equipment-target-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    MultistrikeEquipmentTargetChecks.Native(source.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--multistrike-equipment-alternative-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    MultistrikeEquipmentTargetChecks.Alternative(source.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--relentless-companion-bump-counterexample-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6942,6 +6954,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-rel
 {
     using var source = ModelJson.ReadFixture(path);
     RelentlessCompanionBumpChecks.Counterexample(source.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-multistrike-equipment-target-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var counterexample = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-random-campaign-20-ring6-release223-budget10000-loss.mt2f"));
+    MultistrikeEquipmentTargetChecks.Native(counterexample.RootElement);
+    MultistrikeEquipmentTargetChecks.Alternative(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-relentless-companion-bump-calibration.mt2f"))
 {

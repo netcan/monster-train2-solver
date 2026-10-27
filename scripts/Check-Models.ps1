@@ -527,6 +527,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-ephemeral-equipment-counterexample-calibration.mt2f',
     'player-ephemeral-equipment-calibration.mt2f',
     'player-ephemeral-equipment-replay-calibration.mt2f',
+    'player-multistrike-equipment-target-calibration.mt2f',
     'player-harvest-angel-moon-birth-calibration.mt2f',
     'harvest-angel-moon-creation-calibration.mt2f',
     'player-harvest-angel-moon-birth-replay-calibration.mt2f',
@@ -2092,6 +2093,18 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -ne 'p
         (Get-TestFixturePath 'player-ascend-deferred-destruction-counterexample-calibration.mt2f') `
         (Get-TestFixturePath 'full-battle-random-campaign-20-ring3-release215-budget10000-search.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Focused Ascend destruction checks failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -ne 'player-multistrike-equipment-target-calibration.mt2f' }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Multistrike equipment target checker build failed.' }
+    }
+    $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
+    dotnet $checker --multistrike-equipment-target-only (Get-TestFixturePath 'full-battle-random-campaign-20-ring6-release223-budget10000-loss.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Multistrike equipment target counterexample failed.' }
+    dotnet $checker --multistrike-equipment-alternative-only (Get-TestFixturePath 'player-multistrike-equipment-target-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Native Multistrike equipment alternative failed.' }
     return
 }
 $relentlessCompanionBumpNames = @('player-relentless-companion-bump-counterexample-calibration.mt2f', 'player-relentless-companion-bump-calibration.mt2f', 'player-relentless-companion-bump-replay-calibration.mt2f')
