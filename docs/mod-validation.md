@@ -1,6 +1,26 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.240, source`4804129a`.
+Current Windows installation:0.2.245, source`dae5fa35`.
+Installed at18:37 with67 protected save/config/other-mod files unchanged.
+The exact accepted three DLLs win sample23 Ring3 with actual10000ms/two-worker
+advice:37inputs/28plays/9EndTurns,Pyre75. Independent normal-reward replay
+matches every full root/successor/forecast/RNG and17 train phases per process,
+with four zero counters.58 normal events create Ring4 save
+8DDF1A2A36B7F3B0E32F1E964711EA3B327AC7BF2747FE49F2952AF9FFED3D7F.
+Source182157-136dc51f and replay182617-be076140 bind the same payload hashes.
+Package`results/mod-dist/PojuAdvisor-0.2.245-Windows-20261027-183739.zip`,SHA256
+`817C4B459FCB80DBA77342961A85629B40DF7297EC085895A7004823CF28395B`.
+The real game was stopped; isolated native workers use their copied payloads.
+Next launch loads245. Previous DLLs and receipt are under
+`BepInEx/PojuBackups/RandomCampaign-20261027-183739/`.
+This adds241-245 trial-reward/consumed-curse Moon compatibility, triple-Juice
+Starstruck and full-moon Dazed, mixed Arkion trigger relics, queued/fallback
+unit copy-catalog capture and Green Recruit's remote preview retirement.
+The first three default-budget victories form one accepted native save chain,
+with the prior completed profile's21 tracked values retained. Ring4 continues
+independent acceptance. No complete default-budget campaign is claimed.
+
+Previous Windows installation:0.2.240, source`4804129a`.
 Installed at17:23 with67 protected save/config/other-mod files unchanged.
 The exact accepted three DLLs win sample23 Ring1 with actual10000ms/two-worker
 advice:38inputs/31plays/7EndTurns,Pyre80. Independent normal-reward replay
