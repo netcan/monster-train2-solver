@@ -128,3 +128,18 @@ all97 hashed members restore. The unchanged six-ring mixed checkpoint chain
 passes with explicit AllowRefinedRoutes. The default loss remains separately
 preserved, and this win is not a default-budget search or eight-battle clear.
 Ring7 proceeds on release262 with actual10000ms/two-worker player advice.
+
+After calibrating Athane's original single-rock summon pool, release265 Ring7
+source20261028-000853-a710660b and independent normal campaign replay
+001637-fa361cf1 win with57 inputs/47 plays/10 EndTurns and Pyre43. Complete
+roots/successors/forecasts/RNG and all19 train phases per process match;
+four raw failure counters remain zero. The actual10000ms/two-worker source
+passes59 publications/445 captures/zero purity failures and1137 mask contexts.
+Normal58 reward/map events create Ring8 save SHA256
+0DF26C608CF6EA2907ED6D53FADBFD4701A46D9D841AF0EE199A5F4704C437D0.
+random24-ring8-default265.zip contains102 files, SHA256
+9F78F5F5700776CC8515EE986406B5227A5CEBBEE63ADBC09118162580BC09BD;
+all101 hashed members restore. The seven-ring unchanged mixed checkpoint
+chain passes with AllowRefinedRoutes. Ring6 remains an offline refinement;
+Ring7 is an actual default-budget win. Ring8 is still under native acceptance,
+so neither an eight-battle clear nor an all-default clear is claimed.
