@@ -113,3 +113,18 @@ candidate, which is not exported. A separate middle/late-input batch follows;
 the2-HP route is not claimed as a native victory.
 Sample25 Underlegion/Pyreborne1860103187 starts naturally from the settled
 defeat profile, preserving its metagame rather than resetting to an older run.
+
+A later bounded batch completes31 candidates with zero unknowns and finds a
+41-input/30-play/11-EndTurn win with Pyre12. The native release261 source
+225855-d57114c6 and independent normal campaign replay230300-4d0f5017 both
+win with those unchanged frozen inputs, zero search nodes/publications,
+22 matching train phases per process and all complete states/forecasts/RNG.
+Both pass four zero counters and are bound to the same offline prediction.
+Normal44 reward/map events create Ring7 save
+171427A1B7693C8575BCC3D316B32E9E785DBECAF0EFC6E1B00322A2D58F0052.
+random24-ring7-refined261.zip has98 files, SHA256
+80B195E5E7845C593C0FB6530B710A4A689EC1990615B7CFFB43B6FF6A86C8EE;
+all97 hashed members restore. The unchanged six-ring mixed checkpoint chain
+passes with explicit AllowRefinedRoutes. The default loss remains separately
+preserved, and this win is not a default-budget search or eight-battle clear.
+Ring7 proceeds on release262 with actual10000ms/two-worker player advice.

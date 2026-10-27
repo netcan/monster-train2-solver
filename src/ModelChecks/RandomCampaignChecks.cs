@@ -7,6 +7,22 @@ internal static class RandomCampaignChecks
 {
     internal static void Curated(string path)
     {
+        if (Path.GetFileName(path) == "full-battle-random-campaign-24-ring6-refined261-search.mt2f")
+        {
+            using var native = ModelJson.ReadFixture(path);
+            using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
+            RefinedPair(native.RootElement, replay.RootElement, 1122120878, 0, 5, "Banished", "Hellhorned", 41);
+            foreach (var fixture in new[] { native.RootElement, replay.RootElement })
+            {
+                var rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+                var final = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                Require(rows.Count(row => row.GetProperty("IsEndTurn").GetBoolean()) == 11 &&
+                    rows.All(row => row.GetProperty("Mode").GetString() == "replay" && row.GetProperty("Nodes").GetInt32() == 0) &&
+                    final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 12,
+                    "Sample24 Ring6 refinement changed41 frozen inputs/11EndTurns or native Pyre12.");
+            }
+            return;
+        }
         if (Path.GetFileName(path) == "full-battle-random-campaign-24-ring6-release261-budget10000-settled-loss.mt2f")
         {
             using var native = ModelJson.ReadFixture(path);
