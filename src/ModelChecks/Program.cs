@@ -7526,10 +7526,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-moon-conduit-birth-order-replay-calibration.mt2f"));
     MoonConduitBirthOrderChecks.Native(source.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) == "player-cael-moon-null-relic-calibration.mt2f"))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-cael-moon-null-relic-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-cael-moon-null-relic-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var source = ModelJson.ReadFixture(path);
-    CaelMoonNullRelicChecks.Native(source.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-cael-moon-null-relic-replay-calibration.mt2f"));
+    CaelMoonNullRelicChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-moon-null-boss-relic-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-moon-null-boss-relic-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

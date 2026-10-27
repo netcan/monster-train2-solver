@@ -13,6 +13,8 @@ the existing independent-relic path. It does not bypass global relic, card,
 Moon or Conduit validation. Four complete native inputs/forecasts/RNG, four
 immutable branches and seven owner/asset/Covenant/placement/effect guards
 pass. The earlier11-input ImmortalMass null-owner independent pair remains
-valid. A fixed-build independent native replay is pending. This capture
+valid. Frozen release251 replay195427-0f117f10 independently matches all
+four native inputs, complete state, forecasts and RNG. The original refusal
+and independent repaired prediction are both retained. This capture
 does not establish a Ring6 victory; later room-copy/generated-birth policy
 branches still require isolated calibration.
