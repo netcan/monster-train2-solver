@@ -6831,6 +6831,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-asc
     using var settled = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "full-battle-random-campaign-20-ring3-release215-budget10000-search.mt2f"));
     AscendDestructionBoundaryChecks.Native(original.RootElement, settled.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-rank-three-room-slay-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-rank-three-room-slay-replay-calibration.mt2f"));
+    RankThreeRoomSlayChecks.Native(source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-remnant-pact-copy-calibration.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
