@@ -328,6 +328,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-pyregel-powerstone-juice-replay-calibration.mt2f',
     'player-pyregel-powerstone-juice-cast-calibration.mt2f',
     'player-inactive-fragile-moon-birth-calibration.mt2f',
+    'player-inactive-fragile-inferno-exit-calibration.mt2f',
     'player-inactive-fragile-moon-birth-replay-calibration.mt2f',
     'player-pyregel-juice-replay-calibration.mt2f',
     'player-pyregel-juice-cast-calibration.mt2f',
@@ -2171,6 +2172,15 @@ if ($Fixture.Count -gt 0) {
 }
 # Explicit selections for this composition have complete dedicated gates.
 # Avoid starting all unrelated pure checks before a component-only request.
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -ne 'player-inactive-fragile-inferno-exit-calibration.mt2f' }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Inactive Fragile Inferno exit checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --inactive-fragile-inferno-exit-only (Get-TestFixturePath 'player-inactive-fragile-inferno-exit-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Inactive Fragile Inferno exit native check failed.' }
+    return
+}
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-third-troop-fragile-buff-calibration.mt2f', 'player-third-troop-fragile-buff-replay-calibration.mt2f') }).Count -eq 0) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q

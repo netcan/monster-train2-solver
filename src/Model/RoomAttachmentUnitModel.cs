@@ -213,6 +213,21 @@ namespace MonsterTrain2Poju.Model
                         if (!ApplyUpgrade(ref currentRoom, currentUnit.Id, removed, upgrade, remove: true, out string? error))
                             return Fail(error!);
                     }
+                    if (state.Context?.QueryFrame is { MoonPhaseTrackingActive: false, MoonPhase: 1 or 2 } inactive &&
+                        previousUnit is { AssetKey: "Boss_Level8_Fragile", Team: CombatTeam.Enemy, MaxHealth: 3000, MoonPhaseMask: 6 })
+                    {
+                        if (removed is not { AssetKey: "InfernoRoom", DataId: "378cea0c-14e9-45fb-9918-fb853bd04a7d", CharacterUpgrades.Count: 1,
+                                PreCombat: { } preCombat } || RoomPreCombatModel.Validate(preCombat) != null ||
+                            removed.CharacterUpgrades[0] is not { AssetKey: "InfernoRoom", DataId: "96547940-8feb-4f73-b147-c763a64161c2" } original ||
+                            new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }.Any(stat => original.Stats.Value(stat) != 0) ||
+                            original.Statuses.Count != 0 || original.ExternalInteractions.Count != 0 || original.TriggerUpgrades?.Count > 0 || original.AbilityUpgrade != null ||
+                            oldRoom.Preview || newRoom.Preview || currentUnit.Triggers.Any(trigger => trigger.Kind is
+                                "OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or "OnMoonshadeLost"))
+                            return Fail("Inactive Fragile room-exit moon understanding requires native calibration.");
+                        int mask = (previousUnit.MoonPhaseMask.Value & ~3) | inactive.MoonPhase.Value;
+                        currentRoom = currentRoom.WithUnits(currentRoom.Units.Select(unit => unit.Id == currentUnit.Id
+                            ? unit.WithMoonPhaseMask(mask) : unit).ToArray());
+                    }
                     state = WithRoom(state, currentRoom);
                     currentUnit = currentRoom.Units.Single(unit => unit.Id == previousUnit.Id);
                 }
