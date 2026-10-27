@@ -52,5 +52,6 @@ Its complete owned state/forecast/RNG replay passes. A later wider diverse
 batch completes329 candidates without improvement. The148HP native archive
 remains the latest actual refined loss;142HP is not native acceptance.
 
-Fresh deployment samples96..143 add48 complete routes with no unsupported or
-improvement. Resume fresh deployment at144; retain the142HP model baseline.
+Fresh deployment samples96..143 and144..191 each add48 complete routes with
+no unsupported or improvement. Resume fresh deployment at192; retain the142HP
+model baseline.
