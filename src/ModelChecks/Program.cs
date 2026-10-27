@@ -577,6 +577,13 @@ if (args.Length is 2 or 3 && args[0] == "--moon-advance-consume-only")
     else { using var replay = ModelJson.ReadFixture(args[2]); MoonAdvanceConsumeChecks.Native(source.RootElement, replay.RootElement); }
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--mirrored-horde-birth-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) MirroredHordeBirthChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); MirroredHordeBirthChecks.Native(source.RootElement, replay.RootElement); }
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--cael-moon-null-relic-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
