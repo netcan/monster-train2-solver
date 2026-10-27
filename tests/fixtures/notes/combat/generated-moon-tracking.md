@@ -61,3 +61,17 @@ counterexample. Replay36795bytes/6019nodes/SHA256
 e1cfa853ed8a20d33fede7f84038a76ec4ee6f640c960116ecaccdd0f97fec68.
 Frozen checker SHA256
 28d46b26bca9bd895b18d9ab47fe837e93aeb18161fd6088cc3221d25c6b4fbb.
+
+285 accepts the first subsequent tracked transition when each captured living
+unit's prior phase bits match the current phase, even when the midbattle reset
+has not added a phase status. Contradictory statuses or captured bits still
+reject; legacy omitted masks still require their original status evidence.
+Native044122-cf660e52 preserves all20 inputs: Full/turn3 with Dusk Mantle38
+equipped on Truffles6 advances to New/turn4. All full successors, forecasts and
+RNG match, with four immutable EndTurn branches and a conflicting-mask control.
+The original capture stored the old validation refusal in ExternalInteractions;
+only the checker revalidates and removes that exact historical field. Production
+still rejects captured interactions; the raw archive is unchanged.
+Source39056bytes/6567nodes/SHA256
+1b173e7ce742174d830745e698431303a4daecfb397d6936e78e37c0db90769a.
+Independent native replay and seventh-battle victory remain separate gates.

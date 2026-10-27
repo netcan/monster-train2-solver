@@ -5,6 +5,56 @@ using MonsterTrain2Poju.Model;
 
 internal static class GeneratedMoonTrackingChecks
 {
+    internal static void FirstTransition(FixtureValue source, FixtureValue? replay = null)
+    {
+        const string reason = "Moon-phase callbacks require known prior unit phase masks.";
+        BattleTurnState Recapture(BattleTurnState state)
+        {
+            if (!state.ExternalInteractions.Contains(reason)) return state;
+            Require(!BattleTurnModel.EndTurn(state).Supported, "Historical captured guard must remain effective.");
+            Require(MoonPhaseTransitionModel.Validate(state.Spawn.Train,
+                new CardActionEffect("AdvanceMoonPhase", "Room", 1, false, false, []), 0,
+                playerActionOnly: false) == null, "Historical capture does not match the calibrated phase signature.");
+            var node = JsonSerializer.SerializeToNode(state, ModelJson.Options)!;
+            node["ExternalInteractions"] = JsonSerializer.SerializeToNode(state.ExternalInteractions.Where(value => value != reason).ToArray());
+            var captured = node.Deserialize<BattleTurnState>(ModelJson.Options)!;
+            Require(NativeBranchObservationChecks.Key(captured) == NativeBranchObservationChecks.Key(state),
+                "Historical revalidation changed native state/RNG.");
+            return captured;
+        }
+        var rows = NativeBranchObservationChecks.Replay(source, reason, revalidateHistoricalCapture: Recapture, normalizeComparison: CaptureKey,
+            matchesRequestCapture: CapturesEquivalent);
+        Require(rows.Length == 20 && rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Wrong first tracked moon transition boundary.");
+        var before = Recapture(rows[^1].GetProperty("Before").Deserialize<BattleTurnState>()!);
+        var actual = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        var train = before.Spawn.Train;
+        Require(before.Spawn.Turn == 3 && before.MoonPhase == "Full" && before.MoonPhaseTrackingActive == true &&
+            train.Rooms.SelectMany(room => room.Units).All(unit => unit.MoonPhaseMask == 2 &&
+                unit.Status("newmoon") == null && unit.Status("fullmoon") == null) &&
+            train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == 6 && unit.EquipmentCards!.Contains(38)) &&
+            actual.Spawn.Turn == 4 && actual.MoonPhase == "New" && actual.MoonPhaseTrackingActive == true,
+            "Missing original Dusk Mantle reset/first phase-change witness.");
+        string immutable = JsonSerializer.Serialize(before, ModelJson.Options);
+        Parallel.For(0, 4, _ =>
+        {
+            var result = BattleTurnModel.EndTurn(before);
+            Require(result.Supported && NativeBranchObservationChecks.Key(result.State!) == NativeBranchObservationChecks.Key(actual),
+                "First tracked phase change differs from full native state/RNG.");
+        });
+        Require(immutable == JsonSerializer.Serialize(before, ModelJson.Options), "First tracked phase change mutated its parent.");
+        var changed = JsonSerializer.SerializeToNode(train, ModelJson.Options)!;
+        changed["Rooms"]![0]!["Units"]![0]!["MoonPhaseMask"] = 1;
+        Require(MoonPhaseTransitionModel.Validate(changed.Deserialize<TrainCombatState>(ModelJson.Options)!,
+            new CardActionEffect("AdvanceMoonPhase", "Room", 1, false, false, []), 0, playerActionOnly: false) == reason,
+            "Contradictory prior understanding was accepted.");
+        if (replay.HasValue)
+        {
+            NativeBranchObservationChecks.Replay(replay.Value, reason, normalizeComparison: CaptureKey,
+                matchesRequestCapture: CapturesEquivalent);
+            NativeBranchObservationChecks.Pair(source, replay.Value);
+        }
+        Console.WriteLine("GENERATED-MOON-FIRST-TRANSITION PASS:20 native inputs/full successors/forecasts/RNG; captured Full understanding without old phase statuses advances to New with Dusk Mantle callbacks; four immutable branches/conflicting-mask guard; independentPair=" + replay.HasValue);
+    }
     internal static void InactiveRoomAttachment(FixtureValue source)
     {
         Require(source.GetProperty("Schema").GetInt32() == 1 &&

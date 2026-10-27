@@ -59,8 +59,11 @@ namespace MonsterTrain2Poju.Model
                 int oldPhase = frame.MoonPhase.Value;
                 string oldStatus = oldPhase == 1 ? "newmoon" : "fullmoon";
                 string otherStatus = oldPhase == 1 ? "fullmoon" : "newmoon";
+                // Midbattle tracking reset updates understanding without adding
+                // phase statuses. Prefer captured bits; keep legacy status proof.
                 if (!roomMasks && source.Rooms.SelectMany(room => room.Units).Where(unit => !unit.IsPyre && unit.Health > 0)
-                    .Any(unit => unit.Status(oldStatus)?.Stacks != 1 || unit.Status(otherStatus) != null))
+                    .Any(unit => unit.Status(otherStatus) != null || (unit.MoonPhaseMask.HasValue
+                        ? (unit.MoonPhaseMask.Value & 3) != oldPhase : unit.Status(oldStatus)?.Stacks != 1)))
                     return "Moon-phase callbacks require known prior unit phase masks.";
                 string? trainError = TrainCombatModel.Validate(source);
                 if (trainError != null) return trainError;
