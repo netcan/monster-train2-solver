@@ -34,11 +34,15 @@ internal static partial class OfflineBattleSearch
         var route = fixture.GetProperty("RollingDecisions").EnumerateArray().Select(row => new Step {
             Action = row.GetProperty("Action").Deserialize<PlayCardAction>(),
             IsEndTurn = row.GetProperty("IsEndTurn").GetBoolean() }).ToArray();
-        var deployment = route.TakeWhile(step => !step.IsEndTurn).ToArray();
-        Require(deployment.Length is >= 1 and <= 32 && deployment.All(step => step.Action is { ActivatorUnitId: 0 } action &&
-            root.PlayRules!.Cards.Single(rule => rule.DataId == root.Spawn.Train.Context!.CardInstances!
-                .Single(card => card.InstanceId == action.CardInstanceId).DataId).SpawnUnit != null),
-            "Expected one to32 initial unit plays before the first EndTurn.");
+        var opening = route.TakeWhile(step => !step.IsEndTurn).ToArray();
+        bool UnitPlay(Step step) => step.Action is { ActivatorUnitId: 0 } action &&
+            root.PlayRules!.Cards.FirstOrDefault(rule => rule.DataId == root.Spawn.Train.Context!.CardInstances!
+                .FirstOrDefault(card => card.InstanceId == action.CardInstanceId)?.DataId)?.SpawnUnit != null;
+        var deployment = opening.TakeWhile(UnitPlay).ToArray();
+        var closing = opening.Skip(deployment.Length).ToArray();
+        Require(deployment.Length is >= 1 and <= 32 && closing.Length <= 32 && closing.All(step =>
+            step.Action is { ActivatorUnitId: 0 } && !UnitPlay(step)),
+            "Expected one to32 initial unit plays, optionally followed by up to32 fixed ordinary card inputs.");
         var bestFinal = fixture.GetProperty("Final").Deserialize<BattleTurnState>()!;
         var bestOutcome = (RoomOutcome)fixture.GetProperty("Outcome").GetInt32();
         Require(bestOutcome == RoomOutcome.PlayerDefeated, "Deployment investigation requires a complete losing baseline.");
@@ -107,7 +111,23 @@ internal static partial class OfflineBattleSearch
             var steps = placement.ToList();
             var current = state;
             var outcome = RoomOutcome.Exchanged;
-            int played = deployment.Length;
+            // Keep the original spell sequence after the joint placements.
+            // Each spell is reapplied to this exact branch; invalid targets or
+            // costs discard the candidate, and unknown mechanics retain their
+            // reproducible native boundary. Never substitute another target.
+            foreach (var step in closing)
+            {
+                var result = BattleActionModel.PlayCard(current, step.Action!);
+                if (!result.Supported)
+                {
+                    if (result.Rejection == ActionRejection.Unsupported) Rejected(result.Reason, step.Action, current, steps);
+                    return true;
+                }
+                current = result.State!; outcome = result.Outcome;
+                steps.Add(step);
+                if (Terminal(outcome)) break;
+            }
+            int played = steps.Count;
             int floor = current.Spawn.Train.Rooms.FirstOrDefault(room => room.Units.Any(unit =>
                 unit.Team == CombatTeam.Player && unit.Health > 0 && unit.Modifiers?.IsChampion == true))?.RoomIndex ?? 2;
             while (!Terminal(outcome) && steps.Count < 256 && !Expired())
@@ -234,7 +254,7 @@ internal static partial class OfflineBattleSearch
                 "Independent deployment export changed its terminal state/RNG.");
         }
         Console.WriteLine($"DEPLOYMENT-GRID foundWin={bestOutcome == RoomOutcome.BattleWon} units={deployment.Length} candidates={candidates} " +
-            $"completed={completed} duplicates={duplicates} unsupported={unsupported} improvements={improvements} " +
+            $"completed={completed} duplicates={duplicates} unsupported={unsupported} improvements={improvements} fixedOpeningCards={closing.Length} " +
             $"firstRoom={firstRoom?.ToString() ?? "any"} timedOut={Expired()} candidateLimit={candidates >= maxCandidates} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}" +
             (spread ? $" startSample={startSample} nextSample={nextSample} spreadSamples={samples} sampleLimit={samples >= maxCandidates * 16}" : "") + "; model prediction only.");
     }

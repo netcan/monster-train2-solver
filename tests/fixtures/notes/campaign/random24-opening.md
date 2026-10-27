@@ -155,3 +155,19 @@ The untouched Ring8 checkpoint remains available for bounded offline route
 investigation. The full first turn contains a spell as well as unit deployment,
 so the unit-only deployment-grid guard correctly rejects that baseline;
 mixed action-order exploration proceeds instead.
+
+The first mixed action-order batch examines197 candidates/196 complete and
+zero unknowns, preserving two improvements in a27-input complete model loss.
+The unfinished candidate is not exported. DeploymentGrid now also permits
+up to32 unchanged ordinary card inputs after its initial unit-only sequence:
+it reapplies each closing spell to every candidate and rejects invalid targets,
+costs or unknown effects without inventing replacements. Joint placements
+remain the only enumerated inputs, and interleaved later unit plays keep the
+explicit scope guard. The full30-placement grid completes with zero unknowns
+and two improvements to a35-input complete model loss; no native win is claimed.
+`scripts/Check-OfflineDeploymentOpening.ps1` checks eight complete placements
+from the preserved native final-battle counterexample, the exact fixed Arena
+input, independent complete replay/forecast/RNG, an independently legal but
+out-of-scope interleaved opening, and existing-output/native-source protection.
+An old four-unit opening also produces the same single complete candidate,
+zero unknowns/improvements and no export under both old and new tools.
