@@ -15,6 +15,16 @@ and captures a world for cards carrying the known upgrade. Nested aura upgrades
 retain their owner identity; stacked/incompatible inherited auras stay guarded.
 
 The original rejected birth now replays full state/forecast/RNG, with eight
-immutable parallel branches and nine changed-signature controls. Independent
-repaired native birth and positive troop growth/loss acceptance are pending.
-This component result alone is not a native battle or campaign win.
+immutable parallel branches and nine changed-signature controls. The independent
+repaired native birth (171826-09091baf) also replays fully. The checker proves
+that the newly captured automatic world is the sole old/new capture difference;
+runtime comparison keeps every new field. Both immutable archives are curated.
+
+The default10000ms/two-worker sample23 Ring1 now passes two independent native
+wins:38 inputs/31 card plays/7 EndTurns, Pyre80,13 train phases and complete
+states/forecasts/RNG, with all four failure counts zero. Natural EagerConscript
+and Harvest increase the troop from1 to19 stacks; maximum health progresses
+5->10->...->95 with one owner-identity +1HP upgrade per stack. Original Squad
+Leader birth/growth/loss/departure and last-troop regressions also pass.
+This first battle does not yet establish a campaign clear; new-aura loss and
+combined enchantment order remain separate boundaries unless witnessed.

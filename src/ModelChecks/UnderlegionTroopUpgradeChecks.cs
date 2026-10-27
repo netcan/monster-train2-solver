@@ -48,9 +48,47 @@ internal static class UnderlegionTroopUpgradeChecks
         }
         if (replay is FixtureValue second) {
             NativeBranchObservationChecks.Replay(second, CardCorruptionAttackUpgradeModel.Guard);
-            NativeBranchObservationChecks.Pair(source, second);
+            CapturePair(source, second);
         }
         Console.WriteLine("UNDERLEGION-TROOP-UPGRADE PASS: natural champion birth/full successor/forecast/RNG; inherited health-per-troop aura/cache; eight immutable branches; nine changed-signature guards; independentPair=" + replay.HasValue);
+    }
+
+    private static void CapturePair(FixtureValue source, FixtureValue replay)
+    {
+        // The old recorder omitted the automatic world for an upgrade-owned aura.
+        // First replay both full observations above. Then prove that this one
+        // newly captured field is the only historical difference; runtime keys
+        // and acceptance retain the entire new world without normalization.
+        var oldRow = source.GetProperty("Rows").EnumerateArray().Single();
+        var newRow = replay.GetProperty("Rows").EnumerateArray().Single();
+        foreach (string field in new[] { "Before", "Actual" }) {
+            var oldState = oldRow.GetProperty(field).Deserialize<BattleTurnState>()!;
+            var newState = newRow.GetProperty(field).Deserialize<BattleTurnState>()!;
+            Require(oldState.Spawn.Train.Context!.Enchantments == null &&
+                oldState.Spawn.Train.Rooms.All(room => room.Context!.Enchantments == null) &&
+                newState.Spawn.Train.Context!.Enchantments is { AutomaticLifecycle: true, EnchanterIds.Count: 0 },
+                "Unexpected historical world capture boundary.");
+            var node = JsonSerializer.SerializeToNode(newState, ModelJson.Options)!;
+            var train = node["Spawn"]!["Train"]!;
+            var contexts = new[] { train["Context"]! }.Concat(train["Rooms"]!.AsArray().Select(room => room!["Context"]!));
+            foreach (var context in contexts) context["Enchantments"] = null;
+            Require(NativeBranchObservationChecks.Key(node.Deserialize<BattleTurnState>(ModelJson.Options)!) ==
+                NativeBranchObservationChecks.Key(oldState), "Native state changed beyond newly captured automatic world.");
+        }
+        var oldRequest = JsonSerializer.SerializeToNode(source.GetProperty("Request").ToObjectGraph())!;
+        var newRequest = JsonSerializer.SerializeToNode(replay.GetProperty("Request").ToObjectGraph())!;
+        foreach (string field in new[] { "Root", "FailedRoot" }) {
+            Require(source.GetProperty("Request").GetProperty(field).ContentEquals(oldRow.GetProperty("Before")) &&
+                replay.GetProperty("Request").GetProperty(field).ContentEquals(newRow.GetProperty("Before")),
+                "Birth request does not bind its own native root.");
+            newRequest[field] = oldRequest[field]!.DeepClone();
+        }
+        Require(JsonNode.DeepEquals(oldRequest, newRequest) &&
+            oldRow.GetProperty("Expected").ValueKind == FixtureKind.Null &&
+            newRow.GetProperty("Expected").ValueKind == FixtureKind.Object &&
+            newRow.GetProperty("UnsupportedReason").ValueKind == FixtureKind.Null &&
+            oldRow.GetProperty("Action").ContentEquals(newRow.GetProperty("Action")),
+            "Independent capture changed request/input or erased the old rejection.");
     }
 
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }

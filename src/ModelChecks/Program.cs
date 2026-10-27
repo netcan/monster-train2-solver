@@ -7706,6 +7706,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-corruption-attack-upgrade-replay-calibration.mt2f"));
     CardCorruptionAttackUpgradeChecks.Native(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-underlegion-troop-upgrade-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-underlegion-troop-upgrade-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-underlegion-troop-upgrade-replay-calibration.mt2f"));
+    UnderlegionTroopUpgradeChecks.Native(source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-unbox-relic-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-unbox-relic-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
