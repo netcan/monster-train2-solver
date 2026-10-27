@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--echo-juice-lower-preview-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    EchoJuiceLowerPreviewChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 or 4 && args[0] == "--echo-just-cause-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6665,6 +6672,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-com
     CombatVictoryStatisticsChecks.Native(fixture.RootElement, replay.RootElement, retention.RootElement);
     RoomCombatChecks.NativeRoomOnly(path);
     RoomCombatChecks.NativeRoomOnly(ModelJson.RelatedFixture(path, "player-combat-victory-cache-retention-counterexample-calibration.mt2f"));
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-juice-middle-preview-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    EchoJuiceLowerPreviewChecks.Native(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-just-cause-copy-calibration.mt2f"))
 {

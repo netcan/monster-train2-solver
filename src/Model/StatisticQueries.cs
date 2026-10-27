@@ -52,6 +52,9 @@ namespace MonsterTrain2Poju.Model
         public bool ActiveBattle { get; }
         public int? SelectedRoomIndex { get; }
         public ForcedRelentlessCounters? ForcedRelentless { get; }
+        // Internal preview input. Native heal previews read live SaveData HP,
+        // even after an earlier preview room has changed the Pyre copy.
+        internal int? PreviewTowerHealth { get; private set; }
         public StatisticQueryFrame(int? energy = null, bool? runningCombat = null, int? turn = null, int? forgePoints = null,
             int? dragonsHoard = null, int? moonPhase = null, int? pyreResurrectionCount = null, bool activeBattle = true,
             int? selectedRoomIndex = null, bool? moonPhaseTrackingActive = null,
@@ -73,7 +76,14 @@ namespace MonsterTrain2Poju.Model
                 activeBattle ?? ActiveBattle, selectedRoomIndex ?? SelectedRoomIndex,
                 moonPhaseTrackingActive ?? MoonPhaseTrackingActive, forgeTrackingActive ?? ForgeTrackingActive,
                 forgeToggleActive ?? ForgeToggleActive, grosMichelCombatRoundCount ?? GrosMichelCombatRoundCount,
-                forcedRelentless ?? ForcedRelentless);
+                forcedRelentless ?? ForcedRelentless) { PreviewTowerHealth = PreviewTowerHealth };
+
+        internal StatisticQueryFrame WithPreviewTowerHealth(int? health)
+        {
+            var changed = With();
+            changed.PreviewTowerHealth = health;
+            return changed;
+        }
 
         internal static string? ValidateDecision(BattleTurnState state)
         {

@@ -54,12 +54,13 @@ namespace MonsterTrain2Poju.Model
             {
                 // PreviewCardRecast fires OnCast too. The native heal writes
                 // preview Pyre HP from live tower HP and ignores the live heal
-                // prohibition. Limit this witness to the top-floor Echo with
-                // an untouched, otherwise empty Pyre room above it.
+                // prohibition. Use the HP at preview entry, not the copy that
+                // earlier preview rooms may already have damaged or healed.
                 RoomCombatState? tower = state.Rooms.SingleOrDefault(value => value.RoomIndex == 3);
                 CombatUnit? pyre = tower?.Units.SingleOrDefault(value => value.IsPyre);
-                if (roomIndex != 2 || tower?.Units.Count != 1 || pyre == null || pyre.Triggers.Count != 0)
-                    return Unsupported("Triple Juice Echo preview requires its calibrated empty Pyre room above the top floor.");
+                int? liveHealth = state.Context!.QueryFrame?.PreviewTowerHealth;
+                if (roomIndex is not (1 or 2) || tower?.Units.Count != 1 || pyre == null || pyre.Triggers.Count != 0 || !liveHealth.HasValue)
+                    return Unsupported("Triple Juice Echo preview requires its captured live Pyre HP and empty Pyre room.");
                 StatisticQueryResult paid = StatisticQueryModel.Evaluate(state.Context!,
                     new CardStatisticQuery("UnmodifiedPlayedCost", variableCost: true), cardId);
                 if (!paid.Supported) return Unsupported(paid.UnsupportedReason!);
@@ -67,7 +68,7 @@ namespace MonsterTrain2Poju.Model
                 if (!maximum.Supported) return Unsupported(maximum.UnsupportedReason!);
                 state = CardSpellModel.WithContext(state, paid.Context!);
                 var healed = EnchantmentWorldModel.Sync(tower!.WithContext(state.Context!).WithUnits(new[] {
-                    pyre.WithHealth(Math.Min(maximum.Value, unchecked(pyre.Health + paid.Value))) }));
+                    pyre.WithHealth(Math.Min(maximum.Value, unchecked(liveHealth.Value + paid.Value))) }));
                 state = new TrainCombatState(state.Rooms.Select(value => value.RoomIndex == 3 ? healed : value).ToArray(),
                     state.Movement, state.EnemySlotsPerRoom, healed.Context);
             }

@@ -13,6 +13,9 @@ namespace MonsterTrain2Poju.Model
         {
             CombatContext? context = source.Context;
             if (context?.Statistics == null) return new TrainCombatResult(source, RoomOutcome.Exchanged, Array.Empty<RoomCombatResult>());
+            if (context.QueryFrame != null)
+                context = context.WithQueryFrame(context.QueryFrame.WithPreviewTowerHealth(
+                    source.Rooms.SelectMany(room => room.Units).SingleOrDefault(unit => unit.IsPyre)?.Health));
             if (context.LifeLinks is LifeLinkContext links)
             {
                 if (playRules == null || !source.Rooms.All(TrueFinalBossCombatModel.Supports))
@@ -278,6 +281,8 @@ namespace MonsterTrain2Poju.Model
                 restoredPoints.Units.Any(unit => unit.SpawnedInPreview && unit.UnitId >= nextUnitId))
                 context = context.WithSpawnPoints(restoredPoints.WithState(restoredPoints.Groups,
                     restoredPoints.Units.Where(unit => !unit.SpawnedInPreview || unit.UnitId < nextUnitId).ToArray()));
+            if (context.QueryFrame?.PreviewTowerHealth != null)
+                context = context.WithQueryFrame(context.QueryFrame.WithPreviewTowerHealth(null));
             var train = new TrainCombatState(source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
                 room.Units.Select(RestorePrimaryEffects).ToArray(), room.ExternalInteractions, context, room.Preview,
                 room.ActiveCompanionBossIds)).ToArray(), source.Movement, source.EnemySlotsPerRoom, context);
