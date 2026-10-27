@@ -514,9 +514,11 @@ namespace MonsterTrain2Poju.Model
             if (!result.Supported || result.State!.Context == null) return result;
             if (!state.Preview && !ReferenceEquals(result, pre) && pre.Outcome == RoomOutcome.Exchanged && pre.RetainedUnits.Count > 0)
             {
-                // The first combat yield completes earlier room-effect deaths.
-                // Those actors have already left the engine's live input roster.
-                var completed = pre.RetainedUnits.Where(unit => unit.Health <= 0 && state.Units.Any(original => original.Id == unit.Id))
+                // A death still awaiting physical removal at combat entry
+                // finishes during the first yield. Actors already removed by
+                // the room effect can retain LastKnown until a later frame.
+                var completed = pre.RetainedUnits.Where(unit => unit.Health <= 0 && state.Units.Any(original => original.Id == unit.Id) &&
+                    pre.State!.Context?.SpawnPoints?.Units.Any(point => point.UnitId == unit.Id && point.Current != null) == true)
                     .Select(unit => unit.Id).ToHashSet();
                 result = new RoomCombatResult(result.State.WithContext(ClearFinishedRemovalPoints(result.State.Context, completed)),
                     result.Outcome, result.Rounds, result.Events.ToList(), result.UnsupportedReason,

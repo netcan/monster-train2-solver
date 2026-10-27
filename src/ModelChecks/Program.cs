@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--native-room-train-only")
+{
+    RoomCombatChecks.NativeObservedRooms(args[1]);
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    TrainCombatChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--inferno-pre-combat-positions-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

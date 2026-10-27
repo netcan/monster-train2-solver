@@ -30,3 +30,13 @@ checks both full native states/RNG with four immutable branches each. The old
 six player-removal states, independent56-room/14-train enemy-removal observation
 remain passing controls. The independent native route will be shared with the
 remaining room79 LastKnown boundary to avoid repeating full searches.
+
+282 limits the room-result cleanup to deaths whose physical point was still
+occupied at combat entry. Original room79/exchange80 distinguish the already
+removed Endless Sycophant40, which keeps LastKnown(room2,point1), from recruit41
+whose old point is gone. Both full states include their captured external Pyre
+and tower targets; all four new room/exchange cases pass with four immutable
+branches each. The original six removal cases and independent56-room/14-train
+observation still pass, as does the58-input capture witness. No original record
+is rewritten. A frozen282 independent58-input route now validates the three
+separate changes together before further actual-budget strategy work.
