@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--terminal-pyre-capture-only")
+{
+    TerminalPyreCaptureChecks.Native(args[1], args.Length == 3 ? args[2] : null);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--underlegion-third-troop-upgrade-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -8099,6 +8104,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-corruption-attack-upgrade-replay-calibration.mt2f"));
     CardCorruptionAttackUpgradeChecks.Native(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-terminal-pyre-capture-calibration.mt2f"))
+    TerminalPyreCaptureChecks.Native(path);
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-underlegion-third-troop-upgrade-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-underlegion-third-troop-upgrade-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

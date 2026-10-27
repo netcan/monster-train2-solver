@@ -164,7 +164,11 @@ namespace MonsterTrain2Poju.Probe
                         retained.Add(new EnchantmentRetainedUnit(captured, actor.GetCurrentRoomIndex(), actor.PreviewMode));
                         // An active-list removal can precede its death coroutine's
                         // spawner return and physical removal. Keep that input.
-                        if (captured.Health <= 0 && !actor.PreviewMode && actor.GetSpawnPoint() != null)
+                        // CheckForDeath sets hasFinishedDying before dispatching
+                        // removal callbacks. Terminal Pyre death stops earlier
+                        // inside ShowKillCam and has not entered that queue.
+                        if (captured.Health <= 0 && captured.DeathState?.HasFinishedDying == true &&
+                            !actor.PreviewMode && actor.GetSpawnPoint() != null)
                             pendingRemovals.Add(pair.Key);
                     }
                 }
