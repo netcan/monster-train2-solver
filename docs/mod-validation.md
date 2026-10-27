@@ -1,6 +1,22 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.209, source`1db960b1`.
+Current Windows installation:0.2.210, source`85ee266c`.
+Installed at10:00 with67 protected save/config/other-mod files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.210-Windows-20261027-100012.zip`,SHA256
+`5c0d3fd00b9dfd0dfa468408f79ff0d5ae4553206c8a63fba47040e91daffb0d`.
+The exact payload wins sample19 Ring5 with the actual10000ms/two-worker
+player search:43inputs,35plays/8EndTurns,Pyre26. Independent normal reward
+replay matches every full state/forecast/RNG, all15 train phases and four
+zero counters. Normal39 reward/map events reach a distinct Ring6 checkpoint.
+The completed unchanged pair receipt and exact payload hashes are reused.
+All real and isolated games were stopped; next launch loads0.2.210. Previous
+DLLs and receipt:`BepInEx/PojuBackups/RandomCampaign-20261027-100012/`.
+This includes the final-eaten Unstable forecast fix; its47-input independent
+native boundary pair and the actual-budget Ring6 defeat match the corrected
+terminal forecast. This installation does not include release211 under
+isolated coverage. No Mac build or additional campaign clear is claimed.
+
+Previous Windows installation:0.2.209, source`1db960b1`.
 Installed at09:20 with67 protected save/config/other-mod files unchanged. Package
 `results/mod-dist/PojuAdvisor-0.2.209-Windows-20261027-092017.zip`,SHA256
 `d203be5b4e0b29dc72e22e3e5ce8a5d77e16c612473c8bc5b0c3f407566c774d`.
