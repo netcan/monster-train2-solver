@@ -213,11 +213,15 @@ namespace MonsterTrain2Poju.Model
                         if (!ApplyUpgrade(ref currentRoom, currentUnit.Id, removed, upgrade, remove: true, out string? error))
                             return Fail(error!);
                     }
-                    if (state.Context?.QueryFrame is { MoonPhaseTrackingActive: false, MoonPhase: 1 } inactive &&
-                        previousUnit is { Team: CombatTeam.Enemy, MoonPhaseMask: 6 })
+                    if (state.Context?.QueryFrame is { MoonPhaseTrackingActive: false, MoonPhase: 1 or 2 } inactive &&
+                        previousUnit is { Team: CombatTeam.Enemy, MoonPhaseMask: 5 or 6 } &&
+                        (previousUnit.MoonPhaseMask.Value & 3) != inactive.MoonPhase.Value)
                     {
                         if (previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
-                            previousUnit is not { AssetKey: "HeavyT3_Basic", BaseAttack: 8, MaxHealth: 325, Size: 2, Triggers.Count: 0 } ||
+                            previousUnit is not { AssetKey: "HeavyT3_Basic", BaseAttack: 8, MaxHealth: 325, Size: 2, Triggers.Count: 0 } &&
+                            previousUnit is not { AssetKey: "HeavyT2_Zealot", BaseAttack: 5, MaxHealth: 110, Size: 2,
+                                Triggers: [{ Kind: "OnAnyUnitDeathOnFloor", FireCount: 1,
+                                    Effects: [{ Type: "CardEffectBuffDamage", Value: 1, Action: { Type: "BuffAttack", Target: "Self", Value: 1 } }] }] } ||
                             removed is not { AssetKey: "InfernoRoom", DataId: "378cea0c-14e9-45fb-9918-fb853bd04a7d", CharacterUpgrades.Count: 1,
                                 PreCombat: { } preCombat } || RoomPreCombatModel.Validate(preCombat) != null ||
                             removed.CharacterUpgrades[0] is not { AssetKey: "InfernoRoom", DataId: "96547940-8feb-4f73-b147-c763a64161c2" } original ||
