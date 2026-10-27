@@ -16,5 +16,9 @@ The complete native successor, forecast and RNG match. Four immutable
 deployment branches and ten unknown-upgrade controls pass. Explicit phase
 activation and removal keep the discount and the unscaled one-Dazed payload.
 This opening witness does not claim an actual reduced-cost spell cast or a
-Ring5 win. An independent repaired native replay and actual campaign search
-continue on a fixed build.
+Ring5 win. Independent native replay184614-a799a841 uses frozen247/2ccea335
+and matches the full successor/forecast/RNG while preserving the old refusal
+and new positive forecast. Both archives are registered with their focused
+typed gate. Existing deployment,30-input actual Full Moon cast and36-input
+dual-curse independent pairs still pass. Actual Ring5 campaign search continues
+on the same fixed build.
