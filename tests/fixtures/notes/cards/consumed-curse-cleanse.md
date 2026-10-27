@@ -18,5 +18,8 @@ four immutable parallel EndTurns and ten unknown-signature controls. The earlier
 independent52-input terminal observation164938-1ae891e9 also replays full native
 state/RNG to the same defeat; terminal capture alone had been insufficient to
 identify the retained-card upgrade. Original triple/Consume Cleanse birth and
-27-input cast controls pass. Independent repaired nonterminal replay is pending;
-neither component is a new battle win.
+27-input cast controls pass. Independent repaired nonterminal replay
+173707-e9bda91c also matches every full input/state/forecast/RNG; the original
+rejection and repaired prediction are both retained in the catalog. A60s local
+strategy batch completes80 of81 candidates,zero unsupported branches and no
+improvement from its1HP model defeat. These components are not new battle wins.

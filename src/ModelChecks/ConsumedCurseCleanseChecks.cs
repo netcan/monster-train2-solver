@@ -54,7 +54,7 @@ internal static class ConsumedCurseCleanseChecks
             NativeBranchObservationChecks.Replay(replay.Value, Reason);
             NativeBranchObservationChecks.Pair(source, replay.Value);
         }
-        Console.WriteLine($"CONSUMED-CURSE-CLEANSE PASS: {rows.Length} natural inputs/full state/forecast/RNG; four immutable branches; terminal={terminal}; ten nonterminal guards; independentPair={replay.HasValue}");
+        Console.WriteLine($"CONSUMED-CURSE-CLEANSE PASS: {rows.Length} natural inputs/full state/forecast/RNG; four immutable branches; terminal={terminal}; unknownSignatureGuards={(terminal ? 0 : 10)}; independentPair={replay.HasValue}");
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }
