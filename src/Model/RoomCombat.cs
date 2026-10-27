@@ -4135,7 +4135,12 @@ namespace MonsterTrain2Poju.Model
                 if (unsupportedReason == null && kind is "OnTroopAdded" or "OnTroopRemoved" &&
                     units.Any(owner => owner.InRoom && owner.Source.Modifiers?.TroopAura != null))
                 {
-                    RoomCombatResult troop = TroopAuraModel.TroopChanged(CurrentRoom(), unit.Freeze(), kind, paramInt, paramInt2);
+                    // Harvest can follow completed death signals before their
+                    // physical removal. Publish those actors before a troop aura
+                    // borrows the world, or its import restores stale listeners.
+                    RoomCombatState troopRoom = EnchantmentWorldModel.Sync(CurrentRoom(),
+                        units.Where(actor => !actor.Alive || !actor.InRoom).Select(actor => actor.Freeze()).ToArray(), ExternalEnchantmentUnits());
+                    RoomCombatResult troop = TroopAuraModel.TroopChanged(troopRoom, unit.Freeze(), kind, paramInt, paramInt2);
                     if (!troop.Supported) { unsupportedReason = troop.UnsupportedReason; return; }
                     CombatUnit? changedTroop = troop.State!.Units.Concat(troop.RetainedUnits).FirstOrDefault(actor => actor.Id == unit.Source.Id);
                     if (changedTroop != null) unit.Apply(changedTroop);
