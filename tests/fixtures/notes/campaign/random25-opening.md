@@ -137,3 +137,13 @@ random25-ring6-default273.zip has123 files, SHA256
 all122 hashed members restore. Five default-budget native victory pairs form
 one unchanged checkpoint chain. Ring6 actual-budget acceptance now continues;
 there is still no all-default eight-battle completion claim.
+
+Windows receives this exact273 payload at02:22 on2026-10-28; all67 protected
+files stay unchanged. PackagePojuAdvisor-0.2.273-Windows-20261028-022202.zip
+SHA256E4A8A0784EDC7B19306FAD073DFE6C8ADD0D228AE6BDB259A1CBAC07AB6F9275,
+backup/receiptRandomCampaign-20261028-022202. Ring6 initial source022038-d8400dae
+captures a background missing-element exception before any played input.
+The pure player-deployment observation reproduces the exception offline in both
+search workers at EnchantmentWorldModel.Complete, inside a boss-attack preview;
+the stronger sequential61-input policy completes independently. The new search
+failure remains unaccepted while the five completed victory pairs stay valid.

@@ -1,6 +1,21 @@
 # Player Mod validation · 2026-10-28
 
-Current Windows installation:0.2.267, source`92b4e5db`.
+Current Windows installation:0.2.273, source`3331413d`.
+Installed at02:22 with67 protected save/config/other-mod files unchanged.
+Sample25 Underlegion/Pyreborne Ring5 wins with actual10000ms/two-worker advice:
+40 inputs/31 plays/nine EndTurns,Pyre79. Source021044-d25fb1db and independent
+normal replay021620-947eb109 match full state/forecasts/RNG,17 train phases
+each and four zero counters.39 normal events enter Ring6;123-file checkpoint
+restores122 hashes. Five default-budget victory pairs form one native chain.
+Package`results/mod-dist/PojuAdvisor-0.2.273-Windows-20261028-022202.zip`,SHA256
+`E4A8A0784EDC7B19306FAD073DFE6C8ADD0D228AE6BDB259A1CBAC07AB6F9275`.
+The three installed DLLs match both native processes; backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261028-022202/`.
+The stopped real game loads273 next launch. Ring6's initial background search
+captures a missing-element exception and remains under diagnosis. This delivery
+does not claim a new eight-battle clear, Mac build or full regression.
+
+Previous Windows installation:0.2.267, source`92b4e5db`.
 Installed at01:02 with67 protected save/config/other-mod files unchanged.
 Sample25 Underlegion/Pyreborne Ring4 wins with actual10000ms/two-worker advice:
 40 inputs/31 plays/nine EndTurns,Pyre89. Source004948-445f9184 and independent
