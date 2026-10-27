@@ -20,3 +20,11 @@ The subsequent deployment grid completes15 losing routes and reaches a
 separate guard after25 inputs. The first exported candidate tries to summon
 into a full room; native CardManager rejects it with RoomFull before effects.
 It is not a legal new-mechanism witness. No fifth-battle victory is claimed.
+
+Release208 filters other floors before constructing draft choices when the
+captured ability explicitly forbids targeting other floors. On this native
+boundary, attempted simulations fall from16 (12 forbidden-floor attempts)
+to4 (none forbidden). The four legal ordered choices,13 full native states,
+forecasts/RNG and independent native pair stay unchanged. The native teleport
+control still performs two same-floor moves and one cross-floor move. This
+counts avoided simulations for this ability, not overall search speed.

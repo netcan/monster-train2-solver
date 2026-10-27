@@ -22,6 +22,19 @@ internal static class UnitAbilityMixChoicesChecks
         Require(rule.DataId == "90366301-c0b5-4639-8a0a-387eddff089b" && rule.Effects.Count == 2 &&
             rule.Effects.All(effect => effect.Type == "Mix" && effect.Value == 2), "Wrong natural two-draft ability.");
         string immutable = JsonSerializer.Serialize(before, ModelJson.Options);
+        int attempts = 0, otherFloors = 0;
+        UnitAbilityModel.EnumerateActivations(before, (state, candidate) =>
+        {
+            if (candidate.ActivatorUnitId == 2)
+            {
+                attempts++;
+                if (candidate.RoomIndex != 2) otherFloors++;
+            }
+            return BattleActionModel.PlayCard(state, candidate);
+        });
+        Console.WriteLine("UNIT-ABILITY-MIX-WORK attempts=" + attempts + "; forbiddenFloorAttempts=" + otherFloors);
+        Require(rule.Ability?.CanTargetOtherFloors == false && attempts == 4 && otherFloors == 0,
+            "A same-floor two-draft ability must simulate only its four legal offer pairs.");
         Parallel.For(0, 4, _ =>
         {
             var choices = UnitAbilityModel.EnumerateSupportedActivations(before).Where(candidate =>

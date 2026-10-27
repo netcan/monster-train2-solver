@@ -254,6 +254,7 @@ namespace MonsterTrain2Poju.Model
                 bool unitTarget = abilityRule != null && CardSpellModel.RequiresUnitTarget(abilityRule.Effects);
                 foreach (RoomPlayRule target in source.PlayRules.Rooms.OrderBy(target => target.RoomIndex == room.RoomIndex ? 0 : 1))
                 {
+                    if (abilityRule?.Ability is { CanTargetOtherFloors: false } && target.RoomIndex != room.RoomIndex) continue;
                     int targetCount = hasTeleport ? context.SpawnPoints?.Group(target.RoomIndex, CombatTeam.Player)?.GroupCount ?? 0 : 1;
                     if (hasTeleport && targetCount == 0)
                     {
