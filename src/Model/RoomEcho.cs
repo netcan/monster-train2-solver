@@ -37,8 +37,9 @@ namespace MonsterTrain2Poju.Model
                 bool juice = EchoJuiceSpikeModel.Known(card, rule.Effects) && EchoJuiceSpikeModel.KnownOnCast(rule.OnCastEffects) &&
                     EchoJuiceSpikeModel.KnownRelics(context);
                 bool justCause = EchoJustCauseModel.Known(card, rule.Effects) && EchoJuiceSpikeModel.KnownRelics(context);
+                bool remnantPact = EchoRemnantPactModel.Known(card, rule.Effects) && EchoJuiceSpikeModel.KnownRelics(context);
                 if (!juice && rule.OnCastEffects.Count > 0 || rule.OnUnplayedNegativeEffects.Count > 0 || rule.ExternalInteractions.Count > 0 ||
-                    !waxen && !juice && !justCause && (CardBranchMaskModel.Resolve(card).Traits.Any(trait => trait != "CardTraitFreeze") || context.Relics?.Any(relic => relic.EffectTypes.Count > 0) == true))
+                    !waxen && !juice && !justCause && !remnantPact && (CardBranchMaskModel.Resolve(card).Traits.Any(trait => trait != "CardTraitFreeze") || context.Relics?.Any(relic => relic.EffectTypes.Count > 0) == true))
                     return Fail("Echo replay needs native calibration: onCast=" + rule.OnCastEffects.Count + ", unplayed=" +
                         rule.OnUnplayedNegativeEffects.Count + ", interactions=" + string.Join(";", rule.ExternalInteractions) +
                         ", traits=" + string.Join(";", CardBranchMaskModel.Resolve(card).Traits) + ", relics=" +
