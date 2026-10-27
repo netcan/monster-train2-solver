@@ -103,6 +103,24 @@ namespace MonsterTrain2Poju.Model
                     }
                 }
 
+                if (state.Context?.QueryFrame is { MoonPhaseTrackingActive: false, MoonPhase: 1 or 2 } inactive)
+                {
+                    var oldAttachment = previous?.Attachments?.SingleOrDefault();
+                    var newAttachment = current?.Attachments?.SingleOrDefault();
+                    bool Updates(CombatUnit unit) => oldAttachment?.CharacterUpgrades?.Count > 0 && Affected(unit, oldAttachment, state.Context) ||
+                        newAttachment?.CharacterUpgrades?.Count > 0 && Affected(unit, newAttachment, state.Context);
+                    var affected = state.Units.Where(unit => unit.MoonPhaseMask.HasValue && Updates(unit)).ToArray();
+                    if (affected.Any(unit => unit.Triggers.Any(trigger => trigger.Kind is
+                        "OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or "OnMoonshadeLost") ||
+                        state.Context.FindCard(unit.SpawnerCardId)?.MaskDescriptor?.BaseTraits.Any(trait =>
+                            trait.RuntimeType.Contains("MoonPhase", StringComparison.Ordinal)) == true))
+                        return Fail("Inactive room attachment moon callbacks require native calibration.");
+                    // TrainRoomAttachmentState updates understanding after each
+                    // applied/removed character upgrade even without tracking.
+                    int mask = RoomMoonPhaseModel.Effective(state.Context, room.RoomIndex, inactive.MoonPhase.Value);
+                    state = state.WithUnits(state.Units.Select(unit => affected.Any(item => item.Id == unit.Id)
+                        ? unit.WithMoonPhaseMask(mask) : unit).ToArray());
+                }
                 if (previous?.Attachments?.Any(item => item.MoonPhase != null) == true || current?.Attachments?.Any(item => item.MoonPhase != null) == true)
                 {
                     if (state.Context?.QueryFrame?.MoonPhase is int phase && state.Context.QueryFrame.MoonPhaseTrackingActive == true)

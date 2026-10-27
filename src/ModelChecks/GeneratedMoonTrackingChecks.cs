@@ -5,6 +5,43 @@ using MonsterTrain2Poju.Model;
 
 internal static class GeneratedMoonTrackingChecks
 {
+    internal static void InactiveRoomAttachment(FixtureValue source)
+    {
+        Require(source.GetProperty("Schema").GetInt32() == 1 &&
+            source.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
+            source.GetProperty("EvidenceKind").GetString() == "NativeIncompleteBranchObservation" &&
+            !source.GetProperty("NativeCompleted").GetBoolean(), "Expected preserved incomplete native prefix.");
+        var rows = source.GetProperty("Rows").EnumerateArray().ToArray();
+        Require(rows.Length == 17, "Wrong inactive attachment prefix.");
+        BattleTurnState? current = null;
+        for (int index = 0; index < rows.Length; index++)
+        {
+            var row = rows[index];
+            var before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            var actual = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            if (current != null) Require(NativeBranchObservationChecks.Key(current) == NativeBranchObservationChecks.Key(before),
+                "Incomplete native prefix changed its inputs.");
+            var step = new BattleSearchStep(row.GetProperty("Action").Deserialize<PlayCardAction>(), row.GetProperty("IsEndTurn").GetBoolean());
+            var result = BattlePlannerChecks.Replay(before, [step], out RoomOutcome outcome);
+            Require(outcome == RoomOutcome.Exchanged && NativeBranchObservationChecks.Key(result) == NativeBranchObservationChecks.Key(actual),
+                "Inactive captured native successor differs at " + index);
+            if (index == 16)
+            {
+                var old = row.GetProperty("Expected").Deserialize<BattleTurnState>()!;
+                Require(before.MoonPhaseTrackingActive == false && before.MoonPhase == "Full" &&
+                    before.Spawn.Train.Rooms[2].Units.Single(unit => unit.Id == 11).MoonPhaseMask == 5 &&
+                    old.Spawn.Train.Rooms[2].Units.Single(unit => unit.Id == 11).MoonPhaseMask == 5 &&
+                    actual.Spawn.Train.Rooms[2].Units.Single(unit => unit.Id == 11).MoonPhaseMask == 6 &&
+                    step.Action?.CardInstanceId == 29, "Missing original Fight Club/Funguy5-to6 witness.");
+                string immutable = JsonSerializer.Serialize(before, ModelJson.Options);
+                Parallel.For(0, 4, _ => Require(NativeBranchObservationChecks.Key(BattleActionModel.PlayCard(before, step.Action!).State!) ==
+                    NativeBranchObservationChecks.Key(actual), "Parallel inactive attachment differs."));
+                Require(immutable == JsonSerializer.Serialize(before, ModelJson.Options), "Inactive attachment changed its parent.");
+            }
+            current = actual;
+        }
+        Console.WriteLine("INACTIVE-MOON-ATTACHMENT PASS:17 original native inputs/full state/RNG and four immutable branches; Funguy11 understanding5-to6 without tracking/status changes; incomplete observation retained, not battle acceptance.");
+    }
     internal static void Native(FixtureValue source, FixtureValue? replay = null)
     {
         var rows = NativeBranchObservationChecks.Replay(source, GeneratedMoonTrackingModel.Guard,

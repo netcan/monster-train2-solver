@@ -34,6 +34,17 @@ model now performs that understanding update independently from the tracked
 phase status. Failed prefix observations write an explicitly incomplete raw
 archive for diagnosis; they cannot satisfy the completed-observation gate.
 
+The preserved17-input prefix043501-d2bcf8dc observes Fight Club29 on floor2
+updating Funguy11 from understanding5 to6 during inactive Full Moon. The old
+prediction retained5. All other active actors already match; the repaired
+model checks every complete native successor/RNG, plus four immutable final
+branches. Ordinary attachment character upgrades now update captured
+understanding without adding phase statuses or refreshing the global phase.
+Unknown moon callbacks/traits remain guarded. This archive is explicitly
+incomplete,34700bytes/5804nodes/SHA256
+95bdd3ff3f91ac82217485b3f34ff89f12aa2668e2c6b5f062d46dad79478ddd;
+it is not counted as a completed component or battle victory.
+
 `--generated-moon-tracking-only` checks all18 native successors/forecasts/RNG,
 four immutable boundary branches, four altered creation signatures and two
 reset guards. Source36390bytes,5973nodes,SHA256
