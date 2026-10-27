@@ -205,3 +205,16 @@ all101 hashed members restore. Seven victories form one unchanged checkpoint
 chain with offline Ring6/7 explicitly identified. Actual10000ms/two-worker
 Ring8 acceptance now starts from Pyre63. The original Pyre43 default defeat
 and its independent replay remain preserved; no eight-battle clear is claimed.
+
+Release269 resumes the unchanged Pyre63 Ring8 checkpoint after calibrating
+Consume/detached-equipment return order. Actual10000ms/two-worker source
+013717-1a6e6232 and independent normal replay014230-6f9603a3 complete39 inputs,
+32 plays/seven EndTurns. Both are native defeats at turn6/boss2906HP/30attack;
+full roots/successors/forecasts/RNG,14 train phases each and four zero counters
+pass. Normal six-event defeat settlement keeps seven wins/one loss and no
+Standard victory, final save SHA256
+B445768F22A98BA7D39C36208E105D562401112742512E3EDD8E08F95E2EF2E7.
+The original Pyre63 checkpoint/save hash remains unchanged. A fresh complete
+joint-deployment grid examines30 candidates with zero unknowns and improves
+the model loss to39 inputs/boss2824HP. Early card-order diversification now
+starts from this exact Pyre63 native root; it is offline evidence only.

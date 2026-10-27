@@ -7,6 +7,24 @@ internal static class RandomCampaignChecks
 {
     internal static void Curated(string path)
     {
+        if (Path.GetFileName(path) == "full-battle-random-campaign-24-ring8-release269-pyre63-budget10000-settled-loss.mt2f")
+        {
+            using var native = ModelJson.ReadFixture(path);
+            using var replay = ModelJson.ReadFixture(path.Replace("-loss.mt2f", "-loss-replay.mt2f", StringComparison.Ordinal));
+            DefeatPair(native.RootElement, replay.RootElement, 1122120878, 0, 7, "Banished", "Hellhorned", 10000);
+            foreach (var fixture in new[] { native.RootElement, replay.RootElement })
+            {
+                var rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+                var root = rows[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+                var final = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                Require(rows.Length == 39 && rows.Count(row => row.GetProperty("IsEndTurn").GetBoolean()) == 7 &&
+                    root.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 63 &&
+                    final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsBoss == true) is
+                        { AssetKey: "Boss_Level8_Fragile", Health: 2906, Attack: 30 },
+                    "Preserve sample24 Pyre63 final-battle39-input native defeat and2906 bossHP.");
+            }
+            return;
+        }
         if (Path.GetFileName(path) == "full-battle-random-campaign-25-ring5-release268-budget10000-settled-loss.mt2f")
         {
             using var native = ModelJson.ReadFixture(path);
