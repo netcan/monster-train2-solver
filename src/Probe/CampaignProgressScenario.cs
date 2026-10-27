@@ -648,10 +648,19 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Prefix(GameStateManager.EndGameReason endGameReason)
             {
-                if (active != null)
-                    active.ObserveRunOutcome(AllGameManagers.Instance.GetSaveManager(), endGameReason == GameStateManager.EndGameReason.Victory);
+                // A defeat is added to completedBattles inside EndGame. Retain
+                // that record after the native method, before the later
+                // GameOver screen's FinishRun resets the active save.
+                if (active != null && endGameReason == GameStateManager.EndGameReason.Victory)
+                    active.ObserveRunOutcome(AllGameManagers.Instance.GetSaveManager(), true);
             }
-            private static void Postfix() { if (active != null) active.runReturned = true; }
+            private static void Postfix(GameStateManager.EndGameReason endGameReason)
+            {
+                if (active == null) return;
+                if (endGameReason == GameStateManager.EndGameReason.Defeat)
+                    active.ObserveRunOutcome(AllGameManagers.Instance.GetSaveManager(), false);
+                active.runReturned = true;
+            }
         }
         [HarmonyPatch(typeof(CombatManager), nameof(CombatManager.StopCombat))]
         private static class BattleOutcomePatch
