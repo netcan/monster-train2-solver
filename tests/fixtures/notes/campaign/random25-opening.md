@@ -121,3 +121,19 @@ The extracted12-input prefix reaches turn2 before its failing EndTurn; it is
 under isolated native observation. Thus a legal opening alone does not prove
 the complete future branch is modeled, and the zero-card fallback is retained
 as a real counterexample instead of counted as satisfactory strategy.
+
+After the calibrated tier-two champion/Titanskin composition and harvest
+listener fix, frozen273 revision3331413d runs actual10000ms/two-worker advice.
+Source021044-d25fb1db and independent normal reward replay021620-947eb109
+both win with40 inputs/31 plays/nine EndTurns and Pyre79. Complete successors,
+forecasts/RNG,17 train phases each,1087 mask contexts and all four zero counters
+pass. The source has42 publications/261 captures and zero purity failures.
+The original268 zero-card defeat and271 nine-raw-difference win stay unchanged.
+
+Normal39 reward/map events produce Ring6 save SHA256
+3464AA8F19646AAD84DF8F8B33664E42541C2527A6152CA8B526DDA3D814B36A.
+random25-ring6-default273.zip has123 files, SHA256
+57B4DF90185296809611E7D97B99C4E3D77EC3D70D5D3E1855678C33DE1A1F03;
+all122 hashed members restore. Five default-budget native victory pairs form
+one unchanged checkpoint chain. Ring6 actual-budget acceptance now continues;
+there is still no all-default eight-battle completion claim.

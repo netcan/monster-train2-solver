@@ -223,3 +223,12 @@ That bounded early-order batch finishes300 complete candidates/zero unknowns,
 preserving three improvements to34 inputs/boss2781HP. All exported successors,
 forecasts and RNG replay independently. It remains a model defeat; additional
 health and local ordering improvements have not produced a final-battle win.
+
+Release273 investigates the untested middle/later suffix from decision12:
+200 bounded candidates/199 complete/zero unknown, two strict improvements to
+30 inputs/six EndTurns and boss2765HP. Independent full successor/forecast/RNG
+replay passes. A separate joint-placement spread checks30 complete distinct
+routes with343 duplicates and no improvement before its120-second budget.
+Both investigations remain model defeats; the unchanged Pyre63 native loss
+and its normal settlement remain the accepted outcome. These batches should
+not be repeated as unexplored work.
