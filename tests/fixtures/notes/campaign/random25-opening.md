@@ -171,3 +171,12 @@ Source SHA256d4a371b25dcd001b3af4b552af46a1464db53ea8885061a94a043226453ca7e3;
 replay SHA2566d4648b9829d48b970e0fa6617b510da6e09939066ba1f5c2cd1bbc5cd13bb6e.
 Acceptance journal:`random-campaign-20261028-032535-e246a3bb/accepted-rings.jsonl`.
 Frozen checker SHA25641B64F27787479FDA999FBFF18E22E99F24D508EBB9D5765503A3667A27F9C70.
+
+Windows receives the exact278 payload at03:40; all67 protected files stay
+unchanged and273 is backed up. Package
+`PojuAdvisor-0.2.278-Windows-20261028-034041.zip` SHA256
+53FBB603395B890608FFA6F8E86FE92F1EF198BEE367C231F3F2525FD1B86477,
+backup/receipt`RandomCampaign-20261028-034041`.
+Ring7 source033848-cf34b6d7 rejects its initial original upgrade room modifier
+before playing any card. The pure deployment capture is preserved for native
+calibration; it does not invalidate the preceding six accepted victory pairs.
