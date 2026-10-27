@@ -1,6 +1,23 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.249, source`16fab624`.
+Current Windows installation:0.2.260, source`b63bed54`.
+Installed at22:02 with67 protected save/config/other-mod files unchanged.
+The exact accepted payload wins sample24 Banished/Hellhorned Ring2 with
+actual10000ms/two-worker advice:35 inputs/28 plays/seven EndTurns,Pyre80.
+Source215231-5ef5c33f and independent normal-reward replay215531-ba3df3f7
+match all complete roots/successors/forecasts/RNG, with four zero counters;
+the source passes685 full mask contexts.51 normal events create Ring3 save
+8B054327C739CC1EE41D809377DA8C9835927CCB09CEF2443E8260E5D4FB531C.
+Package`results/mod-dist/PojuAdvisor-0.2.260-Windows-20261027-220208.zip`,SHA256
+`5D8261C6772C11A97B1E0A6C600AF2D5F795D9967C3117D4C642382FEB15A8D1`.
+All three DLL hashes match both accepted native processes. Previous DLLs
+and receipt are under`BepInEx/PojuBackups/RandomCampaign-20261027-220208/`.
+The real game was stopped; its next launch loads260. No Mac build was made.
+Sample24 retains sample23's normally settled natural metagame and has two
+accepted default-budget victories. Full default-budget campaign acceptance
+remains open; the third battle is undergoing independent frozen replay.
+
+Previous Windows installation:0.2.249, source`16fab624`.
 Installed at19:49 with67 protected save/config/other-mod files unchanged.
 The exact accepted payload wins sample23 Ring5 with actual10000ms/two-worker
 advice:38inputs/29plays/9EndTurns,Pyre12. Independent normal-reward replay

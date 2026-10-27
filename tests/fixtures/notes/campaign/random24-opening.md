@@ -26,3 +26,23 @@ the real Windows game at21:37 on2026-10-27 after binding both native trace
 hashes, all three DLL hashes and the accepted journal entry. The prior
 installation is recoverable under BepInEx/PojuBackups/RandomCampaign-20261027-213724;
 67 protected files and other mods/configuration are unchanged.
+
+Release260 Ring2 source215231-5ef5c33f and independent normal campaign
+replay215531-ba3df3f7 win with the same35 inputs/28 plays/seven EndTurns
+and Pyre80. Every complete root/successor/forecast/RNG matches; all four raw
+failure counters remain zero. The actual10000ms/two-worker whole-battle
+source also passes37 publications and685 complete mask-context checks.
+The replay makes51 normal reward/map events, creating Ring3 save
+8B054327C739CC1EE41D809377DA8C9835927CCB09CEF2443E8260E5D4FB531C.
+random24-ring3-default260.zip has82 files, SHA256
+0F9CE0BA87CDCDF31EEEA87A64CBF9246E34F77B055F7E9678668AD362ED59E8;
+all81 hashed members restore successfully. The accepted journal entry binds
+both traces and the unchanged prior checkpoint. Two default-budget victories
+are accepted; this still does not establish an eight-battle clear.
+
+The accepted release260 payload from revisionb63bed54 supersedes259 at22:02.
+Package: results/mod-dist/PojuAdvisor-0.2.260-Windows-20261027-220208.zip,
+SHA256 5D8261C6772C11A97B1E0A6C600AF2D5F795D9967C3117D4C642382FEB15A8D1.
+Backup/receipt: BepInEx/PojuBackups/RandomCampaign-20261027-220208.
+All three installed DLL hashes match both accepted native processes;
+67 protected files and other mods/configuration remain unchanged.
