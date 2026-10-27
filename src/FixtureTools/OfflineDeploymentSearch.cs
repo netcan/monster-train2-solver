@@ -9,11 +9,12 @@ internal static partial class OfflineBattleSearch
     // Explore several simultaneous placement changes without requiring each
     // single move to improve a complete loss. Never export a truncated rollout.
     internal static void DeploymentGrid(string input, string prediction, string output, int milliseconds, int maxCandidates,
-        int? firstRoom = null)
+        int? firstRoom = null, bool spread = false, int startSample = 0)
     {
         Require(milliseconds is >= 100 and <= 600000 && maxCandidates is >= 1 and <= 4096,
             "Expected100..600000ms and1..4096 deployment candidates.");
         Require(firstRoom == null || firstRoom is >= 0 and <= 2, "Expected a first-unit room in0..2.");
+        Require(startSample is >= 0 and <= 1000000 && (spread || startSample == 0), "Expected a spread sample offset in0..1000000.");
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         string unsupportedOutput = output + ".unsupported.mt2f";
         if (File.Exists(unsupportedOutput)) throw new IOException("Output already exists: " + unsupportedOutput);
@@ -44,7 +45,7 @@ internal static partial class OfflineBattleSearch
         double best = ImprovementMerit(bestFinal, bestOutcome), initial = best;
         var bestRoute = route;
         var watch = Stopwatch.StartNew();
-        int candidates = 0, completed = 0, unsupported = 0, duplicates = 0, improvements = 0;
+        int candidates = 0, completed = 0, unsupported = 0, duplicates = 0, improvements = 0, samples = 0, nextSample = startSample;
         var visited = new HashSet<string>(StringComparer.Ordinal);
         var reasons = new HashSet<string>(StringComparer.Ordinal);
         bool Expired() => watch.ElapsedMilliseconds >= milliseconds;
@@ -99,9 +100,9 @@ internal static partial class OfflineBattleSearch
             }
             yield return (state, prefix.ToArray());
         }
-        void Visit(BattleTurnState state, Step[] placement)
+        bool Visit(BattleTurnState state, Step[] placement)
         {
-            if (!visited.Add(keys.Key(state))) { duplicates++; return; }
+            if (!visited.Add(keys.Key(state))) { duplicates++; return true; }
             candidates++;
             var steps = placement.ToList();
             var current = state;
@@ -125,20 +126,65 @@ internal static partial class OfflineBattleSearch
                 else
                 {
                     var ended = BattleTurnModel.EndTurn(current);
-                    if (!ended.Supported) { Rejected(ended.UnsupportedReason, null, current, steps); return; }
+                    if (!ended.Supported) { Rejected(ended.UnsupportedReason, null, current, steps); return true; }
                     current = ended.State!; outcome = ended.Outcome;
                     steps.Add(new Step { IsEndTurn = true }); played = 0;
                 }
             }
-            if (!Terminal(outcome)) return;
+            if (!Terminal(outcome)) return false;
             completed++;
             double score = ImprovementMerit(current, outcome);
-            if (score >= best) return;
+            if (score >= best) return true;
             best = score; bestFinal = current; bestOutcome = outcome; bestRoute = steps.ToArray(); improvements++;
             Console.WriteLine($"DEPLOYMENT-IMPROVED candidate={candidates} outcome={outcome} steps={steps.Count} merit={best:R} " +
                 "placements=" + JsonSerializer.Serialize(placement.Select(step => step.Action)));
+            return true;
         }
-        if (firstRoom.HasValue)
+        if (spread)
+        {
+            // A depth-first stream leaves the early units fixed for many
+            // expensive rollouts. Walk legal choices with a deterministic
+            // mixed-radix index instead.137 is coprime to every possible
+            // room/position choice count, spreading early and late placements
+            // across the budget without materializing a tree of battle states.
+            for (int sample = startSample; sample < startSample + maxCandidates * 16 && !Stop(); sample++)
+            {
+                samples++;
+                int code = sample * 137;
+                var state = root;
+                var placement = new List<Step>();
+                var parents = new List<(BattleTurnState State, string Key)>();
+                bool covered = false;
+                for (int index = 0; index < deployment.Length && !Stop(); index++)
+                {
+                    parents.Add((state, keys.Key(state)));
+                    var legal = BattleActionModel.EnumerateActions(state, deployment[index].Action!.CardInstanceId, includeAbilities: false);
+                    foreach (var rejected in legal.UnsupportedAttempts) Rejected(rejected.Reason, rejected.Action, state, placement);
+                    var choices = legal.SupportedCandidates.Where(choice => choice.Result.Outcome == RoomOutcome.Exchanged &&
+                            (index != 0 || firstRoom == null || choice.Action.RoomIndex == firstRoom))
+                        .OrderByDescending(choice => choice.Action.RoomIndex).ThenBy(choice => choice.Action.PlayerPosition).ToArray();
+                    if (choices.Length == 0) break;
+                    var chosen = choices[code % choices.Length];
+                    code /= choices.Length;
+                    placement.Add(new Step { Action = chosen.Action });
+                    state = chosen.Result.State!;
+                }
+                if (placement.Count == deployment.Length && !Stop())
+                {
+                    if (sample - startSample < 6) Console.WriteLine($"DEPLOYMENT-SPREAD sample={sample} placements=" +
+                        JsonSerializer.Serialize(placement.Select(step => step.Action)));
+                    covered = Visit(state, placement.ToArray());
+                }
+                else if (!Stop()) covered = true; // No legal complete placement for this sample.
+                foreach (var parent in parents)
+                    Require(keys.Key(parent.State) == parent.Key, "Spread deployment changed its parent.");
+                // Retry a budget-truncated sample instead of silently skipping
+                // its unfinished route when the next batch resumes.
+                nextSample = covered ? sample + 1 : sample;
+                if (!covered) break;
+            }
+        }
+        else if (firstRoom.HasValue)
         {
             foreach (var leaf in Deployments(root, 0, new List<Step>()))
             {
@@ -189,6 +235,7 @@ internal static partial class OfflineBattleSearch
         }
         Console.WriteLine($"DEPLOYMENT-GRID foundWin={bestOutcome == RoomOutcome.BattleWon} units={deployment.Length} candidates={candidates} " +
             $"completed={completed} duplicates={duplicates} unsupported={unsupported} improvements={improvements} " +
-            $"firstRoom={firstRoom?.ToString() ?? "any"} timedOut={Expired()} candidateLimit={candidates >= maxCandidates} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}; model prediction only.");
+            $"firstRoom={firstRoom?.ToString() ?? "any"} timedOut={Expired()} candidateLimit={candidates >= maxCandidates} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}" +
+            (spread ? $" startSample={startSample} nextSample={nextSample} spreadSamples={samples} sampleLimit={samples >= maxCandidates * 16}" : "") + "; model prediction only.");
     }
 }
