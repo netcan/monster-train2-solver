@@ -13,7 +13,13 @@
 第二战新增ApplyUnitUpgradeWhenRich遗物的月相手牌刷新边界；尚未计第二战或整局胜利。
 详见[光环继承证据](../tests/fixtures/notes/cards/underlegion-troop-upgrade.md)。
 
-2026-10-27 16:21交付Windows0.2.237，构建来源6af2f309，绑定第22组第四战
+2026-10-27 17:23交付Windows0.2.240，构建来源4804129a，绑定上述第23组第一战
+默认预算独立原生双胜。三个DLL与验收载荷相同，67项其他插件/配置/存档不变。
+包为`results/mod-dist/PojuAdvisor-0.2.240-Windows-20261027-172341.zip`，
+SHA256为C6B58CC5896BDE32EF50670BD271BB58C48101BEB48CB6E3D849538BEE62455E。
+备份为`BepInEx/PojuBackups/RandomCampaign-20261027-172341`；下次启动加载240。
+
+此前2026-10-27 16:21交付Windows0.2.237，构建来源6af2f309，绑定第22组第四战
 实际10000ms/双线程57输入、薪火37独立原生双胜；原236对照为53输入/薪火5。
 双方各16列车阶段、完整状态/预测/RNG及四项零失败通过，正常60奖励事件进入第五战。
 三个DLL与验收载荷相同，67项其他插件/配置/存档不变。

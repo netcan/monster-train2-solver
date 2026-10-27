@@ -1,23 +1,24 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.237, source`6af2f309`.
-Installed at16:21 with67 protected save/config/other-mod files unchanged.
-The exact accepted three DLLs win sample22 Ring4 with actual10000ms/two-worker
-advice:57inputs/49plays/8EndTurns,Pyre37. Independent normal-reward replay
-matches every full root/successor/forecast/RNG and16 train phases per process,
-with four zero counters.60 normal events create Ring5 save
-8EE2D303385939CB3C1575F811FA6B680DA57B57AEC4909039BFCDC415F1304F.
-Source155719-017fdccc and replay160949-db097714 bind the same payload hashes.
-Package`results/mod-dist/PojuAdvisor-0.2.237-Windows-20261027-162112.zip`,SHA256
-`4D2AC249AEBBD0E32EBEACA74D64F1EA8DF435D1E11AC95C99F57C5A7B281D7A`.
+Current Windows installation:0.2.240, source`4804129a`.
+Installed at17:23 with67 protected save/config/other-mod files unchanged.
+The exact accepted three DLLs win sample23 Ring1 with actual10000ms/two-worker
+advice:38inputs/31plays/7EndTurns,Pyre80. Independent normal-reward replay
+matches every full root/successor/forecast/RNG and13 train phases per process,
+with four zero counters.47 normal events create Ring2 save
+5D5B91B8648A464B9F10BBCEBC4C89A49D9D71C6CAFF1434F288B14B2483C6FB.
+Source171548-06d4bdca and replay171759-6302ac70 bind the same payload hashes.
+Package`results/mod-dist/PojuAdvisor-0.2.240-Windows-20261027-172341.zip`,SHA256
+`C6B58CC5896BDE32EF50670BD271BB58C48101BEB48CB6E3D849538BEE62455E`.
 The real game was stopped; isolated native workers use their copied payloads.
-Next launch loads237. Previous DLLs and receipt are under
-`BepInEx/PojuBackups/RandomCampaign-20261027-162112/`.
-This includes229-237 triple-Juice/Conduit/ChaosScepter/Consume, mixed Rage target,
+Next launch loads240. Previous DLLs and receipt are under
+`BepInEx/PojuBackups/RandomCampaign-20261027-172341/`.
+This includes229-240 triple-Juice/Conduit/ChaosScepter/Consume, mixed Rage target,
 paid outer-boss floor destruction, Burnout healing, Moon/Burnout-loss Rage and
 retained hand-copy trait ordering, partial-horizon merge and upper-opening
-portfolio fixes. The older branch has five default-budget accepted links and
-a verified Ring6 defeat; the stronger Ring4 branch continues Ring5. No complete
+portfolio, targeted damage, post-run setup audit and inherited troop-aura fixes.
+The older branch has five default-budget accepted links and a verified Ring6
+defeat; sample23 continues a retained metagame profile after Ring1. No complete
 default-budget campaign or Mac build is claimed.
 
 Previous Windows installation:0.2.210, source`85ee266c`.
