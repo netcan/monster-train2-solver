@@ -1,6 +1,21 @@
 # Player Mod validation · 2026-10-28
 
-Current Windows installation:0.2.278, source`a9f3c3f1`.
+Current Windows installation:0.2.288, source`7873a29a`.
+Installed at05:41 with67 protected save/config/other-mod files unchanged.
+Sample25 Ring7 source052551-d5c5bb59 and independent normal replay
+053440-668478dc win with actual10000ms/two-worker advice:59 inputs,
+49 plays/10 EndTurns/Pyre46, full state/forecasts/RNG,19 train phases each
+and four zero counters.58 normal events enter Ring8;131-file checkpoint
+restores130 hashes. Seven actual default-budget native victory pairs form
+one unchanged checkpoint chain.
+Package`results/mod-dist/PojuAdvisor-0.2.288-Windows-20261028-054146.zip`,SHA256
+`8DCD4C12345F7FDE061F8F1348F46B4918453E24D2BC66CE2552A25B04F37AEA`.
+The three installed DLLs match both accepted native processes; backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261028-054146/`.
+The stopped real game loads288 next launch. Ring8's new Juice/Powerstone
+combination is under isolated native calibration; no eight-battle clear yet.
+
+Previous Windows installation:0.2.278, source`a9f3c3f1`.
 Installed at03:40 with67 protected save/config/other-mod files unchanged.
 Sample25 Underlegion/Pyreborne Ring6 wins with actual10000ms/two-worker advice:
 57 inputs/46 plays/11 EndTurns,Pyre67. Source032535-b494124d and independent

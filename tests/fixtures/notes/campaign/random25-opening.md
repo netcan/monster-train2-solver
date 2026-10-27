@@ -204,3 +204,12 @@ Source SHA256ecf2373ec702a023faf46eb11145749a7d6bcc188b8ea30318691a66b5e3d525;
 replay SHA2563013ff43e425628723ac9d8755ee594191be869fd505dc2948622f60dfe62243.
 Acceptance journal:`random-campaign-20261028-052550-c018b525/accepted-rings.jsonl`.
 Frozen checker SHA256218B4A1280BB370A9AAD519FD702D7DA91B7A8D8673A026DC79BC09FEBF25005.
+
+Windows receives the exact288 payload at05:41; all67 protected files remain
+unchanged and278 is backed up. Package
+`PojuAdvisor-0.2.288-Windows-20261028-054146.zip` SHA256
+8DCD4C12345F7FDE061F8F1348F46B4918453E24D2BC66CE2552A25B04F37AEA,
+backup/receipt`RandomCampaign-20261028-054146`.
+Ring8 actual source054052-498fc914 rejects the initial Juice/Powerstone
+composition onStarterFireStarter18 before any input. Its native deployment
+and unchanged input checkpoint remain isolated; no eighth victory is claimed.
