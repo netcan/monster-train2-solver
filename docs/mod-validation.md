@@ -1,6 +1,24 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.200, source`c8354352`.
+Current Windows installation:0.2.209, source`1db960b1`.
+Installed at09:20 with67 protected save/config/other-mod files unchanged. Package
+`results/mod-dist/PojuAdvisor-0.2.209-Windows-20261027-092017.zip`,SHA256
+`d203be5b4e0b29dc72e22e3e5ce8a5d77e16c612473c8bc5b0c3f407566c774d`.
+The exact payload wins sample19 Ring5 using the actual10000ms/two-worker
+player search:43inputs,35plays/8EndTurns,Pyre26. The independent normal reward
+replay matches all full states/forecasts/RNG,15train phases per process and
+four zero counters. Normal40reward/map events reach Ring6. Delivery reuses
+the completed unchanged native pair receipt and identical payload hashes.
+The real and isolated games were stopped before installation. Next launch
+loads0.2.209; previous DLLs and receipt are backed up under
+`BepInEx/PojuBackups/RandomCampaign-20261027-092017/`. No Mac build was made.
+Three installed DLLs and their compiled provenance match the accepted pair.
+This includes the calibrated Juice/Echo and Conduit combinations, ordered
+ability draft choices, early summon capacity checks, forbidden-floor ability
+filtering and fixed-attack equipment target strategy. Sample19 has five
+accepted battles with refinements in Rings3/4; no full campaign clear is claimed.
+
+Previous Windows installation:0.2.200, source`c8354352`.
 Installed at07:15 with67 protected save/config/other-mod files unchanged. Package
 `results/mod-dist/PojuAdvisor-0.2.200-Windows-20261027-071459.zip`,SHA256
 `34b35511410d44cb1df6c448c08a9b36237d1ce0c1342e9f58cb788790485e37`.
@@ -20,7 +38,7 @@ Source0.2.201 also removes the stale hardcoded plugin version0.2.164. The
 BepInEx attribute and POJU-READY log constant now come from the project's
 Version property through a generated intermediate source file. Release build
 and assembly metadata inspection confirm0.2.201/0.2.201.0 agree. This display
-fix is staged for the next native release; Windows remains the accepted0.2.200.
+fix is included in the accepted0.2.209 Windows installation above.
 
 Previous Windows installation:0.2.190, source`ffcfbeb7`.
 Installed at05:09 with67 protected save/config/other-mod files unchanged. Package
