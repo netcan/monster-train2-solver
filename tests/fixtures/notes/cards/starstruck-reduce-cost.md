@@ -22,3 +22,19 @@ and new positive forecast. Both archives are registered with their focused
 typed gate. Existing deployment,30-input actual Full Moon cast and36-input
 dual-curse independent pairs still pass. Actual Ring5 campaign search continues
 on the same fixed build.
+
+Actual cast source184911-e1dbdba8 and independent replay185221-b97b45fc
+execute23 natural inputs with complete state/forecast/RNG agreement. At
+Turn4/New Moon, card18 pays1 energy: base1 minus original discount1 plus
+one Titan Curse1. LastPlayedCost records1, the one-HP Horde target dies,
+and four immutable cast branches match. The request's historical label says
+full Moon; the checker explicitly requires the captured New Moon instead.
+This pair does not claim a reduced-cost Full Moon Dazed cast.
+
+Actual default-budget Ring5 source184614-7f97375e loses after38 inputs and
+nine EndTurns, boss74HP. All18 train phases, full successors/forecasts/RNG,
+four zero counters and player projection pass. The physical losing route is
+archived separately. A38-input model policy wins with Pyre12; its first
+divergence is input26/Turn5, deploying card19 on floor2 instead of floor0.
+Native frozen execution185423-19ae004f physically wins but has three raw
+final-combat component differences; it is not yet an accepted victory.

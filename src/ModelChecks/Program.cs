@@ -578,6 +578,13 @@ if (args.Length is 2 or 3 && args[0] == "--starstruck-reduce-cost-only")
     else { using var replay = ModelJson.ReadFixture(args[2]); StarstruckReduceCostChecks.Native(source.RootElement, replay.RootElement); }
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--starstruck-reduce-cost-cast-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) StarstruckReduceCostChecks.Cast(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); StarstruckReduceCostChecks.Cast(source.RootElement, replay.RootElement); }
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--triple-juice-starstruck-cast-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -7813,6 +7820,9 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-starstruck-reduce-cost-replay-calibration.mt2f"));
     StarstruckReduceCostChecks.Native(source.RootElement, replay.RootElement);
+    using var cast = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-starstruck-reduce-cost-cast-calibration.mt2f"));
+    using var castReplay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-starstruck-reduce-cost-cast-replay-calibration.mt2f"));
+    StarstruckReduceCostChecks.Cast(cast.RootElement, castReplay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-triple-juice-starstruck-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-triple-juice-starstruck-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
