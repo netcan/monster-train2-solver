@@ -1252,6 +1252,8 @@ namespace MonsterTrain2Poju.Probe
                 OriginalReactiveUnitsIds = OriginalReactiveUnitsScenario.CardIds,
                 OriginalBaseChampionsPrepared = OriginalBaseChampionsScenario.Prepared,
                 OriginalBaseChampionsIds = OriginalBaseChampionsScenario.CardIds,
+                RankThreeRoomSlayPrepared = RankThreeRoomSlayScenario.Prepared,
+                RankThreeRoomSlayIds = RankThreeRoomSlayScenario.CardIds,
                 OriginalStatusUnitsPrepared = OriginalStatusUnitsScenario.Prepared,
                 OriginalStatusUnitsIds = OriginalStatusUnitsScenario.CardIds,
                 OriginalEquipmentCardsPrepared = OriginalEquipmentCardsScenario.Prepared,

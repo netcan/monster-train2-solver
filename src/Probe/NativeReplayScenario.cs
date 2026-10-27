@@ -1598,6 +1598,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalBaseChampionsScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && RankThreeRoomSlayScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Room slay execution must start on deployment turn.");
+                numericModifiersPrepared = true;
+                RankThreeRoomSlayScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalStatusUnitsScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original status units fixture must start on deployment turn.");
@@ -3058,6 +3064,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalAttackOverridesScenario.Enabled) pendingPlay = OriginalAttackOverridesScenario.Choose(decision, OriginalAttackOverridesScenario.CardIds);
                 if (OriginalReactiveUnitsScenario.Enabled) pendingPlay = OriginalReactiveUnitsScenario.Choose(decision, OriginalReactiveUnitsScenario.CardIds);
                 if (OriginalBaseChampionsScenario.Enabled) pendingPlay = OriginalBaseChampionsScenario.Choose(decision, OriginalBaseChampionsScenario.CardIds);
+                if (RankThreeRoomSlayScenario.Enabled) pendingPlay = RankThreeRoomSlayScenario.Choose(decision);
                 if (OriginalStatusUnitsScenario.Enabled) pendingPlay = OriginalStatusUnitsScenario.Choose(decision, OriginalStatusUnitsScenario.CardIds);
                 if (OriginalEquipmentCardsScenario.Enabled) pendingPlay = OriginalEquipmentCardsScenario.Choose(decision, OriginalEquipmentCardsScenario.CardIds);
                 if (OriginalSupportSpellsScenario.Enabled) pendingPlay = OriginalSupportSpellsScenario.Choose(decision, OriginalSupportSpellsScenario.CardIds);

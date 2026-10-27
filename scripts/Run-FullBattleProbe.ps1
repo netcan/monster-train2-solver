@@ -245,6 +245,7 @@ param(
     [string[]] $OriginalIsolatedEquipmentIds = @(),
     [switch] $OriginalStatusUnits,
     [switch] $OriginalBaseChampions,
+    [switch] $RankThreeRoomSlayExecution,
     [switch] $OriginalReactiveUnits,
     [switch] $OriginalAttackOverrides,
     [switch] $OriginalSupportUnits,
@@ -1098,6 +1099,7 @@ if ($IsolatedUnitConduit) {
 if ($OriginalAttackOverrides) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalReactiveUnits) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalBaseChampions) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($RankThreeRoomSlayExecution) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStatusUnits) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalEquipmentCards) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalIsolatedEquipmentIds.Count -gt 0) {
@@ -2086,6 +2088,7 @@ if ($OriginalCardDrawOnHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'original-c
 if ($OriginalBrokenRailRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-broken-rail' }
 if ($OriginalHephsBlueprints) { $environment['MT2_PROBE_MODIFIERS'] = 'original-hephs-blueprints' }
 if ($OriginalRageOnBurnoutStackLoss) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rage-on-burnout-stack-loss' }
+if ($RankThreeRoomSlayExecution) { $environment['MT2_PROBE_MODIFIERS'] = 'rank-three-room-slay-execution' }
 if ($OriginalPyreRevenge) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-revenge' }
 if ($OriginalExtractForEmberAndEchos) { $environment['MT2_PROBE_MODIFIERS'] = 'original-extract-for-ember-and-echos' }
 if ($OriginalCardDrawOnCardPlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-card-play' }
