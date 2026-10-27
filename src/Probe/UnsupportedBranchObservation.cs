@@ -23,6 +23,8 @@ namespace MonsterTrain2Poju.Probe
         private static FixtureValue[]? prefix;
         internal static bool ObserveTriggeredCorruption => prefix != null && request.GetProperty("Reason").GetString() ==
             "Battle preview floor 2: CorruptionAdded unit callbacks are not modeled.";
+        internal static bool ObserveOrdinaryBossAuraPreview => prefix != null && request.GetProperty("Reason").GetString() ==
+            "Native ordinary boss aura action outside the temporary preview roster.";
         private static BattleTurnState expected = null!;
         private static readonly List<Row> rows = new List<Row>();
         private static readonly List<object> roomAttachmentMovement = new List<object>();

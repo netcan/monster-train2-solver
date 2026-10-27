@@ -10,8 +10,21 @@ namespace MonsterTrain2Poju.Probe
     internal static class BossPreviewEnchantmentProbe
     {
         internal static readonly List<object> Records = new List<object>();
-        private static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_BOSS_PREVIEW_ENCHANTMENTS") == "1" &&
-            FullBattleTrace.Active != null && AllGameManagers.Instance!.GetCombatManager().GetTurnCount() == 5;
+        private static bool OrdinaryBoundary
+        {
+            get
+            {
+#if DEVELOPMENT_PROBE
+                return UnsupportedBranchObservation.ObserveOrdinaryBossAuraPreview;
+#else
+                return false;
+#endif
+            }
+        }
+        private static bool Enabled => FullBattleTrace.Active != null &&
+            (Environment.GetEnvironmentVariable("MT2_PROBE_BOSS_PREVIEW_ENCHANTMENTS") == "1" &&
+            AllGameManagers.Instance!.GetCombatManager().GetTurnCount() == 5 ||
+            OrdinaryBoundary && AllGameManagers.Instance!.GetCombatManager().GetTurnCount() >= 6);
 
         private static object Map(CardEffectEnchant effect, string field)
         {
@@ -34,7 +47,8 @@ namespace MonsterTrain2Poju.Probe
         {
             if (!Enabled) return;
             var source = (CharacterState)AccessTools.Field(typeof(CardEffectEnchant), "enchanterCharacter").GetValue(effect);
-            if (source == null || source.IsDestroyed || source.GetSourceCharacterData().name != "Boss_Level8_Fragile") return;
+            if (source == null || source.IsDestroyed || source.GetSourceCharacterData().name !=
+                (OrdinaryBoundary ? "EnchanterT2_Titanskin" : "Boss_Level8_Fragile")) return;
             Records.Add(new { Operation = operation, Frame = UnityEngine.Time.frameCount,
                 SavePreview = AllGameManagers.Instance!.GetSaveManager().PreviewMode,
                 Primary = Map(effect, "_primaryEnchantedTargets"), Preview = Map(effect, "_previewEnchantedTargets") });
@@ -45,6 +59,19 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Prefix(CardEffectEnchant __instance) => Observe("BeforeUpdate", __instance);
             private static void Postfix(CardEffectEnchant __instance) => Observe("AfterUpdate", __instance);
+        }
+
+        [HarmonyPatch(typeof(CombatManager), "SetCharacterPreviewState")]
+        private static class BattlePreviewPatch
+        {
+            private static void Prefix(CharacterState.CombatPreviewState previewState) => Observe("Before:" + previewState);
+            private static void Postfix(CharacterState.CombatPreviewState previewState) => Observe("After:" + previewState);
+            private static void Observe(string operation)
+            {
+                if (!Enabled || !OrdinaryBoundary) return;
+                var managers = AllGameManagers.Instance!;
+                Records.Add(new { Operation = operation, Frame = UnityEngine.Time.frameCount, SavePreview = managers.GetSaveManager().PreviewMode });
+            }
         }
 
         [HarmonyPatch(typeof(CombatManager), "SetTemporaryStateEnabled")]

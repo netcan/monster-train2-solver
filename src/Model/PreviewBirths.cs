@@ -233,12 +233,10 @@ namespace MonsterTrain2Poju.Model
                 bumpRules: raw.BumpRules, lastFeederId: raw.LastFeederId, moonPhaseMask: raw.MoonPhaseMask);
         }
 
-        internal static CombatUnit Restore(CombatUnit preview, IReadOnlyCollection<int> removedIds, bool afterFrame = false,
-            IReadOnlyCollection<int>? resetPreviewActionsForUnitIds = null)
+        internal static CombatUnit Restore(CombatUnit preview, IReadOnlyCollection<int> removedIds, bool afterFrame = false)
         {
             CombatUnit primary = preview.DeathState?.PreviewPrimary ?? throw new ArgumentException("A preview-born actor needs its initial primary state.");
-            CombatUnit restored = PreviewEffectsModel.Restore(primary, preview, removedIds,
-                resetPreviewActionsForUnitIds: resetPreviewActionsForUnitIds);
+            CombatUnit restored = PreviewEffectsModel.Restore(primary, preview, removedIds);
             var triggers = restored.Triggers.Select(trigger =>
             {
                 CombatTrigger observed = preview.Triggers.Single(item => item.StateId == trigger.StateId);
@@ -261,11 +259,10 @@ namespace MonsterTrain2Poju.Model
                 bumpRules: restored.BumpRules, lastFeederId: restored.LastFeederId, moonPhaseMask: restored.MoonPhaseMask);
         }
 
-        internal static EnchantmentRetainedUnit[] Retain(EnchantmentWorld observed, int firstPreviewId, IReadOnlyCollection<int> removedIds,
-            IReadOnlyCollection<int>? resetPreviewActionsForUnitIds = null)
+        internal static EnchantmentRetainedUnit[] Retain(EnchantmentWorld observed, int firstPreviewId, IReadOnlyCollection<int> removedIds)
             => observed.Rooms.SelectMany(room => room.Units).Concat(observed.RetainedUnits.Select(actor => actor.Unit))
                 .Where(unit => unit.Id >= firstPreviewId).Select(unit => new EnchantmentRetainedUnit(
-                    Restore(unit, removedIds, resetPreviewActionsForUnitIds: resetPreviewActionsForUnitIds), -1, false)).ToArray();
+                    Restore(unit, removedIds), -1, false)).ToArray();
 
         internal static CardInstanceState[] RestoreSourceCards(CombatContext preview, int firstCardId, ISet<int> restoredIds)
             => (preview.CardRegistry ?? Array.Empty<CardInstanceState>()).Where(card => card.InstanceId >= firstCardId).Select(card =>

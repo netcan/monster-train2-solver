@@ -823,6 +823,13 @@ if (args.Length is 2 or 3 && args[0] == "--pyre-ascension-queue-only")
     else { using var replay = ModelJson.ReadFixture(args[2]); PyreAscensionQueueChecks.Native(source.RootElement, replay.RootElement); }
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--enchantment-boss-preview-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    EnchantmentBossPreviewChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--enchantment-preview-death-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -8210,6 +8217,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-pyre-ascension-queue-replay-calibration.mt2f"));
     PyreAscensionQueueChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-boss-aura-preview-pending-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    EnchantmentBossPreviewChecks.Native(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-deathwish-enchantment-registry-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-deathwish-enchantment-registry-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

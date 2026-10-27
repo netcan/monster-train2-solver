@@ -248,18 +248,15 @@ namespace MonsterTrain2Poju.Model
                 if (context.SpawnPoints != null && originalPoints?.NextPreviewCopyId.HasValue != true)
                     context = context.WithSpawnPoints(context.SpawnPoints.WithState(context.SpawnPoints.Groups, context.SpawnPoints.Units.Concat(
                         removed.Select(id => new UnitSpawnPointState(id, null, null, spawnedInPreview: true))).ToArray()));
-                // Ordinary solitary bosses restore their preview actions. The
-                // separately managed outer boss and its companion retain them.
-                int[] previewBossIds = actors.Values.Where(unit => unit.IsBoss == true && unit.BumpRules?.OuterBoss != true &&
-                    unit.BumpRules?.CompanionBoss != true)
-                    .Select(unit => unit.Id).ToArray();
+                // Aura maps belong to shared effect objects. A target outside
+                // a temporary preview roster can retain a pending action even
+                // when it is a live ordinary boss; copy the observed map intact.
                 CombatUnit RestoreEnchantments(CombatUnit original)
                 {
                     // Dead preview actors can be pruned from the aura world;
                     // their observed non-primary reference writes still survive.
                     if (!actors.TryGetValue(original.Id, out CombatUnit? tested)) return RestorePrimaryEffects(original);
-                    return PreviewEffectsModel.Restore(RestorePrimaryEffects(original), tested, removed,
-                        resetPreviewActionsForUnitIds: previewBossIds);
+                    return PreviewEffectsModel.Restore(RestorePrimaryEffects(original), tested, removed);
                 }
                 // HeroManager's global preview reset also reaches enemy births
                 // retained by earlier temporary boss-kill previews this turn.
@@ -269,11 +266,11 @@ namespace MonsterTrain2Poju.Model
                     source.Movement, source.EnemySlotsPerRoom, originalWorld.RetainedUnits.Select(actor =>
                         actor.Preview && actor.Unit.Team == CombatTeam.Enemy ? new EnchantmentRetainedUnit(
                             PreviewBirthModel.Restore(actors.TryGetValue(actor.Unit.Id, out CombatUnit? tested) ? tested : actor.Unit,
-                                removed, resetPreviewActionsForUnitIds: previewBossIds), -1, false) :
+                                removed), -1, false) :
                         actor.Preview && actor.Unit.Team == CombatTeam.Player && originalPoints?.Units.Any(point =>
                             point.UnitId == actor.Unit.Id && point.SpawnedInPreview) == true ? PreviewBirthModel.CancelPlayer(actor) : new EnchantmentRetainedUnit(
                             RestoreEnchantments(actor.Unit), actor.RoomIndex, actor.Preview))
-                        .Concat(PreviewBirthModel.Retain(observed, firstPreviewId, removed, previewBossIds)).ToArray(),
+                        .Concat(PreviewBirthModel.Retain(observed, firstPreviewId, removed)).ToArray(),
                     originalWorld.EnchanterIds.Concat(observed.EnchanterIds).Distinct().ToArray(),
                     originalWorld.AllowUpdates, originalWorld.Updating, originalWorld.Preview,
                     context.IsolatedBattlePreview == true ? originalWorld.TestRng : observed.TestRng, true));
