@@ -70,6 +70,14 @@ internal static class GeneratedMoonTrackingChecks
                 "Generated moon tracking differs from full native state/RNG.");
         });
         Require(immutable == JsonSerializer.Serialize(before, ModelJson.Options), "Generated moon tracking changed its parent.");
+        var changedKnown = JsonSerializer.SerializeToNode(actual, ModelJson.Options)!;
+        changedKnown["Spawn"]!["Train"]!["Rooms"]![0]!["Units"]![0]!["MoonPhaseMask"] = 1;
+        Require(!CapturesEquivalent(actual, changedKnown.Deserialize<BattleTurnState>(ModelJson.Options)!),
+            "A previously observed phase bit was ignored.");
+        changedKnown = JsonSerializer.SerializeToNode(actual, ModelJson.Options)!;
+        changedKnown["Energy"] = actual.Energy + 1;
+        Require(!CapturesEquivalent(actual, changedKnown.Deserialize<BattleTurnState>(ModelJson.Options)!),
+            "A non-mask native field was ignored.");
         foreach (string control in new[] { "Id", "Cost", "Effect", "Traits" })
         {
             var changed = JsonSerializer.SerializeToNode(creation, ModelJson.Options)!;

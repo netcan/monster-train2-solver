@@ -102,7 +102,7 @@ namespace MonsterTrain2Poju.Model
                         (tank && allies.Any(unit => unit.Modifiers?.IsChampion == true) ? 100 + unit.Health * 2 : 0);
                 }
                 CombatUnit? target = room.Units.FirstOrDefault(unit => unit.Id == action.TargetUnitId);
-                if (target == null) return RoomDamageValue(source, action, rule) ??
+                if (target == null) return RoomPreCombatDamageValue(source, action, rule) ?? RoomDamageValue(source, action, rule) ??
                     RoomNegativeStatusValue(source, action, rule, preferredDeploymentRoom) ??
                     room.Units.Count(unit => unit.Team == CombatTeam.Enemy) * 25 + action.RoomIndex;
                 if (SacrificeTargetValue(rule, target) is double sacrifice) return sacrifice;
@@ -225,6 +225,18 @@ namespace MonsterTrain2Poju.Model
             return stacks - Math.Abs(action.RoomIndex - preferredDeploymentRoom) * .001;
         }
 
+        internal static double? RoomPreCombatDamageValue(BattleTurnState source, PlayCardAction action, CardPlayRule rule)
+        {
+            if (rule.Effects.Count != 1 || rule.OnCastEffects.Count != 0 || rule.Effects[0].Type != "AttachRoomCapacity" ||
+                rule.Effects[0].RoomAttachment?.PreCombat is not RoomPreCombatRule pre ||
+                RoomPreCombatModel.Validate(pre) != null || pre.Effects.Count != 1 ||
+                pre.Effects[0] is not { Type: "Damage", AllowPlayer: true, AllowEnemy: true }) return null;
+            // Persistent friendly fire must not inherit the army's deployment
+            // preference. Price the damage and combat strength it repeatedly
+            // puts at risk; the full search still retains every legal floor.
+            return DamageRoomValue(source, action, pre.Effects[0], persistent: true);
+        }
+
         internal static double? RoomDamageValue(BattleTurnState source, PlayCardAction action, CardPlayRule rule)
         {
             // Estimate deterministic room damage against visible health/armor.
@@ -237,6 +249,11 @@ namespace MonsterTrain2Poju.Model
             if (effect.Type != "Damage" || effect.Target is not ("Room" or "FrontInRoom") ||
                 !effect.AllowEnemy || effect.Value <= 0)
                 return null;
+            return DamageRoomValue(source, action, effect, persistent: false);
+        }
+
+        private static double? DamageRoomValue(BattleTurnState source, PlayCardAction action, CardActionEffect effect, bool persistent)
+        {
             CardTargets targets = CardTargetModel.Collect(source.Spawn.Train, action.RoomIndex, effect, Array.Empty<int>(), firstEffect: true);
             if (!targets.Supported) return null;
             return source.Spawn.Train.Rooms.SelectMany(room => room.Units)
@@ -249,7 +266,7 @@ namespace MonsterTrain2Poju.Model
                     // A mixed-team room spell also destroys our combat strength.
                     // This estimate only orders seeds: legal sacrifice casts
                     // remain available to the full model/search enumerator.
-                    double loss = effect.Value >= durability
+                    double loss = effect.Value >= durability || persistent
                         ? Math.Max(0d, unit.Attack) * unit.Attacks + (unit.Modifiers?.IsChampion == true ? 10000d : 0d)
                         : 0d;
                     return -damage - loss;

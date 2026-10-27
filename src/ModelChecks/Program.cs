@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--inferno-placement-policy-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    InfernoPlacementPolicyChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--inactive-moon-attachment-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -7305,10 +7311,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-unb
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-unbox-moon-relic-replay-calibration.mt2f"));
     UnboxMoonRelicChecks.Native(source.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) == "player-generated-moon-tracking-calibration.mt2f"))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-generated-moon-tracking-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-generated-moon-tracking-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var source = ModelJson.ReadFixture(path);
-    GeneratedMoonTrackingChecks.Native(source.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-generated-moon-tracking-replay-calibration.mt2f"));
+    GeneratedMoonTrackingChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-inactive-moon-room-attachment-calibration.mt2f"))
 {
@@ -8144,6 +8152,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     .Select(path => ModelJson.RelatedFixture(path, "player-terminal-pyre-capture-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     TerminalPyreCaptureChecks.Native(path, ModelJson.RelatedFixture(path, "player-terminal-pyre-capture-replay-calibration.mt2f"));
+    using var infernoSource = ModelJson.ReadFixture(path);
+    InfernoPlacementPolicyChecks.Native(infernoSource.RootElement);
     using var fixture = ModelJson.ReadFixture(path);
     InfernoPreCombatPositionsChecks.Native(fixture.RootElement);
     string rawPath = ModelJson.RelatedFixture(path, "player-terminal-pyre-capture-raw-replay-calibration.mt2f");

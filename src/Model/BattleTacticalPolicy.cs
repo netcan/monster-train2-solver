@@ -191,7 +191,7 @@ namespace MonsterTrain2Poju.Model
                     return -100 * Math.Abs(action.RoomIndex - preferredDeploymentRoom) + (tank ? -action.PlayerPosition : action.PlayerPosition);
                 }
                 CombatUnit? target = room.Units.FirstOrDefault(unit => unit.Id == action.TargetUnitId);
-                if (target == null) return BattleHeuristicPolicy.RoomDamageValue(source, action, rule) ??
+                if (target == null) return BattleHeuristicPolicy.RoomPreCombatDamageValue(source, action, rule) ?? BattleHeuristicPolicy.RoomDamageValue(source, action, rule) ??
                     BattleHeuristicPolicy.RoomNegativeStatusValue(source, action, rule, preferredDeploymentRoom) ??
                     -100 * Math.Abs(action.RoomIndex - preferredDeploymentRoom);
                 if (BattleHeuristicPolicy.SacrificeTargetValue(rule, target) is double sacrifice) return sacrifice;

@@ -51,3 +51,13 @@ reset guards. Source36390bytes,5973nodes,SHA256
 a43431ab24c38979583ef424684fdffb8c5b42167c7c1f2f54f3aaaabf93f586.
 Independent frozen replay and subsequent full-battle acceptance are separate
 checks; this component is not a seventh victory.
+
+Frozen28337a22dab independently captures044001-3e252ada in62seconds with
+the exact same request and18 native inputs. Every formerly observed native
+field, all full successors/forecasts/RNG and four immutable branches match;
+newly exposed inactive understanding fields are checked by the model too.
+The registered gate always checks the pair and original17-input incomplete
+counterexample. Replay36795bytes/6019nodes/SHA256
+e1cfa853ed8a20d33fede7f84038a76ec4ee6f640c960116ecaccdd0f97fec68.
+Frozen checker SHA256
+28d46b26bca9bd895b18d9ab47fe837e93aeb18161fd6088cc3221d25c6b4fbb.
