@@ -511,6 +511,10 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-room-slay-status-replay-calibration.mt2f',
     'player-rank-three-room-slay-calibration.mt2f',
     'player-rank-three-room-slay-replay-calibration.mt2f',
+    'player-harvest-angel-moon-birth-calibration.mt2f',
+    'harvest-angel-moon-creation-calibration.mt2f',
+    'player-harvest-angel-moon-birth-replay-calibration.mt2f',
+    'harvest-angel-moon-creation-replay-calibration.mt2f',
     'player-room-death-retained-cleanup-calibration.mt2f',
     'player-room-death-retained-cleanup-replay-calibration.mt2f',
     'player-zero-energy-x-policy-calibration.mt2f',
@@ -2071,6 +2075,17 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -ne 'p
         (Get-TestFixturePath 'player-ascend-deferred-destruction-counterexample-calibration.mt2f') `
         (Get-TestFixturePath 'full-battle-random-campaign-20-ring3-release215-budget10000-search.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Focused Ascend destruction checks failed.' }
+    return
+}
+$harvestAngelMoonNames = @('player-harvest-angel-moon-birth-calibration.mt2f', 'harvest-angel-moon-creation-calibration.mt2f', 'player-harvest-angel-moon-birth-replay-calibration.mt2f', 'harvest-angel-moon-creation-replay-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $harvestAngelMoonNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Harvest angel moon birth checker build failed.' }
+    }
+    $harvestAngelMoonArguments = @('--harvest-angel-moon-birth-only') + @($harvestAngelMoonNames | ForEach-Object { Get-TestFixturePath $_ })
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @harvestAngelMoonArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Focused harvest angel moon birth checks failed.' }
     return
 }
 $echoPactNames = @('player-echo-remnant-pact-copy-calibration.mt2f', 'player-echo-remnant-pact-endturn-calibration.mt2f', 'player-echo-remnant-pact-endturn-replay-calibration.mt2f')
