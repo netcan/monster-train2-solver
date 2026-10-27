@@ -18,7 +18,13 @@ namespace MonsterTrain2Poju.Model
             CardTraitValue[] active = (CardExhaustModel.RefreshTraits(card).CombinedTraits ?? Array.Empty<CardTraitValue>()).Where(trait => trait.RuntimeType == Trait).ToArray();
             if (active.Length == 0) return new StatisticQueryResult(context, amount);
             int index = descriptor.BaseTraits.ToList().FindIndex(trait => trait.RuntimeType == Trait);
-            if (active.Length != 1 || index < 0 || descriptor.SourceTraits == null || descriptor.SourceTraits.Count != descriptor.BaseTraits.Count ||
+            // SourceTraits contains the authored prefix. Permanent upgrades
+            // append runtime traits such as Consume without adding source
+            // definitions or moving the existing moon trait's source index.
+            if (active.Length != 1 || index < 0 || descriptor.SourceTraits == null || index >= descriptor.SourceTraits.Count ||
+                descriptor.SourceTraits.Count > descriptor.BaseTraits.Count ||
+                !descriptor.SourceTraits.Select(trait => trait.Type).SequenceEqual(
+                    descriptor.BaseTraits.Take(descriptor.SourceTraits.Count).Select(trait => trait.DeclaredName)) ||
                 descriptor.TemporaryTraits.Any(trait => trait.RuntimeType == Trait) ||
                 descriptor.PermanentReplacements.Any(rule => rule.OldName == Trait || rule.NewRuntimeType == Trait) ||
                 card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == Trait) == true))
