@@ -11,10 +11,11 @@ internal static partial class OfflineBattleSearch
     // Reuse recorded forecasts before spending another search/native battle.
     // This exports a replayable failure boundary, never a native successor.
     internal static void ExtractUnsupported(string input, string output, string reason,
-        bool endTurnOnly = false, int preferredRoom = 2, bool strength = false)
+        bool endTurnOnly = false, int preferredRoom = 2, bool strength = false, int fromDecision = 0)
     {
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         Require(!string.IsNullOrWhiteSpace(reason), "An exact rejection reason is required.");
+        Require(fromDecision >= 0, "The starting decision must be nonnegative.");
         using var source = FixtureDocument.Read(input);
         bool deployment = IsDeploymentObservation(source.RootElement);
         FixtureValue[] rows = source.RootElement.TryGetProperty("RollingDecisions", out FixtureValue recorded)
@@ -64,6 +65,7 @@ internal static partial class OfflineBattleSearch
                 System.Text.Json.JsonSerializer.Serialize(action) + " reason=" + reason);
             return true;
         }
+        int decisionIndex = 0;
         foreach (FixtureValue row in rows)
         {
             BattleTurnState current = row.GetProperty("Root").Deserialize<BattleTurnState>()!;
@@ -71,7 +73,7 @@ internal static partial class OfflineBattleSearch
             RoomOutcome outcome = RoomOutcome.Exchanged;
             foreach (FixtureValue stepValue in row.GetProperty("PlanSteps").EnumerateArray())
             {
-                if (Extract(current, forecastPrefix)) return;
+                if (decisionIndex >= fromDecision && Extract(current, forecastPrefix)) return;
                 Require(!Terminal(outcome), "Recorded forecast follows a terminal result.");
                 Step next = new Step { Action = stepValue.GetProperty("Action").Deserialize<PlayCardAction>(),
                     IsEndTurn = stepValue.GetProperty("IsEndTurn").GetBoolean() };
@@ -81,7 +83,8 @@ internal static partial class OfflineBattleSearch
             prefix.Add(new Step { Action = row.GetProperty("Action").Deserialize<PlayCardAction>(),
                 IsEndTurn = row.GetProperty("IsEndTurn").GetBoolean() });
             if (row.TryGetProperty("Actual", out FixtureValue actual) && actual.ValueKind == FixtureKind.Object &&
-                Extract(actual.Deserialize<BattleTurnState>()!, new List<Step>(prefix))) return;
+                decisionIndex + 1 >= fromDecision && Extract(actual.Deserialize<BattleTurnState>()!, new List<Step>(prefix))) return;
+            decisionIndex++;
         }
         if (deployment)
         {

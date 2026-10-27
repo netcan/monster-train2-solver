@@ -261,6 +261,12 @@ scenario controls and pauses background search. This short observation mode
 closed the [Endless spell routing gap](../cards/endless-spell-routing.md) with two native
 processes in 140.08/123.97 seconds; it does not claim terminal battle acceptance.
 
+`extract-unsupported-from <recorded.mt2f> <new-output.mt2f> <exact-reason>
+<first-decision-index>` limits the search to that zero-based recorded decision
+and later roots while retaining and independently validating the entire
+original prefix. This avoids selecting an earlier occurrence of the same
+rejection when investigating a later player-facing failure.
+
 `refine-policy <native.mt2f> <new-winning-output.mt2f> <milliseconds>
 [start-decision] [last-decision]` compares local alternatives to an accepted
 native battle without launching a new game for every candidate. The inclusive
