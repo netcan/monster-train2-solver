@@ -742,11 +742,23 @@ namespace MonsterTrain2Poju.Probe
                         .Where(item => item.RoomIndex != room.GetRoomIndex())
                         .SelectMany(item => item.Units.Select(unit => (RoomIndex: item.RoomIndex, Unit: unit)))
                         .Where(target => target.Unit.Id != (pyre?.Id ?? 0)).ToArray() ?? Array.Empty<(int, CombatUnit)>();
+                    var combat = managers.GetCombatManager()!;
+                    var queued = ((IEnumerable<CombatManager.TriggerQueueData>)AccessTools.Property(typeof(CombatManager), "TriggerQueue")
+                        .GetValue(combat)).Select(item => new StageQueuedTrigger
+                        {
+                            Kind = item.trigger.ToString(),
+                            UnitId = item.character != null && TryGetUnitId(item.character, out int id) ? id : 0,
+                            DyingUnitId = item.dyingCharacter != null && TryGetUnitId(item.dyingCharacter, out int dyingId) ? dyingId : 0,
+                            Count = item.triggerCount,
+                            CanFireTriggers = item.canFireTriggers
+                        }).ToArray();
                     record = new StageRecord
                     {
                         Index = stages.Count,
                         Turn = managers.GetCombatManager()!.GetTurnCount(),
                         Kind = kind,
+                        TriggerQueueRunning = combat.IsRunningTriggerQueue,
+                        QueuedTriggers = queued,
                         Room = room,
                         Before = before,
                         ExternalTargets = externalTargets.Select(target => new TowerTargetSnapshot
@@ -1926,6 +1938,8 @@ namespace MonsterTrain2Poju.Probe
             public int Index { get; set; }
             public int Turn { get; set; }
             public string Kind { get; set; } = "";
+            public bool TriggerQueueRunning { get; set; }
+            public StageQueuedTrigger[] QueuedTriggers { get; set; } = Array.Empty<StageQueuedTrigger>();
             [JsonIgnore] public RoomState Room { get; set; } = null!;
             public RoomCombatState Before { get; set; } = null!;
             public TowerTargetSnapshot[] ExternalTargets { get; set; } = Array.Empty<TowerTargetSnapshot>();
@@ -1936,6 +1950,15 @@ namespace MonsterTrain2Poju.Probe
             public CombatUnit? ActualExternalPyre { get; set; }
             public TowerTargetSnapshot[]? ActualExternalTargets { get; set; }
             public string? Difference { get; set; }
+        }
+
+        private sealed class StageQueuedTrigger
+        {
+            public string Kind { get; set; } = "";
+            public int UnitId { get; set; }
+            public int DyingUnitId { get; set; }
+            public int Count { get; set; }
+            public bool CanFireTriggers { get; set; }
         }
 
         private sealed class TowerTargetSnapshot
