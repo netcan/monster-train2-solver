@@ -3475,7 +3475,15 @@ namespace MonsterTrain2Poju.Probe
             }
             int selectedBeforeTest = managers.GetRoomManager()!.GetSelectedRoom();
             if (!cards.CanPlayHandCard(cards.GetHand()[index], action.RoomIndex, drop, null, null, out var error))
+            {
+#if DEVELOPMENT_PROBE
+                if (UnsupportedBranchObservation.TryObserveRejection(action, error.ToString()))
+                {
+                    pendingPlay = null; Enter(Stage.Battle, 30f); return;
+                }
+#endif
                 throw new InvalidOperationException("The native game rejected a modeled legal play: " + error);
+            }
             int selectedAfterTest = managers.GetRoomManager()!.GetSelectedRoom();
             FullBattleTrace.Active!.BeginCardPlay(action, scenarioAction: scenarioPrelude);
             int selectedAfterCapture = managers.GetRoomManager()!.GetSelectedRoom();

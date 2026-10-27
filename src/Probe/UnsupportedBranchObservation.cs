@@ -27,6 +27,7 @@ namespace MonsterTrain2Poju.Probe
         private static readonly List<Row> rows = new List<Row>();
         private static readonly List<object> roomAttachmentMovement = new List<object>();
         private static object? abilityCacheWarm;
+        private static string? nativeSelectionRejection;
         private static bool waiting;
         private static int readyFrame = -1;
         internal static bool AwaitingSettlement()
@@ -90,6 +91,7 @@ namespace MonsterTrain2Poju.Probe
             using var document = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "NativeUnsupportedBranchObservation",
                 GameModuleMvid = typeof(CardState).Module.ModuleVersionId.ToString(),
                 Request = Read<JObject>(request), NativeCompleted = true, Rows = rows,
+                NativeSelectionRejection = nativeSelectionRejection,
                 PlayerAdvisor = PlayerAdvisorProbe.Evidence,
                 EquipmentOwnerRecoveries = FullBattleTrace.Active!.EquipmentOwnerRecoveries.ToArray(),
                 EquipmentPreviewClear = equipmentPreviewClear,
@@ -107,6 +109,20 @@ namespace MonsterTrain2Poju.Probe
                 "unsupported-branch-native.mt2f"), FileMode.CreateNew, FileAccess.Write);
             document.Write(stream);
             Completed = true;
+        }
+
+        internal static bool TryObserveRejection(PlayCardAction action, string error)
+        {
+            if (!Enabled || !waiting || rows.Count == 0 || !rows.Last().Boundary ||
+                !request.TryGetProperty("ExpectedNativeRejection", out var expectedError)) return false;
+            Require(expectedError.GetString() == error, "Native rejected the candidate for a different reason: " + error);
+            Row row = rows.Last();
+            Require(!row.IsEndTurn && row.Action?.CardInstanceId == action.CardInstanceId &&
+                row.Action.RoomIndex == action.RoomIndex && action.ActivatorUnitId == 0 && !action.ActivatorRoomIndex.HasValue,
+                "Only the requested final hand-card rejection may complete this observation.");
+            nativeSelectionRejection = error;
+            Observe(PlayerAdvisorProbe.Capture());
+            return true;
         }
 
         private static object? CaptureFloorTransitionPiercing()
@@ -199,7 +215,9 @@ namespace MonsterTrain2Poju.Probe
             {
                 BattleActionResult result = BattleActionModel.PlayCard(root, action!);
                 predicted = result.State; reason = result.Reason; outcome = result.Outcome;
-                Require(result.Rejection != ActionRejection.Illegal, "Native diagnostic action is illegal: " + reason);
+                Require(result.Rejection != ActionRejection.Illegal || boundary &&
+                    request.TryGetProperty("ExpectedNativeRejection", out var nativeError) && nativeError.ValueKind == FixtureKind.String,
+                    "Native diagnostic action is illegal: " + reason);
             }
             Require(boundary || predicted != null && outcome == RoomOutcome.Exchanged,
                 "Branch prefix is unsupported or terminal: " + reason);
