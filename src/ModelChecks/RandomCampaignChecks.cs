@@ -7,6 +7,22 @@ internal static class RandomCampaignChecks
 {
     internal static void Curated(string path)
     {
+        if (Path.GetFileName(path) == "full-battle-random-campaign-24-ring6-release261-budget10000-settled-loss.mt2f")
+        {
+            using var native = ModelJson.ReadFixture(path);
+            using var replay = ModelJson.ReadFixture(path.Replace("-loss.mt2f", "-loss-replay.mt2f", StringComparison.Ordinal));
+            DefeatPair(native.RootElement, replay.RootElement, 1122120878, 0, 5, "Banished", "Hellhorned", 10000);
+            foreach (var fixture in new[] { native.RootElement, replay.RootElement })
+            {
+                var rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+                var final = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                Require(rows.Length == 51 && rows.Count(row => row.GetProperty("IsEndTurn").GetBoolean()) == 11 &&
+                    final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsBoss == true) is
+                        { AssetKey: "Boss_Level6_Cael_DamageShield", Health: 512, Attack: 22 },
+                    "Settled sample24 loss changed its51 inputs or512 bossHP.");
+            }
+            return;
+        }
         if (Path.GetFileName(path) == "full-battle-random-campaign-23-ring6-release256-budget10000-settled-loss.mt2f")
         {
             using var native = ModelJson.ReadFixture(path);

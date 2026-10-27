@@ -89,3 +89,27 @@ SHA256 FCD33D50B1EC6A2B64AEB27B83573B9BA5E1D68CF82DA1A7821E12E7FF8CAD27.
 Backup/receipt: BepInEx/PojuBackups/RandomCampaign-20261027-223625.
 Three installed DLL hashes match both accepted native processes and all67
 protected files remain unchanged. Later battles and full settlement remain open.
+
+Release261 Ring6 source223504-6124ffb4 and independent frozen native replay
+224128-720c69dc end in the same actual defeat:51 inputs/40 plays/11 EndTurns,
+Cael_DamageShield512 HP/22 attack. Complete state/forecast/RNG and all22 train
+phases per process match; four raw failure counters remain zero. The source
+passes53 publications/351 captures/zero purity failures and1187 mask contexts.
+Explicit normal defeat settlement retains the five native wins and final loss,
+uses no cheats, gives victoryType=None, and returns to an idle save with SHA256
+B4E2C1BD67A942F5BEED6E6961C6791183BE0F479F297F02B8F88BCFEC6A3780.
+Its six audit events and the independent defeat pair pass. No sixth victory,
+seventh-battle checkpoint or completed Standard campaign is claimed.
+
+A bounded offline deployment check completes all36 joint placements of the
+four initial units, zero unknowns and four improvements in104158ms. The best
+55-input complete model route leaves103 bossHP; it is independently replayed
+model evidence, not an actual native win. Its grid is exhausted; a separate
+bounded action-order investigation follows without repeating these placements.
+The first action-order batch checks116 candidates/115 complete/zero unknowns,
+accepts five improvements (one joint pair), and independently exports a41-input
+complete model defeat with2 bossHP. Its180-second budget ends with one partial
+candidate, which is not exported. A separate middle/late-input batch follows;
+the2-HP route is not claimed as a native victory.
+Sample25 Underlegion/Pyreborne1860103187 starts naturally from the settled
+defeat profile, preserving its metagame rather than resetting to an older run.
