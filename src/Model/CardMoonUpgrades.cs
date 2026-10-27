@@ -192,6 +192,20 @@ namespace MonsterTrain2Poju.Model
                 RelicCardModifierModel.Validate(relic) == null;
         }
 
+        // Starstruck's original moon Daze fires after its damage has settled.
+        // Native OnCast retains the dead drop-point object and its statistics;
+        // it does not require that object to remain a live room occupant.
+        internal static bool RetiredStarstruckTarget(CardInstanceState? card, IReadOnlyList<CardActionEffect> effects)
+        {
+            if (card?.DataId != "753f20a2-c625-47b3-be4b-8600b673841e" || !Present(card) ||
+                effects.Count != 1 || effects[0].Type != "AddStatus" || effects[0].Target != "DropTargetCharacter" ||
+                effects[0].Statuses.Count != 1 || effects[0].Statuses[0].Id != "dazed" || effects[0].Statuses[0].Stacks != 1)
+                return false;
+            CardUpgradeModifier[] triggers = card.Permanent.Upgrades.Concat(card.Temporary.Upgrades)
+                .Where(upgrade => upgrade.Lifecycle?.Triggers.Any(trigger => trigger.Type == "OnCast") == true).ToArray();
+            return triggers.Length == 1 && triggers[0].DataId == "12793a9c-fae4-42ab-80bb-c3274e681c19" && KnownPayload(triggers[0]);
+        }
+
         // Each original Heavenfall upgrade creates one separate OnCast trigger.
         // Native resolves the selected room again between these triggers.
         internal static bool SeparateCastRooms(CardInstanceState card) =>

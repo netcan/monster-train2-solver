@@ -135,13 +135,33 @@ namespace MonsterTrain2Poju.Model
             int targetId, int sourceCardId, BattlePlayRules definitions, IReadOnlyList<CardPileState>? otherPiles, int selfUnitId = 0,
             int targetSpawnPointIndex = -1, IReadOnlyList<CardRecursionSelection>? recursionSelections = null, bool onCastEffects = false,
             bool onUnplayedNegativeEffects = false, IReadOnlyList<ElixirMixSelection>? mixSelections = null,
-            IReadOnlyList<int>? priorTargets = null, int? abilityRoomIndex = null, bool resolveLiveEffects = true)
-            => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, true, otherPiles,
+            IReadOnlyList<int>? priorTargets = null, int? abilityRoomIndex = null, bool resolveLiveEffects = true,
+            CombatUnit? retainedDropTarget = null)
+        {
+            if (onCastEffects && retainedDropTarget?.Id == targetId && retainedDropTarget.Health <= 0 &&
+                priorTargets?.Contains(targetId) == true && !source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == targetId) &&
+                CardMoonUpgradeModel.RetiredStarstruckTarget(source.Context?.FindCard(sourceCardId), effects))
+            {
+                // CheckTargetsOverride keeps the original drop-point object even
+                // after damage removes it from the room. Apply the original Daze
+                // to that private reference, including normal Juice/statistics.
+                // It must never become a live room occupant again.
+                RoomCombatState room = source.Rooms.Single(item => item.RoomIndex == roomIndex);
+                var frame = room.WithUnits(room.Units.Concat(new[] { retainedDropTarget }).ToArray());
+                RoomCombatResult applied = StatusApplicationModel.ApplyRetained(frame, targetId, effects[0].Statuses[0], sourceCardId);
+                if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
+                CombatUnit updated = applied.State!.Units.Single(unit => unit.Id == targetId);
+                return new TrainSpellResult(WithContext(source, applied.State.Context!.AfterCardEffects()), applied.Outcome, applied.Events,
+                    collections: new[] { new SpellTargetCollection(0, new[] { targetId }) }, otherPiles: otherPiles,
+                    retainedUnits: new[] { updated }, pendingCallbacks: applied.PendingCallbacks);
+            }
+            return ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, true, otherPiles,
                 selfUnitId, deferFinalCallbacks: true, targetSpawnPointIndex: targetSpawnPointIndex,
                 recursionSelections: recursionSelections, onCastEffects: onCastEffects,
                 onUnplayedNegativeEffects: onUnplayedNegativeEffects, mixSelections: mixSelections,
                 priorTargets: priorTargets, playerActionPhase: true, abilityRoomIndex: abilityRoomIndex,
                 resolveLiveEffects: resolveLiveEffects);
+        }
 
         internal static TrainSpellResult ApplyCachedEffects(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
             int sourceCardId, int selfUnitId, BattlePlayRules? definitions) =>

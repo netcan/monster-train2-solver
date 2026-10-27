@@ -865,7 +865,8 @@ namespace MonsterTrain2Poju.Model
                     .Select(selection => new CardRecursionSelection(selection.EffectIndex - rule.Effects.Count, selection.CardInstanceIds)).ToArray();
                 TrainSpellResult result = CardSpellModel.ApplyForCardPlay(train, action.RoomIndex, rule.OnCastEffects,
                     action.TargetUnitId, card.InstanceId, source.PlayRules, piles, recursionSelections: onCastSelections,
-                    onCastEffects: true, priorTargets: lastMainTargets);
+                    onCastEffects: true, priorTargets: lastMainTargets,
+                    retainedDropTarget: retainedSpellUnits.LastOrDefault(unit => unit.Id == action.TargetUnitId));
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 foreach (CombatEvent damage in result.Events.Where(item => item.Kind == "Spell" && item.Amount > 0))
                     lastDamagedUnitIds.Add(damage.Target);

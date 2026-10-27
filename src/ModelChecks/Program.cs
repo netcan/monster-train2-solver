@@ -584,6 +584,13 @@ if (args.Length is 2 or 3 && args[0] == "--mirrored-existing-horde-only")
     else { using var replay = ModelJson.ReadFixture(args[2]); MirroredExistingHordeChecks.Native(source.RootElement, replay.RootElement); }
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--starstruck-retired-target-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) StarstruckRetiredTargetChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); StarstruckRetiredTargetChecks.Native(source.RootElement, replay.RootElement); }
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--mirrored-troop-aura-birth-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
