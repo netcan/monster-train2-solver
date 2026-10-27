@@ -39,7 +39,11 @@ namespace MonsterTrain2Poju.Model
                     .OrderByDescending(action => TargetPriority(action, choice.rule!)))
                 {
                     BattleActionResult result = BattleActionModel.PlayCard(source, action);
-                    if (result.Supported) return new SupportedActionCandidate(action, result);
+                    if (result.Supported)
+                    {
+                        if (!AttackBuffDamagePolicy.UsefulSuccessor(source, action, choice.rule!, result.State!)) continue;
+                        return new SupportedActionCandidate(action, result);
+                    }
                     if (result.Rejection == ActionRejection.Unsupported)
                         omitted.Add(new UnsupportedActionAttempt(action, result.Reason ?? "Unsupported strength-seed action."));
                 }
@@ -100,6 +104,7 @@ namespace MonsterTrain2Poju.Model
                     RoomNegativeStatusValue(source, action, rule, preferredDeploymentRoom) ??
                     room.Units.Count(unit => unit.Team == CombatTeam.Enemy) * 25 + action.RoomIndex;
                 if (SacrificeTargetValue(rule, target) is double sacrifice) return sacrifice;
+                if (AttackBuffDamagePolicy.TargetValue(rule, target) is double buffDamage) return buffDamage;
                 bool harmful = rule.Effects.Any(effect => effect.Type is "Damage" or "Kill" ||
                     effect.Statuses.Any(status => status.DisplayCategory == "Negative"));
                 if (harmful != (target.Team == CombatTeam.Enemy)) return -1e6;

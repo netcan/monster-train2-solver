@@ -102,6 +102,7 @@ namespace MonsterTrain2Poju.Model
                     BattleActionResult result = Play(source, action);
                     if (result.Supported)
                     {
+                        if (!AttackBuffDamagePolicy.UsefulSuccessor(source, action, rule, result.State!)) continue;
                         var candidate = new SupportedActionCandidate(action, result);
                         // Prefer actual injury over spending a damage-only card
                         // entirely on shields. If every target blocks it, keep
@@ -192,6 +193,7 @@ namespace MonsterTrain2Poju.Model
                     BattleHeuristicPolicy.RoomNegativeStatusValue(source, action, rule, preferredDeploymentRoom) ??
                     -100 * Math.Abs(action.RoomIndex - preferredDeploymentRoom);
                 if (BattleHeuristicPolicy.SacrificeTargetValue(rule, target) is double sacrifice) return sacrifice;
+                if (AttackBuffDamagePolicy.TargetValue(rule, target) is double buffDamage) return buffDamage;
                 CardActionEffect[] effects = rule.Effects.Concat(rule.OnCastEffects).ToArray();
                 // Only effects on the selected actor determine its team.
                 // Room-wide enemy damage may accompany an allied-target buff.

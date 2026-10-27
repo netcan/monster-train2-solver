@@ -65,6 +65,7 @@ internal static class OriginalSpellCompositionsChecks
             row.GetProperty("Actual").Deserialize<CardCycleState>()!.DrawModifier == 0), "Native next turn must draw eight and reset the one-turn draw modifier.");
         BonusDrawChecks.Native(root);
         RecordedBattleChecks.Native(root);
+        AttackBuffDamageTargetChecks.Native(root);
         Console.WriteLine("ORIGINAL-SPELL-COMPOSITIONS PASS: seven unchanged original spells, positive damage/healing/overheal/status compositions, exact costs/discard, guaranteed chance RNG, floor/team controls, eight-card future draw/reset and 16 immutable chains. Other target/upgrade/relic combinations need separate witnesses.");
     }
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);

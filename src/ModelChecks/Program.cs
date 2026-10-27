@@ -2268,6 +2268,13 @@ if (args.Length == 1 && args[0] == "--tactical-target-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--attack-buff-damage-target-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    AttackBuffDamageTargetChecks.Native(source.RootElement);
+    return;
+}
+
 if (args.Length is 2 or 3 && args[0] == "--triple-juice-purifying-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
