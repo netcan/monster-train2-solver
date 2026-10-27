@@ -7356,13 +7356,17 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-unb
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-dusk-mantle-recruit-boss-preview-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-dusk-mantle-recruit-boss-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
     UnderlegionThirdTroopPreviewChecks.Native(path, ModelJson.RelatedFixture(path, "player-dusk-mantle-recruit-boss-preview-replay-calibration.mt2f"));
-foreach (string path in args.Where(path => Path.GetFileName(path) == "player-pyregel-powerstone-juice-calibration.mt2f"))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-pyregel-powerstone-juice-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-pyregel-powerstone-juice-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var source = ModelJson.ReadFixture(path);
-    PyregelPowerstoneJuiceChecks.Native(source.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-pyregel-powerstone-juice-replay-calibration.mt2f"));
+    using var cast = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-pyregel-powerstone-juice-cast-calibration.mt2f"));
+    PyregelPowerstoneJuiceChecks.Native(source.RootElement, replay.RootElement, cast.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) == "player-inactive-fragile-moon-birth-calibration.mt2f"))
-    InactiveOuterBossMoonBirthChecks.Native(path);
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-inactive-fragile-moon-birth-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-inactive-fragile-moon-birth-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+    InactiveOuterBossMoonBirthChecks.Native(path, ModelJson.RelatedFixture(path, "player-inactive-fragile-moon-birth-replay-calibration.mt2f"));
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("parallel-lower-opening-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "parallel-lower-opening-model-counterexample.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
