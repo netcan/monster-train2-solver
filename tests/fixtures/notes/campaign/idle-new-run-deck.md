@@ -22,3 +22,10 @@ and sample23 opening archive (SHA25630771bed40a8fd1605cb528811876ebad2d413eb1f48
 All21 prior tracked values persist, a native dialogue completes (0->1), the
 source and real files remain unchanged, and no battle simulation is required.
 This is retained native progression, not a true-final victory acceptance.
+
+The release240 Ring1 independent38-input/Pyre80 pair advances this same profile
+normally. Check-NativeMetagameContinuation verifies its Ring2 checkpoint archive
+(SHA256262617878014e444499498dc9cc518a4983fd59e5e86c12ba044113bba7abd99)
+against the completed and opening archives:all prior tracked values persist,
+nine values increase naturally, and one completed battle/replay/choice history
+links the exact opening save/metagame. No progression values are edited.

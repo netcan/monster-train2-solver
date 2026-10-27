@@ -55,6 +55,15 @@ namespace MonsterTrain2Poju.Model
             lifecycle.Values.DataId == upgrade.DataId && CleansePower(lifecycle.Values.Stats) && lifecycle.Values.Statuses.Count == 0 &&
             lifecycle.AddedTraits[0].RuntimeType == "CardTraitExhaustState" &&
             lifecycle.AddedTraits[0].DeclaredName == "CardTraitExhaustState" && Ordinary(lifecycle.AddedTraits[0], 0);
+        private static bool KnownConsumedCleanseCurse(CardInstanceState card) =>
+            card.Permanent.Upgrades.Count == 2 && KnownCleanseConsume(card.Permanent.Upgrades[1]) &&
+            card.PlayCount == 1 && card.ExhaustState is { PlayCountModifier: 0, BaseTraits.Count: 1, UpgradeTrait: null } exhausted &&
+            exhausted.BaseTraits[0].TraitIndex == 1 && exhausted.BaseTraits[0].IsExhausted &&
+            exhausted.BaseTraits[0].ExhaustedCardId == card.InstanceId &&
+            card.Temporary.Upgrades.Count == 1 && KnownTitanCurse(card.Temporary.Upgrades[0]) &&
+            card.Temporary.Upgrades[0] is { Unique: false, RemoveOnDiscard: false, ExcludeFromClones: false,
+                RestrictSizeToRoomCapacity: false, MagicPowerTraitScalingOnly: false, CloneDamageBase: null, CloneHealBase: null,
+                Lifecycle.ReplacedAssets.Count: 0, Lifecycle.TraitsModified.Count: 0 };
         internal static string? Validate(CardInstanceState card)
         {
             if (!Present(card)) return null;
@@ -72,7 +81,8 @@ namespace MonsterTrain2Poju.Model
                     traits.Count == 2 && traits[1].RuntimeType == "CardTraitExhaustState" &&
                     traits[1].DeclaredName == "CardTraitExhaustState" && Ordinary(traits[1], 0) &&
                     card.Permanent.Upgrades.Count == 2 && KnownCleanseConsume(card.Permanent.Upgrades[1])) &&
-                card.Temporary.Upgrades.Count <= 1 && card.Temporary.Upgrades.All(LazarusJuiceSpikeModel.KnownConduit) &&
+                (card.Temporary.Upgrades.Count <= 1 && card.Temporary.Upgrades.All(LazarusJuiceSpikeModel.KnownConduit) ||
+                    KnownConsumedCleanseCurse(card)) &&
                 card.MaskDescriptor.SourceTraits?.Count is not > 0 &&
                 card.DamageScalingTraits?.Count is not > 0 && card.StatusScalingTraits?.Count is not > 0 &&
                 card.UnitUpgradeScalingTraits?.Count is not > 0 && card.TrainHealScalingTraits?.Count is not > 0 &&
