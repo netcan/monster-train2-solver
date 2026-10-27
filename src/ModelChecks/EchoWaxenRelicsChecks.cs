@@ -5,7 +5,8 @@ using MonsterTrain2Poju.Model;
 
 internal static class EchoWaxenRelicsChecks
 {
-    internal static void Native(FixtureValue source)
+    private const string EndReason = "Extended relic Waxen Echo retains paid3 and replays its raw effects during pre-combat.";
+    internal static void Native(FixtureValue source, FixtureValue? endTurn = null, FixtureValue? replay = null)
     {
         string reason = source.GetProperty("Request").GetProperty("Reason").GetString()!;
         Require(reason.StartsWith("Echo replay needs native calibration: onCast=0, unplayed=0, interactions=, traits=CardTraitScalingUpgradeUnitAttack;CardTraitExhaustState, relics=", StringComparison.Ordinal),
@@ -48,7 +49,62 @@ internal static class EchoWaxenRelicsChecks
             if (control == "EnemyCallback") relics.Single(relic => relic!["AssetKey"]!.GetValue<string>() == "Enemy_CorruptSeraph_BuffAllies")!["EffectTypes"]![0] = "RelicEffectCopyCardOnCardPlayed";
             Require(!EchoJuiceSpikeModel.KnownRelics(changed.Deserialize<CombatContext>(ModelJson.Options)!), "Unknown Echo relic admitted: " + control);
         }
-        Console.WriteLine("ECHO-WAXEN-RELICS PASS:41 native inputs/full state/RNG, paid3/raw copy/single curse, sealed equipment/slot/deployment relics, four immutable branches/four relic guards; pre-combat replay still separate.");
+        if (endTurn.HasValue)
+        {
+            var extended = NativeBranchObservationChecks.Replay(endTurn.Value, EndReason);
+            Require(extended.Length == 42 && extended[^1].GetProperty("IsEndTurn").GetBoolean(), "Missing extended-relic Echo EndTurn.");
+            for (int i = 0; i < rows.Length; i++)
+            {
+                foreach (string field in new[] { "Action", "IsEndTurn" })
+                    Require(rows[i].GetProperty(field).ContentEquals(extended[i].GetProperty(field)), "Echo extension changed its input.");
+                foreach (string field in new[] { "Before", "Actual" })
+                    Require(NativeBranchObservationChecks.Key(rows[i].GetProperty(field).Deserialize<BattleTurnState>()!) ==
+                        NativeBranchObservationChecks.Key(extended[i].GetProperty(field).Deserialize<BattleTurnState>()!),
+                        "Echo extension changed a complete prefix state/RNG.");
+            }
+            var final = extended[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            Require(final.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 1).Attachments!
+                .Single(attachment => attachment.Echo != null).Echo!.CopyCardId == 0, "Echo cache did not clear after replay.");
+            string immutable = JsonSerializer.Serialize(after, ModelJson.Options);
+            Parallel.For(0, 4, _ =>
+            {
+                var result = BattleTurnModel.EndTurn(after);
+                Require(result.Supported && result.Outcome == RoomOutcome.Exchanged &&
+                    NativeBranchObservationChecks.Key(result.State!) == NativeBranchObservationChecks.Key(final),
+                    "Extended-relic Echo EndTurn differs from complete native state/RNG.");
+            });
+            Require(immutable == JsonSerializer.Serialize(after, ModelJson.Options), "Echo EndTurn mutated parent.");
+            CheckPreCombat(endTurn.Value);
+            if (replay.HasValue)
+            {
+                NativeBranchObservationChecks.Replay(replay.Value, EndReason);
+                NativeBranchObservationChecks.Pair(endTurn.Value, replay.Value, originalPredictionPresent: true, originalPredictionMatched: true);
+                CheckPreCombat(replay.Value);
+            }
+        }
+        Require(!replay.HasValue || endTurn.HasValue, "Replay requires its source EndTurn observation.");
+        Console.WriteLine("ECHO-WAXEN-RELICS PASS:41 native inputs/full state/RNG, paid3/raw copy/single curse, sealed equipment/slot/deployment relics, four immutable branches/four relic guards; nativeEndTurn=" + endTurn.HasValue + "; independentPair=" + replay.HasValue);
+    }
+    private static void CheckPreCombat(FixtureValue fixture)
+    {
+        var phase = fixture.GetProperty("RoomPreCombatRecords").EnumerateArray().Single(row =>
+            row.GetProperty("Turn").GetInt32() == 8 && row.GetProperty("RoomIndex").GetInt32() == 1);
+        Require(phase.GetProperty("Completed").GetBoolean(), "Incomplete native Echo pre-combat callback.");
+        var before = phase.GetProperty("Before").Deserialize<TrainCombatState>()!.Rooms.Single(room => room.RoomIndex == 1);
+        var after = phase.GetProperty("After").Deserialize<TrainCombatState>()!.Rooms.Single(room => room.RoomIndex == 1);
+        foreach (int id in new[] { 2, 26, 27 })
+        {
+            var old = before.Units.Single(unit => unit.Id == id);
+            var next = after.Units.Single(unit => unit.Id == id);
+            Require(next.Attack - old.Attack == 12 && next.Health == old.Health &&
+                next.Status("ephemeral")!.Stacks - old.Status("ephemeral")!.Stacks == 4 &&
+                next.Modifiers!.Upgrades.Count == old.Modifiers!.Upgrades.Count + 1 &&
+                next.Modifiers.Upgrades[^1].DataId == "31243b24-f327-42c8-84ad-b014e6fec675" &&
+                next.Modifiers.Upgrades[^1].Stats.Damage == 12, "Native paid3 Echo must add12 attack/four Burnout once per ally.");
+        }
+        Require(before.Units.Where(unit => unit.Team == CombatTeam.Enemy).All(old =>
+            JsonSerializer.Serialize(old, ModelJson.Options) == JsonSerializer.Serialize(after.Units.Single(unit => unit.Id == old.Id), ModelJson.Options)),
+            "Friendly Waxen Echo changed a native enemy.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

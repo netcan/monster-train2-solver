@@ -37,5 +37,9 @@ Waxen Spike35 pays three ember on turn8 in room1, creates raw copy44 with its
 single Titan Curse, and advances NextCardId to45. Complete state/RNG, four
 immutable branches and four changed-relic rejection controls pass. The original
 48-input copy calibration and its nine card/relic controls still pass. Actual
-EndTurn replay under these extra relics is a separate pending boundary; this
-copy observation does not prove a winning final-battle strategy.
+EndTurn extensions now match in two independent pinned213 native processes:
+42 complete inputs/states/forecasts/RNG and four immutable EndTurn branches.
+Both native pre-combat snapshots positively show allies2/26/27 each gaining
+12 attack/four Burnout and one scaled upgrade, with no health or enemy changes.
+The Echo cache clears. These three archives complete this component boundary;
+the sampled final-battle deployment remains a loss.

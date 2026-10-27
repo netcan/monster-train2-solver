@@ -165,6 +165,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-19-ring5-release210-budget10000-pyre44-replay.mt2f',
     'full-battle-random-campaign-19-ring5-release212-budget10000-pyre44-search.mt2f',
     'full-battle-random-campaign-19-ring5-release212-budget10000-pyre44-replay.mt2f',
+    'full-battle-random-campaign-19-ring6-release212-budget10000-loss.mt2f',
     'full-battle-random-campaign-19-ring6-release210-budget10000-pyre26-loss.mt2f',
     'full-battle-random-campaign-19-ring6-release210-budget10000-pyre40-loss.mt2f',
     'full-battle-random-campaign-20-ring1-release212-budget10000-search.mt2f',
@@ -191,6 +192,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-combat-victory-statistics-calibration.mt2f',
     'player-combat-victory-cache-retention-counterexample-calibration.mt2f',
     'player-echo-waxen-spike-copy-calibration.mt2f',
+    'player-echo-waxen-relics-copy-calibration.mt2f',
+    'player-echo-waxen-relics-endturn-calibration.mt2f',
+    'player-echo-waxen-relics-endturn-replay-calibration.mt2f',
     'player-echo-juice-spike-copy-calibration.mt2f',
     'player-echo-just-cause-copy-calibration.mt2f',
     'player-echo-just-cause-endturn-calibration.mt2f',
@@ -2039,6 +2043,17 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     $echoJuiceArguments = @('--echo-juice-spike-only') + @($echoJuiceNames | ForEach-Object { Get-TestFixturePath $_ })
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @echoJuiceArguments
     if ($LASTEXITCODE -ne 0) { throw 'Focused Echo Juice Spike checks failed.' }
+    return
+}
+$echoWaxenRelicsNames = @('player-echo-waxen-relics-copy-calibration.mt2f', 'player-echo-waxen-relics-endturn-calibration.mt2f', 'player-echo-waxen-relics-endturn-replay-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $echoWaxenRelicsNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Echo Waxen relic checker build failed.' }
+    }
+    $echoWaxenRelicsArguments = @('--echo-waxen-relics-only') + @($echoWaxenRelicsNames | ForEach-Object { Get-TestFixturePath $_ })
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @echoWaxenRelicsArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Focused Echo Waxen relic checks failed.' }
     return
 }
 $echoWaxenNames = @('player-echo-waxen-spike-copy-calibration.mt2f', 'player-echo-waxen-spike-endturn-calibration.mt2f', 'player-echo-waxen-spike-endturn-replay-calibration.mt2f')

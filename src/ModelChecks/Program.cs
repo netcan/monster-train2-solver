@@ -1,9 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
-if (args.Length == 2 && args[0] == "--echo-waxen-relics-only")
+if (args.Length is 2 or 3 or 4 && args[0] == "--echo-waxen-relics-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
-    EchoWaxenRelicsChecks.Native(source.RootElement);
+    using var endTurn = args.Length >= 3 ? ModelJson.ReadFixture(args[2]) : null;
+    using var replay = args.Length == 4 ? ModelJson.ReadFixture(args[3]) : null;
+    EchoWaxenRelicsChecks.Native(source.RootElement, endTurn?.RootElement, replay?.RootElement);
     return;
 }
 if (args.Length is 2 or 3 && args[0] == "--moon-silence-shift-only")
@@ -6800,6 +6802,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-ech
     using var endTurn = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-juice-spike-endturn-calibration.mt2f"));
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-juice-spike-endturn-replay-calibration.mt2f"));
     EchoJuiceSpikeChecks.Native(source.RootElement, endTurn.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-waxen-relics-copy-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var endTurn = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-waxen-relics-endturn-calibration.mt2f"));
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-waxen-relics-endturn-replay-calibration.mt2f"));
+    EchoWaxenRelicsChecks.Native(source.RootElement, endTurn.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-waxen-spike-copy-calibration.mt2f"))
 {

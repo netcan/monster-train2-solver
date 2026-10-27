@@ -32,3 +32,11 @@ with all10 train stages, full state/forecast/RNG and four zero counters.
 Both actual-budget losses are curated independently of all earlier saves.
 Deployment refinement reaches59 model inputs but remains a loss and exposes
 a StoicPlatemail/Aurora moon-silence callback guard for native calibration.
+
+The fresh release212 fifth-battle source100338-9b9bbef3 and its independent
+replay100925-8491cf90 produce another distinct Pyre26 Ring6 save. Default
+10000ms/two-worker source101332-2f1db791 also loses in38inputs/33plays/5EndTurns,
+with ten matching train phases, complete state/forecast/RNG, four zero counters
+and unchanged original files. Its native loss is curated separately. Offline
+deployment spread subsequently reaches72 inputs/turn8 with Cael1629HP and
+then a77-input improvement; neither is a native win or a sixth-ring acceptance.
