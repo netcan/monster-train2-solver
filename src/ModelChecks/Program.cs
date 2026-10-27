@@ -7615,6 +7615,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-treasure-despawn-movement-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-treasure-despawn-movement-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
     TreasureDespawnMovementChecks.Native(path, ModelJson.RelatedFixture(path, "player-treasure-despawn-movement-replay-calibration.mt2f"));
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-champion-enemy-death-preview-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-champion-enemy-death-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-champion-enemy-death-preview-replay-calibration.mt2f"));
+    ChampionEnemyDeathPreviewChecks.Native(source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-mirrored-meddler-moon-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-mirrored-meddler-moon-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

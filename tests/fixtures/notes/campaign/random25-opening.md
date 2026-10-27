@@ -28,3 +28,19 @@ D679FBCCB39421F5171702395DB4D2C0703EBF87CF26E5A1D823BE9CF33E94F4.
 Backup/receipt:BepInEx/PojuBackups/RandomCampaign-20261027-231422.
 Three installed DLLs match both native processes; all67 protected files remain
 unchanged. No Mac build or full regression is used for this delivery.
+
+Release263 revisionb1b172f1 fixes the unobserved two-stack champion enemy-death
+preview allocation. Original component231250-527c0331 and independent fixed
+component232349-1f39b742 pass all nine complete native inputs/forecasts/RNG.
+See [champion preview identities](../combat/champion-enemy-death-preview.md).
+Default Ring2 source232349-2d3e8d84 and independent normal reward replay
+232559-38f3a537 win with31 inputs/24 plays/seven EndTurns, Pyre80, complete
+state/forecasts/RNG,13 train phases per process and four zero counters.
+The source passes33 publications and1120 mask contexts. Normal61 reward/map
+events enter Ring3 save
+DBD03518EE57E0FC10E4968AD0670888053D03A9EB21881BAEBB74A17528FFEE.
+random25-ring3-default263.zip has111 files, SHA256
+FEAC913B418FC7E36E196C2CD2EF0FB1556F51ADC7F1DF15D4AA274E77D86DA1;
+all110 hashed members restore. The first two default-budget battles form one
+unchanged checkpoint chain. Ring3 exposes a new Juice/card trait signature;
+later battles and a complete default-budget clear remain open.

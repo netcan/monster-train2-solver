@@ -97,6 +97,7 @@ namespace MonsterTrain2Poju.Probe
                 EquipmentPreviewClear = equipmentPreviewClear,
                 SkillPresentation = skillPresentation,
                 AbilityCacheWarm = abilityCacheWarm,
+                EnemySummonSignatures = CaptureEnemySummonSignatures(),
                 TripleJuiceCalibration = JuiceTraitProbe.TripleSamples,
                 FloorTransitionPiercing = CaptureFloorTransitionPiercing(),
                 RoomAttachmentMovement = roomAttachmentMovement.ToArray(),
@@ -110,6 +111,25 @@ namespace MonsterTrain2Poju.Probe
             document.Write(stream);
             Completed = true;
         }
+
+        // Keep authored targeting alongside new enemy-birth observations. The
+        // native effect can ignore some common targeting fields; the model
+        // still needs the exact signature before widening its capture guard.
+        private static object[] CaptureEnemySummonSignatures() => FullBattleTrace.Active!.KnownUnits
+            .Where(unit => unit != null && !unit.IsDestroyed && unit.IsAlive)
+            .Select(unit => unit.GetSourceCharacterData()).Where(data => data != null)
+            .GroupBy(data => data.GetID()).Select(group => group.First())
+            .SelectMany(data => data.GetTriggers().SelectMany(trigger => trigger.GetEffects()
+                .Where(effect => effect.GetEffectStateName() == "CardEffectSpawnHero")
+                .Select(effect => (object)new {
+                    AssetKey = data.GetAssetKey(), Trigger = trigger.GetTrigger().ToString(),
+                    TargetMode = effect.GetTargetMode().ToString(), TargetTeam = effect.GetTargetTeamType().ToString(),
+                    Character = effect.GetParamCharacterData()?.GetAssetKey(), CharacterId = effect.GetParamCharacterData()?.GetID(),
+                    Pool = (effect.GetParamCharacterDataPool() ?? new List<CharacterData>()).Select(item => item.GetAssetKey()).ToArray(),
+                    ParamInt = effect.GetParamInt(), ParamBool = effect.GetParamBool(),
+                    ShouldTest = effect.GetShouldTest(), FailToCast = effect.GetShouldFailToCastIfTestFails(),
+                    CancelSubsequent = effect.GetShouldCancelSubsequentEffectsIfTestFails()
+                }))).ToArray();
 
         internal static bool TryObserveRejection(PlayCardAction action, string error)
         {
