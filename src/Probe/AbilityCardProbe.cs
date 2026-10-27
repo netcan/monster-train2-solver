@@ -70,11 +70,13 @@ namespace MonsterTrain2Poju.Probe
             private static void Postfix(CardState __result, Record? __state)
             {
                 FullBattleTrace? trace = FullBattleTrace.Active;
-                if (trace == null) return;
+                // Outside the explicit cache scenario, production observes cache
+                // identities as part of the next coherent decision capture. An
+                // inactive development observer must not allocate an identity
+                // ahead of a detached clone discovered by that same capture.
+                if (trace == null || __state == null) return;
                 try
                 {
-                    trace.CardId(__result);
-                    if (__state == null) return;
                     __state.CardId = trace.CardId(__result); __state.After = trace.CaptureContext();
                     AbilityCardResult predicted = AbilityCardModel.Get(__state.Before, __state.Creation);
                     __state.UnsupportedReason = predicted.UnsupportedReason;
