@@ -74,6 +74,12 @@ namespace MonsterTrain2Poju.Model
             upgrade.AbilityUpgrade == null && upgrade.TriggerUpgrades?.Count is not > 0 &&
             upgrade.Lifecycle is { AssetKey: "ReduceCost", AddedTraits.Count: 0, RemovedRuntimeTypes.Count: 0,
                 TraitsModified.Count: 0, ReplacedAssets.Count: 0, Triggers.Count: 0 };
+        private static bool KnownStarstruckTemporary(CardInstanceState card)
+        {
+            var conduit = card.Temporary.Upgrades.Where(LazarusJuiceSpikeModel.KnownConduit).ToArray();
+            return conduit.Length <= 3 && conduit.Select(upgrade => upgrade.DataId).Distinct(StringComparer.Ordinal).Count() == conduit.Length &&
+                card.Temporary.Upgrades.All(upgrade => KnownTitanCurse(upgrade) || LazarusJuiceSpikeModel.KnownConduit(upgrade));
+        }
         private static bool KnownTripleStarstruck(CardInstanceState card, CardTraitCompositionState traits) =>
             card.DataId == "753f20a2-c625-47b3-be4b-8600b673841e" &&
             traits.CombinedTraits is { Count: 2 } combined &&
@@ -85,7 +91,7 @@ namespace MonsterTrain2Poju.Model
                 card.Permanent.Upgrades.Count is 2 or 3 && KnownStarstruckReduceCost(card.Permanent.Upgrades[1]) &&
                 card.Permanent.Upgrades.Skip(2).All(upgrade => upgrade.DataId == "12793a9c-fae4-42ab-80bb-c3274e681c19" &&
                     CardMoonUpgradeModel.KnownPayload(upgrade))) &&
-            card.Temporary.Upgrades.All(KnownTitanCurse) &&
+            KnownStarstruckTemporary(card) &&
             CardMoonUpgradeModel.Validate(card) == null &&
             card.DamageScalingTraits?.Count is not > 0 && card.StatusScalingTraits?.Count is not > 0 &&
             card.UnitUpgradeScalingTraits?.Count is not > 0 && card.TrainHealScalingTraits?.Count is not > 0 &&
