@@ -598,6 +598,22 @@ if (args.Length is 2 or 3 && args[0] == "--discard-equipment-turn-only")
     else { using var replay = ModelJson.ReadFixture(args[2]); DiscardEquipmentTurnChecks.Native(source.RootElement, replay.RootElement); }
     return;
 }
+if (args.Length == 3 && args[0] == "--pyregel-juice-cast-request")
+{
+    PyregelJuiceChecks.ExportCastRequest(args[1], args[2]);
+    return;
+}
+if (args.Length is >= 2 and <= 4 && args[0] == "--pyregel-juice-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) PyregelJuiceChecks.Native(source.RootElement);
+    else {
+        using var replay = ModelJson.ReadFixture(args[2]);
+        if (args.Length == 3) PyregelJuiceChecks.Native(source.RootElement, replay.RootElement);
+        else { using var cast = ModelJson.ReadFixture(args[3]); PyregelJuiceChecks.Native(source.RootElement, replay.RootElement, cast.RootElement); }
+    }
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--champion-enemy-death-preview-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -7246,6 +7262,15 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-bur
 {
     using var source = ModelJson.ReadFixture(path);
     BurnoutHealTargetChecks.Alternative(source.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) is "player-pyregel-juice-calibration.mt2f" or
+    "player-pyregel-juice-replay-calibration.mt2f" or "player-pyregel-juice-cast-calibration.mt2f")
+    .Select(path => ModelJson.RelatedFixture(path, "player-pyregel-juice-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-pyregel-juice-replay-calibration.mt2f"));
+    using var cast = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-pyregel-juice-cast-calibration.mt2f"));
+    PyregelJuiceChecks.Native(source.RootElement, replay.RootElement, cast.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "full-battle-random-campaign-22-ring6-release235-budget10000-loss.mt2f"))
 {

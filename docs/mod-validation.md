@@ -1,6 +1,19 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.262, source`d1ca6fc9`.
+Current Windows installation:0.2.263, source`b1b172f1`.
+Installed at23:30 with67 protected save/config/other-mod files unchanged.
+Sample25 Underlegion/Pyreborne Ring2 wins with actual10000ms/two-worker advice:
+31 inputs/24 plays/seven EndTurns,Pyre80. Source232349-2d3e8d84 and independent
+normal replay232559-38f3a537 match full state/forecasts/RNG and four zero
+counters.61 normal events enter Ring3;111-file checkpoint restores110 hashes.
+Package`results/mod-dist/PojuAdvisor-0.2.263-Windows-20261027-233027.zip`,SHA256
+`252006A6F00A6EDDF48E7BE97D94C2BE9BA445F8EB33F4BCE40AFA90C50A0CC9`.
+The three installed DLLs match both native processes; backup/receipt:
+`BepInEx/PojuBackups/RandomCampaign-20261027-233027/`.
+The stopped real game loads263 next launch. Later natural combinations remain
+open; no Mac build or full regression was run.
+
+Previous Windows installation:0.2.262, source`d1ca6fc9`.
 Installed at23:14 with67 protected save/config/other-mod files unchanged.
 The payload fixes physical treasure removal and wins sample25
 Underlegion/Pyreborne Ring1 with actual10000ms/two-worker advice:

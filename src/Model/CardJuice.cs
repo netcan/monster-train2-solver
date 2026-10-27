@@ -165,7 +165,14 @@ namespace MonsterTrain2Poju.Model
                 traits[1].RuntimeType == "CardTraitExhaustState" && Ordinary(traits[1], 0) &&
                 traits[2].RuntimeType == Trait && Ordinary(traits[2], 2) &&
                 card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] { Upgrade });
-            if ((!fracture && !justCause && !magicJuice && !unnamedTome && card.DataId is not ("3020f56f-71a5-4155-8bed-48ada7e7e0de" or "f9f20326-dccb-44af-894b-467534afab4a")) ||
+            bool pyregel = card.DataId == "fb0683b1-20ac-4dd2-b580-14b502e182f4" && traits.Count == 1 &&
+                traits[0].RuntimeType == Trait && traits[0].DeclaredName == Trait && Ordinary(traits[0], 2) &&
+                card.Permanent.Upgrades.Count == 1 && KnownJuiceUpgrade(card.Permanent.Upgrades[0], false) &&
+                card.Temporary.Upgrades.Count == 0 && card.MaskDescriptor.SourceTraits?.Count is not > 0 &&
+                card.DamageScalingTraits?.Count is not > 0 && card.UnitUpgradeScalingTraits?.Count is not > 0 &&
+                card.TrainHealScalingTraits?.Count is not > 0 && card.CapacityScalingTraits?.Count is not > 0 &&
+                card.ForgeCountScalingTraits?.Count is not > 0;
+            if ((!fracture && !justCause && !magicJuice && !unnamedTome && !pyregel && card.DataId is not ("3020f56f-71a5-4155-8bed-48ada7e7e0de" or "f9f20326-dccb-44af-894b-467534afab4a")) ||
                 card.StatusScalingTraits?.Count > 0 ||
                 traits.Count(trait => trait.RuntimeType == Trait) != 1)
                 return "Juice with this card or ordered scaling traits requires native calibration.";

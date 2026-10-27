@@ -44,3 +44,10 @@ FEAC913B418FC7E36E196C2CD2EF0FB1556F51ADC7F1DF15D4AA274E77D86DA1;
 all110 hashed members restore. The first two default-budget battles form one
 unchanged checkpoint chain. Ring3 exposes a new Juice/card trait signature;
 later battles and a complete default-budget clear remain open.
+
+Windows receives the exact263 payload at23:30; all67 protected files remain
+unchanged. PackagePojuAdvisor-0.2.263-Windows-20261027-233027.zip SHA256
+252006A6F00A6EDDF48E7BE97D94C2BE9BA445F8EB33F4BCE40AFA90C50A0CC9,
+backup/receiptRandomCampaign-20261027-233027. Three installed DLLs match both
+accepted Ring2 processes. See [pyregel Juice](../cards/pyregel-juice.md) for
+the next exact signature and actual16-input cast proof; Ring3 remains open.
