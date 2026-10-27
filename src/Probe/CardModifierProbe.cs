@@ -269,7 +269,8 @@ namespace MonsterTrain2Poju.Probe
                      upgrade.GetRoomModifierUpgrades()[0].GetRoomStateModifierClassName() != CardCorruptionAttackUpgradeModel.Type ||
                      upgrade.GetRoomModifierUpgrades()[0].GetParamInt() != 5))
                     interactions.Add("Changed original corruption-attack room modifier definition");
-                if (upgrade.GetCardUpgradeDataId() is (CardUnderlegionTroopUpgradeModel.DataId or CardUnderlegionTroopUpgradeModel.SecondDataId) &&
+                if (upgrade.GetCardUpgradeDataId() is (CardUnderlegionTroopUpgradeModel.DataId or CardUnderlegionTroopUpgradeModel.SecondDataId or
+                    CardUnderlegionTroopUpgradeModel.ThirdDataId) &&
                     !TroopAuraProbe.KnownChampionUpgrade(upgrade))
                     interactions.Add("Changed original Underlegion troop room modifier definition");
             }

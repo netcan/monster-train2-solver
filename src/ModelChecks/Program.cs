@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--underlegion-third-troop-upgrade-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    UnderlegionThirdTroopUpgradeChecks.Native(fixture.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--green-recruit-boss-preview-only")
 {
     GreenRecruitBossPreviewChecks.Native(args[1], args.Length == 3 ? args[2] : null);
@@ -8091,6 +8098,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-corruption-attack-upgrade-replay-calibration.mt2f"));
     CardCorruptionAttackUpgradeChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-underlegion-third-troop-upgrade-calibration.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    UnderlegionThirdTroopUpgradeChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-underlegion-second-troop-upgrade-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-underlegion-second-troop-upgrade-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

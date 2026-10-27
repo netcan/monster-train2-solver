@@ -12,13 +12,16 @@ namespace MonsterTrain2Poju.Probe
         internal const string CardId = "54a24002-b7b2-4e1c-967b-59d40b67231c";
         internal static bool RequiresWorld(FullBattleTrace trace) => trace.KnownCards.Any(card => card.GetCardDataID() == CardId ||
             card.GetCardStateModifiers().GetCardUpgrades().Concat(card.GetTemporaryCardStateModifiers().GetCardUpgrades())
-                .Any(upgrade => upgrade.GetCardUpgradeDataId() is CardUnderlegionTroopUpgradeModel.DataId or CardUnderlegionTroopUpgradeModel.SecondDataId));
+                .Any(upgrade => upgrade.GetCardUpgradeDataId() is CardUnderlegionTroopUpgradeModel.DataId or
+                    CardUnderlegionTroopUpgradeModel.SecondDataId or CardUnderlegionTroopUpgradeModel.ThirdDataId));
 
         internal static bool KnownChampionUpgrade(CardUpgradeState upgrade)
         {
             bool second = upgrade.GetCardUpgradeDataId() == CardUnderlegionTroopUpgradeModel.SecondDataId;
-            if ((!second && upgrade.GetCardUpgradeDataId() != CardUnderlegionTroopUpgradeModel.DataId) ||
-                upgrade.GetAssetName() != (second ? CardUnderlegionTroopUpgradeModel.SecondAssetKey : CardUnderlegionTroopUpgradeModel.AssetKey) ||
+            bool third = upgrade.GetCardUpgradeDataId() == CardUnderlegionTroopUpgradeModel.ThirdDataId;
+            if ((!second && !third && upgrade.GetCardUpgradeDataId() != CardUnderlegionTroopUpgradeModel.DataId) ||
+                upgrade.GetAssetName() != (third ? CardUnderlegionTroopUpgradeModel.ThirdAssetKey :
+                    second ? CardUnderlegionTroopUpgradeModel.SecondAssetKey : CardUnderlegionTroopUpgradeModel.AssetKey) ||
                 upgrade.GetRoomModifierUpgrades().Count != 1)
                 return false;
             RoomModifierData room = upgrade.GetRoomModifierUpgrades()[0];
@@ -27,9 +30,8 @@ namespace MonsterTrain2Poju.Probe
                 room.GetParamStatusEffects().Length != 0 || room.GetParamCardUpgradeData() == null) return false;
             var state = new CardUpgradeState(); state.Setup(room.GetParamCardUpgradeData());
             CardUpgradeModifier captured = CardModifierProbe.Upgrade(state, false, true);
-            return captured.DataId == (second ? CardUnderlegionTroopUpgradeModel.SecondAuraUpgradeId : CardUnderlegionTroopUpgradeModel.AuraUpgradeId) &&
-                captured.AssetKey == (second ? CardUnderlegionTroopUpgradeModel.SecondAuraUpgradeKey : CardUnderlegionTroopUpgradeModel.AuraUpgradeKey) &&
-                captured.Stats.Health == (second ? 2 : 1) &&
+            var aura = CardUnderlegionTroopUpgradeModel.AuraDefinition(upgrade.GetCardUpgradeDataId());
+            return captured.DataId == aura.Id && captured.AssetKey == aura.AssetKey && captured.Stats.Health == aura.Health &&
                 new[] { "Damage", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }
                     .All(stat => captured.Stats.Value(stat) == 0) && captured.Statuses.Count == 0 &&
                 captured.ExternalInteractions.Count == 0 && !captured.Unique && !captured.RemoveOnDiscard &&
@@ -57,7 +59,8 @@ namespace MonsterTrain2Poju.Probe
         internal static CardUpgradeModifier Normalize(CardUpgradeState upgrade, CardUpgradeModifier captured)
         {
             var trace = FullBattleTrace.Active;
-            if (trace == null || captured.DataId is not ("8538457b-b33a-4a3d-9596-5929a2de5936" or CardUnderlegionTroopUpgradeModel.AuraUpgradeId or CardUnderlegionTroopUpgradeModel.SecondAuraUpgradeId))
+            if (trace == null || captured.DataId is not ("8538457b-b33a-4a3d-9596-5929a2de5936" or CardUnderlegionTroopUpgradeModel.AuraUpgradeId or
+                CardUnderlegionTroopUpgradeModel.SecondAuraUpgradeId or CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId))
                 return captured;
             foreach (CharacterState owner in trace.KnownUnits)
             foreach (RoomStateTroopUnitUpgradeModifier modifier in owner.GetRoomStateModifiers<RoomStateTroopUnitUpgradeModifier>())
