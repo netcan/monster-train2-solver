@@ -143,3 +143,15 @@ all101 hashed members restore. The seven-ring unchanged mixed checkpoint
 chain passes with AllowRefinedRoutes. Ring6 remains an offline refinement;
 Ring7 is an actual default-budget win. Ring8 is still under native acceptance,
 so neither an eight-battle clear nor an all-default clear is claimed.
+
+Release265 Ring8 source002251-3bc1eb2f and independent normal defeat replay
+002649-82723e98 preserve28 inputs/22 plays/six EndTurns and the actual loss:
+Boss_Level8_Fragile2906HP/30attack at turn5. Complete roots/successors,
+forecasts/RNG, all12 train phases per process and four zero counters pass.
+Normal six-event settlement retains seven wins plus the final defeat, without
+cheats or a Standard victory; idle save SHA256 is
+078754D59222F2980E6D82948BC8F69987F6DA890D12864137E199143220936D.
+The untouched Ring8 checkpoint remains available for bounded offline route
+investigation. The full first turn contains a spell as well as unit deployment,
+so the unit-only deployment-grid guard correctly rejects that baseline;
+mixed action-order exploration proceeds instead.
