@@ -1006,7 +1006,13 @@ namespace MonsterTrain2Poju.Model
                 CardBranchMaskModel.Resolve(discardInstance).Traits.Any(trait =>
                     trait is "CardTraitInfusion" or "CardTraitPersistent");
             bool consumedOnPlay = !skipNaturalDiscard && consumeSuppression != RelicSuppressExhaustModel.Trait && discardInstance != null && CardExhaustModel.ShouldExhaustOnPlayedDiscard(discardInstance);
-            bool ephemeralPurgeCallbacks = !skipNaturalDiscard && rule.Destination == "Purged" && discardInstance?.MaskDescriptor != null &&
+            bool ephemeralEquipment = !skipNaturalDiscard && rule.Effect == "Equipment" && rule.Destination == "Standby" &&
+                discardInstance?.MaskDescriptor != null &&
+                CardBranchMaskModel.Resolve(discardInstance).Traits.Contains("CardTraitEphemeral", StringComparer.Ordinal);
+            if (ephemeralEquipment && (consumedOnPlay ||
+                CardBranchMaskModel.Resolve(discardInstance!).Traits.Contains("CardTraitSelfPurge", StringComparer.Ordinal)))
+                return Unsupported("Ephemeral equipment with Consume or SelfPurge requires native callback-order calibration.");
+            bool ephemeralPurgeCallbacks = !skipNaturalDiscard && (rule.Destination == "Purged" || ephemeralEquipment) && discardInstance?.MaskDescriptor != null &&
                 CardBranchMaskModel.Resolve(discardInstance).Traits.Contains("CardTraitEphemeral", StringComparer.Ordinal);
             bool ephemeralBeforeConsume = consumedOnPlay && ephemeralPurgeCallbacks &&
                 CardExhaustModel.EphemeralDiscardPrecedesConsume(discardInstance!);
@@ -1036,7 +1042,7 @@ namespace MonsterTrain2Poju.Model
                     CardPileState added = CardPileModel.Add(pile, card);
                     // Ephemeral calls PurgeCard from both OnCardPlayed and
                     // OnCardDiscarded; a separate SelfPurge discard callback adds a third reference.
-                    if (ephemeralPurgeCallbacks)
+                    if (ephemeralPurgeCallbacks && !ephemeralEquipment)
                     {
                         added = CardPileModel.Add(added, card);
                         if (CardBranchMaskModel.Resolve(discardInstance!).Traits.Contains("CardTraitSelfPurge", StringComparer.Ordinal))
@@ -1050,6 +1056,15 @@ namespace MonsterTrain2Poju.Model
                 if (rule.Equipment == null || action.TargetUnitId <= 0) return Unsupported("Missing equipment standby host.");
                 piles = piles.Select(pile => pile.Name == "Standby" ? CardPileModel.BindEquipment(pile,
                     new EquipmentStandbyCondition(card.InstanceId, action.TargetUnitId, rule.Equipment.ReturnToHand)) : pile).ToArray();
+                if (ephemeralEquipment)
+                {
+                    if (!piles.Any(pile => pile.Name == "Purged")) return Unsupported("Ephemeral equipment requires its captured purge pile.");
+                    // AddEquipment enters standby before OnCardPlayed/OnCardDiscarded
+                    // each purge the card. Its attached upgrades survive, while the
+                    // standby slot becomes a hole and its return condition is removed.
+                    piles = piles.Select(pile => pile.Name == "Standby" ? CardPileModel.Remove(pile, card.InstanceId) :
+                        pile.Name == "Purged" ? CardPileModel.Add(CardPileModel.Add(pile, card), card) : pile).ToArray();
+                }
             }
             if (rule.Effect == "SpawnMonster" && rule.Destination == "Standby" && spawnedId.HasValue &&
                 piles.Any(pile => pile.Name == "Standby" && pile.UnitConditions != null))
@@ -1111,7 +1126,7 @@ namespace MonsterTrain2Poju.Model
             if (!skipNaturalDiscard && !terminal && rule.Destination == "Exhausted") statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
             if (!skipNaturalDiscard && summonRemoved && !eatenDuringBirth && !summonedEndless && !terminal && !consumedOnPlay)
                 statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
-            if (!skipNaturalDiscard && rule.Destination == "Purged")
+            if (!skipNaturalDiscard && (rule.Destination == "Purged" || ephemeralEquipment))
             {
                 if (statistics?.DeckCards?.Contains(card.InstanceId) == true && context.Resources != null)
                     context = context.WithResources(context.Resources.WithVisibleDeckCount(context.Resources.VisibleDeckCount - 1));
