@@ -22,4 +22,17 @@ tier independent native pair also passes. A fixed-build independent native
 capture and actual Ring4 default advice are still required; this component
 does not claim a subsequent troop event or fourth campaign victory.
 
+Fixed revision92b4e5db component005232-197eae0a now passes independent native
+pair acceptance. The fresh native request root adds only the newly captured
+automatic lifecycle world; removing that world from each captured context
+reproduces the complete original root/RNG. Both source and replay match their
+own full native states/forecasts/RNG; the original rejection is retained.
+The first old-root request is rejected by the native driver's strict world
+identity check, so the replay uses the independently captured fresh root.
+Actual Ring4 source004948-445f9184 subsequently wins with40 inputs/Pyre89,
+all four raw counters zero. It observes an active one-stack Fun Guy13 at
+decision13/turn2:6/6HP, one health2 upgrade, runtime identitytroop-aura:2.
+Independent normal campaign replay remains in progress; no fourth campaign
+victory is accepted until that separate pair passes.
+
 Focused check: `--underlegion-second-troop-upgrade-only <source> [replay]`.
