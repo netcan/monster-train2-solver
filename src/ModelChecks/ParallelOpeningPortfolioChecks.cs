@@ -3,6 +3,46 @@ using MonsterTrain2Poju.Model;
 
 internal static class ParallelOpeningPortfolioChecks
 {
+    internal static void Lower(FixtureValue previous, FixtureValue knownRoute)
+    {
+        Require(previous.GetProperty("EvidenceKind").GetString() == "ModelRootPrediction" &&
+            previous.GetProperty("NativeValidationRequired").GetBoolean() && knownRoute.GetProperty("EvidenceKind").GetString() == "ModelPrediction" &&
+            previous.GetProperty("SourceSHA256").GetString() == knownRoute.GetProperty("SourceSHA256").GetString(),
+            "Lower-floor controls must retain model-only evidence from one native deployment.");
+        var root = previous.GetProperty("Root").Deserialize<BattleTurnState>()!;
+        using var keys = new BattleStateKeys();
+        string parent = keys.Key(root);
+        Require(root.Spawn.Turn == 0 && parent == keys.Key(knownRoute.GetProperty("Root").Deserialize<BattleTurnState>()!) &&
+            previous.GetProperty("Milliseconds").GetInt32() == 10000 && previous.GetProperty("RequestedMaxNodes").GetInt32() == 256 &&
+            previous.GetProperty("RequestedWorkers").GetInt32() == 2 &&
+            previous.GetProperty("Plan").GetProperty("Outcome").GetInt32() == (int)RoomOutcome.PlayerDefeated &&
+            knownRoute.GetProperty("Outcome").GetInt32() == (int)RoomOutcome.BattleWon,
+            "Missing old default-options defeat and complete lower-floor model win.");
+        var oldSteps = previous.GetProperty("Plan").GetProperty("Steps").EnumerateArray().Select(step => new BattleSearchStep(
+            step.GetProperty("Action").Deserialize<PlayCardAction>(), step.GetProperty("IsEndTurn").GetBoolean())).ToArray();
+        var old = BattlePlannerChecks.Replay(root, oldSteps, out RoomOutcome oldOutcome);
+        Require(oldOutcome == RoomOutcome.PlayerDefeated && keys.Key(old) == keys.Key(previous.GetProperty("Plan").GetProperty("State").Deserialize<BattleTurnState>()!) &&
+            old.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsBoss == true).Health == 730,
+            "Changed original complete defeat/Rax730 witness.");
+        var route = knownRoute.GetProperty("RollingDecisions").EnumerateArray().Select(step => new BattleSearchStep(
+            step.GetProperty("Action").Deserialize<PlayCardAction>(), step.GetProperty("IsEndTurn").GetBoolean())).ToArray();
+        var winning = BattlePlannerChecks.Replay(root, route, out RoomOutcome winningOutcome);
+        Require(winningOutcome == RoomOutcome.BattleWon && route.Length == 59 &&
+            keys.Key(winning) == keys.Key(knownRoute.GetProperty("Final").Deserialize<BattleTurnState>()!) &&
+            winning.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 46,
+            "Changed lower-floor full state/RNG and Pyre46 bound.");
+        var options = new BattlePlannerOptions(256, timeLimit: TimeSpan.FromSeconds(10), allowShorterHorizon: true,
+            searchToBattleEnd: true, stopAtBestPyreHealth: true);
+        var result = ParallelBattlePlanner.Plan(root, options);
+        int pyre = result.State.Spawn.Train.Rooms.SelectMany(room => room.Units).SingleOrDefault(unit => unit.IsPyre)?.Health ?? 0;
+        Console.WriteLine($"LOWER-OPENING result={result.Outcome} pyre={pyre} nodes={result.ExpandedNodes} elapsedMs={result.Elapsed.TotalMilliseconds:F1}");
+        Require(result.Outcome == RoomOutcome.BattleWon && pyre >= 46 && result.SearchWorkers == 2 && result.ExpandedNodes <= 256,
+            "Default two-worker opening lost the lower-floor model win or shared budget.");
+        var replayed = BattlePlannerChecks.Replay(root, result.Steps, out RoomOutcome outcome);
+        Require(outcome == result.Outcome && keys.Key(replayed) == keys.Key(result.State) && keys.Key(root) == parent,
+            "Diversified opening differs from complete state/RNG or mutated root.");
+        Console.WriteLine("LOWER-OPENING-PORTFOLIO PASS: same native deployment, original Rax730 model defeat to Pyre46 win under10000ms/256 shared nodes/two workers; immutable independent full-state/RNG replay; native validation required.");
+    }
     internal static void Run(FixtureValue nativeRoot, FixtureValue knownRoute)
     {
         Require(nativeRoot.GetProperty("EvidenceKind").GetString() == "ModelRootPrediction" &&

@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--parallel-lower-opening-only")
+{
+    using var previous = ModelJson.ReadFixture(args[1]);
+    using var route = ModelJson.ReadFixture(args[2]);
+    ParallelOpeningPortfolioChecks.Lower(previous.RootElement, route.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--underlegion-third-troop-preview-only")
 {
     UnderlegionThirdTroopPreviewChecks.Native(args[1], args.Length == 3 ? args[2] : null);
@@ -7323,8 +7330,16 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-unb
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-unbox-moon-relic-replay-calibration.mt2f"));
     UnboxMoonRelicChecks.Native(source.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) == "player-underlegion-third-troop-preview-calibration.mt2f"))
-    UnderlegionThirdTroopPreviewChecks.Native(path);
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("parallel-lower-opening-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "parallel-lower-opening-model-counterexample.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var previous = ModelJson.ReadFixture(path);
+    using var route = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "parallel-lower-opening-route-model-calibration.mt2f"));
+    ParallelOpeningPortfolioChecks.Lower(previous.RootElement, route.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-underlegion-third-troop-preview-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-underlegion-third-troop-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+    UnderlegionThirdTroopPreviewChecks.Native(path, ModelJson.RelatedFixture(path, "player-underlegion-third-troop-preview-replay-calibration.mt2f"));
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-generated-moon-first-transition-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-generated-moon-first-transition-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

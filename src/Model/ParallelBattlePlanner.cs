@@ -23,10 +23,11 @@ namespace MonsterTrain2Poju.Model
             var errors = new Exception?[count];
             int[] rooms = source.PlayRules?.Rooms.Select(room => room.RoomIndex)
                 .Where(room => room != options.PreferredDeploymentRoom).OrderBy(room => room).ToArray() ?? Array.Empty<int>();
-            // The ordinary opening seed already compares lower-floor departures
-            // and may move away from its preferred top floor. Keep the tactical
-            // worker on that floor so both searches do not discard it together.
-            bool preserveOpeningFloor = options.SearchToBattleEnd && options.AllowShorterHorizon &&
+            // Give each opening worker a fixed floor. The adaptive ordinary
+            // seed can otherwise duplicate the tactical worker's top floor,
+            // or both can abandon it after the same short lower-floor forecast.
+            // Both fixed policies retain all legal alternatives in their search.
+            bool splitOpeningFloors = count > 1 && options.SearchToBattleEnd && options.AllowShorterHorizon &&
                 !options.UseTacticalSeed && options.PreferredDeploymentRoom == 2 && source.Spawn.Turn == 0 &&
                 !source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0);
@@ -42,8 +43,8 @@ namespace MonsterTrain2Poju.Model
                         options.MaxNodes / count + (index < options.MaxNodes % count ? 1 : 0),
                         options.MaxTurns, options.BeamWidth, options.MaxActionsPerTurn,
                         remaining > TimeSpan.Zero ? remaining : TimeSpan.FromTicks(1),
-                        index == 0 || rooms.Length == 0 || preserveOpeningFloor ? options.PreferredDeploymentRoom : rooms[0],
-                        index == 0 ? options.UseTacticalSeed : !options.UseTacticalSeed,
+                        index == 0 || rooms.Length == 0 ? options.PreferredDeploymentRoom : rooms[0],
+                        splitOpeningFloors || (index == 0 ? options.UseTacticalSeed : !options.UseTacticalSeed),
                         options.AllowShorterHorizon, options.SearchToBattleEnd, options.MaxSteps, earlyStop != null);
                     using var keys = new BattleStateKeys();
                     results[index] = BattlePlanner.PlanCore(source, keys.Key, branchOptions, null, cancellationToken, true, earlyStop);
