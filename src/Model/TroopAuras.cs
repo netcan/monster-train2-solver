@@ -163,7 +163,7 @@ namespace MonsterTrain2Poju.Model
             if (retired.Any(actor => actor.Unit.AssetKey != "EnchanterT2_Titanskin" || actor.Unit.Team != CombatTeam.Enemy ||
                 actor.Unit.Health > 0 || actor.Unit.DeathState?.IsDestroyed != true || actor.RoomIndex != -1) ||
                 enchanters.Any(unit => unit.Health <= 0 || unit.DeathState?.IsDestroyed == true)) return false;
-            return enchanterIds.Count is 1 or 2 && enchanters.Length + retired.Length == enchanterIds.Count &&
+            return enchanterIds.Count > 0 && enchanters.Length + retired.Length == enchanterIds.Count &&
                 enchanters.Concat(retired.Select(actor => actor.Unit)).All(unit =>
             {
                 var effects = unit.Triggers.SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null).ToArray();
