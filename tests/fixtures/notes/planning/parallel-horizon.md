@@ -21,4 +21,8 @@ retains the terminal win. Existing same-root49/7-step terminal-defeat controls
 still select the useful material position and preserve primary-score priority.
 An attempted idle extension is explicitly unsupported by another triple-Juice
 signature and is not used as a terminal outcome. A fresh native default-budget
-battle is still required before claiming gameplay improvement.
+battle subsequently completed with release236:53 inputs/45 plays/8 EndTurns,
+Pyre5 and16 train stages. Its independent native reward replay matches every
+state/forecast/RNG transition, with all four failure counts zero. Normal58
+events produce Ring5 save6D2C913B9B0B265D24035AFE2B2F7AFE41B239C6AA684ABE9E24AA4729F4C062.
+This establishes a native passing baseline, not an improvement in surviving Pyre.
