@@ -92,6 +92,11 @@ if (args.Length is 3 or 5 && args[0] == "--harvest-angel-moon-birth-only")
     HarvestAngelMoonBirthChecks.Native(source.RootElement, birth.RootElement, replay?.RootElement, replayBirth?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--rank-three-room-slay-execution-only")
+{
+    RankThreeRoomSlayExecutionChecks.Native(args[1], args.Length == 3 ? args[2] : null);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--rank-three-room-slay-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6929,6 +6934,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-ran
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-rank-three-room-slay-replay-calibration.mt2f"));
     RankThreeRoomSlayChecks.Native(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-rank-three-room-slay-execution-calibration.mt2f"))
+    RankThreeRoomSlayExecutionChecks.Native(path, ModelJson.RelatedFixture(path, "player-rank-three-room-slay-execution-replay-calibration.mt2f"));
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-green-recruit-preview-identity-counterexample-calibration.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);

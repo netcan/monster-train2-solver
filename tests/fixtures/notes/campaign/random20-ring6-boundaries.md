@@ -7,7 +7,7 @@ Ring6 checkpoint110219-cf2a6848 remains unchanged, SHA256
 
 | Boundary | Repair | Evidence |
 | --- | --- | --- |
-| Rank-three champion room slay +2 | release217 accepts this original propagatable-status payload | independent deployment pair, complete state/RNG, four immutable branches and six unknown-payload controls; positive execution still needs its combat witness |
+| Rank-three champion room slay +2 | release217 accepts this original propagatable-status payload | independent natural deployment pair and six unknown-payload controls; a separate controlled native execution pair proves three slays raise ally regen9to15, complete room/train/input/RNG and immutable branches |
 | Harvest-health angel full-moon birth | release218 models original11ATK/1250HP birth and status registration | independent two-input and separate birth pairs, complete state/forecast/RNG, four immutable branches and five scope controls |
 | Green Recruit preview identities | release220 omits unobserved deployment preview34; release221 retains birth definitions until later-floor cleanup before omitting preview29 | independent49-input and35-input pairs, both preserved counters, full states/forecasts/RNG and four immutable branches each |
 | Fetched Ephemeral Resin Blades | release223 preserves attachment, removes standby binding and records both purge callbacks | independent54-input native pair and preserved counterexample, full successor/forecast/RNG, four immutable branches and two compound-trait guards |
@@ -25,3 +25,7 @@ original files. This strategy counterexample is curated as
 It starts from the previously accepted unchanged checkpoint, with its
 source/checker/payload frozen. No simulation or component match advances a
 campaign save link.
+
+The positive slay execution pair is documented in
+[its controlled combat note](../combat/rank-three-room-slay-execution.md).
+It closes that component witness without advancing this natural campaign.
