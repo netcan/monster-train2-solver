@@ -26,8 +26,11 @@ Lazarus/double-Juice/Conduit independent pair and eleven guards still pass.
 
 The Conduit extension shares the already calibrated modifier definition;
 only one such temporary upgrade is allowed for this Purifying Cleanse owner.
-Independent final-cast replay and fresh default-budget Ring3 acceptance are
-pending. These components are not a battle or campaign victory.
+Independent final-cast replay140135-210d8afa from committed1eecb652 passes
+all18 inputs and preserves the original rejected forecast. Both independent
+component pairs are curated with their original counterexamples. Fresh actual
+10000ms/two-worker Ring3 acceptance is in progress from the same natural save.
+These components are not a battle or campaign victory.
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --triple-juice-purifying-only <original.mt2f> <replay.mt2f>

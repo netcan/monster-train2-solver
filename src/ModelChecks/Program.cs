@@ -6651,6 +6651,16 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-moon-silence-shift-replay-calibration.mt2f"));
     MoonSilenceShiftChecks.Native(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-triple-juice-purifying-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-triple-juice-purifying-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-purifying-replay-calibration.mt2f"));
+    using var cast = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-purifying-cast-calibration.mt2f"));
+    using var castReplay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-purifying-cast-replay-calibration.mt2f"));
+    TripleJuicePurifyingCleanseChecks.Native(source.RootElement, replay.RootElement);
+    TripleJuicePurifyingCleanseChecks.Cast(cast.RootElement, castReplay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-lazarus-juice-multi-conduit-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-lazarus-juice-multi-conduit-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
