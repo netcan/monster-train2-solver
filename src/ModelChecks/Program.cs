@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--champion-meat-shield-boss-preview-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    ChampionMeatShieldBossPreviewChecks.Native(fixture.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--champion-meat-shield-preview-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -8289,6 +8296,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-roo
 {
     using var fixture = ModelJson.ReadFixture(path);
     RoomPreCombatWorldChecks.NativeRoot(fixture.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-champion-meat-shield-boss-preview-calibration.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    ChampionMeatShieldBossPreviewChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-champion-meat-shield-preview-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-champion-meat-shield-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

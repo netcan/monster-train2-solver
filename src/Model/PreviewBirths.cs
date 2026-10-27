@@ -72,6 +72,22 @@ namespace MonsterTrain2Poju.Model
             return births.Select(unit => unit.Id).ToArray();
         }
 
+        internal static CombatContext ForgetUnobservedBossPlayers(RoomCombatState source, CombatContext preview,
+            IReadOnlyCollection<CombatUnit> observedBirths, out int[] forgotten)
+        {
+            forgotten = Array.Empty<int>();
+            if (source.Context?.Enchantments is not { AutomaticLifecycle: true } world ||
+                !source.Units.Any(unit => IsOriginalChampionEnemyDeath(unit, source.Context) && unit.Triggers.Count == 2 &&
+                    IsOriginalMeatShieldHeal(unit.Triggers[1], unit, source.Context))) return preview;
+            // This equipped champion's cardless fallback also disappears before
+            // identity capture in a temporary boss-kill preview. Other calibrated
+            // boss-preview players can retain aura references and stay observed.
+            var train = new TrainCombatState(world.Rooms.Select(room => room.RoomIndex == source.RoomIndex
+                ? source : room.WithContext(source.Context)).ToArray(), world.Movement, world.EnemySlotsPerRoom, source.Context);
+            return ForgetUnobservedPlayers(train, preview, source.Context.NextUnitId ?? int.MaxValue,
+                source.Context.NextCardId, observedBirths, out forgotten);
+        }
+
         internal static CombatContext CompleteRemoteCombatBirths(CombatContext context, int roomIndex)
         {
             if (context.Enchantments is not { AutomaticLifecycle: true, Preview: false } world ||

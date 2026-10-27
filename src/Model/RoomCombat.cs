@@ -2683,12 +2683,16 @@ namespace MonsterTrain2Poju.Model
                         ? owner.WithResourceEffects(preview.context.Relics!.Single(other => other.DataId == owner.DataId).ResourceEffects!)
                         : owner).ToArray());
                 int firstPreviewId = context.NextUnitId ?? int.MaxValue;
+                int[] unobservedPlayers;
+                if (originalWorld?.AutomaticLifecycle == true)
+                    preview.context = PreviewBirthModel.ForgetUnobservedBossPlayers(PhysicalRoom(), preview.context,
+                        preview.units.Select(unit => unit.Freeze()).ToArray(), out unobservedPlayers);
+                else unobservedPlayers = originalWorld == null ? PreviewBirthModel.UnobservedRoomPlayers(PhysicalRoom(),
+                    preview.context, preview.units.Select(unit => unit.Freeze())) : Array.Empty<int>();
                 EnchantmentWorld? previewWorld = preview.context.Enchantments;
                 int[] enemyBirthIds = previewWorld == null ? Array.Empty<int>() : previewWorld.Rooms.SelectMany(room => room.Units)
                     .Concat(previewWorld.RetainedUnits.Select(retained => retained.Unit))
                     .Where(unit => unit.Id >= firstPreviewId && unit.Team == CombatTeam.Enemy).Select(unit => unit.Id).ToArray();
-                int[] unobservedPlayers = originalWorld == null ? PreviewBirthModel.UnobservedRoomPlayers(PhysicalRoom(),
-                    preview.context, preview.units.Select(unit => unit.Freeze())) : Array.Empty<int>();
                 BattleSpawnPoints? restoredPoints = context.SpawnPoints?.NextPreviewCopyId.HasValue == true ?
                     BattleSpawnPoints.EndPreview(context.SpawnPoints, preview.context.SpawnPoints!, clearBirths: false,
                         clearBirthUnitIds: enemyBirthIds.Concat(unobservedPlayers).ToArray()) : null;
