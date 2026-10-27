@@ -73,6 +73,15 @@ namespace MonsterTrain2Poju.Model
 
         internal static BattlePlanResult SelectBest(System.Collections.Generic.IEnumerable<BattlePlanResult> results) =>
             results.OrderByDescending(result => result.CompletedHorizon || result.UsedShorterHorizon)
+                // A terminal win is comparable by Pyre health. Partial whole-
+                // battle forecasts must first see equally far: an earlier state
+                // has not paid damage from later waves yet. Match PlanCore's
+                // completed-prefix ordering without favoring a known defeat.
+                .ThenBy(result => result.Outcome == RoomOutcome.BattleWon ? 0 :
+                    result.Outcome is RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate or RoomOutcome.Unsupported ? 2 : 1)
+                .ThenByDescending(result => result.SearchedToBattleEnd &&
+                    result.Outcome is not (RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate or RoomOutcome.Unsupported)
+                        ? result.TurnsCompleted : 0)
                 .ThenBy(result => result.Score).ThenBy(result => BattlePlanner.PositionCost(result.State, result.Outcome))
                 .ThenByDescending(result => result.TurnsCompleted).ThenBy(result => result.Steps.Count).First();
     }

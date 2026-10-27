@@ -193,6 +193,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-moon-burnout-relic-calibration.mt2f',
     'player-moon-burnout-relic-replay-calibration.mt2f',
     'player-duplicate-retain-order-calibration.mt2f',
+    'player-duplicate-retain-order-replay-calibration.mt2f',
+    'parallel-horizon-shallow-model-calibration.mt2f',
+    'parallel-horizon-route-model-calibration.mt2f',
     'player-triple-juice-purifying-calibration.mt2f',
     'player-triple-juice-purifying-replay-calibration.mt2f',
     'player-triple-juice-purifying-cast-calibration.mt2f',
@@ -2693,6 +2696,17 @@ if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'pending-boss-loss-or
         (Get-TestFixturePath 'full-battle-random-campaign-13-ring7-release137-budget10000-loss.mt2f') `
         (Get-TestFixturePath 'full-battle-random-campaign-13-ring7-release137-refined-loss.mt2f') $fixtures[0]
     if ($LASTEXITCODE -ne 0) { throw 'Focused pending boss loss order check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notlike 'parallel-horizon-*-model-calibration.mt2f' }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Parallel horizon checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --parallel-horizon-only `
+        (Get-TestFixturePath 'parallel-horizon-shallow-model-calibration.mt2f') `
+        (Get-TestFixturePath 'parallel-horizon-route-model-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Focused parallel horizon check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notlike 'parallel-planner-merge-model-*.mt2f' }).Count -eq 0) {

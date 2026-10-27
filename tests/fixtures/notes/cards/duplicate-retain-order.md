@@ -20,5 +20,7 @@ branches and eight unknown-signature guards pass. Historical forecast comparison
 proves only the two base traits changed order; comparisons keep array ordering.
 Original two-cast Stardust Invocation and Mass Production full-context/prefix
 checks with16 immutable branches each pass. Independent repaired native replay
-and a fresh default-budget fifth battle remain pending. This component is not
+153807-2e85f832 matches all18 full successors/forecasts/RNG, retaining the exact
+original ordering error and the fixed independent forecast. A fresh default-
+budget fifth battle is running. This component is not
 a fifth-battle win; installed Windows remains accepted233.

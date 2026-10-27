@@ -2482,6 +2482,13 @@ if (args.Length == 2 && args[0] == "--cost-rejection-cache-only")
     TacticalSelectionChecks.CostRejections(fixture.RootElement);
     return;
 }
+if (args.Length == 3 && args[0] == "--parallel-horizon-only")
+{
+    using var shallow = ModelJson.ReadFixture(args[1]);
+    using var route = ModelJson.ReadFixture(args[2]);
+    ParallelHorizonChecks.Run(shallow.RootElement, route.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--parallel-planner-merge-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -7055,10 +7062,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is "player-moo
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-moon-burnout-relic-replay-calibration.mt2f"));
     MoonBurnoutRelicChecks.Native(source.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) == "player-duplicate-retain-order-calibration.mt2f"))
+foreach (string path in args.Where(path => Path.GetFileName(path) is "player-duplicate-retain-order-calibration.mt2f" or "player-duplicate-retain-order-replay-calibration.mt2f")
+    .Select(path => ModelJson.RelatedFixture(path, "player-duplicate-retain-order-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var source = ModelJson.ReadFixture(path);
-    DuplicateRetainOrderChecks.Native(source.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-duplicate-retain-order-replay-calibration.mt2f"));
+    DuplicateRetainOrderChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) is "player-relentless-outer-bump-calibration.mt2f" or "player-relentless-outer-bump-replay-calibration.mt2f")
     .Select(path => ModelJson.RelatedFixture(path, "player-relentless-outer-bump-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
@@ -7966,6 +7975,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-har
     using var fixture = ModelJson.ReadFixture(ModelJson.RelatedFixture(path,
         "full-battle-harvester-birth-calibration.mt2f"));
     HarvesterBirthChecks.Component(observation.RootElement, fixture.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) is "parallel-horizon-shallow-model-calibration.mt2f" or "parallel-horizon-route-model-calibration.mt2f")
+    .Select(path => ModelJson.RelatedFixture(path, "parallel-horizon-shallow-model-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var shallow = ModelJson.ReadFixture(path);
+    using var route = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "parallel-horizon-route-model-calibration.mt2f"));
+    ParallelHorizonChecks.Run(shallow.RootElement, route.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "parallel-planner-merge-model-calibration.mt2f"))
 {
