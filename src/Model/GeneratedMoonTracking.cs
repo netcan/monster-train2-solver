@@ -29,7 +29,7 @@ namespace MonsterTrain2Poju.Model
             if (context.EnergyState?.Phase != "MonsterTurn" || context.QueryFrame.MoonPhase is not (1 or 2) ||
                 state.Rooms.Any(room => room.Preview) || (context.Enchantments?.RetainedUnits.Count ?? 0) != 0 ||
                 RoomMoonPhaseModel.HasMask(state) || state.Rooms.SelectMany(room => room.Units).Any(unit =>
-                    unit.MoonPhaseMask is not (null or 0 or 4) || unit.Triggers.Any(trigger => trigger.Kind is
+                    unit.MoonPhaseMask is < 0 or > 7 || unit.Triggers.Any(trigger => trigger.Kind is
                         "OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or "OnMoonshadeLost" or "OnMoonPhaseShift") ||
                     context.FindCard(unit.SpawnerCardId)?.MaskDescriptor?.BaseTraits.Any(trait =>
                         trait.RuntimeType.Contains("MoonPhase", StringComparison.Ordinal)) == true))

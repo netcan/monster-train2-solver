@@ -42,15 +42,23 @@ namespace MonsterTrain2Poju.Probe
             if (readyFrame < 0) readyFrame = UnityEngine.Time.frameCount;
             return UnityEngine.Time.frameCount <= readyFrame + 1;
         }
-        private static string Comparable(BattleTurnState state)
+        private static string Comparable(BattleTurnState state) => BattleTurnProbe.Comparable(state).ToString(Newtonsoft.Json.Formatting.None);
+
+        private static bool MatchesRequestCapture(BattleTurnState expectedState, BattleTurnState actualState)
         {
-            var value = (JObject)BattleTurnProbe.Comparable(state);
+            var value = (JObject)BattleTurnProbe.Comparable(expectedState);
+            JToken actual = BattleTurnProbe.Comparable(actualState);
             // Older observation requests omitted inactive understanding masks.
-            // Their native default is MoonPhase.None (4). Keep raw records intact.
+            // Bind only these unobserved fields to the newly read native value.
+            // Every previously captured bit and raw record remains unchanged.
             foreach (JProperty property in value.Descendants().OfType<JProperty>()
                 .Where(property => property.Name == "MoonPhaseMask" && property.Value.Type == JTokenType.Null))
-                property.Value = (int)PlayerManager.MoonPhase.None;
-            return value.ToString(Newtonsoft.Json.Formatting.None);
+            {
+                JToken? captured = actual.SelectToken(property.Path);
+                if (captured?.Type != JTokenType.Integer || (int)captured < 0 || (int)captured > 7) return false;
+                property.Value = captured.DeepClone();
+            }
+            return JToken.DeepEquals(value, actual);
         }
         private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 
@@ -224,12 +232,12 @@ namespace MonsterTrain2Poju.Probe
             }
             bool boundary = rows.Count == prefix!.Length;
             Require(rows.Count <= prefix.Length, "Branch input overflow.");
-            Require(Comparable(root) == Comparable(expected), "Native branch prefix root differs at " + rows.Count + ": " +
+            Require(MatchesRequestCapture(expected, root), "Native branch prefix root differs at " + rows.Count + ": " +
                 UnitPlayModelProbe.FirstDifference(BattleTurnProbe.Comparable(expected), BattleTurnProbe.Comparable(root), "$"));
             if (boundary)
             {
                 var failedRoot = Read<BattleTurnState>(request.GetProperty("FailedRoot"));
-                Require(Comparable(root) == Comparable(failedRoot), "Native branch did not reach the recorded failure root: " +
+                Require(MatchesRequestCapture(failedRoot, root), "Native branch did not reach the recorded failure root: " +
                     UnitPlayModelProbe.FirstDifference(BattleTurnProbe.Comparable(failedRoot), BattleTurnProbe.Comparable(root), "$"));
             }
             FixtureValue value = boundary ? request : prefix[rows.Count];

@@ -7,7 +7,8 @@ internal static class GeneratedMoonTrackingChecks
 {
     internal static void Native(FixtureValue source, FixtureValue? replay = null)
     {
-        var rows = NativeBranchObservationChecks.Replay(source, GeneratedMoonTrackingModel.Guard, normalizeComparison: CaptureKey);
+        var rows = NativeBranchObservationChecks.Replay(source, GeneratedMoonTrackingModel.Guard,
+            normalizeComparison: CaptureKey, matchesRequestCapture: CapturesEquivalent);
         Require(rows.Length == 18, "Missing original seventeen inputs plus Fetch activation.");
         var before = rows[^1].GetProperty("Before").Deserialize<BattleTurnState>()!;
         var actual = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
@@ -53,31 +54,58 @@ internal static class GeneratedMoonTrackingChecks
             pending.Movement, pending.EnemySlotsPerRoom, pending.Context);
         Require(!GeneratedMoonTrackingModel.CompletePlayerReset(before.Spawn.Train, callbacks).Supported,
             "Unknown activation callback accepted.");
-        Require(!GeneratedMoonTrackingModel.CompletePlayerReset(before.Spawn.Train, actual.Spawn.Train).Supported,
-            "A previously understood phase must not be silently reset.");
+        var badContext = JsonSerializer.SerializeToNode(context, ModelJson.Options)!;
+        badContext["EnergyState"]!["Phase"] = "HeroTurn";
+        Require(!GeneratedMoonTrackingModel.KnownPlayerCreation(badContext.Deserialize<CombatContext>(ModelJson.Options)!, creation),
+            "Unobserved player reset timing accepted.");
         if (replay.HasValue)
         {
-            NativeBranchObservationChecks.Replay(replay.Value, GeneratedMoonTrackingModel.Guard, normalizeComparison: CaptureKey);
-            NativeBranchObservationChecks.Pair(source, replay.Value, normalizeComparison: CaptureKey);
+            NativeBranchObservationChecks.Replay(replay.Value, GeneratedMoonTrackingModel.Guard,
+                normalizeComparison: CaptureKey, matchesRequestCapture: CapturesEquivalent);
+            NativeBranchObservationChecks.Pair(source, replay.Value, normalizeComparison: CaptureKey, capturesEquivalent: CapturesEquivalent);
         }
         Console.WriteLine("GENERATED-MOON-TRACKING PASS:18 native inputs/full successor/forecast/RNG; Dusk Mantle38 enables tracking and resets all12 actors without phase/status changes; four immutable branches/four creation and two reset guards; independentPair=" + replay.HasValue);
     }
     private static string CaptureKey(string value)
     {
         // In the unchanged282 observation, inactive native masks were omitted.
-        // Only the omitted native None(4) is equivalent; phase bits stay exact.
+        // Only unspawned definition defaults are known None(4). Live masks
+        // remain unknown in the historical capture, never guessed as None.
         JsonNode root = JsonNode.Parse(value)!;
         void Visit(JsonNode? node)
         {
             if (node is JsonObject obj)
             {
-                if (obj.ContainsKey("MoonPhaseMask") && obj["MoonPhaseMask"] == null) obj["MoonPhaseMask"] = 4;
+                if (obj.ContainsKey("BaseAttack") && obj["Id"]?.GetValue<int>() == 0 &&
+                    obj.ContainsKey("MoonPhaseMask") && obj["MoonPhaseMask"] == null) obj["MoonPhaseMask"] = 4;
                 foreach (JsonNode? child in obj.Select(pair => pair.Value)) Visit(child);
             }
             else if (node is JsonArray array) foreach (JsonNode? child in array) Visit(child);
         }
         Visit(root);
         return root.ToJsonString();
+    }
+    private static bool CapturesEquivalent(BattleTurnState original, BattleTurnState repeated)
+    {
+        JsonNode expected = JsonNode.Parse(NativeBranchObservationChecks.Key(original))!;
+        JsonNode actual = JsonNode.Parse(NativeBranchObservationChecks.Key(repeated))!;
+        void BindOmitted(JsonNode? left, JsonNode? right)
+        {
+            if (left is JsonObject obj && right is JsonObject other)
+            {
+                if (obj.ContainsKey("MoonPhaseMask") && obj["MoonPhaseMask"] == null && other["MoonPhaseMask"] is JsonValue captured)
+                {
+                    int mask = captured.GetValue<int>();
+                    Require(mask is >= 0 and <= 7, "Invalid newly captured native mask.");
+                    obj["MoonPhaseMask"] = mask;
+                }
+                foreach (var field in obj) BindOmitted(field.Value, other[field.Key]);
+            }
+            else if (left is JsonArray array && right is JsonArray otherArray && array.Count == otherArray.Count)
+                for (int index = 0; index < array.Count; index++) BindOmitted(array[index], otherArray[index]);
+        }
+        BindOmitted(expected, actual);
+        return JsonNode.DeepEquals(expected, actual);
     }
     private static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
 }

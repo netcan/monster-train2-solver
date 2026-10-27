@@ -11,7 +11,8 @@ internal static class NativeBranchObservationChecks
         RoomOutcome boundaryOutcome = RoomOutcome.Exchanged, string? historicalUnsupportedReason = null,
         RoomOutcome? historicalBoundaryOutcome = null,
         Func<BattleTurnState, BattleTurnState>? revalidateHistoricalCapture = null,
-        Func<string, string>? normalizeComparison = null)
+        Func<string, string>? normalizeComparison = null,
+        Func<BattleTurnState, BattleTurnState, bool>? matchesRequestCapture = null)
     {
         string CaptureKey(BattleTurnState state, bool terminal = false) => normalizeComparison?.Invoke(Key(state, terminal)) ?? Key(state, terminal);
         Require(!historicalBoundaryOutcome.HasValue || historicalBoundaryMismatch != null,
@@ -36,7 +37,7 @@ internal static class NativeBranchObservationChecks
             bool end = step.GetProperty("IsEndTurn").GetBoolean();
             BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
             BattleTurnState actual = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
-            Require(CaptureKey(current) == CaptureKey(before) && row.GetProperty("Boundary").GetBoolean() == boundary &&
+            Require((matchesRequestCapture?.Invoke(current, before) ?? CaptureKey(current) == CaptureKey(before)) && row.GetProperty("Boundary").GetBoolean() == boundary &&
                 row.GetProperty("IsEndTurn").GetBoolean() == end && row.GetProperty("Action").ContentEquals(step.GetProperty("Action")),
                 "Native chain/input differs at " + index);
             if (revalidateHistoricalCapture != null) before = revalidateHistoricalCapture(before);
@@ -65,7 +66,11 @@ internal static class NativeBranchObservationChecks
                 else Require(historicalKey == actualKey, "Historical prediction differs at " + index);
             }
             Require(immutable == JsonSerializer.Serialize(before, ModelJson.Options), "Replay mutated its parent.");
-            if (boundary) Require(CaptureKey(before) == CaptureKey(request.GetProperty("FailedRoot").Deserialize<BattleTurnState>()!), "Wrong failed root.");
+            if (boundary)
+            {
+                var failedRoot = request.GetProperty("FailedRoot").Deserialize<BattleTurnState>()!;
+                Require(matchesRequestCapture?.Invoke(failedRoot, before) ?? CaptureKey(before) == CaptureKey(failedRoot), "Wrong failed root.");
+            }
             current = actual;
         }
         FixtureValue overlay = fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay");
@@ -76,7 +81,8 @@ internal static class NativeBranchObservationChecks
     }
 
     internal static void Pair(FixtureValue source, FixtureValue replay, bool originalPredictionPresent = false,
-        bool originalPredictionMatched = false, Func<string, string>? normalizeComparison = null)
+        bool originalPredictionMatched = false, Func<string, string>? normalizeComparison = null,
+        Func<BattleTurnState, BattleTurnState, bool>? capturesEquivalent = null)
     {
         string CaptureKey(BattleTurnState state, bool terminal = false) => normalizeComparison?.Invoke(Key(state, terminal)) ?? Key(state, terminal);
         Require(!originalPredictionMatched || originalPredictionPresent, "A matching original prediction must be present.");
@@ -87,8 +93,12 @@ internal static class NativeBranchObservationChecks
         for (int index = 0; index < first.Length; index++)
         {
             foreach (string field in new[] { "Before", "Actual" })
-                Require(CaptureKey(first[index].GetProperty(field).Deserialize<BattleTurnState>()!) ==
-                    CaptureKey(second[index].GetProperty(field).Deserialize<BattleTurnState>()!), "Independent process changed " + field + " at " + index);
+            {
+                var original = first[index].GetProperty(field).Deserialize<BattleTurnState>()!;
+                var repeated = second[index].GetProperty(field).Deserialize<BattleTurnState>()!;
+                Require(capturesEquivalent?.Invoke(original, repeated) ?? CaptureKey(original) == CaptureKey(repeated),
+                    "Independent process changed " + field + " at " + index);
+            }
             foreach (string field in new[] { "Action", "IsEndTurn", "Boundary" })
                 Require(first[index].GetProperty(field).ContentEquals(second[index].GetProperty(field)), "Independent input changed at " + index);
         }

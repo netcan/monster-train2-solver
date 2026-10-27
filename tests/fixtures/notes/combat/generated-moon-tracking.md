@@ -14,16 +14,19 @@ native None(4).
 
 283 admits this captured Dusk Mantle creation during an active player turn,
 then completes the reset before previews. Unknown creation signatures,
-existing phase understanding, retained actors, room masks, character moon
+unobserved timing, retained actors, room masks, character moon
 callbacks and spawner moon traits remain guarded. Ability results propagate
 the updated tracking flag to the outer battle state.
 
 Player captures now read actual masks from deployment even while tracking
 is inactive. The old282 observation omitted these fields; its comparison
-explicitly treats only an omitted mask as native None(4). Actual phase bits,
+compares unspawned definition defaults to native None(4). Omitted live masks
+are unknown: the independent replay reads them directly and checks every
+previously captured field unchanged. In particular, inactive tracking does
+not imply a character has no phase understanding. Actual recorded phase bits,
 all other state, inputs, RNG and raw archive bytes remain exact. Development
-observation request comparison uses the same omission rule without changing
-the request or native capture.
+observation request comparison binds only omitted mask fields to the new
+native values without changing the request or capture.
 
 `--generated-moon-tracking-only` checks all18 native successors/forecasts/RNG,
 four immutable boundary branches, four altered creation signatures and two
