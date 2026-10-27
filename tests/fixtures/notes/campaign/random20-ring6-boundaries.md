@@ -16,6 +16,12 @@ Release221's default run115221-b3899e19 passes the old35th and49th boundaries,
 then stops on input54's equipment routing. It is not a terminal battle and
 must not count as a sixth win. Release223's preceding Ring5 default run is
 an independently checked38-input native defeat, retained separately from
-the earlier default win. Ring6 resumes from the previously accepted unchanged
-checkpoint, with its source/checker/payload frozen. No simulation or component
-match advances a campaign save link.
+the earlier default win. Ring6's release223 run121311-b9a3dbb7 completes64
+inputs/53plays/11EndTurns in actual defeat, with both bosses at669/1159HP.
+All22 train phases and complete successors/forecasts/RNG pass, with zero
+capture failures, mismatches, unsupported or pending records, and unchanged
+original files. This strategy counterexample is curated as
+`full-battle-random-campaign-20-ring6-release223-budget10000-loss.mt2f`.
+It starts from the previously accepted unchanged checkpoint, with its
+source/checker/payload frozen. No simulation or component match advances a
+campaign save link.
