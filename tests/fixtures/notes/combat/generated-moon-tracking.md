@@ -28,6 +28,12 @@ all other state, inputs, RNG and raw archive bytes remain exact. Development
 observation request comparison binds only omitted mask fields to the new
 native values without changing the request or capture.
 
+CharacterState.Setup updates understanding even when tracking is inactive;
+birth retains the native None bit while adding the current phase bits. The
+model now performs that understanding update independently from the tracked
+phase status. Failed prefix observations write an explicitly incomplete raw
+archive for diagnosis; they cannot satisfy the completed-observation gate.
+
 `--generated-moon-tracking-only` checks all18 native successors/forecasts/RNG,
 four immutable boundary branches, four altered creation signatures and two
 reset guards. Source36390bytes,5973nodes,SHA256

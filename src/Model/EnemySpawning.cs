@@ -256,12 +256,15 @@ namespace MonsterTrain2Poju.Model
                 // Preserve status registration order (e.g. relentless, moon,
                 // Covenant boss buff), as well as the off-train callback order.
                 if (context?.QueryFrame?.MoonPhase is int moon &&
-                    MoonPhaseStatusModel.IsTracking(context, rooms.SelectMany(room => room)))
+                    (unit.MoonPhaseMask.HasValue || MoonPhaseStatusModel.IsTracking(context, rooms.SelectMany(room => room))))
                 {
                     int liveIndex = rooms[index].FindIndex(actor => actor.Id == unit.Id);
                     if (liveIndex >= 0)
                     {
-                        CombatUnit initialized = MoonPhaseStatusModel.WithPhase(rooms[index][liveIndex], moon).WithMoonPhaseMask(moon);
+                        CombatUnit initialized = rooms[index][liveIndex];
+                        if (MoonPhaseStatusModel.IsTracking(context, rooms.SelectMany(room => room)))
+                            initialized = MoonPhaseStatusModel.WithPhase(initialized, moon);
+                        initialized = initialized.WithMoonPhaseMask(moon);
                         rooms[index][liveIndex] = initialized;
                         string gained = moon == 2 ? "OnMoonLit" : "OnMoonShade";
                         if (moon is 1 or 2 && initialized.Triggers.Any(trigger => trigger.Kind == gained))

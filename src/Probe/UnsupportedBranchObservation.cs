@@ -84,7 +84,18 @@ namespace MonsterTrain2Poju.Probe
             if (row.Boundary) row.RoomAttachmentsAfter = CaptureRoomAttachments();
             if (!row.Boundary)
             {
-                Require(Comparable(expected) == Comparable(actual), "Native branch prefix successor differs at " + rows.Count);
+                if (Comparable(expected) != Comparable(actual))
+                {
+                    using var partial = NativeFixtureCapture.Capture(new { Schema = 1,
+                        EvidenceKind = "NativeIncompleteBranchObservation", NativeCompleted = false,
+                        GameModuleMvid = typeof(CardState).Module.ModuleVersionId.ToString(),
+                        Request = Read<JObject>(request), Rows = rows });
+                    using var partialStream = new FileStream(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                        "unsupported-branch-partial.mt2f"), FileMode.CreateNew, FileAccess.Write);
+                    partial.Write(partialStream);
+                    throw new InvalidOperationException("Native branch prefix successor differs at " + rows.Count + ": " +
+                        UnitPlayModelProbe.FirstDifference(BattleTurnProbe.Comparable(expected), BattleTurnProbe.Comparable(actual), "$"));
+                }
                 return;
             }
             object? equipmentPreviewClear = null;

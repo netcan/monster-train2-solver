@@ -2248,12 +2248,16 @@ namespace MonsterTrain2Poju.Model
                 if (!ApplyBirthRelics(true)) return Finish(RoomOutcome.Unsupported);
                 int birthMoonMask = 0;
                 if (context?.QueryFrame?.MoonPhase is int moon &&
-                    MoonPhaseStatusModel.IsTracking(context, units.Select(unit => unit.Freeze())))
+                    (spawned.Source.MoonPhaseMask.HasValue || MoonPhaseStatusModel.IsTracking(context, units.Select(unit => unit.Freeze()))))
                 {
                     birthMoonMask = RoomMoonPhaseModel.Effective(context, source.RoomIndex, moon);
                     // CharacterState.Setup registers the moon before room attachments
-                    // add statuses such as Planetarium's conduit to the new actor.
-                    spawned.Apply(MoonPhaseStatusModel.WithPhase(spawned.Freeze(), moon).WithMoonPhaseMask(birthMoonMask));
+                    // even without tracking. Only tracked births acquire a phase
+                    // status from PlayerManager.OnCharacterSpawned.
+                    CombatUnit understood = spawned.Freeze();
+                    if (MoonPhaseStatusModel.IsTracking(context, units.Select(unit => unit.Freeze())))
+                        understood = MoonPhaseStatusModel.WithPhase(understood, moon);
+                    spawned.Apply(understood.WithMoonPhaseMask(birthMoonMask));
                 }
                 // Native installs starting statuses and covenant effects before
                 // room attachments. Initializing afterward can erase an
