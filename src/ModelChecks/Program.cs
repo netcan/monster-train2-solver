@@ -6865,6 +6865,17 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-ran
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-rank-three-room-slay-replay-calibration.mt2f"));
     RankThreeRoomSlayChecks.Native(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-green-recruit-preview-identity-counterexample-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    GreenRecruitPreviewIdentityChecks.Counterexample(source.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-green-recruit-preview-identity-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-green-recruit-preview-identity-replay-calibration.mt2f"));
+    GreenRecruitPreviewIdentityChecks.Native(source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-harvest-angel-moon-birth-calibration.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);

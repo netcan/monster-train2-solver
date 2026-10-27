@@ -9,3 +9,9 @@ exports a47-input model loss with3565HP, and finds ten guarded Echo attempts.
 The first exact45-input prefix plus triple-Juice Spike is saved and observed
 in an isolated native process. Echo with its Pyre-heal upgrade needs calibration;
 the minor model loss improvement is not submitted as a native win.
+
+Later model-only deployment work reaches3025 remaining bossHP. The native
+Waxen Spike and consumed Remnant Pact Echo boundaries have independent pairs.
+With the new pure-Endless target seed, samples60..81 all complete with no
+improvement or unsupported branches in120seconds. Next fresh sample is82.
+The final battle remains unaccepted; component matches do not make it a clear.

@@ -511,6 +511,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-room-slay-status-replay-calibration.mt2f',
     'player-rank-three-room-slay-calibration.mt2f',
     'player-rank-three-room-slay-replay-calibration.mt2f',
+    'player-green-recruit-preview-identity-counterexample-calibration.mt2f',
+    'player-green-recruit-preview-identity-calibration.mt2f',
+    'player-green-recruit-preview-identity-replay-calibration.mt2f',
     'player-harvest-angel-moon-birth-calibration.mt2f',
     'harvest-angel-moon-creation-calibration.mt2f',
     'player-harvest-angel-moon-birth-replay-calibration.mt2f',
@@ -2075,6 +2078,19 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -ne 'p
         (Get-TestFixturePath 'player-ascend-deferred-destruction-counterexample-calibration.mt2f') `
         (Get-TestFixturePath 'full-battle-random-campaign-20-ring3-release215-budget10000-search.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Focused Ascend destruction checks failed.' }
+    return
+}
+$greenRecruitIdentityNames = @('player-green-recruit-preview-identity-counterexample-calibration.mt2f', 'player-green-recruit-preview-identity-calibration.mt2f', 'player-green-recruit-preview-identity-replay-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $greenRecruitIdentityNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Green Recruit preview identity checker build failed.' }
+    }
+    $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
+    dotnet $checker --green-recruit-preview-counterexample-only (Get-TestFixturePath $greenRecruitIdentityNames[0])
+    if ($LASTEXITCODE -ne 0) { throw 'Green Recruit identity counterexample check failed.' }
+    dotnet $checker --green-recruit-preview-identity-only (Get-TestFixturePath $greenRecruitIdentityNames[1]) (Get-TestFixturePath $greenRecruitIdentityNames[2])
+    if ($LASTEXITCODE -ne 0) { throw 'Focused Green Recruit identity pair failed.' }
     return
 }
 $harvestAngelMoonNames = @('player-harvest-angel-moon-birth-calibration.mt2f', 'harvest-angel-moon-creation-calibration.mt2f', 'player-harvest-angel-moon-birth-replay-calibration.mt2f', 'harvest-angel-moon-creation-replay-calibration.mt2f')

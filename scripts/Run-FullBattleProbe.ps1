@@ -3536,9 +3536,12 @@ if ($OriginalDeathroar -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -
     -not $trace.OriginalDeathroarPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 4)) {
     throw 'Original Deathroar witness lacks its three controlled Stewards and direct damage/status-transfer play.'
 }
-if ($OriginalGreenRecruit -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-green-recruit' -or
-    -not $trace.OriginalGreenRecruitPrepared -or -not $trace.NativeWon)) {
-    throw 'Original Green Recruit witness did not complete its native Monster deployment.'
+if ($OriginalGreenRecruit) {
+    $greenRecruitSchema = if ($SettleCardAnimations) { 106 } elseif ($SettleDeathDissolves) { 105 } else { 103 }
+    if ($trace.Schema -ne $greenRecruitSchema -or $trace.ModifierScenario -ne 'original-green-recruit' -or
+        -not $trace.OriginalGreenRecruitPrepared -or -not $trace.NativeWon) {
+        throw 'Original Green Recruit witness did not complete its native Monster deployment.'
+    }
 }
 if ($OriginalPrimordium -and ($trace.Schema -ne 103 -or $trace.ModifierScenario -ne 'original-primordium' -or
     -not $trace.OriginalPrimordiumPrepared -or -not $trace.NativeWon)) {

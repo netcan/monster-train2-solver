@@ -22,3 +22,9 @@ complete states/forecasts/RNG and four zero counters pass. The actual loss is
 curated separately; its45-input owned frozen route also replays completely.
 Offline deployment spread covers24 previously unseen candidates and reaches
 241 remaining bossHP, still a model loss. No third-ring acceptance is claimed.
+
+Subsequent offline diverse ordering reaches213HP. A bounded search over paired
+inputs21..40 reaches197HP in43inputs, with full owned successor/forecast/RNG
+verification; it remains a model loss. Deployment samples24..47 add24 complete
+candidates and no improvement. Resume fresh deployment at48; do not count any
+of these routes as native victories or replay unchanged samples.
