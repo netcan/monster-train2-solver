@@ -42,6 +42,7 @@ namespace MonsterTrain2Poju.Model
                     if (result.Supported)
                     {
                         if (!AttackBuffDamagePolicy.UsefulSuccessor(source, action, choice.rule!, result.State!)) continue;
+                        if (!BurnoutHealPolicy.UsefulSuccessor(source, action, choice.rule!, result.State!)) continue;
                         return new SupportedActionCandidate(action, result);
                     }
                     if (result.Rejection == ActionRejection.Unsupported)
@@ -105,6 +106,7 @@ namespace MonsterTrain2Poju.Model
                     room.Units.Count(unit => unit.Team == CombatTeam.Enemy) * 25 + action.RoomIndex;
                 if (SacrificeTargetValue(rule, target) is double sacrifice) return sacrifice;
                 if (AttackBuffDamagePolicy.TargetValue(rule, target) is double buffDamage) return buffDamage;
+                if (BurnoutHealPolicy.TargetValue(rule, target) is double burnoutHeal) return burnoutHeal;
                 bool harmful = rule.Effects.Any(effect => effect.Type is "Damage" or "Kill" ||
                     effect.Statuses.Any(status => status.DisplayCategory == "Negative"));
                 if (harmful != (target.Team == CombatTeam.Enemy)) return -1e6;

@@ -193,6 +193,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-relentless-outer-bump-counterexample-calibration.mt2f',
     'player-relentless-outer-bump-calibration.mt2f',
     'player-relentless-outer-bump-replay-calibration.mt2f',
+    'player-burnout-heal-target-calibration.mt2f',
     'player-ascend-deferred-destruction-counterexample-calibration.mt2f',
     'full-battle-random-campaign-21-ring1-release215-budget10000-search.mt2f',
     'full-battle-random-campaign-21-ring1-release215-budget10000-replay.mt2f',

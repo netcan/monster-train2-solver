@@ -28,6 +28,17 @@ independent first-EndTurn and18-input positive Conduit8/heal23/Burnout9 pairs.
 Its clean full battle140135-6feeba03 then reaches input39 and exposes missing
 departure-floor destruction after paid Relentless outer-boss movement.
 Release231 corrects the native39-input source and independent replay pair;
-the original failure and both components are curated. The same checkpoint
-is undergoing fresh actual10000ms/two-worker full-battle acceptance.
+the original failure and both components are curated. Fresh actual10000ms/
+two-worker source141346-80329b5c finishes47 inputs/39plays/8EndTurns in defeat.
+All16 train phases, complete successors/forecasts/RNG and four zero counters
+pass; overlay49 publications/291 captures/purity0. The defeat remains in
+journal141345-4574fb5e, independently of the preceding default victories.
+
+The retained229 root also shows Purifying Cleanse8 healing the full-health
+hero beside a39ATK/33HP Lady with Burnout1. Release232 fixes both seed target
+rankings; independent native22-input component142051-bc670472 preserves
+the first21 inputs and confirms Lady health33->56/Burnout1->10. Full state,
+forecasts and RNG agree. Ten additional model controls and eight immutable
+native-root choices pass. Fresh full-battle acceptance is the next step;
+the component alone is not counted as a victory.
 No Ring3 or full-campaign win is claimed.

@@ -2275,6 +2275,19 @@ if (args.Length == 2 && args[0] == "--attack-buff-damage-target-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--burnout-heal-target-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    BurnoutHealTargetChecks.Native(source.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--burnout-heal-alternative-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    BurnoutHealTargetChecks.Alternative(source.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--relentless-outer-bump-counterexample-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -6985,6 +6998,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-rel
 {
     using var source = ModelJson.ReadFixture(path);
     RelentlessOuterBossBumpChecks.Counterexample(source.RootElement);
+    BurnoutHealTargetChecks.Native(source.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-burnout-heal-target-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    BurnoutHealTargetChecks.Alternative(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) is "player-relentless-outer-bump-calibration.mt2f" or "player-relentless-outer-bump-replay-calibration.mt2f")
     .Select(path => ModelJson.RelatedFixture(path, "player-relentless-outer-bump-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

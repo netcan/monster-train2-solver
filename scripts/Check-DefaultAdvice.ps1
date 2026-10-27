@@ -30,6 +30,8 @@ function Invoke-Check([string] $Mode, [string[]] $Archives) {
 if ('Targets' -in $Case) {
     Invoke-Check '--tactical-target-only' @()
     Invoke-Check '--attack-buff-damage-target-only' @(Get-Archive 'full-battle-original-spell-compositions.mt2f')
+    Invoke-Check '--burnout-heal-target-only' @(Get-Archive 'player-relentless-outer-bump-counterexample-calibration.mt2f')
+    Invoke-Check '--burnout-heal-alternative-only' @(Get-Archive 'player-burnout-heal-target-calibration.mt2f')
 }
 if ('Keys' -in $Case) {
     Invoke-Check '--state-key-only' @(Get-Archive 'full-battle-player-natural-ring7-ordinary-search.mt2f')
