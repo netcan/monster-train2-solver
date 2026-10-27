@@ -21,3 +21,25 @@ is supported or that the strategy is sufficient.
 
 Model-only deployment/card-order refinements remain investigations until
 they pass fresh native execution and independent normal campaign replay.
+
+Release256 source210851-fa277060 independently repeats the complete
+21-input default defeat. Release259 frozen replay212859-ebe44516 matches
+every input, root, successor, forecast and RNG, both sets of eight train
+phases and all four raw zero counters. It publishes no new advice.
+Explicit CompleteDefeat lets native StopCombat finish Pyre destruction,
+EndGame and GameOver/FinishRun without forcing a victory or changing saves.
+The native snapshot has distance5/six battles, five wins and one loss;
+the final active save is idle at sequence0/distance-1/zero battles.
+Original/input files are unchanged. This is a normally settled defeat,
+never a sixth accepted victory or an eight-battle campaign clear.
+
+The EndGame prefix is too early to retain a loss: native BattleLost runs
+inside EndGame. Defeats are observed in its postfix before the asynchronous
+GameOver screen resets the run. The first release258 attempt was correctly
+rejected for retaining only five battle records and is not accepted here.
+The original victory-only continuation and completed-Standard archive
+guards remain strict; independent negative checks still reject defeats.
+
+Metagame progress continues into sample24 Banished/Hellhorned1122120878
+through this normally settled native profile, rather than restarting from
+an older completed campaign. That opening does not imply a new clear.

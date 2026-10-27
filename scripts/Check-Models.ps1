@@ -215,6 +215,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-23-ring5-release249-budget10000-search.mt2f',
     'full-battle-random-campaign-23-ring5-release249-budget10000-replay.mt2f',
     'full-battle-random-campaign-23-ring6-release254-budget10000-loss.mt2f',
+    'full-battle-random-campaign-23-ring6-release256-budget10000-settled-loss.mt2f',
+    'full-battle-random-campaign-23-ring6-release256-budget10000-settled-loss-replay.mt2f',
     'full-battle-random-campaign-23-ring5-refined248-search.mt2f',
     'full-battle-random-campaign-23-ring5-refined248-replay.mt2f',
     'player-underlegion-troop-upgrade-calibration.mt2f',
@@ -3316,7 +3318,9 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notli
     $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
     $checkedSources = @{}
     foreach ($path in $fixtures) {
-        $sourceName = (Split-Path -Leaf $path) -replace '-replay\.mt2f$', '-search.mt2f'
+        $sourceName = if ($path.EndsWith('-settled-loss-replay.mt2f', [StringComparison]::Ordinal)) {
+            (Split-Path -Leaf $path) -replace '-replay\.mt2f$', '.mt2f'
+        } else { (Split-Path -Leaf $path) -replace '-replay\.mt2f$', '-search.mt2f' }
         if ($sourceName -eq 'player-random-campaign-02-ring2-permafrost-unavailable.mt2f') {
             $sourceName = 'full-battle-random-campaign-02-ring2-search.mt2f'
         }

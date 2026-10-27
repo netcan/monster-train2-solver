@@ -7,6 +7,16 @@ internal static class RandomCampaignChecks
 {
     internal static void Curated(string path)
     {
+        if (Path.GetFileName(path) == "full-battle-random-campaign-23-ring6-release256-budget10000-settled-loss.mt2f")
+        {
+            using var native = ModelJson.ReadFixture(path);
+            using var replay = ModelJson.ReadFixture(path.Replace("-loss.mt2f", "-loss-replay.mt2f", StringComparison.Ordinal));
+            DefeatPair(native.RootElement, replay.RootElement, 47305607, 0, 5, "Underlegion", "LunaCoven", 10000);
+            Require(native.RootElement.GetProperty("RollingDecisions").GetArrayLength() == 21 &&
+                replay.RootElement.GetProperty("RollingDecisions").GetArrayLength() == 21,
+                "Settled sample23 loss changed its21 frozen inputs.");
+            return;
+        }
         if (Path.GetFileName(path) == "full-battle-random-campaign-23-ring5-refined248-search.mt2f")
         {
             using var native = ModelJson.ReadFixture(path);
