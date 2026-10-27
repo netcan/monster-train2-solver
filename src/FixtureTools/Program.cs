@@ -129,6 +129,11 @@ else if (args.Length is 6 or 7 && args[0] == "deployment-grid")
     OfflineBattleSearch.DeploymentGrid(args[1], args[2], args[3], int.Parse(args[4]), int.Parse(args[5]),
         args.Length == 7 ? int.Parse(args[6]) : null);
 }
+else if (args.Length is 6 or 7 && args[0] == "deployment-win")
+{
+    OfflineBattleSearch.DeploymentGrid(args[1], args[2], args[3], int.Parse(args[4]), int.Parse(args[5]),
+        args.Length == 7 ? int.Parse(args[6]) : null, improveWinningRoute: true);
+}
 else if (args.Length is >= 6 and <= 8 && args[0] == "deployment-spread")
 {
     OfflineBattleSearch.DeploymentGrid(args[1], args[2], args[3], int.Parse(args[4]), int.Parse(args[5]),

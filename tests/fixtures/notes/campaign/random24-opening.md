@@ -171,3 +171,26 @@ input, independent complete replay/forecast/RNG, an independently legal but
 out-of-scope interleaved opening, and existing-output/native-source protection.
 An old four-unit opening also produces the same single complete candidate,
 zero unknowns/improvements and no export under both old and new tools.
+
+Further Ring8 batches preserve two improvements among190 candidates/189
+complete, then two among177 fully complete pair/triple candidates. A separate
+opening frontier examines252 candidates/251 complete across11 alternative
+routes without improvement. Every batch has zero unknowns; three budget-
+truncated candidates across the total846 candidates/843 complete are excluded
+from exports. Best complete model result remains a34-input loss/boss2809HP,
+not a native victory or an impossibility proof.
+
+The first Ring7 winning-route sweep checks111 candidates/110 complete from
+decisions22..36 without improving Pyre43. New diagnostic command
+`deployment-win <native> <winning-prediction> <output> <ms> <candidates> [floor]`
+reuses joint-placement search with an explicitly verified winning baseline.
+It keeps the production win/Pyre objective, checks all bounds and output guards,
+and exports only a strictly better complete win. Ordinary deployment-grid
+continues to require a complete loss. A native losing baseline is rejected by
+the new command before output creation.
+All30 Ring7 joint placements finish with zero unknowns and one improvement:
+47 inputs/Pyre63, versus native57/Pyre43. Only the first unit's initial floor
+changes in the winning opening: card8 bottom, card1 top, card2 middle. The
+independent model export replays every forecast and RNG from the unchanged
+native root. Fixed release267 native replay010136-358fbd47 is in progress;
+this model route is not yet accepted as an improved native campaign pair.

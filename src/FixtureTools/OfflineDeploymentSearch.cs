@@ -7,9 +7,9 @@ using MonsterTrain2Poju.Model;
 internal static partial class OfflineBattleSearch
 {
     // Explore several simultaneous placement changes without requiring each
-    // single move to improve a complete loss. Never export a truncated rollout.
+    // single move to improve a complete route. Never export a truncated rollout.
     internal static void DeploymentGrid(string input, string prediction, string output, int milliseconds, int maxCandidates,
-        int? firstRoom = null, bool spread = false, int startSample = 0)
+        int? firstRoom = null, bool spread = false, int startSample = 0, bool improveWinningRoute = false)
     {
         Require(milliseconds is >= 100 and <= 600000 && maxCandidates is >= 1 and <= 4096,
             "Expected100..600000ms and1..4096 deployment candidates.");
@@ -45,7 +45,9 @@ internal static partial class OfflineBattleSearch
             "Expected one to32 initial unit plays, optionally followed by up to32 fixed ordinary card inputs.");
         var bestFinal = fixture.GetProperty("Final").Deserialize<BattleTurnState>()!;
         var bestOutcome = (RoomOutcome)fixture.GetProperty("Outcome").GetInt32();
-        Require(bestOutcome == RoomOutcome.PlayerDefeated, "Deployment investigation requires a complete losing baseline.");
+        Require(bestOutcome == (improveWinningRoute ? RoomOutcome.BattleWon : RoomOutcome.PlayerDefeated),
+            improveWinningRoute ? "Winning deployment investigation requires a complete winning baseline." :
+                "Deployment investigation requires a complete losing baseline.");
         double best = ImprovementMerit(bestFinal, bestOutcome), initial = best;
         var bestRoute = route;
         var watch = Stopwatch.StartNew();
@@ -53,7 +55,7 @@ internal static partial class OfflineBattleSearch
         var visited = new HashSet<string>(StringComparer.Ordinal);
         var reasons = new HashSet<string>(StringComparer.Ordinal);
         bool Expired() => watch.ElapsedMilliseconds >= milliseconds;
-        bool Stop() => Expired() || candidates >= maxCandidates || bestOutcome == RoomOutcome.BattleWon;
+        bool Stop() => Expired() || candidates >= maxCandidates || !improveWinningRoute && bestOutcome == RoomOutcome.BattleWon;
         void Rejected(string? reason, PlayCardAction? action, BattleTurnState failedRoot, IReadOnlyList<Step> failedPrefix)
         {
             unsupported++;
@@ -255,7 +257,7 @@ internal static partial class OfflineBattleSearch
         }
         Console.WriteLine($"DEPLOYMENT-GRID foundWin={bestOutcome == RoomOutcome.BattleWon} units={deployment.Length} candidates={candidates} " +
             $"completed={completed} duplicates={duplicates} unsupported={unsupported} improvements={improvements} fixedOpeningCards={closing.Length} " +
-            $"firstRoom={firstRoom?.ToString() ?? "any"} timedOut={Expired()} candidateLimit={candidates >= maxCandidates} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}" +
+            $"firstRoom={firstRoom?.ToString() ?? "any"} timedOut={Expired()} candidateLimit={candidates >= maxCandidates} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial} improveWinningRoute={improveWinningRoute}" +
             (spread ? $" startSample={startSample} nextSample={nextSample} spreadSamples={samples} sampleLimit={samples >= maxCandidates * 16}" : "") + "; model prediction only.");
     }
 }
