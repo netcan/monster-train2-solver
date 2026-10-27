@@ -31,6 +31,7 @@ internal static class EatenUnstableChecks
                 unit.Id == 17 && unit.AssetKey == "Boss_Level6_FeedDamageShield" && unit.Health == 12 &&
                 unit.Status("eatmany")?.Stacks == 1 && unit.Status("unstable")?.Stacks == 5),
             "Missing the natural last-meal/self-damage/Unstable boundary.");
+        NonfinalMealControl(before.Spawn.Train.Rooms.Single(room => room.RoomIndex == 2));
         string parent = JsonSerializer.Serialize(before, ModelJson.Options);
         Parallel.For(0, 4, _ =>
         {
@@ -70,16 +71,7 @@ internal static class EatenUnstableChecks
             JsonSerializer.Serialize(BattleTurnChecks.ComparableContext(result.State.Context!)) ==
             JsonSerializer.Serialize(BattleTurnChecks.ComparableContext(actual.Context!)),
             "The complete refeed room state/context differs from native.");
-        // A nonfinal meal is not marked as eaten-dead. If its own callback
-        // kills it, Unstable must still fire; suppressing all food is incorrect.
-        var repeatMeal = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
-        var food = repeatMeal["Units"]!.AsArray().Single(unit => unit!["Id"]!.GetValue<int>() == 17)!;
-        foreach (var key in new[] { "Statuses", "StatusRegistry" })
-            food[key]!.AsArray().Single(status => status!["Id"]!.GetValue<string>() == "eatmany")!["Stacks"] = 2;
-        var repeated = RoomCombatModel.Resolve(repeatMeal.Deserialize<RoomCombatState>(ModelJson.Options)!);
-        Require(repeated.Supported && repeated.State!.Units.Single(unit => unit.Id == 16).Status("damage shield") == null &&
-            repeated.Events.Any(item => item.Kind == "Poison" && item.Target == 16),
-            "A nonfinal food death incorrectly suppressed its ordinary Unstable explosion.");
+        NonfinalMealControl(before);
         var rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
         var root = rows[^1].GetProperty("Root").Deserialize<BattleTurnState>()!;
         var final = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
@@ -94,6 +86,19 @@ internal static class EatenUnstableChecks
         });
         Require(JsonSerializer.Serialize(root, ModelJson.Options) == parent, "Refeed branches changed their parent.");
         Console.WriteLine("EATEN-UNSTABLE PASS: native shield/attacker, complete room/context and four immutable terminal EndTurns/state/RNG.");
+    }
+    private static void NonfinalMealControl(RoomCombatState before)
+    {
+        // A nonfinal meal is not marked as eaten-dead. If its own callback
+        // kills it, Unstable must still fire; suppressing all food is incorrect.
+        var repeatMeal = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
+        var food = repeatMeal["Units"]!.AsArray().Single(unit => unit!["Id"]!.GetValue<int>() == 17)!;
+        foreach (var key in new[] { "Statuses", "StatusRegistry" })
+            food[key]!.AsArray().Single(status => status!["Id"]!.GetValue<string>() == "eatmany")!["Stacks"] = 2;
+        var repeated = RoomCombatModel.Resolve(repeatMeal.Deserialize<RoomCombatState>(ModelJson.Options)!);
+        Require(repeated.Supported && repeated.State!.Units.Single(unit => unit.Id == 16).Status("damage shield") == null &&
+            repeated.Events.Any(item => item.Kind == "Poison" && item.Target == 16),
+            "A nonfinal food death incorrectly suppressed its ordinary Unstable explosion.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

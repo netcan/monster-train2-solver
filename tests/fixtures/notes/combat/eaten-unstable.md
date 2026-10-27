@@ -17,8 +17,11 @@ only its Unstable death explosion. Full native room/context and four
 immutable terminal EndTurn/state/RNG branches now match. A synthetic
 Eatmany2/self-damage control still explodes; the existing31-input Undying
 revival native pair and58 ordinary explosion room stages remain unchanged.
-The independent original47-input native observation is preserved; repaired
-native replay and clean actual-budget campaign continuation are pending.
+The independent original47-input native observation093355-abf546d2 and
+repaired replay094009-b3d475c8 retain identical inputs/roots/successors/RNG.
+Original false survival remains recorded; the fresh forecast correctly
+matches the native terminal loss. Both preserve real files. Clean
+actual-budget campaign continuation is running separately.
 
 This fixes a false survival forecast. It does not turn the loss into a win
 or establish that every feeding/Unstable combination is covered.
