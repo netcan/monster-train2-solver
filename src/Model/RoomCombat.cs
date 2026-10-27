@@ -1607,6 +1607,7 @@ namespace MonsterTrain2Poju.Model
             internal bool Despawned;
             internal bool Destroyed;
             internal bool DeathFinished;
+            internal bool WillDieFromEaten;
             internal bool Removed;
             internal bool InRoom = true;
             internal int? LastAttackerId;
@@ -3171,6 +3172,9 @@ namespace MonsterTrain2Poju.Model
 
             private void ExplodeUnstable(WorkingUnit target)
             {
+                // Native marks food before its OnEaten queue. Its self-damage
+                // can kill it there; that death signal still suppresses Unstable.
+                if (target.WillDieFromEaten) return;
                 int stacks = target.Count("unstable");
                 if (stacks <= 0) return;
                 CombatUnit unstableSource = target.Freeze();
@@ -3471,6 +3475,7 @@ namespace MonsterTrain2Poju.Model
                 runningTriggerQueue = true;
                 foreach (WorkingUnit unit in food)
                 {
+                    if (unit.Count("eatmany") <= 1) unit.WillDieFromEaten = true;
                     unit.LastFeederId = feeder.Source.Id;
                     for (int repeat = 0; repeat < triggerCount; repeat++) FireTriggers(unit, "OnEaten");
                 }

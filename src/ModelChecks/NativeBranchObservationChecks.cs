@@ -8,8 +8,11 @@ internal static class NativeBranchObservationChecks
 
     internal static FixtureValue[] Replay(FixtureValue fixture, string reason,
         Action<BattleTurnState, BattleTurnState>? historicalBoundaryMismatch = null,
-        RoomOutcome boundaryOutcome = RoomOutcome.Exchanged, string? historicalUnsupportedReason = null)
+        RoomOutcome boundaryOutcome = RoomOutcome.Exchanged, string? historicalUnsupportedReason = null,
+        RoomOutcome? historicalBoundaryOutcome = null)
     {
+        Require(!historicalBoundaryOutcome.HasValue || historicalBoundaryMismatch != null,
+            "A changed historical boundary outcome requires an explicit mismatch witness.");
         Require(fixture.GetProperty("Schema").GetInt32() == 1 &&
             fixture.GetProperty("EvidenceKind").GetString() == "NativeUnsupportedBranchObservation" &&
             fixture.GetProperty("NativeCompleted").GetBoolean() &&
@@ -46,7 +49,8 @@ internal static class NativeBranchObservationChecks
             else
             {
                 Require(row.GetProperty("UnsupportedReason").ValueKind == FixtureKind.Null &&
-                    row.GetProperty("Outcome").GetInt32() == (int)outcome, "Historical outcome differs at " + index);
+                    row.GetProperty("Outcome").GetInt32() == (int)(boundary ? historicalBoundaryOutcome ?? outcome : outcome),
+                    "Historical outcome differs at " + index);
                 BattleTurnState historical = expected.Deserialize<BattleTurnState>()!;
                 if (boundary && historicalBoundaryMismatch != null && Key(historical, terminal) != Key(actual, terminal))
                     historicalBoundaryMismatch(historical, actual);
