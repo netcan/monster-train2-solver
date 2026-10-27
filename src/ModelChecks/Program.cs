@@ -7374,10 +7374,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-inactive-fragile-moon-birth-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-inactive-fragile-moon-birth-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
     InactiveOuterBossMoonBirthChecks.Native(path, ModelJson.RelatedFixture(path, "player-inactive-fragile-moon-birth-replay-calibration.mt2f"));
-foreach (string path in args.Where(path => Path.GetFileName(path) == "player-third-troop-fragile-buff-calibration.mt2f"))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-third-troop-fragile-buff-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-third-troop-fragile-buff-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var source = ModelJson.ReadFixture(path);
-    ThirdTroopFragileBuffChecks.Native(source.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-third-troop-fragile-buff-replay-calibration.mt2f"));
+    ThirdTroopFragileBuffChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("parallel-lower-opening-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "parallel-lower-opening-model-counterexample.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
