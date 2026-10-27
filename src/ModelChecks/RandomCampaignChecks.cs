@@ -7,6 +7,23 @@ internal static class RandomCampaignChecks
 {
     internal static void Curated(string path)
     {
+        if (Path.GetFileName(path) == "full-battle-random-campaign-23-ring5-refined248-search.mt2f")
+        {
+            using var native = ModelJson.ReadFixture(path);
+            using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
+            RefinedPair(native.RootElement, replay.RootElement, 47305607, 0, 4, "Underlegion", "LunaCoven", 38);
+            foreach (var fixture in new[] { native.RootElement, replay.RootElement })
+            {
+                var rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+                var final = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                Require(rows.Count(row => row.GetProperty("IsEndTurn").GetBoolean()) == 9 &&
+                    rows.All(row => row.GetProperty("Mode").GetString() == "replay" && row.GetProperty("Nodes").GetInt32() == 0) &&
+                    final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 12,
+                    "Sample23 Ring5 refinement must retain38 zero-search inputs/9EndTurns and native Pyre12.");
+            }
+            Console.WriteLine("RANDOM-CAMPAIGN-23-RING5-REFINED PASS: two native wins/Pyre12, unchanged38 inputs/full context/forecasts/RNG; not a default-budget win.");
+            return;
+        }
         if (Path.GetFileName(path) == "full-battle-random-campaign-21-ring3-release228-refined-loss.mt2f")
         {
             CompleteNativeBattleChecks.Native(path);

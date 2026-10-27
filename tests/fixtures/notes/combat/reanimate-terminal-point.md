@@ -19,5 +19,8 @@ All92 room/exchange stages,17 train phases, nine EndTurns and324 complete
 context-reference snapshots now match the unchanged historical source/RNG.
 Four immutable branches at each failing boundary and changed-owner/base-
 attack/max-health/revival controls pass. The old original failure remains
-archived. A fresh fixed-build victory and independent normal reward replay
-are required before counting this alternate route as accepted Ring5 progress.
+archived. Fresh release248 source191250-62e5542b and independent normal
+reward replay191618-375083eb now both win with Pyre12 and all four raw
+failure counters zero. Every one of38 inputs, full states, forecasts and RNG
+matches. See campaign/random23-ring5.md; this is a refined fixed-input route,
+not an acceptance of default-budget search quality.
