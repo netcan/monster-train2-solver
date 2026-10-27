@@ -17,7 +17,24 @@ namespace MonsterTrain2Poju.Probe
             CombatUnit[] rootUnits = reachable.SelectMany(rule => new[] { rule.SpawnUnit, rule.Summon?.Additional?.Unit }
                 .Where(unit => unit != null).Cast<CombatUnit>().Concat(rule.Summon?.Pool.Select(choice => choice.Unit) ?? Array.Empty<CombatUnit>()))
                 .Concat(spawn.Waves.SelectMany(wave => wave.Candidates).SelectMany(group => group.Units).Concat(spawn.Treasures).Select(item => item.Unit)).ToArray();
-            var assets = new HashSet<string>(rootUnits.Select(unit => unit.AssetKey), StringComparer.Ordinal);
+            // Copy definitions must already contain queued bosses and cardless
+            // trigger births. Discovering them only through live characters
+            // changes the immutable rule catalog after an otherwise identical
+            // EndTurn and invalidates an accepted plan's successor.
+            var pending = new Queue<CombatUnit>(rootUnits.Concat(spawn.Train.Rooms.SelectMany(room => room.Units))
+                .Concat(spawn.QueuedOuterBoss != null ? new[] { spawn.QueuedOuterBoss.Actor.Unit } :
+                    OuterBossBirthProbe.CreatedDefinition != null ? new[] { OuterBossBirthProbe.CreatedDefinition } : Array.Empty<CombatUnit>())
+                .Concat(spawn.QueuedTrueFinalBoss?.Definitions.Select(definition => definition.Unit) ?? Array.Empty<CombatUnit>())
+                .Concat(reachable.SelectMany(rule => rule.Effects.Concat(rule.OnCastEffects))
+                    .Select(effect => effect.SpawnFallbackUnit).OfType<CombatUnit>()));
+            var assets = new HashSet<string>(StringComparer.Ordinal);
+            while (pending.Count > 0)
+            {
+                CombatUnit unit = pending.Dequeue();
+                if (!assets.Add(unit.AssetKey)) continue;
+                foreach (CombatUnit child in unit.Triggers.SelectMany(trigger => trigger.Effects)
+                    .Select(effect => effect.Action?.SpawnFallbackUnit).OfType<CombatUnit>()) pending.Enqueue(child);
+            }
             CharacterData[] characters = all.GetAllCharacterData().Where(data => data != null && assets.Contains(data.GetAssetKey()))
                 .Concat(live.Select(unit => unit.GetSourceCharacterData())).GroupBy(data => data.GetAssetKey()).Select(group => group.Last()).ToArray();
             var births = characters.Select(data =>
