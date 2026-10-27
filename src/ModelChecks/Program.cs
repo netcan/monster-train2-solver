@@ -6697,7 +6697,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-com
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-lazarus-juice-conduit-calibration.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    LazarusJuiceConduitChecks.Native(source.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-lazarus-juice-conduit-replay-calibration.mt2f"));
+    LazarusJuiceConduitChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-summon-capacity-rejection-calibration.mt2f"))
 {

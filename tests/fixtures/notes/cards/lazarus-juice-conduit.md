@@ -15,5 +15,6 @@ remain guarded. The existing Conduit engine supplies the captured power.
 
 All27 native states/RNG, four parallel immutable casts and eleven mutated
 payload guards pass. The earlier Lazarus Juice cast pair and ten original
-signature guards pass. Independent new-release replay is pending. This
+signature guards pass. Independent release207 native replay matches all27
+roots/successors, forecasts and RNG with original files unchanged. This
 does not establish a fifth-battle victory or a campaign clear.
