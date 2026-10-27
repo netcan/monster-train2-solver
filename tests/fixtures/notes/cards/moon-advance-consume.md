@@ -21,6 +21,10 @@ and its temporary upgrade clears. All44 complete states, forecasts and RNG
 replay; four immutable branches and eight changed-source guards pass. Original
 Lunacy X=3/0/10 and the15-boundary room-moon spell-upgrade controls pass.
 
-An independent native replay on the frozen246 build is required before this
-component is registered as a native pair. No new Ring5 victory is claimed;
-the current best complete model route still loses with the boss at1 HP.
+Independent native replay183710-49a3deb7 uses frozen246/9e82d35a and matches
+all44 inputs and complete states/forecasts/RNG, preserving the old refusal
+and the new positive boundary forecast. Both immutable archives and the typed
+pair gate are registered. The repaired43..48 search completes69 candidates,
+and the separate49..58 pass completes68, all with zero unsupported branches;
+neither exports an improvement. No new Ring5 victory is claimed; the current
+best complete model route still loses with the boss at1 HP.

@@ -7793,6 +7793,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player
     using var source = ModelJson.ReadFixture(path);
     GreenRecruitPreviewRetirementChecks.Native(source.RootElement, path);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-moon-advance-consume-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-moon-advance-consume-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-moon-advance-consume-replay-calibration.mt2f"));
+    MoonAdvanceConsumeChecks.Native(source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-triple-juice-starstruck-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-triple-juice-starstruck-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
