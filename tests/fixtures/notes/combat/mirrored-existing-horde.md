@@ -19,7 +19,9 @@ active copying keep their original path.
 
 The14-input complete native successor/preview/RNG chain, four immutable
 branches and four altered-signature guards pass. The previous seven-input
-troop-aura birth independent pair also passes. Independent frozen replay
-is required before accepting the new pair. The current boundary exercises
+troop-aura birth independent pair also passes. Frozen release254 at04c34060
+independently replays the identical request in process202747-0d40d5fb; both
+complete chains and the original mismatch versus the repaired forecast pass.
+Both captures are registered under combat/units. The current boundary exercises
 the spell path; later natural triggered uses require their own full-state
 checks. This is not a Ring6 victory or a default eight-ring clear.
