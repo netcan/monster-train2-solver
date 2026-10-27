@@ -4,7 +4,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class PendingPhysicalHarvestChecks
 {
-    internal static void Native(FixtureValue fixture)
+    internal static void Native(FixtureValue fixture, FixtureValue? replay = null)
     {
         var stage = fixture.GetProperty("Stages")[51];
         var before = stage.GetProperty("Before").Deserialize<RoomCombatState>()!;
@@ -35,7 +35,20 @@ internal static class PendingPhysicalHarvestChecks
         Require(!RoomCombatModel.Exchange(before, pendingPhysicalDeathIds: [999]).Supported &&
             !RoomCombatModel.Exchange(before, pendingPhysicalDeathIds: [32, 32]).Supported,
             "Unknown or duplicate pending deaths escaped validation.");
-        Console.WriteLine("PENDING-PHYSICAL-HARVEST PASS: native removal/harvest witness and full exchange state/RNG; four immutable branches/two guards.");
+        if (replay.HasValue)
+        {
+            Native(replay.Value);
+            var repeated = replay.Value.GetProperty("Stages")[51];
+            Require(repeated.GetProperty("PendingPhysicalDeaths").Deserialize<int[]>()!.SequenceEqual([32]), "Independent pending IDs differ.");
+            string repeatedActual = Key(repeated.GetProperty("Actual").Deserialize<RoomCombatState>()!);
+            string repeatedPredicted = Key(repeated.GetProperty("Predicted").GetProperty("State").Deserialize<RoomCombatState>()!);
+            Require(repeatedPredicted == repeatedActual, "Independent forecast differs: " + ModelJson.Difference(repeatedPredicted, repeatedActual));
+            Require(replay.Value.GetProperty("Mismatches").GetInt32() == 0 && replay.Value.GetProperty("Unsupported").GetInt32() == 0 &&
+                replay.Value.GetProperty("CaptureFailures").GetInt32() == 0 && replay.Value.GetProperty("Pending").GetInt32() == 0 &&
+                replay.Value.GetProperty("TerminalEffectsSettled").GetBoolean() && !replay.Value.GetProperty("NativeWon").GetBoolean(),
+                "Independent full replay must be a settled zero-difference defeat.");
+        }
+        Console.WriteLine("PENDING-PHYSICAL-HARVEST PASS: native removal/harvest witness and full exchange state/RNG; four immutable branches/two guards; independentWitness=" + replay.HasValue);
     }
     private static string Key(RoomCombatState room) => JsonSerializer.Serialize(room.WithContext(BattleTurnChecks.ComparableContext(room.Context)), ModelJson.Options);
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }

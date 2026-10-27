@@ -975,10 +975,18 @@ if (args.Length is 2 or 3 && args[0] == "--inactive-pyre-damage-inferno-exit-onl
     InactivePyreDamageInfernoExitChecks.Native(source.RootElement, replay?.RootElement);
     return;
 }
-if (args.Length == 2 && args[0] == "--pending-physical-harvest-only")
+if (args.Length is 2 or 3 && args[0] == "--pending-physical-harvest-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
-    PendingPhysicalHarvestChecks.Native(source.RootElement);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    PendingPhysicalHarvestChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
+if (args.Length is 2 or 3 && args[0] == "--inactive-buffed-zealot-inferno-exit-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    InactiveBuffedZealotInfernoExitChecks.Native(source.RootElement, replay?.RootElement);
     return;
 }
 if (args.Length is 2 or 3 && args[0] == "--inactive-fragile-inferno-exit-only")
@@ -7472,10 +7480,17 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-retired-titanskin-troop-replay-calibration.mt2f"));
     RetiredTitanskinTroopChecks.Native(source.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player-pending-physical-harvest-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-pending-physical-harvest-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-pending-physical-harvest-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var source = ModelJson.ReadFixture(path);
-    PendingPhysicalHarvestChecks.Native(source.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-pending-physical-harvest-replay-calibration.mt2f"));
+    PendingPhysicalHarvestChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player-inactive-buffed-zealot-inferno-exit-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var source = ModelJson.ReadFixture(path);
+    InactiveBuffedZealotInfernoExitChecks.Native(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-inactive-pyre-damage-inferno-exit-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-inactive-pyre-damage-inferno-exit-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

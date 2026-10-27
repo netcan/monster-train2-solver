@@ -223,7 +223,7 @@ namespace MonsterTrain2Poju.Model
                                 Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,
                                     Effects: [{ Type: "CardEffectPyreDamageIfNoPlayerUnits", Value: 5,
                                         Action: { Type: "Damage", Target: "Pyre", Value: 5 } }] }] } &&
-                            previousUnit is not { AssetKey: "HeavyT2_Zealot", BaseAttack: 5, MaxHealth: 110, Size: 2,
+                            previousUnit is not { AssetKey: "HeavyT2_Zealot", BaseAttack: 5 or 11, MaxHealth: 110, Size: 2,
                                 Triggers: [{ Kind: "OnAnyUnitDeathOnFloor", FireCount: 1,
                                     Effects: [{ Type: "CardEffectBuffDamage", Value: 1, Action: { Type: "BuffAttack", Target: "Self", Value: 1 } }] }] } ||
                             !OriginalInferno(removed) ||
