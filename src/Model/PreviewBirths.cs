@@ -17,10 +17,13 @@ namespace MonsterTrain2Poju.Model
         private static bool IsOriginalChampionEnemyDeath(CombatUnit unit, CombatContext context) =>
             unit is { AssetKey: "MonsterChampionUnderlegion1", Team: CombatTeam.Player } &&
             context.FindCard(unit.SpawnerCardId)?.DataId == "0422f6ca-896c-4676-a01f-71d8d4b232fb" &&
-            unit.Triggers is [{ Kind: "OnAnyHeroDeathOnFloor", Effects: [{ Type: "CardEffectSpawnMonsterOrAddStatusEffect", Action:
+            (unit.Triggers.Count == 1 || unit.Triggers is [_, { Kind: "OnHit", Effects: [{ Type: "CardEffectAddStatusEffect", Action:
+                { Type: "AddStatus", Target: "LastAttackerCharacter", Range: null,
+                    AllowEnemy: true, AllowPlayer: true, Statuses: [{ Id: "pyregel", Stacks: 3 }] } }] }]) &&
+            unit.Triggers[0] is { Kind: "OnAnyHeroDeathOnFloor", Effects: [{ Type: "CardEffectSpawnMonsterOrAddStatusEffect", Action:
                 { Type: "SpawnOrStatus", Target: "Room", Value: 2, AllowPlayer: true, AllowEnemy: false, Range: null,
                     Statuses: [{ Id: "horde", Stacks: 2 }], Filters.Subtype: "SubtypesData_Horde",
-                    SpawnFallbackUnit: { AssetKey: "MonsterFunguy", BaseAttack: 3, Health: 4, Modifiers.Upgrades.Count: 0 } } }] }];
+                    SpawnFallbackUnit: { AssetKey: "MonsterFunguy", BaseAttack: 3, Health: 4, Modifiers.Upgrades.Count: 0 } } }] };
 
         private static bool IsOriginalChampionAuraPreview(EnchantmentRetainedUnit actor, EnchantmentWorld world, CombatContext context) =>
             world.EnchanterIds.Count == 0 && actor.Unit is { Health: 12, MaxHealth: 12, Triggers.Count: 0,
@@ -141,8 +144,10 @@ namespace MonsterTrain2Poju.Model
             // Preserve observed births and all enemy births. Check the allocator
             // first so ordinary preview refreshes do not scan units or cards.
             if (context.Enchantments?.AutomaticLifecycle != true || preview.NextUnitId is not int nextId ||
-                nextId <= firstUnitId || world == null || world.EnchanterIds.Count != 0 || preview.CardRegistry == null)
+                nextId <= firstUnitId || world == null || preview.CardRegistry == null ||
+                world.EnchanterIds.Count != 0 && !TroopAuraModel.OnlyTitanskinSources(world.Rooms, world.RetainedUnits, world.EnchanterIds))
                 return preview;
+            bool enemyOnlyObservers = world.EnchanterIds.Count != 0;
             CardInstanceState[] newCards = preview.CardRegistry?.Where(card => card.InstanceId >= firstCardId).ToArray()
                 ?? Array.Empty<CardInstanceState>();
             if (newCards.Length == 0)
@@ -173,7 +178,10 @@ namespace MonsterTrain2Poju.Model
             else if (context.SummonCatalog == null || nextId - firstUnitId != newCards.Length) return preview;
             if (world.Rooms.SelectMany(room => room.Units).Concat(world.RetainedUnits.Select(actor => actor.Unit)).Concat(observedBirths)
                 .Any(unit => unit.Id >= firstUnitId && unit.Team != CombatTeam.Player ||
-                    unit.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Enchantment != null))) return preview;
+                    unit.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Enchantment != null) &&
+                    // The calibrated Titanskin sources only observe enemies;
+                    // their presence does not retain an unowned player birth.
+                    !(enemyOnlyObservers && unit.Team == CombatTeam.Enemy && world.EnchanterIds.Contains(unit.Id)))) return preview;
             var spawnerIds = (context.SummonCatalog?.Units ?? Array.Empty<SummonUnitDefinition>()).Where(unit => unit.Unit.Team == CombatTeam.Player && unit.Fallback != null)
                 .Select(unit => unit.Fallback!.DataId).ToHashSet();
             foreach (CombatUnit actor in source.Rooms.SelectMany(room => room.Units).Where(unit =>

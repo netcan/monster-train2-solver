@@ -43,7 +43,8 @@ namespace MonsterTrain2Poju.Model
                     rule.Targets.Any(id => !targets.Contains(id) && train.Rooms.SelectMany(item => item.Units)
                         .Any(unit => unit.Id == id && unit.Health > 0 && unit.DeathState?.IsDestroyed != true));
                 bool orderedAddition = source.EnchanterIds.Count > 0 && changesModifiers &&
-                    KnownBirthAddition(source, room, owner, rule, targets);
+                    (KnownBirthAddition(source, room, owner, rule, targets) ||
+                     KnownChampionAddition(source, room, owner, rule, targets));
                 if (source.EnchanterIds.Count > 0 && changesModifiers && !orderedAddition)
                 { error = "Combined troop upgrades and enchantment source ordering require native calibration."; break; }
                 // The frame strips its shared world to stay finite. A troop
@@ -117,6 +118,64 @@ namespace MonsterTrain2Poju.Model
             return new EnchantmentCombatResult(error == null ? new EnchantmentCombatState(train, source.RetainedUnits,
                 source.EnchanterIds, source.AllowUpdates, source.Updating, source.Preview, source.TestRng) : null,
                 Array.Empty<EnchantmentRequest>(), callbacks, error);
+        }
+
+        private static bool KnownChampionAddition(EnchantmentCombatState source, RoomCombatState room,
+            CombatUnit owner, TroopAuraState rule, IReadOnlyList<int> targets)
+        {
+            // Native second-tier champion writes two HP per Horde stack after
+            // the enemy-only Titanskin pass. An uncached preview birth receives
+            // that write on every refresh; only primary mode commits the cache.
+            // These sources affect disjoint teams. Other enchantments, living
+            // departures and modified champion auras retain the ordering guard.
+            CardUpgradeModifier upgrade = rule.Upgrade;
+            if (source.Preview != room.Preview || owner.AssetKey != "MonsterChampionUnderlegion1" ||
+                owner.Team != CombatTeam.Player || rule.Subtype != CardUnderlegionTroopUpgradeModel.NoneSubtype ||
+                rule.Statuses.Count != 0 || upgrade.DataId != CardUnderlegionTroopUpgradeModel.SecondAuraUpgradeId ||
+                upgrade.AssetKey != CardUnderlegionTroopUpgradeModel.SecondAuraUpgradeKey || upgrade.Stats.Health != 2 ||
+                new[] { "Damage", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }
+                    .Any(stat => upgrade.Stats.Value(stat) != 0) ||
+                upgrade.Statuses.Count != 0 || upgrade.ExternalInteractions.Count != 0 ||
+                upgrade.AbilityUpgrade != null || upgrade.TriggerUpgrades?.Count > 0 ||
+                upgrade.Unique || upgrade.RemoveOnDiscard || upgrade.ExcludeFromClones || upgrade.UnhealedHealth != 0 ||
+                upgrade.DamageBuff != 0 || upgrade.RestrictSizeToRoomCapacity || upgrade.MagicPowerTraitScalingOnly ||
+                upgrade.CloneDamageBase != null || upgrade.CloneHealBase != null ||
+                upgrade.Lifecycle is not { AddedTraits.Count: 0, RemovedRuntimeTypes.Count: 0, Triggers.Count: 0,
+                    ReplacedAssets.Count: 0, TraitsModified.Count: 0 } ||
+                rule.Targets.Any(id => !targets.Contains(id) && source.Train.Rooms.SelectMany(floor => floor.Units)
+                    .Any(unit => unit.Id == id && unit.Health > 0 && unit.DeathState?.IsDestroyed != true))) return false;
+            int[] added = targets.Where(id => !rule.Targets.Contains(id)).ToArray();
+            if (added.Length == 0 || added.Any(id => room.Units.Single(unit => unit.Id == id) is not
+                    { AssetKey: "MonsterFunguy" } ||
+                source.Train.Context?.SpawnPoints?.Units.Any(point => point.UnitId == id &&
+                    (source.Preview ? point.SpawnedInPreview : !point.SpawnedInPreview &&
+                        point.Current?.RoomIndex == room.RoomIndex && point.Current.Team == CombatTeam.Player)) != true)) return false;
+            return OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
+        }
+
+        internal static bool OnlyTitanskinSources(IReadOnlyList<RoomCombatState> rooms,
+            IReadOnlyList<EnchantmentRetainedUnit> retainedUnits, IReadOnlyList<int> enchanterIds)
+        {
+            CombatUnit[] enchanters = rooms.SelectMany(floor => floor.Units)
+                .Where(unit => enchanterIds.Contains(unit.Id)).ToArray();
+            var retired = retainedUnits.Where(actor => enchanterIds.Contains(actor.Unit.Id) &&
+                !enchanters.Any(unit => unit.Id == actor.Unit.Id)).ToArray();
+            if (retired.Any(actor => actor.Unit.AssetKey != "EnchanterT2_Titanskin" || actor.Unit.Team != CombatTeam.Enemy ||
+                actor.Unit.Health > 0 || actor.Unit.DeathState?.IsDestroyed != true || actor.RoomIndex != -1) ||
+                enchanters.Any(unit => unit.Health <= 0 || unit.DeathState?.IsDestroyed == true)) return false;
+            return enchanterIds.Count is 1 or 2 && enchanters.Length + retired.Length == enchanterIds.Count &&
+                enchanters.Concat(retired.Select(actor => actor.Unit)).All(unit =>
+            {
+                var effects = unit.Triggers.SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null).ToArray();
+                return unit.AssetKey == "EnchanterT2_Titanskin" && unit.Team == CombatTeam.Enemy &&
+                    effects.Length == 1 && effects[0].Enchantment is { HasParentCard: false, StatusPool.Count: 1 } aura &&
+                    (aura.Bound || unit.DeathState?.IsDestroyed == true) &&
+                    aura.Targeting is { Type: "AddStatus", Target: "Room", Value: 0, Range: null, OnlyIfNoEnemies: false,
+                        AllowEnemy: true, AllowPlayer: false,
+                        Filters: { Health: "Both", RequiredStatuses.Count: 0, ExcludedStatuses.Count: 0,
+                            IgnoreBosses: false, Subtype: "", ExcludedSubtypes.Count: 0 } } &&
+                    aura.StatusPool[0] is { Id: "titanskin", Stacks: 5, ParamInt: 1 };
+            });
         }
 
         private static bool KnownBirthAddition(EnchantmentCombatState source, RoomCombatState room,

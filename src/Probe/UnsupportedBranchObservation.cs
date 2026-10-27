@@ -284,7 +284,9 @@ namespace MonsterTrain2Poju.Probe
             bool observing = waiting && rows.Count > 0 && rows.Last().Boundary &&
                 request.GetProperty("Reason").GetString() is
                     "Battle preview floor 1: Combined troop upgrades and enchantment source ordering require native calibration." or
+                    "Battle preview floor 2: Combined troop upgrades and enchantment source ordering require native calibration." or
                     "Train combat floor 1: Combined troop upgrades and enchantment source ordering require native calibration." or
+                    "Train combat floor 2: Combined troop upgrades and enchantment source ordering require native calibration." or
                     "Combined troop upgrades and enchantment source ordering require native calibration.";
             object? before = observing ? TroopSnapshot() : null;
             while (operation.MoveNext()) yield return operation.Current;
@@ -300,6 +302,7 @@ namespace MonsterTrain2Poju.Probe
                         .GetValue(modifier)).Select(trace.UnitId).ToArray(),
                     Units = units.Select(unit => new { Id = trace.UnitId(unit), Asset = unit.GetSourceCharacterData().GetAssetKey(),
                         Attack = unit.GetAttackDamageWithoutStatusEffectBuffs(), Horde = unit.GetStatusEffectStacks("horde"),
+                        Health = unit.GetHP(), MaxHealth = unit.GetMaxHP(),
                         Trample = unit.GetStatusEffectStacks("trample"),
                         Upgrades = unit.GetAppliedCardUpgrades().Select(upgrade => upgrade.GetCardUpgradeDataId()).ToArray() }).ToArray() };
             }
