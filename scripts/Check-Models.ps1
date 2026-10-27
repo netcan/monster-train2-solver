@@ -146,6 +146,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-18-ring8-release200-budget10000-loss.mt2f',
     'full-battle-random-campaign-19-ring3-release200-refined-search.mt2f',
     'full-battle-random-campaign-19-ring3-release200-refined-replay.mt2f',
+    'full-battle-random-campaign-19-ring4-release202-budget10000-search.mt2f',
+    'full-battle-random-campaign-19-ring4-release202-budget10000-replay.mt2f',
     'player-unbox-moon-relic-calibration.mt2f',
     'player-unbox-moon-relic-replay-calibration.mt2f',
     'full-battle-random-campaign-18-ring6-release190-budget10000-search.mt2f',
@@ -162,6 +164,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-echo-juice-spike-copy-calibration.mt2f',
     'player-echo-just-cause-copy-calibration.mt2f',
     'player-echo-just-cause-endturn-calibration.mt2f',
+    'player-echo-just-cause-endturn-replay-calibration.mt2f',
     'player-echo-juice-spike-endturn-calibration.mt2f',
     'player-echo-juice-spike-endturn-replay-calibration.mt2f',
     'player-lazarus-juice-spike-deployment-refusal-calibration.mt2f',
@@ -1923,7 +1926,7 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     if ($LASTEXITCODE -ne 0) { throw 'Focused MoreMass moon birth checks failed.' }
     return
 }
-$echoJustCauseNames = @('player-echo-just-cause-copy-calibration.mt2f', 'player-echo-just-cause-endturn-calibration.mt2f')
+$echoJustCauseNames = @('player-echo-just-cause-copy-calibration.mt2f', 'player-echo-just-cause-endturn-calibration.mt2f', 'player-echo-just-cause-endturn-replay-calibration.mt2f')
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $echoJustCauseNames }).Count -eq 0) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q

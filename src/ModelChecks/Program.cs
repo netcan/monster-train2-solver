@@ -6670,7 +6670,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-ech
 {
     using var source = ModelJson.ReadFixture(path);
     using var endTurn = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-just-cause-endturn-calibration.mt2f"));
-    EchoJustCauseChecks.Native(source.RootElement, endTurn.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-just-cause-endturn-replay-calibration.mt2f"));
+    EchoJustCauseChecks.Native(source.RootElement, endTurn.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-lazarus-juice-spike-deployment-refusal-calibration.mt2f"))
 {

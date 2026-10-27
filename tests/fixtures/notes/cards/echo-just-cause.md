@@ -22,5 +22,7 @@ the remembered front slot (still occupied by unit2 in this witness), keeps
 player order2/5/26, adds valor88 to90 once and clears the paid2 entry. Other
 friendly units remain unchanged during that callback. The full turn reaches
 turn9 with Pyre77. Complete state/RNG and four immutable EndTurn branches
-are checked; independent native replay is pending. Changed occupants of the
-remembered slot are not claimed as a new witness from this recording.
+are checked. The independent release203 native replay in
+`player-echo-just-cause-endturn-replay-calibration.mt2f` matches all41 full
+roots/successors, forecasts and RNG. Changed occupants of the remembered
+slot are not claimed as a new witness from this recording.
