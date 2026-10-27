@@ -6938,6 +6938,17 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-pre
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-preview-death-spawn-shift-replay-calibration.mt2f"));
     PreviewDeathSpawnShiftChecks.Native(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-relentless-companion-bump-counterexample-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    RelentlessCompanionBumpChecks.Counterexample(source.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-relentless-companion-bump-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-relentless-companion-bump-replay-calibration.mt2f"));
+    RelentlessCompanionBumpChecks.Native(source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-ephemeral-equipment-calibration.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);

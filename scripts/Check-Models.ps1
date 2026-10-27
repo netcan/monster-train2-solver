@@ -521,6 +521,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-green-recruit-endturn-identity-replay-calibration.mt2f',
     'player-preview-death-spawn-shift-calibration.mt2f',
     'player-preview-death-spawn-shift-replay-calibration.mt2f',
+    'player-relentless-companion-bump-counterexample-calibration.mt2f',
+    'player-relentless-companion-bump-calibration.mt2f',
+    'player-relentless-companion-bump-replay-calibration.mt2f',
     'player-ephemeral-equipment-counterexample-calibration.mt2f',
     'player-ephemeral-equipment-calibration.mt2f',
     'player-ephemeral-equipment-replay-calibration.mt2f',
@@ -2089,6 +2092,19 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -ne 'p
         (Get-TestFixturePath 'player-ascend-deferred-destruction-counterexample-calibration.mt2f') `
         (Get-TestFixturePath 'full-battle-random-campaign-20-ring3-release215-budget10000-search.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Focused Ascend destruction checks failed.' }
+    return
+}
+$relentlessCompanionBumpNames = @('player-relentless-companion-bump-counterexample-calibration.mt2f', 'player-relentless-companion-bump-calibration.mt2f', 'player-relentless-companion-bump-replay-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $relentlessCompanionBumpNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Relentless companion Bump checker build failed.' }
+    }
+    $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
+    dotnet $checker --relentless-companion-bump-counterexample-only (Get-TestFixturePath $relentlessCompanionBumpNames[0])
+    if ($LASTEXITCODE -ne 0) { throw 'Relentless companion Bump counterexample failed.' }
+    dotnet $checker --relentless-companion-bump-only (Get-TestFixturePath $relentlessCompanionBumpNames[1]) (Get-TestFixturePath $relentlessCompanionBumpNames[2])
+    if ($LASTEXITCODE -ne 0) { throw 'Relentless companion Bump native pair failed.' }
     return
 }
 $previewDeathShiftNames = @('player-preview-death-spawn-shift-calibration.mt2f', 'player-preview-death-spawn-shift-replay-calibration.mt2f')
