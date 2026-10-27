@@ -80,3 +80,19 @@ files remain unchanged. PackagePojuAdvisor-0.2.266-Windows-20261028-004218.zip
 SHA2566822565BC52D2E4EBFA4902F967C56B02F7CEA5BB94EE235B4441AFBDBE77C67,
 backup/receiptRandomCampaign-20261028-004218. Three installed DLLs match both
 accepted Ring3 native processes and source revisionf5d1a1cd.
+
+Release267 revision92b4e5db admits only the original second-tier champion
+troop aura and captures its full automatic lifecycle world. Actual Ring4
+source004948-445f9184 and independent normal replay005346-2f9e55de win with
+40 inputs/31 plays/nine EndTurns/Pyre89, starting from Pyre95. Complete
+roots/successors/forecasts/RNG,17 train phases per process, four zero counters
+and1011 complete mask contexts pass. The source has42 publications/249 captures
+and zero purity failures. Both traces include the actual one-stack Fun Guy13
+at6/6HP with one health2 aura upgrade and runtime identitytroop-aura:2.
+Normal57 reward/map events create Ring5 save SHA256
+D885F6D3A634C90EEC18B6FFDB1B125B30B0C371B2BF735C60C5E6975C74861A.
+random25-ring5-default267.zip has119 files, SHA256
+9DE90A27D53AB140FE281B953F5BB92A6A445A32BE711355B48FB7D20867DF38;
+all118 hashed members restore. Four unchanged default-budget native victory
+pairs form one checkpoint chain. Ring5 reaches a seven-input enchantment
+preview NextAction discrepancy, which remains unaccepted and under calibration.
