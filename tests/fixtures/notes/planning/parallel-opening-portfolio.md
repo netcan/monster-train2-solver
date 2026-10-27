@@ -18,5 +18,15 @@ The focused unchanged-root test reproduces the old Pyre5 selection, then obtains
 a full Pyre37 model win under the same budget/options. Independent full-state/
 RNG replay and immutable root pass. Existing single/two-thread whole-battle
 wins, shared one-node/one-step limits, expiry and cancellation controls pass.
-This is a model quality bound, not a new native victory or proof of optimality.
-Fresh native default-budget execution and independent replay remain pending.
+The existing Fragile control also preserves its safer bottom opening at the
+16-node cutoff and replays54 inputs to a Pyre2 model win; this is not a new
+native victory or proof of optimality.
+
+Fresh native execution with release237 now wins Ring4 at the unchanged default
+10000ms/two-worker budget:57 inputs/49 plays/8 EndTurns, Pyre37 and16 train
+stages. The independent native replay matches all states/forecasts/RNG and all
+four failure counts remain zero. Normal60 reward/map events produce Ring5 save
+8EE2D303385939CB3C1575F811FA6B680DA57B57AEC4909039BFCDC415F1304F.
+The original release23653-input/Pyre5 native pair is retained separately. The
+new branch continues Ring5; neither pair establishes a complete default-budget
+campaign victory.
