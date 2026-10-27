@@ -74,3 +74,9 @@ all114 hashed members restore. The three-battle unchanged default-budget
 checkpoint chain passes. Ring4 immediately exposes a new guarded upgrade
 room modifier; the original deployment and isolated native trigger are kept
 for calibration. No fourth win or eight-battle default clear is claimed.
+
+Windows receives the exact266 payload at00:42 on2026-10-28; all67 protected
+files remain unchanged. PackagePojuAdvisor-0.2.266-Windows-20261028-004218.zip
+SHA2566822565BC52D2E4EBFA4902F967C56B02F7CEA5BB94EE235B4441AFBDBE77C67,
+backup/receiptRandomCampaign-20261028-004218. Three installed DLLs match both
+accepted Ring3 native processes and source revisionf5d1a1cd.
