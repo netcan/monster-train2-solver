@@ -10,6 +10,7 @@ $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
     'player-room-pre-combat-world-root.mt2f',
+    'player-inferno-removal-queue-calibration.mt2f',
     'player-champion-meat-shield-boss-preview-calibration.mt2f',
     'player-champion-meat-shield-boss-preview-replay-calibration.mt2f',
     'player-champion-meat-shield-preview-calibration.mt2f',
@@ -3279,6 +3280,16 @@ if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-room-pre-comb
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --room-pre-combat-world-root-only (Get-TestFixturePath $selectedFixtureNames[0])
     if ($LASTEXITCODE -ne 0) { throw 'Room pre-combat shared-world root checks failed.' }
+    return
+}
+if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-inferno-removal-queue-calibration.mt2f') {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Inferno removal queue checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --inferno-removal-queue-only `
+        (Get-TestFixturePath 'player-inferno-removal-queue-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Inferno removal queue check failed.' }
     return
 }
 if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -in @('player-champion-meat-shield-boss-preview-calibration.mt2f', 'player-champion-meat-shield-boss-preview-replay-calibration.mt2f')) {

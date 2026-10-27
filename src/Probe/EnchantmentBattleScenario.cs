@@ -151,14 +151,22 @@ namespace MonsterTrain2Poju.Probe
                     observed[trace.UnitId(native)] = (native, native.GetCurrentRoomIndex());
             var retained = new List<EnchantmentRetainedUnit>();
             var enchanters = new List<int>();
+            var pendingRemovals = new HashSet<int>();
             foreach (var pair in observed)
             {
                 CharacterState actor = pair.Value.Native;
                 using (new CharacterState.SetAllowDestroyedAccessHelper(actor, true))
                 {
                     if (actor.IsEnchanter) enchanters.Add(pair.Key);
-                    if (!live.Contains(pair.Key)) retained.Add(new EnchantmentRetainedUnit(trace.CaptureUnit(actor),
-                        actor.GetCurrentRoomIndex(), actor.PreviewMode));
+                    if (!live.Contains(pair.Key))
+                    {
+                        CombatUnit captured = trace.CaptureUnit(actor);
+                        retained.Add(new EnchantmentRetainedUnit(captured, actor.GetCurrentRoomIndex(), actor.PreviewMode));
+                        // An active-list removal can precede its death coroutine's
+                        // spawner return and physical removal. Keep that input.
+                        if (captured.Health <= 0 && !actor.PreviewMode && actor.GetSpawnPoint() != null)
+                            pendingRemovals.Add(pair.Key);
+                    }
                 }
             }
             var referenced = train.Rooms.SelectMany(room => room.Units).Concat(retained.Select(actor => actor.Unit))
@@ -196,7 +204,7 @@ namespace MonsterTrain2Poju.Probe
                 referenced.UnionWith(BattleSpawnPointProbe.Capture(trace).Groups.SelectMany(group => group.Occupants));
                 referenced.UnionWith(trace.KnownUnits.Where(actor => actor.SpawnedInPreviewMode).Select(trace.UnitId));
             }
-            retained = retained.Where(actor => referenced.Contains(actor.Unit.Id)).ToList();
+            retained = retained.Where(actor => referenced.Contains(actor.Unit.Id) || pendingRemovals.Contains(actor.Unit.Id)).ToList();
             AllGameManagers managers = AllGameManagers.Instance!;
             RoomManager rooms = managers.GetRoomManager()!;
             uint[] test = RngCalibration.Words(RandomManager.GetState(RngId.BattleTest));

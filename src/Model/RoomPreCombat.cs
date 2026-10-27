@@ -41,6 +41,7 @@ namespace MonsterTrain2Poju.Model
             if (!echo.Supported) return echo;
             RoomCombatState current = echo.State!;
             var events = echo.Events.ToList();
+            var retained = new Dictionary<int, CombatUnit>();
             // Native DoRoomCombat calls the room hook in previews as well.
             // The nested Damage effect supports preview application even though
             // the room modifier advertises CanApplyInPreviewMode = false.
@@ -85,11 +86,12 @@ namespace MonsterTrain2Poju.Model
                 RoomCombatResult result = CardSpellModel.ApplyRoomPreCombat(current, rule.Effects, refreshPyre);
                 if (!result.Supported) return result;
                 events.AddRange(result.Events);
+                foreach (CombatUnit unit in result.RetainedUnits) retained[unit.Id] = unit;
                 current = result.State!;
                 if (result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated)
                     return new RoomCombatResult(current, result.Outcome, 0, events);
             }
-            return new RoomCombatResult(current, RoomOutcome.Exchanged, 0, events);
+            return new RoomCombatResult(current, RoomOutcome.Exchanged, 0, events, retainedUnits: retained.Values.ToArray());
         }
     }
 }

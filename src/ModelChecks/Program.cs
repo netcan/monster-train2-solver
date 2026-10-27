@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--inferno-removal-queue-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    InfernoRemovalQueueChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--champion-meat-shield-boss-preview-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -8291,6 +8297,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-enemy-statistics-listeners-replay-calibration.mt2f"));
     EnemyStatisticsListenerChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-inferno-removal-queue-calibration.mt2f"))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    InfernoRemovalQueueChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-room-pre-combat-world-root.mt2f"))
 {

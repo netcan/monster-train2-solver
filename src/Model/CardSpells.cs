@@ -144,7 +144,8 @@ namespace MonsterTrain2Poju.Model
             var result = ApplyCore(train, source.RoomIndex, effects, 0, 0, null, null, null,
                 fullTrain: false, refreshPyre: refreshPyre);
             return new RoomCombatResult(result.State?.Rooms.Single(room => room.RoomIndex == source.RoomIndex),
-                result.Outcome, 0, result.Events.ToList(), result.UnsupportedReason);
+                result.Outcome, 0, result.Events.ToList(), result.UnsupportedReason,
+                retainedUnits: result.RetainedUnits);
         }
 
         internal static TrainSpellResult ApplyForCardPlay(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,

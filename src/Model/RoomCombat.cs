@@ -512,6 +512,16 @@ namespace MonsterTrain2Poju.Model
                 result = new RoomCombatResult(result.State, result.Outcome, result.Rounds, pre.Events.Concat(result.Events).ToList(),
                     result.UnsupportedReason, result.PendingCallbacks, result.RetainedUnits, result.Dispatches);
             if (!result.Supported || result.State!.Context == null) return result;
+            if (!state.Preview && !ReferenceEquals(result, pre) && pre.Outcome == RoomOutcome.Exchanged && pre.RetainedUnits.Count > 0)
+            {
+                // The first combat yield completes earlier room-effect deaths.
+                // Those actors have already left the engine's live input roster.
+                var completed = pre.RetainedUnits.Where(unit => unit.Health <= 0 && state.Units.Any(original => original.Id == unit.Id))
+                    .Select(unit => unit.Id).ToHashSet();
+                result = new RoomCombatResult(result.State.WithContext(ClearFinishedRemovalPoints(result.State.Context, completed)),
+                    result.Outcome, result.Rounds, result.Events.ToList(), result.UnsupportedReason,
+                    result.PendingCallbacks, result.RetainedUnits, result.Dispatches);
+            }
             RelicFirstCardCostResult endOfTurn = RelicFirstCardCostModel.EndRoomCombat(result.State.Context);
             if (!endOfTurn.Supported)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, result.Rounds, result.Events.ToList(), endOfTurn.UnsupportedReason);
@@ -1017,6 +1027,14 @@ namespace MonsterTrain2Poju.Model
             var engine = new Engine(state, events, refreshPyre: refreshPyre,
                 externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets);
             return engine.Run(entireRoom, updateSelectedRoom);
+        }
+
+        private static CombatContext ClearFinishedRemovalPoints(CombatContext context, IReadOnlyCollection<int> completed)
+        {
+            if (context.SpawnPoints is not BattleSpawnPoints points || completed.Count == 0) return context;
+            return context.WithSpawnPoints(points.WithState(points.Groups, points.Units.Select(point =>
+                completed.Contains(point.UnitId) && point.Current == null
+                    ? new UnitSpawnPointState(point.UnitId, null, null, point.OuterBoss, point.SpawnedInPreview) : point).ToArray()));
         }
 
         internal static string? Validate(RoomCombatState state, int? dyingTargetId = null, bool linkedHealthOnly = false)
@@ -1853,6 +1871,23 @@ namespace MonsterTrain2Poju.Model
                 runningRoomCombat = true;
                 ordinaryPyreAttack = source.RoomIndex == 3 && source.Units.Any(unit => unit.IsPyre);
                 stopAfterBossRemoval = true;
+                var pendingRemovals = context?.Enchantments?.RetainedUnits.Where(actor => !source.Preview &&
+                    actor.RoomIndex == source.RoomIndex && actor.Unit.Health <= 0 &&
+                    actor.Unit.DeathState is { HasFinishedDying: true, HasStatisticsListener: false } &&
+                    units.All(unit => unit.Source.Id != actor.Unit.Id) &&
+                    context.SpawnPoints?.Units.Any(point => point.UnitId == actor.Unit.Id && point.Current != null) == true).ToArray();
+                foreach (var pending in pendingRemovals ?? Array.Empty<EnchantmentRetainedUnit>())
+                {
+                    // CheckForDeath already completed its signals/statistics.
+                    // Finish only the outstanding spawner/physical removal.
+                    var unit = NewUnit(pending.Unit, false); units.Add(unit);
+                    SettleDeadSpawner(unit); RemovePhysicalPoint(unit);
+                }
+                if (pendingRemovals?.Length > 0)
+                {
+                    CenterAfterSummon();
+                    context = ClearFinishedRemovalPoints(context!, pendingRemovals.Select(actor => actor.Unit.Id).ToArray());
+                }
                 if (!source.Preview && context != null && BothTeamsPresent())
                     context = PreviewBirthModel.CompleteRemoteCombatBirths(context, source.RoomIndex);
                 if (updateSelectedRoom && !source.Preview && context?.QueryFrame?.SelectedRoomIndex != null &&
