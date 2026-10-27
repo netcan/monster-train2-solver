@@ -558,6 +558,12 @@ if (args.Length == 3 && args[0] == "--unit-copy-birth-catalog-only")
     UnitCopyBirthCatalogChecks.Native(source.RootElement, replay.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--green-recruit-preview-retirement-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    GreenRecruitPreviewRetirementChecks.Native(source.RootElement, args[1]);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--triple-juice-starstruck-cast-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -7774,6 +7780,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-unit-copy-birth-catalog-replay-calibration.mt2f"));
     UnitCopyBirthCatalogChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player-green-recruit-preview-retirement-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var source = ModelJson.ReadFixture(path);
+    GreenRecruitPreviewRetirementChecks.Native(source.RootElement, path);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-triple-juice-starstruck-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-triple-juice-starstruck-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

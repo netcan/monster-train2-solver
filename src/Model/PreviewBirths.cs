@@ -45,12 +45,24 @@ namespace MonsterTrain2Poju.Model
                 actor.Unit.Modifiers.Upgrades is [{ AssetKey: "InfectoryEffect_Upgrade" }]);
             var pending = world.RetainedUnits.Where(actor => actor.Preview && actor.RoomIndex != roomIndex &&
                 actor.Unit is { Team: CombatTeam.Player, AssetKey: "MonsterFunguy", SpawnerCardId: 0,
-                    Health: > 0, DeathState.IsDestroyed: false } && actor.Unit.Status("horde")?.Stacks == 1 &&
+                    Health: > 0, DeathState.IsDestroyed: false } &&
+                (actor.Unit.Status("horde")?.Stacks == 1 &&
                 (actor.Unit.Status("trample")?.Stacks == 2 && actor.Unit.Modifiers?.Upgrades.Count == 3 &&
                     actor.Unit.Modifiers.Upgrades.Count(upgrade => upgrade.AssetKey == "SquadLeader_Upgrade") == 2 &&
                     actor.Unit.Modifiers.Upgrades.Count(upgrade => upgrade.AssetKey == "InfectoryEffect_Upgrade") == 1 ||
                     removedTroopOwner && actor.Unit.Status("trample") == null &&
-                        actor.Unit.Modifiers?.Upgrades is [{ AssetKey: "InfectoryEffect_Upgrade" }]) &&
+                        actor.Unit.Modifiers?.Upgrades is [{ AssetKey: "InfectoryEffect_Upgrade" }]) ||
+                // The original Green Recruit death creates four unupgraded
+                // troop stacks. Its preview object survives that floor's raw
+                // capture, then retires during the next lower floor's real
+                // combat yield, just like the calibrated one-stack births.
+                actor.RoomIndex > roomIndex && actor.Unit.Status("horde")?.Stacks == 4 &&
+                    actor.Unit.Status("trample") == null && actor.Unit.Triggers.Count == 0 &&
+                    actor.Unit.Modifiers?.Upgrades.Count == 0 &&
+                    actor.Unit.HordeDefinition is { Attack: 3, Health: 4 } &&
+                    world.RetainedUnits.Any(owner => owner.Unit.Health <= 0 && IsOriginalGreenRecruit(owner.Unit, context) &&
+                        (owner.RoomIndex == actor.RoomIndex || points.Units.Any(point => point.UnitId == owner.Unit.Id &&
+                            point.LastKnown?.RoomIndex == actor.RoomIndex)))) &&
                 points.Units.Any(point => point.UnitId == actor.Unit.Id && point.SpawnedInPreview &&
                     point.Current?.PreviewCopyId != null)).ToArray();
             if (pending.Length == 0) return context;
