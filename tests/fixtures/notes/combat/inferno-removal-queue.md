@@ -25,3 +25,13 @@ This diagnostic captures pending players only; its turn4 enemy15 exchange
 still lacks a required native input. It is not a complete accepted battle or
 a sixth campaign victory. Production277 extends the same observation to both
 teams; a fresh frozen-build campaign must verify that additional boundary.
+
+Independent `032139-f6f8e745` from frozen a9f3c3f1 supplies the unchanged37-input
+route with complete both-team capture. Its full raw record is preserved as
+`player-inferno-removal-queue-replay-calibration.mt2f`. Turn4 first exchange
+directly observes enemy15 FeedDamageShield, HP0, finished death, detached
+statistics listener and a still-current physical point. All56 raw rooms and
+14 train phases reproduce exactly, in addition to the original six player
+boundaries. The optional second CLI argument enables this complete check;
+the curated script gate always supplies it. It remains a component replay,
+not a completed sixth-battle victory.

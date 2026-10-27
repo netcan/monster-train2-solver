@@ -27,3 +27,12 @@ The preserved request is `random25-ring6-recruit278-request.mt2f`, with47
 unchanged prefix inputs and reason
 `Native Green Recruit boss preview identity differs after input48.`
 Independent frozen native acceptance remains required before counting a win.
+
+Frozen a9f3c3f1 independent `032139-83779ce7` replays all48 unchanged inputs.
+Its component is preserved as
+`player-green-recruit-boss-preview-replay-calibration.mt2f`; complete native
+before/actual states and source SHA are compared by the paired checker.
+The frozen checker SHA is
+`41B64F27787479FDA999FBFF18E22E99F24D508EBB9D5765503A3667A27F9C70`.
+Original saves/configuration remain unchanged. This is an independent boundary
+replay, not a default-budget campaign win.

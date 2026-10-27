@@ -8303,12 +8303,16 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-enemy-statistics-listeners-replay-calibration.mt2f"));
     EnemyStatisticsListenerChecks.Native(source.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) == "player-green-recruit-boss-preview-calibration.mt2f"))
-    GreenRecruitBossPreviewChecks.Native(path);
-foreach (string path in args.Where(path => Path.GetFileName(path) == "player-inferno-removal-queue-calibration.mt2f"))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-green-recruit-boss-preview-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-green-recruit-boss-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+    GreenRecruitBossPreviewChecks.Native(path,
+        ModelJson.RelatedFixture(path, "player-green-recruit-boss-preview-replay-calibration.mt2f"));
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-inferno-removal-queue-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-inferno-removal-queue-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var fixture = ModelJson.ReadFixture(path);
-    InfernoRemovalQueueChecks.Native(fixture.RootElement);
+    InfernoRemovalQueueChecks.Native(fixture.RootElement,
+        ModelJson.RelatedFixture(path, "player-inferno-removal-queue-replay-calibration.mt2f"));
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-room-pre-combat-world-root.mt2f"))
 {
