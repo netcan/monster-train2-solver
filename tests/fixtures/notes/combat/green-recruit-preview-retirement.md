@@ -27,7 +27,7 @@ six scope controls pass. Existing22-input remote-preview and28-input retired
 troop-source independent pairs still pass. The original failed33-input/Pyre75
 receipt is retained separately. Release245's new default10000ms/two-worker
 source182157-136dc51f and independent reward replay182617-be076140 both win:
-33 inputs,24 plays/nine EndTurns, Pyre75. Full state, forecast, RNG and all17
+37 inputs,28 plays/nine EndTurns, Pyre75. Full state, forecast, RNG and all17
 train phases match; capture, mismatch, unsupported and pending counters are
 all zero. The replay advances58 normal reward/map events to Ring4, save SHA256
 8DDF1A2A36B7F3B0E32F1E964711EA3B327AC7BF2747FE49F2952AF9FFED3D7F.
