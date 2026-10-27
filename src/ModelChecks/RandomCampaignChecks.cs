@@ -7,6 +7,22 @@ internal static class RandomCampaignChecks
 {
     internal static void Curated(string path)
     {
+        if (path.EndsWith("full-battle-random-campaign-19-ring5-release208-refined-search.mt2f", StringComparison.Ordinal))
+        {
+            using var native = ModelJson.ReadFixture(path);
+            using var replay = ModelJson.ReadFixture(path.Replace("-search.mt2f", "-replay.mt2f", StringComparison.Ordinal));
+            RefinedPair(native.RootElement, replay.RootElement, 68586509, 0, 4, "LazarusLeague", "LunaCoven", 36);
+            foreach (var fixture in new[] { native.RootElement, replay.RootElement })
+            {
+                var rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+                var final = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                Require(rows.Count(row => row.GetProperty("IsEndTurn").GetBoolean()) == 7 &&
+                    final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 12,
+                    "Nineteenth sample Ring5 refinement must retain29 plays/7EndTurns and native Pyre12.");
+            }
+            FixedAttackEquipmentTargetChecks.Native(native.RootElement);
+            return;
+        }
         if (path.EndsWith("full-battle-random-campaign-19-ring4-release207-refined-search.mt2f", StringComparison.Ordinal))
         {
             using var native = ModelJson.ReadFixture(path);
