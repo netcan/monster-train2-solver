@@ -6,13 +6,29 @@ namespace MonsterTrain2Poju.Model
 {
     internal static class PreviewBirthModel
     {
-        private static bool IsOriginalGreenRecruit(CombatUnit unit, CombatContext context) =>
+        internal static bool IsOriginalGreenRecruit(CombatUnit unit, CombatContext context) =>
             unit is { AssetKey: "MonsterGenerousHost", Team: CombatTeam.Player } &&
             context.FindCard(unit.SpawnerCardId)?.DataId == "c052c567-1e3c-4f36-a6cd-89b0648b9475" &&
-            unit.Triggers is [{ Kind: "OnDeath", Effects: [{ Type: "CardEffectSpawnMonsterOrAddStatusEffect", Action:
+            (unit.Triggers.Count == 1 || unit.Triggers.Count == 3 &&
+                IsOriginalDuskMantleTrigger(unit.Triggers[1], unit, context, "OnMoonShade", "CardEffectAddStatusEffect", "AddStatus") &&
+                IsOriginalDuskMantleTrigger(unit.Triggers[2], unit, context, "OnMoonshadeLost", "CardEffectRemoveStatusEffect", "RemoveStatus") &&
+                unit.Triggers[1].Origin.EquipmentCardId == unit.Triggers[2].Origin.EquipmentCardId) &&
+            unit.Triggers[0] is { Kind: "OnDeath", Effects: [{ Type: "CardEffectSpawnMonsterOrAddStatusEffect", Action:
                 { Type: "SpawnOrStatus", Target: "Room", Value: 4, AllowPlayer: true, AllowEnemy: false, Range: null,
                     Statuses: [{ Id: "horde", Stacks: 4 }], Filters.Subtype: "SubtypesData_Horde",
-                    SpawnFallbackUnit: { AssetKey: "MonsterFunguy", BaseAttack: 3, Health: 4 } } }] }];
+                    SpawnFallbackUnit: { AssetKey: "MonsterFunguy", BaseAttack: 3, Health: 4 } } }] };
+
+        private static bool IsOriginalDuskMantleTrigger(CombatTrigger trigger, CombatUnit unit, CombatContext context,
+            string kind, string effectType, string actionType) =>
+            trigger.Kind == kind && trigger.IgnoreSilence == (kind == "OnMoonshadeLost") &&
+            trigger is { Once: false, FireCount: 1, SkipDuringDeployment: false,
+                Origin: { UpgradeId: GeneratedMoonTrackingModel.EquipmentId, EquipmentCardId: > 0,
+                    IsFromEquipment: true, OnlyIfEquipped: false } origin,
+                Effects: [{ Type: var capturedEffect, Value: 0, Enchantment: null, Summon: null, Generation: null,
+                    Action: { Type: var capturedAction, Target: "Self", Value: 0, Range: null, AllowPlayer: true, AllowEnemy: false,
+                        Upgrade: null, Statuses: [{ Id: "titanskin", Stacks: 5 }] } }] } &&
+            capturedEffect == effectType && capturedAction == actionType && unit.EquipmentCards.Contains(origin.EquipmentCardId) &&
+            context.FindCard(origin.EquipmentCardId)?.DataId == GeneratedMoonTrackingModel.EquipmentId;
 
         internal static bool IsOriginalChampionEnemyDeath(CombatUnit unit, CombatContext context) =>
             unit is { AssetKey: "MonsterChampionUnderlegion1", Team: CombatTeam.Player } &&

@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--dusk-mantle-recruit-boss-preview-only")
+{
+    UnderlegionThirdTroopPreviewChecks.Native(args[1], args.Length == 3 ? args[2] : null);
+    return;
+}
 if (args.Length == 3 && args[0] == "--parallel-lower-opening-only")
 {
     using var previous = ModelJson.ReadFixture(args[1]);
@@ -7330,6 +7335,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-unb
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-unbox-moon-relic-replay-calibration.mt2f"));
     UnboxMoonRelicChecks.Native(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-dusk-mantle-recruit-boss-preview-calibration.mt2f"))
+    UnderlegionThirdTroopPreviewChecks.Native(path);
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("parallel-lower-opening-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "parallel-lower-opening-model-counterexample.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
