@@ -311,8 +311,10 @@ namespace MonsterTrain2Poju.Probe
         {
             bool observing = waiting && rows.Count > 0 && rows.Last().Boundary &&
                 request.GetProperty("Reason").GetString() is
+                    "Battle preview floor 0: Combined troop upgrades and enchantment source ordering require native calibration." or
                     "Battle preview floor 1: Combined troop upgrades and enchantment source ordering require native calibration." or
                     "Battle preview floor 2: Combined troop upgrades and enchantment source ordering require native calibration." or
+                    "Train combat floor 0: Combined troop upgrades and enchantment source ordering require native calibration." or
                     "Train combat floor 1: Combined troop upgrades and enchantment source ordering require native calibration." or
                     "Train combat floor 2: Combined troop upgrades and enchantment source ordering require native calibration." or
                     "Combined troop upgrades and enchantment source ordering require native calibration.";
