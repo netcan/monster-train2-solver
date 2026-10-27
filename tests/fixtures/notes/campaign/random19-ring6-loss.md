@@ -12,3 +12,11 @@ not a sixth-battle acceptance or full campaign clear.
 The alternative fourth-battle refinement's Pyre44 checkpoint subsequently
 wins Ring5 with the release209 default search and Pyre26. Its independent
 normal reward replay and following checkpoint remain a separate save chain.
+
+That Pyre26 branch also loses Ring6 under the actual10000ms/two-worker
+budget: source091152-ffb84437 records38 inputs/33plays/5EndTurns and
+Cael1772HP. All10 train phases, full states/forecasts/RNG and four zero
+counters pass. Its separate archive preserves this longer native loss;
+the Pyre12 and Pyre26 input saves are not interchangeable. A third,
+independently paired Ring5 refinement enters Ring6 with Pyre40 and is
+being evaluated separately.

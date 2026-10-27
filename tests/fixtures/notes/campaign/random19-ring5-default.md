@@ -13,3 +13,13 @@ The five-battle checkpoint chain passes without new simulations. Rings3/4
 are refined and Rings1/2/5 use their actual default budget. The older Pyre12
 Ring6 checkpoint follows a different Ring4/5 branch and remains separate.
 This is a default-budget battle victory, not an all-default campaign clear.
+
+An independent offline refinement of this same Pyre44 input wins in42
+inputs/34plays/8EndTurns with Pyre40. Source091237-e8c471ad and independent
+normal reward replay091618-f652c4df both win, retain all15 train phases,
+full states/forecasts/RNG and four zero counters. Both archives bind to
+the complete frozen prediction. Normal40 reward/map events produce Ring6
+save7F332FC6ACD3C104FC3048CB7672DF9EE91A1C5DD75B35174E6E87200DC20779.
+The separate five-ring checkpoint chain passes without simulations.
+This refined route does not replace the actual default-budget result or
+its Pyre26 save chain; neither chain is a complete campaign clear.
