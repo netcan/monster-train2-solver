@@ -87,6 +87,10 @@ namespace MonsterTrain2Poju.Model
                     attempted.Add(id); continue;
                 }
                 if (actor.IsPyre) continue;
+                // FindBumpSpawnPoint checks the paired companion restriction
+                // before its outer-boss anchor branch; an actor can be both.
+                if (actor.BumpRules.CompanionBoss && actor.Status("relentless") != null && FindPairedBossId(actor) != 0)
+                { attempted.Add(id); continue; }
                 if (actor.BumpRules.OuterBoss)
                 {
                     if (actor.Team != CombatTeam.Enemy || !old.OuterBossAnchor)
@@ -140,8 +144,6 @@ namespace MonsterTrain2Poju.Model
                     if (!ForceMoveBoss(id, outerDestination.Point)) return Fail(error!);
                     continue;
                 }
-                if (actor.BumpRules.CompanionBoss && actor.Status("relentless") != null && FindPairedBossId(actor) != 0)
-                { attempted.Add(id); continue; }
                 int steps = Math.Max(-pyre, Math.Min(pyre, amount)), direction = steps > 0 ? 1 : -1;
                 bool looping = actor.BumpRules.Loops && actor.Status("relentless") == null && direction > 0 && old.RoomIndex + steps >= pyre;
                 if (looping) { direction = -1; steps = old.RoomIndex; }
