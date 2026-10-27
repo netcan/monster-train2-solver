@@ -131,6 +131,22 @@ namespace MonsterTrain2Poju.Model
             int targetId, int sourceCardId = 0, BattlePlayRules? definitions = null, IReadOnlyList<CardPileState>? otherPiles = null, int selfUnitId = 0)
             => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, fullTrain: true, otherPiles, selfUnitId);
 
+        internal static RoomCombatResult ApplyRoomPreCombat(RoomCombatState source, IReadOnlyList<CardActionEffect> effects,
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre)
+        {
+            if (source.Context?.Enchantments is not { AutomaticLifecycle: true } world)
+                return Apply(source, effects, 0, refreshPyre: refreshPyre);
+            // Damage still targets this room. Its death queue can refresh auras
+            // and invoke callbacks elsewhere, so keep their physical rooms.
+            var train = EnchantmentWorldModel.Rebase(new TrainCombatState(world.Rooms.Select(room =>
+                room.RoomIndex == source.RoomIndex ? source : room.WithContext(source.Context)).ToArray(),
+                world.Movement, world.EnemySlotsPerRoom, source.Context));
+            var result = ApplyCore(train, source.RoomIndex, effects, 0, 0, null, null, null,
+                fullTrain: false, refreshPyre: refreshPyre);
+            return new RoomCombatResult(result.State?.Rooms.Single(room => room.RoomIndex == source.RoomIndex),
+                result.Outcome, 0, result.Events.ToList(), result.UnsupportedReason);
+        }
+
         internal static TrainSpellResult ApplyForCardPlay(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
             int targetId, int sourceCardId, BattlePlayRules definitions, IReadOnlyList<CardPileState>? otherPiles, int selfUnitId = 0,
             int targetSpawnPointIndex = -1, IReadOnlyList<CardRecursionSelection>? recursionSelections = null, bool onCastEffects = false,

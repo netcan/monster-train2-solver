@@ -82,7 +82,7 @@ namespace MonsterTrain2Poju.Model
                 // Native attachment VFX selects the room before running effects.
                 if (!current.Preview && rule.FocusRoom && current.Context?.QueryFrame != null)
                     current = current.WithContext(current.Context.WithQueryFrame(current.Context.QueryFrame.With(selectedRoomIndex: source.RoomIndex)));
-                RoomCombatResult result = CardSpellModel.Apply(current, rule.Effects, 0, refreshPyre: refreshPyre);
+                RoomCombatResult result = CardSpellModel.ApplyRoomPreCombat(current, rule.Effects, refreshPyre);
                 if (!result.Supported) return result;
                 events.AddRange(result.Events);
                 current = result.State!;
