@@ -8,7 +8,7 @@ namespace MonsterTrain2Poju.Model
         internal static bool Known(CardInstanceState card, IReadOnlyList<CardActionEffect> effects)
         {
             string[] stats = { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" };
-            return card.DataId == "c8b39244-83c1-4eb3-b474-8898226d4280" && card.ExternalInteractions.Count == 0 &&
+            return card.DataId == "c8b39244-83c1-4eb3-b474-8898226d4280" && card.MaskDescriptor != null && card.ExternalInteractions.Count == 0 &&
                 card.Permanent.Upgrades.Count == 0 && card.Temporary.Upgrades.Count == 1 &&
                 CardJuiceModel.KnownTitanCurse(card.Temporary.Upgrades[0]) &&
                 stats.All(stat => card.Permanent.Offsets.Value(stat) == 0 && card.Temporary.Offsets.Value(stat) == 0) &&

@@ -5,7 +5,7 @@ using MonsterTrain2Poju.Model;
 internal static class EchoJustCauseChecks
 {
     internal const string EndReason = "Echo Just Cause reuses the remembered physical slot before rearranging and adding valor.";
-    internal static void Native(FixtureValue source)
+    internal static void Native(FixtureValue source, FixtureValue? endTurn = null, FixtureValue? replay = null)
     {
         string reason = source.GetProperty("Request").GetProperty("Reason").GetString()!;
         Require(reason.StartsWith("Echo replay needs native calibration: onCast=0, unplayed=0, interactions=, traits=, relics=", StringComparison.Ordinal),
@@ -32,7 +32,7 @@ internal static class EchoJustCauseChecks
                 "Detached JustCause Echo copy differs.");
         });
         Require(immutable == JsonSerializer.Serialize(before, ModelJson.Options), "JustCause Echo mutated its parent.");
-        foreach (string control in new[] { "Id", "Curse", "Offset", "Callback", "Amount" })
+        foreach (string control in new[] { "Id", "Curse", "Offset", "Callback", "Amount", "Descriptor" })
         {
             var changed = JsonSerializer.SerializeToNode(copy, ModelJson.Options)!;
             var effects = JsonSerializer.SerializeToNode(echo.Effects, ModelJson.Options)!;
@@ -41,10 +41,61 @@ internal static class EchoJustCauseChecks
             if (control == "Offset") changed["Permanent"]!["Offsets"]!["Damage"] = 1;
             if (control == "Callback") changed["ExternalInteractions"]!.AsArray().Add("unknown-callback");
             if (control == "Amount") effects[1]!["Statuses"]![0]!["Stacks"] = 4;
+            if (control == "Descriptor") changed["MaskDescriptor"] = null;
             Require(!EchoJustCauseModel.Known(changed.Deserialize<CardInstanceState>(ModelJson.Options)!, effects.Deserialize<CardActionEffect[]>(ModelJson.Options)!),
                 "Unknown JustCause Echo payload admitted: " + control);
         }
-        Console.WriteLine("ECHO-JUST-CAUSE COPY PASS:40 native inputs/full state/RNG, remembered physical slot, paid2 and Titan curse; four immutable branches/five guards.");
+        if (endTurn.HasValue)
+        {
+            var ends = NativeBranchObservationChecks.Replay(endTurn.Value, "Train combat floor 1: " + EndReason);
+            Require(ends.Length == 41 && ends[^1].GetProperty("IsEndTurn").GetBoolean(), "Missing native JustCause pre-combat replay.");
+            for (int i = 0; i < rows.Length; i++)
+                Require(rows[i].GetProperty("Action").ContentEquals(ends[i].GetProperty("Action")) &&
+                    rows[i].GetProperty("IsEndTurn").ContentEquals(ends[i].GetProperty("IsEndTurn")) &&
+                    NativeBranchObservationChecks.Key(rows[i].GetProperty("Actual").Deserialize<BattleTurnState>()!) ==
+                    NativeBranchObservationChecks.Key(ends[i].GetProperty("Actual").Deserialize<BattleTurnState>()!),
+                    "JustCause EndTurn changed the original prefix: " + i);
+            var final = ends[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            Require(final.Spawn.Turn == 9 && final.Spawn.Train.Rooms.Single(room => room.RoomIndex == 3).Units.Single(unit => unit.IsPyre).Health == 77 &&
+                final.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == 1).Attachments!
+                .Single(attachment => attachment.Echo != null).Echo!.CopyCardId == 0, "Recast JustCause cache was not cleared.");
+            CheckPreCombat(endTurn.Value);
+            string parent = JsonSerializer.Serialize(actual, ModelJson.Options);
+            Parallel.For(0, 4, _ =>
+            {
+                var result = BattleTurnModel.EndTurn(actual);
+                Require(result.Supported && result.Outcome == RoomOutcome.Exchanged &&
+                    NativeBranchObservationChecks.Key(result.State!) == NativeBranchObservationChecks.Key(final),
+                    "Detached JustCause EndTurn differs.");
+            });
+            Require(parent == JsonSerializer.Serialize(actual, ModelJson.Options), "JustCause EndTurn mutated its parent.");
+            if (replay.HasValue)
+            {
+                NativeBranchObservationChecks.Replay(replay.Value, "Train combat floor 1: " + EndReason);
+                NativeBranchObservationChecks.Pair(endTurn.Value, replay.Value);
+                CheckPreCombat(replay.Value);
+            }
+        }
+        Console.WriteLine("ECHO-JUST-CAUSE PASS:40 native inputs/full state/RNG, remembered physical slot, paid2 and Titan curse; four immutable branches/six guards; nativeEndTurn=" + endTurn.HasValue + "; independentPair=" + replay.HasValue);
+    }
+    private static void CheckPreCombat(FixtureValue fixture)
+    {
+        var phase = fixture.GetProperty("RoomPreCombatRecords").EnumerateArray().Single(row =>
+            row.GetProperty("Turn").GetInt32() == 8 && row.GetProperty("RoomIndex").GetInt32() == 1);
+        Require(phase.GetProperty("Completed").GetBoolean(), "Incomplete JustCause pre-combat record.");
+        var before = phase.GetProperty("Before").Deserialize<TrainCombatState>()!;
+        var after = phase.GetProperty("After").Deserialize<TrainCombatState>()!;
+        var old = before.Rooms.Single(room => room.RoomIndex == 1).Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
+        var next = after.Rooms.Single(room => room.RoomIndex == 1).Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
+        Require(old.Select(unit => unit.Id).SequenceEqual(new[] { 2, 5, 26 }) &&
+            next.Select(unit => unit.Id).SequenceEqual(new[] { 2, 5, 26 }) &&
+            old[0].Status("valor")!.Stacks == 88 && next[0].Status("valor")!.Stacks == 90 &&
+            old.Zip(next).All(pair => pair.First.Health == pair.Second.Health) &&
+            old.Skip(1).Zip(next.Skip(1)).All(pair => JsonSerializer.Serialize(pair.First, ModelJson.Options) == JsonSerializer.Serialize(pair.Second, ModelJson.Options)) &&
+            before.Context!.Statistics!.PlayedCosts.Single(value => value.CardId == 44).Cost == 2 &&
+            after.Context!.Statistics!.CardsPlayedThisTurn!.SequenceEqual(new[] { 13, 26, 17, 44 }) &&
+            !after.Context.Statistics.PlayedCosts.Any(value => value.CardId == 44),
+            "JustCause Echo must recast once on its physical front slot, add2 valor and clear its paid-cost entry.");
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }

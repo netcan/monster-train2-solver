@@ -29,8 +29,6 @@ namespace MonsterTrain2Poju.Model
                 (context.Relics?.Any(relic => relic.EffectTypes.Count > 0) == true || CardBranchMaskModel.Resolve(card).Traits.Any(trait =>
                     trait is not (TreasureTrait or "CardTraitStrongerMagicPower" or "CardTraitFreeze"))))
                 return Unsupported("Indirect Treasure casting with additional relic or card callbacks requires native calibration.");
-            if (justCauseEcho && !source.Rooms.Any(value => value.Preview))
-                return Unsupported("Echo Just Cause reuses the remembered physical slot before rearranging and adding valor.");
             CardPlayRule rule = juiceRule ?? CardModifierModel.Resolve(raw, card);
             int roomIndex = selectedRoom ?? context.QueryFrame?.SelectedRoomIndex ?? -1;
             RoomCombatState? room = source.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex);

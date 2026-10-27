@@ -1,9 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
-if (args.Length == 2 && args[0] == "--echo-just-cause-only")
+if (args.Length is 2 or 3 or 4 && args[0] == "--echo-just-cause-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
-    EchoJustCauseChecks.Native(source.RootElement);
+    using var endTurn = args.Length >= 3 ? ModelJson.ReadFixture(args[2]) : null;
+    using var replay = args.Length == 4 ? ModelJson.ReadFixture(args[3]) : null;
+    EchoJustCauseChecks.Native(source.RootElement, endTurn?.RootElement, replay?.RootElement);
     return;
 }
 if (args.Length is 2 or 3 or 4 && args[0] == "--lazarus-juice-spike-only")
@@ -6667,7 +6669,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-com
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-echo-just-cause-copy-calibration.mt2f"))
 {
     using var source = ModelJson.ReadFixture(path);
-    EchoJustCauseChecks.Native(source.RootElement);
+    using var endTurn = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-echo-just-cause-endturn-calibration.mt2f"));
+    EchoJustCauseChecks.Native(source.RootElement, endTurn.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-lazarus-juice-spike-deployment-refusal-calibration.mt2f"))
 {
