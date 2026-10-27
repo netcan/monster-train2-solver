@@ -7355,12 +7355,15 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-moo
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-moon-silence-reset-replay-calibration.mt2f"));
     MoonSilenceResetChecks.Native(battle.RootElement, source.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) is "player-cael-lifesteal-moon-birth-calibration.mt2f" or "cael-lifesteal-moon-creation-calibration.mt2f")
+foreach (string path in args.Where(path => Path.GetFileName(path) is "player-cael-lifesteal-moon-birth-calibration.mt2f" or "cael-lifesteal-moon-creation-calibration.mt2f" or
+    "player-cael-lifesteal-moon-birth-replay-calibration.mt2f" or "cael-lifesteal-moon-creation-replay-calibration.mt2f")
     .Select(path => ModelJson.RelatedFixture(path, "player-cael-lifesteal-moon-birth-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var source = ModelJson.ReadFixture(path);
     using var birth = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "cael-lifesteal-moon-creation-calibration.mt2f"));
-    CaelMoonBirthChecks.Native(source.RootElement, birth.RootElement, lifesteal: true);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-cael-lifesteal-moon-birth-replay-calibration.mt2f"));
+    using var replayBirth = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "cael-lifesteal-moon-creation-replay-calibration.mt2f"));
+    CaelMoonBirthChecks.Native(source.RootElement, birth.RootElement, replay.RootElement, replayBirth.RootElement, lifesteal: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-cael-moon-birth-calibration.mt2f"))
 {

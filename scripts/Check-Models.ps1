@@ -342,6 +342,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-cael-moon-birth-calibration.mt2f',
     'player-cael-lifesteal-moon-birth-calibration.mt2f',
     'cael-lifesteal-moon-creation-calibration.mt2f',
+    'player-cael-lifesteal-moon-birth-replay-calibration.mt2f',
+    'cael-lifesteal-moon-creation-replay-calibration.mt2f',
     'player-fragile-moon-birth-calibration.mt2f',
     'fragile-moon-creation-calibration.mt2f',
     'player-fragile-moon-birth-replay-calibration.mt2f',
@@ -2490,7 +2492,8 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     if ($LASTEXITCODE -ne 0) { throw 'Focused native cache continuation failed.' }
     return
 }
-$caelLifestealMoonNames = @('player-cael-lifesteal-moon-birth-calibration.mt2f', 'cael-lifesteal-moon-creation-calibration.mt2f')
+$caelLifestealMoonNames = @('player-cael-lifesteal-moon-birth-calibration.mt2f', 'cael-lifesteal-moon-creation-calibration.mt2f',
+    'player-cael-lifesteal-moon-birth-replay-calibration.mt2f', 'cael-lifesteal-moon-creation-replay-calibration.mt2f')
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $caelLifestealMoonNames }).Count -eq 0) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q

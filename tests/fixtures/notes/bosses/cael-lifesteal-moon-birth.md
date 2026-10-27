@@ -18,5 +18,8 @@ The full two-input native replay and before/after creation state, controllers,
 physical points and RNG agree. Four immutable branches and seven changed
 phase/owner/callback/stat/payload guards pass. The older DamageShield Cael
 pair and all three original guards still pass, including a Lifesteal asset
-name substituted onto the wrong authored postcombat payload. A fixed-build
-independent native replay is pending.
+name substituted onto the wrong authored postcombat payload. Frozen
+release250 replay194101-971c290a independently matches both inputs and the
+complete creation/placement/controller/RNG boundary. All four captures are
+registered. A later turn2 hand refresh reveals a separate original boss-relic
+callback guard; that boundary requires its own native capture and validation.
