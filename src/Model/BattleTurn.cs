@@ -381,7 +381,25 @@ namespace MonsterTrain2Poju.Model
                     cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId, cards.DeckDrawDisabledThisTurn);
             }
             context = WithCards(context, cards);
-            if (discardedIds.Count > 0) context = UnitStandbyModel.ReturnReady(CardExhaustModel.ReturnReady(context));
+            if (discardedIds.Count > 0)
+            {
+                context = UnitStandbyModel.ReturnReady(CardExhaustModel.ReturnReady(context));
+                // DiscardCard checks every standby condition, including detached
+                // equipment from an earlier death. Its exhaust statistics and
+                // callbacks belong to this turn, before NextTurn rotates them.
+                if (context.OtherPiles?.Any(pile => pile.Name == "Standby" && pile.EquipmentConditions?.Count > 0) == true)
+                {
+                    train = WithContext(train, context, spawn.Turn == 0);
+                    TrainCombatResult discardEquipment = EquipmentModel.ReturnUnattached(train, source.SelectedRoom);
+                    if (!discardEquipment.Supported) return Unsupported(discardEquipment.UnsupportedReason!);
+                    if (!RouteDeadUnits(train, discardEquipment)) return Unsupported("Discard equipment return deaths require standby card routing.");
+                    train = discardEquipment.State!;
+                    context = train.Context!;
+                    otherPiles = context.OtherPiles?.ToArray() ?? otherPiles;
+                    spawn = WithTrain(spawn, train, spawn.Turn, spawn.Rng);
+                    if (Terminal(discardEquipment.Outcome)) return Finish(discardEquipment.Outcome, source.Energy, source.MoonPhase);
+                }
+            }
             // Native conservation sees hand callbacks and the previous EndTurnEnergy
             // statistic, then stores this turn's remaining energy before removal.
             if (conserveEnergy)

@@ -591,6 +591,13 @@ if (args.Length is 2 or 3 && args[0] == "--starstruck-retired-target-only")
     else { using var replay = ModelJson.ReadFixture(args[2]); StarstruckRetiredTargetChecks.Native(source.RootElement, replay.RootElement); }
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--discard-equipment-turn-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) DiscardEquipmentTurnChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); DiscardEquipmentTurnChecks.Native(source.RootElement, replay.RootElement); }
+    return;
+}
 if (args.Length is >= 2 and <= 4 && args[0] == "--mirrored-meddler-moon-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
