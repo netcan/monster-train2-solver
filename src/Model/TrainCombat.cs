@@ -138,10 +138,11 @@ namespace MonsterTrain2Poju.Model
         {
             if (unit.DeathState?.IsDestroyed != true) return unit;
             unit = unit.AfterDestruction();
-            // A living unit can vanish without a death signal. Its statistics
-            // listeners persist through the raw room result, then OnDestroy
-            // clears them together with the other frame-completed references.
-            if (unit.DeathState is { IsDespawned: true } death)
+            // CharacterState.StateInformation.OnDestroy clears every signal,
+            // including the ordinary HP/death statistics listeners. This helper
+            // is reached only for frame-completed destruction, after raw room
+            // captures; the same cleanup applies to deaths and despawns.
+            if (unit.DeathState is UnitDeathState death)
                 unit = unit.WithDeathState(new UnitDeathState(death.HasFinishedDying, death.IsBeingRemoved,
                     false, null, death.IsSacrifice, death.StatisticsListenerOnce.HasValue ? false : (bool?)null,
                     death.IsDespawned, death.IsDestroyed));

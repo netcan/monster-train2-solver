@@ -837,6 +837,13 @@ if (args.Length is 2 or 3 && args[0] == "--champion-troop-titanskin-only")
     ChampionTroopTitanskinChecks.Native(source.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--enemy-statistics-listeners-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    EnemyStatisticsListenerChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--enchantment-boss-preview-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
