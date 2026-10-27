@@ -18,9 +18,13 @@ sixth-battle win. Existing35/49-input Green Recruit and54-input Ephemeral
 equipment pairs also pass. The previously rejected middle- and upper-floor
 model routes now complete; both remain losses pending strategy refinement.
 
-Upper-floor ordering refinement subsequently produces a65-input model loss,
-one boss killed and the other878HP. The deployment tool's old six-unit limit
+Upper-floor ordering refinement initially produced a65-input model loss,
+one boss killed and the other878HP. Native input63 later disproved its paid
+companion-boss movement; that prediction is invalid, not a native result.
+See [the retained counterexample](../bosses/relentless-companion-bump.md).
+The deployment tool's old six-unit limit
 incorrectly rejected this native seven-unit opening; it now accepts1..32
 initial unit plays while retaining the same candidate/time/parent bounds.
 The first120000ms spread completes18 routes without unsupported or improvement;
-its unfinished nineteenth route is not counted. Resume at sample37.
+its unfinished nineteenth route is not counted. Resume at sample37 only after
+regenerating its baseline with the corrected movement model.

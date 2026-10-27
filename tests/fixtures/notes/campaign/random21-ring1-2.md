@@ -35,3 +35,12 @@ with163 complete candidates and one strict improvement at input13. Full owned
 successor/forecast/RNG verification passes. A separate sweep starting13
 completes129 candidates through23 without improvement; the unfinished24th
 decision is retried by the next batch. These remain model losses.
+
+Release228's next three-input batch completes140 candidates without unsupported
+and reaches148HP in43 inputs. Fresh native process130724-0f18c7c8 executes
+all43 unchanged inputs with zero new searches/publications. Full successors,
+forecasts, RNG and four zero counters match; its actual final Fleshweaver
+MoreMass has148HP/8ATK, still a defeat. This improved loss is curated separately
+from the original45-input/271HP default loss, not accepted as Ring3 victory.
+Subsequent diverse decisions0..9 complete141 candidates without improvement;
+decision10 is unfinished and the next distinct batch starts at11.

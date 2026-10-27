@@ -7,6 +7,24 @@ internal static class RandomCampaignChecks
 {
     internal static void Curated(string path)
     {
+        if (Path.GetFileName(path) == "full-battle-random-campaign-21-ring3-release228-refined-loss.mt2f")
+        {
+            CompleteNativeBattleChecks.Native(path);
+            using var native = ModelJson.ReadFixture(path);
+            var fixture = native.RootElement;
+            Input(fixture, 1515294717, 0, 2, "Hellhorned", "Remnant", 10000, validateSearchSettings: false);
+            var rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+            var final = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            Require(!fixture.GetProperty("NativeWon").GetBoolean() && rows.Length == 43 &&
+                rows.Count(row => row.GetProperty("IsEndTurn").GetBoolean()) == 9 &&
+                rows.All(row => row.GetProperty("Mode").GetString() == "replay" && row.GetProperty("Nodes").GetInt32() == 0) &&
+                fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay").GetProperty("Published").GetInt32() == 0 &&
+                final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsBoss == true) is
+                    { AssetKey: "Boss_Level3_Fleshweaver_MoreMass", Health: 148, Attack: 8 },
+                "Sample21 Ring3 refinement must preserve43 zero-search inputs and actual native defeat with148 bossHP.");
+            Console.WriteLine("RANDOM-CAMPAIGN-REFINED-LOSS PASS:43 native frozen inputs/34plays/9EndTurns, boss148HP; not a default-budget win.");
+            return;
+        }
         if (path.EndsWith("full-battle-random-campaign-19-ring5-release209-refined-pyre40-search.mt2f", StringComparison.Ordinal))
         {
             using var native = ModelJson.ReadFixture(path);
