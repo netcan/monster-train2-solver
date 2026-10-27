@@ -16,6 +16,7 @@ namespace MonsterTrain2Poju.Probe
                 // Keep the independent native comparison in the same capture
                 // mode as the separately loaded player assembly.
                 playerCapture |= PlayerAdvisorProbe.Enabled;
+                playerCapture |= RankThreeRoomSlayScenario.Enabled;
 #endif
                 if (!playerCapture) return false;
                 HeroManager? heroes = AllGameManagers.Instance?.GetHeroManager();
