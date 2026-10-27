@@ -833,6 +833,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-boss-aura-preview-pending-replay-calibration.mt2f',
     'player-consume-equipment-order-calibration.mt2f',
     'player-consume-equipment-order-replay-calibration.mt2f',
+    'player-champion-troop-titanskin-calibration.mt2f',
+    'player-champion-troop-titanskin-replay-calibration.mt2f',
     'player-deathwish-enchantment-registry-replay-calibration.mt2f',
     'player-pyre-ascension-queue-calibration.mt2f',
     'player-pyre-ascension-queue-replay-calibration.mt2f',
@@ -3347,6 +3349,7 @@ $branchPairGates = @{
     'player-deathwish-enchantment-registry-calibration.mt2f' = '--enchantment-preview-death-only'
     'player-boss-aura-preview-pending-calibration.mt2f' = '--enchantment-boss-preview-only'
     'player-consume-equipment-order-calibration.mt2f' = '--consume-equipment-order-only'
+    'player-champion-troop-titanskin-calibration.mt2f' = '--champion-troop-titanskin-only'
     'player-pyre-ascension-queue-calibration.mt2f' = '--pyre-ascension-queue-only'
     'player-corrupt-rage-room-calibration.mt2f' = '--corrupt-room-attachment-only'
     'player-standby-etch-paired-boss-calibration.mt2f' = '--first-of-kin-exhaust-only'
