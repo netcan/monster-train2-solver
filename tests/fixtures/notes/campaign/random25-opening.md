@@ -147,3 +147,27 @@ The pure player-deployment observation reproduces the exception offline in both
 search workers at EnchantmentWorldModel.Complete, inside a boss-attack preview;
 the stronger sequential61-input policy completes independently. The new search
 failure remains unaccepted while the five completed victory pairs stay valid.
+
+After shared-world room damage, temporary champion/Green Recruit preview IDs
+and pending removal capture are calibrated, frozen278 revisiona9f3c3f1 runs
+actual10000ms/two-worker advice. Source032535-b494124d and independent normal
+reward replay033255-502a7bda both win:57 inputs,46 plays,11 EndTurns,Pyre67.
+All96 source room stages,21 train phases per process,complete actual successors,
+published forecasts/RNG,1269 branch-mask contexts and four zero counters pass.
+59 publications/375 captures have zero purity failures. Historical273/275/277
+rejections and independent focused boundary replays remain unchanged.
+
+Normal64 reward/map events heal20 toPyre87 and produce the Ring7 checkpoint,
+save SHA256AED7C6AB0BCE1A5D4A0757DB3C21EF084BF4D3F0662C00C504DA63221BCB1610.
+`random25-ring7-default278.zip` has127 files,SHA256
+FB11BFCEF9F39BC9715A434488628A54C4D14C3E2B2C9DA55A52B26BA06C9374;
+all126 hashed members restore. Six actual default-budget native victory pairs
+form one uninterrupted checkpoint chain; Ring7 actual advice now continues.
+No all-default eight-battle completion is claimed.
+
+Curated raw source/replay:
+`full-battle-random-campaign-25-ring6-release278-budget10000-{search,replay}.mt2f`.
+Source SHA256d4a371b25dcd001b3af4b552af46a1464db53ea8885061a94a043226453ca7e3;
+replay SHA2566d4648b9829d48b970e0fa6617b510da6e09939066ba1f5c2cd1bbc5cd13bb6e.
+Acceptance journal:`random-campaign-20261028-032535-e246a3bb/accepted-rings.jsonl`.
+Frozen checker SHA25641B64F27787479FDA999FBFF18E22E99F24D508EBB9D5765503A3667A27F9C70.
