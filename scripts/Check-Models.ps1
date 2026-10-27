@@ -250,6 +250,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-mirrored-meddler-moon-calibration.mt2f',
     'player-mirrored-meddler-moon-replay-calibration.mt2f',
     'player-mirrored-meddler-moon-coherent-calibration.mt2f',
+    'player-discard-equipment-turn-calibration.mt2f',
+    'player-discard-equipment-turn-replay-calibration.mt2f',
     'player-starstruck-conduit-replay-calibration.mt2f',
     'player-targeted-damage-calibration.mt2f',
     'player-targeted-damage-replay-calibration.mt2f',
@@ -2510,6 +2512,17 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     $cacheArguments = @('--ability-cache-continuation-only') + @($abilityPresentationNames | ForEach-Object { Get-TestFixturePath $_ })
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') @cacheArguments
     if ($LASTEXITCODE -ne 0) { throw 'Focused native cache continuation failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-discard-equipment-turn-calibration.mt2f', 'player-discard-equipment-turn-replay-calibration.mt2f') }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Discard equipment turn checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --discard-equipment-turn-only `
+        (Get-TestFixturePath 'player-discard-equipment-turn-calibration.mt2f') `
+        (Get-TestFixturePath 'player-discard-equipment-turn-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Focused discard equipment turn check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-mirrored-meddler-moon-calibration.mt2f', 'player-mirrored-meddler-moon-replay-calibration.mt2f', 'player-mirrored-meddler-moon-coherent-calibration.mt2f') }).Count -eq 0) {
