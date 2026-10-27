@@ -7021,10 +7021,16 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-bur
     using var source = ModelJson.ReadFixture(path);
     BurnoutHealTargetChecks.Alternative(source.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) == "player-triple-juice-consume-cleanse-calibration.mt2f"))
+foreach (string path in args.Where(path => Path.GetFileName(path) is "player-triple-juice-consume-cleanse-calibration.mt2f" or "player-triple-juice-consume-cleanse-replay-calibration.mt2f" or
+    "player-triple-juice-consume-cleanse-cast-calibration.mt2f" or "player-triple-juice-consume-cleanse-cast-replay-calibration.mt2f")
+    .Select(path => ModelJson.RelatedFixture(path, "player-triple-juice-consume-cleanse-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var source = ModelJson.ReadFixture(path);
-    TripleJuiceConsumeCleanseChecks.Native(source.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-consume-cleanse-replay-calibration.mt2f"));
+    TripleJuiceConsumeCleanseChecks.Native(source.RootElement, replay.RootElement);
+    using var cast = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-consume-cleanse-cast-calibration.mt2f"));
+    using var castReplay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-consume-cleanse-cast-replay-calibration.mt2f"));
+    TripleJuiceConsumeCleanseChecks.Cast(cast.RootElement, castReplay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) is "player-relentless-outer-bump-calibration.mt2f" or "player-relentless-outer-bump-replay-calibration.mt2f")
     .Select(path => ModelJson.RelatedFixture(path, "player-relentless-outer-bump-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

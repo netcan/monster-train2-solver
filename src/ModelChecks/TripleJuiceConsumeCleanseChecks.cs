@@ -79,9 +79,10 @@ internal static class TripleJuiceConsumeCleanseChecks
         var resolved = CardModifierModel.Resolve(before.PlayRules!.Cards.Single(rule => rule.DataId == card.DataId), during);
         int heal = resolved.Effects[0].Value;
         Console.WriteLine($"CONSUME-CLEANSE-NATIVE inputs={rows.Length} turn={before.Spawn.Turn} target={a.Id} heal={heal} HP={a.Health}->{b.Health}/{a.MaxHealth} Burnout={a.Status("ephemeral")?.Stacks}->{b.Status("ephemeral")?.Stacks}");
-        Require(before.Spawn.Turn > 0 && action.CardInstanceId == 18 &&
+        Require(rows.Length == 27 && before.Spawn.Turn == 4 && action is { CardInstanceId: 18, TargetUnitId: 5 } &&
             card.DataId == "d4366b7c-588c-49aa-b2c6-2aeb30b0e01b" && CardJuiceModel.Validate(during) == null &&
-            a.Health < a.MaxHealth && heal >= 35 && b.Health == Math.Min(a.MaxHealth, a.Health + heal) &&
+            card.Permanent.Upgrades.Select(upgrade => upgrade.AssetKey).SequenceEqual(["TraitJuice3", "ChaosScepter"]) &&
+            a.Health == 24 && a.MaxHealth == 40 && b.Health == 40 && heal == 35 &&
             (b.Status("ephemeral")?.Stacks ?? 0) == (a.Status("ephemeral")?.Stacks ?? 0) + 9 &&
             played.PlayCount == 1 && played.Temporary.Upgrades.Count == 0 &&
             actual.Spawn.Train.Context.OtherPiles!.Single(pile => pile.Name == "Exhausted").Cards.Any(token => token.InstanceId == 18) &&

@@ -52,5 +52,11 @@ This is a fresh default-budget victory, distinct from the parallel offline
 Ring4 actual opening143736-77b200c2 is blocked before its first input by the
 same triple-Juice Cleanse with a newly acquired ChaosScepter upgrade (+20 magic
 power and Consume). Original232 rejection and independent native observation
-143927-abc18db7 are retained for focused calibration. No Ring4 or full-campaign
-win is claimed.
+143927-abc18db7 are retained. Release233 calibrates the exact ordered triple/
+ChaosScepter combination: original/repaired birth pair and independent27-input
+positive cast pair pass full successors/forecasts/RNG, health24->40/40,
+Burnout0->9 and Exhausted destination. Four immutable birth/four cast branches,
+twelve unknown-signature guards and previous plain/Conduit pairs pass.
+Fresh actual10000ms/two-worker source144707-8b30a7a9 is in progress; a separate
+57-input model win is not counted as native acceptance. No Ring4 or full-
+campaign win is claimed.
