@@ -167,6 +167,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-random-campaign-19-ring6-release210-budget10000-pyre40-loss.mt2f',
     'player-eaten-unstable-shield-calibration.mt2f',
     'player-eaten-unstable-shield-replay-calibration.mt2f',
+    'player-moon-silence-shift-calibration.mt2f',
+    'player-moon-silence-shift-replay-calibration.mt2f',
     'player-lazarus-juice-multi-conduit-calibration.mt2f',
     'player-lazarus-juice-multi-conduit-cast-calibration.mt2f',
     'player-lazarus-juice-multi-conduit-cast-replay-calibration.mt2f',

@@ -18,5 +18,9 @@ The full34-input replay, four immutable parallel branches and five guards
 pass. Aurora retains mask5/three Conduit stacks/three prior moon upgrades,
 gains60Armor and Silence1, and retains its complete trigger state. Four
 gained/lost trigger variants and an unknown moon card trait still reject.
-Independent repaired native replay and complete campaign victory remain
-separate acceptance steps; this calibration does not imply either.
+Independent repaired native process100338-677db4cd repeats all34 inputs
+and matches every complete state/RNG; the final forecast now matches.
+Both archives are curated, retaining the original rejection and the repaired
+forecast. The old19-input Silence reset counterexample and its independent
+observation pair still pass with all three protections. Complete campaign
+victory remains a separate acceptance step; this calibration does not imply it.
