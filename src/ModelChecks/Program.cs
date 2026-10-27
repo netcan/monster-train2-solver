@@ -2275,6 +2275,20 @@ if (args.Length == 2 && args[0] == "--attack-buff-damage-target-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--relentless-outer-bump-counterexample-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    RelentlessOuterBossBumpChecks.Counterexample(source.RootElement);
+    return;
+}
+if (args.Length is 2 or 3 && args[0] == "--relentless-outer-bump-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    RelentlessOuterBossBumpChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
+
 if (args.Length is 2 or 3 && args[0] == "--triple-juice-purifying-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

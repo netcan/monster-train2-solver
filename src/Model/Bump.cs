@@ -223,11 +223,16 @@ namespace MonsterTrain2Poju.Model
             }
             foreach (var move in moved)
             {
-                if (move.ForcedBossMove) continue;
-                CombatUnit actor = Get(move.Id)!;
-                if (actor.Status("relentless") != null && move.NewRoom > move.OldRoom)
+                CombatUnit? actor = Get(move.Id) ?? retained.GetValueOrDefault(move.Id);
+                if (actor == null) return Fail("Moved actor was not retained through its movement callbacks.");
+                // CardEffectBump destroys passed floors before skipping its
+                // outer-boss follow-up callbacks. Controller-driven boss moves
+                // perform destruction in their own phase, outside this card path.
+                if (actor.Status("relentless") != null && move.NewRoom > move.OldRoom &&
+                    (!move.ForcedBossMove || !outerBossActionMovement))
                     for (int floor = move.OldRoom; floor < move.NewRoom; floor++)
                         if (!DestroyRoom(floor)) return Fail(error!);
+                if (move.ForcedBossMove) continue;
                 int recipient = HordeMergeModel.Select(state.Rooms[move.NewRoom], actor);
                 if (recipient != 0)
                 {
