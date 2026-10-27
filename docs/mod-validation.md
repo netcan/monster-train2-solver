@@ -1,23 +1,23 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.235, source`7b4c1a06`.
-Installed at16:00 with67 protected save/config/other-mod files unchanged.
-The exact accepted three DLLs win sample22 Ring5 with actual10000ms/two-worker
-advice:58inputs/49plays/9EndTurns,Pyre5. Independent normal-reward replay
-matches every full root/successor/forecast/RNG and17 train phases per process,
-with four zero counters.39 normal events create Ring6 save
-0BF94FFC9376F2721AEB3E852456B26FB15BA8115C73048D1714E345ECFDD643.
-Source153818-dcfb90f5 and replay154854-6dc6ca14 bind the same payload hashes.
-Package`results/mod-dist/PojuAdvisor-0.2.235-Windows-20261027-160020.zip`,SHA256
-`BD3F58AA5CECFC1E3243167403CB0CA83425550A2F956B31FD1194D36B734571`.
+Current Windows installation:0.2.237, source`6af2f309`.
+Installed at16:21 with67 protected save/config/other-mod files unchanged.
+The exact accepted three DLLs win sample22 Ring4 with actual10000ms/two-worker
+advice:57inputs/49plays/8EndTurns,Pyre37. Independent normal-reward replay
+matches every full root/successor/forecast/RNG and16 train phases per process,
+with four zero counters.60 normal events create Ring5 save
+8EE2D303385939CB3C1575F811FA6B680DA57B57AEC4909039BFCDC415F1304F.
+Source155719-017fdccc and replay160949-db097714 bind the same payload hashes.
+Package`results/mod-dist/PojuAdvisor-0.2.237-Windows-20261027-162112.zip`,SHA256
+`4D2AC249AEBBD0E32EBEACA74D64F1EA8DF435D1E11AC95C99F57C5A7B281D7A`.
 The real game was stopped; isolated native workers use their copied payloads.
-Next launch loads235. Previous DLLs and receipt are under
-`BepInEx/PojuBackups/RandomCampaign-20261027-160020/`.
-This includes229-235 triple-Juice/Conduit/ChaosScepter/Consume, mixed Rage target,
+Next launch loads237. Previous DLLs and receipt are under
+`BepInEx/PojuBackups/RandomCampaign-20261027-162112/`.
+This includes229-237 triple-Juice/Conduit/ChaosScepter/Consume, mixed Rage target,
 paid outer-boss floor destruction, Burnout healing, Moon/Burnout-loss Rage and
-retained hand-copy trait ordering fixes. The first five sample22 battles have
-default-budget accepted links. Ring6 and isolated236/237 search changes remain
-under native validation; no complete
+retained hand-copy trait ordering, partial-horizon merge and upper-opening
+portfolio fixes. The older branch has five default-budget accepted links and
+a verified Ring6 defeat; the stronger Ring4 branch continues Ring5. No complete
 default-budget campaign or Mac build is claimed.
 
 Previous Windows installation:0.2.210, source`85ee266c`.
