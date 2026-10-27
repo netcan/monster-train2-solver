@@ -5,7 +5,7 @@ using MonsterTrain2Poju.Model;
 internal static class MirroredMeddlerMoonChecks
 {
     internal const string Reason = "Triggered moon-phase advance requires a complete train callback.";
-    internal static void Native(FixtureValue source, FixtureValue? replay = null)
+    internal static void Native(FixtureValue source, FixtureValue? replay = null, FixtureValue? coherentCapture = null)
     {
         var rows = NativeBranchObservationChecks.Replay(source, Reason);
         Require(rows.Length == 11 && !rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Wrong mirrored Meddler boundary.");
@@ -48,6 +48,26 @@ internal static class MirroredMeddlerMoonChecks
         {
             NativeBranchObservationChecks.Replay(replay.Value, Reason);
             NativeBranchObservationChecks.Pair(source, replay.Value);
+        }
+        if (coherentCapture.HasValue)
+        {
+            FixtureValue trace = coherentCapture.Value;
+            foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
+                Require(trace.GetProperty(counter).GetInt32() == 0, "Native trace observer differs: " + counter);
+            var records = trace.GetProperty("Actions").EnumerateArray().ToArray();
+            Require(records.Length == 9, "Missing raw card-action identity witnesses.");
+            foreach (FixtureValue record in records)
+            {
+                var root = record.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                var input = record.GetProperty("Action").Deserialize<PlayCardAction>()!;
+                var predicted = BattleActionModel.PlayCard(root, input);
+                var actualAction = record.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                var captured = record.GetProperty("Predicted").GetProperty("State").Deserialize<BattleTurnState>()!;
+                Require(record.GetProperty("Difference").ValueKind == FixtureKind.Null && predicted.Supported &&
+                    NativeBranchObservationChecks.Key(predicted.State!) == NativeBranchObservationChecks.Key(actualAction) &&
+                    NativeBranchObservationChecks.Key(captured) == NativeBranchObservationChecks.Key(actualAction),
+                    "Inactive cache observation changed a raw action identity.");
+            }
         }
         Console.WriteLine("MIRRORED-MEDDLER-MOON PASS:11 native inputs/full state/forecast/RNG; paid and copied original moon advances/all-floor phase refresh; four immutable branches/four scope controls; independentPair=" + replay.HasValue);
     }

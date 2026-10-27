@@ -591,11 +591,15 @@ if (args.Length is 2 or 3 && args[0] == "--starstruck-retired-target-only")
     else { using var replay = ModelJson.ReadFixture(args[2]); StarstruckRetiredTargetChecks.Native(source.RootElement, replay.RootElement); }
     return;
 }
-if (args.Length is 2 or 3 && args[0] == "--mirrored-meddler-moon-only")
+if (args.Length is >= 2 and <= 4 && args[0] == "--mirrored-meddler-moon-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
     if (args.Length == 2) MirroredMeddlerMoonChecks.Native(source.RootElement);
-    else { using var replay = ModelJson.ReadFixture(args[2]); MirroredMeddlerMoonChecks.Native(source.RootElement, replay.RootElement); }
+    else {
+        using var replay = ModelJson.ReadFixture(args[2]);
+        if (args.Length == 3) MirroredMeddlerMoonChecks.Native(source.RootElement, replay.RootElement);
+        else { using var raw = ModelJson.ReadFixture(args[3]); MirroredMeddlerMoonChecks.Native(source.RootElement, replay.RootElement, raw.RootElement); }
+    }
     return;
 }
 if (args.Length is 2 or 3 && args[0] == "--mirrored-troop-aura-birth-only")
@@ -7560,6 +7564,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-moon-conduit-birth-order-replay-calibration.mt2f"));
     MoonConduitBirthOrderChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-mirrored-meddler-moon-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-mirrored-meddler-moon-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-mirrored-meddler-moon-replay-calibration.mt2f"));
+    using var raw = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-mirrored-meddler-moon-coherent-calibration.mt2f"));
+    MirroredMeddlerMoonChecks.Native(source.RootElement, replay.RootElement, raw.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-starstruck-retired-target-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-starstruck-retired-target-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
