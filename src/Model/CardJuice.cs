@@ -41,6 +41,20 @@ namespace MonsterTrain2Poju.Model
             upgrade.Lifecycle is { AddedTraits.Count: 1, RemovedRuntimeTypes.Count: 0, Triggers.Count: 0 } lifecycle &&
             lifecycle.AddedTraits[0].RuntimeType == "CardTraitIntrinsicState" &&
             lifecycle.AddedTraits[0].DeclaredName == "CardTraitIntrinsicState" && Ordinary(lifecycle.AddedTraits[0], 0);
+        private static bool CleansePower(CardStatModifier stats) => stats.Damage == 20 && stats.Heal == 20 &&
+            stats.Health == 0 && stats.Cost == 0 && stats.Size == 0 && stats.XCost == 0 &&
+            stats.EquipmentLimit == 0 && stats.UpgradeSlotCount == 0;
+        private static bool KnownCleanseConsume(CardUpgradeModifier upgrade) =>
+            upgrade.DataId == "83e2c6c5-8ebf-4160-8818-fdae82d2abfe" && upgrade.AssetKey == "ChaosScepter" &&
+            CleansePower(upgrade.Stats) && upgrade.CloneDamageBase == 20 && upgrade.CloneHealBase == 20 &&
+            upgrade.Statuses.Count == 0 && upgrade.UnhealedHealth == 0 && upgrade.DamageBuff == 0 &&
+            !upgrade.RemoveOnDiscard && !upgrade.Unique && !upgrade.ExcludeFromClones &&
+            upgrade.AbilityUpgrade == null && upgrade.TriggerUpgrades?.Count is not > 0 && upgrade.ExternalInteractions.Count == 0 &&
+            upgrade.Lifecycle is { AssetKey: "ChaosScepter", AddedTraits.Count: 1, RemovedRuntimeTypes.Count: 0,
+                TraitsModified.Count: 0, ReplacedAssets.Count: 0, Triggers.Count: 0, OriginalDamage: 20, OriginalHeal: 20 } lifecycle &&
+            lifecycle.Values.DataId == upgrade.DataId && CleansePower(lifecycle.Values.Stats) && lifecycle.Values.Statuses.Count == 0 &&
+            lifecycle.AddedTraits[0].RuntimeType == "CardTraitExhaustState" &&
+            lifecycle.AddedTraits[0].DeclaredName == "CardTraitExhaustState" && Ordinary(lifecycle.AddedTraits[0], 0);
         internal static string? Validate(CardInstanceState card)
         {
             if (!Present(card)) return null;
@@ -52,8 +66,12 @@ namespace MonsterTrain2Poju.Model
             var traits = CardExhaustModel.RefreshTraits(card).CombinedTraits!;
             bool triple = traits.Any(trait => trait.RuntimeType == TripleTrait);
             if (triple && card.DataId == "d4366b7c-588c-49aa-b2c6-2aeb30b0e01b" &&
-                traits.Count == 1 && traits[0].RuntimeType == TripleTrait && traits[0].DeclaredName == TripleTrait && Ordinary(traits[0], 3) &&
-                card.Permanent.Upgrades.Count == 1 && KnownTripleUpgrade(card.Permanent.Upgrades[0]) &&
+                traits.Count is 1 or 2 && traits[0].RuntimeType == TripleTrait && traits[0].DeclaredName == TripleTrait && Ordinary(traits[0], 3) &&
+                card.Permanent.Upgrades.Count >= 1 && KnownTripleUpgrade(card.Permanent.Upgrades[0]) &&
+                (traits.Count == 1 && card.Permanent.Upgrades.Count == 1 ||
+                    traits.Count == 2 && traits[1].RuntimeType == "CardTraitExhaustState" &&
+                    traits[1].DeclaredName == "CardTraitExhaustState" && Ordinary(traits[1], 0) &&
+                    card.Permanent.Upgrades.Count == 2 && KnownCleanseConsume(card.Permanent.Upgrades[1])) &&
                 card.Temporary.Upgrades.Count <= 1 && card.Temporary.Upgrades.All(LazarusJuiceSpikeModel.KnownConduit) &&
                 card.MaskDescriptor.SourceTraits?.Count is not > 0 &&
                 card.DamageScalingTraits?.Count is not > 0 && card.StatusScalingTraits?.Count is not > 0 &&

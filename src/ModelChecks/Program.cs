@@ -2310,6 +2310,22 @@ if (args.Length is 2 or 3 && args[0] == "--triple-juice-purifying-only")
     return;
 }
 
+if (args.Length is 2 or 3 && args[0] == "--triple-juice-consume-cleanse-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    TripleJuiceConsumeCleanseChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
+
+if (args.Length is 2 or 3 && args[0] == "--triple-juice-consume-cleanse-cast-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    TripleJuiceConsumeCleanseChecks.Cast(source.RootElement, replay?.RootElement);
+    return;
+}
+
 if (args.Length is 2 or 3 && args[0] == "--triple-juice-purifying-cast-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -7004,6 +7020,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-bur
 {
     using var source = ModelJson.ReadFixture(path);
     BurnoutHealTargetChecks.Alternative(source.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-triple-juice-consume-cleanse-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    TripleJuiceConsumeCleanseChecks.Native(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) is "player-relentless-outer-bump-calibration.mt2f" or "player-relentless-outer-bump-replay-calibration.mt2f")
     .Select(path => ModelJson.RelatedFixture(path, "player-relentless-outer-bump-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

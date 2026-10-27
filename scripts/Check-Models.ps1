@@ -192,6 +192,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-triple-juice-purifying-replay-calibration.mt2f',
     'player-triple-juice-purifying-cast-calibration.mt2f',
     'player-triple-juice-purifying-cast-replay-calibration.mt2f',
+    'player-triple-juice-consume-cleanse-calibration.mt2f',
     'player-relentless-outer-bump-counterexample-calibration.mt2f',
     'player-relentless-outer-bump-calibration.mt2f',
     'player-relentless-outer-bump-replay-calibration.mt2f',
