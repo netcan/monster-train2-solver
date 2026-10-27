@@ -961,10 +961,12 @@ if (args.Length is 2 or 3 && args[0] == "--third-troop-fragile-buff-only")
     ThirdTroopFragileBuffChecks.Native(source.RootElement, replay?.RootElement);
     return;
 }
-if (args.Length == 2 && args[0] == "--inactive-fragile-inferno-exit-only")
+if (args.Length is 2 or 3 && args[0] == "--inactive-fragile-inferno-exit-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
-    InactiveFragileInfernoExitChecks.Native(source.RootElement);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    InactiveFragileInfernoExitChecks.Native(source.RootElement, replay?.RootElement,
+        Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(args[1]))).ToLowerInvariant());
     return;
 }
 if (args.Length is 2 or 3 && args[0] == "--enemy-statistics-listeners-only")
@@ -7380,10 +7382,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-inactive-fragile-moon-birth-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-inactive-fragile-moon-birth-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
     InactiveOuterBossMoonBirthChecks.Native(path, ModelJson.RelatedFixture(path, "player-inactive-fragile-moon-birth-replay-calibration.mt2f"));
-foreach (string path in args.Where(path => Path.GetFileName(path) == "player-inactive-fragile-inferno-exit-calibration.mt2f"))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-inactive-fragile-inferno-exit-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-inactive-fragile-inferno-exit-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var source = ModelJson.ReadFixture(path);
-    InactiveFragileInfernoExitChecks.Native(source.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-inactive-fragile-inferno-exit-replay-calibration.mt2f"));
+    InactiveFragileInfernoExitChecks.Native(source.RootElement, replay.RootElement,
+        Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant());
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-third-troop-fragile-buff-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-third-troop-fragile-buff-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
