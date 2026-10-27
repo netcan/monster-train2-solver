@@ -1,6 +1,25 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.210, source`85ee266c`.
+Current Windows installation:0.2.232, source`6e56684f`.
+Installed at14:38 with67 protected save/config/other-mod files unchanged.
+The exact accepted three DLLs win sample22 Ring3 with actual10000ms/two-worker
+advice:46inputs/38plays/8EndTurns,Pyre53. Independent normal-reward replay
+matches every full root/successor/forecast/RNG and16 train phases per process,
+with four zero counters.66 normal events create Ring4 save
+78F8BECBDCD091EF6BB6FE0A514C2E13FCAAF2BAE78FAA4E8A8E2B1D042B6FC1.
+Source142818-8a4d5c78 and replay143322-1c5d235e bind the same payload hashes.
+Package`results/mod-dist/PojuAdvisor-0.2.232-Windows-20261027-143856.zip`,SHA256
+`C621B2AD977B788C83EDB9565FB90C368F2A547D7846A10C33D54B9091E91945`.
+The real game was stopped; isolated native workers use their copied payloads.
+Next launch loads232. Previous DLLs and receipt are under
+`BepInEx/PojuBackups/RandomCampaign-20261027-143856/`.
+This includes229-232 triple-Juice/Conduit, mixed Rage target, paid outer-boss
+floor destruction and Burnout-healing target fixes. The first three sample22
+battles have default-budget accepted links. Ring4 exposes an additional
+ChaosScepter/Consume upgrade combination under investigation; no complete
+default-budget campaign or Mac build is claimed.
+
+Previous Windows installation:0.2.210, source`85ee266c`.
 Installed at10:00 with67 protected save/config/other-mod files unchanged. Package
 `results/mod-dist/PojuAdvisor-0.2.210-Windows-20261027-100012.zip`,SHA256
 `5c0d3fd00b9dfd0dfa468408f79ff0d5ae4553206c8a63fba47040e91daffb0d`.

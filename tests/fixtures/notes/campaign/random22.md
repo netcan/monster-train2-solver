@@ -49,4 +49,8 @@ Both archives are curated; journal142817-6bdd173b binds the pair with frozen
 checkerDDE69CE8843F761CD5E7E1D0ADB4CAB3C3D82BACDF4DEB80B12C4205ECAC363E.
 This is a fresh default-budget victory, distinct from the parallel offline
 46-input positive route. The first three default links pass without refinements.
-Ring4 is undergoing actual default acceptance. No full-campaign win is claimed.
+Ring4 actual opening143736-77b200c2 is blocked before its first input by the
+same triple-Juice Cleanse with a newly acquired ChaosScepter upgrade (+20 magic
+power and Consume). Original232 rejection and independent native observation
+143927-abc18db7 are retained for focused calibration. No Ring4 or full-campaign
+win is claimed.
