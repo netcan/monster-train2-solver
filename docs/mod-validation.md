@@ -1,6 +1,25 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.245, source`dae5fa35`.
+Current Windows installation:0.2.249, source`16fab624`.
+Installed at19:49 with67 protected save/config/other-mod files unchanged.
+The exact accepted payload wins sample23 Ring5 with actual10000ms/two-worker
+advice:38inputs/29plays/9EndTurns,Pyre12. Independent normal-reward replay
+matches every full root/successor/forecast/RNG and17 train phases per process,
+with all four raw failure counters zero.63 normal events create Ring6 save
+82C54A1DAB96252856C93C584A1AE585788AFF65D68C15A8FC0F0DCA542A8798.
+Source193404-eae536e6 and replay194051-6f4415a9 bind the three installed hashes.
+Package`results/mod-dist/PojuAdvisor-0.2.249-Windows-20261027-194910.zip`,SHA256
+`36095F803B512CFE661C036F95ED205750475E092C3D1763900E99354C4FCC25`.
+The real game was stopped. Next launch loads249. Previous DLLs and receipt
+are under`BepInEx/PojuBackups/RandomCampaign-20261027-194910/`.
+This includes reduced-cost triple Starstruck, its three original Conduit
+contributors with TitanCurse, and Reanimate's completed terminal position.
+Five default-budget native victory pairs now form one unchanged save chain,
+retaining the prior completed profile's21 tracked values. Full eight-ring
+default-budget acceptance remains open. Release250's isolated Cael creation
+pair is source acceptance only and is not part of this installed payload.
+
+Previous Windows installation:0.2.245, source`dae5fa35`.
 Installed at18:37 with67 protected save/config/other-mod files unchanged.
 The exact accepted three DLLs win sample23 Ring3 with actual10000ms/two-worker
 advice:37inputs/28plays/9EndTurns,Pyre75. Independent normal-reward replay
