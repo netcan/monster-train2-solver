@@ -9,7 +9,8 @@ internal static class NativeBranchObservationChecks
     internal static FixtureValue[] Replay(FixtureValue fixture, string reason,
         Action<BattleTurnState, BattleTurnState>? historicalBoundaryMismatch = null,
         RoomOutcome boundaryOutcome = RoomOutcome.Exchanged, string? historicalUnsupportedReason = null,
-        RoomOutcome? historicalBoundaryOutcome = null)
+        RoomOutcome? historicalBoundaryOutcome = null,
+        Func<BattleTurnState, BattleTurnState>? revalidateHistoricalCapture = null)
     {
         Require(!historicalBoundaryOutcome.HasValue || historicalBoundaryMismatch != null,
             "A changed historical boundary outcome requires an explicit mismatch witness.");
@@ -36,6 +37,7 @@ internal static class NativeBranchObservationChecks
             Require(Key(current) == Key(before) && row.GetProperty("Boundary").GetBoolean() == boundary &&
                 row.GetProperty("IsEndTurn").GetBoolean() == end && row.GetProperty("Action").ContentEquals(step.GetProperty("Action")),
                 "Native chain/input differs at " + index);
+            if (revalidateHistoricalCapture != null) before = revalidateHistoricalCapture(before);
             string immutable = JsonSerializer.Serialize(before, ModelJson.Options);
             PlayCardAction? action = step.GetProperty("Action").Deserialize<PlayCardAction>();
             BattleTurnState predicted = BattlePlannerChecks.Replay(before, [new BattleSearchStep(action, end)], out RoomOutcome outcome);

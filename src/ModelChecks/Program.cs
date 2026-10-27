@@ -2310,6 +2310,14 @@ if (args.Length is 2 or 3 && args[0] == "--triple-juice-purifying-only")
     return;
 }
 
+if (args.Length is 2 or 3 && args[0] == "--moon-burnout-relic-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    MoonBurnoutRelicChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
+
 if (args.Length is 2 or 3 && args[0] == "--triple-juice-consume-cleanse-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -7031,6 +7039,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is "player-tri
     using var cast = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-consume-cleanse-cast-calibration.mt2f"));
     using var castReplay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-consume-cleanse-cast-replay-calibration.mt2f"));
     TripleJuiceConsumeCleanseChecks.Cast(cast.RootElement, castReplay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-moon-burnout-relic-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    MoonBurnoutRelicChecks.Native(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) is "player-relentless-outer-bump-calibration.mt2f" or "player-relentless-outer-bump-replay-calibration.mt2f")
     .Select(path => ModelJson.RelatedFixture(path, "player-relentless-outer-bump-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

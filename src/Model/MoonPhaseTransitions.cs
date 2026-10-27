@@ -85,8 +85,9 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             if (source.Rooms.SelectMany(room => room.Units).Any(unit => !unit.IsPyre) &&
-                source.Context.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.AddStatusOnApplied) ||
-                    relic.StatusStackAdditions?.Count > 0 || relic.StatusMagnitudes?.Count > 0) == true)
+                source.Context.Relics?.Any(relic => (relic.EffectTypes.Contains(RelicModel.AddStatusOnApplied) ||
+                    relic.StatusStackAdditions?.Count > 0 || relic.StatusMagnitudes?.Count > 0) &&
+                    !IsCalibratedBurnoutLossRelic(relic)) == true)
                 return "Moon-phase status application with relic modifiers is not modeled.";
             foreach (CardInstanceState card in source.Context.CardInstances ?? Array.Empty<CardInstanceState>())
                 if (CardMoonUpgradeModel.Validate(card) is string moonError) return moonError;
@@ -95,6 +96,19 @@ namespace MonsterTrain2Poju.Model
                 return "Moon-phase relic energy requires captured resource limits.";
             return null;
         }
+
+        // This native callback has no status-addition behavior and only responds
+        // to removed Burnout. Switching new/full Moon cannot fire it. Keep actual
+        // Burnout removal on the existing ordered status-removal callback path.
+        private static bool IsCalibratedBurnoutLossRelic(CombatRelicState relic) =>
+            relic.DataId == "85667d60-8053-4204-8c02-ba101dab7945" && relic.AssetKey == "RageOnBurnoutStackLoss" &&
+            relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false &&
+            relic.EffectTypes.SequenceEqual(new[] { RelicModel.AddStatusOnOtherStatusRemoved }) &&
+            (relic.StatusMagnitudes?.Count ?? 0) == 0 && relic.StatusStackAdditions?.Count == 1 &&
+            relic.StatusStackAdditions[0] is { EffectIndex: 0, SourceTeam: "Monsters", StatusId: "buff",
+                TriggerStatusId: "ephemeral", AdditionalStacks: 3, AddCondition: 0, Conditions.Count: 0,
+                AddedStatusDefinition: { Id: "buff", Stacks: 3, ParamInt: 2 } } &&
+            RelicStatusStackModel.Validate(relic) == null;
 
         public static MoonPhaseTransitionResult Apply(TrainCombatState source, CardActionEffect effect, int sourceCardId = 0,
             bool playerActionOnly = true)
