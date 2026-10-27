@@ -495,8 +495,10 @@ namespace MonsterTrain2Poju.Model
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
         public static RoomCombatResult Exchange(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
-            bool updateSelectedRoom = true, IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null) =>
-            Run(state, false, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom, externalTargets: externalTargets);
+            bool updateSelectedRoom = true, IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
+            IReadOnlyCollection<int>? pendingPhysicalDeathIds = null) =>
+            Run(state, false, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom, externalTargets: externalTargets,
+                pendingPhysicalDeathIds: pendingPhysicalDeathIds);
         public static RoomCombatResult Resolve(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
             bool updateSelectedRoom = true, CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
             IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null)
@@ -1019,7 +1021,8 @@ namespace MonsterTrain2Poju.Model
         private static RoomCombatResult Run(RoomCombatState state, bool entireRoom,
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, bool updateSelectedRoom = true,
             CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
-            IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null)
+            IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
+            IReadOnlyCollection<int>? pendingPhysicalDeathIds = null)
         {
             var events = new List<CombatEvent>();
             string? error = Validate(state);
@@ -1030,7 +1033,7 @@ namespace MonsterTrain2Poju.Model
                     "True-final-boss room attack scheduling remains uncalibrated; linked damage/heal APIs are separate.");
             var engine = new Engine(state, events, refreshPyre: refreshPyre,
                 externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets);
-            return engine.Run(entireRoom, updateSelectedRoom);
+            return engine.Run(entireRoom, updateSelectedRoom, pendingPhysicalDeathIds);
         }
 
         private static CombatContext ClearFinishedRemovalPoints(CombatContext context, IReadOnlyCollection<int> completed)
@@ -1872,7 +1875,7 @@ namespace MonsterTrain2Poju.Model
                 return source.ActiveCompanionBossIds == null ? null : Array.Empty<int>();
             }
 
-            internal RoomCombatResult Run(bool entireRoom, bool updateSelectedRoom)
+            internal RoomCombatResult Run(bool entireRoom, bool updateSelectedRoom, IReadOnlyCollection<int>? pendingPhysicalDeathIds = null)
             {
                 runningRoomCombat = true;
                 ordinaryPyreAttack = source.RoomIndex == 3 && source.Units.Any(unit => unit.IsPyre);
@@ -1882,11 +1885,23 @@ namespace MonsterTrain2Poju.Model
                     actor.Unit.DeathState is { HasFinishedDying: true, HasStatisticsListener: false } &&
                     units.All(unit => unit.Source.Id != actor.Unit.Id) &&
                     context.SpawnPoints?.Units.Any(point => point.UnitId == actor.Unit.Id && point.Current != null) == true).ToArray();
+                if (pendingPhysicalDeathIds != null && (entireRoom || pendingPhysicalDeathIds.Distinct().Count() != pendingPhysicalDeathIds.Count ||
+                    pendingPhysicalDeathIds.Any(id => pendingRemovals?.Count(actor => actor.Unit.Id == id) != 1)))
+                {
+                    unsupportedReason = "Explicit pending physical deaths require matching retained room actors.";
+                    return Finish(RoomOutcome.Unsupported);
+                }
                 foreach (var pending in pendingRemovals ?? Array.Empty<EnchantmentRetainedUnit>())
                 {
                     // CheckForDeath already completed its signals/statistics.
-                    // Finish only the outstanding spawner/physical removal.
                     var unit = NewUnit(pending.Unit, false); units.Add(unit);
+                    if (pendingPhysicalDeathIds?.Contains(unit.Source.Id) == true)
+                    {
+                        unit.Apply(MarkBeingRemoved(unit.Freeze()));
+                        FireTriggers(unit, "OnDeath");
+                        PhysicalHarvest(unit);
+                        if (unsupportedReason != null) return Finish(RoomOutcome.Unsupported);
+                    }
                     SettleDeadSpawner(unit); RemovePhysicalPoint(unit);
                 }
                 if (pendingRemovals?.Length > 0)

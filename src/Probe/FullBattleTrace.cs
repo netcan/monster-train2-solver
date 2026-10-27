@@ -755,6 +755,18 @@ namespace MonsterTrain2Poju.Probe
                             Count = item.triggerCount,
                             CanFireTriggers = item.canFireTriggers
                         }).ToArray();
+                    var pendingDeaths = new List<int>();
+                    if (kind == "Exchange")
+                        foreach (var manager in new ICharacterManager[] { managers.GetHeroManager(), managers.GetMonsterManager() })
+                            for (int i = 0; i < manager.GetNumCharacters(); i++)
+                            {
+                                var unit = manager.GetCharacter(i);
+                                if (unit.Initialized && unit.IsDead && unit.HasFinishedDying && !unit.IsBeingRemoved() &&
+                                    TryGetUnitId(unit, out int id) && before.Context?.Enchantments?.RetainedUnits.Any(actor =>
+                                        actor.Unit.Id == id && actor.RoomIndex == room.GetRoomIndex()) == true &&
+                                    before.Context.SpawnPoints?.Units.Any(point => point.UnitId == id && point.Current != null) == true)
+                                    pendingDeaths.Add(id);
+                            }
                     record = new StageRecord
                     {
                         Index = stages.Count,
@@ -764,13 +776,15 @@ namespace MonsterTrain2Poju.Probe
                         QueuedTriggers = queued,
                         ActiveDeaths = activeDeaths.Select(death => new StageDeathRecord
                             { Kind = death.Kind, UnitId = death.UnitId, Started = death.Started }).ToArray(),
+                        PendingPhysicalDeaths = pendingDeaths.ToArray(),
                         Room = room,
                         Before = before,
                         ExternalTargets = externalTargets.Select(target => new TowerTargetSnapshot
                             { RoomIndex = target.RoomIndex, Unit = target.Unit }).ToArray(),
                         ExternalPyre = pyre,
                         ExternalPyreRoomIndex = pyre == null ? -1 : pyreRoomIndex,
-                        Predicted = kind == "Exchange" ? RoomCombatModel.Exchange(before, externalTargets: externalTargets) :
+                        Predicted = kind == "Exchange" ? RoomCombatModel.Exchange(before, externalTargets: externalTargets,
+                            pendingPhysicalDeathIds: pendingDeaths) :
                             RoomCombatModel.Resolve(before, externalPyre: pyre,
                                 externalPyreRoomIndex: pyre == null ? -1 : pyreRoomIndex, externalTargets: externalTargets)
                     };
@@ -1948,6 +1962,7 @@ namespace MonsterTrain2Poju.Probe
             public bool TriggerQueueRunning { get; set; }
             public StageQueuedTrigger[] QueuedTriggers { get; set; } = Array.Empty<StageQueuedTrigger>();
             public StageDeathRecord[] ActiveDeaths { get; set; } = Array.Empty<StageDeathRecord>();
+            public int[] PendingPhysicalDeaths { get; set; } = Array.Empty<int>();
             [JsonIgnore] public RoomState Room { get; set; } = null!;
             public RoomCombatState Before { get; set; } = null!;
             public TowerTargetSnapshot[] ExternalTargets { get; set; } = Array.Empty<TowerTargetSnapshot>();
