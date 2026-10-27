@@ -481,6 +481,18 @@ namespace MonsterTrain2Poju.Model
             if (targetRule == null || target == null) return Illegal("The target room does not exist.");
             if (!targetRule.Enabled || targetRule.IsPyre && (rule.CanPlayInEngineRoom != true || rule.Effect == "SpawnMonster"))
                 return Illegal("This card cannot be played in the target room.");
+            // Native CanPlayHandCard rejects an ordinary unit's full room
+            // before paid-card callbacks. Those callbacks can themselves hit
+            // an unsupported signature, which must not turn an illegal input
+            // into a missing-mechanism report.
+            if (rule.CardType == "Monster" && rule.Effect == "SpawnMonster" && rule.Summon == null && rule.SpawnUnit != null)
+            {
+                var occupants = target.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
+                if (targetRule.SummonBlocked || occupants.Length >= targetRule.PlayerSlots ||
+                    occupants.Sum(unit => (long)unit.Size) + rule.SpawnUnit.Size >
+                        (RoomCapacityModel.Maximum(context, action.RoomIndex, CombatTeam.Player) ?? targetRule.PlayerCapacity))
+                    return Illegal("The room cannot accept this unit's size or another spawn slot.");
+            }
             RelicPyreCostPlan pyreCost = RelicPayCardCostWithPyreHealthModel.Plan(train, effectiveCost,
                 source.Energy, rule.CostType, source.Spawn.Turn,
                 context.IsolatedBattlePreview == true || target.Preview);
