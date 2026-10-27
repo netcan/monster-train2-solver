@@ -64,6 +64,19 @@ namespace MonsterTrain2Poju.Model
             card.Temporary.Upgrades[0] is { Unique: false, RemoveOnDiscard: false, ExcludeFromClones: false,
                 RestrictSizeToRoomCapacity: false, MagicPowerTraitScalingOnly: false, CloneDamageBase: null, CloneHealBase: null,
                 Lifecycle.ReplacedAssets.Count: 0, Lifecycle.TraitsModified.Count: 0 };
+        private static bool KnownTripleStarstruck(CardInstanceState card, CardTraitCompositionState traits) =>
+            card.DataId == "753f20a2-c625-47b3-be4b-8600b673841e" &&
+            traits.CombinedTraits is { Count: 2 } combined &&
+            combined[0].RuntimeType == CardMoonUpgradeModel.Trait && combined[1].RuntimeType == TripleTrait &&
+            combined[1].DeclaredName == TripleTrait && Ordinary(combined[1], 3) &&
+            card.Permanent.Upgrades.Count is 1 or 2 && KnownTripleUpgrade(card.Permanent.Upgrades[0]) &&
+            card.Permanent.Upgrades.Skip(1).All(upgrade => upgrade.DataId == "12793a9c-fae4-42ab-80bb-c3274e681c19" &&
+                CardMoonUpgradeModel.KnownPayload(upgrade)) &&
+            card.Temporary.Upgrades.All(KnownTitanCurse) &&
+            CardMoonUpgradeModel.Validate(card) == null &&
+            card.DamageScalingTraits?.Count is not > 0 && card.StatusScalingTraits?.Count is not > 0 &&
+            card.UnitUpgradeScalingTraits?.Count is not > 0 && card.TrainHealScalingTraits?.Count is not > 0 &&
+            card.CapacityScalingTraits?.Count is not > 0 && card.ForgeCountScalingTraits?.Count is not > 0;
         internal static string? Validate(CardInstanceState card)
         {
             if (!Present(card)) return null;
@@ -72,8 +85,10 @@ namespace MonsterTrain2Poju.Model
                 return LazarusJuiceSpikeModel.Known(card) ? null : "Juice with this card or ordered scaling traits requires native calibration.";
             // Original Lifesteal/Scorch,Ritual of Battle,and calibrated merchant owners.
             // Ordered scaling callbacks and other owners remain explicit gaps.
-            var traits = CardExhaustModel.RefreshTraits(card).CombinedTraits!;
+            var refreshed = CardExhaustModel.RefreshTraits(card);
+            var traits = refreshed.CombinedTraits!;
             bool triple = traits.Any(trait => trait.RuntimeType == TripleTrait);
+            if (triple && KnownTripleStarstruck(card, refreshed)) return null;
             if (triple && card.DataId == "d4366b7c-588c-49aa-b2c6-2aeb30b0e01b" &&
                 traits.Count is 1 or 2 && traits[0].RuntimeType == TripleTrait && traits[0].DeclaredName == TripleTrait && Ordinary(traits[0], 3) &&
                 card.Permanent.Upgrades.Count >= 1 && KnownTripleUpgrade(card.Permanent.Upgrades[0]) &&
