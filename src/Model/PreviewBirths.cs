@@ -14,7 +14,7 @@ namespace MonsterTrain2Poju.Model
                     Statuses: [{ Id: "horde", Stacks: 4 }], Filters.Subtype: "SubtypesData_Horde",
                     SpawnFallbackUnit: { AssetKey: "MonsterFunguy", BaseAttack: 3, Health: 4 } } }] }];
 
-        private static bool IsOriginalChampionEnemyDeath(CombatUnit unit, CombatContext context) =>
+        internal static bool IsOriginalChampionEnemyDeath(CombatUnit unit, CombatContext context) =>
             unit is { AssetKey: "MonsterChampionUnderlegion1", Team: CombatTeam.Player } &&
             context.FindCard(unit.SpawnerCardId)?.DataId == "0422f6ca-896c-4676-a01f-71d8d4b232fb" &&
             (unit.Triggers.Count == 1 || unit.Triggers is [_, { Kind: "OnHit", Effects: [{ Type: "CardEffectAddStatusEffect", Action:
@@ -22,9 +22,12 @@ namespace MonsterTrain2Poju.Model
                     AllowEnemy: true, AllowPlayer: true, Statuses: [{ Id: "pyregel", Stacks: 3 }] } }] }] ||
                 unit.Triggers.Count == 2 && IsOriginalMeatShieldHeal(unit.Triggers[1], unit, context)) &&
             unit.Triggers[0] is { Kind: "OnAnyHeroDeathOnFloor", Effects: [{ Type: "CardEffectSpawnMonsterOrAddStatusEffect", Action:
-                { Type: "SpawnOrStatus", Target: "Room", Value: 2, AllowPlayer: true, AllowEnemy: false, Range: null,
-                    Statuses: [{ Id: "horde", Stacks: 2 }], Filters.Subtype: "SubtypesData_Horde",
-                    SpawnFallbackUnit: { AssetKey: "MonsterFunguy", BaseAttack: 3, Health: 4, Modifiers.Upgrades.Count: 0 } } }] };
+                { Type: "SpawnOrStatus", Target: "Room", Value: var stacks, AllowPlayer: true, AllowEnemy: false, Range: null,
+                    Statuses: [{ Id: "horde", Stacks: var statusStacks }], Filters.Subtype: "SubtypesData_Horde",
+                    SpawnFallbackUnit: { AssetKey: "MonsterFunguy", BaseAttack: 3, Health: 4, Modifiers.Upgrades.Count: 0 } } }] } &&
+            stacks == statusStacks && (stacks == 2 || stacks == 3 &&
+                context.FindCard(unit.SpawnerCardId)!.Permanent.Upgrades.Any(upgrade =>
+                    upgrade.DataId == CardUnderlegionTroopUpgradeModel.ThirdDataId && CardUnderlegionTroopUpgradeModel.Known(upgrade)));
 
         private static bool IsOriginalMeatShieldHeal(CombatTrigger trigger, CombatUnit unit, CombatContext context) =>
             trigger is { Kind: "PostCombat", Once: false, IgnoreSilence: false, FireCount: 1, SkipDuringDeployment: true,
@@ -194,7 +197,7 @@ namespace MonsterTrain2Poju.Model
                         attachment.DataId == "e1a39d88-4a77-4399-98b2-0b81f44fe6a8" &&
                         attachment.DeathEffect != null && RoomDeathEffectModel.Validate(attachment.DeathEffect) == null) == true;
                 bool recruitFallback = source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalGreenRecruit(unit, context));
-                // The original two-stack champion enemy-death fallback has the
+                // The original calibrated champion enemy-death fallback has the
                 // same unowned Fun Guy lifetime as Green Recruit. Its temporary
                 // preview character is destroyed before decision identity capture.
                 bool championFallback = source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalChampionEnemyDeath(unit, context));
