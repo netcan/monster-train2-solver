@@ -213,11 +213,23 @@ namespace MonsterTrain2Poju.Probe
             }
             else
             {
-                BattleActionResult result = BattleActionModel.PlayCard(root, action!);
-                predicted = result.State; reason = result.Reason; outcome = result.Outcome;
-                Require(result.Rejection != ActionRejection.Illegal || boundary &&
-                    request.TryGetProperty("ExpectedNativeRejection", out var nativeError) && nativeError.ValueKind == FixtureKind.String,
-                    "Native diagnostic action is illegal: " + reason);
+                try
+                {
+                    BattleActionResult result = BattleActionModel.PlayCard(root, action!);
+                    predicted = result.State; reason = result.Reason; outcome = result.Outcome;
+                    Require(result.Rejection != ActionRejection.Illegal || boundary &&
+                        request.TryGetProperty("ExpectedNativeRejection", out var nativeError) && nativeError.ValueKind == FixtureKind.String,
+                        "Native diagnostic action is illegal: " + reason);
+                }
+                catch (InvalidOperationException error) when (boundary &&
+                    error.Message == "Triple Juice with this card or ordered scaling traits requires native calibration.")
+                {
+                    // This composition can be discovered partway through a room
+                    // focus callback. Preserve its original model refusal while
+                    // observing only the requested final native input. Prefixes
+                    // and unrelated exceptions still fail the probe.
+                    predicted = null; reason = error.Message; outcome = RoomOutcome.Unsupported;
+                }
             }
             Require(boundary || predicted != null && outcome == RoomOutcome.Exchanged,
                 "Branch prefix is unsupported or terminal: " + reason);
