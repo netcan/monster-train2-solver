@@ -80,6 +80,22 @@ namespace MonsterTrain2Poju.Model
             return conduit.Length <= 3 && conduit.Select(upgrade => upgrade.DataId).Distinct(StringComparer.Ordinal).Count() == conduit.Length &&
                 card.Temporary.Upgrades.All(upgrade => KnownTitanCurse(upgrade) || LazarusJuiceSpikeModel.KnownConduit(upgrade));
         }
+        private static bool PowerstoneStats(CardStatModifier stats) => stats.Damage == 10 && stats.Heal == 10 &&
+            stats.Health == 0 && stats.Cost == 0 && stats.Size == 0 && stats.XCost == 0 &&
+            stats.EquipmentLimit == 0 && stats.UpgradeSlotCount == 0;
+        private static bool KnownPyregelPowerstone(CardUpgradeModifier upgrade) =>
+            upgrade.DataId == "571cd1d6-6959-48ae-831d-86f07de8329e" && upgrade.AssetKey == "Powerstone" &&
+            PowerstoneStats(upgrade.Stats) && upgrade.CloneDamageBase == 10 && upgrade.CloneHealBase == 10 &&
+            upgrade.Statuses.Count == 0 && upgrade.ExternalInteractions.Count == 0 && upgrade.DamageBuff == 0 &&
+            upgrade.UnhealedHealth == 0 && !upgrade.Unique && !upgrade.RemoveOnDiscard && !upgrade.ExcludeFromClones &&
+            !upgrade.RestrictSizeToRoomCapacity && !upgrade.MagicPowerTraitScalingOnly &&
+            upgrade.EquipmentSourceCardId == null && upgrade.EquipmentSourceUpgradeIndex == null &&
+            upgrade.AbilityUpgrade == null && upgrade.TriggerUpgrades?.Count is not > 0 &&
+            upgrade.Lifecycle is { AssetKey: "Powerstone", Unique: false, RemoveOnDiscard: false,
+                AddedTraits.Count: 0, RemovedRuntimeTypes.Count: 0, TraitsModified.Count: 0,
+                ReplacedAssets.Count: 0, Triggers.Count: 0, OriginalDamage: 10, OriginalHeal: 10 } lifecycle &&
+            lifecycle.Values.DataId == upgrade.DataId && PowerstoneStats(lifecycle.Values.Stats) &&
+            lifecycle.Values.Statuses.Count == 0;
         private static bool KnownTripleStarstruck(CardInstanceState card, CardTraitCompositionState traits) =>
             card.DataId == "753f20a2-c625-47b3-be4b-8600b673841e" &&
             traits.CombinedTraits is { Count: 2 } combined &&
@@ -167,7 +183,8 @@ namespace MonsterTrain2Poju.Model
                 card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] { Upgrade });
             bool pyregel = card.DataId == "fb0683b1-20ac-4dd2-b580-14b502e182f4" && traits.Count == 1 &&
                 traits[0].RuntimeType == Trait && traits[0].DeclaredName == Trait && Ordinary(traits[0], 2) &&
-                card.Permanent.Upgrades.Count == 1 && KnownJuiceUpgrade(card.Permanent.Upgrades[0], false) &&
+                card.Permanent.Upgrades.Count is 1 or 2 && KnownJuiceUpgrade(card.Permanent.Upgrades[0], false) &&
+                (card.Permanent.Upgrades.Count == 1 || KnownPyregelPowerstone(card.Permanent.Upgrades[1])) &&
                 card.Temporary.Upgrades.Count == 0 && card.MaskDescriptor.SourceTraits?.Count is not > 0 &&
                 card.DamageScalingTraits?.Count is not > 0 && card.UnitUpgradeScalingTraits?.Count is not > 0 &&
                 card.TrainHealScalingTraits?.Count is not > 0 && card.CapacityScalingTraits?.Count is not > 0 &&

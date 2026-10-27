@@ -720,6 +720,19 @@ if (args.Length == 4 && args[0] == "--athane-summon-request")
     AthaneSummonChecks.ExportRequest(args[1], args[2], args[3]);
     return;
 }
+if (args.Length == 3 && args[0] == "--pyregel-powerstone-juice-cast-request")
+{
+    PyregelJuiceChecks.ExportCastRequest(args[1], args[2], 18, 11, PyregelPowerstoneJuiceChecks.CastReason);
+    return;
+}
+if (args.Length is >= 2 and <= 4 && args[0] == "--pyregel-powerstone-juice-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length >= 3 ? ModelJson.ReadFixture(args[2]) : null;
+    using var cast = args.Length == 4 ? ModelJson.ReadFixture(args[3]) : null;
+    PyregelPowerstoneJuiceChecks.Native(source.RootElement, replay?.RootElement, cast?.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--pyregel-juice-cast-request")
 {
     PyregelJuiceChecks.ExportCastRequest(args[1], args[2]);
@@ -7338,6 +7351,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-unb
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-dusk-mantle-recruit-boss-preview-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-dusk-mantle-recruit-boss-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
     UnderlegionThirdTroopPreviewChecks.Native(path, ModelJson.RelatedFixture(path, "player-dusk-mantle-recruit-boss-preview-replay-calibration.mt2f"));
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-pyregel-powerstone-juice-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    PyregelPowerstoneJuiceChecks.Native(source.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("parallel-lower-opening-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "parallel-lower-opening-model-counterexample.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

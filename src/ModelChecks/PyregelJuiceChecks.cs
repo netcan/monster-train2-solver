@@ -63,7 +63,7 @@ internal static class PyregelJuiceChecks
         Console.WriteLine("PYREGEL-JUICE PASS: original deployment/full state/forecast/RNG, four immutable branches/four scope controls; independentPair=" + replay.HasValue + "; nativeCast=" + cast.HasValue);
     }
 
-    internal static void ExportCastRequest(string sourcePath, string output)
+    internal static void ExportCastRequest(string sourcePath, string output, int cardId = 12, int minimumHealth = 1, string? reason = null)
     {
         using var source = ModelJson.ReadFixture(sourcePath);
         var root = source.RootElement.GetProperty("Rows")[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
@@ -73,16 +73,16 @@ internal static class PyregelJuiceChecks
         for (int index = 0; index < 128; index++)
         {
             var candidates = BattleActionModel.EnumerateActions(current).SupportedCandidates;
-            var cast = candidates.FirstOrDefault(candidate => candidate.Action.CardInstanceId == 12 &&
+            var cast = candidates.FirstOrDefault(candidate => candidate.Action.CardInstanceId == cardId &&
                 current.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == candidate.Action.TargetUnitId &&
-                    unit.Health > 1 && unit.Status("armor") == null && unit.Status("damage shield") == null));
+                    unit.Health > minimumHealth && unit.Status("armor") == null && unit.Status("damage shield") == null));
             if (cast != null)
             {
                 Require(immutable == NativeBranchObservationChecks.Key(root), "Cast request mutated its deployment root.");
                 using var document = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
                     SourceArchive = Path.GetFileName(sourcePath), SourceSHA256 = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(sourcePath))).ToLowerInvariant(),
                     Root = root, Prefix = prefix, FailedRoot = current, Action = cast.Action, IsEndTurn = false,
-                    Reason = CastReason, NativeValidationRequired = true });
+                    Reason = reason ?? CastReason, NativeValidationRequired = true });
                 using var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write);
                 document.Write(stream);
                 Console.WriteLine("PYREGEL-CAST-REQUEST prefix=" + prefix.Count + " turn=" + current.Spawn.Turn + "; model request, native validation required.");
