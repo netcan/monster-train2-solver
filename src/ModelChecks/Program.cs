@@ -551,6 +551,13 @@ if (args.Length is 2 or 3 && args[0] == "--triple-juice-starstruck-only")
     else { using var replay = ModelJson.ReadFixture(args[2]); TripleJuiceStarstruckChecks.Native(source.RootElement, replay.RootElement); }
     return;
 }
+if (args.Length == 3 && args[0] == "--unit-copy-birth-catalog-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    UnitCopyBirthCatalogChecks.Native(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--triple-juice-starstruck-cast-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -7760,6 +7767,26 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-moon-trial-gold-relic-replay-calibration.mt2f"));
     MoonTrialGoldRelicChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-unit-copy-birth-catalog-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-unit-copy-birth-catalog-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-unit-copy-birth-catalog-replay-calibration.mt2f"));
+    UnitCopyBirthCatalogChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-triple-juice-starstruck-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-triple-juice-starstruck-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-starstruck-replay-calibration.mt2f"));
+    TripleJuiceStarstruckChecks.Native(source.RootElement, replay.RootElement);
+    using var cast = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-starstruck-cast-calibration.mt2f"));
+    using var castReplay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-starstruck-cast-replay-calibration.mt2f"));
+    using var curse = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-starstruck-curse-calibration.mt2f"));
+    using var curseReplay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-juice-starstruck-curse-replay-calibration.mt2f"));
+    TripleJuiceStarstruckChecks.Cast(cast.RootElement, castReplay.RootElement);
+    TripleJuiceStarstruckChecks.Curse(curse.RootElement, curseReplay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-consumed-curse-cleanse-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-consumed-curse-cleanse-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

@@ -214,6 +214,14 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-consumed-curse-cleanse-calibration.mt2f',
     'player-consumed-curse-cleanse-replay-calibration.mt2f',
     'player-consumed-curse-cleanse-terminal-calibration.mt2f',
+    'player-triple-juice-starstruck-calibration.mt2f',
+    'player-triple-juice-starstruck-replay-calibration.mt2f',
+    'player-triple-juice-starstruck-cast-calibration.mt2f',
+    'player-triple-juice-starstruck-cast-replay-calibration.mt2f',
+    'player-triple-juice-starstruck-curse-calibration.mt2f',
+    'player-triple-juice-starstruck-curse-replay-calibration.mt2f',
+    'player-unit-copy-birth-catalog-calibration.mt2f',
+    'player-unit-copy-birth-catalog-replay-calibration.mt2f',
     'player-targeted-damage-calibration.mt2f',
     'player-targeted-damage-replay-calibration.mt2f',
     'player-moon-burnout-relic-calibration.mt2f',
@@ -2737,6 +2745,36 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --consumed-curse-cleanse-terminal-only `
         (Get-TestFixturePath 'player-consumed-curse-cleanse-terminal-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Focused consumed curse Cleanse terminal check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-unit-copy-birth-catalog-calibration.mt2f', 'player-unit-copy-birth-catalog-replay-calibration.mt2f') }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Unit-copy birth catalog checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --unit-copy-birth-catalog-only `
+        (Get-TestFixturePath 'player-unit-copy-birth-catalog-calibration.mt2f') `
+        (Get-TestFixturePath 'player-unit-copy-birth-catalog-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Focused unit-copy birth catalog native pair failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-triple-juice-starstruck-calibration.mt2f', 'player-triple-juice-starstruck-replay-calibration.mt2f', 'player-triple-juice-starstruck-cast-calibration.mt2f', 'player-triple-juice-starstruck-cast-replay-calibration.mt2f', 'player-triple-juice-starstruck-curse-calibration.mt2f', 'player-triple-juice-starstruck-curse-replay-calibration.mt2f') }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Triple-Juice Starstruck checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --triple-juice-starstruck-only `
+        (Get-TestFixturePath 'player-triple-juice-starstruck-calibration.mt2f') `
+        (Get-TestFixturePath 'player-triple-juice-starstruck-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Focused triple-Juice Starstruck native deployment pair failed.' }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --triple-juice-starstruck-cast-only `
+        (Get-TestFixturePath 'player-triple-juice-starstruck-cast-calibration.mt2f') `
+        (Get-TestFixturePath 'player-triple-juice-starstruck-cast-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Focused triple-Juice Starstruck native cast pair failed.' }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --triple-juice-starstruck-curse-only `
+        (Get-TestFixturePath 'player-triple-juice-starstruck-curse-calibration.mt2f') `
+        (Get-TestFixturePath 'player-triple-juice-starstruck-curse-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Focused triple-Juice Starstruck native curse pair failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-moon-trial-gold-relic-calibration.mt2f', 'player-moon-trial-gold-relic-replay-calibration.mt2f') }).Count -eq 0) {

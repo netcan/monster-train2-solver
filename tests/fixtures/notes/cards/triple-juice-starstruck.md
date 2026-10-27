@@ -23,6 +23,15 @@ trigger definitions; character-death callbacks remain separately dispatched.
 The original deployment successor/full forecast/RNG and ten changed-signature
 controls pass. The complete38-step tactical model route now replays, including
 the naturally accumulated two separate TitanCurse_Upgrade cost modifiers.
-Independent native deployment replay, surviving-target Full Moon cast, cumulative
-curse component pairs and the actual default-budget Ring3 campaign pair remain
-pending. No new native victory or full campaign clearance is claimed here.
+Independent deployment replay175737-e167360f passes. After the separate
+release244 copy-catalog capture correction, native full-Moon cast pair
+180456-7849eb50/180744-29775495 passes all30 inputs: the surviving armored
+target19 gains exactly three Dazed stacks. The36-input native curse pair
+180456-56146a72/180744-e2b8e17d confirms turn7->8 retains two separate one-cost
+upgrades on Starstruck. Both components replay complete native successors,
+forecasts/RNG and four immutable branches. Seven changed Arkion/Moon-owner
+controls and five changed-curse controls also pass.
+
+Default-budget Ring3 run180351-94fd69bb physically wins but has a separate
+cross-floor preview-birth destruction component mismatch. It is not accepted
+as a campaign victory. No new full campaign clearance is claimed here.
