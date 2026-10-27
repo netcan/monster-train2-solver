@@ -22,5 +22,8 @@ Old native Burnout1 removal still produces exactly Rage3/attack26; existing
 Moon transition/phase/unknown-callback controls pass. Independent fixed capture
 152404-682b0360 matches both complete native roots/successors/forecasts/RNG,
 preserving the original refusal and the independently matching prediction.
-The actual default-budget fifth battle is running from the same checkpoint;
-the component pair is not counted as a fifth-battle win.
+The actual default-budget release235 fifth battle153818-dcfb90f5 and independent
+normal-reward replay154854-6dc6ca14 also win in58 inputs/Pyre5. Each verifies17
+train phases/full state/forecasts/RNG/four zero counters.39 normal events create
+Ring6 and the first five default-budget links pass. The whole-campaign result
+remains pending.

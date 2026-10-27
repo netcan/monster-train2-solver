@@ -22,5 +22,8 @@ Original two-cast Stardust Invocation and Mass Production full-context/prefix
 checks with16 immutable branches each pass. Independent repaired native replay
 153807-2e85f832 matches all18 full successors/forecasts/RNG, retaining the exact
 original ordering error and the fixed independent forecast. A fresh default-
-budget fifth battle is running. This component is not
-a fifth-battle win; installed Windows remains accepted233.
+budget fifth battle153818-dcfb90f5 and independent normal-reward replay
+154854-6dc6ca14 also win in58 inputs/Pyre5. All17 train phases per process,
+full successors/forecasts/RNG and four zero counters pass;39 normal events
+create Ring6. The first five default-budget checkpoint links pass. Ring6
+continues; this does not establish a full campaign. Installed Windows remains233.

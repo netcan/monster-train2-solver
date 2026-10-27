@@ -70,4 +70,19 @@ A separate57-input model win/Pyre37 remains unaccepted by native play.
 Ring5 opening150457-8f1c080a stops before its first input with
 `Moon-phase status application with relic modifiers is not modeled.`
 Its original refusal and checkpoint are retained for isolated calibration.
-No Ring5 or full-campaign win is claimed.
+Release234 calibrates that unrelated Burnout-loss Rage relic with an independent
+two-input Moon transition pair. Its fresh default run152415-f0127cdf reaches
+input18 and exposes copied Retain/Ephemeral ordering. Release235 repairs the
+18-input original/replay pair without sorting or weakening comparison arrays.
+
+Fresh actual10000ms/two-worker Ring5 source153818-dcfb90f5 and independent
+normal-reward replay154854-6dc6ca14 both win in58 inputs/49plays/9EndTurns,
+Pyre5. Each verifies17 train phases, all full roots/successors/forecasts/RNG,
+four zero counters and unchanged originals. Overlay60 publications and four
+search metric samples pass;739 native branch-mask contexts are captured.
+Normal39 reward/map events produce Ring6 save
+0BF94FFC9376F2721AEB3E852456B26FB15BA8115C73048D1714E345ECFDD643.
+Both archives are curated and journal153817-6958c4f5 accepts the pair. The
+first five default-budget checkpoint links pass without new simulations or
+offline refinements. Ring6 source155717-08f1de5c is running; no complete
+default-budget campaign is claimed.
