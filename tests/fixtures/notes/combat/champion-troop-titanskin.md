@@ -41,3 +41,12 @@ deployment, release271's tactical continuation examines43 roots without that
 rejection, whereas the stronger continuation reaches the next composition
 after15 inputs/turn3. The exported request independently replays that exact
 prefix/root/RNG and reproduces the same EndTurn rejection before native work.
+
+Release272 removes the arbitrary two-source cap while validating every source's
+original signature and lifetime. Native source015726-b85b2204 completes this
+16-input prefix from turn3 to4, growing the registry[10,17] to[10,17,21]. Four
+preview writes see FunGuy22 at Horde2, HP8/12/16/20/24 and upgrade counts0/2/4/6/8;
+the primary cache remains[2,4]. Independent frozen replay020128-1caa1393 repeats
+all16 successors, forecasts and RNG. Four immutable branches, five altered
+signature guards and the original13-input pair pass. This component pair does
+not count the later actual battle's raw listener differences as an accepted win.

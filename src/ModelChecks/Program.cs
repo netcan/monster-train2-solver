@@ -8246,11 +8246,18 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-consume-equipment-order-replay-calibration.mt2f"));
     ConsumeEquipmentOrderChecks.Native(source.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-champion-troop-titanskin-", StringComparison.OrdinalIgnoreCase))
+foreach (string path in args.Where(path => Path.GetFileName(path) is "player-champion-troop-titanskin-calibration.mt2f" or "player-champion-troop-titanskin-replay-calibration.mt2f")
     .Select(path => ModelJson.RelatedFixture(path, "player-champion-troop-titanskin-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-champion-troop-titanskin-replay-calibration.mt2f"));
+    ChampionTroopTitanskinChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-champion-troop-titanskin-many-sources-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-champion-troop-titanskin-many-sources-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-champion-troop-titanskin-many-sources-replay-calibration.mt2f"));
     ChampionTroopTitanskinChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-enemy-statistics-listeners-", StringComparison.OrdinalIgnoreCase))
