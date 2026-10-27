@@ -61,6 +61,26 @@ namespace MonsterTrain2Poju.Probe
 
         private IEnumerator Wrap(IEnumerator native, string kind)
         {
+            // Component comparisons need a stable destruction boundary. Unity
+            // can defer OnDestroy from ResolveCombat until a frame yielded by
+            // DoTurn, invalidating old weak references between its two captures.
+            // Under the explicit isolation protocol, await only objects already
+            // scheduled for destruction. Never destroy actors or run removals here.
+            CharacterState[] pendingDestruction = kind == "Ascend" && DeathDissolveSettlement.Enabled
+                ? trace.KnownUnits.Where(unit => unit != null && unit.IsDestroyed &&
+                    !ReferenceEquals(unit.GetWeakReference().Ref, null)).ToArray()
+                : Array.Empty<CharacterState>();
+            int settlementFrames = 0;
+            while (pendingDestruction.Any(unit => !ReferenceEquals(unit.GetWeakReference().Ref, null)))
+            {
+                if (++settlementFrames > 2)
+                {
+                    var error = new InvalidOperationException("Deferred Unity destruction did not finish before Ascend capture.");
+                    trace.CaptureFailure(error);
+                    throw error;
+                }
+                yield return null;
+            }
             Record? record = null;
             try
             {
@@ -72,6 +92,8 @@ namespace MonsterTrain2Poju.Probe
                     {
                         Index = records.Count, Turn = managers.GetCombatManager()!.GetTurnCount(),
                         Kind = kind, Before = before,
+                        SettledDestructionIds = pendingDestruction.Select(trace.UnitId).OrderBy(id => id).ToArray(),
+                        SettlementFrames = settlementFrames,
                         Predicted = kind == "Combat" ? TrainCombatModel.ResolveCombat(before) : TrainCombatModel.Ascend(before)
                     };
                     records.Add(record);
@@ -128,6 +150,8 @@ namespace MonsterTrain2Poju.Probe
             public int Index { get; set; }
             public int Turn { get; set; }
             public string Kind { get; set; } = "";
+            public int[] SettledDestructionIds { get; set; } = Array.Empty<int>();
+            public int SettlementFrames { get; set; }
             public TrainCombatState Before { get; set; } = null!;
             public TrainCombatResult Predicted { get; set; } = null!;
             public TrainCombatState? Actual { get; set; }
