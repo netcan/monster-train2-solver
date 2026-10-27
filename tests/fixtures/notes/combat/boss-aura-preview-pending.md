@@ -20,5 +20,12 @@ Primitive lifecycle target planning/mode checks and shared object restoration
 retain the actual map. The focused checker replays all seven native successors,
 full state and RNG, witnesses the one historical difference and checks four
 immutable final branches. Existing plain/random persistent aura controls pass
-their complete EndTurn/card transitions. Independent fixed native pairing and
-whole-battle default-budget acceptance remain required separately.
+their complete EndTurn/card transitions. Both old aura-summon/fresh-summon
+fixtures also pass all five EndTurns and15 card actions each.
+
+Fixed revisionac1216e7 independently repeats the exact request as native
+012005-9d5b77b0. All seven complete successors/forecasts/RNG match, the original
+wrong prediction remains preserved and the corrected forecast matches native.
+The focused independent pair passes. Actual10000ms/two-worker Ring5 play now
+continues from the unchanged Ring5 checkpoint; whole-battle acceptance and
+an eight-battle campaign clear remain separate and unclaimed.

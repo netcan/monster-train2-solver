@@ -828,6 +828,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-floor-transition-piercing-replay-calibration.mt2f',
     'player-deathwish-enchantment-registry-calibration.mt2f',
     'player-boss-aura-preview-pending-calibration.mt2f',
+    'player-boss-aura-preview-pending-replay-calibration.mt2f',
     'player-deathwish-enchantment-registry-replay-calibration.mt2f',
     'player-pyre-ascension-queue-calibration.mt2f',
     'player-pyre-ascension-queue-replay-calibration.mt2f',

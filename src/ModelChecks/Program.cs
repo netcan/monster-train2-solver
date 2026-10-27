@@ -8218,10 +8218,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-pyre-ascension-queue-replay-calibration.mt2f"));
     PyreAscensionQueueChecks.Native(source.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) == "player-boss-aura-preview-pending-calibration.mt2f"))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-boss-aura-preview-pending-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-boss-aura-preview-pending-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var source = ModelJson.ReadFixture(path);
-    EnchantmentBossPreviewChecks.Native(source.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-boss-aura-preview-pending-replay-calibration.mt2f"));
+    EnchantmentBossPreviewChecks.Native(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-deathwish-enchantment-registry-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-deathwish-enchantment-registry-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
