@@ -5866,12 +5866,23 @@ namespace MonsterTrain2Poju.Model
                     // including outside Boss anchors, without running its callbacks.
                     var retiredEnemies = units.Where(unit => !unit.Alive && unit.Source.Team == CombatTeam.Enemy)
                         .Select(unit => unit.Source.Id).ToHashSet();
+                    // The original inner Reanimate is already physically
+                    // removed after the final Undying life. Its room centering
+                    // remembered that real point; terminal slot retirement must
+                    // not erase it like an unfinished companion death batch.
+                    var completedInnerBosses = units.Where(unit => !unit.Alive && unit.Destroyed &&
+                        unit.Source.AssetKey == "Boss_Level5_Reanimate" && unit.Source.BaseAttack == 17 &&
+                        unit.Source.MaxHealth == 500 && unit.Count("undying") == 0)
+                        .Select(unit => unit.Source.Id).ToHashSet();
                     context = context.WithSpawnPoints(terminalPoints.WithState(terminalPoints.Groups.Select(group =>
                         group.Team == CombatTeam.Enemy && !group.PreviewCopyId.HasValue
                             ? new SpawnPointGroupState(group.RoomIndex, group.Team, group.InnerCount, group.GroupCount,
                                 group.Occupants.Select(id => retiredEnemies.Contains(id) ? 0 : id).ToArray(), group.Outside)
                             : group).ToArray(), terminalPoints.Units.Select(point => retiredEnemies.Contains(point.UnitId)
-                            ? new UnitSpawnPointState(point.UnitId, null, null, point.OuterBoss, point.SpawnedInPreview)
+                            ? new UnitSpawnPointState(point.UnitId, null,
+                                completedInnerBosses.Contains(point.UnitId) && point.Current == null && !point.OuterBoss &&
+                                !point.SpawnedInPreview && point.LastKnown is { PreviewCopyId: null, OuterBossAnchor: false }
+                                    ? point.LastKnown : null, point.OuterBoss, point.SpawnedInPreview)
                             : point).ToArray()));
                 }
                 var localIds = units.Where(unit => !externalTurnActorIds.Contains(unit.Source.Id))

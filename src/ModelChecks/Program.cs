@@ -564,6 +564,12 @@ if (args.Length == 2 && args[0] == "--green-recruit-preview-retirement-only")
     GreenRecruitPreviewRetirementChecks.Native(source.RootElement, args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--reanimate-terminal-point-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    ReanimateTerminalPointChecks.Native(source.RootElement, args[1]);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--moon-advance-consume-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -7806,6 +7812,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player
 {
     using var source = ModelJson.ReadFixture(path);
     GreenRecruitPreviewRetirementChecks.Native(source.RootElement, path);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player-reanimate-terminal-point-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var source = ModelJson.ReadFixture(path);
+    ReanimateTerminalPointChecks.Native(source.RootElement, path);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-moon-advance-consume-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-moon-advance-consume-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
