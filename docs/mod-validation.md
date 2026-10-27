@@ -1,22 +1,23 @@
 # Player Mod validation · 2026-10-27
 
-Current Windows installation:0.2.233, source`7af531ff`.
-Installed at15:13 with67 protected save/config/other-mod files unchanged.
-The exact accepted three DLLs win sample22 Ring4 with actual10000ms/two-worker
-advice:53inputs/45plays/8EndTurns,Pyre5. Independent normal-reward replay
-matches every full root/successor/forecast/RNG and16 train phases per process,
-with four zero counters.58 normal events create Ring5 save
-3F70110D2A92C880E3E4C5BCFC503D870A992CDA0D922E7DD4E321266CF13503.
-Source144707-8b30a7a9 and replay145804-b2c1270f bind the same payload hashes.
-Package`results/mod-dist/PojuAdvisor-0.2.233-Windows-20261027-151305.zip`,SHA256
-`3FDDC2E059C893E05CF9877ED8B3995185BFC12C0D29DEBDCFEA8E53BC15D31D`.
+Current Windows installation:0.2.235, source`7b4c1a06`.
+Installed at16:00 with67 protected save/config/other-mod files unchanged.
+The exact accepted three DLLs win sample22 Ring5 with actual10000ms/two-worker
+advice:58inputs/49plays/9EndTurns,Pyre5. Independent normal-reward replay
+matches every full root/successor/forecast/RNG and17 train phases per process,
+with four zero counters.39 normal events create Ring6 save
+0BF94FFC9376F2721AEB3E852456B26FB15BA8115C73048D1714E345ECFDD643.
+Source153818-dcfb90f5 and replay154854-6dc6ca14 bind the same payload hashes.
+Package`results/mod-dist/PojuAdvisor-0.2.235-Windows-20261027-160020.zip`,SHA256
+`BD3F58AA5CECFC1E3243167403CB0CA83425550A2F956B31FD1194D36B734571`.
 The real game was stopped; isolated native workers use their copied payloads.
-Next launch loads233. Previous DLLs and receipt are under
-`BepInEx/PojuBackups/RandomCampaign-20261027-151305/`.
-This includes229-233 triple-Juice/Conduit/ChaosScepter/Consume, mixed Rage target,
-paid outer-boss floor destruction and Burnout-healing target fixes. The first
-four sample22 battles have default-budget accepted links. Ring5 exposes a
-moon-phase/relic modifier combination under investigation; no complete
+Next launch loads235. Previous DLLs and receipt are under
+`BepInEx/PojuBackups/RandomCampaign-20261027-160020/`.
+This includes229-235 triple-Juice/Conduit/ChaosScepter/Consume, mixed Rage target,
+paid outer-boss floor destruction, Burnout healing, Moon/Burnout-loss Rage and
+retained hand-copy trait ordering fixes. The first five sample22 battles have
+default-budget accepted links. Ring6 and isolated236/237 search changes remain
+under native validation; no complete
 default-budget campaign or Mac build is claimed.
 
 Previous Windows installation:0.2.210, source`85ee266c`.

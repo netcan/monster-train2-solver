@@ -26,4 +26,5 @@ budget fifth battle153818-dcfb90f5 and independent normal-reward replay
 154854-6dc6ca14 also win in58 inputs/Pyre5. All17 train phases per process,
 full successors/forecasts/RNG and four zero counters pass;39 normal events
 create Ring6. The first five default-budget checkpoint links pass. Ring6
-continues; this does not establish a full campaign. Installed Windows remains233.
+continues; this does not establish a full campaign. Windows235 was installed
+at16:00 using the same three accepted DLLs, preserving67 protected files.
