@@ -884,7 +884,8 @@ namespace MonsterTrain2Poju.Model
             Func<RoomCombatState, RoomCombatResult>? finishDamageQueue = null, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
             CombatUnit? externalActor = null, int externalActorRoomIndex = -1,
             Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool captureAllDispatches = false,
-            bool piercing = false, IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null)
+            bool piercing = false, IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
+            bool centerPhysicalRemovals = true)
         {
             string? error = Validate(state);
             bool localAttacker = state.Units.Any(unit => unit.Id == attackerUnitId);
@@ -899,7 +900,8 @@ namespace MonsterTrain2Poju.Model
             return new Engine(state, new List<CombatEvent>(), nativeCardDamage: true,
                 finishDamageQueue: finishDamageQueue, refreshPyre: refreshPyre,
                 enqueueCharacterTrigger: enqueueCharacterTrigger, externalActor: externalActor,
-                externalActorRoomIndex: externalActorRoomIndex, externalActorInRoom: false, externalTargets: externalTargets)
+                externalActorRoomIndex: externalActorRoomIndex, externalActorInRoom: false, externalTargets: externalTargets,
+                centerDamageDeaths: centerPhysicalRemovals)
                 .TraceAllDispatches(captureAllDispatches)
                 .CardDamage(targetId, damage, sourceCardId, false, attackerUnitId, piercing);
         }
@@ -1743,6 +1745,7 @@ namespace MonsterTrain2Poju.Model
             private readonly Action<QueuedCharacterTrigger>? enqueueCharacterTrigger;
             private readonly bool deferAbilityCallbacks;
             private readonly bool nativeCardDamage;
+            private readonly bool centerDamageDeaths;
             private bool plainSpellDamage;
             private bool triggeredCommand;
             private bool ordinaryPyreAttack;
@@ -1781,7 +1784,7 @@ namespace MonsterTrain2Poju.Model
                 Func<RoomCombatState, int, IReadOnlyList<QueuedCharacterTrigger>, RoomCombatResult>? relicBirthEffect = null,
                 IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
                 Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect = null,
-                Func<RoomCombatState, CardActionEffect, int, BumpResult>? birthBump = null)
+                Func<RoomCombatState, CardActionEffect, int, BumpResult>? birthBump = null, bool centerDamageDeaths = true)
             {
                 this.source = source; this.events = events;
                 this.deferSpawnerExhaustion = deferSpawnerExhaustion;
@@ -1789,6 +1792,7 @@ namespace MonsterTrain2Poju.Model
                 this.enqueueCharacterTrigger = enqueueCharacterTrigger;
                 this.deferAbilityCallbacks = deferAbilityCallbacks;
                 this.nativeCardDamage = nativeCardDamage;
+                this.centerDamageDeaths = centerDamageDeaths;
                 this.finishDamageQueue = finishDamageQueue;
                 this.refreshPyre = refreshPyre;
                 this.moonPhase = moonPhase;
@@ -3876,7 +3880,7 @@ namespace MonsterTrain2Poju.Model
                     // Heal relic damage also enters this queue during room combat.
                     // The selection UI only compacts when it owns the room visuals;
                     // during combat the vacancy persists until the room has finished.
-                    if ((nativeCardDamage || (source.Preview || !runningRoomCombat) && removing.Any(item => item.RelicDamage)) && ownedPoint &&
+                    if ((nativeCardDamage && centerDamageDeaths || (source.Preview || !runningRoomCombat) && removing.Any(item => item.RelicDamage)) && ownedPoint &&
                         dead.Equals(removing[removing.Length - 1])) CenterAfterSummon();
                     // HeroManager removal starts GameScreen.EndCombat, which cancels
                     // the combat coroutine after this boss's death callbacks. Later

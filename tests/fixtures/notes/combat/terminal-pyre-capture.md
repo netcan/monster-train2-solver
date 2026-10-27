@@ -20,3 +20,13 @@ fixed-build native replay must match every input and full successor, with only
 the explained capture-only object differing. Old native files stay unchanged.
 This gate does not accept the separate raw room42/79 placement boundaries or
 claim a seventh victory. Independent280 observation is pending.
+
+281 separately checks original raw room42/exchange43 from this same immutable
+archive. Inferno kills Funguy14, combat then kills champion2, and survivor
+Truffles28 remains at physical point2 with two vacancies. Room pre-combat
+damage must not run card-play centering in either the immediate damage engine,
+the between-target removal queue or the final callback queue. The direct gate
+checks both full native states/RNG with four immutable branches each. The old
+six player-removal states, independent56-room/14-train enemy-removal observation
+remain passing controls. The independent native route will be shared with the
+remaining room79 LastKnown boundary to avoid repeating full searches.

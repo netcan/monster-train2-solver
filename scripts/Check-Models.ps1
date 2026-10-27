@@ -3129,6 +3129,9 @@ if ($Fixture.Count -eq 1 -and $selectedFixtureNames[0] -eq 'player-terminal-pyre
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --terminal-pyre-capture-only `
         (Get-TestFixturePath 'player-terminal-pyre-capture-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Terminal Pyre capture check failed.' }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --inferno-pre-combat-positions-only `
+        (Get-TestFixturePath 'player-terminal-pyre-capture-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Inferno pre-combat positions check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-underlegion-third-troop-upgrade-calibration.mt2f', 'player-underlegion-third-troop-upgrade-replay-calibration.mt2f') }).Count -eq 0) {

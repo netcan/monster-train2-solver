@@ -134,15 +134,14 @@ namespace MonsterTrain2Poju.Model
         internal static RoomCombatResult ApplyRoomPreCombat(RoomCombatState source, IReadOnlyList<CardActionEffect> effects,
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre)
         {
-            if (source.Context?.Enchantments is not { AutomaticLifecycle: true } world)
-                return Apply(source, effects, 0, refreshPyre: refreshPyre);
             // Damage still targets this room. Its death queue can refresh auras
             // and invoke callbacks elsewhere, so keep their physical rooms.
-            var train = EnchantmentWorldModel.Rebase(new TrainCombatState(world.Rooms.Select(room =>
-                room.RoomIndex == source.RoomIndex ? source : room.WithContext(source.Context)).ToArray(),
-                world.Movement, world.EnemySlotsPerRoom, source.Context));
+            var train = source.Context?.Enchantments is { AutomaticLifecycle: true } world
+                ? EnchantmentWorldModel.Rebase(new TrainCombatState(world.Rooms.Select(room =>
+                    room.RoomIndex == source.RoomIndex ? source : room.WithContext(source.Context)).ToArray(),
+                    world.Movement, world.EnemySlotsPerRoom, source.Context)) : SingleRoom(source);
             var result = ApplyCore(train, source.RoomIndex, effects, 0, 0, null, null, null,
-                fullTrain: false, refreshPyre: refreshPyre);
+                fullTrain: false, refreshPyre: refreshPyre, duringRoomPreCombat: true);
             return new RoomCombatResult(result.State?.Rooms.Single(room => room.RoomIndex == source.RoomIndex),
                 result.Outcome, 0, result.Events.ToList(), result.UnsupportedReason,
                 retainedUnits: result.RetainedUnits);
@@ -199,7 +198,7 @@ namespace MonsterTrain2Poju.Model
             int sourceCardId, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> pendingDeaths, int attackerUnitId = 0,
             Action<RoomCombatModel.QueuedCharacterTrigger>? enqueueCharacterTrigger = null,
             Func<TrainCombatState, TrainCombatState?>? drainQueuedTriggers = null,
-            Func<int, CombatUnit?>? getRetainedUnit = null)
+            Func<int, CombatUnit?>? getRetainedUnit = null, bool centerPhysicalRemovals = true)
         {
             TrainCombatState state = source;
             RelicPyreAttackRefreshResult Refresh(CombatContext context, bool placement) => RefreshTrain(ref state, context, placement);
@@ -261,7 +260,7 @@ namespace MonsterTrain2Poju.Model
                     RoomCombatState room = state.Rooms.Single(item => item.RoomIndex == queued.RoomIndex);
                     bool lastInTeam = !queue.Any(item => item.Kind == "OnDeath" && item.Unit.Team == queued.Unit.Team &&
                         item.Unit.Id > queued.Unit.Id);
-                    var returned = lastInTeam ? RoomCombatModel.SettleQueuedSpawnerAndCenter(room, queued.Unit, refreshPyre: Refresh) :
+                    var returned = lastInTeam && centerPhysicalRemovals ? RoomCombatModel.SettleQueuedSpawnerAndCenter(room, queued.Unit, refreshPyre: Refresh) :
                         RoomCombatModel.SettleQueuedSpawner(room, queued.Unit, refreshPyre: Refresh);
                     if (!returned.Supported) { error = returned.UnsupportedReason; return false; }
                     state = ReplaceRoom(state, RestoreUnfinished(returned)); events.AddRange(returned.Events);
@@ -287,7 +286,8 @@ namespace MonsterTrain2Poju.Model
                 pendingDeaths.Count == 0 ? null : (Func<RoomCombatState, RoomCombatResult>)FinishQueue, refreshPyre: Refresh,
                 externalActor: externalAttacker ? attacker : null,
                 externalActorRoomIndex: externalAttacker ? attackerRoom!.RoomIndex : -1,
-                enqueueCharacterTrigger: externalAttacker ? enqueueCharacterTrigger : null, externalTargets: borrowedTargets);
+                enqueueCharacterTrigger: externalAttacker ? enqueueCharacterTrigger : null, externalTargets: borrowedTargets,
+                centerPhysicalRemovals: centerPhysicalRemovals);
             if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
             state = ReplaceRoom(state, applied.State!);
             MergeBorrowed(applied, borrowedTargets);
@@ -322,7 +322,7 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<CardRecursionSelection>? recursionSelections = null, bool onCastEffects = false,
             bool onUnplayedNegativeEffects = false, IReadOnlyList<ElixirMixSelection>? mixSelections = null,
             IReadOnlyList<int>? priorTargets = null, bool playerActionPhase = false, bool resolveLiveEffects = true,
-            int? abilityRoomIndex = null)
+            int? abilityRoomIndex = null, bool duringRoomPreCombat = false)
         {
             string? selectionError = CardRecursionModel.ValidateSelections(effects, recursionSelections);
             if (selectionError != null) return UnsupportedTrain(selectionError);
@@ -1775,7 +1775,7 @@ namespace MonsterTrain2Poju.Model
                             DrainDeaths();
                             return routingError == null ? state : null;
                         },
-                        getRetainedUnit: retained.GetValueOrDefault) : null;
+                        getRetainedUnit: retained.GetValueOrDefault, centerPhysicalRemovals: !duringRoomPreCombat) : null;
                     if (nativeApplied != null && !nativeApplied.Supported) return UnsupportedTrain(nativeApplied.UnsupportedReason!);
                     RoomCombatResult applied = nativeApplied != null
                         ? new RoomCombatResult(nativeApplied.State!.Rooms.Single(room => room.RoomIndex == targetRoom!.RoomIndex),
@@ -2052,7 +2052,10 @@ namespace MonsterTrain2Poju.Model
                             .Where(unit => occupied.Contains(unit.Id) && !present.Contains(unit.Id))).ToArray(),
                             room.ExternalInteractions, room.Context, room.Preview, room.ActiveCompanionBossIds);
                     }
-                    RoomCombatResult returned = lastPhysicalDeath ? RoomCombatModel.SettleQueuedSpawnerAndCenter(room, queued.Unit, refreshPyre: Refresh) :
+                    // Room modifiers run inside DoRoomCombat, where vacancies
+                    // remain until the outer room completes. Card-play queues
+                    // own the selection UI and center their final removal.
+                    RoomCombatResult returned = lastPhysicalDeath && !duringRoomPreCombat ? RoomCombatModel.SettleQueuedSpawnerAndCenter(room, queued.Unit, refreshPyre: Refresh) :
                         RoomCombatModel.SettleQueuedSpawner(room, queued.Unit, queued.PreservePhysicalPoint, refreshPyre: Refresh);
                     if (!returned.Supported) { callbackError = returned.UnsupportedReason; return false; }
                     state = ReplaceRoom(state, returned.State!); return true;
