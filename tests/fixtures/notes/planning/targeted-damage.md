@@ -37,3 +37,8 @@ a defeat, not a victory. No assumption of monotonically better full routes is ma
 Release237's stronger Ring4 opening remains an accepted57-input/Pyre37 pair;
 its subsequent Ring5 default47-input/8-EndTurn defeat at boss302HP is retained
 separately. A single-battle improvement does not establish a campaign win.
+
+The same new37Pyre Ring5 checkpoint with default release238 finishes60 inputs/
+9 EndTurns at Reanimate18HP, compared with release237's302HP. All18 train phases,
+full native states/forecasts/RNG and four zero failure counts pass. This natural
+defeat is retained independently; it does not qualify as a cleared fifth battle.
