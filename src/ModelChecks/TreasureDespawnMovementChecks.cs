@@ -9,7 +9,9 @@ internal static class TreasureDespawnMovementChecks
         using var source = ModelJson.ReadFixture(sourcePath);
         var fixture = source.RootElement;
         Require(fixture.GetProperty("Mismatches").GetInt32() == 1 &&
-            fixture.GetProperty("NativeWon").GetBoolean(), "Missing original raw-room-only mismatch.");
+            fixture.GetProperty("NativeWon").GetBoolean() &&
+            fixture.GetProperty("RollingDecisions").GetArrayLength() == 28,
+            "Missing original28-input raw-room-only mismatch.");
         var stage = fixture.GetProperty("Stages").EnumerateArray().Single(row => row.GetProperty("Index").GetInt32() == 20);
         var before = stage.GetProperty("Before").Deserialize<RoomCombatState>()!;
         var actual = stage.GetProperty("Actual").Deserialize<RoomCombatState>()!;
@@ -55,7 +57,25 @@ internal static class TreasureDespawnMovementChecks
         RoomCombatChecks.NativeRoomOnly(sourcePath);
         TrainCombatChecks.Native(fixture);
         RollingAdviceChecks.ObservedSuccessors(fixture);
-        if (replayPath != null) CompleteNativeBattleChecks.Native(replayPath);
+        if (replayPath != null)
+        {
+            CompleteNativeBattleChecks.Native(replayPath);
+            using var replay = ModelJson.ReadFixture(replayPath);
+            Require(fixture.GetProperty("NativeRunInput").ContentEquals(replay.RootElement.GetProperty("NativeRunInput")),
+                "Independent native observation changed the campaign input.");
+            var removal = replay.RootElement.GetProperty("Stages").EnumerateArray().Single(row =>
+                row.GetProperty("Kind").GetString() == "Room" &&
+                row.GetProperty("Before").Deserialize<RoomCombatState>()!.Units.Any(unit => unit.AssetKey == "TreasureBagLvl1Gold") &&
+                row.GetProperty("Predicted").GetProperty("Events").EnumerateArray().Any(item =>
+                    item.GetProperty("Kind").GetString() == "Despawn"));
+            var fixedRoom = removal.GetProperty("Actual").Deserialize<RoomCombatState>()!;
+            var fixedPrediction = removal.GetProperty("Predicted").GetProperty("State").Deserialize<RoomCombatState>()!;
+            int retiredId = removal.GetProperty("Before").Deserialize<RoomCombatState>()!.Units
+                .Single(unit => unit.AssetKey == "TreasureBagLvl1Gold").Id;
+            Require(Key(fixedRoom) == Key(fixedPrediction) &&
+                fixedRoom.Context!.Enchantments!.Movement.All(rule => rule.UnitId != retiredId),
+                "Independent native capture retained the vanished treasure movement.");
+        }
         Console.WriteLine("TREASURE-DESPAWN-MOVEMENT PASS: original raw-room witness/full room state/RNG, all28 native successors, four immutable branches, living-counter/explicit-lifecycle controls; independentNative=" + (replayPath != null));
     }
 
