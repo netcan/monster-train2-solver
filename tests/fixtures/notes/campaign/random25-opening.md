@@ -96,3 +96,9 @@ random25-ring5-default267.zip has119 files, SHA256
 all118 hashed members restore. Four unchanged default-budget native victory
 pairs form one checkpoint chain. Ring5 reaches a seven-input enchantment
 preview NextAction discrepancy, which remains unaccepted and under calibration.
+
+Windows receives the exact267 payload at01:02 on2026-10-28; all67 protected
+files remain unchanged. PackagePojuAdvisor-0.2.267-Windows-20261028-010255.zip
+SHA25623E42DC19D6C9FF74971D595B5712C187F46E5E1293BA4BCD252AC2AE03D87DB,
+backup/receiptRandomCampaign-20261028-010255. Three installed DLLs match both
+accepted Ring4 native processes and source revision92b4e5db.
