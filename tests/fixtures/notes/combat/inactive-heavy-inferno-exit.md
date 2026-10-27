@@ -10,5 +10,6 @@ Release293 covers this exact original enemy and room signature. Other enemies
 with the same inactive phase boundary remain rejected pending evidence. The
 focused checker compares 21 card plays, five full turns, all ten train phases,
 four immutable branches and four changed-signature guards. The historical
-discrepancy is limited to the two captured masks. Independent replay and
-complete actual-budget battle acceptance remain outstanding.
+discrepancy is limited to the two captured masks. Frozen revision 0f162052
+independently reproduced all26 original inputs and complete native
+state/forecast/RNG. Complete actual-budget battle acceptance remains separate.

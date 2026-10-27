@@ -969,10 +969,12 @@ if (args.Length is 2 or 3 && args[0] == "--inactive-fragile-inferno-exit-only")
         Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(args[1]))).ToLowerInvariant());
     return;
 }
-if (args.Length == 2 && args[0] == "--inactive-heavy-inferno-exit-only")
+if (args.Length is 2 or 3 && args[0] == "--inactive-heavy-inferno-exit-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
-    InactiveHeavyInfernoExitChecks.Native(source.RootElement);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    InactiveHeavyInfernoExitChecks.Native(source.RootElement, replay?.RootElement,
+        Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(args[1]))).ToLowerInvariant());
     return;
 }
 if (args.Length is 2 or 3 && args[0] == "--enemy-statistics-listeners-only")
@@ -7396,10 +7398,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     InactiveFragileInfernoExitChecks.Native(source.RootElement, replay.RootElement,
         Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant());
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) == "player-inactive-heavy-inferno-exit-calibration.mt2f"))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-inactive-heavy-inferno-exit-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-inactive-heavy-inferno-exit-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var source = ModelJson.ReadFixture(path);
-    InactiveHeavyInfernoExitChecks.Native(source.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-inactive-heavy-inferno-exit-replay-calibration.mt2f"));
+    InactiveHeavyInfernoExitChecks.Native(source.RootElement, replay.RootElement,
+        Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant());
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-third-troop-fragile-buff-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-third-troop-fragile-buff-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
