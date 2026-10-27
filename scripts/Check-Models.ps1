@@ -514,6 +514,9 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-green-recruit-preview-identity-counterexample-calibration.mt2f',
     'player-green-recruit-preview-identity-calibration.mt2f',
     'player-green-recruit-preview-identity-replay-calibration.mt2f',
+    'player-green-recruit-endturn-identity-counterexample-calibration.mt2f',
+    'player-green-recruit-endturn-identity-calibration.mt2f',
+    'player-green-recruit-endturn-identity-replay-calibration.mt2f',
     'player-harvest-angel-moon-birth-calibration.mt2f',
     'harvest-angel-moon-creation-calibration.mt2f',
     'player-harvest-angel-moon-birth-replay-calibration.mt2f',
@@ -1931,6 +1934,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'full-battle-original-rapid-raise.mt2f', 'full-battle-original-spawning-pods.mt2f',
     'full-battle-original-make-it-rain.mt2f', 'full-battle-original-deathroar.mt2f',
     'full-battle-original-secret-ingredient.mt2f', 'full-battle-original-green-recruit.mt2f',
+    'full-battle-original-green-recruit-settled.mt2f',
     'full-battle-original-primordium.mt2f', 'full-battle-original-cheery-deathcap.mt2f',
     'full-battle-original-enthusiastic-fan.mt2f')
 $selectedFixtureNames = $fixtureNames
@@ -2078,6 +2082,19 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -ne 'p
         (Get-TestFixturePath 'player-ascend-deferred-destruction-counterexample-calibration.mt2f') `
         (Get-TestFixturePath 'full-battle-random-campaign-20-ring3-release215-budget10000-search.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Focused Ascend destruction checks failed.' }
+    return
+}
+$greenRecruitEndTurnNames = @('player-green-recruit-endturn-identity-counterexample-calibration.mt2f', 'player-green-recruit-endturn-identity-calibration.mt2f', 'player-green-recruit-endturn-identity-replay-calibration.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $greenRecruitEndTurnNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Green Recruit EndTurn checker build failed.' }
+    }
+    $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
+    dotnet $checker --green-recruit-endturn-counterexample-only (Get-TestFixturePath $greenRecruitEndTurnNames[0])
+    if ($LASTEXITCODE -ne 0) { throw 'Green Recruit EndTurn counterexample check failed.' }
+    dotnet $checker --green-recruit-endturn-identity-only (Get-TestFixturePath $greenRecruitEndTurnNames[1]) (Get-TestFixturePath $greenRecruitEndTurnNames[2])
+    if ($LASTEXITCODE -ne 0) { throw 'Focused Green Recruit EndTurn pair failed.' }
     return
 }
 $greenRecruitIdentityNames = @('player-green-recruit-preview-identity-counterexample-calibration.mt2f', 'player-green-recruit-preview-identity-calibration.mt2f', 'player-green-recruit-preview-identity-replay-calibration.mt2f')
@@ -5174,7 +5191,7 @@ foreach ($fixturePath in $originalSecretIngredientFixtures) {
         if ($LASTEXITCODE -ne 0) { throw "Original Secret Ingredient checks failed ($mode): $fixturePath" }
     }
 }
-$originalGreenRecruitFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'full-battle-original-green-recruit.mt2f' })
+$originalGreenRecruitFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -in @('full-battle-original-green-recruit.mt2f', 'full-battle-original-green-recruit-settled.mt2f') })
 foreach ($fixturePath in $originalGreenRecruitFixtures) {
     foreach ($mode in @('--original-green-recruit-only', '--native-actions-only', '--battle-search-only')) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
