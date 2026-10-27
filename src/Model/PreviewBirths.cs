@@ -19,11 +19,20 @@ namespace MonsterTrain2Poju.Model
             context.FindCard(unit.SpawnerCardId)?.DataId == "0422f6ca-896c-4676-a01f-71d8d4b232fb" &&
             (unit.Triggers.Count == 1 || unit.Triggers is [_, { Kind: "OnHit", Effects: [{ Type: "CardEffectAddStatusEffect", Action:
                 { Type: "AddStatus", Target: "LastAttackerCharacter", Range: null,
-                    AllowEnemy: true, AllowPlayer: true, Statuses: [{ Id: "pyregel", Stacks: 3 }] } }] }]) &&
+                    AllowEnemy: true, AllowPlayer: true, Statuses: [{ Id: "pyregel", Stacks: 3 }] } }] }] ||
+                unit.Triggers.Count == 2 && IsOriginalMeatShieldHeal(unit.Triggers[1], unit, context)) &&
             unit.Triggers[0] is { Kind: "OnAnyHeroDeathOnFloor", Effects: [{ Type: "CardEffectSpawnMonsterOrAddStatusEffect", Action:
                 { Type: "SpawnOrStatus", Target: "Room", Value: 2, AllowPlayer: true, AllowEnemy: false, Range: null,
                     Statuses: [{ Id: "horde", Stacks: 2 }], Filters.Subtype: "SubtypesData_Horde",
                     SpawnFallbackUnit: { AssetKey: "MonsterFunguy", BaseAttack: 3, Health: 4, Modifiers.Upgrades.Count: 0 } } }] };
+
+        private static bool IsOriginalMeatShieldHeal(CombatTrigger trigger, CombatUnit unit, CombatContext context) =>
+            trigger is { Kind: "PostCombat", Once: false, IgnoreSilence: false, FireCount: 1, SkipDuringDeployment: true,
+                Origin: { UpgradeId: CardGraftedEquipmentModel.EventEquipmentId, IsFromEquipment: true, EquipmentCardId: > 0 } origin,
+                Effects: [{ Type: "CardEffectHeal", Value: 10, Action: { Type: "Heal", Target: "Self", Value: 10,
+                    AllowEnemy: false, AllowPlayer: false, Range: null, Statuses.Count: 0, Upgrade: null } }] } &&
+            unit.EquipmentCards.Contains(origin.EquipmentCardId) &&
+            context.FindCard(origin.EquipmentCardId)?.DataId == CardGraftedEquipmentModel.EventEquipmentId;
 
         private static bool IsOriginalChampionAuraPreview(EnchantmentRetainedUnit actor, EnchantmentWorld world, CombatContext context) =>
             world.EnchanterIds.Count == 0 && actor.Unit is { Health: 12, MaxHealth: 12, Triggers.Count: 0,
