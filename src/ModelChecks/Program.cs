@@ -750,6 +750,13 @@ if (args.Length is 2 or 3 && args[0] == "--underlegion-troop-upgrade-only")
     else { using var replay = ModelJson.ReadFixture(args[2]); UnderlegionTroopUpgradeChecks.Native(source.RootElement, replay.RootElement); }
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--underlegion-second-troop-upgrade-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) UnderlegionSecondTroopUpgradeChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); UnderlegionSecondTroopUpgradeChecks.Native(source.RootElement, replay.RootElement); }
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--card-corruption-attack-upgrade-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -8020,6 +8027,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-corruption-attack-upgrade-replay-calibration.mt2f"));
     CardCorruptionAttackUpgradeChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-underlegion-second-troop-upgrade-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    UnderlegionSecondTroopUpgradeChecks.Native(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-underlegion-troop-upgrade-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-underlegion-troop-upgrade-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

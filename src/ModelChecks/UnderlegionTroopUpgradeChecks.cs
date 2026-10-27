@@ -53,7 +53,7 @@ internal static class UnderlegionTroopUpgradeChecks
         Console.WriteLine("UNDERLEGION-TROOP-UPGRADE PASS: natural champion birth/full successor/forecast/RNG; inherited health-per-troop aura/cache; eight immutable branches; nine changed-signature guards; independentPair=" + replay.HasValue);
     }
 
-    private static void CapturePair(FixtureValue source, FixtureValue replay)
+    internal static void CapturePair(FixtureValue source, FixtureValue replay)
     {
         // The old recorder omitted the automatic world for an upgrade-owned aura.
         // First replay both full observations above. Then prove that this one
