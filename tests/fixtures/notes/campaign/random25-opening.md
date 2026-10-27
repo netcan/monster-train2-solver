@@ -102,3 +102,22 @@ files remain unchanged. PackagePojuAdvisor-0.2.267-Windows-20261028-010255.zip
 SHA25623E42DC19D6C9FF74971D595B5712C187F46E5E1293BA4BCD252AC2AE03D87DB,
 backup/receiptRandomCampaign-20261028-010255. Three installed DLLs match both
 accepted Ring4 native processes and source revision92b4e5db.
+
+Release268 revisionac1216e7 fixes the isolated ordinary-boss aura pending map.
+Actual Ring5 source012132-1fd5d91d and independent defeat settlement
+012338-0ef59d26 both lose with nine EndTurns/zero cards,boss355HP/17attack.
+All complete roots/successors/forecasts/RNG,18 train phases per process and
+four zero counters pass.11 publications/63 captures have zero purity errors.
+Normal six events settle four wins and one loss; NativeVictoryType=None,
+save SHA256416EFEFC9E53A2C05B424B4473B16422D056FF4011CA2B832235E631E6A30C68.
+The unchanged Ring5 input is archived separately as119 files,SHA256
+B2FEC3A3042FD5C82CC41F69963BA667CB59AC571AD34941FA299277D5E2D031.
+No fifth win is claimed.
+
+Root enumeration has24 supported actions/zero unknown actions. A stronger
+offline continuation exposes the later exact rejection: Battle preview floor2,
+combined troop upgrades and enchantment source ordering require calibration.
+The extracted12-input prefix reaches turn2 before its failing EndTurn; it is
+under isolated native observation. Thus a legal opening alone does not prove
+the complete future branch is modeled, and the zero-card fallback is retained
+as a real counterexample instead of counted as satisfactory strategy.

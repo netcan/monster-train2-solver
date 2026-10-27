@@ -7,6 +7,22 @@ internal static class RandomCampaignChecks
 {
     internal static void Curated(string path)
     {
+        if (Path.GetFileName(path) == "full-battle-random-campaign-25-ring5-release268-budget10000-settled-loss.mt2f")
+        {
+            using var native = ModelJson.ReadFixture(path);
+            using var replay = ModelJson.ReadFixture(path.Replace("-loss.mt2f", "-loss-replay.mt2f", StringComparison.Ordinal));
+            DefeatPair(native.RootElement, replay.RootElement, 1860103187, 0, 4, "Underlegion", "Pyreborne", 10000);
+            foreach (var fixture in new[] { native.RootElement, replay.RootElement })
+            {
+                var rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+                var final = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+                Require(rows.Length == 9 && rows.All(row => row.GetProperty("IsEndTurn").GetBoolean()) &&
+                    final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsBoss == true) is
+                        { AssetKey: "Boss_Level5_Reanimate", Health: 355, Attack: 17 },
+                    "Preserve sample25 Ring5 nine-EndTurn/zero-card native defeat and355 bossHP.");
+            }
+            return;
+        }
         if (Path.GetFileName(path) == "full-battle-random-campaign-24-ring7-refined267-search.mt2f")
         {
             using var native = ModelJson.ReadFixture(path);
