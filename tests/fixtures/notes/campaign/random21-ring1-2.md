@@ -28,3 +28,5 @@ inputs21..40 reaches197HP in43inputs, with full owned successor/forecast/RNG
 verification; it remains a model loss. Deployment samples24..47 add24 complete
 candidates and no improvement. Resume fresh deployment at48; do not count any
 of these routes as native victories or replay unchanged samples.
+Release224 checks fresh deployment samples48..71:24 complete candidates,
+zero unsupported and no improvement. The next fresh deployment index is72.

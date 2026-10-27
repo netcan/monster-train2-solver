@@ -35,10 +35,10 @@ internal static partial class OfflineBattleSearch
             Action = row.GetProperty("Action").Deserialize<PlayCardAction>(),
             IsEndTurn = row.GetProperty("IsEndTurn").GetBoolean() }).ToArray();
         var deployment = route.TakeWhile(step => !step.IsEndTurn).ToArray();
-        Require(deployment.Length is >= 1 and <= 6 && deployment.All(step => step.Action is { ActivatorUnitId: 0 } action &&
+        Require(deployment.Length is >= 1 and <= 32 && deployment.All(step => step.Action is { ActivatorUnitId: 0 } action &&
             root.PlayRules!.Cards.Single(rule => rule.DataId == root.Spawn.Train.Context!.CardInstances!
                 .Single(card => card.InstanceId == action.CardInstanceId).DataId).SpawnUnit != null),
-            "Expected one to six initial unit plays before the first EndTurn.");
+            "Expected one to32 initial unit plays before the first EndTurn.");
         var bestFinal = fixture.GetProperty("Final").Deserialize<BattleTurnState>()!;
         var bestOutcome = (RoomOutcome)fixture.GetProperty("Outcome").GetInt32();
         Require(bestOutcome == RoomOutcome.PlayerDefeated, "Deployment investigation requires a complete losing baseline.");
