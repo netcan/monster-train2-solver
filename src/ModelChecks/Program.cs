@@ -961,6 +961,20 @@ if (args.Length is 2 or 3 && args[0] == "--third-troop-fragile-buff-only")
     ThirdTroopFragileBuffChecks.Native(source.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--retired-titanskin-troop-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    RetiredTitanskinTroopChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
+if (args.Length is 2 or 3 && args[0] == "--inactive-pyre-damage-inferno-exit-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    InactivePyreDamageInfernoExitChecks.Native(source.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--inactive-fragile-inferno-exit-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -7444,6 +7458,16 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-third-troop-fragile-buff-replay-calibration.mt2f"));
     ThirdTroopFragileBuffChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player-retired-titanskin-troop-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var source = ModelJson.ReadFixture(path);
+    RetiredTitanskinTroopChecks.Native(source.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player-inactive-pyre-damage-inferno-exit-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var source = ModelJson.ReadFixture(path);
+    InactivePyreDamageInfernoExitChecks.Native(source.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("parallel-lower-opening-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "parallel-lower-opening-model-counterexample.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

@@ -219,6 +219,10 @@ namespace MonsterTrain2Poju.Model
                     {
                         if (previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
                             previousUnit is not { AssetKey: "HeavyT3_Basic", BaseAttack: 8, MaxHealth: 325, Size: 2, Triggers.Count: 0 } &&
+                            previousUnit is not { AssetKey: "HeavyT3_PyreDamageIfUnblocked", BaseAttack: 5, MaxHealth: 250, Size: 2,
+                                Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,
+                                    Effects: [{ Type: "CardEffectPyreDamageIfNoPlayerUnits", Value: 5,
+                                        Action: { Type: "Damage", Target: "Pyre", Value: 5 } }] }] } &&
                             previousUnit is not { AssetKey: "HeavyT2_Zealot", BaseAttack: 5, MaxHealth: 110, Size: 2,
                                 Triggers: [{ Kind: "OnAnyUnitDeathOnFloor", FireCount: 1,
                                     Effects: [{ Type: "CardEffectBuffDamage", Value: 1, Action: { Type: "BuffAttack", Target: "Self", Value: 1 } }] }] } ||

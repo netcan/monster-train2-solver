@@ -156,13 +156,23 @@ namespace MonsterTrain2Poju.Model
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
         }
 
-        private static bool OnlyFragileBuffSource(EnchantmentCombatState source)
+        internal static bool OnlyFragileBuffSource(EnchantmentCombatState source)
         {
-            if (source.EnchanterIds.Count != 1) return false;
-            CombatUnit? owner = source.Train.Rooms.SelectMany(room => room.Units)
-                .SingleOrDefault(unit => unit.Id == source.EnchanterIds[0]);
+            CombatUnit[] owners = source.Train.Rooms.SelectMany(room => room.Units)
+                .Where(unit => source.EnchanterIds.Contains(unit.Id) && unit.AssetKey == "Boss_Level8_Fragile").ToArray();
+            if (owners.Length != 1 || source.EnchanterIds.Count(id => id == owners[0].Id) != 1) return false;
+            CombatUnit owner = owners[0];
             if (owner is not { AssetKey: "Boss_Level8_Fragile", Team: CombatTeam.Enemy, MaxHealth: 3000 } ||
                 owner.Health <= 0 || owner.DeathState?.IsDestroyed == true) return false;
+            int[] retiredIds = source.EnchanterIds.Where(id => id != owner.Id).ToArray();
+            // The native registry can retain destroyed Titanskin owners after
+            // their room bindings were removed. They cannot perform writes.
+            if (retiredIds.Length != 0 && (retiredIds.Length != 2 || retiredIds.Distinct().Count() != 2 ||
+                source.Train.Rooms.SelectMany(room => room.Units).Any(unit => retiredIds.Contains(unit.Id)) ||
+                retiredIds.Any(id => source.RetainedUnits.Count(actor => actor.Unit.Id == id &&
+                    actor.RoomIndex == -1 && !actor.Preview && actor.Unit.Health <= 0 &&
+                    actor.Unit.DeathState?.IsDestroyed == true) != 1) ||
+                !OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, retiredIds))) return false;
             var effects = owner.Triggers.SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null).ToArray();
             return effects.Length == 1 && effects[0].Enchantment is
                 { Bound: true, HasParentCard: false, StatusPool.Count: 1 } aura &&
