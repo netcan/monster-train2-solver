@@ -12,4 +12,6 @@ immutable branches and three changed-signature guards. Its historical turn
 difference is limited to those two masks. The nested room exchange also had
 an independently observed delayed Zealot attack update; full room combat
 matches, but that intermediate exchange remains an explicit separate gap.
-Independent replay and actual-budget whole-battle acceptance are outstanding.
+Frozen revision f7b80178 independently reproduced all34 original inputs and
+complete state/forecast/RNG. Actual-budget whole-battle acceptance remains
+outstanding.
