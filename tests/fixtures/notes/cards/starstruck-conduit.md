@@ -19,6 +19,10 @@ the previously calibrated TitanCurse upgrades for this exact Starstruck owner
 and ordered permanent signature. It reuses the full calibrated Conduit shape;
 changed owners, assets, power/heal/cost/traits, duplicate or fourth contributors
 remain rejected. All34 complete native states/forecasts/RNG, four immutable
-branches and eight scope controls pass. A frozen fixed-build independent
-native replay is pending. This floor-focus capture does not claim an actual
+branches and eight scope controls pass. Frozen release249 replay
+193153-b7ef2975 independently matches all34 native inputs, full states,
+forecasts and RNG. The old boundary refusal remains archived. The same
+former turn5 search failure now finds a model-verified whole-battle win with
+Pyre12 at10000ms/two workers; a fresh native default-budget run is pending.
+This floor-focus capture does not claim an actual
 Starstruck cast while those contributors remain attached.
