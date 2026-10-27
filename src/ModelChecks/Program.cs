@@ -598,6 +598,11 @@ if (args.Length is 2 or 3 && args[0] == "--discard-equipment-turn-only")
     else { using var replay = ModelJson.ReadFixture(args[2]); DiscardEquipmentTurnChecks.Native(source.RootElement, replay.RootElement); }
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--treasure-despawn-movement-only")
+{
+    TreasureDespawnMovementChecks.Native(args[1], args.Length == 3 ? args[2] : null);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--titan-skin-hit-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

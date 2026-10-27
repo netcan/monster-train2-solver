@@ -3314,6 +3314,15 @@ namespace MonsterTrain2Poju.Model
                 if (source.Preview && context?.LifeLinks != null) return;
                 unit.Destroyed = true;
                 if (context != null) context = ConduitModel.Change(context, unit.RoomIndex, unit.Freeze(), source.Preview, remove: true);
+                // HeroManager no longer owns movement after physical removal,
+                // including a living treasure actor that despawns. Older room
+                // captures can omit lifecycle flags, so Sync cannot infer this
+                // from the retained actor's positive health alone.
+                if (context?.Enchantments is EnchantmentWorld world && world.Movement.Any(rule => rule.UnitId == unit.Source.Id))
+                    context = context.WithEnchantments(new EnchantmentWorld(world.Rooms,
+                        world.Movement.Where(rule => rule.UnitId != unit.Source.Id).ToArray(), world.EnemySlotsPerRoom,
+                        world.RetainedUnits, world.EnchanterIds, world.AllowUpdates, world.Updating, world.Preview,
+                        world.TestRng, world.AutomaticLifecycle, world.TemporaryPreviewUnitIds));
                 if (context?.SpawnPoints == null) return;
                 var removed = BattleSpawnPointModel.Apply(context.SpawnPoints, CurrentRoom(), "Remove", unit.Source.Team, unit.Source.Id);
                 if (!removed.Supported) { unsupportedReason = removed.Error; return; }
