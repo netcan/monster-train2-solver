@@ -46,3 +46,17 @@ SHA256 5D8261C6772C11A97B1E0A6C600AF2D5F795D9967C3117D4C642382FEB15A8D1.
 Backup/receipt: BepInEx/PojuBackups/RandomCampaign-20261027-220208.
 All three installed DLL hashes match both accepted native processes;
 67 protected files and other mods/configuration remain unchanged.
+
+Release260 Ring3 source215735-0e507a49 and independent replay220208-55277bb5
+win with the same41 inputs/32 plays/nine EndTurns and Pyre56. Complete roots,
+successors, forecasts and RNG match; every raw failure counter is zero.
+The source passes43 publications/291 captures/zero purity failures and1108
+complete mask contexts. The declared actual search remains10000ms/two workers.
+64 normal reward/map events enter Ring4, including native healing to Pyre76;
+the resulting save SHA256 is
+BAE052DC459BE0F8BDC37A8F4689A7CF7F1E006B1E718DABBEA3C741482BEA46.
+random24-ring4-default260.zip has86 files, SHA256
+187642D2EAD20289872B40584673D2B3D37F2C7BB0B151FE85C04DE7E5DF8285;
+all85 hashed members restore. The independent pair is journaled before Ring4.
+Three consecutive default-budget native pairs are accepted; later rings
+and the native eight-battle settlement remain unaccepted.
