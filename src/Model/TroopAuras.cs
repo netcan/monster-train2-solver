@@ -18,7 +18,10 @@ namespace MonsterTrain2Poju.Model
     {
         internal static string Key(int id) => "troop-aura:" + id;
         internal static bool Matches(CombatUnit unit, TroopAuraState rule) => unit.Team == CombatTeam.Player && !unit.IsPyre &&
-            unit.Health > 0 && unit.DeathState?.IsDestroyed != true && unit.Subtypes.Contains(rule.Subtype);
+            unit.Health > 0 && unit.DeathState?.IsDestroyed != true && SubtypeMatches(unit, rule);
+
+        private static bool SubtypeMatches(CombatUnit unit, TroopAuraState rule) =>
+            rule.Subtype == CardUnderlegionTroopUpgradeModel.NoneSubtype || unit.Subtypes.Contains(rule.Subtype);
 
         internal static EnchantmentCombatResult UpdateAll(EnchantmentCombatState source, IReadOnlyList<int> order)
         {
@@ -180,7 +183,7 @@ namespace MonsterTrain2Poju.Model
             foreach (CombatUnit owner in source.Units.Where(unit => unit.Modifiers?.TroopAura != null))
             {
                 TroopAuraState rule = owner.Modifiers!.TroopAura!;
-                if (target.Team != CombatTeam.Player || target.IsPyre || !target.Subtypes.Contains(rule.Subtype)) continue;
+                if (target.Team != CombatTeam.Player || target.IsPyre || !SubtypeMatches(target, rule)) continue;
                 CardUpgradeModifier upgrade = rule.Upgrade.WithRuntimeIdentity(Key(owner.Id));
                 for (int i = 0; i < delta; i++)
                 {

@@ -385,7 +385,8 @@ namespace MonsterTrain2Poju.Model
                 ? upgrade.ExternalInteractions.Where(interaction => interaction != "Upgrade replacements")
                 : upgrade.ExternalInteractions)
             .Where(interaction => interaction != CardCorruptionAttackUpgradeModel.Guard ||
-                !CardCorruptionAttackUpgradeModel.Known(upgrade) && !CardSentientDrawUpgradeModel.Known(upgrade))
+                !CardCorruptionAttackUpgradeModel.Known(upgrade) && !CardSentientDrawUpgradeModel.Known(upgrade) &&
+                !CardUnderlegionTroopUpgradeModel.Known(upgrade))
             .Where(interaction => interaction != "Upgrade traits" || !CardJuiceModel.KnownTripleUpgrade(upgrade))
             .Concat((upgrade.Lifecycle?.Triggers ?? Array.Empty<CardLifecycleTrigger>()).SelectMany(trigger =>
                 trigger.Type != "OnCast" && !(RelicPerkeoModel.IsConversionUpgrade(upgrade) && RelicPerkeoModel.IsConversionTrigger(trigger))
@@ -487,6 +488,9 @@ namespace MonsterTrain2Poju.Model
                         maxHealth = Math.Min(99999, checked(maxHealth + upgrade.UnhealedHealth));
                 }
                 UnitModifiers? original = unit.Modifiers;
+                int inheritedTroopAuras = cardUpgrades.Count(CardUnderlegionTroopUpgradeModel.Known);
+                if (inheritedTroopAuras > 1 || inheritedTroopAuras == 1 && original?.TroopAura != null)
+                    interactions.Add("Combined inherited troop room modifiers require native calibration.");
                 int attackDamage = UpgradedStat(original?.AttackDamage ?? unit.BaseAttack, "Damage", true, modifiers);
                 int damageBuff = original?.DamageBuff ?? 0;
                 int baseAttack = UpgradedStat(unit.BaseAttack, "Damage", true, modifiers);
@@ -504,7 +508,8 @@ namespace MonsterTrain2Poju.Model
                     original.DamageBuffFromStatusEffects, original.MagebladeDamagePerMagicPower, original.StatusAttackModifiers,
                     original.IsChampion, CardCorruptionAttackUpgradeModel.BirthRules(original.SelfAttackRules, cardUpgrades),
                     CardSentientDrawUpgradeModel.BirthRules(original.RoomResources, cardUpgrades), original.RoomStatuses, original.RoomTriggerCounts, original.SpawnCopySubtype,
-                    instance.MaskDescriptor?.GraftedEquipment ?? original.Graft, original.SynergizeStatuses, original.Sentry, original.TroopAura);
+                    instance.MaskDescriptor?.GraftedEquipment ?? original.Graft, original.SynergizeStatuses, original.Sentry,
+                    CardUnderlegionTroopUpgradeModel.BirthRule(original.TroopAura, cardUpgrades));
                 int? nextTriggerId = unit.NextTriggerId;
                 var triggers = unit.Triggers.ToList();
                 foreach (CombatTrigger definition in cardUpgrades.SelectMany(upgrade =>

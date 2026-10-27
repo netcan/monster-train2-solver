@@ -544,6 +544,13 @@ if (args.Length == 2 && args[0] == "--card-corruption-attack-queries-only")
     CardCorruptionAttackUpgradeChecks.NaturalQueries(source.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--underlegion-troop-upgrade-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) UnderlegionTroopUpgradeChecks.Native(source.RootElement);
+    else { using var replay = ModelJson.ReadFixture(args[2]); UnderlegionTroopUpgradeChecks.Native(source.RootElement, replay.RootElement); }
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--card-corruption-attack-upgrade-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
