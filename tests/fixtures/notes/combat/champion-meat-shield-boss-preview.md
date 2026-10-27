@@ -17,7 +17,9 @@ then independently compares all37 native successors/full forecasts/RNG and
 the continuous model-owned route, including four immutable boundary branches.
 The older observable champion-aura preview control passes74 raw room/17 train
 phases/43 successors and seven lifetime guards; its retained preview27 must
-not be forgotten. Fixed-build native pairing remains pending.
+not be forgotten. Fixed276 revision728cd590 independent native component
+025134-edd6dd8e passes all37 inputs and the complete native pair, with the
+original request and native observations unchanged.
 
 The unchanged release275 whole-battle archive also retains separate raw
 Inferno death-queue snapshot differences at turns3/4/5/6. Passing all37 actual

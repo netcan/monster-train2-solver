@@ -8297,10 +8297,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-roo
     using var fixture = ModelJson.ReadFixture(path);
     RoomPreCombatWorldChecks.NativeRoot(fixture.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path) == "player-champion-meat-shield-boss-preview-calibration.mt2f"))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-champion-meat-shield-boss-preview-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-champion-meat-shield-boss-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var fixture = ModelJson.ReadFixture(path);
-    ChampionMeatShieldBossPreviewChecks.Native(fixture.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-champion-meat-shield-boss-preview-replay-calibration.mt2f"));
+    ChampionMeatShieldBossPreviewChecks.Native(fixture.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-champion-meat-shield-preview-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-champion-meat-shield-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
