@@ -56,6 +56,12 @@ else if (args.Length == 4 && args[0] == "extract-unsupported-branch")
 {
     OfflineBattleSearch.ExtractUnsupported(args[1], args[2], args[3]);
 }
+else if (args.Length is 4 or 5 && args[0] == "extract-unsupported-endturn")
+{
+    int room = args.Length == 5 ? int.Parse(args[4]) : 2;
+    if (room is < 0 or > 2) throw new ArgumentOutOfRangeException(nameof(room), "Expected floor0..2.");
+    OfflineBattleSearch.ExtractUnsupported(args[1], args[2], args[3], endTurnOnly: true, preferredRoom: room);
+}
 else if (args.Length is 4 or 5 && args[0] == "policy-battle" && (args.Length == 4 || args[4] == "--strength"))
 {
     OfflineBattleSearch.Policy(args[1], args[2], int.Parse(args[3]), args.Length == 5);

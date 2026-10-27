@@ -10,7 +10,8 @@ internal static partial class OfflineBattleSearch
 {
     // Reuse recorded forecasts before spending another search/native battle.
     // This exports a replayable failure boundary, never a native successor.
-    internal static void ExtractUnsupported(string input, string output, string reason)
+    internal static void ExtractUnsupported(string input, string output, string reason,
+        bool endTurnOnly = false, int preferredRoom = 2)
     {
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         Require(!string.IsNullOrWhiteSpace(reason), "An exact rejection reason is required.");
@@ -27,7 +28,7 @@ internal static partial class OfflineBattleSearch
         bool Extract(BattleTurnState current, List<Step> forecastPrefix)
         {
             if (!visited.Add(keys.Key(current))) return false;
-            UnsupportedActionAttempt? failure = BattleActionModel.EnumerateActions(current).UnsupportedAttempts
+            UnsupportedActionAttempt? failure = endTurnOnly ? null : BattleActionModel.EnumerateActions(current).UnsupportedAttempts
                 .FirstOrDefault(attempt => attempt.Reason == reason);
             bool end = failure == null;
             if (end && BattleTurnModel.EndTurn(current).UnsupportedReason != reason) return false;
@@ -90,7 +91,7 @@ internal static partial class OfflineBattleSearch
             while (!Terminal(outcome) && prefix.Count < 256)
             {
                 if (Extract(current, prefix)) return;
-                SupportedActionCandidate? choice = played >= 18 ? null : BattleTacticalPolicy.Choose(current, out _);
+                SupportedActionCandidate? choice = played >= 18 ? null : BattleTacticalPolicy.Choose(current, out _, preferredRoom);
                 var step = new Step { Action = choice?.Action, IsEndTurn = choice == null };
                 current = Apply(current, step.Action, step.IsEndTurn, out outcome);
                 prefix.Add(step); played = step.IsEndTurn ? 0 : played + 1;
