@@ -2799,6 +2799,15 @@ if (args.Length is 3 or 5 && args[0] == "--fleshweaver-merchant-birth-only")
     FleshweaverMerchantBirthChecks.Native(source.RootElement, birth.RootElement, replay?.RootElement, replayBirth?.RootElement);
     return;
 }
+if (args.Length is 3 or 5 && args[0] == "--cael-lifesteal-moon-birth-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var birth = ModelJson.ReadFixture(args[2]);
+    if (args.Length == 3) CaelMoonBirthChecks.Native(source.RootElement, birth.RootElement, lifesteal: true);
+    else { using var replay = ModelJson.ReadFixture(args[3]); using var replayBirth = ModelJson.ReadFixture(args[4]);
+        CaelMoonBirthChecks.Native(source.RootElement, birth.RootElement, replay.RootElement, replayBirth.RootElement, lifesteal: true); }
+    return;
+}
 if (args.Length is 3 or 5 && args[0] == "--cael-moon-birth-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -7345,6 +7354,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-moo
     using var source = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-moon-silence-reset-calibration.mt2f"));
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-moon-silence-reset-replay-calibration.mt2f"));
     MoonSilenceResetChecks.Native(battle.RootElement, source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) is "player-cael-lifesteal-moon-birth-calibration.mt2f" or "cael-lifesteal-moon-creation-calibration.mt2f")
+    .Select(path => ModelJson.RelatedFixture(path, "player-cael-lifesteal-moon-birth-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var birth = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "cael-lifesteal-moon-creation-calibration.mt2f"));
+    CaelMoonBirthChecks.Native(source.RootElement, birth.RootElement, lifesteal: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-cael-moon-birth-calibration.mt2f"))
 {

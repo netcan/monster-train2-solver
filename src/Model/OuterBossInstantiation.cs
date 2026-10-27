@@ -26,6 +26,18 @@ namespace MonsterTrain2Poju.Model
     }
     public static class OuterBossInstantiationModel
     {
+        private static bool CalibratedLifestealMoon(CombatUnit unit) =>
+            unit is { AssetKey: "Boss_Level6_Cael_Lifesteal", BaseAttack: 22, Attack: 22,
+                Health: 1800, MaxHealth: 1800, Triggers.Count: 1 } &&
+            unit.Triggers[0] is { Kind: "PostCombat", Effects.Count: 1 } trigger &&
+            trigger.Effects[0] is { Type: "CardEffectAddTempCardUpgradeToUnits",
+                UnitUpgrade: { Target: "FrontInRoom", AllowEnemy: true, AllowPlayer: false,
+                    Upgrade: { DataId: "47c4adc2-192c-47c5-bf22-06ab8f45c2f4", AssetKey: "Boss_Level6_FeedLifestealUpgrade",
+                        Statuses.Count: 1 } upgrade } } &&
+            upgrade.Stats.Damage == 7 && upgrade.Stats.Health == 0 && upgrade.Stats.Cost == 0 &&
+            upgrade.Stats.Heal == 0 && upgrade.Stats.Size == 0 && upgrade.Stats.XCost == 0 &&
+            upgrade.Stats.EquipmentLimit == 0 && upgrade.Stats.UpgradeSlotCount == 0 &&
+            upgrade.Statuses[0].Id == "lifesteal" && upgrade.Statuses[0].Stacks == 1;
         public static OuterBossInstantiationResult Apply(OuterBossInstantiationState source)
         {
             OuterBossInstantiationResult Fail(string reason) => new OuterBossInstantiationResult(null, reason);
@@ -36,7 +48,7 @@ namespace MonsterTrain2Poju.Model
             int moon = train.Context?.QueryFrame?.MoonPhase ?? 0;
             bool calibratedMoon = battle.MoonPhaseTrackingActive == true &&
                 (actor.Unit.AssetKey is "Boss_Level3_Fleshweaver_Corruption" or "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth" or
-                    "Boss_Level3_Arkion_SiphonRage" or "Boss_Level6_Cael_DamageShield" ||
+                    "Boss_Level3_Arkion_SiphonRage" or "Boss_Level6_Cael_DamageShield" || CalibratedLifestealMoon(actor.Unit) ||
                     actor.Unit is { AssetKey: "Boss_Level6_AngelDuo_Entropic_Variant3_HarvestHealth", BaseAttack: 11, Attack: 11,
                         Health: 1250, MaxHealth: 1250 } ||
                     actor.Unit is { AssetKey: "Boss_Level8_Fragile", BaseAttack: 30, Attack: 30, Health: 3000, MaxHealth: 3000 } ||
