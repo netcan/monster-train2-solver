@@ -6981,6 +6981,18 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == "player-ran
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-rank-three-room-slay-replay-calibration.mt2f"));
     RankThreeRoomSlayChecks.Native(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) == "player-relentless-outer-bump-counterexample-calibration.mt2f"))
+{
+    using var source = ModelJson.ReadFixture(path);
+    RelentlessOuterBossBumpChecks.Counterexample(source.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) is "player-relentless-outer-bump-calibration.mt2f" or "player-relentless-outer-bump-replay-calibration.mt2f")
+    .Select(path => ModelJson.RelatedFixture(path, "player-relentless-outer-bump-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-relentless-outer-bump-replay-calibration.mt2f"));
+    RelentlessOuterBossBumpChecks.Native(source.RootElement, replay.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-rank-three-room-slay-execution-calibration.mt2f"))
     RankThreeRoomSlayExecutionChecks.Native(path, ModelJson.RelatedFixture(path, "player-rank-three-room-slay-execution-replay-calibration.mt2f"));
 foreach (string path in args.Where(path => Path.GetFileName(path) == "player-green-recruit-preview-identity-counterexample-calibration.mt2f"))

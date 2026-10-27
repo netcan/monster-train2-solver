@@ -23,6 +23,11 @@ A226C470F55D211943E4B320A13DB1ABE3F8DA7E9B5CE6A9BF77138451F8E6BA.
 Both archives are curated and the first two default-budget save links pass.
 
 Ring3 opening134842-6e17cfeb is blocked before its first input by a new
-triple-Juice owner signature. Its original capture and guard are retained;
-isolated native calibration is in progress. No Ring3 or full-campaign win
-is claimed.
+triple-Juice owner signature. Release229 calibrates Purifying Cleanse with
+independent first-EndTurn and18-input positive Conduit8/heal23/Burnout9 pairs.
+Its clean full battle140135-6feeba03 then reaches input39 and exposes missing
+departure-floor destruction after paid Relentless outer-boss movement.
+Release231 corrects the native39-input source and independent replay pair;
+the original failure and both components are curated. The same checkpoint
+is undergoing fresh actual10000ms/two-worker full-battle acceptance.
+No Ring3 or full-campaign win is claimed.

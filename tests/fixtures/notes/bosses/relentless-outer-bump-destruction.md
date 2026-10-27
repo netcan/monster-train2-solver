@@ -24,8 +24,12 @@ Enabled field is excluded from this new39-input comparison. The paired boss
 counterexample also passes its53rd automatic and63rd paid-card boundaries,
 with eight immutable full-state/RNG branches.
 
-Independent repaired39-input replay and fresh default-budget Ring3 acceptance
-are pending. This component does not add a campaign or battle victory.
+Independent repaired39-input replay141346-52b6e79d from1b1b789b now passes
+the complete pair comparison, preserving the original wrong forecast and all
+actual inputs, roots, successors, forecasts and RNG. Original failed battle,
+source component and corrected replay are curated separately. Fresh actual
+10000ms/two-worker Ring3 acceptance continues. This component does not add a
+campaign or battle victory.
 
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --relentless-outer-bump-counterexample-only <original-failure.mt2f>
