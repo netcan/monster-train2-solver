@@ -18,7 +18,7 @@ namespace MonsterTrain2Poju.Model
     {
         internal static string Key(int id) => "troop-aura:" + id;
         internal static bool Matches(CombatUnit unit, TroopAuraState rule) => unit.Team == CombatTeam.Player && !unit.IsPyre &&
-            unit.Health > 0 && unit.DeathState?.IsDestroyed != true && SubtypeMatches(unit, rule);
+            unit.Health > 0 && unit.DeathState?.IsDestroyed != true && unit.Status("untouchable")?.Stacks is not > 0 && SubtypeMatches(unit, rule);
 
         private static bool SubtypeMatches(CombatUnit unit, TroopAuraState rule) =>
             rule.Subtype == CardUnderlegionTroopUpgradeModel.NoneSubtype || unit.Subtypes.Contains(rule.Subtype);
@@ -34,13 +34,20 @@ namespace MonsterTrain2Poju.Model
                 CombatUnit? owner = room?.Units.Single(unit => unit.Id == ownerId);
                 TroopAuraState? rule = owner?.Modifiers?.TroopAura;
                 if (rule == null || owner!.Health <= 0 || owner.DeathState?.IsDestroyed == true) continue;
-                var targets = room!.Units.Where(unit => Matches(unit, rule)).Select(unit => unit.Id).ToArray();
+                CombatUnit[] knownDepartures = room!.Units.Where(unit => KnownStasisTarget(room, owner, unit, train.Context)).ToArray();
+                var targets = room.Units.Where(unit => Matches(unit, rule)).Select(unit => unit.Id).ToArray();
+                bool knownDeparture = !source.Preview && knownDepartures.Length == 1 &&
+                    rule.Targets.Except(targets).SequenceEqual(new[] { knownDepartures[0].Id }) && !targets.Except(rule.Targets).Any() &&
+                    KnownStasisOrdering(source, knownDepartures[0], owner);
                 // A stable target cache does not apply/remove any modifiers. In
                 // particular, a Squad Leader without Fun Guys must not reject an
                 // unrelated enemy enchanter. Keep the ordering boundary whenever
                 // a living target would actually gain or lose the troop aura.
                 bool livingDeparture = rule.Targets.Any(id => !targets.Contains(id) && train.Rooms.SelectMany(item => item.Units)
                     .Any(unit => unit.Id == id && unit.Health > 0 && unit.DeathState?.IsDestroyed != true));
+                if (rule.Targets.Any(id => !targets.Contains(id) && (!knownDeparture || id != knownDepartures[0].Id) && train.Rooms.SelectMany(item => item.Units)
+                    .Any(unit => unit.Id == id && unit.Health > 0 && unit.DeathState?.IsDestroyed != true && unit.Status("untouchable")?.Stacks is > 0)))
+                { error = "Untouchable troop-aura target removal requires native calibration."; break; }
                 bool changesModifiers = targets.Any(id => !rule.Targets.Contains(id)) || livingDeparture;
                 // No statuses and no horde stacks mean additions update only
                 // the target cache; no modifier write can interleave here.
@@ -48,15 +55,15 @@ namespace MonsterTrain2Poju.Model
                     .SelectMany(id => train.Rooms.SelectMany(item => item.Units).Where(unit => unit.Id == id &&
                         unit.Health > 0 && unit.DeathState?.IsDestroyed != true))
                     .All(unit => (unit.Status("horde")?.Stacks ?? 0) == 0);
-                bool orderedAddition = source.EnchanterIds.Count > 0 && changesModifiers &&
-                    (cacheOnly || KnownBirthAddition(source, room, owner, rule, targets) ||
+                bool orderedChange = source.EnchanterIds.Count > 0 && changesModifiers &&
+                    (knownDeparture || cacheOnly || KnownBirthAddition(source, room, owner, rule, targets) ||
                      KnownChampionAddition(source, room, owner, rule, targets));
-                if (source.EnchanterIds.Count > 0 && changesModifiers && !orderedAddition)
+                if (source.EnchanterIds.Count > 0 && changesModifiers && !orderedChange)
                 { error = "Combined troop upgrades and enchantment source ordering require native calibration."; break; }
                 // The frame strips its shared world to stay finite. A troop
                 // write still validates every actor, including enemy summoners.
                 // Borrow the caller's complete world with native reentry closed.
-                bool borrowWorld = orderedAddition || automaticLifecycle && source.EnchanterIds.Count == 0 &&
+                bool borrowWorld = orderedChange || automaticLifecycle && source.EnchanterIds.Count == 0 &&
                     room.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Effects.Any(effect => effect.Summon?.EnemyHero == true)));
                 var cache = rule.Targets.ToList();
                 foreach (int id in rule.Targets.Reverse())
@@ -124,6 +131,44 @@ namespace MonsterTrain2Poju.Model
             return new EnchantmentCombatResult(error == null ? new EnchantmentCombatState(train, source.RetainedUnits,
                 source.EnchanterIds, source.AllowUpdates, source.Updating, source.Preview, source.TestRng) : null,
                 Array.Empty<EnchantmentRequest>(), callbacks, error);
+        }
+
+        // This exact real-game departure is calibrated against two native processes.
+        internal static bool KnownStasisTarget(RoomCombatState room, CombatUnit owner, CombatUnit unit, CombatContext? context)
+        {
+            TroopAuraState? aura = owner.Modifiers?.TroopAura;
+            return !room.Preview && room.RoomIndex == 2 && owner is { AssetKey: "MonsterChampionUnderlegion1", Health: 69, MaxHealth: 115 } &&
+                aura is { Subtype: CardUnderlegionTroopUpgradeModel.NoneSubtype, Statuses.Count: 0, Targets.Count: 3 } &&
+                aura.Upgrade.DataId == CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId &&
+                aura.Upgrade.AssetKey == CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeKey && aura.Upgrade.Stats.Health == 3 &&
+                new[] { "Damage", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }.All(stat => aura.Upgrade.Stats.Value(stat) == 0) &&
+                aura.Upgrade.Statuses.Count == 0 && aura.Upgrade.ExternalInteractions.Count == 0 && aura.Upgrade.TriggerUpgrades?.Count is not > 0 &&
+                aura.Upgrade.AbilityUpgrade == null && !aura.Upgrade.Unique && !aura.Upgrade.RemoveOnDiscard && !aura.Upgrade.ExcludeFromClones &&
+                aura.Upgrade.UnhealedHealth == 0 && aura.Upgrade.DamageBuff == 0 && !aura.Upgrade.RestrictSizeToRoomCapacity &&
+                !aura.Upgrade.MagicPowerTraitScalingOnly && aura.Upgrade.CloneDamageBase == null && aura.Upgrade.CloneHealBase == null &&
+                aura.Upgrade.Lifecycle is { AddedTraits.Count: 0, RemovedRuntimeTypes.Count: 0, Triggers.Count: 0, ReplacedAssets.Count: 0, TraitsModified.Count: 0 } &&
+                aura.Targets.Contains(owner.Id) && aura.Targets.Contains(unit.Id) &&
+                room.Units.Any(other => other.AssetKey == "MonsterSycophant" && other.Health == 35 && other.MaxHealth == 35 && aura.Targets.Contains(other.Id)) &&
+                unit is { AssetKey: "MonsterFunguy", Health: 19, MaxHealth: 28, EquipmentCards.Count: 1 } &&
+                unit.Status("horde")?.Stacks == 4 && unit.Status("untouchable")?.Stacks == 1 &&
+                context?.FindCard(unit.EquipmentCards[0])?.DataId == "764f9b75-daf1-4deb-a6a2-f09964fb5296";
+        }
+
+        private static bool KnownStasisOrdering(EnchantmentCombatState source, CombatUnit unit, CombatUnit owner)
+        {
+            string key = Key(owner.Id);
+            return unit.Modifiers?.Upgrades is { Count: 6 } upgrades &&
+                upgrades.Take(4).All(upgrade => upgrade.DataId == key && upgrade.AssetKey == CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeKey &&
+                    upgrade.Stats.Health == 3 && upgrade.Statuses.Count == 0 && upgrade.ExternalInteractions.Count == 0 &&
+                    new[] { "Damage", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }.All(stat => upgrade.Stats.Value(stat) == 0) &&
+                    upgrade.TriggerUpgrades?.Count is not > 0 && upgrade.AbilityUpgrade == null && !upgrade.Unique && !upgrade.RemoveOnDiscard &&
+                    !upgrade.ExcludeFromClones && upgrade.UnhealedHealth == 0 && upgrade.DamageBuff == 0 &&
+                    !upgrade.RestrictSizeToRoomCapacity && !upgrade.MagicPowerTraitScalingOnly && upgrade.CloneDamageBase == null && upgrade.CloneHealBase == null &&
+                    upgrade.Lifecycle is { AddedTraits.Count: 0, RemovedRuntimeTypes.Count: 0, Triggers.Count: 0, ReplacedAssets.Count: 0, TraitsModified.Count: 0 }) &&
+                upgrades[4].DataId == "e3393292-1b8f-4df3-b7df-cc9c7297d1a6" && upgrades[5].DataId == "" &&
+                source.EnchanterIds.Count == 3 && source.EnchanterIds.Count(id =>
+                    source.Train.Rooms.SelectMany(room => room.Units).Any(actor => actor.Id == id && actor.AssetKey == "Boss_Level8_Fragile" && actor.Health > 0)) == 1 &&
+                source.EnchanterIds.Count(id => source.RetainedUnits.Any(actor => actor.Unit.Id == id && actor.Unit.AssetKey == "EnchanterT2_Titanskin" && actor.Unit.DeathState?.IsDestroyed == true)) == 2;
         }
 
         private static bool KnownChampionAddition(EnchantmentCombatState source, RoomCombatState room,

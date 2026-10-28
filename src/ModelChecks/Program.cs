@@ -6270,6 +6270,14 @@ if (args.Length == 4 && args[0] == "--untouchable-troop-trace-pair")
     UntouchableTroopAuraChecks.TracePair(original.RootElement, first.RootElement, second.RootElement);
     return;
 }
+if (args.Length == 4 && args[0] == "--untouchable-troop-repaired")
+{
+    using var original = ModelJson.ReadFixture(args[1]);
+    using var first = ModelJson.ReadFixture(args[2]);
+    using var second = ModelJson.ReadFixture(args[3]);
+    UntouchableTroopAuraChecks.RepairedPair(original.RootElement, first.RootElement, second.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--planner-replay-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

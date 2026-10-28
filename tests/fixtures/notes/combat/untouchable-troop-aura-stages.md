@@ -10,5 +10,9 @@ the first preview, the target has seven horde stacks and changes from 40/49 to
 28/28; the target cache remains unchanged throughout preview. The subsequent
 real operation starts with four horde stacks, changes the target from 19/28 to
 16/16, and removes its id from the cache. This documents one exact ordering,
-not general support for arbitrary auras, previews or enchantments. The model's
-guard remains in place until its full successor can be independently verified.
+not general support for arbitrary auras, previews or enchantments. Version 396
+models this specific removal and retains guards on uncalibrated departures.
+Two independent repaired native runs reproduce all 55 prefix successors and
+the complete target successor, forecast and RNG. Four concurrent model
+branches, six source mutations, an altered upgrade payload and an additional
+target departure are checked.
