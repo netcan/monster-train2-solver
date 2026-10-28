@@ -126,6 +126,14 @@ if (args.Length is 2 or 3 && args[0] == "--single-horde-sycophant-attack24-only"
     SingleHordeSycophantChecks.Native(fixture.RootElement, replay?.RootElement, attack24: true);
     return;
 }
+if (args.Length == 4 && args[0] == "--triple-horde-phase-boundary-only")
+{
+    using var original = ModelJson.ReadFixture(args[1]);
+    using var experiment = ModelJson.ReadFixture(args[2]);
+    using var phases = ModelJson.ReadFixture(args[3]);
+    TripleHordePhaseBoundaryChecks.Native(original.RootElement, experiment.RootElement, phases.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--fight-club-missing-horde-preview-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -8151,6 +8159,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var fixture = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-fight-club-injured-companion-replay-calibration.mt2f"));
     FightClubInjuredCompanionChecks.Native(fixture.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-triple-horde-phase-boundary-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-triple-horde-phase-boundary-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var original = ModelJson.ReadFixture(path);
+    using var experiment = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-horde-phase-boundary-experiment.mt2f"));
+    using var phases = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-horde-phase-boundary-stage.mt2f"));
+    TripleHordePhaseBoundaryChecks.Native(original.RootElement, experiment.RootElement, phases.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-fight-club-missing-horde-preview-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-fight-club-missing-horde-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
