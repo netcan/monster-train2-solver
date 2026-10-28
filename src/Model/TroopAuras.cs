@@ -466,7 +466,9 @@ namespace MonsterTrain2Poju.Model
                      Health: 3, MaxHealth: 25, Size: 2, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
                      source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83") &&
                  source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 && rule.Targets.Contains(actor.Unit.Id) &&
-                     actor.Unit is { AssetKey: "MonsterSneezyWhelp", Team: CombatTeam.Player, Health: <= 0, DeathState.IsDestroyed: true })) &&
+                     (actor.Unit is { AssetKey: "MonsterSneezyWhelp", Team: CombatTeam.Player, Health: <= 0, DeathState.IsDestroyed: true } ||
+                      actor.Unit is { AssetKey: "MonsterGoldyWhelp", Team: CombatTeam.Player, Health: <= 0, MaxHealth: 1, DeathState.IsDestroyed: true } &&
+                      source.Train.Context.FindCard(actor.Unit.SpawnerCardId)?.DataId == "5fcb0af2-7bab-4998-94c9-e74a828fff01"))) &&
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player,
                     SpawnerCardId: 0, BaseAttack: 12, Size: 1,
                     HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades: var fourUpgrades } fourHorde &&
