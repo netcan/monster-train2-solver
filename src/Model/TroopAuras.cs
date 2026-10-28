@@ -219,7 +219,7 @@ namespace MonsterTrain2Poju.Model
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player,
                     SpawnerCardId: 0, BaseAttack: 12, Size: 1,
                     HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades: var fourUpgrades } fourHorde &&
-                fourHorde.Status("horde")?.Stacks == 4 && fourUpgrades.Count is 0 or 8 or 12 or 16 or 20 or 24 or 28 &&
+                fourHorde.Status("horde")?.Stacks == 4 && fourUpgrades.Count is 0 or 4 or 8 or 12 or 16 or 20 or 24 or 28 &&
                 fourHorde.Health == 16 + 3 * fourUpgrades.Count && fourHorde.MaxHealth == fourHorde.Health &&
                 fourUpgrades.All(item => item.DataId == Key(owner.Id) && item.AssetKey == upgrade.AssetKey &&
                     item.Stats.Health == 3 && item.Stats.Damage == 0 && item.Stats.Cost == 0 && item.Stats.Heal == 0 &&
