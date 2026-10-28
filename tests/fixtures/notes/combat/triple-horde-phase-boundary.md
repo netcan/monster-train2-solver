@@ -48,6 +48,12 @@ changed gold, health, RNG seed and statistic values remain distinguishable.
 This is a collector comparison, not proof of intermediate model equivalence or
 permission to remove the existing unsupported boundary.
 
+The archived experimental EndTurn phase also matches the complete comparable
+native phase and gameplay RNG after adjusting only preview point27 and the
+two documented unit allocator fields. Gold, unit health, RNG seed and card
+statistic perturbations remain detectable. This is one experimental phase and
+does not by itself validate unobserved combinations or release the guard.
+
 The five `player-triple-horde-phase-boundary-*` archives preserve the original
 rejection, experimental successor, phase counterexample and independent frame
 samples. The focused check replays the supported prefix, compares independent

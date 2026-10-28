@@ -41,6 +41,7 @@ internal static class TripleHordePhaseBoundaryChecks
                 point.Current == null && point.LastKnown == null) &&
             !boundary.Spawn.Train.Context!.SpawnPoints!.Units.Any(point => point.UnitId == 27),
             "Missing transient native preview spawn point.");
+        DualTraceHordeChecks.DiagnosePhase(phases);
         var firstFrames = CheckTimeline(original, timeline);
         var repeatedFrames = CheckTimeline(original, replayTimeline);
         for (int i = 0; i < firstFrames.Length; i++)

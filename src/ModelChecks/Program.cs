@@ -126,6 +126,12 @@ if (args.Length is 2 or 3 && args[0] == "--single-horde-sycophant-attack24-only"
     SingleHordeSycophantChecks.Native(fixture.RootElement, replay?.RootElement, attack24: true);
     return;
 }
+if (args.Length == 2 && args[0] == "--horde-phase-diagnostic")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    DualTraceHordeChecks.DiagnosePhase(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--horde-identity-diagnostic")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

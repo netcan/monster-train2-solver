@@ -4,6 +4,35 @@ using MonsterTrain2Poju.Model;
 
 internal static class DualTraceHordeChecks
 {
+    internal static void DiagnosePhase(FixtureValue fixture)
+    {
+        var turn = fixture.GetProperty("Turns")[3];
+        var predicted = turn.GetProperty("Predicted").GetProperty("State").Deserialize<BattleTurnState>()!;
+        var actual = turn.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        JsonNode model = JsonNode.Parse(WithoutPreviewIdentity(predicted))!;
+        JsonNode native = JsonNode.Parse(WithoutPreviewIdentity(actual))!;
+        Require(model["Context"]!["NextUnitId"]!.GetValue<int>() == 27 && native["Context"]!["NextUnitId"]!.GetValue<int>() == 28,
+            "Unexpected native phase allocator mismatch.");
+        model["Context"]!["NextUnitId"] = 0;
+        native["Context"]!["NextUnitId"] = 0;
+        string left = model.ToJsonString(), right = native.ToJsonString();
+        Require(left == right, "Unexplained native phase difference: " + ModelJson.Difference(left, right));
+        foreach (string field in new[] { "Gold", "Health", "Rng", "Statistic" })
+        {
+            JsonNode altered = native.DeepClone();
+            JsonNode parent = field switch {
+                "Gold" => altered["Context"]!,
+                "Health" => altered["Rooms"]![0]!["Units"]![0]!,
+                "Rng" => altered["RngStreams"]![0]!,
+                _ => altered["Context"]!["Statistics"]!["Values"]![0]!
+            };
+            string name = field switch { "Rng" => "Seed", "Statistic" => "Value", _ => field };
+            parent[name] = parent[name]!.GetValue<int>() + 1;
+            Require(left != altered.ToJsonString(), "Phase comparison hid changed " + field);
+        }
+        Console.WriteLine("HORDE-PHASE-DIAGNOSTIC MATCH: complete native phase and RNG after explicit preview identity adjustment; four value controls preserved.");
+    }
+
     internal static void Diagnose(FixtureValue fixture)
     {
         var mapping = fixture.GetProperty("IdentityCorrespondence").GetProperty("Cards").EnumerateArray()
