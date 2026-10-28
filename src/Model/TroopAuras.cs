@@ -147,17 +147,20 @@ namespace MonsterTrain2Poju.Model
                 rule.Targets.Any(id => !targets.Contains(id) && source.Train.Rooms.SelectMany(floor => floor.Units)
                     .Any(unit => unit.Id == id && unit.Health > 0 && unit.DeathState?.IsDestroyed != true))) return false;
             int[] added = targets.Where(id => !rule.Targets.Contains(id)).ToArray();
-            if (added.Length == 0 || added.Any(id => room.Units.Single(unit => unit.Id == id) is not
-                    { AssetKey: "MonsterFunguy" } ||
+            if (added.Length == 0 || added.Any(id =>
                 source.Train.Context?.SpawnPoints?.Units.Any(point => point.UnitId == id &&
                     (source.Preview ? point.SpawnedInPreview : !point.SpawnedInPreview &&
                         point.Current?.RoomIndex == room.RoomIndex && point.Current.Team == CombatTeam.Player)) != true)) return false;
             bool originalChampion = !source.Preview && source.Train.Context != null &&
                 PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context);
+            bool originalSycophant = originalChampion && added.Length == 1 && room.Units.Single(unit => unit.Id == added[0]) is
+                { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20, Health: 25, MaxHealth: 25, Size: 2 } sycophant &&
+                sycophant.Status("horde") == null && source.Train.Context!.FindCard(sycophant.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83";
+            if (!originalSycophant && added.Any(id => room.Units.Single(unit => unit.Id == id) is not { AssetKey: "MonsterFunguy" })) return false;
             bool originalSingleBirth = originalChampion && added.Length == 1 && room.Units.Single(unit => unit.Id == added[0]) is
                 { AssetKey: "MonsterFunguy", SpawnerCardId: 0, Health: 4, MaxHealth: 4, Modifiers.Upgrades.Count: 0 } newborn &&
                 newborn.Status("horde")?.Stacks == 1;
-            return third ? OnlyFragileBuffSource(source, allowLiveCombat: originalChampion, allowTwoLiveCombat: originalSingleBirth) :
+            return third ? OnlyFragileBuffSource(source, allowLiveCombat: originalChampion, allowTwoLiveCombat: originalSingleBirth || originalSycophant) :
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
         }
 
