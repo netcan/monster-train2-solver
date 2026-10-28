@@ -1015,6 +1015,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-armor-champion-preview-replay-calibration.mt2f',
     'player-steward-whelp-preview-calibration.mt2f',
     'player-steward-whelp-preview-replay-calibration.mt2f',
+    'player-four-horde-combat-birth-calibration.mt2f',
+    'player-four-horde-combat-birth-replay-calibration.mt2f',
     'player-four-horde-retired-enchanter-calibration.mt2f',
     'player-four-horde-retired-enchanter-replay-calibration.mt2f',
     'player-three-companions-missing-preview-calibration.mt2f',
@@ -2491,6 +2493,15 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --three-companions-missing-preview-only (Get-TestFixturePath 'player-three-companions-missing-preview-calibration.mt2f') (Get-TestFixturePath 'player-three-companions-missing-preview-replay-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Three companions missing preview native check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-four-horde-combat-birth-calibration.mt2f', 'player-four-horde-combat-birth-replay-calibration.mt2f') }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Four horde combat birth checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --four-horde-combat-birth-only (Get-TestFixturePath 'player-four-horde-combat-birth-calibration.mt2f') (Get-TestFixturePath 'player-four-horde-combat-birth-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Four horde combat birth native check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-four-horde-retired-enchanter-calibration.mt2f', 'player-four-horde-retired-enchanter-replay-calibration.mt2f') }).Count -eq 0) {
