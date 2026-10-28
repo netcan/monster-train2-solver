@@ -203,7 +203,9 @@ namespace MonsterTrain2Poju.Model
                     unit.Modifiers?.TroopAura?.Upgrade.DataId == CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId) &&
                 TroopAuraModel.OnlyFragileBuffSource(world.Frame(context), allowTwoLivePreview:
                     OriginalExistingHorde() || OriginalSycophantCompanion() || source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalGreenRecruit(unit, context)),
-                    allowPreviewRetired: true);
+                    allowPreviewRetired: true,
+                    allowSingleRetiredPreview: source.Rooms.Any(room => room.Units.Any(unit => IsOriginalChampionEnemyDeath(unit, context)) &&
+                        room.Units.Any(unit => IsOriginalGreenRecruit(unit, context))));
             // Temporary player births without durable aura references are gone
             // before native decision capture assigns their synthetic identities.
             // Preserve observed births and all enemy births. Check the allocator
