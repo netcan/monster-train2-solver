@@ -12,6 +12,24 @@ if(-not $SkipBuild){
 }
 $tool=Join-Path (Resolve-Path $ToolsRoot) 'FixtureTools.dll'
 Add-Type -Path (Join-Path (Resolve-Path $ToolsRoot) 'FixtureArchive.dll')
+Add-Type -Path (Join-Path (Resolve-Path $ToolsRoot) 'Model.dll')
+$assembly=[Reflection.Assembly]::LoadFrom($tool)
+$rank=$assembly.GetType('OfflineBattleSearch').GetMethod('BetterSurvival', [Reflection.BindingFlags]'NonPublic,Static')
+$won=[MonsterTrain2Poju.Model.RoomOutcome]::BattleWon
+$lost=[MonsterTrain2Poju.Model.RoomOutcome]::PlayerDefeated
+foreach($case in @(
+ @($won,1,999.0,$lost,99,1.0,$true),
+ @($lost,99,1.0,$won,1,999.0,$false),
+ @($lost,8,999.0,$lost,7,1.0,$true),
+ @($lost,7,1.0,$lost,8,999.0,$false),
+ @($lost,7,1.0,$lost,7,2.0,$true),
+ @($lost,7,2.0,$lost,7,1.0,$false),
+ @($won,1,1.0,$won,99,2.0,$true),
+ @($lost,7,1.0,$lost,7,1.0,$false)
+)){
+ $argsForRank=[object[]]@($case[0],[int]$case[1],[double]$case[2],$case[3],[int]$case[4],[double]$case[5])
+ if([bool]$rank.Invoke($null,$argsForRank) -ne [bool]$case[6]){throw 'Survival ranking precedence failed'}
+}
 $source=(Resolve-Path $Fixture).Path
 $originalHash=(Get-FileHash $source).Hash
 $testRoot=Join-Path ([IO.Path]::GetTempPath()) ('poju-diversification-'+[guid]::NewGuid().ToString('N'))
@@ -54,6 +72,16 @@ try{
  $singleLog=@(& dotnet $tool improve-diverse $source $baseline $singleOutput 100 1 $indices[0] 1 1 2 0 2>&1)
  if($LASTEXITCODE -ne 0 -or ($singleLog -join "`n") -notmatch 'IMPROVE-DIVERSIFY WARNING: one pass cannot explore retained alternative routes'){
   throw 'Single-pass diversification warning missing'
+ }
+ $survivalOutput=Join-Path $testRoot 'survival.mt2f'
+ $survivalLog=@(& dotnet $tool improve-survival $source $baseline $survivalOutput 30000 1 $indices[0] 6 1 2 0 2>&1)
+ if($LASTEXITCODE -ne 0 -or ($survivalLog -join "`n") -notmatch 'preferLaterDefeat=True' -or
+    ($survivalLog -join "`n") -notmatch 'improvements=[1-9]' -or -not (Test-Path $survivalOutput)){
+  throw 'Survival investigation failed to export its controlled improvement'
+ }
+ & dotnet $tool verify-offline-plan $survivalOutput
+ if($LASTEXITCODE -ne 0 -or (Get-FileHash $survivalOutput).Hash -ne (Get-FileHash $expected).Hash){
+  throw 'Survival route differs from the independently replayed controlled improvement'
  }
  $protectedResult=@(& dotnet $tool improve-diverse $source $baseline $actual 100 1 0 1 1 1 0 2>&1)
  if($LASTEXITCODE -eq 0 -or ($protectedResult -join "`n") -notmatch 'Output already exists' -or

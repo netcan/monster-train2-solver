@@ -13,7 +13,7 @@ internal static partial class OfflineBattleSearch
     internal static void Improve(string input, string output, int milliseconds, int maxPasses = 4,
         string? prediction = null, int startDecision = 0, bool exploreCardOrder = false, bool retainSuffix = false,
         int secondActionWidth = 0, bool improveWinningRoute = false, int perDecisionCandidateLimit = 0,
-        int thirdActionWidth = 0, int diversificationWidth = 0, int maxDecisionCount = 256)
+        int thirdActionWidth = 0, int diversificationWidth = 0, int maxDecisionCount = 256, bool preferLaterDefeat = false)
     {
         Require(milliseconds is >= 100 and <= 600000 && maxPasses is >= 1 and <= 16,
             "Expected100..600000ms and1..16 improvement passes.");
@@ -24,6 +24,7 @@ internal static partial class OfflineBattleSearch
         Require(diversificationWidth is >= 0 and <= 16 && maxDecisionCount is >= 1 and <= 256 &&
             (diversificationWidth == 0 || retainSuffix && perDecisionCandidateLimit > 0),
             "Expected0..16 alternative routes and1..256 decisions; diversification requires a bounded retained suffix.");
+        Require(!preferLaterDefeat || !improveWinningRoute, "Survival investigation requires a losing baseline.");
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         string unsupportedOutput = output + ".unsupported.mt2f";
         if (retainSuffix && File.Exists(unsupportedOutput)) throw new IOException("Output already exists: " + unsupportedOutput);
@@ -60,7 +61,8 @@ internal static partial class OfflineBattleSearch
         BattleTurnState final = Replay(route, out RoomOutcome outcome, prefixes);
         Require(!improveWinningRoute || outcome == RoomOutcome.BattleWon,
             "Winning-route improvement requires an already verified complete model win.");
-        double best = ImprovementMerit(final, outcome), initial = best;
+        double best = ImprovementMerit(final, outcome);
+        Require(!preferLaterDefeat || outcome == RoomOutcome.PlayerDefeated, "Survival investigation requires a complete losing baseline.");
         // Keep the best complete route independently of the route currently
         // being explored. A useful pair of deployment changes can make a
         // worse complete loss after the first change. A bounded frontier lets
@@ -297,7 +299,9 @@ internal static partial class OfflineBattleSearch
                     if (!Terminal(result)) continue;
                     completed++;
                     double score = ImprovementMerit(branch, result);
-                    if (diversificationWidth > 0 && score >= best)
+                    bool better = preferLaterDefeat ? BetterSurvival(result, branch.Spawn.Turn, score,
+                        bestOutcome, bestFinal.Spawn.Turn, best) : score < best;
+                    if (diversificationWidth > 0 && !better)
                     {
                         Step[] candidateRoute = steps.ToArray();
                         string identity = JsonSerializer.Serialize(candidateRoute);
@@ -305,11 +309,13 @@ internal static partial class OfflineBattleSearch
                         {
                             frontier.Add(new PolicyAlternative(identity, score, candidateRoute,
                                 prefixes.Take(index + 1).Concat(tailStates.Take(tailStates.Count - 1)).ToArray(), branch, result));
-                            frontier = frontier.OrderBy(item => item.Merit).ThenBy(item => item.Route.Length)
+                            frontier = frontier.OrderByDescending(item => preferLaterDefeat && item.Outcome == RoomOutcome.BattleWon)
+                                .ThenByDescending(item => preferLaterDefeat ? item.Final.Spawn.Turn : 0)
+                                .ThenBy(item => item.Merit).ThenBy(item => item.Route.Length)
                                 .Take(diversificationWidth).ToList();
                         }
                     }
-                    if (score >= best) continue;
+                    if (!better) continue;
                     best = score; final = branch; outcome = result; route = steps.ToArray();
                     prefixes = prefixes.Take(index + 1).Concat(tailStates.Take(tailStates.Count - 1)).ToList();
                     Require(prefixes.Count == route.Length, "Improved prefix cache lost a model-owned successor.");
@@ -352,7 +358,9 @@ internal static partial class OfflineBattleSearch
         }
         // A complete losing improvement is useful for another investigation,
         // but is explicitly exported with PlayerDefeated, never called a win.
-        if (best < initial)
+        // Independent replay and freezing do not consume the search budget.
+        watch.Stop();
+        if (improvements > 0)
         {
             BattleTurnState independent = Replay(bestRoute, out RoomOutcome replayOutcome);
             Require(replayOutcome == bestOutcome && keys.Key(independent) == keys.Key(bestFinal) && keys.Key(root) == immutable,
@@ -361,7 +369,7 @@ internal static partial class OfflineBattleSearch
         }
         Console.WriteLine($"IMPROVE-POLICY foundWin={bestOutcome == RoomOutcome.BattleWon} improvements={improvements} " +
             $"startDecision={startDecision} exploreCardOrder={exploreCardOrder} candidates={candidates} completed={completed} unsupported={unsupported} " +
-            $"retainSuffix={retainSuffix} improveWinningRoute={improveWinningRoute} secondActionWidth={secondActionWidth} thirdActionWidth={thirdActionWidth} perDecisionCandidateLimit={perDecisionCandidateLimit} diverseFirstCards={perDecisionCandidateLimit > 0} diversificationWidth={diversificationWidth} diversifiedRoutes={diversifiedRoutes} maxDecisionCount={maxDecisionCount} visitedDecisions={visitedDecisions} lastDecision={lastDecision} pairCandidates={pairCandidates} pairImprovements={pairImprovements} tripleCandidates={tripleCandidates} tripleImprovements={tripleImprovements} retainedSteps={retainedSteps} skippedSuffixInputs={skippedSuffixInputs} retargetedSuffixInputs={retargetedSuffixInputs} timedOut={Expired()} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial}; model prediction only.");
+            $"retainSuffix={retainSuffix} improveWinningRoute={improveWinningRoute} preferLaterDefeat={preferLaterDefeat} bestTurn={bestFinal.Spawn.Turn} secondActionWidth={secondActionWidth} thirdActionWidth={thirdActionWidth} perDecisionCandidateLimit={perDecisionCandidateLimit} diverseFirstCards={perDecisionCandidateLimit > 0} diversificationWidth={diversificationWidth} diversifiedRoutes={diversifiedRoutes} maxDecisionCount={maxDecisionCount} visitedDecisions={visitedDecisions} lastDecision={lastDecision} pairCandidates={pairCandidates} pairImprovements={pairImprovements} tripleCandidates={tripleCandidates} tripleImprovements={tripleImprovements} retainedSteps={retainedSteps} skippedSuffixInputs={skippedSuffixInputs} retargetedSuffixInputs={retargetedSuffixInputs} timedOut={Expired()} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={improvements > 0}; model prediction only.");
 
         BattleTurnState Replay(IEnumerable<Step> steps, out RoomOutcome terminal, List<BattleTurnState>? collect = null)
         {
@@ -379,6 +387,15 @@ internal static partial class OfflineBattleSearch
 
     private sealed record PolicyAlternative(string Identity, double Merit, Step[] Route,
         BattleTurnState[] Prefixes, BattleTurnState Final, RoomOutcome Outcome);
+
+    internal static bool BetterSurvival(RoomOutcome candidate, int candidateTurn, double candidateMerit,
+        RoomOutcome incumbent, int incumbentTurn, double incumbentMerit)
+    {
+        if (candidate == RoomOutcome.BattleWon && incumbent != RoomOutcome.BattleWon) return true;
+        if (candidate != RoomOutcome.BattleWon && incumbent == RoomOutcome.BattleWon) return false;
+        if (candidate != RoomOutcome.BattleWon && candidateTurn != incumbentTurn) return candidateTurn > incumbentTurn;
+        return candidateMerit < incumbentMerit;
+    }
 
     // Earlier deployment changes can assign the old numeric actor ID to a
     // different card. Preserve a selected card's identity, including its exact

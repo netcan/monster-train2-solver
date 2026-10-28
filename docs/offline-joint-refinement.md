@@ -168,6 +168,10 @@ dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll improve-triples `
 单轮只能收集备选路线而无法展开它们，工具会明确提示；要实际探索备选路线需至少两轮，
 且预算须足以完成首轮。
 
+`improve-survival`使用同样的参数探索另一种失败路线排序：胜局始终优先；败局先按
+结束时回合数降序，再按原诊断分数排序。更晚失败不代表更接近胜利，也不是搜索下界；
+导出仍仅是重新完整复演的模型预测，玩家面板的正式评分不受影响。
+
 ```powershell
 dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll improve-diverse `
   <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> 180000 16 0 4 6 6 0
