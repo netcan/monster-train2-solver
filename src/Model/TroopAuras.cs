@@ -439,6 +439,28 @@ namespace MonsterTrain2Poju.Model
                         { DataId: RelicStartCombatAttachmentModel.Floor3UpgradeId, AssetKey: RelicStartCombatAttachmentModel.Floor3UpgradeKey,
                             Stats.Damage: 15 }] } && rule.Targets.Contains(unit.Id) &&
                     source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83");
+            bool fightClubRetiredPuffballBirth = source.Preview && source.Train.Context != null && added.Length == 1 &&
+                PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context) && owner.Triggers.Count == 2 &&
+                PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
+                rule.Targets.Count == 3 && targets.Count == 2 && targets.Contains(owner.Id) && rule.Targets.Count(id => !targets.Contains(id)) == 2 &&
+                source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 && actor.Unit is
+                    { AssetKey: "MonsterPricklyPuffball", Team: CombatTeam.Player, BaseAttack: 25, Health: <= 0, MaxHealth: 45,
+                        Size: 2, DeathState.IsDestroyed: true, Modifiers.Upgrades: [
+                            { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" }, { DataId: "", AssetKey: "" }, var club] } &&
+                    OriginalFightClub(club) && rule.Targets.Contains(actor.Unit.Id) &&
+                    source.Train.Context.FindCard(actor.Unit.SpawnerCardId)?.DataId == "fec68cb5-1d4f-4ae5-b01a-288a06cc9502") &&
+                room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player, SpawnerCardId: 0,
+                    Size: 1, HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades: var retiredClubUpgrades } retiredClub &&
+                (retiredClub.Status("horde")?.Stacks == 3 && retiredClub.BaseAttack == 24 && retiredClubUpgrades.Count is 1 or 4 ||
+                 retiredClub.Status("horde")?.Stacks == 6 && retiredClub.BaseAttack == 33 && retiredClubUpgrades.Count is 10 or 16 ||
+                 retiredClub.Status("horde")?.Stacks == 9 && retiredClub.BaseAttack == 42 && retiredClubUpgrades.Count is 19 or 28 or 37) &&
+                retiredClub.Health == retiredClub.Status("horde")!.Stacks * 4 + 3 * (retiredClubUpgrades.Count - 1) &&
+                retiredClub.MaxHealth == retiredClub.Health && OriginalFightClub(retiredClubUpgrades[0]) &&
+                retiredClubUpgrades.Skip(1).All(item => item.DataId == Key(owner.Id) && item.AssetKey == upgrade.AssetKey &&
+                    item.Stats.Health == 3 && item.Stats.Damage == 0 && item.Stats.Cost == 0 && item.Stats.Heal == 0 &&
+                    item.Stats.Size == 0 && item.Stats.XCost == 0 && item.Stats.EquipmentLimit == 0 &&
+                    item.Stats.UpgradeSlotCount == 0 && item.Statuses.Count == 0 && item.ExternalInteractions.Count == 0 &&
+                    item.AbilityUpgrade == null && item.TriggerUpgrades?.Count is not > 0);
             bool fightClubLavaPreviewBirth = fightClubPreviewBirth && source.Train.Context != null && owner.Triggers.Count == 2 &&
                 PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
                 (rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 ||
@@ -449,12 +471,12 @@ namespace MonsterTrain2Poju.Model
             return third ? OnlyFragileBuffSource(source, allowLiveCombat: originalChampion, allowTwoLiveCombat: originalSingleBirth || originalSycophant || originalTripleBirth || fightClubCompanionsBirth || fightClubLavaCombatBirth, allowSingleRetiredCombat: originalSingleRetiredBirth,
                     pendingDyingRoom: originalPendingTripleBirth || source.Preview && fightClubCompanionsBirth ? room.RoomIndex : (int?)null,
                     pendingDyingPreview: source.Preview && fightClubCompanionsBirth,
-                    allowTwoLivePreview: originalPreviewBirth || originalFourHordePreviewBirth || originalSixHordePuffballPreviewBirth || fightClubLavaPreviewBirth || fightClubCompanionsBirth, allowMixedCombat: fightClubBirth || originalTripleBirth || fightClubLavaCombatBirth,
+                    allowTwoLivePreview: originalPreviewBirth || originalFourHordePreviewBirth || originalSixHordePuffballPreviewBirth || fightClubLavaPreviewBirth || fightClubCompanionsBirth || fightClubRetiredPuffballBirth, allowMixedCombat: fightClubBirth || originalTripleBirth || fightClubLavaCombatBirth,
                     allowSingleNonPreviewRetiredPreview: originalTripleCompanionsRetiredPreviewBirth,
                     allowPreviewRetired: originalPreviewBirth || originalFourHordePreviewBirth && rule.Targets.Count == 5 || originalSixHordeCompanionsPreviewBirth || originalSixHordeRetiredPuffballPreviewBirth ||
                         fightClubCompanionsBirth && (targets.Count == 4 || room.Units.Single(unit => unit.Id == added[0]).Status("horde")?.Stacks == 6) ||
-                        fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4, allowSingleRetiredPreview: originalFourHordePreviewBirth || originalTripleCompanionsRetiredPreviewBirth,
-                    allowTwoRetiredMixedPreview: fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4 || originalPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count == 6 || originalLavaTwoRetiredPreviewBirth) :
+                        fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4 || fightClubRetiredPuffballBirth, allowSingleRetiredPreview: originalFourHordePreviewBirth || originalTripleCompanionsRetiredPreviewBirth,
+                    allowTwoRetiredMixedPreview: fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4 || originalPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count == 6 || originalLavaTwoRetiredPreviewBirth || fightClubRetiredPuffballBirth) :
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
         }
 
