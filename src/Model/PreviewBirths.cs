@@ -205,7 +205,8 @@ namespace MonsterTrain2Poju.Model
                     OriginalExistingHorde() || OriginalSycophantCompanion() || source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalGreenRecruit(unit, context)),
                     allowPreviewRetired: true,
                     allowSingleRetiredPreview: source.Rooms.Any(room => room.Units.Any(unit => IsOriginalChampionEnemyDeath(unit, context)) &&
-                        room.Units.Any(unit => IsOriginalGreenRecruit(unit, context))));
+                        room.Units.Any(unit => IsOriginalGreenRecruit(unit, context))),
+                    allowTwoRetiredMixedPreview: OriginalSycophantCompanion());
             // Temporary player births without durable aura references are gone
             // before native decision capture assigns their synthetic identities.
             // Preserve observed births and all enemy births. Check the allocator
