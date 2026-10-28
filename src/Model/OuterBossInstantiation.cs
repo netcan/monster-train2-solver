@@ -26,6 +26,15 @@ namespace MonsterTrain2Poju.Model
     }
     public static class OuterBossInstantiationModel
     {
+        private static bool CalibratedPushMoon(CombatUnit unit) =>
+            unit is { AssetKey: "Boss_Level3_Arkion_PushAttack", BaseAttack: 13, Attack: 13,
+                Health: 425, MaxHealth: 425, Triggers.Count: 1 } &&
+            unit.Triggers[0] is { Kind: "OnAttackingBeforeDamage", Once: false, HasTriggered: false, IgnoreSilence: false,
+                FireCount: 1, SkipDuringDeployment: false, TriggerAtThreshold: 0, Conditions: null,
+                RemoveOnRelentlessChange: true, Effects.Count: 1 } trigger &&
+            trigger.Effects[0] is { Type: "CardEffectFloorRearrange", Action: { Type: "FloorRearrange",
+                Target: "LastAttackedCharacter", Value: 1, AllowEnemy: true, AllowPlayer: true, Range: null,
+                UseCardTraits: false, Statuses.Count: 0 } };
         private static bool CalibratedLifestealMoon(CombatUnit unit) =>
             unit is { AssetKey: "Boss_Level6_Cael_Lifesteal", BaseAttack: 22, Attack: 22,
                 Health: 1800, MaxHealth: 1800, Triggers.Count: 1 } &&
@@ -48,7 +57,7 @@ namespace MonsterTrain2Poju.Model
             int moon = train.Context?.QueryFrame?.MoonPhase ?? 0;
             bool calibratedMoon = battle.MoonPhaseTrackingActive == true &&
                 (actor.Unit.AssetKey is "Boss_Level3_Fleshweaver_Corruption" or "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth" or
-                    "Boss_Level3_Arkion_SiphonRage" or "Boss_Level6_Cael_DamageShield" || CalibratedLifestealMoon(actor.Unit) ||
+                    "Boss_Level3_Arkion_SiphonRage" or "Boss_Level6_Cael_DamageShield" || CalibratedLifestealMoon(actor.Unit) || CalibratedPushMoon(actor.Unit) ||
                     actor.Unit is { AssetKey: "Boss_Level6_AngelDuo_Entropic_Variant3_HarvestHealth", BaseAttack: 11, Attack: 11,
                         Health: 1250, MaxHealth: 1250 } ||
                     actor.Unit is { AssetKey: "Boss_Level8_Fragile", BaseAttack: 30, Attack: 30, Health: 3000, MaxHealth: 3000 } ||

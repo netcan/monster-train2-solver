@@ -6242,6 +6242,26 @@ if (args.Length == 2 && args[0] == "--untouchable-troop-aura-only")
     UntouchableTroopAuraChecks.Run(fixture.RootElement);
     return;
 }
+if (args.Length == 5 && args[0] == "--arkion-push-moon-original")
+{
+    using var first = ModelJson.ReadFixture(args[1]);
+    using var birth = ModelJson.ReadFixture(args[2]);
+    using var second = ModelJson.ReadFixture(args[3]);
+    using var secondBirth = ModelJson.ReadFixture(args[4]);
+    ArkionPushMoonBirthChecks.Native(first.RootElement, birth.RootElement, second.RootElement, secondBirth.RootElement);
+    return;
+}
+if (args.Length == 7 && args[0] == "--arkion-push-moon-repaired")
+{
+    using var original = ModelJson.ReadFixture(args[1]);
+    using var originalBirth = ModelJson.ReadFixture(args[2]);
+    using var first = ModelJson.ReadFixture(args[3]);
+    using var firstBirth = ModelJson.ReadFixture(args[4]);
+    using var second = ModelJson.ReadFixture(args[5]);
+    using var secondBirth = ModelJson.ReadFixture(args[6]);
+    ArkionPushMoonBirthChecks.Repaired(original.RootElement, originalBirth.RootElement, first.RootElement, firstBirth.RootElement, second.RootElement, secondBirth.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--exhausted-advice-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

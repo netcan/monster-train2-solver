@@ -9,6 +9,10 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-arkion-push-fullmoon-original.mt2f', 'arkion-push-fullmoon-birth-original.mt2f',
+    'player-arkion-push-fullmoon-original-replay.mt2f', 'arkion-push-fullmoon-birth-original-replay.mt2f',
+    'player-arkion-push-fullmoon-397.mt2f', 'arkion-push-fullmoon-birth-397.mt2f',
+    'player-arkion-push-fullmoon-397-replay.mt2f', 'arkion-push-fullmoon-birth-397-replay.mt2f',
     'player-untouchable-troop-aura-396.mt2f', 'player-untouchable-troop-aura-396-replay.mt2f',
     'player-random25-ring8-395-search.mt2f', 'player-random25-ring8-395-replay.mt2f',
     'player-untouchable-troop-aura-stage.mt2f', 'player-untouchable-troop-aura-stage-replay.mt2f',
@@ -2513,6 +2517,21 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --fight-club-injured-companion-only (Get-TestFixturePath 'player-fight-club-injured-companion-calibration.mt2f') (Get-TestFixturePath 'player-fight-club-injured-companion-replay-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Fight Club injured companion native check failed.' }
+    return
+}
+$arkionPushMoonNames = @('player-arkion-push-fullmoon-original.mt2f', 'arkion-push-fullmoon-birth-original.mt2f',
+    'player-arkion-push-fullmoon-original-replay.mt2f', 'arkion-push-fullmoon-birth-original-replay.mt2f',
+    'player-arkion-push-fullmoon-397.mt2f', 'arkion-push-fullmoon-birth-397.mt2f',
+    'player-arkion-push-fullmoon-397-replay.mt2f', 'arkion-push-fullmoon-birth-397-replay.mt2f')
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $arkionPushMoonNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Arkion Push moon checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --arkion-push-moon-original @($arkionPushMoonNames[0..3] | ForEach-Object { Get-TestFixturePath $_ })
+    if ($LASTEXITCODE -ne 0) { throw 'Arkion Push original native pair failed.' }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --arkion-push-moon-repaired @(@($arkionPushMoonNames[0..1]) + @($arkionPushMoonNames[4..7]) | ForEach-Object { Get-TestFixturePath $_ })
+    if ($LASTEXITCODE -ne 0) { throw 'Arkion Push repaired native pair failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-untouchable-troop-aura-396.mt2f', 'player-untouchable-troop-aura-396-replay.mt2f') }).Count -eq 0) {
@@ -7652,6 +7671,12 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
     if ($LASTEXITCODE -ne 0) { throw 'Untouchable troop-aura guard check failed.' }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --exhausted-advice-only $fixturePath
     if ($LASTEXITCODE -ne 0) { throw 'Exhausted advice check failed.' }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-arkion-push-fullmoon-original.mt2f' })) {
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --arkion-push-moon-original @($arkionPushMoonNames[0..3] | ForEach-Object { Get-TestFixturePath $_ })
+    if ($LASTEXITCODE -ne 0) { throw 'Arkion Push original native pair failed.' }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --arkion-push-moon-repaired @(@($arkionPushMoonNames[0..1]) + @($arkionPushMoonNames[4..7]) | ForEach-Object { Get-TestFixturePath $_ })
+    if ($LASTEXITCODE -ne 0) { throw 'Arkion Push repaired native pair failed.' }
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-untouchable-troop-aura-396.mt2f' })) {
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --untouchable-troop-repaired (Get-TestFixturePath 'player-untouchable-troop-aura-stage.mt2f') $fixturePath (Get-TestFixturePath 'player-untouchable-troop-aura-396-replay.mt2f')
