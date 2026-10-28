@@ -213,6 +213,18 @@ namespace MonsterTrain2Poju.Model
                             point.Current == null && point.LastKnown == null) == true) == true &&
                     source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 && actor.Unit is
                         { AssetKey: "TrainStewardSmall", Team: CombatTeam.Player, Health: <= 0, DeathState.IsDestroyed: true }) ||
+                    birthUpgrades.Count is 9 or 12 && rule.Targets.Count == 3 && targets.Count == 2 &&
+                    rule.Targets.Count(id => !targets.Contains(id)) == 2 &&
+                    source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 &&
+                        actor.Unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20,
+                            Health: <= 0, MaxHealth: 35, Size: 2, DeathState.IsDestroyed: true, Modifiers.Upgrades: [
+                                { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" }, { DataId: "", AssetKey: "" }] } &&
+                        rule.Targets.Contains(actor.Unit.Id) && !targets.Contains(actor.Unit.Id) &&
+                        source.Train.Context.FindCard(actor.Unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83" &&
+                        source.Train.Context.CardRegistry?.Any(card => card.DataId == "924ad6ab-3d60-4760-b38e-78f5cf09c1d5" &&
+                            card.EquippedUnitId == actor.Unit.Id) == true) &&
+                    source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 && actor.Unit is
+                        { AssetKey: "TrainStewardSmall", Team: CombatTeam.Player, Health: <= 0, DeathState.IsDestroyed: true }) ||
                     birthUpgrades.Count is 9 or 12 && rule.Targets.Count == 2 && rule.Targets.All(targets.Contains) &&
                     room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 24,
                         Health: 35, MaxHealth: 35, Size: 2, Modifiers.Upgrades: [
