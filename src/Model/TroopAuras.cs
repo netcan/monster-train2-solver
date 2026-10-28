@@ -400,9 +400,7 @@ namespace MonsterTrain2Poju.Model
                     item.Stats.Size == 0 && item.Stats.XCost == 0 && item.Stats.EquipmentLimit == 0 &&
                     item.Stats.UpgradeSlotCount == 0 && item.Statuses.Count == 0 && item.ExternalInteractions.Count == 0 &&
                     item.AbilityUpgrade == null && item.TriggerUpgrades?.Count is not > 0);
-            bool fightClubLavaPreviewBirth = fightClubPreviewBirth && source.Train.Context != null && owner.Triggers.Count == 2 &&
-                PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
-                rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 &&
+            bool fightClubLavaCompanion = source.Train.Context != null &&
                 room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 35,
                     Health: 35, MaxHealth: 35, Size: 2, Modifiers.Upgrades: [
                         { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" },
@@ -410,7 +408,14 @@ namespace MonsterTrain2Poju.Model
                         { DataId: RelicStartCombatAttachmentModel.Floor3UpgradeId, AssetKey: RelicStartCombatAttachmentModel.Floor3UpgradeKey,
                             Stats.Damage: 15 }] } && rule.Targets.Contains(unit.Id) &&
                     source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83");
-            return third ? OnlyFragileBuffSource(source, allowLiveCombat: originalChampion, allowTwoLiveCombat: originalSingleBirth || originalSycophant || originalTripleBirth || fightClubCompanionsBirth, allowSingleRetiredCombat: originalSingleRetiredBirth,
+            bool fightClubLavaPreviewBirth = fightClubPreviewBirth && source.Train.Context != null && owner.Triggers.Count == 2 &&
+                PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
+                (rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 ||
+                 rule.Targets.Count == 2 && rule.Targets.All(targets.Contains)) && fightClubLavaCompanion;
+            bool fightClubLavaCombatBirth = fightClubBirth && source.Train.Context != null && owner.Triggers.Count == 2 &&
+                PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
+                rule.Targets.Count == 2 && targets.Count == 3 && rule.Targets.All(targets.Contains) && fightClubLavaCompanion;
+            return third ? OnlyFragileBuffSource(source, allowLiveCombat: originalChampion, allowTwoLiveCombat: originalSingleBirth || originalSycophant || originalTripleBirth || fightClubCompanionsBirth || fightClubLavaCombatBirth, allowSingleRetiredCombat: originalSingleRetiredBirth,
                     pendingDyingRoom: originalPendingTripleBirth || source.Preview && fightClubCompanionsBirth ? room.RoomIndex : (int?)null,
                     pendingDyingPreview: source.Preview && fightClubCompanionsBirth,
                     allowTwoLivePreview: originalPreviewBirth || originalFourHordePreviewBirth || originalSixHordePuffballPreviewBirth || fightClubLavaPreviewBirth || fightClubCompanionsBirth, allowMixedCombat: fightClubBirth || originalTripleBirth,
