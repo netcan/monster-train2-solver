@@ -597,10 +597,15 @@ namespace MonsterTrain2Poju.Model
                     Health: 5, MaxHealth: 5, Size: 1, Modifiers.Upgrades: [var club] } && OriginalFightClub(club) &&
                     rule.Targets.Contains(unit.Id) && PreviewBirthModel.IsOriginalGreenRecruit(unit, source.Train.Context));
             bool FightClubStewardRecruit() => source.Train.Context != null &&
-                owner is { BaseAttack: 95, Health: 58, MaxHealth: 110, Size: 1, Triggers.Count: 1, Modifiers.Upgrades: [
+                owner is { BaseAttack: 95, Health: 58, MaxHealth: 110, Size: 1, Triggers.Count: 1 } &&
+                (owner.Modifiers?.Upgrades is [
                     { DataId: "", AssetKey: "" },
                     { DataId: "4f70b7b7-b507-4931-9b14-e13dcd6cd59f", AssetKey: "ExilesDiadem_Upgrade", Stats.Health: 10, Stats.Size: -2 },
-                    { DataId: "", AssetKey: "" }, var recruitOwnerClub] } && OriginalFightClub(recruitOwnerClub) &&
+                    { DataId: "", AssetKey: "" }, var recruitOwnerClub] && OriginalFightClub(recruitOwnerClub) ||
+                 owner.Modifiers?.Upgrades is [
+                    { DataId: "", AssetKey: "" }, { DataId: "", AssetKey: "" },
+                    { DataId: "4f70b7b7-b507-4931-9b14-e13dcd6cd59f", AssetKey: "ExilesDiadem_Upgrade", Stats.Health: 10, Stats.Size: -2 },
+                    { DataId: "", AssetKey: "" }, var upgradedRecruitOwnerClub] && OriginalFightClub(upgradedRecruitOwnerClub)) &&
                 source.Train.Context.CardRegistry?.Any(card => card.DataId == "217d467c-77c2-481d-b78f-57aaf3dcd4a6" && card.EquippedUnitId == owner.Id) == true &&
                 rule.Targets.Count == 3 && targets.Count == 4 && rule.Targets.All(targets.Contains) &&
                 room.Units.Any(unit => unit is { AssetKey: "TrainStewardBig", Team: CombatTeam.Player, BaseAttack: 23,
