@@ -7755,10 +7755,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-pending-physical-harvest-replay-calibration.mt2f"));
     PendingPhysicalHarvestChecks.Native(source.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player-inactive-once-buffed-multistrike-zealot-inferno-exit-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-inactive-once-buffed-multistrike-zealot-inferno-exit-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-inactive-once-buffed-multistrike-zealot-inferno-exit-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var fixture = ModelJson.ReadFixture(path);
-    InactiveOnceBuffedMultistrikeZealotInfernoExitChecks.Native(fixture.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-inactive-once-buffed-multistrike-zealot-inferno-exit-replay-calibration.mt2f"));
+    InactiveOnceBuffedMultistrikeZealotInfernoExitChecks.Native(fixture.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-inactive-multistrike-zealot-inferno-exit-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-inactive-multistrike-zealot-inferno-exit-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
