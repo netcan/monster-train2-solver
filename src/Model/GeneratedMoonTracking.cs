@@ -50,12 +50,14 @@ namespace MonsterTrain2Poju.Model
             var actors = world.RetainedUnits;
             if (actors.Any(actor => actor.RoomIndex != -1 || actor.Preview || actor.Unit.Team != CombatTeam.Enemy ||
                 actor.Unit.Health > 0 || actor.Unit.DeathState?.IsDestroyed != true || actor.Unit.MoonPhaseMask is not (5 or 6))) return false;
-            return actors.Count(actor => actor.Unit is { AssetKey: "HeavyT3_Basic", BaseAttack: 8, MaxHealth: 325, Size: 2, Triggers.Count: 0 }) == 2 &&
+            int basicCount = actors.Count(actor => actor.Unit is { AssetKey: "HeavyT3_Basic", BaseAttack: 8, MaxHealth: 325, Size: 2, Triggers.Count: 0 });
+            int sweepCount = actors.Count(actor => actor.Unit is { AssetKey: "AttackerT3_Sweep", BaseAttack: 5, MaxHealth: 5, Size: 1, Triggers.Count: 0 });
+            return (basicCount == 2 && sweepCount == actors.Count - 6 ||
+                context.QueryFrame is { MoonPhase: 2, Turn: 7 } && actors.Count == 10 && basicCount == 4 && sweepCount == 2) &&
                 actors.Count(actor => actor.Unit is { AssetKey: "HeavyT3_PyreDamageIfUnblocked", BaseAttack: 5, MaxHealth: 250, Size: 2,
                     Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,
                         Effects: [{ Type: "CardEffectPyreDamageIfNoPlayerUnits", Value: 5,
                             Action: { Type: "Damage", Target: "Pyre", Value: 5 } }] }] }) == 2 &&
-                actors.Count(actor => actor.Unit is { AssetKey: "AttackerT3_Sweep", BaseAttack: 5, MaxHealth: 5, Size: 1, Triggers.Count: 0 }) == actors.Count - 6 &&
                 actors.Count(actor => actor.Unit.AssetKey == "EnchanterT2_Titanskin" && world.EnchanterIds.Contains(actor.Unit.Id)) == 2;
         }
     }
