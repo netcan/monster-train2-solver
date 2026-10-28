@@ -287,7 +287,7 @@ namespace MonsterTrain2Poju.Model
                     item.Stats.UpgradeSlotCount == 0 && item.Statuses.Count == 0 && item.ExternalInteractions.Count == 0 &&
                     item.AbilityUpgrade == null && item.TriggerUpgrades?.Count is not > 0) &&
                 room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 39,
-                    Health: 25, MaxHealth: 25, Size: 2, Modifiers.Upgrades: [var club] } && OriginalFightClub(club) &&
+                    Health: 24 or 25, MaxHealth: 25, Size: 2, Modifiers.Upgrades: [var club] } && OriginalFightClub(club) &&
                     rule.Targets.Contains(unit.Id) && source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83") &&
                 room.Units.Any(unit => unit is { AssetKey: "MonsterGenerousHost", Team: CombatTeam.Player, BaseAttack: 20,
                     Health: 5, MaxHealth: 5, Size: 1, Modifiers.Upgrades: [var club] } && OriginalFightClub(club) &&
