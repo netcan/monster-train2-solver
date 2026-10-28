@@ -1249,6 +1249,13 @@ if (args.Length is 2 or 3 && args[0] == "--single-horde-sycophant-only")
     SingleHordeSycophantChecks.Native(fixture.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--fight-club-wounded-steward-boss-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    FightClubStewardRecruitBossChecks.Native(fixture.RootElement, replay?.RootElement, woundedSteward: true);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--fight-club-steward-recruit-boss-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -8035,6 +8042,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var fixture = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-fight-club-lava-boss-preview-replay-calibration.mt2f"));
     FightClubLavaBossPreviewChecks.Native(fixture.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-fight-club-wounded-steward-boss-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-fight-club-wounded-steward-boss-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-fight-club-wounded-steward-boss-replay-calibration.mt2f"));
+    FightClubStewardRecruitBossChecks.Native(fixture.RootElement, replay.RootElement, woundedSteward: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-fight-club-steward-recruit-boss-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-fight-club-steward-recruit-boss-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

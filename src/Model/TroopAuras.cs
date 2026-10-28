@@ -566,20 +566,23 @@ namespace MonsterTrain2Poju.Model
             bool fightClubStewardRecruitPreviewBirth = fightClubPreviewBirth &&
                 room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count is 1 or 4 && FightClubStewardRecruit();
             bool fightClubStewardRecruitCombatBirth = fightClubBirth && FightClubStewardRecruit();
-            bool fightClubWoundedStewardPreviewBirth = fightClubPreviewBirth && source.Train.Context != null &&
-                room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count is 1 or 4 &&
+            bool FightClubWoundedSteward() => source.Train.Context != null &&
                 owner is { BaseAttack: 95, Health: 84, MaxHealth: 110, Size: 1, Triggers.Count: 1, Modifiers.Upgrades: [
                     { DataId: "", AssetKey: "" }, { DataId: "", AssetKey: "" },
                     { DataId: "4f70b7b7-b507-4931-9b14-e13dcd6cd59f", AssetKey: "ExilesDiadem_Upgrade", Stats.Health: 10, Stats.Size: -2 },
                     { DataId: "", AssetKey: "" }, var woundedOwnerClub] } && OriginalFightClub(woundedOwnerClub) &&
                 source.Train.Context.CardRegistry?.Any(card => card.DataId == "217d467c-77c2-481d-b78f-57aaf3dcd4a6" && card.EquippedUnitId == owner.Id) == true &&
-                rule.Targets.Count == 3 && targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 &&
+                (rule.Targets.Count == 3 && targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 ||
+                 rule.Targets.Count == 2 && targets.Count == 3 && rule.Targets.All(targets.Contains)) &&
                 rule.Targets.Where(id => !targets.Contains(id)).All(id =>
                     source.Train.Context.SpawnPoints?.Units.Any(point => point.UnitId == id && !point.SpawnedInPreview &&
                         point.Current == null && point.LastKnown == null) == true) &&
                 room.Units.Any(unit => unit is { AssetKey: "TrainStewardBig", Team: CombatTeam.Player, BaseAttack: 23,
                     Health: 10, MaxHealth: 25, Size: 3, Modifiers.Upgrades: [var club] } && OriginalFightClub(club) &&
                     rule.Targets.Contains(unit.Id) && source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "d14a50f3-728d-43e1-87f0-ef1b013f6678");
+            bool fightClubWoundedStewardPreviewBirth = fightClubPreviewBirth &&
+                room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count is 1 or 4 && FightClubWoundedSteward();
+            bool fightClubWoundedStewardCombatBirth = fightClubBirth && rule.Targets.Count == 2 && FightClubWoundedSteward();
             bool fightClubRetiredPuffballBirth = source.Preview && source.Train.Context != null && added.Length == 1 &&
                 PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context) && owner.Triggers.Count == 2 &&
                 PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
@@ -609,7 +612,7 @@ namespace MonsterTrain2Poju.Model
             bool fightClubLavaCombatBirth = (fightClubBirth || fightClubSingleBirth) && source.Train.Context != null && owner.Triggers.Count == 2 &&
                 PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
                 rule.Targets.Count == 2 && targets.Count == 3 && rule.Targets.All(targets.Contains) && fightClubLavaCompanion;
-            return third ? OnlyFragileBuffSource(source, allowLiveCombat: originalChampion, allowTwoLiveCombat: originalSingleBirth || originalSycophant || originalTripleBirth || fightClubCompanionsBirth || fightClubLavaCombatBirth || fightClubStewardRecruitCombatBirth, allowSingleRetiredCombat: originalSingleRetiredBirth,
+            return third ? OnlyFragileBuffSource(source, allowLiveCombat: originalChampion, allowTwoLiveCombat: originalSingleBirth || originalSycophant || originalTripleBirth || fightClubCompanionsBirth || fightClubLavaCombatBirth || fightClubStewardRecruitCombatBirth || fightClubWoundedStewardCombatBirth, allowSingleRetiredCombat: originalSingleRetiredBirth,
                     pendingDyingRoom: originalPendingTripleBirth || source.Preview && fightClubCompanionsBirth ? room.RoomIndex : (int?)null,
                     pendingDyingPreview: source.Preview && fightClubCompanionsBirth,
                     allowTwoLivePreview: originalPreviewBirth || originalFourHordePreviewBirth || originalSixHordePuffballPreviewBirth || originalSixHordeStewardFanPreviewBirth || originalSixHordeStewardCompanionPreviewBirth || fightClubLavaPreviewBirth || fightClubCompanionsBirth || fightClubRetiredPuffballBirth || fightClubStewardPreviewBirth || fightClubStewardRecruitPreviewBirth || fightClubWoundedStewardPreviewBirth || fightClubSmallStewardMissingTarget, allowMixedCombat: fightClubBirth || originalTripleBirth || fightClubLavaCombatBirth,
