@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--six-horde-retired-puffball-five-writes-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    SixHordeRetiredPuffballFiveWritesChecks.Native(fixture.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--lava-steward-live-horde-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -7943,6 +7950,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var health = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-six-horde-companions-health-calibration.mt2f"));
     using var healthReplay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-six-horde-companions-health-replay-calibration.mt2f"));
     SixHordeCompanionsPreviewChecks.Native(health.RootElement, healthReplay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-retired-puffball-five-writes-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-retired-puffball-five-writes-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-retired-puffball-five-writes-replay-calibration.mt2f"));
+    SixHordeRetiredPuffballFiveWritesChecks.Native(fixture.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-six-horde-retired-puffball-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-six-horde-retired-puffball-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

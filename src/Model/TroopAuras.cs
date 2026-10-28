@@ -323,14 +323,14 @@ namespace MonsterTrain2Poju.Model
                 PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context) && added.Length == 1 &&
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player,
                     SpawnerCardId: 0, BaseAttack: 18, Size: 1, HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades: var sixUpgrades } sixHorde &&
-                sixHorde.Status("horde")?.Stacks == 6 && sixUpgrades.Count is 9 or 15 &&
+                sixHorde.Status("horde")?.Stacks == 6 && sixUpgrades.Count is 9 or 15 or 21 &&
                 sixHorde.Health == 24 + 3 * sixUpgrades.Count && sixHorde.MaxHealth == sixHorde.Health &&
                 sixUpgrades.All(item => item.DataId == Key(owner.Id) && item.AssetKey == upgrade.AssetKey &&
                     item.Stats.Health == 3 && item.Stats.Damage == 0 && item.Stats.Cost == 0 && item.Stats.Heal == 0 &&
                     item.Stats.Size == 0 && item.Stats.XCost == 0 && item.Stats.EquipmentLimit == 0 &&
                     item.Stats.UpgradeSlotCount == 0 && item.Statuses.Count == 0 && item.ExternalInteractions.Count == 0 &&
                     item.AbilityUpgrade == null && item.TriggerUpgrades?.Count is not > 0);
-            bool originalSixHordePuffballPreviewBirth = originalSixHordePreviewBirth && source.Train.Context != null &&
+            bool originalSixHordePuffballPreviewBirth = originalSixHordePreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count != 21 && source.Train.Context != null &&
                 owner.Triggers.Count == 2 && PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
                 rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 &&
                 room.Units.Any(unit => unit is { AssetKey: "MonsterPricklyPuffball", Team: CombatTeam.Player, BaseAttack: 10,
@@ -350,7 +350,7 @@ namespace MonsterTrain2Poju.Model
                     rule.Targets.Any(id => id != actor.Unit.Id && !targets.Contains(id) &&
                         source.Train.Context.SpawnPoints?.Units.Any(point => point.UnitId == id && !point.SpawnedInPreview &&
                             point.Current == null && point.LastKnown == null) == true));
-            bool originalSixHordeCompanionsPreviewBirth = originalSixHordePreviewBirth && source.Train.Context != null &&
+            bool originalSixHordeCompanionsPreviewBirth = originalSixHordePreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count != 21 && source.Train.Context != null &&
                 owner is { BaseAttack: 80, MaxHealth: 110, Size: 1, Triggers.Count: 1 } &&
                 owner.Modifiers?.Upgrades is [
                     { DataId: "", AssetKey: "" },
