@@ -6,26 +6,28 @@ using MonsterTrain2Poju.Model;
 internal static class LavaStewardPreviewChecks
 {
     private const string Reason = "Battle preview floor 0: Combined troop upgrades and enchantment source ordering require native calibration.";
-    internal static void Native(FixtureValue fixture, FixtureValue? replay = null)
+    internal static void Native(FixtureValue fixture, FixtureValue? replay = null, bool fiveWrites = false)
     {
         var rows = NativeBranchObservationChecks.Replay(fixture, Reason);
-        Require(rows.Length == 20 && !rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Missing native chain.");
+        Require(rows.Length == (fiveWrites ? 21 : 20) && !rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Missing native chain.");
         var before = rows[^1].GetProperty("Before").Deserialize<BattleTurnState>()!;
         var actual = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         var action = rows[^1].GetProperty("Action").Deserialize<PlayCardAction>()!;
-        Require(action.CardInstanceId == 13 && action.RoomIndex == 0 && actual.Spawn.Train.Context!.NextUnitId == 25 &&
+        int previewId = fiveWrites ? 26 : 25;
+        Require(action.CardInstanceId == (fiveWrites ? 21 : 13) && action.RoomIndex == 0 && actual.Spawn.Train.Context!.NextUnitId == previewId &&
             actual.Spawn.Train.Rooms[0].Units.Any(unit => unit.Id == 24 && unit.AssetKey == "TrainStewardSmall") &&
+            (!fiveWrites || actual.Spawn.Train.Rooms[0].Units.Any(unit => unit.Id == 25 && unit.AssetKey == "MonsterEnthusiasticFan")) &&
             before.Spawn.Train.Context!.CardRegistry!.Any(card => card.DataId == "924ad6ab-3d60-4760-b38e-78f5cf09c1d5" && card.EquippedUnitId == 6),
             "Missing steward or equipped source identity.");
         var writes = rows[^1].GetProperty("TroopUpdates").EnumerateArray().Where(update =>
             update.GetProperty("Before").GetProperty("Preview").GetBoolean() &&
-            update.GetProperty("Before").GetProperty("Units").EnumerateArray().Any(unit => unit.GetProperty("Id").GetInt32() == 25)).ToArray();
-        Require(writes.Length == 4, "Expected four preview writes.");
+            update.GetProperty("Before").GetProperty("Units").EnumerateArray().Any(unit => unit.GetProperty("Id").GetInt32() == previewId)).ToArray();
+        Require(writes.Length == (fiveWrites ? 5 : 4), "Unexpected preview write count.");
         for (int i = 0; i < writes.Length; i++)
         {
             var b = writes[i].GetProperty("Before"); var a = writes[i].GetProperty("After");
-            var bu = b.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == 25);
-            var au = a.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == 25);
+            var bu = b.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == previewId);
+            var au = a.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == previewId);
             Require(b.GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual([2, 6]) &&
                 a.GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual([2, 6]) &&
                 bu.GetProperty("Health").GetInt32() == 12 + i * 9 && au.GetProperty("Health").GetInt32() == 21 + i * 9 &&
@@ -77,8 +79,8 @@ internal static class LavaStewardPreviewChecks
         var wrongBindingResult = BattleActionModel.PlayCard(wrongBinding.Deserialize<BattleTurnState>(ModelJson.Options)!, action);
         Require(changedBindings > 0 && (!wrongBindingResult.Supported || NativeBranchObservationChecks.Key(wrongBindingResult.State!) != NativeBranchObservationChecks.Key(actual)),
             "Wrong equipment binding matched calibrated successor.");
-        if (replay.HasValue) { Native(replay.Value); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
-        Console.WriteLine("LAVA-STEWARD-PREVIEW PASS: 20 native inputs/full state/RNG, four writes, equipment binding, four immutable branches and source controls; independentPair=" + replay.HasValue);
+        if (replay.HasValue) { Native(replay.Value, fiveWrites: fiveWrites); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
+        Console.WriteLine("LAVA-STEWARD-PREVIEW PASS: native inputs/full state/RNG, preview writes, equipment binding, four immutable branches and source controls; fiveWrites=" + fiveWrites + "; independentPair=" + replay.HasValue);
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }

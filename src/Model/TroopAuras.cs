@@ -205,7 +205,7 @@ namespace MonsterTrain2Poju.Model
                 previewBirth.Status("horde")?.Stacks == 3 && (birthUpgrades.Count is 0 or 3 or 6 ||
                     owner.Triggers.Count == 2 && PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
                     (birthUpgrades.Count == 9 && rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 ||
-                    birthUpgrades.Count == 9 && rule.Targets.Count == 2 && targets.Count == 2 &&
+                    birthUpgrades.Count is 9 or 12 && rule.Targets.Count == 2 && targets.Count == 2 &&
                     rule.Targets.Count(id => !targets.Contains(id)) == 1 &&
                     source.Train.Context.CardRegistry?.Any(card => card.DataId == "924ad6ab-3d60-4760-b38e-78f5cf09c1d5" &&
                         card.EquippedUnitId is int equipped && rule.Targets.Contains(equipped) && !targets.Contains(equipped) &&
