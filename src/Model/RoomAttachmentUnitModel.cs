@@ -226,11 +226,11 @@ namespace MonsterTrain2Poju.Model
                             previousUnit is not { AssetKey: "HeavyT2_Zealot", BaseAttack: 5 or 11, MaxHealth: 110, Size: 2,
                                 Triggers: [{ Kind: "OnAnyUnitDeathOnFloor", FireCount: 1,
                                     Effects: [{ Type: "CardEffectBuffDamage", Value: 1, Action: { Type: "BuffAttack", Target: "Self", Value: 1 } }] }] } &&
-                            !(previousUnit is { AssetKey: "HeavyT2_Zealot", BaseAttack: 4 or 6 or 7, MaxHealth: 110, Size: 2,
-                                HordeDefinition: { Attack: 3, Health: 110 }, Modifiers.DamageBuff: 1 or 3 or 4,
+                            !(previousUnit is { AssetKey: "HeavyT2_Zealot", BaseAttack: 4 or 6 or 7 or 15, MaxHealth: 110, Size: 2,
+                                HordeDefinition: { Attack: 3, Health: 110 }, Modifiers.DamageBuff: 1 or 3 or 4 or 12,
                                 Triggers: [{ Kind: "OnAnyUnitDeathOnFloor", FireCount: 1,
                                     Effects: [{ Type: "CardEffectBuffDamage", Value: 1, Action: { Type: "BuffAttack", Target: "Self", Value: 1 } }] }] } &&
-                                (previousUnit.BaseAttack, previousUnit.Modifiers.DamageBuff) is (4, 1) or (6, 3) or (7, 4) &&
+                                (previousUnit.BaseAttack, previousUnit.Modifiers.DamageBuff) is (4, 1) or (6, 3) or (7, 4) or (15, 12) &&
                                 previousUnit.Status("multistrike")?.Stacks == 1) ||
                             !OriginalInferno(removed) ||
                             oldRoom.Preview || newRoom.Preview || currentUnit.Triggers.Any(trigger => trigger.Kind is
