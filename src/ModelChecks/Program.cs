@@ -7479,7 +7479,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
 {
     using var source = ModelJson.ReadFixture(path);
     using var rng = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-third-troop-fragile-preview-rng-calibration.mt2f"));
-    ThirdTroopFragilePreviewChecks.Native(source.RootElement, rng.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-third-troop-fragile-preview-replay-calibration.mt2f"));
+    ThirdTroopFragilePreviewChecks.Native(source.RootElement, rng.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-third-troop-fragile-buff-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-third-troop-fragile-buff-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
