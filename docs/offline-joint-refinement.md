@@ -171,6 +171,8 @@ dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll improve-triples `
 `improve-survival`使用同样的参数探索另一种失败路线排序：胜局始终优先；败局先按
 结束时回合数降序，再按原诊断分数排序。更晚失败不代表更接近胜利，也不是搜索下界；
 导出仍仅是重新完整复演的模型预测，玩家面板的正式评分不受影响。
+`improve-survival-pairs`额外将单步优先候选限制在每点预算的一半，随后穿插两步组合；
+至少需要两个候选和正的第二步宽度。它改变探索顺序，并不保证一定有合法组合或更快找到胜局。
 
 ```powershell
 dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll improve-diverse `

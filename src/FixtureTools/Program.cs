@@ -161,7 +161,7 @@ else if (args.Length == 9 && args[0] == "improve-sweep")
         int.Parse(args[6]), exploreCardOrder: true, retainSuffix: true, secondActionWidth: int.Parse(args[7]),
         perDecisionCandidateLimit: limit);
 }
-else if (args.Length == 11 && args[0] is "improve-diverse" or "improve-survival")
+else if (args.Length == 11 && args[0] is "improve-diverse" or "improve-survival" or "improve-survival-pairs")
 {
     int limit = int.Parse(args[7]), count = int.Parse(args[8]), width = int.Parse(args[9]), second = int.Parse(args[10]);
     if (limit is < 1 or > 256 || count is < 1 or > 256 || width is < 1 or > 16 || second is < 0 or > 32)
@@ -169,7 +169,7 @@ else if (args.Length == 11 && args[0] is "improve-diverse" or "improve-survival"
     OfflineBattleSearch.Improve(args[1], args[3], int.Parse(args[4]), int.Parse(args[5]), args[2],
         int.Parse(args[6]), exploreCardOrder: true, retainSuffix: true, secondActionWidth: second,
         perDecisionCandidateLimit: limit, diversificationWidth: width, maxDecisionCount: count,
-        preferLaterDefeat: args[0] == "improve-survival");
+        preferLaterDefeat: args[0] != "improve-diverse", balancePairs: args[0] == "improve-survival-pairs");
 }
 else if (args.Length is 6 or 7 && args[0] == "deployment-grid")
 {
@@ -284,6 +284,7 @@ else
     Console.Error.WriteLine("Bounded route sweep: improve-sweep <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <second-action-width:0..32> <candidates-per-decision:1..256>; share the budget across later decisions; model prediction only.");
     Console.Error.WriteLine("Diversified route investigation: improve-diverse <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <candidates-per-decision:1..256> <decision-count:1..256> <alternative-routes:1..16> <second-action-width:0..32>; explore bounded complete losing alternatives, export only a strictly better independently replayed route; model prediction only.");
     Console.Error.WriteLine("Survival route investigation: improve-survival has the same arguments as improve-diverse; wins rank first, then later complete losses, then the original loss score. Model prediction only; does not change player search.");
+    Console.Error.WriteLine("Balanced survival investigation: improve-survival-pairs uses the same arguments, reserving part of each decision budget for joint inputs; requires at least two candidates and a positive second-action width.");
     Console.Error.WriteLine("Deployment investigation: deployment-grid <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <max-candidates:1..4096> [first-unit-room:0..2]; keep the initial unit order and explore joint legal room/position assignments, preserve the first independently replayed unsupported boundary, export only a complete independently replayed improvement; model prediction only.");
     Console.Error.WriteLine("Spread deployment investigation: deployment-spread <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <max-candidates:1..4096> [first-unit-room:any|0..2] [start-sample:0..1000000]; sample legal joint placements across early and late units, resume at nextSample, with the same exact-root/complete-replay guards as deployment-grid; model prediction only.");
     Console.Error.WriteLine("Bounded three-input investigation: improve-triples <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <second-action-width:1..32> <third-action-width:1..16> <candidates-per-decision:1..256>; model prediction only.");

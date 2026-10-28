@@ -13,7 +13,8 @@ internal static partial class OfflineBattleSearch
     internal static void Improve(string input, string output, int milliseconds, int maxPasses = 4,
         string? prediction = null, int startDecision = 0, bool exploreCardOrder = false, bool retainSuffix = false,
         int secondActionWidth = 0, bool improveWinningRoute = false, int perDecisionCandidateLimit = 0,
-        int thirdActionWidth = 0, int diversificationWidth = 0, int maxDecisionCount = 256, bool preferLaterDefeat = false)
+        int thirdActionWidth = 0, int diversificationWidth = 0, int maxDecisionCount = 256, bool preferLaterDefeat = false,
+        bool balancePairs = false)
     {
         Require(milliseconds is >= 100 and <= 600000 && maxPasses is >= 1 and <= 16,
             "Expected100..600000ms and1..16 improvement passes.");
@@ -25,6 +26,8 @@ internal static partial class OfflineBattleSearch
             (diversificationWidth == 0 || retainSuffix && perDecisionCandidateLimit > 0),
             "Expected0..16 alternative routes and1..256 decisions; diversification requires a bounded retained suffix.");
         Require(!preferLaterDefeat || !improveWinningRoute, "Survival investigation requires a losing baseline.");
+        Require(!balancePairs || preferLaterDefeat && secondActionWidth > 0 && perDecisionCandidateLimit >= 2,
+            "Balanced pairs require survival ordering, a second-action width and at least two candidates per decision.");
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         string unsupportedOutput = output + ".unsupported.mt2f";
         if (retainSuffix && File.Exists(unsupportedOutput)) throw new IOException("Output already exists: " + unsupportedOutput);
@@ -149,12 +152,13 @@ internal static partial class OfflineBattleSearch
                     .GroupBy(candidate => (candidate.Step.Action?.CardInstanceId ?? -1,
                         candidate.Step.Action?.ActivatorUnitId ?? 0))
                     .Select(group => group.First().Step).ToArray();
+                var upfrontSingles = balancePairs ? singles.Take(Math.Max(1, perDecisionCandidateLimit / 2)).ToArray() : singles;
                 // Neither input has to improve the route alone.
                 // Every successor is model-owned and the final export is still
                 // independently replayed from the exact native deployment.
                 IEnumerable<(Step[] Steps, BattleTurnState[] States, RoomOutcome Outcome)> Neighbors()
                 {
-                    foreach (var first in ordered.Where(candidate => singles.Contains(candidate.Step)))
+                    foreach (var first in ordered.Where(candidate => upfrontSingles.Contains(candidate.Step)))
                     {
                         if (Expired() || DecisionBudgetReached()) yield break;
                         yield return (new[] { first.Step }, new[] { first.State }, first.Outcome);
@@ -162,7 +166,7 @@ internal static partial class OfflineBattleSearch
                     foreach (var first in perDecisionCandidateLimit == 0 ? alternatives : ordered.AsEnumerable())
                     {
                         if (Expired() || DecisionBudgetReached()) yield break;
-                        if (!singles.Contains(first.Step))
+                        if (!upfrontSingles.Contains(first.Step))
                             yield return (new[] { first.Step }, new[] { first.State }, first.Outcome);
                         if (secondActionWidth == 0 || Expired() || DecisionBudgetReached() || first.Step.IsEndTurn || Terminal(first.Outcome) || prefix.Length >= 255) continue;
                         var firstPrefix = prefix.Append(first.Step).ToArray();
@@ -369,7 +373,7 @@ internal static partial class OfflineBattleSearch
         }
         Console.WriteLine($"IMPROVE-POLICY foundWin={bestOutcome == RoomOutcome.BattleWon} improvements={improvements} " +
             $"startDecision={startDecision} exploreCardOrder={exploreCardOrder} candidates={candidates} completed={completed} unsupported={unsupported} " +
-            $"retainSuffix={retainSuffix} improveWinningRoute={improveWinningRoute} preferLaterDefeat={preferLaterDefeat} bestTurn={bestFinal.Spawn.Turn} secondActionWidth={secondActionWidth} thirdActionWidth={thirdActionWidth} perDecisionCandidateLimit={perDecisionCandidateLimit} diverseFirstCards={perDecisionCandidateLimit > 0} diversificationWidth={diversificationWidth} diversifiedRoutes={diversifiedRoutes} maxDecisionCount={maxDecisionCount} visitedDecisions={visitedDecisions} lastDecision={lastDecision} pairCandidates={pairCandidates} pairImprovements={pairImprovements} tripleCandidates={tripleCandidates} tripleImprovements={tripleImprovements} retainedSteps={retainedSteps} skippedSuffixInputs={skippedSuffixInputs} retargetedSuffixInputs={retargetedSuffixInputs} timedOut={Expired()} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={improvements > 0}; model prediction only.");
+            $"retainSuffix={retainSuffix} improveWinningRoute={improveWinningRoute} preferLaterDefeat={preferLaterDefeat} balancePairs={balancePairs} bestTurn={bestFinal.Spawn.Turn} secondActionWidth={secondActionWidth} thirdActionWidth={thirdActionWidth} perDecisionCandidateLimit={perDecisionCandidateLimit} diverseFirstCards={perDecisionCandidateLimit > 0} diversificationWidth={diversificationWidth} diversifiedRoutes={diversifiedRoutes} maxDecisionCount={maxDecisionCount} visitedDecisions={visitedDecisions} lastDecision={lastDecision} pairCandidates={pairCandidates} pairImprovements={pairImprovements} tripleCandidates={tripleCandidates} tripleImprovements={tripleImprovements} retainedSteps={retainedSteps} skippedSuffixInputs={skippedSuffixInputs} retargetedSuffixInputs={retargetedSuffixInputs} timedOut={Expired()} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={improvements > 0}; model prediction only.");
 
         BattleTurnState Replay(IEnumerable<Step> steps, out RoomOutcome terminal, List<BattleTurnState>? collect = null)
         {

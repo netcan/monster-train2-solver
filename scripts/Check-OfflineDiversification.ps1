@@ -83,6 +83,20 @@ try{
  if($LASTEXITCODE -ne 0 -or (Get-FileHash $survivalOutput).Hash -ne (Get-FileHash $expected).Hash){
   throw 'Survival route differs from the independently replayed controlled improvement'
  }
+ $balancedOutput=Join-Path $testRoot 'balanced.mt2f'
+ $balancedLog=@(& dotnet $tool improve-survival-pairs $source $baseline $balancedOutput 30000 1 0 6 1 2 2 2>&1)
+ if($LASTEXITCODE -ne 0 -or ($balancedLog -join "`n") -notmatch 'balancePairs=True' -or
+    ($balancedLog -join "`n") -notmatch 'pairCandidates=[1-9]'){
+  throw 'Balanced survival investigation failed to explore joint candidates'
+ }
+ if(Test-Path $balancedOutput){
+  & dotnet $tool verify-offline-plan $balancedOutput
+  if($LASTEXITCODE -ne 0){throw 'Balanced survival route failed independent replay'}
+ }
+ $badPairs=@(& dotnet $tool improve-survival-pairs missing-source missing-prediction (Join-Path $testRoot 'bad-pairs.mt2f') 100 1 0 6 1 2 0 2>&1)
+ if($LASTEXITCODE -eq 0 -or ($badPairs -join "`n") -notmatch 'Balanced pairs require'){
+  throw 'Balanced survival accepted a zero second-action width'
+ }
  $protectedResult=@(& dotnet $tool improve-diverse $source $baseline $actual 100 1 0 1 1 1 0 2>&1)
  if($LASTEXITCODE -eq 0 -or ($protectedResult -join "`n") -notmatch 'Output already exists' -or
     (Get-FileHash $actual).Hash -ne $actualHash){throw 'Existing output protection failed'}
