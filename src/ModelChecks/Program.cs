@@ -6248,6 +6248,13 @@ if (args.Length == 2 && args[0] == "--exhausted-advice-only")
     ExhaustedAdviceChecks.Run(fixture.RootElement);
     return;
 }
+if (args.Length == 3 && args[0] == "--exhausted-advice-native-pair")
+{
+    using var before = ModelJson.ReadFixture(args[1]);
+    using var after = ModelJson.ReadFixture(args[2]);
+    ExhaustedAdviceChecks.NativePair(before.RootElement, after.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--untouchable-troop-aura-native")
 {
     using var original = ModelJson.ReadFixture(args[1]);

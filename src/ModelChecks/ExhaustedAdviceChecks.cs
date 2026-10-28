@@ -4,6 +4,30 @@ using MonsterTrain2Poju.Model;
 
 internal static class ExhaustedAdviceChecks
 {
+    internal static void NativePair(FixtureValue before, FixtureValue after)
+    {
+        foreach (FixtureValue sample in new[] { before, after })
+        {
+            Require(sample.GetProperty("EvidenceKind").GetString() == "NativeAdviceResearch", "Not a native advice sample.");
+            BattleTurnState previous = sample.GetProperty("PreviousRoot").Deserialize<BattleTurnState>()!;
+            BattleTurnState current = sample.GetProperty("ActualRoot").Deserialize<BattleTurnState>()!;
+            FixtureValue[] steps = sample.GetProperty("PreviousPlan").GetProperty("Steps").EnumerateArray().ToArray();
+            FixtureValue timing = sample.GetProperty("Timing");
+            Require(steps.Length == 1 && steps[0].GetProperty("IsEndTurn").GetBoolean() &&
+                current.Spawn.Turn > previous.Spawn.Turn &&
+                sample.GetProperty("CurrentSearches").GetInt32() == sample.GetProperty("PreviousSearches").GetInt32() + 1 &&
+                timing.GetProperty("SearchWorkers").GetInt32() == 2 && timing.GetProperty("SearchMs").GetDouble() > 0 &&
+                sample.GetProperty("CurrentPlan").GetProperty("Steps").EnumerateArray().Any(),
+                "Sample did not cross an exhausted-plan boundary into a fresh parallel search.");
+        }
+        foreach (string property in new[] { "PreviousRoot", "ActualRoot" })
+            Require(before.GetProperty(property).ContentEquals(after.GetProperty(property)), "Native samples differ in " + property);
+        foreach (string property in new[] { "Steps", "State", "Outcome" })
+            Require(before.GetProperty("PreviousPlan").GetProperty(property).ContentEquals(after.GetProperty("PreviousPlan").GetProperty(property)),
+                "Native previous plans differ in " + property);
+        Console.WriteLine($"EXHAUSTED-ADVICE NATIVE PAIR PASS: identical roots and previous plan, fresh parallel searches; verificationMs={before.GetProperty("Timing").GetProperty("VerificationMs").GetDouble():F1}/{after.GetProperty("Timing").GetProperty("VerificationMs").GetDouble():F1} (sample only).");
+    }
+
     internal static void Run(FixtureValue fixture)
     {
         FixtureValue[] rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
