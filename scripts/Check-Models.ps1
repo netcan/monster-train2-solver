@@ -939,6 +939,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-triple-horde-target-death-calibration.mt2f',
     'player-triple-horde-lava-target-death-calibration.mt2f',
     'player-triple-horde-lava-target-death-replay-calibration.mt2f',
+    'player-fight-club-whelp-death-calibration.mt2f',
+    'player-fight-club-whelp-death-replay-calibration.mt2f',
     'player-six-horde-puffball-preview-calibration.mt2f',
     'player-six-horde-companions-preview-calibration.mt2f',
     'player-six-horde-companions-health-calibration.mt2f',
@@ -2428,6 +2430,15 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --six-horde-puffball-preview-only (Get-TestFixturePath 'player-six-horde-puffball-preview-calibration.mt2f') (Get-TestFixturePath 'player-six-horde-puffball-preview-replay-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Six horde puffball preview native check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-fight-club-whelp-death-calibration.mt2f', 'player-fight-club-whelp-death-replay-calibration.mt2f') }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Fight Club whelp death checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --fight-club-whelp-death-only (Get-TestFixturePath 'player-fight-club-whelp-death-calibration.mt2f') (Get-TestFixturePath 'player-fight-club-whelp-death-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Fight Club whelp death native check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-triple-horde-lava-target-death-calibration.mt2f', 'player-triple-horde-lava-target-death-replay-calibration.mt2f') }).Count -eq 0) {

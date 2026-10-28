@@ -275,9 +275,11 @@ namespace MonsterTrain2Poju.Model
                     { DataId: "", AssetKey: "" },
                     { DataId: "4f70b7b7-b507-4931-9b14-e13dcd6cd59f", AssetKey: "ExilesDiadem_Upgrade", Stats.Health: 10, Stats.Size: -2 },
                     { DataId: "", AssetKey: "" }, var ownerClub] } && OriginalFightClub(ownerClub) &&
-                added.Length == 1 && targets.Count == 5 &&
-                (rule.Targets.Count == 5 && rule.Targets.Count(id => !targets.Contains(id)) == 1 ||
-                 rule.Targets.Count == 4 && rule.Targets.All(targets.Contains)) &&
+                added.Length == 1 &&
+                (targets.Count == 5 && (rule.Targets.Count == 5 && rule.Targets.Count(id => !targets.Contains(id)) == 1 ||
+                 rule.Targets.Count == 4 && rule.Targets.All(targets.Contains)) ||
+                 source.Preview && targets.Count == 4 && rule.Targets.Count == 4 && rule.Targets.Count(id => !targets.Contains(id)) == 1 &&
+                 !room.Units.Any(unit => unit.AssetKey == "MonsterSneezyWhelp")) &&
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player,
                     SpawnerCardId: 0, Size: 1, HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades: var clubCompanionUpgrades } clubCompanion &&
                 (clubCompanion.Status("horde")?.Stacks == 3 && clubCompanion.BaseAttack == 24 && clubCompanionUpgrades.Count is 1 or 4 ||
@@ -295,9 +297,9 @@ namespace MonsterTrain2Poju.Model
                 room.Units.Any(unit => unit is { AssetKey: "MonsterGenerousHost", Team: CombatTeam.Player, BaseAttack: 20,
                     Health: 4 or 5, MaxHealth: 5, Size: 1, Modifiers.Upgrades: [var club] } && OriginalFightClub(club) &&
                     rule.Targets.Contains(unit.Id) && PreviewBirthModel.IsOriginalGreenRecruit(unit, source.Train.Context)) &&
-                room.Units.Any(unit => unit is { AssetKey: "MonsterSneezyWhelp", Team: CombatTeam.Player, BaseAttack: 19,
+                (targets.Count == 4 || room.Units.Any(unit => unit is { AssetKey: "MonsterSneezyWhelp", Team: CombatTeam.Player, BaseAttack: 19,
                     Health: 1, MaxHealth: 1, Size: 1, Modifiers.Upgrades: [var club] } && OriginalFightClub(club) &&
-                    rule.Targets.Contains(unit.Id) && source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "eef8abd9-3550-4da6-a8bd-d5f63e9d2b16");
+                    rule.Targets.Contains(unit.Id) && source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "eef8abd9-3550-4da6-a8bd-d5f63e9d2b16"));
             bool fightClubPreviewBirth = source.Preview && source.Train.Context != null &&
                 PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context) && added.Length == 1 &&
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player,
@@ -328,7 +330,7 @@ namespace MonsterTrain2Poju.Model
                     pendingDyingPreview: source.Preview && fightClubCompanionsBirth,
                     allowTwoLivePreview: originalPreviewBirth || originalFourHordePreviewBirth || originalSixHordePuffballPreviewBirth || fightClubLavaPreviewBirth || fightClubCompanionsBirth, allowMixedCombat: fightClubBirth || originalTripleBirth,
                     allowPreviewRetired: originalPreviewBirth || originalSixHordeCompanionsPreviewBirth ||
-                        fightClubCompanionsBirth && room.Units.Single(unit => unit.Id == added[0]).Status("horde")?.Stacks == 6 ||
+                        fightClubCompanionsBirth && (targets.Count == 4 || room.Units.Single(unit => unit.Id == added[0]).Status("horde")?.Stacks == 6) ||
                         fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4, allowSingleRetiredPreview: originalFourHordePreviewBirth,
                     allowTwoRetiredMixedPreview: fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4 || originalPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count == 6) :
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
