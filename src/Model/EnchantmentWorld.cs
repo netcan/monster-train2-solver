@@ -94,6 +94,11 @@ namespace MonsterTrain2Poju.Model
                     .SelectMany(effect => effect.Enchantment!.State.PrimaryTargets.Concat(effect.Enchantment.State.PreviewTargets))
                     .Select(target => target.UnitId).Concat(world.EnchanterIds).ToHashSet();
                 referenced.UnionWith(activeRetainedIds);
+                // A preview slot can still reference a removed actor while a later
+                // shift needs that actor's death state to compact the copied group.
+                if (source.Preview)
+                    referenced.UnionWith(source.Context!.SpawnPoints?.Groups.Where(group => group.PreviewCopyId.HasValue)
+                        .SelectMany(group => group.Occupants) ?? Array.Empty<int>());
                 if (RoomDeathEffectModel.RequiresBirthWorld(source.Context))
                 {
                     referenced.UnionWith(source.Context!.SpawnPoints?.Groups.SelectMany(group => group.Occupants) ?? Array.Empty<int>());
@@ -130,6 +135,9 @@ namespace MonsterTrain2Poju.Model
                 .SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null)
                 .SelectMany(effect => effect.Enchantment!.State.PrimaryTargets.Concat(effect.Enchantment.State.PreviewTargets))
                 .Select(target => target.UnitId).Concat(world.EnchanterIds).ToHashSet();
+            if (world.Preview)
+                referenced.UnionWith(context.SpawnPoints?.Groups.Where(group => group.PreviewCopyId.HasValue)
+                    .SelectMany(group => group.Occupants) ?? Array.Empty<int>());
             if (RoomDeathEffectModel.RequiresBirthWorld(context))
             {
                 referenced.UnionWith(world.RetainedUnits.Where(actor => actor.Unit.Health > 0 &&

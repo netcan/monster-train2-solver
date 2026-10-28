@@ -229,7 +229,10 @@ namespace MonsterTrain2Poju.Model
                     OriginalExistingHorde() || OriginalSycophantCompanion() || OriginalWoundedHorde() || source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalGreenRecruit(unit, context)),
                     allowPreviewRetired: true,
                     allowSingleRetiredPreview: source.Rooms.Any(room => room.Units.Any(unit => IsOriginalChampionEnemyDeath(unit, context)) &&
-                        room.Units.Any(unit => IsOriginalGreenRecruit(unit, context))),
+                        room.Units.Any(unit => IsOriginalGreenRecruit(unit, context))) || source.Rooms.Any(room =>
+                        room.Units.Any(unit => IsOriginalGreenRecruit(unit, context)) && room.Units.Any(unit => unit is
+                            { AssetKey: "MonsterGreedDragon", Team: CombatTeam.Player, BaseAttack: 34, Health: 35,
+                                MaxHealth: 35, Size: 3 } && context.FindCard(unit.SpawnerCardId)?.DataId == "0060b286-4716-49e0-9714-3fd7811b9f72")),
                     allowTwoRetiredMixedPreview: OriginalSycophantCompanion() || OriginalFightClubHorde());
             // Temporary player births without durable aura references are gone
             // before native decision capture assigns their synthetic identities.
