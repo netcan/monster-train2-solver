@@ -226,3 +226,13 @@ without an improvement; it is not exhaustive and does not establish optimality.
 The original reward deck has a separately replayed44-input loss at2117/3000.
 Neither result is a campaign victory, and the alternate reward path is not the
 original seven-win checkpoint chain.
+
+The rank2 reward alternative instead picks WrackingPain and DragonsBreath; the
+draft checker confirms both changed choices share the same original Ring7
+replay and valid checkpoint. Actual389 advice at3000ms/two workers in source
+034132-7b1625d1 and an independent390 frozen defeat replay in
+034745-eaa0b244 both lose after37 inputs (29 plays,8 EndTurns), boss2896/3000.
+Every input, successor, forecast and RNG matches, failure counters are zero,
+and the isolated defeat settlement leaves the original files unchanged. This
+cross-version pair establishes reproducibility, not a same-build release
+acceptance or a campaign win.
