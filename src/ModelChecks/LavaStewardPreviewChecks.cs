@@ -6,19 +6,26 @@ using MonsterTrain2Poju.Model;
 internal static class LavaStewardPreviewChecks
 {
     private const string Reason = "Battle preview floor 0: Combined troop upgrades and enchantment source ordering require native calibration.";
-    internal static void Native(FixtureValue fixture, FixtureValue? replay = null, bool fiveWrites = false, bool realHorde = false)
+    internal static void Native(FixtureValue fixture, FixtureValue? replay = null, bool fiveWrites = false, bool realHorde = false, bool liveLava = false)
     {
         var rows = NativeBranchObservationChecks.Replay(fixture, Reason);
-        Require(rows.Length == (realHorde ? 22 : fiveWrites ? 21 : 20) && !rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Missing native chain.");
+        Require(rows.Length == (liveLava ? 23 : realHorde ? 22 : fiveWrites ? 21 : 20) && !rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Missing native chain.");
         var before = rows[^1].GetProperty("Before").Deserialize<BattleTurnState>()!;
         var actual = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         var action = rows[^1].GetProperty("Action").Deserialize<PlayCardAction>()!;
-        int previewId = realHorde ? 27 : fiveWrites ? 26 : 25;
-        Require(action.CardInstanceId == (realHorde ? 19 : fiveWrites ? 21 : 13) && action.RoomIndex == (realHorde ? 2 : 0) && actual.Spawn.Train.Context!.NextUnitId == previewId &&
+        int previewId = liveLava || realHorde ? 27 : fiveWrites ? 26 : 25;
+        Require(action.CardInstanceId == (liveLava ? 25 : realHorde ? 19 : fiveWrites ? 21 : 13) && action.RoomIndex == (liveLava || realHorde ? 2 : 0) &&
+            (!liveLava || action.TargetUnitId == 15) && actual.Spawn.Train.Context!.NextUnitId == previewId &&
             actual.Spawn.Train.Rooms[0].Units.Any(unit => unit.Id == 24 && unit.AssetKey == "TrainStewardSmall") &&
-            (!(fiveWrites || realHorde) || actual.Spawn.Train.Rooms[0].Units.Any(unit => unit.Id == 25 && unit.AssetKey == "MonsterEnthusiasticFan")) &&
+            (!(fiveWrites || realHorde || liveLava) || actual.Spawn.Train.Rooms[0].Units.Any(unit => unit.Id == 25 && unit.AssetKey == "MonsterEnthusiasticFan")) &&
             before.Spawn.Train.Context!.CardRegistry!.Any(card => card.DataId == "924ad6ab-3d60-4760-b38e-78f5cf09c1d5" && card.EquippedUnitId == 6),
             "Missing steward or equipped source identity.");
+        if (liveLava) Require(before.Spawn.Train.Rooms[2].Units.Any(unit => unit.Id == 26 && unit.AssetKey == "MonsterFunguy" &&
+            unit.Health == 7 && unit.Status("horde")?.Stacks == 1) &&
+            actual.Spawn.Train.Rooms[2].Units.Any(unit => unit.Id == 26 && unit.AssetKey == "MonsterFunguy" &&
+                unit.Health == 28 && unit.Status("horde")?.Stacks == 4) &&
+            actual.Spawn.Train.Rooms[2].Units.Any(unit => unit.Id == 6 && unit.AssetKey == "MonsterSycophant" && unit.Health == 35),
+            "Missing live Lava companion or four horde.");
         if (realHorde)
         {
             var birth = rows[^1].GetProperty("TroopUpdates").EnumerateArray().Single(update =>
@@ -34,13 +41,13 @@ internal static class LavaStewardPreviewChecks
         var writes = rows[^1].GetProperty("TroopUpdates").EnumerateArray().Where(update =>
             update.GetProperty("Before").GetProperty("Preview").GetBoolean() &&
             update.GetProperty("Before").GetProperty("Units").EnumerateArray().Any(unit => unit.GetProperty("Id").GetInt32() == previewId)).ToArray();
-        Require(writes.Length == (fiveWrites || realHorde ? 5 : 4), "Unexpected preview write count.");
+        Require(writes.Length == (fiveWrites || realHorde || liveLava ? 5 : 4), "Unexpected preview write count.");
         for (int i = 0; i < writes.Length; i++)
         {
             var b = writes[i].GetProperty("Before"); var a = writes[i].GetProperty("After");
             var bu = b.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == previewId);
             var au = a.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == previewId);
-            int[] cache = realHorde ? [2, 6, 26] : [2, 6];
+            int[] cache = realHorde || liveLava ? [2, 6, 26] : [2, 6];
             Require(b.GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual(cache) &&
                 a.GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual(cache) &&
                 bu.GetProperty("Health").GetInt32() == 12 + i * 9 && au.GetProperty("Health").GetInt32() == 21 + i * 9 &&
@@ -92,8 +99,8 @@ internal static class LavaStewardPreviewChecks
         var wrongBindingResult = BattleActionModel.PlayCard(wrongBinding.Deserialize<BattleTurnState>(ModelJson.Options)!, action);
         Require(changedBindings > 0 && (!wrongBindingResult.Supported || NativeBranchObservationChecks.Key(wrongBindingResult.State!) != NativeBranchObservationChecks.Key(actual)),
             "Wrong equipment binding matched calibrated successor.");
-        if (replay.HasValue) { Native(replay.Value, fiveWrites: fiveWrites, realHorde: realHorde); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
-        Console.WriteLine("LAVA-STEWARD-PREVIEW PASS: native inputs/full state/RNG, preview writes, equipment binding, four immutable branches and source controls; fiveWrites=" + fiveWrites + "; realHorde=" + realHorde + "; independentPair=" + replay.HasValue);
+        if (replay.HasValue) { Native(replay.Value, fiveWrites: fiveWrites, realHorde: realHorde, liveLava: liveLava); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
+        Console.WriteLine("LAVA-STEWARD-PREVIEW PASS: native inputs/full state/RNG, preview writes, equipment binding, four immutable branches and source controls; fiveWrites=" + fiveWrites + "; realHorde=" + realHorde + "; liveLava=" + liveLava + "; independentPair=" + replay.HasValue);
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }

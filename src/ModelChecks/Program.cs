@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--lava-steward-live-horde-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    LavaStewardPreviewChecks.Native(fixture.RootElement, replay?.RootElement, liveLava: true);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--lava-steward-horde-birth-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -7948,6 +7955,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var fixture = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-six-horde-short-owner-replay-calibration.mt2f"));
     SixHordeShortOwnerChecks.Native(fixture.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-lava-steward-live-horde-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-lava-steward-live-horde-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-lava-steward-live-horde-replay-calibration.mt2f"));
+    LavaStewardPreviewChecks.Native(fixture.RootElement, replay.RootElement, liveLava: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-lava-steward-horde-birth-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-lava-steward-horde-birth-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
