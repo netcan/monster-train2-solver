@@ -236,3 +236,11 @@ Every input, successor, forecast and RNG matches, failure counters are zero,
 and the isolated defeat settlement leaves the original files unchanged. This
 cross-version pair establishes reproducibility, not a same-build release
 acceptance or a campaign win.
+
+Further bounded offline diversification of the original reward deck produces
+a54-input defeat with boss2071/3000, compared with the earlier independently
+replayed44-input defeat at2117/3000. Two independent391 frozen native replays,
+040308-1da2e6e5 and040323-034d3055, each match the prediction at every input,
+full successor, forecast and RNG, with four failure counters zero. Neither
+replay runs an actual search, and this is not a victory or an optimality claim.
+Another99 complete model candidates near the opening did not improve it.
