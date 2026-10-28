@@ -126,6 +126,13 @@ if (args.Length is 2 or 3 && args[0] == "--single-horde-sycophant-attack24-only"
     SingleHordeSycophantChecks.Native(fixture.RootElement, replay?.RootElement, attack24: true);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--inactive-heavy-inferno-new-moon-entry-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    InactiveHeavyInfernoNewMoonEntryChecks.Native(fixture.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length == 6 && args[0] == "--triple-horde-phase-boundary-only")
 {
     using var original = ModelJson.ReadFixture(args[1]);
@@ -8563,6 +8570,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var fixture = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-third-troop-fragile-two-live-replay-calibration.mt2f"));
     ThirdTroopFragileTwoLiveChecks.Native(fixture.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-inactive-heavy-inferno-new-moon-entry-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-inactive-heavy-inferno-new-moon-entry-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-inactive-heavy-inferno-new-moon-entry-replay-calibration.mt2f"));
+    InactiveHeavyInfernoNewMoonEntryChecks.Native(fixture.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-inactive-heavy-inferno-entry-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-inactive-heavy-inferno-entry-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

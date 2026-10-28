@@ -259,7 +259,8 @@ namespace MonsterTrain2Poju.Model
                         previousUnit is { Team: CombatTeam.Enemy, MoonPhaseMask: 5 or 6 } &&
                         (previousUnit.MoonPhaseMask.Value & 3) != inactive.MoonPhase.Value)
                     {
-                        if (inactive.MoonPhase == 1 && previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } ||
+                        if ((inactive.MoonPhase == 1 && previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
+                            previousUnit.AssetKey != "HeavyT3_PyreDamageIfUnblocked") ||
                             previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
                             previousUnit is not { AssetKey: "HeavyT3_Basic", BaseAttack: 8, MaxHealth: 325, Size: 2, Triggers.Count: 0 } &&
                             previousUnit is not { AssetKey: "HeavyT3_PyreDamageIfUnblocked", BaseAttack: 5, MaxHealth: 250, Size: 2,
