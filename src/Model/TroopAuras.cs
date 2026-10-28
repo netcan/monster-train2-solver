@@ -227,6 +227,23 @@ namespace MonsterTrain2Poju.Model
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", SpawnerCardId: 0,
                     HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades: var birthUpgrades } previewBirth &&
                 previewBirth.Status("horde")?.Stacks == 3 && (birthUpgrades.Count is 0 or 3 or 6 ||
+                    birthUpgrades.Count == 9 && owner is { BaseAttack: 80, Health: 5, MaxHealth: 110, Size: 1, Triggers.Count: 1,
+                        Modifiers.Upgrades: [{ DataId: "", AssetKey: "" },
+                            { DataId: "4f70b7b7-b507-4931-9b14-e13dcd6cd59f", AssetKey: "ExilesDiadem_Upgrade", Stats.Health: 10, Stats.Size: -2 },
+                            { DataId: "", AssetKey: "" }] } &&
+                    source.Train.Context.CardRegistry?.Any(card => card.DataId == "217d467c-77c2-481d-b78f-57aaf3dcd4a6" && card.EquippedUnitId == owner.Id) == true &&
+                    rule.Targets.Count == 3 && targets.Count == 4 && rule.Targets.All(targets.Contains) &&
+                    room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 24,
+                        Health: 40, MaxHealth: 40, Size: 2, Triggers.Count: 2, Modifiers.Upgrades: [
+                            { DataId: "09546a2d-2f67-4585-8007-de11ee12753e", AssetKey: "MeatShield_Upgrade" }, { DataId: "", AssetKey: "" }] } &&
+                        rule.Targets.Contains(unit.Id) && PreviewBirthModel.IsOriginalMeatShieldHeal(unit.Triggers[1], unit, source.Train.Context) &&
+                        source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83") &&
+                    room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20,
+                        Health: 25, MaxHealth: 25, Size: 2, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
+                        source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83") &&
+                    source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 && actor.Unit is
+                        { AssetKey: "TrainStewardSmall", Team: CombatTeam.Player, Health: <= 0, MaxHealth: 5, DeathState.IsDestroyed: true } &&
+                        source.Train.Context.FindCard(actor.Unit.SpawnerCardId)?.DataId == "38e70e6a-20f3-4e36-8d31-c5110be07f87") ||
                     birthUpgrades.Count == 9 && owner is { BaseAttack: 80, Health: 47, MaxHealth: 110, Size: 3, Triggers.Count: 2,
                         Modifiers.Upgrades: [{ DataId: "", AssetKey: "" },
                             { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" }, { DataId: "", AssetKey: "" }] } &&
