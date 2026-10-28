@@ -226,6 +226,23 @@ namespace MonsterTrain2Poju.Model
                     item.Stats.Size == 0 && item.Stats.XCost == 0 && item.Stats.EquipmentLimit == 0 &&
                     item.Stats.UpgradeSlotCount == 0 && item.Statuses.Count == 0 && item.ExternalInteractions.Count == 0 &&
                     item.AbilityUpgrade == null && item.TriggerUpgrades?.Count is not > 0);
+            bool originalSixHordePuffballPreviewBirth = source.Preview && source.Train.Context != null &&
+                PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context) && owner.Triggers.Count == 2 &&
+                PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
+                added.Length == 1 && rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 &&
+                room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player,
+                    SpawnerCardId: 0, BaseAttack: 18, Size: 1, HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades: var sixUpgrades } sixHorde &&
+                sixHorde.Status("horde")?.Stacks == 6 && sixUpgrades.Count is 9 or 15 &&
+                sixHorde.Health == 24 + 3 * sixUpgrades.Count && sixHorde.MaxHealth == sixHorde.Health &&
+                sixUpgrades.All(item => item.DataId == Key(owner.Id) && item.AssetKey == upgrade.AssetKey &&
+                    item.Stats.Health == 3 && item.Stats.Damage == 0 && item.Stats.Cost == 0 && item.Stats.Heal == 0 &&
+                    item.Stats.Size == 0 && item.Stats.XCost == 0 && item.Stats.EquipmentLimit == 0 &&
+                    item.Stats.UpgradeSlotCount == 0 && item.Statuses.Count == 0 && item.ExternalInteractions.Count == 0 &&
+                    item.AbilityUpgrade == null && item.TriggerUpgrades?.Count is not > 0) &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterPricklyPuffball", Team: CombatTeam.Player, BaseAttack: 10,
+                    Health: 8, MaxHealth: 45, Size: 2, Modifiers.Upgrades: [
+                        { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" }, { DataId: "", AssetKey: "" }] } &&
+                    rule.Targets.Contains(unit.Id) && source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "fec68cb5-1d4f-4ae5-b01a-288a06cc9502");
             bool fightClubPreviewBirth = source.Preview && source.Train.Context != null &&
                 PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context) && added.Length == 1 &&
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player,
@@ -253,7 +270,7 @@ namespace MonsterTrain2Poju.Model
                     source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83");
             return third ? OnlyFragileBuffSource(source, allowLiveCombat: originalChampion, allowTwoLiveCombat: originalSingleBirth || originalSycophant || originalTripleBirth, allowSingleRetiredCombat: originalSingleRetiredBirth,
                     pendingDyingRoom: originalPendingTripleBirth ? room.RoomIndex : (int?)null,
-                    allowTwoLivePreview: originalPreviewBirth || originalFourHordePreviewBirth || fightClubLavaPreviewBirth, allowMixedCombat: fightClubBirth || originalTripleBirth,
+                    allowTwoLivePreview: originalPreviewBirth || originalFourHordePreviewBirth || originalSixHordePuffballPreviewBirth || fightClubLavaPreviewBirth, allowMixedCombat: fightClubBirth || originalTripleBirth,
                     allowPreviewRetired: originalPreviewBirth || fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4, allowSingleRetiredPreview: originalFourHordePreviewBirth,
                     allowTwoRetiredMixedPreview: fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4 || originalPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count == 6) :
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
