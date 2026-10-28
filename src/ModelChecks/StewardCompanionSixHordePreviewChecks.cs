@@ -5,10 +5,10 @@ using MonsterTrain2Poju.Model;
 
 internal static class StewardCompanionSixHordePreviewChecks
 {
-    internal static void Native(FixtureValue fixture, FixtureValue? replay = null)
+    internal static void Native(FixtureValue fixture, FixtureValue? replay = null, bool threeHorde = false)
     {
         var rows = NativeBranchObservationChecks.Replay(fixture,
-            "Battle preview floor 2: Combined troop upgrades and enchantment source ordering require native calibration.");
+            $"Battle preview floor {(threeHorde ? 0 : 2)}: Combined troop upgrades and enchantment source ordering require native calibration.");
         Require(rows.Length == 22 && !rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Wrong native input count.");
         var before = rows[^1].GetProperty("Before").Deserialize<BattleTurnState>()!;
         var actual = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
@@ -17,8 +17,10 @@ internal static class StewardCompanionSixHordePreviewChecks
             update.GetProperty("Before").GetProperty("Preview").GetBoolean() &&
             update.GetProperty("Before").GetProperty("Units").EnumerateArray().Any(unit => unit.GetProperty("Id").GetInt32() == 26)).ToArray();
         Require(writes.Length == 4, "Expected four native preview writes.");
-        int[] beforeHealth = [12, 21, 51, 69], afterHealth = [21, 30, 69, 87];
-        int[] beforeUpgrades = [0, 3, 9, 15], afterUpgrades = [3, 6, 15, 21];
+        int[] beforeHealth = threeHorde ? [12, 21, 30, 39] : [12, 21, 51, 69];
+        int[] afterHealth = threeHorde ? [21, 30, 39, 48] : [21, 30, 69, 87];
+        int[] beforeUpgrades = threeHorde ? [0, 3, 6, 9] : [0, 3, 9, 15];
+        int[] afterUpgrades = threeHorde ? [3, 6, 9, 12] : [3, 6, 15, 21];
         for (int i = 0; i < writes.Length; i++)
         {
             var b = writes[i].GetProperty("Before"); var a = writes[i].GetProperty("After");
@@ -28,7 +30,7 @@ internal static class StewardCompanionSixHordePreviewChecks
                 a.GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual([2, 16, 25]) &&
                 bu.GetProperty("Health").GetInt32() == beforeHealth[i] && au.GetProperty("Health").GetInt32() == afterHealth[i] &&
                 bu.GetProperty("Upgrades").GetArrayLength() == beforeUpgrades[i] && au.GetProperty("Upgrades").GetArrayLength() == afterUpgrades[i] &&
-                bu.GetProperty("Horde").GetInt32() == (i < 2 ? 3 : 6), "Native preview write differs at " + i);
+                bu.GetProperty("Horde").GetInt32() == (threeHorde || i < 2 ? 3 : 6), "Native preview write differs at " + i);
         }
         string parent = JsonSerializer.Serialize(before, ModelJson.Options);
         Parallel.For(0, 4, _ => {
@@ -72,8 +74,8 @@ internal static class StewardCompanionSixHordePreviewChecks
         var unbound = BattleActionModel.PlayCard(binding.Deserialize<BattleTurnState>(ModelJson.Options)!, action);
         Require(changedBindings > 0 && (!unbound.Supported || NativeBranchObservationChecks.Key(unbound.State!) != NativeBranchObservationChecks.Key(actual)),
             "Wrong equipment binding received the native result.");
-        if (replay.HasValue) { Native(replay.Value); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
-        Console.WriteLine("STEWARD-COMPANION-SIX-HORDE-PREVIEW PASS: 22 native inputs/full state/RNG, four writes, four immutable branches and source/binding controls; independentPair=" + replay.HasValue);
+        if (replay.HasValue) { Native(replay.Value, threeHorde: threeHorde); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
+        Console.WriteLine("STEWARD-COMPANION-HORDE-PREVIEW PASS: 22 native inputs/full state/RNG, four writes, four immutable branches and source/binding controls; threeHorde=" + threeHorde + "; independentPair=" + replay.HasValue);
     }
 
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }

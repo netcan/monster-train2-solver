@@ -237,6 +237,16 @@ namespace MonsterTrain2Poju.Model
                 rule.Targets.Where(id => !targets.Contains(id)).All(id =>
                     source.Train.Context.SpawnPoints?.Units.Any(point => point.UnitId == id && !point.SpawnedInPreview &&
                         point.Current == null && point.LastKnown == null) == true);
+            bool OriginalStewardCompanion() => source.Train.Context != null &&
+                owner is { BaseAttack: 80, Health: 47, MaxHealth: 110, Size: 1, Triggers.Count: 1 } &&
+                source.Train.Context.CardRegistry?.Any(card => card.DataId == "217d467c-77c2-481d-b78f-57aaf3dcd4a6" && card.EquippedUnitId == owner.Id) == true &&
+                rule.Targets.Count == 3 && targets.Count == 4 && rule.Targets.All(targets.Contains) &&
+                room.Units.Any(unit => unit is { AssetKey: "TrainStewardSmall", Team: CombatTeam.Player, BaseAttack: 14,
+                    Health: 5, MaxHealth: 5, Size: 2, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
+                    source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "38e70e6a-20f3-4e36-8d31-c5110be07f87") &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20,
+                    Health: 25, MaxHealth: 25, Size: 2, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
+                    source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83");
             bool originalPreviewBirth = source.Preview && source.Train.Context != null &&
                 PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context) && added.Length == 1 &&
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", SpawnerCardId: 0,
@@ -271,6 +281,7 @@ namespace MonsterTrain2Poju.Model
                         { AssetKey: "TrainStewardSmall", Team: CombatTeam.Player, Health: <= 0, MaxHealth: 5, DeathState.IsDestroyed: true } &&
                         source.Train.Context.FindCard(actor.Unit.SpawnerCardId)?.DataId == "38e70e6a-20f3-4e36-8d31-c5110be07f87") ||
                     birthUpgrades.Count is 9 or 12 && OriginalMissingPreviewTarget() ||
+                    birthUpgrades.Count == 9 && OriginalStewardCompanion() ||
                     owner.Triggers.Count == 2 && PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
                     (birthUpgrades.Count == 9 && rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 ||
                     (birthUpgrades.Count == 12 || birthUpgrades.Count == 15 &&
@@ -419,15 +430,7 @@ namespace MonsterTrain2Poju.Model
                     source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "adaaaa9d-56a9-4a5f-a347-ee71d4767df5");
             bool originalSixHordeStewardCompanionPreviewBirth = originalSixHordePreviewBirth && source.Train.Context != null &&
                 room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count is 9 or 15 &&
-                owner is { BaseAttack: 80, Health: 47, MaxHealth: 110, Size: 1, Triggers.Count: 1 } &&
-                source.Train.Context.CardRegistry?.Any(card => card.DataId == "217d467c-77c2-481d-b78f-57aaf3dcd4a6" && card.EquippedUnitId == owner.Id) == true &&
-                rule.Targets.Count == 3 && targets.Count == 4 && rule.Targets.All(targets.Contains) &&
-                room.Units.Any(unit => unit is { AssetKey: "TrainStewardSmall", Team: CombatTeam.Player, BaseAttack: 14,
-                    Health: 5, MaxHealth: 5, Size: 2, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
-                    source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "38e70e6a-20f3-4e36-8d31-c5110be07f87") &&
-                room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20,
-                    Health: 25, MaxHealth: 25, Size: 2, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
-                    source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83");
+                OriginalStewardCompanion();
             bool originalSixHordeCompanionsPreviewBirth = originalSixHordePreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count != 21 && source.Train.Context != null &&
                 owner is { BaseAttack: 80, MaxHealth: 110, Size: 1, Triggers.Count: 1 } &&
                 owner.Modifiers?.Upgrades is [
@@ -569,7 +572,7 @@ namespace MonsterTrain2Poju.Model
                         fightClubCompanionsBirth && (targets.Count == 4 || room.Units.Single(unit => unit.Id == added[0]).Status("horde")?.Stacks == 6) ||
                         fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4 || fightClubRetiredPuffballBirth || fightClubStewardPreviewBirth || fightClubWoundedStewardPreviewBirth, allowSingleRetiredPreview: originalFourHordePreviewBirth || originalTripleCompanionsRetiredPreviewBirth,
                     allowTwoRetiredMixedPreview: fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4 || originalPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count == 6 || originalLavaTwoRetiredPreviewBirth || fightClubRetiredPuffballBirth || fightClubStewardPreviewBirth,
-                    allowTwoPreviewRetired: originalSixHordeStewardCompanionPreviewBirth) :
+                    allowTwoPreviewRetired: originalSixHordeStewardCompanionPreviewBirth || originalPreviewBirth && OriginalStewardCompanion()) :
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
         }
 
