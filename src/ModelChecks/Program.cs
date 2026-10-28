@@ -1263,6 +1263,13 @@ if (args.Length is 2 or 3 && args[0] == "--third-troop-fightclub-retired-preview
     ThirdTroopFightClubRetiredPreviewChecks.Native(fixture.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--six-horde-fightclub-five-writes-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    SixHordeFightClubCompanionsChecks.Native(fixture.RootElement, replay?.RootElement, fiveWrites: true);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--generated-moon-ten-retired-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -7874,6 +7881,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var fixture = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-fight-club-dying-preview-replay-calibration.mt2f"));
     FightClubDyingPreviewChecks.Native(fixture.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-six-horde-fight-club-five-writes-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-six-horde-fight-club-five-writes-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-six-horde-fight-club-five-writes-replay-calibration.mt2f"));
+    SixHordeFightClubCompanionsChecks.Native(fixture.RootElement, replay.RootElement, fiveWrites: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-six-horde-fight-club-companions-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-six-horde-fight-club-companions-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

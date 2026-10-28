@@ -348,7 +348,8 @@ namespace MonsterTrain2Poju.Model
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player,
                     SpawnerCardId: 0, Size: 1, HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades: var clubCompanionUpgrades } clubCompanion &&
                 (clubCompanion.Status("horde")?.Stacks == 3 && clubCompanion.BaseAttack == 24 && clubCompanionUpgrades.Count is 1 or 4 ||
-                 clubCompanion.Status("horde")?.Stacks == 6 && clubCompanion.BaseAttack == 33 && clubCompanionUpgrades.Count is 10 or 16) &&
+                 clubCompanion.Status("horde")?.Stacks == 6 && clubCompanion.BaseAttack == 33 &&
+                    (clubCompanionUpgrades.Count is 10 or 16 || source.Preview && clubCompanionUpgrades.Count == 22)) &&
                 clubCompanion.Health == clubCompanion.Status("horde")!.Stacks * 4 + 3 * (clubCompanionUpgrades.Count - 1) &&
                 clubCompanion.MaxHealth == clubCompanion.Health && OriginalFightClub(clubCompanionUpgrades[0]) &&
                 clubCompanionUpgrades.Skip(1).All(item => item.DataId == Key(owner.Id) && item.AssetKey == upgrade.AssetKey &&

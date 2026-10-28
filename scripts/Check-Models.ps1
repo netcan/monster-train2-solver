@@ -963,6 +963,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-six-horde-companions-preview-calibration.mt2f',
     'player-six-horde-companions-health-calibration.mt2f',
     'player-six-horde-fight-club-companions-calibration.mt2f',
+    'player-six-horde-fight-club-five-writes-calibration.mt2f',
+    'player-six-horde-fight-club-five-writes-replay-calibration.mt2f',
     'player-fight-club-dying-preview-calibration.mt2f',
     'player-fight-club-dying-preview-replay-calibration.mt2f',
     'player-fight-club-fourth-write-calibration.mt2f',
@@ -2419,6 +2421,15 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --fight-club-dying-preview-only (Get-TestFixturePath 'player-fight-club-dying-preview-calibration.mt2f') (Get-TestFixturePath 'player-fight-club-dying-preview-replay-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Fight Club dying preview native check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-six-horde-fight-club-five-writes-calibration.mt2f', 'player-six-horde-fight-club-five-writes-replay-calibration.mt2f') }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Five-write Fight Club checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --six-horde-fightclub-five-writes-only (Get-TestFixturePath 'player-six-horde-fight-club-five-writes-calibration.mt2f') (Get-TestFixturePath 'player-six-horde-fight-club-five-writes-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Five-write Fight Club native check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-six-horde-fight-club-companions-calibration.mt2f', 'player-six-horde-fight-club-companions-replay-calibration.mt2f') }).Count -eq 0) {
