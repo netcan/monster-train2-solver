@@ -7717,7 +7717,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-six-horde-companions-preview-replay-calibration.mt2f"));
     SixHordeCompanionsPreviewChecks.Native(fixture.RootElement, replay.RootElement);
     using var health = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-six-horde-companions-health-calibration.mt2f"));
-    SixHordeCompanionsPreviewChecks.Native(health.RootElement);
+    using var healthReplay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-six-horde-companions-health-replay-calibration.mt2f"));
+    SixHordeCompanionsPreviewChecks.Native(health.RootElement, healthReplay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-six-horde-puffball-preview-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-six-horde-puffball-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
