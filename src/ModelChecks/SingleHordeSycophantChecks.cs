@@ -6,7 +6,7 @@ using MonsterTrain2Poju.Model;
 internal static class SingleHordeSycophantChecks
 {
     private const string Reason = "Combined troop upgrades and enchantment source ordering require native calibration.";
-    internal static void Native(FixtureValue fixture, FixtureValue? replay = null)
+    internal static void Native(FixtureValue fixture, FixtureValue? replay = null, bool attack24 = false)
     {
         var rows = NativeBranchObservationChecks.Replay(fixture, Reason);
         Require(rows.Length == 13 && !rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Missing native chain.");
@@ -21,8 +21,11 @@ internal static class SingleHordeSycophantChecks
                 unit.GetProperty("Health").GetInt32() == 4) &&
             update.GetProperty("After").GetProperty("Units").EnumerateArray().Any(unit => unit.GetProperty("Id").GetInt32() == 16 &&
                 unit.GetProperty("Health").GetInt32() == 7)).ToArray();
-        Require(writes.Length == 1 && writes[0].GetProperty("Before").GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual([2, 6]) &&
-            writes[0].GetProperty("After").GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual([2, 6, 16]), "Missing native single aura write.");
+        int companionId = attack24 ? 5 : 6;
+        Require(before.Spawn.Train.Rooms[2].Units.Any(unit => unit.Id == companionId && unit.AssetKey == "MonsterSycophant" &&
+            unit.BaseAttack == (attack24 ? 24 : 20)) && writes.Length == 1 &&
+            writes[0].GetProperty("Before").GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual([2, companionId]) &&
+            writes[0].GetProperty("After").GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual([2, companionId, 16]), "Missing native single aura write.");
         string parent = JsonSerializer.Serialize(before, ModelJson.Options);
         Parallel.For(0, 4, _ => {
             var result = BattleActionModel.PlayCard(before, action);
@@ -48,8 +51,8 @@ internal static class SingleHordeSycophantChecks
             Require(!result.Supported || NativeBranchObservationChecks.Key(result.State!) != NativeBranchObservationChecks.Key(actual),
                 "Unknown source incorrectly received native result: " + control);
         }
-        if (replay.HasValue) { Native(replay.Value); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
-        Console.WriteLine("SINGLE-HORDE-SYCOPHANT PASS: 13 native inputs/full state/RNG, one write, four immutable branches and source controls; independentPair=" + replay.HasValue);
+        if (replay.HasValue) { Native(replay.Value, attack24: attack24); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
+        Console.WriteLine("SINGLE-HORDE-SYCOPHANT PASS: 13 native inputs/full state/RNG, one write, four immutable branches and source controls; attack24=" + attack24 + "; independentPair=" + replay.HasValue);
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }

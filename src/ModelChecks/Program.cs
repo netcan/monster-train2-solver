@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--single-horde-sycophant-attack24-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    SingleHordeSycophantChecks.Native(fixture.RootElement, replay?.RootElement, attack24: true);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--four-horde-retired-companions-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -7852,7 +7859,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-retained-preview-physical-shift-replay-calibration.mt2f"));
     RetainedPreviewPhysicalShiftChecks.Native(fixture.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-single-horde-sycophant-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-single-horde-sycophant-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-single-horde-sycophant-attack24-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-single-horde-sycophant-attack24-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-single-horde-sycophant-attack24-replay-calibration.mt2f"));
+    SingleHordeSycophantChecks.Native(fixture.RootElement, replay.RootElement, attack24: true);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-single-horde-sycophant-", StringComparison.OrdinalIgnoreCase) && !Path.GetFileName(path).StartsWith("player-single-horde-sycophant-attack24-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-single-horde-sycophant-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var fixture = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-single-horde-sycophant-replay-calibration.mt2f"));

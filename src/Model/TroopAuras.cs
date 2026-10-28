@@ -176,7 +176,7 @@ namespace MonsterTrain2Poju.Model
                 newborn.Status("horde")?.Stacks == 1;
             bool originalSingleRetiredBirth = originalSingleBirth && owner.Triggers.Count == 2 &&
                 PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context!) &&
-                room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20,
+                room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20 or 24,
                     Health: 25, MaxHealth: 25, Size: 2, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
                     source.Train.Context!.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83");
             bool fightClubBirth = originalChampion && added.Length == 1 && room.Units.Single(unit => unit.Id == added[0]) is
