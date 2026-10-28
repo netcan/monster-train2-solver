@@ -900,6 +900,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-third-troop-sycophant-two-live-replay-calibration.mt2f',
     'player-third-troop-fightclub-mixed-calibration.mt2f',
     'player-third-troop-fightclub-mixed-replay-calibration.mt2f',
+    'player-third-troop-original-mixed-combat-calibration.mt2f',
     'player-third-troop-two-live-preview-calibration.mt2f',
     'player-third-troop-two-live-preview-replay-calibration.mt2f',
     'player-retired-titanskin-troop-calibration.mt2f',
@@ -2298,6 +2299,15 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --third-troop-two-live-preview-only (Get-TestFixturePath 'player-third-troop-two-live-preview-calibration.mt2f') (Get-TestFixturePath 'player-third-troop-two-live-preview-replay-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Two-live preview native check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -ne 'player-third-troop-original-mixed-combat-calibration.mt2f' }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Original mixed combat checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --third-troop-original-mixed-combat-only (Get-TestFixturePath 'player-third-troop-original-mixed-combat-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Original mixed combat native check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-third-troop-fightclub-mixed-calibration.mt2f', 'player-third-troop-fightclub-mixed-replay-calibration.mt2f') }).Count -eq 0) {

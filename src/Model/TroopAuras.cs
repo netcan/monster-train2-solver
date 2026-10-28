@@ -167,6 +167,10 @@ namespace MonsterTrain2Poju.Model
                         Stats: { Damage: 15, Health: 0, Cost: 0, Heal: 0, Size: 0, XCost: 0, EquipmentLimit: 0, UpgradeSlotCount: 0 },
                         Statuses.Count: 0, ExternalInteractions.Count: 0, AbilityUpgrade: null, TriggerUpgrades: null }] } clubBirth &&
                 clubBirth.Status("horde")?.Stacks == 3;
+            bool originalTripleBirth = originalChampion && added.Length == 1 && room.Units.Single(unit => unit.Id == added[0]) is
+                { AssetKey: "MonsterFunguy", SpawnerCardId: 0, Health: 12, MaxHealth: 12,
+                    HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades.Count: 0 } tripleBirth &&
+                tripleBirth.Status("horde")?.Stacks == 3;
             bool originalPreviewBirth = source.Preview && source.Train.Context != null &&
                 PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context) && added.Length == 1 &&
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", SpawnerCardId: 0,
@@ -179,7 +183,7 @@ namespace MonsterTrain2Poju.Model
                     item.Stats.UpgradeSlotCount == 0 && item.Statuses.Count == 0 && item.ExternalInteractions.Count == 0 &&
                     item.AbilityUpgrade == null && item.TriggerUpgrades?.Count is not > 0);
             return third ? OnlyFragileBuffSource(source, allowLiveCombat: originalChampion, allowTwoLiveCombat: originalSingleBirth || originalSycophant,
-                    allowTwoLivePreview: originalPreviewBirth, allowMixedCombat: fightClubBirth, allowPreviewRetired: originalPreviewBirth) :
+                    allowTwoLivePreview: originalPreviewBirth, allowMixedCombat: fightClubBirth || originalTripleBirth, allowPreviewRetired: originalPreviewBirth) :
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
         }
 
