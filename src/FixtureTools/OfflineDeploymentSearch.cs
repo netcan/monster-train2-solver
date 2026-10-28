@@ -9,12 +9,14 @@ internal static partial class OfflineBattleSearch
     // Explore several simultaneous placement changes without requiring each
     // single move to improve a complete route. Never export a truncated rollout.
     internal static void DeploymentGrid(string input, string prediction, string output, int milliseconds, int maxCandidates,
-        int? firstRoom = null, bool spread = false, int startSample = 0, bool improveWinningRoute = false)
+        int? firstRoom = null, bool spread = false, int startSample = 0, bool improveWinningRoute = false,
+        string? unsupportedReasonFilter = null)
     {
         Require(milliseconds is >= 100 and <= 600000 && maxCandidates is >= 1 and <= 4096,
             "Expected100..600000ms and1..4096 deployment candidates.");
         Require(firstRoom == null || firstRoom is >= 0 and <= 2, "Expected a first-unit room in0..2.");
         Require(startSample is >= 0 and <= 1000000 && (spread || startSample == 0), "Expected a spread sample offset in0..1000000.");
+        Require(unsupportedReasonFilter == null || !string.IsNullOrWhiteSpace(unsupportedReasonFilter), "Expected a nonempty unsupported reason filter.");
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         string unsupportedOutput = output + ".unsupported.mt2f";
         if (File.Exists(unsupportedOutput)) throw new IOException("Output already exists: " + unsupportedOutput);
@@ -60,7 +62,8 @@ internal static partial class OfflineBattleSearch
         {
             unsupported++;
             if (reasons.Add(reason ?? "Unknown")) Console.WriteLine("DEPLOYMENT-UNSUPPORTED " + reason);
-            if (File.Exists(unsupportedOutput)) return;
+            if (File.Exists(unsupportedOutput) || unsupportedReasonFilter != null &&
+                !(reason?.Contains(unsupportedReasonFilter, StringComparison.OrdinalIgnoreCase) ?? false)) return;
             string? reproduced = action == null ? BattleTurnModel.EndTurn(failedRoot).UnsupportedReason :
                 BattleActionModel.PlayCard(failedRoot, action).Reason;
             // Enumerators can report a whole-state guard without a specific

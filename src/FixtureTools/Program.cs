@@ -181,11 +181,12 @@ else if (args.Length is 6 or 7 && args[0] == "deployment-win")
     OfflineBattleSearch.DeploymentGrid(args[1], args[2], args[3], int.Parse(args[4]), int.Parse(args[5]),
         args.Length == 7 ? int.Parse(args[6]) : null, improveWinningRoute: true);
 }
-else if (args.Length is >= 6 and <= 8 && args[0] == "deployment-spread")
+else if (args.Length is >= 6 and <= 9 && args[0] == "deployment-spread")
 {
     OfflineBattleSearch.DeploymentGrid(args[1], args[2], args[3], int.Parse(args[4]), int.Parse(args[5]),
         args.Length >= 7 && args[6] != "any" ? int.Parse(args[6]) : null, spread: true,
-        startSample: args.Length == 8 ? int.Parse(args[7]) : 0);
+        startSample: args.Length >= 8 ? int.Parse(args[7]) : 0,
+        unsupportedReasonFilter: args.Length == 9 ? args[8] : null);
 }
 else if (args.Length is >= 4 and <= 6 && args[0] == "refine-policy")
 {
@@ -286,7 +287,7 @@ else
     Console.Error.WriteLine("Survival route investigation: improve-survival has the same arguments as improve-diverse; wins rank first, then later complete losses, then the original loss score. Model prediction only; does not change player search.");
     Console.Error.WriteLine("Balanced survival investigation: improve-survival-pairs uses the same arguments, reserving part of each decision budget for joint inputs; requires at least two candidates and a positive second-action width.");
     Console.Error.WriteLine("Deployment investigation: deployment-grid <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <max-candidates:1..4096> [first-unit-room:0..2]; keep the initial unit order and explore joint legal room/position assignments, preserve the first independently replayed unsupported boundary, export only a complete independently replayed improvement; model prediction only.");
-    Console.Error.WriteLine("Spread deployment investigation: deployment-spread <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <max-candidates:1..4096> [first-unit-room:any|0..2] [start-sample:0..1000000]; sample legal joint placements across early and late units, resume at nextSample, with the same exact-root/complete-replay guards as deployment-grid; model prediction only.");
+    Console.Error.WriteLine("Spread deployment investigation: deployment-spread <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <max-candidates:1..4096> [first-unit-room:any|0..2] [start-sample:0..1000000] [unsupported-reason-substring]; sample legal joint placements across early and late units, resume at nextSample, with the same exact-root/complete-replay guards as deployment-grid; model prediction only.");
     Console.Error.WriteLine("Bounded three-input investigation: improve-triples <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <second-action-width:1..32> <third-action-width:1..16> <candidates-per-decision:1..256>; model prediction only.");
     Console.Error.WriteLine("Predicted counterexample: refine-prediction <native.mt2f> <verified-prediction.mt2f> <new-winning-output.mt2f> <milliseconds> [start-decision] [last-decision]; validates native input hash/root and independently replays the baseline before exploring.");
     Console.Error.WriteLine("Search: solve-exact <input.mt2f> <new-output.mt2f> <max-nodes> <milliseconds> [EndTurn-horizon] | plan-belief <input.mt2f> <new-output.mt2f> <max-worlds> <decisions> <max-nodes> <milliseconds> [native-Turns-index] | verify-belief <policy.mt2f>");
