@@ -8,6 +8,65 @@ internal static class PreviewIdMismatchRequest
     internal const string Reason = "Native temporary preview birth identity differs with two live Titanskin sources.";
     internal const string ExistingHordeReason = "Native temporary preview birth identity differs with existing champion horde and two live Titanskin sources.";
     private sealed record Step(PlayCardAction? Action, bool IsEndTurn);
+    internal static void RefreshNativePrefix(string input, string native, string output)
+    {
+        if (File.Exists(output)) throw new IOException("Output already exists: " + output);
+        using var source = FixtureDocument.Read(input);
+        using var observation = FixtureDocument.Read(native);
+        var request = source.RootElement;
+        var captured = observation.RootElement;
+        Require(request.GetProperty("EvidenceKind").GetString() == "ModelUnsupportedBranch" &&
+            captured.GetProperty("EvidenceKind").GetString() == "NativeUnsupportedBranchObservation" &&
+            captured.GetProperty("NativeCompleted").GetBoolean() &&
+            captured.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4", "Expected a completed original native observation.");
+        var steps = request.GetProperty("Prefix").EnumerateArray().ToArray();
+        var rows = captured.GetProperty("Rows").EnumerateArray().ToArray();
+        Require(rows.Length > 0 && rows.Length <= steps.Length, "Native observation must cover a nonempty prefix.");
+        var root = request.GetProperty("Root").Deserialize<BattleTurnState>()!;
+        var current = root;
+        using var keys = new BattleStateKeys();
+        Require(keys.Key(root) == keys.Key(captured.GetProperty("Request").GetProperty("Root").Deserialize<BattleTurnState>()!), "Native root differs.");
+        var prefix = new List<Step>();
+        for (int index = 0; index < steps.Length; index++)
+        {
+            var step = steps[index];
+            bool end = step.GetProperty("IsEndTurn").GetBoolean();
+            var action = step.GetProperty("Action").Deserialize<PlayCardAction>();
+            if (index < rows.Length)
+                Require(rows[index].GetProperty("Action").ContentEquals(step.GetProperty("Action")) &&
+                    rows[index].GetProperty("IsEndTurn").GetBoolean() == end &&
+                    keys.Key(current) == keys.Key(rows[index].GetProperty("Before").Deserialize<BattleTurnState>()!), "Native input differs at " + index);
+            if (end)
+            {
+                var result = BattleTurnModel.EndTurn(current);
+                Require(result.Supported && result.Outcome == RoomOutcome.Exchanged, "Prefix turn rejected: " + result.UnsupportedReason);
+                current = result.State!;
+            }
+            else
+            {
+                var result = BattleActionModel.PlayCard(current, action!);
+                Require(result.Supported && result.Outcome == RoomOutcome.Exchanged, "Prefix action rejected: " + result.Reason);
+                current = result.State!;
+            }
+            if (index < rows.Length)
+                Require(keys.Key(current) == keys.Key(rows[index].GetProperty("Actual").Deserialize<BattleTurnState>()!), "Native successor differs at " + index);
+            prefix.Add(new Step(action, end));
+        }
+        bool boundaryEnd = request.GetProperty("IsEndTurn").GetBoolean();
+        var boundaryAction = request.GetProperty("Action").Deserialize<PlayCardAction>();
+        string reason = request.GetProperty("Reason").GetString()!;
+        Require(boundaryEnd ? boundaryAction == null && BattleTurnModel.EndTurn(current).UnsupportedReason == reason :
+            boundaryAction != null && BattleActionModel.PlayCard(current, boundaryAction).Reason == reason,
+            "Original protected target no longer reproduces its rejection.");
+        using var refreshed = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
+            SourceArchive = Path.GetFileName(input), SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+            Root = root, Prefix = prefix, FailedRoot = current, Action = boundaryAction, IsEndTurn = boundaryEnd, Reason = reason,
+            NativeValidationRequired = true });
+        using var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write);
+        refreshed.Write(stream);
+        Console.WriteLine("NATIVE-PREFIX-REFRESH PASS: " + rows.Length + " independently matched inputs; " + (steps.Length - rows.Length) +
+            " model-only inputs and the protected target require native observation.");
+    }
     internal static void ObservePartial(string input, string output)
     {
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
