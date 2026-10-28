@@ -5,15 +5,15 @@ using MonsterTrain2Poju.Model;
 
 internal static class StewardCompanionSixHordePreviewChecks
 {
-    internal static void Native(FixtureValue fixture, FixtureValue? replay = null, bool threeHorde = false, bool sevenWrites = false, bool missingTarget = false, bool twoPlainCompanions = false)
+    internal static void Native(FixtureValue fixture, FixtureValue? replay = null, bool threeHorde = false, bool sevenWrites = false, bool missingTarget = false, bool twoPlainCompanions = false, bool threeCompanionsMissing = false)
     {
         var rows = NativeBranchObservationChecks.Replay(fixture,
             $"Battle preview floor {(threeHorde || sevenWrites ? 0 : 2)}: Combined troop upgrades and enchantment source ordering require native calibration.");
-        Require(rows.Length == (missingTarget ? 27 : sevenWrites ? 24 : 22) && !rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Wrong native input count.");
+        Require(rows.Length == (threeCompanionsMissing ? 23 : missingTarget ? 27 : sevenWrites ? 24 : 22) && !rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Wrong native input count.");
         var before = rows[^1].GetProperty("Before").Deserialize<BattleTurnState>()!;
         var actual = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         var action = rows[^1].GetProperty("Action").Deserialize<PlayCardAction>()!;
-        int birthId = missingTarget ? 29 : sevenWrites ? 28 : 26;
+        int birthId = missingTarget || threeCompanionsMissing ? 29 : sevenWrites ? 28 : 26;
         var writes = rows[^1].GetProperty("TroopUpdates").EnumerateArray().Where(update =>
             update.GetProperty("Before").GetProperty("Preview").GetBoolean() &&
             update.GetProperty("Before").GetProperty("Units").EnumerateArray().Any(unit => unit.GetProperty("Id").GetInt32() == birthId)).ToArray();
@@ -27,7 +27,7 @@ internal static class StewardCompanionSixHordePreviewChecks
             var b = writes[i].GetProperty("Before"); var a = writes[i].GetProperty("After");
             var bu = b.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == birthId);
             var au = a.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == birthId);
-            int[] expectedCache = twoPlainCompanions ? [2, 4, 20] : missingTarget ? [2, 16, 25, 28] : [2, 16, 25];
+            int[] expectedCache = threeCompanionsMissing ? [2, 5, 21, 22, 23] : twoPlainCompanions ? [2, 4, 20] : missingTarget ? [2, 16, 25, 28] : [2, 16, 25];
             Require(b.GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual(expectedCache) &&
                 a.GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual(expectedCache) &&
                 bu.GetProperty("Health").GetInt32() == beforeHealth[i] && au.GetProperty("Health").GetInt32() == afterHealth[i] &&
@@ -42,7 +42,7 @@ internal static class StewardCompanionSixHordePreviewChecks
                 "Concurrent successor differs: " + result.Reason);
         });
         Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "Card play mutated its parent.");
-        foreach (string control in new[] { "MonsterChampionUnderlegion1", "Boss_Level8_Fragile", "EnchanterT2_Titanskin", "MonsterSycophant", "MonsterFunguy", "ExilesDiadem_Upgrade" }.Concat(twoPlainCompanions ? Array.Empty<string>() : ["TrainStewardSmall"]).Concat(missingTarget ? ["FightClub"] : Array.Empty<string>()))
+        foreach (string control in new[] { "MonsterChampionUnderlegion1", "Boss_Level8_Fragile", "EnchanterT2_Titanskin", "MonsterSycophant", "MonsterFunguy", "ExilesDiadem_Upgrade" }.Concat(twoPlainCompanions || threeCompanionsMissing ? Array.Empty<string>() : ["TrainStewardSmall"]).Concat(missingTarget ? ["FightClub"] : Array.Empty<string>()).Concat(threeCompanionsMissing ? ["MonsterGenerousHost", "MonsterSneezyWhelp"] : Array.Empty<string>()))
         {
             JsonNode altered = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
             void Rewrite(JsonNode? node)
@@ -101,7 +101,7 @@ internal static class StewardCompanionSixHordePreviewChecks
                     "Changed companion " + field + " received the native result.");
             }
         }
-        if (missingTarget)
+        if (missingTarget || threeCompanionsMissing)
         {
             JsonNode invalid = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
             int changedPoints = 0;
@@ -109,7 +109,7 @@ internal static class StewardCompanionSixHordePreviewChecks
             {
                 if (node is JsonObject obj)
                 {
-                    if (obj["UnitId"]?.GetValueKind() == JsonValueKind.Number && obj["UnitId"]!.GetValue<int>() == 28 &&
+                    if (obj["UnitId"]?.GetValueKind() == JsonValueKind.Number && obj["UnitId"]!.GetValue<int>() == (threeCompanionsMissing ? 23 : 28) &&
                         obj["SpawnedInPreview"]?.GetValueKind() == JsonValueKind.False)
                     { obj["SpawnedInPreview"] = true; changedPoints++; }
                     foreach (var entry in obj.ToArray()) ChangePoint(entry.Value);
@@ -121,7 +121,7 @@ internal static class StewardCompanionSixHordePreviewChecks
             Require(changedPoints > 0 && (!changed.Supported || NativeBranchObservationChecks.Key(changed.State!) != NativeBranchObservationChecks.Key(actual)),
                 "Changed missing target spawn point received the native result.");
         }
-        if (replay.HasValue) { Native(replay.Value, threeHorde: threeHorde, sevenWrites: sevenWrites, missingTarget: missingTarget, twoPlainCompanions: twoPlainCompanions); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
+        if (replay.HasValue) { Native(replay.Value, threeHorde: threeHorde, sevenWrites: sevenWrites, missingTarget: missingTarget, twoPlainCompanions: twoPlainCompanions, threeCompanionsMissing: threeCompanionsMissing); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
         Console.WriteLine($"STEWARD-COMPANION-HORDE-PREVIEW PASS: {rows.Length} native inputs/full state/RNG, {writes.Length} writes, four immutable branches and source/binding controls; threeHorde={threeHorde}; independentPair={replay.HasValue}");
     }
 

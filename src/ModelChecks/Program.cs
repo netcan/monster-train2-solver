@@ -1465,6 +1465,13 @@ if (args.Length is 2 or 3 && args[0] == "--steward-companion-seven-writes-previe
     StewardCompanionSixHordePreviewChecks.Native(fixture.RootElement, replay?.RootElement, sevenWrites: true);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--three-companions-missing-preview-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    StewardCompanionSixHordePreviewChecks.Native(fixture.RootElement, replay?.RootElement, threeHorde: true, threeCompanionsMissing: true);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--steward-companion-three-horde-preview-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -8558,6 +8565,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var fixture = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-steward-companion-seven-writes-preview-replay-calibration.mt2f"));
     StewardCompanionSixHordePreviewChecks.Native(fixture.RootElement, replay.RootElement, sevenWrites: true);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-three-companions-missing-preview-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-three-companions-missing-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-three-companions-missing-preview-replay-calibration.mt2f"));
+    StewardCompanionSixHordePreviewChecks.Native(fixture.RootElement, replay.RootElement, threeHorde: true, threeCompanionsMissing: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-steward-companion-three-horde-preview-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-steward-companion-three-horde-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
