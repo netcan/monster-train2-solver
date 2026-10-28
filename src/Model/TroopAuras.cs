@@ -156,7 +156,11 @@ namespace MonsterTrain2Poju.Model
             bool originalSycophant = originalChampion && added.Length == 1 && room.Units.Single(unit => unit.Id == added[0]) is
                 { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20, Health: 25, MaxHealth: 25, Size: 2 } sycophant &&
                 sycophant.Status("horde") == null && source.Train.Context!.FindCard(sycophant.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83";
-            if (!originalSycophant && added.Any(id => room.Units.Single(unit => unit.Id == id) is not { AssetKey: "MonsterFunguy" })) return false;
+            bool originalRecruit = originalChampion && added.Length == 1 && room.Units.Single(unit => unit.Id == added[0]) is
+                { AssetKey: "MonsterGenerousHost", Team: CombatTeam.Player, BaseAttack: 5, Health: 5, MaxHealth: 5, Size: 1,
+                    Modifiers.Upgrades.Count: 0 } recruit && recruit.Status("horde") == null &&
+                PreviewBirthModel.IsOriginalGreenRecruit(recruit, source.Train.Context!);
+            if (!originalSycophant && !originalRecruit && added.Any(id => room.Units.Single(unit => unit.Id == id) is not { AssetKey: "MonsterFunguy" })) return false;
             bool originalSingleBirth = originalChampion && added.Length == 1 && room.Units.Single(unit => unit.Id == added[0]) is
                 { AssetKey: "MonsterFunguy", SpawnerCardId: 0, Health: 4, MaxHealth: 4, Modifiers.Upgrades.Count: 0 } newborn &&
                 newborn.Status("horde")?.Stacks == 1;
