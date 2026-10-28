@@ -152,11 +152,12 @@ namespace MonsterTrain2Poju.Model
                 source.Train.Context?.SpawnPoints?.Units.Any(point => point.UnitId == id &&
                     (source.Preview ? point.SpawnedInPreview : !point.SpawnedInPreview &&
                         point.Current?.RoomIndex == room.RoomIndex && point.Current.Team == CombatTeam.Player)) != true)) return false;
-            return third ? OnlyFragileBuffSource(source) :
+            return third ? OnlyFragileBuffSource(source, allowLiveCombat: !source.Preview && source.Train.Context != null &&
+                    PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context)) :
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
         }
 
-        internal static bool OnlyFragileBuffSource(EnchantmentCombatState source)
+        internal static bool OnlyFragileBuffSource(EnchantmentCombatState source, bool allowLiveCombat = false)
         {
             CombatUnit[] owners = source.Train.Rooms.SelectMany(room => room.Units)
                 .Where(unit => source.EnchanterIds.Contains(unit.Id) && unit.AssetKey == "Boss_Level8_Fragile").ToArray();
@@ -165,7 +166,7 @@ namespace MonsterTrain2Poju.Model
             if (owner is not { AssetKey: "Boss_Level8_Fragile", Team: CombatTeam.Enemy, MaxHealth: 3000 } ||
                 owner.Health <= 0 || owner.DeathState?.IsDestroyed == true) return false;
             int[] retiredIds = source.EnchanterIds.Where(id => id != owner.Id).ToArray();
-            bool livePreviewTitanskin = source.Preview && retiredIds.Length == 1 &&
+            bool livePreviewTitanskin = (source.Preview || allowLiveCombat) && retiredIds.Length == 1 &&
                 source.Train.Rooms.SelectMany(room => room.Units).Count(unit => unit.Id == retiredIds[0] &&
                     unit.AssetKey == "EnchanterT2_Titanskin" && unit.Health > 0 && unit.DeathState?.IsDestroyed != true) == 1 &&
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, retiredIds);
