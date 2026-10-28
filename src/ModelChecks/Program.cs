@@ -1046,6 +1046,13 @@ if (args.Length is 2 or 3 && args[0] == "--third-troop-sycophant-two-live-only")
     ThirdTroopSycophantTwoLiveChecks.Native(fixture.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--third-troop-fightclub-mixed-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    ThirdTroopFightClubMixedChecks.Native(fixture.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--inactive-fragile-inferno-exit-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -7523,10 +7530,17 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     InactiveFullMoonInfernoExitChecks.Native(source.RootElement, replay.RootElement,
         Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant());
 }
-foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player-third-troop-sycophant-two-live-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player-third-troop-fightclub-mixed-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
 {
     using var fixture = ModelJson.ReadFixture(path);
-    ThirdTroopSycophantTwoLiveChecks.Native(fixture.RootElement);
+    ThirdTroopFightClubMixedChecks.Native(fixture.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-third-troop-sycophant-two-live-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-third-troop-sycophant-two-live-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-third-troop-sycophant-two-live-replay-calibration.mt2f"));
+    ThirdTroopSycophantTwoLiveChecks.Native(fixture.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-preview-two-live-identity-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-preview-two-live-identity-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
