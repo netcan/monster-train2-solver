@@ -1053,6 +1053,13 @@ if (args.Length is 2 or 3 && args[0] == "--third-troop-fightclub-mixed-only")
     ThirdTroopFightClubMixedChecks.Native(fixture.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--inactive-multistrike-zealot-inferno-exit-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    InactiveMultistrikeZealotInfernoExitChecks.Native(fixture.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--third-troop-two-live-preview-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -7628,6 +7635,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-pending-physical-harvest-replay-calibration.mt2f"));
     PendingPhysicalHarvestChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player-inactive-multistrike-zealot-inferno-exit-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    InactiveMultistrikeZealotInfernoExitChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-inactive-buffed-zealot-inferno-exit-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-inactive-buffed-zealot-inferno-exit-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
