@@ -5,28 +5,29 @@ using MonsterTrain2Poju.Model;
 
 internal static class TwinSycophantPreviewChecks
 {
-    internal static void Native(FixtureValue fixture, FixtureValue? replay = null)
+    internal static void Native(FixtureValue fixture, FixtureValue? replay = null, bool sevenWrites = false)
     {
         var rows = NativeBranchObservationChecks.Replay(fixture,
             "Battle preview floor 0: Combined troop upgrades and enchantment source ordering require native calibration.");
-        Require(rows.Length == 22 && !rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Wrong native input count.");
+        Require(rows.Length == (sevenWrites ? 24 : 22) && !rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Wrong native input count.");
         var before = rows[^1].GetProperty("Before").Deserialize<BattleTurnState>()!;
         var actual = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         var action = rows[^1].GetProperty("Action").Deserialize<PlayCardAction>()!;
         var writes = rows[^1].GetProperty("TroopUpdates").EnumerateArray().Where(update =>
             update.GetProperty("Before").GetProperty("Preview").GetBoolean() &&
-            update.GetProperty("Before").GetProperty("Units").EnumerateArray().Any(unit => unit.GetProperty("Id").GetInt32() == 26)).ToArray();
-        Require(writes.Length == 4, "Expected four native preview writes.");
+            update.GetProperty("Before").GetProperty("Units").EnumerateArray().Any(unit => unit.GetProperty("Id").GetInt32() == (sevenWrites ? 28 : 26))).ToArray();
+        Require(writes.Length == (sevenWrites ? 7 : 4), "Unexpected native preview write count.");
         for (int i = 0; i < writes.Length; i++)
         {
             var b = writes[i].GetProperty("Before"); var a = writes[i].GetProperty("After");
-            var bu = b.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == 26);
-            var au = a.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == 26);
-            Require(b.GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual([4, 2, 20]) &&
-                a.GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual([4, 2, 20]) &&
+            var bu = b.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == (sevenWrites ? 28 : 26));
+            var au = a.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == (sevenWrites ? 28 : 26));
+            int[] cache = sevenWrites ? [3, 2, 20] : [4, 2, 20];
+            Require(b.GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual(cache) &&
+                a.GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual(cache) &&
                 bu.GetProperty("Health").GetInt32() == 12 + i * 9 && au.GetProperty("Health").GetInt32() == 21 + i * 9 &&
                 bu.GetProperty("Upgrades").GetArrayLength() == i * 3 && au.GetProperty("Upgrades").GetArrayLength() == (i + 1) * 3 &&
-                b.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == 4).GetProperty("Health").GetInt32() == 5,
+                b.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == (sevenWrites ? 3 : 4)).GetProperty("Health").GetInt32() == 5,
                 "Native preview write differs at " + i);
         }
         string parent = JsonSerializer.Serialize(before, ModelJson.Options);
@@ -54,7 +55,7 @@ internal static class TwinSycophantPreviewChecks
             Require(!result.Supported || NativeBranchObservationChecks.Key(result.State!) != NativeBranchObservationChecks.Key(actual),
                 "Unknown source incorrectly received native result: " + control);
         }
-        foreach (var (dataId, unitId) in new[] { ("7369cb8e-f8cf-44be-8667-c699c630c063", 2), ("217d467c-77c2-481d-b78f-57aaf3dcd4a6", 4) })
+        foreach (var (dataId, unitId) in new[] { ("7369cb8e-f8cf-44be-8667-c699c630c063", 2), ("217d467c-77c2-481d-b78f-57aaf3dcd4a6", sevenWrites ? 3 : 4) })
         {
             JsonNode binding = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
             int changedBindings = 0;
@@ -74,8 +75,8 @@ internal static class TwinSycophantPreviewChecks
             Require(changedBindings > 0 && (!unbound.Supported || NativeBranchObservationChecks.Key(unbound.State!) != NativeBranchObservationChecks.Key(actual)),
                 "Wrong equipment binding received the native result: " + dataId);
         }
-        if (replay.HasValue) { Native(replay.Value); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
-        Console.WriteLine("TWIN-SYCOPHANT-PREVIEW PASS: 22 native inputs/full state/RNG, four writes, four immutable branches and source/binding controls; independentPair=" + replay.HasValue);
+        if (replay.HasValue) { Native(replay.Value, sevenWrites: sevenWrites); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
+        Console.WriteLine($"TWIN-SYCOPHANT-PREVIEW PASS: {rows.Length} native inputs/full state/RNG, {writes.Length} writes, four immutable branches and source/binding controls; sevenWrites={sevenWrites}; independentPair={replay.HasValue}");
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }

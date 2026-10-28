@@ -1008,6 +1008,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-armor-champion-preview-calibration.mt2f',
     'player-twin-sycophant-preview-calibration.mt2f',
     'player-twin-sycophant-preview-replay-calibration.mt2f',
+    'player-twin-sycophant-seven-preview-calibration.mt2f',
+    'player-twin-sycophant-seven-preview-replay-calibration.mt2f',
     'player-armor-champion-preview-replay-calibration.mt2f',
     'player-steward-whelp-preview-calibration.mt2f',
     'player-steward-whelp-preview-replay-calibration.mt2f',
@@ -2472,6 +2474,15 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --fight-club-fourth-write-only (Get-TestFixturePath 'player-fight-club-fourth-write-calibration.mt2f') (Get-TestFixturePath 'player-fight-club-fourth-write-replay-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Fight Club fourth write native check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-twin-sycophant-seven-preview-calibration.mt2f', 'player-twin-sycophant-seven-preview-replay-calibration.mt2f') }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Twin sycophant seven preview checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --twin-sycophant-seven-preview-only (Get-TestFixturePath 'player-twin-sycophant-seven-preview-calibration.mt2f') (Get-TestFixturePath 'player-twin-sycophant-seven-preview-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Twin sycophant seven preview native check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-steward-whelp-preview-calibration.mt2f', 'player-steward-whelp-preview-replay-calibration.mt2f') }).Count -eq 0) {

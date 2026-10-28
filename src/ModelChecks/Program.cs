@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--twin-sycophant-seven-preview-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    TwinSycophantPreviewChecks.Native(fixture.RootElement, replay?.RootElement, sevenWrites: true);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--twin-sycophant-preview-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -8233,6 +8240,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var fixture = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-six-horde-short-owner-replay-calibration.mt2f"));
     SixHordeShortOwnerChecks.Native(fixture.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-twin-sycophant-seven-preview-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-twin-sycophant-seven-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-twin-sycophant-seven-preview-replay-calibration.mt2f"));
+    TwinSycophantPreviewChecks.Native(fixture.RootElement, replay.RootElement, sevenWrites: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-twin-sycophant-preview-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-twin-sycophant-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
