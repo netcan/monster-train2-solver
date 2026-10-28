@@ -2738,10 +2738,7 @@ namespace MonsterTrain2Poju.Model
                 context = context.WithStatistics(preview.context!.Statistics);
                 // Native previews share relic effect objects. Bone Dog's persistent run flag is
                 // restored with the save, but its OnTrigger condition bookkeeping survives.
-                if (context.Relics?.Any(owner => owner.EffectTypes.Contains(RelicPyreResurrectionModel.Effect)) == true)
-                    context = context.WithRelics(context.Relics.Select(owner => owner.EffectTypes.Contains(RelicPyreResurrectionModel.Effect)
-                        ? owner.WithResourceEffects(preview.context.Relics!.Single(other => other.DataId == owner.DataId).ResourceEffects!)
-                        : owner).ToArray());
+                context = RelicPyreResurrectionModel.CarryPreviewConditions(context, preview.context);
                 int firstPreviewId = context.NextUnitId ?? int.MaxValue;
                 int[] unobservedPlayers;
                 if (originalWorld?.AutomaticLifecycle == true)

@@ -45,6 +45,13 @@ namespace MonsterTrain2Poju.Model
             }
             return source;
         }
+        internal static CombatContext CarryPreviewConditions(CombatContext source, CombatContext observed)
+        {
+            if (source.Relics?.Any(owner => owner.EffectTypes.Contains(Effect)) != true) return source;
+            return source.WithRelics(source.Relics.Select(owner => owner.EffectTypes.Contains(Effect)
+                ? owner.WithResourceEffects(observed.Relics!.Single(other => other.DataId == owner.DataId).ResourceEffects!)
+                : owner).ToArray());
+        }
         internal static PlayCardAction? ChoosePlay(BattleTurnState source)
         {
             if (source.Spawn.Turn != 0 || source.Spawn.Train.Rooms.Any(room => room.Units.Any(unit => unit.SpawnerCardId > 0))) return null;

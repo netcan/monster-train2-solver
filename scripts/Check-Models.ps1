@@ -919,6 +919,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-four-horde-eight-writes-replay-calibration.mt2f',
     'player-four-horde-two-writes-calibration.mt2f',
     'player-four-horde-two-writes-replay-calibration.mt2f',
+    'player-bone-dog-preview-leak-calibration.mt2f',
+    'player-bone-dog-preview-leak-replay-calibration.mt2f',
     'player-six-horde-short-owner-calibration.mt2f',
     'player-six-horde-short-owner-replay-calibration.mt2f',
     'player-third-troop-four-horde-preview-replay-calibration.mt2f',
@@ -2550,6 +2552,15 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --six-horde-short-owner-only (Get-TestFixturePath 'player-six-horde-short-owner-calibration.mt2f') (Get-TestFixturePath 'player-six-horde-short-owner-replay-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Six-horde short owner native check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-bone-dog-preview-leak-calibration.mt2f', 'player-bone-dog-preview-leak-replay-calibration.mt2f') }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Bone Dog preview leak checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --bone-dog-preview-leak-only (Get-TestFixturePath 'player-bone-dog-preview-leak-calibration.mt2f') (Get-TestFixturePath 'player-bone-dog-preview-leak-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Bone Dog preview leak native check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-four-horde-two-writes-calibration.mt2f', 'player-four-horde-two-writes-replay-calibration.mt2f') }).Count -eq 0) {

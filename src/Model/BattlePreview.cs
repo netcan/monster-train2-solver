@@ -209,6 +209,7 @@ namespace MonsterTrain2Poju.Model
                         previewContext = previewContext.WithCard(card.WithRoomCacheState(captured.PlayedRoomUnitIds, captured.RawPlayedRoomUnitIds));
                 }
                 previewContext = previewContext.WithStatistics(previewContext.Statistics!.RetainPreviewQueries(preview.State!.Context!.Statistics!));
+                previewContext = RelicPyreResurrectionModel.CarryPreviewConditions(previewContext, preview.State.Context);
                 if (previewContext.LifeLinks != null) previewContext = previewContext.WithLifeLinks(preview.State.Context.LifeLinks);
                 if (originalPoints?.NextPreviewCopyId.HasValue == true && preview.State.Context.SpawnPoints != null)
                     previewContext = previewContext.WithSpawnPoints(preview.State.Context.SpawnPoints);
@@ -229,6 +230,7 @@ namespace MonsterTrain2Poju.Model
                 firstPreviewId, firstPreviewCardId, previewActors == null ? Array.Empty<CombatUnit>() : previewActors.Values,
                 out int[] unobservedPreviewIds);
             context = context.WithStatistics(context.Statistics!.RetainPreviewQueries(previewContext.Statistics!));
+            context = RelicPyreResurrectionModel.CarryPreviewConditions(context, previewContext);
             if (source.Context!.LifeLinks != null) context = context.WithLifeLinks(source.Context.LifeLinks);
             if (originalPoints?.NextPreviewCopyId.HasValue == true)
                 context = context.WithSpawnPoints(BattleSpawnPoints.EndPreview(originalPoints, previewContext.SpawnPoints!, clearBirths: true));
