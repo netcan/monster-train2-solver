@@ -167,12 +167,23 @@ namespace MonsterTrain2Poju.Model
                         Stats: { Damage: 15, Health: 0, Cost: 0, Heal: 0, Size: 0, XCost: 0, EquipmentLimit: 0, UpgradeSlotCount: 0 },
                         Statuses.Count: 0, ExternalInteractions.Count: 0, AbilityUpgrade: null, TriggerUpgrades: null }] } clubBirth &&
                 clubBirth.Status("horde")?.Stacks == 3;
+            bool originalPreviewBirth = source.Preview && source.Train.Context != null &&
+                PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context) && added.Length == 1 &&
+                room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", SpawnerCardId: 0,
+                    HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades: var birthUpgrades } previewBirth &&
+                previewBirth.Status("horde")?.Stacks == 3 && birthUpgrades.Count is 0 or 3 &&
+                previewBirth.Health == 12 + birthUpgrades.Count * 3 && previewBirth.MaxHealth == previewBirth.Health &&
+                birthUpgrades.All(item => item.DataId == Key(owner.Id) && item.AssetKey == upgrade.AssetKey &&
+                    item.Stats.Health == 3 && item.Stats.Damage == 0 && item.Stats.Cost == 0 && item.Stats.Heal == 0 &&
+                    item.Stats.Size == 0 && item.Stats.XCost == 0 && item.Stats.EquipmentLimit == 0 &&
+                    item.Stats.UpgradeSlotCount == 0 && item.Statuses.Count == 0 && item.ExternalInteractions.Count == 0 &&
+                    item.AbilityUpgrade == null && item.TriggerUpgrades?.Count is not > 0);
             return third ? OnlyFragileBuffSource(source, allowLiveCombat: originalChampion, allowTwoLiveCombat: originalSingleBirth || originalSycophant,
-                    allowMixedCombat: fightClubBirth) :
+                    allowTwoLivePreview: originalPreviewBirth, allowMixedCombat: fightClubBirth, allowPreviewRetired: originalPreviewBirth) :
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
         }
 
-        internal static bool OnlyFragileBuffSource(EnchantmentCombatState source, bool allowLiveCombat = false, bool allowTwoLiveCombat = false, bool allowTwoLivePreview = false, bool allowMixedCombat = false)
+        internal static bool OnlyFragileBuffSource(EnchantmentCombatState source, bool allowLiveCombat = false, bool allowTwoLiveCombat = false, bool allowTwoLivePreview = false, bool allowMixedCombat = false, bool allowPreviewRetired = false)
         {
             CombatUnit[] owners = source.Train.Rooms.SelectMany(room => room.Units)
                 .Where(unit => source.EnchanterIds.Contains(unit.Id) && unit.AssetKey == "Boss_Level8_Fragile").ToArray();
@@ -189,7 +200,7 @@ namespace MonsterTrain2Poju.Model
                 source.Train.Rooms.SelectMany(room => room.Units).Count(unit => retiredIds.Contains(unit.Id) &&
                     unit.AssetKey == "EnchanterT2_Titanskin" && unit.Health > 0 && unit.DeathState?.IsDestroyed != true) == 1 &&
                 source.RetainedUnits.Count(actor => retiredIds.Contains(actor.Unit.Id) && actor.RoomIndex == -1 &&
-                    !actor.Preview && actor.Unit.Health <= 0 && actor.Unit.DeathState?.IsDestroyed == true) == 1 &&
+                    (!actor.Preview || allowPreviewRetired) && actor.Unit.Health <= 0 && actor.Unit.DeathState?.IsDestroyed == true) == 1 &&
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, retiredIds);
             bool twoLiveCombatTitanskin = (!source.Preview && allowTwoLiveCombat || source.Preview && allowTwoLivePreview) && retiredIds.Length == 2 &&
                 retiredIds.Distinct().Count() == 2 && source.Train.Rooms.SelectMany(room => room.Units).Count(unit =>
