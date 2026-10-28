@@ -241,8 +241,13 @@ namespace MonsterTrain2Poju.Model
                     if (rule.RequireGraft) return Fail("Relic birth requires native graft definition and source-card graft metadata.");
                     if (rule.ExcludedSubtypes.Any(actor.Subtypes.Contains) || rule.RestrictedRoom.HasValue && rule.RestrictedRoom != state.RoomIndex ||
                         rule.Statuses.Count == 0) continue;
-                    RngDraw draw = state.Context!.BattleRng.Range(0, rule.Statuses.Count);
-                    SetContext(state.Context.WithBattleRng(draw.State));
+                    // RandomManager maps Battle to BattleTest in native preview.
+                    // Isolated previews instead use their private Battle stream.
+                    EnchantmentWorld? world = state.Context!.Enchantments;
+                    bool testRng = state.Preview && state.Context.IsolatedBattlePreview != true && world != null;
+                    RngDraw draw = (testRng ? world!.TestRng : state.Context.BattleRng).Range(0, rule.Statuses.Count);
+                    SetContext(testRng ? state.Context.WithEnchantments(world!.WithTestRng(draw.State)) :
+                        state.Context.WithBattleRng(draw.State));
                     int stacks = rule.HpPercentAsStacks > 0 ? (int)Math.Floor((float)actor.MaxHealth * ((float)rule.HpPercentAsStacks / 100f)) :
                         Math.Max(1, rule.Statuses[draw.Value].Stacks);
                     // Selection is before the required-subtype test, including a one-element list.

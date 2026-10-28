@@ -29,9 +29,11 @@ namespace MonsterTrain2Poju.Probe
             private static void Prefix(int min, int max, RngId rngId, out Record? __state)
             {
                 __state = null;
-                if (!UnsupportedBranchObservation.Enabled || rngId != RngId.BattleTest) return;
+                bool preview = AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == true;
+                if (!UnsupportedBranchObservation.Enabled ||
+                    rngId != RngId.BattleTest && !(preview && rngId == RngId.Battle)) return;
                 __state = new Record { Min = min, Max = max, Before = State(), Frame = UnityEngine.Time.frameCount,
-                    Preview = AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == true,
+                    Preview = preview,
                     Stack = new StackTrace(1, false).ToString() };
                 Records.Add(__state);
             }

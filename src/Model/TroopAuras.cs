@@ -123,8 +123,8 @@ namespace MonsterTrain2Poju.Model
         private static bool KnownChampionAddition(EnchantmentCombatState source, RoomCombatState room,
             CombatUnit owner, TroopAuraState rule, IReadOnlyList<int> targets)
         {
-            // Native tier-two/Titanskin preview births receive repeated HP
-            // writes; the tier-three/Fragile observation covers primary mode.
+            // Native tier-two/Titanskin and tier-three/Fragile preview births
+            // receive repeated HP writes; the primary cache is not changed.
             // These sources affect disjoint teams. Other enchantments, living
             // departures and modified champion auras retain the ordering guard.
             CardUpgradeModifier upgrade = rule.Upgrade;
@@ -152,7 +152,7 @@ namespace MonsterTrain2Poju.Model
                 source.Train.Context?.SpawnPoints?.Units.Any(point => point.UnitId == id &&
                     (source.Preview ? point.SpawnedInPreview : !point.SpawnedInPreview &&
                         point.Current?.RoomIndex == room.RoomIndex && point.Current.Team == CombatTeam.Player)) != true)) return false;
-            return third ? !source.Preview && OnlyFragileBuffSource(source) :
+            return third ? OnlyFragileBuffSource(source) :
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
         }
 

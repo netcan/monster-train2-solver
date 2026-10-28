@@ -184,17 +184,23 @@ namespace MonsterTrain2Poju.Model
             forgotten = Array.Empty<int>();
             CombatContext context = source.Context!;
             EnchantmentWorld? world = preview.Enchantments;
+            bool fragileObserver = world != null && world.EnchanterIds.Count > 0 &&
+                source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalChampionEnemyDeath(unit, context) &&
+                    unit.Modifiers?.TroopAura?.Upgrade.DataId == CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId) &&
+                TroopAuraModel.OnlyFragileBuffSource(world.Frame(context));
             // Temporary player births without durable aura references are gone
             // before native decision capture assigns their synthetic identities.
             // Preserve observed births and all enemy births. Check the allocator
             // first so ordinary preview refreshes do not scan units or cards.
             if (context.Enchantments?.AutomaticLifecycle != true || preview.NextUnitId is not int nextId ||
                 nextId <= firstUnitId || world == null || preview.CardRegistry == null ||
-                world.EnchanterIds.Count != 0 && !TroopAuraModel.OnlyTitanskinSources(world.Rooms, world.RetainedUnits, world.EnchanterIds))
+                world.EnchanterIds.Count != 0 && !fragileObserver &&
+                    !TroopAuraModel.OnlyTitanskinSources(world.Rooms, world.RetainedUnits, world.EnchanterIds))
                 return preview;
             bool enemyOnlyObservers = world.EnchanterIds.Count != 0;
             CardInstanceState[] newCards = preview.CardRegistry?.Where(card => card.InstanceId >= firstCardId).ToArray()
                 ?? Array.Empty<CardInstanceState>();
+            if (fragileObserver && newCards.Length != 0) return preview;
             if (newCards.Length == 0)
             {
                 // Infectory and the original Green Recruit death fallback create an unowned character,

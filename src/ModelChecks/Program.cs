@@ -989,6 +989,14 @@ if (args.Length is 2 or 3 && args[0] == "--inactive-buffed-zealot-inferno-exit-o
     InactiveBuffedZealotInfernoExitChecks.Native(source.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 3 or 4 && args[0] == "--third-troop-fragile-preview-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var rng = ModelJson.ReadFixture(args[2]);
+    using var replay = args.Length == 4 ? ModelJson.ReadFixture(args[3]) : null;
+    ThirdTroopFragilePreviewChecks.Native(source.RootElement, rng.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--inactive-fragile-inferno-exit-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -7465,6 +7473,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-inactive-fullmoon-inferno-exit-replay-calibration.mt2f"));
     InactiveFullMoonInfernoExitChecks.Native(source.RootElement, replay.RootElement,
         Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant());
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-third-troop-fragile-preview-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-third-troop-fragile-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var rng = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-third-troop-fragile-preview-rng-calibration.mt2f"));
+    ThirdTroopFragilePreviewChecks.Native(source.RootElement, rng.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-third-troop-fragile-buff-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-third-troop-fragile-buff-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
