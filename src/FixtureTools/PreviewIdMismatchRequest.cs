@@ -6,15 +6,18 @@ using MonsterTrain2Poju.Model;
 internal static class PreviewIdMismatchRequest
 {
     internal const string Reason = "Native temporary preview birth identity differs with two live Titanskin sources.";
+    internal const string ExistingHordeReason = "Native temporary preview birth identity differs with existing champion horde and two live Titanskin sources.";
     private sealed record Step(PlayCardAction? Action, bool IsEndTurn);
-    internal static void Extract(string input, string output)
+    internal static void Extract(string input, string output) => Extract(input, output, 21, 27, 26, Reason);
+    internal static void ExtractExistingHorde(string input, string output) => Extract(input, output, 11, 23, 22, ExistingHordeReason);
+    private static void Extract(string input, string output, int expectedRows, int oldNextId, int nativeNextId, string reason)
     {
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         using var source = FixtureDocument.Read(input);
         var fixture = source.RootElement;
         Require(!fixture.GetProperty("NativeCompleted").GetBoolean(), "Expected the original partial native capture.");
         var rows = fixture.GetProperty("Rows").EnumerateArray().ToArray();
-        Require(rows.Length == 21 && rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Expected the 21-input mismatch.");
+        Require(rows.Length == expectedRows && rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Unexpected identity mismatch prefix.");
         var root = fixture.GetProperty("Request").GetProperty("Root").Deserialize<BattleTurnState>()!;
         var current = root;
         var prefix = new List<Step>();
@@ -44,15 +47,15 @@ internal static class PreviewIdMismatchRequest
         }
         var failed = rows[^1].GetProperty("Before").Deserialize<BattleTurnState>()!;
         var old = rows[^1].GetProperty("Expected").Deserialize<BattleTurnState>()!;
-        Require(old.Spawn.Train.Context!.NextUnitId == 27 && current.Spawn.Train.Context!.NextUnitId == 26,
+        Require(old.Spawn.Train.Context!.NextUnitId == oldNextId && current.Spawn.Train.Context!.NextUnitId == nativeNextId,
             "Missing historical identity mismatch.");
         using var request = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
             SourceArchive = Path.GetFileName(input), SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
             Root = root, Prefix = prefix, FailedRoot = failed, Action = (PlayCardAction?)null,
-            IsEndTurn = true, Reason, NativeValidationRequired = true });
+            IsEndTurn = true, Reason = reason, NativeValidationRequired = true });
         using var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write);
         request.Write(stream);
-        Console.WriteLine("PREVIEW-ID-REQUEST PASS: 20 native prefix inputs and repaired mismatch; independent native validation required.");
+        Console.WriteLine("PREVIEW-ID-REQUEST PASS: " + (expectedRows - 1) + " native prefix inputs and repaired mismatch; independent native validation required.");
     }
     internal static void Refresh(string input, string native, string output)
     {

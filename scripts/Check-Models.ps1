@@ -896,6 +896,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-third-troop-fragile-two-live-replay-calibration.mt2f',
     'player-preview-two-live-identity-calibration.mt2f',
     'player-preview-two-live-identity-replay-calibration.mt2f',
+    'player-preview-existing-horde-identity-calibration.mt2f',
     'player-third-troop-sycophant-two-live-calibration.mt2f',
     'player-third-troop-sycophant-two-live-replay-calibration.mt2f',
     'player-third-troop-fightclub-mixed-calibration.mt2f',
@@ -2327,6 +2328,15 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --third-troop-sycophant-two-live-only (Get-TestFixturePath 'player-third-troop-sycophant-two-live-calibration.mt2f') (Get-TestFixturePath 'player-third-troop-sycophant-two-live-replay-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Sycophant two-live native check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -ne 'player-preview-existing-horde-identity-calibration.mt2f' }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Existing horde preview identity checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --preview-existing-horde-identity-only (Get-TestFixturePath 'player-preview-existing-horde-identity-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Existing horde preview identity native check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-preview-two-live-identity-calibration.mt2f', 'player-preview-two-live-identity-replay-calibration.mt2f') }).Count -eq 0) {

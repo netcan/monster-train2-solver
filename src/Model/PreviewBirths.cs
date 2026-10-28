@@ -184,11 +184,20 @@ namespace MonsterTrain2Poju.Model
             forgotten = Array.Empty<int>();
             CombatContext context = source.Context!;
             EnchantmentWorld? world = preview.Enchantments;
+            bool OriginalExistingHorde() => source.Rooms.Any(room => room.Units.Any(owner => IsOriginalChampionEnemyDeath(owner, context) &&
+                owner.Modifiers?.TroopAura?.Upgrade is { DataId: CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId } aura &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterFunguy", SpawnerCardId: 0, Health: 42, MaxHealth: 42,
+                    HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades.Count: 6 } && unit.Status("horde")?.Stacks == 6 &&
+                    unit.Modifiers.Upgrades.All(upgrade => upgrade.DataId == TroopAuraModel.Key(owner.Id) && upgrade.AssetKey == aura.AssetKey &&
+                        upgrade.Stats.Health == 3 && upgrade.Stats.Damage == 0 && upgrade.Stats.Cost == 0 && upgrade.Stats.Heal == 0 &&
+                        upgrade.Stats.Size == 0 && upgrade.Stats.XCost == 0 && upgrade.Stats.EquipmentLimit == 0 &&
+                        upgrade.Stats.UpgradeSlotCount == 0 && upgrade.Statuses.Count == 0 && upgrade.ExternalInteractions.Count == 0 &&
+                        upgrade.AbilityUpgrade == null && upgrade.TriggerUpgrades?.Count is not > 0))));
             bool fragileObserver = world != null && world.EnchanterIds.Count > 0 &&
                 source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalChampionEnemyDeath(unit, context) &&
                     unit.Modifiers?.TroopAura?.Upgrade.DataId == CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId) &&
                 TroopAuraModel.OnlyFragileBuffSource(world.Frame(context), allowTwoLivePreview:
-                    source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalGreenRecruit(unit, context)),
+                    OriginalExistingHorde() || source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalGreenRecruit(unit, context)),
                     allowPreviewRetired: true);
             // Temporary player births without durable aura references are gone
             // before native decision capture assigns their synthetic identities.
