@@ -182,7 +182,7 @@ namespace MonsterTrain2Poju.Model
                     item.Stats.Size == 0 && item.Stats.XCost == 0 && item.Stats.EquipmentLimit == 0 &&
                     item.Stats.UpgradeSlotCount == 0 && item.Statuses.Count == 0 && item.ExternalInteractions.Count == 0 &&
                     item.AbilityUpgrade == null && item.TriggerUpgrades?.Count is not > 0);
-            return third ? OnlyFragileBuffSource(source, allowLiveCombat: originalChampion, allowTwoLiveCombat: originalSingleBirth || originalSycophant,
+            return third ? OnlyFragileBuffSource(source, allowLiveCombat: originalChampion, allowTwoLiveCombat: originalSingleBirth || originalSycophant || originalTripleBirth,
                     allowTwoLivePreview: originalPreviewBirth, allowMixedCombat: fightClubBirth || originalTripleBirth, allowPreviewRetired: originalPreviewBirth) :
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
         }
