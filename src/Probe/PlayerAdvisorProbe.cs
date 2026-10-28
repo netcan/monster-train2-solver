@@ -163,6 +163,33 @@ namespace MonsterTrain2Poju.Probe
             return (BattleTurnState)Call("CaptureReadOnly", AllGameManagers.Instance)!;
         }
 
+        internal static object CaptureIdentityCorrespondence()
+        {
+            Resolve();
+            FullBattleTrace development = FullBattleTrace.Active!;
+            Type traceType = type!.Assembly.GetType("MonsterTrain2Poju.Probe.FullBattleTrace", true)!;
+            object player = AccessTools.Property(traceType, "Active").GetValue(null)!;
+            var tryPlayerCard = AccessTools.Method(traceType, "TryGetCardId");
+            var tryPlayerUnit = AccessTools.Method(traceType, "TryGetUnitId");
+            var cards = development.KnownCards.Select(card => {
+                bool developmentFound = development.TryGetCardId(card, out int developmentId);
+                object[] args = { card, 0 };
+                bool playerFound = (bool)tryPlayerCard.Invoke(player, args);
+                return new { DevelopmentFound = developmentFound, DevelopmentId = developmentId,
+                    PlayerFound = playerFound, PlayerId = (int)args[1] };
+            }).ToArray();
+            CharacterState unit = development.KnownUnits.Single(item => development.TryGetUnitId(item, out int id) && id == 20);
+            CardState spawner = unit.GetSpawnerCard();
+            bool developmentCardFound = development.TryGetCardId(spawner, out int developmentCardId);
+            object[] cardArgs = { spawner, 0 };
+            bool playerCardFound = (bool)tryPlayerCard.Invoke(player, cardArgs);
+            object[] unitArgs = { unit, 0 };
+            bool playerUnitFound = (bool)tryPlayerUnit.Invoke(player, unitArgs);
+            return new { Cards = cards, Spawner = new { DevelopmentUnitId = 20, PlayerUnitFound = playerUnitFound,
+                PlayerUnitId = (int)unitArgs[1], DevelopmentCardFound = developmentCardFound,
+                DevelopmentCardId = developmentCardId, PlayerCardFound = playerCardFound, PlayerCardId = (int)cardArgs[1] } };
+        }
+
         internal static void CaptureTerminal()
         {
             if (!Enabled) return;

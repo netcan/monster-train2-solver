@@ -31,6 +31,14 @@ Every input and player successor still matches the uninstrumented native
 process. The live-model boundary remains rejected until these identities and
 their behavioral effects are independently established.
 
+Two further independent processes read both registries using the same native
+card object references, without assigning new identities. Each mapped all 39
+development-known card objects to distinct player-side identities. The same
+native unit20 and its actual spawner object are development card5 and player
+card6. This confirms that particular mismatch is identity numbering, including
+when other cards share the same data ID. It does not establish that every other
+state field or preview transition is equivalent; the boundary remains guarded.
+
 The five `player-triple-horde-phase-boundary-*` archives preserve the original
 rejection, experimental successor, phase counterexample and independent frame
 samples. The focused check replays the supported prefix, compares independent

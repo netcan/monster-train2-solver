@@ -4,6 +4,32 @@ using MonsterTrain2Poju.Model;
 
 internal static class DualTraceHordeChecks
 {
+    internal static void Correspondence(FixtureValue original, FixtureValue first, FixtureValue second)
+    {
+        Native(original, first, second);
+        int[]? previous = null;
+        foreach (FixtureValue fixture in new[] { first, second })
+        {
+            var evidence = fixture.GetProperty("IdentityCorrespondence");
+            var spawner = evidence.GetProperty("Spawner");
+            Require(spawner.GetProperty("DevelopmentUnitId").GetInt32() == 20 && spawner.GetProperty("PlayerUnitFound").GetBoolean() &&
+                spawner.GetProperty("PlayerUnitId").GetInt32() == 20 && spawner.GetProperty("DevelopmentCardFound").GetBoolean() &&
+                spawner.GetProperty("DevelopmentCardId").GetInt32() == 5 && spawner.GetProperty("PlayerCardFound").GetBoolean() &&
+                spawner.GetProperty("PlayerCardId").GetInt32() == 6, "Native spawner identity correspondence differs.");
+            var cards = evidence.GetProperty("Cards").EnumerateArray().ToArray();
+            Require(cards.Length == 39 && cards.All(card => card.GetProperty("DevelopmentFound").GetBoolean() && card.GetProperty("PlayerFound").GetBoolean()),
+                "A development card is absent from the player identity map.");
+            var ordered = cards.OrderBy(card => card.GetProperty("DevelopmentId").GetInt32()).ToArray();
+            int[] source = ordered.Select(card => card.GetProperty("DevelopmentId").GetInt32()).ToArray();
+            int[] target = ordered.Select(card => card.GetProperty("PlayerId").GetInt32()).ToArray();
+            Require(source.SequenceEqual(Enumerable.Range(1, 39)) && target.Distinct().Count() == 39 && target.All(id => id > 0) && target[4] == 6,
+                "Native card-object correspondence is not one-to-one.");
+            if (previous != null) Require(previous.SequenceEqual(target), "Independent native card-object correspondence differs.");
+            previous = target;
+        }
+        Console.WriteLine("HORDE-IDENTITY-MAP PASS: two independent native runs map all 39 development card objects one-to-one, including the same 5->6 spawner; boundary remains guarded.");
+    }
+
     internal static void Native(FixtureValue original, FixtureValue timeline, FixtureValue? replay = null)
     {
         TripleHordePhaseBoundaryChecks.CheckTimeline(original, timeline);

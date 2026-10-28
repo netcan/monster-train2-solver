@@ -126,6 +126,14 @@ if (args.Length is 2 or 3 && args[0] == "--single-horde-sycophant-attack24-only"
     SingleHordeSycophantChecks.Native(fixture.RootElement, replay?.RootElement, attack24: true);
     return;
 }
+if (args.Length == 4 && args[0] == "--horde-identity-map-only")
+{
+    using var original = ModelJson.ReadFixture(args[1]);
+    using var first = ModelJson.ReadFixture(args[2]);
+    using var second = ModelJson.ReadFixture(args[3]);
+    DualTraceHordeChecks.Correspondence(original.RootElement, first.RootElement, second.RootElement);
+    return;
+}
 if (args.Length is 3 or 4 && args[0] == "--dual-trace-horde-only")
 {
     using var original = ModelJson.ReadFixture(args[1]);
@@ -8176,6 +8184,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var fixture = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-fight-club-injured-companion-replay-calibration.mt2f"));
     FightClubInjuredCompanionChecks.Native(fixture.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-triple-horde-identity-map-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-triple-horde-identity-map-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var original = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-horde-phase-boundary-calibration.mt2f"));
+    using var first = ModelJson.ReadFixture(path);
+    using var second = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-horde-identity-map-replay-calibration.mt2f"));
+    DualTraceHordeChecks.Correspondence(original.RootElement, first.RootElement, second.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-triple-horde-dual-trace-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-triple-horde-dual-trace-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

@@ -32,6 +32,7 @@ namespace MonsterTrain2Poju.Probe
         private static readonly List<object> roomAttachmentMovement = new List<object>();
         private static readonly List<object> settlementSamples = new List<object>();
         private static object? settlementPost;
+        private static object? identityCorrespondence;
         private static object? abilityCacheWarm;
         private static string? nativeSelectionRejection;
         private static bool waiting;
@@ -97,6 +98,8 @@ namespace MonsterTrain2Poju.Probe
             row.Actual = actual; waiting = false;
             if (row.Boundary && Environment.GetEnvironmentVariable("MT2_PROBE_SETTLEMENT_TIMELINE") == "1")
                 settlementPost = new { Frame = UnityEngine.Time.frameCount, Development = FullBattleTrace.Active!.CaptureDecision(), Player = actual };
+            if (row.Boundary && Environment.GetEnvironmentVariable("MT2_PROBE_IDENTITY_MAP") == "1")
+                identityCorrespondence = PlayerAdvisorProbe.CaptureIdentityCorrespondence();
             if (row.Boundary) row.RoomAttachmentsAfter = CaptureRoomAttachments();
             if (!row.Boundary)
             {
@@ -150,6 +153,7 @@ namespace MonsterTrain2Poju.Probe
                 TripleJuiceCalibration = JuiceTraitProbe.TripleSamples,
                 FloorTransitionPiercing = CaptureFloorTransitionPiercing(),
                 RoomAttachmentMovement = roomAttachmentMovement.ToArray(), SettlementTimeline = settlementSamples.ToArray(), SettlementPost = settlementPost,
+                IdentityCorrespondence = identityCorrespondence,
                 TriggeredCorruption = TriggeredCorruptionProbe.Records.ToArray(),
                 RoomPreCombatRecords = RoomPreCombatProbe.Records.ToArray(),
                 CorruptRestrictedState = CorruptRestrictedStateCalibration.Evidence,
