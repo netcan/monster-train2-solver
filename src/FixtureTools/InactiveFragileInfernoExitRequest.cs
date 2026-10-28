@@ -7,13 +7,13 @@ internal static class InactiveFragileInfernoExitRequest
     private const string Reason = "Native inactive Fragile Inferno exit moon mask differs on the fourth turn.";
     private sealed record Step(PlayCardAction? Action, bool IsEndTurn);
 
-    internal static void Extract(string input, string output, bool heavy = false, bool fullMoon = false, bool entry = false)
+    internal static void Extract(string input, string output, bool heavy = false, bool fullMoon = false, bool entry = false, bool newMoonEntry = false)
     {
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         using var source = FixtureDocument.Read(input);
         var decisions = source.RootElement.GetProperty("RollingDecisions").EnumerateArray().ToArray();
         var turns = source.RootElement.GetProperty("Turns").EnumerateArray().ToArray();
-        Require(decisions.Length == (entry ? 35 : fullMoon ? 34 : heavy ? 26 : 19) && turns.Length == (entry ? 7 : fullMoon ? 6 : heavy ? 5 : 4) &&
+        Require(decisions.Length == (newMoonEntry ? 42 : entry ? 35 : fullMoon ? 34 : heavy ? 26 : 19) && turns.Length == (newMoonEntry ? 8 : entry ? 7 : fullMoon ? 6 : heavy ? 5 : 4) &&
             turns[^1].GetProperty("Difference").GetString() == "Decision state, resources, card piles or gameplay RNG differ",
             "Expected the original incomplete native mask mismatch.");
         var root = decisions[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
@@ -53,7 +53,8 @@ internal static class InactiveFragileInfernoExitRequest
             Schema = 1, EvidenceKind = "ModelUnsupportedBranch", SourceArchive = Path.GetFileName(input),
             SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
             Root = root, Prefix = prefix, FailedRoot = failedRoot, Action = (PlayCardAction?)null,
-            IsEndTurn = true, Reason = entry ? "Native inactive Fragile Inferno entry moon mask differs on the seventh turn." :
+            IsEndTurn = true, Reason = newMoonEntry ? "Native inactive Fragile Inferno entry new-moon mask differs on the eighth turn." :
+                entry ? "Native inactive Fragile Inferno entry moon mask differs on the seventh turn." :
                 fullMoon ? "Native inactive full-moon Inferno exit masks differ on the sixth turn." :
                 heavy ? "Native inactive heavy Inferno exit moon masks differ on the fifth turn." : Reason,
             NativeValidationRequired = true });

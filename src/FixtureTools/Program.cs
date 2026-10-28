@@ -42,6 +42,10 @@ else if (args.Length == 3 && args[0] == "extract-inactive-fullmoon-inferno-exit"
 {
     InactiveFragileInfernoExitRequest.Extract(args[1], args[2], fullMoon: true);
 }
+else if (args.Length == 3 && args[0] == "extract-inactive-fragile-inferno-new-moon-entry")
+{
+    InactiveFragileInfernoExitRequest.Extract(args[1], args[2], newMoonEntry: true);
+}
 else if (args.Length == 3 && args[0] == "extract-inactive-fragile-inferno-entry")
 {
     InactiveFragileInfernoExitRequest.Extract(args[1], args[2], entry: true);
@@ -274,6 +278,7 @@ else
     Console.Error.WriteLine("Captured mismatch: extract-inactive-heavy-inferno-exit <native.mt2f> <new-request.mt2f>; validate the original 25-step prefix and repaired end turn before independent native observation.");
     Console.Error.WriteLine("Captured mismatch: extract-inactive-fullmoon-inferno-exit <native.mt2f> <new-request.mt2f>; validate the original 33-step prefix and repaired end turn before independent native observation.");
     Console.Error.WriteLine("Captured mismatch: extract-inactive-fragile-inferno-entry <native.mt2f> <new-request.mt2f>; validate the original 34-step prefix and repaired end turn before independent native observation.");
+    Console.Error.WriteLine("Captured mismatch: extract-inactive-fragile-inferno-new-moon-entry <native.mt2f> <new-request.mt2f>; validate the original 41-step prefix and repaired end turn before independent native observation.");
     Console.Error.WriteLine("EndTurn diagnostics: extract-unsupported-endturn <native-or-deployment.mt2f> <new-output.mt2f> <exact-rejection-reason> [floor:0..2] [--strength]; match policy-battle's stronger heuristic when reproducing a deployment branch.");
     Console.Error.WriteLine("Player root: plan-root <capture.mt2f> <new-output.mt2f> <milliseconds> [decision-index] [workers] [shared-nodes] | verify-root-plan <prediction.mt2f> | freeze-root-plan <prediction.mt2f> <new-output.mt2f>; nodes default256, other node budgets are offline experiments.");
     Console.Error.WriteLine("Partial forecast: complete-root-plan <native.mt2f> <verified-root-prediction.mt2f> <new-output.mt2f> <deployment-room> [--strength]; preserves the entire verified prefix before policy completion; model evidence only.");

@@ -1643,6 +1643,14 @@ if (args.Length is 2 or 3 && args[0] == "--inactive-fullmoon-inferno-exit-only")
         Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(args[1]))).ToLowerInvariant());
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--inactive-fragile-inferno-new-moon-entry-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    InactiveFragileInfernoEntryChecks.Native(source.RootElement, replay?.RootElement,
+        Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(args[1]))).ToLowerInvariant(), newMoonEntry: true);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--inactive-fragile-inferno-entry-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -8071,6 +8079,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-inactive-fragile-inferno-exit-replay-calibration.mt2f"));
     InactiveFragileInfernoExitChecks.Native(source.RootElement, replay.RootElement,
         Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant());
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-inactive-fragile-inferno-new-moon-entry-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-inactive-fragile-inferno-new-moon-entry-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-inactive-fragile-inferno-new-moon-entry-replay-calibration.mt2f"));
+    InactiveFragileInfernoEntryChecks.Native(source.RootElement, replay.RootElement,
+        Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant(), newMoonEntry: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-inactive-fragile-inferno-entry-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-inactive-fragile-inferno-entry-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

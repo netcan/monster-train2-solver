@@ -255,10 +255,12 @@ namespace MonsterTrain2Poju.Model
                         if (!ApplyUpgrade(ref currentRoom, currentUnit.Id, added, upgrade, remove: false, out string? error))
                             return Fail(error!);
                     }
-                    if (state.Context?.QueryFrame is { MoonPhaseTrackingActive: false, MoonPhase: 2 } inactive &&
-                        previousUnit is { Team: CombatTeam.Enemy, MoonPhaseMask: 5 })
+                    if (state.Context?.QueryFrame is { MoonPhaseTrackingActive: false, MoonPhase: 1 or 2 } inactive &&
+                        previousUnit is { Team: CombatTeam.Enemy, MoonPhaseMask: 5 or 6 } &&
+                        (previousUnit.MoonPhaseMask.Value & 3) != inactive.MoonPhase.Value)
                     {
-                        if (previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
+                        if (inactive.MoonPhase == 1 && previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } ||
+                            previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
                             previousUnit is not { AssetKey: "HeavyT3_Basic", BaseAttack: 8, MaxHealth: 325, Size: 2, Triggers.Count: 0 } &&
                             previousUnit is not { AssetKey: "HeavyT3_PyreDamageIfUnblocked", BaseAttack: 5, MaxHealth: 250, Size: 2,
                                 Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,

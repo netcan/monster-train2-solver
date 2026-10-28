@@ -5,11 +5,11 @@ using MonsterTrain2Poju.Model;
 
 internal static class InactiveFragileInfernoEntryChecks
 {
-    internal static void Native(FixtureValue source, FixtureValue? replay = null, string? sourceHash = null)
+    internal static void Native(FixtureValue source, FixtureValue? replay = null, string? sourceHash = null, bool newMoonEntry = false)
     {
         TrainCombatChecks.Native(source);
         var actions = source.GetProperty("Actions").EnumerateArray().ToArray();
-        Require(actions.Length == 28, "Expected 28 original card actions.");
+        Require(actions.Length == (newMoonEntry ? 34 : 28), "Unexpected original card actions.");
         foreach (var row in actions)
         {
             var result = BattleActionModel.PlayCard(row.GetProperty("Before").Deserialize<BattleTurnState>()!,
@@ -18,7 +18,7 @@ internal static class InactiveFragileInfernoEntryChecks
                 NativeBranchObservationChecks.Key(row.GetProperty("Actual").Deserialize<BattleTurnState>()!), "Original card action differs: " + result.Reason);
         }
         var turns = source.GetProperty("Turns").EnumerateArray().ToArray();
-        Require(turns.Length == 7, "Expected seven original turn records.");
+        Require(turns.Length == (newMoonEntry ? 8 : 7), "Unexpected original turn records.");
         for (int index = 0; index < turns.Length; index++)
         {
             var before = turns[index].GetProperty("Before").Deserialize<BattleTurnState>()!;
@@ -27,13 +27,15 @@ internal static class InactiveFragileInfernoEntryChecks
             var result = BattleTurnModel.EndTurn(before);
             Require(result.Supported && NativeBranchObservationChecks.Key(result.State!) == NativeBranchObservationChecks.Key(actual),
                 "Native turn differs at " + index + ": " + (result.Supported ? ModelJson.Difference(NativeBranchObservationChecks.Key(result.State!), NativeBranchObservationChecks.Key(actual)) : result.UnsupportedReason));
-            if (index < 6) Require(NativeBranchObservationChecks.Key(old) == NativeBranchObservationChecks.Key(actual), "Earlier historical turn changed.");
+            if (index < turns.Length - 1) Require(NativeBranchObservationChecks.Key(old) == NativeBranchObservationChecks.Key(actual), "Earlier historical turn changed.");
             else
             {
-                var origin = before.Spawn.Train.Rooms[2].Units.Single(unit => unit.Id == 11);
+                var origin = before.Spawn.Train.Rooms[newMoonEntry ? 1 : 2].Units.Single(unit => unit.Id == 11);
                 var prior = old.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == 11);
                 var native = actual.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == 11);
-                Require(origin.AssetKey == "Boss_Level8_Fragile" && origin.MoonPhaseMask == 5 && prior.MoonPhaseMask == 5 && native.MoonPhaseMask == 6 &&
+                int oldMask = newMoonEntry ? 6 : 5;
+                int nativeMask = newMoonEntry ? 5 : 6;
+                Require(origin.AssetKey == "Boss_Level8_Fragile" && origin.MoonPhaseMask == oldMask && prior.MoonPhaseMask == oldMask && native.MoonPhaseMask == nativeMask &&
                     origin.Modifiers!.Upgrades.All(upgrade => upgrade.AssetKey != "InfernoRoom") &&
                     native.Modifiers!.Upgrades.Any(upgrade => upgrade.AssetKey == "InfernoRoom"), "Missing native boss room-entry witness.");
                 JsonNode historical = JsonSerializer.SerializeToNode(old, ModelJson.Options)!;
@@ -42,8 +44,8 @@ internal static class InactiveFragileInfernoEntryChecks
                 {
                     if (node is JsonObject obj)
                     {
-                        if (obj.ContainsKey("BaseAttack") && obj["Id"]?.GetValue<int>() == 11 && obj["MoonPhaseMask"]?.GetValue<int>() == 5)
-                        { obj["MoonPhaseMask"] = 6; corrected++; }
+                        if (obj.ContainsKey("BaseAttack") && obj["Id"]?.GetValue<int>() == 11 && obj["MoonPhaseMask"]?.GetValue<int>() == oldMask)
+                        { obj["MoonPhaseMask"] = nativeMask; corrected++; }
                         foreach (var entry in obj.ToArray()) Correct(entry.Value);
                     }
                     else if (node is JsonArray array) foreach (var child in array) Correct(child);
@@ -82,10 +84,11 @@ internal static class InactiveFragileInfernoEntryChecks
         }
         if (replay.HasValue)
         {
-            const string reason = "Native inactive Fragile Inferno entry moon mask differs on the seventh turn.";
+            string reason = newMoonEntry ? "Native inactive Fragile Inferno entry new-moon mask differs on the eighth turn." :
+                "Native inactive Fragile Inferno entry moon mask differs on the seventh turn.";
             var rows = NativeBranchObservationChecks.Replay(replay.Value, reason);
             var decisions = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
-            Require(rows.Length == 35 && decisions.Length == 35 &&
+            Require(rows.Length == (newMoonEntry ? 42 : 35) && decisions.Length == rows.Length &&
                 replay.Value.GetProperty("Request").GetProperty("SourceSHA256").GetString() == sourceHash,
                 "Independent native replay lost its original source or input count.");
             for (int index = 0; index < rows.Length; index++)
@@ -100,7 +103,7 @@ internal static class InactiveFragileInfernoEntryChecks
                     "Independent native input/state/RNG differs at " + index);
             }
         }
-        Console.WriteLine("INACTIVE-FRAGILE-INFERNO-ENTRY PASS: 28 actions/seven turns/train phases/full state/forecast/RNG, boss mask5->6, four immutable branches/three unknown guards; nested exchange remains separate; independentPair=" + replay.HasValue);
+        Console.WriteLine($"INACTIVE-FRAGILE-INFERNO-ENTRY PASS: {actions.Length} actions/{turns.Length} turns/train phases/full state/forecast/RNG, boss mask{(newMoonEntry ? "6->5" : "5->6")}, four immutable branches/three unknown guards; nested exchange remains separate; independentPair={replay.HasValue}");
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }
