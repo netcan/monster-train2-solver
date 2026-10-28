@@ -196,10 +196,13 @@ namespace MonsterTrain2Poju.Probe
             if (screen is DraftScreenBase draft)
             {
                 var offers = Field<List<IDraftableUI>>(draft, "draftItems");
-                IDraftableUI? choice = offers.Where(x => x.rootTransform.gameObject.activeInHierarchy)
-                    .OrderByDescending(x => x is CardUI card ? CardValue(card.GetCardState()) : 0).FirstOrDefault();
+                var ranked = offers.Where(x => x.rootTransform.gameObject.activeInHierarchy)
+                    .OrderByDescending(x => x is CardUI card ? CardValue(card.GetCardState()) : 0).ToList();
+                int rank = int.TryParse(Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_DRAFT_CHOICE_RANK"), out int configuredRank)
+                    ? Math.Max(0, Math.Min(configuredRank, 2)) : 0;
+                IDraftableUI? choice = ranked.Count == 0 ? null : ranked[Math.Min(rank, ranked.Count - 1)];
                 if (choice != null) Click(choice.SelectableUI as GameUISelectableButton, "draft", new {
-                    offers = offers.Select(DescribeDraft).ToList(), selected = DescribeDraft(choice) });
+                    offers = offers.Select(DescribeDraft).ToList(), selected = DescribeDraft(choice), rank });
                 return;
             }
             if (screen is RewardScreen reward) { Click(reward.GetCollectButton(), "collect-reward"); return; }

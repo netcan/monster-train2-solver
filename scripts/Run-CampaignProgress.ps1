@@ -13,6 +13,7 @@ param(
     [string[]] $ExcludeUpgradeTrait = @(),
     [switch] $SkipMerchantPurchases,
     [ValidateSet('First', 'Last')] [string] $StoryChoiceOrder = 'First',
+    [ValidateRange(0, 2)] [int] $DraftChoiceRank = 0,
     [ValidateRange(0, 2)] [int] $DeploymentRoom = 2,
     [switch] $OuterBossTurns,
     [switch] $OuterBossBirth,
@@ -153,6 +154,7 @@ $inputMetagameHash = (Get-FileHash -LiteralPath (Join-Path $source 'metagameSave
     PrimaryClan = $PrimaryClan; SecondaryClan = $SecondaryClan; StartingCovenantLevel = $StartingCovenantLevel;
     SkipMerchantPurchases = [bool]$SkipMerchantPurchases;
     StoryChoiceOrder = $StoryChoiceOrder;
+    DraftChoiceRank = $DraftChoiceRank;
     DeploymentRoom = $DeploymentRoom;
     OuterBossTurns = [bool]$OuterBossTurns; OuterBossBirth = [bool]$OuterBossBirth;
     StoryProgressionOnly = [bool]$StoryProgressionOnly;
@@ -210,6 +212,7 @@ $settings = @{
     MT2_PROBE_CAMPAIGN_EXCLUDED_UPGRADE_TRAITS = ($ExcludeUpgradeTrait -join ';')
     MT2_PROBE_CAMPAIGN_SKIP_MERCHANT_PURCHASES = $(if ($SkipMerchantPurchases) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_STORY_CHOICE_ORDER = $StoryChoiceOrder
+    MT2_PROBE_CAMPAIGN_DRAFT_CHOICE_RANK = $DraftChoiceRank.ToString()
     MT2_PROBE_CAMPAIGN_DEPLOYMENT_ROOM = [string]$DeploymentRoom
     MT2_PROBE_BRANCH_CARD_MASKS = '1'; MT2_PROBE_PHYSICAL_SPAWNPOINTS = '1'; MT2_PROBE_GAME_SPEED = 'Instant'
     MT2_PROBE_OUTER_BOSS_TURNS = $(if ($OuterBossTurns) { '1' } else { '0' })
