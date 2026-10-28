@@ -440,6 +440,19 @@ namespace MonsterTrain2Poju.Model
                     item.Stats.Size == 0 && item.Stats.XCost == 0 && item.Stats.EquipmentLimit == 0 &&
                     item.Stats.UpgradeSlotCount == 0 && item.Statuses.Count == 0 && item.ExternalInteractions.Count == 0 &&
                     item.AbilityUpgrade == null && item.TriggerUpgrades?.Count is not > 0);
+            bool originalFourHordeRetiredEnchanterPreviewBirth = originalFourHordePreviewBirth && source.Train.Context != null &&
+                owner is { BaseAttack: 80, Health: 110, MaxHealth: 110, Size: 1, Triggers.Count: 1, Modifiers.Upgrades: [
+                    { DataId: "", AssetKey: "" },
+                    { DataId: "4f70b7b7-b507-4931-9b14-e13dcd6cd59f", AssetKey: "ExilesDiadem_Upgrade", Stats.Health: 10, Stats.Size: -2 },
+                    { DataId: "", AssetKey: "" }] } &&
+                source.Train.Context.CardRegistry?.Any(card => card.DataId == "217d467c-77c2-481d-b78f-57aaf3dcd4a6" && card.EquippedUnitId == owner.Id) == true &&
+                rule.Targets.Count == 3 && targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 &&
+                rule.Targets.Where(id => !targets.Contains(id)).All(id =>
+                    source.Train.Context.SpawnPoints?.Units.Any(point => point.UnitId == id && !point.SpawnedInPreview &&
+                        point.Current == null && point.LastKnown == null) == true) &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 24,
+                    Health: 25, MaxHealth: 25, Size: 2, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
+                    source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83");
             bool originalSixHordePreviewBirth = source.Preview && source.Train.Context != null &&
                 PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context) && added.Length == 1 &&
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player,
@@ -711,7 +724,7 @@ namespace MonsterTrain2Poju.Model
                     pendingDyingRoom: originalPendingTripleBirth || source.Preview && fightClubCompanionsBirth ? room.RoomIndex : (int?)null,
                     pendingDyingPreview: source.Preview && fightClubCompanionsBirth,
                     allowTwoLivePreview: originalPreviewBirth || originalFourHordePreviewBirth || originalSixHordePuffballPreviewBirth || originalSixHordeStewardFanPreviewBirth || originalSixHordeStewardCompanionPreviewBirth || fightClubLavaPreviewBirth || fightClubCompanionsBirth || fightClubRetiredPuffballBirth || fightClubStewardPreviewBirth || fightClubStewardRecruitMissingPreviewBirth || fightClubStewardRecruitPreviewBirth || fightClubWoundedStewardPreviewBirth || fightClubSmallStewardMissingTarget || fightClubWoundedCompanionsMissingPreviewBirth, allowMixedCombat: fightClubBirth || originalTripleBirth || fightClubLavaCombatBirth,
-                    allowSingleNonPreviewRetiredPreview: originalTripleCompanionsRetiredPreviewBirth,
+                    allowSingleNonPreviewRetiredPreview: originalTripleCompanionsRetiredPreviewBirth || originalFourHordeRetiredEnchanterPreviewBirth,
                     allowPreviewRetired: originalPreviewBirth || originalFourHordePreviewBirth && rule.Targets.Count == 5 || originalSixHordeCompanionsPreviewBirth || originalSixHordeRetiredPuffballPreviewBirth || originalSixHordeStewardFanPreviewBirth || originalSixHordeStewardCompanionPreviewBirth ||
                         fightClubCompanionsBirth && (targets.Count == 4 || room.Units.Single(unit => unit.Id == added[0]).Status("horde")?.Stacks == 6) ||
                         fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4 || fightClubRetiredPuffballBirth || fightClubStewardPreviewBirth || fightClubStewardRecruitMissingPreviewBirth || fightClubStewardRecruitPreviewBirth || fightClubWoundedStewardPreviewBirth || fightClubSmallStewardMissingTarget || fightClubWoundedCompanionsMissingPreviewBirth, allowSingleRetiredPreview: originalFourHordePreviewBirth || originalTripleCompanionsRetiredPreviewBirth,

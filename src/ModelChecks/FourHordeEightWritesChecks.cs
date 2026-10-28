@@ -6,18 +6,19 @@ using MonsterTrain2Poju.Model;
 internal static class FourHordeEightWritesChecks
 {
     private const string Reason = "Battle preview floor 1: Combined troop upgrades and enchantment source ordering require native calibration.";
-    internal static void Native(FixtureValue fixture, FixtureValue? replay = null)
+    internal static void Native(FixtureValue fixture, FixtureValue? replay = null, bool retiredEnchanter = false)
     {
-        var rows = NativeBranchObservationChecks.Replay(fixture, Reason);
-        Require(rows.Length == 19 && !rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Missing native chain.");
+        var rows = NativeBranchObservationChecks.Replay(fixture, retiredEnchanter ?
+            "Battle preview floor 2: Combined troop upgrades and enchantment source ordering require native calibration." : Reason);
+        Require(rows.Length == (retiredEnchanter ? 18 : 19) && !rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Missing native chain.");
         var before = rows[^1].GetProperty("Before").Deserialize<BattleTurnState>()!;
         var actual = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         var action = rows[^1].GetProperty("Action").Deserialize<PlayCardAction>()!;
-        Require(action.CardInstanceId == 31 && action.RoomIndex == 1, "Missing native input.");
+        Require(action.CardInstanceId == (retiredEnchanter ? 18 : 31) && action.RoomIndex == 1, "Missing native input.");
         var writes = rows[^1].GetProperty("TroopUpdates").EnumerateArray().Where(update =>
             update.GetProperty("Before").GetProperty("Preview").GetBoolean() &&
             update.GetProperty("Before").GetProperty("Units").EnumerateArray().Any(unit => unit.GetProperty("Id").GetInt32() == 22)).ToArray();
-        Require(writes.Length == 8, "Expected eight native preview writes.");
+        Require(writes.Length == (retiredEnchanter ? 5 : 8), "Unexpected native preview write count.");
         for (int i = 0; i < writes.Length; i++)
         {
             var b = writes[i].GetProperty("Before"); var a = writes[i].GetProperty("After");
@@ -55,8 +56,30 @@ internal static class FourHordeEightWritesChecks
             Require(changedCount > 0 && (!result.Supported || NativeBranchObservationChecks.Key(result.State!) != NativeBranchObservationChecks.Key(actual)),
                 "Unknown source matched calibrated successor: " + control);
         }
-        if (replay.HasValue) { Native(replay.Value); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
-        Console.WriteLine("FOUR-HORDE-EIGHT-WRITES PASS: 19 native inputs/full state/RNG, eight writes, four immutable branches and five source controls; independentPair=" + replay.HasValue);
+        if (retiredEnchanter)
+        {
+            JsonNode binding = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
+            int changed = 0;
+            void ChangeBinding(JsonNode? node)
+            {
+                if (node is JsonObject obj)
+                {
+                    if (obj["DataId"]?.GetValueKind() == JsonValueKind.String && obj["DataId"]!.GetValue<string>() == "217d467c-77c2-481d-b78f-57aaf3dcd4a6" &&
+                        obj["EquippedUnitId"]?.GetValueKind() == JsonValueKind.Number && obj["EquippedUnitId"]!.GetValue<int>() == 2)
+                    { obj["EquippedUnitId"] = 999; changed++; }
+                    foreach (var entry in obj.ToArray()) ChangeBinding(entry.Value);
+                }
+                else if (node is JsonArray array) foreach (var child in array) ChangeBinding(child);
+            }
+            ChangeBinding(binding);
+            var unbound = BattleActionModel.PlayCard(binding.Deserialize<BattleTurnState>(ModelJson.Options)!, action);
+            Require(changed > 0 && (!unbound.Supported || NativeBranchObservationChecks.Key(unbound.State!) != NativeBranchObservationChecks.Key(actual)),
+                "Wrong equipment binding received the native result.");
+            Require(before.Spawn.Train.Context!.NextUnitId == actual.Spawn.Train.Context!.NextUnitId,
+                "Native did not reclaim the preview unit identifier.");
+        }
+        if (replay.HasValue) { Native(replay.Value, retiredEnchanter: retiredEnchanter); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
+        Console.WriteLine($"FOUR-HORDE-WRITES PASS: {rows.Length} native inputs/full state/RNG, {writes.Length} writes, four immutable branches and source controls; retiredEnchanter={retiredEnchanter}; independentPair={replay.HasValue}");
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }

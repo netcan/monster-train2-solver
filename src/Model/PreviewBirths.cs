@@ -267,6 +267,20 @@ namespace MonsterTrain2Poju.Model
                 room.Units.Any(unit => unit is { AssetKey: "MonsterSneezyWhelp", Team: CombatTeam.Player, BaseAttack: 4,
                     Health: 1, MaxHealth: 1, Size: 1, Modifiers.Upgrades.Count: 0 } &&
                     context.FindCard(unit.SpawnerCardId)?.DataId == "eef8abd9-3550-4da6-a8bd-d5f63e9d2b16"));
+            bool OriginalFourHordeRetiredEnchanter() => source.Rooms.Any(room => room.Units.Any(owner =>
+                owner is { BaseAttack: 80, Health: 110, MaxHealth: 110, Size: 1, Triggers.Count: 1, Modifiers.Upgrades: [
+                    { DataId: "", AssetKey: "" },
+                    { DataId: "4f70b7b7-b507-4931-9b14-e13dcd6cd59f", AssetKey: "ExilesDiadem_Upgrade", Stats.Health: 10, Stats.Size: -2 },
+                    { DataId: "", AssetKey: "" }] } && IsOriginalChampionEnemyDeath(owner, context) &&
+                owner.Modifiers.TroopAura is { Upgrade.DataId: CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId, Targets.Count: 3 } aura &&
+                aura.Targets.Contains(owner.Id) &&
+                context.CardRegistry?.Any(card => card.DataId == "217d467c-77c2-481d-b78f-57aaf3dcd4a6" && card.EquippedUnitId == owner.Id) == true &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 24,
+                    Health: 25, MaxHealth: 25, Size: 2, Modifiers.Upgrades.Count: 0 } && aura.Targets.Contains(unit.Id) &&
+                    context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83") &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterGenerousHost", Team: CombatTeam.Player, BaseAttack: 5,
+                    Health: 5, MaxHealth: 5, Size: 1, Modifiers.Upgrades.Count: 0 } && aura.Targets.Contains(unit.Id) &&
+                    IsOriginalGreenRecruit(unit, context))));
             bool OriginalWoundedSteward() => source.Rooms.Any(room => room.Units.Any(owner =>
                 owner is { BaseAttack: 80, Health: 84, MaxHealth: 110, Size: 1, Triggers.Count: 1 } &&
                 IsOriginalChampionEnemyDeath(owner, context) &&
@@ -365,7 +379,7 @@ namespace MonsterTrain2Poju.Model
                             { AssetKey: "MonsterGreedDragon", Team: CombatTeam.Player, BaseAttack: 34, Health: 35,
                                 MaxHealth: 35, Size: 3 } && context.FindCard(unit.SpawnerCardId)?.DataId == "0060b286-4716-49e0-9714-3fd7811b9f72")),
                     allowTwoRetiredMixedPreview: OriginalSycophantCompanion() || OriginalFightClubHorde() || OriginalLavaFourHorde(),
-                    allowSingleNonPreviewRetiredPreview: OriginalTripleCompanions(),
+                    allowSingleNonPreviewRetiredPreview: OriginalTripleCompanions() || OriginalFourHordeRetiredEnchanter(),
                     allowTwoPreviewRetired: OriginalStewardCompanion() || OriginalFightClubSmallStewardHorde());
             // Temporary player births without durable aura references are gone
             // before native decision capture assigns their synthetic identities.
