@@ -211,6 +211,17 @@ namespace MonsterTrain2Poju.Model
                     Health: 35, MaxHealth: 35, Size: 2, Modifiers.Upgrades: [
                         { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" }, { DataId: "", AssetKey: "" }] }) && rule.Targets.Contains(unit.Id) &&
                     source.Train.Context!.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83");
+            bool OriginalLiveLavaCompanion() => source.Train.Context != null && room.Units.Any(unit =>
+                unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20 or 24,
+                    Health: 35, MaxHealth: 35, Size: 2, Modifiers.Upgrades: [
+                        { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" }, { DataId: "", AssetKey: "" }] } &&
+                rule.Targets.Contains(unit.Id) && source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83" &&
+                (unit.BaseAttack == 20 || source.Train.Rooms.SelectMany(floor => floor.Units).Any(fan =>
+                    fan is { AssetKey: "MonsterEnthusiasticFan", Team: CombatTeam.Player, Health: 5, MaxHealth: 5 } &&
+                    source.Train.Context.FindCard(fan.SpawnerCardId)?.DataId == "adaaaa9d-56a9-4a5f-a347-ee71d4767df5") ||
+                 source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 && actor.Unit is
+                    { AssetKey: "MonsterEnthusiasticFan", Team: CombatTeam.Player, Health: <= 0, MaxHealth: 5, DeathState.IsDestroyed: true } &&
+                    source.Train.Context.FindCard(actor.Unit.SpawnerCardId)?.DataId == "adaaaa9d-56a9-4a5f-a347-ee71d4767df5")));
             bool originalPreviewBirth = source.Preview && source.Train.Context != null &&
                 PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context) && added.Length == 1 &&
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", SpawnerCardId: 0,
@@ -226,10 +237,7 @@ namespace MonsterTrain2Poju.Model
                             { AssetKey: "MonsterGoldyWhelp", Team: CombatTeam.Player, Health: <= 0, MaxHealth: 1, DeathState.IsDestroyed: true } &&
                             source.Train.Context.FindCard(actor.Unit.SpawnerCardId)?.DataId == "5fcb0af2-7bab-4998-94c9-e74a828fff01")) &&
                     rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 &&
-                    room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20,
-                        Health: 35, MaxHealth: 35, Size: 2, Modifiers.Upgrades: [
-                            { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" }, { DataId: "", AssetKey: "" }] } &&
-                        rule.Targets.Contains(unit.Id) && source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83") &&
+                    OriginalLiveLavaCompanion() &&
                     source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 && actor.Unit is
                         { AssetKey: "TrainStewardSmall", Team: CombatTeam.Player, Health: <= 0, DeathState.IsDestroyed: true }) ||
                     birthUpgrades.Count is 9 or 12 && rule.Targets.Count == 2 && targets.Count == 2 &&
@@ -300,10 +308,7 @@ namespace MonsterTrain2Poju.Model
             bool originalLavaTwoRetiredPreviewBirth = originalPreviewBirth && source.Train.Context != null &&
                 rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 &&
                 room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count is 9 or 12 or 15 &&
-                room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20,
-                    Health: 35, MaxHealth: 35, Size: 2, Modifiers.Upgrades: [
-                        { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" }, { DataId: "", AssetKey: "" }] } &&
-                    rule.Targets.Contains(unit.Id) && source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83") &&
+                OriginalLiveLavaCompanion() &&
                 source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 && actor.Unit is
                     { AssetKey: "TrainStewardSmall", Team: CombatTeam.Player, Health: <= 0, DeathState.IsDestroyed: true });
             bool originalFourHordePreviewBirth = source.Preview && source.Train.Context != null &&

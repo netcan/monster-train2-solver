@@ -210,10 +210,16 @@ namespace MonsterTrain2Poju.Model
                     item.Stats.XCost == 0 && item.Stats.EquipmentLimit == 0 && item.Stats.UpgradeSlotCount == 0 &&
                     item.Statuses.Count == 0 && item.ExternalInteractions.Count == 0 && item.AbilityUpgrade == null &&
                     item.TriggerUpgrades?.Count is not > 0))) &&
-                room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20,
+                room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20 or 24,
                     Health: 35, MaxHealth: 35, Size: 2, Modifiers.Upgrades: [
                         { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" }, { DataId: "", AssetKey: "" }] } &&
-                    context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83"));
+                    context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83" &&
+                    (unit.BaseAttack == 20 || source.Rooms.SelectMany(floor => floor.Units).Any(fan => fan is
+                        { AssetKey: "MonsterEnthusiasticFan", Team: CombatTeam.Player, Health: 5, MaxHealth: 5 } &&
+                        context.FindCard(fan.SpawnerCardId)?.DataId == "adaaaa9d-56a9-4a5f-a347-ee71d4767df5") &&
+                        source.Rooms.SelectMany(floor => floor.Units).Any(steward => steward is
+                            { AssetKey: "TrainStewardSmall", Team: CombatTeam.Player, Health: 5, MaxHealth: 5 } &&
+                            context.FindCard(steward.SpawnerCardId)?.DataId == "38e70e6a-20f3-4e36-8d31-c5110be07f87"))));
             bool OriginalTripleCompanions() => source.Rooms.Any(room => room.Units.Any(owner =>
                 owner is { BaseAttack: 80, MaxHealth: 110, Size: 1, Triggers.Count: 1 } && IsOriginalChampionEnemyDeath(owner, context) &&
                 owner.Modifiers?.TroopAura?.Upgrade.DataId == CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId) &&
