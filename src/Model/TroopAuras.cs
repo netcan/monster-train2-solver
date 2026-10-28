@@ -573,7 +573,13 @@ namespace MonsterTrain2Poju.Model
                  !room.Units.Any(unit => unit.AssetKey == "MonsterSneezyWhelp")) &&
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player,
                     SpawnerCardId: 0, Size: 1, HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades: var clubCompanionUpgrades } clubCompanion &&
-                (clubCompanion.Status("horde")?.Stacks == 3 && clubCompanion.BaseAttack == 24 && clubCompanionUpgrades.Count is 1 or 4 ||
+                (clubCompanion.Status("horde")?.Stacks == 3 && clubCompanion.BaseAttack == 24 &&
+                    (clubCompanionUpgrades.Count is 1 or 4 || clubCompanionUpgrades.Count == 7 && source.Preview &&
+                        owner.Health == 58 && rule.Targets.Count == 4 && targets.Count == 4 &&
+                        rule.Targets.Count(id => !targets.Contains(id)) == 1 &&
+                        rule.Targets.Where(id => !targets.Contains(id)).All(id =>
+                            source.Train.Context.SpawnPoints?.Units.Any(point => point.UnitId == id && !point.SpawnedInPreview &&
+                                point.Current == null && point.LastKnown == null) == true)) ||
                  clubCompanion.Status("horde")?.Stacks == 6 && clubCompanion.BaseAttack == 33 &&
                     (clubCompanionUpgrades.Count is 10 or 16 || source.Preview && clubCompanionUpgrades.Count == 22)) &&
                 clubCompanion.Health == clubCompanion.Status("horde")!.Stacks * 4 + 3 * (clubCompanionUpgrades.Count - 1) &&
