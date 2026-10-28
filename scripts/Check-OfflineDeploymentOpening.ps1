@@ -74,8 +74,24 @@ try {
         ($strength -join "`n") -notmatch 'fixedOpeningCards=1' -or ($strength -join "`n") -notmatch 'rolloutPolicy=strength') {
         throw 'Strength rollout failed the bounded original-root investigation.'
     }
+    $mixed = @(& dotnet $tool deployment-order-mixed-strength $source $baseline (Join-Path $testRoot 'mixed.mt2f') 60000 6 any 0 2>&1)
+    if ($LASTEXITCODE -ne 0 -or ($mixed -join "`n") -notmatch 'candidates=6 completed=6' -or
+        ($mixed -join "`n") -notmatch 'mixedPlacements=True' -or ($mixed -join "`n") -notmatch 'rolloutPolicy=strength') {
+        throw 'Mixed placement strength rollout failed.'
+    }
+    $mixedLines = @($mixed | Where-Object { $_ -match '^DEPLOYMENT-SPREAD sample=\d+ placements=' })
+    $first = @(($mixedLines[0] -replace '^DEPLOYMENT-SPREAD sample=\d+ placements=', '') | ConvertFrom-Json)[0]
+    $fourth = @(($mixedLines[3] -replace '^DEPLOYMENT-SPREAD sample=\d+ placements=', '') | ConvertFrom-Json)[0]
+    if ($mixedLines.Count -ne 6 -or $first.CardInstanceId -ne $fourth.CardInstanceId -or $first.RoomIndex -eq $fourth.RoomIndex) {
+        throw 'Mixed placement did not vary the same first unit across floors.'
+    }
+    $mixedResume = @(& dotnet $tool deployment-order-mixed-strength $source $baseline (Join-Path $testRoot 'mixed-resume.mt2f') 60000 1 any 3 2>&1)
+    $mixedResumedPlacement = @($mixedResume | Where-Object { $_ -match '^DEPLOYMENT-SPREAD sample=3 placements=' })
+    if ($LASTEXITCODE -ne 0 -or $mixedResumedPlacement.Count -ne 1 -or $mixedResumedPlacement[0] -cne $mixedLines[3]) {
+        throw 'Mixed placement resume changed the sampled placement.'
+    }
     if ((Get-FileHash $source).Hash -ne $originalHash -or (Get-FileHash $baseline).Hash -ne $baselineHash) {
         throw 'Native source or baseline was modified.'
     }
-    "DEPLOYMENT-OPENING PASS: eight complete native-root placements preserve the exact closing spell, independently replay the full result and retain interleaving/output guards; four distinct unit orders, deterministic resume and two strength rollouts; artifacts=$testRoot"
+    "DEPLOYMENT-OPENING PASS: eight complete native-root placements preserve the exact closing spell, independently replay the full result and retain interleaving/output guards; four distinct unit orders, strength and mixed placements with deterministic resume; artifacts=$testRoot"
 } finally { $document.Dispose() }

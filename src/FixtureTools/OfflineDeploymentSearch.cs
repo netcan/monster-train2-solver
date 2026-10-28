@@ -10,13 +10,14 @@ internal static partial class OfflineBattleSearch
     // single move to improve a complete route. Never export a truncated rollout.
     internal static void DeploymentGrid(string input, string prediction, string output, int milliseconds, int maxCandidates,
         int? firstRoom = null, bool spread = false, int startSample = 0, bool improveWinningRoute = false,
-        string? unsupportedReasonFilter = null, bool spreadOrder = false, bool strengthRollout = false)
+        string? unsupportedReasonFilter = null, bool spreadOrder = false, bool strengthRollout = false, bool mixedPlacements = false)
     {
         Require(milliseconds is >= 100 and <= 600000 && maxCandidates is >= 1 and <= 4096,
             "Expected100..600000ms and1..4096 deployment candidates.");
         Require(firstRoom == null || firstRoom is >= 0 and <= 2, "Expected a first-unit room in0..2.");
         Require(startSample is >= 0 and <= 1000000 && (spread || startSample == 0), "Expected a spread sample offset in0..1000000.");
         Require(!spreadOrder || spread, "Deployment order sampling requires spread sampling.");
+        Require(!mixedPlacements || spreadOrder, "Mixed placement sampling requires order spread sampling.");
         Require(unsupportedReasonFilter == null || !string.IsNullOrWhiteSpace(unsupportedReasonFilter), "Expected a nonempty unsupported reason filter.");
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         string unsupportedOutput = output + ".unsupported.mt2f";
@@ -209,7 +210,7 @@ internal static partial class OfflineBattleSearch
                             (index != 0 || firstRoom == null || choice.Action.RoomIndex == firstRoom))
                         .OrderByDescending(choice => choice.Action.RoomIndex).ThenBy(choice => choice.Action.PlayerPosition).ToArray();
                     if (choices.Length == 0) break;
-                    var chosen = choices[code % choices.Length];
+                    var chosen = choices[mixedPlacements ? (int)(PlacementSample(sample, index) % (uint)choices.Length) : code % choices.Length];
                     code /= choices.Length;
                     placement.Add(new Step { Action = chosen.Action });
                     state = chosen.Result.State!;
@@ -281,6 +282,19 @@ internal static partial class OfflineBattleSearch
         Console.WriteLine($"DEPLOYMENT-GRID foundWin={bestOutcome == RoomOutcome.BattleWon} units={deployment.Length} candidates={candidates} " +
             $"completed={completed} duplicates={duplicates} unsupported={unsupported} improvements={improvements} fixedOpeningCards={closing.Length} " +
             $"firstRoom={firstRoom?.ToString() ?? "any"} timedOut={Expired()} candidateLimit={candidates >= maxCandidates} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial} improveWinningRoute={improveWinningRoute} rolloutPolicy={(strengthRollout ? "strength" : "tactical")}" +
-            (spread ? $" startSample={startSample} nextSample={nextSample} spreadSamples={samples} sampleLimit={samples >= maxCandidates * 16} spreadOrder={spreadOrder}" : "") + "; model prediction only.");
+            (spread ? $" startSample={startSample} nextSample={nextSample} spreadSamples={samples} sampleLimit={samples >= maxCandidates * 16} spreadOrder={spreadOrder} mixedPlacements={mixedPlacements}" : "") + "; model prediction only.");
+    }
+
+    private static uint PlacementSample(int sample, int index)
+    {
+        unchecked
+        {
+            uint value = (uint)sample + 0x9e3779b9u * ((uint)index + 1);
+            value ^= value >> 16;
+            value *= 0x7feb352du;
+            value ^= value >> 15;
+            value *= 0x846ca68bu;
+            return value ^ (value >> 16);
+        }
     }
 }
