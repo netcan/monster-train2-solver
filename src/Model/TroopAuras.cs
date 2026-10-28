@@ -189,7 +189,10 @@ namespace MonsterTrain2Poju.Model
                 PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context) && added.Length == 1 &&
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", SpawnerCardId: 0,
                     HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades: var birthUpgrades } previewBirth &&
-                previewBirth.Status("horde")?.Stacks == 3 && birthUpgrades.Count is 0 or 3 or 6 &&
+                previewBirth.Status("horde")?.Stacks == 3 && (birthUpgrades.Count is 0 or 3 or 6 ||
+                    birthUpgrades.Count == 9 && owner.Triggers.Count == 2 &&
+                    PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
+                    rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1) &&
                 previewBirth.Health == 12 + birthUpgrades.Count * 3 && previewBirth.MaxHealth == previewBirth.Health &&
                 birthUpgrades.All(item => item.DataId == Key(owner.Id) && item.AssetKey == upgrade.AssetKey &&
                     item.Stats.Health == 3 && item.Stats.Damage == 0 && item.Stats.Cost == 0 && item.Stats.Heal == 0 &&

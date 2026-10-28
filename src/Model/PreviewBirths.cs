@@ -45,7 +45,7 @@ namespace MonsterTrain2Poju.Model
                 context.FindCard(unit.SpawnerCardId)!.Permanent.Upgrades.Any(upgrade =>
                     upgrade.DataId == CardUnderlegionTroopUpgradeModel.ThirdDataId && CardUnderlegionTroopUpgradeModel.Known(upgrade)));
 
-        private static bool IsOriginalMeatShieldHeal(CombatTrigger trigger, CombatUnit unit, CombatContext context) =>
+        internal static bool IsOriginalMeatShieldHeal(CombatTrigger trigger, CombatUnit unit, CombatContext context) =>
             trigger is { Kind: "PostCombat", Once: false, IgnoreSilence: false, FireCount: 1, SkipDuringDeployment: true,
                 Origin: { UpgradeId: CardGraftedEquipmentModel.EventEquipmentId, IsFromEquipment: true, EquipmentCardId: > 0 } origin,
                 Effects: [{ Type: "CardEffectHeal", Value: 10, Action: { Type: "Heal", Target: "Self", Value: 10,
