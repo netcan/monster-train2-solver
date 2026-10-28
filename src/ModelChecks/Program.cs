@@ -6242,6 +6242,13 @@ if (args.Length == 2 && args[0] == "--untouchable-troop-aura-only")
     UntouchableTroopAuraChecks.Run(fixture.RootElement);
     return;
 }
+if (args.Length == 3 && args[0] == "--untouchable-troop-aura-native")
+{
+    using var original = ModelJson.ReadFixture(args[1]);
+    using var observation = ModelJson.ReadFixture(args[2]);
+    UntouchableTroopAuraChecks.Independent(original.RootElement, observation.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--planner-replay-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
