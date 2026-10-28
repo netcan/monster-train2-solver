@@ -54,5 +54,58 @@ internal static class PreviewIdMismatchRequest
         request.Write(stream);
         Console.WriteLine("PREVIEW-ID-REQUEST PASS: 20 native prefix inputs and repaired mismatch; independent native validation required.");
     }
+    internal static void Refresh(string input, string native, string output)
+    {
+        if (File.Exists(output)) throw new IOException("Output already exists: " + output);
+        using var original = FixtureDocument.Read(input);
+        using var observation = FixtureDocument.Read(native);
+        var request = original.RootElement;
+        var rows = observation.RootElement.GetProperty("Rows").EnumerateArray().ToArray();
+        var steps = request.GetProperty("Prefix").EnumerateArray().ToArray();
+        Require(observation.RootElement.GetProperty("NativeCompleted").GetBoolean() && rows.Length == 21 && steps.Length == rows.Length &&
+            observation.RootElement.GetProperty("Request").GetProperty("Reason").GetString() == Reason,
+            "Expected the independently validated identity prefix.");
+        var root = request.GetProperty("Root").Deserialize<BattleTurnState>()!;
+        var current = root;
+        var prefix = new List<Step>();
+        using var keys = new BattleStateKeys();
+        for (int index = 0; index < rows.Length; index++)
+        {
+            var row = rows[index]; var step = steps[index];
+            bool end = step.GetProperty("IsEndTurn").GetBoolean();
+            var action = step.GetProperty("Action").Deserialize<PlayCardAction>();
+            Require(row.GetProperty("Action").ContentEquals(step.GetProperty("Action")) &&
+                row.GetProperty("IsEndTurn").GetBoolean() == end &&
+                keys.Key(current) == keys.Key(row.GetProperty("Before").Deserialize<BattleTurnState>()!),
+                "Independent prefix input differs at " + index);
+            if (end)
+            {
+                var result = BattleTurnModel.EndTurn(current);
+                Require(result.Supported && result.Outcome == RoomOutcome.Exchanged, "Prefix turn rejected: " + result.UnsupportedReason);
+                current = result.State!;
+            }
+            else
+            {
+                var result = BattleActionModel.PlayCard(current, action!);
+                Require(result.Supported && result.Outcome == RoomOutcome.Exchanged, "Prefix action rejected: " + result.Reason);
+                current = result.State!;
+            }
+            Require(keys.Key(current) == keys.Key(row.GetProperty("Actual").Deserialize<BattleTurnState>()!),
+                "Independent prefix successor differs at " + index);
+            prefix.Add(new Step(action, end));
+        }
+        bool boundaryEnd = request.GetProperty("IsEndTurn").GetBoolean();
+        var boundaryAction = request.GetProperty("Action").Deserialize<PlayCardAction>();
+        string reason = request.GetProperty("Reason").GetString()!;
+        Require(!boundaryEnd && boundaryAction != null && BattleActionModel.PlayCard(current, boundaryAction).Reason == reason,
+            "Original target action no longer reproduces its exact boundary.");
+        using var refreshed = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
+            SourceArchive = Path.GetFileName(input), SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+            Root = root, Prefix = prefix, FailedRoot = current, Action = boundaryAction, IsEndTurn = false, Reason = reason,
+            NativeValidationRequired = true });
+        using var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write);
+        refreshed.Write(stream);
+        Console.WriteLine("PREVIEW-ID-REFRESH PASS: 21 independently native-matched inputs and original protected target; native validation required.");
+    }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidDataException(reason); }
 }

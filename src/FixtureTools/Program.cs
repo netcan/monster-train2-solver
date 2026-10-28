@@ -2,7 +2,11 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using MonsterTrain2Poju.Fixtures;
 
-if (args.Length == 3 && args[0] == "extract-preview-id-mismatch")
+if (args.Length == 4 && args[0] == "refresh-preview-id-prefix")
+{
+    PreviewIdMismatchRequest.Refresh(args[1], args[2], args[3]);
+}
+else if (args.Length == 3 && args[0] == "extract-preview-id-mismatch")
 {
     PreviewIdMismatchRequest.Extract(args[1], args[2]);
 }
