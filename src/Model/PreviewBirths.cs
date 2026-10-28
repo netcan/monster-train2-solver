@@ -239,6 +239,17 @@ namespace MonsterTrain2Poju.Model
                 room.Units.Any(unit => unit is { AssetKey: "TrainStewardBig", Team: CombatTeam.Player, BaseAttack: 8,
                     Health: 10, MaxHealth: 25, Size: 3, Modifiers.Upgrades.Count: 0 } &&
                     context.FindCard(unit.SpawnerCardId)?.DataId == "d14a50f3-728d-43e1-87f0-ef1b013f6678"));
+            bool OriginalStewardCompanion() => source.Rooms.Any(room => room.Units.Any(owner =>
+                owner is { BaseAttack: 80, Health: 94, MaxHealth: 110, Size: 1, Triggers.Count: 1 } &&
+                IsOriginalChampionEnemyDeath(owner, context) &&
+                owner.Modifiers?.TroopAura?.Upgrade.DataId == CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId &&
+                context.CardRegistry?.Any(card => card.DataId == "217d467c-77c2-481d-b78f-57aaf3dcd4a6" && card.EquippedUnitId == owner.Id) == true) &&
+                room.Units.Any(unit => unit is { AssetKey: "TrainStewardSmall", Team: CombatTeam.Player, BaseAttack: 14,
+                    Health: 5, MaxHealth: 5, Size: 2, Modifiers.Upgrades.Count: 0 } &&
+                    context.FindCard(unit.SpawnerCardId)?.DataId == "38e70e6a-20f3-4e36-8d31-c5110be07f87") &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20,
+                    Health: 25, MaxHealth: 25, Size: 2, Modifiers.Upgrades.Count: 0 } &&
+                    context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83"));
             bool OriginalWoundedHorde() => source.Rooms.Any(room => room.Units.Any(owner => IsOriginalChampionEnemyDeath(owner, context) &&
                 owner.Triggers.Count == 2 && IsOriginalMeatShieldHeal(owner.Triggers[1], owner, context) &&
                 owner.Modifiers?.TroopAura?.Upgrade is { DataId: CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId } aura &&
@@ -295,7 +306,8 @@ namespace MonsterTrain2Poju.Model
                             { AssetKey: "MonsterGreedDragon", Team: CombatTeam.Player, BaseAttack: 34, Health: 35,
                                 MaxHealth: 35, Size: 3 } && context.FindCard(unit.SpawnerCardId)?.DataId == "0060b286-4716-49e0-9714-3fd7811b9f72")),
                     allowTwoRetiredMixedPreview: OriginalSycophantCompanion() || OriginalFightClubHorde() || OriginalLavaFourHorde(),
-                    allowSingleNonPreviewRetiredPreview: OriginalTripleCompanions());
+                    allowSingleNonPreviewRetiredPreview: OriginalTripleCompanions(),
+                    allowTwoPreviewRetired: OriginalStewardCompanion());
             // Temporary player births without durable aura references are gone
             // before native decision capture assigns their synthetic identities.
             // Preserve observed births and all enemy births. Check the allocator

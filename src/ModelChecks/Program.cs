@@ -1381,6 +1381,13 @@ if (args.Length == 2 && args[0] == "--inactive-once-buffed-multistrike-zealot-al
     InactiveOnceBuffedMultistrikeZealotInfernoExitChecks.Native(fixture.RootElement, alternative: true);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--steward-companion-six-horde-preview-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    StewardCompanionSixHordePreviewChecks.Native(fixture.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--fight-club-wounded-steward-preview-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -8371,6 +8378,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player
 {
     using var fixture = ModelJson.ReadFixture(path);
     InactiveOnceBuffedMultistrikeZealotInfernoExitChecks.Native(fixture.RootElement, alternative: true);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-steward-companion-six-horde-preview-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-steward-companion-six-horde-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-steward-companion-six-horde-preview-replay-calibration.mt2f"));
+    StewardCompanionSixHordePreviewChecks.Native(fixture.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-fight-club-wounded-steward-preview-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-fight-club-wounded-steward-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
