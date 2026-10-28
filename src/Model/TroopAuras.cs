@@ -231,8 +231,20 @@ namespace MonsterTrain2Poju.Model
                         card.EquippedUnitId is int equipped && rule.Targets.Contains(equipped) && !targets.Contains(equipped) &&
                         source.Train.Context.SpawnPoints?.Units.Any(point => point.UnitId == equipped && !point.SpawnedInPreview &&
                             point.Current == null && point.LastKnown == null) == true) == true &&
-                    source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 && actor.Unit is
+                    (source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 && actor.Unit is
                         { AssetKey: "TrainStewardSmall", Team: CombatTeam.Player, Health: <= 0, DeathState.IsDestroyed: true }) ||
+                     source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 && actor.Unit is
+                        { AssetKey: "MonsterSneezyWhelp", Team: CombatTeam.Player, Health: <= 0, DeathState.IsDestroyed: true } &&
+                        source.Train.Context.FindCard(actor.Unit.SpawnerCardId)?.DataId == "eef8abd9-3550-4da6-a8bd-d5f63e9d2b16") &&
+                     (source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 && actor.Unit is
+                        { AssetKey: "MonsterGenerousHost", Team: CombatTeam.Player, Health: <= 0, DeathState.IsDestroyed: true } &&
+                        PreviewBirthModel.IsOriginalGreenRecruit(actor.Unit, source.Train.Context)) ||
+                      birthUpgrades.Count == 12 && source.Train.Rooms.Any(other => other.RoomIndex != room.RoomIndex &&
+                        other.Units.Any(unit => unit is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player, SpawnerCardId: 0,
+                            BaseAttack: 12, Health: 16, MaxHealth: 16, Size: 1, Modifiers.Upgrades.Count: 0,
+                            HordeDefinition: { Attack: 3, Health: 4 } } && unit.Status("horde")?.Stacks == 4 &&
+                            source.Train.Context.SpawnPoints?.Units.Any(point => point.UnitId == unit.Id && point.SpawnedInPreview &&
+                                point.Current?.RoomIndex == other.RoomIndex) == true)))) ||
                     birthUpgrades.Count is 9 or 12 && rule.Targets.Count == 3 && targets.Count == 2 &&
                     rule.Targets.Count(id => !targets.Contains(id)) == 2 &&
                     source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 &&
