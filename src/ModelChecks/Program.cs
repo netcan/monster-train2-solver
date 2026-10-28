@@ -7832,10 +7832,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-generated-moon-first-transition-replay-calibration.mt2f"));
     GeneratedMoonTrackingChecks.FirstTransition(source.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player-generated-moon-retired-enemies-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-generated-moon-retired-enemies-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-generated-moon-retired-enemies-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var fixture = ModelJson.ReadFixture(path);
-    GeneratedMoonRetiredEnemiesChecks.Native(fixture.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-generated-moon-retired-enemies-replay-calibration.mt2f"));
+    GeneratedMoonRetiredEnemiesChecks.Native(fixture.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-generated-moon-tracking-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-generated-moon-tracking-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
