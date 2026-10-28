@@ -269,9 +269,10 @@ namespace MonsterTrain2Poju.Model
                             "Captured state differs from the retained continuation.");
                     bool browsed = observations.Any(item => item.Root == null);
                     VerifiedAdviceContinuation? matched = retained?.MatchObserved(root, observations, exactFinalState: browsed);
-                    if (matched == null && candidate != null && !SelectionAdviceReuse.SameBattle(candidate.Root, root))
+                    bool exhaustedTurn = candidate != null && ConsumedFinalTurn(candidate, root);
+                    if (matched == null && candidate != null && !exhaustedTurn && !SelectionAdviceReuse.SameBattle(candidate.Root, root))
                         matched = SelectionAdviceReuse.MatchAfterObservations(candidate, observations, root, token);
-                    bool reusedSelection = matched == null && candidate != null && SelectionAdviceReuse.TryRebase(candidate, root,
+                    bool reusedSelection = matched == null && candidate != null && !exhaustedTurn && SelectionAdviceReuse.TryRebase(candidate, root,
                         retainPlans, token, out plan, out proof);
                     verification.Stop();
                     TimeSpan reuseCheckElapsed = verification.Elapsed;
@@ -306,6 +307,10 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static void Verify(BattleTurnState root, BattlePlanResult plan) => VerifyAndRetain(root, plan, false);
+
+        internal static bool ConsumedFinalTurn(BattleAdvice candidate, BattleTurnState root) =>
+            candidate.Plan.Steps.Count == 1 && candidate.Plan.Steps[0].IsEndTurn &&
+            root.Spawn.Turn > candidate.Root.Spawn.Turn;
 
         private static VerifiedAdviceContinuation? VerifyAndRetain(BattleTurnState root, BattlePlanResult plan,
             bool retain, CancellationToken token = default)
