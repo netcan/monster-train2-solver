@@ -10,12 +10,13 @@ internal static partial class OfflineBattleSearch
     // single move to improve a complete route. Never export a truncated rollout.
     internal static void DeploymentGrid(string input, string prediction, string output, int milliseconds, int maxCandidates,
         int? firstRoom = null, bool spread = false, int startSample = 0, bool improveWinningRoute = false,
-        string? unsupportedReasonFilter = null)
+        string? unsupportedReasonFilter = null, bool spreadOrder = false)
     {
         Require(milliseconds is >= 100 and <= 600000 && maxCandidates is >= 1 and <= 4096,
             "Expected100..600000ms and1..4096 deployment candidates.");
         Require(firstRoom == null || firstRoom is >= 0 and <= 2, "Expected a first-unit room in0..2.");
         Require(startSample is >= 0 and <= 1000000 && (spread || startSample == 0), "Expected a spread sample offset in0..1000000.");
+        Require(!spreadOrder || spread, "Deployment order sampling requires spread sampling.");
         Require(unsupportedReasonFilter == null || !string.IsNullOrWhiteSpace(unsupportedReasonFilter), "Expected a nonempty unsupported reason filter.");
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         string unsupportedOutput = output + ".unsupported.mt2f";
@@ -175,15 +176,32 @@ internal static partial class OfflineBattleSearch
             for (int sample = startSample; sample < startSample + maxCandidates * 16 && !Stop(); sample++)
             {
                 samples++;
-                int code = sample * 137;
+                int code = sample * (spreadOrder ? 397 : 137);
+                var sampleDeployment = deployment;
+                if (spreadOrder)
+                {
+                    // Factoradic sampling visits every ordering of up to six
+                    // distinct units before repeating; room choices use a
+                    // separate deterministic stream.
+                    int orderCode = sample * 137;
+                    var remaining = deployment.ToList();
+                    sampleDeployment = new Step[deployment.Length];
+                    for (int i = 0; i < sampleDeployment.Length; i++)
+                    {
+                        int choice = orderCode % remaining.Count;
+                        orderCode /= remaining.Count;
+                        sampleDeployment[i] = remaining[choice];
+                        remaining.RemoveAt(choice);
+                    }
+                }
                 var state = root;
                 var placement = new List<Step>();
                 var parents = new List<(BattleTurnState State, string Key)>();
                 bool covered = false;
-                for (int index = 0; index < deployment.Length && !Stop(); index++)
+                for (int index = 0; index < sampleDeployment.Length && !Stop(); index++)
                 {
                     parents.Add((state, keys.Key(state)));
-                    var legal = BattleActionModel.EnumerateActions(state, deployment[index].Action!.CardInstanceId, includeAbilities: false);
+                    var legal = BattleActionModel.EnumerateActions(state, sampleDeployment[index].Action!.CardInstanceId, includeAbilities: false);
                     foreach (var rejected in legal.UnsupportedAttempts) Rejected(rejected.Reason, rejected.Action, state, placement);
                     var choices = legal.SupportedCandidates.Where(choice => choice.Result.Outcome == RoomOutcome.Exchanged &&
                             (index != 0 || firstRoom == null || choice.Action.RoomIndex == firstRoom))
@@ -261,6 +279,6 @@ internal static partial class OfflineBattleSearch
         Console.WriteLine($"DEPLOYMENT-GRID foundWin={bestOutcome == RoomOutcome.BattleWon} units={deployment.Length} candidates={candidates} " +
             $"completed={completed} duplicates={duplicates} unsupported={unsupported} improvements={improvements} fixedOpeningCards={closing.Length} " +
             $"firstRoom={firstRoom?.ToString() ?? "any"} timedOut={Expired()} candidateLimit={candidates >= maxCandidates} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial} improveWinningRoute={improveWinningRoute}" +
-            (spread ? $" startSample={startSample} nextSample={nextSample} spreadSamples={samples} sampleLimit={samples >= maxCandidates * 16}" : "") + "; model prediction only.");
+            (spread ? $" startSample={startSample} nextSample={nextSample} spreadSamples={samples} sampleLimit={samples >= maxCandidates * 16} spreadOrder={spreadOrder}" : "") + "; model prediction only.");
     }
 }

@@ -56,8 +56,21 @@ try {
     if ($LASTEXITCODE -eq 0 -or ($rejected -join "`n") -notmatch 'initial unit plays, optionally followed') {
         throw 'Interleaved unknown deployment scope lost its guard.'
     }
+    $orderLog = @(& dotnet $tool deployment-order-spread $source $baseline (Join-Path $testRoot 'order.mt2f') 60000 4 any 0 2>&1)
+    if ($LASTEXITCODE -ne 0 -or ($orderLog -join "`n") -notmatch 'candidates=4 completed=4' -or
+        ($orderLog -join "`n") -notmatch 'spreadOrder=True') { throw 'Order spread did not complete four samples.' }
+    $placements = @($orderLog | Where-Object { $_ -match '^DEPLOYMENT-SPREAD sample=\d+ placements=' })
+    $orders = @($placements | ForEach-Object {
+        $json = $_ -replace '^DEPLOYMENT-SPREAD sample=\d+ placements=', ''
+        (@($json | ConvertFrom-Json) | ForEach-Object { $_.CardInstanceId }) -join ','
+    })
+    if ($orders.Count -ne 4 -or @($orders | Select-Object -Unique).Count -ne 4) { throw 'Unit order did not vary across samples.' }
+    $resume = @(& dotnet $tool deployment-order-spread $source $baseline (Join-Path $testRoot 'resume.mt2f') 60000 1 any 1 2>&1)
+    if ($LASTEXITCODE -ne 0) { throw 'Order spread resume failed.' }
+    $resumePlacement = @($resume | Where-Object { $_ -match '^DEPLOYMENT-SPREAD sample=1 placements=' })
+    if ($resumePlacement.Count -ne 1 -or $resumePlacement[0] -cne $placements[1]) { throw 'Order spread resume changed the sampled placement.' }
     if ((Get-FileHash $source).Hash -ne $originalHash -or (Get-FileHash $baseline).Hash -ne $baselineHash) {
         throw 'Native source or baseline was modified.'
     }
-    "DEPLOYMENT-OPENING PASS: eight complete native-root placements preserve the exact closing spell, independently replay the full result and retain interleaving/output guards; artifacts=$testRoot"
+    "DEPLOYMENT-OPENING PASS: eight complete native-root placements preserve the exact closing spell, independently replay the full result and retain interleaving/output guards; four distinct unit orders and deterministic resume; artifacts=$testRoot"
 } finally { $document.Dispose() }
