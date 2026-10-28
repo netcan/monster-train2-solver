@@ -247,6 +247,16 @@ namespace MonsterTrain2Poju.Model
                 room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20,
                     Health: 25, MaxHealth: 25, Size: 2, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
                     source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83");
+            bool OriginalTwoPlainCompanions() => source.Train.Context != null &&
+                owner is { BaseAttack: 80, Health: 30, MaxHealth: 110, Size: 1, Triggers.Count: 1 } &&
+                source.Train.Context.CardRegistry?.Any(card => card.DataId == "217d467c-77c2-481d-b78f-57aaf3dcd4a6" && card.EquippedUnitId == owner.Id) == true &&
+                rule.Targets.Count == 3 && targets.Count == 4 && rule.Targets.All(targets.Contains) &&
+                room.Units.Count(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20 or 24,
+                    Health: 25, MaxHealth: 25, Size: 2, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
+                    source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83") == 2 &&
+                room.Units.Count(unit => unit.AssetKey == "MonsterSycophant" && rule.Targets.Contains(unit.Id) && unit.BaseAttack == 24) == 1 &&
+                room.Units.Where(unit => unit.AssetKey == "MonsterSycophant" && rule.Targets.Contains(unit.Id))
+                    .Select(unit => unit.SpawnerCardId).Distinct().Count() == 2;
             bool originalPreviewBirth = source.Preview && source.Train.Context != null &&
                 PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context) && added.Length == 1 &&
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", SpawnerCardId: 0,
@@ -281,7 +291,7 @@ namespace MonsterTrain2Poju.Model
                         { AssetKey: "TrainStewardSmall", Team: CombatTeam.Player, Health: <= 0, MaxHealth: 5, DeathState.IsDestroyed: true } &&
                         source.Train.Context.FindCard(actor.Unit.SpawnerCardId)?.DataId == "38e70e6a-20f3-4e36-8d31-c5110be07f87") ||
                     birthUpgrades.Count is 9 or 12 && OriginalMissingPreviewTarget() ||
-                    birthUpgrades.Count == 9 && OriginalStewardCompanion() ||
+                    birthUpgrades.Count == 9 && (OriginalStewardCompanion() || OriginalTwoPlainCompanions()) ||
                     owner.Triggers.Count == 2 && PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
                     (birthUpgrades.Count == 9 && rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 ||
                     (birthUpgrades.Count == 12 || birthUpgrades.Count == 15 &&
@@ -637,7 +647,7 @@ namespace MonsterTrain2Poju.Model
                         fightClubCompanionsBirth && (targets.Count == 4 || room.Units.Single(unit => unit.Id == added[0]).Status("horde")?.Stacks == 6) ||
                         fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4 || fightClubRetiredPuffballBirth || fightClubStewardPreviewBirth || fightClubStewardRecruitMissingPreviewBirth || fightClubStewardRecruitPreviewBirth || fightClubWoundedStewardPreviewBirth || fightClubSmallStewardMissingTarget, allowSingleRetiredPreview: originalFourHordePreviewBirth || originalTripleCompanionsRetiredPreviewBirth,
                     allowTwoRetiredMixedPreview: fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4 || originalPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count == 6 || originalLavaTwoRetiredPreviewBirth || fightClubRetiredPuffballBirth || fightClubStewardPreviewBirth,
-                    allowTwoPreviewRetired: originalSixHordeStewardCompanionPreviewBirth || originalPreviewBirth && OriginalStewardCompanion() || fightClubSmallStewardMissingTarget || fightClubStewardRecruitMissingPreviewBirth) :
+                    allowTwoPreviewRetired: originalSixHordeStewardCompanionPreviewBirth || originalPreviewBirth && (OriginalStewardCompanion() || OriginalTwoPlainCompanions()) || fightClubSmallStewardMissingTarget || fightClubStewardRecruitMissingPreviewBirth) :
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
         }
 
