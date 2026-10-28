@@ -126,12 +126,14 @@ if (args.Length is 2 or 3 && args[0] == "--single-horde-sycophant-attack24-only"
     SingleHordeSycophantChecks.Native(fixture.RootElement, replay?.RootElement, attack24: true);
     return;
 }
-if (args.Length == 4 && args[0] == "--triple-horde-phase-boundary-only")
+if (args.Length == 6 && args[0] == "--triple-horde-phase-boundary-only")
 {
     using var original = ModelJson.ReadFixture(args[1]);
     using var experiment = ModelJson.ReadFixture(args[2]);
     using var phases = ModelJson.ReadFixture(args[3]);
-    TripleHordePhaseBoundaryChecks.Native(original.RootElement, experiment.RootElement, phases.RootElement);
+    using var timeline = ModelJson.ReadFixture(args[4]);
+    using var replayTimeline = ModelJson.ReadFixture(args[5]);
+    TripleHordePhaseBoundaryChecks.Native(original.RootElement, experiment.RootElement, phases.RootElement, timeline.RootElement, replayTimeline.RootElement);
     return;
 }
 if (args.Length is 2 or 3 && args[0] == "--fight-club-missing-horde-preview-only")
@@ -8165,7 +8167,9 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var original = ModelJson.ReadFixture(path);
     using var experiment = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-horde-phase-boundary-experiment.mt2f"));
     using var phases = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-horde-phase-boundary-stage.mt2f"));
-    TripleHordePhaseBoundaryChecks.Native(original.RootElement, experiment.RootElement, phases.RootElement);
+    using var timeline = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-horde-phase-boundary-timeline.mt2f"));
+    using var replayTimeline = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-horde-phase-boundary-timeline-replay.mt2f"));
+    TripleHordePhaseBoundaryChecks.Native(original.RootElement, experiment.RootElement, phases.RootElement, timeline.RootElement, replayTimeline.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-fight-club-missing-horde-preview-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-fight-club-missing-horde-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

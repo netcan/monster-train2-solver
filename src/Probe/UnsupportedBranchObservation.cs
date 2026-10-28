@@ -30,6 +30,7 @@ namespace MonsterTrain2Poju.Probe
         private static BattleTurnState expected = null!;
         private static readonly List<Row> rows = new List<Row>();
         private static readonly List<object> roomAttachmentMovement = new List<object>();
+        private static readonly List<object> settlementSamples = new List<object>();
         private static object? abilityCacheWarm;
         private static string? nativeSelectionRejection;
         private static bool waiting;
@@ -40,6 +41,14 @@ namespace MonsterTrain2Poju.Probe
             // Unity defers OnDestroy and enchantment unbinding beyond the first
             // ready combat frame. Observe the settled state, as the player does.
             if (readyFrame < 0) readyFrame = UnityEngine.Time.frameCount;
+            if (Environment.GetEnvironmentVariable("MT2_PROBE_SETTLEMENT_TIMELINE") == "1" &&
+                rows.Count > 0 && rows.Last().Boundary && UnityEngine.Time.frameCount <= readyFrame + 1)
+            {
+                BattleTurnState first = FullBattleTrace.Active!.CaptureDecision();
+                BattleTurnState second = FullBattleTrace.Active!.CaptureDecision();
+                settlementSamples.Add(new { Frame = UnityEngine.Time.frameCount, ReadyFrame = readyFrame,
+                    First = first, Second = second, CaptureStable = Comparable(first) == Comparable(second) });
+            }
             return UnityEngine.Time.frameCount <= readyFrame + 1;
         }
         private static string Comparable(BattleTurnState state) => BattleTurnProbe.Comparable(state).ToString(Newtonsoft.Json.Formatting.None);
@@ -133,7 +142,7 @@ namespace MonsterTrain2Poju.Probe
                 EnemySummonSignatures = CaptureEnemySummonSignatures(),
                 TripleJuiceCalibration = JuiceTraitProbe.TripleSamples,
                 FloorTransitionPiercing = CaptureFloorTransitionPiercing(),
-                RoomAttachmentMovement = roomAttachmentMovement.ToArray(),
+                RoomAttachmentMovement = roomAttachmentMovement.ToArray(), SettlementTimeline = settlementSamples.ToArray(),
                 TriggeredCorruption = TriggeredCorruptionProbe.Records.ToArray(),
                 RoomPreCombatRecords = RoomPreCombatProbe.Records.ToArray(),
                 CorruptRestrictedState = CorruptRestrictedStateCalibration.Evidence,
