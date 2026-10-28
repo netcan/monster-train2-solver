@@ -6,14 +6,15 @@ using MonsterTrain2Poju.Model;
 internal static class FightClubInjuredCompanionChecks
 {
     private const string Reason = "Battle preview floor 2: Combined troop upgrades and enchantment source ordering require native calibration.";
-    internal static void Native(FixtureValue fixture, FixtureValue? replay = null)
+    internal static void Native(FixtureValue fixture, FixtureValue? replay = null, bool greenRecruit = false)
     {
         var rows = NativeBranchObservationChecks.Replay(fixture, Reason);
         Require(rows.Length == 23 && !rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Missing native chain.");
         var before = rows[^1].GetProperty("Before").Deserialize<BattleTurnState>()!;
         var actual = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         var action = rows[^1].GetProperty("Action").Deserialize<PlayCardAction>()!;
-        Require(action.CardInstanceId == 25 && action.RoomIndex == 2 && action.TargetUnitId == 5, "Missing native targeted input.");
+        int targetId = greenRecruit ? 21 : 5;
+        Require(action.CardInstanceId == 25 && action.RoomIndex == 2 && action.TargetUnitId == targetId, "Missing native targeted input.");
         var writes = rows[^1].GetProperty("TroopUpdates").EnumerateArray().Where(update =>
             update.GetProperty("Before").GetProperty("Preview").GetBoolean() &&
             update.GetProperty("Before").GetProperty("Units").EnumerateArray().Any(unit => unit.GetProperty("Id").GetInt32() == 27)).ToArray();
@@ -25,10 +26,10 @@ internal static class FightClubInjuredCompanionChecks
             var b = writes[i].GetProperty("Before"); var a = writes[i].GetProperty("After");
             var bu = b.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == 27);
             var au = a.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == 27);
-            var companion = b.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == 5);
+            var companion = b.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == targetId);
             Require(b.GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual([2, 5, 21, 22, 23]) &&
                 a.GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual([2, 5, 21, 22, 23]) &&
-                companion.GetProperty("Health").GetInt32() == 24 && companion.GetProperty("MaxHealth").GetInt32() == 25 &&
+                companion.GetProperty("Health").GetInt32() == (greenRecruit ? 4 : 24) && companion.GetProperty("MaxHealth").GetInt32() == (greenRecruit ? 5 : 25) &&
                 bu.GetProperty("Health").GetInt32() == healthBefore[i] && au.GetProperty("Health").GetInt32() == healthAfter[i] &&
                 bu.GetProperty("Upgrades").GetArrayLength() == upgradesBefore[i] && au.GetProperty("Upgrades").GetArrayLength() == upgradesAfter[i],
                 "Native preview write differs at " + i);
@@ -59,8 +60,8 @@ internal static class FightClubInjuredCompanionChecks
             Require(changedCount > 0 && (!result.Supported || NativeBranchObservationChecks.Key(result.State!) != NativeBranchObservationChecks.Key(actual)),
                 "Unknown source matched calibrated successor: " + control);
         }
-        if (replay.HasValue) { Native(replay.Value); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
-        Console.WriteLine("FIGHT-CLUB-INJURED-COMPANION PASS: 23 native inputs/full state/RNG, three writes, four immutable branches and eight source controls; independentPair=" + replay.HasValue);
+        if (replay.HasValue) { Native(replay.Value, greenRecruit: greenRecruit); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
+        Console.WriteLine("FIGHT-CLUB-INJURED-COMPANION PASS: 23 native inputs/full state/RNG, three writes, four immutable branches and eight source controls; greenRecruit=" + greenRecruit + "; independentPair=" + replay.HasValue);
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }

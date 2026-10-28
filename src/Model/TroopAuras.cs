@@ -290,7 +290,7 @@ namespace MonsterTrain2Poju.Model
                     Health: 24 or 25, MaxHealth: 25, Size: 2, Modifiers.Upgrades: [var club] } && OriginalFightClub(club) &&
                     rule.Targets.Contains(unit.Id) && source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83") &&
                 room.Units.Any(unit => unit is { AssetKey: "MonsterGenerousHost", Team: CombatTeam.Player, BaseAttack: 20,
-                    Health: 5, MaxHealth: 5, Size: 1, Modifiers.Upgrades: [var club] } && OriginalFightClub(club) &&
+                    Health: 4 or 5, MaxHealth: 5, Size: 1, Modifiers.Upgrades: [var club] } && OriginalFightClub(club) &&
                     rule.Targets.Contains(unit.Id) && PreviewBirthModel.IsOriginalGreenRecruit(unit, source.Train.Context)) &&
                 room.Units.Any(unit => unit is { AssetKey: "MonsterSneezyWhelp", Team: CombatTeam.Player, BaseAttack: 19,
                     Health: 1, MaxHealth: 1, Size: 1, Modifiers.Upgrades: [var club] } && OriginalFightClub(club) &&
