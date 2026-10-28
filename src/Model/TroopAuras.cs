@@ -165,9 +165,13 @@ namespace MonsterTrain2Poju.Model
             if (owner is not { AssetKey: "Boss_Level8_Fragile", Team: CombatTeam.Enemy, MaxHealth: 3000 } ||
                 owner.Health <= 0 || owner.DeathState?.IsDestroyed == true) return false;
             int[] retiredIds = source.EnchanterIds.Where(id => id != owner.Id).ToArray();
+            bool livePreviewTitanskin = source.Preview && retiredIds.Length == 1 &&
+                source.Train.Rooms.SelectMany(room => room.Units).Count(unit => unit.Id == retiredIds[0] &&
+                    unit.AssetKey == "EnchanterT2_Titanskin" && unit.Health > 0 && unit.DeathState?.IsDestroyed != true) == 1 &&
+                OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, retiredIds);
             // The native registry can retain destroyed Titanskin owners after
             // their room bindings were removed. They cannot perform writes.
-            if (retiredIds.Length != 0 && (retiredIds.Length != 2 || retiredIds.Distinct().Count() != 2 ||
+            if (retiredIds.Length != 0 && !livePreviewTitanskin && (retiredIds.Length != 2 || retiredIds.Distinct().Count() != 2 ||
                 source.Train.Rooms.SelectMany(room => room.Units).Any(unit => retiredIds.Contains(unit.Id)) ||
                 retiredIds.Any(id => source.RetainedUnits.Count(actor => actor.Unit.Id == id &&
                     actor.RoomIndex == -1 && !actor.Preview && actor.Unit.Health <= 0 &&
