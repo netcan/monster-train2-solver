@@ -1263,6 +1263,13 @@ if (args.Length is 2 or 3 && args[0] == "--third-troop-fightclub-retired-preview
     ThirdTroopFightClubRetiredPreviewChecks.Native(fixture.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--troop-cache-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    TroopCacheOnlyChecks.Native(fixture.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--six-horde-fightclub-five-writes-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -8687,6 +8694,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-retained-player-preview-replay-calibration.mt2f"));
     RetainedPlayerPreviewChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-troop-cache-only-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-troop-cache-only-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-troop-cache-only-replay-calibration.mt2f"));
+    TroopCacheOnlyChecks.Native(fixture.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-troop-enchantment-noop-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-troop-enchantment-noop-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

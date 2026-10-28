@@ -39,11 +39,17 @@ namespace MonsterTrain2Poju.Model
                 // particular, a Squad Leader without Fun Guys must not reject an
                 // unrelated enemy enchanter. Keep the ordering boundary whenever
                 // a living target would actually gain or lose the troop aura.
-                bool changesModifiers = targets.Any(id => !rule.Targets.Contains(id)) ||
-                    rule.Targets.Any(id => !targets.Contains(id) && train.Rooms.SelectMany(item => item.Units)
-                        .Any(unit => unit.Id == id && unit.Health > 0 && unit.DeathState?.IsDestroyed != true));
+                bool livingDeparture = rule.Targets.Any(id => !targets.Contains(id) && train.Rooms.SelectMany(item => item.Units)
+                    .Any(unit => unit.Id == id && unit.Health > 0 && unit.DeathState?.IsDestroyed != true));
+                bool changesModifiers = targets.Any(id => !rule.Targets.Contains(id)) || livingDeparture;
+                // No statuses and no horde stacks mean additions update only
+                // the target cache; no modifier write can interleave here.
+                bool cacheOnly = !livingDeparture && rule.Statuses.Count == 0 && targets.Except(rule.Targets)
+                    .SelectMany(id => train.Rooms.SelectMany(item => item.Units).Where(unit => unit.Id == id &&
+                        unit.Health > 0 && unit.DeathState?.IsDestroyed != true))
+                    .All(unit => (unit.Status("horde")?.Stacks ?? 0) == 0);
                 bool orderedAddition = source.EnchanterIds.Count > 0 && changesModifiers &&
-                    (KnownBirthAddition(source, room, owner, rule, targets) ||
+                    (cacheOnly || KnownBirthAddition(source, room, owner, rule, targets) ||
                      KnownChampionAddition(source, room, owner, rule, targets));
                 if (source.EnchanterIds.Count > 0 && changesModifiers && !orderedAddition)
                 { error = "Combined troop upgrades and enchantment source ordering require native calibration."; break; }
