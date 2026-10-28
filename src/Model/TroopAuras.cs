@@ -161,7 +161,7 @@ namespace MonsterTrain2Poju.Model
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
         }
 
-        internal static bool OnlyFragileBuffSource(EnchantmentCombatState source, bool allowLiveCombat = false, bool allowTwoLiveCombat = false)
+        internal static bool OnlyFragileBuffSource(EnchantmentCombatState source, bool allowLiveCombat = false, bool allowTwoLiveCombat = false, bool allowTwoLivePreview = false)
         {
             CombatUnit[] owners = source.Train.Rooms.SelectMany(room => room.Units)
                 .Where(unit => source.EnchanterIds.Contains(unit.Id) && unit.AssetKey == "Boss_Level8_Fragile").ToArray();
@@ -180,7 +180,7 @@ namespace MonsterTrain2Poju.Model
                 source.RetainedUnits.Count(actor => retiredIds.Contains(actor.Unit.Id) && actor.RoomIndex == -1 &&
                     !actor.Preview && actor.Unit.Health <= 0 && actor.Unit.DeathState?.IsDestroyed == true) == 1 &&
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, retiredIds);
-            bool twoLiveCombatTitanskin = !source.Preview && allowTwoLiveCombat && retiredIds.Length == 2 &&
+            bool twoLiveCombatTitanskin = (!source.Preview && allowTwoLiveCombat || source.Preview && allowTwoLivePreview) && retiredIds.Length == 2 &&
                 retiredIds.Distinct().Count() == 2 && source.Train.Rooms.SelectMany(room => room.Units).Count(unit =>
                     retiredIds.Contains(unit.Id) && unit.AssetKey == "EnchanterT2_Titanskin" &&
                     unit.Health > 0 && unit.DeathState?.IsDestroyed != true) == 2 &&

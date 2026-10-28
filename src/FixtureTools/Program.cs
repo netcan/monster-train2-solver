@@ -2,7 +2,11 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using MonsterTrain2Poju.Fixtures;
 
-if (args.Length == 3 && args[0] == "extract-advice-budget-failure")
+if (args.Length == 3 && args[0] == "extract-preview-id-mismatch")
+{
+    PreviewIdMismatchRequest.Extract(args[1], args[2]);
+}
+else if (args.Length == 3 && args[0] == "extract-advice-budget-failure")
 {
     AdviceBudgetFailure.Extract(args[1], args[2]);
 }

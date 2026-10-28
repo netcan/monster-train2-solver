@@ -187,7 +187,8 @@ namespace MonsterTrain2Poju.Model
             bool fragileObserver = world != null && world.EnchanterIds.Count > 0 &&
                 source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalChampionEnemyDeath(unit, context) &&
                     unit.Modifiers?.TroopAura?.Upgrade.DataId == CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId) &&
-                TroopAuraModel.OnlyFragileBuffSource(world.Frame(context));
+                TroopAuraModel.OnlyFragileBuffSource(world.Frame(context), allowTwoLivePreview:
+                    source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalGreenRecruit(unit, context)));
             // Temporary player births without durable aura references are gone
             // before native decision capture assigns their synthetic identities.
             // Preserve observed births and all enemy births. Check the allocator
