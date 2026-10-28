@@ -1011,6 +1011,13 @@ if (args.Length is 2 or 3 && args[0] == "--third-troop-fragile-upper-combat-only
     ThirdTroopFragileUpperCombatChecks.Native(fixture.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--third-troop-fragile-mixed-preview-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    ThirdTroopFragileMixedPreviewChecks.Native(fixture.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--inactive-fragile-inferno-exit-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -7487,6 +7494,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-inactive-fullmoon-inferno-exit-replay-calibration.mt2f"));
     InactiveFullMoonInfernoExitChecks.Native(source.RootElement, replay.RootElement,
         Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant());
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player-third-troop-fragile-mixed-preview-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    ThirdTroopFragileMixedPreviewChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-third-troop-fragile-upper-combat-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-third-troop-fragile-upper-combat-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
