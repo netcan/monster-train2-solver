@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--triple-horde-lava-target-death-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    TripleHordeTargetDeathChecks.Native(fixture.RootElement, replay?.RootElement, lava: true);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--bone-dog-preview-leak-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -7879,6 +7886,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var fixture = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-six-horde-short-owner-replay-calibration.mt2f"));
     SixHordeShortOwnerChecks.Native(fixture.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-triple-horde-lava-target-death-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-triple-horde-lava-target-death-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-horde-lava-target-death-replay-calibration.mt2f"));
+    TripleHordeTargetDeathChecks.Native(fixture.RootElement, replay.RootElement, lava: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-bone-dog-preview-leak-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-bone-dog-preview-leak-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

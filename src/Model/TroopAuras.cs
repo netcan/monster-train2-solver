@@ -192,8 +192,11 @@ namespace MonsterTrain2Poju.Model
                 tripleBirth.Status("horde")?.Stacks == 3;
             bool originalPendingTripleBirth = originalTripleBirth && owner.Triggers.Count == 2 &&
                 PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context!) &&
-                room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20,
-                    Health: 25, MaxHealth: 25, Size: 2, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
+                room.Units.Any(unit => (unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20,
+                    Health: 25, MaxHealth: 25, Size: 2, Modifiers.Upgrades.Count: 0 } ||
+                    unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 24,
+                    Health: 35, MaxHealth: 35, Size: 2, Modifiers.Upgrades: [
+                        { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" }, { DataId: "", AssetKey: "" }] }) && rule.Targets.Contains(unit.Id) &&
                     source.Train.Context!.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83");
             bool originalPreviewBirth = source.Preview && source.Train.Context != null &&
                 PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context) && added.Length == 1 &&
