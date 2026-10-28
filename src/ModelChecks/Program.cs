@@ -1381,6 +1381,13 @@ if (args.Length == 2 && args[0] == "--inactive-once-buffed-multistrike-zealot-al
     InactiveOnceBuffedMultistrikeZealotInfernoExitChecks.Native(fixture.RootElement, alternative: true);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--inactive-thrice-buffed-multistrike-zealot-inferno-exit-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    InactiveThriceBuffedMultistrikeZealotInfernoExitChecks.Native(fixture.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--inactive-once-buffed-multistrike-zealot-inferno-exit-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -8336,6 +8343,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player
 {
     using var fixture = ModelJson.ReadFixture(path);
     InactiveOnceBuffedMultistrikeZealotInfernoExitChecks.Native(fixture.RootElement, alternative: true);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-inactive-thrice-buffed-multistrike-zealot-inferno-exit-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-inactive-thrice-buffed-multistrike-zealot-inferno-exit-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-inactive-thrice-buffed-multistrike-zealot-inferno-exit-replay-calibration.mt2f"));
+    InactiveThriceBuffedMultistrikeZealotInfernoExitChecks.Native(fixture.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-inactive-once-buffed-multistrike-zealot-inferno-exit-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-inactive-once-buffed-multistrike-zealot-inferno-exit-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
