@@ -7586,10 +7586,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-third-troop-sycophant-two-live-replay-calibration.mt2f"));
     ThirdTroopSycophantTwoLiveChecks.Native(fixture.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player-preview-existing-horde-identity-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-preview-existing-horde-identity-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-preview-existing-horde-identity-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var fixture = ModelJson.ReadFixture(path);
-    PreviewExistingHordeIdentityChecks.Native(fixture.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-preview-existing-horde-identity-replay-calibration.mt2f"));
+    PreviewExistingHordeIdentityChecks.Native(fixture.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-preview-two-live-identity-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-preview-two-live-identity-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

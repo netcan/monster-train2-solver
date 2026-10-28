@@ -57,7 +57,9 @@ internal static class PreviewIdMismatchRequest
         request.Write(stream);
         Console.WriteLine("PREVIEW-ID-REQUEST PASS: " + (expectedRows - 1) + " native prefix inputs and repaired mismatch; independent native validation required.");
     }
-    internal static void Refresh(string input, string native, string output)
+    internal static void Refresh(string input, string native, string output) => Refresh(input, native, output, Reason, 21, false);
+    internal static void RefreshExistingHorde(string input, string native, string output) => Refresh(input, native, output, ExistingHordeReason, 11, true);
+    private static void Refresh(string input, string native, string output, string identityReason, int expectedRows, bool expectedEndTurn)
     {
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         using var original = FixtureDocument.Read(input);
@@ -65,8 +67,8 @@ internal static class PreviewIdMismatchRequest
         var request = original.RootElement;
         var rows = observation.RootElement.GetProperty("Rows").EnumerateArray().ToArray();
         var steps = request.GetProperty("Prefix").EnumerateArray().ToArray();
-        Require(observation.RootElement.GetProperty("NativeCompleted").GetBoolean() && rows.Length == 21 && steps.Length == rows.Length &&
-            observation.RootElement.GetProperty("Request").GetProperty("Reason").GetString() == Reason,
+        Require(observation.RootElement.GetProperty("NativeCompleted").GetBoolean() && rows.Length == expectedRows && steps.Length == rows.Length &&
+            observation.RootElement.GetProperty("Request").GetProperty("Reason").GetString() == identityReason,
             "Expected the independently validated identity prefix.");
         var root = request.GetProperty("Root").Deserialize<BattleTurnState>()!;
         var current = root;
@@ -100,15 +102,16 @@ internal static class PreviewIdMismatchRequest
         bool boundaryEnd = request.GetProperty("IsEndTurn").GetBoolean();
         var boundaryAction = request.GetProperty("Action").Deserialize<PlayCardAction>();
         string reason = request.GetProperty("Reason").GetString()!;
-        Require(!boundaryEnd && boundaryAction != null && BattleActionModel.PlayCard(current, boundaryAction).Reason == reason,
-            "Original target action no longer reproduces its exact boundary.");
+        Require(boundaryEnd == expectedEndTurn && (boundaryEnd ? boundaryAction == null &&
+            BattleTurnModel.EndTurn(current).UnsupportedReason == reason : boundaryAction != null &&
+            BattleActionModel.PlayCard(current, boundaryAction).Reason == reason), "Original target no longer reproduces its exact boundary.");
         using var refreshed = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
             SourceArchive = Path.GetFileName(input), SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
-            Root = root, Prefix = prefix, FailedRoot = current, Action = boundaryAction, IsEndTurn = false, Reason = reason,
+            Root = root, Prefix = prefix, FailedRoot = current, Action = boundaryAction, IsEndTurn = boundaryEnd, Reason = reason,
             NativeValidationRequired = true });
         using var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write);
         refreshed.Write(stream);
-        Console.WriteLine("PREVIEW-ID-REFRESH PASS: 21 independently native-matched inputs and original protected target; native validation required.");
+        Console.WriteLine("PREVIEW-ID-REFRESH PASS: " + expectedRows + " independently native-matched inputs and original protected target; native validation required.");
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidDataException(reason); }
 }

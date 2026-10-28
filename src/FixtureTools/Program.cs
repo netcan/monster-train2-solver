@@ -6,6 +6,10 @@ if (args.Length == 4 && args[0] == "refresh-preview-id-prefix")
 {
     PreviewIdMismatchRequest.Refresh(args[1], args[2], args[3]);
 }
+else if (args.Length == 4 && args[0] == "refresh-existing-horde-preview-id-prefix")
+{
+    PreviewIdMismatchRequest.RefreshExistingHorde(args[1], args[2], args[3]);
+}
 else if (args.Length == 3 && args[0] == "extract-existing-horde-preview-id-mismatch")
 {
     PreviewIdMismatchRequest.ExtractExistingHorde(args[1], args[2]);
