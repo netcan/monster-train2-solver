@@ -45,8 +45,16 @@ try{
     $summary[0] -notmatch 'diversifiedRoutes=[1-9]' -or $summary[0] -notmatch 'exported=True'){
   throw 'Control must improve and then explore a worse complete alternative'
  }
+ if($summary[0] -notmatch 'diversifiedRoutes=(\d+)' -or [int]$Matches[1] -ge 4){
+  throw 'An alternative selected after the final pass cannot be counted as explored'
+ }
  $actualHash=(Get-FileHash $actual).Hash
  if($actualHash -ne (Get-FileHash $expected).Hash){throw 'Export lost the best complete route after diversification'}
+ $singleOutput=Join-Path $testRoot 'single-pass.mt2f'
+ $singleLog=@(& dotnet $tool improve-diverse $source $baseline $singleOutput 100 1 $indices[0] 1 1 2 0 2>&1)
+ if($LASTEXITCODE -ne 0 -or ($singleLog -join "`n") -notmatch 'IMPROVE-DIVERSIFY WARNING: one pass cannot explore retained alternative routes'){
+  throw 'Single-pass diversification warning missing'
+ }
  $protectedResult=@(& dotnet $tool improve-diverse $source $baseline $actual 100 1 0 1 1 1 0 2>&1)
  if($LASTEXITCODE -eq 0 -or ($protectedResult -join "`n") -notmatch 'Output already exists' -or
     (Get-FileHash $actual).Hash -ne $actualHash){throw 'Existing output protection failed'}

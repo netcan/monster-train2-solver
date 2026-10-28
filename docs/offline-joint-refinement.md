@@ -165,6 +165,8 @@ dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll improve-triples `
 部署再接上后续变化。最好结果单独保存；探索中的退步、超时的半条路线都不导出。
 参数依次为源局、已验证路线、新输出、毫秒预算、1..16轮、起始输入、每点候选数、
 连续决策点数、备选路线数和第二步宽度。默认旧命令不启用这个模式。
+单轮只能收集备选路线而无法展开它们，工具会明确提示；要实际探索备选路线需至少两轮，
+且预算须足以完成首轮。
 
 ```powershell
 dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll improve-diverse `

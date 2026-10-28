@@ -27,6 +27,8 @@ internal static partial class OfflineBattleSearch
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         string unsupportedOutput = output + ".unsupported.mt2f";
         if (retainSuffix && File.Exists(unsupportedOutput)) throw new IOException("Output already exists: " + unsupportedOutput);
+        if (diversificationWidth > 0 && maxPasses == 1)
+            Console.WriteLine("IMPROVE-DIVERSIFY WARNING: one pass cannot explore retained alternative routes; use at least two passes.");
         using var document = FixtureDocument.Read(input);
         FixtureValue trace = document.RootElement;
         RequireNativeInput(trace);
@@ -335,7 +337,7 @@ internal static partial class OfflineBattleSearch
             // A bounded sweep may leave untried neighbors at every decision.
             // Later passes continue past the already-tried inputs, even when
             // the preceding pass found no strictly better complete route.
-            if (!improved && diversificationWidth > 0 && !Expired() && frontier.Count > 0)
+            if (!improved && diversificationWidth > 0 && pass + 1 < maxPasses && !Expired() && frontier.Count > 0)
             {
                 PolicyAlternative alternative = frontier[0]; frontier.RemoveAt(0);
                 Require(alternative.Prefixes.Length == alternative.Route.Length,
