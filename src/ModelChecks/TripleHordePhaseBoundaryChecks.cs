@@ -46,7 +46,7 @@ internal static class TripleHordePhaseBoundaryChecks
         for (int i = 0; i < firstFrames.Length; i++)
             Require(NativeBranchObservationChecks.Key(firstFrames[i]) == NativeBranchObservationChecks.Key(repeatedFrames[i]),
                 "Independent settlement frame differs at " + i);
-        Console.WriteLine("TRIPLE-HORDE-PHASE-BOUNDARY PASS: 20 native prefix inputs, two independent two-frame 28->27 observations and full successors; allocator transition remains guarded.");
+        Console.WriteLine("TRIPLE-HORDE-PHASE-BOUNDARY PASS: 20 native prefix inputs, two independent two-frame development snapshots and player successors; cross-collector allocator mismatch remains guarded.");
     }
 
     private static BattleTurnState[] CheckTimeline(FixtureValue original, FixtureValue timeline)
@@ -84,7 +84,7 @@ internal static class TripleHordePhaseBoundaryChecks
         }
         var settled = observed[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         Require(settled.Spawn.NextUnitId == 27 && !settled.Spawn.Train.Context!.SpawnPoints!.Units.Any(point => point.UnitId == 27),
-            "Final decision did not remove the transient preview point.");
+            "Player decision unexpectedly includes the development preview point.");
         return states;
     }
 

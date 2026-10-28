@@ -11,12 +11,13 @@ native phase had 28 and an additional unplaced preview spawn point 27. A later
 decision capture had 27 and no such point. The experimental expansion was removed.
 
 Two additional independent native processes sampled the first two ready frames
-after the boundary. Both frames retained allocator 28 and preview point 27;
-two captures within each frame matched. The later decision had allocator 27
-and no such point. Every prefix and successor matches the uninstrumented native
-capture, including comparable gameplay RNG. These samples do not establish
-whether the production overlay can capture the transient state, or whether
-repeated capture itself affects subsequent cleanup.
+after the boundary using the development trace. Both frames had allocator 28
+and preview point 27; two captures within each frame matched. The later player
+decision used the separately loaded player trace, with allocator 27 and no such
+point. Because these are distinct identity maps, these samples alone do not
+establish that either map underwent a 28-to-27 cleanup. Every player prefix and
+successor matches the uninstrumented native capture, including comparable RNG.
+Whether the production overlay sees the transient state remains unestablished.
 
 The five `player-triple-horde-phase-boundary-*` archives preserve the original
 rejection, experimental successor, phase counterexample and independent frame
