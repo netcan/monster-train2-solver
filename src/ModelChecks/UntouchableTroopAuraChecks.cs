@@ -90,6 +90,42 @@ internal static class UntouchableTroopAuraChecks
         Console.WriteLine("UNTOUCHABLE-TROOP-AURA-NATIVE PASS: 55 full successors/RNG, independent boundary, guard and immutable roots.");
     }
 
+    internal static void TracePair(FixtureValue original, FixtureValue first, FixtureValue second)
+    {
+        Independent(original, first);
+        Independent(original, second);
+        FixtureValue[] a = first.GetProperty("TroopTargetability").EnumerateArray().ToArray();
+        FixtureValue[] b = second.GetProperty("TroopTargetability").EnumerateArray().ToArray();
+        Require(a.Length == 7 && b.Length == a.Length, "Unexpected troop targetability operation count.");
+        for (int index = 0; index < a.Length; index++)
+        {
+            Require(a[index].GetProperty("Completed").GetBoolean() && b[index].GetProperty("Completed").GetBoolean(),
+                "Incomplete native troop operation at " + index);
+            foreach (string side in new[] { "Before", "After" })
+            foreach (string field in new[] { "Room", "Preview", "Cached", "Units" })
+                Require(a[index].GetProperty(side).GetProperty(field).ContentEquals(b[index].GetProperty(side).GetProperty(field)),
+                    "Independent troop operation differs at " + index + ": " + side + "." + field);
+            Require(a[index].GetProperty("Before").GetProperty("Preview").GetBoolean() == (index < 6) &&
+                a[index].GetProperty("After").GetProperty("Preview").GetBoolean() == (index < 6),
+                "Unexpected troop operation preview phase at " + index);
+        }
+        FixtureValue previewBefore = a[0].GetProperty("Before"), previewAfter = a[0].GetProperty("After");
+        FixtureValue realBefore = a[6].GetProperty("Before"), realAfter = a[6].GetProperty("After");
+        Require(previewBefore.GetProperty("Cached").ContentEquals(previewAfter.GetProperty("Cached")) &&
+            !realBefore.GetProperty("Cached").ContentEquals(realAfter.GetProperty("Cached")), "Native cache transition changed.");
+        FixtureValue pu = previewBefore.GetProperty("Units")[0], pv = previewAfter.GetProperty("Units")[0];
+        FixtureValue ru = realBefore.GetProperty("Units")[0], rv = realAfter.GetProperty("Units")[0];
+        Require(pu.GetProperty("Id").GetInt32() == 46 && pu.GetProperty("Horde").GetInt32() == 7 &&
+            pu.GetProperty("Health").GetInt32() == 40 && pu.GetProperty("MaxHealth").GetInt32() == 49 &&
+            pv.GetProperty("Health").GetInt32() == 28 && pv.GetProperty("MaxHealth").GetInt32() == 28 &&
+            ru.GetProperty("Id").GetInt32() == 46 && ru.GetProperty("Horde").GetInt32() == 4 &&
+            ru.GetProperty("Health").GetInt32() == 19 && ru.GetProperty("MaxHealth").GetInt32() == 28 &&
+            rv.GetProperty("Health").GetInt32() == 16 && rv.GetProperty("MaxHealth").GetInt32() == 16 &&
+            ru.GetProperty("Untouchable").GetInt32() == 1 && rv.GetProperty("Untouchable").GetInt32() == 1,
+            "Native preview or actual target health differs.");
+        Console.WriteLine("UNTOUCHABLE-TROOP-TRACE PASS: two isolated traces, six preview operations and one real cache removal.");
+    }
+
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }
 }

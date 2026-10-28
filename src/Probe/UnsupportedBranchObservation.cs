@@ -27,6 +27,9 @@ namespace MonsterTrain2Poju.Probe
             "Native ordinary boss aura action outside the temporary preview roster.";
         internal static bool ObserveStandbyOrdering => waiting && rows.Count > 0 && rows.Last().Boundary &&
             request.GetProperty("Reason").GetString() == "Native multi-equipment host sacrifice recycle order.";
+        internal static bool ObserveTroopTargetability => waiting && rows.Count > 0 && rows.Last().Boundary &&
+            request.GetProperty("Reason").GetString() == "Untouchable troop-aura target removal requires native calibration." &&
+            Environment.GetEnvironmentVariable("MT2_PROBE_TROOP_TARGET_TRACE") == "1";
         private static BattleTurnState expected = null!;
         private static readonly List<Row> rows = new List<Row>();
         private static readonly List<object> roomAttachmentMovement = new List<object>();
@@ -153,6 +156,7 @@ namespace MonsterTrain2Poju.Probe
                 TripleJuiceCalibration = JuiceTraitProbe.TripleSamples,
                 FloorTransitionPiercing = CaptureFloorTransitionPiercing(),
                 RoomAttachmentMovement = roomAttachmentMovement.ToArray(), SettlementTimeline = settlementSamples.ToArray(), SettlementPost = settlementPost,
+                TroopTargetability = TroopTargetabilityProbe.Records.ToArray(),
                 IdentityCorrespondence = identityCorrespondence,
                 TriggeredCorruption = TriggeredCorruptionProbe.Records.ToArray(),
                 RoomPreCombatRecords = RoomPreCombatProbe.Records.ToArray(),
