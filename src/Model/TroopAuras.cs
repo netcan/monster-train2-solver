@@ -218,7 +218,14 @@ namespace MonsterTrain2Poju.Model
                     item.AbilityUpgrade == null && item.TriggerUpgrades?.Count is not > 0);
             bool originalFourHordePreviewBirth = source.Preview && source.Train.Context != null &&
                 PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context) && added.Length == 1 &&
-                rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 &&
+                (rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 ||
+                 rule.Targets.Count == 5 && targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 3 &&
+                 owner is { BaseAttack: 80, MaxHealth: 110, Size: 1, Triggers.Count: 1 } &&
+                 room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 24,
+                     Health: 3, MaxHealth: 25, Size: 2, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
+                     source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83") &&
+                 source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 && rule.Targets.Contains(actor.Unit.Id) &&
+                     actor.Unit is { AssetKey: "MonsterSneezyWhelp", Team: CombatTeam.Player, Health: <= 0, DeathState.IsDestroyed: true })) &&
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player,
                     SpawnerCardId: 0, BaseAttack: 12, Size: 1,
                     HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades: var fourUpgrades } fourHorde &&
@@ -329,7 +336,7 @@ namespace MonsterTrain2Poju.Model
                     pendingDyingRoom: originalPendingTripleBirth || source.Preview && fightClubCompanionsBirth ? room.RoomIndex : (int?)null,
                     pendingDyingPreview: source.Preview && fightClubCompanionsBirth,
                     allowTwoLivePreview: originalPreviewBirth || originalFourHordePreviewBirth || originalSixHordePuffballPreviewBirth || fightClubLavaPreviewBirth || fightClubCompanionsBirth, allowMixedCombat: fightClubBirth || originalTripleBirth,
-                    allowPreviewRetired: originalPreviewBirth || originalSixHordeCompanionsPreviewBirth ||
+                    allowPreviewRetired: originalPreviewBirth || originalFourHordePreviewBirth && rule.Targets.Count == 5 || originalSixHordeCompanionsPreviewBirth ||
                         fightClubCompanionsBirth && (targets.Count == 4 || room.Units.Single(unit => unit.Id == added[0]).Status("horde")?.Stacks == 6) ||
                         fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4, allowSingleRetiredPreview: originalFourHordePreviewBirth,
                     allowTwoRetiredMixedPreview: fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4 || originalPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count == 6) :
