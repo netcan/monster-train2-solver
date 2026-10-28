@@ -90,10 +90,15 @@ internal static class PreviewTwoLiveIdentityChecks
             var repeated = NativeBranchObservationChecks.Replay(replay.Value, Reason);
             Require(repeated.Length == rows.Length, "Independent input count differs.");
             for (int index = 0; index < rows.Length; index++)
+            {
+                Require(rows[index].GetProperty("Action").ContentEquals(repeated[index].GetProperty("Action")) &&
+                    rows[index].GetProperty("IsEndTurn").ContentEquals(repeated[index].GetProperty("IsEndTurn")),
+                    "Independent input differs at " + index);
                 foreach (string field in new[] { "Before", "Actual" })
                     Require(NativeBranchObservationChecks.Key(rows[index].GetProperty(field).Deserialize<BattleTurnState>()!) ==
                         NativeBranchObservationChecks.Key(repeated[index].GetProperty(field).Deserialize<BattleTurnState>()!),
                         "Independent native " + field + " differs at " + index);
+            }
         }
         Console.WriteLine("PREVIEW-TWO-LIVE-IDENTITY PASS: 21 native inputs/full state/RNG, historical allocator difference, four immutable branches; independentPair=" + replay.HasValue);
     }

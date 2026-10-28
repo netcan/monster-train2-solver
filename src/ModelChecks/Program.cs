@@ -7516,10 +7516,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     InactiveFullMoonInfernoExitChecks.Native(source.RootElement, replay.RootElement,
         Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant());
 }
-foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player-preview-two-live-identity-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-preview-two-live-identity-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-preview-two-live-identity-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var fixture = ModelJson.ReadFixture(path);
-    PreviewTwoLiveIdentityChecks.Native(fixture.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-preview-two-live-identity-replay-calibration.mt2f"));
+    PreviewTwoLiveIdentityChecks.Native(fixture.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-third-troop-fragile-two-live-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-third-troop-fragile-two-live-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
