@@ -222,7 +222,7 @@ namespace MonsterTrain2Poju.Model
                 rule.Targets.Count == 4 && targets.Count == 5 && rule.Targets.All(targets.Contains) &&
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player,
                     SpawnerCardId: 0, BaseAttack: 9, Size: 1, HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades: var tripleUpgrades } tripleCompanion &&
-                tripleCompanion.Status("horde")?.Stacks == 3 && tripleUpgrades.Count is 0 or 3 or 6 or 9 or 12 &&
+                tripleCompanion.Status("horde")?.Stacks == 3 && tripleUpgrades.Count is 0 or 3 or 6 or 9 or 12 or 15 or 18 or 21 &&
                 tripleCompanion.Health == 12 + tripleUpgrades.Count * 3 && tripleCompanion.MaxHealth == tripleCompanion.Health &&
                 tripleUpgrades.All(item => item.DataId == Key(owner.Id) && item.AssetKey == upgrade.AssetKey &&
                     item.Stats.Health == 3 && item.Stats.Damage == 0 && item.Stats.Cost == 0 && item.Stats.Heal == 0 &&
@@ -361,7 +361,7 @@ namespace MonsterTrain2Poju.Model
                     allowSingleNonPreviewRetiredPreview: originalTripleCompanionsRetiredPreviewBirth,
                     allowPreviewRetired: originalPreviewBirth || originalFourHordePreviewBirth && rule.Targets.Count == 5 || originalSixHordeCompanionsPreviewBirth ||
                         fightClubCompanionsBirth && (targets.Count == 4 || room.Units.Single(unit => unit.Id == added[0]).Status("horde")?.Stacks == 6) ||
-                        fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4, allowSingleRetiredPreview: originalFourHordePreviewBirth,
+                        fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4, allowSingleRetiredPreview: originalFourHordePreviewBirth || originalTripleCompanionsRetiredPreviewBirth,
                     allowTwoRetiredMixedPreview: fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4 || originalPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count == 6) :
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
         }
