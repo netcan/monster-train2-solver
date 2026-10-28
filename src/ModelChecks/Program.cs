@@ -1060,6 +1060,13 @@ if (args.Length is 2 or 3 && args[0] == "--third-troop-original-mixed-combat-onl
     ThirdTroopOriginalMixedCombatChecks.Native(fixture.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--lava-fightclub-preview-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    LavaFightClubPreviewChecks.Native(fixture.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--lava-sycophant-preview-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -7668,6 +7675,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var fixture = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-third-troop-retired-four-horde-preview-replay-calibration.mt2f"));
     ThirdTroopRetiredFourHordePreviewChecks.Native(fixture.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player-lava-fightclub-preview-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    LavaFightClubPreviewChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-lava-sycophant-preview-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-lava-sycophant-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

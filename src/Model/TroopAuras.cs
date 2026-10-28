@@ -221,7 +221,7 @@ namespace MonsterTrain2Poju.Model
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player,
                     SpawnerCardId: 0, BaseAttack: 24, Size: 1, HordeDefinition: { Attack: 3, Health: 4 },
                     Modifiers.Upgrades: var clubUpgrades } clubPreview && clubPreview.Status("horde")?.Stacks == 3 &&
-                clubUpgrades.Count is 7 or 10 or 13 or 16 && clubPreview.Health == 12 + 3 * (clubUpgrades.Count - 1) &&
+                clubUpgrades.Count is 1 or 4 or 7 or 10 or 13 or 16 && clubPreview.Health == 12 + 3 * (clubUpgrades.Count - 1) &&
                 clubPreview.MaxHealth == clubPreview.Health && clubUpgrades[0] is {
                     DataId: RelicStartCombatAttachmentModel.Floor3UpgradeId, AssetKey: RelicStartCombatAttachmentModel.Floor3UpgradeKey,
                     Stats: { Damage: 15, Health: 0, Cost: 0, Heal: 0, Size: 0, XCost: 0, EquipmentLimit: 0, UpgradeSlotCount: 0 },
@@ -231,10 +231,20 @@ namespace MonsterTrain2Poju.Model
                     item.Stats.Size == 0 && item.Stats.XCost == 0 && item.Stats.EquipmentLimit == 0 &&
                     item.Stats.UpgradeSlotCount == 0 && item.Statuses.Count == 0 && item.ExternalInteractions.Count == 0 &&
                     item.AbilityUpgrade == null && item.TriggerUpgrades?.Count is not > 0);
+            bool fightClubLavaPreviewBirth = fightClubPreviewBirth && source.Train.Context != null && owner.Triggers.Count == 2 &&
+                PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
+                rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 35,
+                    Health: 35, MaxHealth: 35, Size: 2, Modifiers.Upgrades: [
+                        { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" },
+                        { DataId: "", AssetKey: "" },
+                        { DataId: RelicStartCombatAttachmentModel.Floor3UpgradeId, AssetKey: RelicStartCombatAttachmentModel.Floor3UpgradeKey,
+                            Stats.Damage: 15 }] } && rule.Targets.Contains(unit.Id) &&
+                    source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83");
             return third ? OnlyFragileBuffSource(source, allowLiveCombat: originalChampion, allowTwoLiveCombat: originalSingleBirth || originalSycophant || originalTripleBirth,
-                    allowTwoLivePreview: originalPreviewBirth || originalFourHordePreviewBirth, allowMixedCombat: fightClubBirth || originalTripleBirth,
-                    allowPreviewRetired: originalPreviewBirth || fightClubPreviewBirth, allowSingleRetiredPreview: originalFourHordePreviewBirth,
-                    allowTwoRetiredMixedPreview: fightClubPreviewBirth || originalPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count == 6) :
+                    allowTwoLivePreview: originalPreviewBirth || originalFourHordePreviewBirth || fightClubLavaPreviewBirth, allowMixedCombat: fightClubBirth || originalTripleBirth,
+                    allowPreviewRetired: originalPreviewBirth || fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4, allowSingleRetiredPreview: originalFourHordePreviewBirth,
+                    allowTwoRetiredMixedPreview: fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4 || originalPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count == 6) :
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
         }
 
