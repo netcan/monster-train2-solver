@@ -7725,10 +7725,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-third-troop-retired-four-horde-preview-replay-calibration.mt2f"));
     ThirdTroopRetiredFourHordePreviewChecks.Native(fixture.RootElement, replay.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player-fight-club-dying-preview-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-fight-club-dying-preview-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-fight-club-dying-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var fixture = ModelJson.ReadFixture(path);
-    FightClubDyingPreviewChecks.Native(fixture.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-fight-club-dying-preview-replay-calibration.mt2f"));
+    FightClubDyingPreviewChecks.Native(fixture.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-six-horde-fight-club-companions-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-six-horde-fight-club-companions-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
