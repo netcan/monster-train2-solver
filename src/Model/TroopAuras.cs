@@ -160,7 +160,17 @@ namespace MonsterTrain2Poju.Model
                 { AssetKey: "MonsterGenerousHost", Team: CombatTeam.Player, BaseAttack: 5, Health: 5, MaxHealth: 5, Size: 1,
                     Modifiers.Upgrades.Count: 0 } recruit && recruit.Status("horde") == null &&
                 PreviewBirthModel.IsOriginalGreenRecruit(recruit, source.Train.Context!);
-            if (!originalSycophant && !originalRecruit && added.Any(id => room.Units.Single(unit => unit.Id == id) is not { AssetKey: "MonsterFunguy" })) return false;
+            bool originalWhelp = originalChampion && added.Length == 1 && room.Units.Single(unit => unit.Id == added[0]) is
+                { AssetKey: "MonsterSneezyWhelp", Team: CombatTeam.Player, BaseAttack: 4, Health: 1, MaxHealth: 1, Size: 1,
+                    Modifiers.Upgrades.Count: 0, Ability: { DataId: "f3c7769a-4f9b-43cf-aacd-cf32c14e3082", HasAbility: true, Cooldown: 2 },
+                    Triggers: [
+                        { Kind: "OnSpawn", FireCount: 1, Effects: [{ Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Self", Statuses: [{ Id: "unit_ability_available", Stacks: 1, ParamInt: 1 }] } }, { Type: "CardEffectResetCooldown", Action: { Type: "ResetCooldown", Target: "Self" } }] },
+                        { Kind: "OnOwnAbilityActivated", FireCount: 1, Effects: [{ Type: "CardEffectResetCooldown", Action: { Type: "ResetCooldown", Target: "Self" } }] },
+                        { Kind: "OnUnitAbilityAvailable", FireCount: 1, Effects: [{ Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Self" } }] },
+                        { Kind: "OnUnitAbilityUnavailable", FireCount: 1, Effects: [{ Type: "CardEffectRemoveStatusEffect", Action: { Type: "RemoveStatus", Target: "Self" } }] }] } whelp &&
+                whelp.Status("horde") == null && whelp.Status("unit_ability")?.Stacks == 1 && whelp.Subtypes.SequenceEqual(["SubtypesData_Whelp"]) &&
+                source.Train.Context!.FindCard(whelp.SpawnerCardId)?.DataId == "eef8abd9-3550-4da6-a8bd-d5f63e9d2b16";
+            if (!originalSycophant && !originalRecruit && !originalWhelp && added.Any(id => room.Units.Single(unit => unit.Id == id) is not { AssetKey: "MonsterFunguy" })) return false;
             bool originalSingleBirth = originalChampion && added.Length == 1 && room.Units.Single(unit => unit.Id == added[0]) is
                 { AssetKey: "MonsterFunguy", SpawnerCardId: 0, Health: 4, MaxHealth: 4, Modifiers.Upgrades.Count: 0 } newborn &&
                 newborn.Status("horde")?.Stacks == 1;
