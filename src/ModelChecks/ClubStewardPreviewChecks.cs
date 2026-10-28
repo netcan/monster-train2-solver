@@ -5,7 +5,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class ClubStewardPreviewChecks
 {
-    internal static void Native(FixtureValue fixture, FixtureValue? replay = null, bool upgradedChampion = false)
+    internal static void Native(FixtureValue fixture, FixtureValue? replay = null, bool upgradedChampion = false, bool woundedCompanions = false)
     {
         var rows = NativeBranchObservationChecks.Replay(fixture,
             "Battle preview floor 2: Combined troop upgrades and enchantment source ordering require native calibration.");
@@ -16,18 +16,18 @@ internal static class ClubStewardPreviewChecks
         var writes = rows[^1].GetProperty("TroopUpdates").EnumerateArray().Where(update =>
             update.GetProperty("Before").GetProperty("Preview").GetBoolean() &&
             update.GetProperty("Before").GetProperty("Units").EnumerateArray().Any(unit => unit.GetProperty("Id").GetInt32() == 30)).ToArray();
-        Require(writes.Length == 6, "Expected six native preview writes.");
+        Require(writes.Length == (woundedCompanions ? 5 : 6), "Wrong native preview write count.");
         for (int i = 0; i < writes.Length; i++)
         {
             var b = writes[i].GetProperty("Before"); var a = writes[i].GetProperty("After");
             var bu = b.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == 30);
             var au = a.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == 30);
-            int[] expectedCache = upgradedChampion ? [2, 16, 22, 28] : [4, 16, 22, 29];
+            int[] expectedCache = woundedCompanions ? [2, 5, 21, 23] : upgradedChampion ? [2, 16, 22, 28] : [4, 16, 22, 29];
             Require(b.GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual(expectedCache) &&
                 a.GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual(expectedCache) &&
                 bu.GetProperty("Health").GetInt32() == 12 + i * 9 && au.GetProperty("Health").GetInt32() == 21 + i * 9 &&
                 bu.GetProperty("Upgrades").GetArrayLength() == 1 + i * 3 && au.GetProperty("Upgrades").GetArrayLength() == 4 + i * 3 &&
-                b.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == (upgradedChampion ? 2 : 4)).GetProperty("Health").GetInt32() == 58,
+                b.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == (upgradedChampion || woundedCompanions ? 2 : 4)).GetProperty("Health").GetInt32() == (woundedCompanions ? 67 : 58),
                 "Native preview write differs at " + i);
         }
         string parent = JsonSerializer.Serialize(before, ModelJson.Options);
@@ -37,7 +37,7 @@ internal static class ClubStewardPreviewChecks
                 "Concurrent successor differs: " + result.Reason);
         });
         Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "Card play mutated its parent.");
-        foreach (string control in new[] { "MonsterChampionUnderlegion1", "Boss_Level8_Fragile", "EnchanterT2_Titanskin", "TrainStewardBig", "MonsterGenerousHost", "MonsterFunguy", RelicStartCombatAttachmentModel.Floor3UpgradeKey })
+        foreach (string control in new[] { "MonsterChampionUnderlegion1", "Boss_Level8_Fragile", "EnchanterT2_Titanskin", "MonsterFunguy", RelicStartCombatAttachmentModel.Floor3UpgradeKey }.Concat(woundedCompanions ? ["MonsterPricklyPuffball", "MonsterSycophant"] : ["TrainStewardBig", "MonsterGenerousHost"]))
         {
             JsonNode altered = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
             void Rewrite(JsonNode? node)
@@ -63,7 +63,7 @@ internal static class ClubStewardPreviewChecks
             {
                 if (obj["DataId"]?.GetValueKind() == JsonValueKind.String &&
                     obj["DataId"]!.GetValue<string>() == "217d467c-77c2-481d-b78f-57aaf3dcd4a6" &&
-                    obj["EquippedUnitId"]?.GetValueKind() == JsonValueKind.Number && obj["EquippedUnitId"]!.GetValue<int>() == (upgradedChampion ? 2 : 4))
+                    obj["EquippedUnitId"]?.GetValueKind() == JsonValueKind.Number && obj["EquippedUnitId"]!.GetValue<int>() == (upgradedChampion || woundedCompanions ? 2 : 4))
                 { obj["EquippedUnitId"] = 999; changedBindings++; }
                 foreach (var entry in obj.ToArray()) ChangeBinding(entry.Value);
             }
@@ -73,7 +73,7 @@ internal static class ClubStewardPreviewChecks
         var unbound = BattleActionModel.PlayCard(binding.Deserialize<BattleTurnState>(ModelJson.Options)!, action);
         Require(changedBindings > 0 && (!unbound.Supported || NativeBranchObservationChecks.Key(unbound.State!) != NativeBranchObservationChecks.Key(actual)),
             "Wrong equipment binding received the native result.");
-        if (upgradedChampion)
+        if (upgradedChampion || woundedCompanions)
         {
             JsonNode invalid = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
             int changedPoints = 0;
@@ -81,7 +81,7 @@ internal static class ClubStewardPreviewChecks
             {
                 if (node is JsonObject obj)
                 {
-                    if (obj["UnitId"]?.GetValueKind() == JsonValueKind.Number && obj["UnitId"]!.GetValue<int>() == 28 &&
+                    if (obj["UnitId"]?.GetValueKind() == JsonValueKind.Number && obj["UnitId"]!.GetValue<int>() == (woundedCompanions ? 23 : 28) &&
                         obj["SpawnedInPreview"]?.GetValueKind() == JsonValueKind.False)
                     { obj["SpawnedInPreview"] = true; changedPoints++; }
                     foreach (var entry in obj.ToArray()) ChangePoint(entry.Value);
@@ -93,8 +93,8 @@ internal static class ClubStewardPreviewChecks
             Require(changedPoints > 0 && (!changed.Supported || NativeBranchObservationChecks.Key(changed.State!) != NativeBranchObservationChecks.Key(actual)),
                 "Changed missing target spawn point received the native result.");
         }
-        if (replay.HasValue) { Native(replay.Value, upgradedChampion: upgradedChampion); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
-        Console.WriteLine($"CLUB-STEWARD-PREVIEW PASS: {rows.Length} native inputs/full state/RNG, six writes, four immutable branches and source/binding controls; upgradedChampion={upgradedChampion}; independentPair={replay.HasValue}");
+        if (replay.HasValue) { Native(replay.Value, upgradedChampion: upgradedChampion, woundedCompanions: woundedCompanions); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
+        Console.WriteLine($"CLUB-STEWARD-PREVIEW PASS: {rows.Length} native inputs/full state/RNG, {writes.Length} writes, four immutable branches and source/binding controls; upgradedChampion={upgradedChampion}; woundedCompanions={woundedCompanions}; independentPair={replay.HasValue}");
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }

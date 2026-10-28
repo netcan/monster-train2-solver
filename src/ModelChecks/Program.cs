@@ -14,6 +14,13 @@ if (args.Length is 2 or 3 && args[0] == "--armor-champion-preview-only")
     ArmorChampionPreviewChecks.Native(fixture.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--club-wounded-companions-preview-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    ClubStewardPreviewChecks.Native(fixture.RootElement, replay?.RootElement, woundedCompanions: true);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--club-upgraded-steward-preview-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -8198,6 +8205,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var fixture = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-armor-champion-preview-replay-calibration.mt2f"));
     ArmorChampionPreviewChecks.Native(fixture.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-club-wounded-companions-preview-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-club-wounded-companions-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-club-wounded-companions-preview-replay-calibration.mt2f"));
+    ClubStewardPreviewChecks.Native(fixture.RootElement, replay.RootElement, woundedCompanions: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-club-upgraded-steward-preview-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-club-upgraded-steward-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
