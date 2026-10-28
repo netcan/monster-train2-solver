@@ -15,4 +15,5 @@ models this specific removal and retains guards on uncalibrated departures.
 Two independent repaired native runs reproduce all 55 prefix successors and
 the complete target successor, forecast and RNG. Four concurrent model
 branches, six source mutations, an altered upgrade payload and an additional
-target departure are checked.
+target departure are checked. A synthetic cross-floor move is rejected even
+when the target otherwise matches the calibrated Stasis Crystal signature.

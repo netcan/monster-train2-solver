@@ -26,6 +26,18 @@ internal static class UntouchableTroopAuraChecks
         Require(!aura.Targets.Contains(newTarget.Id) && !TroopAuraModel.Matches(newTarget, aura) &&
             !TroopAuraModel.Matches(newTarget.WithHealth(15), aura),
             "Untouchable target was eligible for reapplication after a later health change.");
+        RoomCombatState originalRoom = before.Spawn.Train.Rooms.Single(room => room.Units.Any(unit => unit.Id == oldTarget.Id));
+        CombatUnit originalOwner = originalRoom.Units.Single(unit => unit.AssetKey == "MonsterChampionUnderlegion1");
+        CombatUnit movedTarget = newTarget.WithHealthAndMaxHealth(19, 28);
+        Require(TroopAuraModel.KnownStasisTarget(originalRoom, originalOwner, movedTarget, actual.Spawn.Train.Context),
+            "Cross-floor control no longer reaches the calibrated target guard.");
+        TrainCombatState nextTrain = actual.Spawn.Train;
+        RoomCombatState[] movedRooms = nextTrain.Rooms.Select(room => room.RoomIndex == originalRoom.RoomIndex
+            ? room.WithUnits(room.Units.Where(unit => unit.Id != movedTarget.Id).ToArray())
+            : room.RoomIndex == 1 ? room.WithUnits(room.Units.Concat(new[] { movedTarget }).ToArray()) : room).ToArray();
+        var movedTrain = new TrainCombatState(movedRooms, nextTrain.Movement, nextTrain.EnemySlotsPerRoom, nextTrain.Context);
+        RoomAttachmentUnitSyncResult moved = RoomAttachmentUnitModel.SynchronizeTargetability(before.Spawn.Train, movedTrain);
+        Require(!moved.Supported && moved.UnsupportedReason == Reason, "Cross-floor target change escaped the calibration guard.");
         string original = JsonSerializer.Serialize(before);
         BattleActionResult modeled = BattleActionModel.PlayCard(before, action);
         Require(modeled.Supported && NativeBranchObservationChecks.Key(modeled.State!) == NativeBranchObservationChecks.Key(actual) &&

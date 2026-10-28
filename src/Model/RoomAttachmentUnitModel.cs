@@ -300,7 +300,8 @@ namespace MonsterTrain2Poju.Model
                 if (current == null || previous.Status("untouchable") != null || current.Status("untouchable") == null ||
                     previous.Status("horde")?.Stacks is not > 0) continue;
                 foreach (CombatUnit owner in oldRoom.Units.Where(owner => owner.Health > 0 && owner.Modifiers?.TroopAura?.Targets.Contains(previous.Id) == true))
-                    if (!TroopAuraModel.KnownStasisTarget(oldRoom, owner, current, after.Context))
+                    if (!after.Rooms.Any(room => room.RoomIndex == oldRoom.RoomIndex && room.Units.Any(unit => unit.Id == current.Id)) ||
+                        !TroopAuraModel.KnownStasisTarget(oldRoom, owner, current, after.Context))
                         return Fail("Untouchable troop-aura target removal requires native calibration.");
             }
             if (after.Context?.RoomCapacities?.Any(room => room.Attachments?.Count > 0) != true)
