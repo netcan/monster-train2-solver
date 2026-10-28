@@ -8,6 +8,51 @@ internal static class PreviewIdMismatchRequest
     internal const string Reason = "Native temporary preview birth identity differs with two live Titanskin sources.";
     internal const string ExistingHordeReason = "Native temporary preview birth identity differs with existing champion horde and two live Titanskin sources.";
     private sealed record Step(PlayCardAction? Action, bool IsEndTurn);
+    internal static void ObservePartial(string input, string output)
+    {
+        if (File.Exists(output)) throw new IOException("Output already exists: " + output);
+        using var source = FixtureDocument.Read(input);
+        var fixture = source.RootElement;
+        Require(fixture.GetProperty("EvidenceKind").GetString() == "NativeIncompleteBranchObservation" &&
+            !fixture.GetProperty("NativeCompleted").GetBoolean(), "Expected an incomplete native observation.");
+        var rows = fixture.GetProperty("Rows").EnumerateArray().ToArray();
+        Require(rows.Length > 0, "Expected a mismatching input.");
+        var root = fixture.GetProperty("Request").GetProperty("Root").Deserialize<BattleTurnState>()!;
+        var current = root;
+        var prefix = new List<Step>();
+        using var keys = new BattleStateKeys();
+        foreach (var row in rows.Take(rows.Length - 1))
+        {
+            Require(keys.Key(current) == keys.Key(row.GetProperty("Before").Deserialize<BattleTurnState>()!), "Recorded input root differs.");
+            bool end = row.GetProperty("IsEndTurn").GetBoolean();
+            var action = row.GetProperty("Action").Deserialize<PlayCardAction>();
+            if (end)
+            {
+                var result = BattleTurnModel.EndTurn(current);
+                Require(result.Supported && result.Outcome == RoomOutcome.Exchanged, "Recorded turn rejected: " + result.UnsupportedReason);
+                current = result.State!;
+            }
+            else
+            {
+                var result = BattleActionModel.PlayCard(current, action!);
+                Require(result.Supported && result.Outcome == RoomOutcome.Exchanged, "Recorded action rejected: " + result.Reason);
+                current = result.State!;
+            }
+            Require(keys.Key(current) == keys.Key(row.GetProperty("Actual").Deserialize<BattleTurnState>()!), "Recorded successor differs from native.");
+            prefix.Add(new Step(action, end));
+        }
+        var failed = rows[^1];
+        Require(keys.Key(current) == keys.Key(failed.GetProperty("Before").Deserialize<BattleTurnState>()!), "Mismatch root differs.");
+        Require(keys.Key(failed.GetProperty("Expected").Deserialize<BattleTurnState>()!) !=
+            keys.Key(failed.GetProperty("Actual").Deserialize<BattleTurnState>()!), "Final input does not contain a model mismatch.");
+        using var request = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
+            SourceArchive = Path.GetFileName(input), SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+            Root = root, Prefix = prefix, FailedRoot = current, Action = failed.GetProperty("Action").Deserialize<PlayCardAction>(),
+            IsEndTurn = failed.GetProperty("IsEndTurn").GetBoolean(), Reason = "Native partial prefix successor mismatch observation.", NativeValidationRequired = true });
+        using var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write);
+        request.Write(stream);
+        Console.WriteLine("PARTIAL-MISMATCH-REQUEST PASS: " + prefix.Count + " native-matched prefix inputs; boundary requires independent native observation.");
+    }
     internal static void Extract(string input, string output) => Extract(input, output, 21, 27, 26, Reason);
     internal static void ExtractExistingHorde(string input, string output) => Extract(input, output, 11, 23, 22, ExistingHordeReason);
     private static void Extract(string input, string output, int expectedRows, int oldNextId, int nativeNextId, string reason)
