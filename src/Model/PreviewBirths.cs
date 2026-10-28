@@ -198,6 +198,19 @@ namespace MonsterTrain2Poju.Model
                 room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20,
                     Health: 35, MaxHealth: 35, Size: 1, Modifiers.Upgrades: [{ DataId: "4f70b7b7-b507-4931-9b14-e13dcd6cd59f", AssetKey: "ExilesDiadem_Upgrade" }, { DataId: "", AssetKey: "" }] } &&
                     unit.Status("horde") == null && context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83"));
+            bool OriginalFightClubHorde() => source.Rooms.Any(room => room.Units.Any(owner => IsOriginalChampionEnemyDeath(owner, context) &&
+                owner.Modifiers?.TroopAura?.Upgrade is { DataId: CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId } aura &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player, SpawnerCardId: 0,
+                    BaseAttack: 27, Health: 28, MaxHealth: 28, Size: 1, HordeDefinition: { Attack: 3, Health: 4 },
+                    Modifiers.Upgrades: var upgrades } && unit.Status("horde")?.Stacks == 4 && upgrades.Count == 5 &&
+                    upgrades.Take(4).All(item => item.DataId == TroopAuraModel.Key(owner.Id) && item.AssetKey == aura.AssetKey &&
+                        item.Stats.Health == 3 && item.Stats.Damage == 0 && item.Stats.Cost == 0 && item.Stats.Heal == 0 &&
+                        item.Stats.Size == 0 && item.Stats.XCost == 0 && item.Stats.EquipmentLimit == 0 &&
+                        item.Stats.UpgradeSlotCount == 0 && item.Statuses.Count == 0 && item.ExternalInteractions.Count == 0 &&
+                        item.AbilityUpgrade == null && item.TriggerUpgrades?.Count is not > 0) &&
+                    upgrades[4] is { DataId: RelicStartCombatAttachmentModel.Floor3UpgradeId, AssetKey: RelicStartCombatAttachmentModel.Floor3UpgradeKey,
+                        Stats: { Damage: 15, Health: 0, Cost: 0, Heal: 0, Size: 0, XCost: 0, EquipmentLimit: 0, UpgradeSlotCount: 0 },
+                        Statuses.Count: 0, ExternalInteractions.Count: 0, AbilityUpgrade: null, TriggerUpgrades: null })));
             bool fragileObserver = world != null && world.EnchanterIds.Count > 0 &&
                 source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalChampionEnemyDeath(unit, context) &&
                     unit.Modifiers?.TroopAura?.Upgrade.DataId == CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId) &&
@@ -206,7 +219,7 @@ namespace MonsterTrain2Poju.Model
                     allowPreviewRetired: true,
                     allowSingleRetiredPreview: source.Rooms.Any(room => room.Units.Any(unit => IsOriginalChampionEnemyDeath(unit, context)) &&
                         room.Units.Any(unit => IsOriginalGreenRecruit(unit, context))),
-                    allowTwoRetiredMixedPreview: OriginalSycophantCompanion());
+                    allowTwoRetiredMixedPreview: OriginalSycophantCompanion() || OriginalFightClubHorde());
             // Temporary player births without durable aura references are gone
             // before native decision capture assigns their synthetic identities.
             // Preserve observed births and all enemy births. Check the allocator
