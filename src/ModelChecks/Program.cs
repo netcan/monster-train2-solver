@@ -7495,10 +7495,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     InactiveFullMoonInfernoExitChecks.Native(source.RootElement, replay.RootElement,
         Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant());
 }
-foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player-third-troop-fragile-mixed-preview-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-third-troop-fragile-mixed-preview-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-third-troop-fragile-mixed-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var fixture = ModelJson.ReadFixture(path);
-    ThirdTroopFragileMixedPreviewChecks.Native(fixture.RootElement);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-third-troop-fragile-mixed-preview-replay-calibration.mt2f"));
+    ThirdTroopFragileMixedPreviewChecks.Native(fixture.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-third-troop-fragile-upper-combat-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-third-troop-fragile-upper-combat-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
