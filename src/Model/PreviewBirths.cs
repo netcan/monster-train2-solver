@@ -263,11 +263,31 @@ namespace MonsterTrain2Poju.Model
                     upgrades[4] is { DataId: RelicStartCombatAttachmentModel.Floor3UpgradeId, AssetKey: RelicStartCombatAttachmentModel.Floor3UpgradeKey,
                         Stats: { Damage: 15, Health: 0, Cost: 0, Heal: 0, Size: 0, XCost: 0, EquipmentLimit: 0, UpgradeSlotCount: 0 },
                         Statuses.Count: 0, ExternalInteractions.Count: 0, AbilityUpgrade: null, TriggerUpgrades: null })));
+            bool OriginalFightClubWoundedHorde() => source.Rooms.Any(room => room.Units.Any(owner =>
+                owner is { BaseAttack: 95, Health: 84, MaxHealth: 110, Size: 1, Triggers.Count: 1 } &&
+                IsOriginalChampionEnemyDeath(owner, context) &&
+                owner.Modifiers?.TroopAura?.Upgrade is { DataId: CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId } aura &&
+                context.CardRegistry?.Any(card => card.DataId == "217d467c-77c2-481d-b78f-57aaf3dcd4a6" && card.EquippedUnitId == owner.Id) == true &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player, SpawnerCardId: 0,
+                    BaseAttack: 30, Health: 25, MaxHealth: 35, Size: 1, HordeDefinition: { Attack: 3, Health: 4 },
+                    Modifiers.Upgrades: var upgrades } && unit.Status("horde")?.Stacks == 5 && upgrades.Count == 6 &&
+                    upgrades.Take(5).All(item => item.DataId == TroopAuraModel.Key(owner.Id) && item.AssetKey == aura.AssetKey &&
+                        item.Stats.Health == 3 && item.Stats.Damage == 0 && item.Stats.Cost == 0 && item.Stats.Heal == 0 &&
+                        item.Stats.Size == 0 && item.Stats.XCost == 0 && item.Stats.EquipmentLimit == 0 &&
+                        item.Stats.UpgradeSlotCount == 0 && item.Statuses.Count == 0 && item.ExternalInteractions.Count == 0 &&
+                        item.AbilityUpgrade == null && item.TriggerUpgrades?.Count is not > 0) &&
+                    upgrades[5] is { DataId: RelicStartCombatAttachmentModel.Floor3UpgradeId, AssetKey: RelicStartCombatAttachmentModel.Floor3UpgradeKey,
+                        Stats: { Damage: 15, Health: 0, Cost: 0, Heal: 0, Size: 0, XCost: 0, EquipmentLimit: 0, UpgradeSlotCount: 0 },
+                        Statuses.Count: 0, ExternalInteractions.Count: 0, AbilityUpgrade: null, TriggerUpgrades: null })) &&
+                room.Units.Any(unit => unit is { AssetKey: "TrainStewardBig", Team: CombatTeam.Player, BaseAttack: 23,
+                    Health: 10, MaxHealth: 25, Size: 3, Modifiers.Upgrades: [{ DataId: RelicStartCombatAttachmentModel.Floor3UpgradeId,
+                        AssetKey: RelicStartCombatAttachmentModel.Floor3UpgradeKey, Stats.Damage: 15 }] } &&
+                    context.FindCard(unit.SpawnerCardId)?.DataId == "d14a50f3-728d-43e1-87f0-ef1b013f6678"));
             bool fragileObserver = world != null && world.EnchanterIds.Count > 0 &&
                 source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalChampionEnemyDeath(unit, context) &&
                     unit.Modifiers?.TroopAura?.Upgrade.DataId == CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId) &&
                 TroopAuraModel.OnlyFragileBuffSource(world.Frame(context), allowTwoLivePreview:
-                    OriginalExistingHorde() || OriginalSycophantCompanion() || OriginalWoundedHorde() || OriginalWoundedSteward() || source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalGreenRecruit(unit, context)),
+                    OriginalExistingHorde() || OriginalSycophantCompanion() || OriginalWoundedHorde() || OriginalWoundedSteward() || OriginalFightClubWoundedHorde() || source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalGreenRecruit(unit, context)),
                     allowPreviewRetired: true,
                     allowSingleRetiredPreview: source.Rooms.Any(room => room.Units.Any(unit => IsOriginalChampionEnemyDeath(unit, context)) &&
                         room.Units.Any(unit => IsOriginalGreenRecruit(unit, context))) || source.Rooms.Any(room =>
