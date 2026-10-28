@@ -1060,6 +1060,13 @@ if (args.Length is 2 or 3 && args[0] == "--third-troop-original-mixed-combat-onl
     ThirdTroopOriginalMixedCombatChecks.Native(fixture.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--wounded-horde-preview-identity-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    WoundedHordePreviewIdentityChecks.Native(fixture.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--third-troop-fightclub-retired-preview-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -7647,6 +7654,11 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var fixture = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-third-troop-retired-four-horde-preview-replay-calibration.mt2f"));
     ThirdTroopRetiredFourHordePreviewChecks.Native(fixture.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).Equals("player-wounded-horde-preview-identity-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    WoundedHordePreviewIdentityChecks.Native(fixture.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-third-troop-fightclub-retired-preview-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-third-troop-fightclub-retired-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

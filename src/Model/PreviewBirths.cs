@@ -198,6 +198,17 @@ namespace MonsterTrain2Poju.Model
                 room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20,
                     Health: 35, MaxHealth: 35, Size: 1, Modifiers.Upgrades: [{ DataId: "4f70b7b7-b507-4931-9b14-e13dcd6cd59f", AssetKey: "ExilesDiadem_Upgrade" }, { DataId: "", AssetKey: "" }] } &&
                     unit.Status("horde") == null && context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83"));
+            bool OriginalWoundedHorde() => source.Rooms.Any(room => room.Units.Any(owner => IsOriginalChampionEnemyDeath(owner, context) &&
+                owner.Triggers.Count == 2 && IsOriginalMeatShieldHeal(owner.Triggers[1], owner, context) &&
+                owner.Modifiers?.TroopAura?.Upgrade is { DataId: CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId } aura &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player, SpawnerCardId: 0,
+                    BaseAttack: 9, Health: 12, MaxHealth: 21, Size: 1, HordeDefinition: { Attack: 3, Health: 4 },
+                    Modifiers.Upgrades.Count: 3 } && unit.Status("horde")?.Stacks == 3 &&
+                    unit.Modifiers.Upgrades.All(item => item.DataId == TroopAuraModel.Key(owner.Id) && item.AssetKey == aura.AssetKey &&
+                        item.Stats.Health == 3 && item.Stats.Damage == 0 && item.Stats.Cost == 0 && item.Stats.Heal == 0 &&
+                        item.Stats.Size == 0 && item.Stats.XCost == 0 && item.Stats.EquipmentLimit == 0 &&
+                        item.Stats.UpgradeSlotCount == 0 && item.Statuses.Count == 0 && item.ExternalInteractions.Count == 0 &&
+                        item.AbilityUpgrade == null && item.TriggerUpgrades?.Count is not > 0))));
             bool OriginalFightClubHorde() => source.Rooms.Any(room => room.Units.Any(owner => IsOriginalChampionEnemyDeath(owner, context) &&
                 owner.Modifiers?.TroopAura?.Upgrade is { DataId: CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId } aura &&
                 room.Units.Any(unit => unit is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player, SpawnerCardId: 0,
@@ -215,7 +226,7 @@ namespace MonsterTrain2Poju.Model
                 source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalChampionEnemyDeath(unit, context) &&
                     unit.Modifiers?.TroopAura?.Upgrade.DataId == CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId) &&
                 TroopAuraModel.OnlyFragileBuffSource(world.Frame(context), allowTwoLivePreview:
-                    OriginalExistingHorde() || OriginalSycophantCompanion() || source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalGreenRecruit(unit, context)),
+                    OriginalExistingHorde() || OriginalSycophantCompanion() || OriginalWoundedHorde() || source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalGreenRecruit(unit, context)),
                     allowPreviewRetired: true,
                     allowSingleRetiredPreview: source.Rooms.Any(room => room.Units.Any(unit => IsOriginalChampionEnemyDeath(unit, context)) &&
                         room.Units.Any(unit => IsOriginalGreenRecruit(unit, context))),
