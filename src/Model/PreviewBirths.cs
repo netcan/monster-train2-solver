@@ -99,7 +99,8 @@ namespace MonsterTrain2Poju.Model
                 !source.Units.Any(unit => IsOriginalGreenRecruit(unit, source.Context) ||
                     IsOriginalChampionEnemyDeath(unit, source.Context) && unit.Triggers.Count == 2 &&
                     IsOriginalMeatShieldHeal(unit.Triggers[1], unit, source.Context)) &&
-                !IsOriginalFightClubWoundedStewardBoss(source, source.Context)) return preview;
+                !IsOriginalFightClubWoundedStewardBoss(source, source.Context) &&
+                !IsOriginalFightClubWoundedCompanionsBoss(source, source.Context)) return preview;
             // Original Green Recruit and this equipped champion lose their
             // unowned fallback before boss-preview identity capture. Other
             // boss-preview players can retain aura references and stay observed.
@@ -123,6 +124,25 @@ namespace MonsterTrain2Poju.Model
                         Modifiers.Upgrades: [{ DataId: RelicStartCombatAttachmentModel.Floor3UpgradeId,
                             AssetKey: RelicStartCombatAttachmentModel.Floor3UpgradeKey, Stats.Damage: 15 }] } &&
                     aura.Targets.Contains(unit.Id) && context.FindCard(unit.SpawnerCardId)?.DataId == "d14a50f3-728d-43e1-87f0-ef1b013f6678"));
+
+        private static bool IsOriginalFightClubWoundedCompanionsBoss(RoomCombatState room, CombatContext context) =>
+            room.Units.Any(owner => owner is { BaseAttack: 95, Health: 67, MaxHealth: 110, Size: 1, Triggers.Count: 1,
+                Modifiers.Upgrades: [{ DataId: "", AssetKey: "" }, { DataId: "", AssetKey: "" },
+                    { DataId: "4f70b7b7-b507-4931-9b14-e13dcd6cd59f", AssetKey: "ExilesDiadem_Upgrade", Stats.Health: 10, Stats.Size: -2 },
+                    { DataId: "", AssetKey: "" }, { DataId: RelicStartCombatAttachmentModel.Floor3UpgradeId,
+                        AssetKey: RelicStartCombatAttachmentModel.Floor3UpgradeKey, Stats.Damage: 15 }] } &&
+                IsOriginalChampionEnemyDeath(owner, context) &&
+                context.CardRegistry?.Any(card => card.DataId == "217d467c-77c2-481d-b78f-57aaf3dcd4a6" && card.EquippedUnitId == owner.Id) == true &&
+                owner.Modifiers.TroopAura is { Upgrade.DataId: CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId, Targets.Count: 3 } aura &&
+                aura.Targets.Contains(owner.Id) && room.Units.Any(unit => unit is
+                    { AssetKey: "MonsterPricklyPuffball", Team: CombatTeam.Player, BaseAttack: 25, Health: 20, MaxHealth: 35, Size: 2,
+                        Modifiers.Upgrades: [{ DataId: RelicStartCombatAttachmentModel.Floor3UpgradeId,
+                            AssetKey: RelicStartCombatAttachmentModel.Floor3UpgradeKey, Stats.Damage: 15 }] } &&
+                    aura.Targets.Contains(unit.Id) && context.FindCard(unit.SpawnerCardId)?.DataId == "fec68cb5-1d4f-4ae5-b01a-288a06cc9502") &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 35,
+                    Health: 10, MaxHealth: 25, Size: 2, Modifiers.Upgrades: [{ DataId: RelicStartCombatAttachmentModel.Floor3UpgradeId,
+                        AssetKey: RelicStartCombatAttachmentModel.Floor3UpgradeKey, Stats.Damage: 15 }] } &&
+                    aura.Targets.Contains(unit.Id) && context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83"));
 
         internal static CombatContext CompleteRemoteCombatBirths(CombatContext context, int roomIndex)
         {
@@ -337,7 +357,7 @@ namespace MonsterTrain2Poju.Model
                 source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalChampionEnemyDeath(unit, context) &&
                     unit.Modifiers?.TroopAura?.Upgrade.DataId == CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId) &&
                 TroopAuraModel.OnlyFragileBuffSource(world.Frame(context), allowTwoLivePreview:
-                    OriginalExistingHorde() || OriginalSycophantCompanion() || OriginalWoundedHorde() || OriginalWoundedSteward() || OriginalFightClubWoundedHorde() || OriginalFightClubSmallStewardHorde() || source.Rooms.Any(room => IsOriginalFightClubWoundedStewardBoss(room, context)) || source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalGreenRecruit(unit, context)),
+                    OriginalExistingHorde() || OriginalSycophantCompanion() || OriginalWoundedHorde() || OriginalWoundedSteward() || OriginalFightClubWoundedHorde() || OriginalFightClubSmallStewardHorde() || source.Rooms.Any(room => IsOriginalFightClubWoundedStewardBoss(room, context) || IsOriginalFightClubWoundedCompanionsBoss(room, context)) || source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalGreenRecruit(unit, context)),
                     allowPreviewRetired: true,
                     allowSingleRetiredPreview: source.Rooms.Any(room => room.Units.Any(unit => IsOriginalChampionEnemyDeath(unit, context)) &&
                         room.Units.Any(unit => IsOriginalGreenRecruit(unit, context))) || source.Rooms.Any(room =>
