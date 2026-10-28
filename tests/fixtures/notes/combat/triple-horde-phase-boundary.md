@@ -39,6 +39,15 @@ card6. This confirms that particular mismatch is identity numbering, including
 when other cards share the same data ID. It does not establish that every other
 state field or preview transition is equivalent; the boundary remains guarded.
 
+After translating only the recorded native-object card identities in card
+references, piles and statistics, and explicitly removing the development-only
+preview point and the two allocator differences, both independent captures
+match in their complete comparable decision state and gameplay RNG. The
+diagnostic retains the original numerical statistic values and validates that
+changed gold, health, RNG seed and statistic values remain distinguishable.
+This is a collector comparison, not proof of intermediate model equivalence or
+permission to remove the existing unsupported boundary.
+
 The five `player-triple-horde-phase-boundary-*` archives preserve the original
 rejection, experimental successor, phase counterexample and independent frame
 samples. The focused check replays the supported prefix, compares independent
