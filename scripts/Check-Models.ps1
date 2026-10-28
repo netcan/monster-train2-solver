@@ -956,6 +956,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-triple-horde-eight-writes-calibration.mt2f',
     'player-triple-horde-eight-writes-replay-calibration.mt2f',
     'player-lava-steward-preview-calibration.mt2f',
+    'player-lava-six-writes-calibration.mt2f',
+    'player-lava-six-writes-replay-calibration.mt2f',
     'player-lava-retired-recruits-preview-calibration.mt2f',
     'player-lava-retired-recruits-preview-replay-calibration.mt2f',
     'player-lava-steward-preview-replay-calibration.mt2f',
@@ -2507,6 +2509,15 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --six-horde-puffball-preview-only (Get-TestFixturePath 'player-six-horde-puffball-preview-calibration.mt2f') (Get-TestFixturePath 'player-six-horde-puffball-preview-replay-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Six horde puffball preview native check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-lava-six-writes-calibration.mt2f', 'player-lava-six-writes-replay-calibration.mt2f') }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Lava six writes checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --lava-six-writes-only (Get-TestFixturePath 'player-lava-six-writes-calibration.mt2f') (Get-TestFixturePath 'player-lava-six-writes-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Lava six writes native check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-lava-retired-recruits-preview-calibration.mt2f', 'player-lava-retired-recruits-preview-replay-calibration.mt2f') }).Count -eq 0) {

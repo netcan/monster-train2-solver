@@ -218,7 +218,14 @@ namespace MonsterTrain2Poju.Model
                 previewBirth.Status("horde")?.Stacks == 3 && (birthUpgrades.Count is 0 or 3 or 6 ||
                     owner.Triggers.Count == 2 && PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
                     (birthUpgrades.Count == 9 && rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 ||
-                    birthUpgrades.Count == 12 && rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 &&
+                    (birthUpgrades.Count == 12 || birthUpgrades.Count == 15 &&
+                        source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 && actor.Unit is
+                            { AssetKey: "MonsterEnthusiasticFan", Team: CombatTeam.Player, Health: <= 0, MaxHealth: 5, DeathState.IsDestroyed: true } &&
+                            source.Train.Context.FindCard(actor.Unit.SpawnerCardId)?.DataId == "adaaaa9d-56a9-4a5f-a347-ee71d4767df5") &&
+                        source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 && actor.Unit is
+                            { AssetKey: "MonsterGoldyWhelp", Team: CombatTeam.Player, Health: <= 0, MaxHealth: 1, DeathState.IsDestroyed: true } &&
+                            source.Train.Context.FindCard(actor.Unit.SpawnerCardId)?.DataId == "5fcb0af2-7bab-4998-94c9-e74a828fff01")) &&
+                    rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 &&
                     room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20,
                         Health: 35, MaxHealth: 35, Size: 2, Modifiers.Upgrades: [
                             { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" }, { DataId: "", AssetKey: "" }] } &&
@@ -292,7 +299,7 @@ namespace MonsterTrain2Poju.Model
                     source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "eef8abd9-3550-4da6-a8bd-d5f63e9d2b16");
             bool originalLavaTwoRetiredPreviewBirth = originalPreviewBirth && source.Train.Context != null &&
                 rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 &&
-                room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count is 9 or 12 &&
+                room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count is 9 or 12 or 15 &&
                 room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20,
                     Health: 35, MaxHealth: 35, Size: 2, Modifiers.Upgrades: [
                         { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" }, { DataId: "", AssetKey: "" }] } &&
