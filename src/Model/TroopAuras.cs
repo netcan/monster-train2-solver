@@ -190,9 +190,13 @@ namespace MonsterTrain2Poju.Model
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", SpawnerCardId: 0,
                     HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades: var birthUpgrades } previewBirth &&
                 previewBirth.Status("horde")?.Stacks == 3 && (birthUpgrades.Count is 0 or 3 or 6 ||
-                    birthUpgrades.Count == 9 && owner.Triggers.Count == 2 &&
-                    PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
-                    rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1) &&
+                    owner.Triggers.Count == 2 && PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
+                    (birthUpgrades.Count == 9 && rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 ||
+                    birthUpgrades.Count is 9 or 12 && rule.Targets.Count == 2 && rule.Targets.All(targets.Contains) &&
+                    room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 24,
+                        Health: 35, MaxHealth: 35, Size: 2, Modifiers.Upgrades: [
+                            { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" }, { DataId: "", AssetKey: "" }] } &&
+                        rule.Targets.Contains(unit.Id) && source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83"))) &&
                 previewBirth.Health == 12 + birthUpgrades.Count * 3 && previewBirth.MaxHealth == previewBirth.Health &&
                 birthUpgrades.All(item => item.DataId == Key(owner.Id) && item.AssetKey == upgrade.AssetKey &&
                     item.Stats.Health == 3 && item.Stats.Damage == 0 && item.Stats.Cost == 0 && item.Stats.Heal == 0 &&
