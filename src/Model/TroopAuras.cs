@@ -216,6 +216,28 @@ namespace MonsterTrain2Poju.Model
                     item.Stats.Size == 0 && item.Stats.XCost == 0 && item.Stats.EquipmentLimit == 0 &&
                     item.Stats.UpgradeSlotCount == 0 && item.Statuses.Count == 0 && item.ExternalInteractions.Count == 0 &&
                     item.AbilityUpgrade == null && item.TriggerUpgrades?.Count is not > 0);
+            bool originalTripleCompanionsRetiredPreviewBirth = source.Preview && source.Train.Context != null &&
+                PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context) &&
+                owner is { BaseAttack: 80, MaxHealth: 110, Size: 1, Triggers.Count: 1 } && added.Length == 1 &&
+                rule.Targets.Count == 4 && targets.Count == 5 && rule.Targets.All(targets.Contains) &&
+                room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player,
+                    SpawnerCardId: 0, BaseAttack: 9, Size: 1, HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades: var tripleUpgrades } tripleCompanion &&
+                tripleCompanion.Status("horde")?.Stacks == 3 && tripleUpgrades.Count is 0 or 3 or 6 or 9 or 12 &&
+                tripleCompanion.Health == 12 + tripleUpgrades.Count * 3 && tripleCompanion.MaxHealth == tripleCompanion.Health &&
+                tripleUpgrades.All(item => item.DataId == Key(owner.Id) && item.AssetKey == upgrade.AssetKey &&
+                    item.Stats.Health == 3 && item.Stats.Damage == 0 && item.Stats.Cost == 0 && item.Stats.Heal == 0 &&
+                    item.Stats.Size == 0 && item.Stats.XCost == 0 && item.Stats.EquipmentLimit == 0 &&
+                    item.Stats.UpgradeSlotCount == 0 && item.Statuses.Count == 0 && item.ExternalInteractions.Count == 0 &&
+                    item.AbilityUpgrade == null && item.TriggerUpgrades?.Count is not > 0) &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 24,
+                    Health: 25, MaxHealth: 25, Size: 2, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
+                    source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83") &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterGenerousHost", Team: CombatTeam.Player, BaseAttack: 5,
+                    Health: 5, MaxHealth: 5, Size: 1, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
+                    PreviewBirthModel.IsOriginalGreenRecruit(unit, source.Train.Context)) &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterSneezyWhelp", Team: CombatTeam.Player, BaseAttack: 4,
+                    Health: 1, MaxHealth: 1, Size: 1, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
+                    source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "eef8abd9-3550-4da6-a8bd-d5f63e9d2b16");
             bool originalFourHordePreviewBirth = source.Preview && source.Train.Context != null &&
                 PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context) && added.Length == 1 &&
                 (rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 ||
@@ -336,6 +358,7 @@ namespace MonsterTrain2Poju.Model
                     pendingDyingRoom: originalPendingTripleBirth || source.Preview && fightClubCompanionsBirth ? room.RoomIndex : (int?)null,
                     pendingDyingPreview: source.Preview && fightClubCompanionsBirth,
                     allowTwoLivePreview: originalPreviewBirth || originalFourHordePreviewBirth || originalSixHordePuffballPreviewBirth || fightClubLavaPreviewBirth || fightClubCompanionsBirth, allowMixedCombat: fightClubBirth || originalTripleBirth,
+                    allowSingleNonPreviewRetiredPreview: originalTripleCompanionsRetiredPreviewBirth,
                     allowPreviewRetired: originalPreviewBirth || originalFourHordePreviewBirth && rule.Targets.Count == 5 || originalSixHordeCompanionsPreviewBirth ||
                         fightClubCompanionsBirth && (targets.Count == 4 || room.Units.Single(unit => unit.Id == added[0]).Status("horde")?.Stacks == 6) ||
                         fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4, allowSingleRetiredPreview: originalFourHordePreviewBirth,
@@ -343,7 +366,7 @@ namespace MonsterTrain2Poju.Model
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
         }
 
-        internal static bool OnlyFragileBuffSource(EnchantmentCombatState source, bool allowLiveCombat = false, bool allowTwoLiveCombat = false, bool allowTwoLivePreview = false, bool allowMixedCombat = false, bool allowPreviewRetired = false, bool allowSingleRetiredPreview = false, bool allowTwoRetiredMixedPreview = false, bool allowSingleRetiredCombat = false, int? pendingDyingRoom = null, bool pendingDyingPreview = false)
+        internal static bool OnlyFragileBuffSource(EnchantmentCombatState source, bool allowLiveCombat = false, bool allowTwoLiveCombat = false, bool allowTwoLivePreview = false, bool allowMixedCombat = false, bool allowPreviewRetired = false, bool allowSingleRetiredPreview = false, bool allowTwoRetiredMixedPreview = false, bool allowSingleRetiredCombat = false, int? pendingDyingRoom = null, bool pendingDyingPreview = false, bool allowSingleNonPreviewRetiredPreview = false)
         {
             CombatUnit[] owners = source.Train.Rooms.SelectMany(room => room.Units)
                 .Where(unit => source.EnchanterIds.Contains(unit.Id) && unit.AssetKey == "Boss_Level8_Fragile").ToArray();
@@ -372,6 +395,11 @@ namespace MonsterTrain2Poju.Model
                 source.RetainedUnits.Count(actor => actor.Unit.Id == retiredIds[0] && actor.RoomIndex == -1 && actor.Preview &&
                     actor.Unit.Health <= 0 && actor.Unit.DeathState?.IsDestroyed == true) == 1 &&
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, retiredIds);
+            bool singleNonPreviewRetiredPreviewTitanskin = source.Preview && allowSingleNonPreviewRetiredPreview && retiredIds.Length == 1 &&
+                !source.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == retiredIds[0]) &&
+                source.RetainedUnits.Count(actor => actor.Unit.Id == retiredIds[0] && actor.RoomIndex == -1 && !actor.Preview &&
+                    actor.Unit.Health <= 0 && actor.Unit.DeathState?.IsDestroyed == true) == 1 &&
+                OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, retiredIds);
             bool singleRetiredCombatTitanskin = !source.Preview && allowSingleRetiredCombat && retiredIds.Length == 1 &&
                 !source.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == retiredIds[0]) &&
                 source.RetainedUnits.Count(actor => actor.Unit.Id == retiredIds[0] && actor.RoomIndex == -1 && !actor.Preview &&
@@ -393,7 +421,7 @@ namespace MonsterTrain2Poju.Model
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, retiredIds);
             // The native registry can retain destroyed Titanskin owners after
             // their room bindings were removed. They cannot perform writes.
-            if (retiredIds.Length != 0 && !livePreviewTitanskin && !mixedPreviewTitanskin && !twoLiveCombatTitanskin && !singleRetiredPreviewTitanskin && !singleRetiredCombatTitanskin && !pendingDyingTitanskin && !twoRetiredMixedPreviewTitanskin && (retiredIds.Length != 2 || retiredIds.Distinct().Count() != 2 ||
+            if (retiredIds.Length != 0 && !livePreviewTitanskin && !mixedPreviewTitanskin && !twoLiveCombatTitanskin && !singleRetiredPreviewTitanskin && !singleNonPreviewRetiredPreviewTitanskin && !singleRetiredCombatTitanskin && !pendingDyingTitanskin && !twoRetiredMixedPreviewTitanskin && (retiredIds.Length != 2 || retiredIds.Distinct().Count() != 2 ||
                 source.Train.Rooms.SelectMany(room => room.Units).Any(unit => retiredIds.Contains(unit.Id)) ||
                 retiredIds.Any(id => source.RetainedUnits.Count(actor => actor.Unit.Id == id &&
                     actor.RoomIndex == -1 && !actor.Preview && actor.Unit.Health <= 0 &&
