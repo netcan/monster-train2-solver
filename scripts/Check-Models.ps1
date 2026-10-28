@@ -1017,6 +1017,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-inactive-once-buffed-multistrike-zealot-inferno-exit-replay-calibration.mt2f',
     'player-inactive-thrice-buffed-multistrike-zealot-inferno-exit-calibration.mt2f',
     'player-inactive-thrice-buffed-multistrike-zealot-inferno-exit-replay-calibration.mt2f',
+    'player-retired-six-horde-preview-calibration.mt2f',
+    'player-retired-six-horde-preview-replay-calibration.mt2f',
     'player-inactive-once-buffed-multistrike-zealot-alternative-calibration.mt2f',
     'player-inactive-pyre-damage-inferno-exit-replay-calibration.mt2f',
     'player-pending-physical-harvest-calibration.mt2f',
@@ -2791,6 +2793,15 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --inactive-once-buffed-multistrike-zealot-alternative-only (Get-TestFixturePath 'player-inactive-once-buffed-multistrike-zealot-alternative-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Alternative multistrike moon native check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-retired-six-horde-preview-calibration.mt2f', 'player-retired-six-horde-preview-replay-calibration.mt2f') }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Retired six-horde preview checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --retired-six-horde-preview-only (Get-TestFixturePath 'player-retired-six-horde-preview-calibration.mt2f') (Get-TestFixturePath 'player-retired-six-horde-preview-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Retired six-horde preview native check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-inactive-thrice-buffed-multistrike-zealot-inferno-exit-calibration.mt2f', 'player-inactive-thrice-buffed-multistrike-zealot-inferno-exit-replay-calibration.mt2f') }).Count -eq 0) {

@@ -222,6 +222,21 @@ namespace MonsterTrain2Poju.Model
                  source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 && actor.Unit is
                     { AssetKey: "MonsterEnthusiasticFan", Team: CombatTeam.Player, Health: <= 0, MaxHealth: 5, DeathState.IsDestroyed: true } &&
                     source.Train.Context.FindCard(actor.Unit.SpawnerCardId)?.DataId == "adaaaa9d-56a9-4a5f-a347-ee71d4767df5")));
+            // A cleared spawn point proves only that the cached target left;
+            // its original identity is no longer available in this preview.
+            bool OriginalMissingPreviewTarget() => source.Train.Context != null &&
+                owner is { BaseAttack: 80, Health: 67, MaxHealth: 110, Size: 1, Triggers.Count: 1 } &&
+                source.Train.Context.CardRegistry?.Any(card => card.DataId == "217d467c-77c2-481d-b78f-57aaf3dcd4a6" && card.EquippedUnitId == owner.Id) == true &&
+                rule.Targets.Count == 4 && targets.Count == 4 && rule.Targets.Count(id => !targets.Contains(id)) == 1 &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20,
+                    Health: 10, MaxHealth: 25, Size: 2, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
+                    source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83") &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterPricklyPuffball", Team: CombatTeam.Player, BaseAttack: 10,
+                    Health: 20, MaxHealth: 35, Size: 2, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
+                    source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "fec68cb5-1d4f-4ae5-b01a-288a06cc9502") &&
+                rule.Targets.Where(id => !targets.Contains(id)).All(id =>
+                    source.Train.Context.SpawnPoints?.Units.Any(point => point.UnitId == id && !point.SpawnedInPreview &&
+                        point.Current == null && point.LastKnown == null) == true);
             bool originalPreviewBirth = source.Preview && source.Train.Context != null &&
                 PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context) && added.Length == 1 &&
                 room.Units.Single(unit => unit.Id == added[0]) is { AssetKey: "MonsterFunguy", SpawnerCardId: 0,
@@ -255,6 +270,7 @@ namespace MonsterTrain2Poju.Model
                     source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 && actor.Unit is
                         { AssetKey: "TrainStewardSmall", Team: CombatTeam.Player, Health: <= 0, MaxHealth: 5, DeathState.IsDestroyed: true } &&
                         source.Train.Context.FindCard(actor.Unit.SpawnerCardId)?.DataId == "38e70e6a-20f3-4e36-8d31-c5110be07f87") ||
+                    birthUpgrades.Count is 9 or 12 && OriginalMissingPreviewTarget() ||
                     owner.Triggers.Count == 2 && PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
                     (birthUpgrades.Count == 9 && rule.Targets.Count == 3 && rule.Targets.Count(id => !targets.Contains(id)) == 1 ||
                     (birthUpgrades.Count == 12 || birthUpgrades.Count == 15 &&
