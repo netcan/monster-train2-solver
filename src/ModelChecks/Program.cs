@@ -7,6 +7,13 @@ if (args.Length is 2 or 3 && args[0] == "--twin-sycophant-preview-only")
     TwinSycophantPreviewChecks.Native(fixture.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--steward-whelp-preview-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    ArmorChampionPreviewChecks.Native(fixture.RootElement, replay?.RootElement, stewardWhelp: true);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--armor-champion-preview-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -8232,6 +8239,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var fixture = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-twin-sycophant-preview-replay-calibration.mt2f"));
     TwinSycophantPreviewChecks.Native(fixture.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-steward-whelp-preview-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-steward-whelp-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-steward-whelp-preview-replay-calibration.mt2f"));
+    ArmorChampionPreviewChecks.Native(fixture.RootElement, replay.RootElement, stewardWhelp: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-armor-champion-preview-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-armor-champion-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
