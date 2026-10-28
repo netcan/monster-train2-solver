@@ -193,11 +193,16 @@ namespace MonsterTrain2Poju.Model
                         upgrade.Stats.Size == 0 && upgrade.Stats.XCost == 0 && upgrade.Stats.EquipmentLimit == 0 &&
                         upgrade.Stats.UpgradeSlotCount == 0 && upgrade.Statuses.Count == 0 && upgrade.ExternalInteractions.Count == 0 &&
                         upgrade.AbilityUpgrade == null && upgrade.TriggerUpgrades?.Count is not > 0))));
+            bool OriginalSycophantCompanion() => source.Rooms.Any(room => room.Units.Any(owner => IsOriginalChampionEnemyDeath(owner, context) &&
+                owner.Modifiers?.TroopAura?.Upgrade.DataId == CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId) &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20,
+                    Health: 35, MaxHealth: 35, Size: 1, Modifiers.Upgrades: [{ DataId: "4f70b7b7-b507-4931-9b14-e13dcd6cd59f", AssetKey: "ExilesDiadem_Upgrade" }, { DataId: "", AssetKey: "" }] } &&
+                    unit.Status("horde") == null && context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83"));
             bool fragileObserver = world != null && world.EnchanterIds.Count > 0 &&
                 source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalChampionEnemyDeath(unit, context) &&
                     unit.Modifiers?.TroopAura?.Upgrade.DataId == CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId) &&
                 TroopAuraModel.OnlyFragileBuffSource(world.Frame(context), allowTwoLivePreview:
-                    OriginalExistingHorde() || source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalGreenRecruit(unit, context)),
+                    OriginalExistingHorde() || OriginalSycophantCompanion() || source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalGreenRecruit(unit, context)),
                     allowPreviewRetired: true);
             // Temporary player births without durable aura references are gone
             // before native decision capture assigns their synthetic identities.
