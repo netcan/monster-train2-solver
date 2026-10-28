@@ -1048,6 +1048,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-triple-horde-phase-boundary-stage.mt2f',
     'player-triple-horde-phase-boundary-timeline.mt2f',
     'player-triple-horde-phase-boundary-timeline-replay.mt2f',
+    'player-triple-horde-dual-trace-calibration.mt2f',
+    'player-triple-horde-dual-trace-replay-calibration.mt2f',
     'player-fight-club-injured-companion-calibration.mt2f',
     'player-fight-club-injured-companion-replay-calibration.mt2f',
     'player-fight-club-injured-recruit-calibration.mt2f',
@@ -2497,6 +2499,15 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --fight-club-injured-companion-only (Get-TestFixturePath 'player-fight-club-injured-companion-calibration.mt2f') (Get-TestFixturePath 'player-fight-club-injured-companion-replay-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Fight Club injured companion native check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-triple-horde-dual-trace-calibration.mt2f', 'player-triple-horde-dual-trace-replay-calibration.mt2f') }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Dual trace horde checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --dual-trace-horde-only (Get-TestFixturePath 'player-triple-horde-phase-boundary-calibration.mt2f') (Get-TestFixturePath 'player-triple-horde-dual-trace-calibration.mt2f') (Get-TestFixturePath 'player-triple-horde-dual-trace-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Dual trace horde native check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-triple-horde-phase-boundary-calibration.mt2f', 'player-triple-horde-phase-boundary-experiment.mt2f', 'player-triple-horde-phase-boundary-stage.mt2f', 'player-triple-horde-phase-boundary-timeline.mt2f', 'player-triple-horde-phase-boundary-timeline-replay.mt2f') }).Count -eq 0) {

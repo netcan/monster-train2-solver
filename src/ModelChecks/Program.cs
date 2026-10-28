@@ -126,6 +126,14 @@ if (args.Length is 2 or 3 && args[0] == "--single-horde-sycophant-attack24-only"
     SingleHordeSycophantChecks.Native(fixture.RootElement, replay?.RootElement, attack24: true);
     return;
 }
+if (args.Length is 3 or 4 && args[0] == "--dual-trace-horde-only")
+{
+    using var original = ModelJson.ReadFixture(args[1]);
+    using var timeline = ModelJson.ReadFixture(args[2]);
+    using var replay = args.Length == 4 ? ModelJson.ReadFixture(args[3]) : null;
+    DualTraceHordeChecks.Native(original.RootElement, timeline.RootElement, replay?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--inactive-heavy-inferno-new-moon-entry-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -8168,6 +8176,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var fixture = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-fight-club-injured-companion-replay-calibration.mt2f"));
     FightClubInjuredCompanionChecks.Native(fixture.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-triple-horde-dual-trace-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-triple-horde-dual-trace-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var original = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-horde-phase-boundary-calibration.mt2f"));
+    using var timeline = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-horde-dual-trace-replay-calibration.mt2f"));
+    DualTraceHordeChecks.Native(original.RootElement, timeline.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-triple-horde-phase-boundary-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-triple-horde-phase-boundary-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

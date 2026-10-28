@@ -49,7 +49,7 @@ internal static class TripleHordePhaseBoundaryChecks
         Console.WriteLine("TRIPLE-HORDE-PHASE-BOUNDARY PASS: 20 native prefix inputs, two independent two-frame development snapshots and player successors; cross-collector allocator mismatch remains guarded.");
     }
 
-    private static BattleTurnState[] CheckTimeline(FixtureValue original, FixtureValue timeline)
+    internal static BattleTurnState[] CheckTimeline(FixtureValue original, FixtureValue timeline)
     {
         Require(timeline.GetProperty("NativeCompleted").GetBoolean() &&
             original.GetProperty("Request").ContentEquals(timeline.GetProperty("Request")), "Timeline request differs.");

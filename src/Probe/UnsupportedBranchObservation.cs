@@ -31,6 +31,7 @@ namespace MonsterTrain2Poju.Probe
         private static readonly List<Row> rows = new List<Row>();
         private static readonly List<object> roomAttachmentMovement = new List<object>();
         private static readonly List<object> settlementSamples = new List<object>();
+        private static object? settlementPost;
         private static object? abilityCacheWarm;
         private static string? nativeSelectionRejection;
         private static bool waiting;
@@ -46,8 +47,12 @@ namespace MonsterTrain2Poju.Probe
             {
                 BattleTurnState first = FullBattleTrace.Active!.CaptureDecision();
                 BattleTurnState second = FullBattleTrace.Active!.CaptureDecision();
+                BattleTurnState playerFirst = PlayerAdvisorProbe.Capture();
+                BattleTurnState playerSecond = PlayerAdvisorProbe.Capture();
                 settlementSamples.Add(new { Frame = UnityEngine.Time.frameCount, ReadyFrame = readyFrame,
-                    First = first, Second = second, CaptureStable = Comparable(first) == Comparable(second) });
+                    First = first, Second = second, CaptureStable = Comparable(first) == Comparable(second),
+                    PlayerFirst = playerFirst, PlayerSecond = playerSecond,
+                    PlayerCaptureStable = Comparable(playerFirst) == Comparable(playerSecond) });
             }
             return UnityEngine.Time.frameCount <= readyFrame + 1;
         }
@@ -90,6 +95,8 @@ namespace MonsterTrain2Poju.Probe
             if (!waiting) return;
             Row row = rows.Last();
             row.Actual = actual; waiting = false;
+            if (row.Boundary && Environment.GetEnvironmentVariable("MT2_PROBE_SETTLEMENT_TIMELINE") == "1")
+                settlementPost = new { Frame = UnityEngine.Time.frameCount, Development = FullBattleTrace.Active!.CaptureDecision(), Player = actual };
             if (row.Boundary) row.RoomAttachmentsAfter = CaptureRoomAttachments();
             if (!row.Boundary)
             {
@@ -142,7 +149,7 @@ namespace MonsterTrain2Poju.Probe
                 EnemySummonSignatures = CaptureEnemySummonSignatures(),
                 TripleJuiceCalibration = JuiceTraitProbe.TripleSamples,
                 FloorTransitionPiercing = CaptureFloorTransitionPiercing(),
-                RoomAttachmentMovement = roomAttachmentMovement.ToArray(), SettlementTimeline = settlementSamples.ToArray(),
+                RoomAttachmentMovement = roomAttachmentMovement.ToArray(), SettlementTimeline = settlementSamples.ToArray(), SettlementPost = settlementPost,
                 TriggeredCorruption = TriggeredCorruptionProbe.Records.ToArray(),
                 RoomPreCombatRecords = RoomPreCombatProbe.Records.ToArray(),
                 CorruptRestrictedState = CorruptRestrictedStateCalibration.Evidence,
