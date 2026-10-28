@@ -293,6 +293,15 @@ namespace MonsterTrain2Poju.Model
 
         internal static RoomAttachmentUnitSyncResult SynchronizeTargetability(TrainCombatState before, TrainCombatState after)
         {
+            foreach (RoomCombatState oldRoom in before.Rooms)
+            foreach (CombatUnit previous in oldRoom.Units)
+            {
+                CombatUnit? current = after.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == previous.Id);
+                if (current == null || previous.Status("untouchable") != null || current.Status("untouchable") == null ||
+                    previous.Status("horde")?.Stacks is not > 0) continue;
+                if (oldRoom.Units.Any(owner => owner.Health > 0 && owner.Modifiers?.TroopAura?.Targets.Contains(previous.Id) == true))
+                    return Fail("Untouchable troop-aura target removal requires native calibration.");
+            }
             if (after.Context?.RoomCapacities?.Any(room => room.Attachments?.Count > 0) != true)
                 return new RoomAttachmentUnitSyncResult(after);
             TrainCombatState state = after;

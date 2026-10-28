@@ -531,6 +531,8 @@ namespace MonsterTrain2Poju.Probe
                     " publishCaptureMs=" + LastCaptureMs.ToString("F1") + " publishPrepareMs=" + LastPreparationMs.ToString("F1") +
                     " projectionMs=" + LastProjectionMs.ToString("F1") + " purityMs=" + LastPurityMs.ToString("F1") +
                     " verifyMs=" + displayed.VerificationElapsed.TotalMilliseconds.ToString("F1") +
+                    " reuseCheckMs=" + displayed.ReuseCheckElapsed.TotalMilliseconds.ToString("F1") +
+                    " planVerifyMs=" + displayed.PlanVerificationElapsed.TotalMilliseconds.ToString("F1") +
                     " stoppedEarly=" + displayed.Plan.StoppedEarly + " pyreHealthBound=" + displayed.Plan.PyreHealthUpperBound +
                     " wholeBattle=" + displayed.Plan.SearchedToBattleEnd + " workers=" + displayed.Plan.SearchWorkers +
                     " workerThreads=" + string.Join(",", displayed.Plan.WorkerThreadIds) +

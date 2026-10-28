@@ -18,6 +18,8 @@ namespace MonsterTrain2Poju.Model
         public TimeSpan PreparationElapsed { get; }
         public TimeSpan QueueElapsed { get; }
         public TimeSpan VerificationElapsed { get; }
+        public TimeSpan ReuseCheckElapsed { get; }
+        public TimeSpan PlanVerificationElapsed => VerificationElapsed - ReuseCheckElapsed;
         public bool ReusedWinningContinuation { get; }
         public bool ReusedContinuation { get; }
         public bool ReusedSelection { get; }
@@ -31,11 +33,12 @@ namespace MonsterTrain2Poju.Model
             TimeSpan captureElapsed, TimeSpan queueElapsed, TimeSpan verificationElapsed, long requestedAt,
             VerifiedAdviceContinuation? continuation = null, bool reusedWinningContinuation = false, bool reusedSelection = false,
             bool reusedContinuation = false, TimeSpan preparationElapsed = default,
-            Dictionary<string, SelectionAdviceReuse.Result>? selectionCache = null)
+            Dictionary<string, SelectionAdviceReuse.Result>? selectionCache = null, TimeSpan reuseCheckElapsed = default)
         {
             Root = root; RootKey = key; Plan = plan; CaptureElapsed = captureElapsed;
             PreparationElapsed = preparationElapsed;
             QueueElapsed = queueElapsed; VerificationElapsed = verificationElapsed; this.requestedAt = requestedAt;
+            ReuseCheckElapsed = reuseCheckElapsed;
             Continuation = continuation; ReusedWinningContinuation = reusedWinningContinuation;
             ReusedContinuation = reusedContinuation;
             ReusedSelection = reusedSelection;
@@ -271,6 +274,7 @@ namespace MonsterTrain2Poju.Model
                     bool reusedSelection = matched == null && candidate != null && SelectionAdviceReuse.TryRebase(candidate, root,
                         retainPlans, token, out plan, out proof);
                     verification.Stop();
+                    TimeSpan reuseCheckElapsed = verification.Elapsed;
                     if (reusedSelection)
                     {
                         verification.Start();
@@ -296,7 +300,7 @@ namespace MonsterTrain2Poju.Model
                         proof, reusedWinningContinuation: matched?.IsWinning == true, reusedSelection: reusedSelection,
                         reusedContinuation: matched != null, preparationElapsed: preparationElapsed,
                         selectionCache: reusedSelection || matched != null && retained != null && matched.SamePosition(retained)
-                            ? candidate?.SelectionCache : null);
+                            ? candidate?.SelectionCache : null, reuseCheckElapsed: reuseCheckElapsed);
                 });
             }
         }

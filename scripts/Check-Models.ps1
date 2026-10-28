@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-untouchable-troop-aura-counterexample.mt2f',
     'player-dusk-mantle-recruit-boss-preview-calibration.mt2f',
     'player-dusk-mantle-recruit-boss-preview-replay-calibration.mt2f',
     'player-underlegion-third-troop-preview-calibration.mt2f',
@@ -2505,6 +2506,15 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --fight-club-injured-companion-only (Get-TestFixturePath 'player-fight-club-injured-companion-calibration.mt2f') (Get-TestFixturePath 'player-fight-club-injured-companion-replay-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Fight Club injured companion native check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -ne 'player-untouchable-troop-aura-counterexample.mt2f' }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Untouchable troop-aura checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --untouchable-troop-aura-only (Get-TestFixturePath 'player-untouchable-troop-aura-counterexample.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Untouchable troop-aura guard check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-triple-horde-retired-combat-calibration.mt2f', 'player-triple-horde-retired-combat-replay-calibration.mt2f', 'player-triple-horde-retired-combat-phase.mt2f', 'player-triple-horde-retired-combat-replay-phase.mt2f') }).Count -eq 0) {
@@ -7582,6 +7592,10 @@ foreach ($fixturePath in $originalGrosMichelFixtures) {
         dotnet run --project (Join-Path $workspace 'src\ModelChecks\ModelChecks.csproj') -c Release --no-build -- $mode $fixturePath
         if ($LASTEXITCODE -ne 0) { throw "Original Gros Michel checks failed ($mode): $fixturePath" }
     }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-untouchable-troop-aura-counterexample.mt2f' })) {
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --untouchable-troop-aura-only $fixturePath
+    if ($LASTEXITCODE -ne 0) { throw 'Untouchable troop-aura guard check failed.' }
 }
 $plannerFixtures = @($fixtures | Where-Object { (Split-Path -Leaf $_) -like 'full-battle-planner-*.mt2f' -or (Split-Path -Leaf $_) -like 'full-battle-advisor-*.mt2f' })
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-live-arkion-pyre-observed-prefix.mt2f' })) {

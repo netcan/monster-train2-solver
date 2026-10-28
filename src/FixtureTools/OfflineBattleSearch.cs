@@ -71,7 +71,8 @@ internal static partial class OfflineBattleSearch
             BattleTurnState current = row.GetProperty("Root").Deserialize<BattleTurnState>()!;
             var forecastPrefix = new List<Step>(prefix);
             RoomOutcome outcome = RoomOutcome.Exchanged;
-            foreach (FixtureValue stepValue in row.GetProperty("PlanSteps").EnumerateArray())
+            foreach (FixtureValue stepValue in decisionIndex >= fromDecision
+                ? row.GetProperty("PlanSteps").EnumerateArray() : Array.Empty<FixtureValue>())
             {
                 if (decisionIndex >= fromDecision && Extract(current, forecastPrefix)) return;
                 Require(!Terminal(outcome), "Recorded forecast follows a terminal result.");

@@ -102,7 +102,10 @@ internal static class BattleAdviceChecks
                 Require(ReferenceEquals(session.Current!.Root, latest) && session.Current.RootKey == Key(latest), "Stale worker result was published.");
                 Require(calls == 2 && peak == 1, "Advice work overlapped or queued intermediate snapshots.");
                 Require(session.Current.CaptureElapsed >= TimeSpan.Zero && session.Current.QueueElapsed >= TimeSpan.Zero &&
-                    session.Current.VerificationElapsed >= TimeSpan.Zero && session.Current.ResponseElapsed >= session.Current.CaptureElapsed,
+                    session.Current.VerificationElapsed >= TimeSpan.Zero && session.Current.ReuseCheckElapsed >= TimeSpan.Zero &&
+                    session.Current.PlanVerificationElapsed >= TimeSpan.Zero &&
+                    session.Current.ReuseCheckElapsed + session.Current.PlanVerificationElapsed == session.Current.VerificationElapsed &&
+                    session.Current.ResponseElapsed >= session.Current.CaptureElapsed,
                     "Advice response timing is invalid.");
                 Require(session.Current.Plan.CompletedHorizon && session.Current.Plan.ReachedNodeLimit, "Budget fallback did not complete its horizon.");
                 session.Observe(latest, Key(latest));

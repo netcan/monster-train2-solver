@@ -6236,6 +6236,12 @@ if (args.Length == 2 && args[0] == "--battle-advice-only")
     BattleAdviceChecks.Run(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--untouchable-troop-aura-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    UntouchableTroopAuraChecks.Run(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--planner-replay-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
