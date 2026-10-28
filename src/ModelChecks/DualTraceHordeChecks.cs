@@ -183,7 +183,7 @@ internal static class DualTraceHordeChecks
             previous = target;
             Diagnose(fixture);
         }
-        Console.WriteLine("HORDE-IDENTITY-MAP PASS: two independent native runs map all 39 development card objects one-to-one, including the same 5->6 spawner; boundary remains guarded.");
+        Console.WriteLine("HORDE-IDENTITY-MAP PASS: two independent native runs map all 39 development card objects one-to-one, including the same 5->6 spawner.");
     }
 
     internal static void Native(FixtureValue original, FixtureValue timeline, FixtureValue? replay = null)
@@ -196,9 +196,10 @@ internal static class DualTraceHordeChecks
         var developmentFinal = post.GetProperty("Development").Deserialize<BattleTurnState>()!;
         var boundary = timeline.GetProperty("Rows").EnumerateArray().Last();
         var rowFinal = boundary.GetProperty("Actual").Deserialize<BattleTurnState>()!;
-        var guarded = BattleTurnModel.EndTurn(boundary.GetProperty("Before").Deserialize<BattleTurnState>()!);
-        Require(!guarded.Supported && guarded.UnsupportedReason ==
-            "Train combat floor 2: Combined troop upgrades and enchantment source ordering require native calibration.", "Unverified boundary escaped its guard.");
+        var calibrated = BattleTurnModel.EndTurn(boundary.GetProperty("Before").Deserialize<BattleTurnState>()!);
+        Require(calibrated.Supported && calibrated.Outcome == RoomOutcome.Exchanged &&
+            NativeBranchObservationChecks.Key(calibrated.State!) == NativeBranchObservationChecks.Key(rowFinal),
+            "Calibrated player successor differs: " + calibrated.UnsupportedReason);
         Require(NativeBranchObservationChecks.Key(playerFinal) == NativeBranchObservationChecks.Key(rowFinal), "Wrong final player capture.");
         for (int i = 0; i < frames.Length; i++)
         {
@@ -230,7 +231,7 @@ internal static class DualTraceHordeChecks
                     NativeBranchObservationChecks.Key(replay.Value.GetProperty("SettlementPost").GetProperty(field).Deserialize<BattleTurnState>()!),
                     "Independent post-settlement capture differs: " + field);
         }
-        Console.WriteLine("DUAL-TRACE-HORDE PASS: stable independent collectors retain differing preview and spawner-card identities; unverified boundary remains guarded; independent=" + replay.HasValue);
+        Console.WriteLine("DUAL-TRACE-HORDE PASS: calibrated player successor and stable independent collectors retain differing preview and spawner-card identities; independent=" + replay.HasValue);
     }
 
     private static string WithoutPreviewIdentity(BattleTurnState state)

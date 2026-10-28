@@ -28,8 +28,8 @@ from the comparison, the first remaining mismatch is the second-floor third
 unit's `SpawnerCardId` (development5, player6). The checker preserves this
 counterexample without asserting that it is the only remaining difference.
 Every input and player successor still matches the uninstrumented native
-process. The live-model boundary remains rejected until these identities and
-their behavioral effects are independently established.
+process. At this stage the live-model boundary remained rejected pending
+independent investigation of these identities and their effects.
 
 Two further independent processes read both registries using the same native
 card object references, without assigning new identities. Each mapped all 39
@@ -37,7 +37,7 @@ development-known card objects to distinct player-side identities. The same
 native unit20 and its actual spawner object are development card5 and player
 card6. This confirms that particular mismatch is identity numbering, including
 when other cards share the same data ID. It does not establish that every other
-state field or preview transition is equivalent; the boundary remains guarded.
+state field or preview transition is equivalent by itself.
 
 After translating only the recorded native-object card identities in card
 references, piles and statistics, and explicitly removing the development-only
@@ -46,16 +46,25 @@ match in their complete comparable decision state and gameplay RNG. The
 diagnostic retains the original numerical statistic values and validates that
 changed gold, health, RNG seed and statistic values remain distinguishable.
 This is a collector comparison, not proof of intermediate model equivalence or
-permission to remove the existing unsupported boundary.
+permission by itself to remove the unsupported boundary.
 
 The archived experimental EndTurn phase also matches the complete comparable
 native phase and gameplay RNG after adjusting only preview point27 and the
 two documented unit allocator fields. Gold, unit health, RNG seed and card
-statistic perturbations remain detectable. This is one experimental phase and
-does not by itself validate unobserved combinations or release the guard.
+statistic perturbations remain detectable. This single experimental phase does
+not by itself validate unobserved combinations.
 
 The five `player-triple-horde-phase-boundary-*` archives preserve the original
 rejection, experimental successor, phase counterexample and independent frame
 samples. The focused check replays the supported prefix, compares independent
-observed successors and frame states, and requires the production model to
-reject the boundary. This does not establish support or a battle victory.
+observed successors and frame states, and now verifies the calibrated player
+successor. This does not establish a battle victory.
+
+Version393 supports the specifically observed real combat birth: a level-three
+horde with the original champion, Sycophant, recruit and Whelp, with a retired
+Titanskin source still registered. Two new independent native processes match
+the 20-input prefix, final successor and gameplay RNG. Both raw phase logs
+retain the documented preview identity mismatch; after adjusting only the
+verified point and allocator, the entire phase state and RNG match. Four
+concurrent model branches and five changed source or companion controls pass.
+Other combinations remain guarded; no full battle victory is implied.

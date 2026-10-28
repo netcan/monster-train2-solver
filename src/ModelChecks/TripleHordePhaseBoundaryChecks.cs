@@ -27,8 +27,11 @@ internal static class TripleHordePhaseBoundaryChecks
             Require(outcome == RoomOutcome.Exchanged && NativeBranchObservationChecks.Key(current) == NativeBranchObservationChecks.Key(actual),
                 "Native prefix successor differs at " + i);
         }
-        var guarded = BattleTurnModel.EndTurn(current);
-        Require(!guarded.Supported && guarded.UnsupportedReason == Reason, "Unverified phase must remain guarded.");
+        var supported = BattleTurnModel.EndTurn(current);
+        var finalNative = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        Require(supported.Supported && supported.Outcome == RoomOutcome.Exchanged &&
+            NativeBranchObservationChecks.Key(supported.State!) == NativeBranchObservationChecks.Key(finalNative),
+            "Calibrated native successor differs: " + supported.UnsupportedReason);
         var boundary = experiment.GetProperty("Rows")[20].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         FixtureValue turn = phases.GetProperty("Turns")[3];
         var predicted = turn.GetProperty("Predicted").GetProperty("State").Deserialize<BattleTurnState>()!;
@@ -47,7 +50,7 @@ internal static class TripleHordePhaseBoundaryChecks
         for (int i = 0; i < firstFrames.Length; i++)
             Require(NativeBranchObservationChecks.Key(firstFrames[i]) == NativeBranchObservationChecks.Key(repeatedFrames[i]),
                 "Independent settlement frame differs at " + i);
-        Console.WriteLine("TRIPLE-HORDE-PHASE-BOUNDARY PASS: 20 native prefix inputs, two independent two-frame development snapshots and player successors; cross-collector allocator mismatch remains guarded.");
+        Console.WriteLine("TRIPLE-HORDE-PHASE-BOUNDARY PASS: 20 native prefix inputs, calibrated player successor and independent development snapshots; historical cross-collector identity mismatch preserved.");
     }
 
     internal static BattleTurnState[] CheckTimeline(FixtureValue original, FixtureValue timeline)

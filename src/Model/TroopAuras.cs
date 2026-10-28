@@ -203,6 +203,22 @@ namespace MonsterTrain2Poju.Model
                 { AssetKey: "MonsterFunguy", SpawnerCardId: 0, Health: 12, MaxHealth: 12,
                     HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades.Count: 0 } tripleBirth &&
                 tripleBirth.Status("horde")?.Stacks == 3;
+            bool originalTripleRetiredCombatBirth = originalTripleBirth && source.Train.Context != null &&
+                owner is { BaseAttack: 80, Health: 94, MaxHealth: 110, Size: 1, Triggers.Count: 1, Modifiers.Upgrades: [
+                    { DataId: "", AssetKey: "" },
+                    { DataId: "4f70b7b7-b507-4931-9b14-e13dcd6cd59f", AssetKey: "ExilesDiadem_Upgrade", Stats.Health: 10, Stats.Size: -2 },
+                    { DataId: "", AssetKey: "" }] } &&
+                source.Train.Context.CardRegistry?.Any(card => card.DataId == "217d467c-77c2-481d-b78f-57aaf3dcd4a6" && card.EquippedUnitId == owner.Id) == true &&
+                rule.Targets.Count == 4 && targets.Count == 5 && rule.Targets.All(targets.Contains) && room.Units.Count == 5 &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 24,
+                    Health: 25, MaxHealth: 25, Size: 2, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
+                    source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83") &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterGenerousHost", Team: CombatTeam.Player, BaseAttack: 5,
+                    Health: 5, MaxHealth: 5, Size: 1, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
+                    PreviewBirthModel.IsOriginalGreenRecruit(unit, source.Train.Context)) &&
+                room.Units.Any(unit => unit is { AssetKey: "MonsterSneezyWhelp", Team: CombatTeam.Player, BaseAttack: 4,
+                    Health: 1, MaxHealth: 1, Size: 1, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
+                    source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "eef8abd9-3550-4da6-a8bd-d5f63e9d2b16");
             bool originalFourHordeCombatBirth = originalChampion && source.Train.Context != null &&
                 owner is { BaseAttack: 80, Health: 110, MaxHealth: 110, Size: 1, Triggers.Count: 1, Modifiers.Upgrades: [
                     { DataId: "", AssetKey: "" },
@@ -765,7 +781,7 @@ namespace MonsterTrain2Poju.Model
             bool fightClubLavaCombatBirth = (fightClubBirth || fightClubSingleBirth) && source.Train.Context != null && owner.Triggers.Count == 2 &&
                 PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
                 rule.Targets.Count == 2 && targets.Count == 3 && rule.Targets.All(targets.Contains) && fightClubLavaCompanion;
-            return third ? OnlyFragileBuffSource(source, allowLiveCombat: originalChampion, allowTwoLiveCombat: originalSingleBirth || originalSycophant || originalTripleBirth || originalFourHordeCombatBirth || fightClubCompanionsBirth || fightClubLavaCombatBirth || fightClubStewardRecruitCombatBirth || fightClubWoundedStewardCombatBirth || fightClubWoundedCompanionsCombatBirth, allowSingleRetiredCombat: originalSingleRetiredBirth,
+            return third ? OnlyFragileBuffSource(source, allowLiveCombat: originalChampion, allowTwoLiveCombat: originalSingleBirth || originalSycophant || originalTripleBirth || originalFourHordeCombatBirth || fightClubCompanionsBirth || fightClubLavaCombatBirth || fightClubStewardRecruitCombatBirth || fightClubWoundedStewardCombatBirth || fightClubWoundedCompanionsCombatBirth, allowSingleRetiredCombat: originalSingleRetiredBirth || originalTripleRetiredCombatBirth,
                     pendingDyingRoom: originalPendingTripleBirth || source.Preview && fightClubCompanionsBirth ? room.RoomIndex : (int?)null,
                     pendingDyingPreview: source.Preview && fightClubCompanionsBirth,
                     allowTwoLivePreview: originalPreviewBirth || originalFourHordePreviewBirth || originalSixHordePuffballPreviewBirth || originalSixHordeStewardFanPreviewBirth || originalSixHordeStewardCompanionPreviewBirth || fightClubLavaPreviewBirth || fightClubCompanionsBirth || fightClubRetiredPuffballBirth || fightClubStewardPreviewBirth || fightClubStewardRecruitMissingPreviewBirth || fightClubStewardRecruitPreviewBirth || fightClubWoundedStewardPreviewBirth || fightClubSmallStewardMissingTarget || fightClubWoundedCompanionsMissingPreviewBirth, allowMixedCombat: fightClubBirth || originalTripleBirth || fightClubLavaCombatBirth,

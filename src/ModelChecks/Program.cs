@@ -126,6 +126,18 @@ if (args.Length is 2 or 3 && args[0] == "--single-horde-sycophant-attack24-only"
     SingleHordeSycophantChecks.Native(fixture.RootElement, replay?.RootElement, attack24: true);
     return;
 }
+if (args.Length is 4 or 6 or 8 && args[0] == "--triple-horde-retired-combat-only")
+{
+    using var original = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    using var phases = ModelJson.ReadFixture(args[3]);
+    using var independent = args.Length >= 6 ? ModelJson.ReadFixture(args[4]) : null;
+    using var second = args.Length >= 6 ? ModelJson.ReadFixture(args[5]) : null;
+    using var independentPhase = args.Length == 8 ? ModelJson.ReadFixture(args[6]) : null;
+    using var secondPhase = args.Length == 8 ? ModelJson.ReadFixture(args[7]) : null;
+    TripleHordeRetiredCombatChecks.Native(original.RootElement, replay.RootElement, phases.RootElement, independent?.RootElement, second?.RootElement, independentPhase?.RootElement, secondPhase?.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--horde-phase-diagnostic")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -8196,6 +8208,17 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var fixture = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-fight-club-injured-companion-replay-calibration.mt2f"));
     FightClubInjuredCompanionChecks.Native(fixture.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-triple-horde-retired-combat-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-triple-horde-retired-combat-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var original = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-horde-phase-boundary-calibration.mt2f"));
+    using var historical = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-horde-phase-boundary-experiment.mt2f"));
+    using var oldPhase = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-horde-phase-boundary-stage.mt2f"));
+    using var first = ModelJson.ReadFixture(path);
+    using var second = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-horde-retired-combat-replay-calibration.mt2f"));
+    using var firstPhase = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-horde-retired-combat-phase.mt2f"));
+    using var secondPhase = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-triple-horde-retired-combat-replay-phase.mt2f"));
+    TripleHordeRetiredCombatChecks.Native(original.RootElement, historical.RootElement, oldPhase.RootElement, first.RootElement, second.RootElement, firstPhase.RootElement, secondPhase.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-triple-horde-identity-map-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-triple-horde-identity-map-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
