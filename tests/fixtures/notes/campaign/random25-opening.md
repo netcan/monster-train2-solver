@@ -213,3 +213,16 @@ backup/receipt`RandomCampaign-20261028-054146`.
 Ring8 actual source054052-498fc914 rejects the initial Juice/Powerstone
 composition onStarterFireStarter18 before any input. Its native deployment
 and unchanged input checkpoint remain isolated; no eighth victory is claimed.
+
+The rank1 reward alternative replays the same Ring7 victory and replaces
+EnthusiasticFan/RoyalWhelp with GrowRoom/Mindcage, retaining Pyre46 and gold30.
+Release389 runs the resulting Ring8 checkpoint with actual3000ms/two-worker
+advice: source032348-08525be0 and independent defeat-settlement replay
+033351-24d95ee7 both lose after48 inputs (39 plays,9 EndTurns), with the boss
+at2716/3000. The defeat-pair checker matches every input, state, forecast and
+RNG; four source failure counters and original-file changes are zero. An
+offline search explored108 complete alternatives around the first six decisions
+without an improvement; it is not exhaustive and does not establish optimality.
+The original reward deck has a separately replayed44-input loss at2117/3000.
+Neither result is a campaign victory, and the alternate reward path is not the
+original seven-win checkpoint chain.
