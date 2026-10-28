@@ -982,6 +982,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-six-horde-fight-club-five-writes-calibration.mt2f',
     'player-six-horde-fight-club-five-writes-replay-calibration.mt2f',
     'player-club-nine-horde-calibration.mt2f',
+    'player-club-steward-preview-calibration.mt2f',
+    'player-club-steward-preview-replay-calibration.mt2f',
     'player-club-nine-horde-replay-calibration.mt2f',
     'player-fight-club-dying-preview-calibration.mt2f',
     'player-fight-club-dying-preview-replay-calibration.mt2f',
@@ -2448,6 +2450,15 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --troop-cache-only (Get-TestFixturePath 'player-troop-cache-only-calibration.mt2f') (Get-TestFixturePath 'player-troop-cache-only-replay-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Troop cache-only native check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-club-steward-preview-calibration.mt2f', 'player-club-steward-preview-replay-calibration.mt2f') }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Club steward preview checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --club-steward-preview-only (Get-TestFixturePath 'player-club-steward-preview-calibration.mt2f') (Get-TestFixturePath 'player-club-steward-preview-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Club steward preview native check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-club-nine-horde-calibration.mt2f', 'player-club-nine-horde-replay-calibration.mt2f') }).Count -eq 0) {
