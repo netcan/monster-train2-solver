@@ -6,25 +6,29 @@ using MonsterTrain2Poju.Model;
 internal static class SixHordePuffballPreviewChecks
 {
     private const string Reason = "Battle preview floor 2: Combined troop upgrades and enchantment source ordering require native calibration.";
-    internal static void Native(FixtureValue fixture, FixtureValue? replay = null)
+    internal static void Native(FixtureValue fixture, FixtureValue? replay = null, bool retiredPuffball = false)
     {
         var rows = NativeBranchObservationChecks.Replay(fixture, Reason);
         Require(rows.Length == 21 && rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Missing native chain.");
         var before = rows[^1].GetProperty("Before").Deserialize<BattleTurnState>()!;
         var actual = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        int unitId = retiredPuffball ? 27 : 28;
         var writes = rows[^1].GetProperty("TroopUpdates").EnumerateArray().Where(update =>
             update.GetProperty("Before").GetProperty("Preview").GetBoolean() &&
-            update.GetProperty("Before").GetProperty("Units").EnumerateArray().Any(unit => unit.GetProperty("Id").GetInt32() == 28)).ToArray();
-        Require(writes.Length == 4, "Expected four native preview writes.");
-        int[] healthBefore = [12, 21, 51, 69], healthAfter = [21, 30, 69, 87];
-        int[] upgradesBefore = [0, 3, 9, 15], upgradesAfter = [3, 6, 15, 21];
+            update.GetProperty("Before").GetProperty("Units").EnumerateArray().Any(unit => unit.GetProperty("Id").GetInt32() == unitId)).ToArray();
+        Require(writes.Length == (retiredPuffball ? 3 : 4), "Wrong native preview write count.");
+        int[] healthBefore = retiredPuffball ? [12, 21, 51] : [12, 21, 51, 69];
+        int[] healthAfter = retiredPuffball ? [21, 30, 69] : [21, 30, 69, 87];
+        int[] upgradesBefore = retiredPuffball ? [0, 3, 9] : [0, 3, 9, 15];
+        int[] upgradesAfter = retiredPuffball ? [3, 6, 15] : [3, 6, 15, 21];
         for (int i = 0; i < writes.Length; i++)
         {
             var b = writes[i].GetProperty("Before"); var a = writes[i].GetProperty("After");
-            var bu = b.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == 28);
-            var au = a.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == 28);
-            Require(b.GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual([2, 7, 23]) &&
-                a.GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual([2, 7, 23]) &&
+            var bu = b.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == unitId);
+            var au = a.GetProperty("Units").EnumerateArray().Single(unit => unit.GetProperty("Id").GetInt32() == unitId);
+            int[] cache = retiredPuffball ? [2, 7, 16] : [2, 7, 23];
+            Require(b.GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual(cache) &&
+                a.GetProperty("Cache").Deserialize<int[]>()!.SequenceEqual(cache) &&
                 bu.GetProperty("Health").GetInt32() == healthBefore[i] && au.GetProperty("Health").GetInt32() == healthAfter[i] &&
                 bu.GetProperty("Upgrades").GetArrayLength() == upgradesBefore[i] && au.GetProperty("Upgrades").GetArrayLength() == upgradesAfter[i],
                 "Native preview write differs at " + i);
@@ -54,8 +58,8 @@ internal static class SixHordePuffballPreviewChecks
             Require(!result.Supported || NativeBranchObservationChecks.Key(result.State!) != NativeBranchObservationChecks.Key(actual),
                 "Unknown source incorrectly received native result: " + control);
         }
-        if (replay.HasValue) { Native(replay.Value); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
-        Console.WriteLine("SIX-HORDE-PUFFBALL-PREVIEW PASS: 21 native inputs/full state/RNG, four writes, four immutable branches and source controls; independentPair=" + replay.HasValue);
+        if (replay.HasValue) { Native(replay.Value, retiredPuffball: retiredPuffball); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
+        Console.WriteLine($"SIX-HORDE-PUFFBALL-PREVIEW PASS: 21 native inputs/full state/RNG, {writes.Length} writes, four immutable branches and source controls; retiredPuffball={retiredPuffball}; independentPair={replay.HasValue}");
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }

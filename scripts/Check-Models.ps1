@@ -962,6 +962,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-lava-steward-live-horde-calibration.mt2f',
     'player-lava-steward-live-horde-replay-calibration.mt2f',
     'player-six-horde-puffball-preview-calibration.mt2f',
+    'player-six-horde-retired-puffball-calibration.mt2f',
+    'player-six-horde-retired-puffball-replay-calibration.mt2f',
     'player-six-horde-companions-preview-calibration.mt2f',
     'player-six-horde-companions-health-calibration.mt2f',
     'player-six-horde-fight-club-companions-calibration.mt2f',
@@ -2461,6 +2463,15 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     if ($LASTEXITCODE -ne 0) { throw 'Six horde companions preview native check failed.' }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --six-horde-companions-preview-only (Get-TestFixturePath 'player-six-horde-companions-health-calibration.mt2f') (Get-TestFixturePath 'player-six-horde-companions-health-replay-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Six horde companions health native check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-six-horde-retired-puffball-calibration.mt2f', 'player-six-horde-retired-puffball-replay-calibration.mt2f') }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Retired puffball checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --six-horde-retired-puffball-only (Get-TestFixturePath 'player-six-horde-retired-puffball-calibration.mt2f') (Get-TestFixturePath 'player-six-horde-retired-puffball-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Retired puffball native check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-six-horde-puffball-preview-calibration.mt2f', 'player-six-horde-puffball-preview-replay-calibration.mt2f') }).Count -eq 0) {

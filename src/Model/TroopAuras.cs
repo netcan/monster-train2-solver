@@ -318,6 +318,19 @@ namespace MonsterTrain2Poju.Model
                     Health: 8, MaxHealth: 45, Size: 2, Modifiers.Upgrades: [
                         { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" }, { DataId: "", AssetKey: "" }] } &&
                     rule.Targets.Contains(unit.Id) && source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "fec68cb5-1d4f-4ae5-b01a-288a06cc9502");
+            bool originalSixHordeRetiredPuffballPreviewBirth = originalSixHordePreviewBirth && source.Train.Context != null &&
+                owner.Triggers.Count == 2 && PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, source.Train.Context) &&
+                rule.Targets.Count == 3 && targets.Count == 2 && targets.Contains(owner.Id) &&
+                rule.Targets.Count(id => !targets.Contains(id)) == 2 &&
+                source.RetainedUnits.Any(actor => actor.Preview && actor.RoomIndex == -1 &&
+                    actor.Unit is { AssetKey: "MonsterPricklyPuffball", Team: CombatTeam.Player, BaseAttack: 10,
+                        Health: <= 0, MaxHealth: 45, Size: 2, DeathState.IsDestroyed: true, Modifiers.Upgrades: [
+                            { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" }, { DataId: "", AssetKey: "" }] } &&
+                    rule.Targets.Contains(actor.Unit.Id) && !targets.Contains(actor.Unit.Id) &&
+                    source.Train.Context.FindCard(actor.Unit.SpawnerCardId)?.DataId == "fec68cb5-1d4f-4ae5-b01a-288a06cc9502" &&
+                    rule.Targets.Any(id => id != actor.Unit.Id && !targets.Contains(id) &&
+                        source.Train.Context.SpawnPoints?.Units.Any(point => point.UnitId == id && !point.SpawnedInPreview &&
+                            point.Current == null && point.LastKnown == null) == true));
             bool originalSixHordeCompanionsPreviewBirth = originalSixHordePreviewBirth && source.Train.Context != null &&
                 owner is { BaseAttack: 80, MaxHealth: 110, Size: 1, Triggers.Count: 1 } &&
                 owner.Modifiers?.Upgrades is [
@@ -402,7 +415,7 @@ namespace MonsterTrain2Poju.Model
                     pendingDyingPreview: source.Preview && fightClubCompanionsBirth,
                     allowTwoLivePreview: originalPreviewBirth || originalFourHordePreviewBirth || originalSixHordePuffballPreviewBirth || fightClubLavaPreviewBirth || fightClubCompanionsBirth, allowMixedCombat: fightClubBirth || originalTripleBirth,
                     allowSingleNonPreviewRetiredPreview: originalTripleCompanionsRetiredPreviewBirth,
-                    allowPreviewRetired: originalPreviewBirth || originalFourHordePreviewBirth && rule.Targets.Count == 5 || originalSixHordeCompanionsPreviewBirth ||
+                    allowPreviewRetired: originalPreviewBirth || originalFourHordePreviewBirth && rule.Targets.Count == 5 || originalSixHordeCompanionsPreviewBirth || originalSixHordeRetiredPuffballPreviewBirth ||
                         fightClubCompanionsBirth && (targets.Count == 4 || room.Units.Single(unit => unit.Id == added[0]).Status("horde")?.Stacks == 6) ||
                         fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4, allowSingleRetiredPreview: originalFourHordePreviewBirth || originalTripleCompanionsRetiredPreviewBirth,
                     allowTwoRetiredMixedPreview: fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4 || originalPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count == 6 || originalLavaTwoRetiredPreviewBirth) :

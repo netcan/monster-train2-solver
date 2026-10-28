@@ -1263,6 +1263,13 @@ if (args.Length is 2 or 3 && args[0] == "--third-troop-fightclub-retired-preview
     ThirdTroopFightClubRetiredPreviewChecks.Native(fixture.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--six-horde-retired-puffball-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var replay = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    SixHordePuffballPreviewChecks.Native(fixture.RootElement, replay?.RootElement, retiredPuffball: true);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--troop-cache-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -7909,6 +7916,12 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var health = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-six-horde-companions-health-calibration.mt2f"));
     using var healthReplay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-six-horde-companions-health-replay-calibration.mt2f"));
     SixHordeCompanionsPreviewChecks.Native(health.RootElement, healthReplay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-six-horde-retired-puffball-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-six-horde-retired-puffball-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var fixture = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-six-horde-retired-puffball-replay-calibration.mt2f"));
+    SixHordePuffballPreviewChecks.Native(fixture.RootElement, replay.RootElement, retiredPuffball: true);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-six-horde-puffball-preview-", StringComparison.OrdinalIgnoreCase)).Select(path => ModelJson.RelatedFixture(path, "player-six-horde-puffball-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
