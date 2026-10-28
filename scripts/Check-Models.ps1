@@ -9,6 +9,8 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-random26-ring5-397-default-loss.mt2f', 'player-random26-ring5-397-default-loss-replay.mt2f',
+    'player-random26-ring5-397-refined-win.mt2f', 'player-random26-ring5-397-refined-win-replay.mt2f',
     'player-arkion-push-fullmoon-original.mt2f', 'arkion-push-fullmoon-birth-original.mt2f',
     'player-arkion-push-fullmoon-original-replay.mt2f', 'arkion-push-fullmoon-birth-original-replay.mt2f',
     'player-arkion-push-fullmoon-397.mt2f', 'arkion-push-fullmoon-birth-397.mt2f',
@@ -2523,6 +2525,23 @@ $arkionPushMoonNames = @('player-arkion-push-fullmoon-original.mt2f', 'arkion-pu
     'player-arkion-push-fullmoon-original-replay.mt2f', 'arkion-push-fullmoon-birth-original-replay.mt2f',
     'player-arkion-push-fullmoon-397.mt2f', 'arkion-push-fullmoon-birth-397.mt2f',
     'player-arkion-push-fullmoon-397-replay.mt2f', 'arkion-push-fullmoon-birth-397-replay.mt2f')
+$random26Ring5Names = @('player-random26-ring5-397-default-loss.mt2f', 'player-random26-ring5-397-default-loss-replay.mt2f',
+    'player-random26-ring5-397-refined-win.mt2f', 'player-random26-ring5-397-refined-win-replay.mt2f')
+function Check-Random26Ring5 {
+    $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
+    dotnet $checker --random-campaign-defeat-pair-only @($random26Ring5Names[0..1] | ForEach-Object { Get-TestFixturePath $_ }) 1332512341 0 4 Pyreborne LunaCoven 3000
+    if ($LASTEXITCODE -ne 0) { throw 'Random ring 5 default defeat pair failed.' }
+    dotnet $checker --random-refined-campaign-pair-only @($random26Ring5Names[2..3] | ForEach-Object { Get-TestFixturePath $_ }) 1332512341 0 4 Pyreborne LunaCoven 56
+    if ($LASTEXITCODE -ne 0) { throw 'Random ring 5 refined victory pair failed.' }
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $random26Ring5Names }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Random ring 5 checker build failed.' }
+    }
+    Check-Random26Ring5
+    return
+}
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $arkionPushMoonNames }).Count -eq 0) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
@@ -7685,6 +7704,9 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-random25-ring8-395-search.mt2f' })) {
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --rolling-replay-pair-only $fixturePath (Get-TestFixturePath 'player-random25-ring8-395-replay.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Random 395 final battle native pair failed.' }
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-random26-ring5-397-default-loss.mt2f' })) {
+    Check-Random26Ring5
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-untouchable-troop-aura-stage.mt2f' })) {
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --untouchable-troop-trace-pair (Get-TestFixturePath 'player-untouchable-troop-aura-counterexample.mt2f') $fixturePath (Get-TestFixturePath 'player-untouchable-troop-aura-stage-replay.mt2f')
