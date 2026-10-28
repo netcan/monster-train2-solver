@@ -244,3 +244,10 @@ replayed44-input defeat at2117/3000. Two independent391 frozen native replays,
 full successor, forecast and RNG, with four failure counters zero. Neither
 replay runs an actual search, and this is not a victory or an optimality claim.
 Another99 complete model candidates near the opening did not improve it.
+
+Further bounded searches over the later decisions produced a55-input loss
+with the boss at2037/3000. Two independent392 frozen native replays,
+044623-68d6e3c7 and044922-ff342698, each pass `verify-offline-native` for
+all decisions, complete forecasts, gameplay RNG and terminal outcome; each
+reports four zero failure counters and unchanged original files. The replays
+do not perform a player search and are not a win or an optimality claim.
