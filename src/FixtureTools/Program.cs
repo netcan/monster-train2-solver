@@ -181,12 +181,13 @@ else if (args.Length is 6 or 7 && args[0] == "deployment-win")
     OfflineBattleSearch.DeploymentGrid(args[1], args[2], args[3], int.Parse(args[4]), int.Parse(args[5]),
         args.Length == 7 ? int.Parse(args[6]) : null, improveWinningRoute: true);
 }
-else if (args.Length is >= 6 and <= 9 && args[0] is "deployment-spread" or "deployment-order-spread")
+else if (args.Length is >= 6 and <= 9 && args[0] is "deployment-spread" or "deployment-order-spread" or "deployment-order-strength")
 {
     OfflineBattleSearch.DeploymentGrid(args[1], args[2], args[3], int.Parse(args[4]), int.Parse(args[5]),
         args.Length >= 7 && args[6] != "any" ? int.Parse(args[6]) : null, spread: true,
         startSample: args.Length >= 8 ? int.Parse(args[7]) : 0,
-        unsupportedReasonFilter: args.Length == 9 ? args[8] : null, spreadOrder: args[0] == "deployment-order-spread");
+        unsupportedReasonFilter: args.Length == 9 ? args[8] : null, spreadOrder: args[0] != "deployment-spread",
+        strengthRollout: args[0] == "deployment-order-strength");
 }
 else if (args.Length is >= 4 and <= 6 && args[0] == "refine-policy")
 {
@@ -289,6 +290,7 @@ else
     Console.Error.WriteLine("Deployment investigation: deployment-grid <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <max-candidates:1..4096> [first-unit-room:0..2]; keep the initial unit order and explore joint legal room/position assignments, preserve the first independently replayed unsupported boundary, export only a complete independently replayed improvement; model prediction only.");
     Console.Error.WriteLine("Spread deployment investigation: deployment-spread <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <max-candidates:1..4096> [first-unit-room:any|0..2] [start-sample:0..1000000] [unsupported-reason-substring]; sample legal joint placements across early and late units, resume at nextSample, with the same exact-root/complete-replay guards as deployment-grid; model prediction only.");
     Console.Error.WriteLine("Order spread investigation: deployment-order-spread uses the same arguments and guards, also sampling unit play order; first-unit-room applies to the first unit in each sampled order. Fixed opening spells remain unchanged; model prediction only.");
+    Console.Error.WriteLine("Strength rollout investigation: deployment-order-strength uses order-spread arguments and guards with the existing strength policy for later decisions; model prediction only.");
     Console.Error.WriteLine("Bounded three-input investigation: improve-triples <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <second-action-width:1..32> <third-action-width:1..16> <candidates-per-decision:1..256>; model prediction only.");
     Console.Error.WriteLine("Predicted counterexample: refine-prediction <native.mt2f> <verified-prediction.mt2f> <new-winning-output.mt2f> <milliseconds> [start-decision] [last-decision]; validates native input hash/root and independently replays the baseline before exploring.");
     Console.Error.WriteLine("Search: solve-exact <input.mt2f> <new-output.mt2f> <max-nodes> <milliseconds> [EndTurn-horizon] | plan-belief <input.mt2f> <new-output.mt2f> <max-worlds> <decisions> <max-nodes> <milliseconds> [native-Turns-index] | verify-belief <policy.mt2f>");

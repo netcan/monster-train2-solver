@@ -69,8 +69,13 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Order spread resume failed.' }
     $resumePlacement = @($resume | Where-Object { $_ -match '^DEPLOYMENT-SPREAD sample=1 placements=' })
     if ($resumePlacement.Count -ne 1 -or $resumePlacement[0] -cne $placements[1]) { throw 'Order spread resume changed the sampled placement.' }
+    $strength = @(& dotnet $tool deployment-order-strength $source $baseline (Join-Path $testRoot 'strength.mt2f') 60000 2 any 0 2>&1)
+    if ($LASTEXITCODE -ne 0 -or ($strength -join "`n") -notmatch 'candidates=2 completed=2' -or
+        ($strength -join "`n") -notmatch 'fixedOpeningCards=1' -or ($strength -join "`n") -notmatch 'rolloutPolicy=strength') {
+        throw 'Strength rollout failed the bounded original-root investigation.'
+    }
     if ((Get-FileHash $source).Hash -ne $originalHash -or (Get-FileHash $baseline).Hash -ne $baselineHash) {
         throw 'Native source or baseline was modified.'
     }
-    "DEPLOYMENT-OPENING PASS: eight complete native-root placements preserve the exact closing spell, independently replay the full result and retain interleaving/output guards; four distinct unit orders and deterministic resume; artifacts=$testRoot"
+    "DEPLOYMENT-OPENING PASS: eight complete native-root placements preserve the exact closing spell, independently replay the full result and retain interleaving/output guards; four distinct unit orders, deterministic resume and two strength rollouts; artifacts=$testRoot"
 } finally { $document.Dispose() }

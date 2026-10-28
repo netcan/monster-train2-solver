@@ -10,7 +10,7 @@ internal static partial class OfflineBattleSearch
     // single move to improve a complete route. Never export a truncated rollout.
     internal static void DeploymentGrid(string input, string prediction, string output, int milliseconds, int maxCandidates,
         int? firstRoom = null, bool spread = false, int startSample = 0, bool improveWinningRoute = false,
-        string? unsupportedReasonFilter = null, bool spreadOrder = false)
+        string? unsupportedReasonFilter = null, bool spreadOrder = false, bool strengthRollout = false)
     {
         Require(milliseconds is >= 100 and <= 600000 && maxCandidates is >= 1 and <= 4096,
             "Expected100..600000ms and1..4096 deployment candidates.");
@@ -141,7 +141,9 @@ internal static partial class OfflineBattleSearch
                 SupportedActionCandidate? choice = null;
                 if (played < 18)
                 {
-                    choice = BattleTacticalPolicy.Choose(current, out var omitted, floor);
+                    IReadOnlyList<UnsupportedActionAttempt> omitted;
+                    choice = strengthRollout ? BattleHeuristicPolicy.Choose(current, out omitted, floor) :
+                        BattleTacticalPolicy.Choose(current, out omitted, floor);
                     foreach (var rejected in omitted) Rejected(rejected.Reason, rejected.Action, current, steps);
                 }
                 if (choice != null)
@@ -278,7 +280,7 @@ internal static partial class OfflineBattleSearch
         }
         Console.WriteLine($"DEPLOYMENT-GRID foundWin={bestOutcome == RoomOutcome.BattleWon} units={deployment.Length} candidates={candidates} " +
             $"completed={completed} duplicates={duplicates} unsupported={unsupported} improvements={improvements} fixedOpeningCards={closing.Length} " +
-            $"firstRoom={firstRoom?.ToString() ?? "any"} timedOut={Expired()} candidateLimit={candidates >= maxCandidates} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial} improveWinningRoute={improveWinningRoute}" +
+            $"firstRoom={firstRoom?.ToString() ?? "any"} timedOut={Expired()} candidateLimit={candidates >= maxCandidates} elapsedMs={watch.Elapsed.TotalMilliseconds:F1} exported={best < initial} improveWinningRoute={improveWinningRoute} rolloutPolicy={(strengthRollout ? "strength" : "tactical")}" +
             (spread ? $" startSample={startSample} nextSample={nextSample} spreadSamples={samples} sampleLimit={samples >= maxCandidates * 16} spreadOrder={spreadOrder}" : "") + "; model prediction only.");
     }
 }
