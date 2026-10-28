@@ -252,7 +252,14 @@ namespace MonsterTrain2Poju.Model
                     if (state.Context?.QueryFrame is { MoonPhaseTrackingActive: false, MoonPhase: 2 } inactive &&
                         previousUnit is { Team: CombatTeam.Enemy, MoonPhaseMask: 5 })
                     {
-                        if (previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } || !OriginalInferno(added) ||
+                        if (previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
+                            previousUnit is not { AssetKey: "HeavyT3_Basic", BaseAttack: 8, MaxHealth: 325, Size: 2, Triggers.Count: 0 } &&
+                            previousUnit is not { AssetKey: "HeavyT3_PyreDamageIfUnblocked", BaseAttack: 5, MaxHealth: 250, Size: 2,
+                                Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,
+                                    Effects: [{ Type: "CardEffectPyreDamageIfNoPlayerUnits", Value: 5,
+                                        Action: { Type: "Damage", Target: "Pyre", Value: 5 } }] }] } &&
+                            !(previousUnit is { AssetKey: "AttackerT3_Sweep", BaseAttack: 5, MaxHealth: 5, Size: 1, Triggers.Count: 0 } &&
+                                previousUnit.Status("sweep")?.Stacks == 1) || !OriginalInferno(added) ||
                             oldRoom.Preview || newRoom.Preview || currentUnit.Triggers.Any(trigger => trigger.Kind is
                                 "OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or "OnMoonshadeLost"))
                             return Fail("Inactive enemy room-entry moon understanding requires native calibration.");
