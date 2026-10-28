@@ -245,7 +245,7 @@ namespace MonsterTrain2Poju.Model
                         { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" }, { DataId: "", AssetKey: "" }] } &&
                     rule.Targets.Contains(unit.Id) && source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "fec68cb5-1d4f-4ae5-b01a-288a06cc9502");
             bool originalSixHordeCompanionsPreviewBirth = originalSixHordePreviewBirth && source.Train.Context != null &&
-                owner is { BaseAttack: 80, Health: 31, MaxHealth: 110, Size: 1, Triggers.Count: 1, Modifiers.Upgrades: [
+                owner is { BaseAttack: 80, MaxHealth: 110, Size: 1, Triggers.Count: 1, Modifiers.Upgrades: [
                     { DataId: "", AssetKey: "" },
                     { DataId: "4f70b7b7-b507-4931-9b14-e13dcd6cd59f", AssetKey: "ExilesDiadem_Upgrade", Stats.Health: 10, Stats.Size: -2 },
                     { DataId: "", AssetKey: "" }] } &&

@@ -16,6 +16,9 @@ internal static class SixHordeCompanionsPreviewChecks
             update.GetProperty("Before").GetProperty("Preview").GetBoolean() &&
             update.GetProperty("Before").GetProperty("Units").EnumerateArray().Any(unit => unit.GetProperty("Id").GetInt32() == 27)).ToArray();
         Require(writes.Length == 3, "Expected three native preview writes.");
+        int ownerHealth = writes[2].GetProperty("Before").GetProperty("Units").EnumerateArray()
+            .Single(unit => unit.GetProperty("Id").GetInt32() == 2).GetProperty("Health").GetInt32();
+        Require(ownerHealth is 31 or 58, "Expected one of the independently captured champion health values.");
         int[] healthBefore = [12, 21, 51], healthAfter = [21, 30, 69];
         int[] upgradesBefore = [0, 3, 9], upgradesAfter = [3, 6, 15];
         for (int i = 0; i < writes.Length; i++)
