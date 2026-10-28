@@ -5,24 +5,24 @@ using MonsterTrain2Poju.Model;
 
 internal static class GeneratedMoonRetiredEnemiesChecks
 {
-    internal static void Native(FixtureValue fixture, FixtureValue? replay = null)
+    internal static void Native(FixtureValue fixture, FixtureValue? replay = null, bool tenRetired = false)
     {
         var rows = NativeBranchObservationChecks.Replay(fixture, GeneratedMoonTrackingModel.Guard);
-        Require(rows.Length == 43 && !rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Missing native chain.");
+        Require(rows.Length == (tenRetired ? 39 : 43) && !rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Missing native chain.");
         var before = rows[^1].GetProperty("Before").Deserialize<BattleTurnState>()!;
         var actual = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         var action = rows[^1].GetProperty("Action").Deserialize<PlayCardAction>()!;
         var context = before.Spawn.Train.Context!;
         var creation = before.PlayRules!.Cards.SelectMany(card => card.Effects).Where(effect => effect.Generation != null)
             .SelectMany(effect => effect.Generation!.Pool).First(card => card.DataId == GeneratedMoonTrackingModel.AlternateEquipmentId);
-        Require(action.CardInstanceId == 42 && context.QueryFrame is { MoonPhase: 1, MoonPhaseTrackingActive: false } &&
-            GeneratedMoonTrackingModel.KnownPlayerCreation(context, creation) && actual.Spawn.Train.Context!.FindCard(43)?.DataId == creation.DataId &&
+        Require(action.CardInstanceId == (tenRetired ? 40 : 42) && context.QueryFrame is { MoonPhase: 1, MoonPhaseTrackingActive: false } &&
+            GeneratedMoonTrackingModel.KnownPlayerCreation(context, creation) && actual.Spawn.Train.Context!.FindCard(tenRetired ? 42 : 43)?.DataId == creation.DataId &&
             actual.Spawn.Train.Context.QueryFrame?.MoonPhaseTrackingActive == true &&
             actual.Spawn.Train.Rooms.SelectMany(room => room.Units).All(unit => unit.MoonPhaseMask == 1),
             "Missing original equipment activation and live-unit reset.");
         var oldRetired = context.Enchantments!.RetainedUnits;
         var newRetired = actual.Spawn.Train.Context.Enchantments!.RetainedUnits;
-        Require(oldRetired.Count == 8 && JsonSerializer.Serialize(oldRetired, ModelJson.Options) == JsonSerializer.Serialize(newRetired, ModelJson.Options),
+        Require(oldRetired.Count == (tenRetired ? 10 : 8) && JsonSerializer.Serialize(oldRetired, ModelJson.Options) == JsonSerializer.Serialize(newRetired, ModelJson.Options),
             "Native reset changed retained destroyed actors.");
         string parent = JsonSerializer.Serialize(before, ModelJson.Options);
         Parallel.For(0, 4, _ => {
@@ -43,7 +43,7 @@ internal static class GeneratedMoonRetiredEnemiesChecks
         }
         var pending = CardSpellModel.WithContext(before.Spawn.Train, actual.Spawn.Train.Context);
         Require(GeneratedMoonTrackingModel.CompletePlayerReset(before.Spawn.Train, pending).Supported, "Known reset rejected.");
-        foreach (string control in new[] { "Identity", "Room", "Preview", "Health", "Destroyed", "Mask" })
+        foreach (string control in new[] { "Identity", "Room", "Preview", "Health", "Destroyed", "Mask", "Count", "Extra" })
         {
             JsonNode node = JsonSerializer.SerializeToNode(pending, ModelJson.Options)!;
             var actor = node["Context"]!["Enchantments"]!["RetainedUnits"]![0]!;
@@ -53,11 +53,13 @@ internal static class GeneratedMoonRetiredEnemiesChecks
             if (control == "Health") actor["Unit"]!["Health"] = 1;
             if (control == "Destroyed") actor["Unit"]!["DeathState"]!["IsDestroyed"] = false;
             if (control == "Mask") actor["Unit"]!["MoonPhaseMask"] = 7;
+            if (control == "Count") node["Context"]!["Enchantments"]!["RetainedUnits"]!.AsArray().RemoveAt(0);
+            if (control == "Extra") node["Context"]!["Enchantments"]!["RetainedUnits"]!.AsArray().Add(actor.DeepClone());
             Require(!GeneratedMoonTrackingModel.CompletePlayerReset(before.Spawn.Train, node.Deserialize<TrainCombatState>(ModelJson.Options)!).Supported,
                 "Unknown retained actor escaped its reset guard: " + control);
         }
-        if (replay.HasValue) { Native(replay.Value); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
-        Console.WriteLine("GENERATED-MOON-RETIRED-ENEMIES PASS: 43 native inputs/full state/RNG, live reset and eight unchanged retained actors, four immutable branches/ten guards; independentPair=" + replay.HasValue);
+        if (replay.HasValue) { Native(replay.Value, tenRetired: tenRetired); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
+        Console.WriteLine($"GENERATED-MOON-RETIRED-ENEMIES PASS: {rows.Length} native inputs/full state/RNG, live reset and {oldRetired.Count} unchanged retained actors, four immutable branches/twelve guards; independentPair={replay.HasValue}");
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }

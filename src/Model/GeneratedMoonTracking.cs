@@ -46,7 +46,7 @@ namespace MonsterTrain2Poju.Model
         {
             CombatContext context = state.Context!;
             EnchantmentWorld? world = context.Enchantments;
-            if (world == null || world.RetainedUnits.Count != 8 || !TroopAuraModel.OnlyFragileBuffSource(world.Frame(context))) return false;
+            if (world == null || world.RetainedUnits.Count is not (8 or 10) || !TroopAuraModel.OnlyFragileBuffSource(world.Frame(context))) return false;
             var actors = world.RetainedUnits;
             if (actors.Any(actor => actor.RoomIndex != -1 || actor.Preview || actor.Unit.Team != CombatTeam.Enemy ||
                 actor.Unit.Health > 0 || actor.Unit.DeathState?.IsDestroyed != true || actor.Unit.MoonPhaseMask is not (5 or 6))) return false;
@@ -55,7 +55,7 @@ namespace MonsterTrain2Poju.Model
                     Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,
                         Effects: [{ Type: "CardEffectPyreDamageIfNoPlayerUnits", Value: 5,
                             Action: { Type: "Damage", Target: "Pyre", Value: 5 } }] }] }) == 2 &&
-                actors.Count(actor => actor.Unit is { AssetKey: "AttackerT3_Sweep", BaseAttack: 5, MaxHealth: 5, Size: 1, Triggers.Count: 0 }) == 2 &&
+                actors.Count(actor => actor.Unit is { AssetKey: "AttackerT3_Sweep", BaseAttack: 5, MaxHealth: 5, Size: 1, Triggers.Count: 0 }) == actors.Count - 6 &&
                 actors.Count(actor => actor.Unit.AssetKey == "EnchanterT2_Titanskin" && world.EnchanterIds.Contains(actor.Unit.Id)) == 2;
         }
     }

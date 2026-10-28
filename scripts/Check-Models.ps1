@@ -20,6 +20,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-generated-moon-tracking-calibration.mt2f',
     'player-generated-moon-retired-enemies-calibration.mt2f',
     'player-generated-moon-retired-enemies-replay-calibration.mt2f',
+    'player-generated-moon-ten-retired-calibration.mt2f',
+    'player-generated-moon-ten-retired-replay-calibration.mt2f',
     'player-generated-moon-tracking-replay-calibration.mt2f',
     'player-inactive-moon-room-attachment-calibration.mt2f',
     'player-room-pre-combat-world-root.mt2f',
@@ -2608,6 +2610,15 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --third-troop-fightclub-retired-preview-only (Get-TestFixturePath 'player-third-troop-fightclub-retired-preview-calibration.mt2f') (Get-TestFixturePath 'player-third-troop-fightclub-retired-preview-replay-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Fight Club retired preview native check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-generated-moon-ten-retired-calibration.mt2f', 'player-generated-moon-ten-retired-replay-calibration.mt2f') }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Ten retired generated moon checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --generated-moon-ten-retired-only (Get-TestFixturePath 'player-generated-moon-ten-retired-calibration.mt2f') (Get-TestFixturePath 'player-generated-moon-ten-retired-replay-calibration.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Ten retired generated moon native check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-generated-moon-retired-enemies-calibration.mt2f', 'player-generated-moon-retired-enemies-replay-calibration.mt2f') }).Count -eq 0) {
