@@ -295,6 +295,7 @@ namespace MonsterTrain2Poju.Model
         internal static bool OriginalMushyExit(RoomCapacityAttachmentState removed, CombatUnit previousUnit) =>
             OriginalMushy(removed) &&
             (previousUnit is { AssetKey: "HeavyT2_Basic", BaseAttack: 6, Health: > 0 and <= 120, MaxHealth: 120, Size: 2, SpawnerCardId: 0, Triggers.Count: 0 } ||
+             previousUnit is { AssetKey: "HeavyT3_Basic", BaseAttack: 8, Health: > 0 and <= 325, MaxHealth: 325, Size: 2, SpawnerCardId: 0, Triggers.Count: 0 } ||
              previousUnit is { AssetKey: "HeavyT3_PyreDamageIfUnblocked", BaseAttack: 5, Health: > 0 and <= 250, MaxHealth: 250, Size: 2, SpawnerCardId: 0,
                 Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,
                     Effects: [{ Type: "CardEffectPyreDamageIfNoPlayerUnits", Value: 5,
