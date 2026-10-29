@@ -9,11 +9,12 @@ if (args.Length is >= 2 and <= 4 && args[0] == "--mushy-rax-entry-only")
     else MushyRaxEntryChecks.Pair(fixture.RootElement, repaired.RootElement, repaired2?.RootElement);
     return;
 }
-if (args.Length == 3 && args[0] == "--random27-ring7-refined-defeat-only")
+if (args.Length is 3 or 5 && args[0] == "--random27-ring7-refined-defeat-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
     using var replay = ModelJson.ReadFixture(args[2]);
-    RandomCampaignChecks.RefinedDefeatPair(source.RootElement, replay.RootElement);
+    RandomCampaignChecks.RefinedDefeatPair(source.RootElement, replay.RootElement,
+        args.Length == 5 ? int.Parse(args[3]) : 55, args.Length == 5 ? int.Parse(args[4]) : 780);
     return;
 }
 if (args.Length is >= 2 and <= 4 && args[0] == "--mushy-dark-entry-only")
@@ -10204,6 +10205,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-enemy-statistics-listeners-replay-calibration.mt2f"));
     EnemyStatisticsListenerChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) is "player-random27-ring7-419-refined-loss.mt2f" or "player-random27-ring7-419-refined-loss-replay.mt2f")
+    .Select(path => ModelJson.RelatedFixture(path, "player-random27-ring7-419-refined-loss.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring7-419-refined-loss-replay.mt2f"));
+    RandomCampaignChecks.RefinedDefeatPair(source.RootElement, replay.RootElement, 52, 471);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) is "player-random27-ring7-418-refined-loss.mt2f" or "player-random27-ring7-418-refined-loss-replay.mt2f")
     .Select(path => ModelJson.RelatedFixture(path, "player-random27-ring7-418-refined-loss.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

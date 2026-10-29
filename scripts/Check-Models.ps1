@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-random27-ring7-419-refined-loss.mt2f', 'player-random27-ring7-419-refined-loss-replay.mt2f',
     'player-random27-ring7-mushy-rax-entry-original.mt2f', 'player-random27-ring7-mushy-rax-entry-repaired.mt2f', 'player-random27-ring7-mushy-rax-entry-repaired2.mt2f',
     'player-random27-ring7-418-refined-loss.mt2f', 'player-random27-ring7-418-refined-loss-replay.mt2f',
     'player-random27-ring7-418-budget30000-loss.mt2f', 'player-random27-ring7-418-budget30000-loss-replay.mt2f',
@@ -5060,14 +5061,16 @@ if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
     return
 }
 if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
-    $selectedFixtureNames[0] -in @('player-random27-ring7-418-refined-loss.mt2f', 'player-random27-ring7-418-refined-loss-replay.mt2f')) {
+    $selectedFixtureNames[0] -match '^player-random27-ring7-(418|419)-refined-loss(-replay)?\.mt2f$') {
+    $version = $Matches[1]
+    $count, $bossHealth = if ($version -eq '419') { 52, 471 } else { 55, 780 }
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
         if ($LASTEXITCODE -ne 0) { throw 'Refined defeat checker build failed.' }
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --random27-ring7-refined-defeat-only `
-        (Get-TestFixturePath 'player-random27-ring7-418-refined-loss.mt2f') `
-        (Get-TestFixturePath 'player-random27-ring7-418-refined-loss-replay.mt2f')
+        (Get-TestFixturePath "player-random27-ring7-$version-refined-loss.mt2f") `
+        (Get-TestFixturePath "player-random27-ring7-$version-refined-loss-replay.mt2f") $count $bossHealth
     if ($LASTEXITCODE -ne 0) { throw 'Refined defeat pair check failed.' }
     return
 }
