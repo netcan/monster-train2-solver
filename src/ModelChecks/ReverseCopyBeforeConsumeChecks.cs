@@ -48,13 +48,31 @@ internal static class ReverseCopyBeforeConsumeChecks
             CardInstanceState altered = changed.Deserialize<BattleTurnState>(ModelJson.Options)!.Spawn.Train.Context!.FindCard(17)!;
             Require(CardCopyOnPlayModel.Validate(altered) != null, "Unknown copy ordering escaped the guard: " + mutation);
         }
+        if (!endTurn)
+        foreach (string missingPile in new[] { "Standby", "Exhausted" })
+        {
+            JsonNode changed = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
+            JsonArray piles = changed["Spawn"]!["Train"]!["Context"]!["OtherPiles"]!.AsArray();
+            piles.Remove(piles.Single(pile => pile!["Name"]!.GetValue<string>() == missingPile));
+            foreach (JsonNode? room in changed["Spawn"]!["Train"]!["Rooms"]!.AsArray())
+            {
+                JsonArray roomPiles = room!["Context"]!["OtherPiles"]!.AsArray();
+                roomPiles.Remove(roomPiles.Single(pile => pile!["Name"]!.GetValue<string>() == missingPile));
+            }
+            BattleTurnState altered = changed.Deserialize<BattleTurnState>(ModelJson.Options)!;
+            BattleActionResult result = BattleActionModel.PlayCard(altered, action!);
+            Require(!result.Supported, "A missing " + missingPile + " pile must reject the branch; input has " +
+                string.Join(",", altered.Spawn.Train.Context!.OtherPiles!.Select(pile => pile.Name)) +
+                "; output has " + string.Join(",", result.State?.Spawn.Train.Context?.OtherPiles?.Select(pile => pile.Name) ?? []));
+        }
         NativeBranchObservationChecks.Replay(repaired, Reason);
         NativeBranchObservationChecks.Replay(repeated, Reason);
         NativeBranchObservationChecks.Pair(first, repaired);
         NativeBranchObservationChecks.Pair(first, repeated);
         NativeBranchObservationChecks.Pair(repaired, repeated, originalPredictionPresent: true, originalPredictionMatched: true);
         Console.WriteLine("REVERSE-COPY-CONSUME PASS: 26-input prefix, " + (endTurn ? "unplayed discard" : "played copy and Consume") +
-            ", two historical and two repaired native states/RNG, four immutable branches and five guards.");
+            ", two historical and two repaired native states/RNG, four immutable branches and five source guards" +
+            (endTurn ? "." : ", plus two missing-pile guards."));
     }
 
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }

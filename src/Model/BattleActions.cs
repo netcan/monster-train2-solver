@@ -413,6 +413,10 @@ namespace MonsterTrain2Poju.Model
             if (uiRangeError != null) return Unsupported(uiRangeError);
             if (rule == null) return Unsupported("Missing play definition for " + card.DataId);
             CardInstanceState? playingInstance = context.CardInstances?.FirstOrDefault(item => item.InstanceId == card.InstanceId);
+            if (playingInstance != null && CardCopyOnPlayModel.ReverseCopyBeforeConsume(playingInstance) &&
+                (context.OtherPiles == null || !context.OtherPiles.Any(pile => pile.Name == "Standby") ||
+                 !context.OtherPiles.Any(pile => pile.Name == "Exhausted")))
+                return Unsupported("Consume requires captured standby and exhausted piles.");
             // Native Unplayable rejects the attempt before card effects or Forge upgrades run.
             if (playingInstance?.MaskDescriptor != null && CardExhaustModel.RefreshTraits(playingInstance)
                 .CombinedTraits?.Any(trait => trait.RuntimeType == "CardTraitUnplayable") == true)
@@ -1146,10 +1150,11 @@ namespace MonsterTrain2Poju.Model
             if (!skipNaturalDiscard) context = ConduitModel.Discarded(context, card.InstanceId);
             if (summonedEndless && !terminal && !consumedOnPlay)
                 context = UnitStandbyModel.ReturnEndless(context, card.InstanceId);
+            if (consumedOnPlay && (context.OtherPiles == null || !context.OtherPiles.Any(pile => pile.Name == "Standby") ||
+                !context.OtherPiles.Any(pile => pile.Name == "Exhausted")))
+                return Unsupported("Consume requires captured standby and exhausted piles.");
             if (consumedOnPlay && !reverseCopyBeforeConsume)
             {
-                if (context.OtherPiles == null || !context.OtherPiles.Any(pile => pile.Name == "Standby") ||
-                    !context.OtherPiles.Any(pile => pile.Name == "Exhausted")) return Unsupported("Consume requires captured standby and exhausted piles.");
                 // Ephemeral purges again from OnCardDiscarded after Consume moves
                 // the card to standby. That removes the pending standby return,
                 // so only MoveToStandByPile records an exhaustion.
