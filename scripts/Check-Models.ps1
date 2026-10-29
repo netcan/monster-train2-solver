@@ -10,6 +10,7 @@ $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
     'player-random27-ring7-rank2-424-loss.mt2f', 'player-random27-ring7-rank2-424-loss-replay.mt2f',
+    'player-random27-ring7-hellfurnace-rax-exit-original.mt2f', 'player-random27-ring7-hellfurnace-rax-exit-original2.mt2f', 'player-random27-ring7-hellfurnace-rax-exit-repaired.mt2f', 'player-random27-ring7-hellfurnace-rax-exit-repaired2.mt2f',
     'player-random27-ring7-hellfurnace-rax-entry-original.mt2f', 'player-random27-ring7-hellfurnace-rax-entry-original2.mt2f', 'player-random27-ring7-hellfurnace-rax-entry-repaired.mt2f', 'player-random27-ring7-hellfurnace-rax-entry-repaired2.mt2f',
     'player-random27-ring7-hellfurnace-light-entry-original.mt2f', 'player-random27-ring7-hellfurnace-light-entry-original2.mt2f', 'player-random27-ring7-hellfurnace-light-entry-repaired.mt2f', 'player-random27-ring7-hellfurnace-light-entry-repaired2.mt2f',
     'player-random27-ring7-hellfurnace-heavy-entry-original.mt2f', 'player-random27-ring7-hellfurnace-heavy-entry-original2.mt2f', 'player-random27-ring7-hellfurnace-heavy-entry-repaired.mt2f', 'player-random27-ring7-hellfurnace-heavy-entry-repaired2.mt2f',
@@ -5087,7 +5088,7 @@ if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
     return
 }
 if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
-    $selectedFixtureNames[0] -match '^player-random27-ring7-hellfurnace-(heavy|light|dark-sweep)-exit-(original2?|repaired2?)\.mt2f$') {
+    $selectedFixtureNames[0] -match '^player-random27-ring7-hellfurnace-(heavy|light|dark-sweep|rax)-exit-(original2?|repaired2?)\.mt2f$') {
     $kind = $Matches[1]
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q

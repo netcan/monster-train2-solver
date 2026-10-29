@@ -307,7 +307,8 @@ namespace MonsterTrain2Poju.Model
                     Effects: [{ Type: "CardEffectPyreDamageIfNoPlayerUnits", Value: 5,
                         Action: { Type: "Damage", Target: "Pyre", Value: 5 } }] }] } ||
              unit is { AssetKey: "AttackerT3_Sweep", BaseAttack: 5, Health: > 0 and <= 5, MaxHealth: 5,
-                Size: 1, SpawnerCardId: 0, Triggers.Count: 0 } && unit.Status("sweep")?.Stacks == 1);
+                Size: 1, SpawnerCardId: 0, Triggers.Count: 0 } && unit.Status("sweep")?.Stacks == 1 ||
+             moonPhase == 2 && OriginalRax(unit));
 
         internal static bool OriginalHellfurnaceEntry(RoomCapacityAttachmentState attachment, CombatUnit unit, int moonPhase = 1) =>
             (((unit.AssetKey is "HeavyT3_PyreDamageIfUnblocked" or "HeavyT3_Basic") && (moonPhase is 1 or 2) ||
