@@ -4287,6 +4287,14 @@ if (args.Length == 2 && args[0] == "--mixalot-only")
     MixalotChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 4 && args[0] == "--surviving-partial-selection-only")
+{
+    using var partial = ModelJson.ReadFixture(args[1]);
+    using var defeat = ModelJson.ReadFixture(args[2]);
+    using var native = ModelJson.ReadFixture(args[3]);
+    SurvivingPartialSelectionChecks.Run(partial.RootElement, defeat.RootElement, native.RootElement);
+    return;
+}
 if (args.Length == 5 && args[0] == "--deferred-harvest-tower-four")
 {
     using var original = ModelJson.ReadFixture(args[1]);

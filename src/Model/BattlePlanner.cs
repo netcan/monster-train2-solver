@@ -203,7 +203,7 @@ namespace MonsterTrain2Poju.Model
                 earlyStop?.Consider(node.State, node.Outcome);
                 // A usable shorter window ends after a complete EndTurn. Do
                 // not publish an arbitrary truncated action sequence.
-                if (node.Turns > 0 && node.Actions == 0 && node.Steps[node.Steps.Count - 1].IsEndTurn &&
+                if (!Terminal(node) && node.Turns > 0 && node.Actions == 0 && node.Steps[node.Steps.Count - 1].IsEndTurn &&
                     (completedPrefix == null || node.Turns > completedPrefix.Turns ||
                         node.Turns == completedPrefix.Turns && Better(node, completedPrefix))) completedPrefix = node;
             }
@@ -483,11 +483,12 @@ namespace MonsterTrain2Poju.Model
             // Cancellation/time can occur inside one atomic model expansion.
             cancelled |= cancellationToken.IsCancellationRequested;
             timedOut |= watch.Elapsed >= options.TimeLimit;
-            bool shorter = best == null && options.AllowShorterHorizon && completedPrefix != null &&
-                !cancelled && (timedOut || nodeLimit || stepLimit);
-            Node selected = best ?? (shorter ? completedPrefix! : fallback);
+            bool shorter = options.AllowShorterHorizon && completedPrefix != null && !cancelled &&
+                (timedOut || nodeLimit || stepLimit) && (best == null || options.SearchToBattleEnd &&
+                    best.Outcome is RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate);
+            Node selected = shorter ? completedPrefix! : best ?? fallback;
             return new BattlePlanResult(selected.State, selected.Outcome, selected.Steps, selected.Score, selected.Turns,
-                nodes, duplicates, pruned, watch.Elapsed, timedOut, cancelled, nodeLimit, actionLimit, best != null, unsupported, policyBaselineScore,
+                nodes, duplicates, pruned, watch.Elapsed, timedOut, cancelled, nodeLimit, actionLimit, best != null && !shorter, unsupported, policyBaselineScore,
                 maxTurns, shorter, options.SearchToBattleEnd, stepLimit, options.MaxSteps, searchMetrics: workspace.Metrics,
                 stoppedEarly: earlyStop?.Reached == true, pyreHealthUpperBound: earlyStop?.PyreHealthUpperBound);
         }

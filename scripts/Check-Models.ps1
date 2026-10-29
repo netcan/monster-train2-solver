@@ -9,6 +9,8 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-random26-ring6-404-budget10s-loss.mt2f', 'player-random26-ring6-404-budget10s-loss-replay.mt2f',
+    'surviving-prefix-root-original.mt2f', 'surviving-prefix-root-defeat.mt2f',
     'player-random26-ring6-403-rank2-loss.mt2f', 'player-random26-ring6-403-rank2-loss-replay.mt2f',
     'player-random26-ring6-403-rank1-loss.mt2f', 'player-random26-ring6-403-rank1-loss-replay.mt2f',
     'player-random26-ring6-403-default-loss.mt2f', 'player-random26-ring6-403-default-loss-replay.mt2f',
@@ -2537,6 +2539,19 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     if ($LASTEXITCODE -ne 0) { throw 'Fight Club injured companion native check failed.' }
     return
 }
+$survivingPrefixNames = @('surviving-prefix-root-original.mt2f', 'surviving-prefix-root-defeat.mt2f')
+function Check-SurvivingPrefixSelection {
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --surviving-partial-selection-only @($survivingPrefixNames | ForEach-Object { Get-TestFixturePath $_ }) (Get-TestFixturePath 'player-random26-ring6-403-rank2-loss.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Surviving partial forecast selection failed.' }
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $survivingPrefixNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Surviving partial forecast checker build failed.' }
+    }
+    Check-SurvivingPrefixSelection
+    return
+}
 $deferredHarvestNames = @('player-deferred-harvest-tower-original.mt2f', 'player-deferred-harvest-tower-original-replay.mt2f',
     'player-deferred-harvest-tower-403.mt2f', 'player-deferred-harvest-tower-403-replay.mt2f')
 function Check-DeferredHarvestTower {
@@ -2612,6 +2627,11 @@ $random26Ring6Names = @('player-random26-ring6-397-default-loss.mt2f', 'player-r
 $random26Ring6NewNames = @('player-random26-ring6-403-default-loss.mt2f', 'player-random26-ring6-403-default-loss-replay.mt2f')
 $random26Ring6Rank1Names = @('player-random26-ring6-403-rank1-loss.mt2f', 'player-random26-ring6-403-rank1-loss-replay.mt2f')
 $random26Ring6Rank2Names = @('player-random26-ring6-403-rank2-loss.mt2f', 'player-random26-ring6-403-rank2-loss-replay.mt2f')
+$random26Ring6Budget10Names = @('player-random26-ring6-404-budget10s-loss.mt2f', 'player-random26-ring6-404-budget10s-loss-replay.mt2f')
+function Check-Random26Ring6Budget10 {
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --random-campaign-defeat-pair-only @($random26Ring6Budget10Names | ForEach-Object { Get-TestFixturePath $_ }) 1332512341 0 5 Pyreborne LunaCoven 10000
+    if ($LASTEXITCODE -ne 0) { throw 'Random ring 6 404 ten-second defeat pair failed.' }
+}
 function Check-Random26Ring6Rank2 {
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --random-campaign-defeat-pair-only @($random26Ring6Rank2Names | ForEach-Object { Get-TestFixturePath $_ }) 1332512341 0 5 Pyreborne LunaCoven 3000
     if ($LASTEXITCODE -ne 0) { throw 'Random ring 6 403 rank 2 reward defeat pair failed.' }
@@ -2646,6 +2666,14 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
         if ($LASTEXITCODE -ne 0) { throw 'Random ring 5 refined 69-Pyre checker build failed.' }
     }
     Check-Random26Ring5Refined69
+    return
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $random26Ring6Budget10Names }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Random ring 6 404 ten-second checker build failed.' }
+    }
+    Check-Random26Ring6Budget10
     return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $random26Ring6Rank2Names }).Count -eq 0) {
@@ -7877,6 +7905,9 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-deferred-harvest-tower-original.mt2f' })) {
     Check-DeferredHarvestTower
 }
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'surviving-prefix-root-original.mt2f' })) {
+    Check-SurvivingPrefixSelection
+}
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-random26-ring6-397-default-loss.mt2f' })) {
     Check-Random26Ring6
 }
@@ -7891,6 +7922,9 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-random26-ring6-403-rank2-loss.mt2f' })) {
     Check-Random26Ring6Rank2
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-random26-ring6-404-budget10s-loss.mt2f' })) {
+    Check-Random26Ring6Budget10
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-untouchable-troop-aura-stage.mt2f' })) {
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --untouchable-troop-trace-pair (Get-TestFixturePath 'player-untouchable-troop-aura-counterexample.mt2f') $fixturePath (Get-TestFixturePath 'player-untouchable-troop-aura-stage-replay.mt2f')
