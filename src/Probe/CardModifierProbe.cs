@@ -257,6 +257,10 @@ namespace MonsterTrain2Poju.Probe
             if (!roomAttachmentUnitUpgrade && upgrade.GetRoomModifierUpgrades().Count > 0)
             {
                 interactions.Add("Upgrade room modifiers");
+                if (upgrade.GetCardUpgradeDataId() == CardPyremaniacUpgradeModel.DataId &&
+                    (upgrade.GetAssetName() != CardPyremaniacUpgradeModel.AssetKey || upgrade.GetRoomModifierUpgrades().Count != 1 ||
+                     !UnitRoomStatusProbe.KnownPyremaniac(upgrade.GetRoomModifierUpgrades()[0])))
+                    interactions.Add("Changed original Pyremaniac room modifier definition");
                 if ((upgrade.GetCardUpgradeDataId() is CardSentientDrawUpgradeModel.DataId or CardSentientDrawUpgradeModel.SecondDataId) &&
                     (!CardSentientDrawUpgradeModel.KnownIdentity(upgrade.GetCardUpgradeDataId(), upgrade.GetAssetName()) ||
                      upgrade.GetRoomModifierUpgrades().Count != 1 ||

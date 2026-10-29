@@ -778,6 +778,12 @@ if (args.Length == 2 && args[0] == "--prepared-selection-publication-only")
     PreparedSelectionPublicationChecks.Native(source.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--pyremaniac-upgrade-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    PyremaniacUpgradeChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--sentient-draw-upgrade-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

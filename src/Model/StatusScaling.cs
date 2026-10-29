@@ -127,6 +127,7 @@ namespace MonsterTrain2Poju.Model
                 if (allowStackModifiers)
                 {
                     stacks = unchecked(stacks + RoomStatusStackModel.Modifier(context, source.RoomIndex, added.Id));
+                    stacks = unchecked(stacks + UnitRoomStatusModel.AddedStacks(source.Units, added.Id));
                     stacks = RelicStatusStackModel.GetStacks(context?.Relics, added.Id, stacks, target.Team,
                         target.Status(added.Id)?.Stacks > 0, fromPermanentUpgrade, fromEffectType: fromEffectType);
                 }

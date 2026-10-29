@@ -21,12 +21,18 @@ namespace MonsterTrain2Poju.Probe
             public Query[] Queries { get; set; } = Array.Empty<Query>();
         }
         internal static readonly List<Record> Records = new List<Record>();
+        internal static bool KnownPyremaniac(RoomModifierData data) =>
+            data.GetRoomStateModifierClassName() == UnitRoomStatusModel.StackModifier && !data.DisallowedInDeploymentPhase &&
+            data.GetParamInt() == 1 && data.GetParamInt2() == 0 && data.GetParamStatusEffects().Length == 1 &&
+            data.GetParamStatusEffects()[0].statusId == "pyregel" && data.GetParamStatusEffects()[0].count == 1;
         internal static UnitRoomStatusRule[]? Rules(IEnumerable<RoomModifierData> definitions)
         {
             UnitRoomStatusRule[] rules = definitions.Where(data => UnitRoomStatusModel.Known(data.GetRoomStateModifierClassName()))
                 .Select(data =>
                 {
                     string type = data.GetRoomStateModifierClassName();
+                    if (type == UnitRoomStatusModel.StackModifier && !KnownPyremaniac(data))
+                        return new UnitRoomStatusRule("Uncalibrated " + type, "", data.GetParamInt());
                     if (type == UnitRoomStatusModel.QueuedStatus && (data.GetParamInt() != 1 || data.DisallowedInDeploymentPhase ||
                         data.GetParamStatusEffects().Length != 1 || data.GetParamStatusEffects()[0].statusId != "conduit"))
                         throw new InvalidOperationException("Uncalibrated queued room status modifier.");

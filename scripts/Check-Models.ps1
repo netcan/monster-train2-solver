@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-random27-ring1-pyremaniac.mt2f', 'player-random27-ring1-pyremaniac-replay.mt2f',
     'player-random26-ring6-404-budget10s-loss.mt2f', 'player-random26-ring6-404-budget10s-loss-replay.mt2f',
     'surviving-prefix-root-original.mt2f', 'surviving-prefix-root-defeat.mt2f',
     'player-random26-ring6-403-rank2-loss.mt2f', 'player-random26-ring6-403-rank2-loss-replay.mt2f',
@@ -4979,6 +4980,22 @@ if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --automatic-view-continuation-only `
         (Get-TestFixturePath 'player-prepared-selection-publication-calibration.mt2f') $fixtures[0]
     if ($LASTEXITCODE -ne 0) { throw 'Automatic view continuation check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
+    $selectedFixtureNames[0] -in @('player-random27-ring1-pyremaniac.mt2f', 'player-random27-ring1-pyremaniac-replay.mt2f')) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Pyremaniac checker build failed.' }
+    }
+    $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
+    foreach ($name in @('player-random27-ring1-pyremaniac.mt2f', 'player-random27-ring1-pyremaniac-replay.mt2f')) {
+        dotnet $checker --pyremaniac-upgrade-only (Get-TestFixturePath $name)
+        if ($LASTEXITCODE -ne 0) { throw 'Pyremaniac focused check failed.' }
+    }
+    dotnet $checker --random-campaign-pair-only (Get-TestFixturePath 'player-random27-ring1-pyremaniac.mt2f') `
+        (Get-TestFixturePath 'player-random27-ring1-pyremaniac-replay.mt2f') 1761031144 0 0 Pyreborne Underlegion 3000
+    if ($LASTEXITCODE -ne 0) { throw 'Pyremaniac native campaign pair check failed.' }
     return
 }
 $branchPairGates = @{

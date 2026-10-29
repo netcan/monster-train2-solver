@@ -386,7 +386,7 @@ namespace MonsterTrain2Poju.Model
                 : upgrade.ExternalInteractions)
             .Where(interaction => interaction != CardCorruptionAttackUpgradeModel.Guard ||
                 !CardCorruptionAttackUpgradeModel.Known(upgrade) && !CardSentientDrawUpgradeModel.Known(upgrade) &&
-                !CardUnderlegionTroopUpgradeModel.Known(upgrade))
+                !CardUnderlegionTroopUpgradeModel.Known(upgrade) && !CardPyremaniacUpgradeModel.Known(upgrade))
             .Where(interaction => interaction != "Upgrade traits" || !CardJuiceModel.KnownTripleUpgrade(upgrade))
             .Concat((upgrade.Lifecycle?.Triggers ?? Array.Empty<CardLifecycleTrigger>()).SelectMany(trigger =>
                 trigger.Type != "OnCast" && !(RelicPerkeoModel.IsConversionUpgrade(upgrade) && RelicPerkeoModel.IsConversionTrigger(trigger))
@@ -507,7 +507,7 @@ namespace MonsterTrain2Poju.Model
                     original.CanBeHealed, original.IsClone, original.Upgrades, original.HealthFromUpgrades, original.SpawnerMatchesDefinition,
                     original.DamageBuffFromStatusEffects, original.MagebladeDamagePerMagicPower, original.StatusAttackModifiers,
                     original.IsChampion, CardCorruptionAttackUpgradeModel.BirthRules(original.SelfAttackRules, cardUpgrades),
-                    CardSentientDrawUpgradeModel.BirthRules(original.RoomResources, cardUpgrades), original.RoomStatuses, original.RoomTriggerCounts, original.SpawnCopySubtype,
+                    CardSentientDrawUpgradeModel.BirthRules(original.RoomResources, cardUpgrades), CardPyremaniacUpgradeModel.BirthRules(original.RoomStatuses, cardUpgrades), original.RoomTriggerCounts, original.SpawnCopySubtype,
                     instance.MaskDescriptor?.GraftedEquipment ?? original.Graft, original.SynergizeStatuses, original.Sentry,
                     CardUnderlegionTroopUpgradeModel.BirthRule(original.TroopAura, cardUpgrades));
                 int? nextTriggerId = unit.NextTriggerId;
