@@ -260,7 +260,8 @@ namespace MonsterTrain2Poju.Model
                         previousUnit is { Team: CombatTeam.Enemy, MoonPhaseMask: 5 or 6 } &&
                         (previousUnit.MoonPhaseMask.Value & 3) != inactive.MoonPhase.Value)
                     {
-                        bool originalMushyEntry = inactive.MoonPhase == 1 && OriginalMushyEntry(added, previousUnit);
+                        bool originalMushyEntry = inactive.MoonPhase == 1 && OriginalMushyEntry(added, previousUnit) ||
+                            inactive.MoonPhase == 2 && OriginalMushyDarkEntry(added, previousUnit);
                         if (!originalMushyEntry && ((inactive.MoonPhase == 1 && previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
                             previousUnit.AssetKey != "HeavyT3_PyreDamageIfUnblocked") ||
                             previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
@@ -284,6 +285,9 @@ namespace MonsterTrain2Poju.Model
             }
             return new RoomAttachmentUnitSyncResult(state);
         }
+
+        internal static bool OriginalMushyDarkEntry(RoomCapacityAttachmentState added, CombatUnit previousUnit) =>
+            (previousUnit.AssetKey is "HeavyT3_PyreDamageIfUnblocked" or "AttackerT3_Sweep") && OriginalMushyExit(added, previousUnit);
 
         internal static bool OriginalMushyEntry(RoomCapacityAttachmentState added, CombatUnit previousUnit) =>
             OriginalMushy(added) && previousUnit is
