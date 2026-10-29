@@ -260,11 +260,7 @@ namespace MonsterTrain2Poju.Model
                         previousUnit is { Team: CombatTeam.Enemy, MoonPhaseMask: 5 or 6 } &&
                         (previousUnit.MoonPhaseMask.Value & 3) != inactive.MoonPhase.Value)
                     {
-                        bool originalMushyEntry = OriginalMushy(added) && inactive.MoonPhase == 1 && previousUnit is
-                            { AssetKey: "Boss_Level6_Cael_DamageShield", BaseAttack: 22, Health: 1700, MaxHealth: 1800, Size: 6,
-                                Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,
-                                    Effects: [{ Type: "CardEffectAddTempCardUpgradeToUnits", UnitUpgrade: { Type: "UnitUpgrade",
-                                        Target: "FrontInRoom", Upgrade.DataId: "04897158-64c9-4828-9541-b5f20f627eee" } }] }] };
+                        bool originalMushyEntry = inactive.MoonPhase == 1 && OriginalMushyEntry(added, previousUnit);
                         if (!originalMushyEntry && ((inactive.MoonPhase == 1 && previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
                             previousUnit.AssetKey != "HeavyT3_PyreDamageIfUnblocked") ||
                             previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
@@ -289,13 +285,17 @@ namespace MonsterTrain2Poju.Model
             return new RoomAttachmentUnitSyncResult(state);
         }
 
+        internal static bool OriginalMushyEntry(RoomCapacityAttachmentState added, CombatUnit previousUnit) =>
+            OriginalMushy(added) && previousUnit is
+                { AssetKey: "Boss_Level6_Cael_DamageShield", BaseAttack: 22, Health: > 0 and <= 1800, MaxHealth: 1800, Size: 6, SpawnerCardId: 0,
+                    Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,
+                        Effects: [{ Type: "CardEffectAddTempCardUpgradeToUnits", UnitUpgrade: { Type: "UnitUpgrade",
+                            Target: "FrontInRoom", Upgrade.DataId: "04897158-64c9-4828-9541-b5f20f627eee" } }] }] };
+
         internal static bool OriginalMushyExit(RoomCapacityAttachmentState removed, CombatUnit previousUnit) =>
             OriginalMushy(removed) &&
-            (previousUnit is { AssetKey: "HeavyT2_Basic", BaseAttack: 6, Health: 11 or 72, MaxHealth: 120, Size: 2, Triggers.Count: 0 } ||
-             previousUnit is { AssetKey: "Boss_Level6_Cael_DamageShield", BaseAttack: 22, Health: 1653, MaxHealth: 1800, Size: 6,
-                Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,
-                    Effects: [{ Type: "CardEffectAddTempCardUpgradeToUnits", UnitUpgrade: { Type: "UnitUpgrade",
-                        Target: "FrontInRoom", Upgrade.DataId: "04897158-64c9-4828-9541-b5f20f627eee" } }] }] } ||
+            (previousUnit is { AssetKey: "HeavyT2_Basic", BaseAttack: 6, Health: > 0 and <= 120, MaxHealth: 120, Size: 2, SpawnerCardId: 0, Triggers.Count: 0 } ||
+             OriginalMushyEntry(removed, previousUnit) ||
              previousUnit is { AssetKey: "Boss_Level6_FeedDamageShield", BaseAttack: 0, Health: 40, MaxHealth: 60, Size: 1,
                 Triggers: [{ Kind: "OnEaten", FireCount: 1, SkipDuringDeployment: true,
                     Effects: [{ Type: "CardEffectAddTempCardUpgradeToUnits", UnitUpgrade: { Type: "UnitUpgrade",

@@ -27,8 +27,11 @@ internal static class MushyPyreMovementChecks
             JsonNode unit = JsonSerializer.SerializeToNode(source, ModelJson.Options)!;
             unit["Health"] = id == 22 ? 11 : 1653;
             Require(RoomAttachmentUnitModel.OriginalMushyExit(attachment, unit.Deserialize<CombatUnit>(ModelJson.Options)!), "Native signature rejected for " + id);
-            unit["Health"] = (int)unit["Health"]! + 1;
-            Require(!RoomAttachmentUnitModel.OriginalMushyExit(attachment, unit.Deserialize<CombatUnit>(ModelJson.Options)!), "Uncalibrated health accepted for " + id);
+            unit["Health"] = id == 22 ? 12 : 1654;
+            Require(RoomAttachmentUnitModel.OriginalMushyExit(attachment, unit.Deserialize<CombatUnit>(ModelJson.Options)!), "Valid health rejected for " + id);
+            unit["Health"] = id == 22 ? 0 : 1653;
+            if (id == 8) unit["BaseAttack"] = 23;
+            Require(!RoomAttachmentUnitModel.OriginalMushyExit(attachment, unit.Deserialize<CombatUnit>(ModelJson.Options)!), "Uncalibrated signature accepted for " + id);
         }
         string immutable = JsonSerializer.Serialize(before, ModelJson.Options), expected = NativeBranchObservationChecks.Key(actual);
         Parallel.For(0, 4, _ =>
