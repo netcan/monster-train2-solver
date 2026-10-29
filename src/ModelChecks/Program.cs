@@ -1,5 +1,15 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is >= 2 and <= 5 && args[0] == "--hellfurnace-heavy-exit-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var repaired = args.Length >= 3 ? ModelJson.ReadFixture(args[2]) : null;
+    using var repaired2 = args.Length >= 4 ? ModelJson.ReadFixture(args[3]) : null;
+    using var original2 = args.Length == 5 ? ModelJson.ReadFixture(args[4]) : null;
+    if (repaired == null) HellfurnaceHeavyExitChecks.Native(fixture.RootElement);
+    else HellfurnaceHeavyExitChecks.Pair(fixture.RootElement, repaired.RootElement, repaired2?.RootElement, original2?.RootElement);
+    return;
+}
 if (args.Length is >= 2 and <= 4 && args[0] == "--mushy-rax-entry-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -10205,6 +10215,15 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-enemy-statistics-listeners-replay-calibration.mt2f"));
     EnemyStatisticsListenerChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-random27-ring7-hellfurnace-heavy-exit-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-random27-ring7-hellfurnace-heavy-exit-original.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var original = ModelJson.ReadFixture(path);
+    using var repaired = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring7-hellfurnace-heavy-exit-repaired.mt2f"));
+    using var repaired2 = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring7-hellfurnace-heavy-exit-repaired2.mt2f"));
+    using var original2 = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring7-hellfurnace-heavy-exit-original2.mt2f"));
+    HellfurnaceHeavyExitChecks.Pair(original.RootElement, repaired.RootElement, repaired2.RootElement, original2.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) is "player-random27-ring7-rank2-419-refined-loss.mt2f" or "player-random27-ring7-rank2-419-refined-loss-replay.mt2f")
     .Select(path => ModelJson.RelatedFixture(path, "player-random27-ring7-rank2-419-refined-loss.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

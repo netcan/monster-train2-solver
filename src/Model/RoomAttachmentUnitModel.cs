@@ -217,8 +217,9 @@ namespace MonsterTrain2Poju.Model
                         previousUnit is { Team: CombatTeam.Enemy, MoonPhaseMask: 5 or 6 } &&
                         (previousUnit.MoonPhaseMask.Value & 3) != inactive.MoonPhase.Value)
                     {
-                        bool originalMushyExit = OriginalMushyExit(removed, previousUnit);
-                        if (!originalMushyExit && (previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
+                        bool originalObservedExit = OriginalMushyExit(removed, previousUnit) ||
+                            inactive.MoonPhase == 2 && OriginalHellfurnaceExit(removed, previousUnit);
+                        if (!originalObservedExit && (previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
                             previousUnit is not { AssetKey: "HeavyT3_Basic", BaseAttack: 8, MaxHealth: 325, Size: 2, Triggers.Count: 0 } &&
                             previousUnit is not { AssetKey: "HeavyT3_PyreDamageIfUnblocked", BaseAttack: 5, MaxHealth: 250, Size: 2,
                                 Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,
@@ -285,6 +286,22 @@ namespace MonsterTrain2Poju.Model
             }
             return new RoomAttachmentUnitSyncResult(state);
         }
+
+        internal static bool OriginalHellfurnaceExit(RoomCapacityAttachmentState attachment, CombatUnit unit) =>
+            attachment is { AssetKey: "Hellfurnace", DataId: "5d34a8d1-be5c-44e0-bd7e-b6cd576df0bb", AttachmentType: 0,
+                CapacityDelta: 0, AffectsHeroes: true, AffectsMonsters: true, IgnoreBosses: false,
+                SpellCostDelta: 0, EnergyPerTurnDelta: 0, MoonPhase: null, PreCombat: null, PostCombat: null,
+                CharacterFilters.Count: 0, CharacterUpgrades.Count: 1,
+                StatusStackBonuses: [{ StatusId: "pyregel", Amount: 3 }], SpawnCopySubtype: null,
+                SpellUpgrade: null, DeathEffect: null, Ability: null, CorruptionModifier: null, Echo: null } &&
+            attachment.CharacterUpgrades[0] is { AssetKey: "AmplificationChamber", DataId: "63c7092d-84ce-4904-a4a5-eeedbdc74b2b" } upgrade &&
+            new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }.All(stat => upgrade.Stats.Value(stat) == 0) &&
+            upgrade.Statuses.Count == 0 && upgrade.ExternalInteractions.Count == 0 && upgrade.TriggerUpgrades?.Count is not > 0 && upgrade.AbilityUpgrade == null &&
+            (unit is { AssetKey: "HeavyT3_Basic", BaseAttack: 8, Health: > 0 and <= 325, MaxHealth: 325, Size: 2, SpawnerCardId: 0, Triggers.Count: 0 } ||
+             unit is { AssetKey: "HeavyT3_PyreDamageIfUnblocked", BaseAttack: 5, Health: > 0 and <= 250, MaxHealth: 250, Size: 2, SpawnerCardId: 0,
+                Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,
+                    Effects: [{ Type: "CardEffectPyreDamageIfNoPlayerUnits", Value: 5,
+                        Action: { Type: "Damage", Target: "Pyre", Value: 5 } }] }] });
 
         internal static bool OriginalMushyDarkEntry(RoomCapacityAttachmentState added, CombatUnit previousUnit) =>
             (previousUnit.AssetKey is "HeavyT3_PyreDamageIfUnblocked" or "AttackerT3_Sweep" or "Boss_Level7_Rax") && OriginalMushyExit(added, previousUnit);
