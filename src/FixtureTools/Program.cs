@@ -2,7 +2,11 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using MonsterTrain2Poju.Fixtures;
 
-if (args.Length == 4 && args[0] == "refresh-native-prefix")
+if (args.Length == 3 && args[0] == "extract-rolling-action-mismatch")
+{
+    RollingActionMismatchRequest.Extract(args[1], args[2]);
+}
+else if (args.Length == 4 && args[0] == "refresh-native-prefix")
 {
     PreviewIdMismatchRequest.RefreshNativePrefix(args[1], args[2], args[3]);
 }

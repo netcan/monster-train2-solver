@@ -4287,6 +4287,26 @@ if (args.Length == 2 && args[0] == "--mixalot-only")
     MixalotChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 5 && args[0] == "--deferred-harvest-tower-four")
+{
+    using var original = ModelJson.ReadFixture(args[1]);
+    using var originalReplay = ModelJson.ReadFixture(args[2]);
+    using var repaired = ModelJson.ReadFixture(args[3]);
+    using var repairedReplay = ModelJson.ReadFixture(args[4]);
+    DeferredHarvestTowerChecks.Four(original.RootElement, originalReplay.RootElement, repaired.RootElement, repairedReplay.RootElement);
+    return;
+}
+if (args.Length is 2 or 3 && args[0] == "--deferred-harvest-tower-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 3)
+    {
+        using var replay = ModelJson.ReadFixture(args[2]);
+        DeferredHarvestTowerChecks.Native(source.RootElement, replay.RootElement);
+    }
+    else DeferredHarvestTowerChecks.Native(source.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--spell-harvest-tower-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

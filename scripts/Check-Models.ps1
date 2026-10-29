@@ -9,6 +9,8 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-deferred-harvest-tower-original.mt2f', 'player-deferred-harvest-tower-original-replay.mt2f',
+    'player-deferred-harvest-tower-403.mt2f', 'player-deferred-harvest-tower-403-replay.mt2f',
     'player-reverse-copy-consume-play-original.mt2f', 'player-reverse-copy-consume-play-original-replay.mt2f',
     'player-reverse-copy-consume-play-401.mt2f', 'player-reverse-copy-consume-play-401-replay.mt2f',
     'player-reverse-copy-consume-discard-original.mt2f', 'player-reverse-copy-consume-discard-original-replay.mt2f',
@@ -2530,6 +2532,20 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --fight-club-injured-companion-only (Get-TestFixturePath 'player-fight-club-injured-companion-calibration.mt2f') (Get-TestFixturePath 'player-fight-club-injured-companion-replay-calibration.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Fight Club injured companion native check failed.' }
+    return
+}
+$deferredHarvestNames = @('player-deferred-harvest-tower-original.mt2f', 'player-deferred-harvest-tower-original-replay.mt2f',
+    'player-deferred-harvest-tower-403.mt2f', 'player-deferred-harvest-tower-403-replay.mt2f')
+function Check-DeferredHarvestTower {
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --deferred-harvest-tower-four @($deferredHarvestNames | ForEach-Object { Get-TestFixturePath $_ })
+    if ($LASTEXITCODE -ne 0) { throw 'Deferred Harvest cross-floor native check failed.' }
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $deferredHarvestNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Deferred Harvest checker build failed.' }
+    }
+    Check-DeferredHarvestTower
     return
 }
 $arkionPushMoonNames = @('player-arkion-push-fullmoon-original.mt2f', 'arkion-push-fullmoon-birth-original.mt2f',
@@ -7815,6 +7831,9 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-reverse-copy-consume-play-original.mt2f' })) {
     Check-ReverseCopyConsume
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-deferred-harvest-tower-original.mt2f' })) {
+    Check-DeferredHarvestTower
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-random26-ring6-397-default-loss.mt2f' })) {
     Check-Random26Ring6

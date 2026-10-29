@@ -226,6 +226,7 @@ namespace MonsterTrain2Poju.Model
                     state = ReplaceExternalActor(state, target.RoomIndex, changed);
                 }
             }
+            var borrowedTargets = Targets(source, roomIndex, externalAttacker ? attackerUnitId : 0);
             RoomCombatResult FinishQueue(RoomCombatState frame)
             {
                 state = ReplaceRoom(state, frame);
@@ -276,11 +277,21 @@ namespace MonsterTrain2Poju.Model
                     : null;
                 if (externalAttacker && updatedAttacker == null)
                     error ??= "External spell attacker was lost while draining deferred deaths.";
+                // Keep the outer damage engine's borrowed roster in sync with
+                // cross-floor changes made while draining earlier deaths.
+                var updatedTargets = new List<CombatUnit>();
+                foreach (var target in borrowedTargets)
+                {
+                    CombatUnit? updated = state.Rooms.Single(room => room.RoomIndex == target.RoomIndex).Units
+                        .FirstOrDefault(unit => unit.Id == target.Unit.Id);
+                    if (updated == null) error ??= "External spell target was lost while draining deferred deaths.";
+                    else updatedTargets.Add(updated);
+                }
+                if (updatedAttacker != null) updatedTargets.Add(updatedAttacker);
                 return new RoomCombatResult(drained && error == null ? state.Rooms.Single(room => room.RoomIndex == roomIndex) : null,
                     drained && error == null ? outcome : RoomOutcome.Unsupported, 0, events, error,
-                    retainedUnits: updatedAttacker == null ? null : [updatedAttacker]);
+                    retainedUnits: updatedTargets);
             }
-            var borrowedTargets = Targets(source, roomIndex, externalAttacker ? attackerUnitId : 0);
             var applied = RoomCombatModel.ApplyNativeCardDamageAfterTraits(initial, targetId, damage, sourceCardId,
                 attackerUnitId,
                 pendingDeaths.Count == 0 ? null : (Func<RoomCombatState, RoomCombatResult>)FinishQueue, refreshPyre: Refresh,
