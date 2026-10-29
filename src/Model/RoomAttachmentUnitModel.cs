@@ -288,8 +288,7 @@ namespace MonsterTrain2Poju.Model
             return new RoomAttachmentUnitSyncResult(state);
         }
 
-        internal static bool OriginalHellfurnaceExit(RoomCapacityAttachmentState attachment, CombatUnit unit, int moonPhase = 2) =>
-            moonPhase is 1 or 2 &&
+        private static bool OriginalHellfurnace(RoomCapacityAttachmentState attachment) =>
             attachment is { AssetKey: "Hellfurnace", DataId: "5d34a8d1-be5c-44e0-bd7e-b6cd576df0bb", AttachmentType: 0,
                 CapacityDelta: 0, AffectsHeroes: true, AffectsMonsters: true, IgnoreBosses: false,
                 SpellCostDelta: 0, EnergyPerTurnDelta: 0, MoonPhase: null, PreCombat: null, PostCombat: null,
@@ -298,7 +297,10 @@ namespace MonsterTrain2Poju.Model
                 SpellUpgrade: null, DeathEffect: null, Ability: null, CorruptionModifier: null, Echo: null } &&
             attachment.CharacterUpgrades[0] is { AssetKey: "AmplificationChamber", DataId: "63c7092d-84ce-4904-a4a5-eeedbdc74b2b" } upgrade &&
             new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }.All(stat => upgrade.Stats.Value(stat) == 0) &&
-            upgrade.Statuses.Count == 0 && upgrade.ExternalInteractions.Count == 0 && upgrade.TriggerUpgrades?.Count is not > 0 && upgrade.AbilityUpgrade == null &&
+            upgrade.Statuses.Count == 0 && upgrade.ExternalInteractions.Count == 0 && upgrade.TriggerUpgrades?.Count is not > 0 && upgrade.AbilityUpgrade == null;
+
+        internal static bool OriginalHellfurnaceExit(RoomCapacityAttachmentState attachment, CombatUnit unit, int moonPhase = 2) =>
+            moonPhase is 1 or 2 && OriginalHellfurnace(attachment) &&
             (unit is { AssetKey: "HeavyT3_Basic", BaseAttack: 8, Health: > 0 and <= 325, MaxHealth: 325, Size: 2, SpawnerCardId: 0, Triggers.Count: 0 } ||
              unit is { AssetKey: "HeavyT3_PyreDamageIfUnblocked", BaseAttack: 5, Health: > 0 and <= 250, MaxHealth: 250, Size: 2, SpawnerCardId: 0,
                 Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,
@@ -308,8 +310,9 @@ namespace MonsterTrain2Poju.Model
                 Size: 1, SpawnerCardId: 0, Triggers.Count: 0 } && unit.Status("sweep")?.Stacks == 1);
 
         internal static bool OriginalHellfurnaceEntry(RoomCapacityAttachmentState attachment, CombatUnit unit, int moonPhase = 1) =>
-            ((unit.AssetKey is "HeavyT3_PyreDamageIfUnblocked" or "HeavyT3_Basic") && (moonPhase is 1 or 2) ||
-             unit.AssetKey == "AttackerT3_Sweep" && moonPhase == 1) && OriginalHellfurnaceExit(attachment, unit, 2);
+            (((unit.AssetKey is "HeavyT3_PyreDamageIfUnblocked" or "HeavyT3_Basic") && (moonPhase is 1 or 2) ||
+              unit.AssetKey == "AttackerT3_Sweep" && moonPhase == 1) && OriginalHellfurnaceExit(attachment, unit, 2)) ||
+            (moonPhase == 1 && OriginalHellfurnace(attachment) && OriginalRax(unit));
 
         internal static bool OriginalMushyDarkEntry(RoomCapacityAttachmentState added, CombatUnit previousUnit) =>
             (previousUnit.AssetKey is "HeavyT3_PyreDamageIfUnblocked" or "AttackerT3_Sweep" or "Boss_Level7_Rax") && OriginalMushyExit(added, previousUnit);
@@ -329,11 +332,7 @@ namespace MonsterTrain2Poju.Model
                 Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,
                     Effects: [{ Type: "CardEffectPyreDamageIfNoPlayerUnits", Value: 5,
                         Action: { Type: "Damage", Target: "Pyre", Value: 5 } }] }] } ||
-             previousUnit is { AssetKey: "Boss_Level7_Rax", BaseAttack: 9, Health: > 0 and <= 1100, MaxHealth: 1100, Size: 5, SpawnerCardId: 0,
-                Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true, Effects: [
-                    { Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Self", Statuses: [{ Id: "buff", Stacks: 8, ParamInt: 2 }] } },
-                    { Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Self", Statuses: [{ Id: "regen", Stacks: 20, ParamInt: 1 }] } },
-                    { Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Self", Statuses: [{ Id: "spell shield", Stacks: 2, ParamInt: 0 }] } }] }] } ||
+             OriginalRax(previousUnit) ||
              previousUnit is { AssetKey: "AttackerT3_Sweep", BaseAttack: 5, Health: > 0 and <= 5, MaxHealth: 5, Size: 1, SpawnerCardId: 0, Triggers.Count: 0 } &&
                 previousUnit.Status("sweep")?.Stacks == 1 ||
              OriginalMushyEntry(removed, previousUnit) ||
@@ -342,6 +341,13 @@ namespace MonsterTrain2Poju.Model
                     Effects: [{ Type: "CardEffectAddTempCardUpgradeToUnits", UnitUpgrade: { Type: "UnitUpgrade",
                         Target: "LastFeederCharacter", Upgrade.DataId: "04897158-64c9-4828-9541-b5f20f627eee" } },
                         { Type: "CardEffectDamage", Value: 20, Action: { Type: "Damage", Target: "Self", Value: 20 } }] }] });
+
+        private static bool OriginalRax(CombatUnit unit) =>
+            unit is { AssetKey: "Boss_Level7_Rax", BaseAttack: 9, Health: > 0 and <= 1100, MaxHealth: 1100, Size: 5, SpawnerCardId: 0,
+                Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true, Effects: [
+                    { Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Self", Statuses: [{ Id: "buff", Stacks: 8, ParamInt: 2 }] } },
+                    { Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Self", Statuses: [{ Id: "regen", Stacks: 20, ParamInt: 1 }] } },
+                    { Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Self", Statuses: [{ Id: "spell shield", Stacks: 2, ParamInt: 0 }] } }] }] };
 
         private static bool OriginalInferno(RoomCapacityAttachmentState attachment) =>
             attachment is { AssetKey: "InfernoRoom", DataId: "378cea0c-14e9-45fb-9918-fb853bd04a7d", CharacterUpgrades.Count: 1,
