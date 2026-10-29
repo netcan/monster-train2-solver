@@ -6,6 +6,10 @@ where the advisor stopped. It can select either a rejected card play or an EndTu
 The request retains the original root, verified supported prefix, exact failure
 root/reason and source SHA256. Extraction does not claim a native successor.
 
+For a rejected alternative seen during retained-suffix investigation, append its
+exact reason to `improve-suffix` as the optional final argument. The diagnostic
+still reports other rejection reasons, but writes only the first matching branch.
+
 Pass the request to `Run-FullBattleProbe.ps1 -UnsupportedBranchInput` with the
 unchanged native input profile, battle distance and physical/canonical capture
 options. The development driver verifies the entire prefix before executing the

@@ -14,7 +14,7 @@ internal static partial class OfflineBattleSearch
         string? prediction = null, int startDecision = 0, bool exploreCardOrder = false, bool retainSuffix = false,
         int secondActionWidth = 0, bool improveWinningRoute = false, int perDecisionCandidateLimit = 0,
         int thirdActionWidth = 0, int diversificationWidth = 0, int maxDecisionCount = 256, bool preferLaterDefeat = false,
-        bool balancePairs = false)
+        bool balancePairs = false, string? unsupportedReasonFilter = null)
     {
         Require(milliseconds is >= 100 and <= 600000 && maxPasses is >= 1 and <= 16,
             "Expected100..600000ms and1..16 improvement passes.");
@@ -90,6 +90,7 @@ internal static partial class OfflineBattleSearch
             unsupported++;
             if (!retainSuffix) return;
             if (reasons.Add(reason)) Console.WriteLine($"IMPROVE-UNSUPPORTED action={JsonSerializer.Serialize(action)} reason={reason}");
+            if (unsupportedReasonFilter != null && reason != unsupportedReasonFilter) return;
             if (File.Exists(unsupportedOutput)) return;
             string? reproduced = action == null ? BattleTurnModel.EndTurn(failedRoot).UnsupportedReason :
                 BattleActionModel.PlayCard(failedRoot, action).Reason;
