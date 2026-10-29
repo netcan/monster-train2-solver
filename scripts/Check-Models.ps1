@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-random27-ring7-418-budget30000-loss.mt2f', 'player-random27-ring7-418-budget30000-loss-replay.mt2f',
     'player-random27-ring7-418-budget10000-loss.mt2f', 'player-random27-ring7-418-budget10000-loss-replay.mt2f',
     'player-random27-ring7-mushy-dark-entry-original.mt2f', 'player-random27-ring7-mushy-dark-entry-repaired.mt2f', 'player-random27-ring7-mushy-dark-entry-repaired2.mt2f',
     'player-random27-ring7-mushy-heavy-t3-exit-original.mt2f', 'player-random27-ring7-mushy-heavy-t3-exit-repaired.mt2f', 'player-random27-ring7-mushy-heavy-t3-exit-repaired2.mt2f',
@@ -5057,14 +5058,15 @@ if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
     return
 }
 if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
-    $selectedFixtureNames[0] -in @('player-random27-ring7-418-budget10000-loss.mt2f', 'player-random27-ring7-418-budget10000-loss-replay.mt2f')) {
+    $selectedFixtureNames[0] -match '^player-random27-ring7-418-budget(10000|30000)-loss(-replay)?\.mt2f$') {
+    $budget = $Matches[1]
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
         if ($LASTEXITCODE -ne 0) { throw 'Random campaign checker build failed.' }
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --random-campaign-defeat-pair-only `
-        (Get-TestFixturePath 'player-random27-ring7-418-budget10000-loss.mt2f') `
-        (Get-TestFixturePath 'player-random27-ring7-418-budget10000-loss-replay.mt2f') 1761031144 0 6 Pyreborne Underlegion 10000
+        (Get-TestFixturePath "player-random27-ring7-418-budget$budget-loss.mt2f") `
+        (Get-TestFixturePath "player-random27-ring7-418-budget$budget-loss-replay.mt2f") 1761031144 0 6 Pyreborne Underlegion $budget
     if ($LASTEXITCODE -ne 0) { throw 'Random campaign ring 7 extended budget defeat pair check failed.' }
     return
 }
