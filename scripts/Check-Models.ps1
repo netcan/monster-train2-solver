@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-random27-ring2-407-win.mt2f', 'player-random27-ring2-407-win-replay.mt2f',
     'player-retired-haste-combat-original.mt2f', 'player-retired-haste-combat-original-replay.mt2f',
     'player-retired-haste-combat-repaired.mt2f', 'player-retired-haste-combat-repaired-replay.mt2f',
     'player-retired-haste-preview-original.mt2f', 'player-retired-haste-preview-original-replay.mt2f',
@@ -4984,6 +4985,18 @@ if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --automatic-view-continuation-only `
         (Get-TestFixturePath 'player-prepared-selection-publication-calibration.mt2f') $fixtures[0]
     if ($LASTEXITCODE -ne 0) { throw 'Automatic view continuation check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
+    $selectedFixtureNames[0] -in @('player-random27-ring2-407-win.mt2f', 'player-random27-ring2-407-win-replay.mt2f')) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Random campaign checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --random-campaign-pair-only `
+        (Get-TestFixturePath 'player-random27-ring2-407-win.mt2f') `
+        (Get-TestFixturePath 'player-random27-ring2-407-win-replay.mt2f') 1761031144 0 1 Pyreborne Underlegion 3000
+    if ($LASTEXITCODE -ne 0) { throw 'Random campaign ring 2 pair check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
