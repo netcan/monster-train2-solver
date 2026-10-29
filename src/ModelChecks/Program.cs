@@ -778,6 +778,15 @@ if (args.Length == 2 && args[0] == "--prepared-selection-publication-only")
     PreparedSelectionPublicationChecks.Native(source.RootElement);
     return;
 }
+if (args.Length == 5 && args[0] == "--retired-haste-preview-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    using var repaired = ModelJson.ReadFixture(args[3]);
+    using var repairedReplay = ModelJson.ReadFixture(args[4]);
+    RetiredHastePreviewChecks.Native(source.RootElement, replay.RootElement, repaired.RootElement, repairedReplay.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--pyremaniac-upgrade-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

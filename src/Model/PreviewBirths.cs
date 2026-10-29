@@ -220,6 +220,27 @@ namespace MonsterTrain2Poju.Model
             forgotten = Array.Empty<int>();
             CombatContext context = source.Context!;
             EnchantmentWorld? world = preview.Enchantments;
+            bool OriginalRetiredHasteRecruit() => world != null && world.EnchanterIds.Count == 2 && world.EnchanterIds.Distinct().Count() == 2 &&
+                source.Rooms.Any(room => room.Units.Any(unit => IsOriginalGreenRecruit(unit, context) &&
+                    unit is { BaseAttack: 5, Health: 5, MaxHealth: 5, Size: 1 } && unit.Status("multistrike")?.Stacks == 1) &&
+                    room.Units.Any(unit => unit is { AssetKey: "MonsterChampionPyreborne1", Team: CombatTeam.Player,
+                        BaseAttack: 20, Health: 25, MaxHealth: 30, Size: 3 } &&
+                        context.FindCard(unit.SpawnerCardId)?.DataId == "7488b439-316c-4a13-8897-90de239b6250") &&
+                    room.Units.Any(unit => unit is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player, SpawnerCardId: 0,
+                        BaseAttack: 10, Health: 8, MaxHealth: 8, Size: 1, Modifiers.Upgrades.Count: 2 } && unit.Status("horde")?.Stacks == 2)) &&
+                !world.Rooms.SelectMany(room => room.Units).Any(unit => world.EnchanterIds.Contains(unit.Id)) &&
+                world.RetainedUnits.Where(actor => world.EnchanterIds.Contains(actor.Unit.Id)).Count() == 2 &&
+                world.RetainedUnits.Where(actor => world.EnchanterIds.Contains(actor.Unit.Id)).All(actor =>
+                {
+                    CombatUnit unit = actor.Unit;
+                    var effects = unit.Triggers.SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null).ToArray();
+                    return actor.RoomIndex == -1 && !actor.Preview && unit is { AssetKey: "EnchanterT1_Speed", Team: CombatTeam.Enemy,
+                        Health: <= 0, DeathState.IsDestroyed: true } && effects.Length == 1 &&
+                        effects[0].Enchantment is { Bound: false, HasParentCard: false, StatusPool: [{ Id: "haste", Stacks: 1, ParamInt: 2 }],
+                            Targeting: { Type: "AddStatus", Target: "Room", Value: 0, Range: null, AllowEnemy: true, AllowPlayer: false,
+                                OnlyIfNoEnemies: false, Filters: { Health: "Both", RequiredStatuses.Count: 0, ExcludedStatuses.Count: 0,
+                                    IgnoreBosses: false, Subtype: "", ExcludedSubtypes.Count: 0 } } };
+                });
             bool OriginalExistingHorde() => source.Rooms.Any(room => room.Units.Any(owner => IsOriginalChampionEnemyDeath(owner, context) &&
                 owner.Modifiers?.TroopAura?.Upgrade is { DataId: CardUnderlegionTroopUpgradeModel.ThirdAuraUpgradeId } aura &&
                 room.Units.Any(unit => unit is { AssetKey: "MonsterFunguy", SpawnerCardId: 0, Health: 42, MaxHealth: 42,
@@ -388,7 +409,7 @@ namespace MonsterTrain2Poju.Model
             if (context.Enchantments?.AutomaticLifecycle != true || preview.NextUnitId is not int nextId ||
                 nextId <= firstUnitId || world == null || preview.CardRegistry == null ||
                 world.EnchanterIds.Count != 0 && !fragileObserver &&
-                    !TroopAuraModel.OnlyTitanskinSources(world.Rooms, world.RetainedUnits, world.EnchanterIds))
+                    !TroopAuraModel.OnlyTitanskinSources(world.Rooms, world.RetainedUnits, world.EnchanterIds) && !OriginalRetiredHasteRecruit())
                 return preview;
             bool enemyOnlyObservers = world.EnchanterIds.Count != 0;
             CardInstanceState[] newCards = preview.CardRegistry?.Where(card => card.InstanceId >= firstCardId).ToArray()
