@@ -217,7 +217,14 @@ namespace MonsterTrain2Poju.Model
                         previousUnit is { Team: CombatTeam.Enemy, MoonPhaseMask: 5 or 6 } &&
                         (previousUnit.MoonPhaseMask.Value & 3) != inactive.MoonPhase.Value)
                     {
-                        if (previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
+                        bool originalMushyExit = OriginalMushy(removed) &&
+                            (previousUnit is { AssetKey: "HeavyT2_Basic", BaseAttack: 6, Health: 72, MaxHealth: 120, Size: 2, Triggers.Count: 0 } ||
+                             previousUnit is { AssetKey: "Boss_Level6_FeedDamageShield", BaseAttack: 0, Health: 40, MaxHealth: 60, Size: 1,
+                                Triggers: [{ Kind: "OnEaten", FireCount: 1, SkipDuringDeployment: true,
+                                    Effects: [{ Type: "CardEffectAddTempCardUpgradeToUnits", UnitUpgrade: { Type: "UnitUpgrade",
+                                        Target: "LastFeederCharacter", Upgrade.DataId: "04897158-64c9-4828-9541-b5f20f627eee" } },
+                                        { Type: "CardEffectDamage", Value: 20, Action: { Type: "Damage", Target: "Self", Value: 20 } }] }] });
+                        if (!originalMushyExit && (previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
                             previousUnit is not { AssetKey: "HeavyT3_Basic", BaseAttack: 8, MaxHealth: 325, Size: 2, Triggers.Count: 0 } &&
                             previousUnit is not { AssetKey: "HeavyT3_PyreDamageIfUnblocked", BaseAttack: 5, MaxHealth: 250, Size: 2,
                                 Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,
@@ -232,7 +239,7 @@ namespace MonsterTrain2Poju.Model
                                     Effects: [{ Type: "CardEffectBuffDamage", Value: 1, Action: { Type: "BuffAttack", Target: "Self", Value: 1 } }] }] } &&
                                 (previousUnit.BaseAttack, previousUnit.Modifiers.DamageBuff) is (4, 1) or (6, 3) or (7, 4) or (15, 12) &&
                                 previousUnit.Status("multistrike")?.Stacks == 1) ||
-                            !OriginalInferno(removed) ||
+                            !OriginalInferno(removed)) ||
                             oldRoom.Preview || newRoom.Preview || currentUnit.Triggers.Any(trigger => trigger.Kind is
                                 "OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or "OnMoonshadeLost"))
                             return Fail("Inactive enemy room-exit moon understanding requires native calibration.");
@@ -259,7 +266,12 @@ namespace MonsterTrain2Poju.Model
                         previousUnit is { Team: CombatTeam.Enemy, MoonPhaseMask: 5 or 6 } &&
                         (previousUnit.MoonPhaseMask.Value & 3) != inactive.MoonPhase.Value)
                     {
-                        if ((inactive.MoonPhase == 1 && previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
+                        bool originalMushyEntry = OriginalMushy(added) && inactive.MoonPhase == 1 && previousUnit is
+                            { AssetKey: "Boss_Level6_Cael_DamageShield", BaseAttack: 22, Health: 1700, MaxHealth: 1800, Size: 6,
+                                Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,
+                                    Effects: [{ Type: "CardEffectAddTempCardUpgradeToUnits", UnitUpgrade: { Type: "UnitUpgrade",
+                                        Target: "FrontInRoom", Upgrade.DataId: "04897158-64c9-4828-9541-b5f20f627eee" } }] }] };
+                        if (!originalMushyEntry && ((inactive.MoonPhase == 1 && previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
                             previousUnit.AssetKey != "HeavyT3_PyreDamageIfUnblocked") ||
                             previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
                             previousUnit is not { AssetKey: "HeavyT3_Basic", BaseAttack: 8, MaxHealth: 325, Size: 2, Triggers.Count: 0 } &&
@@ -268,7 +280,7 @@ namespace MonsterTrain2Poju.Model
                                     Effects: [{ Type: "CardEffectPyreDamageIfNoPlayerUnits", Value: 5,
                                         Action: { Type: "Damage", Target: "Pyre", Value: 5 } }] }] } &&
                             !(previousUnit is { AssetKey: "AttackerT3_Sweep", BaseAttack: 5, MaxHealth: 5, Size: 1, Triggers.Count: 0 } &&
-                                previousUnit.Status("sweep")?.Stacks == 1) || !OriginalInferno(added) ||
+                                previousUnit.Status("sweep")?.Stacks == 1) || !OriginalInferno(added)) ||
                             oldRoom.Preview || newRoom.Preview || currentUnit.Triggers.Any(trigger => trigger.Kind is
                                 "OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or "OnMoonshadeLost"))
                             return Fail("Inactive enemy room-entry moon understanding requires native calibration.");
@@ -288,6 +300,15 @@ namespace MonsterTrain2Poju.Model
                 PreCombat: { DisallowedInDeployment: true, FocusRoom: true, Effects.Count: 1 } preCombat } &&
             RoomPreCombatModel.Validate(preCombat) == null &&
             attachment.CharacterUpgrades[0] is { AssetKey: "InfernoRoom", DataId: "96547940-8feb-4f73-b147-c763a64161c2" } upgrade &&
+            new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }.All(stat => upgrade.Stats.Value(stat) == 0) &&
+            upgrade.Statuses.Count == 0 && upgrade.ExternalInteractions.Count == 0 && upgrade.TriggerUpgrades?.Count is not > 0 && upgrade.AbilityUpgrade == null;
+
+        internal static bool OriginalMushy(RoomCapacityAttachmentState attachment) =>
+            attachment is { AssetKey: "MushyRoom", DataId: "83e40135-9e3a-4290-ab9f-d4c8c7e1ac0b", AffectsHeroes: true,
+                AffectsMonsters: true, IgnoreBosses: false, CharacterUpgrades.Count: 1,
+                PostCombat: { DisallowedInDeployment: false, Effects: [{ Type: "AddStatus", Target: "Room", Value: 0,
+                    AllowEnemy: true, AllowPlayer: false, Range: null, Statuses: [{ Id: "debuff", Stacks: 3, ParamInt: 2 }] }] } } &&
+            attachment.CharacterUpgrades[0] is { AssetKey: "MushyRoom_Upgrade", DataId: "5364e378-3dbb-43c3-8c9b-ff305ef779f5" } upgrade &&
             new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }.All(stat => upgrade.Stats.Value(stat) == 0) &&
             upgrade.Statuses.Count == 0 && upgrade.ExternalInteractions.Count == 0 && upgrade.TriggerUpgrades?.Count is not > 0 && upgrade.AbilityUpgrade == null;
 

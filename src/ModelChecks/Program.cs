@@ -1,5 +1,23 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is >= 2 and <= 4 && args[0] == "--green-recruit-souls-preview-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var repaired = args.Length >= 3 ? ModelJson.ReadFixture(args[2]) : null;
+    using var repaired2 = args.Length == 4 ? ModelJson.ReadFixture(args[3]) : null;
+    if (repaired == null) GreenRecruitSoulsPreviewChecks.Native(fixture.RootElement);
+    else GreenRecruitSoulsPreviewChecks.Pair(fixture.RootElement, repaired.RootElement, repaired2?.RootElement);
+    return;
+}
+if (args.Length is >= 2 and <= 4 && args[0] == "--mushy-moon-movement-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var repaired = args.Length >= 3 ? ModelJson.ReadFixture(args[2]) : null;
+    using var repaired2 = args.Length == 4 ? ModelJson.ReadFixture(args[3]) : null;
+    if (repaired == null) MushyMoonMovementChecks.Native(fixture.RootElement);
+    else MushyMoonMovementChecks.Pair(fixture.RootElement, repaired.RootElement, repaired2?.RootElement);
+    return;
+}
 if (args.Length is >= 2 and <= 4 && args[0] == "--green-recruit-blade-preview-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -10107,6 +10125,22 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-enemy-statistics-listeners-replay-calibration.mt2f"));
     EnemyStatisticsListenerChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-random27-ring6-mushy-moon-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-random27-ring6-mushy-moon-original.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var original = ModelJson.ReadFixture(path);
+    using var repaired = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring6-mushy-moon-repaired.mt2f"));
+    using var repaired2 = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring6-mushy-moon-repaired2.mt2f"));
+    MushyMoonMovementChecks.Pair(original.RootElement, repaired.RootElement, repaired2.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-random27-ring6-recruit-souls-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-random27-ring6-recruit-souls-original.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var original = ModelJson.ReadFixture(path);
+    using var repaired = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring6-recruit-souls-repaired.mt2f"));
+    using var repaired2 = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring6-recruit-souls-repaired2.mt2f"));
+    GreenRecruitSoulsPreviewChecks.Pair(original.RootElement, repaired.RootElement, repaired2.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-random27-ring6-recruit-blade-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-random27-ring6-recruit-blade-original.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

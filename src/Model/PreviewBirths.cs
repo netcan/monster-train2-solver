@@ -10,6 +10,7 @@ namespace MonsterTrain2Poju.Model
             unit is { AssetKey: "MonsterGenerousHost", Team: CombatTeam.Player } &&
             context.FindCard(unit.SpawnerCardId)?.DataId == "c052c567-1e3c-4f36-a6cd-89b0648b9475" &&
             (unit.Triggers.Count == 1 || unit.Triggers.Count == 2 && IsOriginalBloodthirstyBladeTrigger(unit.Triggers[1], unit, context) || unit.Triggers.Count == 3 &&
+                IsOriginalSoulsmelterTriggers(unit.Triggers[1], unit.Triggers[2], unit, context) || unit.Triggers.Count == 3 &&
                 IsOriginalDuskMantleTrigger(unit.Triggers[1], unit, context, "OnMoonShade", "CardEffectAddStatusEffect", "AddStatus") &&
                 IsOriginalDuskMantleTrigger(unit.Triggers[2], unit, context, "OnMoonshadeLost", "CardEffectRemoveStatusEffect", "RemoveStatus") &&
                 unit.Triggers[1].Origin.EquipmentCardId == unit.Triggers[2].Origin.EquipmentCardId) &&
@@ -30,6 +31,21 @@ namespace MonsterTrain2Poju.Model
                             Statuses.Count: 0, ExternalInteractions.Count: 0, AbilityUpgrade: null, TriggerUpgrades: null } } }] } &&
             unit.EquipmentCards.Contains(origin.EquipmentCardId) &&
             context.FindCard(origin.EquipmentCardId)?.DataId == "66cbbd14-f5f3-44a1-bd1c-ce98f3c13584";
+
+        private static bool IsOriginalSoulsmelterTriggers(CombatTrigger first, CombatTrigger second, CombatUnit unit, CombatContext context) =>
+            first is { Kind: "OnAnyHeroDeathOnFloor", Once: false, IgnoreSilence: false, FireCount: 1, SkipDuringDeployment: false, Conditions: null,
+                Origin: { UpgradeId: "bee94cde-06f4-4bee-b616-8d1116fbb803", EquipmentCardId: > 0,
+                    IsFromEquipment: true, OnlyIfEquipped: false } origin,
+                Effects: [{ Type: "CardEffectAddStatusEffect", Value: 0, UnitUpgrade: null, Enchantment: null, Summon: null, Generation: null,
+                    Action: { Type: "AddStatus", Target: "Self", Value: 0, Range: null, AllowEnemy: true, AllowPlayer: true,
+                        Statuses: [{ Id: "captured_soul", Stacks: 1 }] } }] } &&
+            second is { Kind: "OnEncounterComplete", Once: false, IgnoreSilence: false, FireCount: 1, SkipDuringDeployment: false, Conditions: null,
+                Origin: { UpgradeId: "bee94cde-06f4-4bee-b616-8d1116fbb803", IsFromEquipment: true, OnlyIfEquipped: false } secondOrigin,
+                Effects: [{ Type: "CardEffectAdjustDragonsHoardPerStatusEffect", Value: 1, UnitUpgrade: null, Enchantment: null, Summon: null, Generation: null,
+                    Action: { Type: "HoardPerStatus", Target: "Self", Value: 1, Range: null, AllowEnemy: true, AllowPlayer: true,
+                        Statuses: [{ Id: "captured_soul", Stacks: >= 0 }] } }] } &&
+            secondOrigin.EquipmentCardId == origin.EquipmentCardId && unit.EquipmentCards.Contains(origin.EquipmentCardId) &&
+            context.FindCard(origin.EquipmentCardId)?.DataId == "bee94cde-06f4-4bee-b616-8d1116fbb803";
 
         private static bool IsOriginalDuskMantleTrigger(CombatTrigger trigger, CombatUnit unit, CombatContext context,
             string kind, string effectType, string actionType) =>
