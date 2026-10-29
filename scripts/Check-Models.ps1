@@ -13,6 +13,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'player-reverse-copy-consume-play-401.mt2f', 'player-reverse-copy-consume-play-401-replay.mt2f',
     'player-reverse-copy-consume-discard-original.mt2f', 'player-reverse-copy-consume-discard-original-replay.mt2f',
     'player-reverse-copy-consume-discard-401.mt2f', 'player-reverse-copy-consume-discard-401-replay.mt2f',
+    'player-random26-ring6-401-alt-default-loss.mt2f', 'player-random26-ring6-401-alt-default-loss-replay.mt2f',
     'player-copy-before-consume-notification-original.mt2f', 'player-copy-before-consume-notification-original-replay.mt2f',
     'player-copy-before-consume-notification-400.mt2f', 'player-copy-before-consume-notification-400-replay.mt2f',
     'player-copy-before-consume-draw-original.mt2f', 'player-copy-before-consume-draw-original-replay.mt2f',
@@ -2583,6 +2584,11 @@ if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin
 $random26Ring5Names = @('player-random26-ring5-397-default-loss.mt2f', 'player-random26-ring5-397-default-loss-replay.mt2f',
     'player-random26-ring5-397-refined-win.mt2f', 'player-random26-ring5-397-refined-win-replay.mt2f')
 $random26Ring6Names = @('player-random26-ring6-397-default-loss.mt2f', 'player-random26-ring6-397-default-loss-replay.mt2f')
+$random26Ring6AltNames = @('player-random26-ring6-401-alt-default-loss.mt2f', 'player-random26-ring6-401-alt-default-loss-replay.mt2f')
+function Check-Random26Ring6Alt {
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --random-campaign-defeat-pair-only @($random26Ring6AltNames | ForEach-Object { Get-TestFixturePath $_ }) 1332512341 0 5 Pyreborne LunaCoven 3000
+    if ($LASTEXITCODE -ne 0) { throw 'Random ring 6 alternate default defeat pair failed.' }
+}
 function Check-Random26Ring6 {
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --random-campaign-defeat-pair-only @($random26Ring6Names | ForEach-Object { Get-TestFixturePath $_ }) 1332512341 0 5 Pyreborne LunaCoven 3000
     if ($LASTEXITCODE -ne 0) { throw 'Random ring 6 default defeat pair failed.' }
@@ -2593,6 +2599,14 @@ function Check-Random26Ring5 {
     if ($LASTEXITCODE -ne 0) { throw 'Random ring 5 default defeat pair failed.' }
     dotnet $checker --random-refined-campaign-pair-only @($random26Ring5Names[2..3] | ForEach-Object { Get-TestFixturePath $_ }) 1332512341 0 4 Pyreborne LunaCoven 56
     if ($LASTEXITCODE -ne 0) { throw 'Random ring 5 refined victory pair failed.' }
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $random26Ring6AltNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Random ring 6 alternate checker build failed.' }
+    }
+    Check-Random26Ring6Alt
+    return
 }
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $random26Ring6Names }).Count -eq 0) {
     if (-not $SkipBuild) {
@@ -7787,6 +7801,9 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-random26-ring6-397-default-loss.mt2f' })) {
     Check-Random26Ring6
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-random26-ring6-401-alt-default-loss.mt2f' })) {
+    Check-Random26Ring6Alt
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-untouchable-troop-aura-stage.mt2f' })) {
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --untouchable-troop-trace-pair (Get-TestFixturePath 'player-untouchable-troop-aura-counterexample.mt2f') $fixturePath (Get-TestFixturePath 'player-untouchable-troop-aura-stage-replay.mt2f')
