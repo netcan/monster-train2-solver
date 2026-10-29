@@ -26,7 +26,7 @@ internal static class HellfurnaceHeavyEntryChecks
             mutant["Health"] = 0; Require(!Accept(), "Dead unit accepted.");
             mutant["Health"] = unit.Health; mutant["SpawnerCardId"] = 1; Require(!Accept(), "Unknown spawning card accepted.");
             mutant["SpawnerCardId"] = 0; mutant["BaseAttack"] = unit.BaseAttack + 1; Require(!Accept(), "Unknown attack accepted.");
-            if (id == 12) Require(!RoomAttachmentUnitModel.OriginalHellfurnaceEntry(furnace, unit, 1), "Unobserved heavy entry phase accepted.");
+            if (id == 12) Require(RoomAttachmentUnitModel.OriginalHellfurnaceEntry(furnace, unit, 1), "Observed heavy entry phase rejected.");
             Require(!RoomAttachmentUnitModel.OriginalHellfurnaceEntry(furnace, unit, 3), "Unknown moon phase accepted.");
         }
         string immutable = JsonSerializer.Serialize(before, ModelJson.Options), expected = NativeBranchObservationChecks.Key(actual);

@@ -300,7 +300,7 @@ namespace MonsterTrain2Poju.Model
             new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }.All(stat => upgrade.Stats.Value(stat) == 0) &&
             upgrade.Statuses.Count == 0 && upgrade.ExternalInteractions.Count == 0 && upgrade.TriggerUpgrades?.Count is not > 0 && upgrade.AbilityUpgrade == null &&
             (unit is { AssetKey: "HeavyT3_Basic", BaseAttack: 8, Health: > 0 and <= 325, MaxHealth: 325, Size: 2, SpawnerCardId: 0, Triggers.Count: 0 } ||
-             moonPhase == 2 && unit is { AssetKey: "HeavyT3_PyreDamageIfUnblocked", BaseAttack: 5, Health: > 0 and <= 250, MaxHealth: 250, Size: 2, SpawnerCardId: 0,
+             unit is { AssetKey: "HeavyT3_PyreDamageIfUnblocked", BaseAttack: 5, Health: > 0 and <= 250, MaxHealth: 250, Size: 2, SpawnerCardId: 0,
                 Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,
                     Effects: [{ Type: "CardEffectPyreDamageIfNoPlayerUnits", Value: 5,
                         Action: { Type: "Damage", Target: "Pyre", Value: 5 } }] }] } ||
@@ -308,8 +308,8 @@ namespace MonsterTrain2Poju.Model
                 Size: 1, SpawnerCardId: 0, Triggers.Count: 0 } && unit.Status("sweep")?.Stacks == 1);
 
         internal static bool OriginalHellfurnaceEntry(RoomCapacityAttachmentState attachment, CombatUnit unit, int moonPhase = 1) =>
-            (unit.AssetKey == "HeavyT3_PyreDamageIfUnblocked" && moonPhase is 1 or 2 ||
-             unit.AssetKey == "HeavyT3_Basic" && moonPhase == 2) && OriginalHellfurnaceExit(attachment, unit, 2);
+            ((unit.AssetKey is "HeavyT3_PyreDamageIfUnblocked" or "HeavyT3_Basic") && (moonPhase is 1 or 2) ||
+             unit.AssetKey == "AttackerT3_Sweep" && moonPhase == 1) && OriginalHellfurnaceExit(attachment, unit, 2);
 
         internal static bool OriginalMushyDarkEntry(RoomCapacityAttachmentState added, CombatUnit previousUnit) =>
             (previousUnit.AssetKey is "HeavyT3_PyreDamageIfUnblocked" or "AttackerT3_Sweep" or "Boss_Level7_Rax") && OriginalMushyExit(added, previousUnit);

@@ -23,7 +23,7 @@ internal static class HellfurnaceHeavyExitChecks
             JsonNode mutant = JsonSerializer.SerializeToNode(unit, ModelJson.Options)!;
             bool Accept() => RoomAttachmentUnitModel.OriginalHellfurnaceExit(furnace, mutant.Deserialize<CombatUnit>(ModelJson.Options)!);
             Require(Accept(), "Native Hellfurnace exit signature rejected for " + id);
-            if (id == 13) Require(!RoomAttachmentUnitModel.OriginalHellfurnaceExit(furnace, unit, 1), "Unobserved pyre-heavy phase accepted.");
+            if (id == 13) Require(RoomAttachmentUnitModel.OriginalHellfurnaceExit(furnace, unit, 1), "Observed pyre-heavy phase rejected.");
             mutant["Health"] = 0; Require(!Accept(), "Dead unit accepted.");
             mutant["Health"] = unit.Health; mutant["SpawnerCardId"] = 1; Require(!Accept(), "Unknown spawning card accepted.");
             mutant["SpawnerCardId"] = 0; mutant["BaseAttack"] = unit.BaseAttack + 1; Require(!Accept(), "Unknown attack accepted.");
