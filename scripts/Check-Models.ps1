@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-random27-ring7-rank2-427-refined-loss.mt2f', 'player-random27-ring7-rank2-427-refined-loss-replay.mt2f',
     'player-random27-ring7-rank2-427-loss.mt2f', 'player-random27-ring7-rank2-427-loss-replay.mt2f',
     'player-random27-ring7-rank2-424-loss.mt2f', 'player-random27-ring7-rank2-424-loss-replay.mt2f',
     'player-random27-ring7-hellfurnace-rax-exit-original.mt2f', 'player-random27-ring7-hellfurnace-rax-exit-original2.mt2f', 'player-random27-ring7-hellfurnace-rax-exit-repaired.mt2f', 'player-random27-ring7-hellfurnace-rax-exit-repaired2.mt2f',
@@ -5071,6 +5072,18 @@ if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
         (Get-TestFixturePath 'player-random27-ring6-recruit-souls-repaired.mt2f') `
         (Get-TestFixturePath 'player-random27-ring6-recruit-souls-repaired2.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Soulsmelter recruit focused check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
+    $selectedFixtureNames[0] -match '^player-random27-ring7-rank2-427-refined-loss(-replay)?\.mt2f$') {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Refined defeat checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --random27-ring7-refined-defeat-only `
+        (Get-TestFixturePath 'player-random27-ring7-rank2-427-refined-loss.mt2f') `
+        (Get-TestFixturePath 'player-random27-ring7-rank2-427-refined-loss-replay.mt2f') 51 343
+    if ($LASTEXITCODE -ne 0) { throw 'Random campaign refined defeat pair check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
