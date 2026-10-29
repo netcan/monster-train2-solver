@@ -296,7 +296,7 @@ namespace MonsterTrain2Poju.Model
             OriginalMushy(removed) &&
             (previousUnit is { AssetKey: "HeavyT2_Basic", BaseAttack: 6, Health: > 0 and <= 120, MaxHealth: 120, Size: 2, SpawnerCardId: 0, Triggers.Count: 0 } ||
              OriginalMushyEntry(removed, previousUnit) ||
-             previousUnit is { AssetKey: "Boss_Level6_FeedDamageShield", BaseAttack: 0, Health: 40, MaxHealth: 60, Size: 1,
+             previousUnit is { AssetKey: "Boss_Level6_FeedDamageShield", BaseAttack: 0, Health: > 0 and <= 60, MaxHealth: 60, Size: 1, SpawnerCardId: 0,
                 Triggers: [{ Kind: "OnEaten", FireCount: 1, SkipDuringDeployment: true,
                     Effects: [{ Type: "CardEffectAddTempCardUpgradeToUnits", UnitUpgrade: { Type: "UnitUpgrade",
                         Target: "LastFeederCharacter", Upgrade.DataId: "04897158-64c9-4828-9541-b5f20f627eee" } },
