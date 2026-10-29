@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 
@@ -37,6 +39,31 @@ internal static class AuthoredConsumeCopyChecks
                 copy.MaskDescriptor.BaseTraits.Single().RuntimeType == "CardTraitExhaustState" &&
                 recursive.Permanent.BoxedCards!.Count == 3 && copy.Permanent.BoxedCards!.Count == 3,
                 "On-cast and on-discard copies lost their distinct modifiers, authored Consume or boxed contents.");
+            CombatRelicState owner = old.Relics!.Single(relic => relic.DataId == "0f4a9e72-cd34-4667-95f6-6a0ca69832f8");
+            RelicCopyCardOnCardPlayModifier effect = owner.CopyCardOnCardPlayModifiers!.Single();
+            CardMaskDescriptor normalized = RelicCopyCardOnCardPlayModel.CreationMask(owner, effect, card);
+            Require(!ReferenceEquals(normalized, card.MaskDescriptor) && normalized.BaseTraits.Count == 1 &&
+                normalized.BaseTraits[0].RuntimeType == "CardTraitExhaustState", "The observed copied card retained installed traits as authored traits.");
+            foreach (string mutation in new[] { "owner", "card", "upgrade", "source", "traits", "callback" })
+            {
+                JsonNode ownerNode = JsonSerializer.SerializeToNode(owner, ModelJson.Options)!;
+                JsonNode effectNode = JsonSerializer.SerializeToNode(effect, ModelJson.Options)!;
+                JsonNode cardNode = JsonSerializer.SerializeToNode(card, ModelJson.Options)!;
+                switch (mutation)
+                {
+                    case "owner": ownerNode["DataId"] = "unknown"; break;
+                    case "card": cardNode["DataId"] = "unknown"; break;
+                    case "upgrade": effectNode["Upgrade"]!["DataId"] = "unknown"; break;
+                    case "source": cardNode["MaskDescriptor"]!["SourceTraits"]![0]!["Type"] = "unknown"; break;
+                    case "traits": cardNode["MaskDescriptor"]!["BaseTraits"]![1]!["RuntimeType"] = "unknown"; break;
+                    case "callback": cardNode["MaskDescriptor"]!["BaseTraits"]![1]!["CopyOnPlayUpgrade"]!["DataId"] = "unknown"; break;
+                }
+                CardInstanceState changed = cardNode.Deserialize<CardInstanceState>(ModelJson.Options)!;
+                Require(ReferenceEquals(RelicCopyCardOnCardPlayModel.CreationMask(
+                    ownerNode.Deserialize<CombatRelicState>(ModelJson.Options)!,
+                    effectNode.Deserialize<RelicCopyCardOnCardPlayModifier>(ModelJson.Options)!, changed), changed.MaskDescriptor),
+                    "Uncalibrated copy source was normalized: " + mutation);
+            }
         }
         else if (rows.Length == 14)
         {

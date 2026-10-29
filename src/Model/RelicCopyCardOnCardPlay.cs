@@ -161,10 +161,11 @@ namespace MonsterTrain2Poju.Model
                 source = evaluation.Context;
             }
 
+            CardMaskDescriptor creationMask = CreationMask(relic, effect, played);
             var creation = new CardCreationRule(played.DataId, CardModifiers.Empty(), played.EffectCounters,
                 played.ExternalInteractions, played.DamageScalingTraits, played.StatusScalingTraits,
                 played.UnitUpgradeScalingTraits, played.CapacityScalingTraits, played.EquippedUnitId,
-                played.MaskDescriptor, played.ForgeCountScalingTraits, played.CanBeCopied, played.TrainHealScalingTraits);
+                creationMask, played.ForgeCountScalingTraits, played.CanBeCopied, played.TrainHealScalingTraits);
             bool handHasSpace = source.Cards.Hand.Count < source.MaxHandSize;
             bool copyHasEphemeralUpgrade = effect.Upgrade?.Lifecycle?.AddedTraits.Any(trait =>
                 trait.RuntimeType == "CardTraitEphemeral") == true;
@@ -210,6 +211,23 @@ namespace MonsterTrain2Poju.Model
                 source = record.Context.WithRelics(relics);
             }
             return new RelicCopyCardOnCardPlayResult(source, true, copied.AddedCards.Select(card => card.InstanceId).ToArray());
+        }
+
+        internal static CardMaskDescriptor CreationMask(CombatRelicState relic, RelicCopyCardOnCardPlayModifier effect,
+            CardInstanceState played)
+        {
+            CardMaskDescriptor descriptor = played.MaskDescriptor ?? throw new InvalidOperationException("Missing copied card metadata.");
+            if (relic.DataId == "0f4a9e72-cd34-4667-95f6-6a0ca69832f8" &&
+                played.DataId == "f0ff6411-5c58-4b69-b025-0f6e4a52fca7" &&
+                effect.Upgrade?.DataId == "80a5edf4-6dc8-41a7-ab4e-9d0e914e0848" &&
+                effect.Upgrade.AssetKey == "AddEphemeral" && descriptor.SourceTraits?.Count == 1 &&
+                descriptor.SourceTraits[0].Type == "CardTraitExhaustState" &&
+                descriptor.BaseTraits.Count == 2 && descriptor.BaseTraits[0].RuntimeType == "CardTraitExhaustState" &&
+                descriptor.BaseTraits[1].RuntimeType == CardCopyOnPlayModel.Trait &&
+                CardCopyOnPlayModel.Validate(played) == null &&
+                played.Permanent.Upgrades.Any(upgrade => upgrade.DataId == CardCopyOnPlayModel.UpgradeId))
+                return descriptor.WithBaseTraits(descriptor.BaseTraits.Take(1).ToArray());
+            return descriptor;
         }
 
         private static RelicCopyCardOnCardPlayResult Fail(CombatContext source, string error) =>
