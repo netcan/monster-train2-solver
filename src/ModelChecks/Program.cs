@@ -10256,6 +10256,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-enemy-statistics-listeners-replay-calibration.mt2f"));
     EnemyStatisticsListenerChecks.Native(source.RootElement, replay.RootElement);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) is "player-random27-ring7-rank2-424-loss.mt2f" or "player-random27-ring7-rank2-424-loss-replay.mt2f")
+    .Select(path => ModelJson.RelatedFixture(path, "player-random27-ring7-rank2-424-loss.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring7-rank2-424-loss-replay.mt2f"));
+    RandomCampaignChecks.DefeatPair(source.RootElement, replay.RootElement, 1761031144, 0, 6, "Pyreborne", "Underlegion", 3000);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-random27-ring7-hellfurnace-heavy-entry-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-random27-ring7-hellfurnace-heavy-entry-original.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
