@@ -295,6 +295,17 @@ namespace MonsterTrain2Poju.Model
         internal static bool OriginalMushyExit(RoomCapacityAttachmentState removed, CombatUnit previousUnit) =>
             OriginalMushy(removed) &&
             (previousUnit is { AssetKey: "HeavyT2_Basic", BaseAttack: 6, Health: > 0 and <= 120, MaxHealth: 120, Size: 2, SpawnerCardId: 0, Triggers.Count: 0 } ||
+             previousUnit is { AssetKey: "HeavyT3_PyreDamageIfUnblocked", BaseAttack: 5, Health: > 0 and <= 250, MaxHealth: 250, Size: 2, SpawnerCardId: 0,
+                Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,
+                    Effects: [{ Type: "CardEffectPyreDamageIfNoPlayerUnits", Value: 5,
+                        Action: { Type: "Damage", Target: "Pyre", Value: 5 } }] }] } ||
+             previousUnit is { AssetKey: "Boss_Level7_Rax", BaseAttack: 9, Health: > 0 and <= 1100, MaxHealth: 1100, Size: 5, SpawnerCardId: 0,
+                Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true, Effects: [
+                    { Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Self", Statuses: [{ Id: "buff", Stacks: 8, ParamInt: 2 }] } },
+                    { Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Self", Statuses: [{ Id: "regen", Stacks: 20, ParamInt: 1 }] } },
+                    { Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Self", Statuses: [{ Id: "spell shield", Stacks: 2, ParamInt: 0 }] } }] }] } ||
+             previousUnit is { AssetKey: "AttackerT3_Sweep", BaseAttack: 5, Health: > 0 and <= 5, MaxHealth: 5, Size: 1, SpawnerCardId: 0, Triggers.Count: 0 } &&
+                previousUnit.Status("sweep")?.Stacks == 1 ||
              OriginalMushyEntry(removed, previousUnit) ||
              previousUnit is { AssetKey: "Boss_Level6_FeedDamageShield", BaseAttack: 0, Health: > 0 and <= 60, MaxHealth: 60, Size: 1, SpawnerCardId: 0,
                 Triggers: [{ Kind: "OnEaten", FireCount: 1, SkipDuringDeployment: true,

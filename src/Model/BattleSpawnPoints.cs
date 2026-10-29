@@ -58,6 +58,12 @@ namespace MonsterTrain2Poju.Model
             return new BattleSpawnPoints(Groups, Units.Where(unit => !forgotten.Contains(unit.UnitId)).ToArray(), NextPreviewCopyId)
             { ActiveCopies = ActiveCopies, BirthPrimaries = Array.AsReadOnly(BirthPrimaries.Where(unit => !forgotten.Contains(unit.UnitId)).ToArray()) };
         }
+        internal int RetainedPreviewNextUnitId(int current, int? previewNext)
+        {
+            UnitSpawnPointState[] pending = Units.Where(unit => unit.UnitId >= current).ToArray();
+            return pending.Length > 0 && pending.All(unit => unit.SpawnedInPreview) && previewNext is int next &&
+                pending.All(unit => unit.UnitId < next) ? next : current;
+        }
         internal static BattleSpawnPoints FromWorld(BattleSpawnPoints source, SpawnPointWorld world) => source.WithState(world.Groups,
             world.Units.Select(unit => new UnitSpawnPointState(unit.UnitId, unit.Current, unit.LastKnown,
                 unit.OuterBoss, unit.SpawnedInPreview)).ToArray());

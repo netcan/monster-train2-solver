@@ -218,7 +218,13 @@ namespace MonsterTrain2Poju.Model
                     // do not consume durable IDs across independently previewed floors.
                     if (originalWorld == null && previewContext.NextUnitId is int nextTemporaryId &&
                         previewContext.SpawnPoints is BattleSpawnPoints points)
-                        previewContext = previewContext.WithSpawnPoints(points.ForgetUnreferencedPreviewBirths(nextTemporaryId));
+                    {
+                        BattleSpawnPoints retained = points.ForgetUnreferencedPreviewBirths(nextTemporaryId);
+                        previewContext = previewContext.WithSpawnPoints(retained);
+                        int nextPreviewId = retained.RetainedPreviewNextUnitId(nextTemporaryId, preview.State.Context.NextUnitId);
+                        if (nextPreviewId != nextTemporaryId)
+                            previewContext = previewContext.WithNextUnitId(nextPreviewId);
+                    }
                 }
                 if (context.IsolatedBattlePreview == true) previewContext = previewContext.WithBattleRng(preview.State!.Context!.BattleRng);
                 if (originalWorld?.AutomaticLifecycle == true)
