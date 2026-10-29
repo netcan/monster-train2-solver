@@ -303,7 +303,7 @@ namespace MonsterTrain2Poju.Model
                 Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,
                     Effects: [{ Type: "CardEffectPyreDamageIfNoPlayerUnits", Value: 5,
                         Action: { Type: "Damage", Target: "Pyre", Value: 5 } }] }] } ||
-             moonPhase == 1 && unit is { AssetKey: "AttackerT3_Sweep", BaseAttack: 5, Health: > 0 and <= 5, MaxHealth: 5,
+             unit is { AssetKey: "AttackerT3_Sweep", BaseAttack: 5, Health: > 0 and <= 5, MaxHealth: 5,
                 Size: 1, SpawnerCardId: 0, Triggers.Count: 0 } && unit.Status("sweep")?.Stacks == 1);
 
         internal static bool OriginalMushyDarkEntry(RoomCapacityAttachmentState added, CombatUnit previousUnit) =>

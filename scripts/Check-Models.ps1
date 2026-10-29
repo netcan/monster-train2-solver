@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-random27-ring7-hellfurnace-dark-sweep-exit-original.mt2f', 'player-random27-ring7-hellfurnace-dark-sweep-exit-original2.mt2f', 'player-random27-ring7-hellfurnace-dark-sweep-exit-repaired.mt2f', 'player-random27-ring7-hellfurnace-dark-sweep-exit-repaired2.mt2f',
     'player-random27-ring7-hellfurnace-light-exit-original.mt2f', 'player-random27-ring7-hellfurnace-light-exit-original2.mt2f', 'player-random27-ring7-hellfurnace-light-exit-repaired.mt2f', 'player-random27-ring7-hellfurnace-light-exit-repaired2.mt2f',
     'player-random27-ring7-hellfurnace-heavy-exit-original.mt2f', 'player-random27-ring7-hellfurnace-heavy-exit-original2.mt2f', 'player-random27-ring7-hellfurnace-heavy-exit-repaired.mt2f', 'player-random27-ring7-hellfurnace-heavy-exit-repaired2.mt2f',
     'player-random27-ring7-rank2-419-refined-loss.mt2f', 'player-random27-ring7-rank2-419-refined-loss-replay.mt2f',
@@ -5066,7 +5067,7 @@ if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
     return
 }
 if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
-    $selectedFixtureNames[0] -match '^player-random27-ring7-hellfurnace-(heavy|light)-exit-(original2?|repaired2?)\.mt2f$') {
+    $selectedFixtureNames[0] -match '^player-random27-ring7-hellfurnace-(heavy|light|dark-sweep)-exit-(original2?|repaired2?)\.mt2f$') {
     $kind = $Matches[1]
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q

@@ -27,7 +27,7 @@ internal static class HellfurnaceLightExitChecks
             mutant["Health"] = unit.Health; mutant["SpawnerCardId"] = 1; Require(!Accept(), "Unknown spawning card accepted.");
             mutant["SpawnerCardId"] = 0; mutant["BaseAttack"] = unit.BaseAttack + 1; Require(!Accept(), "Unknown attack accepted.");
             if (id != 17)
-                Require(!RoomAttachmentUnitModel.OriginalHellfurnaceExit(furnace, unit, 2), "Unobserved sweep phase accepted.");
+                Require(!RoomAttachmentUnitModel.OriginalHellfurnaceExit(furnace, unit, 3), "Unknown sweep phase accepted.");
         }
         string immutable = JsonSerializer.Serialize(before, ModelJson.Options), expected = NativeBranchObservationChecks.Key(actual);
         Parallel.For(0, 4, _ =>
