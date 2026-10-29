@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-random27-ring7-414-loss.mt2f', 'player-random27-ring7-414-loss-replay.mt2f',
     'player-random27-ring6-rank1-414-refined-win.mt2f', 'player-random27-ring6-rank1-414-refined-win-replay.mt2f',
     'player-random27-ring6-rank1-414-loss.mt2f', 'player-random27-ring6-rank1-414-loss-replay.mt2f',
     'player-random27-ring6-rank1-413-loss.mt2f', 'player-random27-ring6-rank1-413-loss-replay.mt2f',
@@ -5032,6 +5033,18 @@ if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
         (Get-TestFixturePath 'player-random27-ring6-recruit-souls-repaired.mt2f') `
         (Get-TestFixturePath 'player-random27-ring6-recruit-souls-repaired2.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Soulsmelter recruit focused check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
+    $selectedFixtureNames[0] -in @('player-random27-ring7-414-loss.mt2f', 'player-random27-ring7-414-loss-replay.mt2f')) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Random campaign checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --random-campaign-defeat-pair-only `
+        (Get-TestFixturePath 'player-random27-ring7-414-loss.mt2f') `
+        (Get-TestFixturePath 'player-random27-ring7-414-loss-replay.mt2f') 1761031144 0 6 Pyreborne Underlegion 3000
+    if ($LASTEXITCODE -ne 0) { throw 'Random campaign ring 7 defeat pair check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
