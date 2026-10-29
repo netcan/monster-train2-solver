@@ -11,11 +11,12 @@ internal static partial class OfflineBattleSearch
     // Reuse recorded forecasts before spending another search/native battle.
     // This exports a replayable failure boundary, never a native successor.
     internal static void ExtractUnsupported(string input, string output, string reason,
-        bool endTurnOnly = false, int preferredRoom = 2, bool strength = false, int fromDecision = 0)
+        bool endTurnOnly = false, int preferredRoom = 2, bool strength = false, int fromDecision = 0, int exploreDepth = 0)
     {
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         Require(!string.IsNullOrWhiteSpace(reason), "An exact rejection reason is required.");
         Require(fromDecision >= 0, "The starting decision must be nonnegative.");
+        Require(exploreDepth is >= 0 and <= 8, "Exploration depth exceeds diagnostic bound.");
         using var source = FixtureDocument.Read(input);
         bool deployment = IsDeploymentObservation(source.RootElement);
         FixtureValue[] rows = source.RootElement.TryGetProperty("RollingDecisions", out FixtureValue recorded)
@@ -102,6 +103,32 @@ internal static partial class OfflineBattleSearch
                 current = Apply(current, step.Action, step.IsEndTurn, out outcome);
                 prefix.Add(step); played = step.IsEndTurn ? 0 : played + 1;
             }
+        }
+        if (!deployment && exploreDepth > 0 && rows.Length > 0)
+        {
+            BattleTurnState last = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            var explored = new HashSet<string>(StringComparer.Ordinal);
+            bool Explore(BattleTurnState current, List<Step> path, int depth)
+            {
+                if (explored.Count >= 2000 || !explored.Add(keys.Key(current))) return false;
+                if (Extract(current, path)) return true;
+                if (depth == 0) return false;
+                BattleTurnResult end = BattleTurnModel.EndTurn(current);
+                if (end.Supported && !Terminal(end.Outcome))
+                {
+                    var next = new List<Step>(path) { new Step { IsEndTurn = true } };
+                    if (Explore(end.State!, next, depth - 1)) return true;
+                }
+                foreach (SupportedActionCandidate candidate in BattleActionModel.EnumerateActions(current).SupportedCandidates)
+                {
+                    if (Terminal(candidate.Result.Outcome)) continue;
+                    var next = new List<Step>(path) { new Step { Action = candidate.Action } };
+                    if (Explore(candidate.Result.State!, next, depth - 1)) return true;
+                }
+                return false;
+            }
+            if (Explore(last, new List<Step>(prefix), exploreDepth)) return;
+            Console.WriteLine($"Explored {explored.Count} additional states to depth {exploreDepth}.");
         }
         throw new InvalidDataException($"No matching unsupported action in {visited.Count} recorded forecast roots: {reason}");
     }

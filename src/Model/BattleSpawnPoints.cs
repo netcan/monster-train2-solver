@@ -47,6 +47,17 @@ namespace MonsterTrain2Poju.Model
         internal BattleSpawnPoints WithBirthPrimary(int id)
             => new BattleSpawnPoints(Groups, Units, NextPreviewCopyId) { ActiveCopies = ActiveCopies,
                 BirthPrimaries = Array.AsReadOnly(BirthPrimaries.Append(Units.Single(unit => unit.UnitId == id)).ToArray()) };
+        internal BattleSpawnPoints ForgetUnreferencedPreviewBirths(int nextUnitId)
+        {
+            if (!Units.Any(unit => unit.SpawnedInPreview && unit.UnitId >= nextUnitId && unit.Current == null && unit.LastKnown == null))
+                return this;
+            var occupied = Groups.SelectMany(group => group.Occupants).Where(id => id > 0).ToHashSet();
+            var forgotten = Units.Where(unit => unit.SpawnedInPreview && unit.UnitId >= nextUnitId &&
+                unit.Current == null && unit.LastKnown == null && !occupied.Contains(unit.UnitId)).Select(unit => unit.UnitId).ToHashSet();
+            if (forgotten.Count == 0) return this;
+            return new BattleSpawnPoints(Groups, Units.Where(unit => !forgotten.Contains(unit.UnitId)).ToArray(), NextPreviewCopyId)
+            { ActiveCopies = ActiveCopies, BirthPrimaries = Array.AsReadOnly(BirthPrimaries.Where(unit => !forgotten.Contains(unit.UnitId)).ToArray()) };
+        }
         internal static BattleSpawnPoints FromWorld(BattleSpawnPoints source, SpawnPointWorld world) => source.WithState(world.Groups,
             world.Units.Select(unit => new UnitSpawnPointState(unit.UnitId, unit.Current, unit.LastKnown,
                 unit.OuterBoss, unit.SpawnedInPreview)).ToArray());

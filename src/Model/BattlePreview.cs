@@ -212,7 +212,14 @@ namespace MonsterTrain2Poju.Model
                 previewContext = RelicPyreResurrectionModel.CarryPreviewConditions(previewContext, preview.State.Context);
                 if (previewContext.LifeLinks != null) previewContext = previewContext.WithLifeLinks(preview.State.Context.LifeLinks);
                 if (originalPoints?.NextPreviewCopyId.HasValue == true && preview.State.Context.SpawnPoints != null)
+                {
                     previewContext = previewContext.WithSpawnPoints(preview.State.Context.SpawnPoints);
+                    // Without a retained actor world, unreferenced temporary births
+                    // do not consume durable IDs across independently previewed floors.
+                    if (originalWorld == null && previewContext.NextUnitId is int nextTemporaryId &&
+                        previewContext.SpawnPoints is BattleSpawnPoints points)
+                        previewContext = previewContext.WithSpawnPoints(points.ForgetUnreferencedPreviewBirths(nextTemporaryId));
+                }
                 if (context.IsolatedBattlePreview == true) previewContext = previewContext.WithBattleRng(preview.State!.Context!.BattleRng);
                 if (originalWorld?.AutomaticLifecycle == true)
                 {

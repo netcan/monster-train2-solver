@@ -1,5 +1,14 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 5 && args[0] == "--unreferenced-preview-birth-only")
+{
+    using var first = ModelJson.ReadFixture(args[1]);
+    using var second = ModelJson.ReadFixture(args[2]);
+    using var repaired = ModelJson.ReadFixture(args[3]);
+    using var repaired2 = ModelJson.ReadFixture(args[4]);
+    UnreferencedPreviewBirthChecks.Native(first.RootElement, second.RootElement, repaired.RootElement, repaired2.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--twin-sycophant-seven-preview-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -10089,6 +10098,15 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-enemy-statistics-listeners-replay-calibration.mt2f"));
     EnemyStatisticsListenerChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-random27-ring5-preview-id-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-random27-ring5-preview-id-original.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var first = ModelJson.ReadFixture(path);
+    using var second = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring5-preview-id-original2.mt2f"));
+    using var repaired = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring5-preview-id-repaired.mt2f"));
+    using var repaired2 = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring5-preview-id-repaired2.mt2f"));
+    UnreferencedPreviewBirthChecks.Native(first.RootElement, second.RootElement, repaired.RootElement, repaired2.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-green-recruit-boss-preview-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-green-recruit-boss-preview-calibration.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
