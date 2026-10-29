@@ -263,7 +263,7 @@ namespace MonsterTrain2Poju.Model
                     {
                         bool originalObservedEntry = inactive.MoonPhase == 1 && OriginalMushyEntry(added, previousUnit) ||
                             inactive.MoonPhase == 2 && OriginalMushyDarkEntry(added, previousUnit) ||
-                            inactive.MoonPhase == 1 && OriginalHellfurnaceEntry(added, previousUnit);
+                            OriginalHellfurnaceEntry(added, previousUnit, inactive.MoonPhase.Value);
                         if (!originalObservedEntry && ((inactive.MoonPhase == 1 && previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
                             previousUnit.AssetKey != "HeavyT3_PyreDamageIfUnblocked") ||
                             previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
@@ -307,8 +307,9 @@ namespace MonsterTrain2Poju.Model
              unit is { AssetKey: "AttackerT3_Sweep", BaseAttack: 5, Health: > 0 and <= 5, MaxHealth: 5,
                 Size: 1, SpawnerCardId: 0, Triggers.Count: 0 } && unit.Status("sweep")?.Stacks == 1);
 
-        internal static bool OriginalHellfurnaceEntry(RoomCapacityAttachmentState attachment, CombatUnit unit) =>
-            unit.AssetKey == "HeavyT3_PyreDamageIfUnblocked" && OriginalHellfurnaceExit(attachment, unit, 2);
+        internal static bool OriginalHellfurnaceEntry(RoomCapacityAttachmentState attachment, CombatUnit unit, int moonPhase = 1) =>
+            (unit.AssetKey == "HeavyT3_PyreDamageIfUnblocked" && moonPhase is 1 or 2 ||
+             unit.AssetKey == "HeavyT3_Basic" && moonPhase == 2) && OriginalHellfurnaceExit(attachment, unit, 2);
 
         internal static bool OriginalMushyDarkEntry(RoomCapacityAttachmentState added, CombatUnit previousUnit) =>
             (previousUnit.AssetKey is "HeavyT3_PyreDamageIfUnblocked" or "AttackerT3_Sweep" or "Boss_Level7_Rax") && OriginalMushyExit(added, previousUnit);
