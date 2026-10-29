@@ -43,7 +43,10 @@ internal static class NativeBranchObservationChecks
             if (revalidateHistoricalCapture != null) before = revalidateHistoricalCapture(before);
             string immutable = JsonSerializer.Serialize(before, ModelJson.Options);
             PlayCardAction? action = step.GetProperty("Action").Deserialize<PlayCardAction>();
-            BattleTurnState predicted = BattlePlannerChecks.Replay(before, [new BattleSearchStep(action, end)], out RoomOutcome outcome);
+            BattleTurnState predicted;
+            RoomOutcome outcome;
+            try { predicted = BattlePlannerChecks.Replay(before, [new BattleSearchStep(action, end)], out outcome); }
+            catch (InvalidOperationException error) { throw new InvalidOperationException("Native replay failed at " + index + ": " + error.Message, error); }
             bool terminal = boundary && boundaryOutcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
             string predictedKey = CaptureKey(predicted, terminal), actualKey = CaptureKey(actual, terminal);
             if (outcome != (boundary ? boundaryOutcome : RoomOutcome.Exchanged) || predictedKey != actualKey)

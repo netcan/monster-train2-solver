@@ -217,13 +217,7 @@ namespace MonsterTrain2Poju.Model
                         previousUnit is { Team: CombatTeam.Enemy, MoonPhaseMask: 5 or 6 } &&
                         (previousUnit.MoonPhaseMask.Value & 3) != inactive.MoonPhase.Value)
                     {
-                        bool originalMushyExit = OriginalMushy(removed) &&
-                            (previousUnit is { AssetKey: "HeavyT2_Basic", BaseAttack: 6, Health: 72, MaxHealth: 120, Size: 2, Triggers.Count: 0 } ||
-                             previousUnit is { AssetKey: "Boss_Level6_FeedDamageShield", BaseAttack: 0, Health: 40, MaxHealth: 60, Size: 1,
-                                Triggers: [{ Kind: "OnEaten", FireCount: 1, SkipDuringDeployment: true,
-                                    Effects: [{ Type: "CardEffectAddTempCardUpgradeToUnits", UnitUpgrade: { Type: "UnitUpgrade",
-                                        Target: "LastFeederCharacter", Upgrade.DataId: "04897158-64c9-4828-9541-b5f20f627eee" } },
-                                        { Type: "CardEffectDamage", Value: 20, Action: { Type: "Damage", Target: "Self", Value: 20 } }] }] });
+                        bool originalMushyExit = OriginalMushyExit(removed, previousUnit);
                         if (!originalMushyExit && (previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
                             previousUnit is not { AssetKey: "HeavyT3_Basic", BaseAttack: 8, MaxHealth: 325, Size: 2, Triggers.Count: 0 } &&
                             previousUnit is not { AssetKey: "HeavyT3_PyreDamageIfUnblocked", BaseAttack: 5, MaxHealth: 250, Size: 2,
@@ -294,6 +288,19 @@ namespace MonsterTrain2Poju.Model
             }
             return new RoomAttachmentUnitSyncResult(state);
         }
+
+        internal static bool OriginalMushyExit(RoomCapacityAttachmentState removed, CombatUnit previousUnit) =>
+            OriginalMushy(removed) &&
+            (previousUnit is { AssetKey: "HeavyT2_Basic", BaseAttack: 6, Health: 11 or 72, MaxHealth: 120, Size: 2, Triggers.Count: 0 } ||
+             previousUnit is { AssetKey: "Boss_Level6_Cael_DamageShield", BaseAttack: 22, Health: 1653, MaxHealth: 1800, Size: 6,
+                Triggers: [{ Kind: "PostCombat", FireCount: 1, SkipDuringDeployment: true,
+                    Effects: [{ Type: "CardEffectAddTempCardUpgradeToUnits", UnitUpgrade: { Type: "UnitUpgrade",
+                        Target: "FrontInRoom", Upgrade.DataId: "04897158-64c9-4828-9541-b5f20f627eee" } }] }] } ||
+             previousUnit is { AssetKey: "Boss_Level6_FeedDamageShield", BaseAttack: 0, Health: 40, MaxHealth: 60, Size: 1,
+                Triggers: [{ Kind: "OnEaten", FireCount: 1, SkipDuringDeployment: true,
+                    Effects: [{ Type: "CardEffectAddTempCardUpgradeToUnits", UnitUpgrade: { Type: "UnitUpgrade",
+                        Target: "LastFeederCharacter", Upgrade.DataId: "04897158-64c9-4828-9541-b5f20f627eee" } },
+                        { Type: "CardEffectDamage", Value: 20, Action: { Type: "Damage", Target: "Self", Value: 20 } }] }] });
 
         private static bool OriginalInferno(RoomCapacityAttachmentState attachment) =>
             attachment is { AssetKey: "InfernoRoom", DataId: "378cea0c-14e9-45fb-9918-fb853bd04a7d", CharacterUpgrades.Count: 1,
