@@ -667,6 +667,10 @@ namespace MonsterTrain2Poju.Model
                 foreach (CardToken token in context.Cards.Draw.ToArray())
                 {
                     CardInstanceState? intrinsic = context.FindCard(token.InstanceId);
+                    string? intrinsicError = intrinsic?.MaskDescriptor != null && intrinsic.DataId == "8de281af-ab9a-4d3d-ac5f-89cd43ff6c84"
+                        ? CardModifierModel.UnsupportedReason(intrinsic) : null;
+                    if (intrinsic != null && intrinsicError != null && CardCopyOnPlayModel.CanDeferUnplayedDrawCard(
+                        context, intrinsic, train.Rooms.SelectMany(room => room.Units), intrinsicError)) continue;
                     if (intrinsic?.MaskDescriptor == null ||
                         !CardBranchMaskModel.Resolve(intrinsic).Traits.Contains("CardTraitIntrinsicState")) continue;
                     TypedDrawResult opening = NextDrawUpgradeModel.DrawSpecific(context, token.InstanceId, 0, source.PlayRules);

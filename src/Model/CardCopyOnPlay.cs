@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Model
         public const string MoonbeamSpellId = "8916c550-474d-49db-89bf-75bacdc95db4";
         public const string IntrinsicSpikeUpgradeId = "62ea77cc-4f97-476f-9ccc-a23e28bc788d";
         public const string PermafrostUpgradeId = "e0af4fe5-75c0-4017-ae5e-5a87099aa6c5";
+        private const string ReverseConsumeOrder = "Copy-on-play requires Consume to precede the copy callback, as in the original calibrated upgrade order.";
         public static bool Present(CardInstanceState card) => card.MaskDescriptor != null &&
             (card.MaskDescriptor.BaseTraits.Concat(card.MaskDescriptor.TemporaryTraits).Any(trait => trait.RuntimeType == Trait) ||
              card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == Trait) == true) ||
@@ -240,8 +241,24 @@ namespace MonsterTrain2Poju.Model
                 return "Copy-on-play with discard-removing temporary upgrades requires native ordering calibration.";
             int consumeIndex = Array.FindIndex(active, trait => trait.RuntimeType == "CardTraitExhaustState");
             if (consumeIndex >= Array.FindIndex(active, trait => trait.RuntimeType == Trait))
-                return "Copy-on-play requires Consume to precede the copy callback, as in the original calibrated upgrade order.";
+                return ReverseConsumeOrder;
             return null;
+        }
+
+        internal static bool CanDeferUnplayedDrawCard(CombatContext context, CardInstanceState card,
+            System.Collections.Generic.IEnumerable<CombatUnit> currentRoomUnits, string unsupported)
+        {
+            if (unsupported != ReverseConsumeOrder || card.DataId != "8de281af-ab9a-4d3d-ac5f-89cd43ff6c84" ||
+                !card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] {
+                    UpgradeId, "fb416958-813a-435b-b7ea-e428127ece20" }) ||
+                !CardExhaustModel.RefreshTraits(card).CombinedTraits!.Select(trait => trait.RuntimeType)
+                    .SequenceEqual(new[] { Trait, "CardTraitExhaustState" }) ||
+                card.Temporary.Upgrades.Count != 0 || currentRoomUnits.Any(unit => unit.SpawnerCardId == card.InstanceId) ||
+                context.Cards.Draw.Count(token => token.InstanceId == card.InstanceId) != 1 ||
+                context.Cards.Hand.Concat(context.Cards.Discard).Any(token => token.InstanceId == card.InstanceId) ||
+                context.OtherPiles?.Any(pile => pile.Cards.Any(token => token.InstanceId == card.InstanceId)) == true)
+                return false;
+            return true;
         }
 
         internal static CardGenerationResult Discarded(CombatContext source, CardInstanceState card)

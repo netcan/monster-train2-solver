@@ -9,6 +9,8 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-copy-before-consume-draw-original.mt2f', 'player-copy-before-consume-draw-original-replay.mt2f',
+    'player-copy-before-consume-draw-398.mt2f', 'player-copy-before-consume-draw-398-replay.mt2f',
     'player-random26-ring6-397-default-loss.mt2f', 'player-random26-ring6-397-default-loss-replay.mt2f',
     'player-random26-ring5-397-default-loss.mt2f', 'player-random26-ring5-397-default-loss-replay.mt2f',
     'player-random26-ring5-397-refined-win.mt2f', 'player-random26-ring5-397-refined-win-replay.mt2f',
@@ -2526,6 +2528,20 @@ $arkionPushMoonNames = @('player-arkion-push-fullmoon-original.mt2f', 'arkion-pu
     'player-arkion-push-fullmoon-original-replay.mt2f', 'arkion-push-fullmoon-birth-original-replay.mt2f',
     'player-arkion-push-fullmoon-397.mt2f', 'arkion-push-fullmoon-birth-397.mt2f',
     'player-arkion-push-fullmoon-397-replay.mt2f', 'arkion-push-fullmoon-birth-397-replay.mt2f')
+$copyBeforeConsumeDrawNames = @('player-copy-before-consume-draw-original.mt2f', 'player-copy-before-consume-draw-original-replay.mt2f',
+    'player-copy-before-consume-draw-398.mt2f', 'player-copy-before-consume-draw-398-replay.mt2f')
+function Check-CopyBeforeConsumeDraw {
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --copy-before-consume-draw-repaired @($copyBeforeConsumeDrawNames | ForEach-Object { Get-TestFixturePath $_ })
+    if ($LASTEXITCODE -ne 0) { throw 'Copy-before-Consume draw-pile native pair failed.' }
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin $copyBeforeConsumeDrawNames }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Copy-before-Consume draw-pile checker build failed.' }
+    }
+    Check-CopyBeforeConsumeDraw
+    return
+}
 $random26Ring5Names = @('player-random26-ring5-397-default-loss.mt2f', 'player-random26-ring5-397-default-loss-replay.mt2f',
     'player-random26-ring5-397-refined-win.mt2f', 'player-random26-ring5-397-refined-win-replay.mt2f')
 $random26Ring6Names = @('player-random26-ring6-397-default-loss.mt2f', 'player-random26-ring6-397-default-loss-replay.mt2f')
@@ -7721,6 +7737,9 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-random26-ring5-397-default-loss.mt2f' })) {
     Check-Random26Ring5
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-copy-before-consume-draw-original.mt2f' })) {
+    Check-CopyBeforeConsumeDraw
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-random26-ring6-397-default-loss.mt2f' })) {
     Check-Random26Ring6

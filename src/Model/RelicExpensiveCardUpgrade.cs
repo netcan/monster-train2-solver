@@ -105,6 +105,8 @@ namespace MonsterTrain2Poju.Model
                 context = CardMoonUpgradeModel.RefreshHand(context, out error, new[] { id });
                 if (error != null) return source;
                 CardInstanceState? card = context.FindCard(id);
+                error = card == null ? null : CardModifierModel.UnsupportedReason(card);
+                if (error != null) return source;
                 if (card?.MaskDescriptor != null && CardBranchMaskModel.Resolve(card).Traits.Contains(Trait)) context = context.WithCard(Freeze(card));
                 context = ConduitModel.Drawn(context, new[] { id });
                 // Native dispatch walks owners in acquisition order; recursive draws

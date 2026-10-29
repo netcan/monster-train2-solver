@@ -2165,6 +2165,22 @@ if (args.Length == 3 && args[0] == "--guaranteed-status-test-rng-pair-only")
     GuaranteedStatusTestRngChecks.Pair(source.RootElement, replay.RootElement);
     return;
 }
+if (args.Length == 5 && args[0] == "--copy-before-consume-draw-repaired")
+{
+    using var first = ModelJson.ReadFixture(args[1]);
+    using var second = ModelJson.ReadFixture(args[2]);
+    using var repaired = ModelJson.ReadFixture(args[3]);
+    using var repeated = ModelJson.ReadFixture(args[4]);
+    CopyBeforeConsumeDrawChecks.Repaired(first.RootElement, second.RootElement, repaired.RootElement, repeated.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--copy-before-consume-draw-native")
+{
+    using var first = ModelJson.ReadFixture(args[1]);
+    using var second = ModelJson.ReadFixture(args[2]);
+    CopyBeforeConsumeDrawChecks.Native(first.RootElement, second.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--random-refined-campaign-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
