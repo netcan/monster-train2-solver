@@ -106,8 +106,10 @@ namespace MonsterTrain2Poju.Model
                 if (error != null) return source;
                 CardInstanceState? card = context.FindCard(id);
                 error = card == null ? null : CardModifierModel.UnsupportedReason(card);
-                if (error != null) return source;
-                if (card?.MaskDescriptor != null && CardBranchMaskModel.Resolve(card).Traits.Contains(Trait)) context = context.WithCard(Freeze(card));
+                bool deferred = card != null && error != null && CardCopyOnPlayModel.CanDeferDrawNotification(context, card, error);
+                if (error != null && !deferred) return source;
+                error = null;
+                if (!deferred && card?.MaskDescriptor != null && CardBranchMaskModel.Resolve(card).Traits.Contains(Trait)) context = context.WithCard(Freeze(card));
                 context = ConduitModel.Drawn(context, new[] { id });
                 // Native dispatch walks owners in acquisition order; recursive draws
                 // finish their own complete owner walk before the parent resumes.

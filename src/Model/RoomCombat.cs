@@ -1067,7 +1067,9 @@ namespace MonsterTrain2Poju.Model
             {
                 string? unsupported = CardModifierModel.UnsupportedReason(instance);
                 if (unsupported != null && !RelicCardGenerationModel.CanDeferUnplayedGraftedCard(state.Context, instance, state.Units) &&
-                    !CardCopyOnPlayModel.CanDeferUnplayedDrawCard(state.Context!, instance, state.Units, unsupported))
+                    !CardCopyOnPlayModel.CanDeferUnplayedDrawCard(state.Context!, instance, state.Units, unsupported) &&
+                    !(state.Units.All(unit => unit.SpawnerCardId != instance.InstanceId) &&
+                      CardCopyOnPlayModel.CanDeferDrawNotification(state.Context!, instance, unsupported)))
                     return unsupported;
             }
             if (state.Units.Select(unit => unit.Id).Distinct().Count() != state.Units.Count)

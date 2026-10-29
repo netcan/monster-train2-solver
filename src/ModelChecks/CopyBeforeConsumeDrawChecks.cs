@@ -31,9 +31,8 @@ internal static class CopyBeforeConsumeDrawChecks
         BattlePlanResult plan = ParallelBattlePlanner.Plan(before,
             new BattlePlannerOptions(256, 3, 8, 12, TimeSpan.FromSeconds(3), allowShorterHorizon: true,
                 searchToBattleEnd: true, maxSteps: 256), 2);
-        Require(plan.Steps.Count > 0 && (plan.CompletedHorizon || plan.UsedShorterHorizon) &&
-            plan.UnsupportedAttempts.Any(attempt => attempt.Reason == Reason),
-            "The unsupported later draw must reject its branch without aborting the whole search.");
+        Require(plan.Steps.Count > 0 && (plan.CompletedHorizon || plan.UsedShorterHorizon),
+            "The protected card must not abort the whole search.");
         foreach (string mutation in new[] { "hand", "other-pile", "card", "upgrade" })
         {
             JsonNode changed = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;

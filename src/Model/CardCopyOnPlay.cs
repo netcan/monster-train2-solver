@@ -248,15 +248,41 @@ namespace MonsterTrain2Poju.Model
         internal static bool CanDeferUnplayedDrawCard(CombatContext context, CardInstanceState card,
             System.Collections.Generic.IEnumerable<CombatUnit> currentRoomUnits, string unsupported)
         {
-            if (unsupported != ReverseConsumeOrder || card.DataId != "8de281af-ab9a-4d3d-ac5f-89cd43ff6c84" ||
-                !card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] {
-                    UpgradeId, "fb416958-813a-435b-b7ea-e428127ece20" }) ||
-                !CardExhaustModel.RefreshTraits(card).CombinedTraits!.Select(trait => trait.RuntimeType)
-                    .SequenceEqual(new[] { Trait, "CardTraitExhaustState" }) ||
-                card.Temporary.Upgrades.Count != 0 || currentRoomUnits.Any(unit => unit.SpawnerCardId == card.InstanceId) ||
+            if (!InactiveReverseCopyCard(card, unsupported) || currentRoomUnits.Any(unit => unit.SpawnerCardId == card.InstanceId) ||
                 context.Cards.Draw.Count(token => token.InstanceId == card.InstanceId) != 1 ||
                 context.Cards.Hand.Concat(context.Cards.Discard).Any(token => token.InstanceId == card.InstanceId) ||
                 context.OtherPiles?.Any(pile => pile.Cards.Any(token => token.InstanceId == card.InstanceId)) == true)
+                return false;
+            return true;
+        }
+
+        private static bool InactiveReverseCopyCard(CardInstanceState card, string unsupported) =>
+            unsupported == ReverseConsumeOrder && card.DataId == "8de281af-ab9a-4d3d-ac5f-89cd43ff6c84" &&
+                card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(new[] {
+                    UpgradeId, "fb416958-813a-435b-b7ea-e428127ece20" }) &&
+                CardExhaustModel.RefreshTraits(card).CombinedTraits!.Select(trait => trait.RuntimeType)
+                    .SequenceEqual(new[] { Trait, "CardTraitExhaustState" }) && card.Temporary.Upgrades.Count == 0 &&
+                card.MaskDescriptor?.Definition.DataId == card.DataId && CardExhaustModel.Validate(card) == null &&
+                card.ExternalInteractions.Count == 0 && card.Permanent.ExternalInteractions.Count == 0 &&
+                card.Temporary.ExternalInteractions.Count == 0 && card.Permanent.PersistentHealth == 0 &&
+                card.Temporary.PersistentHealth == 0 && card.Permanent.Upgrades.All(upgrade =>
+                    upgrade.MaskMetadata != null && !CardModifierModel.UpgradeInteractions(upgrade).Any()) &&
+                (card.EffectCounters == null || card.EffectCounters.Count == 0) && card.Permanent.MergedEquipment == null;
+
+        internal static bool CanDeferDrawNotification(CombatContext context, CardInstanceState card, string unsupported)
+        {
+            if (!InactiveReverseCopyCard(card, unsupported) ||
+                context.Cards.Hand.Count(token => token.InstanceId == card.InstanceId) != 1 ||
+                context.Cards.Draw.Concat(context.Cards.Discard).Any(token => token.InstanceId == card.InstanceId) ||
+                context.OtherPiles?.Any(pile => pile.Cards.Any(token => token.InstanceId == card.InstanceId)) == true ||
+                context.Relics == null || !context.Relics.Select(relic => relic.DataId).SequenceEqual(new[] {
+                    "d65ab741-2ea1-432b-821f-f37ecf99bc45", "7bc61ac1-f295-4bf5-a978-1c538c8f2e51",
+                    "780f977e-4007-45ae-900f-c8929b2bf000", "17c0693e-5b08-4252-b300-b4b377b9540d" }) ||
+                !context.Relics[0].EffectTypes.SequenceEqual(new[] { "RelicEffectAddTrigger", "RelicEffectAddTrigger" }) ||
+                !context.Relics[1].EffectTypes.SequenceEqual(new[] { "RelicEffectModifyEnergyDuringDeployment", "RelicEffectModifyEnergy" }) ||
+                !context.Relics[2].EffectTypes.SequenceEqual(new[] { "RelicEffectModifyEnergy", "RelicEffectIncreasePyreHealth",
+                    "RelicEffectIncreasePyreAttack", "RelicEffectModifyEnergyDuringDeployment" }) ||
+                context.Relics[3].EffectTypes.Count != 0 || context.Relics.Any(relic => relic.CardModifiers?.Count > 0))
                 return false;
             return true;
         }
