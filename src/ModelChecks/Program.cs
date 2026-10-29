@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--random27-ring7-refined-defeat-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    using var replay = ModelJson.ReadFixture(args[2]);
+    RandomCampaignChecks.RefinedDefeatPair(source.RootElement, replay.RootElement);
+    return;
+}
 if (args.Length is >= 2 and <= 4 && args[0] == "--mushy-dark-entry-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -10188,6 +10195,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-enemy-statistics-listeners-replay-calibration.mt2f"));
     EnemyStatisticsListenerChecks.Native(source.RootElement, replay.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path) is "player-random27-ring7-418-refined-loss.mt2f" or "player-random27-ring7-418-refined-loss-replay.mt2f")
+    .Select(path => ModelJson.RelatedFixture(path, "player-random27-ring7-418-refined-loss.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring7-418-refined-loss-replay.mt2f"));
+    RandomCampaignChecks.RefinedDefeatPair(source.RootElement, replay.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) is "player-random27-ring7-418-budget30000-loss.mt2f" or "player-random27-ring7-418-budget30000-loss-replay.mt2f")
     .Select(path => ModelJson.RelatedFixture(path, "player-random27-ring7-418-budget30000-loss.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

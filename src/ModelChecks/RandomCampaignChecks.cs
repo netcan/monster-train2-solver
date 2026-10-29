@@ -723,6 +723,26 @@ internal static class RandomCampaignChecks
         Console.WriteLine($"RANDOM-CAMPAIGN-REFINED-PAIR PASS:{inputCount} unchanged frozen inputs, {primary}/{secondary} seed={seed} rank={rank} ring={distance + 1}, two native wins/full forecasts/state/RNG; offline refined route, not a default search-budget acceptance.");
     }
 
+    internal static void RefinedDefeatPair(FixtureValue source, FixtureValue replay)
+    {
+        Require(source.GetProperty("NativeRunInput").ContentEquals(replay.GetProperty("NativeRunInput")), "Refined defeats changed the native campaign input.");
+        foreach (FixtureValue fixture in new[] { source, replay })
+        {
+            int metadataBudget = fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay").GetProperty("TimeLimitMs").GetInt32();
+            Input(fixture, 1761031144, 0, 6, "Pyreborne", "Underlegion", metadataBudget, validateSearchSettings: false);
+            FixtureValue[] rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+            BattleTurnState final = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            Require(!fixture.GetProperty("NativeWon").GetBoolean() && rows.Length == 55 &&
+                fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay").GetProperty("Published").GetInt32() == 0 &&
+                final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsBoss == true) is
+                    { AssetKey: "Boss_Level7_Rax", Health: 780, MaxHealth: 1100 },
+                "Preserve the offline-refined 55-input native defeat and 780-health boss.");
+            TrainCombatChecks.Native(fixture);
+        }
+        RollingAdviceChecks.FrozenPair(source, replay, sourceFrozen: true);
+        Console.WriteLine("RANDOM-CAMPAIGN-REFINED-DEFEAT PASS: 55 frozen inputs, two native defeats, complete state/forecasts/RNG; no campaign victory.");
+    }
+
     internal static void DefeatPair(FixtureValue source, FixtureValue replay, int seed, int rank, int distance, string primary, string secondary, int timeLimitMs = 3000)
     {
         Input(source, seed, rank, distance, primary, secondary, timeLimitMs);
