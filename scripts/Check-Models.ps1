@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-random27-ring7-hellfurnace-pyre-entry-original.mt2f', 'player-random27-ring7-hellfurnace-pyre-entry-original2.mt2f', 'player-random27-ring7-hellfurnace-pyre-entry-repaired.mt2f', 'player-random27-ring7-hellfurnace-pyre-entry-repaired2.mt2f',
     'player-random27-ring7-hellfurnace-dark-sweep-exit-original.mt2f', 'player-random27-ring7-hellfurnace-dark-sweep-exit-original2.mt2f', 'player-random27-ring7-hellfurnace-dark-sweep-exit-repaired.mt2f', 'player-random27-ring7-hellfurnace-dark-sweep-exit-repaired2.mt2f',
     'player-random27-ring7-hellfurnace-light-exit-original.mt2f', 'player-random27-ring7-hellfurnace-light-exit-original2.mt2f', 'player-random27-ring7-hellfurnace-light-exit-repaired.mt2f', 'player-random27-ring7-hellfurnace-light-exit-repaired2.mt2f',
     'player-random27-ring7-hellfurnace-heavy-exit-original.mt2f', 'player-random27-ring7-hellfurnace-heavy-exit-original2.mt2f', 'player-random27-ring7-hellfurnace-heavy-exit-repaired.mt2f', 'player-random27-ring7-hellfurnace-heavy-exit-repaired2.mt2f',
@@ -5064,6 +5065,20 @@ if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
         (Get-TestFixturePath 'player-random27-ring6-recruit-souls-repaired.mt2f') `
         (Get-TestFixturePath 'player-random27-ring6-recruit-souls-repaired2.mt2f')
     if ($LASTEXITCODE -ne 0) { throw 'Soulsmelter recruit focused check failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
+    $selectedFixtureNames[0] -match '^player-random27-ring7-hellfurnace-pyre-entry-(original2?|repaired2?)\.mt2f$') {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Hellfurnace entry checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --hellfurnace-pyre-entry-only `
+        (Get-TestFixturePath 'player-random27-ring7-hellfurnace-pyre-entry-original.mt2f') `
+        (Get-TestFixturePath 'player-random27-ring7-hellfurnace-pyre-entry-repaired.mt2f') `
+        (Get-TestFixturePath 'player-random27-ring7-hellfurnace-pyre-entry-repaired2.mt2f') `
+        (Get-TestFixturePath 'player-random27-ring7-hellfurnace-pyre-entry-original2.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Hellfurnace entry focused check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
