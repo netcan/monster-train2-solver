@@ -287,7 +287,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static bool OriginalMushyDarkEntry(RoomCapacityAttachmentState added, CombatUnit previousUnit) =>
-            (previousUnit.AssetKey is "HeavyT3_PyreDamageIfUnblocked" or "AttackerT3_Sweep") && OriginalMushyExit(added, previousUnit);
+            (previousUnit.AssetKey is "HeavyT3_PyreDamageIfUnblocked" or "AttackerT3_Sweep" or "Boss_Level7_Rax") && OriginalMushyExit(added, previousUnit);
 
         internal static bool OriginalMushyEntry(RoomCapacityAttachmentState added, CombatUnit previousUnit) =>
             OriginalMushy(added) && previousUnit is

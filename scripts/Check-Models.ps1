@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-random27-ring7-mushy-rax-entry-original.mt2f', 'player-random27-ring7-mushy-rax-entry-repaired.mt2f', 'player-random27-ring7-mushy-rax-entry-repaired2.mt2f',
     'player-random27-ring7-418-refined-loss.mt2f', 'player-random27-ring7-418-refined-loss-replay.mt2f',
     'player-random27-ring7-418-budget30000-loss.mt2f', 'player-random27-ring7-418-budget30000-loss-replay.mt2f',
     'player-random27-ring7-418-budget10000-loss.mt2f', 'player-random27-ring7-418-budget10000-loss-replay.mt2f',
@@ -4992,13 +4993,13 @@ if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
     return
 }
 if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
-    $selectedFixtureNames[0] -match '^player-random27-ring7-(mushy-rax|occupied-preview|mushy-heavy-t3-exit|mushy-dark-entry)-(original|repaired2?)\.mt2f$') {
+    $selectedFixtureNames[0] -match '^player-random27-ring7-(mushy-rax|occupied-preview|mushy-heavy-t3-exit|mushy-dark-entry|mushy-rax-entry)-(original|repaired2?)\.mt2f$') {
     $kind = $Matches[1]
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
         if ($LASTEXITCODE -ne 0) { throw 'Ring seven checker build failed.' }
     }
-    $check = switch ($kind) { 'mushy-rax' { '--mushy-rax-movement-only' } 'occupied-preview' { '--occupied-preview-birth-only' } 'mushy-heavy-t3-exit' { '--mushy-heavy-t3-exit-only' } 'mushy-dark-entry' { '--mushy-dark-entry-only' } }
+    $check = switch ($kind) { 'mushy-rax' { '--mushy-rax-movement-only' } 'occupied-preview' { '--occupied-preview-birth-only' } 'mushy-heavy-t3-exit' { '--mushy-heavy-t3-exit-only' } 'mushy-dark-entry' { '--mushy-dark-entry-only' } 'mushy-rax-entry' { '--mushy-rax-entry-only' } }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') $check `
         (Get-TestFixturePath "player-random27-ring7-$kind-original.mt2f") `
         (Get-TestFixturePath "player-random27-ring7-$kind-repaired.mt2f") `

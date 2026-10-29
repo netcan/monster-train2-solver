@@ -1,5 +1,14 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is >= 2 and <= 4 && args[0] == "--mushy-rax-entry-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var repaired = args.Length >= 3 ? ModelJson.ReadFixture(args[2]) : null;
+    using var repaired2 = args.Length == 4 ? ModelJson.ReadFixture(args[3]) : null;
+    if (repaired == null) MushyRaxEntryChecks.Native(fixture.RootElement);
+    else MushyRaxEntryChecks.Pair(fixture.RootElement, repaired.RootElement, repaired2?.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--random27-ring7-refined-defeat-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
@@ -10224,6 +10233,14 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is "player-ran
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring7-416-loss-replay.mt2f"));
     RandomCampaignChecks.DefeatPair(source.RootElement, replay.RootElement, 1761031144, 0, 6, "Pyreborne", "Underlegion", 3000);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-random27-ring7-mushy-rax-entry-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-random27-ring7-mushy-rax-entry-original.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var original = ModelJson.ReadFixture(path);
+    using var repaired = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring7-mushy-rax-entry-repaired.mt2f"));
+    using var repaired2 = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring7-mushy-rax-entry-repaired2.mt2f"));
+    MushyRaxEntryChecks.Pair(original.RootElement, repaired.RootElement, repaired2.RootElement);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-random27-ring7-mushy-dark-entry-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-random27-ring7-mushy-dark-entry-original.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
@@ -10240,7 +10257,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var repaired2 = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring7-mushy-heavy-t3-exit-repaired2.mt2f"));
     MushyHeavyT3ExitChecks.Pair(original.RootElement, repaired.RootElement, repaired2.RootElement);
 }
-foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-random27-ring7-mushy-rax-", StringComparison.OrdinalIgnoreCase))
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-random27-ring7-mushy-rax-", StringComparison.OrdinalIgnoreCase) &&
+    !Path.GetFileName(path).StartsWith("player-random27-ring7-mushy-rax-entry-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-random27-ring7-mushy-rax-original.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
     using var original = ModelJson.ReadFixture(path);
