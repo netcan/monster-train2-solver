@@ -788,6 +788,12 @@ if (args.Length == 5 && args[0] is "--retired-haste-preview-only" or "--retired-
         combat: args[0] == "--retired-haste-combat-only");
     return;
 }
+if (args.Length == 2 && args[0] == "--pyremaniac2-upgrade-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    PyremaniacUpgradeChecks.NativeSecond(source.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--pyremaniac-upgrade-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

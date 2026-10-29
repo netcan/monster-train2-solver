@@ -20,7 +20,8 @@ namespace MonsterTrain2Poju.Model
             type == "RoomStateSpikesDamageModifier" ? "spikes" : type == "RoomStateValorModifier" ? "valor" : type == QueuedStatus ? "conduit" : type == StackModifier ? "pyregel" : "";
         internal static bool Known(string type) => Status(type).Length != 0;
         internal static string? Validate(CombatUnit unit) => unit.Modifiers?.RoomStatuses?.Any(rule =>
-            !Known(rule.Type) || rule.StatusId != Status(rule.Type) || rule.Amount != (rule.StatusId == "buff" ? 3 : 1)) == true
+            !Known(rule.Type) || rule.StatusId != Status(rule.Type) ||
+            (rule.Type == StackModifier ? rule.Amount is not (1 or 2) : rule.Amount != (rule.StatusId == "buff" ? 3 : 1))) == true
             ? "Uncalibrated unit room status modifier." : null;
         internal static int Modifier(IEnumerable<CombatUnit> units, CombatTeam team, string status) => units
             .Where(unit => unit.Team == team && unit.Health > 0 && unit.DeathState?.IsDestroyed != true)

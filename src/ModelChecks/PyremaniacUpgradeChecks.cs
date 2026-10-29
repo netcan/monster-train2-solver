@@ -4,6 +4,61 @@ using MonsterTrain2Poju.Model;
 
 internal static class PyremaniacUpgradeChecks
 {
+    internal static void NativeSecond(FixtureValue source)
+    {
+        FixtureValue[] rows = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        var birth = rows[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        var born = rows[0].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        var upgrade = birth.Spawn.Train.Context!.FindCard(8)!.Permanent.Upgrades.Single();
+        Require(CardPyremaniacUpgradeModel.Known(upgrade) && upgrade.DataId == CardPyremaniacUpgradeModel.SecondDataId &&
+            !CardPyremaniacUpgradeModel.Known(upgrade.WithStats(new CardStatModifier(damage: 16, health: 20))) &&
+            !CardPyremaniacUpgradeModel.KnownIdentity(upgrade.DataId, CardPyremaniacUpgradeModel.AssetKey),
+            "Second tier identity and changed-signature guards differ.");
+        var champion = born.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.SpawnerCardId == 8);
+        Require(champion is { BaseAttack: 30, Health: 40, MaxHealth: 40 } && champion.Modifiers?.RoomStatuses?.SingleOrDefault() is
+            { Type: UnitRoomStatusModel.StackModifier, StatusId: "pyregel", Amount: 2 }, "Second tier native birth differs.");
+        var action = rows[0].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        var modelBirth = BattleActionModel.PlayCard(birth, action);
+        Require(modelBirth.Supported && NativeBranchObservationChecks.Key(modelBirth.State!) == NativeBranchObservationChecks.Key(born),
+            "Second tier birth differs from native state.");
+
+        foreach ((int index, int expected) in new[] { (8, 4), (10, 6) })
+        {
+            var before = rows[index].GetProperty("Root").Deserialize<BattleTurnState>()!;
+            var after = rows[index].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            var input = rows[index].GetProperty("Action").Deserialize<PlayCardAction>()!;
+            var target = before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == input.TargetUnitId);
+            var changed = after.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == input.TargetUnitId);
+            Require((changed.Status("pyregel")?.Stacks ?? 0) - (target.Status("pyregel")?.Stacks ?? 0) == expected,
+                "Second tier native spell or ability stack delta differs.");
+            string parent = JsonSerializer.Serialize(before, ModelJson.Options);
+            Parallel.For(0, 4, _ =>
+            {
+                var result = BattleActionModel.PlayCard(before, input);
+                Require(result.Supported && NativeBranchObservationChecks.Key(result.State!) == NativeBranchObservationChecks.Key(after),
+                    "Second tier native spell or ability successor differs.");
+            });
+            Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "Second tier branches mutated their parent.");
+        }
+        var root = rows[8].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        var floor = root.Spawn.Train.Rooms[0];
+        foreach (int id in new[] { 7, champion.Id })
+        {
+            var modified = StatusApplicationModel.Apply(floor, id, new CombatStatus("pyregel", 1));
+            var unmodified = StatusApplicationModel.Apply(floor, id, new CombatStatus("pyregel", 1), allowStackModifiers: false);
+            Require(modified.Supported && unmodified.Supported &&
+                modified.State!.Units.Single(unit => unit.Id == id).Status("pyregel")!.Stacks == 3 &&
+                unmodified.State!.Units.Single(unit => unit.Id == id).Status("pyregel")!.Stacks == 1,
+                "Second tier same-floor status bonus differs.");
+        }
+        var otherFloor = root.Spawn.Train.Rooms[1];
+        var other = otherFloor.Units.First(unit => unit.Health > 0);
+        var separate = StatusApplicationModel.Apply(otherFloor, other.Id, new CombatStatus("pyregel", 1));
+        Require(separate.Supported && separate.State!.Units.Single(unit => unit.Id == other.Id).Status("pyregel")!.Stacks == 1,
+            "Second tier aura leaked into another floor.");
+        Console.WriteLine("PYREMANIAC2 PASS: original birth, spell and ability; same-floor teams, other floor, disabled modification, changed signatures and immutable branches.");
+    }
+
     internal static void Native(FixtureValue source)
     {
         FixtureValue[] rows = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
