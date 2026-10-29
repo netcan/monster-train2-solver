@@ -223,11 +223,17 @@ namespace MonsterTrain2Poju.Model
             bool OriginalRetiredHasteRecruit() => world != null && world.EnchanterIds.Count == 2 && world.EnchanterIds.Distinct().Count() == 2 &&
                 source.Rooms.Any(room => room.Units.Any(unit => IsOriginalGreenRecruit(unit, context) &&
                     unit is { BaseAttack: 5, Health: 5, MaxHealth: 5, Size: 1 } && unit.Status("multistrike")?.Stacks == 1) &&
-                    room.Units.Any(unit => unit is { AssetKey: "MonsterChampionPyreborne1", Team: CombatTeam.Player,
+                    (room.Units.Any(unit => unit is { AssetKey: "MonsterChampionPyreborne1", Team: CombatTeam.Player,
                         BaseAttack: 20, Health: 25, MaxHealth: 30, Size: 3 } &&
                         context.FindCard(unit.SpawnerCardId)?.DataId == "7488b439-316c-4a13-8897-90de239b6250") &&
                     room.Units.Any(unit => unit is { AssetKey: "MonsterFunguy", Team: CombatTeam.Player, SpawnerCardId: 0,
-                        BaseAttack: 10, Health: 8, MaxHealth: 8, Size: 1, Modifiers.Upgrades.Count: 2 } && unit.Status("horde")?.Stacks == 2)) &&
+                        BaseAttack: 10, Health: 8, MaxHealth: 8, Size: 1, Modifiers.Upgrades.Count: 2 } && unit.Status("horde")?.Stacks == 2) ||
+                    room.Units.Count(unit => unit.Team == CombatTeam.Player) == 1 &&
+                    room.Units.Any(unit => unit is { AssetKey: "Boss_Level2_BigStats", Team: CombatTeam.Enemy,
+                        BaseAttack: 7, Health: 185, MaxHealth: 260 }) &&
+                    room.Units.Any(unit => unit is { AssetKey: "AttackerT1_Spearman", Team: CombatTeam.Enemy, Health: 2 }) &&
+                    context.CardRegistry?.Any(card => card.DataId == "7488b439-316c-4a13-8897-90de239b6250" &&
+                        card.Permanent.Upgrades.Any(CardPyremaniacUpgradeModel.Known)) == true)) &&
                 !world.Rooms.SelectMany(room => room.Units).Any(unit => world.EnchanterIds.Contains(unit.Id)) &&
                 world.RetainedUnits.Where(actor => world.EnchanterIds.Contains(actor.Unit.Id)).Count() == 2 &&
                 world.RetainedUnits.Where(actor => world.EnchanterIds.Contains(actor.Unit.Id)).All(actor =>
