@@ -6,6 +6,8 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class AdvisorCardPresentation
     {
+        internal static string Predicted(string title) => Plain(title) + " · 预计生成";
+
         // These are current native values, not the predicted values at a later
         // point in the plan. Rebuild them only when publishing/viewing advice.
         internal static string Describe(CardState card, int handIndex, int? cost)

@@ -2420,7 +2420,7 @@ if ($AdvisorPresentation -and -not $RollingInput) {
     if ($null -eq $presentation -or $presentation.RetainedInputs -lt 1 -or $presentation.PendingFrames -lt 1 -or
         $presentation.ReusedPublications -lt 1 -or $presentation.ScrolledPublications -lt 1 -or $presentation.Resets -lt 1 -or
         $presentation.BudgetChanges -lt 4 -or $presentation.CollapsedTurnResets -lt 1 -or
-        $presentation.CardIdentityChecks -lt 3 -or $presentation.CardHoverChecks -lt 5 -or
+        $presentation.CardIdentityChecks -lt 4 -or $presentation.CardHoverChecks -lt 5 -or
         $presentation.ForecastScopeChecks -lt 7 -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'PLAYER-ADVISOR-PRESENTATION-PASS' -Quiet)) {
         throw 'Player UI did not retain pending text and reading position across native inputs and reused publications.'

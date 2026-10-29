@@ -113,7 +113,10 @@ namespace MonsterTrain2Poju.Probe
             string future = Describe(upgraded, -1, null);
             Require(future.Contains("当前不在手牌") && !future.Contains("左起") && !future.Contains(" 费"),
                 "a future card was assigned a current hand slot or cost");
-            cardIdentityChecks += 3;
+            string generated = (string)AccessTools.Method(formatter, "Predicted").Invoke(null, new object[] { "<b>魔纺术</b>" });
+            Require(generated == "魔纺术 · 预计生成" && !generated.Contains("当前手牌"),
+                "a forecast-generated card must not look like a current hand card");
+            cardIdentityChecks += 4;
 
             var before = new Snapshot();
             int captures = (int)AccessTools.Property(type, "Captures").GetValue(overlay);

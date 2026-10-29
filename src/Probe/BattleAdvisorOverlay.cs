@@ -668,9 +668,12 @@ namespace MonsterTrain2Poju.Probe
                         managers.GetRelicManager(), room < 0 ? null : managers.GetRoomManager().GetRoom(room));
                     return descriptions[id] = AdvisorCardPresentation.Describe(known, index, cost);
                 }
-                string? dataId = advice.Root.Spawn.Train.Context?.FindCard(id)?.DataId ?? plan.State.Spawn.Train.Context?.FindCard(id)?.DataId;
-                return dataId == null ? "生成的卡牌 #" + id :
+                CardInstanceState? rootCard = advice.Root.Spawn.Train.Context?.FindCard(id);
+                CardInstanceState? forecastCard = plan.State.Spawn.Train.Context?.FindCard(id);
+                string? dataId = rootCard?.DataId ?? forecastCard?.DataId;
+                string name = dataId == null ? "卡牌 #" + id :
                     AllGameManagers.Instance.GetSaveManager().GetAllGameData().FindCardData(dataId)?.GetName() ?? "卡牌 #" + id;
+                return rootCard == null && forecastCard != null ? AdvisorCardPresentation.Predicted(name) : name;
             }
             string UnitName(int id) => units.TryGetValue(id, out CharacterState known) ? known.GetName() : "单位 #" + id;
             void AppendStep(BattleSearchStep step)
