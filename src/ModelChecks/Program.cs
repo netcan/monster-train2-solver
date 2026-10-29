@@ -2165,6 +2165,15 @@ if (args.Length == 3 && args[0] == "--guaranteed-status-test-rng-pair-only")
     GuaranteedStatusTestRngChecks.Pair(source.RootElement, replay.RootElement);
     return;
 }
+if (args.Length == 6 && args[0] == "--reverse-copy-consume")
+{
+    using var first = ModelJson.ReadFixture(args[1]);
+    using var second = ModelJson.ReadFixture(args[2]);
+    using var repaired = ModelJson.ReadFixture(args[3]);
+    using var repeated = ModelJson.ReadFixture(args[4]);
+    ReverseCopyBeforeConsumeChecks.Check(first.RootElement, second.RootElement, repaired.RootElement, repeated.RootElement, bool.Parse(args[5]));
+    return;
+}
 if (args.Length == 5 && args[0] == "--copy-before-consume-notification-repaired")
 {
     using var first = ModelJson.ReadFixture(args[1]);

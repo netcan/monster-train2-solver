@@ -9,6 +9,10 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-reverse-copy-consume-play-original.mt2f', 'player-reverse-copy-consume-play-original-replay.mt2f',
+    'player-reverse-copy-consume-play-401.mt2f', 'player-reverse-copy-consume-play-401-replay.mt2f',
+    'player-reverse-copy-consume-discard-original.mt2f', 'player-reverse-copy-consume-discard-original-replay.mt2f',
+    'player-reverse-copy-consume-discard-401.mt2f', 'player-reverse-copy-consume-discard-401-replay.mt2f',
     'player-copy-before-consume-notification-original.mt2f', 'player-copy-before-consume-notification-original-replay.mt2f',
     'player-copy-before-consume-notification-400.mt2f', 'player-copy-before-consume-notification-400-replay.mt2f',
     'player-copy-before-consume-draw-original.mt2f', 'player-copy-before-consume-draw-original-replay.mt2f',
@@ -2530,6 +2534,24 @@ $arkionPushMoonNames = @('player-arkion-push-fullmoon-original.mt2f', 'arkion-pu
     'player-arkion-push-fullmoon-original-replay.mt2f', 'arkion-push-fullmoon-birth-original-replay.mt2f',
     'player-arkion-push-fullmoon-397.mt2f', 'arkion-push-fullmoon-birth-397.mt2f',
     'player-arkion-push-fullmoon-397-replay.mt2f', 'arkion-push-fullmoon-birth-397-replay.mt2f')
+$reverseCopyPlayNames = @('player-reverse-copy-consume-play-original.mt2f', 'player-reverse-copy-consume-play-original-replay.mt2f',
+    'player-reverse-copy-consume-play-401.mt2f', 'player-reverse-copy-consume-play-401-replay.mt2f')
+$reverseCopyDiscardNames = @('player-reverse-copy-consume-discard-original.mt2f', 'player-reverse-copy-consume-discard-original-replay.mt2f',
+    'player-reverse-copy-consume-discard-401.mt2f', 'player-reverse-copy-consume-discard-401-replay.mt2f')
+function Check-ReverseCopyConsume {
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --reverse-copy-consume @($reverseCopyPlayNames | ForEach-Object { Get-TestFixturePath $_ }) false
+    if ($LASTEXITCODE -ne 0) { throw 'Reverse copy/Consume play native pair failed.' }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --reverse-copy-consume @($reverseCopyDiscardNames | ForEach-Object { Get-TestFixturePath $_ }) true
+    if ($LASTEXITCODE -ne 0) { throw 'Reverse copy/Consume discard native pair failed.' }
+}
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin ($reverseCopyPlayNames + $reverseCopyDiscardNames) }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Reverse copy/Consume checker build failed.' }
+    }
+    Check-ReverseCopyConsume
+    return
+}
 $copyBeforeConsumeNotificationNames = @('player-copy-before-consume-notification-original.mt2f', 'player-copy-before-consume-notification-original-replay.mt2f',
     'player-copy-before-consume-notification-400.mt2f', 'player-copy-before-consume-notification-400-replay.mt2f')
 function Check-CopyBeforeConsumeNotification {
@@ -7759,6 +7781,9 @@ foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-copy-before-consume-notification-original.mt2f' })) {
     Check-CopyBeforeConsumeNotification
+}
+foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-reverse-copy-consume-play-original.mt2f' })) {
+    Check-ReverseCopyConsume
 }
 foreach ($fixturePath in @($fixtures | Where-Object { (Split-Path -Leaf $_) -eq 'player-random26-ring6-397-default-loss.mt2f' })) {
     Check-Random26Ring6

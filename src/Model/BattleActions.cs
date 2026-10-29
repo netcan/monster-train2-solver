@@ -1120,6 +1120,7 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             bool copyOnDiscard = !skipNaturalDiscard && discardInstance != null && CardCopyOnPlayModel.Present(discardInstance);
+            bool reverseCopyBeforeConsume = copyOnDiscard && CardCopyOnPlayModel.ReverseCopyBeforeConsume(discardInstance!);
             BattleStatistics? statistics = context.Statistics;
             if (terminal) statistics = statistics?.RefreshOwnedCards(new[] { card.InstanceId });
             if (!skipNaturalDiscard) statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded");
@@ -1145,7 +1146,7 @@ namespace MonsterTrain2Poju.Model
             if (!skipNaturalDiscard) context = ConduitModel.Discarded(context, card.InstanceId);
             if (summonedEndless && !terminal && !consumedOnPlay)
                 context = UnitStandbyModel.ReturnEndless(context, card.InstanceId);
-            if (consumedOnPlay)
+            if (consumedOnPlay && !reverseCopyBeforeConsume)
             {
                 if (context.OtherPiles == null || !context.OtherPiles.Any(pile => pile.Name == "Standby") ||
                     !context.OtherPiles.Any(pile => pile.Name == "Exhausted")) return Unsupported("Consume requires captured standby and exhausted piles.");
@@ -1168,6 +1169,8 @@ namespace MonsterTrain2Poju.Model
                     context = context.WithStatistics(context.Statistics?.RefreshOwnedCards(
                         context.CardInstances.Select(instance => instance.InstanceId)));
             }
+            if (consumedOnPlay && reverseCopyBeforeConsume)
+                context = CardExhaustModel.MoveConsumedToStandby(context, card);
             if (consumedOnPlay)
             {
                 // A later installed Consume trait runs after Ephemeral's

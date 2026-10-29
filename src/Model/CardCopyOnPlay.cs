@@ -240,7 +240,8 @@ namespace MonsterTrain2Poju.Model
             if (card.Temporary.Upgrades.Any(upgrade => upgrade.RemoveOnDiscard))
                 return "Copy-on-play with discard-removing temporary upgrades requires native ordering calibration.";
             int consumeIndex = Array.FindIndex(active, trait => trait.RuntimeType == "CardTraitExhaustState");
-            if (consumeIndex >= Array.FindIndex(active, trait => trait.RuntimeType == Trait))
+            if (consumeIndex >= Array.FindIndex(active, trait => trait.RuntimeType == Trait) &&
+                !InactiveReverseCopyCard(card, ReverseConsumeOrder))
                 return ReverseConsumeOrder;
             return null;
         }
@@ -266,8 +267,24 @@ namespace MonsterTrain2Poju.Model
                 card.ExternalInteractions.Count == 0 && card.Permanent.ExternalInteractions.Count == 0 &&
                 card.Temporary.ExternalInteractions.Count == 0 && card.Permanent.PersistentHealth == 0 &&
                 card.Temporary.PersistentHealth == 0 && card.Permanent.Upgrades.All(upgrade =>
-                    upgrade.MaskMetadata != null && !CardModifierModel.UpgradeInteractions(upgrade).Any()) &&
+                    upgrade.MaskMetadata != null && upgrade.Statuses.Count == 0 && !upgrade.RemoveOnDiscard &&
+                    !upgrade.Unique && !upgrade.ExcludeFromClones && upgrade.UnhealedHealth == 0 && upgrade.DamageBuff == 0 &&
+                    !upgrade.RestrictSizeToRoomCapacity && !upgrade.MagicPowerTraitScalingOnly &&
+                    upgrade.CloneDamageBase == null && upgrade.CloneHealBase == null && upgrade.EquipmentSourceCardId == null &&
+                    upgrade.EquipmentSourceUpgradeIndex == null && (upgrade.TriggerUpgrades?.Count ?? 0) == 0 &&
+                    upgrade.AbilityUpgrade == null && !CardModifierModel.UpgradeInteractions(upgrade).Any() &&
+                    upgrade.Lifecycle is { } lifecycle && lifecycle.AddedTraits.Count == 1 &&
+                    lifecycle.RemovedRuntimeTypes.Count == 0 && lifecycle.ReplacedAssets.Count == 0 &&
+                    lifecycle.Triggers.Count == 0 && lifecycle.TraitsModified.Count == 0 && !lifecycle.AvoidClobbering &&
+                    new[] { "Damage", "Health", "Heal", "Size", "EquipmentLimit", "UpgradeSlotCount" }
+                        .All(stat => upgrade.Stats.Value(stat) == 0)) &&
+                card.Permanent.Upgrades[0].AssetKey == "CreateSpellCopyWithPurge" &&
+                card.Permanent.Upgrades[0].Stats.Cost == 0 && card.Permanent.Upgrades[0].Stats.XCost == 0 &&
+                card.Permanent.Upgrades[1].AssetKey == "ReduceCostAddConsume" &&
+                card.Permanent.Upgrades[1].Stats.Cost == -2 && card.Permanent.Upgrades[1].Stats.XCost == 2 &&
                 (card.EffectCounters == null || card.EffectCounters.Count == 0) && card.Permanent.MergedEquipment == null;
+
+        internal static bool ReverseCopyBeforeConsume(CardInstanceState card) => InactiveReverseCopyCard(card, ReverseConsumeOrder);
 
         internal static bool CanDeferDrawNotification(CombatContext context, CardInstanceState card, string unsupported)
         {

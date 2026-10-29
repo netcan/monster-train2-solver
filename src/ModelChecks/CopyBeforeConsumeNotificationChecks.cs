@@ -20,11 +20,10 @@ internal static class CopyBeforeConsumeNotificationChecks
         BattleTurnState actual = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         Require(before.Spawn.Train.Context!.Cards.Draw.Any(token => token.InstanceId == 17) &&
             actual.Spawn.Train.Context!.Cards.Hand.Any(token => token.InstanceId == 17), "The native draw did not move the guarded card to hand.");
-        Require(BattleActionModel.EnumerateActions(actual).UnsupportedAttempts.Any(attempt =>
-            attempt.Action?.CardInstanceId == 17 && attempt.Reason == Reason), "Playing the uncalibrated card must remain guarded.");
+        Require(BattleActionModel.EnumerateActions(actual).SupportedCandidates.Any(candidate =>
+            candidate.Action.CardInstanceId == 17), "The calibrated card should be playable.");
         BattleTurnResult discard = BattleTurnModel.EndTurn(actual);
-        Require(!discard.Supported && discard.UnsupportedReason?.Contains(Reason, StringComparison.Ordinal) == true,
-            "Discarding the uncalibrated card must remain guarded.");
+        Require(discard.Supported, "The calibrated card should permit an unplayed discard.");
         string immutable = JsonSerializer.Serialize(before, ModelJson.Options);
         Parallel.For(0, 4, _ => {
             BattleTurnResult result = BattleTurnModel.EndTurn(before);
