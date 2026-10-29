@@ -9,7 +9,7 @@ namespace MonsterTrain2Poju.Model
         internal static bool IsOriginalGreenRecruit(CombatUnit unit, CombatContext context) =>
             unit is { AssetKey: "MonsterGenerousHost", Team: CombatTeam.Player } &&
             context.FindCard(unit.SpawnerCardId)?.DataId == "c052c567-1e3c-4f36-a6cd-89b0648b9475" &&
-            (unit.Triggers.Count == 1 || unit.Triggers.Count == 3 &&
+            (unit.Triggers.Count == 1 || unit.Triggers.Count == 2 && IsOriginalBloodthirstyBladeTrigger(unit.Triggers[1], unit, context) || unit.Triggers.Count == 3 &&
                 IsOriginalDuskMantleTrigger(unit.Triggers[1], unit, context, "OnMoonShade", "CardEffectAddStatusEffect", "AddStatus") &&
                 IsOriginalDuskMantleTrigger(unit.Triggers[2], unit, context, "OnMoonshadeLost", "CardEffectRemoveStatusEffect", "RemoveStatus") &&
                 unit.Triggers[1].Origin.EquipmentCardId == unit.Triggers[2].Origin.EquipmentCardId) &&
@@ -17,6 +17,19 @@ namespace MonsterTrain2Poju.Model
                 { Type: "SpawnOrStatus", Target: "Room", Value: 4, AllowPlayer: true, AllowEnemy: false, Range: null,
                     Statuses: [{ Id: "horde", Stacks: 4 }], Filters.Subtype: "SubtypesData_Horde",
                     SpawnFallbackUnit: { AssetKey: "MonsterFunguy", BaseAttack: 3, Health: 4 } } }] };
+
+        private static bool IsOriginalBloodthirstyBladeTrigger(CombatTrigger trigger, CombatUnit unit, CombatContext context) =>
+            trigger is { Kind: "OnKill", Once: false, IgnoreSilence: false, FireCount: 1, SkipDuringDeployment: false, Conditions: null,
+                Origin: { UpgradeId: "66cbbd14-f5f3-44a1-bd1c-ce98f3c13584", EquipmentCardId: > 0,
+                    IsFromEquipment: true, OnlyIfEquipped: false } origin,
+                Effects: [{ Type: "CardEffectBuffEquipment", Value: 0, Action: null, Enchantment: null, Summon: null, Generation: null,
+                    UnitUpgrade: { Type: "BuffEquipment", Target: "Self", Value: 0, Range: null, AllowEnemy: false, AllowPlayer: false,
+                        Lifetime: "TemporaryUntilUnitDeath", Statuses.Count: 0,
+                        Upgrade: { DataId: "147c2bab-6487-4b1f-9e6f-f8388dc77199", AssetKey: "ChampionSword_Upgrade2",
+                            Stats: { Damage: 1, Health: 0, Cost: 0, Heal: 0, Size: 0, XCost: 0, EquipmentLimit: 0, UpgradeSlotCount: 0 },
+                            Statuses.Count: 0, ExternalInteractions.Count: 0, AbilityUpgrade: null, TriggerUpgrades: null } } }] } &&
+            unit.EquipmentCards.Contains(origin.EquipmentCardId) &&
+            context.FindCard(origin.EquipmentCardId)?.DataId == "66cbbd14-f5f3-44a1-bd1c-ce98f3c13584";
 
         private static bool IsOriginalDuskMantleTrigger(CombatTrigger trigger, CombatUnit unit, CombatContext context,
             string kind, string effectType, string actionType) =>
