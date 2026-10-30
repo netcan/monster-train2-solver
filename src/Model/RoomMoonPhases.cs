@@ -85,6 +85,8 @@ namespace MonsterTrain2Poju.Model
                 return new MoonPhaseTransitionResult(source);
             if (!unit.MoonPhaseMask.HasValue)
                 return new MoonPhaseTransitionResult(null, "Movement moon understanding requires a captured prior mask.");
+            if (source.Context.Relics?.Any(relic => relic.EffectTypes.Contains("RelicEffectMoonPhaseAlwaysActive")) == true)
+                return new MoonPhaseTransitionResult(null, "Movement with relic moon-phase override requires native calibration.");
             CardInstanceState? spawner = source.Context.FindCard(unit.SpawnerCardId);
             if (spawner != null && (spawner.MaskDescriptor?.BaseTraits.Concat(spawner.MaskDescriptor.TemporaryTraits)
                 .Any(trait => trait.RuntimeType.Contains("MoonPhase", StringComparison.Ordinal)) == true ||
@@ -109,7 +111,10 @@ namespace MonsterTrain2Poju.Model
                     Modifiers.IsChampion: false, Modifiers.IsClone: false } && source.Context.QueryFrame.MoonPhase == 1) &&
                 !(unit is { Team: CombatTeam.Player, AssetKey: "MonsterBasher", MoonPhaseMask: 5,
                     Health: > 0, Size: 3, IsBoss: false,
-                    Modifiers.IsChampion: false, Modifiers.IsClone: false } && source.Context.QueryFrame.MoonPhase == 2))
+                    Modifiers.IsChampion: false, Modifiers.IsClone: false } && source.Context.QueryFrame.MoonPhase == 2) &&
+                !(unit is { Team: CombatTeam.Enemy, AssetKey: "HordeT3_PureSouls", MoonPhaseMask: 6,
+                    Health: > 0, Size: 1, IsBoss: false,
+                    Modifiers.IsChampion: false, Modifiers.IsClone: false } && source.Context.QueryFrame.MoonPhase == 1))
                 return new MoonPhaseTransitionResult(null, "Inactive movement moon understanding requires native calibration.");
             if (room.Preview)
                 return new MoonPhaseTransitionResult(null, "Preview movement moon understanding requires native calibration.");
