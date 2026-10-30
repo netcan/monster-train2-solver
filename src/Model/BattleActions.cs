@@ -1173,6 +1173,15 @@ namespace MonsterTrain2Poju.Model
                 if (ephemeralPurgeCallbacks && copied.AddedCards.Count > 0 && context.CardInstances != null)
                     context = context.WithStatistics(context.Statistics?.RefreshOwnedCards(
                         context.CardInstances.Select(instance => instance.InstanceId)));
+                // The original Imp-scaling damage card refreshes its hand text
+                // after this copy enters the hand; its deck query materializes
+                // the new card in CardStatistics.UpdateDeckStats.
+                if (copied.AddedCards.Count > 0 && card.DataId == "84314844-3a47-4173-9d34-5d15de013571" &&
+                    context.QueryFrame?.ActiveBattle == true && context.Statistics?.StoredCards != null && context.CardInstances != null &&
+                    context.Cards.Hand.Any(token => context.FindCard(token.InstanceId) is CardInstanceState handCard &&
+                        handCard.DataId == "e6e77821-f0c2-4d76-bc7f-2efece0e065f" &&
+                        handCard.DamageScalingTraits?.Any(trait => trait.Query.Type == "SubtypeInDeck") == true))
+                    context = context.WithStatistics(context.Statistics.RefreshOwnedCards(context.CardInstances.Select(instance => instance.InstanceId)));
             }
             if (consumedOnPlay && reverseCopyBeforeConsume)
                 context = CardExhaustModel.MoveConsumedToStandby(context, card);
