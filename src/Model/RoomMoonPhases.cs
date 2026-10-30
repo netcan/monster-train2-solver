@@ -106,7 +106,10 @@ namespace MonsterTrain2Poju.Model
                     Modifiers.IsChampion: false, Modifiers.IsClone: false } && source.Context.QueryFrame.MoonPhase == 1) &&
                 !(unit is { Team: CombatTeam.Enemy, AssetKey: "Boss_Level6_AngelDuo_Savage_Variant3_RevengeAttack", MoonPhaseMask: 6,
                     BaseAttack: 13, Attack: 13, Health: 1025, MaxHealth: 1100, Size: 6, IsBoss: true,
-                    Modifiers.IsChampion: false, Modifiers.IsClone: false } && source.Context.QueryFrame.MoonPhase == 1))
+                    Modifiers.IsChampion: false, Modifiers.IsClone: false } && source.Context.QueryFrame.MoonPhase == 1) &&
+                !(unit is { Team: CombatTeam.Player, AssetKey: "MonsterBasher", MoonPhaseMask: 5,
+                    BaseAttack: 84, Attack: 84, Health: 48, MaxHealth: 80, Size: 3, IsBoss: false,
+                    Modifiers.IsChampion: false, Modifiers.IsClone: false } && source.Context.QueryFrame.MoonPhase == 2))
                 return new MoonPhaseTransitionResult(null, "Inactive movement moon understanding requires native calibration.");
             if (room.Preview)
                 return new MoonPhaseTransitionResult(null, "Preview movement moon understanding requires native calibration.");
