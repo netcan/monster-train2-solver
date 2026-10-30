@@ -10364,6 +10364,16 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var original2 = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring7-hellfurnace-rax-entry-original2.mt2f"));
     HellfurnaceRaxEntryChecks.Pair(original.RootElement, repaired.RootElement, repaired2.RootElement, original2.RootElement);
 }
+foreach ((string sourceName, string replayName, int distance) in new[] {
+    ("player-random28-ring1-428-win.mt2f", "player-random28-ring1-428-win-replay.mt2f", 0),
+    ("player-random28-ring2-429-win.mt2f", "player-random28-ring2-429-win-replay.mt2f", 1) })
+foreach (string path in args.Where(path => Path.GetFileName(path) == sourceName || Path.GetFileName(path) == replayName)
+    .Select(path => ModelJson.RelatedFixture(path, sourceName)).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, replayName));
+    RandomCampaignChecks.Pair(source.RootElement, replay.RootElement, 1632497512, 0, distance, "Hellhorned", "Awoken", 3000);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-random28-ring2-inactive-bump-moon-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-random28-ring2-inactive-bump-moon-original.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
