@@ -312,7 +312,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static bool OriginalHellfurnaceEntry(RoomCapacityAttachmentState attachment, CombatUnit unit, int moonPhase = 1) =>
             (((unit.AssetKey is "HeavyT3_PyreDamageIfUnblocked" or "HeavyT3_Basic") && (moonPhase is 1 or 2) ||
-              unit.AssetKey == "AttackerT3_Sweep" && moonPhase == 1) && OriginalHellfurnaceExit(attachment, unit, 2)) ||
+              unit.AssetKey == "AttackerT3_Sweep" && moonPhase is 1 or 2) && OriginalHellfurnaceExit(attachment, unit, 2)) ||
             (moonPhase == 1 && OriginalHellfurnace(attachment) && OriginalRax(unit));
 
         internal static bool OriginalMushyDarkEntry(RoomCapacityAttachmentState added, CombatUnit previousUnit) =>

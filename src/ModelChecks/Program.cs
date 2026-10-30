@@ -525,6 +525,19 @@ if (args.Length is 2 or 3 && args[0] == "--generated-moon-tracking-only")
     GeneratedMoonTrackingChecks.Native(fixture.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 5 && args[0] == "--hellfurnace-dark-sweep-entry-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) HellfurnaceDarkSweepEntryChecks.Native(fixture.RootElement);
+    else
+    {
+        using var repaired = ModelJson.ReadFixture(args[2]);
+        using var repaired2 = ModelJson.ReadFixture(args[3]);
+        using var original2 = ModelJson.ReadFixture(args[4]);
+        HellfurnaceDarkSweepEntryChecks.Pair(fixture.RootElement, repaired.RootElement, repaired2.RootElement, original2.RootElement);
+    }
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-action-chain-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -10330,6 +10343,15 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
     using var repaired2 = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring7-hellfurnace-rax-entry-repaired2.mt2f"));
     using var original2 = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring7-hellfurnace-rax-entry-original2.mt2f"));
     HellfurnaceRaxEntryChecks.Pair(original.RootElement, repaired.RootElement, repaired2.RootElement, original2.RootElement);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-random27-ring7-hellfurnace-dark-sweep-entry-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-random27-ring7-hellfurnace-dark-sweep-entry-original.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var original = ModelJson.ReadFixture(path);
+    using var repaired = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring7-hellfurnace-dark-sweep-entry-repaired.mt2f"));
+    using var repaired2 = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring7-hellfurnace-dark-sweep-entry-repaired2.mt2f"));
+    using var original2 = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring7-hellfurnace-dark-sweep-entry-original2.mt2f"));
+    HellfurnaceDarkSweepEntryChecks.Pair(original.RootElement, repaired.RootElement, repaired2.RootElement, original2.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-random27-ring7-hellfurnace-light-entry-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-random27-ring7-hellfurnace-light-entry-original.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

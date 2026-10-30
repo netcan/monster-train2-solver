@@ -104,6 +104,10 @@ else if (args.Length == 4 && args[0] == "freeze-actions")
 {
     OfflineBattleSearch.Freeze(args[1], args[2] == "-" ? Console.In.ReadToEnd() : File.ReadAllText(args[2]), args[3]);
 }
+else if (args.Length == 3 && args[0] == "extract-simple-policy-unsupported")
+{
+    OfflineBattleSearch.ExtractSimplePolicyUnsupported(args[1], args[2]);
+}
 else if (args.Length == 4 && args[0] == "extract-unsupported-branch")
 {
     OfflineBattleSearch.ExtractUnsupported(args[1], args[2], args[3]);
@@ -283,6 +287,7 @@ else if (args.Length == 3 && args[0] == "pack-directory")
 }
 else
 {
+    Console.Error.WriteLine("Diagnostics: extract-simple-policy-unsupported <native.mt2f> <new-output.mt2f>");
     Console.Error.WriteLine("Diagnostics: extract-unsupported-branch <recorded.mt2f> <new-output.mt2f> <exact-rejection-reason>");
     Console.Error.WriteLine("Diagnostics: extract-unsupported-from <recorded.mt2f> <new-output.mt2f> <exact-rejection-reason> <first-decision-index>; retain the complete original prefix.");
     Console.Error.WriteLine("Diagnostics: explore-unsupported-from <recorded.mt2f> <new-output.mt2f> <exact-rejection-reason> <first-decision-index> <depth:1..8>; explore up to 2000 model states after the recorded prefix.");
