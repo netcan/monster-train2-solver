@@ -10312,6 +10312,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is "player-ran
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring7-rank2-427-refined-loss-replay.mt2f"));
     RandomCampaignChecks.RefinedDefeatPair(source.RootElement, replay.RootElement, 51, 343);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) is "player-random27-ring7-rank2-428-loss.mt2f" or "player-random27-ring7-rank2-428-loss-replay.mt2f")
+    .Select(path => ModelJson.RelatedFixture(path, "player-random27-ring7-rank2-428-loss.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random27-ring7-rank2-428-loss-replay.mt2f"));
+    RandomCampaignChecks.DefeatPair(source.RootElement, replay.RootElement, 1761031144, 0, 6, "Pyreborne", "Underlegion", 3000);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path) is "player-random27-ring7-rank2-427-loss.mt2f" or "player-random27-ring7-rank2-427-loss-replay.mt2f")
     .Select(path => ModelJson.RelatedFixture(path, "player-random27-ring7-rank2-427-loss.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {

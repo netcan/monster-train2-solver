@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-random27-ring7-rank2-428-loss.mt2f', 'player-random27-ring7-rank2-428-loss-replay.mt2f',
     'player-random27-ring7-hellfurnace-dark-sweep-entry-original.mt2f', 'player-random27-ring7-hellfurnace-dark-sweep-entry-original2.mt2f', 'player-random27-ring7-hellfurnace-dark-sweep-entry-repaired.mt2f', 'player-random27-ring7-hellfurnace-dark-sweep-entry-repaired2.mt2f',
     'player-random27-ring7-rank2-427-refined-loss.mt2f', 'player-random27-ring7-rank2-427-refined-loss-replay.mt2f',
     'player-random27-ring7-rank2-427-loss.mt2f', 'player-random27-ring7-rank2-427-loss-replay.mt2f',
@@ -5102,17 +5103,18 @@ if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
     return
 }
 if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
-    $selectedFixtureNames[0] -match '^player-random27-ring7-rank2-427-loss(-replay)?\.mt2f$') {
+    $selectedFixtureNames[0] -match '^player-random27-ring7-rank2-(427|428)-loss(-replay)?\.mt2f$') {
+    $version = $Matches[1]
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
         if ($LASTEXITCODE -ne 0) { throw 'Random campaign defeat checker build failed.' }
     }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --random-campaign-defeat-pair-only `
-        (Get-TestFixturePath 'player-random27-ring7-rank2-427-loss.mt2f') `
-        (Get-TestFixturePath 'player-random27-ring7-rank2-427-loss-replay.mt2f') 1761031144 0 6 Pyreborne Underlegion 3000
+        (Get-TestFixturePath "player-random27-ring7-rank2-$version-loss.mt2f") `
+        (Get-TestFixturePath "player-random27-ring7-rank2-$version-loss-replay.mt2f") 1761031144 0 6 Pyreborne Underlegion 3000
     if ($LASTEXITCODE -ne 0) { throw 'Random campaign defeat pair check failed.' }
     dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --native-action-chain-only `
-        (Get-TestFixturePath 'player-random27-ring7-rank2-427-loss.mt2f')
+        (Get-TestFixturePath "player-random27-ring7-rank2-$version-loss.mt2f")
     if ($LASTEXITCODE -ne 0) { throw 'Random campaign recorded action chain check failed.' }
     return
 }
