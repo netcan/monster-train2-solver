@@ -103,6 +103,9 @@ namespace MonsterTrain2Poju.Model
                      unit.MoonPhaseMask == 6 && source.Context.QueryFrame.MoonPhase == 1)) &&
                 !(unit is { Team: CombatTeam.Enemy, AssetKey: "HeavyT2_Zealot", MoonPhaseMask: 6,
                     BaseAttack: 3, Attack: 3, Health: 110, MaxHealth: 110, Size: 2, IsBoss: false,
+                    Modifiers.IsChampion: false, Modifiers.IsClone: false } && source.Context.QueryFrame.MoonPhase == 1) &&
+                !(unit is { Team: CombatTeam.Enemy, AssetKey: "Boss_Level6_AngelDuo_Savage_Variant3_RevengeAttack", MoonPhaseMask: 6,
+                    BaseAttack: 13, Attack: 13, Health: 1025, MaxHealth: 1100, Size: 6, IsBoss: true,
                     Modifiers.IsChampion: false, Modifiers.IsClone: false } && source.Context.QueryFrame.MoonPhase == 1))
                 return new MoonPhaseTransitionResult(null, "Inactive movement moon understanding requires native calibration.");
             if (room.Preview)

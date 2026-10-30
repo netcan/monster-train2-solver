@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-random28-ring6-newmoon-boss-original.mt2f', 'player-random28-ring6-newmoon-boss-original2.mt2f', 'player-random28-ring6-newmoon-boss-repaired.mt2f', 'player-random28-ring6-newmoon-boss-repaired2.mt2f',
     'player-random28-ring6-newmoon-zealot-original.mt2f', 'player-random28-ring6-newmoon-zealot-original2.mt2f', 'player-random28-ring6-newmoon-zealot-repaired.mt2f', 'player-random28-ring6-newmoon-zealot-repaired2.mt2f',
     'player-random28-ring6-newmoon-bump-original.mt2f', 'player-random28-ring6-newmoon-bump-original2.mt2f', 'player-random28-ring6-newmoon-bump-repaired.mt2f', 'player-random28-ring6-newmoon-bump-repaired2.mt2f',
     'player-random28-ring6-430-loss.mt2f', 'player-random28-ring6-430-loss-replay.mt2f',
@@ -5097,6 +5098,20 @@ if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
         (Get-TestFixturePath "player-random28-ring$ring-$version-win.mt2f") `
         (Get-TestFixturePath "player-random28-ring$ring-$version-win-replay.mt2f") 1632497512 0 ($ring - 1) Hellhorned Awoken 3000
     if ($LASTEXITCODE -ne 0) { throw 'Random28 native pair checks failed.' }
+    return
+}
+if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
+    $selectedFixtureNames[0] -match '^player-random28-ring6-newmoon-boss-(original2?|repaired2?)\.mt2f$') {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Inactive new moon boss checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --inactive-new-moon-boss-only `
+        (Get-TestFixturePath 'player-random28-ring6-newmoon-boss-original.mt2f') `
+        (Get-TestFixturePath 'player-random28-ring6-newmoon-boss-repaired.mt2f') `
+        (Get-TestFixturePath 'player-random28-ring6-newmoon-boss-repaired2.mt2f') `
+        (Get-TestFixturePath 'player-random28-ring6-newmoon-boss-original2.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Inactive new moon boss native checks failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
