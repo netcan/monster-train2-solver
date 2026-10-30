@@ -10366,7 +10366,8 @@ foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("pl
 }
 foreach ((string sourceName, string replayName, int distance) in new[] {
     ("player-random28-ring1-428-win.mt2f", "player-random28-ring1-428-win-replay.mt2f", 0),
-    ("player-random28-ring2-429-win.mt2f", "player-random28-ring2-429-win-replay.mt2f", 1) })
+    ("player-random28-ring2-429-win.mt2f", "player-random28-ring2-429-win-replay.mt2f", 1),
+    ("player-random28-ring3-429-win.mt2f", "player-random28-ring3-429-win-replay.mt2f", 2) })
 foreach (string path in args.Where(path => Path.GetFileName(path) == sourceName || Path.GetFileName(path) == replayName)
     .Select(path => ModelJson.RelatedFixture(path, sourceName)).Distinct(StringComparer.OrdinalIgnoreCase))
 {
