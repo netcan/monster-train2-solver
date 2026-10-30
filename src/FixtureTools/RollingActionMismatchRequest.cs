@@ -57,11 +57,9 @@ internal static class RollingActionMismatchRequest
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         using var source = FixtureDocument.Read(input);
         FixtureValue[] rows = source.RootElement.GetProperty("RollingDecisions").EnumerateArray().ToArray();
-        FixtureValue[] actions = source.RootElement.GetProperty("Actions").EnumerateArray().ToArray();
-        Require(rows.Length is > 0 and < 256 && actions.Length > 0, "Expected a bounded native action prefix.");
-        FixtureValue failure = actions[^1];
-        Require(failure.GetProperty("Difference").GetString() == "Card play decision state differs" &&
-            failure.GetProperty("Predicted").GetProperty("Supported").GetBoolean(), "Expected a supported action with native state mismatch.");
+        Require(rows.Length is > 0 and < 256 && !rows[^1].GetProperty("IsEndTurn").GetBoolean() &&
+            rows[^1].GetProperty("Difference").ValueKind == FixtureKind.String,
+            "Expected a bounded player-identity action prefix ending in a native state mismatch.");
         BattleTurnState root = rows[0].GetProperty("Root").Deserialize<BattleTurnState>()!;
         BattleTurnState current = root;
         using var keys = new BattleStateKeys();
@@ -88,9 +86,9 @@ internal static class RollingActionMismatchRequest
         }
         BattleTurnState before = rows[^1].GetProperty("Root").Deserialize<BattleTurnState>()!;
         BattleTurnState actual = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
-        PlayCardAction boundary = failure.GetProperty("Action").Deserialize<PlayCardAction>()!;
-        Require(rows[^1].GetProperty("Action").ContentEquals(failure.GetProperty("Action")) &&
-            !rows[^1].GetProperty("IsEndTurn").GetBoolean(), "Rolling and action boundaries differ.");
+        // Rolling decisions and development action probes can use different
+        // instance IDs; retain the player's identity space for native replay.
+        PlayCardAction boundary = rows[^1].GetProperty("Action").Deserialize<PlayCardAction>()!;
         Require(keys.Key(current) == keys.Key(before), "Native mismatch root differs from matched prefix.");
         BattleActionResult predicted = BattleActionModel.PlayCard(current, boundary);
         Require(predicted.Supported && keys.Key(predicted.State!) != keys.Key(actual), "Mismatch no longer reproduced.");

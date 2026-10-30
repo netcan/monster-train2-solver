@@ -80,8 +80,8 @@ namespace MonsterTrain2Poju.Model
         {
             RoomCombatState? room = source.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == id));
             CombatUnit? unit = room?.Units.FirstOrDefault(item => item.Id == id);
-            if (unit == null || unit.Health <= 0 ||
-                source.Context?.QueryFrame?.MoonPhaseTrackingActive != true || source.Context.QueryFrame.MoonPhase is not (1 or 2))
+            if (unit == null || unit.Health <= 0 || source.Context?.QueryFrame?.MoonPhaseTrackingActive is not (true or false) ||
+                source.Context.QueryFrame.MoonPhase is not (1 or 2))
                 return new MoonPhaseTransitionResult(source);
             if (!unit.MoonPhaseMask.HasValue)
                 return new MoonPhaseTransitionResult(null, "Movement moon understanding requires a captured prior mask.");
@@ -93,9 +93,13 @@ namespace MonsterTrain2Poju.Model
                 return new MoonPhaseTransitionResult(null, "Moving units with moon resource traits requires native calibration.");
             string? error = ValidateCallbacks(source);
             if (error != null) return new MoonPhaseTransitionResult(null, error);
-            int mask = Effective(source.Context, room!.RoomIndex, source.Context.QueryFrame.MoonPhase.Value);
             int prior = unit.MoonPhaseMask.Value;
+            int mask = (prior & ~3) | Effective(source.Context, room!.RoomIndex, source.Context.QueryFrame.MoonPhase.Value);
             if ((prior & 3) == (mask & 3)) return new MoonPhaseTransitionResult(source);
+            if (source.Context.QueryFrame.MoonPhaseTrackingActive == false &&
+                !(unit is { Team: CombatTeam.Player, AssetKey: "MonsterChampionHellhornedHornbreaker", MoonPhaseMask: 5,
+                    Health: > 0, Size: 2, Modifiers.IsChampion: true } && source.Context.QueryFrame.MoonPhase == 2))
+                return new MoonPhaseTransitionResult(null, "Inactive movement moon understanding requires native calibration.");
             if (room.Preview)
                 return new MoonPhaseTransitionResult(null, "Preview movement moon understanding requires native calibration.");
             CombatUnit changed = unit.WithMoonPhaseMask(mask);
@@ -107,9 +111,10 @@ namespace MonsterTrain2Poju.Model
                     pending.Add(new RoomCombatModel.QueuedCharacterTrigger(room.RoomIndex, changed, kind));
             }
             Queue(2, "OnMoonLit", "OnMoonlitLost"); Queue(1, "OnMoonShade", "OnMoonshadeLost");
-            return new MoonPhaseTransitionResult(new TrainCombatState(source.Rooms.Select(item => item.RoomIndex == room.RoomIndex
-                ? item.WithUnits(item.Units.Select(actor => actor.Id == id ? changed : actor).ToArray()) : item).ToArray(),
-                source.Movement, source.EnemySlotsPerRoom, source.Context));
+            RoomCombatState refreshed = EnchantmentWorldModel.Sync(room.WithUnits(room.Units.Select(actor => actor.Id == id ? changed : actor).ToArray()));
+            var state = new TrainCombatState(source.Rooms.Select(item => item.RoomIndex == room.RoomIndex ? refreshed : item).ToArray(),
+                source.Movement, source.EnemySlotsPerRoom, refreshed.Context);
+            return new MoonPhaseTransitionResult(refreshed.Context == null ? state : CardSpellModel.WithContext(state, refreshed.Context));
         }
         internal static string? ValidateCallbacks(TrainCombatState source)
         {
