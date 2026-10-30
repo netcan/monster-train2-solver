@@ -525,6 +525,12 @@ if (args.Length is 2 or 3 && args[0] == "--generated-moon-tracking-only")
     GeneratedMoonTrackingChecks.Native(fixture.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-action-chain-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    BattleActionChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-room-train-only")
 {
     RoomCombatChecks.NativeObservedRooms(args[1]);

@@ -945,6 +945,16 @@ internal static class BattleActionChecks
             Console.WriteLine($"NATIVE-POLICY-CHAIN-CHECKS PASS: {scenarioActions} controlled relic actions checked individually, independent {suffixTurns.Length}-EndTurn suffix to native victory, and 16 immutable parallel branches.");
             return;
         }
+        // Player-advisor decisions use a separate capture identity space, and
+        // the native driver translates them before recording Actions/Turns.
+        if (fixture.TryGetProperty("PlayerAdvisor", out var playerAdvisor) && playerAdvisor.ValueKind == FixtureKind.Object &&
+            fixture.TryGetProperty("RollingDecisions", out var rollingDecisions) &&
+            rollingDecisions.GetArrayLength() > 0 && rollingDecisions.GetArrayLength() == allActions.Length + turns.GetArrayLength() &&
+            allActions.All(entry => !entry.TryGetProperty("ScenarioAction", out var scenarioAction) || !scenarioAction.GetBoolean()))
+        {
+            RecordedBattleChecks.Native(fixture);
+            return;
+        }
         if (fixture.TryGetProperty("CardBackedFeeding", out var feeding) && feeding.GetBoolean() ||
             fixture.TryGetProperty("TowerCorruptionCallbacks", out var tower) && tower.GetBoolean() ||
             fixture.TryGetProperty("RemovedStatusScaling", out var removal) && removal.GetBoolean())

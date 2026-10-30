@@ -5096,6 +5096,9 @@ if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
         (Get-TestFixturePath 'player-random27-ring7-rank2-427-loss.mt2f') `
         (Get-TestFixturePath 'player-random27-ring7-rank2-427-loss-replay.mt2f') 1761031144 0 6 Pyreborne Underlegion 3000
     if ($LASTEXITCODE -ne 0) { throw 'Random campaign defeat pair check failed.' }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --native-action-chain-only `
+        (Get-TestFixturePath 'player-random27-ring7-rank2-427-loss.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Random campaign recorded action chain check failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
