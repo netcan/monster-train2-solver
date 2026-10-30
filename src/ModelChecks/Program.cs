@@ -10429,6 +10429,13 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == sourceName 
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, replayName));
     RandomCampaignChecks.Pair(source.RootElement, replay.RootElement, 1632497512, 0, distance, "Hellhorned", "Awoken", 3000);
 }
+foreach (string path in args.Where(path => Path.GetFileName(path) is "player-random28-ring6-433-refined-win.mt2f" or "player-random28-ring6-433-refined-win-replay.mt2f")
+    .Select(path => ModelJson.RelatedFixture(path, "player-random28-ring6-433-refined-win.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var source = ModelJson.ReadFixture(path);
+    using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random28-ring6-433-refined-win-replay.mt2f"));
+    RandomCampaignChecks.RefinedPair(source.RootElement, replay.RootElement, 1632497512, 0, 5, "Hellhorned", "Awoken", 46);
+}
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-random28-ring6-newmoon-boss-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-random28-ring6-newmoon-boss-original.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
 {
