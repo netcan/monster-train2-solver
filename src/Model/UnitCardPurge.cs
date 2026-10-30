@@ -12,7 +12,11 @@ namespace MonsterTrain2Poju.Model
             if (source.OtherPiles == null || source.FindCard(cardId) == null ||
                 !source.OtherPiles.Any(pile => pile.Name == "Purged"))
             { error = "Unit-card purge requires captured card metadata and native piles."; return null; }
-            if (source.Relics?.Any(relic => relic.EffectTypes.Count > 0) == true)
+            // Native purge dispatches only IOnPurgeRelicEffect; these observed types do not implement it.
+            if (source.Relics?.Any(relic => relic.EffectTypes.Any(effect => effect is not
+                ("RelicEffectModifyEnergyDuringDeployment" or "RelicEffectModifyEnergy" or
+                 "RelicEffectIncreasePyreHealth" or "RelicEffectIncreasePyreAttack" or
+                 "RelicEffectAddTempUpgrade"))) == true)
             { error = "Unit-card purge with relic callbacks requires native calibration."; return null; }
             if (source.Cards.Hand.Concat(source.Cards.Draw).Any(card => card.InstanceId == cardId))
             { error = "Unit-card purge from Hand or Draw requires native alias calibration."; return null; }

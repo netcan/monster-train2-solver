@@ -525,6 +525,19 @@ if (args.Length is 2 or 3 && args[0] == "--generated-moon-tracking-only")
     GeneratedMoonTrackingChecks.Native(fixture.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 5 && args[0] == "--unit-purge-relic-observation-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) UnitPurgeRelicChecks.Native(fixture.RootElement);
+    else
+    {
+        using var repaired = ModelJson.ReadFixture(args[2]);
+        using var repaired2 = ModelJson.ReadFixture(args[3]);
+        using var original2 = ModelJson.ReadFixture(args[4]);
+        UnitPurgeRelicChecks.Pair(fixture.RootElement, repaired.RootElement, repaired2.RootElement, original2.RootElement);
+    }
+    return;
+}
 if (args.Length is 2 or 5 && args[0] == "--inactive-full-moon-basher-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -10455,6 +10468,15 @@ foreach (string path in args.Where(path => Path.GetFileName(path) is "player-ran
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random28-ring6-433-refined-win-replay.mt2f"));
     RandomCampaignChecks.RefinedPair(source.RootElement, replay.RootElement, 1632497512, 0, 5, "Hellhorned", "Awoken", 46);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-random28-ring7-unit-purge-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-random28-ring7-unit-purge-original.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var original = ModelJson.ReadFixture(path);
+    using var repaired = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random28-ring7-unit-purge-repaired.mt2f"));
+    using var repaired2 = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random28-ring7-unit-purge-repaired2.mt2f"));
+    using var original2 = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random28-ring7-unit-purge-original2.mt2f"));
+    UnitPurgeRelicChecks.Pair(original.RootElement, repaired.RootElement, repaired2.RootElement, original2.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-random28-ring7-fullmoon-basher-", StringComparison.OrdinalIgnoreCase))
     .Select(path => ModelJson.RelatedFixture(path, "player-random28-ring7-fullmoon-basher-original.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

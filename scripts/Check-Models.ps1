@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-random28-ring7-unit-purge-original.mt2f', 'player-random28-ring7-unit-purge-original2.mt2f', 'player-random28-ring7-unit-purge-repaired.mt2f', 'player-random28-ring7-unit-purge-repaired2.mt2f',
     'player-random28-ring7-fullmoon-basher-original.mt2f', 'player-random28-ring7-fullmoon-basher-original2.mt2f', 'player-random28-ring7-fullmoon-basher-repaired.mt2f', 'player-random28-ring7-fullmoon-basher-repaired2.mt2f',
     'player-random28-ring7-433-loss.mt2f', 'player-random28-ring7-433-loss-replay.mt2f',
     'player-random28-ring6-433-refined-win.mt2f', 'player-random28-ring6-433-refined-win-replay.mt2f', 'player-random28-ring6-433-refined-model.mt2f',
@@ -5132,6 +5133,20 @@ if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
         dotnet (Join-Path $workspace 'src/FixtureTools/bin/Release/net8.0/FixtureTools.dll') verify-offline-native $prediction $trace
         if ($LASTEXITCODE -ne 0) { throw 'Random28 refined prediction/native binding failed.' }
     }
+    return
+}
+if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
+    $selectedFixtureNames[0] -match '^player-random28-ring7-unit-purge-(original2?|repaired2?)\.mt2f$') {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Unit purge relic checker build failed.' }
+    }
+    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --unit-purge-relic-observation-only `
+        (Get-TestFixturePath 'player-random28-ring7-unit-purge-original.mt2f') `
+        (Get-TestFixturePath 'player-random28-ring7-unit-purge-repaired.mt2f') `
+        (Get-TestFixturePath 'player-random28-ring7-unit-purge-repaired2.mt2f') `
+        (Get-TestFixturePath 'player-random28-ring7-unit-purge-original2.mt2f')
+    if ($LASTEXITCODE -ne 0) { throw 'Unit purge relic native checks failed.' }
     return
 }
 if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
