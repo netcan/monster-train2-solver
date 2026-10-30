@@ -45,6 +45,7 @@ namespace MonsterTrain2Poju.Probe
         private bool panelVisible = true;
         private bool HiddenPause => pauseWhenHidden && !panelVisible;
         private BattleAdvice? displayed;
+        private int tentativeSteps;
         private int displayFrame;
         private long displayedSearches;
         private long unavailableGeneration = -1;
@@ -288,16 +289,16 @@ namespace MonsterTrain2Poju.Probe
             RectTransform refresh = (RectTransform)panel.transform.Find("重新计算");
             refresh.anchoredPosition = new Vector2(18, expanded ? -570 : -315);
             planLabel.text = expanded ? "收起方案" : "完整方案";
-            if (displayed != null) body.text = Describe(displayed);
+            if (displayed != null) body.text = DescribeAdvice(displayed, tentativeSteps);
             planScroll.verticalNormalizedPosition = 1;
-            if (displayed != null) RecordDiagnosticView("view");
+            if (displayed != null && tentativeSteps == 0) RecordDiagnosticView("view");
         }
 
         private void SetPending(bool pending)
         {
             if (statusLabel == null) return;
             if (pending) cardHover.Clear();
-            statusLabel.text = pending ? "正在核对后续步骤 · 原方案待确认" :
+            statusLabel.text = pending ? tentativeSteps > 0 ? "临时步骤 · 待确认" : "正在核对后续步骤 · 原方案待确认" :
                 SearchScopeLabel;
             body.color = pending ? new Color(.65f, .72f, .78f) : new Color(.91f, .94f, .98f);
         }
@@ -305,6 +306,7 @@ namespace MonsterTrain2Poju.Probe
         private void ShowMessage(string message)
         {
             displayed = null;
+            tentativeSteps = 0;
             cardHover.Entries.Clear(); cardHover.Clear();
             SetPending(false);
             if (body != null) body.text = message;
@@ -493,7 +495,7 @@ namespace MonsterTrain2Poju.Probe
                     (session.Current.ReusedContinuation || session.Current.ReusedSelection) &&
                     (showFullPlan || displayed.Root.Spawn.Turn == session.Current.Root.Spawn.Turn);
                 float scroll = preserveScroll ? planScroll.verticalNormalizedPosition : 1;
-                displayed = session.Current; Published++;
+                displayed = session.Current; tentativeSteps = 0; Published++;
                 if (displayed.ReusedSelection) SelectionReuses++;
                 displayFrame = Time.frameCount;
                 displayedSearches = session.SearchCount;
@@ -641,14 +643,18 @@ namespace MonsterTrain2Poju.Probe
             }
         }
 
-        private string Describe(BattleAdvice advice)
+        private string Describe(BattleAdvice advice) => DescribeAdvice(advice, 0);
+
+        private string DescribeAdvice(BattleAdvice advice, int skipped)
         {
             BattlePlanResult plan = advice.Plan;
+            bool tentative = skipped > 0;
             int hp = plan.State.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.IsPyre).Select(unit => unit.Health).FirstOrDefault();
             int initialHp = advice.Root.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.IsPyre).Select(unit => unit.Health).FirstOrDefault();
             var text = new StringBuilder();
-            text.Append(AdvisorForecastPresentation.Describe(plan.Outcome, plan.TurnsCompleted, initialHp, hp));
-            if (plan.UsedShorterHorizon && !plan.SearchedToBattleEnd)
+            text.Append(tentative ? "临时步骤 · 结果与手牌位置待核对" :
+                AdvisorForecastPresentation.Describe(plan.Outcome, plan.TurnsCompleted, initialHp, hp));
+            if (!tentative && plan.UsedShorterHorizon && !plan.SearchedToBattleEnd)
                 text.Append("\n目标 ").Append(plan.RequestedTurns).Append(" 回合，预算内完成 ").Append(plan.TurnsCompleted).Append(" 回合");
             FullBattleTrace trace = FullBattleTrace.Active!;
             var cards = trace.KnownCards.ToDictionary(card => trace.CardId(card));
@@ -662,11 +668,11 @@ namespace MonsterTrain2Poju.Probe
                 if (descriptions.TryGetValue(id, out string description)) return description;
                 if (cards.TryGetValue(id, out CardState known))
                 {
-                    int index = hand.IndexOf(known);
+                    int index = tentative ? -1 : hand.IndexOf(known);
                     int room = managers.GetRoomManager().GetSelectedRoom();
                     int? cost = index < 0 ? null : known.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(),
                         managers.GetRelicManager(), room < 0 ? null : managers.GetRoomManager().GetRoom(room));
-                    return descriptions[id] = AdvisorCardPresentation.Describe(known, index, cost);
+                    return descriptions[id] = AdvisorCardPresentation.Describe(known, tentative ? int.MinValue : index, cost);
                 }
                 CardInstanceState? rootCard = advice.Root.Spawn.Train.Context?.FindCard(id);
                 CardInstanceState? forecastCard = plan.State.Spawn.Train.Context?.FindCard(id);
@@ -685,7 +691,7 @@ namespace MonsterTrain2Poju.Probe
                 {
                     CardData? definition = actor.GetUnitAbility();
                     CardState? ability = AbilityCardProbe.Existing(definition);
-                    int? cost = ability?.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(),
+                    int? cost = tentative ? null : ability?.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(),
                         managers.GetRelicManager(), managers.GetRoomManager().GetRoom(action.RoomIndex));
                     text.Append(AdvisorForecastPresentation.Ability(actor.GetName(), ability?.GetTitle() ?? definition?.GetName() ?? "单位技能",
                         actor.GetCurrentRoomIndex(), cost));
@@ -699,38 +705,39 @@ namespace MonsterTrain2Poju.Probe
                 if (action.TargetUnitId > 0)
                 {
                     text.Append(" · 目标：").Append(UnitName(action.TargetUnitId));
-                    if (!showFullPlan && units.TryGetValue(action.TargetUnitId, out CharacterState target))
+                    if (!tentative && !showFullPlan && units.TryGetValue(action.TargetUnitId, out CharacterState target))
                         text.Append("（").Append(target.GetHP()).Append(" 血）");
                 }
-                if (action.ActivatorUnitId == 0 && cards.TryGetValue(action.CardInstanceId, out CardState hovered))
+                if (!tentative && action.ActivatorUnitId == 0 && cards.TryGetValue(action.CardInstanceId, out CardState hovered))
                     cardHover.AddEntry(start, text.Length, hovered);
             }
             if (showFullPlan)
             {
                 text.Append(AdvisorForecastPresentation.IsTerminal(plan.Outcome) ? "\n完整方案 · " : "\n部分方案 · ")
-                    .Append(plan.Steps.Count).Append(" 步\n按当前局面预测，操作后更新。\n\n当前回合\n");
+                    .Append(plan.Steps.Count - skipped).Append(" 步\n按当前局面预测，操作后更新。\n\n当前回合\n");
                 int turns = 0;
-                for (int index = 0; index < plan.Steps.Count; index++)
+                for (int index = skipped; index < plan.Steps.Count; index++)
                 {
-                    text.Append(index + 1).Append(". "); AppendStep(plan.Steps[index]); text.Append('\n');
+                    text.Append(index - skipped + 1).Append(". "); AppendStep(plan.Steps[index]); text.Append('\n');
                     if (plan.Steps[index].IsEndTurn && index + 1 < plan.Steps.Count)
                         text.Append("\n后续第 ").Append(++turns).Append(" 回合\n");
                 }
             }
             else
             {
-                int skills = plan.Steps.TakeWhile(step => !step.IsEndTurn).Count(step =>
+                int skills = plan.Steps.Skip(skipped).TakeWhile(step => !step.IsEndTurn).Count(step =>
                     step.Action?.ActivatorUnitId > 0 || step.Action?.ActivatorRoomIndex.HasValue == true);
                 text.Append("\n\n本回合步骤");
                 if (skills > 0) text.Append("（含 ").Append(skills).Append(" 次技能）");
                 text.Append("：\n");
-                for (int index = 0; index < plan.Steps.Count; index++)
+                for (int index = skipped; index < plan.Steps.Count; index++)
                 {
                     BattleSearchStep step = plan.Steps[index];
-                    text.Append(index + 1).Append(". "); AppendStep(step); text.Append('\n');
+                    text.Append(index - skipped + 1).Append(". "); AppendStep(step); text.Append('\n');
                     if (step.IsEndTurn) break;
                 }
             }
+            if (tentative) { text.Append("\n\n局面核对后更新，暂勿依赖预测结果。"); return text.ToString(); }
             if (advice.ReusedSelection) text.Append("\n\n沿用当前建议");
             else if (advice.ReusedWinningContinuation) text.Append("\n\n沿用已验证胜局");
             else if (advice.ReusedContinuation) text.Append("\n\n沿用已验证步骤");
@@ -747,6 +754,7 @@ namespace MonsterTrain2Poju.Probe
 
         private void InvalidateState(bool preserveContinuation, string reason = "native-state-change")
         {
+            if (!preserveContinuation) tentativeSteps = 0;
             if (!preserveContinuation) RecordDiagnosticReset(reason);
             observationRevision++;
             if (session.Status != BattleAdviceStatus.Idle) Invalidations++;
@@ -767,6 +775,53 @@ namespace MonsterTrain2Poju.Probe
             foreach (Type patch in new[] { typeof(CardPlayedPatch), typeof(EndTurnPatch), typeof(EndTurnRecordedPatch), typeof(UndoPatch), typeof(RestartPatch), typeof(SelectionPatch), typeof(MutationPatch) })
                 harmony.CreateClassProcessor(patch).Patch();
         }
+        private sealed class CardInputState
+        {
+            internal AdviceDiagnosticEntry? Diagnostic;
+            internal BattleAdvice? Advice;
+            internal int Offset;
+            internal bool DirectHandPlay;
+            internal bool Matches;
+        }
+
+        private CardInputState PrepareCardInput(CardState card, CharacterState selfTarget, SpawnPoint drop,
+            bool direct, CharacterState actor, RoomState roomActor, int roomOverride)
+        {
+            var input = new CardInputState { Diagnostic = DiagnosticCardInput(card, selfTarget, drop, direct, actor, roomActor, roomOverride) };
+            AllGameManagers managers = AllGameManagers.Instance;
+            if (capturing || managers?.GetSaveManager()?.PreviewMode != false || PreviewRngIsolation.Active ||
+                !direct || actor != null || roomActor != null || !managers.GetCardManager().GetHand().Contains(card)) return input;
+            input.DirectHandPlay = true;
+            input.Advice = displayed;
+            input.Offset = tentativeSteps;
+            FullBattleTrace? trace = FullBattleTrace.Active;
+            if (displayed == null || paused || HiddenPause || trace == null ||
+                (tentativeSteps == 0 && !ReferenceEquals(displayed, session.Current)) ||
+                !trace.TryGetCardId(card, out int cardId)) return input;
+            int room = managers.GetRoomManager().IsValidRoomIndex(roomOverride) ? roomOverride :
+                drop?.GetRoomOwner()?.GetRoomIndex() ?? selfTarget?.GetCurrentRoomIndex() ?? managers.GetRoomManager().GetSelectedRoom();
+            CharacterState? target = drop?.GetCharacterState() ?? selfTarget;
+            int targetId = target == null ? 0 : trace.TryGetUnitId(target, out int id) ? id : -1;
+            input.Matches = TentativeAdviceProgress.Matches(displayed.Plan.Steps, tentativeSteps, cardId, room,
+                drop?.GetIndexInRoom() ?? -1, targetId, true);
+            return input;
+        }
+
+        private void CompleteCardInput(bool accepted, CardInputState? input)
+        {
+            if (input == null) return;
+            if (accepted && input.Diagnostic != null) journal?.Record(input.Diagnostic);
+            if (!input.DirectHandPlay || !accepted) return;
+            if (!input.Matches || input.Advice == null || !ReferenceEquals(displayed, input.Advice) || tentativeSteps != input.Offset)
+            { ShowMessage("正在核对局面…"); return; }
+            tentativeSteps++;
+            body.text = DescribeAdvice(displayed, tentativeSteps);
+            planScroll.StopMovement();
+            planScroll.verticalNormalizedPosition = 1;
+            SetPending(true);
+            RecordDiagnosticTentative();
+        }
+
         [HarmonyPatch(typeof(CardManager), nameof(CardManager.PlayAnyCard))]
         private static class CardPlayedPatch
         {
@@ -778,17 +833,31 @@ namespace MonsterTrain2Poju.Probe
 #endif
             private static void Prefix(CardState cardState, CharacterState selfTarget, SpawnPoint dropLocation,
                 bool fromDirectPlay, CharacterState characterThatActivatedAbility, RoomState roomThatActivatedAbility,
-                int roomIndexOverride, out AdviceDiagnosticEntry? __state)
+                int roomIndexOverride, out CardInputState? __state)
             {
-                __state = Active?.DiagnosticCardInput(cardState, selfTarget, dropLocation, fromDirectPlay,
-                    characterThatActivatedAbility, roomThatActivatedAbility, roomIndexOverride);
+                __state = null;
+                try { __state = Active?.PrepareCardInput(cardState, selfTarget, dropLocation, fromDirectPlay,
+                    characterThatActivatedAbility, roomThatActivatedAbility, roomIndexOverride); }
+                catch (Exception error) { Active?.log.LogWarning("POJU-TENTATIVE-INPUT " + error.Message); }
                 NativeAction(reason: "card-play");
             }
-            private static void Postfix(bool __result, AdviceDiagnosticEntry? __state)
-            { if (__result && __state != null) Active?.journal?.Record(__state); }
+            private static void Postfix(bool __result, CardInputState? __state)
+            {
+                try { Active?.CompleteCardInput(__result, __state); }
+                catch (Exception error) { Active?.ShowMessage("正在核对局面…"); Active?.log.LogWarning("POJU-TENTATIVE-DISPLAY " + error.Message); }
+            }
         }
         [HarmonyPatch(typeof(BattleHud), "EndTurn")]
-        private static class EndTurnPatch { private static void Prefix() => NativeAction(reason: "end-turn"); }
+        private static class EndTurnPatch
+        {
+            private static void Prefix()
+            {
+                if (Active != null && !Active.capturing && Active.tentativeSteps > 0 &&
+                    AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false && !PreviewRngIsolation.Active)
+                    Active.ShowMessage("正在核对局面…");
+                NativeAction(reason: "end-turn");
+            }
+        }
         [HarmonyPatch(typeof(ReplayManager), nameof(ReplayManager.RecordEntry))]
         private static class EndTurnRecordedPatch
         {

@@ -12,7 +12,7 @@ namespace MonsterTrain2Poju.Probe
         // point in the plan. Rebuild them only when publishing/viewing advice.
         internal static string Describe(CardState card, int handIndex, int? cost)
         {
-            string location = handIndex < 0 ? "当前不在手牌" : "当前手牌左起第 " + (handIndex + 1) + " 张";
+            string location = handIndex == int.MinValue ? "手牌位置待核对" : handIndex < 0 ? "当前不在手牌" : "当前手牌左起第 " + (handIndex + 1) + " 张";
             string energy = cost.HasValue ? " · 当前 " + (card.IsConsumeRemainingEnergyCostType() ? "X" : cost.Value.ToString()) + " 费" : "";
             string damage = card.GetCardType() == CardType.Spell ? "法强" : "攻击";
             var permanent = card.GetCardStateModifiers().GetCardUpgrades().Select(upgrade => Upgrade(upgrade, damage)).ToArray();

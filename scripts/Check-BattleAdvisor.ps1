@@ -9,6 +9,8 @@ try {
         dotnet build src/ModelChecks/ModelChecks.csproj -c Release --no-restore -p:WarningLevel=0 -v:q
         if ($LASTEXITCODE -ne 0) { throw 'Advice check build failed.' }
     }
+    dotnet run --project src/ModelChecks/ModelChecks.csproj -c Release --no-build -- --tentative-advice-only
+    if ($LASTEXITCODE -ne 0) { throw 'Tentative advice input checks failed.' }
     dotnet run --project src/ModelChecks/ModelChecks.csproj -c Release --no-build -- --battle-advice-only tests/fixtures/planning/search/full-battle-planner-starter-search.mt2f
     if ($LASTEXITCODE -ne 0) { throw 'Advice session check failed.' }
     dotnet run --project src/ModelChecks/ModelChecks.csproj -c Release --no-build -- --floor-browse-advice-only tests/fixtures/advisor/presentation/full-battle-player-boss-search.mt2f

@@ -50,7 +50,12 @@ foreach ($entry in $cards) {
         throw 'Accepted native input lacks a card/ability identity.'
     }
 }
-if (@($entries | Where-Object Kind -NotIn @('advice', 'view', 'reset', 'card-accepted', 'end-turn-accepted')).Count) {
+foreach ($entry in @($entries | Where-Object Kind -EQ 'tentative')) {
+    if (-not $entry.AdvicePending -or -not $entry.DisplayText.Contains('临时步骤') -or $null -ne $entry.Forecast) {
+        throw 'Tentative advice must be marked pending and must not carry a verified forecast.'
+    }
+}
+if (@($entries | Where-Object Kind -NotIn @('advice', 'view', 'tentative', 'reset', 'card-accepted', 'end-turn-accepted')).Count) {
     throw 'Advice history contains an unexpected event (floor browsing must not write events).'
 }
 Write-Output "PLAYER-ADVICE-HISTORY-PASS advice=$($advice.Count) plays=$($cards.Count) EndTurns=$($turns.Count) dropped=0 backgroundWriter=$WriterThreadId"

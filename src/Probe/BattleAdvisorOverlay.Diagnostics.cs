@@ -85,6 +85,20 @@ namespace MonsterTrain2Poju.Probe
             catch (Exception error) { ReportDiagnosticError(error.Message); }
         }
 
+        private void RecordDiagnosticTentative()
+        {
+            if (journal == null) return;
+            try
+            {
+                AdviceDiagnosticEntry entry = DiagnosticEntry("tentative");
+                entry.AdvicePending = true;
+                entry.DisplayText = ClipDiagnosticText(body.text, 32768);
+                entry.DisplayTextTruncated = body.text.Length > entry.DisplayText.Length;
+                journal.Record(entry);
+            }
+            catch (Exception error) { ReportDiagnosticError(error.Message); }
+        }
+
         private AdviceDiagnosticEntry? DiagnosticCardInput(CardState card, CharacterState selfTarget, SpawnPoint drop,
             bool direct, CharacterState actor, RoomState roomActor, int roomOverride)
         {

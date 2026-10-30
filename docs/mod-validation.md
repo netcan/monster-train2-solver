@@ -1,6 +1,13 @@
 # Player Mod validation · 2026-10-28
 
-Current Windows installation:0.2.288, source`7873a29a`.
+Current Windows installation: 0.2.438, installed 2026-10-30 after an isolated
+native player battle and focused continuation checks. The three installed DLL
+hashes match the tested build; the prior 0.2.437 payload is retained at
+`BepInEx/PojuBackups/FollowLatency-20261030-0.2.438/`. The game was stopped
+for installation; real player-session loading and timing remain unverified.
+See [tentative advice](tentative-advice.md) for measurements and boundaries.
+
+Previous documented Windows installation:0.2.288, source`7873a29a`.
 Installed at05:41 with67 protected save/config/other-mod files unchanged.
 Sample25 Ring7 source052551-d5c5bb59 and independent normal replay
 053440-668478dc win with actual10000ms/two-worker advice:59 inputs,

@@ -2999,6 +2999,12 @@ if (args.Length is 8 or 9 && args[0] == "--random-campaign-defeat-pair-only")
     return;
 }
 
+if (args.Length == 1 && args[0] == "--tentative-advice-only")
+{
+    TentativeAdviceProgressChecks.Run();
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--advice-history-only")
 {
     AdviceDiagnosticJournalChecks.Run();
