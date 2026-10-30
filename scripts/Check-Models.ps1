@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'FixturePaths.ps1')
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibration.mt2f',
+    'player-random28-ring4-429-win.mt2f', 'player-random28-ring4-429-win-replay.mt2f',
     'player-random28-ring3-429-win.mt2f', 'player-random28-ring3-429-win-replay.mt2f',
     'player-random28-ring1-428-win.mt2f', 'player-random28-ring1-428-win-replay.mt2f', 'player-random28-ring2-429-win.mt2f', 'player-random28-ring2-429-win-replay.mt2f',
     'player-random28-ring2-inactive-bump-moon-original.mt2f', 'player-random28-ring2-inactive-bump-moon-original2.mt2f', 'player-random28-ring2-inactive-bump-moon-repaired.mt2f', 'player-random28-ring2-inactive-bump-moon-repaired2.mt2f',
@@ -5080,7 +5081,7 @@ if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
     return
 }
 if ($Fixture.Count -gt 0 -and $selectedFixtureNames.Count -eq 1 -and
-    $selectedFixtureNames[0] -match '^player-random28-ring([123])-(428|429)-win(-replay)?\.mt2f$') {
+    $selectedFixtureNames[0] -match '^player-random28-ring([1234])-(428|429)-win(-replay)?\.mt2f$') {
     $ring = [int]$Matches[1]; $version = $Matches[2]
     if (($ring -eq 1 -and $version -ne '428') -or ($ring -ge 2 -and $version -ne '429')) { throw 'Unexpected random28 fixture version.' }
     if (-not $SkipBuild) {
