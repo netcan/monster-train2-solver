@@ -525,6 +525,19 @@ if (args.Length is 2 or 3 && args[0] == "--generated-moon-tracking-only")
     GeneratedMoonTrackingChecks.Native(fixture.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 5 && args[0] == "--inactive-new-moon-bump-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (args.Length == 2) InactiveNewMoonBumpChecks.Native(fixture.RootElement);
+    else
+    {
+        using var repaired = ModelJson.ReadFixture(args[2]);
+        using var repaired2 = ModelJson.ReadFixture(args[3]);
+        using var original2 = ModelJson.ReadFixture(args[4]);
+        InactiveNewMoonBumpChecks.Pair(fixture.RootElement, repaired.RootElement, repaired2.RootElement, original2.RootElement);
+    }
+    return;
+}
 if (args.Length is 2 or 5 && args[0] == "--copy-imp-text-cache-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -10389,6 +10402,15 @@ foreach (string path in args.Where(path => Path.GetFileName(path) == sourceName 
     using var source = ModelJson.ReadFixture(path);
     using var replay = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, replayName));
     RandomCampaignChecks.Pair(source.RootElement, replay.RootElement, 1632497512, 0, distance, "Hellhorned", "Awoken", 3000);
+}
+foreach (string path in args.Where(path => Path.GetFileName(path).StartsWith("player-random28-ring6-newmoon-bump-", StringComparison.OrdinalIgnoreCase))
+    .Select(path => ModelJson.RelatedFixture(path, "player-random28-ring6-newmoon-bump-original.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))
+{
+    using var original = ModelJson.ReadFixture(path);
+    using var repaired = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random28-ring6-newmoon-bump-repaired.mt2f"));
+    using var repaired2 = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random28-ring6-newmoon-bump-repaired2.mt2f"));
+    using var original2 = ModelJson.ReadFixture(ModelJson.RelatedFixture(path, "player-random28-ring6-newmoon-bump-original2.mt2f"));
+    InactiveNewMoonBumpChecks.Pair(original.RootElement, repaired.RootElement, repaired2.RootElement, original2.RootElement);
 }
 foreach (string path in args.Where(path => Path.GetFileName(path) is "player-random28-ring6-430-loss.mt2f" or "player-random28-ring6-430-loss-replay.mt2f")
     .Select(path => ModelJson.RelatedFixture(path, "player-random28-ring6-430-loss.mt2f")).Distinct(StringComparer.OrdinalIgnoreCase))

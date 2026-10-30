@@ -97,8 +97,10 @@ namespace MonsterTrain2Poju.Model
             int mask = (prior & ~3) | Effective(source.Context, room!.RoomIndex, source.Context.QueryFrame.MoonPhase.Value);
             if ((prior & 3) == (mask & 3)) return new MoonPhaseTransitionResult(source);
             if (source.Context.QueryFrame.MoonPhaseTrackingActive == false &&
-                !(unit is { Team: CombatTeam.Player, AssetKey: "MonsterChampionHellhornedHornbreaker", MoonPhaseMask: 5,
-                    Health: > 0, Size: 2, Modifiers.IsChampion: true } && source.Context.QueryFrame.MoonPhase == 2))
+                !(unit is { Team: CombatTeam.Player, AssetKey: "MonsterChampionHellhornedHornbreaker",
+                    Health: > 0, Size: 2, Modifiers.IsChampion: true } &&
+                    (unit.MoonPhaseMask == 5 && source.Context.QueryFrame.MoonPhase == 2 ||
+                     unit.MoonPhaseMask == 6 && source.Context.QueryFrame.MoonPhase == 1)))
                 return new MoonPhaseTransitionResult(null, "Inactive movement moon understanding requires native calibration.");
             if (room.Preview)
                 return new MoonPhaseTransitionResult(null, "Preview movement moon understanding requires native calibration.");
