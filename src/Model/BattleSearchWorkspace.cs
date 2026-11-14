@@ -59,7 +59,7 @@ namespace MonsterTrain2Poju.Model
         internal BattleActionResult Play(BattleTurnState source, PlayCardAction action)
         {
             requests++;
-            if (!enabled)
+            if (!enabled || action.Operation != null)
             { simulated++; return BattleActionModel.PlayCard(source, action); }
             var entry = For(source);
             // Direct card cost is checked before target/position/selection

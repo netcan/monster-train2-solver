@@ -1714,6 +1714,7 @@ namespace MonsterTrain2Poju.Probe
                 CelebrateHealthBattle = CelebrateHealthBattleScenario.Enabled ? CelebrateHealthBattleScenario.Evidence : null,
                 DamagedFloorEnergyBattle = DamagedFloorEnergyBattleScenario.Enabled ? DamagedFloorEnergyBattleScenario.Evidence : null,
                 DevotionSpawnBattle = DevotionSpawnBattleScenario.Enabled ? DevotionSpawnBattleScenario.Evidence : null,
+                DevoteBattle = DevoteBattleScenario.Enabled ? DevoteBattleScenario.Evidence : null,
                 DevotionDamageBattle = DevotionDamageBattleScenario.Enabled ? DevotionDamageBattleScenario.Evidence : null,
                 DevotionDamageCallbacks = DevotionDamageBattleScenario.Enabled ? RelicUnitResourceProbe.Records : null,
                 DamageThresholdDrawBattle = DamageThresholdDrawBattleScenario.Enabled ? DamageThresholdDrawBattleScenario.Evidence : null,

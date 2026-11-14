@@ -467,6 +467,7 @@ param(
     [switch] $DamageThresholdDrawBattle,
     [switch] $DevotionDamageBattle,
     [switch] $DevotionSpawnBattle,
+    [switch] $DevoteBattle,
     [switch] $TenaciousBattle,
     [switch] $ChainedStatusCalibration,
     [switch] $ChainedBattle,
@@ -1391,6 +1392,7 @@ if ($ChainedRemoteQueue) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $tru
 if ($CelebrateHealthBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($DamagedFloorEnergyBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($DevotionSpawnBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($DevoteBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDeathwishAttack) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStealthSlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -2326,6 +2328,7 @@ if ($ChainedRemoteQueue) { $environment['MT2_PROBE_MODIFIERS'] = 'chained-remote
 if ($CelebrateHealthBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'celebrate-health-battle' }
 if ($DamagedFloorEnergyBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'damaged-floor-energy-battle' }
 if ($DevotionSpawnBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'devotion-spawn-battle' }
+if ($DevoteBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'devote-battle' }
 if ($OriginalDeathwishAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deathwish-attack' }
 if ($OriginalStealthSlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-stealth-slay' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
@@ -2870,6 +2873,15 @@ if ($TenaciousBattle -and ($trace.ModifierScenario -cne 'tenacious-battle' -or
     @($trace.TenaciousBattle.Calibration.Admissions).Count -ne 4 -or
     @($trace.TenaciousBattle.Calibration.Admissions | Where-Object { -not $_.Completed -or $null -ne $_.Difference }).Count -ne 0)) {
     throw 'Missing original Tenacious victory, eleven plays, native stage matrix or restored complete state.'
+}
+if ($DevoteBattle -and ($trace.ModifierScenario -cne 'devote-battle' -or
+    -not $trace.DevoteBattle.Prepared -or $null -ne $trace.DevoteBattle.Error -or $trace.DevoteBattle.Devotes -ne 14 -or
+    @($trace.Actions).Count -ne 15 -or @($trace.Actions | Where-Object { $_.Action.Operation -ceq 'Devote' }).Count -ne 14 -or
+    @($trace.DevoteBattle.Observations).Count -ne 28 -or @($trace.DevoteBattle.Gates).Count -ne 7 -or
+    @($trace.DevoteBattle.Gates | Where-Object { $_.Yielded -or $null -ne $_.Difference }).Count -ne 0 -or
+    -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
+    throw 'Missing native Devote victory, fourteen complete tribute inputs, rejected no-op controls or full matching successors.'
 }
 if ($DevotionSpawnBattle -and ($trace.ModifierScenario -cne 'devotion-spawn-battle' -or
     -not $trace.DevotionSpawnBattle.Prepared -or $trace.DevotionSpawnBattle.CompletedControlPlays -ne 12 -or

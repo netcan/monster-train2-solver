@@ -317,7 +317,8 @@ namespace MonsterTrain2Poju.Probe
             SaveManager save = managers.GetSaveManager(); CombatManager combat = managers.GetCombatManager();
             CardManager cards = managers.GetCardManager();
             return save != null && combat != null && cards != null && !LoadingScreen.IsWorking() && !save.PreviewMode &&
-                !PreviewRngIsolation.Active && save.GetGameSequence() == SaveData.GameSequence.InBattle &&
+                !PreviewRngIsolation.Active && !DevotionProbe.IsDevoteInProgress &&
+                !(managers.GetHandUI()?.IsHandSelectionActive() ?? false) && save.GetGameSequence() == SaveData.GameSequence.InBattle &&
                 !managers.GetScreenManager().GetScreenActive(ScreenName.Dialog) && CardAnimationSettlement.Ready() &&
                 NativeEffectSettlement.Ready(combat) && combat.ShouldShowEndTurnButton() && NativeDecisionReadiness.CardsDrawn(combat) && !combat.IsRunningTriggerQueue &&
                 (!save.GetBattlePreviewEnabled() || !(bool)combatChanged.GetValue(combat)) &&
@@ -390,7 +391,7 @@ namespace MonsterTrain2Poju.Probe
                 session.Status is BattleAdviceStatus.Ready or BattleAdviceStatus.Unavailable &&
                 (managers!.GetSaveManager().PreviewMode || observation.Equals(new AdvisorObservation(managers))) &&
                 NativeEffectSettlement.Ready(managers.GetCombatManager()) && !managers.GetCombatManager().IsRunningTriggerQueue &&
-                !managers.GetReplayManager().IsCardPlaying())
+                !managers.GetReplayManager().IsCardPlaying() && !DevotionProbe.IsDevoteInProgress)
             { IdleFrames++; return; }
             if (paused || HiddenPause || managers == null || !Ready(managers))
             {
@@ -697,7 +698,8 @@ namespace MonsterTrain2Poju.Probe
                         actor.GetCurrentRoomIndex(), cost));
                 }
                 else if (action.ActivatorUnitId > 0) text.Append("【单位技能】").Append(UnitName(action.ActivatorUnitId));
-                else text.Append(action.CardInstanceId > 0 ? CardName(action.CardInstanceId) : "房间技能");
+                else text.Append(action.Operation == DevoteModel.Operation ? "供奉（消耗 1 能量，随机弃一张牌）" :
+                    action.CardInstanceId > 0 ? CardName(action.CardInstanceId) : "房间技能");
                 text.Append(showFullPlan ? " → 第 " : "\n第 ").Append(action.RoomIndex + 1).Append(" 层");
                 if (action.PlayerPosition >= 0) text.Append(" · 部署位 ").Append(action.PlayerPosition + 1);
                 if (action.TargetSpawnPointIndex >= 0) text.Append(" · 目标部署位 ").Append(action.TargetSpawnPointIndex + 1);

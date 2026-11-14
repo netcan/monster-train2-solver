@@ -290,12 +290,14 @@ namespace MonsterTrain2Poju.Model
         public UnitCopyCatalog? UnitCopyCatalog { get; }
         public ElixirCatalog? Elixirs { get; }
         public ForgeUpgradeDefinition? ForgeUpgrade { get; }
+        public bool? DevoteEnabled { get; }
+        public bool ShouldSerializeDevoteEnabled() => DevoteEnabled.HasValue;
         public BattlePlayRules(IReadOnlyList<RoomPlayRule> rooms, IReadOnlyList<CardPlayRule> cards, IReadOnlyList<CombatStatus>? statusRules = null,
-            UnitCopyCatalog? unitCopyCatalog = null, ElixirCatalog? elixirs = null, ForgeUpgradeDefinition? forgeUpgrade = null)
-        { Rooms = Array.AsReadOnly(rooms.ToArray()); Cards = Array.AsReadOnly(cards.ToArray()); StatusRules = Array.AsReadOnly((statusRules ?? Array.Empty<CombatStatus>()).ToArray()); UnitCopyCatalog = unitCopyCatalog; Elixirs = elixirs; ForgeUpgrade = forgeUpgrade; }
-        internal BattlePlayRules WithRooms(IReadOnlyList<RoomPlayRule> rooms) => new(rooms, Cards, StatusRules, UnitCopyCatalog, Elixirs, ForgeUpgrade);
+            UnitCopyCatalog? unitCopyCatalog = null, ElixirCatalog? elixirs = null, ForgeUpgradeDefinition? forgeUpgrade = null, bool? devoteEnabled = null)
+        { Rooms = Array.AsReadOnly(rooms.ToArray()); Cards = Array.AsReadOnly(cards.ToArray()); StatusRules = Array.AsReadOnly((statusRules ?? Array.Empty<CombatStatus>()).ToArray()); UnitCopyCatalog = unitCopyCatalog; Elixirs = elixirs; ForgeUpgrade = forgeUpgrade; DevoteEnabled = devoteEnabled; }
+        internal BattlePlayRules WithRooms(IReadOnlyList<RoomPlayRule> rooms) => new(rooms, Cards, StatusRules, UnitCopyCatalog, Elixirs, ForgeUpgrade, DevoteEnabled);
         internal BattlePlayRules WithForgeEligibility(bool? eligible) => new(Rooms,
-            Cards.Select(card => card.WithForgeEligibility(eligible)).ToArray(), StatusRules, UnitCopyCatalog, Elixirs, ForgeUpgrade);
+            Cards.Select(card => card.WithForgeEligibility(eligible)).ToArray(), StatusRules, UnitCopyCatalog, Elixirs, ForgeUpgrade, DevoteEnabled);
         internal BattlePlayRules WithCapacities(IReadOnlyList<RoomCapacityState> capacities) => WithRooms(Rooms.Select(room =>
         {
             RoomCapacityState? capacity = capacities.FirstOrDefault(item => item.RoomIndex == room.RoomIndex);
@@ -305,6 +307,10 @@ namespace MonsterTrain2Poju.Model
 
     public sealed class PlayCardAction
     {
+        // Null preserves existing card/ability archives. Non-card battle inputs
+        // use an explicit operation, never a fabricated card definition.
+        public string? Operation { get; }
+        public bool ShouldSerializeOperation() => Operation != null;
         public int CardInstanceId { get; }
         public int RoomIndex { get; }
         // -1 chooses the native first empty slot; 0..count inserts at the selected player position.
@@ -319,10 +325,10 @@ namespace MonsterTrain2Poju.Model
         public PlayCardAction(int cardInstanceId, int roomIndex, int playerPosition = -1, int targetUnitId = 0,
             int activatorUnitId = 0, int targetSpawnPointIndex = -1,
             IReadOnlyList<CardRecursionSelection>? recursionSelections = null,
-            IReadOnlyList<ElixirMixSelection>? mixSelections = null, int? activatorRoomIndex = null)
+            IReadOnlyList<ElixirMixSelection>? mixSelections = null, int? activatorRoomIndex = null, string? operation = null)
         { CardInstanceId = cardInstanceId; RoomIndex = roomIndex; PlayerPosition = playerPosition; TargetUnitId = targetUnitId;
             ActivatorUnitId = activatorUnitId; TargetSpawnPointIndex = targetSpawnPointIndex;
-            ActivatorRoomIndex = activatorRoomIndex;
+            ActivatorRoomIndex = activatorRoomIndex; Operation = operation;
             RecursionSelections = Array.AsReadOnly((recursionSelections ?? Array.Empty<CardRecursionSelection>()).ToArray());
             MixSelections = Array.AsReadOnly((mixSelections ?? Array.Empty<ElixirMixSelection>()).ToArray()); }
     }
@@ -370,6 +376,8 @@ namespace MonsterTrain2Poju.Model
     {
         public static BattleActionResult PlayCard(BattleTurnState source, PlayCardAction action)
         {
+            if (action.Operation != null) return action.Operation == DevoteModel.Operation
+                ? DevoteModel.Apply(source, action) : Unsupported("Unknown battle operation: " + action.Operation);
             if (action.ActivatorUnitId != 0 || action.ActivatorRoomIndex.HasValue)
             {
                 int currentRoom = source.Spawn.Train.Context?.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom;
@@ -1345,6 +1353,9 @@ namespace MonsterTrain2Poju.Model
                 actions.AddRange(roomAbilities.SupportedCandidates);
                 unsupported.AddRange(roomAbilities.UnsupportedAttempts);
             }
+            if (!onlyCardId.HasValue && source.PlayRules.DevoteEnabled == true)
+                foreach (RoomPlayRule room in source.PlayRules.Rooms.Where(room => room.Enabled))
+                    Attempt(new PlayCardAction(0, room.RoomIndex, operation: DevoteModel.Operation));
             return new BattleActionEnumeration(actions, unsupported);
 
             void Attempt(PlayCardAction action)

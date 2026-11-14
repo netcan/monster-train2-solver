@@ -6,6 +6,9 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class DevotionProbe
     {
+        private static readonly System.Reflection.PropertyInfo? devoteInProgress =
+            typeof(CharacterState).Assembly.GetType("MonolithHelper")?.GetProperty("IsDevoteInProgress");
+        internal static bool IsDevoteInProgress => devoteInProgress?.GetValue(null) is true;
         internal static int Read(object owner, string method) => (int)AccessTools.Method(owner.GetType(), method).Invoke(owner, null);
         internal static int? Requirement(CardEffectData effect, bool maximum = false) => ConditionalActivationProbe.HasVanguard
             ? Read(effect, maximum ? "GetDevotionRequirementMax" : "GetDevotionRequirement") : (int?)null;

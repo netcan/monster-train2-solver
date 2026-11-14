@@ -1091,6 +1091,11 @@ namespace MonsterTrain2Poju.Probe
                 DevotionSpawnBattleScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
+            if (fullBattle && !numericModifiersPrepared && DevoteBattleScenario.Enabled)
+            {
+                DevoteBattleScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
             if (fullBattle && !numericModifiersPrepared && DevotionDamageBattleScenario.Enabled)
             {
                 DevotionDamageBattleScenario.Prepare(managers, log);
@@ -3252,6 +3257,7 @@ namespace MonsterTrain2Poju.Probe
                 else if (CelebrateHealthBattleScenario.Enabled) pendingPlay = CelebrateHealthBattleScenario.Choose(decision);
                 else if (DamagedFloorEnergyBattleScenario.Enabled) pendingPlay = DamagedFloorEnergyBattleScenario.Choose(decision);
                 else if (TenaciousBattleScenario.Enabled) pendingPlay = TenaciousBattleScenario.Choose(decision);
+                else if (DevoteBattleScenario.Enabled) pendingPlay = DevoteBattleScenario.Choose(decision);
                 else if (DevotionSpawnBattleScenario.Enabled) pendingPlay = DevotionSpawnBattleScenario.Choose(decision);
                 else if (DevotionDamageBattleScenario.Enabled) pendingPlay = DevotionDamageBattleScenario.Choose(decision);
                 else if (DamageThresholdDrawBattleScenario.Enabled) pendingPlay = DamageThresholdDrawBattleScenario.Choose(decision);
@@ -3572,6 +3578,12 @@ namespace MonsterTrain2Poju.Probe
                 (OriginalHealingPowerScenario.Enabled && OriginalHealingPowerScenario.IsScenarioPrelude(action)) ||
                 (ChooseDiscardScenario.Enabled && ChooseDiscardScenario.IsScenarioPrelude(action));
             PreviewSchedulingProbe.Observe("Play:" + action.CardInstanceId);
+            if (action.Operation == DevoteModel.Operation)
+            {
+                FullBattleTrace.Active!.BeginCardPlay(action);
+                DevoteBattleScenario.Start(log);
+                pendingPlay = null; Enter(Stage.PlayingCard, 30f); return;
+            }
             if (MixScenario.Enabled) MixScenario.Expect(action);
             if (action.ActivatorRoomIndex.HasValue)
             {
@@ -3690,6 +3702,8 @@ namespace MonsterTrain2Poju.Probe
 
         private static bool Ready(AllGameManagers managers, SaveManager save, CombatManager? combat, CardManager? cards)
         {
+            if (DevoteBattleScenario.Error != null) throw new InvalidOperationException(DevoteBattleScenario.Error);
+            if (DevoteBattleScenario.Running || DevotionProbe.IsDevoteInProgress) return false;
             return !LoadingScreen.IsWorking() && !save.PreviewMode && !PreviewRngIsolation.Active && CardAnimationSettlement.Ready() && save.GetGameSequence() == SaveData.GameSequence.InBattle &&
                 combat != null && cards != null && NativeEffectSettlement.Ready(combat) && combat.ShouldShowEndTurnButton() &&
                 (!save.GetBattlePreviewEnabled() || !(bool)typeof(CombatManager).GetField("combatStateChanged",

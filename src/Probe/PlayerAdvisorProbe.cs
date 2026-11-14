@@ -248,7 +248,7 @@ namespace MonsterTrain2Poju.Probe
                 Unit(action.TargetUnitId), Unit(action.ActivatorUnitId), action.TargetSpawnPointIndex,
                 choices,
                 action.MixSelections,
-                activatorRoomIndex: action.ActivatorRoomIndex);
+                activatorRoomIndex: action.ActivatorRoomIndex, operation: action.Operation);
         }
 
         // Drive the same native selection/confirmation callbacks as a player.

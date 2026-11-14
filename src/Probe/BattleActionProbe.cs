@@ -203,7 +203,7 @@ namespace MonsterTrain2Poju.Probe
                 spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Modifiers?.SpawnCopySubtype != null) ||
                 spawn.Train.Context?.RoomCapacities?.Any(room => room.Attachments?.Any(attachment => attachment.SpawnCopySubtype != null) == true) == true
                     ? UnitCopyCatalogProbe.Capture(reachable.Values.ToArray(), spawn) : null,
-                elixirs, forgeUpgrade);
+                elixirs, forgeUpgrade, ConditionalActivationProbe.HasVanguard ? true : (bool?)null);
             return rules;
         }
 

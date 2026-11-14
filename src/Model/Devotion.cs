@@ -58,6 +58,10 @@ namespace MonsterTrain2Poju.Model
             Award(source, unchecked(effect.Value + (source.QueryFrame?.Devotion is DevotionState state ? PerLevel(state, effect.DevotionPerLevel ?? 0) : 0)), preview);
 
         public static DevotionResult Award(CombatContext source, int amount, bool preview = false)
+            => AwardCore(source, amount, preview, true);
+        internal static DevotionResult AwardBeforeDevoteDiscard(CombatContext source)
+            => AwardCore(source, 1, false, false);
+        private static DevotionResult AwardCore(CombatContext source, int amount, bool preview, bool validateNotifications)
         {
             string? error = Validate(source);
             if (error != null) return Fail(error);
@@ -85,21 +89,27 @@ namespace MonsterTrain2Poju.Model
                 if (points >= Threshold(next)) return Fail("Devotion level or threshold overflow requires native calibration.");
             }
             bool changed = level != state.Level;
-            if (changed)
+            if (changed && validateNotifications)
             {
                 // The original Monolith consumers have no mutating resource
                 // callback: they query their damage/status scaling when used.
                 // Reject unknown live callbacks instead of silently losing them.
-                foreach (CardInstanceState card in (source.CardInstances ?? Array.Empty<CardInstanceState>()).Where(card =>
-                    source.Cards.Hand.Any(token => token.InstanceId == card.InstanceId) || card.PlayedRoomUnitIds?.Count > 0))
-                {
-                    if (card.MaskDescriptor?.SourceTraits == null) return Fail("Devotion level notifications require captured card trait provenance.");
-                    if (card.MaskDescriptor.SourceTraits.Any(trait => trait.TrackedValue == "MonolithLevel" &&
-                        trait.EntryDuration != "PreviousTurn" && trait.Type != "CardTraitScalingAddDamage" && trait.Type != "CardTraitScalingAddStatusEffect"))
-                        return Fail("Uncalibrated Devotion level resource callback on " + card.DataId + ".");
-                }
+                string? callbackError = ValidateLevelCallbacks(source);
+                if (callbackError != null) return Fail(callbackError);
             }
             return new DevotionResult(source.WithQueryFrame(source.QueryFrame.With(devotion: state.With(level, Math.Max(0, points)))), changed);
+        }
+        internal static string? ValidateLevelCallbacks(CombatContext source)
+        {
+            foreach (CardInstanceState card in (source.CardInstances ?? Array.Empty<CardInstanceState>()).Where(card =>
+                source.Cards.Hand.Any(token => token.InstanceId == card.InstanceId) || card.PlayedRoomUnitIds?.Count > 0))
+            {
+                if (card.MaskDescriptor?.SourceTraits == null) return "Devotion level notifications require captured card trait provenance.";
+                if (card.MaskDescriptor.SourceTraits.Any(trait => trait.TrackedValue == "MonolithLevel" &&
+                    trait.EntryDuration != "PreviousTurn" && trait.Type != "CardTraitScalingAddDamage" && trait.Type != "CardTraitScalingAddStatusEffect"))
+                    return "Uncalibrated Devotion level resource callback on " + card.DataId + ".";
+            }
+            return null;
         }
         private static DevotionResult Fail(string error) => new DevotionResult(null, error: error);
     }

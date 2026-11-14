@@ -49,7 +49,7 @@ internal static class RecordedBattleChecks
         Console.WriteLine($"RECORDED-BATTLE-CHAIN PASS: {actions.Length} plays, {turns.Length} EndTurns, first turn {firstTurn}, full native decision comparisons and 16 independent immutable branches.");
     }
     private static bool Terminal(RoomOutcome outcome) => outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
-    private static void Compare(BattleTurnState predicted, BattleTurnState actual, bool terminal, string label)
+    internal static void Compare(BattleTurnState predicted, BattleTurnState actual, bool terminal, string label)
     {
         string? difference = ModelJson.Difference(BattleTurnChecks.Comparable(predicted, terminal), BattleTurnChecks.Comparable(actual, terminal));
         Require(difference == null, label + ": " + difference);
