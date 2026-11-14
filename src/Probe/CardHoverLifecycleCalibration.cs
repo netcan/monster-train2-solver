@@ -15,8 +15,9 @@ namespace MonsterTrain2Poju.Probe
         internal static bool DirectDamage => Environment.GetEnvironmentVariable("MT2_PROBE_DIRECT_DAMAGE_CARD_HOVER") == "1";
         private static bool CompositeDamage => DirectDamage && Environment.GetEnvironmentVariable("MT2_PROBE_COMPOSITE_DAMAGE_CARD_HOVER") == "1";
         private static bool RandomDamage => DirectDamage && Environment.GetEnvironmentVariable("MT2_PROBE_RANDOM_DAMAGE_CARD_HOVER") == "1";
+        private static bool HealingDamage => DirectDamage && Environment.GetEnvironmentVariable("MT2_PROBE_HEALING_DAMAGE_CARD_HOVER") == "1";
         private static bool CompositionBoundaries => DirectDamage && Environment.GetEnvironmentVariable("MT2_PROBE_DAMAGE_CARD_BOUNDARIES") == "1";
-        private static bool MixedDamage => DirectDamage && (CompositionBoundaries || Environment.GetEnvironmentVariable("MT2_PROBE_DAMAGE_CARD_COMPOSITIONS") == "1");
+        private static bool MixedDamage => DirectDamage && (HealingDamage || CompositionBoundaries || Environment.GetEnvironmentVariable("MT2_PROBE_DAMAGE_CARD_COMPOSITIONS") == "1");
         private static bool BatchedControls => RandomDamage || MixedDamage;
         internal static bool Enabled => DirectDamage || Environment.GetEnvironmentVariable("MT2_PROBE_MAXIMUM_HEALTH_LETHAL_PREVIEW") == "1";
         private static bool EnemyTarget => Environment.GetEnvironmentVariable("MT2_PROBE_MAXIMUM_HEALTH_LETHAL_PREVIEW_ENEMY") == "1";
@@ -44,6 +45,8 @@ namespace MonsterTrain2Poju.Probe
         internal sealed class RangeDraw
         {
             public int Min, Max, Value;
+            public int EffectIndex;
+            public string EffectType = "";
             public float Multiplier;
             public bool Preview, Test;
             public UnityRng Before, After;
@@ -54,6 +57,7 @@ namespace MonsterTrain2Poju.Probe
             return new UnityRng(words[0], words[1], words[2], words[3]);
         }
         private static Record? active;
+        private static CardEffectData[] activeEffects = Array.Empty<CardEffectData>();
         private static CharacterState host = null!;
         private static readonly List<CharacterTriggerDispatch> dispatches = new List<CharacterTriggerDispatch>();
         private static object Get(object owner, string field) => AccessTools.Field(owner.GetType(), field).GetValue(owner);
@@ -77,6 +81,7 @@ namespace MonsterTrain2Poju.Probe
             while (save.PreviewMode || managers.GetReplayManager().IsCardPlaying() || combat.IsRunningTriggerQueue ||
                 managers.GetHandUI().AreAnyCardsAnimating() || !CardAnimationSettlement.Ready()) yield return null;
             var all = managers.GetAllGameData();
+            if (HealingDamage) HealingScenario.RegisterHealingStatus("heal immunity", "StatusEffectHealImmunityState", 0);
             var actors = new List<CharacterState>();
             for (int room = 0; room < managers.GetRoomManager().GetNumRooms(); room++)
             {
@@ -97,11 +102,11 @@ namespace MonsterTrain2Poju.Probe
             if (baseHealth < 2 || actors.Any(actor => actor.PreviewMode || actor.TemporaryPreviewsEnabled))
                 throw new InvalidOperationException("Lethal hover requires independent original primary actors and positive Horde base health.");
             foreach (var card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);
-            int[] modes = CompositionBoundaries ? new[] { 10, 11, 12 } : MixedDamage ? new[] { 4, 5, 6, 7, 8, 9 } : RandomDamage ? new[] { 0, 1, 2, 3 } : CompositeDamage ? new[] { 1, 2, 3 } : new[] { 0 };
+            int[] modes = HealingDamage ? Enumerable.Range(13, 10).ToArray() : CompositionBoundaries ? new[] { 10, 11, 12 } : MixedDamage ? new[] { 4, 5, 6, 7, 8, 9 } : RandomDamage ? new[] { 0, 1, 2, 3 } : CompositeDamage ? new[] { 1, 2, 3 } : new[] { 0 };
             int[] rangeCases = MixedDamage ? new[] { 0, 1 } : RandomDamage ? new[] { 1, 2, 3, 4 } : new[] { 0 };
-            bool RoomMode(int mode) => mode is 1 or 3 or 5 or 7 or 9 or 12;
-            bool OnCastMode(int mode) => mode >= 2 && mode != 6 && mode != 7 && mode != 10;
-            bool OnCastRoomMode(int mode) => MixedDamage ? mode == 4 || mode == 9 : RoomMode(mode);
+            bool RoomMode(int mode) => mode is 1 or 3 or 5 or 7 or 9 or 12 or 14 or 18 or 19 or 22;
+            bool OnCastMode(int mode) => HealingDamage ? mode is 17 or 18 or 20 or 21 or 22 : mode >= 2 && mode != 6 && mode != 7 && mode != 10;
+            bool OnCastRoomMode(int mode) => HealingDamage ? mode == 17 : MixedDamage ? mode == 4 || mode == 9 : RoomMode(mode);
             bool NeedsDrop(int mode) => MixedDamage || !RoomMode(mode);
             var controls = new Dictionary<(int Amount, int Mode, int RangeCase), CardState>();
             int DamageAmount(bool horde, bool half, bool final) => DirectDamage
@@ -117,11 +122,11 @@ namespace MonsterTrain2Poju.Probe
                 if (controls.ContainsKey((amount, mode, rangeCase))) continue;
                 var data = UnityEngine.Object.Instantiate(all.FindCardData(DevotionSpawnBattleScenario.VenerateId));
                 data.name = (DirectDamage ? "PojuDamageHover" : "PojuMaximumLethalHover") + mode + "_" + amount;
-                Set(data, "id", (CompositionBoundaries ? "fc231b68" : MixedDamage ? "fc231b67" : RandomDamage ? "fc231b66" : CompositeDamage ? "fc231b65" : DirectDamage ? "fc231b64" : "fc231b63") + "-0000-4000-8000-" + (rangeCase * 100000000 + mode * 1000000 + amount).ToString("D12")); Set(data, "cost", 2);
-                CardEffectData Effect(int value, bool? roomOverride = null, bool bothTeams = false)
+                Set(data, "id", (HealingDamage ? "fc231b69" : CompositionBoundaries ? "fc231b68" : MixedDamage ? "fc231b67" : RandomDamage ? "fc231b66" : CompositeDamage ? "fc231b65" : DirectDamage ? "fc231b64" : "fc231b63") + "-0000-4000-8000-" + (rangeCase * 100000000 + mode * 1000000 + amount).ToString("D12")); Set(data, "cost", 2);
+                CardEffectData Effect(int value, bool? roomOverride = null, bool bothTeams = false, bool healing = false)
                 {
                     bool roomTarget = roomOverride ?? RoomMode(mode);
-                    var effect = new CardEffectData(DirectDamage ? "CardEffectDamage" : "CardEffectDebuffMaxHealth", null!,
+                    var effect = new CardEffectData(healing ? "CardEffectHeal" : DirectDamage ? "CardEffectDamage" : "CardEffectDebuffMaxHealth", null!,
                         roomTarget || bothTeams ? Team.Type.Monsters | Team.Type.Heroes : host.GetTeamType());
                     effect.Cheat_SetTargetMode(roomTarget ? TargetMode.Room : TargetMode.DropTargetCharacter);
                     Set(effect, "paramInt", value);
@@ -135,7 +140,14 @@ namespace MonsterTrain2Poju.Probe
                     return effect;
                 }
                 var mainEffects = new List<CardEffectData> { Effect(MixedDamage || OnCastMode(mode) ? 1 : amount) };
-                if (MixedDamage && mode >= 6 && mode <= 11) mainEffects.Add(Effect(mode <= 7 || mode == 10 ? amount : 1, !RoomMode(mode)));
+                if (HealingDamage)
+                {
+                    mainEffects[0] = Effect(mode is 13 or 14 or 16 or 20 or 22 ? amount : mode == 21 ? 0 : 1,
+                        healing: mode is 13 or 14 or 16 or 18 or 21 or 22);
+                    if (mode is 15 or 19) mainEffects.Add(Effect(amount, false, healing: true));
+                    if (mode == 16) mainEffects.Add(Effect(1, true));
+                }
+                else if (MixedDamage && mode >= 6 && mode <= 11) mainEffects.Add(Effect(mode <= 7 || mode == 10 ? amount : 1, !RoomMode(mode)));
                 if (mode is 10 or 11)
                 {
                     Set(mainEffects[0], "useIntRange", true); Set(mainEffects[0], "paramMinInt", 0); Set(mainEffects[0], "paramMaxInt", 0);
@@ -146,7 +158,8 @@ namespace MonsterTrain2Poju.Probe
                 if (OnCastMode(mode))
                 {
                     var trigger = new CardTriggerEffectData(); Set(trigger, "trigger", CardTriggerType.OnCast);
-                    Set(trigger, "cardEffects", new List<CardEffectData> { Effect(MixedDamage ? amount : amount - 1, OnCastRoomMode(mode), mode == 12) }); cardTriggers.Add(trigger);
+                    Set(trigger, "cardEffects", new List<CardEffectData> { Effect(mode == 22 ? 1 : MixedDamage ? amount : amount - 1,
+                        OnCastRoomMode(mode), mode == 12, healing: HealingDamage && mode is 17 or 20 or 21) }); cardTriggers.Add(trigger);
                 }
                 Set(data, "traits", new List<CardTraitData>()); Set(data, "triggers", cardTriggers);
                 Set(data, "effectTriggers", new List<CharacterTriggerData>()); Set(data, "startingUpgrades", new List<CardUpgradeData>());
@@ -188,6 +201,11 @@ namespace MonsterTrain2Poju.Probe
                     }
                     AddTrigger(host, "OnDeathwish", 5); AddTrigger(host, "OnDeathwishLost", 7);
                     AddTrigger(host, "OnReanimated", 11); AddTrigger(host, "OnDeath", 13);
+                    if (HealingDamage)
+                    {
+                        Set(Get(host, "_primaryStateInformation"), "canBeHealed", true);
+                        AddTrigger(host, "OnHeal", 17);
+                    }
                     foreach (var witness in actors.Where(actor => actor != host && actor.GetCurrentRoomIndex() == host.GetCurrentRoomIndex()))
                     {
                         if (mode == 12) witness.SetHealth(10, 10);
@@ -199,6 +217,11 @@ namespace MonsterTrain2Poju.Probe
                         if (hostStatuses.TryGetValue(pair.Id, out var status)) status.Count = pair.Count;
                         else hostStatuses.Add(pair.Id, new CharacterState.StatusEffectStack(managers.GetStatusEffectManager().Create(pair.Id, host), pair.Count));
                     }
+                    if (HealingDamage && mode == 22)
+                    {
+                        if (hostStatuses.TryGetValue("heal immunity", out var immunity)) immunity.Count = 1;
+                        else hostStatuses.Add("heal immunity", new CharacterState.StatusEffectStack(managers.GetStatusEffectManager().Create("heal immunity", host), 1));
+                    }
                     int maximum = baseHealth * (horde ? 3 : 1), health = half ? maximum / 2 : maximum / 2 + 1;
                     host.SetHealth(health, maximum);
                     AccessTools.Method(typeof(CharacterState), "TryUpdateDeathwish").Invoke(host, null);
@@ -206,6 +229,9 @@ namespace MonsterTrain2Poju.Probe
                     yield return managers.GetRoomManager().GetRoomUI().SetSelectedRoom(host.GetCurrentRoomIndex());
                     int amount = DamageAmount(horde, half, zero);
                     var card = controls[(amount, mode, rangeCase)];
+                    var cardData = all.FindCardData(card.GetCardDataID())!;
+                    activeEffects = cardData.GetEffects().Concat(cardData.GetCardTriggers()
+                        .Where(trigger => trigger.GetTrigger() == CardTriggerType.OnCast).SelectMany(trigger => trigger.GetCardEffects())).ToArray();
                     // Author a single held control without drawing or spending RNG.
                     // The native hover below receives the ordinary hand-spell input.
                     if (BatchedControls) cards.GetHand().Add(card);
@@ -238,6 +264,7 @@ namespace MonsterTrain2Poju.Probe
             finally
             {
                 active = null;
+                activeEffects = Array.Empty<CardEffectData>();
                 for (int index = 0; index < actors.Count; index++)
                 {
                     Set(actors[index], "_primaryStateInformation", primary[index]); Set(actors[index], "triggers", triggers[index]);
@@ -246,10 +273,10 @@ namespace MonsterTrain2Poju.Probe
                 CombatPreviewControl.Set(combat, suppression);
             }
             using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
-                GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId, Boundary = CompositionBoundaries ? "NativeDamageCompositionBoundaryCardHover" : MixedDamage ? "NativeDamageCompositionCardHover" : RandomDamage ? "NativeRandomDamageCardHover" : CompositeDamage ? "NativeCompositeDamageCardHover" : DirectDamage ? "NativeDirectDamageCardHover" : "NativeMaximumHealthLethalCardHover",
+                GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId, Boundary = HealingDamage ? "NativeHealingDamageCardHover" : CompositionBoundaries ? "NativeDamageCompositionBoundaryCardHover" : MixedDamage ? "NativeDamageCompositionCardHover" : RandomDamage ? "NativeRandomDamageCardHover" : CompositeDamage ? "NativeCompositeDamageCardHover" : DirectDamage ? "NativeDirectDamageCardHover" : "NativeMaximumHealthLethalCardHover",
                 NativeCompleted = true, AuthoredControls = true, TargetTeam = EnemyTarget ? "Enemy" : "Player", SelfTargetId = 0, BaseHealth = baseHealth, Samples = samples,
                 OriginalSuppression = originalSuppression, FinalSuppression = (int)Get(combat, "combatPreviewSuppressionCount") }))
-            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, CompositionBoundaries ? "damage-card-preview-boundaries.mt2f" : MixedDamage ? "damage-card-preview-compositions.mt2f" : RandomDamage ? "damage-card-preview-random.mt2f" : CompositeDamage ? "damage-card-preview-extended.mt2f" : DirectDamage ? "damage-card-preview.mt2f" : "maximum-health-lethal-preview.mt2f"))) document.Write(output);
+            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, HealingDamage ? "healing-damage-card-preview.mt2f" : CompositionBoundaries ? "damage-card-preview-boundaries.mt2f" : MixedDamage ? "damage-card-preview-compositions.mt2f" : RandomDamage ? "damage-card-preview-random.mt2f" : CompositeDamage ? "damage-card-preview-extended.mt2f" : DirectDamage ? "damage-card-preview.mt2f" : "maximum-health-lethal-preview.mt2f"))) document.Write(output);
         }
         [HarmonyPatch(typeof(CardEffectState), nameof(CardEffectState.GetIntInRange))]
         private static class RangePatch
@@ -259,6 +286,7 @@ namespace MonsterTrain2Poju.Probe
                 __state = null;
                 if (!BatchedControls || active == null || !__instance.GetUseIntRange()) return;
                 __state = new RangeDraw { Min = __instance.GetParamMinInt(), Max = __instance.GetParamMaxInt(),
+                    EffectIndex = Array.IndexOf(activeEffects, __instance.GetSourceCardEffectData()), EffectType = __instance.GetCardEffect().GetType().Name,
                     Multiplier = __instance.GetParamMultiplier(), Preview = AllGameManagers.Instance!.GetSaveManager().PreviewMode,
                     Test = new System.Diagnostics.StackTrace().GetFrames().Any(frame => frame.GetMethod()?.Name == "TestEffect"), Before = TestRng() };
             }

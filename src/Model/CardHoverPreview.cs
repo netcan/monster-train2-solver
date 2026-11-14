@@ -26,7 +26,7 @@ namespace MonsterTrain2Poju.Model
 
     // CombatManager.PreviewCardPlay has its own protocol. It does not pay for a
     // card, move piles, increment played-card statistics, or reset the TFB counter.
-    // Calibrated maximum-health and direct-damage spells use temporary room copies,
+    // Calibrated maximum-health, damage and healing spells use temporary room copies,
     // including lethal ordinary units and nonlethal linked maximum-health changes. Battle previews keep
     // their separate protocol and validation.
     public static class CardHoverPreviewModel
@@ -46,12 +46,12 @@ namespace MonsterTrain2Poju.Model
                 rule.ExternalInteractions.Count != 0 || rule.Equipment != null || rule.Ability != null ||
                 rule.SpawnUnit != null || rule.Summon != null || rule.HasKillTriggers ||
                 rule.Effects.Count == 0 || rule.Effects.Concat(rule.OnCastEffects).Any(effect =>
-                    effect.Type is not ("BuffHealth" or "DebuffHealth" or "Damage") || effect.Target is not ("DropTargetCharacter" or "Room")))
-                return new CardHoverPreviewResult("Card hover currently requires calibrated maximum-health or direct-damage spell effects.");
-            if (rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Type == "Damage") &&
+                    effect.Type is not ("BuffHealth" or "DebuffHealth" or "Damage" or "Heal") || effect.Target is not ("DropTargetCharacter" or "Room")))
+                return new CardHoverPreviewResult("Card hover currently requires calibrated maximum-health, damage or healing spell effects.");
+            if (rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Type is "Damage" or "Heal") &&
                 (links != null || rule.OnCastEffects.Count > 1 ||
-                    rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Type != "Damage")))
-                return new CardHoverPreviewResult("Damage hover requires damage-only main/OnCast effects and no linked bodies.");
+                    rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Type is not ("Damage" or "Heal"))))
+                return new CardHoverPreviewResult("Damage/healing hover requires damage/healing main/OnCast effects and no linked bodies.");
             if (action.Operation != null || action.ActivatorUnitId != 0 || action.MixSelections.Count != 0 ||
                 action.RecursionSelections.Count != 0 || !primary.Cards.Hand.Any(card =>
                     card.InstanceId == action.CardInstanceId && card.DataId == rule.DataId))
@@ -99,10 +99,10 @@ namespace MonsterTrain2Poju.Model
                 .WithEnchantments(world.WithTemporaryPreviewUnits(copiedIds));
             TrainCombatState copied = WithContext(source, context, preview: true, copiedIds);
             bool dropOverride = rule.Effects.Any(effect => effect.Target == "DropTargetCharacter");
-            bool damageOnly = rule.Effects.All(effect => effect.Type == "Damage");
+            bool continuousEffects = rule.Effects.All(effect => effect.Type is "Damage" or "Heal");
             // OnCast runs before the final main-effect death queue drains. Keep
-            // damage effects in one queue and derive drop overrides from main only.
-            TrainSpellResult effects = damageOnly
+            // damage/healing effects in one queue and derive drop overrides from main only.
+            TrainSpellResult effects = continuousEffects
                 ? CardSpellModel.ApplyCardHoverEffects(copied, action.RoomIndex, rule.Effects.Concat(rule.OnCastEffects).ToArray(),
                     action.TargetUnitId, action.CardInstanceId, dropOverride, rule.Effects.Count)
                 : CardSpellModel.Apply(copied, action.RoomIndex, rule.Effects, action.TargetUnitId, action.CardInstanceId);
@@ -111,7 +111,7 @@ namespace MonsterTrain2Poju.Model
             var transientActors = effects.RetainedUnits.ToDictionary(unit => unit.Id);
             if (effects.PendingCallbacks.Count != 0)
                 return new CardHoverPreviewResult("Card hover main effects left uncalibrated pending callbacks.");
-            if (!damageOnly && rule.OnCastEffects.Count > 0)
+            if (!continuousEffects && rule.OnCastEffects.Count > 0)
             {
                 effects = CardSpellModel.Apply(after, action.RoomIndex, rule.OnCastEffects,
                     action.TargetUnitId, action.CardInstanceId);

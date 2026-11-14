@@ -2773,7 +2773,7 @@ namespace MonsterTrain2Poju.Model
             int sourceCardId = 0, int lastSacrificedUnitId = 0, bool hasPriorTargets = false, CombatUnit? retainedSelf = null,
             bool? previewDropOverride = null, CombatUnit? retainedDropTarget = null)
         {
-            if (effect.Type == "Damage" && effect.Target == "DropTargetCharacter" && previewDropOverride.HasValue &&
+            if ((effect.Type is "Damage" or "Heal") && effect.Target == "DropTargetCharacter" && previewDropOverride.HasValue &&
                 state.Context?.Enchantments?.TemporaryPreviewUnitIds != null)
             {
                 RoomCombatState room = state.Rooms.Single(item => item.RoomIndex == roomIndex);

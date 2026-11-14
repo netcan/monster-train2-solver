@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--healing-damage-card-preview-only")
+{
+    HealingDamageCardPreviewChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--damage-composition-boundaries-preview-only")
 {
     DamageCompositionCardPreviewChecks.Native(args[1], boundaries: true);

@@ -1046,7 +1046,10 @@ namespace MonsterTrain2Poju.Model
             if (error != null || amount < 0 || target?.Modifiers == null)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                     error ?? "Card healing requires a valid amount, target and healability state.");
-            return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre).TraceAllDispatches(captureAllDispatches).CardHeal(targetId, amount);
+            // Card hover resets copied actors once; later healing retains callback flags.
+            return new Engine(state, new List<CombatEvent>(),
+                resetPreviewTriggers: state.Context?.Enchantments?.TemporaryPreviewUnitIds == null,
+                refreshPyre: refreshPyre).TraceAllDispatches(captureAllDispatches).CardHeal(targetId, amount);
         }
 
         internal static RoomCombatResult ApplyMaximumHealthLifecycle(RoomCombatState state, int targetId, int amount, bool debuff,

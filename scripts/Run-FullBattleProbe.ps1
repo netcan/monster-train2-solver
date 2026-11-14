@@ -468,6 +468,7 @@ param(
     [switch] $DamageCardPreviewRandom,
     [switch] $DamageCardPreviewCompositions,
     [switch] $DamageCardPreviewBoundaries,
+    [switch] $DamageCardPreviewHealing,
     [Alias('DamageCardPreviewTeam')]
     [ValidateSet('Player', 'Enemy')]
     [string] $MaximumHealthLethalPreviewTeam = 'Player',
@@ -1495,11 +1496,12 @@ if ($DamageCardPreviewExtended -and -not $DamageCardPreviewOnly) { throw 'Extend
 if ($DamageCardPreviewRandom -and (-not $DamageCardPreviewOnly -or $DamageCardPreviewExtended)) { throw 'Random damage hovers require DamageCardPreviewOnly and cannot combine with Extended.' }
 if ($DamageCardPreviewCompositions -and (-not $DamageCardPreviewOnly -or $DamageCardPreviewExtended -or $DamageCardPreviewRandom)) { throw 'Damage compositions require DamageCardPreviewOnly and cannot combine with Extended or Random.' }
 if ($DamageCardPreviewBoundaries -and (-not $DamageCardPreviewOnly -or $DamageCardPreviewExtended -or $DamageCardPreviewRandom -or $DamageCardPreviewCompositions)) { throw 'Damage composition boundaries require DamageCardPreviewOnly and no other damage-hover modifier.' }
+if ($DamageCardPreviewHealing -and (-not $DamageCardPreviewOnly -or $DamageCardPreviewExtended -or $DamageCardPreviewRandom -or $DamageCardPreviewCompositions -or $DamageCardPreviewBoundaries)) { throw 'Healing/damage compositions require DamageCardPreviewOnly and no other damage-hover modifier.' }
 if ($PSBoundParameters.ContainsKey('MaximumHealthLethalPreviewTeam') -and -not ($MaximumHealthLethalPreviewOnly -or $DamageCardPreviewOnly)) {
     throw 'A card-hover target team requires MaximumHealthLethalPreviewOnly or DamageCardPreviewOnly.'
 }
 if ($MaximumHealthLethalPreviewOnly -or $DamageCardPreviewOnly -or $HalfHealthLifecycleOnly -or $HalfHealthMaximumOnly -or $HalfHealthUpgradeOnly -or $HalfHealthUpgradeEffectsOnly -or $DamageReactionsOnly -or $DamageReactionRevivalOnly -or $DamageReactionFinalDeathOnly) {
-    $lifecycleArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'MaximumHealthLethalPreviewOnly', 'DamageCardPreviewOnly', 'DamageCardPreviewExtended', 'DamageCardPreviewRandom', 'DamageCardPreviewCompositions', 'DamageCardPreviewBoundaries', 'MaximumHealthLethalPreviewTeam', 'HalfHealthLifecycleOnly', 'HalfHealthMaximumOnly', 'HalfHealthUpgradeOnly', 'HalfHealthUpgradeEffectsOnly', 'DamageReactionsOnly', 'DamageReactionRevivalOnly', 'DamageReactionFinalDeathOnly',
+    $lifecycleArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'MaximumHealthLethalPreviewOnly', 'DamageCardPreviewOnly', 'DamageCardPreviewExtended', 'DamageCardPreviewRandom', 'DamageCardPreviewCompositions', 'DamageCardPreviewBoundaries', 'DamageCardPreviewHealing', 'MaximumHealthLethalPreviewTeam', 'HalfHealthLifecycleOnly', 'HalfHealthMaximumOnly', 'HalfHealthUpgradeOnly', 'HalfHealthUpgradeEffectsOnly', 'DamageReactionsOnly', 'DamageReactionRevivalOnly', 'DamageReactionFinalDeathOnly',
         'BinaryCapture', 'CaptureJson', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction',
         'ProgressAction', 'ErrorVariable', 'WarningVariable', 'InformationVariable', 'OutVariable', 'OutBuffer', 'PipelineVariable')
     if (@($MaximumHealthLethalPreviewOnly, $DamageCardPreviewOnly, $HalfHealthLifecycleOnly, $HalfHealthMaximumOnly, $HalfHealthUpgradeOnly, $HalfHealthUpgradeEffectsOnly, $DamageReactionsOnly, $DamageReactionRevivalOnly, $DamageReactionFinalDeathOnly | Where-Object { $_ }).Count -ne 1 -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $lifecycleArguments }).Count) {
@@ -1938,6 +1940,7 @@ $environment = @{
     MT2_PROBE_DIRECT_DAMAGE_CARD_HOVER = $(if ($DamageCardPreviewOnly) { '1' } else { '0' })
     MT2_PROBE_COMPOSITE_DAMAGE_CARD_HOVER = $(if ($DamageCardPreviewExtended) { '1' } else { '0' })
     MT2_PROBE_RANDOM_DAMAGE_CARD_HOVER = $(if ($DamageCardPreviewRandom) { '1' } else { '0' })
+    MT2_PROBE_HEALING_DAMAGE_CARD_HOVER = $(if ($DamageCardPreviewHealing) { '1' } else { '0' })
     MT2_PROBE_DAMAGE_CARD_COMPOSITIONS = $(if ($DamageCardPreviewCompositions) { '1' } else { '0' })
     MT2_PROBE_DAMAGE_CARD_BOUNDARIES = $(if ($DamageCardPreviewBoundaries) { '1' } else { '0' })
     MT2_PROBE_MAXIMUM_HEALTH_LETHAL_PREVIEW_ENEMY = $(if (($MaximumHealthLethalPreviewOnly -or $DamageCardPreviewOnly) -and $MaximumHealthLethalPreviewTeam -eq 'Enemy') { '1' } else { '0' })
@@ -2489,10 +2492,10 @@ Wait-NativeBattleExit -Process $process -Timer $nativeTimer -UnityLog $unityLog 
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
 if ($MaximumHealthLethalPreviewOnly -or $DamageCardPreviewOnly) {
-    $hoverFile = if ($DamageCardPreviewBoundaries) { 'damage-card-preview-boundaries.mt2f' } elseif ($DamageCardPreviewCompositions) { 'damage-card-preview-compositions.mt2f' } elseif ($DamageCardPreviewRandom) { 'damage-card-preview-random.mt2f' } elseif ($DamageCardPreviewExtended) { 'damage-card-preview-extended.mt2f' } elseif ($DamageCardPreviewOnly) { 'damage-card-preview.mt2f' } else { 'maximum-health-lethal-preview.mt2f' }
-    $hoverBoundary = if ($DamageCardPreviewBoundaries) { 'NativeDamageCompositionBoundaryCardHover' } elseif ($DamageCardPreviewCompositions) { 'NativeDamageCompositionCardHover' } elseif ($DamageCardPreviewRandom) { 'NativeRandomDamageCardHover' } elseif ($DamageCardPreviewExtended) { 'NativeCompositeDamageCardHover' } elseif ($DamageCardPreviewOnly) { 'NativeDirectDamageCardHover' } else { 'NativeMaximumHealthLethalCardHover' }
+    $hoverFile = if ($DamageCardPreviewHealing) { 'healing-damage-card-preview.mt2f' } elseif ($DamageCardPreviewBoundaries) { 'damage-card-preview-boundaries.mt2f' } elseif ($DamageCardPreviewCompositions) { 'damage-card-preview-compositions.mt2f' } elseif ($DamageCardPreviewRandom) { 'damage-card-preview-random.mt2f' } elseif ($DamageCardPreviewExtended) { 'damage-card-preview-extended.mt2f' } elseif ($DamageCardPreviewOnly) { 'damage-card-preview.mt2f' } else { 'maximum-health-lethal-preview.mt2f' }
+    $hoverBoundary = if ($DamageCardPreviewHealing) { 'NativeHealingDamageCardHover' } elseif ($DamageCardPreviewBoundaries) { 'NativeDamageCompositionBoundaryCardHover' } elseif ($DamageCardPreviewCompositions) { 'NativeDamageCompositionCardHover' } elseif ($DamageCardPreviewRandom) { 'NativeRandomDamageCardHover' } elseif ($DamageCardPreviewExtended) { 'NativeCompositeDamageCardHover' } elseif ($DamageCardPreviewOnly) { 'NativeDirectDamageCardHover' } else { 'NativeMaximumHealthLethalCardHover' }
     $hoverPass = if ($DamageCardPreviewOnly) { 'DEPTH-PASS Direct-damage card preview component captured' } else { 'DEPTH-PASS Maximum-health lethal card preview component captured' }
-    $hoverCount = if ($DamageCardPreviewBoundaries) { 192 } elseif ($DamageCardPreviewCompositions) { 384 } elseif ($DamageCardPreviewRandom) { 512 } elseif ($DamageCardPreviewExtended) { 96 } elseif ($DamageCardPreviewOnly) { 32 } else { 16 }
+    $hoverCount = if ($DamageCardPreviewHealing) { 640 } elseif ($DamageCardPreviewBoundaries) { 192 } elseif ($DamageCardPreviewCompositions) { 384 } elseif ($DamageCardPreviewRandom) { 512 } elseif ($DamageCardPreviewExtended) { 96 } elseif ($DamageCardPreviewOnly) { 32 } else { 16 }
     $capturePath = Join-Path $profile $hoverFile
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or
         -not (Select-String -LiteralPath $unityLog -Pattern $hoverPass -Quiet) -or

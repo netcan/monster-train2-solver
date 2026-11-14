@@ -3806,6 +3806,7 @@ namespace MonsterTrain2Poju.Probe
         {
             if (next == Stage.Battle && (Environment.GetEnvironmentVariable("MT2_PROBE_RANDOM_DAMAGE_CARD_HOVER") == "1" ||
                     Environment.GetEnvironmentVariable("MT2_PROBE_DAMAGE_CARD_COMPOSITIONS") == "1" ||
+                    Environment.GetEnvironmentVariable("MT2_PROBE_HEALING_DAMAGE_CARD_HOVER") == "1" ||
                     Environment.GetEnvironmentVariable("MT2_PROBE_DAMAGE_CARD_BOUNDARIES") == "1"))
                 seconds = Math.Max(seconds, 300f); // Bounded native card-hover calibration batches.
             // Planning and its independent full-path verification share this
