@@ -219,8 +219,7 @@ namespace MonsterTrain2Poju.Model
                     {
                         bool originalObservedExit = OriginalMushyExit(removed, previousUnit) ||
                             OriginalHellfurnaceExit(removed, previousUnit, inactive.MoonPhase.Value) ||
-                            OriginalInferno(removed) && removed.AffectsHeroes && previousUnit.SpawnerCardId == 0 &&
-                            previousUnit.Team == CombatTeam.Enemy;
+                            OriginalCardlessRoomMoonSync(removed, previousUnit);
                         if (!originalObservedExit && (previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
                             previousUnit is not { AssetKey: "HeavyT3_Basic", BaseAttack: 8, MaxHealth: 325, Size: 2, Triggers.Count: 0 } &&
                             previousUnit is not { AssetKey: "HeavyT3_PyreDamageIfUnblocked", BaseAttack: 5, MaxHealth: 250, Size: 2,
@@ -266,8 +265,7 @@ namespace MonsterTrain2Poju.Model
                         bool originalObservedEntry = inactive.MoonPhase == 1 && OriginalMushyEntry(added, previousUnit) ||
                             inactive.MoonPhase == 2 && OriginalMushyDarkEntry(added, previousUnit) ||
                             OriginalHellfurnaceEntry(added, previousUnit, inactive.MoonPhase.Value) ||
-                            OriginalInferno(added) && added.AffectsHeroes && previousUnit.SpawnerCardId == 0 &&
-                            previousUnit.Team == CombatTeam.Enemy;
+                            OriginalCardlessRoomMoonSync(added, previousUnit);
                         if (!originalObservedEntry && ((inactive.MoonPhase == 1 && previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
                             previousUnit.AssetKey != "HeavyT3_PyreDamageIfUnblocked") ||
                             previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
@@ -353,6 +351,10 @@ namespace MonsterTrain2Poju.Model
                     { Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Self", Statuses: [{ Id: "buff", Stacks: 8, ParamInt: 2 }] } },
                     { Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Self", Statuses: [{ Id: "regen", Stacks: 20, ParamInt: 1 }] } },
                     { Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Self", Statuses: [{ Id: "spell shield", Stacks: 2, ParamInt: 0 }] } }] }] };
+
+        private static bool OriginalCardlessRoomMoonSync(RoomCapacityAttachmentState attachment, CombatUnit unit) =>
+            unit.Team == CombatTeam.Enemy && unit.SpawnerCardId == 0 &&
+            (OriginalMushy(attachment) || OriginalInferno(attachment) && attachment.AffectsHeroes);
 
         private static bool OriginalInferno(RoomCapacityAttachmentState attachment) =>
             attachment is { AssetKey: "InfernoRoom", DataId: "378cea0c-14e9-45fb-9918-fb853bd04a7d", CharacterUpgrades.Count: 1,

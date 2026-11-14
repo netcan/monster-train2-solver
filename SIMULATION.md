@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current curated inventory (2026-11-14): 2,865 binary archives with verified
+Current curated inventory (2026-11-14): 2,866 binary archives with verified
 hashes and registrations. The card evidence index accepts 1,561 battle archives
 and 31,514 native actions; three historical captures with nonzero counters stay
 excluded. All 559 intrinsically playable logbook cards have a definition-matched
@@ -58,6 +58,13 @@ its mask changes 6 to 5 while the original room upgrade is removed; returning
 reapplies the upgrade without changing mask 5. Two independent native captures
 have equal complete roots. Preview, unknown spawner/attachment and moon callback
 paths remain guarded; this is a Bump component, not EndTurn ascension proof.
+
+Original Mushy Room now uses the same cardless, callback-free enemy movement
+rule instead of enemy-name lists. Six original Full/New Bumps cover room upgrade
+application/removal and both stale New entry and stale New exit (mask 6 to 5).
+Two native processes have equal complete roots; all train/context and gameplay
+RNG successors match. Its PostCombat effect and natural EndTurn ascension remain
+separate coverage, as do moon callbacks, spawner traits and previews.
 
 A further 34 original Conduit movement callbacks now match independently in
 complete context, private card trackers, physical points and gameplay RNG.
