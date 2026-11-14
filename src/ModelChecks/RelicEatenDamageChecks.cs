@@ -62,7 +62,7 @@ internal static class RelicEatenDamageChecks
             .Where(row => row.GetProperty("ScenarioAction").GetBoolean()).Select(row => row.GetProperty("Action")
                 .GetProperty("CardInstanceId").GetInt32()).SequenceEqual(cards), "Missing or reordered native OnEaten carrier actions.");
         int positives = 0, behindFront = 0, enemyControls = 0, emptyControls = 0, wrongTriggers = 0;
-        foreach (FixtureValue row in root.GetProperty("RelicEatenDamageTests").EnumerateArray())
+        foreach (FixtureValue row in root.GetProperty("RelicEatenDamageTests").EnumerateArray().Where(IsOwner))
         {
             TrainCombatState before = row.GetProperty("Before").Deserialize<TrainCombatState>()!;
             TrainCombatState actual = row.GetProperty("Actual").Deserialize<TrainCombatState>()!;
@@ -89,14 +89,16 @@ internal static class RelicEatenDamageChecks
             "Missing weakest-behind-front, wrong-trigger, enemy-team or empty/reset native controls.");
         int nonlethal = 0, kills = 0;
         var victimOrder = new List<int>();
-        foreach (FixtureValue row in root.GetProperty("RelicEatenDamageApplications").EnumerateArray())
+        foreach (FixtureValue row in root.GetProperty("RelicEatenDamageApplications").EnumerateArray().Where(IsOwner))
         {
             TrainCombatState before = row.GetProperty("Before").Deserialize<TrainCombatState>()!;
             TrainCombatState actual = row.GetProperty("Actual").Deserialize<TrainCombatState>()!;
             int[] targets = row.GetProperty("Targets").EnumerateArray().Select(item => item.GetInt32()).ToArray();
             Require(row.GetProperty("Completed").GetBoolean() && targets.Length == 1, "OnEaten damage callback incomplete.");
             victimOrder.Add(targets[0]);
-            TrainCombatResult predicted = RelicFriendlyTriggerDamageModel.ApplySelected(before, targets, deferPhysicalRemoval: true);
+            int ownerIndex = before.Context!.Relics!.Select((owner, index) => (owner, index))
+                .Single(item => item.owner.DataId == RelicFriendlyTriggerDamageModel.DataId).index;
+            TrainCombatResult predicted = RelicFriendlyTriggerDamageModel.ApplySelected(before, targets, deferPhysicalRemoval: true, relicIndex: ownerIndex);
             Require(predicted.Supported, "OnEaten damage/death unsupported: " + predicted.UnsupportedReason);
             Equal(predicted.State, actual, "damage/death queue");
             CombatUnit victim = before.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == targets[0]);
@@ -104,13 +106,15 @@ internal static class RelicEatenDamageChecks
             if (after == null || after.Health <= 0) kills++;
             else { Require(victim.Health - after.Health == 5, "OnEaten damage magnitude differs."); nonlethal++; }
             string parent = JsonSerializer.Serialize(before, ModelJson.Options);
-            Parallel.For(0, 16, _ => Equal(RelicFriendlyTriggerDamageModel.ApplySelected(before, targets, deferPhysicalRemoval: true).State, actual, "parallel application"));
+            Parallel.For(0, 16, _ => Equal(RelicFriendlyTriggerDamageModel.ApplySelected(before, targets, deferPhysicalRemoval: true, relicIndex: ownerIndex).State, actual, "parallel application"));
             Require(JsonSerializer.Serialize(before, ModelJson.Options) == parent, "OnEaten damage mutated its parent.");
         }
         Require(victimOrder.SequenceEqual([enemies[1], enemies[1], enemies[0], enemies[0], enemies[0]]) && nonlethal == 3 && kills == 2,
             "Missing exact weakest-target sequence, three nonlethal hits or two kills.");
         Console.WriteLine("ORIGINAL-EATEN-DAMAGE-NATIVE PASS: unchanged owner, five weakest-Hero damage callbacks, three nonlethal hits, two kills, wrong-trigger/enemy/empty/reset controls, full state/queues and immutable parallel branches.");
     }
+    private static bool IsOwner(FixtureValue row) => !row.TryGetProperty("OwnerDataId", out FixtureValue owner) ||
+        owner.GetString() == RelicFriendlyTriggerDamageModel.DataId;
     private static void Equal<T>(T a, T b, string label)
     {
         string predicted = JsonSerializer.Serialize(a, ModelJson.Options), actual = JsonSerializer.Serialize(b, ModelJson.Options);

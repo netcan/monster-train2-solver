@@ -13,6 +13,8 @@ namespace MonsterTrain2Poju.Model
     internal static class RelicFriendlyTriggerDamageModel
     {
         internal const string Effect = "RelicEffectDamageEnemyOnFriendlyTrigger";
+        internal const string PiercingEffect = "RelicEffectDamageEnemyOnFriendlyTriggerPiercing";
+        internal static bool IsEffect(string type) => type == Effect || type == PiercingEffect;
         internal const string DataId = "38990528-6639-4cb2-b310-4e14193256a0";
         internal const string AssetKey = "DamageOnEaten";
         internal const string BurnoutDataId = "cb54fe76-9b3c-47f9-972c-424ec3ee39f7";
@@ -20,15 +22,16 @@ namespace MonsterTrain2Poju.Model
         internal const string PunishDataId = "5253721f-c51c-4148-9958-d45550f08316";
         internal const string PunishAssetKey = "DamageFriendlyOnSpawn";
         // DamageHelper checks the shared runtime effect class against balance
-        // data. The 2.2.1 captures pierce; the 2.3.1 class consumes armor. Its
-        // damage-statistics snapshot identifies that native ruleset.
-        internal static bool IsPiercing(CombatContext? context) => context?.Statistics?.MonsterDamage == null;
+        // data for the source owner. The 2.2.1 base class pierces; 2.3.1 needs
+        // the explicit subclass. Damage statistics identify the native ruleset.
+        internal static bool IsPiercing(CombatContext? context, CombatRelicState owner) =>
+            context?.Statistics?.MonsterDamage == null || owner.EffectTypes.Contains(PiercingEffect);
 
         internal static string? Validate(CombatRelicState owner, RelicResourceEffect effect)
         {
             RelicUnitResourceRule? trigger = effect.UnitTrigger;
             bool eaten = owner.DataId == DataId && owner.AssetKey == AssetKey &&
-                owner.EffectTypes.SequenceEqual(new[] { Effect }, StringComparer.Ordinal) && effect.EffectIndex == 0 &&
+                IsEffect(effect.Type) && owner.EffectTypes.SequenceEqual(new[] { effect.Type }, StringComparer.Ordinal) && effect.EffectIndex == 0 &&
                 trigger?.Trigger == "OnEaten" && trigger.RequiredStatuses.Count == 0 && effect.UnitDamage?.TargetMode == "Weakest";
             bool burnout = owner.DataId == BurnoutDataId && owner.AssetKey == BurnoutAssetKey &&
                 owner.EffectTypes.SequenceEqual(new[] { Effect, Effect }, StringComparer.Ordinal) &&
@@ -51,10 +54,10 @@ namespace MonsterTrain2Poju.Model
             string? error = RelicModel.Validate(source.Context);
             if (error != null) return new(null, error: error);
             CombatRelicState? owner = source.Context?.Relics?.ElementAtOrDefault(relicIndex);
-            RelicResourceEffect? effect = owner?.ResourceEffects?.SingleOrDefault(rule => rule.Type == Effect && rule.EffectIndex == effectIndex);
+            RelicResourceEffect? effect = owner?.ResourceEffects?.SingleOrDefault(rule => IsEffect(rule.Type) && rule.EffectIndex == effectIndex);
             if (effect == null) return new(null, error: "Missing friendly-trigger damage owner/effect.");
-            if (owner!.DataId == PunishDataId && source.Context?.Statistics?.MonsterDamage == null)
-                return new(null, error: "Punish retaliation requires the game 2.3.1 damage lifecycle snapshot.");
+            if ((owner!.DataId == PunishDataId || effect.Type == PiercingEffect) && source.Context?.Statistics?.MonsterDamage == null)
+                return new(null, error: "Versioned friendly-trigger damage requires the game 2.3.1 damage lifecycle snapshot.");
             RelicUnitResourceRule rule = effect.UnitTrigger!;
             if (trigger != rule.Trigger || actor.Team != CombatTeam.Player || actor.IsPyre ||
                 rule.RequiredStatuses.Any(status => !(actor.Status(status)?.Stacks > 0)) ||
@@ -68,15 +71,20 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static TrainCombatResult ApplySelected(TrainCombatState source, IReadOnlyList<int> targets,
-            bool deferPhysicalRemoval = false)
+            bool deferPhysicalRemoval = false, int relicIndex = -1)
         {
+            CombatRelicState[] owners = source.Context?.Relics?.Where(candidate => candidate.EffectTypes.Any(IsEffect)).ToArray() ?? Array.Empty<CombatRelicState>();
+            CombatRelicState? owner = relicIndex >= 0 ? source.Context?.Relics?.ElementAtOrDefault(relicIndex) :
+                owners.Length == 1 ? owners[0] : null;
+            if (owner == null || !owner.EffectTypes.Any(IsEffect))
+                return new TrainCombatResult(null, RoomOutcome.Unsupported, Array.Empty<RoomCombatResult>(), "Friendly-trigger damage requires its original owner index.");
             TrainCombatState state = source;
             var rooms = new List<RoomCombatResult>();
             RoomOutcome outcome = RoomOutcome.Exchanged;
             foreach (int target in targets)
             {
                 TrainCombatResult damaged = RelicCardPlayDamageModel.ApplySelected(state, new[] { target },
-                    deferPhysicalRemoval, damageAmount: 5, selectTargetRoom: false, piercing: IsPiercing(state.Context));
+                    deferPhysicalRemoval, damageAmount: 5, selectTargetRoom: false, piercing: IsPiercing(state.Context, owner));
                 if (!damaged.Supported) return damaged;
                 state = damaged.State!; rooms.AddRange(damaged.RoomResults);
                 if (damaged.Outcome != RoomOutcome.Exchanged) outcome = damaged.Outcome;

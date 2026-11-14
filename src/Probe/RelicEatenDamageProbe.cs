@@ -12,6 +12,7 @@ namespace MonsterTrain2Poju.Probe
     {
         internal sealed class TestRecord
         {
+            public string OwnerDataId { get; set; } = "";
             public CombatUnit Actor { get; set; } = null!;
             public string Trigger { get; set; } = "";
             public int EffectIndex { get; set; }
@@ -29,6 +30,7 @@ namespace MonsterTrain2Poju.Probe
         }
         internal sealed class ApplicationRecord
         {
+            public string OwnerDataId { get; set; } = "";
             public int EffectIndex { get; set; }
             public int[] Targets { get; set; } = Array.Empty<int>();
             public TrainCombatState Before { get; set; } = null!;
@@ -41,6 +43,17 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static readonly List<TestRecord> Tests = new List<TestRecord>();
         internal static readonly List<ApplicationRecord> Applications = new List<ApplicationRecord>();
+        internal static object RuleEvidence
+        {
+            get
+            {
+                var managers = AllGameManagers.Instance!;
+                return new { PiercingEffectTypes = managers.GetAllGameData().GetBalanceData().GetRelicEffectStateNamesThatDoPiercingDamage().ToArray(),
+                    Owners = managers.GetSaveManager().GetCollectedRelics().Where(owner => owner.GetEffects().Any(effect => effect is RelicEffectDamageEnemyOnFriendlyTrigger))
+                        .Select(owner => new { DataId = owner.GetRelicDataID(), RuntimeEffectTypes = owner.GetEffects().Select(effect => effect.GetType().Name).ToArray(),
+                            NativePiercing = DamageHelper.IsPiercingDamage(null, owner, managers.GetCoreManagers()) }).ToArray() };
+            }
+        }
         private static bool Active => (OriginalEatenDamageScenario.Prepared || OriginalBurnoutDamageScenario.Prepared ||
             DamageReactionBattleScenario.Prepared) && FullBattleTrace.Active != null &&
             !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
@@ -55,7 +68,7 @@ namespace MonsterTrain2Poju.Probe
                 CharacterTriggerRelicEffectParams relicEffectParams, out TestRecord? __state)
             {
                 __state = null; if (!Active) return;
-                var row = new TestRecord(); __state = row; Tests.Add(row);
+                var row = new TestRecord { OwnerDataId = __instance.SourceRelicState.GetRelicDataID() }; __state = row; Tests.Add(row);
                 try
                 {
                     FullBattleTrace trace = FullBattleTrace.Active!;
@@ -97,12 +110,14 @@ namespace MonsterTrain2Poju.Probe
         }
         private static IEnumerator Observe(IEnumerator native, RelicEffectDamageEnemyOnFriendlyTrigger effect)
         {
-            var row = new ApplicationRecord(); Applications.Add(row);
+            var row = new ApplicationRecord { OwnerDataId = effect.SourceRelicState.GetRelicDataID() }; Applications.Add(row);
             try
             {
                 row.EffectIndex = effect.SourceRelicState.GetEffects().FindIndex(item => ReferenceEquals(item, effect));
                 row.Targets = Targets(effect); row.Before = FullBattleTrace.Active!.CaptureTrain();
-                TrainCombatResult predicted = RelicFriendlyTriggerDamageModel.ApplySelected(row.Before, row.Targets, deferPhysicalRemoval: true);
+                int owner = row.Before.Context!.Relics!.Select((item, index) => (item, index))
+                    .Single(item => item.item.DataId == effect.SourceRelicState.GetRelicDataID()).index;
+                TrainCombatResult predicted = RelicFriendlyTriggerDamageModel.ApplySelected(row.Before, row.Targets, deferPhysicalRemoval: true, relicIndex: owner);
                 row.Predicted = predicted.State; row.UnsupportedReason = predicted.UnsupportedReason;
             }
             catch (Exception error) { row.Error = error.ToString(); FullBattleTrace.Active!.CaptureFailure(error); }

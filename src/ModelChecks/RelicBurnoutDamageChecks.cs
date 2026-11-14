@@ -68,7 +68,7 @@ internal static class RelicBurnoutDamageChecks
             row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() == (index < 2 ? 0 : 1)).All(match => match),
             "Death witnesses must complete on turn one before natural burnout.");
         int death = 0, burnout = 0, wrongTrigger = 0, wrongTeam = 0, noStatus = 0, zeroStackDeath = 0;
-        foreach (FixtureValue row in root.GetProperty("RelicBurnoutDamageTests").EnumerateArray())
+        foreach (FixtureValue row in root.GetProperty("RelicBurnoutDamageTests").EnumerateArray().Where(IsOwner))
         {
             TrainCombatState before = row.GetProperty("Before").Deserialize<TrainCombatState>()!;
             TrainCombatState actual = row.GetProperty("Actual").Deserialize<TrainCombatState>()!;
@@ -98,14 +98,16 @@ internal static class RelicBurnoutDamageChecks
         Require(death == 1 && burnout == 1 && wrongTrigger > 0 && wrongTeam > 0 && noStatus > 0 && zeroStackDeath > 0,
             "Missing positive callbacks, team/trigger/status controls or no double damage after burnout.");
         int applications = 0, hits = 0, kills = 0;
-        foreach (FixtureValue row in root.GetProperty("RelicBurnoutDamageApplications").EnumerateArray())
+        foreach (FixtureValue row in root.GetProperty("RelicBurnoutDamageApplications").EnumerateArray().Where(IsOwner))
         {
             TrainCombatState before = row.GetProperty("Before").Deserialize<TrainCombatState>()!;
             TrainCombatState actual = row.GetProperty("Actual").Deserialize<TrainCombatState>()!;
             int[] targets = row.GetProperty("Targets").EnumerateArray().Select(item => item.GetInt32()).ToArray();
             Require(row.GetProperty("Completed").GetBoolean() && row.GetProperty("EffectIndex").GetInt32() == applications &&
                 targets.SequenceEqual(applications == 0 ? enemies : enemies.Take(2)), "Missing exact ordered whole-room applications.");
-            TrainCombatResult predicted = RelicFriendlyTriggerDamageModel.ApplySelected(before, targets, deferPhysicalRemoval: true);
+            int ownerIndex = before.Context!.Relics!.Select((owner, index) => (owner, index))
+                .Single(item => item.owner.DataId == RelicFriendlyTriggerDamageModel.BurnoutDataId).index;
+            TrainCombatResult predicted = RelicFriendlyTriggerDamageModel.ApplySelected(before, targets, deferPhysicalRemoval: true, relicIndex: ownerIndex);
             Require(predicted.Supported, "Room damage/death queue unsupported: " + predicted.UnsupportedReason);
             Equal(predicted.State, actual, "damage/death queue");
             foreach (int target in targets)
@@ -113,16 +115,23 @@ internal static class RelicBurnoutDamageChecks
                 CombatUnit victim = before.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == target);
                 CombatUnit? after = actual.Rooms.SelectMany(room => room.Units).SingleOrDefault(unit => unit.Id == target);
                 if (after == null || after.Health <= 0) kills++;
-                else { Require(victim.Health - after.Health == 5, "Whole-room damage is not five."); hits++; }
+                else
+                {
+                    int absorbed = RelicFriendlyTriggerDamageModel.IsPiercing(before.Context, before.Context.Relics[ownerIndex])
+                        ? 0 : Math.Min(5, victim.Status("armor")?.Stacks ?? 0);
+                    Require(victim.Health - after.Health == 5 - absorbed, "Whole-room damage/armor differs."); hits++;
+                }
             }
             string parent = JsonSerializer.Serialize(before, ModelJson.Options);
-            Parallel.For(0, 16, _ => Equal(RelicFriendlyTriggerDamageModel.ApplySelected(before, targets, true).State, actual, "parallel damage"));
+            Parallel.For(0, 16, _ => Equal(RelicFriendlyTriggerDamageModel.ApplySelected(before, targets, true, ownerIndex).State, actual, "parallel damage"));
             Require(JsonSerializer.Serialize(before, ModelJson.Options) == parent, "Damage branch mutated its parent.");
             applications++;
         }
         Require(applications == 2 && hits == 3 && kills == 2, "Missing three nonlethal hits and two kills across the death/burnout callbacks.");
         Console.WriteLine("ORIGINAL-BURNOUT-DAMAGE-NATIVE PASS: unchanged ordered owner, Ephemeral death and natural zero-stack burnout, complete room targets, three nonlethal hits/two kills, status/team/trigger controls, no duplicate death damage and immutable parallel replay.");
     }
+    private static bool IsOwner(FixtureValue row) => !row.TryGetProperty("OwnerDataId", out FixtureValue owner) ||
+        owner.GetString() == RelicFriendlyTriggerDamageModel.BurnoutDataId;
     private static void Equal<T>(T predicted, T actual, string label)
     {
         string a = JsonSerializer.Serialize(predicted, ModelJson.Options), b = JsonSerializer.Serialize(actual, ModelJson.Options);

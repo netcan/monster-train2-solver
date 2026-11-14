@@ -26,7 +26,8 @@ namespace MonsterTrain2Poju.Probe
         internal static int[] EnemyUnitIds { get; private set; } = Array.Empty<int>();
         internal static object Evidence => new { OwnerId = RelicFriendlyTriggerDamageModel.BurnoutDataId,
             AssetKey = RelicFriendlyTriggerDamageModel.BurnoutAssetKey, CarrierId, ControlId, KillId, CardIds,
-            EnemyUnitIds, InitialEnemyHealth = new[] { 12, 6, 4 }, Damage = 5 };
+            EnemyUnitIds, InitialEnemyHealth = new[] { 12, 6, 4 }, InitialEnemyArmor = ConditionalActivationProbe.HasVanguard ? new[] { 3, 0, 0 } : new[] { 0, 0, 0 },
+            DeploymentRooms = ConditionalActivationProbe.HasVanguard ? new[] { 2, 2 } : new[] { 0, 2 }, Damage = 5 };
 
         internal static void AcquireBeforeBattle(AllGameManagers managers, ManualLogSource log)
         {
@@ -43,7 +44,10 @@ namespace MonsterTrain2Poju.Probe
             Set(steward.GetSpawnCharacterData()!, "size", 1); Set(steward, "cost", 0);
             save.GetDeckState().Clear();
             for (int i = 0; i < 2; i++) save.AddCardToDeck(steward, applyExistingRelicModifiers: false, showAnimation: false, notifyDeckCount: false);
-            save.AddRelic(relic); Acquired = true;
+            save.AddRelic(relic);
+            if (ConditionalActivationProbe.HasVanguard)
+                save.AddRelic(data.GetAllCollectableRelicData().Single(item => item.GetID() == RelicFriendlyTriggerDamageModel.DataId));
+            Acquired = true;
             log.LogInfo("ORIGINAL-BURNOUT-DAMAGE-ACQUIRED unchanged ordered OnDeath/Ephemeral and OnBurnout room-damage effects.");
         }
 
@@ -97,7 +101,8 @@ namespace MonsterTrain2Poju.Probe
                     CharacterData enemy = UnityEngine.Object.Instantiate(ordinary); enemy.name = "PojuBurnoutDamageEnemy" + index;
                     Set(enemy, "id", "fc119000-0000-4000-8000-00000000060" + (4 + index++));
                     Set(enemy, "health", health); Set(enemy, "attackDamage", 0); Set(enemy, "triggers", new List<CharacterTriggerData>());
-                    Set(enemy, "startingStatusEffects", Array.Empty<StatusEffectStackData>()); Set(enemy, "unitAbility", null!);
+                    Set(enemy, "startingStatusEffects", ConditionalActivationProbe.HasVanguard && index == 1 ? new[] {
+                        new StatusEffectStackData { statusId = "armor", count = 3 } } : Array.Empty<StatusEffectStackData>()); Set(enemy, "unitAbility", null!);
                     ((List<CharacterData>)AccessTools.Field(typeof(AllGameData), "characterDatas").GetValue(data)).Add(enemy);
                     yield return managers.GetHeroManager()!.SpawnHeroInRoom(enemy, 1, null!);
                 }
@@ -147,7 +152,9 @@ namespace MonsterTrain2Poju.Probe
         {
             if (step < CardIds.Length)
             {
-                int room = step == 0 ? 0 : step == 1 ? 2 : 1;
+                // Keep the versioned control fight short after both sacrificial
+                // carriers are gone; the unchanged relic witnesses use room 1.
+                int room = step < 2 && ConditionalActivationProbe.HasVanguard ? 2 : step == 0 ? 0 : step == 1 ? 2 : 1;
                 PlayCardAction? witness = BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(play =>
                     play.CardInstanceId == CardIds[step] && play.RoomIndex == room && (step < 5 ||
                         source.Spawn.Train.Rooms.Single(floor => floor.RoomIndex == room).Units.Any(unit => unit.Id == play.TargetUnitId &&

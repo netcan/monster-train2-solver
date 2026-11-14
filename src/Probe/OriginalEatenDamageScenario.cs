@@ -25,7 +25,8 @@ namespace MonsterTrain2Poju.Probe
         internal static int[] EnemyUnitIds { get; private set; } = Array.Empty<int>();
         internal static object Evidence => new { OwnerId = RelicFriendlyTriggerDamageModel.DataId,
             AssetKey = RelicFriendlyTriggerDamageModel.AssetKey, SpellId, EnemyId, CardIds, EnemyUnitIds,
-            InitialEnemyHealth = new[] { 12, 6 }, Damage = 5, PositiveSpells = 5, ControlRoom = 2 };
+            InitialEnemyHealth = new[] { 12, 6 }, InitialEnemyArmor = ConditionalActivationProbe.HasVanguard ? new[] { 7, 7 } : new[] { 0, 0 },
+            Damage = 5, PositiveSpells = 5, ControlRoom = 2 };
 
         internal static void AcquireBeforeBattle(AllGameManagers managers, ManualLogSource log)
         {
@@ -44,6 +45,8 @@ namespace MonsterTrain2Poju.Probe
             for (int i = 0; i < 2; i++)
                 save.AddCardToDeck(steward, applyExistingRelicModifiers: false, showAnimation: false, notifyDeckCount: false);
             save.AddRelic(relic);
+            if (ConditionalActivationProbe.HasVanguard)
+                save.AddRelic(data.GetAllCollectableRelicData().Single(item => item.GetID() == RelicFriendlyTriggerDamageModel.BurnoutDataId));
             Acquired = true;
             log.LogInfo("ORIGINAL-EATEN-DAMAGE-ACQUIRED unchanged Monsters OnEaten/weakest Hero/5 damage owner; isolated two-Steward deck.");
         }
@@ -98,7 +101,8 @@ namespace MonsterTrain2Poju.Probe
             enemy.name = "PojuEatenDamageEnemy";
             Set(enemy, "id", EnemyId); Set(enemy, "health", 12); Set(enemy, "attackDamage", 0);
             Set(enemy, "triggers", new List<CharacterTriggerData>());
-            Set(enemy, "startingStatusEffects", Array.Empty<StatusEffectStackData>()); Set(enemy, "unitAbility", null!);
+            Set(enemy, "startingStatusEffects", ConditionalActivationProbe.HasVanguard ? new[] {
+                new StatusEffectStackData { statusId = "armor", count = 7 } } : Array.Empty<StatusEffectStackData>()); Set(enemy, "unitAbility", null!);
             ((List<CharacterData>)AccessTools.Field(typeof(AllGameData), "characterDatas").GetValue(data)).Add(enemy);
             bool previewUpdates = CombatPreviewControl.Save(combat);
             CombatPreviewControl.Set(combat, true);
@@ -173,7 +177,8 @@ namespace MonsterTrain2Poju.Probe
         {
             RelicEffectData effect = relic.GetEffects().Single();
             if (relic.name != RelicFriendlyTriggerDamageModel.AssetKey || relic.DisallowInDeploymentPhase ||
-                effect.GetEffectClassName() != RelicFriendlyTriggerDamageModel.Effect || effect.GetParamInt() != 5 ||
+                effect.GetEffectClassName() != (ConditionalActivationProbe.HasVanguard ? RelicFriendlyTriggerDamageModel.PiercingEffect :
+                    RelicFriendlyTriggerDamageModel.Effect) || effect.GetParamInt() != 5 ||
                 effect.GetParamInt2() != 0 || effect.GetParamTrigger() != CharacterTriggerData.Trigger.OnEaten ||
                 effect.GetParamSourceTeam() != Team.Type.Monsters || effect.GetTargetMode() != TargetMode.Weakest ||
                 effect.GetTraits().Count != 0 || effect.GetEffectConditions().Count != 0)

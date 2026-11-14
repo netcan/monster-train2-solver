@@ -5,10 +5,11 @@ using MonsterTrain2Poju.Model;
 internal static class RecordedBattleChecks
 {
     // Each child starts from the previous modeled result, never the next native snapshot.
-    internal static void Native(FixtureValue root)
+    internal static void Native(FixtureValue root, int firstTurn = 0)
     {
-        var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
-        var turns = root.GetProperty("Turns").EnumerateArray().ToArray();
+        var actions = root.GetProperty("Actions").EnumerateArray().Where(InScope).ToArray();
+        var turns = root.GetProperty("Turns").EnumerateArray().Where(InScope).ToArray();
+        bool InScope(FixtureValue row) => row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() >= firstTurn;
         Require(actions.Length > 0 || turns.Length > 0, "Recorded battle contains no actions or EndTurns.");
         BattleTurnState initial = (actions.Length > 0 ? actions[0] : turns[0])
             .GetProperty("Before").Deserialize<BattleTurnState>()!;
@@ -44,7 +45,7 @@ internal static class RecordedBattleChecks
         }
         Replay(); Parallel.For(0, 16, _ => Replay());
         Require(parent == JsonSerializer.Serialize(initial, ModelJson.Options), "Recorded full chain mutated its parent.");
-        Console.WriteLine($"RECORDED-BATTLE-CHAIN PASS: {actions.Length} plays, {turns.Length} EndTurns, full native decision comparisons and 16 independent immutable branches.");
+        Console.WriteLine($"RECORDED-BATTLE-CHAIN PASS: {actions.Length} plays, {turns.Length} EndTurns, first turn {firstTurn}, full native decision comparisons and 16 independent immutable branches.");
     }
     private static bool Terminal(RoomOutcome outcome) => outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
     private static void Compare(BattleTurnState predicted, BattleTurnState actual, bool terminal, string label)

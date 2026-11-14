@@ -521,7 +521,7 @@ Bloodshed/OnHit/Punish/重生/死亡奖励分别为 5/10/15/20/25 金币，回�
 模型据已捕获的新版伤害统计标识选择新版规则，旧 2.2.1 归档继续采用原穿甲规则，
 也保留公共的全伤害穿甲修正。新版目录中 `DamageOnEaten` 已改用名单内的
 `RelicEffectDamageEnemyOnFriendlyTriggerPiercing` 派生效果，`DamageOnBurnoutDeath`
-仍用普通效果；它们需各自重新验收，旧归档通过不等于已获新版整局证据。
+仍用普通效果；两件旧遗物的新版验证见下节，旧归档不单独作为新版证据。
 
 在实际与预演中另直接捕获原版反击的目标前后状态，共六次实际、32 次预演，
 分别要求观察到护甲消耗和生命伤害；目标已含燃胶的伤害增加也在核对范围。
@@ -546,11 +546,62 @@ Probe、ModelChecks、Advisor 构建及 PowerShell 解析通过。
 来源 `.probe-runs/full-battle-units-spells-and-junk-20261114-170013-316a5a79`，
 原生 336.50 秒，四类失败计数均零、退出码零、`DEPTH-PASS` 及玩家文件未变检查通过。
 
+## 两件旧遗物的来源穿甲与同场对照
+
+`DamageOnEaten` 的新版派生类直接继承普通类的触发逻辑。模型复用原有目标选择、
+队列及死亡结算，按伤害来源遗物的运行时效果类判定穿甲；不能因玩家持有另一件
+穿甲遗物就让所有遗物伤害穿甲。两份隔离场景都实际取得这两件原版遗物，
+不修改遗物定义；原生平衡表、每件遗物的实际运行时类型以及
+`DamageHelper.IsPiercingDamage` 的逐来源查询结果随录制保存。
+
+吞噬场景给两个 12/6 生命的控制敌人各加 7 护甲。五次最弱敌人伤害保留护甲，
+三次非致命伤害各扣 5 生命，两次击杀；包含后排最弱目标、敌方来源、空房、
+错误触发器与击杀后的目标缓存重置。10 次出牌、6 次 EndTurn、51 个房间及
+11 个列车阶段匹配，布置后连续复放为 8 次出牌、5 次 EndTurn。
+
+燃尽场景保留三个 12/6/4 生命敌人与两次原生效果：仍有 Ephemeral 的死亡、
+自然减至零层后的燃尽。第一个敌人带 3 护甲，普通伤害先将其变为 10 生命/零护甲，
+第二次变为 5 生命；即使同时持有吞噬穿甲遗物也如此。两次应用共三次非致命伤害、
+两次击杀，另核对错误触发器、敌方来源、无燃尽状态、零层死亡及无重复伤害。
+两名部署守卫集中在第三层以缩短后续战斗，伤害对照在第二层完成。
+最终 7 次出牌、7 次 EndTurn、
+51 个房间及 13 个列车阶段匹配，布置后连续复放为 5 次出牌、6 次 EndTurn。
+
+两份检查都核对共存遗物的全部原生 Test 及完整状态，要求只有对应来源实际造成伤害；
+无来源下标的歧义调用被拒绝，显式来源的 16 路并行应用保持父状态不变。
+穿甲派生类缺失新版统计标识的输入仍拒绝。房间、列车及布置后的完整后继/RNG
+独立复放通过，各有 16 路连续并行分支；旧 2.2.1 两件遗物的原生归档与纯控制、
+新版 Punish 普通伤害遗物的整局回归也通过。
+
+这两种控制场景在部署结束后才注入敌人和控制牌，连续复放明确从正式第一回合的
+首个输入开始；两个部署输入及部署 EndTurn 另由原生分项比对，不能把中间的
+场景布置当成模型自行推进。它们是两件旧遗物的新版证据，新增遗物进度仍为 2/12，
+也不代表新版 614 张卡和 236 件遗物已经全量重验。
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Game231FriendlyTriggerDamage.ps1
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -OriginalEatenDamageRelic -GameSpeed Instant -SkipBuild
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -OriginalBurnoutDamageRelic -GameSpeed Instant -SkipBuild
+```
+
+两份二进制录制保存在 `mechanics/friendly-trigger-damage/`，清单固定大小与 SHA256。
+
+| 录制 | 字节数 | SHA256 |
+| --- | ---: | --- |
+| `eaten.mt2f` | 45,138 | `ea36667aff4096d5acad7299045463344474f7121d3c75ad8fd11ba8379ca2f1` |
+| `burnout.mt2f` | 46,960 | `58fe7773f8863d65993157cee407967979f17d232b90bca30cf093b5bec6d00c` |
+
+来源分别为 `.probe-runs/full-battle-units-and-junk-20261114-173223-61f145a0`
+与 `.probe-runs/full-battle-units-and-junk-20261114-174554-442ff3dc`，
+原生耗时 285.96/390.54 秒。两份均原生胜利、四类计数及遗物专项四类计数为零，
+退出码零、`DEPTH-PASS` 与玩家文件未变检查通过。
+
 ## 可复验样本
 
-[版本化样本目录](../tests/compatibility/game-2.3.1/) 保存八份二进制归档：
+[版本化样本目录](../tests/compatibility/game-2.3.1/) 的基础清单包含八份二进制归档：
 每版各一份卡牌目录、遗物目录、原生规则目录和完整基础战斗，合计约 550 KiB。
-`manifest.tsv` 固定字节数及 SHA256；它们独立于旧版 2,874 份正式机制回归归档。
+`manifest.tsv` 固定字节数及 SHA256；机制迁移样本另放 `mechanics/`，
+它们均独立于旧版 2,874 份正式机制回归归档。
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Game231Compatibility.ps1

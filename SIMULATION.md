@@ -31,6 +31,18 @@ in 2.3.1; legacy 2.2.1 piercing evidence remains unchanged. Recheck with
 `scripts/Check-Game231DamageReactionBattle.ps1`. Together with `DeathwishAttack`,
 two of the 12 new relic owners have complete native battle acceptance.
 
+The existing `DamageOnEaten` and `DamageOnBurnoutDeath` owners also have paired
+2.3.1 controls with both unchanged relics collected in each native battle.
+Eaten uses the new piercing subclass and preserves seven armor; ordinary
+Burnout/death consumes three armor before health. Native runtime types,
+balance classes and per-source DamageHelper queries distinguish the owners.
+All native room/train phases and continuous replay after authored turn-one
+setup pass, with 16 immutable branches. Deployment inputs are checked
+separately because native authoring occurs between deployment and turn one.
+Recheck with `scripts/Check-Game231FriendlyTriggerDamage.ps1`. Legacy 2.2.1
+captures still pass; these two existing owners do not increase the 2/12 new
+relic count or imply full 614-card/236-relic revalidation.
+
 Half-health Deathwish now also passes a complete authored native battle: two
 paid deployments, three damage/heal controls, natural later turns, Undying and
 removal. All 25 plays, seven EndTurns, 62 room and 14 train phases match; 336

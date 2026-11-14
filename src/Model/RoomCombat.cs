@@ -4432,11 +4432,11 @@ namespace MonsterTrain2Poju.Model
                         foreach (QueuedCharacterTrigger callback in silenced.PendingCallbacks) QueueCallback(callback);
                         continue;
                     }
-                    if (relic.EffectTypes[effectIndex] == RelicFriendlyTriggerDamageModel.Effect ||
+                    if (RelicFriendlyTriggerDamageModel.IsEffect(relic.EffectTypes[effectIndex]) ||
                         relic.EffectTypes[effectIndex] == RelicHealDamageModel.Effect)
                     {
                         bool healDamage = relic.EffectTypes[effectIndex] == RelicHealDamageModel.Effect;
-                        bool piercing = !healDamage && RelicFriendlyTriggerDamageModel.IsPiercing(context);
+                        bool piercing = !healDamage && RelicFriendlyTriggerDamageModel.IsPiercing(context, relic);
                         int damage = healDamage ? paramInt : 5;
                         RoomCombatState frame = CurrentRoom();
                         var train = new TrainCombatState([frame], [], 0, context);
