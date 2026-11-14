@@ -7,6 +7,16 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+The 2.3.1 LifeLink maximum-health card-hover protocol now has 50 native
+`PreviewCardPlay` controls: complete copy/effect/cancel successors, 15 OnCast
+cases, five room sweeps, preserved gameplay RNG and 16 continuous immutable
+branches. Cancellation retains the allocator and shared TFB accumulator.
+A separate mismatched-room control demonstrates real primary HP leakage;
+the model rejects it. Trait/upgrade, active-relic, played-card callback,
+lethal and other hover effects remain guarded. Run
+`scripts/Check-Game231LifeLinkMaximumCardPreview.ps1`; this adds mechanic
+evidence, not original card/relic catalog coverage.
+
 Relentless notification boundaries now use the captured native interval (100).
 Eight isolated native room successors cover preview early exit, Abandon room
 cleanup, repeated Continue callbacks, and zero-damage cycles. Exact pending-choice

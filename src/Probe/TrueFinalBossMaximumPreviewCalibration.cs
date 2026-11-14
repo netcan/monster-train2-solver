@@ -15,7 +15,7 @@ namespace MonsterTrain2Poju.Probe
     // component does not claim a card-hover or full UI battle acceptance.
     internal static class TrueFinalBossMaximumPreviewCalibration
     {
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_PREVIEW") == "1";
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_PREVIEW") == "1" || TrueFinalBossMaximumCardPreviewCalibration.Enabled;
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
         private static IReadOnlyList<CharacterState>? armed;
@@ -32,7 +32,8 @@ namespace MonsterTrain2Poju.Probe
                 (bool)AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(combat) ||
                 combat.IsRunningTriggerQueue || !combat.HaveCardsBeenDrawnForCurrentTurn() ||
                 managers.GetReplayManager().IsCardPlaying() || managers.GetHandUI().AreAnyCardsAnimating() || !CardAnimationSettlement.Ready()) return;
-            started = true; managers.GetSaveManager().StartCoroutine(Protect(Capture(armed)));
+            started = true; managers.GetSaveManager().StartCoroutine(Protect(TrueFinalBossMaximumCardPreviewCalibration.Enabled
+                ? TrueFinalBossMaximumCardPreviewCalibration.Capture(armed) : Capture(armed)));
         }
         private static IEnumerator Protect(IEnumerator root)
         {
@@ -59,6 +60,24 @@ namespace MonsterTrain2Poju.Probe
             foreach (var property in token.Descendants().OfType<JProperty>().Where(property => property.Name == "NextPreviewCopyId"))
                 if (property.Value.Type != JTokenType.Null) property.Value = 0;
             return token;
+        }
+        internal static RoomCombatState Snapshot(IReadOnlyList<CharacterState> actors, IReadOnlyList<CharacterState>? copied, RoomState room)
+        {
+            var trace = FullBattleTrace.Active!; var combat = AllGameManagers.Instance!.GetCombatManager();
+            var state = trace.Capture(room);
+            var links = new LifeLinkContext(actors.Select(actor => new LifeLinkActor(trace.UnitId(actor),
+                actor.GetLinkedCharacterState() == null ? 0 : trace.UnitId(actor.GetLinkedCharacterState()),
+                actor.GetHP(), actor.PreviewHP(), actor.Initialized, actor.HasStatusEffect("lifelink"), true,
+                actor.IsOuterTrainBoss(), AccessTools.Field(typeof(CharacterState), "_previewStateInformation").GetValue(actor) != null)).ToArray(),
+                combat.CombatPreviewState == CharacterState.CombatPreviewState.Calculating, combat.TrueFinalBossBattlePreviewHpChange,
+                copied?.Where(actors.Contains).Select(trace.UnitId).ToArray());
+            var world = state.Context!.Enchantments!;
+            var context = state.Context.WithLifeLinks(links).WithEnchantments(new EnchantmentWorld(world.Rooms,
+                world.Movement, world.EnemySlotsPerRoom, world.RetainedUnits, world.EnchanterIds,
+                world.AllowUpdates, world.Updating, world.Preview, world.TestRng, world.AutomaticLifecycle,
+                copied?.Select(trace.UnitId).ToArray()));
+            return new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions,
+                context, state.Preview, state.ActiveCompanionBossIds);
         }
         private sealed class Input
         {
@@ -103,23 +122,7 @@ namespace MonsterTrain2Poju.Probe
             { if (recording) events.Add(new HealthChangedEvent(trace.UnitId(changed), hp)); });
             object originalTrain = trace.CaptureCanonicalTrain(), originalRng = HalfHealthLifecycleCalibration.Rng();
             List<CharacterState>? copied = null;
-            RoomCombatState Snapshot(CharacterState target)
-            {
-                var state = trace.Capture(target.GetCurrentRoom());
-                var links = new LifeLinkContext(actors.Select(actor => new LifeLinkActor(trace.UnitId(actor),
-                    actor.GetLinkedCharacterState() == null ? 0 : trace.UnitId(actor.GetLinkedCharacterState()),
-                    actor.GetHP(), actor.PreviewHP(), actor.Initialized, actor.HasStatusEffect("lifelink"), true,
-                    actor.IsOuterTrainBoss(), AccessTools.Field(typeof(CharacterState), "_previewStateInformation").GetValue(actor) != null)).ToArray(),
-                    combat.CombatPreviewState == CharacterState.CombatPreviewState.Calculating,
-                    combat.TrueFinalBossBattlePreviewHpChange, copied!.Select(trace.UnitId).ToArray());
-                var world = state.Context!.Enchantments!;
-                var context = state.Context.WithLifeLinks(links).WithEnchantments(new EnchantmentWorld(world.Rooms,
-                    world.Movement, world.EnemySlotsPerRoom, world.RetainedUnits, world.EnchanterIds,
-                    world.AllowUpdates, world.Updating, world.Preview, world.TestRng, world.AutomaticLifecycle,
-                    copied.Select(trace.UnitId).ToArray()));
-                return new RoomCombatState(state.RoomIndex, state.Deployment, state.Units, state.ExternalInteractions,
-                    context, state.Preview, state.ActiveCompanionBossIds);
-            }
+            RoomCombatState SnapshotTarget(CharacterState target) => Snapshot(actors, copied, target.GetCurrentRoom());
             void Temporary(bool enabled) => AccessTools.Method(typeof(CombatManager), "SetTemporaryStateEnabled")
                 .Invoke(combat, new object[] { enabled, copied!, true });
             try
@@ -153,7 +156,7 @@ namespace MonsterTrain2Poju.Probe
                     }
                     foreach (var input in inputs)
                     {
-                        var selected = actors[input.Target]; var before = Snapshot(selected);
+                        var selected = actors[input.Target]; var before = SnapshotTarget(selected);
                         var operationRng = HalfHealthLifecycleCalibration.Rng();
                         bool protection = StatusEffectLifeLinkState.ProtectedByLifeLink(selected, managers.GetHeroManager(), managers.GetMonsterManager(), combat);
                         bool prediction = StatusEffectLifeLinkState.ProtectedByLifeLink(selected, managers.GetHeroManager(), managers.GetMonsterManager(), combat, true);
@@ -170,7 +173,7 @@ namespace MonsterTrain2Poju.Probe
                             throw new InvalidOperationException("Temporary maximum-health control became terminal or queued work: " + input.Label);
                         rows.Add(new { Index = rows.Count, input.Label, TargetId = trace.UnitId(selected), input.Amount, input.Debuff,
                             input.Floor, input.DecreaseHp, input.Heal, Protected = protection, ProtectedForPrediction = prediction,
-                            Before = before, Actual = Snapshot(selected),
+                            Before = before, Actual = SnapshotTarget(selected),
                             Events = events.ToArray(), RngBefore = operationRng, RngAfter = HalfHealthLifecycleCalibration.Rng() });
                     }
                     int counterAtCancel = combat.TrueFinalBossBattlePreviewHpChange;

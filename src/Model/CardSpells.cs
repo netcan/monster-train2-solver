@@ -2194,7 +2194,7 @@ namespace MonsterTrain2Poju.Model
         {
             if (fullTrain)
             {
-                string? error = TrainCombatModel.Validate(source);
+                string? error = TrainCombatModel.Validate(source, linkedHealthOnly: MaximumHealthTemporaryPreview(source.Context, effects));
                 if (error != null) return error;
             }
             RoomCombatState? selected = source.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex);
@@ -2376,9 +2376,13 @@ namespace MonsterTrain2Poju.Model
                 pendingCallbacks: turn.PendingCallbacks, retainedUnits: retained);
         }
 
+        private static bool MaximumHealthTemporaryPreview(CombatContext? context, IReadOnlyList<CardActionEffect> effects) =>
+            context?.LifeLinks?.TemporaryPreviewIds != null && effects.Count > 0 &&
+            effects.All(effect => effect.Type is "BuffHealth" or "DebuffHealth");
+
         private static string? Validate(RoomCombatState source, IReadOnlyList<CardActionEffect> effects, int targetId)
         {
-            string? error = RoomCombatModel.Validate(source);
+            string? error = RoomCombatModel.Validate(source, linkedHealthOnly: MaximumHealthTemporaryPreview(source.Context, effects));
             if (error != null) return error;
             if (source.Context == null || effects.Count == 0) return "A spell requires context and effects.";
             if (RequiresUnitTarget(effects) && !source.Units.Any(unit => unit.Id == targetId)) return "The spell target is missing.";
