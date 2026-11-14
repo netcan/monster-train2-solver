@@ -454,6 +454,7 @@ param(
     [switch] $EnchantmentCombatOnly,
     [switch] $HalfHealthDeathwishOnly,
     [switch] $HalfHealthLifecycleOnly,
+    [switch] $HalfHealthMaximumOnly,
     [switch] $EnchantmentWorld,
     [switch] $HordeStatuses,
     [switch] $HordeMerge,
@@ -1385,12 +1386,12 @@ if ($DamageOverflow) { $BranchCardMasks = $true; $Policy = 'units-spells-and-jun
 if ($BattleRelicUpgrades -or $SpawnStatusRelicsClones -or $OriginalRelicBatch -or $OriginalStingRelicBatch -or $OriginalDeployableRelic) { $BranchCardMasks = $true }
 if ($SpawnStatusRelicsClones) { $SpawnStatusRelics = $true; $UnitClone = $true }
 if ($EnchantmentWorld) { $EnchantmentCombat = $true }
-if ($HalfHealthLifecycleOnly) {
-    $lifecycleArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'HalfHealthLifecycleOnly',
+if ($HalfHealthLifecycleOnly -or $HalfHealthMaximumOnly) {
+    $lifecycleArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'HalfHealthLifecycleOnly', 'HalfHealthMaximumOnly',
         'BinaryCapture', 'CaptureJson', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction',
         'ProgressAction', 'ErrorVariable', 'WarningVariable', 'InformationVariable', 'OutVariable', 'OutBuffer', 'PipelineVariable')
-    if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $lifecycleArguments }).Count) {
-        throw 'HalfHealthLifecycleOnly requires an isolated component run without other scenarios.'
+    if (($HalfHealthLifecycleOnly -and $HalfHealthMaximumOnly) -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $lifecycleArguments }).Count) {
+        throw 'Half-health lifecycle sampling requires one isolated component mode without other scenarios.'
     }
     $Policy = 'steward-once'
 }
@@ -1812,6 +1813,7 @@ $environment = @{
     MT2_PROBE_ENCHANTMENT_COMBAT_ONLY = $(if ($EnchantmentCombatOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_DEATHWISH = $(if ($HalfHealthDeathwishOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_LIFECYCLE = $(if ($HalfHealthLifecycleOnly) { '1' } else { '0' })
+    MT2_PROBE_HALF_HEALTH_MAXIMUM = $(if ($HalfHealthMaximumOnly) { '1' } else { '0' })
     MT2_PROBE_ENCHANTMENT_WORLD = $(if ($EnchantmentWorld) { '1' } else { '0' })
     MT2_PROBE_TRIGGER_REPEATS = $(if ($TriggerRepeats) { '1' } else { '0' })
 }
@@ -2329,18 +2331,22 @@ Wait-NativeBattleExit -Process $process -Timer $nativeTimer -UnityLog $unityLog 
     -TimeoutSeconds $TimeoutSeconds -FailFastOnIsolatedUnitReject:$FailFastOnIsolatedUnitReject
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
-if ($HalfHealthLifecycleOnly) {
-    $lifecyclePath = Join-Path $profile 'half-health-lifecycle.mt2f'
+if ($HalfHealthLifecycleOnly -or $HalfHealthMaximumOnly) {
+    $lifecycleFile = if ($HalfHealthMaximumOnly) { 'half-health-maximum.mt2f' } else { 'half-health-lifecycle.mt2f' }
+    $lifecycleBoundary = if ($HalfHealthMaximumOnly) { 'NativeHalfHealthMaximumHealthLifecycle' } else { 'NativeHalfHealthDamageHealLifecycle' }
+    $lifecyclePass = if ($HalfHealthMaximumOnly) { 'DEPTH-PASS Half-health Deathwish maximum-health lifecycle component captured' } else { 'DEPTH-PASS Half-health Deathwish damage/heal lifecycle component captured' }
+    $lifecycleCount = if ($HalfHealthMaximumOnly) { 23 } else { 13 }
+    $lifecyclePath = Join-Path $profile $lifecycleFile
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $lifecyclePath) -or
-        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Half-health Deathwish damage/heal lifecycle component captured' -Quiet) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern $lifecyclePass -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore) { throw "Half-health lifecycle component failed; inspect $unityLog" }
     Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
     $lifecycleDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($lifecyclePath)
     try {
         $lifecycle = $lifecycleDocument.RootElement
-        if ($lifecycle.GetProperty('Boundary').GetString() -ne 'NativeHalfHealthDamageHealLifecycle' -or
+        if ($lifecycle.GetProperty('Boundary').GetString() -ne $lifecycleBoundary -or
             -not $lifecycle.GetProperty('LiveContextUnchanged').GetBoolean() -or -not $lifecycle.GetProperty('EffectsDrained').GetBoolean() -or
-            $lifecycle.GetProperty('Mismatches').GetInt32() -ne 0 -or $lifecycle.GetProperty('Samples').GetArrayLength() -ne 13) {
+            $lifecycle.GetProperty('Mismatches').GetInt32() -ne 0 -or $lifecycle.GetProperty('Samples').GetArrayLength() -ne $lifecycleCount) {
             throw 'Incomplete half-health damage/heal lifecycle component.'
         }
     } finally { $lifecycleDocument.Dispose() }

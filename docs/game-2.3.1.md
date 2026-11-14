@@ -36,7 +36,8 @@
   新版 Deathwish 则按生命比例不高于 50% 判定，使用 `deathwishSources`。
   采集分别保留两类成员关系；旧版仍读取 `deathWishSources`。新版半血触发
   带显式 `HalfHealth` 标识。半血条件、入队和非致命直接伤害/治疗的回调生命周期
-  已独立校准；最大生命、死亡复活、共享世界和整层调度仍受防护。
+  已独立校准；最大生命另有 23 项 API/队列边界及嵌套效果校准。死亡复活、
+  单位升级中的连续血量步骤、共享世界和整层调度仍受防护。
 - 组件归档的版本号取自运行游戏；目录采集校验本次原生枚举数量和唯一 ID，
   不再把旧版 668 个定义写死在采集器中。旧版固定目录验收仍保留。
 - EndTurn 调用后，原生协程有时尚未推进就暴露旧的 ready 状态；复放器在原有
@@ -167,9 +168,41 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -HalfHealt
 原生约 26 秒，组件差异零、`DEPTH-PASS`、退出码零和玩家文件未变均通过。
 旧版治疗触发、攻击触发及依赖最后攻击者的按血伤害三份房间/列车回归通过。
 
-本次开放直接非预演伤害/治疗 API。致命伤害与复活、最大生命、触发安装/移除、
+本次开放直接非预演伤害/治疗 API，最大生命由下述独立样本验收。致命伤害与复活、触发安装/移除、
 共享光环世界、外部伤害回调队列、原生法术分阶段 API 及整层调度仍受保护；
 尚未获得新增半血卡牌/遗物或整场搜索的完整验收。
+
+## 半血 Deathwish 最大生命生命周期
+
+23 项原生协程同时记录 API 返回时和显式执行队列后的完整状态。增加最大生命
+并回血时，治疗内部会执行半血队列；不回血的增加、无法接受治疗及非致命削减
+最大生命，则先返回待执行的独占回调。九项返回边界保留共 18 份完整队列载荷，
+随后执行效果；检查逐字段核对两个边界的状态、成员关系、回调及来源身份。
+
+矩阵包含回血/不回血、扣减 HP/仅截断、生命下限、99999 上限、零/负参数、
+治疗免疫绕过、治疗倍率、无法接受治疗、OnHeal 先自伤，以及获得/失去回调
+再触发治疗或伤害。新增一项回调内增加最大生命，验证在同一个执行队列中追加
+半血回调，避免另建引擎而越过先前已入队的工作。卡牌效果入口继续保留临时
+召唤牌偏移及 OnHeal 抑制，原生角色 API 则不写该偏移。
+
+23 项 API 返回后继和 23 项队列执行后继独立复放通过，每项另执行 32 路不可变
+并发分支。逐步检查全部游戏逻辑随机流和 Unity RNG 不变；台词/表现的两条流
+保留原始观察，最终与其他随机流、单位、触发器及上下文一起恢复。
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Game231HalfHealthMaximum.ps1
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --unit-health-pure
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -HalfHealthMaximumOnly -GameSpeed Instant -SkipBuild
+```
+
+样本 `mechanics/half-health-deathwish/maximum-health/maximum-health.mt2f` 为 10,795
+字节，其子目录 manifest 固定哈希；来源
+`.probe-runs/full-battle-steward-once-20261114-135128-3642a4cc`。原生约 31 秒，组件
+差异零、`DEPTH-PASS`、退出码零及玩家文件未变均通过。旧版最大生命法术、
+致命削减和触发治疗三份房间/列车回归，以及既有最大生命纯模型检查通过。
+
+本项尚未验收最大生命致死/复活、菌群伤亡组合、单位升级的多段血量修改、
+半血触发安装/移除、预演、共享光环世界或完整战斗搜索。
 
 另一次玩家光环来源互相施加菌群的观察
 `.probe-runs/full-battle-units-and-junk-20261114-123510-0d0945c7`，在最终菌群移除

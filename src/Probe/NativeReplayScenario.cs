@@ -2350,12 +2350,14 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 ChooseDiscardScenario.Prepare(managers, log);
             }
-            if (fullBattle && Environment.GetEnvironmentVariable("MT2_PROBE_HALF_HEALTH_LIFECYCLE") == "1")
+            if (fullBattle && (Environment.GetEnvironmentVariable("MT2_PROBE_HALF_HEALTH_LIFECYCLE") == "1" || HalfHealthLifecycleCalibration.MaximumHealth))
             {
                 if (HalfHealthLifecycleCalibration.Error != null) throw new InvalidOperationException(HalfHealthLifecycleCalibration.Error);
                 if (HalfHealthLifecycleCalibration.Completed)
                 {
-                    Finish(true, "Half-health Deathwish damage/heal lifecycle component captured; death and maximum-health acceptance is separate.");
+                    Finish(true, HalfHealthLifecycleCalibration.MaximumHealth ?
+                        "Half-health Deathwish maximum-health lifecycle component captured; death and shared-world acceptance is separate." :
+                        "Half-health Deathwish damage/heal lifecycle component captured; maximum-health has separate acceptance.");
                     return;
                 }
                 if (!HalfHealthLifecycleCalibration.Started && HalfHealthLifecycleCalibration.Eligible) HalfHealthLifecycleCalibration.Start(log);

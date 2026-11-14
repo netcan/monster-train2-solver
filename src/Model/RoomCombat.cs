@@ -1023,6 +1023,20 @@ namespace MonsterTrain2Poju.Model
             return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre).TraceAllDispatches(captureAllDispatches).CardHeal(targetId, amount);
         }
 
+        internal static RoomCombatResult ApplyMaximumHealthLifecycle(RoomCombatState state, int targetId, int amount, bool debuff,
+            bool heal, bool triggerOnHeal, bool captureAllDispatches, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre) =>
+            new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false, refreshPyre: refreshPyre)
+                .TraceAllDispatches(captureAllDispatches).MaximumHealthLifecycle(targetId, amount, debuff, heal, triggerOnHeal);
+
+        internal static RoomCombatResult DrainCharacterCallbacks(RoomCombatState state, IReadOnlyList<QueuedCharacterTrigger> callbacks,
+            bool captureAllDispatches = false)
+        {
+            string? error = Validate(state, halfHealthLifecycle: true);
+            if (error != null) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error);
+            return new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false)
+                .TraceAllDispatches(captureAllDispatches).DrainCallbacks(callbacks);
+        }
+
         private static RoomCombatResult Run(RoomCombatState state, bool entireRoom,
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, bool updateSelectedRoom = true,
             CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
@@ -1052,7 +1066,7 @@ namespace MonsterTrain2Poju.Model
         internal static string? Validate(RoomCombatState state, int? dyingTargetId = null, bool linkedHealthOnly = false,
             bool halfHealthLifecycle = false)
         {
-            // Only the direct, real damage/heal APIs have a drained-queue oracle.
+            // Direct, real damage/heal/maximum-health APIs have queue-boundary oracles.
             // Preview, shared aura worlds and whole-room scheduling keep their guard.
             halfHealthLifecycle &= !state.Preview && state.Context?.Enchantments == null;
             bool linkedCombat = TrueFinalBossCombatModel.Supports(state);
@@ -2247,6 +2261,29 @@ namespace MonsterTrain2Poju.Model
                 Heal(target, amount, "SpellHeal");
                 return Finish(battleWon ? RoomOutcome.BattleWon : target.Source.IsPyre && !target.Alive
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
+            }
+
+            internal RoomCombatResult MaximumHealthLifecycle(int targetId, int amount, bool debuff, bool heal, bool triggerOnHeal)
+            {
+                WorkingUnit target = units.Single(unit => unit.Source.Id == targetId);
+                if (!debuff && heal) Heal(target, amount, "MaxHealthHeal", fromMaxHealthChange: true, triggerOnHeal: triggerOnHeal);
+                UpdateHalfHealthDeathwish(target, drain: false);
+                QueuedCharacterTrigger[] pending = triggerQueue.Select(queued => new QueuedCharacterTrigger(queued.RoomIndex,
+                    queued.Unit.Freeze(), queued.Kind, canFireTriggers: queued.CanFire, paramInt: queued.ParamInt,
+                    paramInt2: queued.ParamInt2, paramString: queued.ParamString, dyingCharacter: queued.DyingCharacter?.Freeze(),
+                    overrideTarget: queued.OverrideTarget?.Freeze(), triggerCount: queued.TriggerCount,
+                    lastSpawnedOverrideUnitId: queued.LastSpawnedOverrideUnitId, exclusiveTriggerStateId: queued.ExclusiveTriggerStateId,
+                    admission: CharacterTriggerAdmission.Accepted, captureAllDispatches: traceAllDispatches)).ToArray();
+                RoomCombatResult result = Finish(RoomOutcome.Exchanged);
+                return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(), result.UnsupportedReason,
+                    pending, result.RetainedUnits, result.Dispatches);
+            }
+
+            internal RoomCombatResult DrainCallbacks(IReadOnlyList<QueuedCharacterTrigger> callbacks)
+            {
+                foreach (QueuedCharacterTrigger callback in callbacks) QueueCallback(callback);
+                DrainLocalTriggerQueue();
+                return Finish(battleWon ? RoomOutcome.BattleWon : RoomOutcome.Exchanged);
             }
 
             internal RoomCombatResult Spawn(int unitId, bool fromCard, IReadOnlyList<CombatStatus>? startingApplications = null,
@@ -3806,20 +3843,20 @@ namespace MonsterTrain2Poju.Model
                 }
             }
 
-            private void Heal(WorkingUnit unit, int amount, string kind)
+            private void Heal(WorkingUnit unit, int amount, string kind, bool fromMaxHealthChange = false, bool triggerOnHeal = true)
             {
                 if (!unit.Alive || unit.Source.Modifiers?.CanBeHealed == false) return;
-                int modified = HealingModel.ModifiedAmount(amount, unit.Statuses.Values.ToArray());
+                int modified = HealingModel.ModifiedAmount(amount, unit.Statuses.Values.ToArray(), fromMaxHealthChange);
                 if (modified < 0) return;
                 int old = unit.Health;
                 if (!SetHealth(unit, unit.Health + Math.Min(modified, unit.Source.MaxHealth - unit.Health))) return;
                 Emit(kind, unit, unit, unit.Health - old);
                 // Native ApplyHeal runs these even when clipping or immunity produces zero restoration.
-                FireTriggers(unit, "OnHeal", paramInt: unit.Health - old);
+                if (triggerOnHeal) FireTriggers(unit, "OnHeal", paramInt: unit.Health - old);
                 UpdateHalfHealthDeathwish(unit);
             }
 
-            private bool UpdateHalfHealthDeathwish(WorkingUnit unit)
+            private bool UpdateHalfHealthDeathwish(WorkingUnit unit, bool drain = true)
             {
                 if (unsupportedReason != null) return false;
                 if (!unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)) return true;
@@ -3829,7 +3866,7 @@ namespace MonsterTrain2Poju.Model
                 if (!updated.Supported) { unsupportedReason = updated.UnsupportedReason; return false; }
                 unit.Apply(updated.State!.Units.Single());
                 foreach (QueuedCharacterTrigger callback in updated.PendingCallbacks) QueueCallback(callback);
-                if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
+                if (drain && enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
                 return unsupportedReason == null;
             }
 
@@ -5679,6 +5716,23 @@ namespace MonsterTrain2Poju.Model
                         }
                         else
                         {
+                            if (units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)))
+                            {
+                                // A nested maximum-health heal observes this engine's
+                                // running queue. Starting another engine would execute
+                                // gained/lost callbacks ahead of already accepted work.
+                                context = UnitHealthModel.RecordSpawnerBuff(context, target.Freeze(), amount, action.Lifetime,
+                                    source.Preview, out string? spawnerError);
+                                if (spawnerError != null) { unsupportedReason = spawnerError; return false; }
+                                if (amount > 0)
+                                {
+                                    target.Apply(target.Freeze().WithHealthAndMaxHealth(target.Health, Math.Min(99999, checked(target.Source.MaxHealth + amount))));
+                                    Heal(target, amount, "MaxHealthHeal", fromMaxHealthChange: true, triggerOnHeal: false);
+                                    if (!UpdateHalfHealthDeathwish(target, drain: false)) return false;
+                                }
+                                Emit(action.Type, actor, target, amount);
+                                continue;
+                            }
                             RoomCombatState healthRoom = target.RoomIndex == source.RoomIndex ? CurrentRoom() :
                                 new RoomCombatState(target.RoomIndex, source.Deployment,
                                     units.Where(unit => unit.Alive && unit.RoomIndex == target.RoomIndex).Select(unit => unit.Freeze()).ToArray(),

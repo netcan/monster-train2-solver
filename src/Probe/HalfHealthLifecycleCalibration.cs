@@ -16,6 +16,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Started { get; private set; }
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
+        internal static bool MaximumHealth => Environment.GetEnvironmentVariable("MT2_PROBE_HALF_HEALTH_MAXIMUM") == "1";
         private static bool recording;
         private static readonly List<CharacterTriggerDispatch> dispatches = new List<CharacterTriggerDispatch>();
         private static AllGameManagers Managers => AllGameManagers.Instance!;
@@ -68,6 +69,11 @@ namespace MonsterTrain2Poju.Probe
         }
         private static IEnumerator Run(ManualLogSource log)
         {
+            if (MaximumHealth)
+            {
+                HealingScenario.RegisterHealingStatus("heal immunity", "StatusEffectHealImmunityState", 0);
+                HealingScenario.RegisterHealingStatus("heal multiplier", "StatusEffectHealMultiplierState", 2);
+            }
             CharacterState[] actors = Actors(); CharacterState host = Host()!;
             RoomManager rooms = Managers.GetRoomManager();
             TrainCombatState original = Trace.CaptureTrain(); object originalRng = Rng();
@@ -93,7 +99,8 @@ namespace MonsterTrain2Poju.Probe
                     identities[actor] = new Dictionary<CharacterTriggerState, int>();
                 }
                 object clean = AccessTools.Method(StateType, "DeepCopyForPreview").Invoke(Get(host, "_primaryStateInformation"), null);
-                foreach (string label in new[] { "damage-enters-half", "damage-remains-half", "damage-zero-enters-half", "damage-armor-blocked",
+                var maximumCases = MaximumCases().ToDictionary(item => item.Label);
+                foreach (string label in MaximumHealth ? maximumCases.Keys.ToArray() : new[] { "damage-enters-half", "damage-remains-half", "damage-zero-enters-half", "damage-armor-blocked",
                     "heal-leaves-half", "heal-remains-half", "heal-zero-enters-half", "heal-clipped", "heal-zero-leaves-half",
                     "damage-onhit-heals-first", "heal-onheal-damages-first", "gain-callback-heals-and-loses", "lost-callback-damages-and-gains" })
                 {
@@ -101,6 +108,11 @@ namespace MonsterTrain2Poju.Probe
                     var statuses = (Dictionary<string, CharacterState.StatusEffectStack>)Get(Get(host, "_primaryStateInformation"), "statusEffects");
                     foreach (var status in statuses.Values) status.Count = 0;
                     Set(host, "triggers", new List<CharacterTriggerState>()); identities[host] = new Dictionary<CharacterTriggerState, int>();
+                    if (MaximumHealth)
+                    {
+                        yield return MaximumSample(maximumCases[label], statuses);
+                        continue;
+                    }
                     // SetHealth is deliberately raw: stale membership controls prove that
                     // the lifecycle API checks even after zero damage/healing.
                     host.SetHealth(11, 20);
@@ -161,11 +173,67 @@ namespace MonsterTrain2Poju.Probe
             }
             string? restoration = Difference(original, Trace.CaptureTrain()) ?? Difference(originalRng, Rng());
             using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
-                GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId, Boundary = "NativeHalfHealthDamageHealLifecycle",
+                GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId,
+                Boundary = MaximumHealth ? "NativeHalfHealthMaximumHealthLifecycle" : "NativeHalfHealthDamageHealLifecycle",
                 LiveContextUnchanged = restoration == null, RestorationDifference = restoration, EffectsDrained = true,
                 RngBefore = originalRng, RngAfter = Rng(), CosmeticStreams = new[] { "NonDeterministic", "Chatter" }, Mismatches = mismatches, Samples = samples }))
-            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "half-health-lifecycle.mt2f"))) document.Write(output);
+            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                MaximumHealth ? "half-health-maximum.mt2f" : "half-health-lifecycle.mt2f"))) document.Write(output);
             if (restoration != null || mismatches != 0) throw new InvalidOperationException("Half-health lifecycle differs: " + mismatches + "; restoration: " + restoration);
+
+            IEnumerator MaximumSample(MaximumInput input, Dictionary<string, CharacterState.StatusEffectStack> statuses)
+            {
+                host.SetHealth(11, 20);
+                Add("OnHit", 2, null);
+                Add("OnHeal", 3, input.Label == "buff-onheal-damages-first" ? "CardEffectDamage" : null);
+                Add("OnDeathwish", 5, input.Label == "buff-gain-heals-loses" ? "CardEffectHeal" :
+                    input.Label == "buff-gain-adds-maxhealth" ? "CardEffectBuffMaxHealth" : null);
+                Add("OnDeathwishLost", 7, input.Label == "debuff-lost-damages-gains" ? "CardEffectDamage" : null);
+                if (input.Active) { host.SetHealth(10, 20); AccessTools.Method(typeof(CharacterState), "TryUpdateDeathwish").Invoke(host, null); Queue.Clear(); }
+                host.SetHealth(input.Hp, input.MaxHp);
+                Set(Get(host, "_primaryStateInformation"), "canBeHealed", input.CanHeal);
+                if (input.Status != null)
+                {
+                    if (statuses.TryGetValue(input.Status, out var status)) status.Count = 1;
+                    else statuses.Add(input.Status, new CharacterState.StatusEffectStack(Managers.GetStatusEffectManager().Create(input.Status, host), 1));
+                }
+                RoomCombatState before = Trace.Capture(host.GetCurrentRoom()); object rngBefore = Rng();
+                RoomCombatResult predicted = UnitHealthModel.ApplyNative(before, Trace.UnitId(host), input.Amount, input.Debuff,
+                    input.Heal, input.TriggerOnHeal, input.Floor, input.DecreaseHp, captureAllDispatches: true);
+                dispatches.Clear(); recording = true;
+                RoomCombatState apiActual; object rngAfterApi; CharacterTriggerDispatch[] apiDispatches; EnchantmentCallback[] apiCallbacks;
+                try
+                {
+                    if (input.Debuff) yield return host.DebuffMaxHP(input.Amount, input.Floor, input.DecreaseHp);
+                    else yield return host.BuffMaxHP(input.Amount, input.TriggerOnHeal, heal: input.Heal);
+                    apiActual = Trace.Capture(host.GetCurrentRoom()); rngAfterApi = Rng(); apiDispatches = dispatches.ToArray();
+                    apiCallbacks = Queue.Select(item => new EnchantmentCallback(item.character.GetCurrentRoomIndex(), Trace.UnitId(item.character),
+                        item.trigger.ToString(), item.fireTriggersData?.paramInt ?? 0, item.fireTriggersData?.paramInt2 ?? 0,
+                        item.fireTriggersData?.paramString, item.fireTriggersData?.overrideTargetCharacter == null ? (int?)null : Trace.UnitId(item.fireTriggersData.overrideTargetCharacter),
+                        item.dyingCharacter == null ? (int?)null : Trace.UnitId(item.dyingCharacter), item.canFireTriggers,
+                        item.exclusiveTrigger == null ? (int?)null : Trace.TriggerStateId(item.character, item.exclusiveTrigger))).ToArray();
+                    yield return Managers.GetCombatManager().RunTriggerQueue();
+                }
+                finally { recording = false; }
+                RoomCombatState actual = Trace.Capture(host.GetCurrentRoom()); object rngAfter = Rng();
+                if (actors.Any(actor => !actor.IsAlive || actor.IsDestroyed) || Queue.Count != 0)
+                    throw new InvalidOperationException("Maximum-health lifecycle left a dead actor or pending queue.");
+                string? difference = predicted.UnsupportedReason ?? Difference(predicted.State, apiActual) ??
+                    Difference(predicted.Dispatches, apiDispatches) ?? Difference(predicted.PendingCallbacks.Select(EnchantmentCallback.From).ToArray(), apiCallbacks);
+                RoomCombatResult? drained = predicted.Supported ? RoomCombatModel.DrainCharacterCallbacks(predicted.State!, predicted.PendingCallbacks, true) : null;
+                difference ??= drained?.UnsupportedReason ?? (drained == null ? "Missing maximum-health successor" : Difference(drained.State, actual) ??
+                    Difference(predicted.Dispatches.Concat(drained.Dispatches).ToArray(), dispatches));
+                bool gameplayRngUnchanged = JToken.DeepEquals(GameplayRng(rngBefore), GameplayRng(rngAfterApi)) &&
+                    JToken.DeepEquals(GameplayRng(rngBefore), GameplayRng(rngAfter));
+                difference ??= gameplayRngUnchanged ? null : "Native gameplay RNG or Unity RNG changed.";
+                if (difference != null) { mismatches++; log.LogWarning(input.Label + ": " + difference); }
+                samples.Add(new { Label = input.Label, Input = input, ActorId = Trace.UnitId(host), Before = before,
+                    ApiActual = apiActual, ApiCallbacks = apiCallbacks, ApiDispatches = apiDispatches,
+                    Actual = actual, Dispatches = dispatches.ToArray(), RngBefore = rngBefore, RngAfterApi = rngAfterApi, RngAfter = rngAfter,
+                    GameplayRngUnchanged = gameplayRngUnchanged, PendingAfterDrain = Queue.Count,
+                    PredictedApi = difference == null ? null : predicted.State, Predicted = difference == null ? null : drained?.State,
+                    Difference = difference, Completed = true });
+            }
 
             void Add(string kind, int gold, string? effectType)
             {
@@ -179,6 +247,49 @@ namespace MonsterTrain2Poju.Probe
                 var trigger = new CharacterTriggerState(); trigger.Setup(data, host.GetTeamType(), Save); host.GetTriggers().Add(trigger);
             }
         }
+        private sealed class MaximumInput
+        {
+            public string Label { get; }
+            public int Hp { get; }
+            public int MaxHp { get; }
+            public bool Active { get; }
+            public int Amount { get; }
+            public bool Debuff { get; }
+            public bool Heal { get; }
+            public bool TriggerOnHeal { get; }
+            public int Floor { get; }
+            public bool DecreaseHp { get; }
+            public bool CanHeal { get; }
+            public string? Status { get; }
+            internal MaximumInput(string label, int hp, int maxHp, bool active, int amount, bool debuff = false, bool heal = true,
+                bool triggerOnHeal = false, int floor = 0, bool decreaseHp = true, bool canHeal = true, string? status = null)
+            { Label = label; Hp = hp; MaxHp = maxHp; Active = active; Amount = amount; Debuff = debuff; Heal = heal;
+                TriggerOnHeal = triggerOnHeal; Floor = floor; DecreaseHp = decreaseHp; CanHeal = canHeal; Status = status; }
+        }
+        private static MaximumInput[] MaximumCases() => new[] {
+            new MaximumInput("buff-heal-leaves-half", 10, 20, true, 2),
+            new MaximumInput("buff-heal-remains-half", 5, 20, true, 2),
+            new MaximumInput("buff-noheal-enters-half", 11, 20, false, 2, heal: false),
+            new MaximumInput("buff-noheal-leaves-stale-half", 12, 20, true, 2, heal: false),
+            new MaximumInput("buff-zero", 10, 20, false, 0),
+            new MaximumInput("buff-negative", 10, 20, false, -1),
+            new MaximumInput("debuff-enters-half", 11, 20, false, 2, debuff: true),
+            new MaximumInput("debuff-remains-half", 9, 20, true, 2, debuff: true),
+            new MaximumInput("debuff-nohp-leaves-half", 10, 20, true, 2, debuff: true, decreaseHp: false),
+            new MaximumInput("debuff-clamps-hp", 19, 20, false, 4, debuff: true, decreaseHp: false),
+            new MaximumInput("debuff-zero", 10, 20, false, 0, debuff: true),
+            new MaximumInput("debuff-negative", 10, 20, false, -2, debuff: true),
+            new MaximumInput("buff-capped", 49999, 99999, true, 2),
+            new MaximumInput("buff-capped-noheal", 50000, 99999, false, 2, heal: false),
+            new MaximumInput("buff-ignores-heal-immunity", 10, 20, true, 2, status: "heal immunity"),
+            new MaximumInput("buff-cannotheal-enters-half", 11, 20, false, 2, canHeal: false),
+            new MaximumInput("buff-onheal-damages-first", 10, 20, true, 2, triggerOnHeal: true),
+            new MaximumInput("buff-gain-heals-loses", 11, 20, false, 2, heal: false),
+            new MaximumInput("debuff-lost-damages-gains", 10, 20, true, 2, debuff: true, decreaseHp: false),
+            new MaximumInput("debuff-floor-nohp", 10, 20, true, 30, debuff: true, floor: 6, decreaseHp: false),
+            new MaximumInput("buff-onheal-before-loss", 10, 20, true, 2, triggerOnHeal: true),
+            new MaximumInput("buff-heal-multiplier", 8, 20, true, 3, status: "heal multiplier"),
+            new MaximumInput("buff-gain-adds-maxhealth", 11, 20, false, 2, heal: false) };
         private static string? Difference(object? left, object? right) => Difference(left == null ? JValue.CreateNull() : JToken.FromObject(left),
             right == null ? JValue.CreateNull() : JToken.FromObject(right), "$");
         private static string? Difference(JToken left, JToken right, string path)

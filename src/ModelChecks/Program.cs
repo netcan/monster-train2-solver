@@ -1,5 +1,15 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 1 && args[0] == "--unit-health-pure")
+{
+    UnitHealthChecks.Run();
+    return;
+}
+if (args.Length == 2 && args[0] == "--half-health-maximum-only")
+{
+    HalfHealthMaximumChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--half-health-lifecycle-only")
 {
     HalfHealthLifecycleChecks.Native(args[1]);
