@@ -1046,6 +1046,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 return;
             }
+            if (fullBattle && !numericModifiersPrepared && HalfHealthBattleScenario.Enabled)
+            {
+                HalfHealthBattleScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalMoreSpikesScenario.Enabled)
             {
                 OriginalMoreSpikesScenario.Prepare(managers, log);
@@ -3162,6 +3167,7 @@ namespace MonsterTrain2Poju.Probe
                 if (MoonPhaseAdvanceScenario.Enabled) pendingPlay = MoonPhaseAdvanceScenario.Choose(decision);
                 if (MoonPhaseCallbackScenario.Enabled) pendingPlay = MoonPhaseCallbackScenario.Choose(decision);
                 if (OriginalMoonPhaseHealRelicScenario.Enabled) pendingPlay = OriginalMoonPhaseHealRelicScenario.Choose(decision);
+                if (HalfHealthBattleScenario.Enabled) pendingPlay = HalfHealthBattleScenario.Choose(decision);
                 if (OriginalOpeningMorselsScenario.FoodCardsMode) pendingPlay = OriginalOpeningMorselsScenario.Choose(decision);
                 if (OriginalMoonPhaseStatusRelicScenario.Enabled) pendingPlay = OriginalMoonPhaseStatusRelicScenario.Choose(decision);
                 if (ConditionalNoPlayerUnitScenario.Enabled) pendingPlay = ConditionalNoPlayerUnitScenario.Choose(decision);
@@ -3415,6 +3421,7 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario == "moon-phase-advance" && MoonPhaseAdvanceScenario.IsScenarioAction(action)) ||
                 (modifierScenario == "moon-phase-callbacks" && MoonPhaseCallbackScenario.IsScenarioAction(action)) ||
                 (modifierScenario == OriginalMoonPhaseHealRelicScenario.Name && OriginalMoonPhaseHealRelicScenario.IsScenarioAction(action)) ||
+                (modifierScenario == HalfHealthBattleScenario.Name && HalfHealthBattleScenario.IsScenarioAction(action)) ||
                 (modifierScenario == OriginalChampionStartTurnHealScenario.Name && OriginalChampionStartTurnHealScenario.IsScenarioAction(action)) ||
                 (OriginalPyreCardCostScenario.Enabled && OriginalPyreCardCostScenario.IsScenarioAction(action)) ||
                 (modifierScenario == OriginalMoonPhaseStatusRelicScenario.Name && OriginalMoonPhaseStatusRelicScenario.IsScenarioAction(action)) ||

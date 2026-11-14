@@ -460,6 +460,7 @@ param(
     [switch] $DamageReactionsOnly,
     [switch] $DamageReactionRevivalOnly,
     [switch] $DamageReactionFinalDeathOnly,
+    [switch] $HalfHealthBattle,
     [switch] $EnchantmentWorld,
     [switch] $HordeStatuses,
     [switch] $HordeMerge,
@@ -1364,6 +1365,7 @@ if ($OriginalPyreHealthCardCostRelic) { $BranchCardMasks = $true; $Policy = 'uni
 if ($OriginalNullRelic -or $OriginalNullRelicBaseline) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRelicCountAttack) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoreSpikes) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($HalfHealthBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStealthSlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalTriggerRelicBatch -or $OriginalTriggerRelicBatchStationary -or $OriginalFusedPyreshard -or $OriginalLifecycleRelicBatch) {
@@ -2270,6 +2272,7 @@ if ($OriginalNullRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-r
 if ($OriginalNullRelicBaseline) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic-baseline' }
 if ($OriginalRelicCountAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-relic-count-attack' }
 if ($OriginalMoreSpikes) { $environment['MT2_PROBE_MODIFIERS'] = 'original-more-spikes' }
+if ($HalfHealthBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'half-health-battle' }
 if ($OriginalStealthSlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-stealth-slay' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
 if ($TypedDraw) {
@@ -2704,6 +2707,13 @@ if ($ChooseDiscard -and ($trace.ModifierScenario -ne 'card-effect-choose-discard
     -not (Select-String -LiteralPath $unityLog -Pattern 'CHOOSE-DISCARD-AUTOSELECT card=\d+ cost=2' -Quiet) -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 1)) {
     throw 'Original StarterScrap did not consume the selected cost-2 card in the native battle.'
+}
+if ($HalfHealthBattle -and ($trace.ModifierScenario -cne 'half-health-battle' -or
+    -not $trace.HalfHealthBattle.Prepared -or $trace.HalfHealthBattle.CompletedControlPlays -ne 5 -or
+    @($trace.HalfHealthBattle.Transitions | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0 -or
+    @($trace.HalfHealthBattle.Transitions | Where-Object { -not $_.Preview }).Count -eq 0 -or
+    @($trace.HalfHealthBattle.Transitions | Where-Object Preview).Count -eq 0)) {
+    throw 'Half-health full-battle controls or real/preview callback evidence are incomplete.'
 }
 if ($ChooseDiscardOthers -and ($trace.ModifierScenario -ne 'card-effect-choose-discard-others' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'CHOOSE-DISCARD-AUTOSELECT card=\d+ cost=2' -Quiet) -or

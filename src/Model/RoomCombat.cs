@@ -894,8 +894,6 @@ namespace MonsterTrain2Poju.Model
             bool centerPhysicalRemovals = true, bool relicSourced = false)
         {
             string? error = Validate(state, halfHealthLifecycle: true);
-            if (enqueueCharacterTrigger != null && state.Units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)))
-                error = "Half-health Deathwish with an external damage callback queue requires native lifecycle calibration.";
             bool localAttacker = state.Units.Any(unit => unit.Id == attackerUnitId);
             if (error != null || damage < 0 || state.Preview || state.Context?.SpawnPoints == null ||
                 !state.Units.Any(unit => unit.Id == targetId) ||
@@ -921,8 +919,6 @@ namespace MonsterTrain2Poju.Model
             Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool captureAllDispatches = false)
         {
             string? error = Validate(state, linkedHealthOnly: true, halfHealthLifecycle: true);
-            if (enqueueCharacterTrigger != null && state.Units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)))
-                error = "Half-health Deathwish with an external damage callback queue requires native lifecycle calibration.";
             if (state.Units.Any(unit => unit.Id == targetId && unit.Status("lifelink") != null))
             {
                 CardInstanceState? source = sourceCardId == 0 ? null : state.Context?.FindCard(sourceCardId);
@@ -993,6 +989,8 @@ namespace MonsterTrain2Poju.Model
             bool remove, string upgradeId, int? anonymousRemovalIndex, bool deferCallbacks = false, int equipmentSourceCardId = 0, bool captureAllDispatches = false, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, bool allowDyingTarget = false)
         {
             string? error = Validate(state, allowDyingTarget ? targetId : (int?)null, halfHealthLifecycle: true);
+            if (state.Preview && state.Units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)))
+                error = "Half-health Deathwish preview upgrade APIs require separate native calibration.";
             if (deferCallbacks && state.Units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)))
                 error = "Half-health Deathwish upgrades inside an external running queue require native calibration.";
             if (error != null || !state.Units.Any(unit => unit.Id == targetId))
@@ -1075,11 +1073,11 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static string? Validate(RoomCombatState state, int? dyingTargetId = null, bool linkedHealthOnly = false,
-            bool halfHealthLifecycle = false)
+            bool halfHealthLifecycle = true)
         {
-            // Direct, real health and numeric-upgrade APIs have queue-boundary oracles.
-            // Preview, shared aura worlds and whole-room scheduling keep their guard.
-            halfHealthLifecycle &= !state.Preview && state.Context?.Enchantments == null;
+            // Real direct and battle queue scheduling share native callbacks.
+            // Shared aura worlds keep their independent guard.
+            halfHealthLifecycle &= state.Context?.Enchantments == null;
             bool linkedCombat = TrueFinalBossCombatModel.Supports(state);
             linkedHealthOnly |= linkedCombat;
             string? relicError = RelicModel.Validate(state.Context);
@@ -3207,10 +3205,6 @@ namespace MonsterTrain2Poju.Model
                     MergeSummon(drained);
                 }
                 if (target.DeathFinished) return;
-                if (!nativeCardDamage && !target.Alive && target.Count("undying") <= 0 &&
-                    (units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)) ||
-                    context?.Enchantments?.Rooms.SelectMany(room => room.Units).Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)) == true))
-                { unsupportedReason = "Lethal half-health damage outside the native card phase requires death/revival lifecycle calibration."; return; }
                 // A lethal hit queues its half-health transition before
                 // CheckDeathCardTriggers revives Undying. Those callbacks run
                 // against the revived character, after the death signal.

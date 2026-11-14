@@ -1701,6 +1701,7 @@ namespace MonsterTrain2Poju.Probe
                 Spawns = spawning.Records,
                 Turns = turns.Records,
                 Actions = actions.Records,
+                HalfHealthBattle = HalfHealthBattleScenario.Enabled ? HalfHealthBattleScenario.Evidence : null,
                 PlannerRuns = PlannerReplayScenario.Records,
                 RollingDecisions = RollingAdviceScenario.Records,
                 BattleDistance = AllGameManagers.Instance!.GetSaveManager().GetCurrentDistance(),

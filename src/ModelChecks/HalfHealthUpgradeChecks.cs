@@ -55,9 +55,9 @@ internal static class HalfHealthUpgradeChecks
         RoomCombatState guarded = samples[0].GetProperty("Before").Deserialize<RoomCombatState>()!;
         int actor = samples[0].GetProperty("ActorId").GetInt32();
         CardUpgradeModifier upgrade = samples[0].GetProperty("Upgrade").Deserialize<CardUpgradeModifier>()!;
-        Require(RoomCombatModel.Validate(guarded)?.Contains("HalfHealth", StringComparison.Ordinal) == true &&
+        Require(RoomCombatModel.Validate(guarded) == null &&
             !UnitModifierModel.Apply(guarded, actor, upgrade, "TemporaryUntilEndOfBattle", scaleUpgrade: true).Supported,
-            "Whole-room or accumulated-scaling half-health guard was lost.");
+            "Calibrated battle scheduling was rejected or accumulated-scaling guard was lost.");
         RoomCombatResult lethal = UnitModifierModel.ApplyDirect(guarded, actor, upgrade.WithScaledStats(0, -99999));
         Require(!lethal.Supported && lethal.UnsupportedReason?.Contains("sacrifice/revival", StringComparison.Ordinal) == true,
             "Uncalibrated lethal upgrade was accepted.");
@@ -70,7 +70,7 @@ internal static class HalfHealthUpgradeChecks
             Array.Empty<string>(), triggerUpgrades: guarded.Units.Single(unit => unit.Id == actor).Triggers);
         Require(!UnitModifierModel.ApplyDirect(guarded, actor, triggerUpgrade).Supported, "Uncalibrated trigger installation was accepted.");
         Parallel.For(0, 32, _ => { foreach (FixtureValue sample in samples) Verify(sample); });
-        Console.WriteLine("HALF-HEALTH-UPGRADE PASS: 27 native numeric upgrade API-return states/queues and drained successors, healed/unhealed/attributed phases, add/remove, nested callbacks, complete dispatches/RNG and 32 immutable branches. Trigger/ability/status changes, accumulated scaling, death and whole-room scheduling remain guarded; spawner writes have separate effect acceptance.");
+        Console.WriteLine("HALF-HEALTH-UPGRADE PASS: 27 native numeric upgrade API-return states/queues and drained successors, healed/unhealed/attributed phases, add/remove, nested callbacks, complete dispatches/RNG and 32 immutable branches. Trigger/ability/status changes, accumulated scaling and lethal upgrades remain guarded; whole-battle and spawner-write acceptance is separate.");
 
         void Expect(string label, int hp, int max, int queued, int apiGold, int finalGold, int? finalHp = null, int? finalMax = null)
         {

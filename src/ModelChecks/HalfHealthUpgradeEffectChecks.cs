@@ -56,7 +56,7 @@ internal static class HalfHealthUpgradeEffectChecks
         Require(hit.GetProperty("Dispatches").EnumerateArray().Single(item => item.GetProperty("Kind").GetString() == "OnBloodshed")
             .GetProperty("OverrideTargetId").GetInt32() == hit.GetProperty("ActorId").GetInt32(), "Bloodshed lost its damaged-character target.");
         RoomCombatState guarded = samples[0].GetProperty("Before").Deserialize<RoomCombatState>()!;
-        Require(RoomCombatModel.Validate(guarded)?.Contains("HalfHealth", StringComparison.Ordinal) == true, "Uncalibrated whole-room scheduling was accepted.");
+        Require(RoomCombatModel.Validate(guarded) == null, "Calibrated half-health battle scheduling was rejected.");
         int actorId = samples[0].GetProperty("ActorId").GetInt32();
         CombatUnit actor = guarded.Units.Single(unit => unit.Id == actorId);
         foreach (string kind in new[] { "OnBloodshed", "OnPunish" })
@@ -69,7 +69,7 @@ internal static class HalfHealthUpgradeEffectChecks
                 "Calibrated authored " + kind + " was rejected in the versioned damage lifecycle.");
         }
         Parallel.For(0, 32, _ => { foreach (FixtureValue sample in samples) Verify(sample); });
-        Console.WriteLine("HALF-HEALTH-UPGRADE-EFFECT PASS: 28 native effects at API/queue-drain boundaries, all three lifetimes, duplicate removal, unique/clone controls, nested upgrade removal/readdition across spawner writes, complete dispatch/RNG/state and 32 immutable branches. Trigger installation, death, full-card and whole-room scheduling remain separate.");
+        Console.WriteLine("HALF-HEALTH-UPGRADE-EFFECT PASS: 28 native effects at API/queue-drain boundaries, all three lifetimes, duplicate removal, unique/clone controls, nested upgrade removal/readdition across spawner writes, complete dispatch/RNG/state and 32 immutable branches. Trigger installation and lethal upgrades remain guarded; whole-card/battle acceptance is separate.");
 
         void Expect(string label, int hp, int max, int queued, int apiGold, int finalGold, int unitRecords, int temporary, int permanent = 0,
             int healthOffset = 0, int? finalHp = null, int? finalMax = null, int? finalUnitRecords = null, int? finalTemporary = null)

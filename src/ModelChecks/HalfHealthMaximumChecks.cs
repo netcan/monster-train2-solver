@@ -50,15 +50,15 @@ internal static class HalfHealthMaximumChecks
             "Native maximum-health nested queue order was not observed.");
         RoomCombatState guarded = samples[0].GetProperty("Before").Deserialize<RoomCombatState>()!;
         int actor = samples[0].GetProperty("ActorId").GetInt32();
-        Require(RoomCombatModel.Validate(guarded)?.Contains("HalfHealth", StringComparison.Ordinal) == true,
-            "Whole-room half-health scheduling lost its calibration guard.");
+        Require(RoomCombatModel.Validate(guarded) == null,
+            "Calibrated half-health battle scheduling was rejected.");
         RoomCombatResult lethal = UnitHealthModel.Apply(guarded, actor, 99999, debuff: true);
         Require(!lethal.Supported && lethal.UnsupportedReason?.Contains("sacrifice/revival", StringComparison.Ordinal) == true,
             "Uncalibrated lethal maximum-health sacrifice/revival was accepted.");
         Parallel.For(0, 32, _ => { foreach (FixtureValue sample in samples) Verify(sample); });
         Require(Kinds("buff-gain-adds-maxhealth").SequenceEqual(new[] { "OnDeathwish", "OnDeathwish", "OnDeathwishLost", "OnDeathwishLost" }),
             "Nested maximum-health effect ran its callbacks before previously queued work.");
-        Console.WriteLine("HALF-HEALTH-MAXIMUM PASS: 23 native API-return states/queues and 23 drained successors, complete dispatches, healing/no-heal/decrease/floor/cap controls, nested damage/heal/maximum-health callbacks, gameplay RNG and 32 immutable branches. Death/revival and whole-room lifecycles remain guarded.");
+        Console.WriteLine("HALF-HEALTH-MAXIMUM PASS: 23 native API-return states/queues and 23 drained successors, complete dispatches, healing/no-heal/decrease/floor/cap controls, nested damage/heal/maximum-health callbacks, gameplay RNG and 32 immutable branches. Lethal maximum-health changes remain guarded; whole-battle scheduling has separate native acceptance.");
 
         void Expect(string label, int hp, int max, int queued, int apiGold, int finalGold, int? finalHp = null, int? finalMax = null)
         {

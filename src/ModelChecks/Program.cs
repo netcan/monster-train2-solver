@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--half-health-battle-only")
+{
+    HalfHealthBattleChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--damage-reaction-final-death-only")
 {
     DamageReactionChecks.NativeFinalDeath(args[1]);

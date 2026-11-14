@@ -17,9 +17,17 @@ queues across revival, one-HP gain/loss, active-half controls and once-only deat
 listeners. Final death in the native card-damage phase has 18 more native
 successors and two actual player/enemy removals, with 99 dispatch payloads and
 32 immutable branches each. Death effects, Harvest, retained actors, physical
-points and spawner exhaustion match. Preview and other damage phases remain
-guarded; these components do not count as whole-card/relic or whole-battle
-acceptance on 2.3.1.
+points and spawner exhaustion match. Actual Bloodshed/Punish effects in preview
+and other damage phases remain guarded; these components do not count as
+whole-card/relic acceptance on 2.3.1.
+
+Half-health Deathwish now also passes a complete authored native battle: two
+paid deployments, three damage/heal controls, natural later turns, Undying and
+removal. All 25 plays, seven EndTurns, 62 room and 14 train phases match; 336
+callbacks include 268 preview callbacks with nested wounds/healing. Continuous
+model-owned replay and 16 immutable branches pass. Shared aura worlds and
+direct preview upgrade APIs still require calibration. Authored definitions
+do not add original card/relic coverage.
 
 Game 2.2.1 curated inventory (2026-11-14): 2,874 binary archives with verified
 hashes and registrations. The card evidence index accepts 1,561 battle archives

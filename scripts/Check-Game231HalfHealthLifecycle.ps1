@@ -20,4 +20,4 @@ if ((Get-Item -LiteralPath $path).Length -ne [long]$row.bytes -or
     (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ine $row.sha256) { throw 'Half-health lifecycle capture hash/size differs.' }
 dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --half-health-lifecycle-only $path
 if ($LASTEXITCODE) { throw 'Independent half-health damage/heal lifecycle validation failed.' }
-Write-Output 'GAME-231-HALF-HEALTH-LIFECYCLE PASS: 13 complete native successors/dispatches and 32 immutable branches; maximum-health has separate acceptance; death, preview and shared-world lifecycles remain guarded.'
+Write-Output 'GAME-231-HALF-HEALTH-LIFECYCLE PASS: 13 complete native successors/dispatches and 32 immutable branches; lethal damage, preview and whole-battle scheduling have separate acceptance; shared worlds remain guarded.'

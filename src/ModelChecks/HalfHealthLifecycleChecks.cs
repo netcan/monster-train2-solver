@@ -42,16 +42,13 @@ internal static class HalfHealthLifecycleChecks
         {
             RoomCombatState before = sample.GetProperty("Before").Deserialize<RoomCombatState>()!;
             int id = sample.GetProperty("ActorId").GetInt32();
-            Require(RoomCombatModel.Validate(before)?.Contains("HalfHealth", StringComparison.Ordinal) == true,
-                "Uncalibrated whole-room lifecycle was opened by the damage/heal component.");
+            Require(RoomCombatModel.Validate(before) == null,
+                "Calibrated half-health battle scheduling was rejected.");
             Require(!UnitHealthModel.Apply(before, id, 99999, debuff: true).Supported,
                 "Lethal maximum-health sacrifice/revival lost its native calibration guard.");
-            RoomCombatResult lethal = RoomCombatModel.ApplyCardDamage(before, id, 99999);
-            Require(!lethal.Supported && lethal.UnsupportedReason?.Contains("death/revival", StringComparison.Ordinal) == true,
-                "Uncalibrated half-health lethal damage/revival was accepted.");
         }
         Parallel.For(0, 32, _ => { foreach (FixtureValue sample in samples) Verify(sample); });
-        Console.WriteLine("HALF-HEALTH-LIFECYCLE PASS: 13 complete native damage/heal successors and dispatch payloads; zero/blocked/clipped controls, OnHit/OnHeal ordering, nested gain/loss effects, parent immutability and 32 parallel branches. Lethal and whole-room lifecycles remain guarded; maximum health has separate acceptance.");
+        Console.WriteLine("HALF-HEALTH-LIFECYCLE PASS: 13 complete native damage/heal successors and dispatch payloads; zero/blocked/clipped controls, OnHit/OnHeal ordering, nested gain/loss effects, parent immutability and 32 parallel branches. Lethal damage and whole-battle scheduling have separate native acceptance; lethal maximum-health changes remain guarded.");
 
         void Expect(string label, int hp, int gold, params string[] kinds)
         {
