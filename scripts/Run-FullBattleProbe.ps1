@@ -86,6 +86,8 @@ param(
     [switch] $TrueFinalBossHealth,
     [switch] $TrueFinalBossLifeLink,
     [switch] $TrueFinalBossHealthUpdates,
+    [switch] $TrueFinalBossMaximumHealth,
+    [switch] $TrueFinalBossMaximumBattle,
     [switch] $TrueFinalBossDamage,
     [switch] $TrueFinalBossDamageAllTargets,
     [switch] $TrueFinalBossSpellDamage,
@@ -878,8 +880,16 @@ if ($OriginalOuterBossVariant -and ($InputProfile -or $BattleDistance -ne 7 -or 
     throw 'OriginalOuterBossVariant requires a fresh isolated Ring8 route with OuterBossTurns.'
 }
 if ($OriginalOuterBossTrial -and -not $OriginalOuterBossVariant) { throw 'OriginalOuterBossTrial requires an explicit original outer-boss variant.' }
+if ($TrueFinalBossMaximumBattle) {
+    if (-not $OriginalTrueFinalBoss -or -not $OuterBossTurns -or $TrueFinalBossLethal -or $TrueFinalBossLethalSpellTarget -or
+        $TrueFinalBossProtectedSpellTarget -or $TrueFinalBossOrdinaryAlly -or $TrueFinalBossAllyUpgrade -or $TrueFinalBossDormantSavagery -or
+        $TrueFinalBossRelentless -or $TrueFinalBossMaximumHealth -or $TrueFinalBossCovenant) {
+        throw 'Maximum-health paid controls require the separate original TFB route and original boss definitions.'
+    }
+    $Policy = 'units-spells-and-junk'; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
+}
 if ($OriginalTrueFinalBoss -and ($InputProfile -or $BattleDistance -ne 8 -or $OriginalOuterBossVariant -or
-    $TrueFinalBossBirth -or $TrueFinalBossSpawn -or $TrueFinalBossScheduledSpawn -or $TrueFinalBossHealth -or $TrueFinalBossLifeLink -or $TrueFinalBossHealthUpdates -or $TrueFinalBossDamage -or $TrueFinalBossDamageAllTargets -or $TrueFinalBossSpellDamage -or $TrueFinalBossPyreBaneTargets -or $TrueFinalBossDeath)) {
+    $TrueFinalBossBirth -or $TrueFinalBossSpawn -or $TrueFinalBossScheduledSpawn -or $TrueFinalBossHealth -or $TrueFinalBossLifeLink -or $TrueFinalBossHealthUpdates -or $TrueFinalBossMaximumHealth -or $TrueFinalBossDamage -or $TrueFinalBossDamageAllTargets -or $TrueFinalBossSpellDamage -or $TrueFinalBossPyreBaneTargets -or $TrueFinalBossDeath)) {
     throw 'OriginalTrueFinalBoss requires a fresh isolated Ring9 route, separate from component-only captures.'
 }
 if ($OriginalTrueFinalBoss -and $OuterBossBirth) {
@@ -949,6 +959,12 @@ if ($TrueFinalBossPyreBaneTargets) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossHealth) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossLifeLink) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossHealthUpdates) { $TrueFinalBossBirth = $true }
+if ($TrueFinalBossMaximumHealth) {
+    if ($TrueFinalBossDamage -or $TrueFinalBossDamageAllTargets -or $TrueFinalBossSpellDamage -or $TrueFinalBossDeath) {
+        throw 'Maximum-health controls require their own original-birth coroutine chain.'
+    }
+    $TrueFinalBossBirth = $true
+}
 if ($TrueFinalBossDamageAllTargets) { $TrueFinalBossDamage = $true }
 if ($TrueFinalBossSpellDamage) {
     if ($TrueFinalBossDamageAllTargets) { throw 'Spell-source and source-free damage are separate native captures.' }
@@ -979,7 +995,7 @@ if ($TrueFinalBossCovenant -and -not ($OriginalTrueFinalBoss -or ($TrueFinalBoss
     throw 'TrueFinalBossCovenant requires an isolated original route or complete spawn observation.'
 }
 if ($TrueFinalBossBirth) {
-    $allowed = @('TrueFinalBossBirth', 'TrueFinalBossCovenant', 'TrueFinalBossSpawn', 'TrueFinalBossScheduledSpawn', 'TrueFinalBossHealth', 'TrueFinalBossLifeLink', 'TrueFinalBossHealthUpdates', 'TrueFinalBossDamage', 'TrueFinalBossDamageAllTargets', 'TrueFinalBossSpellDamage', 'TrueFinalBossPyreBaneTargets', 'TrueFinalBossDeath', 'TrueFinalBossDeathSpellSource', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    $allowed = @('TrueFinalBossBirth', 'TrueFinalBossCovenant', 'TrueFinalBossSpawn', 'TrueFinalBossScheduledSpawn', 'TrueFinalBossHealth', 'TrueFinalBossLifeLink', 'TrueFinalBossHealthUpdates', 'TrueFinalBossMaximumHealth', 'TrueFinalBossDamage', 'TrueFinalBossDamageAllTargets', 'TrueFinalBossSpellDamage', 'TrueFinalBossPyreBaneTargets', 'TrueFinalBossDeath', 'TrueFinalBossDeathSpellSource', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'TrueFinalBossBirth is an isolated original birth observation.' }
     $Policy = 'no-cards'; $BattleDistance = 8; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
 }
@@ -1781,6 +1797,8 @@ $environment = @{
     MT2_PROBE_TRUE_FINAL_BOSS_HEALTH = $(if ($TrueFinalBossHealth) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_LIFE_LINK = $(if ($TrueFinalBossLifeLink) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_HEALTH_UPDATES = $(if ($TrueFinalBossHealthUpdates) { '1' } else { '0' })
+    MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_HEALTH = $(if ($TrueFinalBossMaximumHealth) { '1' } else { '0' })
+    MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_BATTLE = $(if ($TrueFinalBossMaximumBattle) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_DAMAGE = $(if ($TrueFinalBossDamage) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_DAMAGE_ALL_TARGETS = $(if ($TrueFinalBossDamageAllTargets) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_SPELL_DAMAGE = $(if ($TrueFinalBossSpellDamage) { '1' } else { '0' })
@@ -2572,6 +2590,7 @@ if ($TrueFinalBossBirth) {
     if ($TrueFinalBossHealth) { $componentNames += 'true-final-boss-linked-health-calibration.mt2f' }
     if ($TrueFinalBossLifeLink) { $componentNames += 'true-final-boss-life-link-calibration.mt2f' }
     if ($TrueFinalBossHealthUpdates) { $componentNames += 'true-final-boss-health-updates-calibration.mt2f' }
+    if ($TrueFinalBossMaximumHealth) { $componentNames += 'true-final-boss-maximum-health.mt2f' }
     if ($TrueFinalBossDamage) { $componentNames += $(if ($TrueFinalBossSpellDamage) { 'true-final-boss-spell-damage-calibration.mt2f' } elseif ($TrueFinalBossDamageAllTargets) { 'true-final-boss-all-target-damage-calibration.mt2f' } else { 'true-final-boss-damage-calibration.mt2f' }) }
     if ($TrueFinalBossDeath) { $componentNames += "true-final-boss-$(if ($TrueFinalBossDeathSpellSource) { 'spell-death' } else { 'death' })-$($TrueFinalBossDeath.ToLowerInvariant()).mt2f" }
     $componentPaths = @($componentNames | ForEach-Object { Join-Path $profile $_ })
@@ -2676,6 +2695,11 @@ if ($BinaryCapture) {
 }
 $inspectionTimer.Stop()
 Write-Output "FULL-BATTLE-INSPECTION elapsedSeconds=$($inspectionTimer.Elapsed.TotalSeconds.ToString('F3', [Globalization.CultureInfo]::InvariantCulture))"
+if ($TrueFinalBossMaximumBattle -and (-not $trace.TrueFinalBossMaximumBattle.Prepared -or
+    $trace.TrueFinalBossMaximumBattle.CompletedControlPlays -ne 10 -or @($trace.Actions).Count -ne 10 -or @($trace.Turns).Count -ne 4 -or
+    -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled)) {
+    throw 'Original TFB maximum-health battle did not finish all ten inputs, four EndTurns and its native victory.'
+}
 if ($Planner) {
     $plannerRuns = @($trace.PlannerRuns)
     if ($plannerRuns.Count -ne 1 -or -not $plannerRuns[0].Completed -or $null -ne $plannerRuns[0].Difference -or

@@ -981,6 +981,7 @@ namespace MonsterTrain2Poju.Probe
                 AngelDuoRelentlessEntry = AngelDuoForcedRelentlessProbe.EntryTransition,
                 TrueFinalBossDormantControl = TrueFinalBossDormantScenario.Evidence,
                 TrueFinalBossLethalControl = TrueFinalBossLethalScenario.Evidence,
+                TrueFinalBossMaximumBattle = TrueFinalBossMaximumBattleScenario.Enabled ? TrueFinalBossMaximumBattleScenario.Evidence : null,
                 TrueFinalBossAllyUpgradeControl = TrueFinalBossAllyUpgradeScenario.Evidence,
                 TrueFinalBossOrdinaryAllyControl = TrueFinalBossOrdinaryAllyScenario.Evidence,
                 TrueFinalBossRelentlessControl = TrueFinalBossRelentlessScenario.Evidence,

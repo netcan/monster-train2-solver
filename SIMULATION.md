@@ -30,6 +30,24 @@ These controls do not add original-card/relic coverage.
 
 Latest 2.3.1 acceptance: all **12/12 new original relics** have controlled
 whole-battle evidence; this does not revalidate all 614 cards or 236 relics.
+LifeLink maximum-health protection now has 79 real native API calls with full
+room/shared-world successors, a frozen-root train replay and 16 immutable chains.
+A ten-play/four-EndTurn native victory retains all five original final bosses,
+birth stats and waves. Explicit control cards exercise shared HP/max across three
+floors and combat rounds, independent protector release, actual ember costs and
+damage-only spell shields. Native Pyre attacks finish the group while ordinary
+waves survive; two original HeavyT2_Zealot observers each harvest one attack.
+Versioned birth immobile/movement and prevented-damage statistics match 2.3.1,
+and remote callback updates persist across borrowed actor refreshes. All 23 room,
+7 train and 4 turn successors match. After the explicit turn-one hand/deck setup,
+ten plays/three EndTurns replay continuously from one root; 16 immutable branches,
+128-state serial/parallel search and independent plan replay pass. Native capture
+takes 29.82 seconds for the component and 52.25 seconds for the battle, with zero
+capture/mismatch/unsupported/pending counts and unchanged player files. Run
+`scripts/Check-Game231LifeLinkMaximum.ps1` for the 56,989-byte binary evidence.
+Control cards add no original coverage, and bounded search does not prove global
+optimality. Linked temporary previews, terminal maximum-health sacrifice and
+other ordinary/Horde/half-health linked combinations still need acceptance.
 Lethal maximum-health changes now follow native Sacrifice(null) and skip the
 ordinary Horde/Deathwish update that follows the nonlethal path. Eight controlled
 native five-play/seven-turn victories cover plain/Undying/Horde/both, retaining
@@ -42,8 +60,8 @@ chains, 16 immutable branches and 128-state serial/parallel search per battle pa
 The eight native runs total 364.98 seconds with unchanged player files; explicit
 card/unit controls add no original coverage. Run `scripts/Check-Game231LethalMaximum.ps1`
 for the 288,642-byte binary archive set. Lethal half-health preview stays guarded;
-LifeLink maximum-health protection and other death/merge/callback combinations
-still require separate native acceptance.
+Linked maximum-health sacrifice and other death/merge/callback combinations
+still require separate native acceptance; original final-boss protection is above.
 Nonlethal direct maximum-health changes now retain Horde casualty queues before
 Deathwish. Modern damage settles Horde in its immediate OnHit status phase,
 before queued Punish/Deathwish even inside healing or half-health callbacks.

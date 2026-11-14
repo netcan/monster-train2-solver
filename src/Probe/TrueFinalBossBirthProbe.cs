@@ -117,7 +117,7 @@ namespace MonsterTrain2Poju.Probe
                     LifeLinkCalibration.Capture(created, () => Snapshot(heroes));
                     TrueFinalBossHealthCalibration.Capture(created, () => Snapshot(heroes));
                     TrueFinalBossDeathCalibration.Arm(created);
-                    Completed = !TrueFinalBossDamageCalibration.Enabled;
+                    Completed = !TrueFinalBossDamageCalibration.Enabled && !TrueFinalBossMaximumHealthCalibration.Enabled;
                 }
                 catch (Exception error)
                 {
@@ -125,9 +125,10 @@ namespace MonsterTrain2Poju.Probe
                     if (TrueFinalBossTurnProbe.Enabled) FullBattleTrace.Active!.CaptureFailure(error);
                 }
             }
-            if (Error == null && TrueFinalBossDamageCalibration.Enabled)
+            if (Error == null && (TrueFinalBossDamageCalibration.Enabled || TrueFinalBossMaximumHealthCalibration.Enabled))
             {
-                IEnumerator paid = TrueFinalBossDamageCalibration.Capture(created);
+                IEnumerator paid = TrueFinalBossMaximumHealthCalibration.Enabled ? TrueFinalBossMaximumHealthCalibration.Capture(created) :
+                    TrueFinalBossDamageCalibration.Capture(created);
                 while (true)
                 {
                     bool moved;

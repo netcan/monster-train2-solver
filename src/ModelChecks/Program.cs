@@ -3976,6 +3976,18 @@ if (args.Length == 2 && args[0] == "--true-final-boss-damage-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--true-final-boss-maximum-battle-only")
+{
+    TrueFinalBossMaximumBattleChecks.Native(args[1]);
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--true-final-boss-maximum-health-only")
+{
+    TrueFinalBossMaximumHealthChecks.Native(args[1]);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--true-final-boss-health-updates-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

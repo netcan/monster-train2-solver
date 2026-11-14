@@ -20,7 +20,7 @@ namespace MonsterTrain2Poju.Model
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre, bool heal, bool triggerOnHeal, int floor,
             bool decreaseHp, bool recordSpawner, bool captureAllDispatches)
         {
-            string? error = RoomCombatModel.Validate(source, halfHealthLifecycle: true);
+            string? error = RoomCombatModel.Validate(source, linkedHealthOnly: true, halfHealthLifecycle: true);
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (error != null || target == null) return Unsupported(error ?? "Missing maximum-health target.");
             if (floor < 0 || floor > 99999) return Unsupported("Invalid native maximum-health floor.");
@@ -38,11 +38,29 @@ namespace MonsterTrain2Poju.Model
             var state = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units,
                 source.ExternalInteractions, context, source.Preview, source.ActiveCompanionBossIds);
             if (amount <= 0) return new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
+            bool linked = context?.LifeLinks?.Actors.Any(actor => actor.Id == targetId) == true;
+            if (linked && source.Preview)
+                return Unsupported("Linked maximum-health preview changes require native copy and shared-health calibration.");
+            bool protectedByLifeLink = debuff && target.Status("lifelink") != null &&
+                context?.LifeLinks != null && LifeLinkModel.Protected(context.LifeLinks, targetId);
+            if (protectedByLifeLink && amount >= target.MaxHealth) amount = target.MaxHealth - 1;
             int maxHealth = debuff ? Math.Max(floor, checked(target.MaxHealth - amount)) : Math.Min(99999, checked(target.MaxHealth + amount));
             bool lifecycle = halfHealth || triggerOnHeal;
-            int health = debuff ? decreaseHp ? Math.Max(0, checked(target.Health - amount)) : Math.Min(target.Health, maxHealth) :
+            int loss = protectedByLifeLink && amount >= target.Health ? target.Health - 1 : amount;
+            int health = debuff ? decreaseHp ? Math.Max(0, checked(target.Health - loss)) : Math.Min(target.Health, maxHealth) :
                 heal && !lifecycle ? HealingModel.HealedHealth(target.Health, maxHealth, amount, target.Modifiers!.CanBeHealed,
                     target.Statuses, fromMaxHealthChange: true) : target.Health;
+            if (linked)
+            {
+                if (health <= 0) return Unsupported("Terminal linked maximum-health changes require native sacrifice and encounter-completion calibration.");
+                context = LinkedBossHealthModel.WithMaximumHealth(context!, targetId, health, maxHealth, out string? linkedError);
+                if (context == null) return Unsupported(linkedError!);
+                var byId = context.Enchantments!.Rooms.SelectMany(room => room.Units).ToDictionary(unit => unit.Id);
+                state = new RoomCombatState(state.RoomIndex, state.Deployment,
+                    state.Units.Select(unit => byId.TryGetValue(unit.Id, out CombatUnit? shared) ?
+                        unit.WithHealthAndMaxHealth(shared.Health, shared.MaxHealth) : unit).ToArray(),
+                    state.ExternalInteractions, context, state.Preview, state.ActiveCompanionBossIds);
+            }
             CombatUnit changed = target.WithHealthAndMaxHealth(health, maxHealth);
             // Lethal native debuffs sacrifice the unit without attributing damage to the played card.
             if (health <= 0 && halfHealth && source.Preview)

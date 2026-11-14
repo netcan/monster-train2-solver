@@ -2960,6 +2960,7 @@ namespace MonsterTrain2Poju.Model
                 int titanSkinSoaked = 0;
                 int armorBlockedThisHit = 0;
                 int lethalDamagePrevented = 0;
+                int lifeLinkPrevented = 0;
                 bool direct = kind == "Attack";
                 bool attackingTrigger = direct || kind == "Trample";
                 if (applyTraits)
@@ -3088,7 +3089,8 @@ namespace MonsterTrain2Poju.Model
                 if (target.Has("lifelink"))
                 {
                     if (context?.LifeLinks == null) { unsupportedReason = "Life-link damage requires the global live roster."; return; }
-                    damage = LifeLinkModel.Test(context.LifeLinks, target.Source.Id, damage).Damage;
+                    LifeLinkDamageResult linked = LifeLinkModel.Test(context.LifeLinks, target.Source.Id, damage);
+                    damage = linked.Damage; lifeLinkPrevented = linked.Prevented;
                 }
                 if (target.Has("tenacious"))
                 {
@@ -3111,7 +3113,10 @@ namespace MonsterTrain2Poju.Model
                     }
                 }
                 if (actor != null && context?.Statistics != null)
-                    context = context.WithStatistics(context.Statistics.WithLastAttackDamage(checked(damage + blocked)));
+                    // 2.3.1 includes LifeLink prevention in attackDamageDealt;
+                    // 2.2.1 stores only damageToApply plus damageBlocked.
+                    context = context.WithStatistics(context.Statistics.WithLastAttackDamage(checked(damage + blocked +
+                        (context.Statistics.MonsterDamage != null ? lifeLinkPrevented : 0))));
                 ApplyDamageOverflow(actor, target, damage, kind, sourceCardId);
                 if (unsupportedReason != null) return;
                 // Native fixes damage and resulting HP before firing the pre-damage
@@ -3681,6 +3686,29 @@ namespace MonsterTrain2Poju.Model
                     world.Preview, world.TestRng, world.AutomaticLifecycle, world.TemporaryPreviewUnitIds));
                 if (context.QueryFrame?.SelectedRoomIndex != null)
                     context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: roster.Last().RoomIndex));
+                // Native removal dispatches each body's floor death observers,
+                // including ordinary enemies while the encounter is ending.
+                foreach (var removed in roster)
+                foreach (string stage in HarvestModel.Stages(removed.Unit))
+                {
+                    HarvestModel.Stage(stage, out string kind, out CombatTeam team);
+                    RoomCombatState floor = context.Enchantments!.Rooms.Single(room => room.RoomIndex == removed.RoomIndex);
+                    CombatUnit[] observers = floor.Units.Where(unit => unit.Health > 0 && unit.Team == team &&
+                        (traceAllDispatches || unit.Triggers.Any(trigger => trigger.Kind == kind))).ToArray();
+                    foreach (CombatUnit observer in observers)
+                        QueueCallback(new QueuedCharacterTrigger(removed.RoomIndex, observer, kind,
+                            // Group cleanup removes the other bodies at their current HP.
+                            dyingCharacter: units.Single(unit => unit.Source.Id == removed.Unit.Id).Freeze(),
+                            triggerCount: 1, captureAllDispatches: traceAllDispatches));
+                    if (enqueueCharacterTrigger == null || localUpgradeQueue) DrainLocalTriggerQueue();
+                    if (unsupportedReason != null) return;
+                    foreach (CombatUnit observer in observers)
+                    {
+                        WorkingUnit? tracked = units.FirstOrDefault(unit => unit.Source.Id == observer.Id);
+                        CombatUnit? updated = context.Enchantments!.Rooms.SelectMany(room => room.Units).SingleOrDefault(unit => unit.Id == observer.Id);
+                        if (tracked != null && updated != null) tracked.Apply(updated);
+                    }
+                }
                 Emit("Death", attacker, root, 0);
             }
 
@@ -4116,6 +4144,11 @@ namespace MonsterTrain2Poju.Model
                         RoomCombatResult fired = ApplyQueuedCharacterTrigger(EnchantmentWorldModel.Room(remote, context), callback, QueueCallback);
                         if (!fired.Supported) { unsupportedReason = fired.UnsupportedReason; break; }
                         events.AddRange(fired.Events); dispatches.AddRange(fired.Dispatches);
+                        foreach (CombatUnit changed in fired.State!.Units)
+                        {
+                            WorkingUnit? borrowed = units.FirstOrDefault(unit => unit.Source.Id == changed.Id && externalTurnActorIds.Contains(changed.Id));
+                            if (borrowed != null) borrowed.Apply(changed);
+                        }
                         ImportEnchantmentRoom(EnchantmentWorldModel.Refresh(EnchantmentWorldModel.Room(PhysicalRoom(), fired.State!.Context)));
                         battleWon |= fired.Outcome == RoomOutcome.BattleWon;
                         continue;

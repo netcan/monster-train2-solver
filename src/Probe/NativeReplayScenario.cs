@@ -3016,6 +3016,7 @@ namespace MonsterTrain2Poju.Probe
                 // normal legal cards. Default capture guards remain in place;
                 // acceptance still requires the complete native failure counters.
                 if (TrueFinalBossLethalScenario.PaidSpell && TrueFinalBossLethalScenario.Prepare()) return;
+                if (TrueFinalBossMaximumBattleScenario.Prepare()) return;
                 BattleTurnState decision = FullBattleTrace.Active!.CaptureDecision(
                     includeOuterBossForBump: OuterBossPhaseProbe.Enabled || OuterBossBirthProbe.Enabled,
                     ignoreOuterBossSpawnInteraction: OuterBossPhaseProbe.Enabled || OuterBossBirthProbe.Enabled);
@@ -3026,7 +3027,11 @@ namespace MonsterTrain2Poju.Probe
                 RelicStatusStackProbe.Matrix();
                 RelicStatusMagnitudeProbe.Matrix();
                 RelicStatusDecayProbe.Matrix();
-                if (TrueFinalBossLethalScenario.PaidSpell && decision.Spawn.Turn > 0)
+                if (TrueFinalBossMaximumBattleScenario.Enabled)
+                {
+                    pendingPlay = TrueFinalBossMaximumBattleScenario.Choose(decision);
+                }
+                else if (TrueFinalBossLethalScenario.PaidSpell && decision.Spawn.Turn > 0)
                 {
                     pendingPlay = TrueFinalBossLethalScenario.Choose(decision);
                 }
@@ -3562,6 +3567,7 @@ namespace MonsterTrain2Poju.Probe
                 (RelentlessBattleScenario.Enabled && RelentlessBattleScenario.IsScenarioAction(action)) ||
                 (ZealHordeBattleScenario.Enabled && ZealHordeBattleScenario.IsScenarioAction(action)) ||
                 (LethalMaximumBattleScenario.Enabled && LethalMaximumBattleScenario.IsScenarioAction(action)) ||
+                (TrueFinalBossMaximumBattleScenario.Enabled && TrueFinalBossMaximumBattleScenario.IsScenarioAction(action)) ||
                 (modifierScenario == OriginalDeathwishAttackScenario.Name && OriginalDeathwishAttackScenario.IsScenarioAction(action)) ||
                 (modifierScenario == OriginalChampionStartTurnHealScenario.Name && OriginalChampionStartTurnHealScenario.IsScenarioAction(action)) ||
                 (OriginalPyreCardCostScenario.Enabled && OriginalPyreCardCostScenario.IsScenarioAction(action)) ||

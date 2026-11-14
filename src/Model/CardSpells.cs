@@ -2286,6 +2286,19 @@ namespace MonsterTrain2Poju.Model
             bool removedLinkedGroup = RemovedLinkedGroup(source, changed);
             RoomCombatState[] rooms = removedLinkedGroup ? changed.Context!.Enchantments!.Rooms.ToArray() :
                 source.Rooms.Select(room => room.RoomIndex == changed.RoomIndex ? changed : room).ToArray();
+            if (!removedLinkedGroup && changed.Context?.LifeLinks is LifeLinkContext links && changed.Context.Enchantments is EnchantmentWorld world)
+            {
+                // A body API can write the shared owner's HP/max HP on another
+                // floor. Preserve that write before the next world refresh.
+                var prior = source.Context?.Enchantments?.Rooms.SelectMany(room => room.Units).ToDictionary(unit => unit.Id);
+                var shared = world.Rooms.SelectMany(room => room.Units).Where(unit => links.Actors.Any(actor => actor.Id == unit.Id) &&
+                    prior != null && prior.TryGetValue(unit.Id, out CombatUnit? old) &&
+                    (old.Health != unit.Health || old.MaxHealth != unit.MaxHealth)).ToDictionary(unit => unit.Id);
+                rooms = rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
+                    room.Units.Select(unit => shared.TryGetValue(unit.Id, out CombatUnit? updated) ?
+                        unit.WithHealthAndMaxHealth(updated.Health, updated.MaxHealth) : unit).ToArray(),
+                    room.ExternalInteractions, room.Context, room.Preview, room.ActiveCompanionBossIds)).ToArray();
+            }
             var alive = new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
             return WithContext(new TrainCombatState(rooms, source.Movement.Concat((changed.Context?.Enchantments?.Movement ?? Array.Empty<EnemyMovement>())
                 .Where(move => !source.Movement.Any(old => old.UnitId == move.UnitId))).Where(move => alive.Contains(move.UnitId)).ToArray(),

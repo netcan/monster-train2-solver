@@ -37,7 +37,7 @@ namespace MonsterTrain2Poju.Probe
                 .Single(data => data.GetAssetKey() == "Boss_Level9_Entropy_Top_V2");
             return new TrueFinalBossSpawnDefinition(definitions,
                 ((List<int>)AccessTools.Field(typeof(HeroManager), "queuedTrueFinalBosses").GetValue(heroes)).ToArray(),
-                OuterBossPhaseProbe.Definition(top), interactions);
+                OuterBossPhaseProbe.Definition(top), interactions, clearBirthImmobile: ConditionalActivationProbe.HasVanguard);
         }
         internal static TrueFinalBossPhaseFlags? CaptureFlags(HeroManager heroes)
         {

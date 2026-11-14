@@ -25,7 +25,8 @@ namespace MonsterTrain2Poju.Probe
             return new TrueFinalBossSpawnState(trace.CaptureDecision(true, true), definitions,
                 ((List<int>)AccessTools.Field(typeof(HeroManager), "queuedTrueFinalBosses").GetValue(heroes)).ToArray(),
                 Id(heroes.GetOuterTrainBossCharacter()), Enumerable.Range(0, rooms.GetNumRooms())
-                    .Select(index => Id(rooms.GetRoom(index).GetOuterTrainBoss())).ToArray(), interactions);
+                    .Select(index => Id(rooms.GetRoom(index).GetOuterTrainBoss())).ToArray(), interactions,
+                    clearBirthImmobile: ConditionalActivationProbe.HasVanguard);
         }
         internal static void Begin(HeroManager heroes)
         {

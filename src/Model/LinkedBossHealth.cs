@@ -20,6 +20,25 @@ namespace MonsterTrain2Poju.Model
     // controller, attacks and terminal cleanup remain separate boundaries.
     public static class LinkedBossHealthModel
     {
+        internal static CombatContext? WithMaximumHealth(CombatContext source, int targetId, int health, int maxHealth, out string? error)
+        {
+            if (source.LifeLinks == null || source.Enchantments == null || source.LifeLinks.CalculatingPreview || source.Enchantments.Preview)
+            { error = "Linked maximum-health updates require the captured live physical world."; return null; }
+            CombatContext? context = WithHealth(source, targetId, health, out error);
+            if (context == null) return null;
+            LifeLinkActor target = context.LifeLinks!.Actors.Single(actor => actor.Id == targetId);
+            int owner = target.LinkedId == 0 ? target.Id : target.LinkedId;
+            var ids = context.LifeLinks.Actors.Where(actor => (actor.LinkedId == 0 ? actor.Id : actor.LinkedId) == owner)
+                .Select(actor => actor.Id).ToHashSet();
+            EnchantmentWorld world = context.Enchantments!;
+            CombatUnit Sync(CombatUnit unit) => ids.Contains(unit.Id) ? unit.WithHealthAndMaxHealth(health, maxHealth) : unit;
+            return context.WithEnchantments(new EnchantmentWorld(world.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
+                room.Deployment, room.Units.Select(Sync).ToArray(), room.ExternalInteractions, null, room.Preview, room.ActiveCompanionBossIds)).ToArray(),
+                world.Movement, world.EnemySlotsPerRoom, world.RetainedUnits.Select(actor =>
+                    new EnchantmentRetainedUnit(actor.Preview ? actor.Unit : Sync(actor.Unit), actor.RoomIndex, actor.Preview)).ToArray(),
+                world.EnchanterIds, world.AllowUpdates, world.Updating, world.Preview, world.TestRng, world.AutomaticLifecycle, world.TemporaryPreviewUnitIds));
+        }
+
         internal static CombatContext? WithHealth(CombatContext source, int targetId, int health, out string? error, bool allowTerminal = false)
         {
             LifeLinkContext? world = source.LifeLinks;

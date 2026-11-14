@@ -10,11 +10,13 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<int> QueuedBosses { get; }
         public OuterBossProgress Controller { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
+        public bool ClearBirthImmobile { get; }
         public TrueFinalBossSpawnDefinition(IReadOnlyList<EnemyDefinition> definitions, IReadOnlyList<int> queuedBosses,
-            OuterBossProgress controller, IReadOnlyList<string> externalInteractions)
+            OuterBossProgress controller, IReadOnlyList<string> externalInteractions, bool clearBirthImmobile = false)
         {
             Definitions = Array.AsReadOnly(definitions.ToArray()); QueuedBosses = Array.AsReadOnly(queuedBosses.ToArray());
             Controller = controller; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
+            ClearBirthImmobile = clearBirthImmobile;
         }
     }
     // The entire native DoTrueFinalBossSpawning boundary, including creation,
@@ -27,12 +29,14 @@ namespace MonsterTrain2Poju.Model
         public int OuterBossId { get; }
         public IReadOnlyList<int> RoomBossIds { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
+        public bool ClearBirthImmobile { get; }
         public TrueFinalBossSpawnState(BattleTurnState battle, IReadOnlyList<EnemyDefinition> definitions,
             IReadOnlyList<int> queuedBosses, int outerBossId, IReadOnlyList<int> roomBossIds,
-            IReadOnlyList<string> externalInteractions)
+            IReadOnlyList<string> externalInteractions, bool clearBirthImmobile = false)
         {
             Battle = battle; Definitions = Array.AsReadOnly(definitions.ToArray());
             QueuedBosses = Array.AsReadOnly(queuedBosses.ToArray()); OuterBossId = outerBossId;
+            ClearBirthImmobile = clearBirthImmobile;
             RoomBossIds = Array.AsReadOnly(roomBossIds.ToArray());
             ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
         }
@@ -60,7 +64,7 @@ namespace MonsterTrain2Poju.Model
                 queued.Controller.Actions.Count != 0)
                 return Fail("Missing original queued true-final-boss definition or empty global controller.");
             TrueFinalBossSpawnResult born = Apply(new TrueFinalBossSpawnState(source, queued.Definitions, queued.QueuedBosses,
-                0, new[] { 0, 0, 0, 0 }, queued.ExternalInteractions));
+                0, new[] { 0, 0, 0, 0 }, queued.ExternalInteractions, queued.ClearBirthImmobile));
             if (!born.Supported) return Fail(born.UnsupportedReason!);
             BattleTurnState battle = born.State!.Battle; EnemySpawnState old = battle.Spawn;
             TrainCombatState train = old.Train;
@@ -73,7 +77,7 @@ namespace MonsterTrain2Poju.Model
             if (!initial.Supported) return Fail(initial.UnsupportedReason!);
             OuterBossProgress authored = queued.Controller;
             var controller = new OuterBossProgress(born.State.OuterBossId, authored.AssetKey, authored.Phase,
-                authored.ValidAttackPhases, authored.BaseCanAttack, 2, 0, new int[3], initial.State!, authored.Actions, authored.DestroyActions);
+                authored.ValidAttackPhases, authored.BaseCanAttack, 2, queued.ClearBirthImmobile ? 1 : 0, new int[3], initial.State!, authored.Actions, authored.DestroyActions);
             var spawn = new EnemySpawnState(train, old.Waves, old.SelectedGroups, old.Phase, old.Looping, old.Rng,
                 old.NextUnitId, old.Treasures, old.TreasuresRemaining, old.TreasureEnabled, old.FirstTreasureTurn,
                 old.FirstTreasureRoom, old.Turn, old.ExternalInteractions, old.CanonicalDecisionReferences, old.PendingDestroyedUnitIds,
@@ -155,6 +159,8 @@ namespace MonsterTrain2Poju.Model
                 if (!allocation.Supported) return Fail(allocation.UnsupportedReason!);
                 context = allocation.Context!;
                 CombatUnit unit = source.Definitions[index].Create(allocation.UnitId);
+                if (source.ClearBirthImmobile)
+                    unit = CardSpellModel.Copy(unit, unit.Health, unit.Statuses.Where(status => status.Id != "immobile").ToArray());
                 // The definition carries authored placement anchors; the live
                 // canonical unit projection retains only its movement roles.
                 if (index >= 2) unit = unit.WithBumpRules(new UnitBumpRules(false, false, true));
@@ -219,7 +225,7 @@ namespace MonsterTrain2Poju.Model
                 battle.PlayRules, battle.BattlePreviewEnabled, battle.UiRngIsolated, battle.CanonicalDecisionReferences,
                 battle.CanonicalPhysicalReferences, battle.SelectedRoom, battle.MoonPhaseTrackingActive);
             return new TrueFinalBossSpawnResult(new TrueFinalBossSpawnState(next, source.Definitions, Array.Empty<int>(),
-                created[4].Id, new[] { created[2].Id, created[3].Id, created[4].Id, 0 }, source.ExternalInteractions));
+                created[4].Id, new[] { created[2].Id, created[3].Id, created[4].Id, 0 }, source.ExternalInteractions, source.ClearBirthImmobile));
         }
     }
 }
