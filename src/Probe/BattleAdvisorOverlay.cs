@@ -685,7 +685,7 @@ namespace MonsterTrain2Poju.Probe
             string UnitName(int id) => units.TryGetValue(id, out CharacterState known) ? known.GetName() : "单位 #" + id;
             void AppendStep(BattleSearchStep step)
             {
-                if (step.IsEndTurn) { text.Append("结束回合"); return; }
+                if (step.IsEndTurn) { text.Append(AdvisorForecastPresentation.EndTurn(step)); return; }
                 PlayCardAction action = step.Action!;
                 int start = text.Length;
                 if (action.ActivatorUnitId > 0 && units.TryGetValue(action.ActivatorUnitId, out CharacterState actor))

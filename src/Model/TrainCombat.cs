@@ -388,6 +388,7 @@ namespace MonsterTrain2Poju.Model
             var shifted = new List<(int Destination, int UnitId)>();
             var movementResults = new List<RoomCombatResult>();
             var destroyedRooms = new List<int>();
+            var destructionByDestination = new Dictionary<int, int>();
             CombatContext? movementContext = source.Context;
             if (source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Team == CombatTeam.Enemy))
             {
@@ -398,7 +399,6 @@ namespace MonsterTrain2Poju.Model
             // Reserve destinations from the top down; each enemy moves only once.
             for (int index = pyre; index >= 0; index--)
             {
-                int? destroyThroughRoom = null;
                 int highestRoomIndexMovedInto = -1;
                 foreach (CombatUnit enemy in rooms[index].Where(unit => unit.Team == CombatTeam.Enemy).ToArray())
                 {
@@ -465,7 +465,7 @@ namespace MonsterTrain2Poju.Model
                     int playerIndex = rooms[destination].FindIndex(unit => unit.Team == CombatTeam.Player);
                     rooms[destination].Insert(playerIndex < 0 ? rooms[destination].Count : playerIndex, arriving);
                     if (destination > index && enemy.Status("relentless") != null)
-                        destroyThroughRoom = destination;
+                        destructionByDestination[destination] = index;
                     if (destination < index && rule.Loops && enemy.Status("relentless") == null) looped.Add(enemy.Id);
                     else
                     {
@@ -475,23 +475,6 @@ namespace MonsterTrain2Poju.Model
                     enteredPyre |= destination == pyre;
                     if (destination == pyre) lastPyreEntrySource = index;
                 }
-                if (destroyThroughRoom.HasValue)
-                {
-                    for (int floor = index; floor < destroyThroughRoom.Value; floor++)
-                    {
-                        if (destroyedRooms.Contains(floor)) continue;
-                        TrainCombatState current = CurrentMovementState();
-                        TrainCombatResult destroyed = DestroyAscendedRoom(current, floor);
-                        if (!destroyed.Supported) return destroyed;
-                        movementResults.AddRange(destroyed.RoomResults);
-                        destroyedRooms.Add(floor);
-                        if (Terminal(destroyed.Outcome))
-                            return new TrainCombatResult(destroyed.State, destroyed.Outcome, movementResults,
-                                destroyedRoomIndexes: destroyedRooms);
-                        rooms = destroyed.State!.Rooms.Select(room => room.Units.ToList()).ToArray();
-                        movementContext = destroyed.State.Context;
-                    }
-                }
                 if (highestRoomIndexMovedInto >= 0 && !source.Rooms[index].Preview &&
                     movementContext?.QueryFrame?.SelectedRoomIndex != null)
                 {
@@ -499,6 +482,21 @@ namespace MonsterTrain2Poju.Model
                         selectedRoomIndex: highestRoomIndexMovedInto));
                     lastMovementSource = index;
                 }
+            }
+            // Native assigns every new SpawnPoint before processing destination
+            // animations/destruction. A room being destroyed can already hold
+            // arrivals reserved from a lower floor; they must be sacrificed too.
+            foreach (var destruction in destructionByDestination.OrderByDescending(item => item.Key))
+            for (int floor = destruction.Value; floor < destruction.Key; floor++)
+            {
+                TrainCombatResult destroyed = DestroyAscendedRoom(CurrentMovementState(), floor);
+                if (!destroyed.Supported) return destroyed;
+                movementResults.AddRange(destroyed.RoomResults); destroyedRooms.Add(floor);
+                if (Terminal(destroyed.Outcome))
+                    return new TrainCombatResult(destroyed.State, destroyed.Outcome, movementResults,
+                        destroyedRoomIndexes: destroyedRooms);
+                rooms = destroyed.State!.Rooms.Select(room => room.Units.ToList()).ToArray();
+                movementContext = destroyed.State.Context;
             }
             RoomCombatState[] next = source.Rooms.Select((room, index) => new RoomCombatState(room.RoomIndex,
                 room.Deployment, BattleSpawnPointModel.Order(movementContext?.SpawnPoints, index, rooms[index]), room.ExternalInteractions,

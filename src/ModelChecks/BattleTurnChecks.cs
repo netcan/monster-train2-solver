@@ -12,7 +12,7 @@ internal static class BattleTurnChecks
         foreach (FixtureValue turn in turns.EnumerateArray())
         {
             BattleTurnState before = turn.GetProperty("Before").Deserialize<BattleTurnState>()!;
-            BattleTurnResult result = BattleTurnModel.EndTurn(before);
+            BattleTurnResult result = BattleTurnModel.EndTurn(before, RecordedBattleChecks.Decisions(turn));
             if (!result.Supported) { unsupported++; continue; }
             BattleTurnState actual = turn.GetProperty("Actual").Deserialize<BattleTurnState>()!;
             bool isTerminalOutcome = result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;

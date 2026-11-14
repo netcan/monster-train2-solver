@@ -124,7 +124,7 @@ namespace MonsterTrain2Poju.Model
                     BattleSearchStep step = advice.Plan.Steps[index++];
                     if (step.IsEndTurn)
                     {
-                        BattleTurnResult next = BattleTurnModel.EndTurn(projected);
+                        BattleTurnResult next = BattleTurnModel.EndTurn(projected, step.RelentlessDecisions);
                         if (!next.Supported) return false;
                         projected = next.State!;
                     }
@@ -158,7 +158,7 @@ namespace MonsterTrain2Poju.Model
                 fullRoots?.Add(fullKeys.Key(state));
                 if (step.IsEndTurn)
                 {
-                    BattleTurnResult next = BattleTurnModel.EndTurn(state);
+                    BattleTurnResult next = BattleTurnModel.EndTurn(state, step.RelentlessDecisions);
                     if (!next.Supported) return false;
                     state = next.State!; outcome = next.Outcome;
                 }

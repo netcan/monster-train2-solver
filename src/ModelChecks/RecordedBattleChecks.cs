@@ -26,7 +26,7 @@ internal static class RecordedBattleChecks
                 while (actionIndex < actions.Length && actions[actionIndex].GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() <= number)
                     Play(actions[actionIndex++]);
                 Compare(state, turn.GetProperty("Before").Deserialize<BattleTurnState>()!, false, "before EndTurn");
-                BattleTurnResult next = BattleTurnModel.EndTurn(state);
+                BattleTurnResult next = BattleTurnModel.EndTurn(state, Decisions(turn));
                 Require(next.Supported, next.UnsupportedReason ?? "EndTurn unsupported.");
                 Require(next.Outcome == turn.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(), "EndTurn outcome differs.");
                 state = next.State!;
@@ -49,6 +49,8 @@ internal static class RecordedBattleChecks
         Console.WriteLine($"RECORDED-BATTLE-CHAIN PASS: {actions.Length} plays, {turns.Length} EndTurns, first turn {firstTurn}, full native decision comparisons and 16 independent immutable branches.");
     }
     private static bool Terminal(RoomOutcome outcome) => outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
+    internal static RelentlessDecision[]? Decisions(FixtureValue row) => row.TryGetProperty("RelentlessDecisions", out var choices) &&
+        choices.ValueKind != FixtureKind.Null ? choices.Deserialize<RelentlessDecision[]>() : null;
     internal static void Compare(BattleTurnState predicted, BattleTurnState actual, bool terminal, string label)
     {
         string? difference = ModelJson.Difference(BattleTurnChecks.Comparable(predicted, terminal), BattleTurnChecks.Comparable(actual, terminal));

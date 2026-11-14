@@ -121,7 +121,9 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (records.Any(record => record.Actual == null)) throw new InvalidOperationException("Previous EndTurn is still pending.");
                 BattleTurnState before = Capture();
-                var record = new Record { Index = records.Count, Before = before, Predicted = BattleTurnModel.EndTurn(before) };
+                var choices = RelentlessBattleScenario.Plan(before);
+                var record = new Record { Index = records.Count, Before = before, RelentlessDecisions = choices,
+                    Predicted = BattleTurnModel.EndTurn(before, choices) };
                 records.Add(record);
             }
             catch (Exception error) { trace.CaptureFailure(error); }
@@ -191,6 +193,8 @@ namespace MonsterTrain2Poju.Probe
         {
             public int Index { get; set; }
             public BattleTurnState Before { get; set; } = null!;
+            public IReadOnlyList<RelentlessDecision>? RelentlessDecisions { get; set; }
+            public bool ShouldSerializeRelentlessDecisions() => RelentlessDecisions != null;
             public BattleTurnResult Predicted { get; set; } = null!;
             public BattleTurnState? Actual { get; set; }
             public RoomOutcome ActualOutcome { get; set; }

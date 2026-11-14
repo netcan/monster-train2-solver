@@ -95,7 +95,8 @@ namespace MonsterTrain2Poju.Probe
                         Kind = kind, Before = before,
                         SettledDestructionIds = pendingDestruction.Select(trace.UnitId).OrderBy(id => id).ToArray(),
                         SettlementFrames = settlementFrames,
-                        Predicted = kind == "Combat" ? TrainCombatModel.ResolveCombat(before) : TrainCombatModel.Ascend(before)
+                        RelentlessDecisions = kind == "Combat" ? RelentlessBattleScenario.CurrentPlan : null,
+                        Predicted = kind == "Combat" ? TrainCombatModel.ResolveCombat(before, RelentlessBattleScenario.CurrentPlan) : TrainCombatModel.Ascend(before)
                     };
                     records.Add(record);
                 }
@@ -160,6 +161,8 @@ namespace MonsterTrain2Poju.Probe
             public int[] SettledDestructionIds { get; set; } = Array.Empty<int>();
             public int SettlementFrames { get; set; }
             public TrainCombatState Before { get; set; } = null!;
+            public IReadOnlyList<RelentlessDecision>? RelentlessDecisions { get; set; }
+            public bool ShouldSerializeRelentlessDecisions() => RelentlessDecisions != null;
             public TrainCombatResult Predicted { get; set; } = null!;
             public TrainCombatState? Actual { get; set; }
             public string? Difference { get; set; }

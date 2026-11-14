@@ -215,6 +215,18 @@ namespace MonsterTrain2Poju.Model
                 return new Node(state, outcome, steps, parent.Turns + (step.IsEndTurn ? 1 : 0),
                     step.IsEndTurn ? 0 : parent.Actions + 1, Score(state, outcome));
             }
+            IReadOnlyList<BattleEndTurnCandidate> EndTurns(BattleTurnState state)
+            {
+                BattleEndTurnFrontier ends = BattleEndTurnModel.Enumerate(state, Math.Max(0, options.MaxNodes - nodes),
+                    () => cancellationToken.IsCancellationRequested || watch.Elapsed >= options.TimeLimit || earlyStop?.Reached == true,
+                    choices => workspace.EndTurn(state, choices));
+                nodes += ends.ChoiceNodes; nodeLimit |= ends.ReachedNodeLimit;
+                foreach (UnsupportedActionAttempt attempt in ends.UnsupportedAttempts) Unsupported(attempt);
+                return ends.Candidates;
+            }
+            BattleEndTurnCandidate? BestEndTurn(BattleTurnState state) => EndTurns(state)
+                .OrderBy(end => Score(end.Result.State!, end.Result.Outcome))
+                .ThenBy(end => PositionCost(end.Result.State!, end.Result.Outcome)).FirstOrDefault();
 
             // Every rollout shares the node/time budget. With the optional
             // tactical seed, spend it on deployment first: completing an empty
@@ -226,9 +238,9 @@ namespace MonsterTrain2Poju.Model
                     (!Stop() || finishFirstTurn && baseline.Turns == 0 && !cancelled && !nodeLimit && earlyStop?.Reached != true))
                 {
                     nodes++;
-                    BattleTurnResult ended = workspace.EndTurn(baseline.State);
-                    if (!ended.Supported) { Unsupported(new UnsupportedActionAttempt(null, ended.UnsupportedReason ?? "Unsupported EndTurn.")); break; }
-                    baseline = Child(baseline, ended.State!, ended.Outcome, new BattleSearchStep(null, true));
+                    BattleEndTurnCandidate? ended = BestEndTurn(baseline.State);
+                    if (ended == null) break;
+                    baseline = Child(baseline, ended.Result.State!, ended.Result.Outcome, ended.Step);
                     Consider(baseline);
                 }
                 return baseline;
@@ -257,9 +269,9 @@ namespace MonsterTrain2Poju.Model
                         tactical = Child(tactical, chosen.Result.State!, chosen.Result.Outcome, new BattleSearchStep(chosen.Action, false));
                     else
                     {
-                        BattleTurnResult ended = workspace.EndTurn(tactical.State);
-                        if (!ended.Supported) { Unsupported(new UnsupportedActionAttempt(null, ended.UnsupportedReason ?? "Unsupported tactical-seed EndTurn.")); break; }
-                        tactical = Child(tactical, ended.State!, ended.Outcome, new BattleSearchStep(null, true));
+                        BattleEndTurnCandidate? ended = BestEndTurn(tactical.State);
+                        if (ended == null) break;
+                        tactical = Child(tactical, ended.Result.State!, ended.Result.Outcome, ended.Step);
                     }
                     Consider(tactical);
                     // Keep a complete forecast whose first action deploys the
@@ -322,9 +334,9 @@ namespace MonsterTrain2Poju.Model
                 }
                 else
                 {
-                    BattleTurnResult ended = workspace.EndTurn(strength.State);
-                    if (!ended.Supported) { Unsupported(new UnsupportedActionAttempt(null, ended.UnsupportedReason ?? "Unsupported strength-seed EndTurn.")); break; }
-                    strength = Child(strength, ended.State!, ended.Outcome, new BattleSearchStep(null, true));
+                    BattleEndTurnCandidate? ended = BestEndTurn(strength.State);
+                    if (ended == null) break;
+                    strength = Child(strength, ended.Result.State!, ended.Result.Outcome, ended.Step);
                     Consider(strength);
                     // Retain the seed's complete current-turn card sequence
                     // even if its later card choices exhaust the shared budget.
@@ -365,10 +377,9 @@ namespace MonsterTrain2Poju.Model
                                         alternate = Child(alternate, move.Result.State!, move.Result.Outcome, new BattleSearchStep(move.Action, false));
                                     else
                                     {
-                                        BattleTurnResult nextTurn = workspace.EndTurn(alternate.State);
-                                        if (!nextTurn.Supported)
-                                        { Unsupported(new UnsupportedActionAttempt(null, nextTurn.UnsupportedReason ?? "Unsupported alternative deployment EndTurn.")); break; }
-                                        alternate = Child(alternate, nextTurn.State!, nextTurn.Outcome, new BattleSearchStep(null, true));
+                                        BattleEndTurnCandidate? nextTurn = BestEndTurn(alternate.State);
+                                        if (nextTurn == null) break;
+                                        alternate = Child(alternate, nextTurn.Result.State!, nextTurn.Result.Outcome, nextTurn.Step);
                                     }
                                     Consider(alternate);
                                 }
@@ -427,9 +438,9 @@ namespace MonsterTrain2Poju.Model
                 }
                 else
                 {
-                    BattleTurnResult ended = workspace.EndTurn(policy.State);
-                    if (!ended.Supported) { Unsupported(new UnsupportedActionAttempt(null, ended.UnsupportedReason ?? "Unsupported policy EndTurn.")); break; }
-                    policy = Child(policy, ended.State!, ended.Outcome, new BattleSearchStep(null, true));
+                    BattleEndTurnCandidate? ended = BestEndTurn(policy.State);
+                    if (ended == null) break;
+                    policy = Child(policy, ended.Result.State!, ended.Result.Outcome, ended.Step);
                     Consider(policy);
                 }
             }
@@ -462,9 +473,8 @@ namespace MonsterTrain2Poju.Model
                     }
                     else actionLimit = true;
                     if (watch.Elapsed >= options.TimeLimit || cancellationToken.IsCancellationRequested || earlyStop?.Reached == true) break;
-                    BattleTurnResult ended = workspace.EndTurn(node.State);
-                    if (ended.Supported) Add(Child(node, ended.State!, ended.Outcome, new BattleSearchStep(null, true)));
-                    else Unsupported(new UnsupportedActionAttempt(null, ended.UnsupportedReason ?? "Unsupported EndTurn."));
+                    foreach (BattleEndTurnCandidate end in EndTurns(node.State))
+                        Add(Child(node, end.Result.State!, end.Result.Outcome, end.Step));
                 }
                 next = next.OrderBy(node => node.Score).ThenBy(node => node.PositionCost)
                     .ThenByDescending(node => node.Turns).ThenBy(node => node.Steps.Count).ToList();

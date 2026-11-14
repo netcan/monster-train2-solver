@@ -245,7 +245,8 @@ internal static class RoomCombatChecks
                 : Array.Empty<(int, CombatUnit)>();
             RoomCombatResult result = stage.GetProperty("Kind").GetString() == "Exchange"
                 ? RoomCombatModel.Exchange(state, externalTargets: externalTargets) : RoomCombatModel.Resolve(state,
-                    externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets);
+                    externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets,
+                    relentlessDecisions: RecordedBattleChecks.Decisions(stage));
             if (!result.Supported) { unsupported++; firstUnsupported ??= result.UnsupportedReason; continue; }
             // The oracle is the captured game state, not the recorded model prediction.
             CombatUnit[] actual = stage.GetProperty("Actual").GetProperty("Units").Deserialize<CombatUnit[]>()!;

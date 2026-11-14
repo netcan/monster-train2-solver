@@ -1,5 +1,20 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--relentless-battle-pair-only")
+{
+    RelentlessBattleChecks.NativePair(args[1], args[2]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--relentless-battle-only")
+{
+    RelentlessBattleChecks.Native(args[1]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--relentless-search-only")
+{
+    RelentlessSearchChecks.NativeComponent(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--relentless-only")
 {
     RelentlessChecks.Native(args[1]);

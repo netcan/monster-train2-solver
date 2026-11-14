@@ -12,9 +12,21 @@ Eight isolated native room successors cover preview early exit, Abandon room
 cleanup, repeated Continue callbacks, and zero-damage cycles. Exact pending-choice
 requests, complete room states, deterministic gameplay streams, distinct state
 keys and 32 immutable parallel branches pass. Explicit decisions flow through
-the room/train/EndTurn APIs; search-plan choice enumeration, live advisor dialog
-handling and whole-battle abandonment still require integration and native proof.
+the room/train/EndTurn APIs. Search, exact solving, planner seeds/beam branches
+and plan verification/reuse now preserve those inputs; choice retries share the
+node/time budget and incomplete infinite frontiers cannot be certified optimal.
 Run `scripts/Check-Game231Relentless.ps1` for the 13,074-byte binary evidence.
+Two independent native seven-turn victories now compare Continue and Abandon
+from an identical complete decision: 131 room and 28 train stages, 11 actual
+dialog callbacks, full successor/RNG replay and 16 immutable branches each pass.
+Abandon destroys the departed floor; native ascension reserves every destination
+before destruction, including lower-floor arrivals that must also be removed.
+The controlled notification interval is three, unit stats are explicitly changed,
+and original bosses are retained. Finite serial/parallel/exact/production search
+prefers the surviving Continue branch. Run `scripts/Check-Game231RelentlessBattle.ps1`.
+Advisor hints display the planned choices; live player dialog interaction,
+hidden-world policy choices and the long real-Pyre exception remain unverified.
+These controls do not add original-card/relic coverage.
 
 Latest 2.3.1 acceptance: all **12/12 new original relics** have controlled
 whole-battle evidence; this does not revalidate all 614 cards or 236 relics.

@@ -781,6 +781,7 @@ namespace MonsterTrain2Poju.Probe
                         ActiveDeaths = activeDeaths.Select(death => new StageDeathRecord
                             { Kind = death.Kind, UnitId = death.UnitId, Started = death.Started }).ToArray(),
                         PendingPhysicalDeaths = pendingDeaths.ToArray(),
+                        RelentlessDecisions = kind == "Room" ? RelentlessBattleScenario.CurrentPlan : null,
                         Room = room,
                         Before = before,
                         ExternalTargets = externalTargets.Select(target => new TowerTargetSnapshot
@@ -790,7 +791,8 @@ namespace MonsterTrain2Poju.Probe
                         Predicted = kind == "Exchange" ? RoomCombatModel.Exchange(before, externalTargets: externalTargets,
                             pendingPhysicalDeathIds: pendingDeaths) :
                             RoomCombatModel.Resolve(before, externalPyre: pyre,
-                                externalPyreRoomIndex: pyre == null ? -1 : pyreRoomIndex, externalTargets: externalTargets)
+                                externalPyreRoomIndex: pyre == null ? -1 : pyreRoomIndex, externalTargets: externalTargets,
+                                relentlessDecisions: RelentlessBattleScenario.CurrentPlan)
                     };
                     stages.Add(record);
                 }
@@ -1717,6 +1719,7 @@ namespace MonsterTrain2Poju.Probe
                 DevotionSpawnBattle = DevotionSpawnBattleScenario.Enabled ? DevotionSpawnBattleScenario.Evidence : null,
                 DevoteBattle = DevoteBattleScenario.Enabled ? DevoteBattleScenario.Evidence : null,
                 FloorDamageBattle = FloorDamageBattleScenario.Enabled ? FloorDamageBattleScenario.Evidence : null,
+                RelentlessBattle = RelentlessBattleScenario.Enabled ? RelentlessBattleScenario.Evidence : null,
                 DevotionDamageBattle = DevotionDamageBattleScenario.Enabled ? DevotionDamageBattleScenario.Evidence : null,
                 DevotionDamageCallbacks = DevotionDamageBattleScenario.Enabled ? RelicUnitResourceProbe.Records : null,
                 DamageThresholdDrawBattle = DamageThresholdDrawBattleScenario.Enabled ? DamageThresholdDrawBattleScenario.Evidence : null,
@@ -1985,6 +1988,8 @@ namespace MonsterTrain2Poju.Probe
             public StageQueuedTrigger[] QueuedTriggers { get; set; } = Array.Empty<StageQueuedTrigger>();
             public StageDeathRecord[] ActiveDeaths { get; set; } = Array.Empty<StageDeathRecord>();
             public int[] PendingPhysicalDeaths { get; set; } = Array.Empty<int>();
+            public IReadOnlyList<RelentlessDecision>? RelentlessDecisions { get; set; }
+            public bool ShouldSerializeRelentlessDecisions() => RelentlessDecisions != null;
             [JsonIgnore] public RoomState Room { get; set; } = null!;
             public RoomCombatState Before { get; set; } = null!;
             public TowerTargetSnapshot[] ExternalTargets { get; set; } = Array.Empty<TowerTargetSnapshot>();

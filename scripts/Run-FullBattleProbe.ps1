@@ -470,6 +470,7 @@ param(
     [switch] $DevotionSpawnBattle,
     [switch] $DevoteBattle,
     [switch] $FloorDamageBattle,
+    [ValidateSet('Abandon', 'Continue')][string] $RelentlessBattle = '',
     [switch] $TenaciousBattle,
     [switch] $ChainedStatusCalibration,
     [switch] $ChainedBattle,
@@ -1396,6 +1397,7 @@ if ($DamagedFloorEnergyBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints 
 if ($DevotionSpawnBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($DevoteBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($FloorDamageBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($RelentlessBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDeathwishAttack) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStealthSlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -2341,6 +2343,7 @@ if ($DamagedFloorEnergyBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'damaged-
 if ($DevotionSpawnBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'devotion-spawn-battle' }
 if ($DevoteBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'devote-battle' }
 if ($FloorDamageBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'floor-damage-battle' }
+if ($RelentlessBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'relentless-battle-' + $RelentlessBattle.ToLowerInvariant() }
 if ($OriginalDeathwishAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deathwish-attack' }
 if ($OriginalStealthSlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-stealth-slay' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
@@ -2913,6 +2916,18 @@ if ($DevoteBattle -and ($trace.ModifierScenario -cne 'devote-battle' -or
     -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
     throw 'Missing native Devote victory, fourteen complete tribute inputs, rejected no-op controls or full matching successors.'
+}
+if ($RelentlessBattle) {
+    $abandon = $RelentlessBattle -ceq 'Abandon'
+    if ($trace.ModifierScenario -cne ('relentless-battle-' + $RelentlessBattle.ToLowerInvariant()) -or
+        -not $trace.RelentlessBattle.Prepared -or $trace.RelentlessBattle.Abandon -ne $abandon -or
+        @($trace.Actions).Count -ne 1 -or @($trace.Turns).Count -ne 7 -or
+        @($trace.RelentlessBattle.Dialogs).Count -eq 0 -or @($trace.RelentlessBattle.RoomStates).Count -lt 7 -or
+        @($trace.RelentlessBattle.Dialogs | Where-Object { $_.Continue -eq $abandon -or $_.CompletedRounds % 3 -ne 0 }).Count -ne 0 -or
+        -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+        $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
+        throw 'Missing complete native Relentless policy, seven turns, observed dialogs/floor states or matching successors.'
+    }
 }
 if ($FloorDamageBattle -and ($trace.ModifierScenario -cne 'floor-damage-battle' -or
     -not $trace.FloorDamageBattle.Prepared -or $trace.FloorDamageBattle.CompletedControlPlays -ne 12 -or

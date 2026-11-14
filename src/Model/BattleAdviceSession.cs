@@ -341,7 +341,7 @@ namespace MonsterTrain2Poju.Model
                 fullRoots?.Add(keys.Key(replayed));
                 if (step.IsEndTurn)
                 {
-                    BattleTurnResult next = BattleTurnModel.EndTurn(replayed);
+                    BattleTurnResult next = BattleTurnModel.EndTurn(replayed, step.RelentlessDecisions);
                     if (!next.Supported) throw new InvalidOperationException(next.UnsupportedReason);
                     replayed = next.State!; outcome = next.Outcome;
                 }

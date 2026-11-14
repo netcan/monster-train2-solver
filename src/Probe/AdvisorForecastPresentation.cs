@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using MonsterTrain2Poju.Model;
 
 namespace MonsterTrain2Poju.Probe
@@ -26,5 +27,9 @@ namespace MonsterTrain2Poju.Probe
             "【单位技能】" + unit + "：" + ability +
             (currentCost.HasValue ? " · 当前 " + currentCost + " 费" : "") +
             (sourceRoom >= 0 ? "\n来源：当前第 " + (sourceRoom + 1) + " 层的 " + unit : "");
+
+        internal static string EndTurn(BattleSearchStep step) => "结束回合" +
+            (step.RelentlessDecisions?.Count > 0 ? "；" + string.Join("；", step.RelentlessDecisions.Select(choice =>
+                "第 " + (choice.RoomIndex + 1) + " 层第 " + choice.CompletedRounds + " 轮" + (choice.Continue ? "继续" : "放弃"))) : "");
     }
 }

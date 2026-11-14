@@ -26,7 +26,12 @@ namespace MonsterTrain2Poju.Model
     {
         public PlayCardAction? Action { get; }
         public bool IsEndTurn { get; }
-        internal BattleSearchStep(PlayCardAction? action, bool isEndTurn) { Action = action; IsEndTurn = isEndTurn; }
+        public IReadOnlyList<RelentlessDecision>? RelentlessDecisions { get; }
+        public bool ShouldSerializeRelentlessDecisions() => RelentlessDecisions != null;
+        public BattleSearchStep(PlayCardAction? action, bool isEndTurn, IReadOnlyList<RelentlessDecision>? relentlessDecisions = null)
+        { Action = action; IsEndTurn = isEndTurn;
+            if (!isEndTurn && relentlessDecisions?.Count > 0) throw new ArgumentException("Relentless decisions belong to EndTurn.", nameof(relentlessDecisions));
+            RelentlessDecisions = relentlessDecisions?.Count > 0 ? Array.AsReadOnly(relentlessDecisions.ToArray()) : null; }
     }
 
     // Completeness refers only to the enumerated model frontier, not the full native game's action space.
@@ -109,12 +114,14 @@ namespace MonsterTrain2Poju.Model
 
             if (turnsElapsed < options.MaxTurns)
             {
-                BattleTurnResult ended = BattleTurnModel.EndTurn(state);
-                if (!ended.Supported)
-                    summary.AddUnsupported(new UnsupportedActionAttempt(null,
-                        ended.UnsupportedReason ?? "EndTurn could not be modeled."));
-                else branches.Add(new SearchBranch(new BattleSearchStep(null, true), ended.State!, ended.Outcome,
-                    turnsElapsed + 1));
+                BattleEndTurnFrontier ends = BattleEndTurnModel.Enumerate(state, Math.Max(0, budget - 1),
+                    () => cancellationToken.IsCancellationRequested);
+                summary.NodesVisited += ends.ChoiceNodes;
+                summary.ReachedNodeLimit |= ends.ReachedNodeLimit;
+                summary.Cancelled |= ends.Interrupted;
+                foreach (UnsupportedActionAttempt attempt in ends.UnsupportedAttempts) summary.AddUnsupported(attempt);
+                foreach (BattleEndTurnCandidate end in ends.Candidates)
+                    branches.Add(new SearchBranch(end.Step, end.Result.State!, end.Result.Outcome, turnsElapsed + 1));
             }
             else
             {
@@ -122,7 +129,7 @@ namespace MonsterTrain2Poju.Model
                 summary.Consider(Leaf(state, RoomOutcome.Exchanged, Array.Empty<BattleSearchStep>(), score));
             }
 
-            PrioritizeBranches(branches, budget, root, score, options, lowerBound);
+            PrioritizeBranches(branches, Math.Max(1, budget - summary.NodesVisited + 1), root, score, options, lowerBound);
 
             if (branches.Count == 0)
             {
@@ -133,7 +140,7 @@ namespace MonsterTrain2Poju.Model
 
             if (root && options.MaxDegreeOfParallelism > 1)
             {
-                int[] childBudgets = AllocateBudget(Math.Max(0, budget - 1), branches);
+                int[] childBudgets = AllocateBudget(Math.Max(0, budget - summary.NodesVisited), branches);
                 var results = new SearchSummary[branches.Count];
                 Parallel.For(0, branches.Count, new ParallelOptions { MaxDegreeOfParallelism = options.MaxDegreeOfParallelism }, index =>
                 {
@@ -144,7 +151,7 @@ namespace MonsterTrain2Poju.Model
             }
             else
             {
-                int remaining = Math.Max(0, budget - 1);
+                int remaining = Math.Max(0, budget - summary.NodesVisited);
                 int remainingChildren = branches.Count(branch => !IsTerminal(branch.Outcome));
                 for (int index = 0; index < branches.Count; index++)
                 {

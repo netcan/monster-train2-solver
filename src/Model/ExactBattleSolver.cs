@@ -98,10 +98,14 @@ namespace MonsterTrain2Poju.Model
                 foreach (var candidate in frontier.SupportedCandidates.Reverse())
                     pending.Push(new Node(candidate.Result.State!, candidate.Result.Outcome, node,
                         new BattleSearchStep(candidate.Action, false), node.Turns));
-                var ended = BattleTurnModel.EndTurn(node.State);
-                if (ended.Supported)
-                    pending.Push(new Node(ended.State!, ended.Outcome, node, new BattleSearchStep(null, true), node.Turns + 1));
-                else unsupported.Add(new UnsupportedActionAttempt(null, ended.UnsupportedReason ?? "Unsupported EndTurn."));
+                BattleEndTurnFrontier ends = BattleEndTurnModel.Enumerate(node.State, Math.Max(0, options.MaxNodes - nodes),
+                    () => cancellationToken.IsCancellationRequested || watch.Elapsed >= options.TimeLimit);
+                nodes += ends.ChoiceNodes; limited |= ends.ReachedNodeLimit;
+                cancelled |= cancellationToken.IsCancellationRequested;
+                timedOut |= watch.Elapsed >= options.TimeLimit;
+                unsupported.AddRange(ends.UnsupportedAttempts);
+                foreach (BattleEndTurnCandidate end in ends.Candidates.Reverse())
+                    pending.Push(new Node(end.Result.State!, end.Result.Outcome, node, end.Step, node.Turns + 1));
             }
             watch.Stop();
             Node chosen = best ?? fallback;

@@ -92,7 +92,7 @@ internal static class TrainCombatChecks
         {
             string kind = phase.GetProperty("Kind").GetString()!;
             TrainCombatState before = phase.GetProperty("Before").Deserialize<TrainCombatState>()!;
-            TrainCombatResult result = kind == "Combat" ? TrainCombatModel.ResolveCombat(before) : TrainCombatModel.Ascend(before);
+            TrainCombatResult result = kind == "Combat" ? TrainCombatModel.ResolveCombat(before, RecordedBattleChecks.Decisions(phase)) : TrainCombatModel.Ascend(before);
             if (!result.Supported) { unsupported++; continue; }
             TrainCombatState actual = phase.GetProperty("Actual").Deserialize<TrainCombatState>()!;
             string predictedKey = Comparable(result.State!, kind), actualKey = Comparable(actual, kind);

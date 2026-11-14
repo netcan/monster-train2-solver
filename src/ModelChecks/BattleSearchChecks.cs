@@ -1,4 +1,5 @@
 using MonsterTrain2Poju.Fixtures;
+using System.Text.Json;
 using MonsterTrain2Poju.Model;
 
 internal static class BattleSearchChecks
@@ -80,7 +81,8 @@ internal static class BattleSearchChecks
             Console.WriteLine("NATIVE-SEARCH-BOUNDARY count=" + group.Count() + " reason=" + group.Key);
         Require(search.BestState != null && search.Score.HasValue && search.Steps.Count > 0,
             "Bounded search returned no result from the native battle decision state.");
-        string Path(BattleSearchResult result) => string.Join("|", result.Steps.Select(step => step.IsEndTurn ? "EndTurn" :
+        string Path(BattleSearchResult result) => string.Join("|", result.Steps.Select(step => step.IsEndTurn ?
+            "EndTurn:" + JsonSerializer.Serialize(step.RelentlessDecisions, ModelJson.Options) :
             step.Action!.CardInstanceId + ":" + step.Action.RoomIndex + ":" + step.Action.PlayerPosition + ":" +
             step.Action.TargetUnitId + ":" + step.Action.ActivatorUnitId + ":" + string.Join(";",
                 step.Action.RecursionSelections.Select(selection => selection.EffectIndex + "=" +
@@ -100,7 +102,7 @@ internal static class BattleSearchChecks
         {
             if (step.IsEndTurn)
             {
-                BattleTurnResult result = BattleTurnModel.EndTurn(replayed);
+                BattleTurnResult result = BattleTurnModel.EndTurn(replayed, step.RelentlessDecisions);
                 Require(result.Supported, result.UnsupportedReason ?? "Searched EndTurn failed during native-state replay.");
                 replayed = result.State!;
             }

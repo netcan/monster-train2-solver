@@ -193,7 +193,7 @@ internal static class BattlePlannerChecks
         {
             if (step.IsEndTurn)
             {
-                BattleTurnResult result = BattleTurnModel.EndTurn(root);
+                BattleTurnResult result = BattleTurnModel.EndTurn(root, step.RelentlessDecisions);
                 Require(result.Supported, result.UnsupportedReason ?? "Planned EndTurn rejected.");
                 root = result.State!; outcome = result.Outcome;
             }

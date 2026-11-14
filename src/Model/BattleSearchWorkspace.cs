@@ -54,6 +54,7 @@ namespace MonsterTrain2Poju.Model
             internal readonly Dictionary<int, (SupportedActionCandidate? Candidate, IReadOnlyList<UnsupportedActionAttempt> Omitted)> Tactical = new Dictionary<int, (SupportedActionCandidate?, IReadOnlyList<UnsupportedActionAttempt>)>();
             internal BattleActionEnumeration? Abilities;
             internal BattleTurnResult? End;
+            internal readonly Dictionary<string, BattleTurnResult> DialogEnds = new Dictionary<string, BattleTurnResult>(StringComparer.Ordinal);
             internal (SupportedActionCandidate? Candidate, IReadOnlyList<UnsupportedActionAttempt> Omitted)? Policy;
         }
         internal BattleActionResult Play(BattleTurnState source, PlayCardAction action)
@@ -119,13 +120,17 @@ namespace MonsterTrain2Poju.Model
                 return "The card excludes the target team.";
             return null;
         }
-        internal BattleTurnResult EndTurn(BattleTurnState source)
+        internal BattleTurnResult EndTurn(BattleTurnState source, IReadOnlyList<RelentlessDecision>? decisions = null)
         {
             turns++;
-            if (enabled && For(source).End is BattleTurnResult existing) { cachedTurns++; return existing; }
+            string? key = decisions?.Count > 0 ? string.Join(";", decisions.Select(choice =>
+                choice.RoomIndex + ":" + choice.CompletedRounds + ":" + (choice.Continue ? "1" : "0"))) : null;
+            if (enabled && key == null && For(source).End is BattleTurnResult existing) { cachedTurns++; return existing; }
+            if (enabled && key != null && For(source).DialogEnds.TryGetValue(key, out BattleTurnResult cachedResult))
+            { cachedTurns++; return cachedResult; }
             simulatedTurns++;
-            var result = BattleTurnModel.EndTurn(source);
-            if (enabled) For(source).End = result;
+            var result = BattleTurnModel.EndTurn(source, decisions);
+            if (enabled) { if (key == null) For(source).End = result; else For(source).DialogEnds[key] = result; }
             return result;
         }
         internal BattleActionEnumeration Enumerate(BattleTurnState source, int? onlyCardId = null, bool includeAbilities = true)
