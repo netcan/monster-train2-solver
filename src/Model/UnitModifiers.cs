@@ -97,9 +97,10 @@ namespace MonsterTrain2Poju.Model
         public static RoomCombatResult Apply(RoomCombatState source, int targetId, CardUpgradeModifier upgrade, string lifetime,
             bool remove = false, int? roomCapacity = null, int sourceCardId = 0, string? triggerKind = null, bool scaleUpgrade = false,
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
-            bool accumulateScaledUpgradeRecord = true)
+            bool accumulateScaledUpgradeRecord = true, bool captureAllDispatches = false)
             => RoomCombatModel.ApplyUnitUpgrade(source, targetId, upgrade, lifetime, remove, roomCapacity, sourceCardId, triggerKind,
-                scaleUpgrade, refreshPyre: refreshPyre, accumulateScaledUpgradeRecord: accumulateScaledUpgradeRecord);
+                scaleUpgrade, refreshPyre: refreshPyre, accumulateScaledUpgradeRecord: accumulateScaledUpgradeRecord,
+                captureAllDispatches: captureAllDispatches);
 
         // CharacterState's direct API, used by equipment, changes only the live unit.
         // Anonymous removal needs an explicit applied-list index to represent object identity;
@@ -126,7 +127,7 @@ namespace MonsterTrain2Poju.Model
             Func<RoomCombatState, int, bool, bool, RoomCombatResult>? changeHealth = null)
         {
             bool halfHealth = source.Units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger));
-            string? error = RoomCombatModel.Validate(source, allowDyingTarget ? targetId : (int?)null, halfHealthLifecycle: directApi);
+            string? error = RoomCombatModel.Validate(source, allowDyingTarget ? targetId : (int?)null, halfHealthLifecycle: changeHealth != null);
             if (error != null) return Unsupported(error);
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target?.Modifiers == null || source.Context?.CardInstances == null)
@@ -137,6 +138,8 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Half-health Deathwish upgrade troop casualties require native calibration.");
             if (halfHealth && target.Health <= 0)
                 return Unsupported("Half-health Deathwish upgrades on dying actors require native sacrifice/revival calibration.");
+            if (halfHealth && scaleUpgrade)
+                return Unsupported("Half-health Deathwish accumulated scaling upgrades require native calibration.");
             CardInstanceState? spawnerCard = source.Context.FindCard(target.SpawnerCardId);
             string? exhaustError = !directApi && lifetime == "Permanent" && spawnerCard != null ? CardExhaustModel.PermanentUpgradeError(spawnerCard, upgrade) : null;
             if (exhaustError != null) return Unsupported(exhaustError);

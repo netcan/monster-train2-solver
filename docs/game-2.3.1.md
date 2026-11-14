@@ -37,8 +37,8 @@
   采集分别保留两类成员关系；旧版仍读取 `deathWishSources`。新版半血触发
   带显式 `HalfHealth` 标识。半血条件、入队和非致命直接伤害/治疗的回调生命周期
   已独立校准；最大生命另有 23 项、直接数值升级另有 27 项 API/队列边界及
-  嵌套效果校准。升级附带的触发/技能/状态及召唤牌回写、死亡复活、共享世界
-  和整层调度仍受防护。
+  嵌套效果校准。数值升级卡牌效果及真实召唤牌回写另有 28 项组件证据。
+  升级附带的触发/技能/状态、累加缩放、死亡复活、共享世界和整层调度仍受防护。
 - 组件归档的版本号取自运行游戏；目录采集校验本次原生枚举数量和唯一 ID，
   不再把旧版 668 个定义写死在采集器中。旧版固定目录验收仍保留。
 - EndTurn 调用后，原生协程有时尚未推进就暴露旧的 ready 状态；复放器在原有
@@ -236,9 +236,45 @@ pwsh -NoProfile -File scripts/Check-Game231HalfHealthUpgrade.ps1
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -HalfHealthUpgradeOnly -GameSpeed Instant -SkipBuild
 ```
 
-本项仅开放直接角色 API 的非致命数值升级。附带触发/技能/状态的升级、卡牌
-效果的召唤牌回写、外部正在执行的队列、死亡复活、菌群伤亡、预演、共享世界
-和整层战斗仍需分别校准。
+本项验收直接角色 API 的非致命数值升级；卡牌效果的召唤牌回写见下一节。
+附带触发/技能/状态的升级、累加缩放、外部正在执行的直接 API 队列、死亡复活、
+菌群伤亡、预演、共享世界和整层战斗仍需分别校准。
+
+## 半血 Deathwish 的数值升级卡牌效果
+
+28 项原生 `CardEffectAddCardUpgradeToUnits`、`CardEffectAddTempCardUpgradeToUnits`
+及 `CardEffectRemoveTempUpgradeFromUnit`，在有真实召唤牌的列车员上校准。
+组件覆盖三种寿命、正负普通/未回血生命、重复移除全部副本、唯一升级、克隆跳过、
+单位没有记录时清理召唤牌、治疗限制，以及回调内伤害、治疗和增加最大生命。
+
+回写顺序由同一升级的嵌套移除/重加直接区分：添加过程中，失去半血的回调先
+移除单位升级，外层效果随后仍将升级写入召唤牌；移除过程中，延迟回调在
+临时牌面清理后重新添加升级，该新记录保留。若移除负生命升级的回血阶段
+立即执行回调，回调中新加的临时记录则会被外层随后清理。永久牌面记录在
+临时移除效果中保留，单位死亡前寿命不写召唤牌。
+
+新版友军伤害路径会派发空 `OnBloodshed` / `OnPunish`，现在保留其载荷及顺序。
+这不代表已经支持带这两类实际触发效果的单位；这些定义仍被拒绝，需后续校准。
+
+每项比较 API 返回状态/完整队列及显式执行队列后的完整后继，包括单位、召唤牌、
+统计缓存、所有调度载荷及游戏 RNG。七个返回边界保留共 16 份待执行载荷，
+每项另执行 32 路不可变分支。采样恢复角色主状态、触发器、克隆标记、召唤牌
+字段和修改器、伤害统计/牌组缓存及全部 RNG，并核对原始列车上下文。
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Game231HalfHealthUpgradeEffects.ps1
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -HalfHealthUpgradeEffectsOnly -GameSpeed Instant -SkipBuild
+```
+
+二进制归档 `mechanics/half-health-deathwish/upgrade-effects/upgrade-effects.mt2f`
+为 12,605 字节，哈希见同目录 manifest；来源
+`.probe-runs/full-battle-steward-once-20261114-142231-4b814106`。原生约 27 秒，
+差异零、上下文/RNG 恢复、退出码零、`DEPTH-PASS` 及玩家文件未变均通过。
+旧版动态、濒死和数值升级三份归档共 151 个房间阶段、35 个列车阶段通过；
+已有半血直接升级/最大生命及两版七回合基线、每版 16 路独立分支也通过。
+
+这是卡牌效果组件验收，尚未开放带半血单位的完整出牌流程或整层战斗调度。
+升级触发/技能/状态安装、累加缩放、死亡复活、菌群伤亡、预演和共享世界仍待验收。
 
 ## 可复验样本
 

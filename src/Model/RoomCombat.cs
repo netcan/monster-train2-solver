@@ -970,14 +970,21 @@ namespace MonsterTrain2Poju.Model
 
         internal static RoomCombatResult ApplyUnitUpgrade(RoomCombatState state, int targetId, CardUpgradeModifier upgrade,
             string lifetime, bool remove, int? roomCapacity, int sourceCardId, string? triggerKind, bool scaleUpgrade = false,
-            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, bool accumulateScaledUpgradeRecord = true)
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, bool accumulateScaledUpgradeRecord = true,
+            bool captureAllDispatches = false)
         {
-            string? error = Validate(state);
+            string? error = Validate(state, halfHealthLifecycle: true);
             if (error != null || !state.Units.Any(unit => unit.Id == targetId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Missing unit upgrade target.");
-            return new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false, refreshPyre: refreshPyre)
+            var callbacks = new List<QueuedCharacterTrigger>();
+            bool deferredRemoval = remove && state.Units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger));
+            RoomCombatResult result = new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false, refreshPyre: refreshPyre,
+                enqueueCharacterTrigger: deferredRemoval ? callbacks.Add : (Action<QueuedCharacterTrigger>?)null)
+                .TraceAllDispatches(captureAllDispatches)
                 .UnitUpgrade(targetId, upgrade, lifetime, remove, roomCapacity, sourceCardId, triggerKind,
                     scaleUpgrade: scaleUpgrade, accumulateScaledUpgradeRecord: accumulateScaledUpgradeRecord);
+            return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(), result.UnsupportedReason,
+                callbacks, result.RetainedUnits, result.Dispatches);
         }
 
         internal static RoomCombatResult ApplyDirectUnitUpgrade(RoomCombatState state, int targetId, CardUpgradeModifier upgrade,
@@ -3150,11 +3157,29 @@ namespace MonsterTrain2Poju.Model
                     Damage(target, actor, retaliation, "Spikes");
                 }
                 if (target.DeathFinished) return;
+                int hitType = kind == "Attack" ? 4 : kind == "Trample" ? 6 : kind == "Spikes" ? 1 : kind == "Poison" ? 2 :
+                    kind == "Decay" ? 8 : kind == "CorruptPoison" ? 7 : kind == "Corruption" ? 9 : kind == "SpellOverflow" ? 10 : 0;
+                bool tookHit = damage > 0 || blocked > 0 || titanSkinSoaked > 0;
+                // The 2.3.1 damage-counter snapshot also identifies its new queue
+                // protocol. Bloodshed queues every friendly room actor before
+                // executing any callback, including actors without that trigger.
+                // Authored Bloodshed/Punish effects retain their validation guard.
+                bool modernDamageQueue = context?.Statistics?.MonsterDamage != null;
+                if (modernDamageQueue && tookHit && target.Source.Team == CombatTeam.Player)
+                {
+                    foreach (WorkingUnit friendly in units.Where(unit => unit.InRoom && !unit.Removed &&
+                        unit.RoomIndex == target.RoomIndex && unit.Source.Team == CombatTeam.Player).ToArray())
+                        QueueCallback(new QueuedCharacterTrigger(friendly.RoomIndex, friendly.Freeze(), "OnBloodshed",
+                            paramInt: damage, paramInt2: hitType, paramString: "", overrideTarget: target.Freeze()));
+                    if (!runningTriggerQueue && (enqueueCharacterTrigger == null || localUpgradeQueue)) DrainLocalTriggerQueue();
+                    if (target.DeathFinished || unsupportedReason != null) return;
+                }
                 // CharacterState counts Titanskin soak for Revenge, separately
                 // from damageBlocked used by last-attack damage statistics.
-                if (damage > 0 || blocked > 0 || titanSkinSoaked > 0) FireTriggers(target, "OnHit", paramInt: damage,
-                    paramInt2: kind == "Attack" ? 4 : kind == "Trample" ? 6 : kind == "Spikes" ? 1 : kind == "Poison" ? 2 :
-                        kind == "Decay" ? 8 : kind == "CorruptPoison" ? 7 : kind == "Corruption" ? 9 : kind == "SpellOverflow" ? 10 : 0);
+                if (tookHit) FireTriggers(target, "OnHit", paramInt: damage, paramInt2: hitType);
+                bool friendlySource = actor != null ? actor.Source.Team == CombatTeam.Player : sourceCardId > 0 || relicSourced;
+                if (modernDamageQueue && tookHit && friendlySource && !target.DeathFinished)
+                    FireTriggers(target, "OnPunish", paramInt: damage, paramInt2: hitType, paramStringOverride: "");
                 // A played spell finishes its hit queue while this victim already has its
                 // new HP. Only previously finished deaths are eligible for removal here.
                 if (nativeCardDamage && !runningTriggerQueue) DrainLocalTriggerQueue();
@@ -4834,7 +4859,7 @@ namespace MonsterTrain2Poju.Model
                 // Removal normally leaves callbacks queued, but restoring a negative
                 // healed-HP modifier runs its ApplyHeal callbacks before the next phase.
                 // Keep one live queue for the entire operation before exporting it.
-                bool ownQueue = directApi && enqueueCharacterTrigger != null && !localUpgradeQueue &&
+                bool ownQueue = enqueueCharacterTrigger != null && !localUpgradeQueue &&
                     units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger));
                 if (ownQueue) localUpgradeQueue = true;
                 try

@@ -56,7 +56,8 @@ internal static class HalfHealthUpgradeChecks
         int actor = samples[0].GetProperty("ActorId").GetInt32();
         CardUpgradeModifier upgrade = samples[0].GetProperty("Upgrade").Deserialize<CardUpgradeModifier>()!;
         Require(RoomCombatModel.Validate(guarded)?.Contains("HalfHealth", StringComparison.Ordinal) == true &&
-            !UnitModifierModel.Apply(guarded, actor, upgrade, "TemporaryUntilEndOfBattle").Supported, "Whole-room or card-effect upgrade half-health guard was lost.");
+            !UnitModifierModel.Apply(guarded, actor, upgrade, "TemporaryUntilEndOfBattle", scaleUpgrade: true).Supported,
+            "Whole-room or accumulated-scaling half-health guard was lost.");
         RoomCombatResult lethal = UnitModifierModel.ApplyDirect(guarded, actor, upgrade.WithScaledStats(0, -99999));
         Require(!lethal.Supported && lethal.UnsupportedReason?.Contains("sacrifice/revival", StringComparison.Ordinal) == true,
             "Uncalibrated lethal upgrade was accepted.");
@@ -69,7 +70,7 @@ internal static class HalfHealthUpgradeChecks
             Array.Empty<string>(), triggerUpgrades: guarded.Units.Single(unit => unit.Id == actor).Triggers);
         Require(!UnitModifierModel.ApplyDirect(guarded, actor, triggerUpgrade).Supported, "Uncalibrated trigger installation was accepted.");
         Parallel.For(0, 32, _ => { foreach (FixtureValue sample in samples) Verify(sample); });
-        Console.WriteLine("HALF-HEALTH-UPGRADE PASS: 27 native numeric upgrade API-return states/queues and drained successors, healed/unhealed/attributed phases, add/remove, nested callbacks, complete dispatches/RNG and 32 immutable branches. Trigger/ability/status changes, card-effect source writes, death and whole-room scheduling remain guarded.");
+        Console.WriteLine("HALF-HEALTH-UPGRADE PASS: 27 native numeric upgrade API-return states/queues and drained successors, healed/unhealed/attributed phases, add/remove, nested callbacks, complete dispatches/RNG and 32 immutable branches. Trigger/ability/status changes, accumulated scaling, death and whole-room scheduling remain guarded; spawner writes have separate effect acceptance.");
 
         void Expect(string label, int hp, int max, int queued, int apiGold, int finalGold, int? finalHp = null, int? finalMax = null)
         {
