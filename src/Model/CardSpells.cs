@@ -2312,6 +2312,10 @@ namespace MonsterTrain2Poju.Model
                 }
                 string? filterError = effect.Target == "Pyre" ? null : effect.Filters?.Validate();
                 if (filterError != null) return filterError;
+                if (effect.Type == "AddStatus" && (effect.Tests?.StrictTargets == true || effect.Target is "DropTargetCharacter" or "RoomExceptDropTarget") &&
+                    effect.Statuses.Any(status => status.Stackable == false) &&
+                    (effect.Statuses.Count != 1 || effect.TargetSubtype.Length != 0 || effect.Filters?.IgnoreBosses == true || CardTargetModel.IsRandom(effect.Target)))
+                    return "Nonstackable status tests require one fixed status, an unrestricted subtype and deterministic targets.";
                 if (effect.Range != null && effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "RandomDiscard" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && effect.Type != "AttachRoomCapacity" && effect.Type != "ScheduleNextDrawUpgrade" &&
                     !AbilityLifecycleModel.IsEffect(effect.Type))
                 {
@@ -2770,7 +2774,8 @@ namespace MonsterTrain2Poju.Model
                     room != null && !room.Units.Any(unit => unit.IsPyre) : count > 0 &&
                     (effect.Recursion?.SelectionMode is "ChooseToHand" or "ChooseToDeck" || effect.Value > 0);
                 case "AddStatus":
-                case "MultiplyStatus": return effect.Tests?.StrictTargets != true && effect.Target != "DropTargetCharacter" || count > 0;
+                case "MultiplyStatus": return effect.Tests?.StrictTargets != true && effect.Target != "DropTargetCharacter" &&
+                    (effect.Type != "AddStatus" || effect.Target != "RoomExceptDropTarget") || count > 0;
                 case "MultiplyAllPositiveStatusEffects": return effect.Target != "DropTargetCharacter" || count > 0;
                 case "AdjustAllStatusEffects": return effect.Tests?.StrictTargets != true || count > 0;
                 case "AddStatusPerOtherEffect": return count > 0;
@@ -2896,6 +2901,10 @@ namespace MonsterTrain2Poju.Model
         }
         internal static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {
+            if (effect.Type == "AddStatus" && effect.Statuses.Count == 1 && effect.Statuses[0].Stackable == false &&
+                (effect.Tests?.StrictTargets == true || effect.Target is "DropTargetCharacter" or "RoomExceptDropTarget"))
+                return state.Rooms.SelectMany(room => room.Units).Count(unit => targets.UnitIds.Contains(unit.Id) &&
+                    !unit.IsPyre && unit.Status(effect.Statuses[0].Id)?.Stacks is not > 0);
             if (effect.Type == "AttachEquipment" && effect.UpgradeFilters.Count > 0)
             {
                 CombatUnit? target = state.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == targets.UnitIds.FirstOrDefault());

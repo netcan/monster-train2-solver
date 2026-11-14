@@ -490,7 +490,7 @@ namespace MonsterTrain2Poju.Model
             "buff", "debuff", "regen", "poison", "decay", "corruption", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "titanite", "duality", "conduit",
             "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch", "avarice", "inedible", "eatmany", "steelguard",
-            "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted", "unit_grafted_equipment", "mass", "zeal"
+            "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted", "unit_grafted_equipment", "mass", "zeal", "tenacious"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -2912,6 +2912,7 @@ namespace MonsterTrain2Poju.Model
                 int blocked = 0;
                 int titanSkinSoaked = 0;
                 int armorBlockedThisHit = 0;
+                int lethalDamagePrevented = 0;
                 bool direct = kind == "Attack";
                 bool attackingTrigger = direct || kind == "Trample";
                 if (applyTraits)
@@ -3042,7 +3043,14 @@ namespace MonsterTrain2Poju.Model
                     if (context?.LifeLinks == null) { unsupportedReason = "Life-link damage requires the global live roster."; return; }
                     damage = LifeLinkModel.Test(context.LifeLinks, target.Source.Id, damage).Damage;
                 }
-                if (target.Has("untouchable")) damage = 0;
+                if (target.Has("tenacious"))
+                {
+                    bool friendly = TenaciousModel.IsFriendlySource(target.Source.Team, actor?.Source.Team, sourceCardId > 0, relicSourced);
+                    TenaciousDamageResult adjusted = TenaciousModel.Adjust(target.Health, damage, friendly);
+                    damage = adjusted.Damage; lethalDamagePrevented = adjusted.Prevented;
+                    blocked = unchecked(blocked + adjusted.Prevented);
+                }
+                if (target.Has("untouchable")) { damage = 0; blocked = 0; titanSkinSoaked = 0; }
                 int hpAfterPyreResurrection = 0;
                 if (target.Source.IsPyre && target.Health - damage <= 0 && context != null)
                 {
@@ -3077,7 +3085,7 @@ namespace MonsterTrain2Poju.Model
                     bool hit = damage > 0 || blocked > 0 || titanSkinSoaked > 0;
                     int amount = unchecked(sustained + (hit ? armorBlockedThisHit : 0));
                     bool friendly = actor != null ? actor.Source.Team == CombatTeam.Player : sourceCardId > 0 || relicSourced;
-                    int friendlyAmount = hit && friendly ? unchecked(sustained + armorBlockedThisHit) : 0;
+                    int friendlyAmount = hit && friendly ? unchecked(sustained + armorBlockedThisHit + lethalDamagePrevented) : 0;
                     if (amount > 0 || friendlyAmount > 0)
                     {
                         int[] owned = context.Cards.Hand.Concat(context.Cards.Draw).Concat(context.Cards.Discard)

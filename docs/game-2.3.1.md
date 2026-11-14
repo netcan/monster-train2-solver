@@ -13,7 +13,7 @@
 运行 `scripts/Check-Game231ZealStatus.ps1` 可离线独立验收。
 原生采样约 33.53 秒，启动器确认玩家文件未变。
 这属于公共状态组件证据；后续完整战斗另验证入场被动和我方攻击加成，
-新增遗物整局验收现为 **7/12**，见下节。供奉动作（`Devote`）、全局被动
+新增遗物整局验收现为 **8/12**，见下节。供奉动作（`Devote`）、全局被动
 倍率提供者生命周期及狂热与群体（Horde）损耗的组合仍待后续；Horde 的狂热移除保持防护。
 
 虔诚（Devotion）资源另完成 **21 项**原生完整列车后继及每项 32 路不可变并发
@@ -32,6 +32,36 @@
 受影响的原版资源法术、锻造卡牌及狂热组件定向回归通过。相同编译产物还在
 2.2.1/2.3.1 重新跑完七回合原生无出牌胜局，四项失败计数均零；各自连续
 模型复放及 16 路不可变分支通过，确认新资源字段跨回合保留且旧版跳过新接口。
+
+## 友方伤害保命（Tenacious）
+
+原版 `SpellsNoKillFriendlies`（ID `2d68b9db-bcbc-487e-96de-b6398ad3c36b`）
+保持定义不变，在我方出生时添加一层不可叠加、不会消耗的 `tenacious`。
+伤害流程在护甲、脆弱和生命链接之后判定：正生命单位受到友方致命伤害时，
+将伤害限制为当前生命减一。伤害归属优先使用攻击者队伍；没有攻击者时，
+卡牌或遗物来源只对我方算友方。效果并不限于法术，敌方来源仍能致死。
+
+58 项原生伤害阶段控制覆盖双方、八种来源组合、未致命/恰好致命/过量伤害，
+以及一血、零/负生命、零/多层、负/零伤害、已有抵挡值和整数上限；每项另有
+32 路不可变并发检查。另有双方各两项状态缺失/已有的原生出牌效果测试，
+验证固定单一不可叠加状态不能重复选中已有该状态的单位。采样后现场完整列车
+及全部 RNG 恢复。混合状态池、限定亚型、忽略 Boss 和随机目标仍保留防护。
+
+原生完整战斗包含 11 次出牌、7 次 EndTurn、48 个房间阶段、13 个列车阶段，
+10 份完整出生回调，以及自首输入到终局的 16 路独立不可变分支。
+我方连续过量/一血伤害、治疗后再受伤、护甲先吸收、普通回合自伤均匹配；
+部署回合不执行普通回合自伤。一血自伤被挡住后，敌方两点尖刺正常将其击杀；
+给一血敌人添加 Tenacious 后，我方法术仍能击杀它。被阻止的致命伤害计入
+友方伤害统计，但不计入实际承受伤害，两项完整统计及全部后继/RNG 均匹配。
+场景的列车员、控制法术和自伤触发器经过改造，不增加原版卡牌覆盖。
+
+二进制归档 `mechanics/tenacious/full-battle.mt2f` 为 39,831 字节，SHA256
+`3a4d18632b8b7f9142564cc028e0fd459e3660936a07224a13f7ac5f992762e6`。
+来源 `.probe-runs/full-battle-units-spells-and-junk-20261114-211035-a86ac54f`，
+原生采样 52.53 秒。胜利、四类零计数、`DEPTH-PASS`、退出码零和玩家文件未变通过。
+运行 `scripts/Check-Game231Tenacious.ps1` 可核对哈希并独立验收。
+新版虔诚入场/受伤整局及伤害回调组件、旧版原版状态牌、Untouchable 房间附件、
+Titanite 组合定向回归通过。Tenacious 与生命链接、复生等其他机制的组合仍需独立证据。
 
 ## 友军受伤虔诚遗物与原版 Venerate
 
@@ -58,7 +88,7 @@
 `2384f0fd7b85d49d04e1cfebcf86963672d5867768a3b2a9d8efbe43e1ab9687`。
 `scripts/Check-Game231DevotionDamage.ps1` 固定哈希并独立验收完整后继/RNG、
 原版费用/消耗、阈值与跨回合、缺失输入保护及 32 路组件分支。
-新增遗物整局验收现为 **7/12**；新版全部 614 张卡、236 件遗物仍未整体重新验收。
+新增遗物整局验收现为 **8/12**；新版全部 614 张卡、236 件遗物仍未整体重新验收。
 受影响的新版阈值抽牌/受击次数整局、虔诚资源组件和旧版三件单位资源遗物
 （505 份完整管理器回调、22 次出牌/5 次 EndTurn）定向回归均通过。
 
@@ -641,7 +671,7 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -DamageRea
 半血整局与原版 `DeathwishAttack` 的完整连续复放及各 16 路分支通过，
 Probe、ModelChecks、Advisor 构建及 PowerShell 解析通过。
 `DeathwishAttack` 与 `DamageFriendlyOnSpawn` 已取得上述新版原版整局证据。
-连同阈值抽牌、受击次数及受伤虔诚，新增遗物当前为 7/12；新版 614 张卡及
+连同阈值抽牌、受击次数、虔诚入场/受伤及 Tenacious，新增遗物当前为 8/12；新版 614 张卡及
 236 件遗物的全量重验仍未完成。
 更多嵌套效果及共享附魔世界组合不计入本次证据范围。
 
@@ -679,7 +709,7 @@ Probe、ModelChecks、Advisor 构建及 PowerShell 解析通过。
 
 这两种控制场景在部署结束后才注入敌人和控制牌，连续复放明确从正式第一回合的
 首个输入开始；两个部署输入及部署 EndTurn 另由原生分项比对，不能把中间的
-场景布置当成模型自行推进。它们是两件旧遗物的新版证据，不增加新增遗物 7/12 的计数，
+场景布置当成模型自行推进。它们是两件旧遗物的新版证据，不增加新增遗物 8/12 的计数，
 也不代表新版 614 张卡和 236 件遗物已经全量重验。
 
 ```powershell
@@ -783,8 +813,10 @@ Rule 投影发生变化的共有卡牌：`DantesInferno`、`FlickerRaiseOnSlayAb
 `SpellsNoKillFriendlies`、`ZealDamageIncrease`。
 
 其中 `DeathwishAttack`、`DamageFriendlyOnSpawn`、`DrawCardOnTurnDamage`、
-`RevengeTriggerTwice`、`DrawCardOnEarlyDiscard` 已完成上述原版整局验收，
-其余新增遗物仍需各自证据。
+`RevengeTriggerTwice`、`DrawCardOnEarlyDiscard`、`MonolithDevotion`、
+`ZealDamageIncrease`、`SpellsNoKillFriendlies` 已完成上述原版整局验收，共 **8/12**。
+剩余 `ChainedDamageIncrease`、`DamagedMaxHealthOnCelebrate`、
+`EmberForDamagedPerFloor`、`FriendlyUnitPunish` 仍需各自证据。
 
 变更的共有遗物：`ApplyDazedOnAscendOrDescend`、`CopyConsumedCard`、`DamageOnEaten`、
 `FriendlyUnitsGainDeathwishPermanentHealth`、`FriendlyUnitsGainDeathwishValor`、

@@ -631,7 +631,9 @@ namespace MonsterTrain2Poju.Probe
                 foreach (StatusEffectStackData status in effect.GetParamStatusEffects())
                 {
                     if (type == "AddStatus" && !StatusEffectManager.Instance.GetStatusEffectDataById(status.statusId)!.IsStackable() &&
-                        (effect.GetParamBool() || effect.GetTargetMode() == TargetMode.DropTargetCharacter))
+                        (effect.GetParamBool() || effect.GetTargetMode() is TargetMode.DropTargetCharacter or TargetMode.RoomExceptDropTarget) &&
+                        (effect.GetParamStatusEffects().Length != 1 || !effect.GetParamSubtype().IsNone || effect.GetTargetIgnoreBosses() ||
+                            CardTargetModel.IsRandom(effect.GetTargetMode().ToString())))
                         interactions.Add("Nonstackable status legality");
                     statuses.Add(Status(status.statusId, status.count));
                 }
