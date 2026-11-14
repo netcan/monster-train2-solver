@@ -1,5 +1,26 @@
 # Room moon masks and character callbacks
 
+The inactive-movement component is
+[`room-moon-inactive-movement-calibration.mt2f`](../../combat/rooms/room-moon-inactive-movement-calibration.mt2f).
+It uses a detached unchanged Eclipse Chamber card as the attachment source;
+native moon tracking stays off after attachment. Eight original Bumps move a
+first-wave ordinary enemy and a Nightingale callback enemy into and out of the
+room under Full and New. The Full entry adds the room's New bit (6 to 7), while
+the stale New-phase entry changes 6 to 5. Nightingale's original upgrade appears
+and disappears at the observed callback boundaries. Every complete train/context
+and gameplay-RNG successor matches the model, with eight immutable branches per
+row; missing masks, preview and altered room modifiers remain rejected. The muted
+Instant run preserved original files. The 10,284-byte binary has 1,212 unique
+nodes and SHA-256
+`6c7bd8feeeea6b10b5bac14676a872a2039a788b3d2541506d27ab97dd24ec75`.
+This component does not establish ordinary EndTurn ascension or other room
+attachment upgrades.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -RoomMoonInactiveMovement -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture room-moon-inactive-movement-calibration.mt2f
+```
+
 The inactive-refresh component is
 [`room-moon-inactive-refresh-calibration.mt2f`](../../combat/rooms/room-moon-inactive-refresh-calibration.mt2f).
 It runs the unchanged Eclipse Chamber character-refresh effect without adding

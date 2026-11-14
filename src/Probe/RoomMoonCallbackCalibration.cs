@@ -16,6 +16,7 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_CALLBACKS") == "1";
         internal static bool InactiveRefresh => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_REFRESH") == "1";
+        internal static bool InactiveMovement => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_MOVEMENT") == "1";
         internal static bool Shade => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_SHADE") == "1";
         internal static bool Movement => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_MOVEMENT") == "1";
         internal static bool Enemy => Movement && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_ENEMY") == "1";
@@ -91,6 +92,11 @@ namespace MonsterTrain2Poju.Probe
             if (InactiveRefresh)
             {
                 yield return RunInactiveRefresh(log);
+                yield break;
+            }
+            if (InactiveMovement)
+            {
+                yield return RunInactiveMovement(log);
                 yield break;
             }
             var data = Managers.GetAllGameData(); var cards = Managers.GetCardManager();
@@ -268,6 +274,66 @@ namespace MonsterTrain2Poju.Probe
                 "room-moon-inactive-refresh-calibration.mt2f"))) document.Write(stream);
             Completed = true;
             log.LogInfo("ROOM-MOON-CALLBACK-NATIVE PASS inactiveRefresh=true rows=" + rows.Count +
+                " gameplayRngUnchanged=" + rngUnchanged);
+        }
+
+        private static IEnumerator RunInactiveMovement(ManualLogSource log)
+        {
+            var data = Managers.GetAllGameData();
+            var rooms = Managers.GetRoomManager();
+            var player = Managers.GetPlayerManager();
+            var combat = Managers.GetCombatManager();
+            if (Trace.CaptureTrain().Context?.QueryFrame?.MoonPhaseTrackingActive != false)
+                throw new InvalidOperationException("Inactive movement requires native moon tracking to remain off.");
+            yield return player.SetMoonPhase(PlayerManager.MoonPhase.Full);
+            SaveManager save = Managers.GetSaveManager();
+            var pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(Managers.GetHeroManager());
+            var waves = new List<SpawnGroupPoolData>(); pattern.GetUnlockedWaves(save, waves);
+            CharacterData ordinary = ((IEnumerable)AccessTools.Field(typeof(SpawnGroupPoolData), "possibleGroups")
+                .GetValue(waves[0])).Cast<SpawnGroupData>()
+                .SelectMany(group => group.GetCharacters(save.GetCovenantsForSpawnPattern(), save, save.GetGeneratedBoss()))
+                .First(unit => !unit.GetTriggers().Any(trigger => trigger.GetTrigger().ToString().Contains("Moon")));
+            yield return Managers.GetHeroManager().SpawnHeroInRoom(ordinary, 1, null!);
+            var enemies = new List<CharacterState>();
+            rooms.GetRoom(1).AddCharactersToList(enemies, Team.Type.Heroes);
+            CharacterState ordinaryEnemy = enemies.Single(); Trace.UnitId(ordinaryEnemy);
+            yield return Managers.GetHeroManager().SpawnHeroInRoom(
+                data.FindCardData("7775c5b5-eed9-4864-9976-9c86896becc1")!.GetSpawnCharacterData(), 1, null!);
+            enemies.Clear(); rooms.GetRoom(1).AddCharactersToList(enemies, Team.Type.Heroes);
+            CharacterState callbackEnemy = enemies.Single(unit => unit != ordinaryEnemy); Trace.UnitId(callbackEnemy);
+            yield return combat.RunTriggerQueue();
+            CardData eclipseData = data.FindCardData(EclipseChamberScenario.DataId)!;
+            CardUpgradeData upgrade = eclipseData.GetEffects().Single(effect =>
+                effect.GetEffectStateName() == "CardEffectAttachTrainRoomAttachment").GetParamCardUpgradeData();
+            CardState eclipse = new CardState(eclipseData, save);
+            Trace.CardId(eclipse);
+            yield return rooms.GetRoom(0).AddTrainRoomAttachment("poju-inactive-moon-movement", eclipse, upgrade, null!,
+                Team.Type.Monsters, TrainRoomAttachmentType.Primary, Managers.GetCoreManagers(), skipTargeting: true);
+            yield return combat.RunTriggerQueue();
+            if (Trace.CaptureTrain().Context?.QueryFrame?.MoonPhaseTrackingActive != false)
+                throw new InvalidOperationException("Detached attachment source activated native moon tracking.");
+            yield return Move("full-ordinary-entry", ordinaryEnemy, -1);
+            yield return Move("full-ordinary-exit", ordinaryEnemy, 1);
+            yield return Move("full-callback-entry", callbackEnemy, -1);
+            yield return Move("full-callback-exit", callbackEnemy, 1);
+            yield return player.SetMoonPhase(PlayerManager.MoonPhase.New, shouldTriggerShift: false);
+            yield return Move("new-ordinary-entry", ordinaryEnemy, -1);
+            yield return Move("new-ordinary-exit", ordinaryEnemy, 1);
+            yield return Move("new-callback-entry", callbackEnemy, -1);
+            yield return Move("new-callback-exit", callbackEnemy, 1);
+            bool rngUnchanged = rows.All(row => JToken.DeepEquals(JObject.FromObject(row)["Before"]!["Rng"],
+                JObject.FromObject(row)["Actual"]!["Rng"]));
+            using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
+                GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
+                NativeCompleted = true, InactiveMovement = true, RngUnchanged = rngUnchanged,
+                PreviewUpdatesSuppressed = combat.SuppressCombatPreviewUpdates,
+                Boundary = "AfterOriginalCoroutineAndTriggerQueue",
+                OrdinaryEnemyId = Trace.UnitId(ordinaryEnemy), CallbackEnemyId = Trace.UnitId(callbackEnemy),
+                Rows = rows }))
+            using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                "room-moon-inactive-movement-calibration.mt2f"))) document.Write(stream);
+            Completed = true;
+            log.LogInfo("ROOM-MOON-CALLBACK-NATIVE PASS inactiveMovement=true rows=" + rows.Count +
                 " gameplayRngUnchanged=" + rngUnchanged);
         }
     }

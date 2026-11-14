@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current curated inventory (2026-11-14): 2,862 binary archives with verified
+Current curated inventory (2026-11-14): 2,863 binary archives with verified
 hashes and registrations. The card evidence index accepts 1,561 battle archives
 and 31,514 native actions; three historical captures with nonzero counters stay
 excluded. All 559 intrinsically playable logbook cards have a definition-matched
@@ -35,6 +35,13 @@ New and Full both update player/enemy understanding and their original upgrades;
 a resource-only refresh and a repeated Full refresh leave actors unchanged.
 The model matches complete native context and RNG in each case. Preview refreshes
 and uncalibrated card moon traits remain guarded.
+
+Original Eclipse Chamber also has an inactive-tracking enemy movement witness.
+Eight native Bumps compare Full/New entry and exit for an ordinary enemy and
+an enemy with original Nightingale callbacks. Complete post-action context,
+upgrades and RNG match the independent model, including the stale New phase
+after tracking-free assignment. Other attachment upgrades and natural enemy
+ascension remain separate coverage.
 
 A further 34 original Conduit movement callbacks now match independently in
 complete context, private card trackers, physical points and gameplay RNG.
