@@ -457,36 +457,37 @@ namespace MonsterTrain2Poju.Model
             internal bool RelicDamageRemoval { get; }
             internal bool RelicDamageApplied { get; }
             internal bool RelicMovementStatusApplied { get; }
+            internal int? AttackDamageDealt { get; }
             internal QueuedCharacterTrigger(int roomIndex, CombatUnit unit, string kind = "OnDeath", bool returnSpawnerAfterQueue = false, bool deferUntilRemoval = false, int paramInt = 0,
                 CombatUnit? overrideTarget = null, int paramInt2 = 0, string? paramString = null, CombatUnit? dyingCharacter = null, bool canFireTriggers = true,
                 int triggerCount = 1, int lastSpawnedOverrideUnitId = 0, bool harvestAfterDeath = false, bool completePhysicalRemovalAfterQueue = false,
                 CharacterTriggerAdmission admission = CharacterTriggerAdmission.Pending, bool removalLifecycle = false, bool preservePhysicalPoint = false,
                 int? exclusiveTriggerStateId = null, bool captureAllDispatches = false, bool relicDamageRemoval = false, bool relicDamageApplied = false,
-                bool relicMovementStatusApplied = false)
-            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; ParamInt2 = paramInt2; ParamString = paramString; DyingCharacter = dyingCharacter; CanFireTriggers = canFireTriggers; TriggerCount = triggerCount; LastSpawnedOverrideUnitId = lastSpawnedOverrideUnitId; HarvestAfterDeath = harvestAfterDeath; CompletePhysicalRemovalAfterQueue = completePhysicalRemovalAfterQueue; Admission = admission; RemovalLifecycle = removalLifecycle; PreservePhysicalPoint = preservePhysicalPoint; ExclusiveTriggerStateId = exclusiveTriggerStateId; CaptureAllDispatches = captureAllDispatches; RelicDamageRemoval = relicDamageRemoval; RelicDamageApplied = relicDamageApplied; RelicMovementStatusApplied = relicMovementStatusApplied; }
+                bool relicMovementStatusApplied = false, int? attackDamageDealt = null)
+            { RoomIndex = roomIndex; Unit = unit; Kind = kind; ReturnSpawnerAfterQueue = returnSpawnerAfterQueue; DeferUntilRemoval = deferUntilRemoval; ParamInt = paramInt; OverrideTarget = overrideTarget; ParamInt2 = paramInt2; ParamString = paramString; DyingCharacter = dyingCharacter; CanFireTriggers = canFireTriggers; TriggerCount = triggerCount; LastSpawnedOverrideUnitId = lastSpawnedOverrideUnitId; HarvestAfterDeath = harvestAfterDeath; CompletePhysicalRemovalAfterQueue = completePhysicalRemovalAfterQueue; Admission = admission; RemovalLifecycle = removalLifecycle; PreservePhysicalPoint = preservePhysicalPoint; ExclusiveTriggerStateId = exclusiveTriggerStateId; CaptureAllDispatches = captureAllDispatches; RelicDamageRemoval = relicDamageRemoval; RelicDamageApplied = relicDamageApplied; RelicMovementStatusApplied = relicMovementStatusApplied; AttackDamageDealt = attackDamageDealt; }
             internal QueuedCharacterTrigger WithRelicDamageRemoval() => new QueuedCharacterTrigger(RoomIndex, Unit, Kind,
                 ReturnSpawnerAfterQueue, DeferUntilRemoval, ParamInt, OverrideTarget, ParamInt2, ParamString, DyingCharacter,
                 CanFireTriggers, TriggerCount, LastSpawnedOverrideUnitId, HarvestAfterDeath, CompletePhysicalRemovalAfterQueue,
-                Admission, RemovalLifecycle, PreservePhysicalPoint, ExclusiveTriggerStateId, CaptureAllDispatches, true, RelicDamageApplied, RelicMovementStatusApplied);
+                Admission, RemovalLifecycle, PreservePhysicalPoint, ExclusiveTriggerStateId, CaptureAllDispatches, true, RelicDamageApplied, RelicMovementStatusApplied, AttackDamageDealt);
             internal QueuedCharacterTrigger WithRelicDamageApplied() => new QueuedCharacterTrigger(RoomIndex, Unit, Kind,
                 ReturnSpawnerAfterQueue, DeferUntilRemoval, ParamInt, OverrideTarget, ParamInt2, ParamString, DyingCharacter,
                 CanFireTriggers, TriggerCount, LastSpawnedOverrideUnitId, HarvestAfterDeath, CompletePhysicalRemovalAfterQueue,
-                Admission, RemovalLifecycle, PreservePhysicalPoint, ExclusiveTriggerStateId, CaptureAllDispatches, RelicDamageRemoval, true, RelicMovementStatusApplied);
+                Admission, RemovalLifecycle, PreservePhysicalPoint, ExclusiveTriggerStateId, CaptureAllDispatches, RelicDamageRemoval, true, RelicMovementStatusApplied, AttackDamageDealt);
             internal QueuedCharacterTrigger WithRelicMovementStatusApplied() => new QueuedCharacterTrigger(RoomIndex, Unit, Kind,
                 ReturnSpawnerAfterQueue, DeferUntilRemoval, ParamInt, OverrideTarget, ParamInt2, ParamString, DyingCharacter,
                 CanFireTriggers, TriggerCount, LastSpawnedOverrideUnitId, HarvestAfterDeath, CompletePhysicalRemovalAfterQueue,
                 Admission, RemovalLifecycle, PreservePhysicalPoint, ExclusiveTriggerStateId, CaptureAllDispatches,
-                RelicDamageRemoval, RelicDamageApplied, true);
+                RelicDamageRemoval, RelicDamageApplied, true, AttackDamageDealt);
             internal QueuedCharacterTrigger InRoom(int roomIndex) => new QueuedCharacterTrigger(roomIndex, Unit, Kind,
                 ReturnSpawnerAfterQueue, DeferUntilRemoval, ParamInt, OverrideTarget, ParamInt2, ParamString, DyingCharacter,
-                CanFireTriggers, TriggerCount, LastSpawnedOverrideUnitId, HarvestAfterDeath, CompletePhysicalRemovalAfterQueue, Admission, RemovalLifecycle, PreservePhysicalPoint, ExclusiveTriggerStateId, CaptureAllDispatches, RelicDamageRemoval, RelicDamageApplied, RelicMovementStatusApplied);
+                CanFireTriggers, TriggerCount, LastSpawnedOverrideUnitId, HarvestAfterDeath, CompletePhysicalRemovalAfterQueue, Admission, RemovalLifecycle, PreservePhysicalPoint, ExclusiveTriggerStateId, CaptureAllDispatches, RelicDamageRemoval, RelicDamageApplied, RelicMovementStatusApplied, AttackDamageDealt);
             internal QueuedCharacterTrigger WithAdmission(CharacterTriggerAdmission admission) => new QueuedCharacterTrigger(RoomIndex, Unit, Kind,
                 ReturnSpawnerAfterQueue, DeferUntilRemoval, ParamInt, OverrideTarget, ParamInt2, ParamString, DyingCharacter,
-                CanFireTriggers, TriggerCount, LastSpawnedOverrideUnitId, HarvestAfterDeath, CompletePhysicalRemovalAfterQueue, admission, RemovalLifecycle, PreservePhysicalPoint, ExclusiveTriggerStateId, CaptureAllDispatches, RelicDamageRemoval, RelicDamageApplied, RelicMovementStatusApplied);
+                CanFireTriggers, TriggerCount, LastSpawnedOverrideUnitId, HarvestAfterDeath, CompletePhysicalRemovalAfterQueue, admission, RemovalLifecycle, PreservePhysicalPoint, ExclusiveTriggerStateId, CaptureAllDispatches, RelicDamageRemoval, RelicDamageApplied, RelicMovementStatusApplied, AttackDamageDealt);
             internal QueuedCharacterTrigger WithCaptureAllDispatches(bool capture) => new QueuedCharacterTrigger(RoomIndex, Unit, Kind,
                 ReturnSpawnerAfterQueue, DeferUntilRemoval, ParamInt, OverrideTarget, ParamInt2, ParamString, DyingCharacter,
                 CanFireTriggers, TriggerCount, LastSpawnedOverrideUnitId, HarvestAfterDeath, CompletePhysicalRemovalAfterQueue,
-                Admission, RemovalLifecycle, PreservePhysicalPoint, ExclusiveTriggerStateId, CaptureAllDispatches || capture, RelicDamageRemoval, RelicDamageApplied, RelicMovementStatusApplied);
+                Admission, RemovalLifecycle, PreservePhysicalPoint, ExclusiveTriggerStateId, CaptureAllDispatches || capture, RelicDamageRemoval, RelicDamageApplied, RelicMovementStatusApplied, AttackDamageDealt);
         }
         private static readonly HashSet<string> KnownStatuses = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -1837,7 +1838,7 @@ namespace MonsterTrain2Poju.Model
             private readonly Func<RoomCombatState, CardActionEffect, int, BumpResult>? birthBump;
             private readonly Func<RoomCombatState, int, IReadOnlyList<QueuedCharacterTrigger>, RoomCombatResult>? relicBirthEffect;
             private readonly Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect;
-            private readonly Queue<(int RoomIndex, WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString, WorkingUnit? DyingCharacter, int TriggerCount, int LastSpawnedOverrideUnitId, int? ExclusiveTriggerStateId)> triggerQueue = new Queue<(int, WorkingUnit, string, bool, int, WorkingUnit?, int, string?, WorkingUnit?, int, int, int?)>();
+            private readonly Queue<(int RoomIndex, WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString, WorkingUnit? DyingCharacter, int TriggerCount, int LastSpawnedOverrideUnitId, int? ExclusiveTriggerStateId, int? AttackDamageDealt)> triggerQueue = new Queue<(int, WorkingUnit, string, bool, int, WorkingUnit?, int, string?, WorkingUnit?, int, int, int?, int?)>();
             private bool runningTriggerQueue;
             private bool holdPreviewTriggerQueue;
             private bool stoppedByRemotePyreDamage;
@@ -2364,7 +2365,7 @@ namespace MonsterTrain2Poju.Model
                     paramInt2: queued.ParamInt2, paramString: queued.ParamString, dyingCharacter: queued.DyingCharacter?.Freeze(),
                     overrideTarget: queued.OverrideTarget?.Freeze(), triggerCount: queued.TriggerCount,
                     lastSpawnedOverrideUnitId: queued.LastSpawnedOverrideUnitId, exclusiveTriggerStateId: queued.ExclusiveTriggerStateId,
-                    admission: CharacterTriggerAdmission.Accepted, captureAllDispatches: traceAllDispatches)).ToArray();
+                    admission: CharacterTriggerAdmission.Accepted, captureAllDispatches: traceAllDispatches, attackDamageDealt: queued.AttackDamageDealt)).ToArray();
 
             internal RoomCombatResult DrainCallbacks(IReadOnlyList<QueuedCharacterTrigger> callbacks)
             {
@@ -2615,7 +2616,7 @@ namespace MonsterTrain2Poju.Model
                     }
                     if (!blockedDeath) FireTriggers(actor, queued.Kind, canFireTriggers: queued.CanFireTriggers, fromQueue: true, paramInt: queued.ParamInt,
                         overrideTarget: overridden, dyingCharacter: dying, triggerCount: queued.TriggerCount, lastSpawnedOverrideUnitId: queued.LastSpawnedOverrideUnitId,
-                        exclusiveTriggerStateId: queued.ExclusiveTriggerStateId, paramInt2: queued.ParamInt2, paramStringOverride: queued.ParamString);
+                        exclusiveTriggerStateId: queued.ExclusiveTriggerStateId, paramInt2: queued.ParamInt2, paramStringOverride: queued.ParamString, attackDamageDealt: queued.AttackDamageDealt);
                     if (queued.Kind == "OnDeath" && queued.ParamInt != 1 && actor.Source.DeathState != null &&
                         (queued.RemovalLifecycle || queued.Unit.Health <= 0))
                         actor.Apply(actor.Freeze().WithDeathState(new UnitDeathState(true, true, false,
@@ -3129,11 +3130,11 @@ namespace MonsterTrain2Poju.Model
                         blocked = target.Health;
                     }
                 }
+                int attackDamageDealt = checked(damage + blocked + (context?.Statistics?.MonsterDamage != null ? lifeLinkPrevented : 0));
                 if (actor != null && context?.Statistics != null)
                     // 2.3.1 includes LifeLink prevention in attackDamageDealt;
                     // 2.2.1 stores only damageToApply plus damageBlocked.
-                    context = context.WithStatistics(context.Statistics.WithLastAttackDamage(checked(damage + blocked +
-                        (context.Statistics.MonsterDamage != null ? lifeLinkPrevented : 0))));
+                    context = context.WithStatistics(context.Statistics.WithLastAttackDamage(attackDamageDealt));
                 ApplyDamageOverflow(actor, target, damage, kind, sourceCardId);
                 if (unsupportedReason != null) return;
                 // Native fixes damage and resulting HP before firing the pre-damage
@@ -3141,7 +3142,7 @@ namespace MonsterTrain2Poju.Model
                 int previousHealth = target.Health;
                 int resultingHealth = Math.Max(0, previousHealth - damage);
                 if (attackingTrigger && actor != null && actor != target)
-                    FireTriggers(actor, "OnAttackingBeforeDamage", overrideTarget: target);
+                    FireTriggers(actor, "OnAttackingBeforeDamage", overrideTarget: target, attackDamageDealt: attackDamageDealt);
                 if (unsupportedReason != null) return;
                 if (!SetHealth(target, resultingHealth)) return;
                 if (!source.Preview && target.Source.Team == CombatTeam.Player && !target.Source.IsPyre &&
@@ -3194,7 +3195,7 @@ namespace MonsterTrain2Poju.Model
                 { battleWon = true; context = context?.WithBossesDead(); }
                 Emit(kind, actor, target, damage);
                 if (attackingTrigger && actor != null && actor != target)
-                    FireTriggers(actor, "OnAttacking", overrideTarget: target);
+                    FireTriggers(actor, "OnAttacking", overrideTarget: target, attackDamageDealt: attackDamageDealt);
                 // Native queues Slay before lifesteal and retaliation, for every damage type
                 // with a character attacker, including damage from a character effect.
                 if (actor != null && !actor.Despawned && !actor.Removed && !target.Alive) FireTriggers(actor, "OnKill", dyingCharacter: target);
@@ -4097,7 +4098,7 @@ namespace MonsterTrain2Poju.Model
 
             private void FireTriggers(WorkingUnit unit, string kind, bool canFireTriggers = true, bool fromQueue = false, int paramInt = 0,
                 WorkingUnit? overrideTarget = null, WorkingUnit? dyingCharacter = null, int triggerCount = 1, int lastSpawnedOverrideUnitId = 0,
-                int? exclusiveTriggerStateId = null, int paramInt2 = 0, string? paramStringOverride = null)
+                int? exclusiveTriggerStateId = null, int paramInt2 = 0, string? paramStringOverride = null, int? attackDamageDealt = null)
             {
                 if (stoppedByRemotePyreDamage) return;
                 string? paramString = paramStringOverride ?? (kind == "OnHeal" || kind == "OnHit" ? "" : null);
@@ -4112,17 +4113,17 @@ namespace MonsterTrain2Poju.Model
                 { enqueueCharacterTrigger(new QueuedCharacterTrigger(unit.RoomIndex, unit.Freeze(), kind, paramInt: paramInt, overrideTarget: overrideTarget?.Freeze(), paramInt2: paramInt2, paramString: paramString,
                     dyingCharacter: dyingCharacter?.Freeze(), canFireTriggers: canFireTriggers, triggerCount: triggerCount, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId,
                     admission: CharacterTriggerAdmission.Accepted, exclusiveTriggerStateId: exclusiveTriggerStateId,
-                    captureAllDispatches: traceAllDispatches)); return; }
+                    captureAllDispatches: traceAllDispatches, attackDamageDealt: attackDamageDealt)); return; }
                 if (!fromQueue)
                 {
-                    triggerQueue.Enqueue((unit.RoomIndex, unit, kind, canFireTriggers, paramInt, overrideTarget, paramInt2, paramString, dyingCharacter, triggerCount, lastSpawnedOverrideUnitId, exclusiveTriggerStateId));
+                    triggerQueue.Enqueue((unit.RoomIndex, unit, kind, canFireTriggers, paramInt, overrideTarget, paramInt2, paramString, dyingCharacter, triggerCount, lastSpawnedOverrideUnitId, exclusiveTriggerStateId, attackDamageDealt));
                     if (!runningTriggerQueue) DrainLocalTriggerQueue();
                     return;
                 }
                 bool startedQueue = !runningTriggerQueue;
                 runningTriggerQueue = true;
                 ExecuteTriggers(unit, kind, canFireTriggers, paramInt, overrideTarget, dyingCharacter, triggerCount, lastSpawnedOverrideUnitId,
-                    paramInt2: paramInt2, paramString: paramString, exclusiveTriggerStateId: exclusiveTriggerStateId);
+                    paramInt2: paramInt2, paramString: paramString, exclusiveTriggerStateId: exclusiveTriggerStateId, attackDamageDealt: attackDamageDealt);
                 if (!startedQueue) return;
                 DrainLocalTriggerQueue();
             }
@@ -4151,7 +4152,7 @@ namespace MonsterTrain2Poju.Model
                             paramInt: queued.ParamInt, overrideTarget: queued.OverrideTarget?.Freeze(), paramInt2: queued.ParamInt2,
                             paramString: queued.ParamString, dyingCharacter: queued.DyingCharacter?.Freeze(), canFireTriggers: queued.CanFire,
                             triggerCount: queued.TriggerCount, lastSpawnedOverrideUnitId: queued.LastSpawnedOverrideUnitId,
-                            exclusiveTriggerStateId: queued.ExclusiveTriggerStateId, captureAllDispatches: traceAllDispatches);
+                            exclusiveTriggerStateId: queued.ExclusiveTriggerStateId, captureAllDispatches: traceAllDispatches, attackDamageDealt: queued.AttackDamageDealt);
                         RoomCombatResult fired = ApplyQueuedCharacterTrigger(EnchantmentWorldModel.Room(remote, context), callback, QueueCallback);
                         if (!fired.Supported) { unsupportedReason = fired.UnsupportedReason; break; }
                         events.AddRange(fired.Events); dispatches.AddRange(fired.Dispatches);
@@ -4165,7 +4166,7 @@ namespace MonsterTrain2Poju.Model
                         continue;
                     }
                     ExecuteTriggers(queued.Unit, queued.Kind, queued.CanFire, queued.ParamInt, queued.OverrideTarget, queued.DyingCharacter,
-                        queued.TriggerCount, queued.LastSpawnedOverrideUnitId, queued.ParamInt2, queued.ParamString, queued.ExclusiveTriggerStateId);
+                        queued.TriggerCount, queued.LastSpawnedOverrideUnitId, queued.ParamInt2, queued.ParamString, queued.ExclusiveTriggerStateId, queued.AttackDamageDealt);
                     if (unsupportedReason == null && queued.Kind == "OnNewStatusEffectAdded")
                     {
                         var callback = new QueuedCharacterTrigger(queued.RoomIndex, queued.Unit.Freeze(), queued.Kind,
@@ -4268,7 +4269,7 @@ namespace MonsterTrain2Poju.Model
             }
 
             private void ExecuteTriggers(WorkingUnit unit, string kind, bool canFireTriggers, int paramInt, WorkingUnit? overrideTarget, WorkingUnit? dyingCharacter, int triggerCount, int lastSpawnedOverrideUnitId,
-                int paramInt2 = 0, string? paramString = null, int? exclusiveTriggerStateId = null)
+                int paramInt2 = 0, string? paramString = null, int? exclusiveTriggerStateId = null, int? attackDamageDealt = null)
             {
                 if (kind == "OnDeath" && paramInt != 1 && !unit.Despawned && unit.Source.Modifiers?.TroopAura != null)
                 {
@@ -4282,6 +4283,10 @@ namespace MonsterTrain2Poju.Model
                         paramInt, paramInt2, paramString, overrideTarget?.Source.Id ?? 0, lastSpawnedOverrideUnitId, exclusiveTriggerStateId));
                 if (kind == "OnDeath" && unit.Despawned) return;
                 if (!unit.Alive && kind != "OnDeath" && (unit.Source.IsBoss == true || unit.Source.EndsBattleOnDeath)) return;
+                // FireTriggers restores the hit quantity when its queued attack callback runs.
+                // Retaliation may have replaced the shared statistic while that callback waited.
+                if (attackDamageDealt.HasValue && context?.Statistics != null)
+                    context = context.WithStatistics(context.Statistics.WithLastAttackDamage(attackDamageDealt.Value));
                 if (kind is "OnSilence" or "OnSilenceLost" && (unit.Has("fullmoon") || unit.Has("newmoon")))
                 {
                     // The native moon status owns these callbacks even when the
@@ -6168,7 +6173,7 @@ namespace MonsterTrain2Poju.Model
                 { overridden = NewUnit(callback.OverrideTarget, false); if (local) units.Add(overridden); }
                 triggerQueue.Enqueue((callback.RoomIndex, actor, callback.Kind, callback.CanFireTriggers, callback.ParamInt, overridden,
                     callback.ParamInt2, callback.ParamString, dying, callback.TriggerCount, callback.LastSpawnedOverrideUnitId,
-                    callback.ExclusiveTriggerStateId));
+                    callback.ExclusiveTriggerStateId, callback.AttackDamageDealt));
             }
 
             private void RemoveStatus(WorkingUnit unit, string id, int count)
