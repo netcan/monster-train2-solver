@@ -1707,6 +1707,8 @@ namespace MonsterTrain2Poju.Probe
                 HalfHealthBattle = HalfHealthBattleScenario.Enabled ? HalfHealthBattleScenario.Evidence : null,
                 OriginalDeathwishAttack = OriginalDeathwishAttackScenario.Enabled ? OriginalDeathwishAttackScenario.Evidence : null,
                 DamageReactionBattle = DamageReactionBattleScenario.Enabled ? DamageReactionBattleScenario.Evidence : null,
+                DevotionDamageBattle = DevotionDamageBattleScenario.Enabled ? DevotionDamageBattleScenario.Evidence : null,
+                DevotionDamageCallbacks = DevotionDamageBattleScenario.Enabled ? RelicUnitResourceProbe.Records : null,
                 DamageThresholdDrawBattle = DamageThresholdDrawBattleScenario.Enabled ? DamageThresholdDrawBattleScenario.Evidence : null,
                 DamageThresholdDrawCallbacks = DamageThresholdDrawBattleScenario.Enabled ? RelicUnitResourceProbe.Records : null,
                 FriendlyTriggerDamageRules = OriginalEatenDamageScenario.Enabled || OriginalBurnoutDamageScenario.Enabled

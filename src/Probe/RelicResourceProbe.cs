@@ -293,6 +293,13 @@ namespace MonsterTrain2Poju.Probe
                 unitTrigger = new RelicUnitResourceRule(damageThreshold ? "OnHit" : "OnHeal", data.GetParamSourceTeam().ToString(), null, Array.Empty<string>());
                 amount = damageThreshold ? data.GetParamInt2() : data.GetParamInt();
             }
+            else if (type == RelicDevotionOnDamageModel.Effect)
+            {
+                // The effect hardcodes OnHit/Monsters; serialized source team
+                // and ParamTrigger are unused (None/OnDeath in this owner).
+                unitTrigger = new RelicUnitResourceRule("OnHit", "Monsters", null, Array.Empty<string>());
+                amount = data.GetParamInt();
+            }
             else if (effect is RelicEffectAddCardsStartOfBattle)
             {
                 var upgradeData = data.GetParamCardUpgradeData();

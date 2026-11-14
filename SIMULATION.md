@@ -11,7 +11,7 @@ Zeal now has 19 isolated native API/drained successors and 32 immutable parallel
 branches each. Unhealed/clipped maximum HP, half-health callback order, stack/HP
 saturation, immunity/Purify and the unchanged original ZealDamageIncrease relic's
 team-specific attack bonus match. This does not count as whole-battle relic
-acceptance (still 4/12 new relics). Offerings, level-dependent
+acceptance (currently 5/12 new relics). Offerings, level-dependent
 cards/birth passives and Zeal/Horde casualty combinations remain separate.
 Run `scripts/Check-Game231ZealStatus.ps1` for the versioned binary component.
 
@@ -25,9 +25,25 @@ notifications reach cards before monsters; unknown mutating callbacks reject.
 State keys distinguish levels/remainders and large awards use bounded arithmetic.
 `scripts/Check-Game231Devotion.ps1` verifies the 10,541-byte binary component.
 Native sampling took 28.05 seconds with complete live train/RNG restoration and
-unchanged player files. Full original-card cost/exhaustion, Devote actions,
-spawn passives and original Devotion relic battle acceptance remain separate;
-the accepted new-relic count is still **4/12**.
+unchanged player files. This resource component is separate from original-card
+cost/exhaustion and relic battle acceptance, which the battle below now provides.
+Devote actions and spawn passives remain pending.
+
+Unchanged original `DrawCardOnEarlyDiscard` now passes a complete native battle:
+its friendly-hit effect awards one Devotion per successful ten-damage delta
+against whole-battle friendly damage, recording the current value twice. A
+single large hit awards once; healing and turn changes preserve the delta.
+Twelve plays include 9/10/11 and 36/40/50 controls and unchanged original
+Venerate spending three energy, gaining six and routing to Exhausted. Three
+relic awards reach level one; Venerate reaches two and natural later hits reach
+three. All 564 full manager contexts, 41 native preview controls, 47 room and
+13 train phases match. Seven EndTurns, continuous independent replay from the
+first input and 16 immutable branches pass with four zero failure counters.
+Sampling took 110.45 seconds with player files unchanged. Authored carriers,
+control spells and a 20-card hand limit isolate the original owners; control
+definitions do not add original-card coverage. The 50,646-byte binary battle is
+verified by `scripts/Check-Game231DevotionDamage.ps1`. New original-relic battle
+acceptance is now **5/12**; full 614-card/236-relic revalidation remains open.
 
 The new Bloodshed/Punish damage callbacks have 33 isolated native cases with
 two paid units, 34 direct hits and 136 dispatch payloads. Full successors/RNG
@@ -63,7 +79,7 @@ All native room/train phases and continuous replay after authored turn-one
 setup pass, with 16 immutable branches. Deployment inputs are checked
 separately because native authoring occurs between deployment and turn one.
 Recheck with `scripts/Check-Game231FriendlyTriggerDamage.ps1`. Legacy 2.2.1
-captures still pass; these two existing owners do not increase the 4/12 new
+captures still pass; these two existing owners do not increase the 5/12 new
 relic count or imply full 614-card/236-relic revalidation.
 
 Two more unchanged new owners, `DrawCardOnTurnDamage` and `RevengeTriggerTwice`,
@@ -77,7 +93,8 @@ observations preserve gold. All nine plays, seven EndTurns, 47 room and 13 train
 phases match, with continuous replay from the first input and 16 immutable
 parallel branches. Legacy heal-draw and combined trigger-count relic checks
 pass. Recheck with `scripts/Check-Game231DamageThresholdDraw.ps1`. New original
-relic battle acceptance is now **4/12**; full catalog revalidation remains open.
+relic battle acceptance, including the Devotion owner above, is now **5/12**;
+full catalog revalidation remains open.
 
 Half-health Deathwish now also passes a complete authored native battle: two
 paid deployments, three damage/heal controls, natural later turns, Undying and

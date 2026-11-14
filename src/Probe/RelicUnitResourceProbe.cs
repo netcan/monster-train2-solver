@@ -30,7 +30,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(CharacterTriggerData.Trigger trigger, CharacterState characterState, int paramInt, ref IEnumerator __result)
             {
-                if ((OriginalUnitResourceScenario.Prepared || OriginalCardDrawOnHealScenario.Prepared || DamageThresholdDrawBattleScenario.Prepared) &&
+                if ((OriginalUnitResourceScenario.Prepared || OriginalCardDrawOnHealScenario.Prepared || DamageThresholdDrawBattleScenario.Prepared || DevotionDamageBattleScenario.Prepared) &&
                     FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
                     __result = Wrap(__result, trigger, characterState, paramInt);
             }
@@ -49,7 +49,13 @@ namespace MonsterTrain2Poju.Probe
                     record = new Record { Trigger = trigger.ToString(), ParamInt = paramInt, Alive = actor.IsAlive,
                         Placement = placement, Actor = capturedActor, Before = before };
                     Records.Add(record);
-                    if (OriginalCardDrawOnHealScenario.Prepared || DamageThresholdDrawBattleScenario.Prepared)
+                    if (DevotionDamageBattleScenario.Prepared)
+                    {
+                        var predicted = RelicDevotionOnDamageModel.Apply(before, capturedActor, trigger.ToString(), placement);
+                        record.Predicted = predicted.Context;
+                        record.UnsupportedReason = predicted.UnsupportedReason;
+                    }
+                    else if (OriginalCardDrawOnHealScenario.Prepared || DamageThresholdDrawBattleScenario.Prepared)
                     {
                         var predicted = RelicCardDrawOnHealModel.Apply(before, capturedActor, trigger.ToString(), placement);
                         record.Predicted = predicted.Context;

@@ -4479,6 +4479,16 @@ namespace MonsterTrain2Poju.Model
                         if (!ApplyRelicCardDrawOnHeal(unit, kind, relic, cardDrawOnHeal)) return false;
                         continue;
                     }
+                    var devotion = relic.ResourceEffects?.SingleOrDefault(effect =>
+                        effect.EffectIndex == effectIndex && effect.Type == RelicDevotionOnDamageModel.Effect);
+                    if (devotion != null)
+                    {
+                        DevotionResult result = RelicDevotionOnDamageModel.ApplyOne(context!, relic.DataId, effectIndex,
+                            unit.Freeze(), kind, source.Deployment, source.Preview);
+                        if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
+                        context = result.Context;
+                        continue;
+                    }
                     var unitTriggerGeneration = relic.ResourceEffects?.SingleOrDefault(effect =>
                         effect.EffectIndex == effectIndex && RelicUnitTriggerCardGenerationModel.IsEffect(effect.Type));
                     if (unitTriggerGeneration != null)

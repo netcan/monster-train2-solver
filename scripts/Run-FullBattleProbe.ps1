@@ -465,6 +465,7 @@ param(
     [switch] $HalfHealthBattle,
     [switch] $DamageReactionBattle,
     [switch] $DamageThresholdDrawBattle,
+    [switch] $DevotionDamageBattle,
     [switch] $OriginalDeathwishAttack,
     [switch] $EnchantmentWorld,
     [switch] $HordeStatuses,
@@ -1373,6 +1374,7 @@ if ($OriginalMoreSpikes) { $BranchCardMasks = $true; $Policy = 'units-spells-and
 if ($HalfHealthBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($DamageReactionBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($DamageThresholdDrawBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($DevotionDamageBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDeathwishAttack) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStealthSlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -2299,6 +2301,7 @@ if ($OriginalMoreSpikes) { $environment['MT2_PROBE_MODIFIERS'] = 'original-more-
 if ($HalfHealthBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'half-health-battle' }
 if ($DamageReactionBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-reaction-battle' }
 if ($DamageThresholdDrawBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-threshold-draw-battle' }
+if ($DevotionDamageBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'devotion-damage-battle' }
 if ($OriginalDeathwishAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deathwish-attack' }
 if ($OriginalStealthSlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-stealth-slay' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
@@ -2772,6 +2775,14 @@ if ($ChooseDiscard -and ($trace.ModifierScenario -ne 'card-effect-choose-discard
     -not (Select-String -LiteralPath $unityLog -Pattern 'CHOOSE-DISCARD-AUTOSELECT card=\d+ cost=2' -Quiet) -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 1)) {
     throw 'Original StarterScrap did not consume the selected cost-2 card in the native battle.'
+}
+if ($DevotionDamageBattle -and ($trace.ModifierScenario -cne 'devotion-damage-battle' -or
+    -not $trace.DevotionDamageBattle.Prepared -or $trace.DevotionDamageBattle.CompletedControlPlays -ne 12 -or
+    @($trace.Actions).Count -ne 12 -or -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+    @($trace.DevotionDamageCallbacks).Count -eq 0 -or @($trace.DevotionDamageCallbacks | Where-Object {
+        -not $_.Completed -or $_.CaptureError -or $_.Difference -or $_.UnsupportedReason -or $null -eq $_.Actual }).Count -ne 0)) {
+    throw 'Missing original Devotion damage battle, twelve inputs, settled victory or complete matching callbacks.'
 }
 if ($DamageThresholdDrawBattle -and ($trace.ModifierScenario -cne 'damage-threshold-draw-battle' -or
     -not $trace.DamageThresholdDrawBattle.Prepared -or $trace.DamageThresholdDrawBattle.CompletedControlPlays -ne 9 -or

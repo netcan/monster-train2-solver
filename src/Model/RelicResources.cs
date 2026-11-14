@@ -318,7 +318,7 @@ namespace MonsterTrain2Poju.Model
             type == RelicCardGenerationModel.ChampionCardAfterDraw ||
             type == RelicTurnDrawModel.FullHealth || type == RelicTurnDrawModel.Opening || type == RelicDeckTurnDrawModel.Effect ||
             type == RelicCardPlayDamageModel.Effect || type == RelicConsumeDamageModel.Effect || RelicFriendlyTriggerDamageModel.IsEffect(type) || type == RelicHealDamageModel.Effect || type == RelicUnitSpawnEffectModel.Effect ||
-            RelicUnitResourceModel.IsEffect(type) || RelicCardDrawOnHealModel.IsEffect(type) || type == RelicRandomDrawCostModel.Effect || type == RelicSuppressExhaustModel.Effect || type == RelicEndTurnHealthModel.Effect || type == RelicCardTypeSequenceModel.Effect ||
+            RelicUnitResourceModel.IsEffect(type) || RelicCardDrawOnHealModel.IsEffect(type) || type == RelicDevotionOnDamageModel.Effect || type == RelicRandomDrawCostModel.Effect || type == RelicSuppressExhaustModel.Effect || type == RelicEndTurnHealthModel.Effect || type == RelicCardTypeSequenceModel.Effect ||
             RelicUnitTriggerCardGenerationModel.IsEffect(type) ||
             RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type) || type == PileStartTurn || type == StartTurnHeal ||
             type == StartTurnRoomEffect || type == PostOpeningDiscardReplacement || type == RelicSingleFloorCapacityModel.Effect || type == RelicMooncycleRoomEffectModel.Effect;
@@ -469,6 +469,11 @@ namespace MonsterTrain2Poju.Model
                 {
                     string? drawError = RelicCardDrawOnHealModel.Validate(relic, rule);
                     if (drawError != null) return drawError;
+                }
+                else if (rule.Type == RelicDevotionOnDamageModel.Effect)
+                {
+                    string? devotionError = RelicDevotionOnDamageModel.Validate(relic, rule);
+                    if (devotionError != null) return devotionError;
                 }
                 else if (RelicUnitTriggerCardGenerationModel.IsEffect(rule.Type))
                 {
