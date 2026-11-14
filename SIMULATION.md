@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current curated inventory (2026-11-14): 2,861 binary archives with verified
+Current curated inventory (2026-11-14): 2,862 binary archives with verified
 hashes and registrations. The card evidence index accepts 1,561 battle archives
 and 31,514 native actions; three historical captures with nonzero counters stay
 excluded. All 559 intrinsically playable logbook cards have a definition-matched
@@ -28,6 +28,13 @@ Seven paired native observations cover player units, enemies and a boss in both
 phase directions; second-ring victory and seventh-ring defeat replays still
 match every recorded successor and RNG state. Preview movement, relic phase
 overrides, unknown callbacks and moon resource traits remain guarded.
+
+Original Eclipse Chamber's character-refresh effect now also works while moon
+tracking is inactive. An isolated native capture checks four refresh boundaries:
+New and Full both update player/enemy understanding and their original upgrades;
+a resource-only refresh and a repeated Full refresh leave actors unchanged.
+The model matches complete native context and RNG in each case. Preview refreshes
+and uncalibrated card moon traits remain guarded.
 
 A further 34 original Conduit movement callbacks now match independently in
 complete context, private card trackers, physical points and gameplay RNG.
@@ -210,7 +217,7 @@ Scrap Metal and Unplayable Unpurgeable. They retain mechanism/rejection evidence
 and are not counted as successful plays. The fifteen previously guarded hidden
 unit-ability/internal definitions now have definition-matched native witnesses,
 including both Chomp feeding routes and both offered spike-crafting choices.
-Across all 668 definitions, 585 have direct native play evidence and 83 retain
+Across all 668 definitions, 593 have direct native play evidence and 75 retain
 mechanism evidence; partial, unsupported and unreviewed inventory entries are
 all zero. These counts do not imply complete support for arbitrary combinations
 or completion of the optimal solver.

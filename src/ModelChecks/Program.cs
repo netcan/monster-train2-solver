@@ -525,6 +525,12 @@ if (args.Length is 2 or 3 && args[0] == "--generated-moon-tracking-only")
     GeneratedMoonTrackingChecks.Native(fixture.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--inactive-moon-refresh-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    InactiveMoonRefreshChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length is 2 or 5 && args[0] == "--inactive-new-moon-horde-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -11650,6 +11656,11 @@ foreach (string path in args.Where(path => path.Contains("room-moon-callback-cal
 {
     using var document = ModelJson.ReadFixture(path);
     RoomMoonCallbackChecks.Native(document.RootElement);
+}
+foreach (string path in args.Where(path => path.EndsWith("room-moon-inactive-refresh-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    InactiveMoonRefreshChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.EndsWith("full-battle-eclipse-chamber-movement.mt2f", StringComparison.OrdinalIgnoreCase)))
 {

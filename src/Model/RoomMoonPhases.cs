@@ -58,8 +58,8 @@ namespace MonsterTrain2Poju.Model
             // Refresh only changes player-resource traits and character phase understanding;
             // it does not shift the global phase or fire phase-shift relic callbacks.
             if (!characters) return new MoonPhaseTransitionResult(source);
-            if (context.QueryFrame.MoonPhaseTrackingActive != true)
-                return new MoonPhaseTransitionResult(null, "Inactive moon tracking refresh requires separate native calibration.");
+            if (context.QueryFrame.MoonPhaseTrackingActive is not (true or false))
+                return new MoonPhaseTransitionResult(null, "Moon refresh requires captured tracking state.");
             if (source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Health > 0 && !unit.MoonPhaseMask.HasValue))
                 return new MoonPhaseTransitionResult(null, "Room phase refresh requires captured character understanding masks.");
             string? callbackError = ValidateCallbacks(source);

@@ -1,5 +1,24 @@
 # Room moon masks and character callbacks
 
+The inactive-refresh component is
+[`room-moon-inactive-refresh-calibration.mt2f`](../../combat/rooms/room-moon-inactive-refresh-calibration.mt2f).
+It runs the unchanged Eclipse Chamber character-refresh effect without adding
+a Moon card to the deck, so native tracking remains disabled. New Moon changes
+the original player Selene and enemy Nightingale masks 6 to 5 and their original
+upgrade counts 1/0 to 0/1. A Full Moon resource-only refresh leaves both alone;
+the following character refresh reverses both changes; a repeated refresh is
+a no-op. All four complete train/context and gameplay-RNG boundaries match the
+model and the card-effect pipeline, including eight immutable branches each.
+The muted Instant process preserved original game files. The 8,911-byte binary
+has 1,035 unique nodes and SHA-256
+`396e19d47092e895a1a8a80c831f920b2d90c8b5e764081ae37f0dab3f41dc72`.
+This is isolated component evidence, not an arbitrary full-battle combination.
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -RoomMoonInactiveRefresh -GameSpeed Instant
+pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture room-moon-inactive-refresh-calibration.mt2f
+```
+
 `room-moon-callback-calibration.mt2f` captures original Mono game 2.2.1,
 module `8fb07b96-f4db-4d2b-884d-c00536d6ccf4`, in profile
 `full-battle-no-cards-20261021-223304-6bc946da` (28.25 seconds).
