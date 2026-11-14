@@ -33,6 +33,7 @@ param(
     [switch] $RoomMoonInactiveInfernoMovement,
     [switch] $RoomMoonInactiveInfernoExit,
     [switch] $RoomMoonInactiveMushyMovement,
+    [switch] $RoomMoonInactiveMushyTurn,
     [switch] $RoomMoonCallbacksShade,
     [switch] $RoomMoonMovement,
     [switch] $RoomMoonEnemyMovement,
@@ -744,11 +745,12 @@ if ($RoomMoonInactiveMovement) { $RoomMoonCallbacks = $true }
 if ($RoomMoonInactiveInfernoMovement) { $RoomMoonCallbacks = $true }
 if ($RoomMoonInactiveInfernoExit) { $RoomMoonCallbacks = $true }
 if ($RoomMoonInactiveMushyMovement) { $RoomMoonCallbacks = $true }
+if ($RoomMoonInactiveMushyTurn) { $RoomMoonCallbacks = $true }
 if ($RoomMoonEnemyMovement) { $RoomMoonMovement = $true }
 if ($RoomMoonMovement) { $RoomMoonCallbacksShade = $true }
 if ($RoomMoonCallbacksShade) { $RoomMoonCallbacks = $true }
 if ($RoomMoonCallbacks) {
-    $allowed = @('RoomMoonCallbacks', 'RoomMoonInactiveRefresh', 'RoomMoonInactiveMovement', 'RoomMoonInactiveInfernoMovement', 'RoomMoonInactiveInfernoExit', 'RoomMoonInactiveMushyMovement', 'RoomMoonCallbacksShade', 'RoomMoonMovement', 'RoomMoonEnemyMovement', 'RoomMoonSpellUpgrades', 'RoomMoonSpellAdvance', 'RoomMoonSpellCostRelic', 'RoomMoonSpellAttackRelic', 'RoomMoonSpellHealingRelic', 'RoomMoonSpellPhaseHealRelic', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    $allowed = @('RoomMoonCallbacks', 'RoomMoonInactiveRefresh', 'RoomMoonInactiveMovement', 'RoomMoonInactiveInfernoMovement', 'RoomMoonInactiveInfernoExit', 'RoomMoonInactiveMushyMovement', 'RoomMoonInactiveMushyTurn', 'RoomMoonCallbacksShade', 'RoomMoonMovement', 'RoomMoonEnemyMovement', 'RoomMoonSpellUpgrades', 'RoomMoonSpellAdvance', 'RoomMoonSpellCostRelic', 'RoomMoonSpellAttackRelic', 'RoomMoonSpellHealingRelic', 'RoomMoonSpellPhaseHealRelic', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     $allowed += 'RoomMoonSpellPhaseEnergyRelic'
     $allowed += 'RoomMoonSpellHandPowerRelic'
     $allowed += 'RoomMoonSpellStatusRelic'
@@ -762,7 +764,7 @@ if ($RoomMoonCallbacks) {
     }
     if ($RoomMoonSpellUpgrades -and ($RoomMoonCallbacksShade -or $RoomMoonMovement -or $RoomMoonEnemyMovement)) { throw 'Spell upgrade controls are a separate isolated component.' }
     if ($RoomMoonInactiveRefresh -and ($RoomMoonCallbacksShade -or $RoomMoonSpellUpgrades -or $StartingCovenantLevel -gt 0)) { throw 'Inactive moon refresh is a separate isolated component.' }
-    if (($RoomMoonInactiveMovement -or $RoomMoonInactiveInfernoMovement -or $RoomMoonInactiveInfernoExit -or $RoomMoonInactiveMushyMovement) -and ($RoomMoonInactiveRefresh -or $RoomMoonCallbacksShade -or $RoomMoonSpellUpgrades -or $StartingCovenantLevel -gt 0 -or @($RoomMoonInactiveMovement, $RoomMoonInactiveInfernoMovement, $RoomMoonInactiveInfernoExit, $RoomMoonInactiveMushyMovement).Where({ $_ }).Count -ne 1)) { throw 'Inactive moon movement requires one separate isolated component.' }
+    if (($RoomMoonInactiveMovement -or $RoomMoonInactiveInfernoMovement -or $RoomMoonInactiveInfernoExit -or $RoomMoonInactiveMushyMovement -or $RoomMoonInactiveMushyTurn) -and ($RoomMoonInactiveRefresh -or $RoomMoonCallbacksShade -or $RoomMoonSpellUpgrades -or $StartingCovenantLevel -gt 0 -or @($RoomMoonInactiveMovement, $RoomMoonInactiveInfernoMovement, $RoomMoonInactiveInfernoExit, $RoomMoonInactiveMushyMovement, $RoomMoonInactiveMushyTurn).Where({ $_ }).Count -ne 1)) { throw 'Inactive moon movement requires one separate isolated component.' }
     $Policy = 'no-cards'; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
 }
 if ($ConduitEnemyMovement) { $ConduitMovement = $true }
@@ -1602,6 +1604,7 @@ $environment = @{
     MT2_PROBE_ROOM_MOON_INACTIVE_INFERNO_MOVEMENT = $(if ($RoomMoonInactiveInfernoMovement) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_INACTIVE_INFERNO_EXIT = $(if ($RoomMoonInactiveInfernoExit) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_INACTIVE_MUSHY_MOVEMENT = $(if ($RoomMoonInactiveMushyMovement) { '1' } else { '0' })
+    MT2_PROBE_ROOM_MOON_INACTIVE_MUSHY_TURN = $(if ($RoomMoonInactiveMushyTurn) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_SPELL_UPGRADES = $(if ($RoomMoonSpellUpgrades) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_SPELL_ADVANCE = $(if ($RoomMoonSpellAdvance) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_SPELL_COST_RELIC = $(if ($RoomMoonSpellCostRelic) { '1' } else { '0' })
@@ -2288,7 +2291,7 @@ if ($TrueFinalBossBirth) {
     return
 }
 if ($RoomMoonCallbacks) {
-    $componentPath = Join-Path $profile $(if ($RoomMoonInactiveMushyMovement) { 'room-moon-inactive-mushy-movement-calibration.mt2f' } elseif ($RoomMoonInactiveInfernoExit) { 'room-moon-inactive-inferno-exit-calibration.mt2f' } elseif ($RoomMoonInactiveInfernoMovement) { 'room-moon-inactive-inferno-movement-calibration.mt2f' } elseif ($RoomMoonInactiveMovement) { 'room-moon-inactive-movement-calibration.mt2f' } elseif ($RoomMoonInactiveRefresh) { 'room-moon-inactive-refresh-calibration.mt2f' } elseif ($RoomMoonSpellPhaseHealRelic) { 'room-moon-spell-phase-heal-relic-calibration.mt2f' } elseif ($RoomMoonSpellHealingRelic) { 'room-moon-spell-healing-relic-calibration.mt2f' } elseif ($RoomMoonSpellAttackRelic) { 'room-moon-spell-attack-relic-calibration.mt2f' } elseif ($RoomMoonSpellCostRelic) { 'room-moon-spell-cost-relic-calibration.mt2f' } elseif ($RoomMoonSpellAdvance) { 'room-moon-spell-advance-calibration.mt2f' } elseif ($RoomMoonSpellUpgrades) { 'room-moon-spell-upgrade-calibration.mt2f' } elseif ($RoomMoonEnemyMovement) { 'room-moon-enemy-movement-calibration.mt2f' } elseif ($RoomMoonMovement) { 'room-moon-movement-calibration.mt2f' } else { 'room-moon-callback-calibration.mt2f' })
+    $componentPath = Join-Path $profile $(if ($RoomMoonInactiveMushyTurn) { 'room-moon-inactive-mushy-turn-calibration.mt2f' } elseif ($RoomMoonInactiveMushyMovement) { 'room-moon-inactive-mushy-movement-calibration.mt2f' } elseif ($RoomMoonInactiveInfernoExit) { 'room-moon-inactive-inferno-exit-calibration.mt2f' } elseif ($RoomMoonInactiveInfernoMovement) { 'room-moon-inactive-inferno-movement-calibration.mt2f' } elseif ($RoomMoonInactiveMovement) { 'room-moon-inactive-movement-calibration.mt2f' } elseif ($RoomMoonInactiveRefresh) { 'room-moon-inactive-refresh-calibration.mt2f' } elseif ($RoomMoonSpellPhaseHealRelic) { 'room-moon-spell-phase-heal-relic-calibration.mt2f' } elseif ($RoomMoonSpellHealingRelic) { 'room-moon-spell-healing-relic-calibration.mt2f' } elseif ($RoomMoonSpellAttackRelic) { 'room-moon-spell-attack-relic-calibration.mt2f' } elseif ($RoomMoonSpellCostRelic) { 'room-moon-spell-cost-relic-calibration.mt2f' } elseif ($RoomMoonSpellAdvance) { 'room-moon-spell-advance-calibration.mt2f' } elseif ($RoomMoonSpellUpgrades) { 'room-moon-spell-upgrade-calibration.mt2f' } elseif ($RoomMoonEnemyMovement) { 'room-moon-enemy-movement-calibration.mt2f' } elseif ($RoomMoonMovement) { 'room-moon-movement-calibration.mt2f' } else { 'room-moon-callback-calibration.mt2f' })
     if ($RoomMoonSpellPhaseEnergyRelic) { $componentPath = Join-Path $profile 'room-moon-spell-phase-energy-relic-calibration.mt2f' }
     if ($RoomMoonSpellHandPowerRelic) { $componentPath = Join-Path $profile 'room-moon-spell-hand-power-relic-calibration.mt2f' }
     if ($RoomMoonSpellStatusRelic) { $componentPath = Join-Path $profile 'room-moon-spell-status-relic-calibration.mt2f' }
@@ -2301,13 +2304,14 @@ if ($RoomMoonCallbacks) {
     $component = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($componentPath)
     try {
         $captured = $component.RootElement.ToObjectGraph()
-        if (-not $captured.NativeCompleted -or -not $captured.RngUnchanged -or
-            -not $captured.PreviewUpdatesSuppressed -or @($captured.Rows).Count -ne $(if ($RoomMoonInactiveMushyMovement) { 6 } elseif ($RoomMoonInactiveInfernoExit) { 2 } elseif ($RoomMoonInactiveInfernoMovement) { 4 } elseif ($RoomMoonInactiveMovement) { 8 } elseif ($RoomMoonInactiveRefresh) { 4 } elseif ($RoomMoonSpellHandPowerRelic) { 19 } elseif ($RoomMoonSpellUpgrades) { 15 } elseif ($RoomMoonEnemyMovement) { 39 } elseif ($RoomMoonMovement) { 37 } elseif ($RoomMoonCallbacksShade) { 15 } else { 13 }) -or
-            $(if ($RoomMoonInactiveMovement -or $RoomMoonInactiveInfernoMovement -or $RoomMoonInactiveInfernoExit -or $RoomMoonInactiveMushyMovement) { $captured.OrdinaryEnemyId -le 0 -or $captured.CallbackEnemyId -le 0 -or $captured.OrdinaryEnemyId -eq $captured.CallbackEnemyId } else { @($captured.ActorIds).Count -ne $(if ($RoomMoonInactiveRefresh) { 2 } elseif ($RoomMoonSpellStatusRelic) { 2 } elseif ($RoomMoonSpellPhaseHealRelic) { 1 } elseif ($RoomMoonSpellUpgrades) { 0 } elseif ($RoomMoonEnemyMovement) { 12 } elseif ($RoomMoonCallbacksShade) { 6 } else { 3 }) }) -or
+        if (-not $captured.NativeCompleted -or (-not $RoomMoonInactiveMushyTurn -and -not $captured.RngUnchanged) -or
+            (-not $RoomMoonInactiveMushyTurn -and -not $captured.PreviewUpdatesSuppressed) -or (-not $RoomMoonInactiveMushyTurn -and @($captured.Rows).Count -ne $(if ($RoomMoonInactiveMushyMovement) { 6 } elseif ($RoomMoonInactiveInfernoExit) { 2 } elseif ($RoomMoonInactiveInfernoMovement) { 4 } elseif ($RoomMoonInactiveMovement) { 8 } elseif ($RoomMoonInactiveRefresh) { 4 } elseif ($RoomMoonSpellHandPowerRelic) { 19 } elseif ($RoomMoonSpellUpgrades) { 15 } elseif ($RoomMoonEnemyMovement) { 39 } elseif ($RoomMoonMovement) { 37 } elseif ($RoomMoonCallbacksShade) { 15 } else { 13 })) -or
+            $(if ($RoomMoonInactiveMushyTurn) { $captured.EnemyId -le 0 -or $captured.Before.Spawn.Turn -ge $captured.Actual.Spawn.Turn } elseif ($RoomMoonInactiveMovement -or $RoomMoonInactiveInfernoMovement -or $RoomMoonInactiveInfernoExit -or $RoomMoonInactiveMushyMovement) { $captured.OrdinaryEnemyId -le 0 -or $captured.CallbackEnemyId -le 0 -or $captured.OrdinaryEnemyId -eq $captured.CallbackEnemyId } else { @($captured.ActorIds).Count -ne $(if ($RoomMoonInactiveRefresh) { 2 } elseif ($RoomMoonSpellStatusRelic) { 2 } elseif ($RoomMoonSpellPhaseHealRelic) { 1 } elseif ($RoomMoonSpellUpgrades) { 0 } elseif ($RoomMoonEnemyMovement) { 12 } elseif ($RoomMoonCallbacksShade) { 6 } else { 3 }) }) -or
             [bool]$captured.InactiveMovement -ne [bool]$RoomMoonInactiveMovement -or
             [bool]$captured.InactiveInfernoMovement -ne [bool]$RoomMoonInactiveInfernoMovement -or
             [bool]$captured.InactiveInfernoExit -ne [bool]$RoomMoonInactiveInfernoExit -or
             [bool]$captured.InactiveMushyMovement -ne [bool]$RoomMoonInactiveMushyMovement -or
+            [bool]$captured.InactiveMushyTurn -ne [bool]$RoomMoonInactiveMushyTurn -or
             [bool]$captured.InactiveRefresh -ne [bool]$RoomMoonInactiveRefresh -or
             [bool]$captured.SpellUpgradeControls -ne [bool]$RoomMoonSpellUpgrades -or
             [bool]$captured.SpellAdvanceControls -ne [bool]$RoomMoonSpellAdvance -or
