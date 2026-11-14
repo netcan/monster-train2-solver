@@ -100,8 +100,8 @@ namespace MonsterTrain2Poju.Probe
             while (!Ready()) yield return null;
             // Direct API calls do not hold the normal card-resolution gate. Keep UI preview
             // from switching native queues while these controlled operations yield.
-            bool previousSuppression = combat.SuppressCombatPreviewUpdates;
-            combat.SuppressCombatPreviewUpdates = true;
+            bool previousSuppression = CombatPreviewControl.Save(combat);
+            CombatPreviewControl.Set(combat, true);
             try
             {
                 yield return Apply("cooldown-ready", "Remove", "cooldown", -1);
@@ -113,7 +113,7 @@ namespace MonsterTrain2Poju.Probe
                 yield return Apply("troops-regrow", "Add", "horde", 2);
                 yield return Apply("maxhp-casualty", "DebuffHealth", "", 30);
             }
-            finally { combat.SuppressCombatPreviewUpdates = previousSuppression; current = draining = null; }
+            finally { CombatPreviewControl.Set(combat, previousSuppression); current = draining = null; }
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(combat, true);
 
             IEnumerator Apply(string label, string operation, string status, int amount)

@@ -53,7 +53,7 @@ namespace MonsterTrain2Poju.Probe
                 while (!Ready()) yield return null;
             }
             rooms.GetRoom(0).AddCharactersToList(players, Team.Type.Monsters);
-            bool previous = combat.SuppressCombatPreviewUpdates; combat.SuppressCombatPreviewUpdates = true;
+            bool previous = CombatPreviewControl.Save(combat); CombatPreviewControl.Set(combat, true);
             try
             {
                 for (int i = 0; i < 3; i++) yield return managers.GetHeroManager()!.SpawnHeroInRoom(HarvestScenario.ObserverDefinition, 0, null!);
@@ -81,7 +81,7 @@ namespace MonsterTrain2Poju.Probe
                 yield return Kill("dying-enemy-remove-unhealed", enemies[1]);
                 yield return Kill("dying-enemy-remove-attributed", enemies[2]);
             }
-            finally { combat.SuppressCombatPreviewUpdates = previous; current = null; Label = null; }
+            finally { CombatPreviewControl.Set(combat, previous); current = null; Label = null; }
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(combat, true);
 
             IEnumerator ApplyStartingUpgrade(CharacterState actor, CardUpgradeData data)

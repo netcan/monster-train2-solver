@@ -150,7 +150,7 @@ namespace MonsterTrain2Poju.Probe
                 bool rngUnchanged = rows.Concat(previews).All(row => JToken.DeepEquals(JObject.FromObject(row)["Before"]!["Rng"], JObject.FromObject(row)["Actual"]!["Rng"]));
                 if (!rngUnchanged || rows.Count != 38 || previews.Count != 3 || !plain.CanScaleWithMagicPower())
                     throw new InvalidOperationException("Conduit movement controls or gameplay RNG changed.");
-                using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
+                using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
                     GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                     Boundary = "AfterNativeSetSpawnPointReturn", NativeCompleted = true, RngUnchanged = rngUnchanged,
                     EnemyCarrier = Enemy, PlainCardId = Trace.CardId(plain), StrongerCardId = Trace.CardId(stronger), Rows = rows, Previews = previews }))

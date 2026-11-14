@@ -149,7 +149,7 @@ namespace MonsterTrain2Poju.Probe
             var players = new List<CharacterState>(); rooms.GetRoom(0).AddCharactersToList(players, Team.Type.Monsters);
             CharacterState first = players.Single(); players.Clear(); rooms.GetRoom(1).AddCharactersToList(players, Team.Type.Monsters);
             CharacterState second = players.Single();
-            bool previous = combat.SuppressCombatPreviewUpdates; combat.SuppressCombatPreviewUpdates = true;
+            bool previous = CombatPreviewControl.Save(combat); CombatPreviewControl.Set(combat, true);
             try
             {
                 var pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(managers.GetHeroManager());
@@ -290,7 +290,7 @@ namespace MonsterTrain2Poju.Probe
                 Configure(managers, -1, TargetMode.DropTargetCharacter, Team.Type.Heroes | Team.Type.Monsters, false);
                 Set(combat, "combatStateChanged", true);
             }
-            finally { label = null; combat.SuppressCombatPreviewUpdates = previous; }
+            finally { label = null; CombatPreviewControl.Set(combat, previous); }
             while (!Ready()) yield return null;
 
             IEnumerator Cast(string name, CharacterState target, int amount, bool room = false, bool ranged = false)
@@ -311,15 +311,15 @@ namespace MonsterTrain2Poju.Probe
                 while (!Ready()) yield return null;
                 // A decision boundary includes the normal combat-preview refresh. Raw effect
                 // observations above remain before that refresh, as in an ordinary card play.
-                combat.SuppressCombatPreviewUpdates = false;
+                CombatPreviewControl.Set(combat, false);
                 while (!Ready()) yield return null;
                 FullBattleTrace.Active.CompleteCardPlay();
-                combat.SuppressCombatPreviewUpdates = true;
+                CombatPreviewControl.Set(combat, true);
                 label = null;
             }
             bool Ready() => !managers.GetSaveManager().PreviewMode && !managers.GetReplayManager().IsCardPlaying() &&
                 !combat.IsRunningTriggerQueue && Count(combat) == 0 && !(managers.GetHandUI()?.AreAnyCardsAnimating() ?? false) &&
-                (combat.SuppressCombatPreviewUpdates || !(bool)AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(combat));
+                (CombatPreviewControl.Get(combat) || !(bool)AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(combat));
         }
         private static IEnumerator SpawnOuterBoss(AllGameManagers managers)
         {

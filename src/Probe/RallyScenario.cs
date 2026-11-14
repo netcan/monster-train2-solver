@@ -97,7 +97,7 @@ namespace MonsterTrain2Poju.Probe
             }
             var players = new List<CharacterState>(); var enemies = new List<CharacterState>();
             rooms.GetRoom(0).AddCharactersToList(players, Team.Type.Monsters); rooms.GetRoom(0).AddCharactersToList(enemies, Team.Type.Heroes);
-            bool previous = combat.SuppressCombatPreviewUpdates; combat.SuppressCombatPreviewUpdates = true;
+            bool previous = CombatPreviewControl.Save(combat); CombatPreviewControl.Set(combat, true);
             try
             {
                 players[1].AddStatusEffect("silenced", 1, allowModification: false); yield return combat.RunTriggerQueue();
@@ -110,7 +110,7 @@ namespace MonsterTrain2Poju.Probe
                 enemies.Clear(); rooms.GetRoom(1).AddCharactersToList(enemies, Team.Type.Heroes);
                 yield return enemies[0].DebuffMaxHP(9999, 0);
             }
-            finally { combat.SuppressCombatPreviewUpdates = previous; holding = false; Label = null; }
+            finally { CombatPreviewControl.Set(combat, previous); holding = false; Label = null; }
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(combat, true);
             IEnumerator Apply(string label, CharacterState actor, int amount, bool remove = false)
             {

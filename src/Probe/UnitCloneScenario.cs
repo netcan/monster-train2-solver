@@ -124,7 +124,7 @@ namespace MonsterTrain2Poju.Probe
             while (!Ready()) yield return null;
             var actors = new List<CharacterState>(); rooms.GetRoom(0).AddCharactersToList(actors, Team.Type.Monsters);
             CharacterState host = actors.Single(unit => unit.GetSpawnerCard() == hostCard), firstClone = null!;
-            bool previous = combat.SuppressCombatPreviewUpdates; combat.SuppressCombatPreviewUpdates = true;
+            bool previous = CombatPreviewControl.Save(combat); CombatPreviewControl.Set(combat, true);
             try
             {
                 yield return Clone("null-source", null, 0);
@@ -164,7 +164,7 @@ namespace MonsterTrain2Poju.Probe
                 yield return Clone("horde-no-birth", host, 0, cardless: true);
                 Set(combat, "combatStateChanged", true);
             }
-            finally { current = null; combat.SuppressCombatPreviewUpdates = previous; }
+            finally { current = null; CombatPreviewControl.Set(combat, previous); }
             while (!Ready()) yield return null;
 
             IEnumerator Clone(string label, CharacterState? source, int room, SpawnMode mode = SpawnMode.FrontSlot,
@@ -183,7 +183,7 @@ namespace MonsterTrain2Poju.Probe
             }
             bool Ready() => !managers.GetSaveManager().PreviewMode && !managers.GetReplayManager().IsCardPlaying() &&
                 !combat.IsRunningTriggerQueue && Count() == 0 && !(managers.GetHandUI()?.AreAnyCardsAnimating() ?? false) &&
-                (combat.SuppressCombatPreviewUpdates || !(bool)AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(combat));
+                (CombatPreviewControl.Get(combat) || !(bool)AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(combat));
         }
         private static UnitCloneRule CaptureRule(CharacterState source)
         {

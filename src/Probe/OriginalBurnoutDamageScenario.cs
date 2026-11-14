@@ -88,7 +88,7 @@ namespace MonsterTrain2Poju.Probe
             CharacterData ordinary = waves.SelectMany(wave => ((IEnumerable)AccessTools.Field(typeof(SpawnGroupPoolData), "possibleGroups")
                 .GetValue(wave)).Cast<SpawnGroupData>()).SelectMany(group => group.GetCharacters(save.GetCovenantsForSpawnPattern(), save,
                     save.GetGeneratedBoss())).First(character => !character.IsMiniboss());
-            bool suppressed = combat.SuppressCombatPreviewUpdates; combat.SuppressCombatPreviewUpdates = true;
+            bool suppressed = CombatPreviewControl.Save(combat); CombatPreviewControl.Set(combat, true);
             try
             {
                 int index = 0;
@@ -102,7 +102,7 @@ namespace MonsterTrain2Poju.Probe
                     yield return managers.GetHeroManager()!.SpawnHeroInRoom(enemy, 1, null!);
                 }
             }
-            finally { combat.SuppressCombatPreviewUpdates = suppressed; }
+            finally { CombatPreviewControl.Set(combat, suppressed); }
             yield return combat.RunTriggerQueue();
             var enemies = new List<CharacterState>(); managers.GetRoomManager()!.GetRoom(1).AddCharactersToList(enemies, Team.Type.Heroes);
             if (!enemies.Select(unit => unit.GetHP()).SequenceEqual(new[] { 12, 6, 4 })) throw new InvalidOperationException("Missing three enemy carriers.");

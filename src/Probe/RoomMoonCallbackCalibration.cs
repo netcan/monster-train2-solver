@@ -56,7 +56,10 @@ namespace MonsterTrain2Poju.Probe
         internal static void Start(ManualLogSource log)
         {
             Started = true;
-            Managers.GetCombatManager().SuppressCombatPreviewUpdates = true;
+#if DEVELOPMENT_PROBE
+            CombatPreviewControl.VerifyNative(Managers.GetCombatManager());
+#endif
+            CombatPreviewControl.Set(Managers.GetCombatManager(), true);
             Managers.GetSaveManager().StartCoroutine(Guard(Run(log), log));
         }
         private static IEnumerator Guard(IEnumerator native, ManualLogSource log)
@@ -244,9 +247,9 @@ namespace MonsterTrain2Poju.Probe
                 yield return Refresh("movement-reset-full-noop", refresh);
             }
             bool rngUnchanged = rows.All(row => JToken.DeepEquals(JObject.FromObject(row)["Before"]!["Rng"], JObject.FromObject(row)["Actual"]!["Rng"]));
-            using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
+            using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
-                NativeCompleted = true, RngUnchanged = rngUnchanged, PreviewUpdatesSuppressed = Managers.GetCombatManager().SuppressCombatPreviewUpdates,
+                NativeCompleted = true, RngUnchanged = rngUnchanged, PreviewUpdatesSuppressed = CombatPreviewControl.Get(Managers.GetCombatManager()),
                 Boundary = "AfterOriginalCoroutineAndTriggerQueue",
                 ShadeCallbacks = Shade, MovementControls = Movement, EnemyControls = Enemy,
                 OrdinaryEnemyId = ordinaryEnemy == null ? 0 : Trace.UnitId(ordinaryEnemy),
@@ -291,10 +294,10 @@ namespace MonsterTrain2Poju.Probe
             yield return Refresh("inactive-full-noop", refresh);
             bool rngUnchanged = rows.All(row => JToken.DeepEquals(JObject.FromObject(row)["Before"]!["Rng"],
                 JObject.FromObject(row)["Actual"]!["Rng"]));
-            using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
+            using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeCompleted = true, InactiveRefresh = true, RngUnchanged = rngUnchanged,
-                PreviewUpdatesSuppressed = combat.SuppressCombatPreviewUpdates,
+                PreviewUpdatesSuppressed = CombatPreviewControl.Get(combat),
                 Boundary = "AfterOriginalCoroutineAndTriggerQueue", ActorIds = actors.Select(Trace.UnitId).ToArray(),
                 Rows = rows }))
             using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
@@ -392,11 +395,11 @@ namespace MonsterTrain2Poju.Probe
                 JObject.FromObject(row)["Actual"]!["Rng"]));
             if (hellfurnace)
             {
-                using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
+                using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
                     GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                     NativeCompleted = true, InactiveHellfurnaceMovement = true,
                     RngUnchanged = rngUnchanged,
-                    PreviewUpdatesSuppressed = combat.SuppressCombatPreviewUpdates,
+                    PreviewUpdatesSuppressed = CombatPreviewControl.Get(combat),
                     Boundary = "AfterOriginalCoroutineAndTriggerQueue",
                     OrdinaryEnemyId = Trace.UnitId(ordinaryEnemy), CallbackEnemyId = Trace.UnitId(callbackEnemy),
                     Rows = rows }))
@@ -407,13 +410,13 @@ namespace MonsterTrain2Poju.Probe
                     " gameplayRngUnchanged=" + rngUnchanged);
                 yield break;
             }
-            using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
+            using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeCompleted = true, InactiveMovement = !inferno && !mushy,
                 InactiveInfernoMovement = inferno && !staleExit, InactiveInfernoExit = staleExit,
                 InactiveMushyMovement = mushy,
                 RngUnchanged = rngUnchanged,
-                PreviewUpdatesSuppressed = combat.SuppressCombatPreviewUpdates,
+                PreviewUpdatesSuppressed = CombatPreviewControl.Get(combat),
                 Boundary = "AfterOriginalCoroutineAndTriggerQueue",
                 OrdinaryEnemyId = Trace.UnitId(ordinaryEnemy), CallbackEnemyId = Trace.UnitId(callbackEnemy),
                 Rows = rows }))
@@ -497,7 +500,7 @@ namespace MonsterTrain2Poju.Probe
             BattleTurnState actual = Trace.CaptureDecision();
             if (death)
             {
-                using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
+                using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
                     GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                     NativeCompleted = true, OriginalDeathRoom = originalRoom,
                     Boundary = "AfterNativeEndTurnSettlement", EnemyId = enemyId, DefenderId = defenderId,
@@ -523,7 +526,7 @@ namespace MonsterTrain2Poju.Probe
                     yield return null;
                 }
                 BattleTurnState afterSecond = Trace.CaptureDecision();
-                using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
+                using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
                     GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                     NativeCompleted = true, InactiveMushyTwoTurns = true,
                     Boundary = "AfterTwoNativeEndTurnSettlements", EnemyId = enemyId,
@@ -536,7 +539,7 @@ namespace MonsterTrain2Poju.Probe
             }
             if (originalRoom != null)
             {
-                using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
+                using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
                     GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                     NativeCompleted = true, OriginalTurnRoom = originalRoom,
                     Boundary = "AfterNativeEndTurnSettlement", EnemyId = enemyId,
@@ -548,7 +551,7 @@ namespace MonsterTrain2Poju.Probe
                 log.LogInfo("ROOM-MOON-CALLBACK-NATIVE PASS inactiveOriginalTurn=" + originalRoom + " enemy=" + enemyId);
                 yield break;
             }
-            using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
+            using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeCompleted = true, InactiveMushyTurn = !inferno,
                 Boundary = "AfterNativeEndTurnSettlement", EnemyId = enemyId,
@@ -636,20 +639,20 @@ namespace MonsterTrain2Poju.Probe
             }
             if (triggerRooms)
             {
-                using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
+                using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
                     GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                     NativeCompleted = true, InactiveTriggerRooms = true, RngUnchanged = rngUnchanged,
-                    PreviewUpdatesSuppressed = combat.SuppressCombatPreviewUpdates,
+                    PreviewUpdatesSuppressed = CombatPreviewControl.Get(combat),
                     Boundary = "AfterOriginalCoroutineAndTriggerQueue", EnemyId = enemyId, Groups = groups }))
                 using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
                     "room-moon-inactive-trigger-rooms-calibration.mt2f"))) document.Write(stream);
             }
             else
             {
-                using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
+                using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
                     GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                     NativeCompleted = true, InactiveRoomBatch = true, RngUnchanged = rngUnchanged,
-                    PreviewUpdatesSuppressed = combat.SuppressCombatPreviewUpdates,
+                    PreviewUpdatesSuppressed = CombatPreviewControl.Get(combat),
                     Boundary = "AfterOriginalCoroutineAndTriggerQueue", EnemyId = enemyId, Groups = groups }))
                 using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
                     "room-moon-inactive-room-batch-calibration.mt2f"))) document.Write(stream);

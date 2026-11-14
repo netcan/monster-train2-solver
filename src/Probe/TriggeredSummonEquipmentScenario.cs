@@ -100,8 +100,8 @@ namespace MonsterTrain2Poju.Probe
             var units = new List<CharacterState>(); rooms.GetRoom(0).AddCharactersToList(units, Team.Type.Monsters);
             CharacterState host = units.Single(unit => unit.GetSpawnerCard() == source);
             CombatManager combat = managers.GetCombatManager()!;
-            bool previousPreviewSuppression = combat.SuppressCombatPreviewUpdates;
-            combat.SuppressCombatPreviewUpdates = true;
+            bool previousPreviewSuppression = CombatPreviewControl.Save(combat);
+            CombatPreviewControl.Set(combat, true);
             try
             {
                 // These setup calls run outside card replay. Keep the independent
@@ -114,7 +114,7 @@ namespace MonsterTrain2Poju.Probe
                         new RemoveFromStandByCondition(() => cards.CheckEquipmentRemoveFromStandByCondition(host, captured)));
                 }
             }
-            finally { combat.SuppressCombatPreviewUpdates = previousPreviewSuppression; }
+            finally { CombatPreviewControl.Set(combat, previousPreviewSuppression); }
             Set(combat, "combatStateChanged", true);
             log.LogInfo("TRIGGERED-SUMMON-EQUIPMENT-PREPARED two transferring cards, one return-to-hand exclusion, live/dead copies, modifiers and child replacement.");
         }

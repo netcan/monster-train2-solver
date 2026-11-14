@@ -133,7 +133,7 @@ namespace MonsterTrain2Poju.Probe
                     throw new InvalidOperationException("Horde merge paid equipment failed: " + error);
                 while (!Ready()) yield return null;
             }
-            bool previous = combat.SuppressCombatPreviewUpdates; combat.SuppressCombatPreviewUpdates = true;
+            bool previous = CombatPreviewControl.Save(combat); CombatPreviewControl.Set(combat, true);
             try
             {
                 SaveManager save = managers.GetSaveManager();
@@ -185,7 +185,7 @@ namespace MonsterTrain2Poju.Probe
                 yield return combat.RunTriggerQueue();
                 yield return Apply("null-source-clone", "Clone", null, null);
             }
-            finally { combat.SuppressCombatPreviewUpdates = previous; current = draining = null; }
+            finally { CombatPreviewControl.Set(combat, previous); current = draining = null; }
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(combat, true);
 
             void Select(CharacterState source)

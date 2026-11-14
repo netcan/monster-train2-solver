@@ -83,7 +83,7 @@ namespace MonsterTrain2Poju.Probe
                 while (!Ready()) yield return null;
             }
             rooms.GetRoom(0).AddCharactersToList(players, Team.Type.Monsters);
-            bool previous = combat.SuppressCombatPreviewUpdates; combat.SuppressCombatPreviewUpdates = true;
+            bool previous = CombatPreviewControl.Save(combat); CombatPreviewControl.Set(combat, true);
             try
             {
                 yield return managers.GetHeroManager()!.SpawnHeroInRoom(HarvestScenario.ObserverDefinition, 0, null!);
@@ -139,7 +139,7 @@ namespace MonsterTrain2Poju.Probe
                 queued.After = queued.AfterApi; queued.QueueAfter = QueueCount(); queued.AfterActor = trace.CaptureUnit(host);
                 current = null; Label = null;
             }
-            finally { combat.SuppressCombatPreviewUpdates = previous; current = null; Label = null; }
+            finally { CombatPreviewControl.Set(combat, previous); current = null; Label = null; }
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(combat, true);
 
             IEnumerator Apply(string label, CharacterState actor, CardUpgradeData definition, bool remove = false)

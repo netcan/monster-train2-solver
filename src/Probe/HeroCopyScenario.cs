@@ -114,7 +114,7 @@ namespace MonsterTrain2Poju.Probe
                 yield return heroes.SpawnHeroInRoom(unitData, floor, null!); while (!Ready()) yield return null;
                 hosts.Add(Actors(floor, Team.Type.Heroes).Single(unit => !previousActors.Contains(unit)));
             }
-            bool previous = combat.SuppressCombatPreviewUpdates; combat.SuppressCombatPreviewUpdates = true;
+            bool previous = CombatPreviewControl.Save(combat); CombatPreviewControl.Set(combat, true);
             try
             {
                 yield return Cast("zero-targeted", hosts[0], 0, false);
@@ -152,7 +152,7 @@ namespace MonsterTrain2Poju.Probe
                 yield return Cast("mixed-mask-player", players[0], 1, true, mixed: true);
                 Configure(managers, 1, false, true); Set(combat, "combatStateChanged", true);
             }
-            finally { label = null; current = null; suppressBackground = false; combat.SuppressCombatPreviewUpdates = previous; }
+            finally { label = null; current = null; suppressBackground = false; CombatPreviewControl.Set(combat, previous); }
             while (!Ready()) yield return null;
 
             CharacterState[] Actors(int floor, Team.Type team)
@@ -168,14 +168,14 @@ namespace MonsterTrain2Poju.Probe
                 trace.BeginCardPlay(new PlayCardAction(trace.CardId(source), floor, targetUnitId: room ? 0 : trace.UnitId(target)), scenarioAction: true);
                 if (!cards.PlayCard(cards.GetHand().IndexOf(source), point, ref error)) throw new InvalidOperationException("Hero copy play failed " + name + ": " + error);
                 while (!Ready()) yield return null;
-                combat.SuppressCombatPreviewUpdates = false; while (!Ready()) yield return null;
-                trace.CompleteCardPlay(); combat.SuppressCombatPreviewUpdates = true; label = null;
+                CombatPreviewControl.Set(combat, false); while (!Ready()) yield return null;
+                trace.CompleteCardPlay(); CombatPreviewControl.Set(combat, true); label = null;
             }
             bool Ready()
             {
                 if (trace.CaptureFailures > 0) throw new InvalidOperationException("Hero-copy capture failed while waiting for " + (label ?? "setup") + "; inspect the preceding capture error.");
                 return !managers.GetSaveManager().PreviewMode && !managers.GetReplayManager().IsCardPlaying() && !combat.IsRunningTriggerQueue && Queue().Count == 0 && !(managers.GetHandUI()?.AreAnyCardsAnimating() ?? false) &&
-                    (combat.SuppressCombatPreviewUpdates || !(bool)AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(combat));
+                    (CombatPreviewControl.Get(combat) || !(bool)AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(combat));
             }
         }
         private static void Configure(AllGameManagers managers, int count, bool room, bool copyStats, bool ranged = false, bool status = false, bool ability = false, bool mixed = false)

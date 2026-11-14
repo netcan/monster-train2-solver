@@ -126,9 +126,9 @@ namespace MonsterTrain2Poju.Probe
             if (RoomMoonCallbackCalibration.SpellHandPowerRelic)
                 yield return Record("unmasked-full-hand-power-third", "PreDiscardHand", 0, Managers.GetRelicManager()!.ApplyEndOfTurnPreDiscardRelicEffects());
             bool unchanged = rows.All(row => JToken.DeepEquals(JObject.FromObject(row)["Before"]!["Rng"], JObject.FromObject(row)["Actual"]!["Rng"]));
-            using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
+            using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId, NativeCompleted = true, RngUnchanged = unchanged,
-                PreviewUpdatesSuppressed = Managers.GetCombatManager()!.SuppressCombatPreviewUpdates, Boundary = "AfterOriginalCoroutineAndTriggerQueue",
+                PreviewUpdatesSuppressed = CombatPreviewControl.Get(Managers.GetCombatManager()!), Boundary = "AfterOriginalCoroutineAndTriggerQueue",
                 SpellUpgradeControls = true, SpellAdvanceControls = RoomMoonCallbackCalibration.SpellAdvance,
                 CostRelicControls = RoomMoonCallbackCalibration.SpellCostRelic, CostControlIds = costIds,
                 AttackRelicControls = RoomMoonCallbackCalibration.SpellAttackRelic, AttackControlIds = attackIds,

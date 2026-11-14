@@ -111,7 +111,7 @@ namespace MonsterTrain2Poju.Probe
                 while (!Ready()) yield return null;
                 players.Clear(); rooms.GetRoom(0).AddCharactersToList(players, Team.Type.Monsters);
             }
-            bool previous = combat.SuppressCombatPreviewUpdates; combat.SuppressCombatPreviewUpdates = true;
+            bool previous = CombatPreviewControl.Save(combat); CombatPreviewControl.Set(combat, true);
             try
             {
                 for (int i = 0; i < 3; i++) yield return managers.GetHeroManager()!.SpawnHeroInRoom(enemy, 0, null!);
@@ -140,7 +140,7 @@ namespace MonsterTrain2Poju.Probe
                     current = null; Label = null;
                 }
             }
-            finally { combat.SuppressCombatPreviewUpdates = previous; current = null; Label = null; }
+            finally { CombatPreviewControl.Set(combat, previous); current = null; Label = null; }
             Set(combat, "combatStateChanged", true);
             int QueueCount() => ((ICollection)AccessTools.Property(typeof(CombatManager), "TriggerQueue").GetValue(combat)).Count;
             bool Ready() => !managers.GetSaveManager().PreviewMode && !managers.GetReplayManager().IsCardPlaying() &&

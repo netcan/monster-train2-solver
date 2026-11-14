@@ -67,7 +67,7 @@ namespace MonsterTrain2Poju.Probe
                 while (!Ready()) yield return null;
             }
             rooms.GetRoom(0).AddCharactersToList(players, Team.Type.Monsters);
-            bool previous = combat.SuppressCombatPreviewUpdates; combat.SuppressCombatPreviewUpdates = true;
+            bool previous = CombatPreviewControl.Save(combat); CombatPreviewControl.Set(combat, true);
             try
             {
                 for (int i = 0; i < 3; i++) yield return managers.GetHeroManager()!.SpawnHeroInRoom(HarvestScenario.ObserverDefinition, 0, null!);
@@ -79,7 +79,7 @@ namespace MonsterTrain2Poju.Probe
                 yield return Apply("dying-final-enemy", "DebuffHealth", heroes[0], 9999);
                 yield return Apply("dying-final-player", "DebuffHealth", players[1], 9999);
             }
-            finally { combat.SuppressCombatPreviewUpdates = previous; current = null; Label = null; }
+            finally { CombatPreviewControl.Set(combat, previous); current = null; Label = null; }
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(combat, true);
 
             IEnumerator Install(CharacterState actor, CharacterTriggerData.Trigger kind, string id)

@@ -89,13 +89,13 @@ namespace MonsterTrain2Poju.Probe
             Set(enemy, "triggers", new List<CharacterTriggerData>());
             Set(enemy, "startingStatusEffects", Array.Empty<StatusEffectStackData>()); Set(enemy, "unitAbility", null!);
             ((List<CharacterData>)AccessTools.Field(typeof(AllGameData), "characterDatas").GetValue(data)).Add(enemy);
-            bool previewUpdates = combat.SuppressCombatPreviewUpdates;
-            combat.SuppressCombatPreviewUpdates = true;
+            bool previewUpdates = CombatPreviewControl.Save(combat);
+            CombatPreviewControl.Set(combat, true);
             try
             {
                 for (int i = 0; i < 2; i++) yield return managers.GetHeroManager()!.SpawnHeroInRoom(enemy, 0, null!);
             }
-            finally { combat.SuppressCombatPreviewUpdates = previewUpdates; }
+            finally { CombatPreviewControl.Set(combat, previewUpdates); }
             yield return combat.RunTriggerQueue();
             FullBattleTrace trace = FullBattleTrace.Active!;
             var enemies = new List<CharacterState>();

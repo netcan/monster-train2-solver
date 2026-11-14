@@ -118,7 +118,7 @@ namespace MonsterTrain2Poju.Probe
             yield return monsters.CloneMonsterState(hosts[0], 2, unit => third = unit, managers.GetCoreManagers(), isCardless: true);
             if (third == null) throw new InvalidOperationException("Native third-floor host clone failed.");
             hosts.Add(third); while (!Ready()) yield return null;
-            bool previous = combat.SuppressCombatPreviewUpdates; combat.SuppressCombatPreviewUpdates = true;
+            bool previous = CombatPreviewControl.Save(combat); CombatPreviewControl.Set(combat, true);
             try
             {
                 yield return Cast("zero-targeted", hosts[0], 0);
@@ -156,7 +156,7 @@ namespace MonsterTrain2Poju.Probe
                 yield return Cast("horde-no-birth", hosts[0], 2);
                 Configure(managers, 1, false); Set(combat, "combatStateChanged", true);
             }
-            finally { label = null; current = null; suppressBackground = false; combat.SuppressCombatPreviewUpdates = previous; }
+            finally { label = null; current = null; suppressBackground = false; CombatPreviewControl.Set(combat, previous); }
             while (!Ready()) yield return null;
 
             IEnumerator Cast(string name, CharacterState target, int count, bool room = false, bool ranged = false, bool status = false, bool ability = false)
@@ -170,12 +170,12 @@ namespace MonsterTrain2Poju.Probe
                 trace.BeginCardPlay(new PlayCardAction(trace.CardId(source), floor, targetUnitId: room ? 0 : trace.UnitId(target)), scenarioAction: true);
                 if (!cards.PlayCard(cards.GetHand().IndexOf(source), point, ref error)) throw new InvalidOperationException("Copy play failed " + name + ": " + error);
                 while (!Ready()) yield return null;
-                combat.SuppressCombatPreviewUpdates = false; while (!Ready()) yield return null;
-                trace.CompleteCardPlay(); combat.SuppressCombatPreviewUpdates = true; label = null;
+                CombatPreviewControl.Set(combat, false); while (!Ready()) yield return null;
+                trace.CompleteCardPlay(); CombatPreviewControl.Set(combat, true); label = null;
             }
             bool Ready() => !managers.GetSaveManager().PreviewMode && !managers.GetReplayManager().IsCardPlaying() &&
                 !combat.IsRunningTriggerQueue && Queue().Count == 0 && !(managers.GetHandUI()?.AreAnyCardsAnimating() ?? false) &&
-                (combat.SuppressCombatPreviewUpdates || !(bool)AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(combat));
+                (CombatPreviewControl.Get(combat) || !(bool)AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(combat));
         }
         private static void Configure(AllGameManagers managers, int count, bool room, bool ranged = false, bool status = false, bool ability = false)
         {

@@ -661,7 +661,10 @@ namespace MonsterTrain2Poju.Probe
         private static CombatTrigger[] CaptureTriggers(CharacterState unit, List<string> interactions)
         {
             object primary = AccessTools.Property(typeof(CharacterState), "PrimaryStateInformation").GetValue(unit);
-            var deathWishSources = (HashSet<CharacterTriggerState>)AccessTools.Field(primary.GetType(), "deathWishSources").GetValue(primary);
+            var deathWishField = primary.GetType().GetField("deathwishSources") ?? primary.GetType().GetField("deathWishSources");
+            var deathWishSources = deathWishField?.GetValue(primary) as HashSet<CharacterTriggerState>
+                ?? throw new NotSupportedException("Unknown native deathwish source set: " +
+                    typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId);
             return unit.GetTriggers().Select(trigger =>
             {
                 if (RelicProbe.HasTriggerCounts(AllGameManagers.Instance!))

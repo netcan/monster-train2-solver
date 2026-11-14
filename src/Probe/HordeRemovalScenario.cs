@@ -87,7 +87,7 @@ namespace MonsterTrain2Poju.Probe
             }
             rooms.GetRoom(0).AddCharactersToList(players, Team.Type.Monsters);
             CardState source = players[1].GetSpawnerCard();
-            bool previous = combat.SuppressCombatPreviewUpdates; combat.SuppressCombatPreviewUpdates = true;
+            bool previous = CombatPreviewControl.Save(combat); CombatPreviewControl.Set(combat, true);
             try
             {
                 for (int i = 0; i < 4; i++) yield return managers.GetHeroManager()!.SpawnHeroInRoom(HarvestScenario.ObserverDefinition, 0, null!);
@@ -170,7 +170,7 @@ namespace MonsterTrain2Poju.Probe
                     current = null; Label = null;
                 }
             }
-            finally { combat.SuppressCombatPreviewUpdates = previous; current = null; Label = null; }
+            finally { CombatPreviewControl.Set(combat, previous); current = null; Label = null; }
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(combat, true);
             CombatUnit Unit(CharacterState actor)
             { using (new CharacterState.SetAllowDestroyedAccessHelper(actor, onlyIfDestroyed: true)) return trace.CaptureUnit(actor); }
