@@ -2,6 +2,8 @@
 
 ## 当前待完成
 
+- 2026-11-15 范围更正：当前 2.3.1 原版的 168 个 Managed DLL（含嵌套类型）读取失败零，`IRoomStateDevotionPassiveModifier` 实现类型零。倍率提供者生命周期从原版待办移除；第三方模组和后续版本新增提供者时再校准。版本/MVID/程序集哈希及审计计数见 `tests/compatibility/game-2.3.1/2.3.1/devotion-provider-audit.tsv`。下文旧进度中该项的“待办”表述由本条更正，其他虔诚／Horde 组合仍待完成。
+
 - 2026-11-15：三张原版卡的逐层伤害已完成新版同场验收。DivinePunishment 的零／一／二级、Dante 的三张永久蜡烛与穿甲、ForbiddenCovenant 的五点友军负面扫击及正常两费／30 点伤害均通过；12 次输入、八次逐层效果、75 房间／13 列车阶段、完整后继/RNG 连续复放、16 路分支和 128 状态串行／并行搜索一致。入口为 `scripts/Check-Game231FloorDamageBattle.ps1`。中间阶段单独记录 UI 帧触发的 StoredCards 缓存差异，正式决策及整回合仍完整比较。混合队伍同物理索引、死亡回调移动及其他组合仍待完成；新增遗物仍为 12/12，614/236 全量重验未完成。
 
 - 新发现的无限战斗边界仍待补齐：原生预演到 `GetRelentlessIterationsUntilNotification()`（当前观察为 100 轮）即退出；实际非薪火战斗弹出继续／放弃对话。当前纯模型尚未完整表达该平衡参数和用户选择，不能把超长 Relentless 战斗的预测视作已验收。逐层伤害场景使用 100 血控制单位避开这项独立机制。

@@ -23,8 +23,12 @@ energy/points before discard, and card-then-monster level notifications. Seven
 rejected native calls leave complete train state and all RNG unchanged. Continuous
 replay, 16 immutable branches, and serial/parallel search selecting Devote pass.
 Run `scripts/Check-Game231DevoteBattle.ps1` for the 39,742-byte versioned archive.
-Uncalibrated mutating discard/Treasure callbacks and passive multiplier-provider
-lifecycles remain guarded or incomplete. The built advisor recognizes Devote and
+Uncalibrated mutating discard/Treasure callbacks remain guarded or incomplete.
+A metadata audit of all 168 native Managed DLLs (including nested types, zero
+read failures) found no IRoomStateDevotionPassiveModifier implementations. Its
+provider lifecycle is therefore not a stock-2.3.1 backlog item; third-party
+providers require separate evidence. See the versioned devotion-provider-audit.tsv.
+The built advisor recognizes Devote and
 waits for its native coroutine to settle; player-session acceptance remains open.
 
 Zeal now has 19 isolated native API/drained successors and 32 immutable parallel
@@ -33,7 +37,7 @@ saturation, immunity/Purify and the unchanged original ZealDamageIncrease relic'
 team-specific attack bonus match. This does not count as whole-battle relic
 acceptance (the latest separate battle count is 12/12 new relics). Devote and
 original birth passives have separate battle evidence; remaining level-dependent
-cards, provider lifecycles and Zeal/Horde casualty combinations remain separate.
+cards and Zeal/Horde casualty combinations remain separate.
 Run `scripts/Check-Game231ZealStatus.ps1` for the versioned binary component.
 
 Devotion resources now have 21 isolated native complete-train successors and
@@ -49,7 +53,7 @@ Native sampling took 28.05 seconds with complete live train/RNG restoration and
 unchanged player files. This resource component is separate from original-card
 cost/exhaustion and relic battle acceptance, which the battle below now provides.
 Devote and original spawn passives now have separate battle evidence; other
-callbacks and passive multiplier-provider lifecycles remain pending.
+callbacks remain pending; the unused stock multiplier interface is audited above.
 
 Unchanged original `DrawCardOnEarlyDiscard` now passes a complete native battle:
 its friendly-hit effect awards one Devotion per successful ten-damage delta

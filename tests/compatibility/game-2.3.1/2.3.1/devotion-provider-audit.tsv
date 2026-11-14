@@ -1,0 +1,12 @@
+key	value
+gameVersion	2.3.1
+gameBuild	26650011
+gameModuleMvid	bf93f060-beda-46b1-b808-95ebf1e9a99d
+assemblyCSharpSha256	49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9
+scope	Native Managed DLLs including nested types; third-party mod assemblies excluded
+metadataReader	Mono.Cecil
+assembliesRead	168
+readFailures	0
+interface	IRoomStateDevotionPassiveModifier
+implementingTypes	0
+auditedOn	2026-11-15
