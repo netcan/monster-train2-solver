@@ -16,6 +16,13 @@ The checker matches each complete settled native/model state and gameplay
 RNG, replays the EndTurn through the planner, and checks four immutable
 branches. Neither OnDeath effect fires in this no-death witness.
 
+The separate ordinary-combat archives
+`full-battle-original-isolated-room-trigger-energy.mt2f` and
+`full-battle-original-isolated-room-trigger-gold.mt2f` contain unchanged
+original room-card plays and positive OnDeath resource effects. Their focused
+checks pass the original-room trigger, complete battle chain and 128-state
+search. They do not cover a death after an inactive-moon room move.
+
 ```powershell
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture room-moon-inactive-original-boilerroom-turn-calibration.mt2f
 pwsh -NoProfile -File scripts/Check-Models.ps1 -Fixture room-moon-inactive-original-sacrificialchamber-turn-calibration.mt2f

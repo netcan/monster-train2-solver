@@ -74,7 +74,12 @@ enemy ascension from floor 0 to 1, removal of the room upgrade and its OnDeath
 trigger, and stale Full understanding changing from mask 6 to 5. Each room has
 two byte-identical muted Instant captures; the complete settled turn, gameplay
 RNG and one-step planner replay match. There are no deaths in these turns, so
-the energy and gold death effects remain separate. See
+the inactive-moon movement-then-death combination remains unverified. Earlier
+full battles with unchanged original BoilerRoom and SacrificialChamber plays
+already cover positive OnDeath energy and gold effects in ordinary combat:
+`full-battle-original-isolated-room-trigger-energy.mt2f` and
+`full-battle-original-isolated-room-trigger-gold.mt2f` pass the original-room
+trigger, full-chain and bounded-search checks. See
 [the natural-turn note](tests/fixtures/notes/combat/inactive-original-trigger-room-turns.md).
 
 The same structural rule now covers inactive-tracking Inferno exit when a
