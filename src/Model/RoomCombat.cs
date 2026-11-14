@@ -893,7 +893,9 @@ namespace MonsterTrain2Poju.Model
             bool piercing = false, IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
             bool centerPhysicalRemovals = true, bool relicSourced = false)
         {
-            string? error = Validate(state);
+            string? error = Validate(state, halfHealthLifecycle: true);
+            if (enqueueCharacterTrigger != null && state.Units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)))
+                error = "Half-health Deathwish with an external damage callback queue requires native lifecycle calibration.";
             bool localAttacker = state.Units.Any(unit => unit.Id == attackerUnitId);
             if (error != null || damage < 0 || state.Preview || state.Context?.SpawnPoints == null ||
                 !state.Units.Any(unit => unit.Id == targetId) ||
@@ -1193,14 +1195,18 @@ namespace MonsterTrain2Poju.Model
                         trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin" && trigger.Kind != "EndTurnPreHandDiscard" && trigger.Kind != "PreCombat" &&
                         trigger.Kind != "OnTrainRoomLoop" && trigger.Kind != "PostAscension" && trigger.Kind != "OnShift" && trigger.Kind != "OnSentry" &&
                         trigger.Kind != "PostDescension" && trigger.Kind != "PostAttemptedAscension" && trigger.Kind != "PostAttemptedDescension" &&
-                        trigger.Kind != "OnHit" && trigger.Kind != "OnKill" && trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking" && trigger.Kind != "OnEaten" && trigger.Kind != "OnFeed" &&
+                        trigger.Kind != "OnHit" && trigger.Kind != "OnKill" && trigger.Kind != "OnBloodshed" && trigger.Kind != "OnPunish" && trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking" && trigger.Kind != "OnEaten" && trigger.Kind != "OnFeed" &&
                         !StatusCallbackModel.Kinds.Contains(trigger.Kind) && !DeathwishModel.CallbackKinds.Contains(trigger.Kind) &&
                         !HarvestModel.Kinds.Contains(trigger.Kind) && trigger.Kind is not ("OnRemoveHatch" or "OnHatched" or "CorruptionAdded") &&
                         trigger.Kind is not ("OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or "OnMoonshadeLost" or "OnMoonPhaseShift"))
                         return "Unmodeled trigger " + trigger.Kind;
+                    if (trigger.Kind is "OnBloodshed" or "OnPunish" && state.Context?.Statistics?.MonsterDamage == null)
+                        return trigger.Kind + " requires the game 2.3.1 damage lifecycle snapshot.";
+                    if (trigger.Kind is "OnBloodshed" or "OnPunish" && state.Preview)
+                        return trigger.Kind + " preview callbacks require native lifecycle calibration.";
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.SkipDuringDeployment == null)
                         return trigger.Kind + " requires deployment timing state.";
-                    if (trigger.TriggerAtThreshold > 0 && trigger.Kind != "OnDeath" && trigger.Kind != "OnHit" && trigger.Kind != "OnKill" &&
+                    if (trigger.TriggerAtThreshold > 0 && trigger.Kind != "OnDeath" && trigger.Kind != "OnHit" && trigger.Kind != "OnKill" && trigger.Kind != "OnBloodshed" && trigger.Kind != "OnPunish" &&
                         trigger.Kind != "OnAttackingBeforeDamage" && trigger.Kind != "OnAttacking" && trigger.Kind != "OnSentry" && trigger.Kind != "CardSpellPlayed" && !StatusCallbackModel.Kinds.Contains(trigger.Kind))
                         return "Threshold arguments are not modeled for " + trigger.Kind;
                     if (trigger.Kind == "OnNewStatusEffectAdded" && !unit.CountUniqueVisibleStatuses().HasValue)
@@ -2496,7 +2502,7 @@ namespace MonsterTrain2Poju.Model
                 WorkingUnit? actor = units.FirstOrDefault(unit => unit.Source.Id == queued.Unit.Id);
                 if (actor == null && (queued.Unit.DeathState?.IsDespawned == true || queued.Unit.DeathState?.IsDestroyed == true))
                 { actor = NewUnit(queued.Unit, false); units.Add(actor); }
-                if (actor == null && (queued.Kind == "OnDeath" || queued.Kind == "OnHit" || queued.Kind == "OnKill" ||
+                if (actor == null && (queued.Kind == "OnDeath" || queued.Kind == "OnHit" || queued.Kind == "OnKill" || queued.Kind == "OnBloodshed" || queued.Kind == "OnPunish" ||
                     queued.Kind == "OnAttackingBeforeDamage" || queued.Kind == "OnAttacking" || queued.Kind == "OnSentry" || queued.Kind == "CardSpellPlayed" ||
                     StatusCallbackModel.Kinds.Contains(queued.Kind) || DeathwishModel.CallbackKinds.Contains(queued.Kind) || HarvestModel.Kinds.Contains(queued.Kind)))
                 { actor = NewUnit(queued.Unit, false); units.Add(actor); }
@@ -3052,6 +3058,11 @@ namespace MonsterTrain2Poju.Model
                 if (attackingTrigger && actor != null && actor != target)
                     FireTriggers(actor, "OnAttackingBeforeDamage", overrideTarget: target);
                 if (unsupportedReason != null) return;
+                if (resultingHealth <= 0 && (target.Triggers.Any(trigger => trigger.Kind == "OnPunish") ||
+                    target.Source.Team == CombatTeam.Player && units.Any(unit => unit.InRoom && !unit.Removed &&
+                        unit.RoomIndex == target.RoomIndex && unit.Source.Team == CombatTeam.Player &&
+                        unit.Triggers.Any(trigger => trigger.Kind == "OnBloodshed"))))
+                { unsupportedReason = "Bloodshed/Punish lethal damage requires native death/revival lifecycle calibration."; return; }
                 if (!SetHealth(target, resultingHealth)) return;
                 if (!source.Preview && target.Source.Team == CombatTeam.Player && !target.Source.IsPyre &&
                     context?.Statistics?.MonsterDamage != null)
@@ -3163,7 +3174,6 @@ namespace MonsterTrain2Poju.Model
                 // The 2.3.1 damage-counter snapshot also identifies its new queue
                 // protocol. Bloodshed queues every friendly room actor before
                 // executing any callback, including actors without that trigger.
-                // Authored Bloodshed/Punish effects retain their validation guard.
                 bool modernDamageQueue = context?.Statistics?.MonsterDamage != null;
                 if (modernDamageQueue && tookHit && target.Source.Team == CombatTeam.Player)
                 {
@@ -4163,7 +4173,7 @@ namespace MonsterTrain2Poju.Model
                     { unsupportedReason = "Captured replay history requires calibrated stateless single-fire trigger payloads."; return; }
                     for (int fire = 0; fire < fireCount; fire++)
                     {
-                        if (!unit.Alive && kind != "OnDeath" && kind != "OnHit" && kind != "OnKill") return;
+                        if (!unit.Alive && kind != "OnDeath" && kind != "OnHit" && kind != "OnKill" && kind != "OnBloodshed" && kind != "OnPunish") return;
                         // CharacterState.ApplyEffects passes the host's spawner even
                         // when these trigger effects are bound to equipment.
                         int cacheCardId = unit.Source.SpawnerCardId;

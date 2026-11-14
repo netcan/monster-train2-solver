@@ -7,6 +7,13 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+The new Bloodshed/Punish damage callbacks have 33 isolated native cases with
+two paid units, 34 direct hits and 136 dispatch payloads. Full successors/RNG
+and 32 immutable branches per case pass, including source precedence,
+absorption, thresholds, silence, nested effects and half-health ordering.
+Lethal and preview callbacks remain guarded; this component does not count as
+whole-card/relic or whole-battle acceptance on 2.3.1.
+
 Game 2.2.1 curated inventory (2026-11-14): 2,874 binary archives with verified
 hashes and registrations. The card evidence index accepts 1,561 battle archives
 and 31,514 native actions; three historical captures with nonzero counters stay

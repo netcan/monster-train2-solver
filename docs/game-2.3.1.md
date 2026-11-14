@@ -254,7 +254,7 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -HalfHealt
 临时移除效果中保留，单位死亡前寿命不写召唤牌。
 
 新版友军伤害路径会派发空 `OnBloodshed` / `OnPunish`，现在保留其载荷及顺序。
-这不代表已经支持带这两类实际触发效果的单位；这些定义仍被拒绝，需后续校准。
+这份升级归档只含空调度；带实际触发效果的单位另由下述 33 项伤害组件校准。
 
 每项比较 API 返回状态/完整队列及显式执行队列后的完整后继，包括单位、召唤牌、
 统计缓存、所有调度载荷及游戏 RNG。七个返回边界保留共 16 份待执行载荷，
@@ -275,6 +275,44 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -HalfHealt
 
 这是卡牌效果组件验收，尚未开放带半血单位的完整出牌流程或整层战斗调度。
 升级触发/技能/状态安装、累加缩放、死亡复活、菌群伤亡、预演和共享世界仍待验收。
+
+## Bloodshed / Punish 的实际伤害回调
+
+33 项原生组件对照已通过，包含 34 次直接伤害调用、136 份完整调度载荷。
+场景通过原生扩容接口和真实付费出牌，在同层放置两只列车员，再分别安装触发器。
+每项重置全部参与角色、触发器、召唤牌字段和统计缓存，并比较完整房间/上下文后继。
+
+- 玩家单位承受伤害或吸收伤害时，先向同层所有玩家单位排入 Bloodshed，再执行
+  受击 OnHit；友方来源还会对受伤单位派发 Punish。敌方目标没有 Bloodshed，
+  仍可因友方来源触发 Punish。伤害量、类型和 Bloodshed 的受伤目标引用均保留。
+- 来源判定优先看攻击者：有敌方攻击者时，附带卡牌或遗物仍算敌方来源；
+  没有攻击者时，卡牌和遗物才各自构成友方来源。自伤也算友方来源。
+- 护甲、伤害护盾、Titanskin、零伤害及按实际伤害值判定的阈值均有对照；
+  零伤害吸收仍会派发回调，但正数阈值可以阻止其效果。
+- 单次触发跨两次伤害、沉默/mute/忽略沉默、Bloodshed 指向受伤目标的治疗/伤害、
+  Punish 自身治疗/伤害，以及这些回调先于半血判定的顺序均匹配。
+
+每项独立模型复放及 32 路不可变并发分支通过，游戏与 Unity RNG 未变；
+采样结束恢复全部 RNG 和原始列车上下文。采样期间持有独立的预演抑制计数，
+避免后台预演混入伤害记录，结束时释放自己持有的计数。
+缺失新版伤害统计快照、致命伤害和预演中的实际 Bloodshed/Punish 仍受保护。
+这批组件不计作新卡牌、新遗物或完整战斗的整体验收。
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Game231DamageReactions.ps1
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -DamageReactionsOnly -GameSpeed Instant -SkipBuild
+```
+
+归档 `mechanics/damage-reactions/damage-reactions.mt2f` 为 14,448 字节，SHA256
+`636b627f9d0784a97ce502fda01d71ed98c1756c9b4e9a8711d9a296c8a292e7`。
+来源 `.probe-runs/full-battle-steward-once-20261114-144339-1736dab5`，原生约 35 秒，
+差异/待执行队列零、`DEPTH-PASS`、退出码零及玩家文件未变均通过。
+已有半血伤害/治疗和 28 项升级效果，以及两版七回合基线各 16 路分支均回归通过。
+新版伤害统计和列车员七回合链/16 路分支也通过；旧受击/击杀归档完整通过，
+旧攻击触发 57 个房间/14 个列车阶段、濒死升级 56/14 阶段通过。
+旧攻击触发归档的 EndTurn 第 0 项另有 `LastAttackerId: 0 != 2` 差异；
+修改前 `a7720df6` 的独立模型副本复现相同失败，属于已有问题，尚未修复，
+不能把这份归档的完整 EndTurn 回归计为通过。
 
 ## 可复验样本
 

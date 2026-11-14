@@ -64,11 +64,11 @@ namespace MonsterTrain2Poju.Probe
             finally { while (stack.Count > 0) (stack.Pop() as IDisposable)?.Dispose(); recording = false; }
             Completed = Error == null;
         }
-        private static object Rng() => new { Unity = RngCalibration.Words(UnityEngine.Random.state),
+        internal static object Rng() => new { Unity = RngCalibration.Words(UnityEngine.Random.state),
             Streams = Enum.GetValues(typeof(RngId)).Cast<RngId>().Select(id =>
                 new { Id = id.ToString(), Words = RngCalibration.Words(RandomManager.GetState(id)) }).ToArray() };
         private static HadesRNG NativeRng(RngId id) => (HadesRNG)AccessTools.Method(typeof(RandomManager), "GetRng").Invoke(null, new object[] { id });
-        private static JToken GameplayRng(object snapshot)
+        internal static JToken GameplayRng(object snapshot)
         {
             var value = JObject.FromObject(snapshot);
             value["Streams"] = new JArray(value["Streams"]!.Where(item => (string?)item["Id"] != "NonDeterministic" && (string?)item["Id"] != "Chatter"));
@@ -419,20 +419,20 @@ namespace MonsterTrain2Poju.Probe
                 var trigger = new CharacterTriggerState(); trigger.Setup(data, host.GetTeamType(), Save); host.GetTriggers().Add(trigger);
             }
         }
-        private static object? CopyList(object? value)
+        internal static object? CopyList(object? value)
         {
             if (value is Array array) return array.Clone();
             if (!(value is IList list)) return value;
             var copy = (IList)Activator.CreateInstance(value.GetType()); foreach (object item in list) copy.Add(item); return copy;
         }
-        private static object ShadowLists(object value)
+        internal static object ShadowLists(object value)
         {
             object copy = AccessTools.Method(typeof(object), "MemberwiseClone").Invoke(value, null);
             foreach (FieldInfo field in value.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
                 if (field.GetValue(value) is IList list) field.SetValue(copy, CopyList(list));
             return copy;
         }
-        private static Dictionary<CardState, CardStatsEntry> ShadowDeck(Dictionary<CardState, CardStatsEntry> values) => values.ToDictionary(pair => pair.Key, pair =>
+        internal static Dictionary<CardState, CardStatsEntry> ShadowDeck(Dictionary<CardState, CardStatsEntry> values) => values.ToDictionary(pair => pair.Key, pair =>
         {
             var copy = new CardStatsEntry();
             var entries = (Dictionary<CardStatistics.EntryDuration, Dictionary<CardStatistics.TrackedValueType, int>>)Get(pair.Value, "entryValues");
@@ -584,7 +584,7 @@ namespace MonsterTrain2Poju.Probe
             new MaximumInput("buff-onheal-before-loss", 10, 20, true, 2, triggerOnHeal: true),
             new MaximumInput("buff-heal-multiplier", 8, 20, true, 3, status: "heal multiplier"),
             new MaximumInput("buff-gain-adds-maxhealth", 11, 20, false, 2, heal: false) };
-        private static string? Difference(object? left, object? right) => Difference(left == null ? JValue.CreateNull() : JToken.FromObject(left),
+        internal static string? Difference(object? left, object? right) => Difference(left == null ? JValue.CreateNull() : JToken.FromObject(left),
             right == null ? JValue.CreateNull() : JToken.FromObject(right), "$");
         private static string? Difference(JToken left, JToken right, string path)
         {

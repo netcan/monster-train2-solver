@@ -16,4 +16,4 @@ if ((Get-Item -LiteralPath $path).Length -ne [long]$manifest[0].bytes -or
     (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ine $manifest[0].sha256) { throw 'Half-health upgrade-effect capture hash/size differs.' }
 dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --half-health-upgrade-effects-only $path
 if ($LASTEXITCODE) { throw 'Independent half-health upgrade-effect validation failed.' }
-Write-Output 'GAME-231-HALF-HEALTH-UPGRADE-EFFECTS PASS: 28 native effects, complete API/drained states and spawner writes, 32 immutable branches. Full cards, authored Bloodshed/Punish, death and shared worlds require separate acceptance.'
+Write-Output 'GAME-231-HALF-HEALTH-UPGRADE-EFFECTS PASS: 28 native effects, complete API/drained states and spawner writes, 32 immutable branches. Full cards, death and shared worlds require separate acceptance.'

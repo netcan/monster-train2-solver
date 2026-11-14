@@ -65,11 +65,11 @@ internal static class HalfHealthUpgradeEffectChecks
                 stateId: actor.NextTriggerId);
             CombatUnit changed = actor.WithTriggerAllocation(actor.Triggers.Concat(new[] { trigger }).ToArray(), actor.NextTriggerId!.Value + 1);
             RoomCombatState state = guarded.WithUnits(guarded.Units.Select(unit => unit.Id == actorId ? changed : unit).ToArray());
-            Require(RoomCombatModel.Validate(state, halfHealthLifecycle: true)?.Contains("Unmodeled trigger " + kind, StringComparison.Ordinal) == true,
-                "Uncalibrated authored " + kind + " effects were accepted.");
+            Require(RoomCombatModel.Validate(state, halfHealthLifecycle: true) == null,
+                "Calibrated authored " + kind + " was rejected in the versioned damage lifecycle.");
         }
         Parallel.For(0, 32, _ => { foreach (FixtureValue sample in samples) Verify(sample); });
-        Console.WriteLine("HALF-HEALTH-UPGRADE-EFFECT PASS: 28 native effects at API/queue-drain boundaries, all three lifetimes, duplicate removal, unique/clone controls, nested upgrade removal/readdition across spawner writes, complete dispatch/RNG/state and 32 immutable branches. Authored Bloodshed/Punish, trigger installation, death, full-card and whole-room scheduling remain separate.");
+        Console.WriteLine("HALF-HEALTH-UPGRADE-EFFECT PASS: 28 native effects at API/queue-drain boundaries, all three lifetimes, duplicate removal, unique/clone controls, nested upgrade removal/readdition across spawner writes, complete dispatch/RNG/state and 32 immutable branches. Trigger installation, death, full-card and whole-room scheduling remain separate.");
 
         void Expect(string label, int hp, int max, int queued, int apiGold, int finalGold, int unitRecords, int temporary, int permanent = 0,
             int healthOffset = 0, int? finalHp = null, int? finalMax = null, int? finalUnitRecords = null, int? finalTemporary = null)

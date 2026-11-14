@@ -2350,6 +2350,17 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 ChooseDiscardScenario.Prepare(managers, log);
             }
+            if (fullBattle && DamageReactionCalibration.Enabled)
+            {
+                if (DamageReactionCalibration.Error != null) throw new InvalidOperationException(DamageReactionCalibration.Error);
+                if (DamageReactionCalibration.Completed)
+                {
+                    Finish(true, "Bloodshed/Punish damage lifecycle component captured; lethal and full-battle acceptance is separate.");
+                    return;
+                }
+                if (!DamageReactionCalibration.Started && DamageReactionCalibration.Eligible) DamageReactionCalibration.Start(log);
+                if (DamageReactionCalibration.Started) return;
+            }
             if (fullBattle && (Environment.GetEnvironmentVariable("MT2_PROBE_HALF_HEALTH_LIFECYCLE") == "1" || HalfHealthLifecycleCalibration.MaximumHealth || HalfHealthLifecycleCalibration.UnitUpgrades || HalfHealthLifecycleCalibration.UpgradeEffects))
             {
                 if (HalfHealthLifecycleCalibration.Error != null) throw new InvalidOperationException(HalfHealthLifecycleCalibration.Error);
