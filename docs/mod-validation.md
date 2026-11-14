@@ -1,6 +1,12 @@
 # Player Mod validation · 2026-10-28
 
-Current Windows installation: 0.2.438, installed 2026-10-30 after an isolated
+2026-11-14: Steam is now game 2.3.1/build 26650011. Source builds and isolated
+native smoke checks pass against the update; this work did not replace the
+installed player payload. The installation evidence below predates the game
+update and does not establish 2.3.1 player compatibility. See
+[the current migration evidence](game-2.3.1.md).
+
+Last documented Windows installation: 0.2.438, installed 2026-10-30 after an isolated
 native player battle and focused continuation checks. The three installed DLL
 hashes match the tested build; the prior 0.2.437 payload is retained at
 `BepInEx/PojuBackups/FollowLatency-20261030-0.2.438/`. The game was stopped

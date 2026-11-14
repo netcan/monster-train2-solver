@@ -1,6 +1,13 @@
 # Full battle simulation
 
-Current curated inventory (2026-11-14): 2,874 binary archives with verified
+Steam updated to game **2.3.1** (build 26650011) on 2026-11-14. Native capture
+APIs now support both versions; paired seven-turn no-cards victories pass
+independent continuous replay and 16 parallel branches each. The new catalog
+has 614 logbook cards and 236 collectable relics. New/changed content remains
+under migration; the coverage figures below describe **game 2.2.1**. See
+[the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
+
+Game 2.2.1 curated inventory (2026-11-14): 2,874 binary archives with verified
 hashes and registrations. The card evidence index accepts 1,561 battle archives
 and 31,514 native actions; three historical captures with nonzero counters stay
 excluded. All 559 intrinsically playable logbook cards have a definition-matched
