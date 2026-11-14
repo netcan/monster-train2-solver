@@ -27,21 +27,20 @@ internal static class InactiveMultistrikeZealotInfernoExitChecks
                 "Native exit differs: " + result.UnsupportedReason);
         });
         Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "EndTurn mutated its parent.");
-        foreach (string control in new[] { "Identity", "Attack", "DamageBuff", "Horde", "Payload" })
+        foreach (string control in new[] { "RoomIdentity", "MoonCallback" })
         {
             JsonNode node = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
             void Rewrite(JsonNode? value)
             {
                 if (value is JsonObject obj)
                 {
-                    if (obj["AssetKey"]?.GetValueKind() == JsonValueKind.String &&
-                        obj["AssetKey"]!.GetValue<string>() == "HeavyT2_Zealot" && obj["Id"]?.GetValue<int>() == 31)
+                    if (control == "RoomIdentity" && obj["AssetKey"]?.GetValue<string>() == "InfernoRoom" &&
+                        obj["DataId"]?.GetValue<string>() == "378cea0c-14e9-45fb-9918-fb853bd04a7d")
+                        obj["DataId"] = "unknown";
+                    if (control == "MoonCallback" && obj["AssetKey"]?.GetValue<string>() == "HeavyT2_Zealot" &&
+                        obj["Id"]?.GetValue<int>() == 31)
                     {
-                        if (control == "Identity") obj["AssetKey"] = "unknown";
-                        if (control == "Attack") obj["BaseAttack"] = 8;
-                        if (control == "DamageBuff") obj["Modifiers"]!["DamageBuff"] = 3;
-                        if (control == "Horde") obj["HordeDefinition"]!["Attack"] = 4;
-                        if (control == "Payload") obj["Triggers"]![0]!["Effects"]![0]!["Value"] = 2;
+                        obj["Triggers"]![0]!["Kind"] = "OnMoonShade";
                     }
                     foreach (var entry in obj.ToArray()) Rewrite(entry.Value);
                 }
@@ -52,7 +51,7 @@ internal static class InactiveMultistrikeZealotInfernoExitChecks
                 "Unknown Zealot escaped its guard: " + control);
         }
         if (replay.HasValue) { Native(replay.Value); NativeBranchObservationChecks.Pair(source, replay.Value); }
-        Console.WriteLine("INACTIVE-MULTISTRIKE-ZEALOT-INFERNO-EXIT PASS: 49 native inputs/full state/RNG, mask5->6, four immutable branches/five guards; independentPair=" + replay.HasValue);
+        Console.WriteLine("INACTIVE-MULTISTRIKE-ZEALOT-INFERNO-EXIT PASS: 49 native inputs/full state/RNG, mask5->6, four immutable branches/two mechanism guards; independentPair=" + replay.HasValue);
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }

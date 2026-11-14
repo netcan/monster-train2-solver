@@ -1786,6 +1786,7 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'room-moon-callback-calibration.mt2f', 'room-moon-callback-calibration-shade.mt2f', 'room-moon-movement-calibration.mt2f',
     'room-moon-enemy-movement-calibration.mt2f', 'room-moon-inactive-refresh-calibration.mt2f',
     'room-moon-inactive-movement-calibration.mt2f', 'room-moon-inactive-inferno-movement-calibration.mt2f',
+    'room-moon-inactive-inferno-exit-calibration.mt2f',
     'full-battle-eclipse-chamber-enemy-movement.mt2f',
     'full-battle-eclipse-chamber-enemy-movement-replay.mt2f',
     'full-battle-eclipse-chamber-enemy-callbacks.mt2f',

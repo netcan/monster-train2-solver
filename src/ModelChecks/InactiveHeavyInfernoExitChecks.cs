@@ -68,19 +68,13 @@ internal static class InactiveHeavyInfernoExitChecks
                 Parallel.For(0, 4, _ => Require(NativeBranchObservationChecks.Key(BattleTurnModel.EndTurn(before).State!) ==
                     NativeBranchObservationChecks.Key(actual), "Parallel EndTurn differs."));
                 Require(immutable == JsonSerializer.Serialize(before, ModelJson.Options), "EndTurn mutated parent.");
-                foreach (string control in new[] { "Enemy", "EnemyAttack", "RoomIdentity", "UpgradeHealth" })
+                foreach (string control in new[] { "RoomIdentity", "UpgradeHealth" })
                 {
                     JsonNode altered = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
                     void Rewrite(JsonNode? node)
                     {
                         if (node is JsonObject obj)
                         {
-                            if (obj["AssetKey"]?.GetValueKind() == JsonValueKind.String && obj["AssetKey"]!.GetValue<string>() == "HeavyT3_Basic" &&
-                                obj.ContainsKey("BaseAttack") && obj["Id"]?.GetValue<int>() is 21 or 22)
-                            {
-                                if (control == "Enemy") obj["AssetKey"] = "unknown";
-                                if (control == "EnemyAttack") obj["BaseAttack"] = 9;
-                            }
                             if (obj["AssetKey"]?.GetValueKind() == JsonValueKind.String && obj["AssetKey"]!.GetValue<string>() == "InfernoRoom")
                             {
                                 if (control == "RoomIdentity" && obj["DataId"]?.GetValueKind() == JsonValueKind.String &&
@@ -117,7 +111,7 @@ internal static class InactiveHeavyInfernoExitChecks
                     "Independent native input/state/RNG differs at " + index);
             }
         }
-        Console.WriteLine("INACTIVE-HEAVY-INFERNO-EXIT PASS: 21 actions/five native turns/full state/forecast/RNG, two original heavy mask6->5, four immutable branches/four unknown guards; independentPair=" + replay.HasValue);
+        Console.WriteLine("INACTIVE-HEAVY-INFERNO-EXIT PASS: 21 actions/five native turns/full state/forecast/RNG, two original heavy mask6->5, four immutable branches/two attachment guards; independentPair=" + replay.HasValue);
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }

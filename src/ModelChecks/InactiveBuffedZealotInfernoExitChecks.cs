@@ -26,19 +26,20 @@ internal static class InactiveBuffedZealotInfernoExitChecks
                 "Native buffed Zealot exit differs: " + result.UnsupportedReason);
         });
         Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "EndTurn mutated its parent.");
-        foreach (string control in new[] { "Identity", "Attack", "Payload" })
+        foreach (string control in new[] { "RoomIdentity", "MoonCallback" })
         {
             JsonNode node = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
             void Rewrite(JsonNode? value)
             {
                 if (value is JsonObject obj)
                 {
-                    if (obj["AssetKey"]?.GetValueKind() == JsonValueKind.String &&
-                        obj["AssetKey"]!.GetValue<string>() == "HeavyT2_Zealot" && obj["Id"]?.GetValue<int>() == 30)
+                    if (control == "RoomIdentity" && obj["AssetKey"]?.GetValue<string>() == "InfernoRoom" &&
+                        obj["DataId"]?.GetValue<string>() == "378cea0c-14e9-45fb-9918-fb853bd04a7d")
+                        obj["DataId"] = "unknown";
+                    if (control == "MoonCallback" && obj["AssetKey"]?.GetValue<string>() == "HeavyT2_Zealot" &&
+                        obj["Id"]?.GetValue<int>() == 30)
                     {
-                        if (control == "Identity") obj["AssetKey"] = "unknown";
-                        if (control == "Attack") obj["BaseAttack"] = 12;
-                        if (control == "Payload") obj["Triggers"]![0]!["Effects"]![0]!["Value"] = 2;
+                        obj["Triggers"]![0]!["Kind"] = "OnMoonShade";
                     }
                     foreach (var entry in obj.ToArray()) Rewrite(entry.Value);
                 }
@@ -49,7 +50,7 @@ internal static class InactiveBuffedZealotInfernoExitChecks
                 "Unknown buffed Zealot escaped its guard: " + control);
         }
         if (replay.HasValue) { Native(replay.Value); NativeBranchObservationChecks.Pair(source, replay.Value); }
-        Console.WriteLine("INACTIVE-BUFFED-ZEALOT-INFERNO-EXIT PASS: 45 native inputs/full state/RNG, attack11 and mask5->6, four immutable branches/three guards; independentPair=" + replay.HasValue);
+        Console.WriteLine("INACTIVE-BUFFED-ZEALOT-INFERNO-EXIT PASS: 45 native inputs/full state/RNG, attack11 and mask5->6, four immutable branches/two mechanism guards; independentPair=" + replay.HasValue);
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }

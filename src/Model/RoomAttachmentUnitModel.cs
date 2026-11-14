@@ -218,7 +218,9 @@ namespace MonsterTrain2Poju.Model
                         (previousUnit.MoonPhaseMask.Value & 3) != inactive.MoonPhase.Value)
                     {
                         bool originalObservedExit = OriginalMushyExit(removed, previousUnit) ||
-                            OriginalHellfurnaceExit(removed, previousUnit, inactive.MoonPhase.Value);
+                            OriginalHellfurnaceExit(removed, previousUnit, inactive.MoonPhase.Value) ||
+                            OriginalInferno(removed) && removed.AffectsHeroes && previousUnit.SpawnerCardId == 0 &&
+                            previousUnit.Team == CombatTeam.Enemy;
                         if (!originalObservedExit && (previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
                             previousUnit is not { AssetKey: "HeavyT3_Basic", BaseAttack: 8, MaxHealth: 325, Size: 2, Triggers.Count: 0 } &&
                             previousUnit is not { AssetKey: "HeavyT3_PyreDamageIfUnblocked", BaseAttack: 5, MaxHealth: 250, Size: 2,
