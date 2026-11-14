@@ -28,6 +28,7 @@ namespace MonsterTrain2Poju.Model
         // not recompute old stacks, and removal can leave a nonzero accumulator.
         internal static StatusAttackDamageResult Change(CombatContext? context, CombatUnit unit, CombatStatus status, int delta, bool adding)
         {
+            if (status.Id == "zeal") return ZealStatusModel.Change(context, unit, status, delta, adding);
             if (delta > 0 && status.Id == "mageblade")
             {
                 if (unit.Modifiers == null)

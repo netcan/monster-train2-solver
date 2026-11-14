@@ -1,0 +1,230 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using BepInEx.Logging;
+using HarmonyLib;
+using MonsterTrain2Poju.Capture;
+using MonsterTrain2Poju.Model;
+using Newtonsoft.Json.Linq;
+
+namespace MonsterTrain2Poju.Probe
+{
+    internal static class ZealStatusCalibration
+    {
+        internal const string OwnerId = "ee429978-fa41-4c66-93c6-3d3c7d5a4733";
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ZEAL_STATUS") == "1";
+        internal static bool Started { get; private set; }
+        internal static bool Completed { get; private set; }
+        internal static string? Error { get; private set; }
+        private static bool recording;
+        private static AllGameManagers Managers => AllGameManagers.Instance!;
+        private static FullBattleTrace Trace => FullBattleTrace.Active!;
+        private static readonly Type StateType = AccessTools.Inner(typeof(CharacterState), "StateInformation");
+        private static readonly List<CharacterTriggerDispatch> dispatches = new List<CharacterTriggerDispatch>();
+        private static object Get(object target, string field) => AccessTools.Field(target.GetType(), field).GetValue(target);
+        private static void Set(object target, string field, object value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);
+        private static object Copy(object value) => AccessTools.Method(StateType, "DeepCopyForPreview").Invoke(value, null);
+        private static Queue<CombatManager.TriggerQueueData> Queue =>
+            (Queue<CombatManager.TriggerQueueData>)AccessTools.Property(typeof(CombatManager), "TriggerQueue").GetValue(Managers.GetCombatManager());
+        private static CharacterState[] Actors()
+        {
+            var result = new List<CharacterState>();
+            for (int room = 0; room < Managers.GetRoomManager().GetNumRooms(); room++)
+                Managers.GetRoomManager().GetRoom(room).AddCharactersToList(result, Team.Type.Monsters | Team.Type.Heroes);
+            return result.Where(actor => actor.IsAlive && !actor.IsDestroyed).ToArray();
+        }
+        internal static bool Eligible => ConditionalActivationProbe.HasVanguard && Queue.Count == 0 &&
+            Actors().Any(actor => actor.GetTeamType() == Team.Type.Monsters && !actor.IsPyreHeart() &&
+                actor.GetSourceCharacterData().GetAssetKey().StartsWith("TrainSteward", StringComparison.Ordinal) &&
+                Actors().Any(enemy => enemy.GetTeamType() == Team.Type.Heroes && enemy.GetCurrentRoomIndex() == actor.GetCurrentRoomIndex()));
+        internal static void Start(ManualLogSource log)
+        { Started = true; Managers.GetSaveManager().StartCoroutine(Protect(Run(log), log)); }
+        private static IEnumerator Protect(IEnumerator root, ManualLogSource log)
+        {
+            var stack = new Stack<IEnumerator>(); stack.Push(root);
+            try
+            {
+                while (stack.Count > 0)
+                {
+                    IEnumerator step = stack.Peek(); bool next;
+                    try { next = step.MoveNext(); }
+                    catch (Exception error) { Error = error.ToString(); log.LogError(Error); break; }
+                    if (!next) { (stack.Pop() as IDisposable)?.Dispose(); continue; }
+                    if (step.Current is IEnumerator child) stack.Push(child); else yield return step.Current;
+                }
+            }
+            finally { while (stack.Count > 0) (stack.Pop() as IDisposable)?.Dispose(); recording = false; }
+            Completed = Error == null;
+        }
+        internal sealed class Input
+        {
+            public string Label { get; set; } = "";
+            public bool Enemy { get; set; }
+            public string Operation { get; set; } = "Add";
+            public int Starting { get; set; }
+            public int Amount { get; set; } = 2;
+            public int Hp { get; set; } = 11;
+            public int Maximum { get; set; } = 20;
+            public bool Active { get; set; }
+            public string? Blocker { get; set; }
+        }
+        private static Input[] Cases() => new[] {
+            new Input { Label = "add-enters-half" },
+            new Input { Label = "enemy-add-enters-half", Enemy = true },
+            new Input { Label = "add-remains-half", Hp = 9, Active = true },
+            new Input { Label = "add-above-half", Hp = 20 },
+            new Input { Label = "add-zero", Amount = 0 },
+            new Input { Label = "add-negative-retains-stats", Starting = 3, Amount = -2, Maximum = 23 },
+            new Input { Label = "add-saturates-stacks", Starting = 9998, Amount = 5, Maximum = 10018, Hp = 10018 },
+            new Input { Label = "add-saturates-health", Maximum = 99998, Hp = 99998, Amount = 3 },
+            new Input { Label = "immune-add", Blocker = "immune" },
+            new Input { Label = "purify-blocks-add", Blocker = "purify" },
+            new Input { Label = "remove-leaves-half", Operation = "Remove", Starting = 3, Maximum = 23, Active = true },
+            new Input { Label = "enemy-remove-leaves-half", Enemy = true, Operation = "Remove", Starting = 3, Maximum = 23, Active = true },
+            new Input { Label = "remove-remains-half", Operation = "Remove", Starting = 3, Hp = 9, Maximum = 23, Active = true },
+            new Input { Label = "remove-clips-current", Operation = "Remove", Starting = 3, Hp = 23, Maximum = 23 },
+            new Input { Label = "remove-all", Operation = "Remove", Starting = 3, Amount = -1, Maximum = 23, Active = true },
+            new Input { Label = "remove-health-floor", Operation = "Remove", Starting = 3, Amount = -1, Hp = 1, Maximum = 2 },
+            new Input { Label = "remove-zero", Operation = "Remove", Starting = 3, Amount = 0, Maximum = 23, Active = true },
+            new Input { Label = "remove-missing", Operation = "Remove", Amount = -1 },
+            new Input { Label = "purify-clears-zeal", Operation = "Purify", Starting = 3, Maximum = 23, Active = true }
+        };
+        private static IEnumerator Run(ManualLogSource log)
+        {
+            var save = Managers.GetSaveManager(); var rooms = Managers.GetRoomManager();
+            RelicData owner = save.GetAllGameData().GetAllCollectableRelicData().Single(data => data.GetID() == OwnerId);
+            RelicEffectData effect = owner.GetEffects().Single();
+            var definition = new { Id = owner.GetID(), Key = owner.name, Placement = owner.DisallowInDeploymentPhase,
+                Type = effect.GetEffectClassName(), Int = effect.GetParamInt(), Team = effect.GetParamSourceTeam().ToString(),
+                Conditions = effect.GetEffectConditions().Count, Statuses = effect.GetParamStatusEffects() };
+            if (definition.Key != "ZealDamageIncrease" || definition.Placement || definition.Type != "RelicEffectModifyStatusMagnitude" ||
+                definition.Int != 1 || definition.Team != "Monsters" || definition.Conditions != 0 ||
+                definition.Statuses.Length != 1 || definition.Statuses[0].statusId != "zeal" || definition.Statuses[0].count != 0 ||
+                save.GetCollectedRelics().Any(relic => relic.GetRelicDataID() == OwnerId))
+                throw new InvalidOperationException("Changed original ZealDamageIncrease owner.");
+            save.AddRelic(owner);
+            CharacterState[] actors = Actors();
+            CharacterState player = actors.First(actor => actor.GetTeamType() == Team.Type.Monsters && !actor.IsPyreHeart() &&
+                actor.GetSourceCharacterData().GetAssetKey().StartsWith("TrainSteward", StringComparison.Ordinal));
+            CharacterState enemy = actors.First(actor => actor.GetTeamType() == Team.Type.Heroes && actor.GetCurrentRoomIndex() == player.GetCurrentRoomIndex());
+            TrainCombatState original = Trace.CaptureTrain(); object rngOriginal = HalfHealthLifecycleCalibration.Rng();
+            object[] states = actors.Select(actor => Get(actor, "_primaryStateInformation")).ToArray();
+            object[] triggers = actors.Select(actor => Get(actor, "triggers")).ToArray();
+            bool[] enchanters = actors.Select(actor => actor.IsEnchanter).ToArray();
+            var identities = (Dictionary<CharacterState, Dictionary<CharacterTriggerState, int>>)Get(Trace, "triggerIdentities");
+            var originalIds = actors.Select(actor => Trace.TriggerStates(actor).ToDictionary(pair => pair.Key, pair => pair.Value)).ToArray();
+            var streams = Enum.GetValues(typeof(RngId)).Cast<RngId>().ToDictionary(id => id,
+                id => new HadesRNG((HadesRNG)AccessTools.Method(typeof(RandomManager), "GetRng").Invoke(null, new object[] { id })));
+            UnityEngine.Random.State unity = UnityEngine.Random.state;
+            bool allow = rooms.AllowEnchantmentUpdates; int gold = save.GetGold();
+            var samples = new List<object>(); int mismatches = 0;
+            try
+            {
+                Set(rooms, "_allowEnchantmentUpdates", false);
+                foreach (Input input in Cases())
+                {
+                    for (int index = 0; index < actors.Length; index++)
+                    {
+                        Set(actors[index], "_primaryStateInformation", Copy(states[index]));
+                        Set(actors[index], "triggers", new List<CharacterTriggerState>());
+                        AccessTools.Property(typeof(CharacterState), "IsEnchanter").SetValue(actors[index], false);
+                        identities[actors[index]] = new Dictionary<CharacterTriggerState, int>();
+                    }
+                    Queue.Clear(); save.SetGold(gold);
+                    CharacterState host = input.Enemy ? enemy : player;
+                    var primary = Get(host, "_primaryStateInformation");
+                    var statuses = (Dictionary<string, CharacterState.StatusEffectStack>)Get(primary, "statusEffects");
+                    foreach (var status in statuses.Values) status.Count = 0;
+                    Set(primary, "deathwishSources", new HashSet<CharacterTriggerState>());
+                    Set(primary, "vanguardSources", new HashSet<CharacterTriggerState>());
+                    AccessTools.Property(StateType, "DamageBuffFromStatusEffects").SetValue(primary, 0);
+                    host.SetHealth(20, 20);
+                    if (input.Starting > 0) host.AddStatusEffect("zeal", input.Starting);
+                    if (input.Blocker != null) host.AddStatusEffect(input.Blocker, 1);
+                    foreach (var row in new[] { ("OnDeathwish", 5), ("OnDeathwishLost", 7), ("OnHeal", 11) })
+                    {
+                        CharacterTriggerData data = HealingScenario.HealGold(row.Item2, false, false);
+                        Set(data, "trigger", Enum.Parse(typeof(CharacterTriggerData.Trigger), row.Item1));
+                        var trigger = new CharacterTriggerState(); trigger.Setup(data, host.GetTeamType(), save); host.GetTriggers().Add(trigger);
+                    }
+                    if (input.Active) { host.SetHealth(10, 20); AccessTools.Method(typeof(CharacterState), "TryUpdateDeathwish").Invoke(host, null); }
+                    host.SetHealth(input.Hp, input.Maximum); Queue.Clear();
+                    RoomCombatState before = Trace.Capture(host.GetCurrentRoom()); object rngBefore = HalfHealthLifecycleCalibration.Rng();
+                    CombatStatus statusDefinition = before.Context!.StatusRules.Single(status => status.Id == "zeal");
+                    RoomCombatResult predicted = Predict(before, Trace.UnitId(host), input, statusDefinition);
+                    dispatches.Clear(); recording = true;
+                    RoomCombatState api; CharacterTriggerDispatch[] apiDispatches; EnchantmentCallback[] pending; object rngApi;
+                    try
+                    {
+                        if (input.Operation == "Remove") host.RemoveStatusEffect("zeal", input.Amount);
+                        else host.AddStatusEffect(input.Operation == "Purify" ? "purify" : "zeal", input.Operation == "Purify" ? 1 : input.Amount);
+                        api = Trace.Capture(host.GetCurrentRoom()); apiDispatches = dispatches.ToArray(); rngApi = HalfHealthLifecycleCalibration.Rng();
+                        pending = Queue.Select(item => new EnchantmentCallback(item.character.GetCurrentRoomIndex(), Trace.UnitId(item.character),
+                            item.trigger.ToString(), item.fireTriggersData?.paramInt ?? 0, item.fireTriggersData?.paramInt2 ?? 0,
+                            item.fireTriggersData?.paramString, item.fireTriggersData?.overrideTargetCharacter == null ? (int?)null : Trace.UnitId(item.fireTriggersData.overrideTargetCharacter),
+                            item.dyingCharacter == null ? (int?)null : Trace.UnitId(item.dyingCharacter), item.canFireTriggers,
+                            item.exclusiveTrigger == null ? (int?)null : Trace.TriggerStateId(item.character, item.exclusiveTrigger))).ToArray();
+                        yield return Managers.GetCombatManager().RunTriggerQueue();
+                    }
+                    finally { recording = false; }
+                    RoomCombatState actual = Trace.Capture(host.GetCurrentRoom()); object rngAfter = HalfHealthLifecycleCalibration.Rng();
+                    RoomCombatResult? drained = predicted.Supported ? RoomCombatModel.DrainCharacterCallbacks(predicted.State!, predicted.PendingCallbacks, true) : null;
+                    string? difference = predicted.UnsupportedReason ?? HalfHealthLifecycleCalibration.Difference(predicted.State, api) ??
+                        HalfHealthLifecycleCalibration.Difference(predicted.PendingCallbacks.Select(EnchantmentCallback.From).ToArray(), pending) ??
+                        HalfHealthLifecycleCalibration.Difference(predicted.Dispatches, apiDispatches) ?? drained?.UnsupportedReason ??
+                        (drained == null ? "Missing model successor." : HalfHealthLifecycleCalibration.Difference(drained.State, actual) ??
+                            HalfHealthLifecycleCalibration.Difference(predicted.Dispatches.Concat(drained.Dispatches).ToArray(), dispatches));
+                    bool rngSame = JToken.DeepEquals(HalfHealthLifecycleCalibration.GameplayRng(rngBefore), HalfHealthLifecycleCalibration.GameplayRng(rngApi)) &&
+                        JToken.DeepEquals(HalfHealthLifecycleCalibration.GameplayRng(rngBefore), HalfHealthLifecycleCalibration.GameplayRng(rngAfter));
+                    difference ??= rngSame ? null : "Gameplay RNG changed.";
+                    if (Queue.Count != 0 || actors.Any(actor => !actor.IsAlive || actor.IsDestroyed)) throw new InvalidOperationException("Zeal component did not settle.");
+                    if (difference != null) mismatches++;
+                    samples.Add(new { Label = input.Label, Input = input, ActorId = Trace.UnitId(host), Status = statusDefinition,
+                        Before = before, ApiActual = api, ApiDispatches = apiDispatches, ApiCallbacks = pending, Actual = actual,
+                        Dispatches = dispatches.ToArray(), RngBefore = rngBefore, RngAfterApi = rngApi, RngAfter = rngAfter,
+                        GameplayRngUnchanged = rngSame, PendingAfterDrain = Queue.Count, Difference = difference, Completed = true });
+                    log.LogInfo("ZEAL-STATUS " + input.Label + " " + (difference ?? "MATCH"));
+                }
+            }
+            finally
+            {
+                recording = false; Queue.Clear();
+                for (int index = 0; index < actors.Length; index++)
+                {
+                    Set(actors[index], "_primaryStateInformation", states[index]); Set(actors[index], "triggers", triggers[index]);
+                    AccessTools.Property(typeof(CharacterState), "IsEnchanter").SetValue(actors[index], enchanters[index]); identities[actors[index]] = originalIds[index];
+                }
+                save.SetGold(gold); Set(rooms, "_allowEnchantmentUpdates", allow);
+                foreach (var pair in streams) ((HadesRNG)AccessTools.Method(typeof(RandomManager), "GetRng").Invoke(null, new object[] { pair.Key })).Init(pair.Value);
+                UnityEngine.Random.state = unity;
+            }
+            string? restoration = HalfHealthLifecycleCalibration.Difference(original, Trace.CaptureTrain()) ??
+                HalfHealthLifecycleCalibration.Difference(rngOriginal, HalfHealthLifecycleCalibration.Rng());
+            using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
+                GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId, Boundary = "NativeZealStatusLifecycle",
+                OwnerDefinition = definition, LiveContextUnchanged = restoration == null, RestorationDifference = restoration, EffectsDrained = true,
+                Mismatches = mismatches, Samples = samples }))
+            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "zeal-status.mt2f"))) document.Write(output);
+            if (restoration != null || mismatches != 0) throw new InvalidOperationException("Zeal differs: " + mismatches + "; restoration: " + restoration);
+        }
+        private static RoomCombatResult Predict(RoomCombatState before, int actorId, Input input, CombatStatus zeal) =>
+            input.Operation == "Remove" ? StatusRemovalModel.Remove(before, actorId, "zeal", input.Amount) :
+                StatusApplicationModel.Apply(before, actorId, input.Operation == "Purify" ?
+                    before.Context!.StatusRules.Single(status => status.Id == "purify").WithStacks(1) : zeal.WithStacks(input.Amount));
+        [HarmonyPatch(typeof(CharacterState), nameof(CharacterState.FireTriggers))]
+        private static class FirePatch
+        {
+            private static void Prefix(CharacterState __instance, CharacterTriggerData.Trigger trigger, CharacterState dyingCharacter,
+                bool fromRunningTriggerQueue, CharacterState.FireTriggersData fireTriggersData, int triggerCount, CharacterTriggerState exclusiveTrigger)
+            {
+                if (!recording || !fromRunningTriggerQueue) return;
+                dispatches.Add(new CharacterTriggerDispatch(Trace.UnitId(__instance), trigger.ToString(), dyingCharacter == null ? 0 : Trace.UnitId(dyingCharacter),
+                    triggerCount, fireTriggersData?.paramInt ?? 0, fireTriggersData?.paramInt2 ?? 0, fireTriggersData?.paramString,
+                    fireTriggersData?.overrideTargetCharacter == null ? 0 : Trace.UnitId(fireTriggersData.overrideTargetCharacter),
+                    exclusiveTriggerStateId: exclusiveTrigger == null ? (int?)null : Trace.TriggerStateId(__instance, exclusiveTrigger)));
+            }
+        }
+    }
+}

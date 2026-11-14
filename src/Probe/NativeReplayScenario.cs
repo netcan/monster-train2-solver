@@ -2370,6 +2370,17 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 ChooseDiscardScenario.Prepare(managers, log);
             }
+            if (fullBattle && ZealStatusCalibration.Enabled)
+            {
+                if (ZealStatusCalibration.Error != null) throw new InvalidOperationException(ZealStatusCalibration.Error);
+                if (ZealStatusCalibration.Completed)
+                {
+                    Finish(true, "Zeal status lifecycle component captured; Devotion awards, birth and whole-battle relic acceptance are separate.");
+                    return;
+                }
+                if (!ZealStatusCalibration.Started && ZealStatusCalibration.Eligible) ZealStatusCalibration.Start(log);
+                if (ZealStatusCalibration.Started) return;
+            }
             if (fullBattle && DamageReactionCalibration.Enabled)
             {
                 if (DamageReactionCalibration.Error != null) throw new InvalidOperationException(DamageReactionCalibration.Error);

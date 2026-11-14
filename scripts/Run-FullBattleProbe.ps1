@@ -454,6 +454,7 @@ param(
     [switch] $EnchantmentCombatOnly,
     [switch] $HalfHealthDeathwishOnly,
     [switch] $HalfHealthLifecycleOnly,
+    [switch] $ZealStatusOnly,
     [switch] $HalfHealthMaximumOnly,
     [switch] $HalfHealthUpgradeOnly,
     [switch] $HalfHealthUpgradeEffectsOnly,
@@ -1399,6 +1400,13 @@ if ($DamageOverflow) { $BranchCardMasks = $true; $Policy = 'units-spells-and-jun
 if ($BattleRelicUpgrades -or $SpawnStatusRelicsClones -or $OriginalRelicBatch -or $OriginalStingRelicBatch -or $OriginalDeployableRelic) { $BranchCardMasks = $true }
 if ($SpawnStatusRelicsClones) { $SpawnStatusRelics = $true; $UnitClone = $true }
 if ($EnchantmentWorld) { $EnchantmentCombat = $true }
+if ($ZealStatusOnly) {
+    $zealArguments = @('ZealStatusOnly', 'Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'CaptureJson', 'SkipBuild',
+        'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction', 'ProgressAction', 'ErrorVariable', 'WarningVariable',
+        'InformationVariable', 'OutVariable', 'OutBuffer', 'PipelineVariable')
+    if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $zealArguments }).Count) { throw 'Zeal lifecycle requires an isolated component mode.' }
+    $Policy = 'steward-once'
+}
 if ($HalfHealthLifecycleOnly -or $HalfHealthMaximumOnly -or $HalfHealthUpgradeOnly -or $HalfHealthUpgradeEffectsOnly -or $DamageReactionsOnly -or $DamageReactionRevivalOnly -or $DamageReactionFinalDeathOnly) {
     $lifecycleArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'HalfHealthLifecycleOnly', 'HalfHealthMaximumOnly', 'HalfHealthUpgradeOnly', 'HalfHealthUpgradeEffectsOnly', 'DamageReactionsOnly', 'DamageReactionRevivalOnly', 'DamageReactionFinalDeathOnly',
         'BinaryCapture', 'CaptureJson', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction',
@@ -1827,6 +1835,7 @@ $environment = @{
     MT2_PROBE_ENCHANTMENT_COMBAT_ONLY = $(if ($EnchantmentCombatOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_DEATHWISH = $(if ($HalfHealthDeathwishOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_LIFECYCLE = $(if ($HalfHealthLifecycleOnly) { '1' } else { '0' })
+    MT2_PROBE_ZEAL_STATUS = $(if ($ZealStatusOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_MAXIMUM = $(if ($HalfHealthMaximumOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_UPGRADE = $(if ($HalfHealthUpgradeOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_UPGRADE_EFFECTS = $(if ($HalfHealthUpgradeEffectsOnly) { '1' } else { '0' })
@@ -2385,6 +2394,25 @@ if ($HalfHealthLifecycleOnly -or $HalfHealthMaximumOnly -or $HalfHealthUpgradeOn
     } finally { $lifecycleDocument.Dispose() }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
         ModelAcceptance='Pending independent focused checker'; Trace=$lifecyclePath } | ConvertTo-Json
+    return
+}
+if ($ZealStatusOnly) {
+    $zealPath = Join-Path $profile 'zeal-status.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $zealPath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Zeal status lifecycle component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Zeal component failed; inspect $unityLog" }
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $zealDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($zealPath)
+    try {
+        $zeal = $zealDocument.RootElement
+        if ($zeal.GetProperty('Boundary').GetString() -cne 'NativeZealStatusLifecycle' -or
+            -not $zeal.GetProperty('LiveContextUnchanged').GetBoolean() -or -not $zeal.GetProperty('EffectsDrained').GetBoolean() -or
+            $zeal.GetProperty('Mismatches').GetInt32() -ne 0 -or $zeal.GetProperty('Samples').GetArrayLength() -ne 19) {
+            throw 'Incomplete Zeal status lifecycle component.'
+        }
+    } finally { $zealDocument.Dispose() }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        ModelAcceptance='Pending independent focused checker'; Trace=$zealPath } | ConvertTo-Json
     return
 }
 if ($HalfHealthDeathwishOnly) {

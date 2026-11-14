@@ -339,6 +339,13 @@ namespace MonsterTrain2Poju.Model
                             state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units,
                                 state.ExternalInteractions, attack.Context, state.Preview, state.ActiveCompanionBossIds);
                             Refresh(attack.Unit!);
+                            if (status.Id == "zeal")
+                            {
+                                RoomCombatResult membership = ZealStatusModel.Membership(Stage(), Snapshot(),
+                                    existing ?? target.RegisteredStatus(status.Id) ?? status, oldStacks - stacks);
+                                if (!membership.Supported) return membership;
+                                Refresh(membership.State!.Units[0]); statusCallbacks.AddRange(membership.PendingCallbacks);
+                            }
                             if (status.Id == "conduit")
                             {
                                 if (!ConduitModel.Captured(state.Context)) return Unsupported("Conduit upgrade removal requires captured native room/card tracker state.");

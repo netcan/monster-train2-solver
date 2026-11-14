@@ -571,6 +571,8 @@ namespace MonsterTrain2Poju.Probe
                 new UnityRng(battle[0], battle[1], battle[2], battle[3]), state.Gold, projection.NextCardId,
                 cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel", "relentless", "cooldown", "unit_ability", "unit_ability_available", "horde", "duality" }.Concat(OriginalOpeningMorselsScenario.Enabled || TriggeredSummonProbe.Enabled || TriggeredSummonProbe.HasPlayerBirths || UnitCloneScenario.Enabled || UnitCopyScenario.Enabled || HeroCopyScenario.Enabled || HasCopyUnitsCard(managers) ? new[] { "cardless" } : Array.Empty<string>()).Concat(new[] { "undying", "endless" })
                     .Concat(registry.Any(card => UnitGraftProbe.Known(card.DataId) || card.MaskDescriptor?.GraftedEquipment != null) ? new[] { "unit_grafted_equipment" } : Array.Empty<string>())
+                    .Concat(ConditionalActivationProbe.HasVanguard ? new[] { "zeal" } : Array.Empty<string>())
+                    .Concat(ZealStatusCalibration.Enabled ? new[] { "purify" } : Array.Empty<string>())
                     .Select(id => BattleActionProbe.Status(id, 1)).ToArray(),
                 statistics, instances, registry, managers.GetCombatManager()!.AllScenarioBossesDead,
                 ((IEnumerable<CardUpgradeState>)AccessTools.Field(typeof(CardManager), "nextAddedTempCardUpgrades").GetValue(cards))

@@ -7,6 +7,14 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+Zeal now has 19 isolated native API/drained successors and 32 immutable parallel
+branches each. Unhealed/clipped maximum HP, half-health callback order, stack/HP
+saturation, immunity/Purify and the unchanged original ZealDamageIncrease relic's
+team-specific attack bonus match. This does not count as whole-battle relic
+acceptance (still 4/12 new relics). Devotion resources, offerings, level-dependent
+cards/birth passives and Zeal/Horde casualty combinations remain separate.
+Run `scripts/Check-Game231ZealStatus.ps1` for the versioned binary component.
+
 The new Bloodshed/Punish damage callbacks have 33 isolated native cases with
 two paid units, 34 direct hits and 136 dispatch payloads. Full successors/RNG
 and 32 immutable branches per case pass, including source precedence,

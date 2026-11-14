@@ -67,6 +67,12 @@ namespace MonsterTrain2Poju.Model
                 context = context.WithStatistics(context.LiveStatistics!.Increment(sourceCardId, "AnyStatusEffectStacksRemoved", status.Stacks - count,
                     requireTrackedCard: context.CardInstances?.Count == 0));
             var callbacks = relicAdded.PendingCallbacks.ToList();
+            if (id == "zeal")
+            {
+                RoomCombatResult membership = ZealStatusModel.Membership(source.WithContext(context), changed, status, status.Stacks - count);
+                if (!membership.Supported) return membership;
+                changed = membership.State!.Units[0]; callbacks.AddRange(membership.PendingCallbacks);
+            }
             if (id == "horde" && count < status.Stacks)
             {
                 var staged = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units,

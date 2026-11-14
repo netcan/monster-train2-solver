@@ -490,7 +490,7 @@ namespace MonsterTrain2Poju.Model
             "buff", "debuff", "regen", "poison", "decay", "corruption", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "titanite", "duality", "conduit",
             "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch", "avarice", "inedible", "eatmany", "steelguard",
-            "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted", "unit_grafted_equipment", "mass"
+            "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted", "unit_grafted_equipment", "mass", "zeal"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -1131,6 +1131,8 @@ namespace MonsterTrain2Poju.Model
                     return "Mageblade requires captured room magic power for this team.";
                 if (requireStatusDamage && unit.Modifiers?.DamageBuffFromStatusEffects.HasValue != true)
                     return "Missing native status attack accumulator.";
+                if (unit.RegisteredStatus("zeal") != null && unit.Modifiers?.DamageBuffFromStatusEffects.HasValue != true)
+                    return "Zeal requires the native status attack accumulator.";
                 if (unit.Ability?.CardCreation != null && unit.Ability.DataId != unit.Ability.CardCreation.DataId)
                     return "Unit ability and cached card creation definitions differ.";
                 if (unit.Ability?.Definition != null && (unit.Ability.DataId != unit.Ability.Definition.DataId || !unit.Ability.Definition.IsUnitAbility) ||
@@ -5986,6 +5988,13 @@ namespace MonsterTrain2Poju.Model
                         status.Stacks - (after.RegisteredStatus(id)?.Stacks ?? 0), adding: false);
                     if (!changed.Supported) { unsupportedReason = changed.UnsupportedReason; return; }
                     context = changed.Context; unit.Apply(changed.Unit!);
+                    if (id == "zeal")
+                    {
+                        RoomCombatResult membership = ZealStatusModel.Membership(CurrentRoom(), unit.Freeze(), status,
+                            status.Stacks - (after.RegisteredStatus(id)?.Stacks ?? 0));
+                        if (!membership.Supported) { unsupportedReason = membership.UnsupportedReason; return; }
+                        unit.Apply(membership.State!.Units[0]); callbacks.AddRange(membership.PendingCallbacks);
+                    }
                     if (id == "conduit" && context != null)
                         context = ConduitModel.Change(context, unit.RoomIndex, unit.Freeze(), source.Preview,
                             refreshSelection: false, order: units.Where(actor => actor.InRoom).Select(actor => actor.Source.Id).ToArray());
