@@ -490,7 +490,7 @@ namespace MonsterTrain2Poju.Model
             "buff", "debuff", "regen", "poison", "decay", "corruption", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "titanite", "duality", "conduit",
             "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch", "avarice", "inedible", "eatmany", "steelguard",
-            "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted", "unit_grafted_equipment", "mass", "zeal", "tenacious"
+            "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted", "unit_grafted_equipment", "mass", "zeal", "tenacious", "chained"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -3180,7 +3180,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (target.DeathFinished) return;
                 int hitType = kind == "Attack" ? 4 : kind == "Trample" ? 6 : kind == "Spikes" ? 1 : kind == "Poison" ? 2 :
-                    kind == "Decay" ? 8 : kind == "CorruptPoison" ? 7 : kind == "Corruption" ? 9 : kind == "SpellOverflow" ? 10 : 0;
+                    kind == "Decay" ? 8 : kind == "CorruptPoison" ? 7 : kind == "Corruption" ? 9 : kind == "SpellOverflow" ? 10 : kind == "Chained" ? ChainedStatusModel.DamageType : 0;
                 bool tookHit = damage > 0 || blocked > 0 || titanSkinSoaked > 0;
                 // The 2.3.1 damage-counter snapshot also identifies its new queue
                 // protocol. Bloodshed queues every friendly room actor before
@@ -3194,6 +3194,37 @@ namespace MonsterTrain2Poju.Model
                             paramInt: damage, paramInt2: hitType, paramString: "", overrideTarget: target.Freeze()));
                     if (!runningTriggerQueue && (enqueueCharacterTrigger == null || localUpgradeQueue)) DrainLocalTriggerQueue();
                     if (target.DeathFinished || unsupportedReason != null) return;
+                }
+                // Chained runs after Bloodshed but before this victim's Revenge.
+                // Armor and Tenacious count toward its input; shields and Titanskin
+                // do not. Snapshot the enemy roster, then read each holder's live
+                // status after the preceding holder's complete damage coroutine.
+                int chainedInput = unchecked(damage + armorBlockedThisHit + lethalDamagePrevented);
+                if (target.Source.Team == CombatTeam.Player && chainedInput > 0 && hitType != ChainedStatusModel.DamageType)
+                {
+                    WorkingUnit[] holders = units.Where(unit => unit.InRoom && !unit.Removed && unit.RoomIndex == target.RoomIndex &&
+                        unit.Source.Team == CombatTeam.Enemy).ToArray();
+                    bool hasChained = holders.Any(unit => ChainedStatusModel.Test(unit.Source.Team, !unit.Alive && unit.Count("undying") <= 0,
+                        unit.Count("chained"), target.Source.Team, chainedInput, hitType));
+                    if (hasChained && !modernDamageQueue)
+                    { unsupportedReason = "Chained requires the native modern damage protocol."; return; }
+                    if (hasChained && enqueueCharacterTrigger != null && !localUpgradeQueue && !runningTriggerQueue)
+                    { unsupportedReason = "Chained requires synchronous Bloodshed settlement across the external trigger queue."; return; }
+                    foreach (WorkingUnit holder in holders)
+                    {
+                        if (holder.Removed || holder.Destroyed || !ChainedStatusModel.Test(holder.Source.Team,
+                            !holder.Alive && holder.Count("undying") <= 0, holder.Count("chained"),
+                            target.Source.Team, chainedInput, hitType)) continue;
+                        // The native status asks the damaged friendly to complete
+                        // its Undying death-card callbacks before applying damage.
+                        if (!target.Alive && target.Count("undying") > 0)
+                        {
+                            TryRevive(holder, target, 0);
+                            if (unsupportedReason != null) return;
+                        }
+                        if (holder.Alive) Damage(target, holder, ChainedStatusModel.Damage(chainedInput, holder.Count("chained")), "Chained");
+                        if (unsupportedReason != null || target.DeathFinished || stoppedByRemotePyreDamage) return;
+                    }
                 }
                 // CharacterState counts Titanskin soak for Revenge, separately
                 // from damageBlocked used by last-attack damage statistics.

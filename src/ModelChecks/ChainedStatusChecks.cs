@@ -28,8 +28,8 @@ internal static class ChainedStatusChecks
         TrainCombatState before = calibration.GetProperty("Before").Deserialize<TrainCombatState>()!;
         Equal(before, calibration.GetProperty("Actual").Deserialize<TrainCombatState>(), "Native complete-train restoration");
         Equal(calibration.GetProperty("RngBefore").ToObjectGraph(), calibration.GetProperty("RngAfter").ToObjectGraph(), "All native RNG restoration");
-        Require(!before.Context!.Relics!.Any(relic => relic.DataId == "d0294a77-7204-4e9e-9b22-7f38e0d59ad0") &&
-            !RoomCombatModel.KnowsStatus("chained"), "Admission/request calibration must not silently enable unmodeled battle damage.");
+        Require(!before.Context!.Relics!.Any(relic => relic.DataId == "d0294a77-7204-4e9e-9b22-7f38e0d59ad0"),
+            "Admission/request component fixture must not be mistaken for original relic battle acceptance.");
         FixtureValue[] tests = calibration.GetProperty("Tests").EnumerateArray().ToArray(),
             requests = calibration.GetProperty("Requests").EnumerateArray().ToArray();
         Require(tests.Length == 111 && requests.Length == 35 && tests.Select(row => row.GetProperty("DamageType").GetInt32()).Distinct().Order().SequenceEqual(Enumerable.Range(0, 13)) &&
@@ -42,7 +42,7 @@ internal static class ChainedStatusChecks
             !ChainedStatusModel.Test(CombatTeam.Enemy, false, 1, CombatTeam.Player, 1, ChainedStatusModel.DamageType),
             "Missing-holder or no-recursion guard differs.");
         RoomCombatChecks.NativeRoomOnly(path); TrainCombatChecks.Native(root); RecordedBattleChecks.Native(root);
-        Console.WriteLine("CHAINED-STATUS PASS: 111 native status-admission tests, 35 intercepted raw damage requests/magnitude results including signed overflow, complete live state/RNG restoration, 32 component branches and unchanged carrier battle with 16 full branches. Relic acquisition, real damage propagation, Bloodshed/death/revival queues remain unaccepted.");
+        Console.WriteLine("CHAINED-STATUS PASS: 111 native status-admission tests, 35 intercepted raw damage requests/magnitude results including signed overflow, complete live state/RNG restoration, 32 component branches and unchanged carrier battle with 16 full branches. Component scope excludes real damage execution; original-owner battle validation is separate.");
 
         void Request(FixtureValue row)
         {

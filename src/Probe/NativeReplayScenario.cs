@@ -1061,6 +1061,11 @@ namespace MonsterTrain2Poju.Probe
                 DevotionLateSpawnBattleScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
+            if (fullBattle && !numericModifiersPrepared && ChainedBattleScenario.Enabled)
+            {
+                ChainedBattleScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
             if (fullBattle && !numericModifiersPrepared && ChainedStatusScenario.Enabled)
             {
                 ChainedStatusScenario.Prepare(managers, log);
@@ -3242,6 +3247,7 @@ namespace MonsterTrain2Poju.Probe
                 if (HalfHealthBattleScenario.Enabled) pendingPlay = HalfHealthBattleScenario.Choose(decision);
                 if (DamageReactionBattleScenario.Enabled) pendingPlay = DamageReactionBattleScenario.Choose(decision);
                 if (DevotionLateSpawnBattleScenario.Enabled) pendingPlay = DevotionLateSpawnBattleScenario.Choose(decision);
+                else if (ChainedBattleScenario.Enabled) pendingPlay = ChainedBattleScenario.Choose(decision);
                 else if (ChainedStatusScenario.Enabled) pendingPlay = ChainedStatusScenario.Choose(decision);
                 else if (CelebrateHealthBattleScenario.Enabled) pendingPlay = CelebrateHealthBattleScenario.Choose(decision);
                 else if (DamagedFloorEnergyBattleScenario.Enabled) pendingPlay = DamagedFloorEnergyBattleScenario.Choose(decision);
@@ -3509,6 +3515,7 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario == DevotionDamageBattleScenario.Name && DevotionDamageBattleScenario.IsScenarioAction(action)) ||
                 (modifierScenario == TenaciousBattleScenario.Name && TenaciousBattleScenario.IsScenarioAction(action)) ||
                 (modifierScenario == DevotionLateSpawnBattleScenario.Name && DevotionLateSpawnBattleScenario.IsScenarioAction(action)) ||
+                (modifierScenario == ChainedBattleScenario.Name && ChainedBattleScenario.IsScenarioAction(action)) ||
                 (modifierScenario == ChainedStatusScenario.Name && ChainedStatusScenario.IsScenarioAction(action)) ||
                 (modifierScenario == CelebrateHealthBattleScenario.Name && CelebrateHealthBattleScenario.IsScenarioAction(action)) ||
                 (modifierScenario == DamagedFloorEnergyBattleScenario.Name && DamagedFloorEnergyBattleScenario.IsScenarioAction(action)) ||

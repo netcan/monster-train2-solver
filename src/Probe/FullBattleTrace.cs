@@ -1709,6 +1709,7 @@ namespace MonsterTrain2Poju.Probe
                 DamageReactionBattle = DamageReactionBattleScenario.Enabled ? DamageReactionBattleScenario.Evidence : null,
                 TenaciousBattle = TenaciousBattleScenario.Enabled ? TenaciousBattleScenario.Evidence : null,
                 DevotionLateSpawnBattle = DevotionLateSpawnBattleScenario.Enabled ? DevotionLateSpawnBattleScenario.Evidence : null,
+                ChainedBattle = ChainedBattleScenario.Enabled ? ChainedBattleScenario.Evidence : null,
                 ChainedStatusCalibration = ChainedStatusScenario.Enabled ? ChainedStatusScenario.Evidence : null,
                 CelebrateHealthBattle = CelebrateHealthBattleScenario.Enabled ? CelebrateHealthBattleScenario.Evidence : null,
                 DamagedFloorEnergyBattle = DamagedFloorEnergyBattleScenario.Enabled ? DamagedFloorEnergyBattleScenario.Evidence : null,
