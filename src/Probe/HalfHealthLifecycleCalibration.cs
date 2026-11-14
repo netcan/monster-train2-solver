@@ -17,6 +17,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
         internal static bool MaximumHealth => Environment.GetEnvironmentVariable("MT2_PROBE_HALF_HEALTH_MAXIMUM") == "1";
+        internal static bool UnitUpgrades => Environment.GetEnvironmentVariable("MT2_PROBE_HALF_HEALTH_UPGRADE") == "1";
         private static bool recording;
         private static readonly List<CharacterTriggerDispatch> dispatches = new List<CharacterTriggerDispatch>();
         private static AllGameManagers Managers => AllGameManagers.Instance!;
@@ -69,7 +70,7 @@ namespace MonsterTrain2Poju.Probe
         }
         private static IEnumerator Run(ManualLogSource log)
         {
-            if (MaximumHealth)
+            if (MaximumHealth || UnitUpgrades)
             {
                 HealingScenario.RegisterHealingStatus("heal immunity", "StatusEffectHealImmunityState", 0);
                 HealingScenario.RegisterHealingStatus("heal multiplier", "StatusEffectHealMultiplierState", 2);
@@ -100,7 +101,8 @@ namespace MonsterTrain2Poju.Probe
                 }
                 object clean = AccessTools.Method(StateType, "DeepCopyForPreview").Invoke(Get(host, "_primaryStateInformation"), null);
                 var maximumCases = MaximumCases().ToDictionary(item => item.Label);
-                foreach (string label in MaximumHealth ? maximumCases.Keys.ToArray() : new[] { "damage-enters-half", "damage-remains-half", "damage-zero-enters-half", "damage-armor-blocked",
+                var upgradeCases = UpgradeCases().ToDictionary(item => item.Label);
+                foreach (string label in UnitUpgrades ? upgradeCases.Keys.ToArray() : MaximumHealth ? maximumCases.Keys.ToArray() : new[] { "damage-enters-half", "damage-remains-half", "damage-zero-enters-half", "damage-armor-blocked",
                     "heal-leaves-half", "heal-remains-half", "heal-zero-enters-half", "heal-clipped", "heal-zero-leaves-half",
                     "damage-onhit-heals-first", "heal-onheal-damages-first", "gain-callback-heals-and-loses", "lost-callback-damages-and-gains" })
                 {
@@ -108,6 +110,11 @@ namespace MonsterTrain2Poju.Probe
                     var statuses = (Dictionary<string, CharacterState.StatusEffectStack>)Get(Get(host, "_primaryStateInformation"), "statusEffects");
                     foreach (var status in statuses.Values) status.Count = 0;
                     Set(host, "triggers", new List<CharacterTriggerState>()); identities[host] = new Dictionary<CharacterTriggerState, int>();
+                    if (UnitUpgrades)
+                    {
+                        yield return UpgradeSample(upgradeCases[label], statuses);
+                        continue;
+                    }
                     if (MaximumHealth)
                     {
                         yield return MaximumSample(maximumCases[label], statuses);
@@ -174,11 +181,11 @@ namespace MonsterTrain2Poju.Probe
             string? restoration = Difference(original, Trace.CaptureTrain()) ?? Difference(originalRng, Rng());
             using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
                 GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId,
-                Boundary = MaximumHealth ? "NativeHalfHealthMaximumHealthLifecycle" : "NativeHalfHealthDamageHealLifecycle",
+                Boundary = UnitUpgrades ? "NativeHalfHealthUnitUpgradeLifecycle" : MaximumHealth ? "NativeHalfHealthMaximumHealthLifecycle" : "NativeHalfHealthDamageHealLifecycle",
                 LiveContextUnchanged = restoration == null, RestorationDifference = restoration, EffectsDrained = true,
                 RngBefore = originalRng, RngAfter = Rng(), CosmeticStreams = new[] { "NonDeterministic", "Chatter" }, Mismatches = mismatches, Samples = samples }))
             using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
-                MaximumHealth ? "half-health-maximum.mt2f" : "half-health-lifecycle.mt2f"))) document.Write(output);
+                UnitUpgrades ? "half-health-upgrade.mt2f" : MaximumHealth ? "half-health-maximum.mt2f" : "half-health-lifecycle.mt2f"))) document.Write(output);
             if (restoration != null || mismatches != 0) throw new InvalidOperationException("Half-health lifecycle differs: " + mismatches + "; restoration: " + restoration);
 
             IEnumerator MaximumSample(MaximumInput input, Dictionary<string, CharacterState.StatusEffectStack> statuses)
@@ -235,6 +242,68 @@ namespace MonsterTrain2Poju.Probe
                     Difference = difference, Completed = true });
             }
 
+            IEnumerator UpgradeSample(UpgradeInput input, Dictionary<string, CharacterState.StatusEffectStack> statuses)
+            {
+                var upgrade = new CardUpgradeState(); upgrade.Setup();
+                upgrade.SetAttackDamage(2); upgrade.SetAdditionalHP(input.Health);
+                Set(upgrade, "additionalUnhealedHP", input.Unhealed);
+                const string upgradeId = "half-health-upgrade";
+                // Negative upgrades must be installed on a safe preparation state;
+                // authored HP and membership are established only after installation.
+                host.SetHealth(1000, 1000);
+                if (input.Remove) yield return host.ApplyCardUpgrade(upgrade, upgradeId: upgradeId);
+                host.SetHealth(11, 20);
+                Add("OnHit", 2, null); Add("OnHeal", 3, null);
+                Add("OnDeathwish", 5, input.GainEffect);
+                Add("OnDeathwishLost", 7, input.LostEffect);
+                if (input.Active) { host.SetHealth(10, 20); AccessTools.Method(typeof(CharacterState), "TryUpdateDeathwish").Invoke(host, null); Queue.Clear(); }
+                host.SetHealth(input.Hp, input.MaxHp);
+                Set(Get(host, "_primaryStateInformation"), "canBeHealed", input.CanHeal);
+                if (input.AssociatedHealth != 0)
+                    ((Dictionary<string, int>)Get(Get(host, "_primaryStateInformation"), "maxHpFromUpgrades"))[upgradeId] = input.AssociatedHealth;
+                if (input.Status != null)
+                {
+                    if (statuses.TryGetValue(input.Status, out var status)) status.Count = 1;
+                    else statuses.Add(input.Status, new CharacterState.StatusEffectStack(Managers.GetStatusEffectManager().Create(input.Status, host), 1));
+                }
+                int? anonymousIndex = input.Remove ? (int?)host.GetAppliedCardUpgrades().ToList().FindIndex(item => ReferenceEquals(item, upgrade)) : null;
+                CardUpgradeModifier definition = CardModifierProbe.Upgrade(upgrade);
+                RoomCombatState before = Trace.Capture(host.GetCurrentRoom()); object rngBefore = Rng();
+                RoomCombatResult predicted = RoomCombatModel.ApplyDirectUnitUpgrade(before, Trace.UnitId(host), definition, input.Remove,
+                    upgradeId, anonymousIndex, captureAllDispatches: true);
+                dispatches.Clear(); recording = true;
+                RoomCombatState apiActual; object rngAfterApi; CharacterTriggerDispatch[] apiDispatches; EnchantmentCallback[] apiCallbacks;
+                try
+                {
+                    yield return input.Remove ? host.RemoveCardUpgrade(upgrade, upgradeId) : host.ApplyCardUpgrade(upgrade, upgradeId: upgradeId);
+                    apiActual = Trace.Capture(host.GetCurrentRoom()); rngAfterApi = Rng(); apiDispatches = dispatches.ToArray();
+                    apiCallbacks = Queue.Select(item => new EnchantmentCallback(item.character.GetCurrentRoomIndex(), Trace.UnitId(item.character),
+                        item.trigger.ToString(), item.fireTriggersData?.paramInt ?? 0, item.fireTriggersData?.paramInt2 ?? 0,
+                        item.fireTriggersData?.paramString, item.fireTriggersData?.overrideTargetCharacter == null ? (int?)null : Trace.UnitId(item.fireTriggersData.overrideTargetCharacter),
+                        item.dyingCharacter == null ? (int?)null : Trace.UnitId(item.dyingCharacter), item.canFireTriggers,
+                        item.exclusiveTrigger == null ? (int?)null : Trace.TriggerStateId(item.character, item.exclusiveTrigger))).ToArray();
+                    yield return Managers.GetCombatManager().RunTriggerQueue();
+                }
+                finally { recording = false; }
+                RoomCombatState actual = Trace.Capture(host.GetCurrentRoom()); object rngAfter = Rng();
+                if (actors.Any(actor => !actor.IsAlive || actor.IsDestroyed) || Queue.Count != 0)
+                    throw new InvalidOperationException("Upgrade lifecycle left a dead actor or pending queue.");
+                string? difference = predicted.UnsupportedReason ?? Difference(predicted.State, apiActual) ?? Difference(predicted.Dispatches, apiDispatches) ??
+                    Difference(predicted.PendingCallbacks.Select(EnchantmentCallback.From).ToArray(), apiCallbacks);
+                RoomCombatResult? drained = predicted.Supported ? RoomCombatModel.DrainCharacterCallbacks(predicted.State!, predicted.PendingCallbacks, true) : null;
+                difference ??= drained?.UnsupportedReason ?? (drained == null ? "Missing upgrade successor" : Difference(drained.State, actual) ??
+                    Difference(predicted.Dispatches.Concat(drained.Dispatches).ToArray(), dispatches));
+                bool gameplayRngUnchanged = JToken.DeepEquals(GameplayRng(rngBefore), GameplayRng(rngAfterApi)) && JToken.DeepEquals(GameplayRng(rngBefore), GameplayRng(rngAfter));
+                difference ??= gameplayRngUnchanged ? null : "Native gameplay RNG or Unity RNG changed.";
+                if (difference != null) { mismatches++; log.LogWarning(input.Label + ": " + difference); }
+                samples.Add(new { Label = input.Label, Input = input, Upgrade = definition, UpgradeId = upgradeId, AnonymousRemovalIndex = anonymousIndex,
+                    ActorId = Trace.UnitId(host), Before = before, ApiActual = apiActual, ApiCallbacks = apiCallbacks, ApiDispatches = apiDispatches,
+                    Actual = actual, Dispatches = dispatches.ToArray(), RngBefore = rngBefore, RngAfterApi = rngAfterApi, RngAfter = rngAfter,
+                    GameplayRngUnchanged = gameplayRngUnchanged, PendingAfterDrain = Queue.Count,
+                    PredictedApi = difference == null ? null : predicted.State, Predicted = difference == null ? null : drained?.State, Difference = difference, Completed = true });
+                log.LogInfo("HALF-HEALTH-UPGRADE " + input.Label + " " + (difference ?? "MATCH"));
+            }
+
             void Add(string kind, int gold, string? effectType)
             {
                 CharacterTriggerData data = HealingScenario.HealGold(gold, effectType != null, false);
@@ -247,6 +316,54 @@ namespace MonsterTrain2Poju.Probe
                 var trigger = new CharacterTriggerState(); trigger.Setup(data, host.GetTeamType(), Save); host.GetTriggers().Add(trigger);
             }
         }
+        private sealed class UpgradeInput
+        {
+            public string Label { get; }
+            public int Hp { get; }
+            public int MaxHp { get; }
+            public bool Active { get; }
+            public int Health { get; }
+            public int Unhealed { get; }
+            public bool Remove { get; }
+            public int AssociatedHealth { get; }
+            public bool CanHeal { get; }
+            public string? Status { get; }
+            public string? GainEffect { get; }
+            public string? LostEffect { get; }
+            internal UpgradeInput(string label, int hp, bool active, int health, int unhealed = 0, bool remove = false,
+                int associatedHealth = 0, bool canHeal = true, string? status = null, string? gainEffect = null, string? lostEffect = null, int maxHp = 20)
+            { Label = label; Hp = hp; MaxHp = maxHp; Active = active; Health = health; Unhealed = unhealed;
+                Remove = remove; AssociatedHealth = associatedHealth; CanHeal = canHeal; Status = status; GainEffect = gainEffect; LostEffect = lostEffect; }
+        }
+        private static UpgradeInput[] UpgradeCases() => new[] {
+            new UpgradeInput("add-heal-leaves-half", 10, true, 2),
+            new UpgradeInput("add-unhealed-enters-half", 11, false, 0, 2),
+            new UpgradeInput("add-negative-enters-half", 11, false, -2),
+            new UpgradeInput("add-negative-unhealed-enters-half", 11, false, 0, -2),
+            new UpgradeInput("add-two-phase-loss-gain", 10, true, 2, 4),
+            new UpgradeInput("add-gain-heals-after-second", 11, false, -2, 2, gainEffect: "CardEffectHeal"),
+            new UpgradeInput("add-loss-damages-before-second", 10, true, 2, 4, lostEffect: "CardEffectDamage"),
+            new UpgradeInput("add-zero-stale-half", 10, false, 0),
+            new UpgradeInput("add-cannotheal-enters-half", 11, false, 2, canHeal: false),
+            new UpgradeInput("add-ignores-heal-immunity", 10, true, 2, status: "heal immunity"),
+            new UpgradeInput("add-heal-multiplier", 8, true, 3, status: "heal multiplier"),
+            new UpgradeInput("add-capped", 49999, true, 2, 2, maxHp: 99999),
+            new UpgradeInput("add-two-phase-remains-half", 5, true, 2, 4),
+            new UpgradeInput("remove-healed-leaves-half", 10, true, 2, remove: true),
+            new UpgradeInput("remove-unhealed-leaves-half", 10, true, 0, 2, remove: true),
+            new UpgradeInput("remove-negative-healed-leaves-half", 10, true, -2, remove: true),
+            new UpgradeInput("remove-negative-unhealed-enters-half", 11, false, 0, -2, remove: true),
+            new UpgradeInput("remove-two-phase-enters-half", 11, false, -2, -4, remove: true),
+            new UpgradeInput("remove-two-phase-loss-gain", 10, true, 2, -4, remove: true),
+            new UpgradeInput("remove-loss-damages-before-second", 10, true, -2, -4, remove: true, lostEffect: "CardEffectDamage"),
+            new UpgradeInput("remove-associated-health", 10, true, 0, remove: true, associatedHealth: 2),
+            new UpgradeInput("remove-ledger-after-gain-loss", 11, false, 0, -2, remove: true, associatedHealth: 4),
+            new UpgradeInput("remove-three-phase-loss-gain-loss", 10, true, -2, -4, remove: true, associatedHealth: 4),
+            new UpgradeInput("remove-cannotheal-enters-half", 11, false, -2, remove: true, canHeal: false),
+            new UpgradeInput("remove-zero-stale-half", 10, false, 0, remove: true),
+            new UpgradeInput("add-gain-buffs-max-after-second", 11, false, -2, 2, gainEffect: "CardEffectBuffMaxHealth"),
+            new UpgradeInput("remove-gain-buffs-max-and-loses", 11, false, 0, -2, remove: true, gainEffect: "CardEffectBuffMaxHealth") };
+
         private sealed class MaximumInput
         {
             public string Label { get; }

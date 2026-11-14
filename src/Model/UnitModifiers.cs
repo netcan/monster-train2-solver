@@ -122,13 +122,21 @@ namespace MonsterTrain2Poju.Model
             Func<RoomCombatState, CombatUnit, bool, RoomCombatResult> settle, bool allowDyingTarget = false,
             Action<RoomCombatModel.QueuedCharacterTrigger>? enqueueCallback = null, bool directApi = false,
             string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0,
-            bool deferAbilityCallbacks = false, bool scaleUpgrade = false, bool accumulateScaledUpgradeRecord = true)
+            bool deferAbilityCallbacks = false, bool scaleUpgrade = false, bool accumulateScaledUpgradeRecord = true,
+            Func<RoomCombatState, int, bool, bool, RoomCombatResult>? changeHealth = null)
         {
-            string? error = RoomCombatModel.Validate(source, allowDyingTarget ? targetId : (int?)null);
+            bool halfHealth = source.Units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger));
+            string? error = RoomCombatModel.Validate(source, allowDyingTarget ? targetId : (int?)null, halfHealthLifecycle: directApi);
             if (error != null) return Unsupported(error);
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target?.Modifiers == null || source.Context?.CardInstances == null)
                 return Unsupported("Unit upgrades require unit and card instance modifier state.");
+            if (halfHealth && (changeHealth == null || upgrade.TriggerUpgrades?.Count > 0 || upgrade.AbilityUpgrade != null || upgrade.Statuses.Count > 0))
+                return Unsupported("Half-health Deathwish upgrades currently require calibrated numeric phases without trigger, ability or status changes.");
+            if (halfHealth && target.Status("horde")?.Stacks > 1)
+                return Unsupported("Half-health Deathwish upgrade troop casualties require native calibration.");
+            if (halfHealth && target.Health <= 0)
+                return Unsupported("Half-health Deathwish upgrades on dying actors require native sacrifice/revival calibration.");
             CardInstanceState? spawnerCard = source.Context.FindCard(target.SpawnerCardId);
             string? exhaustError = !directApi && lifetime == "Permanent" && spawnerCard != null ? CardExhaustModel.PermanentUpgradeError(spawnerCard, upgrade) : null;
             if (exhaustError != null) return Unsupported(exhaustError);
@@ -368,6 +376,7 @@ namespace MonsterTrain2Poju.Model
                 void Refresh(CombatUnit actor)
                 {
                     target = actor; nextModifiers = actor.Modifiers!;
+                    upgrades = nextModifiers.Upgrades.ToList(); healthFromUpgrades = nextModifiers.HealthFromUpgrades.ToList();
                     damage = nextModifiers.AttackDamage; added = nextModifiers.AttackDamageAdded; buff = nextModifiers.DamageBuff;
                     size = nextModifiers.RawSize; equipment = nextModifiers.EquipmentLimit;
                     health = actor.Health; maxHealth = actor.MaxHealth; triggers = actor.Triggers; nextTriggerId = actor.NextTriggerId;
@@ -375,6 +384,14 @@ namespace MonsterTrain2Poju.Model
                 }
                 void ChangeHealth(int delta, bool decreaseHealth, bool heal)
                 {
+                    if (halfHealth && delta != 0)
+                    {
+                        RoomCombatResult phase = changeHealth!(Stage(), delta, decreaseHealth, heal);
+                        if (!phase.Supported) { healthFailure = phase; return; }
+                        state = phase.State!;
+                        Refresh(state.Units.Single(unit => unit.Id == targetId));
+                        return;
+                    }
                     if (delta < 0)
                     {
                         bool wasAlive = health > 0;

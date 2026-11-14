@@ -983,7 +983,9 @@ namespace MonsterTrain2Poju.Model
         internal static RoomCombatResult ApplyDirectUnitUpgrade(RoomCombatState state, int targetId, CardUpgradeModifier upgrade,
             bool remove, string upgradeId, int? anonymousRemovalIndex, bool deferCallbacks = false, int equipmentSourceCardId = 0, bool captureAllDispatches = false, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, bool allowDyingTarget = false)
         {
-            string? error = Validate(state, allowDyingTarget ? targetId : (int?)null);
+            string? error = Validate(state, allowDyingTarget ? targetId : (int?)null, halfHealthLifecycle: true);
+            if (deferCallbacks && state.Units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)))
+                error = "Half-health Deathwish upgrades inside an external running queue require native calibration.";
             if (error != null || !state.Units.Any(unit => unit.Id == targetId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Missing direct upgrade target.");
             var callbacks = new List<QueuedCharacterTrigger>();
@@ -1066,7 +1068,7 @@ namespace MonsterTrain2Poju.Model
         internal static string? Validate(RoomCombatState state, int? dyingTargetId = null, bool linkedHealthOnly = false,
             bool halfHealthLifecycle = false)
         {
-            // Direct, real damage/heal/maximum-health APIs have queue-boundary oracles.
+            // Direct, real health and numeric-upgrade APIs have queue-boundary oracles.
             // Preview, shared aura worlds and whole-room scheduling keep their guard.
             halfHealthLifecycle &= !state.Preview && state.Context?.Enchantments == null;
             bool linkedCombat = TrueFinalBossCombatModel.Supports(state);
@@ -1795,6 +1797,7 @@ namespace MonsterTrain2Poju.Model
             private bool holdPreviewTriggerQueue;
             private bool stoppedByRemotePyreDamage;
             private bool localFeedingQueue;
+            private bool localUpgradeQueue;
             private bool stopAfterBossRemoval;
             private bool runningRoomCombat;
             private bool killCamActivated;
@@ -2268,16 +2271,18 @@ namespace MonsterTrain2Poju.Model
                 WorkingUnit target = units.Single(unit => unit.Source.Id == targetId);
                 if (!debuff && heal) Heal(target, amount, "MaxHealthHeal", fromMaxHealthChange: true, triggerOnHeal: triggerOnHeal);
                 UpdateHalfHealthDeathwish(target, drain: false);
-                QueuedCharacterTrigger[] pending = triggerQueue.Select(queued => new QueuedCharacterTrigger(queued.RoomIndex,
+                QueuedCharacterTrigger[] pending = SnapshotLocalCallbacks();
+                RoomCombatResult result = Finish(RoomOutcome.Exchanged);
+                return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(), result.UnsupportedReason,
+                    pending, result.RetainedUnits, result.Dispatches);
+            }
+
+            private QueuedCharacterTrigger[] SnapshotLocalCallbacks() => triggerQueue.Select(queued => new QueuedCharacterTrigger(queued.RoomIndex,
                     queued.Unit.Freeze(), queued.Kind, canFireTriggers: queued.CanFire, paramInt: queued.ParamInt,
                     paramInt2: queued.ParamInt2, paramString: queued.ParamString, dyingCharacter: queued.DyingCharacter?.Freeze(),
                     overrideTarget: queued.OverrideTarget?.Freeze(), triggerCount: queued.TriggerCount,
                     lastSpawnedOverrideUnitId: queued.LastSpawnedOverrideUnitId, exclusiveTriggerStateId: queued.ExclusiveTriggerStateId,
                     admission: CharacterTriggerAdmission.Accepted, captureAllDispatches: traceAllDispatches)).ToArray();
-                RoomCombatResult result = Finish(RoomOutcome.Exchanged);
-                return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(), result.UnsupportedReason,
-                    pending, result.RetainedUnits, result.Dispatches);
-            }
 
             internal RoomCombatResult DrainCallbacks(IReadOnlyList<QueuedCharacterTrigger> callbacks)
             {
@@ -3866,7 +3871,7 @@ namespace MonsterTrain2Poju.Model
                 if (!updated.Supported) { unsupportedReason = updated.UnsupportedReason; return false; }
                 unit.Apply(updated.State!.Units.Single());
                 foreach (QueuedCharacterTrigger callback in updated.PendingCallbacks) QueueCallback(callback);
-                if (drain && enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
+                if (drain && (enqueueCharacterTrigger == null || localUpgradeQueue) && !runningTriggerQueue) DrainLocalTriggerQueue();
                 return unsupportedReason == null;
             }
 
@@ -3904,7 +3909,7 @@ namespace MonsterTrain2Poju.Model
                     if (context?.PurifyBlockedTriggers == null) { unsupportedReason = "Purify requires captured trigger queue restrictions."; return; }
                     if (context.PurifyBlockedTriggers.Contains(kind)) return;
                 }
-                if (!fromQueue && enqueueCharacterTrigger != null && !localFeedingQueue)
+                if (!fromQueue && enqueueCharacterTrigger != null && !localFeedingQueue && !localUpgradeQueue)
                 { enqueueCharacterTrigger(new QueuedCharacterTrigger(unit.RoomIndex, unit.Freeze(), kind, paramInt: paramInt, overrideTarget: overrideTarget?.Freeze(), paramInt2: paramInt2, paramString: paramString,
                     dyingCharacter: dyingCharacter?.Freeze(), canFireTriggers: canFireTriggers, triggerCount: triggerCount, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId,
                     admission: CharacterTriggerAdmission.Accepted, exclusiveTriggerStateId: exclusiveTriggerStateId,
@@ -4826,6 +4831,50 @@ namespace MonsterTrain2Poju.Model
                 string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0,
                 bool scaleUpgrade = false, bool accumulateScaledUpgradeRecord = true)
             {
+                // Removal normally leaves callbacks queued, but restoring a negative
+                // healed-HP modifier runs its ApplyHeal callbacks before the next phase.
+                // Keep one live queue for the entire operation before exporting it.
+                bool ownQueue = directApi && enqueueCharacterTrigger != null && !localUpgradeQueue &&
+                    units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger));
+                if (ownQueue) localUpgradeQueue = true;
+                try
+                {
+                    return ApplyUpgradeCore(target, upgrade, lifetime, remove, roomCapacity, sourceCardId, kind,
+                        directApi, upgradeId, anonymousRemovalIndex, equipmentSourceCardId, scaleUpgrade, accumulateScaledUpgradeRecord);
+                }
+                finally
+                {
+                    if (ownQueue)
+                    {
+                        QueuedCharacterTrigger[] remaining = SnapshotLocalCallbacks();
+                        triggerQueue.Clear(); localUpgradeQueue = false;
+                        foreach (QueuedCharacterTrigger callback in remaining) enqueueCharacterTrigger!(callback);
+                    }
+                }
+            }
+
+            private RoomCombatResult UpgradeHealthPhase(RoomCombatState state, WorkingUnit target, int delta, bool decreaseHp, bool heal)
+            {
+                context = state.Context;
+                target.Apply(state.Units.Single(unit => unit.Id == target.Source.Id));
+                int maximum = delta < 0 ? Math.Max(0, checked(target.Source.MaxHealth + delta)) :
+                    Math.Min(99999, checked(target.Source.MaxHealth + delta));
+                int hp = delta < 0 ? (decreaseHp ? Math.Max(0, checked(target.Health + delta)) : Math.Min(target.Health, maximum)) : target.Health;
+                if (hp <= 0)
+                    return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
+                        "Half-health Deathwish lethal upgrade phases require native sacrifice/revival calibration.");
+                target.Apply(target.Freeze().WithHealthAndMaxHealth(hp, maximum));
+                if (delta > 0 && heal) Heal(target, delta, "UpgradeMaxHealthHeal", fromMaxHealthChange: true, triggerOnHeal: false);
+                UpdateHalfHealthDeathwish(target, drain: false);
+                return new RoomCombatResult(unsupportedReason == null ? UpgradeRoom(target) : null,
+                    unsupportedReason == null ? RoomOutcome.Exchanged : RoomOutcome.Unsupported, 0, new List<CombatEvent>(), unsupportedReason);
+            }
+
+            private bool ApplyUpgradeCore(WorkingUnit target, CardUpgradeModifier upgrade, string lifetime, bool remove,
+                int? roomCapacity, int sourceCardId, string? kind, bool directApi,
+                string upgradeId, int? anonymousRemovalIndex, int equipmentSourceCardId,
+                bool scaleUpgrade, bool accumulateScaledUpgradeRecord)
+            {
                 RoomCombatState upgradeRoom = UpgradeRoom(target);
                 RoomCombatResult result = UnitModifierModel.ApplyWithSettlement(upgradeRoom, target.Source.Id, upgrade, lifetime,
                     remove, roomCapacity, sourceCardId, kind, (state, changed, sacrifice) =>
@@ -4851,7 +4900,7 @@ namespace MonsterTrain2Poju.Model
                         // ApplyCardUpgrade runs the native queue before the effect writes
                         // the upgrade back to its source card. A queue already running
                         // defers child callbacks until that source write has completed.
-                        if (!remove && enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
+                        if (!remove && (enqueueCharacterTrigger == null || localUpgradeQueue) && !runningTriggerQueue) DrainLocalTriggerQueue();
                         if (unsupportedReason != null)
                             return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), unsupportedReason);
                         // The native effect retains its target object through removal and
@@ -4860,7 +4909,8 @@ namespace MonsterTrain2Poju.Model
                     }, allowDyingTarget: true, enqueueCallback: QueueCallback, directApi: directApi,
                     upgradeId: upgradeId, anonymousRemovalIndex: anonymousRemovalIndex, equipmentSourceCardId: equipmentSourceCardId,
                     deferAbilityCallbacks: !directApi || deferAbilityCallbacks || runningTriggerQueue, scaleUpgrade: scaleUpgrade,
-                    accumulateScaledUpgradeRecord: accumulateScaledUpgradeRecord);
+                    accumulateScaledUpgradeRecord: accumulateScaledUpgradeRecord,
+                    changeHealth: (state, delta, decreaseHp, heal) => UpgradeHealthPhase(state, target, delta, decreaseHp, heal));
                 if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
                 context = result.State!.Context;
                 return true;
@@ -5855,7 +5905,7 @@ namespace MonsterTrain2Poju.Model
                 if (error != null) { unsupportedReason = error; return; }
                 if (admitted.Admission == CharacterTriggerAdmission.Rejected) return;
                 callback = admitted;
-                if (enqueueCharacterTrigger != null) { enqueueCharacterTrigger(callback); return; }
+                if (enqueueCharacterTrigger != null && !localUpgradeQueue) { enqueueCharacterTrigger(callback); return; }
                 bool local = callback.RoomIndex == source.RoomIndex;
                 WorkingUnit? actor = local ? units.FirstOrDefault(unit => unit.Source.Id == callback.Unit.Id) : null;
                 if (actor == null)

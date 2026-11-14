@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--half-health-upgrade-only")
+{
+    HalfHealthUpgradeChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 1 && args[0] == "--unit-health-pure")
 {
     UnitHealthChecks.Run();
