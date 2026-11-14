@@ -7,13 +7,25 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+The 2.3.1 card-hover protocol also models ranged damage quantities: 1024 new
+native player/enemy controls cover targeted/room and main/OnCast effects with
+ordinary/Horde/Undying/half-health and armor. Native tests and applications
+draw separately from BattleTest; cancellation retains that stream while real
+Battle stays unchanged. Empty modifier planes still clamp negative damage
+endpoints; OnCast draws against a finished drop-target reference without
+reviving its room membership. The dedicated checker compares every draw,
+complete temporary actors, copy/effect/cancel states and 16 immutable branches
+per root. Run `scripts/Check-Game231RandomDamagePreview.ps1`. Random targets,
+mixed modes, multiple main effects, linked damage, traits and other callbacks
+remain guarded. These authored controls do not increase catalog coverage.
+
 The 2.3.1 card-hover protocol additionally supports constant room damage and
 matching-target main/OnCast damage: 192 new native player/enemy controls cover
 targetless room input, multiple deaths, Horde/Undying/half-health and armor.
 All three temporary actors, including removed victims, full copy/effect/cancel
 states, gameplay RNG and 16 immutable branches each match. Temporary triggers
 reset once; later victims share their flags and native deferred death queues.
-Run `scripts/Check-Game231CompositeDamagePreview.ps1`. Random damage, mixed
+Run `scripts/Check-Game231CompositeDamagePreview.ps1`. Random targets, mixed
 target modes, multiple main effects, linked bodies and modified callbacks remain guarded.
 
 The 2.3.1 card-hover protocol also supports one constant direct-damage effect
@@ -22,8 +34,9 @@ Undying/half-health and lethal/nonlethal damage. Complete temporary targets,
 copy/effect/cancel states, gameplay RNG and 16 immutable branches each match.
 Ordinary spells have no self/ability activator and preserve the last-attack scalar.
 Horde hit casualties precede final death/revival. Run
-`scripts/Check-Game231DamageCardPreview.ps1`. Damage sweeps, ranges, OnCast,
-linked bodies and modified cards/callbacks still require hover calibration.
+`scripts/Check-Game231DamageCardPreview.ps1`. Damage sweeps, ranges and OnCast
+have the separate evidence above; linked damage and modified cards/callbacks
+still require hover calibration.
 
 The 2.3.1 ordinary/Horde/Undying/half-health maximum-health lethal card-hover
 protocol has 32 native player/enemy controls with complete temporary targets, copied/effect/

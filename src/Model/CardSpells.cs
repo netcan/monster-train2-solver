@@ -596,9 +596,9 @@ namespace MonsterTrain2Poju.Model
                 CardActionEffect tested = effect;
                 if (QuantityTest(effect) && effect.Type != "DamagePerSourceAttack")
                 {
-                    UnityRng testingRng = state.Context!.BattleRng;
+                    UnityRng testingRng = RuntimeRng(state);
                     tested = Sample(effect, ref testingRng);
-                    state = WithContext(state, state.Context.WithBattleRng(testingRng));
+                    state = WithRuntimeRng(state, testingRng);
                 }
                 int testCount = TestCount(state, effect, targets);
                 if (testCount < 0) return UnsupportedTrain("All-status adjustment requires complete propagation metadata.");
@@ -930,9 +930,9 @@ namespace MonsterTrain2Poju.Model
                         new[] { effect.Statuses[0].WithStacks(count) }, tests: effect.Tests, filters: effect.Filters);
                 }
                 if ((effect.Type == ForgePointsModel.Effect || effect.Type == DevotionModel.Effect) && selected.Preview) continue;
-                UnityRng effectRng = state.Context!.BattleRng;
+                UnityRng effectRng = RuntimeRng(state);
                 if (effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && effect.Type != "AttachRoomCapacity" && effect.Type != "ScheduleNextDrawUpgrade" && !AbilityCooldownModel.IsEffect(effect.Type) && !AbilityLifecycleModel.IsEffect(effect.Type)) effect = Sample(effect, ref effectRng);
-                state = WithContext(state, state.Context.WithBattleRng(effectRng));
+                state = WithRuntimeRng(state, effectRng);
                 int damageAttackerId = selfUnitId;
                 int damageOwnerCardId = sourceCardId;
                 int damageValue = effect.Value;
@@ -3000,6 +3000,14 @@ namespace MonsterTrain2Poju.Model
             (effect.Target == "DrawPile" || effect.Target == "Hand" || effect.Target == "LastDrawnCard");
         private static bool IsDamage(CardActionEffect effect) => effect.Type == "Damage" || effect.Type == FloorDamageModel.Effect || effect.Type == "DamagePerSourceAttack";
         private static bool QuantityTest(CardActionEffect effect) => IsDamage(effect) || effect.Type == "Draw";
+        // RandomManager converts Battle to BattleTest while a native card hover
+        // owns temporary copies. Tests and applications share that persistent stream.
+        private static UnityRng RuntimeRng(TrainCombatState state) =>
+            state.Context!.Enchantments is { Preview: true, TemporaryPreviewUnitIds: not null } world
+                ? world.TestRng : state.Context.BattleRng;
+        private static TrainCombatState WithRuntimeRng(TrainCombatState state, UnityRng rng) =>
+            WithContext(state, state.Context!.Enchantments is { Preview: true, TemporaryPreviewUnitIds: not null } world
+                ? state.Context.WithEnchantments(world.WithTestRng(rng)) : state.Context.WithBattleRng(rng));
         private static CardActionEffect Sample(CardActionEffect effect, ref UnityRng rng)
         {
             if (effect.Range == null) return effect;

@@ -50,9 +50,9 @@ namespace MonsterTrain2Poju.Model
                 return new CardHoverPreviewResult("Card hover currently requires calibrated maximum-health or direct-damage spell effects.");
             if (rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Type == "Damage") &&
                 (links != null || rule.OnCastEffects.Count > 1 || rule.Effects.Count != 1 ||
-                    rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect is not { Type: "Damage", Range: null }) ||
+                    rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Type != "Damage") ||
                     rule.OnCastEffects.Any(effect => effect.Target != rule.Effects[0].Target)))
-                return new CardHoverPreviewResult("Damage hover requires constant main/OnCast damage with matching target modes and no linked bodies.");
+                return new CardHoverPreviewResult("Damage hover requires main/OnCast damage with matching target modes and no linked bodies.");
             if (action.Operation != null || action.ActivatorUnitId != 0 || action.MixSelections.Count != 0 ||
                 action.RecursionSelections.Count != 0 || !primary.Cards.Hand.Any(card =>
                     card.InstanceId == action.CardInstanceId && card.DataId == rule.DataId))
@@ -62,6 +62,12 @@ namespace MonsterTrain2Poju.Model
                 hovered.MaskDescriptor.TemporaryTraits.Count != 0 || hovered.MaskDescriptor.PermanentReplacements.Count != 0 ||
                 hovered.Permanent.Upgrades.Count != 0 || hovered.Temporary.Upgrades.Count != 0)
                 return new CardHoverPreviewResult("Card hover with card traits or upgrades requires native calibration.");
+            // Even empty native damage modifier planes clamp negative endpoints.
+            rule = CardModifierModel.Resolve(rule, hovered);
+            if (rule.ExternalInteractions.Count != 0)
+                return new CardHoverPreviewResult("Card hover modifiers: " + string.Join("; ", rule.ExternalInteractions));
+            string? rangeError = rule.Effects.Concat(rule.OnCastEffects).Select(effect => effect.Range?.Validate()).FirstOrDefault(error => error != null);
+            if (rangeError != null) return new CardHoverPreviewResult("Card hover range: " + rangeError);
             if (world.EnchanterIds.Count != 0 || world.RetainedUnits.Count != 0 || primary.Relics == null ||
                 primary.Relics.Any(relic => relic.EffectTypes.Count != 0) || source.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Triggers.Any(trigger => trigger.Kind is "CardSpellPlayed" or "OnPreOwnAbilityActivated" or "OnOwnAbilityActivated")))
@@ -100,7 +106,24 @@ namespace MonsterTrain2Poju.Model
             var transientActors = effects.RetainedUnits.ToDictionary(unit => unit.Id);
             if (effects.PendingCallbacks.Count != 0)
                 return new CardHoverPreviewResult("Card hover main effects left uncalibrated pending callbacks.");
-            if (rule.OnCastEffects.Count > 0)
+            if (rule.OnCastEffects.Count > 0 && rule.OnCastEffects.All(effect => effect.Type == "Damage" && effect.Target == "DropTargetCharacter") &&
+                transientActors.TryGetValue(action.TargetUnitId, out var retired) && retired.Health <= 0 &&
+                retired.DeathState?.HasFinishedDying == true && !after.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == retired.Id))
+            {
+                // Native OnCast keeps the dead drop-point reference. Damage tests
+                // and applications still draw, while ApplyDamageToTarget skips
+                // the finished victim. It must never rejoin the live room list.
+                UnityRng rng = after.Context!.Enchantments!.TestRng;
+                foreach (var effect in rule.OnCastEffects)
+                {
+                    int tested = effect.Value;
+                    if (effect.Range != null) { var draw = effect.Range.Sample(rng); tested = draw.Value; rng = draw.State; }
+                    if (tested >= 0 && (effect.Range == null || effect.Range.Max > 0) && effect.Range != null)
+                        rng = effect.Range.Sample(rng).State;
+                }
+                after = CardSpellModel.WithContext(after, after.Context.WithEnchantments(after.Context.Enchantments.WithTestRng(rng)));
+            }
+            else if (rule.OnCastEffects.Count > 0)
             {
                 effects = CardSpellModel.Apply(after, action.RoomIndex, rule.OnCastEffects,
                     action.TargetUnitId, action.CardInstanceId);
@@ -111,7 +134,8 @@ namespace MonsterTrain2Poju.Model
                 foreach (var unit in effects.RetainedUnits) transientActors[unit.Id] = unit;
             }
             // Cancellation restores the original actor planes and cached preview
-            // HP. Native keeps the allocator and shared maximum-health accumulator.
+            // HP. Native keeps the allocator, shared maximum-health accumulator,
+            // and any BattleTest draws; the real Battle stream stays unchanged.
             var restoredLinks = links == null ? null : new LifeLinkContext(links.Actors, links.CalculatingPreview,
                 after.Context!.LifeLinks!.SharedPreviewHpChange);
             foreach (var actor in after.Context!.Enchantments!.RetainedUnits) transientActors.TryAdd(actor.Unit.Id, actor.Unit);
@@ -121,7 +145,8 @@ namespace MonsterTrain2Poju.Model
             copied = ProjectPoints(primary.SpawnPoints, copied, copiedIds);
             after = ProjectPoints(primary.SpawnPoints, after, copiedIds);
             points = after.Context!.SpawnPoints!;
-            context = primary.WithSpawnPoints(points).WithLifeLinks(restoredLinks);
+            context = primary.WithSpawnPoints(points).WithLifeLinks(restoredLinks)
+                .WithEnchantments(world.WithTestRng(after.Context!.Enchantments!.TestRng));
             TrainCombatState restored = WithContext(source, context, preview: false);
             return new CardHoverPreviewResult(copied, after, restored, copiedIds, removed);
         }

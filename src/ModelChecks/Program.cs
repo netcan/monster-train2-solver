@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--random-damage-card-preview-only")
+{
+    RandomDamageCardPreviewChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--composite-damage-card-preview-only")
 {
     DirectDamageCardPreviewChecks.Native(args[1], composite: true);

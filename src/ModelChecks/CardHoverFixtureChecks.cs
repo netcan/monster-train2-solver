@@ -11,16 +11,17 @@ internal static class CardHoverFixtureChecks
         string? difference = ModelJson.Difference(Json(expected), Json(actual));
         Require(difference == null, stage + ": " + difference);
     }
-    internal static bool GameplayRng(FixtureValue before, FixtureValue after)
+    internal static bool GameplayRng(FixtureValue before, FixtureValue after, bool allowBattleTest = false)
     {
         var left = before.GetProperty("Streams").EnumerateArray().ToArray();
         var right = after.GetProperty("Streams").EnumerateArray().ToArray();
         return left.Length == 16 && right.Length == 16 && before.GetProperty("Unity").GetArrayLength() == 4 &&
             before.GetProperty("Unity").ContentEquals(after.GetProperty("Unity")) && left.Zip(right).All(pair =>
                 pair.First.GetProperty("Id").GetString() == pair.Second.GetProperty("Id").GetString() &&
-                (pair.First.GetProperty("Id").GetString() is "NonDeterministic" or "Chatter" || pair.First.ContentEquals(pair.Second)));
+                (pair.First.GetProperty("Id").GetString() is "NonDeterministic" or "Chatter" ||
+                    allowBattleTest && pair.First.GetProperty("Id").GetString() == "BattleTest" || pair.First.ContentEquals(pair.Second)));
     }
-    internal static void Match(FixtureValue row)
+    internal static void Match(FixtureValue row, bool battleTestAdvances = false)
     {
         string label = row.GetProperty("Label").GetString()!;
         int targetId = row.GetProperty("TargetId").GetInt32();
@@ -31,7 +32,7 @@ internal static class CardHoverFixtureChecks
         int dropId = row.TryGetProperty("DropTargetId", out var dropTarget) ? dropTarget.GetInt32() : targetId;
         var action = new PlayCardAction(row.GetProperty("CardId").GetInt32(), row.GetProperty("RoomIndex").GetInt32(), targetUnitId: dropId);
         var observed = row.GetProperty("ActualTarget").Deserialize<CombatUnit>()!;
-        Require(GameplayRng(row.GetProperty("RngBefore"), row.GetProperty("RngAfter")), "Card hover changed gameplay RNG: " + label);
+        Require(GameplayRng(row.GetProperty("RngBefore"), row.GetProperty("RngAfter"), battleTestAdvances), "Card hover changed gameplay RNG: " + label);
         string frozen = Json(before);
         var result = CardHoverPreviewModel.Apply(before, rule, action);
         Require(result.Supported, "Card hover unsupported: " + label + ": " + result.UnsupportedReason);
@@ -62,11 +63,11 @@ internal static class CardHoverFixtureChecks
         Same(result.Restored!, row.GetProperty("Cleared").Deserialize<TrainCombatState>()!, label + " cleared visuals");
         Require(result.CopiedIds.SequenceEqual(row.GetProperty("CopiedIds").EnumerateArray().Select(id => id.GetInt32())) &&
             Json(before) == frozen, "Card hover changed its parent or copied different actors: " + label);
-        string expected = Json(result.AfterEffects!), expectedRemoved = Json(result.TemporaryRemovedUnits);
+        string expected = Json(result.AfterEffects!), expectedRemoved = Json(result.TemporaryRemovedUnits), expectedRestored = Json(restored);
         Parallel.For(0, 16, branch =>
         {
             var fork = CardHoverPreviewModel.Apply(before, rule, action);
-            Require(fork.Supported && Json(fork.AfterEffects!) == expected && Json(fork.Restored!) == Json(restored) &&
+            Require(fork.Supported && Json(fork.AfterEffects!) == expected && Json(fork.Restored!) == expectedRestored &&
                 Json(fork.TemporaryRemovedUnits) == expectedRemoved && Json(before) == frozen,
                 "Card hover immutable branch differs: " + label + "/" + branch);
         });
