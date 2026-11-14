@@ -21,6 +21,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool InactiveInfernoExit => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_INFERNO_EXIT") == "1";
         internal static bool InactiveMushyMovement => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_MUSHY_MOVEMENT") == "1";
         internal static bool InactiveHellfurnaceMovement => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_HELLFURNACE_MOVEMENT") == "1";
+        internal static bool InactiveRoomBatch => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_ROOM_BATCH") == "1";
         internal static bool InactiveMushyTurn => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_MUSHY_TURN") == "1";
         internal static bool InactiveInfernoTurn => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_INFERNO_TURN") == "1";
         internal static bool InactiveMushyTwoTurns => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_MUSHY_TWO_TURNS") == "1";
@@ -99,6 +100,11 @@ namespace MonsterTrain2Poju.Probe
             if (InactiveRefresh)
             {
                 yield return RunInactiveRefresh(log);
+                yield break;
+            }
+            if (InactiveRoomBatch)
+            {
+                yield return RunInactiveRoomBatch(log);
                 yield break;
             }
             if (InactiveMushyTurn || InactiveInfernoTurn || InactiveMushyTwoTurns)
@@ -496,6 +502,89 @@ namespace MonsterTrain2Poju.Probe
                     "room-moon-inactive-mushy-turn-calibration.mt2f"))) document.Write(stream);
             Completed = true;
             log.LogInfo("ROOM-MOON-CALLBACK-NATIVE PASS inactiveInfernoTurn=" + inferno + " enemy=" + enemyId);
+        }
+
+        private static IEnumerator RunInactiveRoomBatch(ManualLogSource log)
+        {
+            var data = Managers.GetAllGameData();
+            var rooms = Managers.GetRoomManager();
+            var player = Managers.GetPlayerManager();
+            var combat = Managers.GetCombatManager();
+            var save = Managers.GetSaveManager();
+            if (Trace.CaptureTrain().Context?.QueryFrame?.MoonPhaseTrackingActive != false)
+                throw new InvalidOperationException("Inactive room batch requires moon tracking off.");
+            yield return player.SetMoonPhase(PlayerManager.MoonPhase.Full);
+            var pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(Managers.GetHeroManager());
+            var waves = new List<SpawnGroupPoolData>(); pattern.GetUnlockedWaves(save, waves);
+            CharacterData ordinary = ((IEnumerable)AccessTools.Field(typeof(SpawnGroupPoolData), "possibleGroups")
+                .GetValue(waves[0])).Cast<SpawnGroupData>()
+                .SelectMany(group => group.GetCharacters(save.GetCovenantsForSpawnPattern(), save, save.GetGeneratedBoss()))
+                .First(unit => !unit.GetTriggers().Any(trigger => trigger.GetTrigger().ToString().Contains("Moon")));
+            yield return Managers.GetHeroManager().SpawnHeroInRoom(ordinary, 1, null!);
+            yield return combat.RunTriggerQueue();
+            var enemies = new List<CharacterState>(); rooms.GetRoom(1).AddCharactersToList(enemies, Team.Type.Heroes);
+            CharacterState enemy = enemies.Single(); int enemyId = Trace.UnitId(enemy);
+            var roomCards = new[] {
+                ("EnchantedChamber", "00f55f64-c5c1-4d5e-9f59-f50413341c1e", true),
+                ("Infectory", "e1a39d88-4a77-4399-98b2-0b81f44fe6a8", true),
+                ("SpellSanctum", "5af36c0f-ab98-4a49-903a-b08d93705af1", true),
+                ("TrapChute", "8d65e688-d93d-4bfa-975d-8c5f046fe2db", true),
+                ("ZoneOfSilence", "56468ba5-86b6-49be-ba30-02baf7ffd6dd", false)
+            };
+            var groups = new List<object>();
+            bool rngUnchanged = true;
+            foreach (var (key, id, affectsMonsters) in roomCards)
+            {
+                yield return player.SetMoonPhase(PlayerManager.MoonPhase.Full, shouldTriggerShift: false);
+                yield return enemy.UpdateMoonPhaseUnderstanding();
+                yield return combat.RunTriggerQueue();
+                CardData roomData = data.FindCardData(id)!;
+                CardUpgradeData upgrade = roomData.GetEffects().Single(effect =>
+                    effect.GetEffectStateName() == "CardEffectAttachTrainRoomAttachment").GetParamCardUpgradeData();
+                CardState sourceCard = new CardState(roomData, save); Trace.CardId(sourceCard);
+                yield return rooms.GetRoom(0).AddTrainRoomAttachment("poju-inactive-room-batch", sourceCard,
+                    upgrade, null!, affectsMonsters ? Team.Type.Monsters | Team.Type.Heroes : Team.Type.Heroes,
+                    TrainRoomAttachmentType.Primary, Managers.GetCoreManagers(), skipTargeting: true);
+                yield return combat.RunTriggerQueue();
+                rows.Clear();
+                yield return Move("full-entry", enemy, -1);
+                yield return Move("full-exit", enemy, 1);
+                yield return player.SetMoonPhase(PlayerManager.MoonPhase.New, shouldTriggerShift: false);
+                yield return Move("new-stale-entry", enemy, -1);
+                yield return Move("new-exit", enemy, 1);
+                yield return player.SetMoonPhase(PlayerManager.MoonPhase.Full, shouldTriggerShift: false);
+                yield return enemy.UpdateMoonPhaseUnderstanding();
+                yield return combat.RunTriggerQueue();
+                yield return CardEffectBump.Bump(null,
+                    new CardEffectParams { targets = new List<CharacterState> { enemy },
+                        selectedRoom = rooms.CurrentSelectedRoom }, Managers.GetCoreManagers(), -1);
+                yield return combat.RunTriggerQueue();
+                yield return player.SetMoonPhase(PlayerManager.MoonPhase.New, shouldTriggerShift: false);
+                yield return Move("new-stale-exit", enemy, 1);
+                yield return Move("new-return", enemy, -1);
+                rngUnchanged &= rows.All(row => JToken.DeepEquals(JObject.FromObject(row)["Before"]!["Rng"],
+                    JObject.FromObject(row)["Actual"]!["Rng"]));
+                groups.Add(new { Card = key, DataId = id, Rows = rows.ToArray() });
+                yield return CardEffectBump.Bump(null,
+                    new CardEffectParams { targets = new List<CharacterState> { enemy },
+                        selectedRoom = rooms.CurrentSelectedRoom }, Managers.GetCoreManagers(), 1);
+                yield return combat.RunTriggerQueue();
+                yield return rooms.GetRoom(0).RemoveTrainRoomAttachment(rooms.GetRoom(0).Attachments.Single(),
+                    Managers.GetCoreManagers());
+                yield return combat.RunTriggerQueue();
+                if (Trace.CaptureTrain().Context?.QueryFrame?.MoonPhaseTrackingActive != false)
+                    throw new InvalidOperationException("Detached room batch source activated moon tracking.");
+            }
+            using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
+                GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
+                NativeCompleted = true, InactiveRoomBatch = true, RngUnchanged = rngUnchanged,
+                PreviewUpdatesSuppressed = combat.SuppressCombatPreviewUpdates,
+                Boundary = "AfterOriginalCoroutineAndTriggerQueue", EnemyId = enemyId, Groups = groups }))
+            using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                "room-moon-inactive-room-batch-calibration.mt2f"))) document.Write(stream);
+            Completed = true;
+            log.LogInfo("ROOM-MOON-CALLBACK-NATIVE PASS inactiveRoomBatch=true rooms=" + groups.Count +
+                " gameplayRngUnchanged=" + rngUnchanged);
         }
     }
 }

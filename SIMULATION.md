@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current curated inventory (2026-11-14): 2,870 binary archives with verified
+Current curated inventory (2026-11-14): 2,871 binary archives with verified
 hashes and registrations. The card evidence index accepts 1,561 battle archives
 and 31,514 native actions; three historical captures with nonzero counters stay
 excluded. All 559 intrinsically playable logbook cards have a definition-matched
@@ -50,6 +50,16 @@ upgrade across four Full/New Bumps; stale New understanding changes from 6 to 5.
 Two independent native captures have equal complete rows, and model context/RNG
 matches each. Callback enemies, preview and uncalibrated attachment payloads
 remain guarded; one natural EndTurn ascension is validated separately below.
+
+Five more original enemy-affecting rooms (EnchantedChamber, Infectory,
+SpellSanctum, TrapChute and ZoneOfSilence) now have an inactive-moon movement
+witness. Thirty native Bumps cover Full/New entry, exit and stale understanding,
+including ZoneOfSilence's silence upgrade. Two independent muted Instant captures
+are byte-identical; the model matches full state and RNG with four parallel
+branches per input. The rule requires the original room and character-upgrade
+signatures, a cardless enemy and no moon callbacks. It does not establish room
+death effects, spell upgrades, ability activation or natural EndTurn behavior.
+See [the focused note](tests/fixtures/notes/combat/inactive-room-batch.md).
 
 The same structural rule now covers inactive-tracking Inferno exit when a
 cardless enemy without moon callbacks carries stale Full understanding. A

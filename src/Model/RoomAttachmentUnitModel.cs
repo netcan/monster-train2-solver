@@ -354,8 +354,48 @@ namespace MonsterTrain2Poju.Model
 
         private static bool OriginalCardlessRoomMoonSync(RoomCapacityAttachmentState attachment, CombatUnit unit) =>
             unit.Team == CombatTeam.Enemy && unit.SpawnerCardId == 0 &&
-            (OriginalMushy(attachment) || OriginalHellfurnace(attachment) ||
+            (OriginalBatchRoom(attachment) || OriginalMushy(attachment) || OriginalHellfurnace(attachment) ||
                 OriginalInferno(attachment) && attachment.AffectsHeroes);
+
+        internal static bool OriginalBatchRoom(RoomCapacityAttachmentState attachment)
+        {
+            if (attachment is not { AttachmentType: 0, CapacityDelta: 0, AffectsHeroes: true,
+                IgnoreBosses: false, EnergyPerTurnDelta: 0, MoonPhase: null, PreCombat: null, PostCombat: null,
+                CharacterFilters.Count: 0, CharacterUpgrades.Count: 1, StatusStackBonuses: null,
+                SpawnCopySubtype: null, CorruptionModifier: null, Echo: null }) return false;
+
+            CardUpgradeModifier upgrade = attachment.CharacterUpgrades[0];
+            if (upgrade.Stats is not { Damage: 0, Health: 0, Cost: 0, Heal: 0, Size: 0,
+                XCost: 0, EquipmentLimit: 0, UpgradeSlotCount: 0 } ||
+                upgrade.ExternalInteractions.Count != 0 || upgrade.TriggerUpgrades?.Count is > 0 ||
+                upgrade.AbilityUpgrade != null) return false;
+
+            bool zone = attachment is { AssetKey: "ZoneOfSilence", DataId: "56468ba5-86b6-49be-ba30-02baf7ffd6dd",
+                AffectsMonsters: false, SpellCostDelta: 0, SpellUpgrade: null, DeathEffect: null, Ability: null } &&
+                upgrade is { AssetKey: "ZoneOfSilence", DataId: "5c47b876-dad4-4b81-9169-bfcb8ab62ca6",
+                    Statuses: [{ Id: "silenced", Stacks: 1 }] };
+            if (zone) return true;
+            if (upgrade.Statuses.Count != 0 || !attachment.AffectsMonsters) return false;
+            return attachment switch
+            {
+                { AssetKey: "EnchantedChamber", DataId: "00f55f64-c5c1-4d5e-9f59-f50413341c1e",
+                    SpellCostDelta: 0, DeathEffect: null, Ability: null,
+                    SpellUpgrade.Upgrade.DataId: "0ce30902-963a-4662-b9e7-fca70d79735c" } =>
+                    upgrade is { AssetKey: "EnchantedChamber", DataId: "68d8696e-ec20-425e-b23d-8a0b9da0dfaf" },
+                { AssetKey: "Infectory", DataId: "e1a39d88-4a77-4399-98b2-0b81f44fe6a8",
+                    SpellCostDelta: 0, SpellUpgrade: null, Ability: null, DeathEffect: not null } =>
+                    upgrade is { AssetKey: "InfectoryEffect_Upgrade", DataId: "118977af-2756-44ff-aa49-ac31ef21fabc" } &&
+                    RoomDeathEffectModel.Validate(attachment.DeathEffect) == null,
+                { AssetKey: "SpellSanctum", DataId: "5af36c0f-ab98-4a49-903a-b08d93705af1",
+                    SpellCostDelta: -1, SpellUpgrade: null, DeathEffect: null, Ability: null } =>
+                    upgrade is { AssetKey: "SpellSanctum_Upgrade", DataId: "35178e4a-0880-440b-a929-de29de6e88f8" },
+                { AssetKey: "TrapChute", DataId: "8d65e688-d93d-4bfa-975d-8c5f046fe2db",
+                    SpellCostDelta: 0, SpellUpgrade: null, DeathEffect: null,
+                    Ability.DataId: "1fd6ef15-e044-4e0e-93c4-3766602282ab" } =>
+                    upgrade is { AssetKey: "TrapChute_Upgrade", DataId: "1354d4ad-3f96-4089-8144-ab8a7f956d8d" },
+                _ => false
+            };
+        }
 
         internal static bool OriginalInferno(RoomCapacityAttachmentState attachment) =>
             attachment is { AssetKey: "InfernoRoom", DataId: "378cea0c-14e9-45fb-9918-fb853bd04a7d", CharacterUpgrades.Count: 1,
