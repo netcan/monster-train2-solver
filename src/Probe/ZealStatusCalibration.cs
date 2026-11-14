@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using BepInEx.Logging;
 using HarmonyLib;
 using MonsterTrain2Poju.Capture;
@@ -15,6 +16,7 @@ namespace MonsterTrain2Poju.Probe
     {
         internal const string OwnerId = "ee429978-fa41-4c66-93c6-3d3c7d5a4733";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ZEAL_STATUS") == "1";
+        internal static bool Horde => Environment.GetEnvironmentVariable("MT2_PROBE_ZEAL_HORDE") == "1";
         internal static bool Started { get; private set; }
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
@@ -69,6 +71,27 @@ namespace MonsterTrain2Poju.Probe
             public int Maximum { get; set; } = 20;
             public bool Active { get; set; }
             public string? Blocker { get; set; }
+            public int Horde { get; set; }
+        }
+        private static Input[] HordeCases()
+        {
+            var cases = new[] {
+                new Input { Label = "horde-add", Maximum = 15 },
+                new Input { Label = "horde-enemy-add", Enemy = true, Maximum = 15 },
+                new Input { Label = "horde-add-wounded-retains-troops", Hp = 5, Maximum = 15, Active = true },
+                new Input { Label = "horde-remove-healthy", Operation = "Remove", Starting = 3, Hp = 14, Maximum = 18 },
+                new Input { Label = "horde-remove-one-at-threshold", Operation = "Remove", Starting = 3, Hp = 11, Maximum = 12 },
+                new Input { Label = "horde-enemy-remove-one", Enemy = true, Operation = "Remove", Starting = 3, Hp = 11, Maximum = 12 },
+                new Input { Label = "horde-remove-two-leaves-half", Operation = "Remove", Starting = 3, Amount = 1, Hp = 5, Maximum = 18, Active = true },
+                new Input { Label = "horde-remove-two-remains-half", Operation = "Remove", Starting = 3, Amount = 1, Hp = 1, Maximum = 18, Active = true },
+                new Input { Label = "horde-remove-floor-retains-one", Operation = "Remove", Starting = 3, Amount = -1, Hp = 1, Maximum = 2 },
+                new Input { Label = "horde-remove-zero-keeps-wounded", Operation = "Remove", Starting = 3, Amount = 0, Hp = 5, Maximum = 18, Active = true },
+                new Input { Label = "horde-remove-negative-keeps-wounded", Operation = "Remove", Starting = 3, Amount = -2, Hp = 5, Maximum = 18, Active = true },
+                new Input { Label = "horde-single-remove", Operation = "Remove", Starting = 3, Hp = 5, Maximum = 8 },
+                new Input { Label = "horde-remove-all-healthy", Operation = "Remove", Starting = 3, Amount = -1, Hp = 18, Maximum = 18 }
+            };
+            foreach (Input input in cases) input.Horde = input.Label == "horde-single-remove" ? 1 : 3;
+            return cases;
         }
         private static Input[] Cases() => new[] {
             new Input { Label = "add-enters-half" },
@@ -112,6 +135,15 @@ namespace MonsterTrain2Poju.Probe
             TrainCombatState original = Trace.CaptureTrain(); object rngOriginal = HalfHealthLifecycleCalibration.Rng();
             object[] states = actors.Select(actor => Get(actor, "_primaryStateInformation")).ToArray();
             object[] triggers = actors.Select(actor => Get(actor, "triggers")).ToArray();
+            CharacterData[] sources = actors.Select(actor => actor.GetSourceCharacterData()).ToArray();
+            var controls = Horde ? new[] { player, enemy }.ToDictionary(actor => actor, actor => UnityEngine.Object.Instantiate(actor.GetSourceCharacterData())) :
+                new Dictionary<CharacterState, CharacterData>();
+            foreach (CharacterData data in controls.Values) { Set(data, "health", 5); Set(data, "attackDamage", 3); }
+            var statistics = Managers.GetCardStatistics();
+            var statFields = typeof(CardStatistics).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            object?[] statValues = statFields.Select(field => field.GetValue(statistics)).ToArray();
+            object saveData = AccessTools.Property(typeof(SaveManager), "ActiveSaveData").GetValue(save);
+            object runStats = Get(saveData, "runStats");
             bool[] enchanters = actors.Select(actor => actor.IsEnchanter).ToArray();
             var identities = (Dictionary<CharacterState, Dictionary<CharacterTriggerState, int>>)Get(Trace, "triggerIdentities");
             var originalIds = actors.Select(actor => Trace.TriggerStates(actor).ToDictionary(pair => pair.Key, pair => pair.Value)).ToArray();
@@ -123,10 +155,21 @@ namespace MonsterTrain2Poju.Probe
             try
             {
                 Set(rooms, "_allowEnchantmentUpdates", false);
-                foreach (Input input in Cases())
+                foreach (Input input in Horde ? HordeCases() : Cases())
                 {
+                    Set(saveData, "runStats", Get(((SaveData)saveData).CreatePreviewCopy(), "runStats"));
+                    for (int index = 0; index < statFields.Length; index++)
+                    {
+                        object? value = statValues[index];
+                        if (value is Dictionary<CardState, CardStatsEntry> deck) value = HalfHealthLifecycleCalibration.ShadowDeck(deck);
+                        else if (value is IDictionary map)
+                        { var copy = (IDictionary)Activator.CreateInstance(value.GetType()); foreach (DictionaryEntry pair in map) copy.Add(pair.Key, pair.Value); value = copy; }
+                        else if (value is IList list) value = HalfHealthLifecycleCalibration.CopyList(list);
+                        statFields[index].SetValue(statistics, value);
+                    }
                     for (int index = 0; index < actors.Length; index++)
                     {
+                        Set(actors[index], "characterData", sources[index]);
                         Set(actors[index], "_primaryStateInformation", Copy(states[index]));
                         Set(actors[index], "triggers", new List<CharacterTriggerState>());
                         AccessTools.Property(typeof(CharacterState), "IsEnchanter").SetValue(actors[index], false);
@@ -134,6 +177,7 @@ namespace MonsterTrain2Poju.Probe
                     }
                     Queue.Clear(); save.SetGold(gold);
                     CharacterState host = input.Enemy ? enemy : player;
+                    if (Horde) Set(host, "characterData", controls[host]);
                     var primary = Get(host, "_primaryStateInformation");
                     var statuses = (Dictionary<string, CharacterState.StatusEffectStack>)Get(primary, "statusEffects");
                     foreach (var status in statuses.Values) status.Count = 0;
@@ -141,6 +185,7 @@ namespace MonsterTrain2Poju.Probe
                     Set(primary, "vanguardSources", new HashSet<CharacterTriggerState>());
                     AccessTools.Property(StateType, "DamageBuffFromStatusEffects").SetValue(primary, 0);
                     host.SetHealth(20, 20);
+                    if (input.Horde > 0) host.AddStatusEffect("horde", input.Horde);
                     if (input.Starting > 0) host.AddStatusEffect("zeal", input.Starting);
                     if (input.Blocker != null) host.AddStatusEffect(input.Blocker, 1);
                     foreach (var row in new[] { ("OnDeathwish", 5), ("OnDeathwishLost", 7), ("OnHeal", 11) })
@@ -150,12 +195,20 @@ namespace MonsterTrain2Poju.Probe
                         var trigger = new CharacterTriggerState(); trigger.Setup(data, host.GetTeamType(), save); host.GetTriggers().Add(trigger);
                     }
                     if (input.Active) { host.SetHealth(10, 20); AccessTools.Method(typeof(CharacterState), "TryUpdateDeathwish").Invoke(host, null); }
+                    if (Horde)
+                        foreach (CharacterState observer in actors.Where(actor => actor != host && actor.GetCurrentRoomIndex() == host.GetCurrentRoomIndex()))
+                        foreach (var row in new[] { ("OnAnyMonsterDeathOnFloor", 1), ("OnAnyUnitDeathOnFloor", 2) })
+                        {
+                            CharacterTriggerData data = HealingScenario.HealGold(row.Item2, false, false);
+                            Set(data, "trigger", Enum.Parse(typeof(CharacterTriggerData.Trigger), row.Item1));
+                            var trigger = new CharacterTriggerState(); trigger.Setup(data, observer.GetTeamType(), save); observer.GetTriggers().Add(trigger);
+                        }
                     host.SetHealth(input.Hp, input.Maximum); Queue.Clear();
                     RoomCombatState before = Trace.Capture(host.GetCurrentRoom()); object rngBefore = HalfHealthLifecycleCalibration.Rng();
                     CombatStatus statusDefinition = before.Context!.StatusRules.Single(status => status.Id == "zeal");
                     RoomCombatResult predicted = Predict(before, Trace.UnitId(host), input, statusDefinition);
                     dispatches.Clear(); recording = true;
-                    RoomCombatState api; CharacterTriggerDispatch[] apiDispatches; EnchantmentCallback[] pending; object rngApi;
+                    RoomCombatState api; CharacterTriggerDispatch[] apiDispatches; EnchantmentCallback[] pending; int[] pendingCounts; object rngApi;
                     try
                     {
                         if (input.Operation == "Remove") host.RemoveStatusEffect("zeal", input.Amount);
@@ -166,6 +219,7 @@ namespace MonsterTrain2Poju.Probe
                             item.fireTriggersData?.paramString, item.fireTriggersData?.overrideTargetCharacter == null ? (int?)null : Trace.UnitId(item.fireTriggersData.overrideTargetCharacter),
                             item.dyingCharacter == null ? (int?)null : Trace.UnitId(item.dyingCharacter), item.canFireTriggers,
                             item.exclusiveTrigger == null ? (int?)null : Trace.TriggerStateId(item.character, item.exclusiveTrigger))).ToArray();
+                        pendingCounts = Queue.Select(item => item.triggerCount).ToArray();
                         yield return Managers.GetCombatManager().RunTriggerQueue();
                     }
                     finally { recording = false; }
@@ -173,6 +227,7 @@ namespace MonsterTrain2Poju.Probe
                     RoomCombatResult? drained = predicted.Supported ? RoomCombatModel.DrainCharacterCallbacks(predicted.State!, predicted.PendingCallbacks, true) : null;
                     string? difference = predicted.UnsupportedReason ?? HalfHealthLifecycleCalibration.Difference(predicted.State, api) ??
                         HalfHealthLifecycleCalibration.Difference(predicted.PendingCallbacks.Select(EnchantmentCallback.From).ToArray(), pending) ??
+                        HalfHealthLifecycleCalibration.Difference(predicted.PendingCallbacks.Select(item => item.TriggerCount).ToArray(), pendingCounts) ??
                         HalfHealthLifecycleCalibration.Difference(predicted.Dispatches, apiDispatches) ?? drained?.UnsupportedReason ??
                         (drained == null ? "Missing model successor." : HalfHealthLifecycleCalibration.Difference(drained.State, actual) ??
                             HalfHealthLifecycleCalibration.Difference(predicted.Dispatches.Concat(drained.Dispatches).ToArray(), dispatches));
@@ -182,7 +237,7 @@ namespace MonsterTrain2Poju.Probe
                     if (Queue.Count != 0 || actors.Any(actor => !actor.IsAlive || actor.IsDestroyed)) throw new InvalidOperationException("Zeal component did not settle.");
                     if (difference != null) mismatches++;
                     samples.Add(new { Label = input.Label, Input = input, ActorId = Trace.UnitId(host), Status = statusDefinition,
-                        Before = before, ApiActual = api, ApiDispatches = apiDispatches, ApiCallbacks = pending, Actual = actual,
+                        Before = before, ApiActual = api, ApiDispatches = apiDispatches, ApiCallbacks = pending, ApiTriggerCounts = pendingCounts, Actual = actual,
                         Dispatches = dispatches.ToArray(), RngBefore = rngBefore, RngAfterApi = rngApi, RngAfter = rngAfter,
                         GameplayRngUnchanged = rngSame, PendingAfterDrain = Queue.Count, Difference = difference, Completed = true });
                     log.LogInfo("ZEAL-STATUS " + input.Label + " " + (difference ?? "MATCH"));
@@ -194,19 +249,23 @@ namespace MonsterTrain2Poju.Probe
                 for (int index = 0; index < actors.Length; index++)
                 {
                     Set(actors[index], "_primaryStateInformation", states[index]); Set(actors[index], "triggers", triggers[index]);
+                    Set(actors[index], "characterData", sources[index]);
                     AccessTools.Property(typeof(CharacterState), "IsEnchanter").SetValue(actors[index], enchanters[index]); identities[actors[index]] = originalIds[index];
                 }
                 save.SetGold(gold); Set(rooms, "_allowEnchantmentUpdates", allow);
+                for (int index = 0; index < statFields.Length; index++) statFields[index].SetValue(statistics, statValues[index]);
+                Set(saveData, "runStats", runStats);
+                foreach (CharacterData control in controls.Values) UnityEngine.Object.Destroy(control);
                 foreach (var pair in streams) ((HadesRNG)AccessTools.Method(typeof(RandomManager), "GetRng").Invoke(null, new object[] { pair.Key })).Init(pair.Value);
                 UnityEngine.Random.state = unity;
             }
             string? restoration = HalfHealthLifecycleCalibration.Difference(original, Trace.CaptureTrain()) ??
                 HalfHealthLifecycleCalibration.Difference(rngOriginal, HalfHealthLifecycleCalibration.Rng());
             using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
-                GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId, Boundary = "NativeZealStatusLifecycle",
+                GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId, Boundary = Horde ? "NativeZealHordeLifecycle" : "NativeZealStatusLifecycle",
                 OwnerDefinition = definition, LiveContextUnchanged = restoration == null, RestorationDifference = restoration, EffectsDrained = true,
                 Mismatches = mismatches, Samples = samples }))
-            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "zeal-status.mt2f"))) document.Write(output);
+            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, Horde ? "zeal-horde.mt2f" : "zeal-status.mt2f"))) document.Write(output);
             if (restoration != null || mismatches != 0) throw new InvalidOperationException("Zeal differs: " + mismatches + "; restoration: " + restoration);
         }
         private static RoomCombatResult Predict(RoomCombatState before, int actorId, Input input, CombatStatus zeal) =>

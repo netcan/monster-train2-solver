@@ -1,5 +1,15 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--zeal-horde-battle-only")
+{
+    ZealHordeBattleChecks.Native(args[1]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--zeal-horde-only")
+{
+    ZealHordeChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 3 && args[0] == "--relentless-battle-pair-only")
 {
     RelentlessBattleChecks.NativePair(args[1], args[2]);

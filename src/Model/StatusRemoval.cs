@@ -69,9 +69,10 @@ namespace MonsterTrain2Poju.Model
             var callbacks = relicAdded.PendingCallbacks.ToList();
             if (id == "zeal")
             {
-                RoomCombatResult membership = ZealStatusModel.Membership(source.WithContext(context), changed, status, status.Stacks - count);
+                RoomCombatResult membership = ZealStatusModel.Membership(source.WithContext(context), changed, status, status.Stacks - count, removing: true);
                 if (!membership.Supported) return membership;
-                changed = membership.State!.Units[0]; callbacks.AddRange(membership.PendingCallbacks);
+                changed = membership.State!.Units.First(unit => unit.Id == targetId);
+                source = membership.State; context = source.Context; callbacks.AddRange(membership.PendingCallbacks);
             }
             if (id == "horde" && count < status.Stacks)
             {

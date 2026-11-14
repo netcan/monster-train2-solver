@@ -62,7 +62,7 @@ internal static class ZealStatusChecks
                 "Missing independent Zeal effect/order control: " + label);
         }
     }
-    private static void Verify(FixtureValue sample)
+    internal static void Verify(FixtureValue sample)
     {
         string label = sample.GetProperty("Label").GetString()!;
         Require(sample.GetProperty("Completed").GetBoolean() && sample.GetProperty("Difference").ValueKind == FixtureKind.Null &&
@@ -85,6 +85,8 @@ internal static class ZealStatusChecks
         Equal(predicted.State, sample.GetProperty("ApiActual").Deserialize<RoomCombatState>(), label + " native API state");
         Equal(predicted.Dispatches, sample.GetProperty("ApiDispatches"), label + " immediate dispatches");
         Equal(predicted.PendingCallbacks.Select(EnchantmentCallback.From).ToArray(), sample.GetProperty("ApiCallbacks"), label + " pending payload/order");
+        if (sample.TryGetProperty("ApiTriggerCounts", out var counts))
+            Equal(predicted.PendingCallbacks.Select(item => item.TriggerCount).ToArray(), counts, label + " pending trigger multiplicities");
         RoomCombatResult drained = RoomCombatModel.DrainCharacterCallbacks(predicted.State!, predicted.PendingCallbacks, true);
         Require(drained.Supported, label + ": " + drained.UnsupportedReason);
         Equal(drained.State, sample.GetProperty("Actual").Deserialize<RoomCombatState>(), label + " drained state");

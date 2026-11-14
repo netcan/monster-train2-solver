@@ -162,7 +162,8 @@ namespace MonsterTrain2Poju.Model
             {
                 RoomCombatResult membership = ZealStatusModel.Membership(source.WithContext(context), changed, existing ?? added, count - old);
                 if (!membership.Supported) return membership;
-                changed = membership.State!.Units[0]; queue.AddRange(membership.PendingCallbacks);
+                changed = membership.State!.Units.First(unit => unit.Id == targetId);
+                source = membership.State; context = source.Context; queue.AddRange(membership.PendingCallbacks);
             }
             if (count > old && !spawnEffect && !fromRoomModifier)
                 UnitRoomStatusModel.QueueApplied(source, changed, added.Id, queue);

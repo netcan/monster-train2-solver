@@ -6141,9 +6141,12 @@ namespace MonsterTrain2Poju.Model
                     if (id == "zeal")
                     {
                         RoomCombatResult membership = ZealStatusModel.Membership(CurrentRoom(), unit.Freeze(), status,
-                            status.Stacks - (after.RegisteredStatus(id)?.Stacks ?? 0));
+                            status.Stacks - (after.RegisteredStatus(id)?.Stacks ?? 0), removing: true);
                         if (!membership.Supported) { unsupportedReason = membership.UnsupportedReason; return; }
-                        unit.Apply(membership.State!.Units[0]); callbacks.AddRange(membership.PendingCallbacks);
+                        context = membership.State!.Context;
+                        foreach (CombatUnit changedActor in membership.State.Units)
+                            units.FirstOrDefault(actor => actor.Source.Id == changedActor.Id)?.Apply(changedActor);
+                        callbacks.AddRange(membership.PendingCallbacks);
                     }
                     if (id == "conduit" && context != null)
                         context = ConduitModel.Change(context, unit.RoomIndex, unit.Freeze(), source.Preview,

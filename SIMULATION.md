@@ -30,6 +30,18 @@ These controls do not add original-card/relic coverage.
 
 Latest 2.3.1 acceptance: all **12/12 new original relics** have controlled
 whole-battle evidence; this does not revalidate all 614 cards or 236 relics.
+Zeal removal now settles Horde casualties before Deathwish and outer status
+notifications, retaining the complete room, simulated deaths and observer queues.
+Thirteen native API/drained controls cover both teams, clipped/wounded casualties,
+zero/negative requests, no-casualty additions and the minimum surviving troop;
+full queue payloads/multiplicities and 32 immutable branches pass. A five-play,
+seven-turn native victory removes three capped-health troops, awards three
+rounded Harvest rewards (15 gold), and records three spawner deaths. Complete
+successors/RNG, 16 full branches and 128-state serial/parallel action search pass.
+The original ZealDamageIncrease relic and bosses are retained; unit/card controls
+are explicit and add no original-card/relic coverage. Run
+`scripts/Check-Game231ZealHorde.ps1` for both binary archives. Other Horde health,
+death/revival, merge and callback combinations still need separate acceptance.
 Three unchanged original cards now share calibrated floor-by-floor damage:
 DivinePunishment at levels 0/1/2, DantesInferno's permanent candles and armor
 bypass, and ForbiddenCovenant's played and unplayed effects. Twelve native inputs,
