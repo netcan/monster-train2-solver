@@ -308,7 +308,7 @@ namespace MonsterTrain2Poju.Model
         public const string StartTurnRoomEffect = RelicStartTurnStatusModel.Effect;
         public const string PostOpeningDiscardReplacement = RelicJudgesScalesModel.Effect;
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == StartCombatHoard || type == Draw ||
-            type == PyreAttack || type == PyreHealth || type == PayCardCostWithPyreHealth || type == FloorCapacity || type == MoonPhaseEnergy || type == MoonPhaseStatus ||
+            type == PyreAttack || type == PyreHealth || type == PayCardCostWithPyreHealth || type == FloorCapacity || type == MoonPhaseEnergy || type == MoonPhaseStatus || type == RelicDamagedFloorEnergyModel.Effect ||
             type == EnergyOnCardEarlyDiscard || type == RelicEndCombatModel.GrosMichelDestroy || type == RelicPyreResurrectionModel.Effect || type == RelicDecayDeathModel.Effect ||
             type == GoldOnExhaust || type == RelicOpeningSpawnModel.Effect || type == RelicOpeningDeckSpawnModel.Effect || type == RelicCorruptedAngelsModel.Effect ||
             type == EnergyOnCorruptRestrictedPlayed || type == CorruptionOnCorruptRestrictedPlayed ||
@@ -521,7 +521,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 else if (rule.PileStartTurn != null) return "Unexpected pile start-of-turn payload on another resource effect.";
                 if (rule.RequiredMutatorId == "") return "Empty required resource mutator identity.";
-                if ((rule.Type == Energy || rule.Type == DeploymentEnergy || rule.Type == StartCombatEnergy) && rule.Amount != rule.ParamInt)
+                if ((rule.Type == Energy || rule.Type == DeploymentEnergy || rule.Type == StartCombatEnergy || rule.Type == RelicDamagedFloorEnergyModel.Effect) && rule.Amount != rule.ParamInt)
                     return "Relic energy initialized amount differs from its original parameter.";
                 if (rule.Type == MoonPhaseEnergy && (rule.Amount != rule.ParamInt || rule.ParamInt2 <= 0 || (rule.ParamInt2 & ~7) != 0))
                     return "Moon-phase energy amount or phase mask differs from its original parameters.";
@@ -564,10 +564,10 @@ namespace MonsterTrain2Poju.Model
                 }
                 else if (rule.CapacityValue.HasValue || rule.CapacityMutationOrder.HasValue)
                     return "Unexpected native floor capacity metadata on a different resource effect.";
-                if ((rule.Type == Energy || rule.Type == DeploymentEnergy || rule.Type == StartCombatEnergy || rule.Type == Draw || rule.Type == FloorCapacity) && rule.RequiredMutatorId != null)
+                if ((rule.Type == Energy || rule.Type == DeploymentEnergy || rule.Type == StartCombatEnergy || rule.Type == Draw || rule.Type == FloorCapacity || rule.Type == RelicDamagedFloorEnergyModel.Effect) && rule.RequiredMutatorId != null)
                     return "Unexpected required mutator on a resource effect without that native gate.";
                 if ((rule.Type == Energy || rule.Type == DeploymentEnergy || rule.Type == StartCombatEnergy || rule.Type == PyreAttack || rule.Type == PyreHealth ||
-                    rule.Type == MoonPhaseEnergy || rule.Type == EnergyOnCardEarlyDiscard || rule.Type == ConserveEnergyEndOfTurn ||
+                    rule.Type == MoonPhaseEnergy || rule.Type == RelicDamagedFloorEnergyModel.Effect || rule.Type == EnergyOnCardEarlyDiscard || rule.Type == ConserveEnergyEndOfTurn ||
                     rule.Type == EnergyOnCorruptRestrictedPlayed || rule.Type == CorruptionOnCorruptRestrictedPlayed ||
                     RelicCardDrawOnHealModel.IsEffect(rule.Type)) &&
                     !relic.DisallowedInPlacementPhase.HasValue)
@@ -685,7 +685,7 @@ namespace MonsterTrain2Poju.Model
 
         // This getter models the display/query contract, not the ordered timing
         // effects. It evaluates conditions without notifying or recording them.
-        public static RelicResourceResult GetEnergyModification(CombatContext source, bool deployment = false, bool preview = false)
+        public static RelicResourceResult GetEnergyModification(CombatContext source, bool deployment = false, bool preview = false, TrainCombatState? train = null)
         {
             string? error = Ready(source);
             if (error != null) return Fail(error);
@@ -694,11 +694,18 @@ namespace MonsterTrain2Poju.Model
             foreach (CombatRelicState relic in source.Relics!)
             foreach (RelicResourceEffect rule in relic.ResourceEffects ?? Array.Empty<RelicResourceEffect>())
             {
-                if (rule.Type != (deployment ? DeploymentEnergy : Energy) || preview && !rule.CanApplyInPreviewMode) continue;
+                if (rule.Type != (deployment ? DeploymentEnergy : Energy) && (deployment || rule.Type != RelicDamagedFloorEnergyModel.Effect) || preview && !rule.CanApplyInPreviewMode) continue;
                 RelicConditionEvaluation evaluation = RelicConditionModel.Evaluate(context, rule.Conditions);
                 if (!evaluation.Supported) return Fail(evaluation.UnsupportedReason!);
                 context = evaluation.Context;
-                if (evaluation.Passed) total = unchecked(total + rule.Amount);
+                if (!evaluation.Passed) continue;
+                if (rule.Type == RelicDamagedFloorEnergyModel.Effect)
+                {
+                    error = RelicDamagedFloorEnergyModel.Check(train, out bool passed);
+                    if (error != null) return Fail(error);
+                    if (!passed) continue;
+                }
+                total = unchecked(total + rule.Amount);
             }
             return new RelicResourceResult(context, deployment ? total : Math.Max(total, 0));
         }
@@ -717,7 +724,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static RelicResourceResult ApplyEnergyTiming(CombatContext source, bool deployment = false,
-            bool preview = false, bool placement = false, bool startOfCombat = false)
+            bool preview = false, bool placement = false, bool startOfCombat = false, TrainCombatState? train = null)
         {
             string? error = Ready(source) ?? EnergyModel.Validate(source);
             if (error != null) return Fail(error);
@@ -730,18 +737,25 @@ namespace MonsterTrain2Poju.Model
                 for (int ruleIndex = 0; ruleIndex < (owner.ResourceEffects?.Count ?? 0); ruleIndex++)
                 {
                     RelicResourceEffect rule = context.Relics[relicIndex].ResourceEffects![ruleIndex];
-                    if (rule.Type != (startOfCombat ? StartCombatEnergy : deployment ? DeploymentEnergy : Energy) || preview && !rule.CanApplyInPreviewMode) continue;
+                    if (rule.Type != (startOfCombat ? StartCombatEnergy : deployment ? DeploymentEnergy : Energy) &&
+                        (startOfCombat || deployment || rule.Type != RelicDamagedFloorEnergyModel.Effect) || preview && !rule.CanApplyInPreviewMode) continue;
                     RelicConditionEvaluation evaluation = RelicConditionModel.Evaluate(context, rule.Conditions);
                     if (!evaluation.Supported) return Fail(evaluation.UnsupportedReason!);
                     context = evaluation.Context;
                     if (!evaluation.Passed || rule.Amount == 0) continue;
+                    if (rule.Type == RelicDamagedFloorEnergyModel.Effect)
+                    {
+                        error = RelicDamagedFloorEnergyModel.Check(train, out bool passed);
+                        if (error != null) return Fail(error);
+                        if (!passed) continue;
+                    }
                     // Both native effects use Math.Abs(int) on a negative amount.
                     if (rule.Amount == int.MinValue) return Fail("Native resource energy removal overflows Math.Abs(Int32.MinValue).");
                     int before = context.QueryFrame!.Energy!.Value;
                     int after = rule.Amount > 0 ? Math.Min(context.Resources!.MaxEnergy, unchecked(before + rule.Amount)) :
                         Math.Max(0, unchecked(before - Math.Abs(rule.Amount)));
                     context = context.WithQueryFrame(context.QueryFrame.With(energy: after));
-                    bool notify = rule.Type == Energy;
+                    bool notify = rule.Type == Energy || rule.Type == RelicDamagedFloorEnergyModel.Effect;
                     if (notify)
                     {
                         RelicConditionRecord recorded = RelicConditionModel.Record(context, rule.Conditions);
@@ -790,9 +804,9 @@ namespace MonsterTrain2Poju.Model
             return new RelicResourceResult(context, context.QueryFrame!.Energy!.Value, events: events);
         }
 
-        public static RelicResourceResult StartTurn(CombatContext source, bool deployment = false, bool preview = false, int unitRoomEnergy = 0)
+        public static RelicResourceResult StartTurn(CombatContext source, bool deployment = false, bool preview = false, int unitRoomEnergy = 0, TrainCombatState? train = null)
         {
-            string? error = Ready(source) ?? EnergyModel.Validate(source);
+            string? error = Ready(source) ?? EnergyModel.Validate(source) ?? RelicDamagedFloorEnergyModel.ValidateBeforeDrawOrder(source);
             if (error != null) return Fail(error);
             CombatContext context = EnergyModel.SetPhase(source, "MonsterTurn");
             int income = unchecked(context.Resources!.BaseEnergy + context.EnergyState!.NextTurn + context.EnergyState.EveryTurn + RoomCapacityModel.EnergyPerTurnDelta(context) + unitRoomEnergy +
@@ -807,7 +821,7 @@ namespace MonsterTrain2Poju.Model
                 context = deployed.Context!; events.AddRange(deployed.Events);
             }
             context = context.WithEnergyState(context.EnergyState!.With(nextTurn: 0));
-            RelicResourceResult timed = ApplyEnergyTiming(context, preview: preview, placement: deployment);
+            RelicResourceResult timed = ApplyEnergyTiming(context, preview: preview, placement: deployment, train: train);
             if (!timed.Supported) return timed;
             events.AddRange(timed.Events);
             return new RelicResourceResult(timed.Context, timed.Value, events: events);

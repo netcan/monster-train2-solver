@@ -610,7 +610,7 @@ namespace MonsterTrain2Poju.Model
             if (context.Resources != null)
             {
                 RelicResourceResult resourceEnergy = RelicResourceModel.StartTurn(context,
-                    unitRoomEnergy: UnitRoomResourceModel.Amount(train, UnitRoomResourceModel.Energy));
+                    unitRoomEnergy: UnitRoomResourceModel.Amount(train, UnitRoomResourceModel.Energy), train: train);
                 if (!resourceEnergy.Supported) return Unsupported(resourceEnergy.UnsupportedReason!);
                 context = resourceEnergy.Context!;
             }

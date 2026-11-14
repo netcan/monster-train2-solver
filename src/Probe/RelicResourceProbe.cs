@@ -512,6 +512,8 @@ namespace MonsterTrain2Poju.Probe
                 amount = 0; // The native effect initializes only ParamFloat; ParamInt is unused.
             else if (effect is GrosMichelRelicEffectChanceToDestroySelf)
                 amount = (int)AccessTools.Field(effect.GetType(), "chanceToDestroySelf").GetValue(effect);
+            else if (type == RelicDamagedFloorEnergyModel.Effect)
+                amount = (int)AccessTools.Field(effect.GetType(), "energyBonus").GetValue(effect);
             else if (effect is RelicEffectEnergyOnCardEarlyDiscard)
                 amount = data.GetParamInt();
             else if (effect is RelicEffectAddGoldOnExhaust)

@@ -468,6 +468,7 @@ param(
     [switch] $DevotionDamageBattle,
     [switch] $DevotionSpawnBattle,
     [switch] $TenaciousBattle,
+    [switch] $DamagedFloorEnergyBattle,
     [switch] $OriginalDeathwishAttack,
     [switch] $EnchantmentWorld,
     [switch] $HordeStatuses,
@@ -1378,6 +1379,7 @@ if ($DamageReactionBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $t
 if ($DamageThresholdDrawBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($DevotionDamageBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($TenaciousBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($DamagedFloorEnergyBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($DevotionSpawnBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDeathwishAttack) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStealthSlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -2307,6 +2309,7 @@ if ($DamageReactionBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-react
 if ($DamageThresholdDrawBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-threshold-draw-battle' }
 if ($DevotionDamageBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'devotion-damage-battle' }
 if ($TenaciousBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'tenacious-battle' }
+if ($DamagedFloorEnergyBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'damaged-floor-energy-battle' }
 if ($DevotionSpawnBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'devotion-spawn-battle' }
 if ($OriginalDeathwishAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deathwish-attack' }
 if ($OriginalStealthSlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-stealth-slay' }
@@ -2781,6 +2784,16 @@ if ($ChooseDiscard -and ($trace.ModifierScenario -ne 'card-effect-choose-discard
     -not (Select-String -LiteralPath $unityLog -Pattern 'CHOOSE-DISCARD-AUTOSELECT card=\d+ cost=2' -Quiet) -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 1)) {
     throw 'Original StarterScrap did not consume the selected cost-2 card in the native battle.'
+}
+if ($DamagedFloorEnergyBattle -and ($trace.ModifierScenario -cne 'damaged-floor-energy-battle' -or
+    -not $trace.DamagedFloorEnergyBattle.Prepared -or $trace.DamagedFloorEnergyBattle.CompletedControlPlays -ne 8 -or
+    @($trace.Actions).Count -ne 8 -or -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+    -not $trace.DamagedFloorEnergyBattle.Calibration.Completed -or -not $trace.DamagedFloorEnergyBattle.Calibration.LiveContextUnchanged -or
+    @($trace.DamagedFloorEnergyBattle.Calibration.Samples).Count -ne 20 -or
+    @($trace.DamagedFloorEnergyBattle.Operations).Count -lt 2 -or
+    @($trace.DamagedFloorEnergyBattle.Operations | Where-Object { -not $_.Completed -or $null -ne $_.Difference }).Count -ne 0)) {
+    throw 'Missing damaged-floor energy victory, eight plays, restored native controls or complete timing callbacks.'
 }
 if ($TenaciousBattle -and ($trace.ModifierScenario -cne 'tenacious-battle' -or
     -not $trace.TenaciousBattle.Prepared -or $trace.TenaciousBattle.CompletedControlPlays -ne 11 -or
