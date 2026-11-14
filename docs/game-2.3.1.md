@@ -34,6 +34,47 @@
 2.2.1/2.3.1 重新跑完七回合原生无出牌胜局，四项失败计数均零；各自连续
 模型复放及 16 路不可变分支通过，确认新资源字段跨回合保留且旧版跳过新接口。
 
+## Relentless 通知与选择边界 · 2026-11-15
+
+`GetRelentlessIterationsUntilNotification()` 的当前运行值为 **100**，反编译字段默认值
+为 10，模型使用采集的实际配置。通知出现在下一轮状态清理之前：预演直接退出
+整个房间协程，跳过房间战后结算；实际非薪火战斗可以继续，或放弃并完成房间
+战后结算。下一次通知仍按完成的轮数计数；实际薪火房间不显示该对话。
+
+`RoomCombatModel.Resolve`、`TrainCombatModel.ResolveCombat` 和 `BattleTurnModel.EndTurn`
+接受不可变的 `RelentlessDecision` 序列。未提供下一次选择时返回带楼层和已完成
+轮数的 `RelentlessChoiceRequest`；不隐含选择继续。预演另标记 `PreviewTruncated`，
+跳过外层房间遗物收尾。零伤害循环也会走到通知，不能提前以状态重复跳过选择。
+平衡间隔保留在所有 QueryFrame 复制路径中，并参与搜索状态键。
+
+八组隔离原生房间后继通过：原始 100 轮的预演与放弃、控制间隔三轮、一次／两次
+继续后放弃、预演及实际零伤害循环。实际调用原生 `DoRoomCombat`，在其
+`WaitForDialog` 位置调用原始 Continue／Abandon 回调，记录真实交换数及战后阶段；
+预演不产生 Valor 护甲，放弃则正常产生三甲。完整房间状态和确定性游戏 RNG 流
+匹配，每组 **32 路不可变并发复放**、逐次缺失选择请求及不同间隔的状态键通过。
+五个实际战斗样本另保存完整输入决策，Train／EndTurn 均返回准确的待选楼层与
+轮数；完整选择序列可通过 EndTurn 得到后继，且父状态不变。后者是 API 传递检查，
+不是放弃后完整原生回合的对照证据。
+跨 UI 帧变化的 Unity 全局 RNG、Chatter、NonDeterministic 仍保留原始记录；不要求
+这三者逐样本不变。整个组件结束后全部 RNG 和原有列车状态均恢复，玩家文件未变。
+
+原生采样 **52.24 秒**。二进制归档 `mechanics/relentless-notification/notification.mt2f`
+为 **13,074 字节**，SHA256
+`96a57a12eb5bd0601c8996faececf506e3e35a1ca8c9a5a754eab2fdc2caff91`。
+运行 `scripts/Check-Game231Relentless.ps1` 可独立验收；采样入口为
+`scripts/Run-FullBattleProbe.ps1 -RelentlessOnly -NativeWorker 3 -GameSpeed Instant -BinaryCapture`。
+
+携带实际通知间隔的新采样逐层伤害七回合胜局通过：12 次输入、75 房间／13 列车
+阶段，采集失败／差异／未支持／未完成均零，玩家文件未变。完整后继与 RNG 连续
+复放、16 路完整分支和 128 状态串行／并行搜索一致；供奉整局的定向回归也通过。
+相同 Probe 在旧版 2.2.1 的七回合原生基线也通过：52 房间／14 列车阶段，四项
+失败计数均零，玩家文件未变；连续完整后继／RNG 及 16 路独立分支通过。
+
+这份证据覆盖房间协程及显式选择 API；搜索计划自动枚举／复放选择、顾问在玩家
+实局的对话交互、放弃后的强制上升／楼层摧毁及跨楼层选择仍需整局原生证据。
+实际薪火长战的无通知分支尚未由该组件单独验收。旧归档缺少间隔时保留其旧输入
+语义。本项不增加原版卡牌或遗物覆盖，614／236 的全量重验仍未完成。
+
 ## 原版虔诚倍率接口审计 · 2026-11-15
 
 对当前 2.3.1 的全部 **168 个原生 Managed DLL** 使用 Mono.Cecil 遍历元数据，

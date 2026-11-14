@@ -78,9 +78,12 @@ namespace MonsterTrain2Poju.Model
         public BattleTurnState? State { get; }
         public RoomOutcome Outcome { get; }
         public string? UnsupportedReason { get; }
+        public RelentlessChoiceRequest? RelentlessChoice { get; }
+        public bool ShouldSerializeRelentlessChoice() => RelentlessChoice != null;
         public bool Supported => State != null;
-        internal BattleTurnResult(BattleTurnState? state, RoomOutcome outcome, string? unsupportedReason = null)
-        { State = state; Outcome = outcome; UnsupportedReason = unsupportedReason; }
+        internal BattleTurnResult(BattleTurnState? state, RoomOutcome outcome, string? unsupportedReason = null,
+            RelentlessChoiceRequest? relentlessChoice = null)
+        { State = state; Outcome = outcome; UnsupportedReason = unsupportedReason; RelentlessChoice = relentlessChoice; }
     }
 
     public static class BattleTurnModel
@@ -172,7 +175,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         // One quiet player decision point through EndTurn to the next decision or terminal battle.
-        public static BattleTurnResult EndTurn(BattleTurnState source)
+        public static BattleTurnResult EndTurn(BattleTurnState source, IReadOnlyList<RelentlessDecision>? relentlessDecisions = null)
         {
             IReadOnlyList<string> turnInteractions = ActionInteractions(source);
             if (turnInteractions.Count > 0) return Unsupported(string.Join("; ", turnInteractions));
@@ -415,8 +418,9 @@ namespace MonsterTrain2Poju.Model
             else context = context.WithQueryFrame(context.QueryFrame?.With(energy: 0));
             context = EnergyModel.SetPhase(context, "Combat");
             train = WithContext(train, context, spawn.Turn == 0);
-            TrainCombatResult combat = TrainCombatModel.ResolveCombat(train);
-            if (!combat.Supported) return Unsupported(combat.UnsupportedReason!);
+            TrainCombatResult combat = TrainCombatModel.ResolveCombat(train, relentlessDecisions);
+            if (!combat.Supported) return new BattleTurnResult(null, RoomOutcome.Unsupported, combat.UnsupportedReason,
+                combat.RelentlessChoice);
             if (!RouteDeadUnits(train, combat)) return Unsupported("Missing unit death event or card routing.");
             train = combat.State!;
             spawn = WithTrain(spawn, train, spawn.Turn, spawn.Rng);

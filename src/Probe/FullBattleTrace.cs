@@ -648,7 +648,8 @@ namespace MonsterTrain2Poju.Probe
                 OuterBossDefinitions.IsAngelDuoScenario(save.GetCurrentScenarioData()?.name) ?
                     new ForcedRelentlessCounters((int)AccessTools.Field(typeof(CombatManager), "totalWaves").GetValue(combat),
                         (int)AccessTools.Field(typeof(CombatManager), "turnsRemainingWhenRelentlessTriggeredEarly").GetValue(combat)) : null,
-                devotion: DevotionProbe.Capture(managers));
+                devotion: DevotionProbe.Capture(managers),
+                relentlessNotificationInterval: combat.GetBalanceData().GetRelentlessIterationsUntilNotification());
         }
 
         internal CardPileState[] CaptureOtherPiles()
@@ -730,7 +731,7 @@ namespace MonsterTrain2Poju.Probe
             try
             {
                 AllGameManagers? managers = AllGameManagers.Instance;
-                if (managers != null && !managers.GetSaveManager().PreviewMode && NativeWon == null)
+                if (managers != null && !managers.GetSaveManager().PreviewMode && NativeWon == null && !RelentlessCalibration.Recording)
                 {
                     RoomCombatState before = Capture(room);
                     RoomManager roomManager = managers.GetRoomManager()!;

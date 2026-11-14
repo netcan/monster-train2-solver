@@ -456,6 +456,7 @@ param(
     [switch] $HalfHealthLifecycleOnly,
     [switch] $ZealStatusOnly,
     [switch] $DevotionOnly,
+    [switch] $RelentlessOnly,
     [switch] $HalfHealthMaximumOnly,
     [switch] $HalfHealthUpgradeOnly,
     [switch] $HalfHealthUpgradeEffectsOnly,
@@ -1423,6 +1424,13 @@ if ($DamageOverflow) { $BranchCardMasks = $true; $Policy = 'units-spells-and-jun
 if ($BattleRelicUpgrades -or $SpawnStatusRelicsClones -or $OriginalRelicBatch -or $OriginalStingRelicBatch -or $OriginalDeployableRelic) { $BranchCardMasks = $true }
 if ($SpawnStatusRelicsClones) { $SpawnStatusRelics = $true; $UnitClone = $true }
 if ($EnchantmentWorld) { $EnchantmentCombat = $true }
+if ($RelentlessOnly) {
+    $relentlessArguments = @('RelentlessOnly', 'Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'CaptureJson', 'SkipBuild',
+        'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction', 'ProgressAction', 'ErrorVariable', 'WarningVariable',
+        'InformationVariable', 'OutVariable', 'OutBuffer', 'PipelineVariable')
+    if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $relentlessArguments }).Count) { throw 'Relentless requires an isolated component mode.' }
+    $Policy = 'steward-once'; $BranchCardMasks = $true
+}
 if ($DevotionOnly) {
     $devotionArguments = @('DevotionOnly', 'Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'CaptureJson', 'SkipBuild',
         'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction', 'ProgressAction', 'ErrorVariable', 'WarningVariable',
@@ -1867,6 +1875,7 @@ $environment = @{
     MT2_PROBE_HALF_HEALTH_LIFECYCLE = $(if ($HalfHealthLifecycleOnly) { '1' } else { '0' })
     MT2_PROBE_ZEAL_STATUS = $(if ($ZealStatusOnly) { '1' } else { '0' })
     MT2_PROBE_DEVOTION = $(if ($DevotionOnly) { '1' } else { '0' })
+    MT2_PROBE_RELENTLESS = $(if ($RelentlessOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_MAXIMUM = $(if ($HalfHealthMaximumOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_UPGRADE = $(if ($HalfHealthUpgradeOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_UPGRADE_EFFECTS = $(if ($HalfHealthUpgradeEffectsOnly) { '1' } else { '0' })
@@ -2436,6 +2445,25 @@ if ($HalfHealthLifecycleOnly -or $HalfHealthMaximumOnly -or $HalfHealthUpgradeOn
     } finally { $lifecycleDocument.Dispose() }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
         ModelAcceptance='Pending independent focused checker'; Trace=$lifecyclePath } | ConvertTo-Json
+    return
+}
+if ($RelentlessOnly) {
+    $relentlessPath = Join-Path $profile 'relentless.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $relentlessPath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Relentless notification component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Relentless component failed; inspect $unityLog" }
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $relentlessDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($relentlessPath)
+    try {
+        $relentless = $relentlessDocument.RootElement
+        if ($relentless.GetProperty('Boundary').GetString() -cne 'NativeRelentlessNotification' -or
+            -not $relentless.GetProperty('LiveContextUnchanged').GetBoolean() -or
+            $relentless.GetProperty('Mismatches').GetInt32() -ne 0 -or $relentless.GetProperty('Samples').GetArrayLength() -ne 8) {
+            throw 'Incomplete Relentless notification component.'
+        }
+    } finally { $relentlessDocument.Dispose() }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        ModelAcceptance='Pending independent focused checker'; Trace=$relentlessPath } | ConvertTo-Json
     return
 }
 if ($DevotionOnly) {

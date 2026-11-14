@@ -54,6 +54,8 @@ namespace MonsterTrain2Poju.Model
         public ForcedRelentlessCounters? ForcedRelentless { get; }
         public DevotionState? Devotion { get; }
         public bool ShouldSerializeDevotion() => Devotion != null;
+        public int? RelentlessNotificationInterval { get; }
+        public bool ShouldSerializeRelentlessNotificationInterval() => RelentlessNotificationInterval.HasValue;
         // Internal preview input. Native heal previews read live SaveData HP,
         // even after an earlier preview room has changed the Pyre copy.
         internal int? PreviewTowerHealth { get; private set; }
@@ -61,24 +63,28 @@ namespace MonsterTrain2Poju.Model
             int? dragonsHoard = null, int? moonPhase = null, int? pyreResurrectionCount = null, bool activeBattle = true,
             int? selectedRoomIndex = null, bool? moonPhaseTrackingActive = null,
             bool? forgeTrackingActive = null, bool? forgeToggleActive = null, int? grosMichelCombatRoundCount = null,
-            ForcedRelentlessCounters? forcedRelentless = null, DevotionState? devotion = null)
+            ForcedRelentlessCounters? forcedRelentless = null, DevotionState? devotion = null,
+            int? relentlessNotificationInterval = null)
         { Energy = energy; RunningCombat = runningCombat; Turn = turn; ForgePoints = forgePoints;
             DragonsHoard = dragonsHoard; MoonPhase = moonPhase; PyreResurrectionCount = pyreResurrectionCount; ActiveBattle = activeBattle;
             SelectedRoomIndex = selectedRoomIndex; MoonPhaseTrackingActive = moonPhaseTrackingActive;
             ForgeTrackingActive = forgeTrackingActive; ForgeToggleActive = forgeToggleActive;
-            GrosMichelCombatRoundCount = grosMichelCombatRoundCount; ForcedRelentless = forcedRelentless; Devotion = devotion; }
+            GrosMichelCombatRoundCount = grosMichelCombatRoundCount; ForcedRelentless = forcedRelentless; Devotion = devotion;
+            RelentlessNotificationInterval = relentlessNotificationInterval; }
         public StatisticQueryFrame With(int? energy = null, bool? runningCombat = null, int? turn = null,
             int? forgePoints = null, int? dragonsHoard = null, int? moonPhase = null,
             int? pyreResurrectionCount = null, bool? activeBattle = null, int? selectedRoomIndex = null,
             bool? moonPhaseTrackingActive = null, bool? forgeTrackingActive = null,
             bool? forgeToggleActive = null, int? grosMichelCombatRoundCount = null,
-            ForcedRelentlessCounters? forcedRelentless = null, DevotionState? devotion = null) => new StatisticQueryFrame(
+            ForcedRelentlessCounters? forcedRelentless = null, DevotionState? devotion = null,
+            int? relentlessNotificationInterval = null) => new StatisticQueryFrame(
                 energy ?? Energy, runningCombat ?? RunningCombat, turn ?? Turn, forgePoints ?? ForgePoints,
                 dragonsHoard ?? DragonsHoard, moonPhase ?? MoonPhase, pyreResurrectionCount ?? PyreResurrectionCount,
                 activeBattle ?? ActiveBattle, selectedRoomIndex ?? SelectedRoomIndex,
                 moonPhaseTrackingActive ?? MoonPhaseTrackingActive, forgeTrackingActive ?? ForgeTrackingActive,
                 forgeToggleActive ?? ForgeToggleActive, grosMichelCombatRoundCount ?? GrosMichelCombatRoundCount,
-                forcedRelentless ?? ForcedRelentless, devotion ?? Devotion) { PreviewTowerHealth = PreviewTowerHealth };
+                forcedRelentless ?? ForcedRelentless, devotion ?? Devotion,
+                relentlessNotificationInterval ?? RelentlessNotificationInterval) { PreviewTowerHealth = PreviewTowerHealth };
 
         internal StatisticQueryFrame WithPreviewTowerHealth(int? health)
         {

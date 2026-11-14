@@ -406,16 +406,22 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<CombatEvent> Events { get; }
         public string? UnsupportedReason { get; }
         public bool Supported => State != null;
+        public RelentlessChoiceRequest? RelentlessChoice { get; }
+        public bool PreviewTruncated { get; }
+        public bool ShouldSerializeRelentlessChoice() => RelentlessChoice != null;
+        public bool ShouldSerializePreviewTruncated() => PreviewTruncated;
         internal IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> PendingCallbacks { get; }
         internal IReadOnlyList<CombatUnit> RetainedUnits { get; }
         internal IReadOnlyList<CharacterTriggerDispatch> Dispatches { get; }
 
         internal RoomCombatResult(RoomCombatState? state, RoomOutcome outcome, int rounds,
-            List<CombatEvent> events, string? reason = null, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? pendingCallbacks = null, IReadOnlyList<CombatUnit>? retainedUnits = null, IReadOnlyList<CharacterTriggerDispatch>? dispatches = null)
+            List<CombatEvent> events, string? reason = null, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? pendingCallbacks = null, IReadOnlyList<CombatUnit>? retainedUnits = null, IReadOnlyList<CharacterTriggerDispatch>? dispatches = null,
+            RelentlessChoiceRequest? relentlessChoice = null, bool previewTruncated = false)
         {
             Dispatches = Array.AsReadOnly((dispatches ?? Array.Empty<CharacterTriggerDispatch>()).ToArray());
             RetainedUnits = Array.AsReadOnly((retainedUnits ?? Array.Empty<CombatUnit>()).ToArray());
             State = state; Outcome = outcome; Rounds = rounds;
+            RelentlessChoice = relentlessChoice; PreviewTruncated = previewTruncated;
             Events = Array.AsReadOnly(events.ToArray()); UnsupportedReason = reason;
             PendingCallbacks = Array.AsReadOnly((pendingCallbacks ?? Array.Empty<RoomCombatModel.QueuedCharacterTrigger>()).ToArray());
         }
@@ -501,19 +507,28 @@ namespace MonsterTrain2Poju.Model
                 pendingPhysicalDeathIds: pendingPhysicalDeathIds);
         public static RoomCombatResult Resolve(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
             bool updateSelectedRoom = true, CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
-            IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null)
+            IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
+            IReadOnlyList<RelentlessDecision>? relentlessDecisions = null)
         {
+            int? interval = state.Context?.QueryFrame?.RelentlessNotificationInterval;
+            if (interval <= 0 || relentlessDecisions?.Any(choice => choice.RoomIndex < 0 || choice.CompletedRounds <= 0 ||
+                !interval.HasValue || choice.CompletedRounds % interval.Value != 0) == true ||
+                relentlessDecisions?.GroupBy(choice => (choice.RoomIndex, choice.CompletedRounds)).Any(group => group.Count() != 1) == true)
+                return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
+                    "Invalid Relentless notification interval or decisions.");
             // Native room modifiers run once before the first exchange, including
             // deaths and queued callbacks; unit PreCombat is a separate phase.
             RoomCombatResult pre = RoomPreCombatModel.Apply(state, refreshPyre);
             if (!pre.Supported) return pre;
             RoomCombatResult result = pre.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated ? pre :
                 Run(pre.State!, true, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom,
-                    externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets);
+                    externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets,
+                    relentlessDecisions: relentlessDecisions);
             if (!ReferenceEquals(result, pre) && pre.Events.Count > 0)
                 result = new RoomCombatResult(result.State, result.Outcome, result.Rounds, pre.Events.Concat(result.Events).ToList(),
-                    result.UnsupportedReason, result.PendingCallbacks, result.RetainedUnits, result.Dispatches);
-            if (!result.Supported || result.State!.Context == null) return result;
+                    result.UnsupportedReason, result.PendingCallbacks, result.RetainedUnits, result.Dispatches,
+                    result.RelentlessChoice, result.PreviewTruncated);
+            if (!result.Supported || result.State!.Context == null || result.PreviewTruncated) return result;
             if (!state.Preview && !ReferenceEquals(result, pre) && pre.Outcome == RoomOutcome.Exchanged && pre.RetainedUnits.Count > 0)
             {
                 // A death still awaiting physical removal at combat entry
@@ -1051,7 +1066,7 @@ namespace MonsterTrain2Poju.Model
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, bool updateSelectedRoom = true,
             CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
             IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
-            IReadOnlyCollection<int>? pendingPhysicalDeathIds = null)
+            IReadOnlyCollection<int>? pendingPhysicalDeathIds = null, IReadOnlyList<RelentlessDecision>? relentlessDecisions = null)
         {
             var events = new List<CombatEvent>();
             string? error = Validate(state);
@@ -1061,7 +1076,8 @@ namespace MonsterTrain2Poju.Model
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, events,
                     "True-final-boss room attack scheduling remains uncalibrated; linked damage/heal APIs are separate.");
             var engine = new Engine(state, events, refreshPyre: refreshPyre,
-                externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets);
+                externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets,
+                relentlessDecisions: relentlessDecisions);
             return engine.Run(entireRoom, updateSelectedRoom, pendingPhysicalDeathIds);
         }
 
@@ -1794,6 +1810,8 @@ namespace MonsterTrain2Poju.Model
             private readonly List<CombatEvent> events;
             private readonly List<CharacterTriggerDispatch> dispatches = new List<CharacterTriggerDispatch>();
             private bool battleWon;
+            private readonly IReadOnlyList<RelentlessDecision> relentlessDecisions;
+            private bool previewTruncated;
             private int round;
             private CombatContext? context;
             private readonly bool deferSpawnerExhaustion;
@@ -1843,9 +1861,11 @@ namespace MonsterTrain2Poju.Model
                 IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
                 Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect = null,
                 Func<RoomCombatState, CardActionEffect, int, BumpResult>? birthBump = null, bool centerDamageDeaths = true,
-                Func<RoomCombatResult, RoomCombatResult>? settleDamageCallbacks = null)
+                Func<RoomCombatResult, RoomCombatResult>? settleDamageCallbacks = null,
+                IReadOnlyList<RelentlessDecision>? relentlessDecisions = null)
             {
                 this.source = source; this.events = events;
+                this.relentlessDecisions = Array.AsReadOnly((relentlessDecisions ?? Array.Empty<RelentlessDecision>()).ToArray());
                 this.deferSpawnerExhaustion = deferSpawnerExhaustion;
                 this.pendingSummonCardId = pendingSummonCardId;
                 this.enqueueCharacterTrigger = enqueueCharacterTrigger;
@@ -1971,13 +1991,32 @@ namespace MonsterTrain2Poju.Model
                     units.Any(unit => unit.Alive && unit.InRoom && unit.Source.Team == CombatTeam.Player && !unit.Source.IsPyre))
                     context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: source.RoomIndex));
                 bool relentless = units.Any(unit => unit.InRoom && unit.Has("relentless")) && BothTeamsPresent();
+                int? notificationInterval = context?.QueryFrame?.RelentlessNotificationInterval;
+                bool notificationCanStop = notificationInterval.HasValue && (source.Preview || source.RoomIndex != 3);
                 var seen = new HashSet<string>(StringComparer.Ordinal);
                 bool repeat;
                 do
                 {
+                    // Native yields out of the entire room coroutine in preview,
+                    // before clearing status effects or completing the room.
+                    if (entireRoom && round > 0 && notificationInterval.HasValue && round % notificationInterval.Value == 0)
+                    {
+                        if (source.Preview)
+                        { previewTruncated = true; return Finish(RoomOutcome.Exchanged); }
+                        if (source.RoomIndex != 3)
+                        {
+                            RelentlessDecision? choice = relentlessDecisions.FirstOrDefault(item =>
+                                item.RoomIndex == source.RoomIndex && item.CompletedRounds == round);
+                            if (choice == null)
+                                return new RoomCombatResult(null, RoomOutcome.Unsupported, round, events,
+                                    "Relentless combat requires Continue or Abandon before the next exchange.",
+                                    relentlessChoice: new RelentlessChoiceRequest(source.RoomIndex, round));
+                            if (!choice.Continue) break;
+                        }
+                    }
                     if (round > 0 && entireRoom) Clear(true);
                     // Compare the same phase: decay before the next exchange can break a apparent cycle.
-                    if (entireRoom && !seen.Add(Signature()))
+                    if (entireRoom && !notificationCanStop && !seen.Add(Signature()))
                         return Finish(RoomOutcome.Stalemate);
                     round++;
                     Exchange();
@@ -6364,7 +6403,7 @@ namespace MonsterTrain2Poju.Model
                         completePhysicalRemovalAfterQueue: context?.SpawnPoints != null, removalLifecycle: true,
                         captureAllDispatches: traceAllDispatches)).ToArray() : null,
                 retainedUnits: units.Where(unit => !unit.Alive || externalTurnActorIds.Contains(unit.Source.Id))
-                    .Select(unit => unit.Freeze()).ToArray(), dispatches: dispatches);
+                    .Select(unit => unit.Freeze()).ToArray(), dispatches: dispatches, previewTruncated: previewTruncated);
             }
         }
     }

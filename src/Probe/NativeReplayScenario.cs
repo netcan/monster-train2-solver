@@ -2420,6 +2420,14 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 ChooseDiscardScenario.Prepare(managers, log);
             }
+            if (fullBattle && RelentlessCalibration.Enabled)
+            {
+                if (RelentlessCalibration.Error != null) throw new InvalidOperationException(RelentlessCalibration.Error);
+                if (RelentlessCalibration.Completed)
+                { Finish(true, "Relentless notification component captured."); return; }
+                if (!RelentlessCalibration.Started && RelentlessCalibration.Eligible) RelentlessCalibration.Start(log);
+                if (RelentlessCalibration.Started) return;
+            }
             if (fullBattle && DevotionCalibration.Enabled)
             {
                 if (DevotionCalibration.Error != null) throw new InvalidOperationException(DevotionCalibration.Error);

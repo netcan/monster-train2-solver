@@ -55,11 +55,15 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<RoomCombatResult> RoomResults { get; }
         public IReadOnlyList<int> DestroyedRoomIndexes { get; }
         public string? UnsupportedReason { get; }
+        public RelentlessChoiceRequest? RelentlessChoice { get; }
+        public bool ShouldSerializeRelentlessChoice() => RelentlessChoice != null;
         public bool Supported => State != null;
         internal TrainCombatResult(TrainCombatState? state, RoomOutcome outcome,
-            IReadOnlyList<RoomCombatResult> roomResults, string? reason = null, IReadOnlyList<int>? destroyedRoomIndexes = null)
+            IReadOnlyList<RoomCombatResult> roomResults, string? reason = null, IReadOnlyList<int>? destroyedRoomIndexes = null,
+            RelentlessChoiceRequest? relentlessChoice = null)
         { State = state; Outcome = outcome; RoomResults = Array.AsReadOnly(roomResults.ToArray());
-            UnsupportedReason = reason; DestroyedRoomIndexes = Array.AsReadOnly((destroyedRoomIndexes ?? Array.Empty<int>()).Distinct().ToArray()); }
+            UnsupportedReason = reason; RelentlessChoice = relentlessChoice;
+            DestroyedRoomIndexes = Array.AsReadOnly((destroyedRoomIndexes ?? Array.Empty<int>()).Distinct().ToArray()); }
     }
 
     public static class TrainCombatModel
@@ -259,7 +263,7 @@ namespace MonsterTrain2Poju.Model
             return new TrainCombatResult(Freeze(source, rooms, context), outcome, results);
         }
 
-        public static TrainCombatResult ResolveCombat(TrainCombatState source)
+        public static TrainCombatResult ResolveCombat(TrainCombatState source, IReadOnlyList<RelentlessDecision>? relentlessDecisions = null)
         {
             string? error = Validate(source) ?? RelicEndCombatModel.Validate(source.Context);
             if (error != null) return Unsupported(error);
@@ -283,8 +287,9 @@ namespace MonsterTrain2Poju.Model
                 RoomCombatResult result = RoomCombatModel.Resolve(WithContext(rooms[index], context),
                     refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement),
                     externalPyre: externalPyre, externalPyreRoomIndex: externalPyre == null ? -1 : pyreRoomIndex,
-                    externalTargets: requiresTowerTargets ? externalTargets : null);
-                if (!result.Supported) return Unsupported("Train combat floor " + index + ": " + result.UnsupportedReason);
+                    externalTargets: requiresTowerTargets ? externalTargets : null, relentlessDecisions: relentlessDecisions);
+                if (!result.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported, results,
+                    "Train combat floor " + index + ": " + result.UnsupportedReason, relentlessChoice: result.RelentlessChoice);
                 rooms[index] = result.State!; results.Add(result);
                 context = result.State!.Context;
                 if (externalPyre != null)

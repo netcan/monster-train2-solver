@@ -323,7 +323,8 @@ internal static class BattleTurnChecks
                 frame.ForgePoints, frame.DragonsHoard, frame.MoonPhase, frame.PyreResurrectionCount, frame.ActiveBattle,
                 forgeTrackingActive: frame.ForgeTrackingActive, forgeToggleActive: frame.ForgeToggleActive,
                 grosMichelCombatRoundCount: frame.GrosMichelCombatRoundCount,
-                forcedRelentless: frame.ForcedRelentless, devotion: frame.Devotion));
+                forcedRelentless: frame.ForcedRelentless, devotion: frame.Devotion,
+                relentlessNotificationInterval: frame.RelentlessNotificationInterval));
         if (context?.SpawnPoints?.NextPreviewCopyId.HasValue == true)
         {
             BattleSpawnPoints points = context.SpawnPoints;

@@ -7,6 +7,15 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+Relentless notification boundaries now use the captured native interval (100).
+Eight isolated native room successors cover preview early exit, Abandon room
+cleanup, repeated Continue callbacks, and zero-damage cycles. Exact pending-choice
+requests, complete room states, deterministic gameplay streams, distinct state
+keys and 32 immutable parallel branches pass. Explicit decisions flow through
+the room/train/EndTurn APIs; search-plan choice enumeration, live advisor dialog
+handling and whole-battle abandonment still require integration and native proof.
+Run `scripts/Check-Game231Relentless.ps1` for the 13,074-byte binary evidence.
+
 Latest 2.3.1 acceptance: all **12/12 new original relics** have controlled
 whole-battle evidence; this does not revalidate all 614 cards or 236 relics.
 Three unchanged original cards now share calibrated floor-by-floor damage:
