@@ -30,6 +30,20 @@ These controls do not add original-card/relic coverage.
 
 Latest 2.3.1 acceptance: all **12/12 new original relics** have controlled
 whole-battle evidence; this does not revalidate all 614 cards or 236 relics.
+Lethal maximum-health changes now follow native Sacrifice(null) and skip the
+ordinary Horde/Deathwish update that follows the nonlethal path. Eight controlled
+native five-play/seven-turn victories cover plain/Undying/Horde/both, retaining
+positive maximum HP or reducing it to zero. Physical death exhausts the spawner
+and compacts positions; revival consumes Undying, restores one HP/max HP at least
+one, retains troops and updates half-health membership. Horde multiplies physical
+Harvest only while dead; revived units harvest once. No ordinary damage statistics
+are added. All 40 plays/56 EndTurns, 424 room/104 train stages, complete state/RNG
+chains, 16 immutable branches and 128-state serial/parallel search per battle pass.
+The eight native runs total 364.98 seconds with unchanged player files; explicit
+card/unit controls add no original coverage. Run `scripts/Check-Game231LethalMaximum.ps1`
+for the 288,642-byte binary archive set. Lethal half-health preview stays guarded;
+LifeLink maximum-health protection and other death/merge/callback combinations
+still require separate native acceptance.
 Nonlethal direct maximum-health changes now retain Horde casualty queues before
 Deathwish. Modern damage settles Horde in its immediate OnHit status phase,
 before queued Punish/Deathwish even inside healing or half-health callbacks.
@@ -41,8 +55,8 @@ awards 15 Harvest gold, heals to the cap and updates the spawner's temporary HP.
 Full successors/RNG, 16 battle branches, 128-state serial/parallel search and
 independent plan replay pass. Explicit unit/card controls add no original-card
 coverage. Run `scripts/Check-Game231HordeMaximum.ps1` for the 12,287-byte component
-and 34,240-byte battle archives. Lethal maximum-health sacrifice/revival and other
-Horde death/merge/callback combinations remain separate.
+and 34,240-byte battle archives. Lethal maximum-health has the separate battle
+acceptance above; other Horde death/merge/callback combinations remain open.
 Zeal removal now settles Horde casualties before Deathwish and outer status
 notifications, retaining the complete room, simulated deaths and observer queues.
 Thirteen native API/drained controls cover both teams, clipped/wounded casualties,

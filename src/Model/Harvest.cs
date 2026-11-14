@@ -20,7 +20,9 @@ namespace MonsterTrain2Poju.Model
             string[] fields = stage.Substring(Prefix.Length).Split(':');
             kind = fields[0]; team = (CombatTeam)Enum.Parse(typeof(CombatTeam), fields[1]); return true;
         }
+        // Native Horde adds repeats only while IsDead; Undying has already
+        // restored HP before it requests its harvest notifications.
         internal static int Count(CombatUnit dying, string kind) =>
-            kind == Kinds[1] || kind == Kinds[2] ? Math.Max(1, dying.Status("horde")?.Stacks ?? 0) : 1;
+            dying.Health <= 0 && (kind == Kinds[1] || kind == Kinds[2]) ? Math.Max(1, dying.Status("horde")?.Stacks ?? 0) : 1;
     }
 }

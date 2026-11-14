@@ -1722,6 +1722,7 @@ namespace MonsterTrain2Poju.Probe
                 RelentlessBattle = RelentlessBattleScenario.Enabled ? RelentlessBattleScenario.Evidence : null,
                 ZealHordeBattle = ZealHordeBattleScenario.Enabled ? ZealHordeBattleScenario.Evidence : null,
                 HordeMaximumBattle = ZealHordeBattleScenario.MaximumHealth ? ZealHordeBattleScenario.Evidence : null,
+                LethalMaximumBattle = LethalMaximumBattleScenario.Enabled ? LethalMaximumBattleScenario.Evidence : null,
                 DevotionDamageBattle = DevotionDamageBattleScenario.Enabled ? DevotionDamageBattleScenario.Evidence : null,
                 DevotionDamageCallbacks = DevotionDamageBattleScenario.Enabled ? RelicUnitResourceProbe.Records : null,
                 DamageThresholdDrawBattle = DamageThresholdDrawBattleScenario.Enabled ? DamageThresholdDrawBattleScenario.Evidence : null,

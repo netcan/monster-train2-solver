@@ -48,7 +48,7 @@ internal static class HalfHealthLifecycleChecks
                 "Lethal maximum-health sacrifice/revival lost its native calibration guard.");
         }
         Parallel.For(0, 32, _ => { foreach (FixtureValue sample in samples) Verify(sample); });
-        Console.WriteLine("HALF-HEALTH-LIFECYCLE PASS: 13 complete native damage/heal successors and dispatch payloads; zero/blocked/clipped controls, OnHit/OnHeal ordering, nested gain/loss effects, parent immutability and 32 parallel branches. Lethal damage and whole-battle scheduling have separate native acceptance; lethal maximum-health changes remain guarded.");
+        Console.WriteLine("HALF-HEALTH-LIFECYCLE PASS: 13 complete native damage/heal successors and dispatch payloads; zero/blocked/clipped controls, OnHit/OnHeal ordering, nested gain/loss effects, parent immutability and 32 parallel branches. Lethal damage, maximum-health sacrifice/revival and whole-battle scheduling have separate native acceptance.");
 
         void Expect(string label, int hp, int gold, params string[] kinds)
         {

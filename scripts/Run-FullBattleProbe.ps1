@@ -459,6 +459,8 @@ param(
     [switch] $HordeMaximumOnly,
     [switch] $ZealHordeBattle,
     [switch] $HordeMaximumBattle,
+    [ValidateSet('plain', 'undying', 'horde', 'horde-undying', 'plain-zero', 'undying-zero', 'horde-zero', 'horde-undying-zero')]
+    [string] $LethalMaximumBattle,
     [switch] $DevotionOnly,
     [switch] $RelentlessOnly,
     [switch] $HalfHealthMaximumOnly,
@@ -1404,6 +1406,7 @@ if ($FloorDamageBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
 if ($RelentlessBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($ZealHordeBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($HordeMaximumBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($LethalMaximumBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDeathwishAttack) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStealthSlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -2354,6 +2357,7 @@ if ($FloorDamageBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'floor-damage-ba
 if ($RelentlessBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'relentless-battle-' + $RelentlessBattle.ToLowerInvariant() }
 if ($ZealHordeBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'zeal-horde-battle' }
 if ($HordeMaximumBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'horde-maximum-battle' }
+if ($LethalMaximumBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'lethal-maximum-battle-' + $LethalMaximumBattle }
 if ($OriginalDeathwishAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deathwish-attack' }
 if ($OriginalStealthSlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-stealth-slay' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
@@ -2940,6 +2944,13 @@ if ($HordeMaximumBattle -and ($trace.ModifierScenario -cne 'horde-maximum-battle
     -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
     throw 'Missing native Horde maximum-health victory, five actual inputs, settled effects or matching complete successors.'
+}
+if ($LethalMaximumBattle -and ($trace.ModifierScenario -cne ('lethal-maximum-battle-' + $LethalMaximumBattle) -or
+    -not $trace.LethalMaximumBattle.Prepared -or $trace.LethalMaximumBattle.CompletedControlPlays -ne 5 -or
+    @($trace.Actions).Count -ne 5 -or @($trace.Turns).Count -ne 7 -or
+    -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
+    throw 'Missing native lethal maximum-health victory, five actual inputs, settled effects or matching complete successors.'
 }
 if ($RelentlessBattle) {
     $abandon = $RelentlessBattle -ceq 'Abandon'

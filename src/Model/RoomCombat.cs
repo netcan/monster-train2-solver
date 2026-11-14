@@ -2202,7 +2202,11 @@ namespace MonsterTrain2Poju.Model
                 if (!target.Alive)
                 {
                     target.Apply(target.Freeze().WithSacrifice(0));
-                    if (!TryRevive(null, target, 0)) Death(null, target, 0);
+                    if (!TryRevive(null, target, 0))
+                    {
+                        Death(null, target, 0, sacrifice: true);
+                        if (!source.Preview && context?.SpawnPoints != null) CenterAfterSummon();
+                    }
                 }
                 return Finish(battleWon ? RoomOutcome.BattleWon : target.Source.IsPyre && !target.Alive
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
