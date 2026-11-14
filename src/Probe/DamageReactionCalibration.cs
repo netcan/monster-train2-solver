@@ -17,7 +17,8 @@ namespace MonsterTrain2Poju.Probe
     internal static class DamageReactionCalibration
     {
         internal static bool Revival => Environment.GetEnvironmentVariable("MT2_PROBE_DAMAGE_REACTION_REVIVAL") == "1";
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_DAMAGE_REACTIONS") == "1" || Revival;
+        internal static bool FinalDeath => Environment.GetEnvironmentVariable("MT2_PROBE_DAMAGE_REACTION_FINAL_DEATH") == "1";
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_DAMAGE_REACTIONS") == "1" || Revival || FinalDeath;
         internal static bool Started { get; private set; }
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
@@ -26,6 +27,8 @@ namespace MonsterTrain2Poju.Probe
         private static FullBattleTrace Trace => FullBattleTrace.Active!;
         private static readonly Type StateType = AccessTools.Inner(typeof(CharacterState), "StateInformation");
         private static bool recording;
+        private static string activeStep = "setup";
+        private static int removalMismatches;
         private static readonly List<CharacterTriggerDispatch> dispatches = new List<CharacterTriggerDispatch>();
         private static object Get(object target, string field) => AccessTools.Field(target.GetType(), field).GetValue(target);
         private static void Set(object target, string field, object value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);
@@ -89,6 +92,37 @@ namespace MonsterTrain2Poju.Probe
                 if (UnityEngine.Time.realtimeSinceStartup > deadline) throw new TimeoutException("Second Steward did not settle.");
                 yield return null;
             }
+            if (FinalDeath)
+            {
+                // ProcessEffectsQueue otherwise removes a finished dead actor
+                // while a separately scheduled calibration coroutine is yielding.
+                // Own the native effect queue for the whole resettable matrix.
+                bool finished = false;
+                var effects = (Queue<CombatManager.EffectQueueData>)Get(Managers.GetCombatManager(), "effectsQueue");
+                effects.Enqueue(new CombatManager.EffectQueueData { effects = new List<CardEffectState>(), selectedRoom = roomIndex,
+                    alwaysFirePostEffects = true, onEffectsFired = (_, __) => InNativeQueue() });
+                float queuedAt = UnityEngine.Time.realtimeSinceStartup, loggedAt = queuedAt;
+                while (!finished && Error == null)
+                {
+                    if (UnityEngine.Time.realtimeSinceStartup - loggedAt > 5)
+                    { log.LogInfo("FINAL-DEATH-WAIT " + activeStep); loggedAt = UnityEngine.Time.realtimeSinceStartup; }
+                    if (UnityEngine.Time.realtimeSinceStartup - queuedAt > 30) throw new TimeoutException("Native final-death queue did not settle: " + activeStep);
+                    yield return null;
+                }
+                yield break;
+                IEnumerator InNativeQueue()
+                {
+                    // The native controller treats BreakZeroFrame as returning
+                    // from the current iterator. Keep its child stack intact.
+                    yield return RunMatrix(log, host, secondCard, roomIndex);
+                    finished = true;
+                }
+            }
+            yield return RunMatrix(log, host, secondCard, roomIndex);
+        }
+        private static IEnumerator RunMatrix(ManualLogSource log, CharacterState host, CardState secondCard, int roomIndex)
+        {
+            RoomManager rooms = Managers.GetRoomManager(); SaveManager save = Managers.GetSaveManager();
             CombatManager combat = Managers.GetCombatManager();
             bool previewSuppression = CombatPreviewControl.Save(combat);
             CombatPreviewControl.Set(combat, true);
@@ -120,8 +154,9 @@ namespace MonsterTrain2Poju.Probe
             var samples = new List<object>(); int mismatches = 0;
             try
             {
-                foreach (Input input in Revival ? RevivalCases() : Cases())
+                foreach (Input input in FinalDeath ? FinalDeathCases() : Revival ? RevivalCases() : Cases())
                 {
+                    activeStep = input.Label;
                     Queue.Clear(); Set(rooms, "_allowEnchantmentUpdates", false);
                     for (int index = 0; index < actors.Length; index++)
                     {
@@ -170,7 +205,7 @@ namespace MonsterTrain2Poju.Probe
                             Queue.Clear();
                         }
                     }
-                    if (Revival)
+                    if (Revival || FinalDeath)
                     {
                         Add(target, "OnReanimated", 35, input, input.ReanimatedEffect);
                         Add(target, "OnDeath", 40, input, input.DeathEffect);
@@ -196,17 +231,22 @@ namespace MonsterTrain2Poju.Probe
                         }
                     }
                     finally { recording = false; }
-                    RoomCombatState actual = Trace.Capture(target.GetCurrentRoom()); object rngAfter = HalfHealthLifecycleCalibration.Rng();
-                    if (actors.Any(actor => !actor.IsAlive || actor.IsDestroyed) || Queue.Count != 0)
+                    RoomCombatState actual = Trace.Capture(rooms.GetRoom(roomIndex)); object rngAfter = HalfHealthLifecycleCalibration.Rng();
+                    CombatUnit actualTarget = Trace.CaptureUnit(target);
+                    if (actors.Any(actor => actor.IsDestroyed || !actor.IsAlive && (!FinalDeath || actor != target)) || Queue.Count != 0 ||
+                        FinalDeath && (target.IsAlive || !target.HasFinishedDying))
                         throw new InvalidOperationException("Damage-reaction case left a dead actor or pending queue: " + input.Label);
                     bool rngUnchanged = JToken.DeepEquals(HalfHealthLifecycleCalibration.GameplayRng(rngBefore), HalfHealthLifecycleCalibration.GameplayRng(rngAfter));
                     string? difference = predicted.UnsupportedReason ?? HalfHealthLifecycleCalibration.Difference(predicted.State, actual) ??
                         HalfHealthLifecycleCalibration.Difference(predictedDispatches, dispatches) ?? (rngUnchanged ? null : "Gameplay/Unity RNG changed.");
+                    if (FinalDeath && difference == null)
+                        difference = HalfHealthLifecycleCalibration.Difference(predicted.RetainedUnits.Single(unit => unit.Id == Trace.UnitId(target)), actualTarget) ??
+                            (predicted.PendingCallbacks.Count == 1 ? null : "Final death needs one deferred physical removal.");
                     if (difference != null) { mismatches++; log.LogWarning(input.Label + ": " + difference); }
                     samples.Add(new { Label = input.Label, Input = input, TargetId = Trace.UnitId(target), HostId = Trace.UnitId(host),
                         WitnessId = Trace.UnitId(witness), AttackerId = attacker == null ? 0 : Trace.UnitId(attacker),
                         SourceCardId = sourceCard == null ? 0 : Trace.CardId(sourceCard), RelicSourced = sourceRelic != null,
-                        Before = before, Actual = actual, Dispatches = dispatches.ToArray(), RngBefore = rngBefore, RngAfter = rngAfter,
+                        Before = before, Actual = actual, ActualTarget = actualTarget, Dispatches = dispatches.ToArray(), RngBefore = rngBefore, RngAfter = rngAfter,
                         GameplayRngUnchanged = rngUnchanged, PendingAfterDrain = Queue.Count, Difference = difference,
                         Predicted = difference == null ? null : predicted.State, Completed = true });
                     log.LogInfo("DAMAGE-REACTION " + input.Label + " " + (difference ?? "MATCH"));
@@ -233,14 +273,91 @@ namespace MonsterTrain2Poju.Probe
             }
             string? restoration = HalfHealthLifecycleCalibration.Difference(original, Trace.CaptureTrain()) ??
                 HalfHealthLifecycleCalibration.Difference(originalRng, HalfHealthLifecycleCalibration.Rng());
+            object restoredRng = HalfHealthLifecycleCalibration.Rng();
+            var removals = new List<object>();
+            if (FinalDeath && restoration == null && mismatches == 0)
+                yield return FinalRemovals(log, host, enemy, witness, actors, removals);
+            mismatches += removalMismatches;
             using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
                 GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId,
-                Boundary = Revival ? "NativeBloodshedPunishUndyingLifecycle" : "NativeBloodshedPunishDamageLifecycle",
+                Boundary = FinalDeath ? "NativeBloodshedPunishFinalDeathDamage" : Revival ? "NativeBloodshedPunishUndyingLifecycle" : "NativeBloodshedPunishDamageLifecycle",
                 LiveContextUnchanged = restoration == null, RestorationDifference = restoration, EffectsDrained = true,
-                RngBefore = originalRng, RngAfter = HalfHealthLifecycleCalibration.Rng(), Mismatches = mismatches, Samples = samples }))
+                RestorationBoundary = FinalDeath ? "BeforePhysicalRemovalSequence" : "CompleteComponent",
+                RngBefore = originalRng, RngAfter = restoredRng, Mismatches = mismatches, Samples = samples, Removals = removals }))
             using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
-                Revival ? "damage-reaction-revival.mt2f" : "damage-reactions.mt2f"))) document.Write(output);
+                FinalDeath ? "damage-reaction-final-death.mt2f" : Revival ? "damage-reaction-revival.mt2f" : "damage-reactions.mt2f"))) document.Write(output);
             if (restoration != null || mismatches != 0) throw new InvalidOperationException("Damage reactions differ: " + mismatches + "; restoration: " + restoration);
+        }
+        private static IEnumerator FinalRemovals(ManualLogSource log, CharacterState host, CharacterState enemy, CharacterState witness,
+            CharacterState[] actors, List<object> output)
+        {
+            removalMismatches = 0;
+            CombatManager combat = Managers.GetCombatManager();
+            bool previous = CombatPreviewControl.Save(combat); CombatPreviewControl.Set(combat, true);
+            try
+            {
+                foreach (CharacterState actor in actors)
+                {
+                    Set(actor, "_primaryStateInformation", Copy(Get(actor, "_primaryStateInformation")));
+                    Set(actor, "triggers", new List<CharacterTriggerState>());
+                    AccessTools.Property(typeof(CharacterState), "IsEnchanter").SetValue(actor, false);
+                    foreach (var status in Statuses(actor).Values) status.Count = 0;
+                    actor.SetHealth(20, 20);
+                }
+                int roomIndex = host.GetCurrentRoomIndex();
+                var input = new Input("physical-removal", hp: 11, amount: 11, half: true);
+                Add(host, "OnBloodshed", 5, input); Add(witness, "OnBloodshed", 10, input);
+                Add(witness, "OnAnyMonsterDeathOnFloor", 45, input);
+                Add(witness, "OnAnyHeroDeathOnFloor", 50, input);
+                Add(witness, "OnAnyUnitDeathOnFloor", 55, input);
+                CardState card = witness.GetSpawnerCard();
+                foreach (CharacterState target in new[] { host, enemy })
+                {
+                    target.SetHealth(11, 20);
+                    Add(target, "OnHit", 15, input); Add(target, "OnPunish", 20, input);
+                    Add(target, "OnDeathwish", 25, input); Add(target, "OnDeathwishLost", 30, input);
+                    Add(target, "OnDeath", 40, input, "CardEffectHeal");
+                    RoomCombatState before = Trace.Capture(Managers.GetRoomManager().GetRoom(roomIndex));
+                    object rngBefore = HalfHealthLifecycleCalibration.Rng();
+                    RoomCombatResult predicted = PredictRemoval(Predict(before, Trace.UnitId(target), 11, Trace.CardId(card), 0, false));
+                    dispatches.Clear(); recording = true;
+                    try
+                    {
+                        yield return target.ApplyDamage(11, new CharacterState.ApplyDamageParams { damageSourceCard = card,
+                            damageType = Damage.Type.Default, damageSourceCardFinishingResolution = true }, Managers.GetPlayerManager(), Managers.GetCardStatistics());
+                        yield return combat.RemoveDeadCharacters();
+                    }
+                    finally { recording = false; }
+                    RoomCombatState actual = Trace.Capture(Managers.GetRoomManager().GetRoom(roomIndex));
+                    object rngAfter = HalfHealthLifecycleCalibration.Rng();
+                    CombatUnit dead; using (new CharacterState.SetAllowDestroyedAccessHelper(target, onlyIfDestroyed: true)) dead = Trace.CaptureUnit(target);
+                    string? difference = predicted.UnsupportedReason ?? HalfHealthLifecycleCalibration.Difference(predicted.State, actual) ??
+                        HalfHealthLifecycleCalibration.Difference(predicted.Dispatches, dispatches) ??
+                        (JToken.DeepEquals(HalfHealthLifecycleCalibration.GameplayRng(rngBefore), HalfHealthLifecycleCalibration.GameplayRng(rngAfter)) ? null : "Gameplay/Unity RNG changed.");
+                    output.Add(new { Label = target == host ? "player-physical-removal" : "enemy-physical-removal", TargetId = Trace.UnitId(target),
+                        Amount = 11, SourceCardId = Trace.CardId(card), Before = before, Actual = actual, ActualTarget = dead,
+                        Dispatches = dispatches.ToArray(), RngBefore = rngBefore, RngAfter = rngAfter, PendingAfterDrain = Queue.Count,
+                        Completed = true, Difference = difference, Predicted = difference == null ? null : predicted.State });
+                    log.LogInfo("FINAL-PHYSICAL-REMOVAL " + (target == host ? "player" : "enemy") + ": " + (difference ?? "MATCH"));
+                    if (difference != null || Queue.Count != 0) removalMismatches++;
+                }
+            }
+            finally { CombatPreviewControl.Set(combat, previous); }
+        }
+        private static RoomCombatResult PredictRemoval(RoomCombatResult result)
+        {
+            if (!result.Supported) return result;
+            var fired = result.Dispatches.ToList(); var queue = result.PendingCallbacks.ToList();
+            bool drained = RoomCombatModel.DrainCharacterQueue(queue, item => {
+                result = RoomCombatModel.ApplyQueuedCharacterTrigger(result.State!, item, queue.Add);
+                fired.AddRange(result.Dispatches); return result.Supported;
+            }, item => {
+                result = item.CompletePhysicalRemovalAfterQueue ? RoomCombatModel.SettleQueuedSpawnerAndCenter(result.State!, item.Unit) :
+                    RoomCombatModel.SettleQueuedSpawner(result.State!, item.Unit);
+                return result.Supported;
+            }, () => { result = EnchantmentWorldModel.CompleteQueuedRemovals(result.State!, queue.Add); return result.Supported; },
+                () => result.State?.Context, message => result = new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), message));
+            return drained ? new RoomCombatResult(result.State, result.Outcome, 0, new List<CombatEvent>(), dispatches: fired) : result;
         }
         private static HadesRNG NativeRng(RngId id) => (HadesRNG)AccessTools.Method(typeof(RandomManager), "GetRng").Invoke(null, new object[] { id });
         private static Dictionary<string, CharacterState.StatusEffectStack> Statuses(CharacterState actor) =>
@@ -344,6 +461,23 @@ namespace MonsterTrain2Poju.Probe
             yield return new Input("revival-active-half-remains", hp: 2, amount: 3, undying: 1, half: true, activeHalf: true);
             yield return new Input("revival-active-half-heal-leaves", hp: 1, maxHp: 2, amount: 1, undying: 1, half: true, activeHalf: true,
                 reanimatedEffect: "CardEffectHeal");
+        }
+        private static IEnumerable<Input> FinalDeathCases()
+        {
+            foreach (string source in new[] { "None", "Card", "Enemy", "Self", "Relic", "Friendly" })
+                yield return new Input("final-source-" + source, source, hp: 2, amount: 3);
+            yield return new Input("final-enemy-card", enemyTarget: true, hp: 2, amount: 3);
+            yield return new Input("final-enemy-source", "Enemy", enemyTarget: true, hp: 2, amount: 3);
+            yield return new Input("final-bloodshed-heal", hp: 2, amount: 3, bloodEffect: "CardEffectHeal");
+            yield return new Input("final-punish-heal", hp: 2, amount: 3, punishEffect: "CardEffectHeal");
+            yield return new Input("final-bloodshed-nested-damage", hp: 2, amount: 3, bloodEffect: "CardEffectDamage");
+            yield return new Input("final-punish-nested-damage", hp: 2, amount: 3, punishEffect: "CardEffectDamage");
+            yield return new Input("final-half-gain", hp: 11, amount: 11, half: true);
+            yield return new Input("final-half-one-maxhp", hp: 1, maxHp: 1, amount: 1, half: true);
+            yield return new Input("final-active-half-remains", hp: 2, amount: 3, half: true, activeHalf: true);
+            yield return new Input("final-active-half-one", hp: 1, maxHp: 2, amount: 1, half: true, activeHalf: true);
+            yield return new Input("final-half-gain-heals", hp: 11, amount: 11, half: true, gainEffect: "CardEffectHeal");
+            yield return new Input("final-half-death-heals", hp: 11, amount: 11, half: true, deathEffect: "CardEffectHeal");
         }
         [HarmonyPatch(typeof(CharacterState), nameof(CharacterState.FireTriggers))]
         private static class DispatchPatch

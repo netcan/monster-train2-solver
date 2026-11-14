@@ -2355,7 +2355,8 @@ namespace MonsterTrain2Poju.Probe
                 if (DamageReactionCalibration.Error != null) throw new InvalidOperationException(DamageReactionCalibration.Error);
                 if (DamageReactionCalibration.Completed)
                 {
-                    Finish(true, DamageReactionCalibration.Revival ?
+                    Finish(true, DamageReactionCalibration.FinalDeath ?
+                        "Bloodshed/Punish final-death damage component captured with physical removals; full-battle acceptance is separate." : DamageReactionCalibration.Revival ?
                         "Bloodshed/Punish Undying lifecycle component captured; final death and full-battle acceptance is separate." :
                         "Bloodshed/Punish damage lifecycle component captured; lethal and full-battle acceptance is separate.");
                     return;

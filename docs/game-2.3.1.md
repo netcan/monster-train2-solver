@@ -169,7 +169,7 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -HalfHealt
 原生约 26 秒，组件差异零、`DEPTH-PASS`、退出码零和玩家文件未变均通过。
 旧版治疗触发、攻击触发及依赖最后攻击者的按血伤害三份房间/列车回归通过。
 
-本次开放直接非预演伤害/治疗 API，最大生命由下述独立样本验收。Undying 致命伤害另见下述 20 项组件；最终死亡、触发安装/移除、
+本次开放直接非预演伤害/治疗 API，最大生命由下述独立样本验收。Undying 致命伤害另见下述 20 项组件；原生伤害阶段最终死亡及移除另见下述 18+2 项。触发安装/移除、
 共享光环世界、外部伤害回调队列、原生法术分阶段 API 及整层调度仍受保护；
 尚未获得新增半血卡牌/遗物或整场搜索的完整验收。
 
@@ -295,7 +295,7 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -HalfHealt
 每项独立模型复放及 32 路不可变并发分支通过，游戏与 Unity RNG 未变；
 采样结束恢复全部 RNG 和原始列车上下文。采样期间持有独立的预演抑制计数，
 避免后台预演混入伤害记录，结束时释放自己持有的计数。
-缺失新版伤害统计快照、无 Undying 的最终死亡和预演中的实际 Bloodshed/Punish 仍受保护。
+缺失新版伤害统计快照、预演和原生卡牌伤害阶段之外的最终死亡仍受保护。
 这批组件不计作新卡牌、新遗物或完整战斗的整体验收。
 
 ```powershell
@@ -355,7 +355,47 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -DamageRea
 旧历史反伤/复活归档的 78 输入复放仍被缺失 `MoonPhaseMask` 保护拦住，错误为
 `Movement moon understanding requires a captured prior mask.`；本次与修改前
 `a7720df6` 的独立模型副本复现一致，未计为通过，需补充原生位移证据。
-无 Undying 的最终死亡、预演、共享世界半血调度及完整出牌/整层战斗仍待校准。
+无 Undying 的最终死亡见下述新证据；预演、共享世界半血调度及完整出牌/整层战斗仍待校准。
+
+## 最终死亡与实际移除
+
+18 项无 Undying 的原生伤害返回边界及两次实际玩家/敌方移除通过。
+前者包含 77 份完整调度载荷，后者另有 22 份；每项独立复放及 32 路并发分支
+比较完整房间/上下文、回调、游戏和 Unity RNG、父状态不可变性。
+
+矩阵覆盖六种伤害来源、双方目标、针对死者的 Bloodshed/Punish 嵌套伤害/治疗、
+半血 gain、最大生命为一、已有半血来源及半血/死亡治疗控制。
+原生在零生命时排入半血请求，并在死亡信号前派发；死者的半血效果不执行。
+伤害返回时已结算死亡统计、移除统计监听器，角色仍保有物理站位，
+玩家召唤牌仍在 Standby。模型输出一项延迟物理移除，保存完整死者状态。
+
+两次实际移除从同一原生上下文顺序执行。OnDeath、对应团队的 Harvest 与
+OnAnyUnitDeathOnFloor 的顺序一致，玩家/敌方金币分别增加 190/180，
+死者治疗未生效，玩家召唤牌转入 Exhausted，实际站位被清除。
+
+采样使用原生效果队列持有整个可重置矩阵，防止后台主循环提前移除死者。
+原生协程栈自行处理 `BreakZeroFrame`，不能将它压平后转交给原生控制器。
+18 项结束后先验证原始列车和全部 RNG 已恢复，再进行两次不可恢复的实际移除；
+归档的 `RestorationBoundary=BeforePhysicalRemovalSequence` 明确记录该检查点。
+实际移除只发生在隔离、静音的 worker3，玩家文件未变。
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Game231DamageReactionFinalDeath.ps1
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -DamageReactionFinalDeathOnly -GameSpeed Instant -SkipBuild
+```
+
+二进制 `mechanics/damage-reactions/final-death/final-death.mt2f` 为 12,833 字节，SHA256
+`5e148ad737d74f420be2e7b2ca83fc7137c29739ae30bf4fbad89d8024fc32a0`。
+来源 `.probe-runs/full-battle-steward-once-20261114-152858-a060d445`，原生 36.82 秒，
+差异/待执行队列为零、退出码零、`DEPTH-PASS` 及玩家文件签名未变均通过。
+已有 33 项伤害、20 项 Undying、13 项半血伤害/治疗、28 项升级效果及旧版
+直接/附魔来源复活与生命周期纯检查均通过。
+旧版攻击触发、受击/击杀和濒死升级三份完整回归也通过：163 个房间、39 个列车
+阶段、60 次出牌、20 次 EndTurn，各 16 路独立策略分支与完整战斗链一致。
+
+本次只开放非预演的原生卡牌伤害阶段及其已记录移除流程。
+其他伤害阶段、共享世界、外部半血伤害回调队列、完整出牌和整层战斗仍待校准，
+没有增加整张新版卡牌或遗物的完整覆盖数。
 
 ## 可复验样本
 

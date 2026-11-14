@@ -14,8 +14,12 @@ absorption, thresholds, silence, nested effects and half-health ordering.
 Undying lethal damage has another 20 native cases, 21 direct hits and 332
 dispatch payloads, with 32 immutable branches per case. These cover half-health
 queues across revival, one-HP gain/loss, active-half controls and once-only death
-listeners. Final death and preview callbacks remain guarded; these components
-do not count as whole-card/relic or whole-battle acceptance on 2.3.1.
+listeners. Final death in the native card-damage phase has 18 more native
+successors and two actual player/enemy removals, with 99 dispatch payloads and
+32 immutable branches each. Death effects, Harvest, retained actors, physical
+points and spawner exhaustion match. Preview and other damage phases remain
+guarded; these components do not count as whole-card/relic or whole-battle
+acceptance on 2.3.1.
 
 Game 2.2.1 curated inventory (2026-11-14): 2,874 binary archives with verified
 hashes and registrations. The card evidence index accepts 1,561 battle archives

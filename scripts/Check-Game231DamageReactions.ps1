@@ -16,4 +16,4 @@ if ((Get-Item -LiteralPath $path).Length -ne [long]$manifest[0].bytes -or
     (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ine $manifest[0].sha256) { throw 'Damage-reaction capture hash/size differs.' }
 dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --damage-reactions-only $path
 if ($LASTEXITCODE) { throw 'Independent damage-reaction validation failed.' }
-Write-Output 'GAME-231-DAMAGE-REACTIONS PASS: 33 native successors, full dispatch/state/RNG and 32 immutable branches. Final death and preview callbacks remain guarded; Undying has separate native acceptance.'
+Write-Output 'GAME-231-DAMAGE-REACTIONS PASS: 33 native successors, full dispatch/state/RNG and 32 immutable branches. Final death and Undying have separate native acceptance; preview remains guarded.'

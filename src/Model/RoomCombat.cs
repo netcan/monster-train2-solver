@@ -3061,11 +3061,12 @@ namespace MonsterTrain2Poju.Model
                 if (attackingTrigger && actor != null && actor != target)
                     FireTriggers(actor, "OnAttackingBeforeDamage", overrideTarget: target);
                 if (unsupportedReason != null) return;
-                if (resultingHealth <= 0 && target.Count("undying") <= 0 && (target.Triggers.Any(trigger => trigger.Kind == "OnPunish") ||
+                if (!nativeCardDamage && resultingHealth <= 0 && target.Count("undying") <= 0 &&
+                    (target.Triggers.Any(trigger => trigger.Kind == "OnPunish") ||
                     target.Source.Team == CombatTeam.Player && units.Any(unit => unit.InRoom && !unit.Removed &&
                         unit.RoomIndex == target.RoomIndex && unit.Source.Team == CombatTeam.Player &&
                         unit.Triggers.Any(trigger => trigger.Kind == "OnBloodshed"))))
-                { unsupportedReason = "Bloodshed/Punish lethal damage requires native death/revival lifecycle calibration."; return; }
+                { unsupportedReason = "Bloodshed/Punish lethal damage outside the native card phase requires death/revival lifecycle calibration."; return; }
                 if (!SetHealth(target, resultingHealth)) return;
                 if (!source.Preview && target.Source.Team == CombatTeam.Player && !target.Source.IsPyre &&
                     context?.Statistics?.MonsterDamage != null)
@@ -3206,9 +3207,10 @@ namespace MonsterTrain2Poju.Model
                     MergeSummon(drained);
                 }
                 if (target.DeathFinished) return;
-                if (!target.Alive && target.Count("undying") <= 0 && (units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)) ||
+                if (!nativeCardDamage && !target.Alive && target.Count("undying") <= 0 &&
+                    (units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)) ||
                     context?.Enchantments?.Rooms.SelectMany(room => room.Units).Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)) == true))
-                { unsupportedReason = "Lethal damage with half-health Deathwish requires native death/revival lifecycle calibration."; return; }
+                { unsupportedReason = "Lethal half-health damage outside the native card phase requires death/revival lifecycle calibration."; return; }
                 // A lethal hit queues its half-health transition before
                 // CheckDeathCardTriggers revives Undying. Those callbacks run
                 // against the revived character, after the death signal.
@@ -3240,6 +3242,10 @@ namespace MonsterTrain2Poju.Model
                 {
                     if (!TryRevive(actor, target, sourceCardId))
                     {
+                        // CheckDeathCardTriggers drains its queued half-health
+                        // requests before CheckForDeath dispatches death signals.
+                        if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
+                        if (unsupportedReason != null || target.DeathFinished || target.Alive) return;
                         // Retaliation finishes inside the outer victim's damage
                         // coroutine. Its dead attacker revives before the native
                         // removal batch updates other enchanters' target maps.
