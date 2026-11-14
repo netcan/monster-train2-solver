@@ -455,6 +455,7 @@ param(
     [switch] $HalfHealthDeathwishOnly,
     [switch] $HalfHealthLifecycleOnly,
     [switch] $ZealStatusOnly,
+    [switch] $DevotionOnly,
     [switch] $HalfHealthMaximumOnly,
     [switch] $HalfHealthUpgradeOnly,
     [switch] $HalfHealthUpgradeEffectsOnly,
@@ -1400,6 +1401,13 @@ if ($DamageOverflow) { $BranchCardMasks = $true; $Policy = 'units-spells-and-jun
 if ($BattleRelicUpgrades -or $SpawnStatusRelicsClones -or $OriginalRelicBatch -or $OriginalStingRelicBatch -or $OriginalDeployableRelic) { $BranchCardMasks = $true }
 if ($SpawnStatusRelicsClones) { $SpawnStatusRelics = $true; $UnitClone = $true }
 if ($EnchantmentWorld) { $EnchantmentCombat = $true }
+if ($DevotionOnly) {
+    $devotionArguments = @('DevotionOnly', 'Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'CaptureJson', 'SkipBuild',
+        'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction', 'ProgressAction', 'ErrorVariable', 'WarningVariable',
+        'InformationVariable', 'OutVariable', 'OutBuffer', 'PipelineVariable')
+    if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $devotionArguments }).Count) { throw 'Devotion requires an isolated component mode.' }
+    $Policy = 'steward-once'; $BranchCardMasks = $true
+}
 if ($ZealStatusOnly) {
     $zealArguments = @('ZealStatusOnly', 'Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'CaptureJson', 'SkipBuild',
         'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction', 'ProgressAction', 'ErrorVariable', 'WarningVariable',
@@ -1836,6 +1844,7 @@ $environment = @{
     MT2_PROBE_HALF_HEALTH_DEATHWISH = $(if ($HalfHealthDeathwishOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_LIFECYCLE = $(if ($HalfHealthLifecycleOnly) { '1' } else { '0' })
     MT2_PROBE_ZEAL_STATUS = $(if ($ZealStatusOnly) { '1' } else { '0' })
+    MT2_PROBE_DEVOTION = $(if ($DevotionOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_MAXIMUM = $(if ($HalfHealthMaximumOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_UPGRADE = $(if ($HalfHealthUpgradeOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_UPGRADE_EFFECTS = $(if ($HalfHealthUpgradeEffectsOnly) { '1' } else { '0' })
@@ -2394,6 +2403,25 @@ if ($HalfHealthLifecycleOnly -or $HalfHealthMaximumOnly -or $HalfHealthUpgradeOn
     } finally { $lifecycleDocument.Dispose() }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
         ModelAcceptance='Pending independent focused checker'; Trace=$lifecyclePath } | ConvertTo-Json
+    return
+}
+if ($DevotionOnly) {
+    $devotionPath = Join-Path $profile 'devotion.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $devotionPath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Devotion resource and card-effect component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Devotion component failed; inspect $unityLog" }
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $devotionDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($devotionPath)
+    try {
+        $devotion = $devotionDocument.RootElement
+        if ($devotion.GetProperty('Boundary').GetString() -cne 'NativeDevotionResourceAndCardEffects' -or
+            -not $devotion.GetProperty('LiveContextUnchanged').GetBoolean() -or -not $devotion.GetProperty('EffectsDrained').GetBoolean() -or
+            $devotion.GetProperty('Mismatches').GetInt32() -ne 0 -or $devotion.GetProperty('Samples').GetArrayLength() -ne 21) {
+            throw 'Incomplete Devotion component.'
+        }
+    } finally { $devotionDocument.Dispose() }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        ModelAcceptance='Pending independent focused checker'; Trace=$devotionPath } | ConvertTo-Json
     return
 }
 if ($ZealStatusOnly) {

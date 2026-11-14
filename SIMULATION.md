@@ -11,9 +11,23 @@ Zeal now has 19 isolated native API/drained successors and 32 immutable parallel
 branches each. Unhealed/clipped maximum HP, half-health callback order, stack/HP
 saturation, immunity/Purify and the unchanged original ZealDamageIncrease relic's
 team-specific attack bonus match. This does not count as whole-battle relic
-acceptance (still 4/12 new relics). Devotion resources, offerings, level-dependent
+acceptance (still 4/12 new relics). Offerings, level-dependent
 cards/birth passives and Zeal/Horde casualty combinations remain separate.
 Run `scripts/Check-Game231ZealStatus.ps1` for the versioned binary component.
+
+Devotion resources now have 21 isolated native complete-train successors and
+32 immutable branches each. Runtime balance inputs are **3/3/2**: thresholds
+3, 6, 9 and a passive-stack base of two, rather than the decompiled field
+defaults of 5/5/4. Accumulation, multiple levels/remainders, signed addition,
+zero/negative/preview controls, the unchanged original Venerate effect,
+per-level increments, random ranges and level/passive queries match. Level
+notifications reach cards before monsters; unknown mutating callbacks reject.
+State keys distinguish levels/remainders and large awards use bounded arithmetic.
+`scripts/Check-Game231Devotion.ps1` verifies the 10,541-byte binary component.
+Native sampling took 28.05 seconds with complete live train/RNG restoration and
+unchanged player files. Full original-card cost/exhaustion, Devote actions,
+spawn passives and original Devotion relic battle acceptance remain separate;
+the accepted new-relic count is still **4/12**.
 
 The new Bloodshed/Punish damage callbacks have 33 isolated native cases with
 two paid units, 34 direct hits and 136 dispatch payloads. Full successors/RNG

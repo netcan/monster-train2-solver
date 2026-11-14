@@ -647,7 +647,8 @@ namespace MonsterTrain2Poju.Probe
                 save.IsForgeToggleActive(), save.GetBalatroGrosMichelCombatRoundCount(),
                 OuterBossDefinitions.IsAngelDuoScenario(save.GetCurrentScenarioData()?.name) ?
                     new ForcedRelentlessCounters((int)AccessTools.Field(typeof(CombatManager), "totalWaves").GetValue(combat),
-                        (int)AccessTools.Field(typeof(CombatManager), "turnsRemainingWhenRelentlessTriggeredEarly").GetValue(combat)) : null);
+                        (int)AccessTools.Field(typeof(CombatManager), "turnsRemainingWhenRelentlessTriggeredEarly").GetValue(combat)) : null,
+                devotion: DevotionProbe.Capture(managers));
         }
 
         internal CardPileState[] CaptureOtherPiles()

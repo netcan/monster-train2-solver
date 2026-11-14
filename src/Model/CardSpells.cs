@@ -690,7 +690,7 @@ namespace MonsterTrain2Poju.Model
                         statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
                         healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
                         sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe,
-                        ignoreDualism: effect.IgnoreDualism);
+                        ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel);
                 }
                 if (effect.Type == "DuplicateCard")
                 {
@@ -870,7 +870,7 @@ namespace MonsterTrain2Poju.Model
                     effect = new CardActionEffect("AddStatus", effect.Target, 0, effect.AllowEnemy, effect.AllowPlayer,
                         new[] { effect.Statuses[0].WithStacks(count) }, tests: effect.Tests, filters: effect.Filters);
                 }
-                if (effect.Type == ForgePointsModel.Effect && selected.Preview) continue;
+                if ((effect.Type == ForgePointsModel.Effect || effect.Type == DevotionModel.Effect) && selected.Preview) continue;
                 UnityRng effectRng = state.Context!.BattleRng;
                 if (effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && effect.Type != "AttachRoomCapacity" && effect.Type != "ScheduleNextDrawUpgrade" && !AbilityCooldownModel.IsEffect(effect.Type) && !AbilityLifecycleModel.IsEffect(effect.Type)) effect = Sample(effect, ref effectRng);
                 state = WithContext(state, state.Context.WithBattleRng(effectRng));
@@ -1093,6 +1093,13 @@ namespace MonsterTrain2Poju.Model
                     MoonPhaseTransitionResult shifted = MoonPhaseTransitionModel.Apply(state, effect, sourceCardId);
                     if (!shifted.Supported) return UnsupportedTrain(shifted.UnsupportedReason!);
                     state = shifted.State!;
+                    continue;
+                }
+                if (effect.Type == DevotionModel.Effect)
+                {
+                    DevotionResult changed = DevotionModel.ApplyEffect(state.Context!, effect, selected.Preview);
+                    if (!changed.Supported) return UnsupportedTrain(changed.UnsupportedReason!);
+                    state = WithContext(state, changed.Context!);
                     continue;
                 }
                 if (effect.Type == ForgePointsModel.Effect)
@@ -2301,7 +2308,7 @@ namespace MonsterTrain2Poju.Model
                     !AbilityLifecycleModel.IsEffect(effect.Type))
                 {
                     if (effect.Type == "AdjustAllStatusEffects") return "Status adjustment effects use a fixed integer value, not an integer range.";
-                    if (!EnergyModel.IsEffect(effect.Type) && effect.Type != ForgePointsModel.Effect && !new[] { "Damage", "DamagePerHp", "Heal", "HealOverheal", "AddStatus", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
+                    if (!EnergyModel.IsEffect(effect.Type) && effect.Type != ForgePointsModel.Effect && effect.Type != DevotionModel.Effect && !new[] { "Damage", "DamagePerHp", "Heal", "HealOverheal", "AddStatus", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
                         return "Unmodeled range consumer " + effect.Type;
                     string? rangeError = effect.Range.Validate();
                     if (rangeError != null) return rangeError;
@@ -2484,6 +2491,13 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "SetMoonPhase" || effect.Type == "AdvanceMoonPhase")
                     continue;
+                if (effect.Type == DevotionModel.Effect)
+                {
+                    string? devotionError = DevotionModel.Validate(source.Context);
+                    if (devotionError != null) return devotionError;
+                    if (!effect.DevotionPerLevel.HasValue) return "Missing native additional Devotion per level.";
+                    continue;
+                }
                 if (effect.Type == ForgePointsModel.Effect)
                 {
                     string? forgeError = ForgePointsModel.Validate(source.Context);
@@ -2707,6 +2721,7 @@ namespace MonsterTrain2Poju.Model
                 return RoomCorruptionModel.Test(room, effect);
             if (effect.Type == "AttachRoomCapacity") return !preview && !bossDead && RoomCapacityModel.TestAttachment(room, effect);
             if (effect.Type == ForgePointsModel.Effect) return ForgePointsModel.Test(pyreAlive ?? context?.EnergyState?.PyreAlive);
+            if (effect.Type == DevotionModel.Effect) return !preview && DevotionModel.Test(context, effect);
             if (EnergyModel.IsEffect(effect.Type)) return !preview && !bossDead && EnergyModel.Test(context!, effect.Type);
             if (effect.Type is "FreezeCard" or "FreezeAllCards") return !preview && !bossDead;
             if (effect.Type == "DuplicateCard") return !preview && !bossDead && count > 0;
@@ -2868,7 +2883,7 @@ namespace MonsterTrain2Poju.Model
                 statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
                 healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
                 sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe,
-                ignoreDualism: effect.IgnoreDualism);
+                ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel);
         }
         internal static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {

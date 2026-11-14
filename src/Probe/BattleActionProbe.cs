@@ -21,7 +21,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAdjustRoomCapacity", "CardEffectAdjustRoomMaxCorruption", "CardEffectAdjustCorruption",
             "CardEffectAddPermanentCorruption", "CardEffectAddStatusToRoomScalingByCasterStatusCount", "CardEffectAddStatusEffectPerMissingHp",
             "CardEffectSetMoonPhase", "CardEffectAdvanceMoonPhase", "CardEffectUpdateMoonPhaseResource",
-            "CardEffectAdjustForgePoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectChooseDiscard", "CardEffectAddBattleCard", "CardEffectAddRunCard", "CardEffectAddBattleCardPerTarget",
+            "CardEffectAdjustForgePoints", "CardEffectGainDevotionPoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectChooseDiscard", "CardEffectAddBattleCard", "CardEffectAddRunCard", "CardEffectAddBattleCardPerTarget",
             "CardEffectHeal", "CardEffectHealAndOverheal", "CardEffectHealAndDamageRelative", "CardEffectHealTrain", "CardEffectHealPyrePerEmberCost", "CardEffectSetHealth", "CardEffectSacrifice", "CardEffectSacrificeOrFeed", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
             "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffect", "CardEffectMultiplyStatusEffect",
             "CardEffectMultiplyAllPositiveStatusEffects", "CardEffectAdjustAllStatusEffects", "CardEffectAddStatusEffectPerOtherEffect",
@@ -488,6 +488,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectUpdateMoonPhaseResource" ? "RefreshMoonPhase" :
                 effect.GetEffectStateName() == "CardEffectAttachTrainRoomAttachment" ? "AttachRoomCapacity" :
                 effect.GetEffectStateName() == "CardEffectAdjustForgePoints" ? ForgePointsModel.Effect :
+                effect.GetEffectStateName() == "CardEffectGainDevotionPoints" ? DevotionModel.Effect :
                 effect.GetEffectStateName() == "CardEffectCopyUnits" ? "CopyUnits" :
                 effect.GetEffectStateName() == "CardEffectBump" ? "Bump" :
                 effect.GetEffectStateName() == "CardEffectRoomAbilityBumpToCurrentRoom" ? "RoomAbilityBumpToCurrentRoom" :
@@ -591,7 +592,7 @@ namespace MonsterTrain2Poju.Probe
                 upgrade = CardModifierProbe.Upgrade(upgradeState);
                 interactions.AddRange(CardModifierModel.UpgradeInteractions(upgrade));
             }
-            if (effect.GetUseIntRange() && !EnergyModel.IsEffect(type) && type != ForgePointsModel.Effect &&
+            if (effect.GetUseIntRange() && !EnergyModel.IsEffect(type) && type != ForgePointsModel.Effect && type != DevotionModel.Effect &&
                 !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "AddStatus", "MultiplyStatus",
                     "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType",
                     "ScheduleNextDrawUpgrade", "DrawNextTurn", "AdjustCapacity", "DiscardHand", "RandomDiscard", "Generate" }.Contains(type))
@@ -699,7 +700,8 @@ namespace MonsterTrain2Poju.Probe
                 equipmentMerge: type == "MergeEquipment" ? EquipmentMerge(effect, interactions) : null,
                 sourceStatusMultiplier: type == "SpawnOrStatus" && effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null,
                 suppressPyreRoomFocus: type == "AttackWithUnit" && effect.GetTargetMode() == TargetMode.Pyre &&
-                    effect.GetParamBool2() && effect.GetShouldSuppressPyreRoomFocus() ? true : (bool?)null);
+                    effect.GetParamBool2() && effect.GetShouldSuppressPyreRoomFocus() ? true : (bool?)null,
+                devotionPerLevel: type == DevotionModel.Effect ? (int?)effect.GetAdditionalParamInt() : null);
         }
 
         private static EquipmentMergeRule? EquipmentMerge(CardEffectData effect, List<string> interactions)

@@ -2370,6 +2370,17 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 ChooseDiscardScenario.Prepare(managers, log);
             }
+            if (fullBattle && DevotionCalibration.Enabled)
+            {
+                if (DevotionCalibration.Error != null) throw new InvalidOperationException(DevotionCalibration.Error);
+                if (DevotionCalibration.Completed)
+                {
+                    Finish(true, "Devotion resource and card-effect component captured; Devote, spawn passives and whole-battle acceptance are separate.");
+                    return;
+                }
+                if (!DevotionCalibration.Started && DevotionCalibration.Eligible) DevotionCalibration.Start(log);
+                if (DevotionCalibration.Started) return;
+            }
             if (fullBattle && ZealStatusCalibration.Enabled)
             {
                 if (ZealStatusCalibration.Error != null) throw new InvalidOperationException(ZealStatusCalibration.Error);
