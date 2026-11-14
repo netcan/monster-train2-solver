@@ -122,6 +122,9 @@ namespace MonsterTrain2Poju.Probe
                 {
                     JToken expected = Comparable(record.Predicted.State!, record.Kind);
                     JToken actual = Comparable(record.Actual, record.Kind);
+                    record.StoredCardCacheDiffers = !JToken.DeepEquals(
+                        JToken.FromObject(record.Predicted.State!.Context?.Statistics?.StoredCards ?? Array.Empty<int>()),
+                        JToken.FromObject(record.Actual.Context?.Statistics?.StoredCards ?? Array.Empty<int>()));
                     record.Difference = JToken.DeepEquals(expected, actual) ? null : "Train room unit states differ";
                     log.LogInfo("TRAIN-MODEL-" + (record.Difference == null ? "MATCH" : "MISMATCH") +
                         " index=" + record.Index + " kind=" + record.Kind + " turn=" + record.Turn);
@@ -139,9 +142,12 @@ namespace MonsterTrain2Poju.Probe
                 Rooms = state.Rooms.Select(room => new { room.RoomIndex, room.Units }).ToArray(),
                 Context = BattleTurnProbe.ComparableContext(state.Context)
             });
-            // HeroManager.DoTurn can finish the next draw before its wrapper returns.
-            // That draw refreshes card ownership statistics outside Ascend's model.
-            if (kind == "Ascend" && comparable["Context"]?["Statistics"] is JObject statistics)
+            // CardUI.LateUpdate queries scaling text between native coroutine
+            // yields, refreshing this membership cache without a battle event.
+            // Ascend can also finish the next draw before its wrapper returns.
+            // Keep the raw snapshots and cache difference; stable decision/turn
+            // comparisons still include this field and every numeric counter.
+            if (comparable["Context"]?["Statistics"] is JObject statistics)
                 statistics.Remove("StoredCards");
             return comparable;
         }
@@ -157,6 +163,7 @@ namespace MonsterTrain2Poju.Probe
             public TrainCombatResult Predicted { get; set; } = null!;
             public TrainCombatState? Actual { get; set; }
             public string? Difference { get; set; }
+            public bool StoredCardCacheDiffers { get; set; }
         }
 
         [HarmonyPatch(typeof(CombatManager), "ResolveCombat")]

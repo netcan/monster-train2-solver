@@ -152,7 +152,8 @@ namespace MonsterTrain2Poju.Model
                         }
                         continue;
                     }
-                    if (rule.HasUnsupportedUnplayedTriggers || rule.OnUnplayedNegativeEffects.Any(effect => effect.Type != "Damage" || effect.Target != "Pyre" || effect.Range != null))
+                    if (rule.HasUnsupportedUnplayedTriggers || rule.OnUnplayedNegativeEffects.Any(effect =>
+                        effect.Type != FloorDamageModel.Effect && (effect.Type != "Damage" || effect.Target != "Pyre" || effect.Range != null)))
                         return new TrainCombatResult(null, RoomOutcome.Unsupported, Array.Empty<RoomCombatResult>(), "Uncalibrated preview unplayed effect.");
                     TrainSpellResult applied = CardSpellModel.ApplyForCardPlay(preparedTrain, preparedTrain.Context.QueryFrame?.SelectedRoomIndex ?? 0,
                         rule.OnUnplayedNegativeEffects, 0, item.Card.InstanceId, playRules!, preparedTrain.Context.OtherPiles,

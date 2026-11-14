@@ -1720,17 +1720,41 @@ namespace MonsterTrain2Poju.Model
                 // Keep this effect's collection fixed; triggers may kill a later target.
                 // Native FloorRearrange.GetDropTarget uses only the first collected actor.
                 int appliedTargetCount = effect.Type == "FloorRearrange" ? Math.Min(1, targets.UnitIds.Count) : targets.UnitIds.Count;
+                IReadOnlyList<int> applicationTargets = targets.UnitIds;
+                int sweepRoom = -1;
+                if (effect.Type == FloorDamageModel.Effect)
+                {
+                    int[]? ordered = FloorDamageModel.Order(state, targets.UnitIds, out string? orderError);
+                    if (ordered == null) return UnsupportedTrain(orderError!);
+                    applicationTargets = ordered;
+                }
                 for (int targetIndex = 0; targetIndex < appliedTargetCount; targetIndex++)
                 {
                     if (effect.Type == "AttachEquipment" && targetIndex > 0) break;
                     // Native status application runs backwards; damage/healing/upgrades run forwards.
-                    int id = targets.UnitIds[(effect.Type == "AddStatus" || effect.Type == "MultiplyStatus" ||
+                    int id = applicationTargets[(effect.Type == "AddStatus" || effect.Type == "MultiplyStatus" ||
                         effect.Type == "MultiplyAllPositiveStatusEffects" || effect.Type == "AdjustAllStatusEffects" || effect.Type == "SpawnOrStatus" ||
                         AbilityCooldownModel.IsEffect(effect.Type) || AbilityLifecycleModel.IsEffect(effect.Type))
                         ? targets.UnitIds.Count - 1 - targetIndex : targetIndex];
                     RoomCombatState? targetRoom = state.Rooms.FirstOrDefault(item => item.Units.Any(unit => unit.Id == id));
                     CombatUnit? target = targetRoom?.Units.FirstOrDefault(unit => unit.Id == id);
                     if (target == null) continue;
+                    if (effect.Type == FloorDamageModel.Effect)
+                    {
+                        if (target.Health <= 0 && target.Status("undying") == null) continue;
+                        if (targetRoom!.RoomIndex != sweepRoom)
+                        {
+                            // Native removes dead characters before changing UI
+                            // focus; damage traits on the next floor see those callbacks.
+                            DrainDeaths();
+                            if (routingError != null) return UnsupportedTrain(routingError);
+                            sweepRoom = targetRoom.RoomIndex; focusedRoom = sweepRoom;
+                            state = WithContext(state, state.Context!.WithQueryFrame(state.Context.QueryFrame?.With(selectedRoomIndex: sweepRoom)));
+                            targetRoom = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == id));
+                            target = targetRoom?.Units.FirstOrDefault(unit => unit.Id == id);
+                            if (target == null) return UnsupportedTrain("Floor damage lost its selected actor during boundary removal callbacks.");
+                        }
+                    }
                     if (effect.Type == "SwapStats")
                     {
                         RoomCombatResult swapped = UnitStatSwapModel.Apply(targetRoom!, id, deferCallbacks: true, refreshPyre: Refresh);
@@ -2011,6 +2035,11 @@ namespace MonsterTrain2Poju.Model
                         outcome = applied.Outcome;
                         bossDead |= outcome == RoomOutcome.BattleWon;
                     }
+                }
+                if (effect.Type == FloorDamageModel.Effect && sweepRoom >= 0)
+                {
+                    DrainDeaths();
+                    if (routingError != null) return UnsupportedTrain(routingError);
                 }
                 if (effect.Type == "SpawnOrStatus" && targets.UnitIds.Count > 0 &&
                     RoomSpawnCopyModel.Active(state.Rooms.Single(room => room.Units.Any(unit => unit.Id == targets.UnitIds[0]))))
@@ -2366,7 +2395,7 @@ namespace MonsterTrain2Poju.Model
                     !AbilityLifecycleModel.IsEffect(effect.Type))
                 {
                     if (effect.Type == "AdjustAllStatusEffects") return "Status adjustment effects use a fixed integer value, not an integer range.";
-                    if (!EnergyModel.IsEffect(effect.Type) && effect.Type != ForgePointsModel.Effect && effect.Type != DevotionModel.Effect && !new[] { "Damage", "DamagePerHp", "Heal", "HealOverheal", "AddStatus", DevotionStatusModel.Effect, "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
+                    if (!EnergyModel.IsEffect(effect.Type) && effect.Type != ForgePointsModel.Effect && effect.Type != DevotionModel.Effect && !new[] { "Damage", FloorDamageModel.Effect, "DamagePerHp", "Heal", "HealOverheal", "AddStatus", DevotionStatusModel.Effect, "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
                         return "Unmodeled range consumer " + effect.Type;
                     string? rangeError = effect.Range.Validate();
                     if (rangeError != null) return rangeError;
@@ -2620,7 +2649,7 @@ namespace MonsterTrain2Poju.Model
                         return "Mix requires a positive draft size and captured elixir state.";
                     continue;
                 }
-                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "AttackTargetsWithSelfUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", "Sacrifice", "Kill", "AddStatus", DevotionStatusModel.Effect, "AddStatusPerCasterStatus", "AddStatusPerMissingHp", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
+                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "AttackTargetsWithSelfUnit", "Damage", FloorDamageModel.Effect, "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", "Sacrifice", "Kill", "AddStatus", DevotionStatusModel.Effect, "AddStatusPerCasterStatus", "AddStatusPerMissingHp", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "TransferAllStatuses" &&
                     (effect.Target != "DropTargetCharacter" || effect.Statuses.Count != 1))
@@ -2640,7 +2669,7 @@ namespace MonsterTrain2Poju.Model
                     return "Status-scaled unit upgrades require a captured self target and status filters.";
                 if (effect.Type == "BuffEquipment" && effect.Lifetime != "TemporaryUntilUnitDeath")
                     return "Equipment buffs require the native unit-death lifetime.";
-                if (effect.Value < 0 && !AttackChange(effect) && effect.Type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "HealOverheal", "AddStatus", DevotionStatusModel.Effect, "AddStatusPerOtherEffect", "SpawnOrStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AdjustDragonsHoard", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
+                if (effect.Value < 0 && !AttackChange(effect) && effect.Type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", FloorDamageModel.Effect, "DamagePerSourceAttack", "DamagePerHp", "Heal", "HealOverheal", "AddStatus", DevotionStatusModel.Effect, "AddStatusPerOtherEffect", "SpawnOrStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AdjustDragonsHoard", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
                     effect.Type == "FloorRearrange" && effect.Value > 1) return "Invalid spell effect value.";
                 if (effect.Type == "BuffHealth" && effect.Lifetime != "" && effect.Lifetime != "TemporaryUntilEndOfBattle" &&
                     effect.Lifetime != "TemporaryUntilUnitDeath") return "Unmodeled maximum-health buff lifetime.";
@@ -2806,6 +2835,7 @@ namespace MonsterTrain2Poju.Model
                 case "RemoveStatus": return string.IsNullOrEmpty(effect.Filters?.Subtype) || count > 0;
                 case "Draw": return context != null && context.Cards.Hand.Count - 1 < context.MaxHandSize;
                 case "ScheduleNextDrawUpgrade": return context != null && (Math.Abs(effect.RequiredGold) == 0 || context.Gold >= Math.Abs(effect.RequiredGold));
+                case FloorDamageModel.Effect:
                 case "Damage": return effect.Value >= 0 && (effect.Range == null || effect.Range.Max > 0) &&
                     (effect.Target != "DropTargetCharacter" || count > 0);
                 case "DamagePerSourceAttack": return count > 0;
@@ -2934,7 +2964,7 @@ namespace MonsterTrain2Poju.Model
             effect.Type == "Draw" && effect.Target == "DrawPile" ||
             (effect.Type == "DrawType" || effect.Type == "ScheduleNextDrawUpgrade") &&
             (effect.Target == "DrawPile" || effect.Target == "Hand" || effect.Target == "LastDrawnCard");
-        private static bool IsDamage(CardActionEffect effect) => effect.Type == "Damage" || effect.Type == "DamagePerSourceAttack";
+        private static bool IsDamage(CardActionEffect effect) => effect.Type == "Damage" || effect.Type == FloorDamageModel.Effect || effect.Type == "DamagePerSourceAttack";
         private static bool QuantityTest(CardActionEffect effect) => IsDamage(effect) || effect.Type == "Draw";
         private static CardActionEffect Sample(CardActionEffect effect, ref UnityRng rng)
         {

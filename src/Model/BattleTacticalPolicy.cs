@@ -203,7 +203,7 @@ namespace MonsterTrain2Poju.Model
                 // Room-wide enemy damage may accompany an allied-target buff.
                 CardActionEffect[] targeted = effects.Where(effect =>
                     effect.Target is "DropTargetCharacter" or "LastTargetedCharacters").ToArray();
-                bool damaging = targeted.Any(effect => effect.Type is "Damage" or "DamagePerSourceAttack" or
+                bool damaging = targeted.Any(effect => effect.Type is "Damage" or FloorDamageModel.Effect or "DamagePerSourceAttack" or
                     "DamagePerHp" or "DamageByUnitsKilled" or "Kill");
                 bool harmful = damaging || targeted.Any(effect =>
                     effect.Statuses.Any(status => status.DisplayCategory == "Negative"));

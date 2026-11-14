@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--floor-damage-battle-only")
+{
+    FloorDamageBattleChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--devote-battle-only")
 {
     DevoteBattleChecks.Native(args[1]);

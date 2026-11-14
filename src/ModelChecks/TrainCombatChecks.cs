@@ -113,8 +113,10 @@ internal static class TrainCombatChecks
             Rooms = state.Rooms.Select(room => new { room.RoomIndex, room.Units }).ToArray(),
             Context = BattleTurnChecks.ComparableContext(state.Context)
         }))!;
-        // DoTurn may finish the next draw before an Ascend wrapper captures its result.
-        if (kind == "Ascend") (comparable["Context"]?["Statistics"] as JsonObject)?.Remove("StoredCards");
+        // CardUI.LateUpdate can refresh this membership cache between coroutine
+        // yields; DoTurn can also draw before Ascend's wrapper captures. Raw
+        // snapshots retain it. Complete decision/EndTurn comparisons include it.
+        (comparable["Context"]?["Statistics"] as JsonObject)?.Remove("StoredCards");
         return comparable.ToJsonString();
     }
 }

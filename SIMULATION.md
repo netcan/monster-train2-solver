@@ -9,6 +9,13 @@ under migration; the coverage figures below describe **game 2.2.1**. See
 
 Latest 2.3.1 acceptance: all **12/12 new original relics** have controlled
 whole-battle evidence; this does not revalidate all 614 cards or 236 relics.
+Three unchanged original cards now share calibrated floor-by-floor damage:
+DivinePunishment at levels 0/1/2, DantesInferno's permanent candles and armor
+bypass, and ForbiddenCovenant's played and unplayed effects. Twelve native inputs,
+eight sweeps, seven turns, continuous replay, 16 immutable branches and 128-state
+serial/parallel search pass. Run `scripts/Check-Game231FloorDamageBattle.ps1` for
+the 46,895-byte archive. Intermediate train comparisons record but exclude the
+UI-timed StoredCards cache; complete decision/EndTurn comparisons retain it.
 Devote is now an explicit non-card operation in the action frontier and search.
 A seven-turn native victory includes 14 offerings over five turns, protected
 Persistent/Infusion cards, discardable Freeze and generated cards, singleton RNG,

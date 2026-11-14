@@ -16,7 +16,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAttachEquipment", "CardEffectAttachTrainRoomAttachment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment", "CardEffectRoomAbilityBumpToCurrentRoom",
             "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn",
             "CardEffectAdjustDragonsHoard", "CardEffectRewardGoldPerDragonHoard",
-            "CardEffectDamage", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDamageByUnitsKilled", "CardEffectTransferAttackFromUnit", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
+            "CardEffectDamage", "CardEffectDamageFloorByFloor", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDamageByUnitsKilled", "CardEffectTransferAttackFromUnit", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
             "CardEffectRemoveAllStatusEffects", "CardEffectTransferAllStatusEffectsFromUnit", "CardEffectTransferAllStatusEffects",
             "CardEffectAdjustRoomCapacity", "CardEffectAdjustRoomMaxCorruption", "CardEffectAdjustCorruption",
             "CardEffectAddPermanentCorruption", "CardEffectAddStatusToRoomScalingByCasterStatusCount", "CardEffectAddStatusEffectPerMissingHp",
@@ -502,6 +502,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectRewardGoldPerDragonHoard" ? "RewardGoldPerDragonHoard" :
                 effect.GetEffectStateName() == "CardEffectRewardGold" ? "RewardGold" :
                 effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
+                effect.GetEffectStateName() == "CardEffectDamageFloorByFloor" ? FloorDamageModel.Effect :
                 effect.GetEffectStateName() == "CardEffectDamagePerSourceAttack" ? "DamagePerSourceAttack" :
                 effect.GetEffectStateName() == "CardEffectDamagePerHp" ? "DamagePerHp" :
                 effect.GetEffectStateName() == "CardEffectDamageByUnitsKilled" ? "DamageByUnitsKilled" :
@@ -594,7 +595,7 @@ namespace MonsterTrain2Poju.Probe
                 interactions.AddRange(CardModifierModel.UpgradeInteractions(upgrade));
             }
             if (effect.GetUseIntRange() && !EnergyModel.IsEffect(type) && type != ForgePointsModel.Effect && type != DevotionModel.Effect &&
-                !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "AddStatus", DevotionStatusModel.Effect, "MultiplyStatus",
+                !new[] { "CopyUnits", "Bump", "Damage", FloorDamageModel.Effect, "DamagePerSourceAttack", "DamagePerHp", "Heal", "AddStatus", DevotionStatusModel.Effect, "MultiplyStatus",
                     "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType",
                     "ScheduleNextDrawUpgrade", "DrawNextTurn", "AdjustCapacity", "DiscardHand", "RandomDiscard", "Generate" }.Contains(type))
                 interactions.Add("Unimplemented integer range consumer " + type);

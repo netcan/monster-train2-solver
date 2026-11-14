@@ -589,9 +589,13 @@ namespace MonsterTrain2Poju.Model
                 sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe,
                 ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel, devotionLevelsPerGrant: effect.DevotionLevelsPerGrant);
 
-            int ResolveValue(CardActionEffect effect, int value) => effect.Type == "Damage" || effect.Type == "Heal" || effect.Type == "HealOverheal" || effect.Type == "HealRelative"
-                ? UpgradedStat(UpgradedStat(value, effect.Type == "HealOverheal" || effect.Type == "HealRelative" ? "Heal" : effect.Type, true, instance.Permanent),
-                    effect.Type == "HealOverheal" || effect.Type == "HealRelative" ? "Heal" : effect.Type, true, instance.Temporary) : value;
+            int ResolveValue(CardActionEffect effect, int value)
+            {
+                string stat = effect.Type == FloorDamageModel.Effect ? "Damage" :
+                    effect.Type == "HealOverheal" || effect.Type == "HealRelative" ? "Heal" : effect.Type;
+                return stat == "Damage" || stat == "Heal"
+                    ? UpgradedStat(UpgradedStat(value, stat, true, instance.Permanent), stat, true, instance.Temporary) : value;
+            }
         }
     }
 }
