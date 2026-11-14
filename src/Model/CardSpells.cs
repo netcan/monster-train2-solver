@@ -238,6 +238,13 @@ namespace MonsterTrain2Poju.Model
             }
             var borrowedTargets = Targets(source, roomIndex, externalAttacker ? attackerUnitId : 0);
             var deferredDeaths = pendingDeaths.ToList();
+            var settledActors = new Dictionary<int, CombatUnit>();
+            void RetainSettled(RoomCombatResult result)
+            {
+                foreach (var unit in result.RetainedUnits)
+                    if (ActorIsLive(unit)) settledActors.Remove(unit.Id);
+                    else settledActors[unit.Id] = unit;
+            }
             RoomCombatResult FinishQueue(RoomCombatState frame)
             {
                 state = ReplaceRoom(state, frame);
@@ -263,6 +270,7 @@ namespace MonsterTrain2Poju.Model
                     var fired = RoomCombatModel.ApplyQueuedCharacterTrigger(room, queued, queue.Add, refreshPyre: Refresh,
                         externalTargets: borrowed);
                     if (!fired.Supported) { error = fired.UnsupportedReason; return false; }
+                    RetainSettled(fired);
                     state = ReplaceRoom(state, RestoreUnfinished(fired)); events.AddRange(fired.Events);
                     MergeBorrowed(fired, borrowed);
                     if (fired.Outcome != RoomOutcome.Exchanged) outcome = fired.Outcome;
@@ -275,6 +283,7 @@ namespace MonsterTrain2Poju.Model
                     var returned = lastInTeam && centerPhysicalRemovals ? RoomCombatModel.SettleQueuedSpawnerAndCenter(room, queued.Unit, refreshPyre: Refresh) :
                         RoomCombatModel.SettleQueuedSpawner(room, queued.Unit, refreshPyre: Refresh);
                     if (!returned.Supported) { error = returned.UnsupportedReason; return false; }
+                    RetainSettled(returned);
                     state = ReplaceRoom(state, RestoreUnfinished(returned)); events.AddRange(returned.Events);
                     return true;
                 }, () =>
@@ -347,6 +356,10 @@ namespace MonsterTrain2Poju.Model
             state = ReplaceRoom(state, applied.State!);
             MergeBorrowed(applied, borrowedTargets);
             var retainedUnits = applied.RetainedUnits.ToList();
+            // Earlier victims can finish their OnDeath/removal callbacks inside
+            // this victim's damage queue. Preserve their final transient state.
+            retainedUnits.RemoveAll(unit => settledActors.ContainsKey(unit.Id));
+            retainedUnits.AddRange(settledActors.Values);
             var borrowedIds = borrowedTargets.Select(target => target.Unit.Id).ToHashSet();
             retainedUnits.RemoveAll(unit => borrowedIds.Contains(unit.Id) && ActorIsLive(unit));
             if (externalAttacker)
@@ -1828,7 +1841,8 @@ namespace MonsterTrain2Poju.Model
                     }
                     if (effect.Type == "HealOverheal" && target.Status("heal immunity")?.Stacks > 0) continue;
                     int? scaledDamage = null;
-                    bool nativeDamagePhase = IsDamage(effect) && targetRoom!.Context?.SpawnPoints != null && !targetRoom.Preview;
+                    bool nativeDamagePhase = IsDamage(effect) && targetRoom!.Context?.SpawnPoints != null &&
+                        (!targetRoom.Preview || targetRoom.Context.Enchantments?.TemporaryPreviewUnitIds != null);
                     // Native calculates trait damage and defensive status focus before its trigger
                     // queue drains the previous victim's standby return. Preserve that value once.
                     if (IsDamage(effect))

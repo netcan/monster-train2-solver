@@ -911,7 +911,7 @@ namespace MonsterTrain2Poju.Model
         {
             string? error = Validate(state, halfHealthLifecycle: true);
             bool localAttacker = state.Units.Any(unit => unit.Id == attackerUnitId);
-            if (error != null || damage < 0 || state.Preview || state.Context?.SpawnPoints == null ||
+            if (error != null || damage < 0 || state.Preview && state.Context?.Enchantments?.TemporaryPreviewUnitIds == null || state.Context?.SpawnPoints == null ||
                 !state.Units.Any(unit => unit.Id == targetId) ||
                 attackerUnitId != 0 && !localAttacker && (externalActor == null || externalActor.Id != attackerUnitId ||
                     externalActor.Health <= 0 || externalActorRoomIndex < 0 || externalActorRoomIndex == state.RoomIndex ||
@@ -1914,7 +1914,9 @@ namespace MonsterTrain2Poju.Model
                         externalTurnActorIds.Add(external.Unit.Id);
                     }
                 }
-                if (source.Preview && resetPreviewTriggers)
+                // Card hovers already reset the selected actors when establishing
+                // their temporary copies. Later victims/effects share those flags.
+                if (source.Preview && resetPreviewTriggers && source.Context?.Enchantments?.TemporaryPreviewUnitIds == null)
                     foreach (WorkingUnit unit in units)
                         for (int index = 0; index < unit.Triggers.Count; index++) unit.Triggers[index] = unit.Triggers[index].ForPreview();
                 context = source.Context;

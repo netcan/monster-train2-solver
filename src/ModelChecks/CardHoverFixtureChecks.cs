@@ -28,7 +28,8 @@ internal static class CardHoverFixtureChecks
         var native = row.GetProperty("CopiedActual").Deserialize<TrainCombatState>()!;
         var restored = row.GetProperty("After").Deserialize<TrainCombatState>()!;
         var rule = row.GetProperty("Rule").Deserialize<CardPlayRule>()!;
-        var action = new PlayCardAction(row.GetProperty("CardId").GetInt32(), row.GetProperty("RoomIndex").GetInt32(), targetUnitId: targetId);
+        int dropId = row.TryGetProperty("DropTargetId", out var dropTarget) ? dropTarget.GetInt32() : targetId;
+        var action = new PlayCardAction(row.GetProperty("CardId").GetInt32(), row.GetProperty("RoomIndex").GetInt32(), targetUnitId: dropId);
         var observed = row.GetProperty("ActualTarget").Deserialize<CombatUnit>()!;
         Require(GameplayRng(row.GetProperty("RngBefore"), row.GetProperty("RngAfter")), "Card hover changed gameplay RNG: " + label);
         string frozen = Json(before);
@@ -36,10 +37,27 @@ internal static class CardHoverFixtureChecks
         Require(result.Supported, "Card hover unsupported: " + label + ": " + result.UnsupportedReason);
         Same(result.CopiedBefore!, row.GetProperty("CopiedBefore").Deserialize<TrainCombatState>()!, label + " copied before");
         Same(result.AfterEffects!, native, label + " after effects");
-        var predictedTarget = result.AfterEffects!.Rooms.SelectMany(room => room.Units)
-            .Concat(result.TemporaryRemovedUnits).Single(unit => unit.Id == targetId);
+        var predictedActors = result.AfterEffects!.Rooms.SelectMany(room => room.Units).Concat(result.TemporaryRemovedUnits).ToArray();
+        CombatUnit Predicted(int id)
+        {
+            Require(predictedActors.Count(unit => unit.Id == id) == 1,
+                label + " missing/duplicate temporary actor " + id + "; captured ids=" + string.Join(",", predictedActors.Select(unit => unit.Id)));
+            return predictedActors.Single(unit => unit.Id == id);
+        }
+        var predictedTarget = Predicted(targetId);
         string? difference = ModelJson.Difference(Json(predictedTarget), Json(observed));
         Require(difference == null, label + " temporary target: " + difference);
+        if (row.TryGetProperty("ActualTargets", out var actualTargets))
+        {
+            var actors = actualTargets.Deserialize<CombatUnit[]>()!;
+            Require(actors.Select(unit => unit.Id).SequenceEqual(result.CopiedIds), "Incomplete native temporary actor roster: " + label);
+            foreach (var actor in actors)
+            {
+                var predicted = Predicted(actor.Id);
+                difference = ModelJson.Difference(Json(predicted), Json(actor));
+                Require(difference == null, label + " temporary actor " + actor.Id + ": " + difference);
+            }
+        }
         Same(result.Restored!, restored, label + " restored primary");
         Same(result.Restored!, row.GetProperty("Cleared").Deserialize<TrainCombatState>()!, label + " cleared visuals");
         Require(result.CopiedIds.SequenceEqual(row.GetProperty("CopiedIds").EnumerateArray().Select(id => id.GetInt32())) &&

@@ -49,9 +49,10 @@ namespace MonsterTrain2Poju.Model
                     effect.Type is not ("BuffHealth" or "DebuffHealth" or "Damage") || effect.Target is not ("DropTargetCharacter" or "Room")))
                 return new CardHoverPreviewResult("Card hover currently requires calibrated maximum-health or direct-damage spell effects.");
             if (rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Type == "Damage") &&
-                (links != null || rule.OnCastEffects.Count != 0 || rule.Effects.Count != 1 ||
-                    rule.Effects[0] is not { Type: "Damage", Target: "DropTargetCharacter", Range: null }))
-                return new CardHoverPreviewResult("Direct-damage hover requires one constant targeted effect without linked bodies or OnCast effects.");
+                (links != null || rule.OnCastEffects.Count > 1 || rule.Effects.Count != 1 ||
+                    rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect is not { Type: "Damage", Range: null }) ||
+                    rule.OnCastEffects.Any(effect => effect.Target != rule.Effects[0].Target)))
+                return new CardHoverPreviewResult("Damage hover requires constant main/OnCast damage with matching target modes and no linked bodies.");
             if (action.Operation != null || action.ActivatorUnitId != 0 || action.MixSelections.Count != 0 ||
                 action.RecursionSelections.Count != 0 || !primary.Cards.Hand.Any(card =>
                     card.InstanceId == action.CardInstanceId && card.DataId == rule.DataId))
@@ -75,8 +76,10 @@ namespace MonsterTrain2Poju.Model
             string? error = links == null ? null : LifeLinkModel.Validate(links);
             if (error != null) return new CardHoverPreviewResult("Card hover primary validation: " + error);
             RoomCombatState? targetRoom = source.Rooms.SingleOrDefault(room => room.RoomIndex == action.RoomIndex);
-            if (targetRoom == null || !targetRoom.Units.Any(unit => unit.Id == action.TargetUnitId))
-                return new CardHoverPreviewResult("Card hover requires a captured target in its selected room.");
+            if (targetRoom == null || (action.TargetUnitId == 0
+                    ? rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Target == "DropTargetCharacter")
+                    : !targetRoom.Units.Any(unit => unit.Id == action.TargetUnitId)))
+                return new CardHoverPreviewResult("Card hover requires its captured room and any required drop target.");
 
             // Native collects enemies then players in the room, plus companion
             // bosses elsewhere. The original five linked bodies are not companions.
@@ -94,6 +97,7 @@ namespace MonsterTrain2Poju.Model
                 action.TargetUnitId, action.CardInstanceId);
             if (!effects.Supported) return new CardHoverPreviewResult("Card hover main effects: " + effects.UnsupportedReason);
             TrainCombatState after = effects.State!;
+            var transientActors = effects.RetainedUnits.ToDictionary(unit => unit.Id);
             if (effects.PendingCallbacks.Count != 0)
                 return new CardHoverPreviewResult("Card hover main effects left uncalibrated pending callbacks.");
             if (rule.OnCastEffects.Count > 0)
@@ -104,13 +108,16 @@ namespace MonsterTrain2Poju.Model
                 if (effects.PendingCallbacks.Count != 0)
                     return new CardHoverPreviewResult("Card hover OnCast effects left uncalibrated pending callbacks.");
                 after = effects.State!;
+                foreach (var unit in effects.RetainedUnits) transientActors[unit.Id] = unit;
             }
             // Cancellation restores the original actor planes and cached preview
             // HP. Native keeps the allocator and shared maximum-health accumulator.
             var restoredLinks = links == null ? null : new LifeLinkContext(links.Actors, links.CalculatingPreview,
                 after.Context!.LifeLinks!.SharedPreviewHpChange);
-            var removed = after.Context!.Enchantments!.RetainedUnits.Where(actor => copiedIds.Contains(actor.Unit.Id))
-                .Select(actor => actor.Unit).ToArray();
+            foreach (var actor in after.Context!.Enchantments!.RetainedUnits) transientActors.TryAdd(actor.Unit.Id, actor.Unit);
+            var presentIds = after.Rooms.SelectMany(room => room.Units).Select(unit => unit.Id).ToHashSet();
+            var removed = transientActors.Values.Where(unit => copiedIds.Contains(unit.Id) && !presentIds.Contains(unit.Id))
+                .OrderBy(unit => unit.Id).ToArray();
             copied = ProjectPoints(primary.SpawnPoints, copied, copiedIds);
             after = ProjectPoints(primary.SpawnPoints, after, copiedIds);
             points = after.Context!.SpawnPoints!;

@@ -7,6 +7,15 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+The 2.3.1 card-hover protocol additionally supports constant room damage and
+matching-target main/OnCast damage: 192 new native player/enemy controls cover
+targetless room input, multiple deaths, Horde/Undying/half-health and armor.
+All three temporary actors, including removed victims, full copy/effect/cancel
+states, gameplay RNG and 16 immutable branches each match. Temporary triggers
+reset once; later victims share their flags and native deferred death queues.
+Run `scripts/Check-Game231CompositeDamagePreview.ps1`. Random damage, mixed
+target modes, multiple main effects, linked bodies and modified callbacks remain guarded.
+
 The 2.3.1 card-hover protocol also supports one constant direct-damage effect
 against a drop target: 64 native player/enemy controls cover armor, ordinary/Horde/
 Undying/half-health and lethal/nonlethal damage. Complete temporary targets,
