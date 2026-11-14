@@ -188,7 +188,6 @@ internal static class EnchantmentCombatChecks
         RoomCombatResult halfHealth = DeathwishModel.Update(Room(healthSource, back));
         Require(halfHealth.Supported && halfHealth.PendingCallbacks.Count == 1 &&
             halfHealth.State!.Units.Single(unit => unit.Id == healthSource.Id).Triggers.Single().DeathwishActive == true &&
-            RoomCombatModel.Validate(Room(healthSource, back))?.Contains("HalfHealth", StringComparison.Ordinal) == true &&
             healthTrigger.WithStateId(30).WithOrigin("test", 0).ActivationCondition == "HalfHealth" &&
             JsonSerializer.Deserialize<CombatTrigger>(JsonSerializer.Serialize(healthTrigger))!.ActivationCondition == "HalfHealth",
             "New half-health Deathwish must retain its predicate across copies/archives and never use legacy front activation.");

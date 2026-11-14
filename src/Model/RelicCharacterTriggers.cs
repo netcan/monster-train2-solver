@@ -137,12 +137,13 @@ namespace MonsterTrain2Poju.Model
                 state = new RoomCombatState(state.RoomIndex, state.Deployment,
                     state.Units.Select(unit => unit.Id == unitId ? actor : unit).ToArray(), state.ExternalInteractions,
                     state.Context, state.Preview, state.ActiveCompanionBossIds);
-                // AddTrigger updates legacy Deathwish on gain and new Vanguard
-                // on either kind, before the next authored trigger is prepended.
+                // AddTrigger refreshes the matching condition before the next
+                // authored trigger is prepended. The two modern passes are independent.
                 if (definition.Kind == "OnDeathwish" || definition.Kind == "OnVanguard" || definition.Kind == "OnVanguardLost" ||
                     definition.Kind == "OnDeathwishLost" && definition.ActivationCondition != null)
                 {
-                    RoomCombatResult updated = DeathwishModel.Update(state);
+                    RoomCombatResult updated = DeathwishModel.Update(state, HalfHealthDeathwishModel.IsTrigger(definition)
+                        ? EnchantmentCombatModel.ConditionalPass.HalfHealth : EnchantmentCombatModel.ConditionalPass.FrontPosition);
                     if (!updated.Supported) return updated;
                     state = updated.State!; callbacks.AddRange(updated.PendingCallbacks);
                 }

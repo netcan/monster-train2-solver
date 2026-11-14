@@ -29,6 +29,12 @@ model-owned replay and 16 immutable branches pass. Shared aura worlds and
 direct preview upgrade APIs still require calibration. Authored definitions
 do not add original card/relic coverage.
 
+Relic conditional-trigger installation has another 16 native controls and 35
+exclusive queue payloads with 32 immutable branches. Vanguard and half-health
+installation now refresh their own source sets independently, including stale
+bystanders and duplicate/prepend order. This calibrates queue admission, with
+original new relic owners still requiring complete battle acceptance.
+
 Game 2.2.1 curated inventory (2026-11-14): 2,874 binary archives with verified
 hashes and registrations. The card evidence index accepts 1,561 battle archives
 and 31,514 native actions; three historical captures with nonzero counters stay

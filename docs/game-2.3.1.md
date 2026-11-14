@@ -435,6 +435,35 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -HalfHealt
 修改前 `fe26bbde` 的独立模型副本也复现，不能计作该归档的严格全字段整链通过。
 新版场景保留全部字段比较，没有为此放宽检查。
 
+## 遗物来源条件触发器的安装边界
+
+`RelicEffectAddTrigger` 安装 Vanguard 或半血触发器时，原生分别调用独立的
+`RoomManager.UpdateVanguard` / `UpdateDeathwish`，并在安装下一项之前刷新来源集合。
+模型现保留两个独立更新入口；该边界也不额外更新 Troop 光环。
+
+16 组真实 `CharacterState.AddTrigger` 对照、35 份完整独占队列载荷与 32 路独立分支通过。
+包含满血/精确半血/奇数阈值、只装 lost、双顺序/重复项、混合两种条件、沉默/静默、
+不可触及、禁用附魔更新及禁止触发次数修正。旁观单位故意保留未刷新的两种来源：
+半血安装只刷新半血，Vanguard 安装只刷新站位；原生的两者更新均不受附魔总开关影响。
+修改前 `da77f2ad` 的独立模型在 `above-half` 对照多激活此次安装无关的 Vanguard，原生为 False，
+新模型为 False；不是通过删除旁观回调或只比较新增触发器来消除差异。
+
+本次只验收返回时的完整列车/上下文、来源分配与未执行队列，未结算触发效果。
+原有 27 组半血条件矩阵同批通过；原版 `DeathwishAttack` 遗物整局仍需独立验收，
+未增加任何新版原版卡牌或遗物的覆盖数。
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Game231HalfHealthTriggerInstallation.ps1
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -HalfHealthDeathwishOnly -GameSpeed Instant -SkipBuild
+```
+
+安装归档 `mechanics/half-health-deathwish/trigger-installation/installation.mt2f` 为 26,037 字节，
+SHA256 `b292788ec2c83f91b2b5e3999c922c4f1718f273ed663f09e6e4dce3061b4ddf`。
+来源 `.probe-runs/full-battle-steward-once-20261114-161745-a11b6a5c`，原生 30.28 秒，
+来源列车、全部 RNG 与帧不变，退出码零、`DEPTH-PASS` 及玩家文件未变检查通过。
+41 组 Vanguard、25 次出牌/7 次 EndTurn 的半血整链及四件装备成长遗物的新版
+24 次出牌/5 次 EndTurn/16 路策略分支定向回归通过，永久生命仍为新版的 +8。
+
 ## 可复验样本
 
 [版本化样本目录](../tests/compatibility/game-2.3.1/) 保存八份二进制归档：

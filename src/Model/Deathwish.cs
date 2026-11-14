@@ -8,7 +8,8 @@ namespace MonsterTrain2Poju.Model
     {
         internal static readonly string[] CallbackKinds = { "OnDeathwish", "OnDeathwishLost", "OnVanguard", "OnVanguardLost" };
 
-        internal static RoomCombatResult Update(RoomCombatState source)
+        internal static RoomCombatResult Update(RoomCombatState source,
+            EnchantmentCombatModel.ConditionalPass pass = EnchantmentCombatModel.ConditionalPass.All)
         {
             EnchantmentWorld? world = source.Context?.Enchantments;
             EnchantmentCombatState frame;
@@ -25,7 +26,7 @@ namespace MonsterTrain2Poju.Model
                 frame = world.Frame(source.Context);
             }
 
-            EnchantmentCombatResult updated = EnchantmentCombatModel.UpdateDeathwish(frame);
+            EnchantmentCombatResult updated = EnchantmentCombatModel.UpdateDeathwish(frame, pass);
             if (!updated.Supported) return Unsupported(updated.UnsupportedReason!);
             RoomCombatState room;
             if (world == null) room = updated.State!.Train.Rooms.Single(item => item.RoomIndex == source.RoomIndex);

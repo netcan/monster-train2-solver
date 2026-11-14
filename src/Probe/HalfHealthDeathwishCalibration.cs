@@ -17,6 +17,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Started { get; private set; }
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
+        internal static bool InstallationsRecording { get; private set; }
         private static AllGameManagers Managers => AllGameManagers.Instance!;
         private static FullBattleTrace Trace => FullBattleTrace.Active!;
         private static readonly Type StateType = AccessTools.Inner(typeof(CharacterState), "StateInformation");
@@ -62,6 +63,7 @@ namespace MonsterTrain2Poju.Probe
             var originalIds = actors.Select(actor => Trace.TriggerStates(actor).ToDictionary(item => item.Key, item => item.Value)).ToArray();
             bool allow = rooms.AllowEnchantmentUpdates, updating = (bool)Get(rooms, "_updatingEnchantments");
             var samples = new List<object>();
+            var installations = new List<object>();
             int mismatches = 0;
             try
             {
@@ -113,9 +115,27 @@ namespace MonsterTrain2Poju.Probe
                 Step("direct-while-updating", 11, 20);
                 Step("manager-while-updating", 11, 20, true);
                 Set(rooms, "_updatingEnchantments", false); Step("manager-resume", 10, 20, true);
+                InstallationsRecording = true;
+                Install("above-half", 20, 20, new[] { "OnDeathwish" });
+                Install("exact-half", 10, 20, new[] { "OnDeathwish" });
+                Install("below-half-loss-only", 9, 20, new[] { "OnDeathwishLost" });
+                Install("odd-above", 11, 21, new[] { "OnDeathwish" });
+                Install("odd-below", 10, 21, new[] { "OnDeathwish" });
+                Install("gain-then-loss", 10, 20, new[] { "OnDeathwish", "OnDeathwishLost" });
+                Install("loss-then-gain", 10, 20, new[] { "OnDeathwishLost", "OnDeathwish" });
+                Install("duplicate-gain", 10, 20, new[] { "OnDeathwish", "OnDeathwish" });
+                Install("muted", 10, 20, new[] { "OnDeathwish", "OnDeathwishLost" }, "muted");
+                Install("silenced", 10, 20, new[] { "OnDeathwish", "OnDeathwishLost" }, "silenced");
+                Install("untouchable", 10, 20, new[] { "OnDeathwish", "OnDeathwishLost" }, "untouchable");
+                Install("updates-disabled", 10, 20, new[] { "OnDeathwish", "OnDeathwishLost" }, allowUpdates: false);
+                Install("no-count-modifiers", 10, 20, new[] { "OnDeathwish", "OnDeathwishLost" }, noCountModifiers: true);
+                Install("vanguard-gain", 10, 20, new[] { "OnVanguard" });
+                Install("vanguard-loss", 10, 20, new[] { "OnVanguardLost" });
+                Install("mixed-passes", 10, 20, new[] { "OnDeathwish", "OnVanguard", "OnDeathwishLost" });
             }
             finally
             {
+                InstallationsRecording = false;
                 Queue.Clear(); Set(rooms, "_allowEnchantmentUpdates", false);
                 for (int index = 0; index < actors.Length; index++)
                 {
@@ -133,9 +153,67 @@ namespace MonsterTrain2Poju.Probe
                 GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId,
                 Boundary = "NativeHalfHealthActivationAndQueueAdmission", LiveContextUnchanged = true,
                 RetainedActorsIncluded = true, RngBefore = originalRng, RngAfter = finalRng,
-                RngUnchanged = true, FrameUnchanged = true, EffectsDrained = false, Mismatches = mismatches, Samples = samples }))
+                RngUnchanged = true, FrameUnchanged = true, EffectsDrained = false, Mismatches = mismatches, Samples = samples,
+                Installations = installations }))
             using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "half-health-deathwish.mt2f"))) document.Write(output);
             if (mismatches != 0) throw new InvalidOperationException("Half-health native activation differs: " + mismatches);
+
+            void Install(string label, int hp, int max, string[] kinds, string? status = null,
+                bool allowUpdates = true, bool noCountModifiers = false)
+            {
+                Queue.Clear(); Set(rooms, "_allowEnchantmentUpdates", allowUpdates); Set(rooms, "_updatingEnchantments", false);
+                for (int index = 0; index < actors.Length; index++)
+                {
+                    object primary = AccessTools.Method(StateType, "DeepCopyForPreview").Invoke(states[index], null);
+                    Set(actors[index], "_primaryStateInformation", primary);
+                    ((HashSet<CharacterTriggerState>)Get(primary, "deathwishSources")).Clear();
+                    ((HashSet<CharacterTriggerState>)Get(primary, "vanguardSources")).Clear();
+                    Set(actors[index], "triggers", new List<CharacterTriggerState>());
+                    AccessTools.Property(typeof(CharacterState), "IsEnchanter").SetValue(actors[index], false);
+                    identities[actors[index]] = new Dictionary<CharacterTriggerState, int>();
+                }
+                hosts[0].SetHealth(hp, max); hosts[1].SetHealth(9, 20);
+                if (status != null) Raw(status, 1);
+                Seed(hosts[0], kinds.All(kind => kind.StartsWith("OnVanguard", StringComparison.Ordinal)) ? "OnDeathwish" : "OnVanguard");
+                Seed(hosts[1], "OnVanguard"); Seed(hosts[1], "OnDeathwish");
+                CharacterTriggerData[] definitions = kinds.Select(Definition).ToArray();
+                var interactions = new List<string>();
+                var rule = new RelicCharacterTriggers(0, false, true,
+                    definitions.Select(definition => EnemySpawningProbe.TriggerDefinition(definition, interactions)).ToArray(),
+                    noCountModifiers, externalInteractions: interactions);
+                TrainCombatState before = Snapshot();
+                int actorId = Trace.UnitId(hosts[0]), roomId = hosts[0].GetCurrentRoomIndex();
+                RoomCombatResult result = RelicCharacterTriggerModel.Apply(before.Rooms.Single(room => room.RoomIndex == roomId), actorId, rule);
+                foreach (CharacterTriggerData definition in definitions)
+                    hosts[0].AddTrigger(definition, "", true, true, -1, noCountModifiers);
+                TrainCombatState actual = Snapshot();
+                EnchantmentCallback[] queued = Callbacks();
+                TrainCombatState? predicted = result.State == null ? null : new TrainCombatState(
+                    before.Rooms.Select(room => room.RoomIndex == roomId ? result.State : room).ToArray(),
+                    before.Movement, before.EnemySlotsPerRoom, result.State.Context);
+                string? difference = result.UnsupportedReason ?? (predicted == null || !Equal(predicted, actual)
+                    ? "Native installation state differs" : !Equal(result.PendingCallbacks.Select(EnchantmentCallback.From).ToArray(), queued)
+                    ? "Native installation queue differs" : null);
+                if (difference != null) mismatches++;
+                installations.Add(new { Label = label, ActorId = actorId, RoomIndex = roomId, AllowUpdates = allowUpdates,
+                    Rule = rule, Before = before, Actual = actual, Callbacks = queued, Difference = difference, Completed = true });
+                Queue.Clear();
+            }
+            CharacterTriggerData Definition(string kind)
+            {
+                CharacterTriggerData definition = HealingScenario.HealGold(5, false, true);
+                Set(definition, "trigger", Enum.Parse(typeof(CharacterTriggerData.Trigger), kind)); return definition;
+            }
+            void Seed(CharacterState actor, string kind)
+            {
+                var trigger = new CharacterTriggerState(); trigger.Setup(Definition(kind), actor.GetTeamType(), save);
+                actor.GetTriggers().Add(trigger);
+            }
+            EnchantmentCallback[] Callbacks() => Queue.Select(item => new EnchantmentCallback(item.character.GetCurrentRoomIndex(), Trace.UnitId(item.character),
+                item.trigger.ToString(), item.fireTriggersData?.paramInt ?? 0, item.fireTriggersData?.paramInt2 ?? 0, item.fireTriggersData?.paramString,
+                item.fireTriggersData?.overrideTargetCharacter == null ? (int?)null : Trace.UnitId(item.fireTriggersData.overrideTargetCharacter),
+                item.dyingCharacter == null ? (int?)null : Trace.UnitId(item.dyingCharacter), item.canFireTriggers,
+                item.exclusiveTrigger == null ? (int?)null : Trace.TriggerStateId(item.character, item.exclusiveTrigger))).ToArray();
 
             void Raw(string status, int count)
             {

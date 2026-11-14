@@ -101,11 +101,12 @@ namespace MonsterTrain2Poju.Model
                     effect.StatusScaling.ActorStatus == null && !effect.StatusScaling.MissingHealth &&
                     !effect.StatusScaling.MagicPower && !effect.StatusScaling.IgnoreDualism &&
                     effect.StatusScaling.Subtype.Length == 0));
-        internal static EnchantmentCombatResult UpdateDeathwish(EnchantmentCombatState source)
+        internal enum ConditionalPass { All, FrontPosition, HalfHealth }
+        internal static EnchantmentCombatResult UpdateDeathwish(EnchantmentCombatState source, ConditionalPass pass = ConditionalPass.All)
         {
             var frame = new EnchantmentCombatState(source.Train, source.RetainedUnits, Array.Empty<int>(),
                 true, source.Updating, source.Preview, source.TestRng, source.TemporaryPreviewUnitIds);
-            EnchantmentCombatResult result = new Engine(frame).All();
+            EnchantmentCombatResult result = new Engine(frame).Conditional(pass);
             if (!result.Supported) return result;
             EnchantmentCombatState updated = result.State!;
             // Suppress aura callbacks only for this Deathwish update. The native
@@ -183,6 +184,7 @@ namespace MonsterTrain2Poju.Model
                 return Finish();
             }
             internal EnchantmentCombatResult One(int id, int trigger, int effect) { Update(id, trigger, effect); return Finish(); }
+            internal EnchantmentCombatResult Conditional(ConditionalPass pass) { UpdateAll(pass); return Finish(); }
             private EnchantmentCombatResult Finish() => new EnchantmentCombatResult(error == null ? state : null, requests, callbacks, error);
 
             // New actors inherit the preview room even though the temporary
@@ -206,7 +208,7 @@ namespace MonsterTrain2Poju.Model
                     unit.Status("muted") != null, unit.Status("silenced") != null, unit.Status("duality") != null,
                     unit.Status("undying") != null, item.Preview);
             }
-            private void UpdateAll()
+            private void UpdateAll(ConditionalPass pass = ConditionalPass.All)
             {
                 if (!state.AllowUpdates || state.Updating || error != null) return;
                 Set(updating: true);
@@ -261,15 +263,16 @@ namespace MonsterTrain2Poju.Model
                     if (error != null) break;
                 }
                 Set(updating: false);
-                if (error == null) UpdateDeathwish(sources);
+                if (error == null) UpdateDeathwish(sources, pass);
             }
             private static bool CanCollect(CombatUnit unit) => unit.Health > 0 &&
                 unit.DeathState?.IsDespawned != true && unit.DeathState?.IsDestroyed != true;
-            private void UpdateDeathwish(int[] actorOrder)
+            private void UpdateDeathwish(int[] actorOrder, ConditionalPass pass)
             {
                 var units = state.Train.Rooms.SelectMany(room => room.Units).ToDictionary(unit => unit.Id);
                 foreach (int id in actorOrder)
                 {
+                    if (pass == ConditionalPass.HalfHealth) break;
                     if (!units.TryGetValue(id, out CombatUnit? unit)) continue;
                     RoomCombatState? room = state.Train.Rooms.FirstOrDefault(item => item.Units.Any(actor => actor.Id == id));
                     if (room == null) continue;
@@ -308,6 +311,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 // RoomManager finishes Vanguard for every actor before its
                 // separate half-health Deathwish pass starts.
+                if (pass == ConditionalPass.FrontPosition) return;
                 foreach (int id in actorOrder)
                 {
                     RoomCombatState? room = state.Train.Rooms.FirstOrDefault(item => item.Units.Any(actor => actor.Id == id));
