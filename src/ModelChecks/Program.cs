@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--chained-remote-queue-only")
+{
+    ChainedRemoteQueueChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--chained-battle-only")
 {
     ChainedBattleChecks.Native(args[1]);

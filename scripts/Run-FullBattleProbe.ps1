@@ -470,6 +470,7 @@ param(
     [switch] $TenaciousBattle,
     [switch] $ChainedStatusCalibration,
     [switch] $ChainedBattle,
+    [switch] $ChainedRemoteQueue,
     [switch] $CelebrateHealthBattle,
     [switch] $DamagedFloorEnergyBattle,
     [switch] $DevotionLateSpawnBattle,
@@ -1386,6 +1387,7 @@ if ($TenaciousBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; 
 if ($DevotionLateSpawnBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($ChainedStatusCalibration) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($ChainedBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($ChainedRemoteQueue) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($CelebrateHealthBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($DamagedFloorEnergyBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($DevotionSpawnBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
@@ -2320,6 +2322,7 @@ if ($TenaciousBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'tenacious-battle'
 if ($DevotionLateSpawnBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'devotion-late-spawn-battle' }
 if ($ChainedStatusCalibration) { $environment['MT2_PROBE_MODIFIERS'] = 'chained-status-calibration' }
 if ($ChainedBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'chained-battle' }
+if ($ChainedRemoteQueue) { $environment['MT2_PROBE_MODIFIERS'] = 'chained-remote-queue' }
 if ($CelebrateHealthBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'celebrate-health-battle' }
 if ($DamagedFloorEnergyBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'damaged-floor-energy-battle' }
 if ($DevotionSpawnBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'devotion-spawn-battle' }
@@ -2805,6 +2808,16 @@ if ($DevotionLateSpawnBattle -and ($trace.ModifierScenario -cne 'devotion-late-s
     @($trace.DevotionLateSpawnBattle.Records).Count -eq 0 -or
     @($trace.DevotionLateSpawnBattle.Records | Where-Object { -not $_.Completed -or $_.Error -or $_.Difference -or $_.UnsupportedReason }).Count -ne 0)) {
     throw 'Missing original late-spawn victory, eight inputs, native gates or complete callback comparisons.'
+}
+if ($ChainedRemoteQueue -and ($trace.ModifierScenario -cne 'chained-remote-queue' -or -not $trace.ChainedBattle.Prepared -or
+    -not $trace.ChainedBattle.RemoteQueue -or $trace.ChainedBattle.CompletedControlPlays -ne 5 -or
+    $trace.ChainedBattle.RemoteActivations -ne 3 -or @($trace.Actions).Count -ne 8 -or
+    @($trace.ChainedBattle.Requests | Where-Object { -not $_.Completed }).Count -ne 0 -or
+    @($trace.ChainedBattle.Propagations | Where-Object { -not $_.Completed }).Count -ne 0 -or
+    @($trace.ChainedBattle.Requests | Where-Object { -not $_.Preview -and $_.Damage -eq 50 -and $_.Source.Health -eq 4 }).Count -eq 0 -or
+    -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
+    throw 'Missing complete remote-ability Chained victory and Bloodshed-before-propagation observations.'
 }
 if ($ChainedBattle -and ($trace.ModifierScenario -cne 'chained-battle' -or -not $trace.ChainedBattle.Prepared -or
     $trace.ChainedBattle.CompletedControlPlays -ne 13 -or @($trace.Actions).Count -ne 13 -or

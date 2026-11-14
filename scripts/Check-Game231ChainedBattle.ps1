@@ -16,4 +16,4 @@ if ((Get-Item -LiteralPath $path).Length -ne [long]$manifest[0].bytes -or
     (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ine $manifest[0].sha256) { throw 'Chained-battle capture hash/size differs.' }
 dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --chained-battle-only $path
 if ($LASTEXITCODE) { throw 'Independent chained-battle validation failed.' }
-Write-Output 'GAME-231-CHAINED-BATTLE PASS: original enemy-spawn owner, 13 inputs, armor/shield/Tenacious/Undying/final death, 63 propagations, 42 real/preview damage requests, complete successor/RNG and 16 independent full battle branches. External deferred Bloodshed remains guarded.'
+Write-Output 'GAME-231-CHAINED-BATTLE PASS: original enemy-spawn owner, 13 inputs, armor/shield/Tenacious/Undying/final death, 63 propagations, 42 real/preview damage requests, complete successor/RNG and 16 independent full battle branches. Missing external callback continuations remain guarded.'

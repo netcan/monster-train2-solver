@@ -237,6 +237,7 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             var borrowedTargets = Targets(source, roomIndex, externalAttacker ? attackerUnitId : 0);
+            var deferredDeaths = pendingDeaths.ToList();
             RoomCombatResult FinishQueue(RoomCombatState frame)
             {
                 state = ReplaceRoom(state, frame);
@@ -247,7 +248,7 @@ namespace MonsterTrain2Poju.Model
                         return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, [], "Queued spell callbacks failed before deferred deaths.");
                     state = drainedState;
                 }
-                var queue = pendingDeaths.ToList();
+                var queue = deferredDeaths.ToList(); deferredDeaths.Clear();
                 var events = new List<CombatEvent>();
                 RoomOutcome outcome = RoomOutcome.Exchanged;
                 string? error = null;
@@ -302,13 +303,46 @@ namespace MonsterTrain2Poju.Model
                     drained && error == null ? outcome : RoomOutcome.Unsupported, 0, events, error,
                     retainedUnits: updatedTargets);
             }
+            RoomCombatResult SettleDamageCallbacks(RoomCombatResult checkpoint)
+            {
+                state = ReplaceRoom(state, checkpoint.State!);
+                MergeBorrowed(checkpoint, borrowedTargets);
+                if (externalAttacker)
+                    state = ReplaceExternalActor(state, attackerRoom!.RoomIndex,
+                        checkpoint.RetainedUnits.Single(unit => unit.Id == attackerUnitId));
+                RoomCombatResult settled = FinishQueue(checkpoint.State!);
+                if (!settled.Supported) return settled;
+                var removed = new List<CombatUnit>();
+                var unfinished = new List<CombatUnit>();
+                foreach (CombatUnit previous in checkpoint.State!.Units.Where(unit => !settled.State!.Units.Any(current => current.Id == unit.Id)))
+                {
+                    CombatUnit? retained = getRetainedUnit?.Invoke(previous.Id);
+                    var point = state.Context?.SpawnPoints?.Units.FirstOrDefault(item => item.UnitId == previous.Id)?.Current;
+                    if (retained?.Health <= 0 && retained.DeathState?.HasFinishedDying == false && point?.RoomIndex == roomIndex)
+                    { unfinished.Add(retained); continue; }
+                    if (retained?.DeathState?.HasFinishedDying != true ||
+                        point != null)
+                        return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, [],
+                            "External damage callback moved or removed a local actor without retained completed-death state: id=" + previous.Id +
+                            "; hp=" + previous.Health + "; finished=" + previous.DeathState?.HasFinishedDying +
+                            "; retained=" + (retained == null ? "null" : retained.Health + "/" + retained.DeathState?.HasFinishedDying) +
+                            "; physical=" + state.Context?.SpawnPoints?.Units.FirstOrDefault(point => point.UnitId == previous.Id)?.Current?.RoomIndex);
+                    removed.Add(retained);
+                }
+                RoomCombatState restored = settled.State!.WithUnits(settled.State.Units.Concat(unfinished).ToArray());
+                state = ReplaceRoom(state, restored);
+                return new RoomCombatResult(restored, settled.Outcome, settled.Rounds, settled.Events.ToList(),
+                    pendingCallbacks: settled.PendingCallbacks, retainedUnits: settled.RetainedUnits.Concat(removed).ToArray(), dispatches: settled.Dispatches);
+            }
             var applied = RoomCombatModel.ApplyNativeCardDamageAfterTraits(initial, targetId, damage, sourceCardId,
                 attackerUnitId,
                 pendingDeaths.Count == 0 ? null : (Func<RoomCombatState, RoomCombatResult>)FinishQueue, refreshPyre: Refresh,
                 externalActor: externalAttacker ? attacker : null,
                 externalActorRoomIndex: externalAttacker ? attackerRoom!.RoomIndex : -1,
                 enqueueCharacterTrigger: externalAttacker ? enqueueCharacterTrigger : null, externalTargets: borrowedTargets,
-                centerPhysicalRemovals: centerPhysicalRemovals);
+                centerPhysicalRemovals: centerPhysicalRemovals,
+                settleDamageCallbacks: externalAttacker && drainQueuedTriggers != null && source.Context?.Statistics?.MonsterDamage != null
+                    ? SettleDamageCallbacks : null);
             if (!applied.Supported) return UnsupportedTrain(applied.UnsupportedReason!);
             state = ReplaceRoom(state, applied.State!);
             MergeBorrowed(applied, borrowedTargets);

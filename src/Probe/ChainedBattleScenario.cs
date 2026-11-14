@@ -11,11 +11,13 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class ChainedBattleScenario
     {
-        internal const string Name = "chained-battle";
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool RemoteQueue => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "chained-remote-queue";
+        internal static string Name => RemoteQueue ? "chained-remote-queue" : "chained-battle";
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "chained-battle" || RemoteQueue;
         internal static bool Prepared { get; private set; }
         private static int[] cards = Array.Empty<int>();
         private static int step;
+        private static int remoteActivations, lastRemoteTurn = -1;
         private static object? definition;
         private static ManualLogSource? logger;
         private static string? rejection;
@@ -23,7 +25,8 @@ namespace MonsterTrain2Poju.Probe
         private static readonly List<Request> requests = new List<Request>();
         private static readonly List<object> timeline = new List<object>();
         internal static object Evidence => new { Prepared, OwnerDefinition = definition, ControlCardIds = cards,
-            CompletedControlPlays = step, Propagations = propagations, Requests = requests, Timeline = timeline };
+            CompletedControlPlays = step, RemoteQueue, RemoteActivations = remoteActivations,
+            Propagations = propagations, Requests = requests, Timeline = timeline };
         private sealed class Propagation
         {
             public bool Preview { get; set; }
@@ -40,6 +43,7 @@ namespace MonsterTrain2Poju.Probe
             public int DamageType { get; set; }
             public bool NullCard { get; set; }
             public bool NullRelic { get; set; }
+            public bool QueueRunning { get; set; }
             public CombatUnit Before { get; set; } = null!;
             public CombatUnit After { get; set; } = null!;
             public CombatUnit Source { get; set; } = null!;
@@ -69,6 +73,13 @@ namespace MonsterTrain2Poju.Probe
                 Set(trigger, "trigger", Enum.Parse(typeof(CharacterTriggerData.Trigger), entry.Item1)); triggers.Add(trigger);
             }
             Set(unit, "triggers", triggers);
+            if (RemoteQueue)
+            {
+                Set(unit, "startingStatusEffects", new[] { new StatusEffectStackData { statusId = "tenacious", count = 1 } });
+                var heal = new CardEffectData("CardEffectHeal", null!, Team.Type.Monsters);
+                heal.Cheat_SetTargetMode(TargetMode.Self); Set(heal, "paramInt", 3);
+                triggers.Add(new CharacterTriggerData((CharacterTriggerData.Trigger)Enum.Parse(typeof(CharacterTriggerData.Trigger), "OnBloodshed"), heal));
+            }
             var finisher = UnityEngine.Object.Instantiate(steward); finisher.name = "PojuChainedFinisher";
             Set(finisher, "id", "fc231e20-0000-4000-8000-000000000001");
             var finisherUnit = UnityEngine.Object.Instantiate(unit); finisherUnit.name = "PojuChainedFinisherUnit";
@@ -78,6 +89,23 @@ namespace MonsterTrain2Poju.Probe
             ((List<CharacterData>)AccessTools.Field(typeof(AllGameData), "characterDatas").GetValue(all)).Add(finisherUnit);
             var cardData = (List<CardData>)AccessTools.Field(typeof(AllGameData), "cardDatas").GetValue(all); cardData.Add(finisher);
             var template = all.FindCardData("96c9ed37-5e59-4c4f-a914-ae7040d24755");
+            if (RemoteQueue)
+            {
+                var ability = UnityEngine.Object.Instantiate(template); ability.name = "PojuChainedRemoteAbility";
+                Set(ability, "id", "fc231e23-0000-4000-8000-000000000001"); Set(ability, "cost", 0);
+                Set(ability, "isUnitAbility", true); Set(ability, "isRoomAbility", false); Set(ability, "canAbilityTargetOtherFloors", true);
+                Set(ability, "cooldownAtSpawn", 0); Set(ability, "cooldownAfterActivated", 1);
+                Set(ability, "targetsRoom", true); Set(ability, "targetless", false);
+                var hits = new List<CardEffectData>();
+                foreach (int amount in new[] { 5, 99 })
+                {
+                    var hit = new CardEffectData("CardEffectDamage", null!, Team.Type.Monsters);
+                    hit.Cheat_SetTargetMode(TargetMode.DropTargetCharacter); Set(hit, "paramInt", amount); hits.Add(hit);
+                }
+                Set(ability, "effects", hits); Set(ability, "traits", new List<CardTraitData>());
+                Set(ability, "triggers", new List<CardTriggerEffectData>()); Set(ability, "effectTriggers", new List<CharacterTriggerData>());
+                Set(ability, "startingUpgrades", new List<CardUpgradeData>()); cardData.Add(ability); Set(finisherUnit, "unitAbility", ability);
+            }
             CardData Control(int index, string type, int amount, string? status = null, bool enemy = false)
             {
                 var card = UnityEngine.Object.Instantiate(template); card.name = "PojuChainedControl" + index;
@@ -103,6 +131,7 @@ namespace MonsterTrain2Poju.Probe
                 Control(7, "CardEffectAddStatusEffect", 1, "damage shield"), Control(8, "CardEffectDamage", 5),
                 LethalStatus(9, "tenacious"), Control(10, "CardEffectHeal", 39), LethalStatus(11, "undying"),
                 Control(12, "CardEffectDamage", 99) };
+            if (RemoteQueue) future = future.Take(1).ToArray();
             foreach (var card in manager.GetHand().ToArray()) manager.MoveCardFromHandToTopOfDeck(card);
             manager.GetDrawPile().Clear(); save.AddRelic(owner);
             CardState Add(CardData card) => manager.AddNewCard(card, CardPile.HandPile, false, false, animate: false) ??
@@ -119,6 +148,17 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static PlayCardAction? Choose(BattleTurnState state)
         {
+            if (RemoteQueue && step >= cards.Length && remoteActivations < 3 && state.Spawn.Turn > lastRemoteTurn)
+            {
+                int source = state.Spawn.Train.Rooms[2].Units.Single(unit => unit.SpawnerCardId == cards[3]).Id;
+                int victim = state.Spawn.Train.Rooms[0].Units.Single(unit => unit.SpawnerCardId == cards[0]).Id;
+                var candidate = UnitAbilityModel.EnumerateSupportedActivations(state).FirstOrDefault(action =>
+                    action.ActivatorUnitId == source && action.TargetUnitId == victim && action.RoomIndex == 0);
+                if (candidate == null) { logger?.LogInfo("CHAINED-REMOTE-REJECT no matching activation"); return null; }
+                var predicted = BattleActionModel.PlayCard(state, candidate);
+                if (!predicted.Supported) { logger?.LogInfo("CHAINED-REMOTE-REJECT " + predicted.Reason); return null; }
+                remoteActivations++; lastRemoteTurn = state.Spawn.Turn; return candidate;
+            }
             if (step >= cards.Length || !state.Spawn.Train.Context!.Cards.Hand.Any(card => card.InstanceId == cards[step])) return null;
             int minTurn = step >= 4 ? 1 : 0;
             if (state.Spawn.Turn < minTurn) return null;
@@ -133,11 +173,12 @@ namespace MonsterTrain2Poju.Probe
             }
             step++; return action;
         }
-        internal static bool IsScenarioAction(PlayCardAction action) => cards.Contains(action.CardInstanceId);
+        internal static bool IsScenarioAction(PlayCardAction action) => cards.Contains(action.CardInstanceId) || RemoteQueue && action.ActivatorUnitId > 0;
         private static void Set(object target, string name, object value) => AccessTools.Field(target.GetType(), name).SetValue(target, value);
         private static void Mark(string phase, string kind, CharacterState actor, int damageType = 0) => timeline.Add(new {
             Phase = phase, Kind = kind, UnitId = FullBattleTrace.Active!.UnitId(actor), DamageType = damageType,
-            Preview = AllGameManagers.Instance!.GetSaveManager().PreviewMode });
+            Preview = AllGameManagers.Instance!.GetSaveManager().PreviewMode,
+            QueueRunning = AllGameManagers.Instance!.GetCombatManager().IsRunningTriggerQueue });
         [HarmonyPatch]
         private static class PropagationPatch
         {
@@ -169,6 +210,7 @@ namespace MonsterTrain2Poju.Probe
                 var trace = FullBattleTrace.Active!;
                 var row = new Request { Preview = AllGameManagers.Instance!.GetSaveManager().PreviewMode,
                     Damage = damage, DamageType = (int)parameters.damageType, NullCard = parameters.playedCard == null,
+                    QueueRunning = AllGameManagers.Instance!.GetCombatManager().IsRunningTriggerQueue,
                     NullRelic = parameters.relicState == null, Before = trace.CaptureUnit(target), Source = trace.CaptureUnit(parameters.selfTarget) };
                 requests.Add(row); Mark("Enter", "Chained", target, (int)parameters.damageType);
                 try { while (native.MoveNext()) yield return native.Current; row.Completed = true; }

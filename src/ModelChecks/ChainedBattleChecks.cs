@@ -100,7 +100,7 @@ internal static class ChainedBattleChecks
         Require(!guarded.Supported && guarded.UnsupportedReason == "Chained requires synchronous Bloodshed settlement across the external trigger queue." &&
             deferred.Any(callback => callback.Kind == "OnBloodshed"), "External deferred Bloodshed silently propagated out of order.");
         RoomCombatChecks.NativeRoomOnly(path); TrainCombatChecks.Native(root); RecordedBattleChecks.Native(root);
-        Console.WriteLine("CHAINED-BATTLE PASS: unchanged original enemy-spawn owner, 13 inputs, armor/shield/Tenacious/heal/Undying/final death, 63 propagations and 42 real/preview damage requests with native nesting, complete successor/RNG replay and 16 immutable full battle branches. External deferred Bloodshed queues remain guarded.");
+        Console.WriteLine("CHAINED-BATTLE PASS: unchanged original enemy-spawn owner, 13 inputs, armor/shield/Tenacious/heal/Undying/final death, 63 propagations and 42 real/preview damage requests with native nesting, complete successor/RNG replay and 16 immutable full battle branches. Missing external callback continuations remain guarded.");
     }
     private static CombatUnit Unit(FixtureValue row, string key) => row.GetProperty(key).Deserialize<CombatUnit>()!;
     private static bool Preview(FixtureValue row) => row.GetProperty("Preview").GetBoolean();

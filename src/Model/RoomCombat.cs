@@ -891,7 +891,8 @@ namespace MonsterTrain2Poju.Model
             CombatUnit? externalActor = null, int externalActorRoomIndex = -1,
             Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool captureAllDispatches = false,
             bool piercing = false, IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
-            bool centerPhysicalRemovals = true, bool relicSourced = false)
+            bool centerPhysicalRemovals = true, bool relicSourced = false,
+            Func<RoomCombatResult, RoomCombatResult>? settleDamageCallbacks = null)
         {
             string? error = Validate(state, halfHealthLifecycle: true);
             bool localAttacker = state.Units.Any(unit => unit.Id == attackerUnitId);
@@ -907,7 +908,7 @@ namespace MonsterTrain2Poju.Model
                 finishDamageQueue: finishDamageQueue, refreshPyre: refreshPyre,
                 enqueueCharacterTrigger: enqueueCharacterTrigger, externalActor: externalActor,
                 externalActorRoomIndex: externalActorRoomIndex, externalActorInRoom: false, externalTargets: externalTargets,
-                centerDamageDeaths: centerPhysicalRemovals)
+                centerDamageDeaths: centerPhysicalRemovals, settleDamageCallbacks: settleDamageCallbacks)
                 .TraceAllDispatches(captureAllDispatches)
                 .CardDamage(targetId, damage, sourceCardId, false, attackerUnitId, piercing, relicSourced);
         }
@@ -1805,6 +1806,7 @@ namespace MonsterTrain2Poju.Model
             private bool triggeredCommand;
             private bool ordinaryPyreAttack;
             private readonly Func<RoomCombatState, RoomCombatResult>? finishDamageQueue;
+            private readonly Func<RoomCombatResult, RoomCombatResult>? settleDamageCallbacks;
             private readonly Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre;
             private readonly Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase;
             private readonly Func<RoomCombatState, CardActionEffect, int, BumpResult>? birthBump;
@@ -1840,7 +1842,8 @@ namespace MonsterTrain2Poju.Model
                 Func<RoomCombatState, int, IReadOnlyList<QueuedCharacterTrigger>, RoomCombatResult>? relicBirthEffect = null,
                 IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
                 Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect = null,
-                Func<RoomCombatState, CardActionEffect, int, BumpResult>? birthBump = null, bool centerDamageDeaths = true)
+                Func<RoomCombatState, CardActionEffect, int, BumpResult>? birthBump = null, bool centerDamageDeaths = true,
+                Func<RoomCombatResult, RoomCombatResult>? settleDamageCallbacks = null)
             {
                 this.source = source; this.events = events;
                 this.deferSpawnerExhaustion = deferSpawnerExhaustion;
@@ -1850,6 +1853,7 @@ namespace MonsterTrain2Poju.Model
                 this.nativeCardDamage = nativeCardDamage;
                 this.centerDamageDeaths = centerDamageDeaths;
                 this.finishDamageQueue = finishDamageQueue;
+                this.settleDamageCallbacks = settleDamageCallbacks;
                 this.refreshPyre = refreshPyre;
                 this.moonPhase = moonPhase;
                 this.birthBump = birthBump;
@@ -3193,6 +3197,7 @@ namespace MonsterTrain2Poju.Model
                         QueueCallback(new QueuedCharacterTrigger(friendly.RoomIndex, friendly.Freeze(), "OnBloodshed",
                             paramInt: damage, paramInt2: hitType, paramString: "", overrideTarget: target.Freeze()));
                     if (!runningTriggerQueue && (enqueueCharacterTrigger == null || localUpgradeQueue)) DrainLocalTriggerQueue();
+                    if (!runningTriggerQueue && settleDamageCallbacks != null && !SettleExternalDamageCallbacks()) return;
                     if (target.DeathFinished || unsupportedReason != null) return;
                 }
                 // Chained runs after Bloodshed but before this victim's Revenge.
@@ -3208,7 +3213,7 @@ namespace MonsterTrain2Poju.Model
                         unit.Count("chained"), target.Source.Team, chainedInput, hitType));
                     if (hasChained && !modernDamageQueue)
                     { unsupportedReason = "Chained requires the native modern damage protocol."; return; }
-                    if (hasChained && enqueueCharacterTrigger != null && !localUpgradeQueue && !runningTriggerQueue)
+                    if (hasChained && enqueueCharacterTrigger != null && !localUpgradeQueue && !runningTriggerQueue && settleDamageCallbacks == null)
                     { unsupportedReason = "Chained requires synchronous Bloodshed settlement across the external trigger queue."; return; }
                     foreach (WorkingUnit holder in holders)
                     {
@@ -3235,7 +3240,11 @@ namespace MonsterTrain2Poju.Model
                 // A played spell finishes its hit queue while this victim already has its
                 // new HP. Only previously finished deaths are eligible for removal here.
                 if (nativeCardDamage && !runningTriggerQueue) DrainLocalTriggerQueue();
-                if (nativeCardDamage && !runningTriggerQueue && finishDamageQueue != null)
+                if (nativeCardDamage && !runningTriggerQueue && settleDamageCallbacks != null)
+                {
+                    if (!SettleExternalDamageCallbacks()) return;
+                }
+                else if (nativeCardDamage && !runningTriggerQueue && finishDamageQueue != null)
                 {
                     var frame = new RoomCombatState(source.RoomIndex, source.Deployment,
                         units.Where(unit => !unit.Removed && unit.InRoom).Select(unit => unit.Freeze()).ToArray(),
@@ -3291,6 +3300,28 @@ namespace MonsterTrain2Poju.Model
                 // CharacterState restores HP after hit/death callbacks, without invoking Heal.
                 if (!target.DeathFinished && hpAfterPyreResurrection > 0)
                     target.Health = hpAfterPyreResurrection;
+            }
+
+            private bool SettleExternalDamageCallbacks()
+            {
+                var frame = new RoomCombatState(source.RoomIndex, source.Deployment,
+                    units.Where(unit => !unit.Removed && unit.InRoom).Select(unit => unit.Freeze()).ToArray(),
+                    source.ExternalInteractions, context, source.Preview, CompanionBossSnapshot());
+                var checkpoint = new RoomCombatResult(frame, battleWon ? RoomOutcome.BattleWon : RoomOutcome.Exchanged,
+                    0, new List<CombatEvent>(), retainedUnits: units.Where(unit => externalTurnActorIds.Contains(unit.Source.Id))
+                        .Select(unit => unit.Freeze()).ToArray());
+                RoomCombatResult settled = settleDamageCallbacks!(checkpoint);
+                if (!settled.Supported) { unsupportedReason = settled.UnsupportedReason; return false; }
+                MergeSummon(settled);
+                foreach (WorkingUnit previous in units.Where(unit => frame.Units.Any(old => old.Id == unit.Source.Id) &&
+                    !settled.State!.Units.Any(current => current.Id == unit.Source.Id)))
+                {
+                    previous.DeathFinished = true; previous.Removed = true; previous.InRoom = false;
+                }
+                // The global queue has already completed these physical deaths;
+                // do not export another removal request when this engine returns.
+                deferredDamageDeaths.RemoveAll(dead => dead.Unit.Removed);
+                return true;
             }
 
             private bool ApplyCardKillCorruption(CardActionEffect effect)
