@@ -9,7 +9,9 @@ internal static class RecordedBattleChecks
     {
         var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
         var turns = root.GetProperty("Turns").EnumerateArray().ToArray();
-        BattleTurnState initial = actions[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        Require(actions.Length > 0 || turns.Length > 0, "Recorded battle contains no actions or EndTurns.");
+        BattleTurnState initial = (actions.Length > 0 ? actions[0] : turns[0])
+            .GetProperty("Before").Deserialize<BattleTurnState>()!;
         if (turns.Length > 0 && turns[0].GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() < initial.Spawn.Turn)
             initial = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
         string parent = JsonSerializer.Serialize(initial, ModelJson.Options);
