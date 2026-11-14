@@ -49,10 +49,9 @@ namespace MonsterTrain2Poju.Model
                     effect.Type is not ("BuffHealth" or "DebuffHealth" or "Damage") || effect.Target is not ("DropTargetCharacter" or "Room")))
                 return new CardHoverPreviewResult("Card hover currently requires calibrated maximum-health or direct-damage spell effects.");
             if (rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Type == "Damage") &&
-                (links != null || rule.OnCastEffects.Count > 1 || rule.Effects.Count != 1 ||
-                    rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Type != "Damage") ||
-                    rule.OnCastEffects.Any(effect => effect.Target != rule.Effects[0].Target)))
-                return new CardHoverPreviewResult("Damage hover requires main/OnCast damage with matching target modes and no linked bodies.");
+                (links != null || rule.OnCastEffects.Count > 1 ||
+                    rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Type != "Damage")))
+                return new CardHoverPreviewResult("Damage hover requires damage-only main/OnCast effects and no linked bodies.");
             if (action.Operation != null || action.ActivatorUnitId != 0 || action.MixSelections.Count != 0 ||
                 action.RecursionSelections.Count != 0 || !primary.Cards.Hand.Any(card =>
                     card.InstanceId == action.CardInstanceId && card.DataId == rule.DataId))
@@ -99,31 +98,20 @@ namespace MonsterTrain2Poju.Model
             CombatContext context = primary.WithLifeLinks(temporaryLinks).WithSpawnPoints(points)
                 .WithEnchantments(world.WithTemporaryPreviewUnits(copiedIds));
             TrainCombatState copied = WithContext(source, context, preview: true, copiedIds);
-            TrainSpellResult effects = CardSpellModel.Apply(copied, action.RoomIndex, rule.Effects,
-                action.TargetUnitId, action.CardInstanceId);
+            bool dropOverride = rule.Effects.Any(effect => effect.Target == "DropTargetCharacter");
+            bool damageOnly = rule.Effects.All(effect => effect.Type == "Damage");
+            // OnCast runs before the final main-effect death queue drains. Keep
+            // damage effects in one queue and derive drop overrides from main only.
+            TrainSpellResult effects = damageOnly
+                ? CardSpellModel.ApplyCardHoverEffects(copied, action.RoomIndex, rule.Effects.Concat(rule.OnCastEffects).ToArray(),
+                    action.TargetUnitId, action.CardInstanceId, dropOverride, rule.Effects.Count)
+                : CardSpellModel.Apply(copied, action.RoomIndex, rule.Effects, action.TargetUnitId, action.CardInstanceId);
             if (!effects.Supported) return new CardHoverPreviewResult("Card hover main effects: " + effects.UnsupportedReason);
             TrainCombatState after = effects.State!;
             var transientActors = effects.RetainedUnits.ToDictionary(unit => unit.Id);
             if (effects.PendingCallbacks.Count != 0)
                 return new CardHoverPreviewResult("Card hover main effects left uncalibrated pending callbacks.");
-            if (rule.OnCastEffects.Count > 0 && rule.OnCastEffects.All(effect => effect.Type == "Damage" && effect.Target == "DropTargetCharacter") &&
-                transientActors.TryGetValue(action.TargetUnitId, out var retired) && retired.Health <= 0 &&
-                retired.DeathState?.HasFinishedDying == true && !after.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == retired.Id))
-            {
-                // Native OnCast keeps the dead drop-point reference. Damage tests
-                // and applications still draw, while ApplyDamageToTarget skips
-                // the finished victim. It must never rejoin the live room list.
-                UnityRng rng = after.Context!.Enchantments!.TestRng;
-                foreach (var effect in rule.OnCastEffects)
-                {
-                    int tested = effect.Value;
-                    if (effect.Range != null) { var draw = effect.Range.Sample(rng); tested = draw.Value; rng = draw.State; }
-                    if (tested >= 0 && (effect.Range == null || effect.Range.Max > 0) && effect.Range != null)
-                        rng = effect.Range.Sample(rng).State;
-                }
-                after = CardSpellModel.WithContext(after, after.Context.WithEnchantments(after.Context.Enchantments.WithTestRng(rng)));
-            }
-            else if (rule.OnCastEffects.Count > 0)
+            if (!damageOnly && rule.OnCastEffects.Count > 0)
             {
                 effects = CardSpellModel.Apply(after, action.RoomIndex, rule.OnCastEffects,
                     action.TargetUnitId, action.CardInstanceId);

@@ -7,6 +7,22 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+The 2.3.1 damage-hover protocol additionally has 1152 native mixed-target and
+multiple-main controls, including fixed/ranged quantities, main cancellation
+with preserved OnCast, and two extra living room candidates. Drop overrides
+depend on the main effect set even during OnCast; room cards keep their room
+candidate lists. Main damage and OnCast share the native deferred death queue,
+so later dying witnesses cannot harvest an earlier victim prematurely. Full
+temporary actors, copy/effect/cancel states, gameplay RNG and 16 immutable
+branches per root pass `scripts/Check-Game231DamageCompositionsPreview.ps1`,
+including 1344 range tests and 1085 application draws. Release builds and focused
+random/composite damage, LifeLink, UI preview and two live battle archive regressions
+pass; the original-composition search matches serial/parallel results at 128 states
+and replays its three-step plan. No full regression was run for this change.
+Linked damage, multiple OnCast effects, random targets, mixed non-damage effects,
+traits and other callbacks remain guarded. Authored controls do not increase
+the original-card or relic inventory counts.
+
 The 2.3.1 card-hover protocol also models ranged damage quantities: 1024 new
 native player/enemy controls cover targeted/room and main/OnCast effects with
 ordinary/Horde/Undying/half-health and armor. Native tests and applications
@@ -15,8 +31,8 @@ Battle stays unchanged. Empty modifier planes still clamp negative damage
 endpoints; OnCast draws against a finished drop-target reference without
 reviving its room membership. The dedicated checker compares every draw,
 complete temporary actors, copy/effect/cancel states and 16 immutable branches
-per root. Run `scripts/Check-Game231RandomDamagePreview.ps1`. Random targets,
-mixed modes, multiple main effects, linked damage, traits and other callbacks
+per root. Run `scripts/Check-Game231RandomDamagePreview.ps1`. Mixed modes and
+multiple main effects have the separate evidence above; random targets, linked damage, traits and other callbacks
 remain guarded. These authored controls do not increase catalog coverage.
 
 The 2.3.1 card-hover protocol additionally supports constant room damage and

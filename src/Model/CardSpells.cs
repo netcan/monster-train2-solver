@@ -131,6 +131,11 @@ namespace MonsterTrain2Poju.Model
             int targetId, int sourceCardId = 0, BattlePlayRules? definitions = null, IReadOnlyList<CardPileState>? otherPiles = null, int selfUnitId = 0)
             => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, fullTrain: true, otherPiles, selfUnitId);
 
+        internal static TrainSpellResult ApplyCardHoverEffects(TrainCombatState source, int roomIndex,
+            IReadOnlyList<CardActionEffect> effects, int targetId, int sourceCardId, bool dropOverride, int mainEffectCount) =>
+            ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, null, fullTrain: true,
+                previewDropOverride: dropOverride, previewOnCastStartIndex: mainEffectCount);
+
         internal static RoomCombatResult ApplyRelicSelf(RoomCombatState source, CardActionEffect effect, int actorId)
         {
             if (effect.Target != "Self") return new RoomCombatResult(null, RoomOutcome.Unsupported, 0,
@@ -390,7 +395,8 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<CardRecursionSelection>? recursionSelections = null, bool onCastEffects = false,
             bool onUnplayedNegativeEffects = false, IReadOnlyList<ElixirMixSelection>? mixSelections = null,
             IReadOnlyList<int>? priorTargets = null, bool playerActionPhase = false, bool resolveLiveEffects = true,
-            int? abilityRoomIndex = null, bool duringRoomPreCombat = false)
+            int? abilityRoomIndex = null, bool duringRoomPreCombat = false,
+            bool? previewDropOverride = null, int? previewOnCastStartIndex = null)
         {
             string? selectionError = CardRecursionModel.ValidateSelections(effects, recursionSelections);
             if (selectionError != null) return UnsupportedTrain(selectionError);
@@ -581,7 +587,8 @@ namespace MonsterTrain2Poju.Model
                 CardTargets targets = Collect(state, collectionRoom, effect, last, initial, dropPosition, index, definitions, isTesting: true,
                     pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId, sourceCardId: sourceCardId,
                     lastSacrificedUnitId: lastSacrificedUnitId, hasPriorTargets: priorTargets != null,
-                    retainedSelf: retained.GetValueOrDefault(selfUnitId));
+                    retainedSelf: retained.GetValueOrDefault(selfUnitId), previewDropOverride: previewDropOverride,
+                    retainedDropTarget: initial == null ? null : retained.GetValueOrDefault(initial.Id));
                 if (!targets.Supported) return UnsupportedTrain(targets.UnsupportedReason!);
                 string? damageTargetError = null;
                 if (!CardTargetModel.IsRandom(effect.Target))
@@ -613,13 +620,21 @@ namespace MonsterTrain2Poju.Model
                     if (index == 0 && CardTargetModel.IsRandom(effect.Target) && targets.UnitIds.Count > 0 && effect.Tests?.CancelSubsequent != true &&
                         effects.Skip(1).Any(next => next.Target.Contains("LastTargeted")))
                         return UnsupportedTrain("A skipped first random effect retains uncaptured test-stream target history.");
-                    if (effect.Tests?.CancelSubsequent == true) break;
+                    if (effect.Tests?.CancelSubsequent == true)
+                    {
+                        // Cancelling the remaining main effects still invokes
+                        // PreviewCardPlay's always-fired OnCast callback.
+                        if (previewOnCastStartIndex is int start && index < start && start < effects.Count)
+                        { index = start - 1; applicationsLeft = 1; }
+                        else break;
+                    }
                     continue;
                 }
                 targets = Collect(state, collectionRoom, effect, last, initial, dropPosition, index, definitions,
                     pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId, sourceCardId: sourceCardId,
                     lastSacrificedUnitId: lastSacrificedUnitId, hasPriorTargets: priorTargets != null,
-                    retainedSelf: retained.GetValueOrDefault(selfUnitId));
+                    retainedSelf: retained.GetValueOrDefault(selfUnitId), previewDropOverride: previewDropOverride,
+                    retainedDropTarget: initial == null ? null : retained.GetValueOrDefault(initial.Id));
                 if (!targets.Supported) return UnsupportedTrain(targets.UnsupportedReason!);
                 damageTargetError = DamagePerHpTargetError(state, effect, targets, selfUnitId);
                 if (damageTargetError != null) return UnsupportedTrain(damageTargetError);
@@ -2755,8 +2770,22 @@ namespace MonsterTrain2Poju.Model
         private static CardTargets Collect(TrainCombatState state, int roomIndex, CardActionEffect effect, IReadOnlyList<int> last,
             CombatUnit? initial, int dropPosition, int index, BattlePlayRules? definitions, bool isTesting = false,
             IReadOnlyDictionary<int, int>? pendingDeadRooms = null, IReadOnlyDictionary<int, int>? positions = null, int selfUnitId = 0,
-            int sourceCardId = 0, int lastSacrificedUnitId = 0, bool hasPriorTargets = false, CombatUnit? retainedSelf = null)
+            int sourceCardId = 0, int lastSacrificedUnitId = 0, bool hasPriorTargets = false, CombatUnit? retainedSelf = null,
+            bool? previewDropOverride = null, CombatUnit? retainedDropTarget = null)
         {
+            if (effect.Type == "Damage" && effect.Target == "DropTargetCharacter" && previewDropOverride.HasValue &&
+                state.Context?.Enchantments?.TemporaryPreviewUnitIds != null)
+            {
+                RoomCombatState room = state.Rooms.Single(item => item.RoomIndex == roomIndex);
+                // GameEffectHelper decides whether to override DropTargetCharacter
+                // from the card's main effects, including while running OnCast.
+                if (!previewDropOverride.Value)
+                    return CardTargetModel.Collect(room, effect, last, isTesting: isTesting, dropOverride: false);
+                if (retainedDropTarget?.Health <= 0 && retainedDropTarget.DeathState?.HasFinishedDying == true &&
+                    !state.Rooms.SelectMany(item => item.Units).Any(unit => unit.Id == retainedDropTarget.Id))
+                    return CardTargetModel.Collect(room.WithUnits(new[] { retainedDropTarget }), effect, last,
+                        retainedDropTarget.Team, 0, isTesting: isTesting);
+            }
             // A completed OnShift death removes the native ability caster before
             // the following scalar status effects collect Self again. Keep the
             // rejection for unknown actors and other retained-actor effects.

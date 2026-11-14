@@ -110,7 +110,7 @@ namespace MonsterTrain2Poju.Model
         public static CardTargets Collect(RoomCombatState room, CardActionEffect effect, IReadOnlyList<int> lastTargets,
             CombatTeam? dropTeam = null, int dropPosition = -1, bool firstEffect = false, bool isTesting = false, int selfUnitId = 0,
             int lastSpawnedOverrideUnitId = 0, bool ignorePyre = true, int lastSacrificedUnitId = 0, bool inCombat = false,
-            IReadOnlyDictionary<int, int>? unitPositions = null)
+            IReadOnlyDictionary<int, int>? unitPositions = null, bool dropOverride = true)
         {
             if (effect.Target == "LastSpawnedCharacter") return LastSpawned(room, lastSpawnedOverrideUnitId);
             if (effect.Target == "LastSacrificedCharacter") return new CardTargets(lastSacrificedUnitId > 0 ? new[] { lastSacrificedUnitId } : Array.Empty<int>());
@@ -129,7 +129,7 @@ namespace MonsterTrain2Poju.Model
                     room.Units.FirstOrDefault(unit => unit.Id == id)?.Health ?? 0).ToArray();
                 return new CardTargets(ordered.Take(1).ToArray());
             }
-            if (effect.Target == "DropTargetCharacter")
+            if (effect.Target == "DropTargetCharacter" && dropOverride)
             {
                 // A damage victim retains its native drop point until the
                 // queued death settles. Removing it from the live list must

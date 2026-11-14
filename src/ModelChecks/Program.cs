@@ -1,5 +1,15 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--damage-composition-boundaries-preview-only")
+{
+    DamageCompositionCardPreviewChecks.Native(args[1], boundaries: true);
+    return;
+}
+if (args.Length == 2 && args[0] == "--damage-composition-card-preview-only")
+{
+    DamageCompositionCardPreviewChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--random-damage-card-preview-only")
 {
     RandomDamageCardPreviewChecks.Native(args[1]);
