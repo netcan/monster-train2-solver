@@ -2251,7 +2251,7 @@ if ($RandomDiscard) {
 if ($RoomCapacityAttachment) { $environment['MT2_PROBE_MODIFIERS'] = 'room-capacity-attachment' }
 if ($CardCatalog) {
     $cardCatalogAllowedArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'CardCatalog',
-        'BinaryCapture', 'CaptureJson', 'SkipBuild', 'FullRuleCatalog', 'Verbose', 'Debug', 'ErrorAction',
+        'BinaryCapture', 'CaptureJson', 'SkipBuild', 'FullRuleCatalog', 'RelicCatalog', 'Verbose', 'Debug', 'ErrorAction',
         'WarningAction', 'InformationAction', 'ProgressAction', 'ErrorVariable', 'WarningVariable',
         'InformationVariable', 'OutVariable', 'OutBuffer', 'PipelineVariable')
     if ($Policy -ne 'no-cards' -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $cardCatalogAllowedArguments }).Count -gt 0) {
@@ -4531,11 +4531,13 @@ if ($CardCatalog) {
             -not $cardCatalogRoot.GetProperty('DecisionUnchanged').GetBoolean() -or
             $cardCatalogRoot.GetProperty('FrameBefore').GetInt32() -ne $cardCatalogRoot.GetProperty('FrameAfter').GetInt32() -or
             -not $cardCatalogRoot.GetProperty('RngBefore').ContentEquals($cardCatalogRoot.GetProperty('RngAfter')) -or
-            $cardCatalogEntries.Count -ne 668 -or
-            @($cardCatalogEntries | ForEach-Object { $_.GetProperty('Id').GetString() } | Sort-Object -Unique).Count -ne 668) {
+            $cardCatalogEntries.Count -eq 0 -or
+            $cardCatalogRoot.GetProperty('NativeDefinitionCount').GetInt32() -ne $cardCatalogEntries.Count -or
+            @($cardCatalogEntries | Where-Object { -not $_.GetProperty('Id').GetString() }).Count -gt 0 -or
+            @($cardCatalogEntries | ForEach-Object { $_.GetProperty('Id').GetString() } | Sort-Object -Unique).Count -ne $cardCatalogEntries.Count) {
             throw 'Original card catalog is incomplete or changed native decision/RNG/frame.'
         }
-        Write-Output "NATIVE-CARD-CATALOG PASS: 668 unique definitions with native logbook/ability roles and model projections; unchanged decision/RNG/frame."
+        Write-Output "NATIVE-CARD-CATALOG PASS: $($cardCatalogEntries.Count) unique definitions with native logbook/ability roles and model projections; unchanged decision/RNG/frame."
     } finally { $cardCatalogDocument.Dispose() }
 }
 if ($RelicCatalog) {

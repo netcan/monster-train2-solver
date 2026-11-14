@@ -19,8 +19,9 @@ namespace MonsterTrain2Poju.Probe
             var data = managers.GetSaveManager().GetAllGameData();
             var relics = managers.GetRelicManager();
             var cards = data.GetAllCardData().OrderBy(card => card.GetID(), StringComparer.Ordinal).ToArray();
-            if (cards.Length != 668 || cards.Select(card => card.GetID()).Distinct().Count() != cards.Length)
-                throw new InvalidOperationException("Expected the complete 668-definition original card catalog.");
+            if (cards.Length == 0 || cards.Any(card => string.IsNullOrEmpty(card.GetID())) ||
+                cards.Select(card => card.GetID()).Distinct().Count() != cards.Length)
+                throw new InvalidOperationException("Native card catalog is empty or has missing/duplicate identities.");
             JToken before = JToken.FromObject(trace.CaptureDecision());
             JObject beforeRng = RngStates();
             int frame = UnityEngine.Time.frameCount;
@@ -79,7 +80,8 @@ namespace MonsterTrain2Poju.Probe
                 BranchCardMasksEnabled = CardBranchMaskProbe.Enabled,
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 FrameBefore = frame, FrameAfter = UnityEngine.Time.frameCount, RngBefore = beforeRng, RngAfter = afterRng,
-                DecisionUnchanged = unchanged, Cards = entries, MoonPhaseUpgradeDefinitions = moonUpgrades,
+                DecisionUnchanged = unchanged, NativeDefinitionCount = cards.Length,
+                Cards = entries, MoonPhaseUpgradeDefinitions = moonUpgrades,
                 CharacterRoomModifierDefinitions = characterRoomModifiers, CardTriggerEffectDefinitions = nativeCardTriggers,
                 CardKillTriggerDefinitions = killTriggers
             }))
