@@ -80,18 +80,18 @@ namespace MonsterTrain2Poju.Probe
             "FloorRearrange", "LastAttackedCharacter", effect.GetParamInt(),
             effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
             Array.Empty<CombatStatus>(), tests: new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
-                effect.GetShouldCancelSubsequentEffectsIfTestFails(), false));
+                effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, devotionRequirement: DevotionProbe.Requirement(effect), devotionRequirementMax: DevotionProbe.Requirement(effect, true)));
         private static CardActionEffect Synergy(CardEffectData effect) => new CardActionEffect("SynergizeStatuses",
             effect.GetTargetMode().ToString(), effect.GetParamBool() ? 1 : 0,
             effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
             effect.GetParamStatusEffects().Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray(),
             tests: new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
-                effect.GetShouldCancelSubsequentEffectsIfTestFails(), false));
+                effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, devotionRequirement: DevotionProbe.Requirement(effect), devotionRequirementMax: DevotionProbe.Requirement(effect, true)));
         private static CardActionEffect Feeding(CardEffectData effect) => new CardActionEffect(
             effect.GetParamBool() ? "SelfFeederRules" : "FeederRules", effect.GetTargetMode().ToString(), effect.GetParamInt(),
             effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
             Array.Empty<CombatStatus>(), tests: new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
-                effect.GetShouldCancelSubsequentEffectsIfTestFails(), false));
+                effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, devotionRequirement: DevotionProbe.Requirement(effect), devotionRequirementMax: DevotionProbe.Requirement(effect, true)));
         private static CardActionEffect HoardPerStatus(CardEffectData effect) => new CardActionEffect(
             "HoardPerStatus", effect.GetTargetMode().ToString(), effect.GetParamInt(),
             effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
@@ -120,7 +120,7 @@ namespace MonsterTrain2Poju.Probe
             if (fallback == null) interactions?.Add("Missing triggered spawn-or-status fallback character.");
             return new CardActionEffect("SpawnOrStatus", effect.GetTargetMode().ToString(), effect.GetParamInt(),
                 allowEnemy: false, allowPlayer: true, statuses, tests: new CardEffectTests(effect.GetShouldTest(),
-                    effect.GetShouldFailToCastIfTestFails(), effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, false),
+                    effect.GetShouldFailToCastIfTestFails(), effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, false, devotionRequirement: DevotionProbe.Requirement(effect), devotionRequirementMax: DevotionProbe.Requirement(effect, true)),
                 range: effect.GetUseIntRange() ? new CardEffectRange(effect.GetParamMinInt(), effect.GetParamMaxInt(), effect.GetParamMultiplier()) : null,
                 filters: new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
                     effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),
@@ -132,7 +132,7 @@ namespace MonsterTrain2Poju.Probe
         private static CardActionEffect TypedDraw(CardEffectData effect, int value) => new CardActionEffect("DrawType", "Self", value,
             false, false, Array.Empty<CombatStatus>(), typedDraw: TypedDrawProbe.DrawRule(effect),
             tests: new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
-                effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, false),
+                effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, false, devotionRequirement: DevotionProbe.Requirement(effect), devotionRequirementMax: DevotionProbe.Requirement(effect, true)),
             range: effect.GetUseIntRange() ? new CardEffectRange(effect.GetParamMinInt(), effect.GetParamMaxInt(), effect.GetParamMultiplier()) : null);
         private static CardActionEffect Describe(CardEffectData effect, int value, CardEffectRange? range, CombatStatus[]? statuses = null)
         {
@@ -162,7 +162,7 @@ namespace MonsterTrain2Poju.Probe
                 upgrade: drawNext ? BonusDrawProbe.Upgrade(effect) : null,
                 lifetime: adjustHealth && effect.GetParamBool() ? "ParentUpgrade" : buffHealth ? ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString() : "",
                 tests: new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
-                    effect.GetShouldCancelSubsequentEffectsIfTestFails(), effect.GetEffectStateName() != "CardEffectAddStatusEffectBasedOnHealth" && StatusEffect(effect.GetEffectStateName()) && effect.GetParamBool(), forgePoints ? true : energy || drawNext || capacity ? false : (bool?)null),
+                    effect.GetShouldCancelSubsequentEffectsIfTestFails(), effect.GetEffectStateName() != "CardEffectAddStatusEffectBasedOnHealth" && StatusEffect(effect.GetEffectStateName()) && effect.GetParamBool(), forgePoints ? true : energy || drawNext || capacity ? false : (bool?)null, devotionRequirement: DevotionProbe.Requirement(effect), devotionRequirementMax: DevotionProbe.Requirement(effect, true)),
                 range: range,
                 filters: new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
                     effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),

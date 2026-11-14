@@ -105,7 +105,7 @@ namespace MonsterTrain2Poju.Model
                 int testCount = TestCount(source, effect, targets);
                 if (testCount < 0) return new SpellCastCheck(false, "All-status adjustment requires complete propagation metadata.");
                 bool valid = effect.Type == "AbilityTeleport"
-                    ? UnitTeleportModel.CanPlay(source, selfUnitId, roomIndex, targetSpawnPointIndex)
+                    ? UnitTeleportModel.CanPlay(source, selfUnitId, roomIndex, targetSpawnPointIndex) && DevotionModel.MeetsRequirements(source.Context, effect.Tests)
                     : (effect.Type != "DamagePerSourceAttack" || sourceAttackUnitId > 0 &&
                         source.Rooms.SelectMany(item => item.Units).Any(unit => unit.Id == sourceAttackUnitId)) &&
                         PassesTest(tested, testCount, source.Context!.AllScenarioBossesDead == true, source.Context, room.Preview, room,
@@ -546,7 +546,7 @@ namespace MonsterTrain2Poju.Model
                 int testCount = TestCount(state, effect, targets);
                 if (testCount < 0) return UnsupportedTrain("All-status adjustment requires complete propagation metadata.");
                 bool passes = effect.Type == "AbilityTeleport"
-                    ? UnitTeleportModel.CanPlay(state, selfUnitId, roomIndex, targetSpawnPointIndex)
+                    ? UnitTeleportModel.CanPlay(state, selfUnitId, roomIndex, targetSpawnPointIndex) && DevotionModel.MeetsRequirements(state.Context, effect.Tests)
                     : PassesTest(tested, testCount, bossDead, state.Context, selected.Preview,
                         state.Rooms.Single(room => room.RoomIndex == roomIndex), PyreAlive(state, fullTrain), sourceCardId) &&
                         PassesTargetSubtype(state, effect, targets) &&
@@ -2185,7 +2185,7 @@ namespace MonsterTrain2Poju.Model
                         if (!testTargets.Supported) return testTargets.UnsupportedReason;
                         int count = TestCount(source, effect, testTargets);
                         if (count < 0) return "All-status adjustment requires complete propagation metadata.";
-                        outcomes.Add(PassesTest(effect, count, source.Context.AllScenarioBossesDead == true));
+                        outcomes.Add(PassesTest(effect, count, source.Context.AllScenarioBossesDead == true, source.Context));
                     }
                     if (outcomes.Distinct().Count() > 1) return "Mandatory last-target tests after random selection depend on the auxiliary test stream.";
                 }
@@ -2302,6 +2302,14 @@ namespace MonsterTrain2Poju.Model
                 return "Mandatory last-target team tests after random selection depend on the auxiliary test stream.";
             foreach (CardActionEffect effect in effects)
             {
+                if (DevotionModel.HasRequirements(effect.Tests))
+                {
+                    string? requirementError = DevotionModel.Validate(source.Context);
+                    if (requirementError != null) return requirementError;
+                    if (effect.Type is "ReplayTrigger" or "UpgradeDeckSpells" or "MergeEquipment" or "Unbox" or
+                        "MixRandom" or "Mix" or "CraftSpike" or "CopyLastTurn" or "GenerateUpgradedCopy")
+                        return "Devotion-gated special card effects require separate native application calibration.";
+                }
                 string? filterError = effect.Target == "Pyre" ? null : effect.Filters?.Validate();
                 if (filterError != null) return filterError;
                 if (effect.Range != null && effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "RandomDiscard" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && effect.Type != "AttachRoomCapacity" && effect.Type != "ScheduleNextDrawUpgrade" &&
@@ -2708,6 +2716,7 @@ namespace MonsterTrain2Poju.Model
         private static bool PassesTest(CardActionEffect effect, int count, bool bossDead = false, CombatContext? context = null, bool preview = false,
             RoomCombatState? room = null, bool? pyreAlive = null, int sourceCardId = 0)
         {
+            if (!DevotionModel.MeetsRequirements(context, effect.Tests)) return false;
             if (effect.Type == "CraftSpike") return true;
             if (effect.Type == "CopyLastTurn") return !preview && !bossDead && count > 0;
             if (effect.Type == "FeederRules") return room?.Deployment == false;

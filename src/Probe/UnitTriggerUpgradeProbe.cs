@@ -50,7 +50,7 @@ namespace MonsterTrain2Poju.Probe
                 perStatus ? effect.GetParamStatusEffectStackData().Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray() :
                     Array.Empty<CombatStatus>(), upgrade, equipment ? "TemporaryUntilUnitDeath" : ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString(),
                 new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
-                    effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, true), filters:
+                    effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, true, devotionRequirement: DevotionProbe.Requirement(effect), devotionRequirementMax: DevotionProbe.Requirement(effect, true)), filters:
                 new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
                     effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),
                     effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,

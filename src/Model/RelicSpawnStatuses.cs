@@ -69,7 +69,7 @@ namespace MonsterTrain2Poju.Model
         internal static string? Validate(CombatRelicState relic)
         {
             int[] indices = relic.EffectTypes.Select((type, index) => (type, index))
-                .Where(item => item.type == RelicModel.AddStatusOnSpawn || item.type == RelicModel.RemoveStatusOnSpawn ||
+                .Where(item => item.type == RelicModel.AddStatusOnSpawn || item.type == RelicModel.AddStatusPerDevotionOnSpawn || item.type == RelicModel.RemoveStatusOnSpawn ||
                     item.type == RelicModel.AddStatusOnTeamSpawn || item.type == RelicModel.EnergyAndCardDrawOnUnitSpawned)
                 .Select(item => item.index).ToArray();
             if (indices.Length == 0) return relic.SpawnStatuses?.Count > 0 ? "Unexpected relic spawn status definitions." : null;
@@ -87,6 +87,15 @@ namespace MonsterTrain2Poju.Model
                 bool teamEffect = effect == RelicModel.AddStatusOnTeamSpawn;
                 bool removal = effect == RelicModel.RemoveStatusOnSpawn;
                 bool firstImpBonus = effect == RelicModel.EnergyAndCardDrawOnUnitSpawned;
+                if (effect == RelicModel.AddStatusPerDevotionOnSpawn &&
+                    (relic.DataId != "ecb009cc-30c5-47ba-93dd-91b8eab5c78f" || relic.AssetKey != "MonolithDevotion" ||
+                    relic.IsCovenant != false || relic.DisallowedInPlacementPhase != false || relic.EffectTypes.Count != 1 ||
+                    rule.EffectIndex != 0 || !rule.TargetPlayer || rule.TargetEnemy || rule.ApplyToTeam ||
+                    rule.Statuses.Count != 1 || rule.Statuses[0].Id != "zeal" || rule.Statuses[0].Stacks != 4 ||
+                    !rule.SubtypeIsNone || rule.SubtypeIsPyre || rule.ExcludedSubtypes.Count != 0 || rule.RestrictedRoom.HasValue ||
+                    rule.HpPercentAsStacks != 0 || rule.SourceKind.Length != 0 || rule.RequireGraft || rule.CharacterAssetKeys.Count != 0 ||
+                    rule.Conditions.Count != 0 || rule.EnergyGain != 0 || rule.DrawCount != 0))
+                    return "Missing or changed original Monolith Devotion spawn definition.";
                 if (firstImpBonus)
                 {
                     RelicConditionState[] conditions = rule.Conditions.ToArray();
@@ -197,7 +206,8 @@ namespace MonsterTrain2Poju.Model
                     bool applyToTeam = relic.EffectTypes[effectIndex] == RelicModel.AddStatusOnTeamSpawn;
                     bool remove = relic.EffectTypes[effectIndex] == RelicModel.RemoveStatusOnSpawn;
                     bool firstImpBonus = relic.EffectTypes[effectIndex] == RelicModel.EnergyAndCardDrawOnUnitSpawned;
-                    if (relic.EffectTypes[effectIndex] != RelicModel.AddStatusOnSpawn && !applyToTeam && !remove && !firstImpBonus) continue;
+                    bool devotion = relic.EffectTypes[effectIndex] == RelicModel.AddStatusPerDevotionOnSpawn;
+                    if (relic.EffectTypes[effectIndex] != RelicModel.AddStatusOnSpawn && !devotion && !applyToTeam && !remove && !firstImpBonus) continue;
                     int ruleIndex = relic.SpawnStatuses!.ToList().FindIndex(rule => rule.EffectIndex == effectIndex);
                     RelicSpawnStatus rule = relic.SpawnStatuses![ruleIndex];
                     RelicConditionEvaluation conditionEvaluation = RelicConditionModel.Evaluate(state.Context!, rule.Conditions);
@@ -250,6 +260,17 @@ namespace MonsterTrain2Poju.Model
                         state.Context.WithBattleRng(draw.State));
                     int stacks = rule.HpPercentAsStacks > 0 ? (int)Math.Floor((float)actor.MaxHealth * ((float)rule.HpPercentAsStacks / 100f)) :
                         Math.Max(1, rule.Statuses[draw.Value].Stacks);
+                    if (devotion)
+                    {
+                        string? devotionError = DevotionModel.Validate(state.Context);
+                        DevotionState? resource = state.Context.QueryFrame?.Devotion;
+                        if (devotionError != null || resource?.PassiveMultiplier is not >= 1)
+                            return Fail(devotionError ?? "Devotion spawn requires the captured native global passive multiplier.");
+                        // The subclass ignores the authored status count and HP
+                        // percent. Selection still consumed RNG at level zero.
+                        stacks = DevotionModel.PassiveStacks(resource, resource.PassiveMultiplier.Value);
+                        if (stacks <= 0) continue;
+                    }
                     // Selection is before the required-subtype test, including a one-element list.
                     bool matches = rule.SubtypeIsNone ? remove || actor.Team == CombatTeam.Enemy || !actor.IsPyre :
                         actor.Subtypes.Contains(rule.RequiredSubtype!) && (actor.Team == CombatTeam.Enemy || (rule.SubtypeIsPyre == actor.IsPyre));

@@ -12,9 +12,9 @@
 免疫及净化清除。归档见 `mechanics/zeal-status/lifecycle.mt2f`，
 运行 `scripts/Check-Game231ZealStatus.ps1` 可离线独立验收。
 原生采样约 33.53 秒，启动器确认玩家文件未变。
-这属于公共状态组件证据，不增加整局遗物覆盖：新增遗物整局验收仍为
-**5/12**。供奉动作（`Devote`）、随等级变化的卡牌和入场被动，
-以及狂热与群体（Horde）损耗的组合仍待后续；Horde 的狂热移除保持防护。
+这属于公共状态组件证据；后续完整战斗另验证入场被动和我方攻击加成，
+新增遗物整局验收现为 **7/12**，见下节。供奉动作（`Devote`）、全局被动
+倍率提供者生命周期及狂热与群体（Horde）损耗的组合仍待后续；Horde 的狂热移除保持防护。
 
 虔诚（Devotion）资源另完成 **21 项**原生完整列车后继及每项 32 路不可变并发
 复放：积分累计、连续升级与余数、零/负数、带符号加法溢出、预演不生效，
@@ -28,7 +28,7 @@
 运行 `scripts/Check-Game231Devotion.ps1` 可独立验收。原生采样约 28.05 秒，
 现场完整列车状态及全部 RNG 恢复、玩家文件未变均通过。
 这份组件属于资源及直接效果证据；后续完整战斗已补齐原版 Venerate 的费用/
-消耗流程及受伤虔诚遗物，见下节。供奉动作、入场被动及其他虔诚遗物仍需验收。
+消耗流程及受伤虔诚遗物，见下节。供奉动作、被动倍率提供者生命周期及其他虔诚遗物仍需验收。
 受影响的原版资源法术、锻造卡牌及狂热组件定向回归通过。相同编译产物还在
 2.2.1/2.3.1 重新跑完七回合原生无出牌胜局，四项失败计数均零；各自连续
 模型复放及 16 路不可变分支通过，确认新资源字段跨回合保留且旧版跳过新接口。
@@ -58,13 +58,53 @@
 `2384f0fd7b85d49d04e1cfebcf86963672d5867768a3b2a9d8efbe43e1ab9687`。
 `scripts/Check-Game231DevotionDamage.ps1` 固定哈希并独立验收完整后继/RNG、
 原版费用/消耗、阈值与跨回合、缺失输入保护及 32 路组件分支。
-新增遗物整局验收现为 **5/12**；新版全部 614 张卡、236 件遗物仍未整体重新验收。
+新增遗物整局验收现为 **7/12**；新版全部 614 张卡、236 件遗物仍未整体重新验收。
 受影响的新版阈值抽牌/受击次数整局、虔诚资源组件和旧版三件单位资源遗物
 （505 份完整管理器回调、22 次出牌/5 次 EndTurn）定向回归均通过。
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Game231DevotionDamage.ps1
 pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -DevotionDamageBattle -NativeWorker 3 -GameSpeed Instant -BinaryCapture -SkipBuild
+```
+
+## 虔诚入场被动、等级卡牌及效果等级限制
+
+原版 `MonolithDevotion` 与 `ZealDamageIncrease` 同场保持定义不变。入场遗物
+忽略配置中的四层，实际按当前等级 × 原生被动基数二 × 全局倍率计算。
+零、一、二级召唤分别为零、二、四层；零级仍消耗一次状态选择 RNG。
+升级不会追补已入场单位；狂热增加最大生命而不治疗。攻击加成遗物使我方
+每层攻击加二，敌方对照仍只加一，最大生命均每层加一。
+
+同场保持原版 `Venerate`、`InitiateSermon`、`Agonize` 定义不变。两次 Venerate
+各实际支付三费、加六点并进入消耗牌堆；Sermon 在一/二级各加二/四层并支付
+两费，保留 Treasure 特性；Agonize 二级实际支付两费，先扣二十五护甲再扣
+三十五生命，合计六十伤害。另有狂热清零和重新添加三层的控制牌。
+场景使用三名 100 血/60 攻击/体积一/零费的改造列车员、零费状态控制牌、
+起始额外十能量和改为 100 血的护卫；这些控制定义不增加原版卡牌覆盖。
+
+新版通用 `GameEffectHelper.TestEffect` 在效果自身测试之后判定虔诚等级上下限：
+正数上下限均包含边界，零/负数不限制。原版 Sermon 最低要求一级，零级不能
+出牌。采集保留上下限，模型在测试和实际效果应用时分别判定，缺失虔诚输入
+不猜默认值。四个等级与六组上下限的 24 项矩阵、一个负数对照、两个原版
+Sermon 零/一级对照共 **27 项**匹配，每项另有 32 路不可变并发检查；采样后
+完整列车、全部 RNG 及现场资源恢复。特殊生成/混合效果和角色触发器上的正数
+等级门槛仍显式受保护，等待相应生命周期校准。
+
+原生完整胜局通过 12 次出牌、7 次 EndTurn、47 个房间阶段、13 个列车阶段，
+10 份完整出生回调（含敌方对照）及自首输入到终局的 16 路独立不可变分支。
+完整状态与 RNG、四项失败计数全零、`DEPTH-PASS`、退出码零和玩家文件未变均通过。
+全局倍率读取原生当前值，本场为一；提供倍率单位的入场/失效/死亡生命周期
+仍未验收，不能把单个倍率快照当作相关单位机制完成。
+
+二进制归档 `mechanics/devotion-spawn/full-battle.mt2f` 为 42,861 字节，SHA256
+`871c5db99c15d63c9a3c8e378a91d9c038d0eb7d4c79ee6c11f8389f5830f404`。
+运行 `scripts/Check-Game231DevotionSpawn.ps1` 可离线独立验收；成功采样来自
+`.probe-runs/full-battle-units-spells-and-junk-20261114-200422-f4a30157`。
+新增遗物整局验收由五件增至 **7/12**；尚未整体重新验收新版 614 张卡和 236 件遗物。
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Game231DevotionSpawn.ps1
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -DevotionSpawnBattle -NativeWorker 3 -GameSpeed Instant -BinaryCapture -SkipBuild
 ```
 
 ## 版本及目录变化
@@ -601,7 +641,7 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -DamageRea
 半血整局与原版 `DeathwishAttack` 的完整连续复放及各 16 路分支通过，
 Probe、ModelChecks、Advisor 构建及 PowerShell 解析通过。
 `DeathwishAttack` 与 `DamageFriendlyOnSpawn` 已取得上述新版原版整局证据。
-连同阈值抽牌、受击次数及受伤虔诚，新增遗物当前为 5/12；新版 614 张卡及
+连同阈值抽牌、受击次数及受伤虔诚，新增遗物当前为 7/12；新版 614 张卡及
 236 件遗物的全量重验仍未完成。
 更多嵌套效果及共享附魔世界组合不计入本次证据范围。
 
@@ -639,7 +679,7 @@ Probe、ModelChecks、Advisor 构建及 PowerShell 解析通过。
 
 这两种控制场景在部署结束后才注入敌人和控制牌，连续复放明确从正式第一回合的
 首个输入开始；两个部署输入及部署 EndTurn 另由原生分项比对，不能把中间的
-场景布置当成模型自行推进。它们是两件旧遗物的新版证据，不增加新增遗物 5/12 的计数，
+场景布置当成模型自行推进。它们是两件旧遗物的新版证据，不增加新增遗物 7/12 的计数，
 也不代表新版 614 张卡和 236 件遗物已经全量重验。
 
 ```powershell

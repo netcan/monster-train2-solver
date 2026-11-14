@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--devotion-spawn-battle-only")
+{
+    DevotionSpawnBattleChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--devotion-damage-battle-only")
 {
     DevotionDamageBattleChecks.Native(args[1]);

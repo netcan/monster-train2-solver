@@ -422,7 +422,7 @@ namespace MonsterTrain2Poju.Probe
                     baseUpgrade = CardModifierProbe.Upgrade(state);
                 }
                 return new CardActionEffect("CraftSpike", "None", effect.GetParamInt(), false, false, Array.Empty<CombatStatus>(),
-                    tests: new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(), effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, false),
+                    tests: new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(), effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, false, devotionRequirement: DevotionProbe.Requirement(effect), devotionRequirementMax: DevotionProbe.Requirement(effect, true)),
                     spikeRecipe: new ElixirRecipe(CardGenerationProbe.Creation(config.Elixirs[0].Elixir), baseUpgrade,
                         config.Elixirs[0].Upgrades.Select(extra => { var state = new CardUpgradeState(); state.Setup(extra); return CardModifierProbe.Upgrade(state); }).ToArray()));
             }
@@ -430,10 +430,10 @@ namespace MonsterTrain2Poju.Probe
                 interactions.Add("Forced feeding with an overridden self feeder requires native calibration");
             if (effect.GetEffectStateName() == "CardEffectUnboxSmallBoxUnitCard")
                 return new CardActionEffect("Unbox", "None", 0, false, false, Array.Empty<CombatStatus>(),
-                    tests: new CardEffectTests(true, false, false, false, false));
+                    tests: new CardEffectTests(true, false, false, false, false, devotionRequirement: DevotionProbe.Requirement(effect), devotionRequirementMax: DevotionProbe.Requirement(effect, true)));
             if (effect.GetEffectStateName() is "CardEffectMix" or "CardEffectMixRandom")
                 return new CardActionEffect(effect.GetEffectStateName() == "CardEffectMix" ? "Mix" : "MixRandom", "None", effect.GetParamInt(), false, false,
-                    Array.Empty<CombatStatus>(), tests: new CardEffectTests(true, false, false, false, true));
+                    Array.Empty<CombatStatus>(), tests: new CardEffectTests(true, false, false, false, true, devotionRequirement: DevotionProbe.Requirement(effect), devotionRequirementMax: DevotionProbe.Requirement(effect, true)));
             bool handUpgrade = effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToCardsInHand" ||
                 effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand";
             bool deckSpellUpgrade = effect.GetEffectStateName() == "CardEffectAddTempCardUpgradeToSpellsInDeck";
@@ -657,7 +657,8 @@ namespace MonsterTrain2Poju.Probe
                 new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(), effect.GetShouldCancelSubsequentEffectsIfTestFails(),
                     (type == "AddStatus" || type == "AdjustAllStatusEffects") && effect.GetParamBool(),
                     ((ICardEffect)Activator.CreateInstance(typeof(CardEffectBase).Assembly.GetType(effect.GetEffectStateName())!)!).CanPlayAfterBossDead,
-                    mustHaveValidTargets: type == "Kill" && effect.GetParamBool3()),
+                    mustHaveValidTargets: type == "Kill" && effect.GetParamBool3(),
+                    devotionRequirement: DevotionProbe.Requirement(effect), devotionRequirementMax: DevotionProbe.Requirement(effect, true)),
                 effect.GetUseIntRange() ? new CardEffectRange(effect.GetParamMinInt(), effect.GetParamMaxInt(), effect.GetParamMultiplier()) : null,
                 new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
                     effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),

@@ -10,9 +10,14 @@ namespace MonsterTrain2Poju.Model
         public int FirstThreshold { get; }
         public int ThresholdIncrease { get; }
         public int PassiveStacksPerLevel { get; }
-        public DevotionState(int level, int points, int firstThreshold, int thresholdIncrease, int passiveStacksPerLevel)
-        { Level = level; Points = points; FirstThreshold = firstThreshold; ThresholdIncrease = thresholdIncrease; PassiveStacksPerLevel = passiveStacksPerLevel; }
-        internal DevotionState With(int level, int points) => new DevotionState(level, points, FirstThreshold, ThresholdIncrease, PassiveStacksPerLevel);
+        public int? PassiveMultiplier { get; }
+        public bool ShouldSerializePassiveMultiplier() => PassiveMultiplier.HasValue;
+        public DevotionState(int level, int points, int firstThreshold, int thresholdIncrease, int passiveStacksPerLevel,
+            int? passiveMultiplier = null)
+        { Level = level; Points = points; FirstThreshold = firstThreshold; ThresholdIncrease = thresholdIncrease;
+            PassiveStacksPerLevel = passiveStacksPerLevel; PassiveMultiplier = passiveMultiplier; }
+        internal DevotionState With(int level, int points) => new DevotionState(level, points, FirstThreshold,
+            ThresholdIncrease, PassiveStacksPerLevel, PassiveMultiplier);
     }
 
     public sealed class DevotionResult
@@ -28,6 +33,11 @@ namespace MonsterTrain2Poju.Model
     public static class DevotionModel
     {
         public const string Effect = "GainDevotion";
+        internal static bool HasRequirements(CardEffectTests? tests) => tests?.DevotionRequirement > 0 || tests?.DevotionRequirementMax > 0;
+        internal static bool MeetsRequirements(CombatContext? context, CardEffectTests? tests) => !HasRequirements(tests) ||
+            context?.QueryFrame?.Devotion is DevotionState state &&
+            (tests!.DevotionRequirement is not > 0 || state.Level >= tests.DevotionRequirement.Value) &&
+            (tests.DevotionRequirementMax is not > 0 || state.Level <= tests.DevotionRequirementMax.Value);
         public static string? Validate(CombatContext? context)
         {
             DevotionState? state = context?.QueryFrame?.Devotion;

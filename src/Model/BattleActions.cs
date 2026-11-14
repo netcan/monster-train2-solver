@@ -12,10 +12,16 @@ namespace MonsterTrain2Poju.Model
         public bool StrictTargets { get; }
         public bool? CanPlayAfterBossDead { get; }
         public bool MustHaveValidTargets { get; }
+        public int? DevotionRequirement { get; }
+        public int? DevotionRequirementMax { get; }
+        public bool ShouldSerializeDevotionRequirement() => DevotionRequirement.HasValue;
+        public bool ShouldSerializeDevotionRequirementMax() => DevotionRequirementMax.HasValue;
         public CardEffectTests(bool shouldTest, bool failToCast, bool cancelSubsequent, bool strictTargets,
-            bool? canPlayAfterBossDead = null, bool mustHaveValidTargets = false)
+            bool? canPlayAfterBossDead = null, bool mustHaveValidTargets = false,
+            int? devotionRequirement = null, int? devotionRequirementMax = null)
         { ShouldTest = shouldTest; FailToCast = failToCast; CancelSubsequent = cancelSubsequent; StrictTargets = strictTargets;
-            CanPlayAfterBossDead = canPlayAfterBossDead; MustHaveValidTargets = mustHaveValidTargets; }
+            CanPlayAfterBossDead = canPlayAfterBossDead; MustHaveValidTargets = mustHaveValidTargets;
+            DevotionRequirement = devotionRequirement; DevotionRequirementMax = devotionRequirementMax; }
     }
     public sealed class CardActionEffect
     {

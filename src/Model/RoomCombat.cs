@@ -1215,6 +1215,11 @@ namespace MonsterTrain2Poju.Model
                     if (countError != null) return countError;
                     foreach (CombatEffect effect in trigger.Effects)
                     {
+                        CardEffectTests? devotionTests = effect.Action?.Tests ?? effect.UnitUpgrade?.Tests ?? effect.Summon?.Tests ?? effect.Enchantment?.Targeting.Tests;
+                        if (DevotionModel.HasRequirements(devotionTests))
+                        {
+                            return "Devotion-gated character triggers require separate native lifecycle calibration.";
+                        }
                         if (effect.Type == "CardEffectForceRelentless")
                         {
                             if (trigger.Kind != "OnDeath" || effect.Value != 1 || effect.Action != null ||

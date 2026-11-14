@@ -1056,6 +1056,11 @@ namespace MonsterTrain2Poju.Probe
                 DamageReactionBattleScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
+            if (fullBattle && !numericModifiersPrepared && DevotionSpawnBattleScenario.Enabled)
+            {
+                DevotionSpawnBattleScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
             if (fullBattle && !numericModifiersPrepared && DevotionDamageBattleScenario.Enabled)
             {
                 DevotionDamageBattleScenario.Prepare(managers, log);
@@ -3211,7 +3216,8 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalMoonPhaseHealRelicScenario.Enabled) pendingPlay = OriginalMoonPhaseHealRelicScenario.Choose(decision);
                 if (HalfHealthBattleScenario.Enabled) pendingPlay = HalfHealthBattleScenario.Choose(decision);
                 if (DamageReactionBattleScenario.Enabled) pendingPlay = DamageReactionBattleScenario.Choose(decision);
-                if (DevotionDamageBattleScenario.Enabled) pendingPlay = DevotionDamageBattleScenario.Choose(decision);
+                if (DevotionSpawnBattleScenario.Enabled) pendingPlay = DevotionSpawnBattleScenario.Choose(decision);
+                else if (DevotionDamageBattleScenario.Enabled) pendingPlay = DevotionDamageBattleScenario.Choose(decision);
                 else if (DamageThresholdDrawBattleScenario.Enabled) pendingPlay = DamageThresholdDrawBattleScenario.Choose(decision);
                 if (OriginalDeathwishAttackScenario.Enabled) pendingPlay = OriginalDeathwishAttackScenario.Choose(decision);
                 if (OriginalOpeningMorselsScenario.FoodCardsMode) pendingPlay = OriginalOpeningMorselsScenario.Choose(decision);
@@ -3471,6 +3477,7 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario == DamageReactionBattleScenario.Name && DamageReactionBattleScenario.IsScenarioAction(action)) ||
                 (modifierScenario == DamageThresholdDrawBattleScenario.Name && DamageThresholdDrawBattleScenario.IsScenarioAction(action)) ||
                 (modifierScenario == DevotionDamageBattleScenario.Name && DevotionDamageBattleScenario.IsScenarioAction(action)) ||
+                (modifierScenario == DevotionSpawnBattleScenario.Name && DevotionSpawnBattleScenario.IsScenarioAction(action)) ||
                 (modifierScenario == OriginalDeathwishAttackScenario.Name && OriginalDeathwishAttackScenario.IsScenarioAction(action)) ||
                 (modifierScenario == OriginalChampionStartTurnHealScenario.Name && OriginalChampionStartTurnHealScenario.IsScenarioAction(action)) ||
                 (OriginalPyreCardCostScenario.Enabled && OriginalPyreCardCostScenario.IsScenarioAction(action)) ||

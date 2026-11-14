@@ -50,7 +50,7 @@ namespace MonsterTrain2Poju.Probe
             var target = new CardActionEffect("AddStatus", data.GetTargetMode().ToString(), 0,
                 data.GetTargetTeamType().HasFlag(Team.Type.Heroes), data.GetTargetTeamType().HasFlag(Team.Type.Monsters), Array.Empty<CombatStatus>(),
                 tests: new CardEffectTests(data.GetShouldTest(), data.GetShouldFailToCastIfTestFails(),
-                    data.GetShouldCancelSubsequentEffectsIfTestFails(), false, true),
+                    data.GetShouldCancelSubsequentEffectsIfTestFails(), false, true, devotionRequirement: DevotionProbe.Requirement(data), devotionRequirementMax: DevotionProbe.Requirement(data, true)),
                 filters: new CardTargetFilters(data.GetTargetModeHealthFilter().ToString(), data.GetTargetModeStatusEffectsFilter(),
                     data.GetTargetModeStatusEffectsExcludedFilter(), data.GetTargetIgnoreBosses(),
                     data.GetTargetCharacterSubtype().IsNone ? "" : data.GetTargetCharacterSubtype().Key,

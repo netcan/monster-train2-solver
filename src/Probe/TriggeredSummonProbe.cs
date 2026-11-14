@@ -154,7 +154,7 @@ namespace MonsterTrain2Poju.Probe
                 return new TriggeredSummonRule(Enemy(effect.GetParamCharacterData()), "",
                     (effect.GetParamCharacterDataPool() ?? new List<CharacterData>()).Select(Enemy).ToArray(),
                     1, true, false, null, new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
-                        effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, false), enemyHero: true);
+                        effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, false, devotionRequirement: DevotionProbe.Requirement(effect), devotionRequirementMax: DevotionProbe.Requirement(effect, true)), enemyHero: true);
             }
             if (effect.GetEffectStateName() != "CardEffectSpawnMonster") return null;
             CardUpgradeModifier? upgrade = null;
@@ -164,7 +164,7 @@ namespace MonsterTrain2Poju.Probe
                 (effect.GetParamCharacterDataPool() ?? new List<CharacterData>()).Select(Register).ToArray(),
                 effect.GetParamInt(), effect.GetParamBool(), false, upgrade,
                 new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
-                    effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, false));
+                    effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, false, devotionRequirement: DevotionProbe.Requirement(effect), devotionRequirementMax: DevotionProbe.Requirement(effect, true)));
         }
         internal static TriggeredSummonRule? Capture(CardEffectState effect)
         {
