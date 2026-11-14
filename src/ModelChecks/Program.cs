@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--damage-threshold-draw-battle-only")
+{
+    DamageThresholdDrawBattleChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--game231-friendly-trigger-damage-only")
 {
     Game231FriendlyTriggerDamageChecks.Native(args[1]);

@@ -537,8 +537,9 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -DamageRea
 旧版 `DamageOnEaten` 和 `DamageOnBurnoutDeath` 的原生定向检查仍通过。
 半血整局与原版 `DeathwishAttack` 的完整连续复放及各 16 路分支通过，
 Probe、ModelChecks、Advisor 构建及 PowerShell 解析通过。
-新增遗物现有 `DeathwishAttack` 与 `DamageFriendlyOnSpawn` 两件取得新版原版整局证据，
-为 2/12；其余新增遗物、新版 614 张卡及 236 件遗物的全量重验仍未完成。
+`DeathwishAttack` 与 `DamageFriendlyOnSpawn` 已取得上述新版原版整局证据。
+连同后述阈值抽牌与受击次数两件，新增遗物当前为 4/12；新版 614 张卡及
+236 件遗物的全量重验仍未完成。
 更多嵌套效果及共享附魔世界组合不计入本次证据范围。
 
 二进制 `mechanics/damage-reactions/battle/full-battle.mt2f` 为 75,548 字节，SHA256
@@ -575,7 +576,7 @@ Probe、ModelChecks、Advisor 构建及 PowerShell 解析通过。
 
 这两种控制场景在部署结束后才注入敌人和控制牌，连续复放明确从正式第一回合的
 首个输入开始；两个部署输入及部署 EndTurn 另由原生分项比对，不能把中间的
-场景布置当成模型自行推进。它们是两件旧遗物的新版证据，新增遗物进度仍为 2/12，
+场景布置当成模型自行推进。它们是两件旧遗物的新版证据，不增加新增遗物 4/12 的计数，
 也不代表新版 614 张卡和 236 件遗物已经全量重验。
 
 ```powershell
@@ -595,6 +596,48 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -OriginalB
 与 `.probe-runs/full-battle-units-and-junk-20261114-174554-442ff3dc`，
 原生耗时 285.96/390.54 秒。两份均原生胜利、四类计数及遗物专项四类计数为零，
 退出码零、`DEPTH-PASS` 与玩家文件未变检查通过。
+
+## 友方伤害阈值抽牌与受击次数
+
+新增原版 `DrawCardOnTurnDamage`（`2fb2972c-de3f-4ccc-8fd7-bcd15d9e1ada`）与
+`RevengeTriggerTwice`（`2adea00a-87e9-4a45-9822-de04104ae108`）同场实际取得，
+遗物和效果定义保持原样。前者复用原有单位回调抽牌、条件记录和抽牌队列；
+后者直接复用原生注册时捕获的触发次数缓存。未为两件遗物各造独立战斗引擎。
+
+源码中阈值抽牌类实际测试 `OnHit`，目录残留的 `ParamTrigger=OnPunish` 不参与逻辑；
+`ParamInt=10` 也只用于显示。真正的阈值由原版条件指定：本回合对友军造成的
+友方伤害不少于 10，且本回合尚未触发；抽牌数为 `ParamInt2=1`。模型按实际方法
+捕获并解释这些字段，要求新版伤害统计，保留效果本体和管理器两次通知的记录顺序。
+
+九次实际输入先部署三名同层控制单位，再分别对两个友军造成 3、6、1、1 伤害，
+治疗第一名友军 8 点，最后再伤害 10。共享统计依次为 3/9/10/11/11/21；
+只在 10 的那次抽一张，继续伤害及治疗后重伤均不重复。自然回合开始时，
+每个单位自伤 6，继续验证回合重置、跨单位累计以及同回合只抽一次。
+七个不同回合各抽一张，十次重复受击被抑制；542 份完整管理器回调独立复放一致。
+
+控制单位的受击与治疗效果各请求一次 1 金币奖励。原生正向奖励最低为 5，
+所以受击触发两次实际加 10，治疗一次加 5；部署后的三个单位分别有
+`OnHit=2`、`OnHeal=1`、`OnTurnBegin=1`。81 份直接执行观察含 40 份实际、
+41 份预演，预演不改变金币。另检查错误触发、敌方来源、Pyre、缺失新版统计及
+预演的抽牌保护，16 路独立抽牌分支保持父状态不变。
+
+原生胜局的 9 次出牌、7 次 EndTurn、47 个房间和 13 个列车阶段匹配。
+控制定义全部在首个部署输入前布置，完整连续复放从首个输入到终局，
+中间不重载原生检查点，另有 16 路完整并行分支。旧版治疗抽牌的纯检查及
+525 份管理器回调回归通过；原版三种触发次数遗物的 160 份查询、31 次召唤/31 次死亡
+回归通过，相关 Incant 状态链另有 32 路独立分支。新增原版遗物整局验收由 2/12 增至 **4/12**；
+控制牌和单位经过改写，不计入原版卡牌覆盖。
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Game231DamageThresholdDraw.ps1
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -DamageThresholdDrawBattle -GameSpeed Instant -SkipBuild
+```
+
+二进制 `mechanics/damage-threshold-draw/full-battle.mt2f` 为 65,617 字节，SHA256
+`69f5cf59ff1abac4d723dc403e289b840394f91c12746c86b34ba33c6a5c3892`。
+来源 `.probe-runs/full-battle-units-spells-and-junk-20261114-181257-a9024690`，
+原生 102.54 秒，原生胜利、四类计数为零、退出码零、`DEPTH-PASS` 和玩家文件未变检查通过。
+只完成九次输入而未跨越阈值、或根本未执行控制输入的录制均不能通过验收。
 
 ## 可复验样本
 
@@ -636,7 +679,8 @@ Rule 投影发生变化的共有卡牌：`DantesInferno`、`FlickerRaiseOnSlayAb
 `EmberForDamagedPerFloor`、`FriendlyUnitPunish`、`MonolithDevotion`、`RevengeTriggerTwice`、
 `SpellsNoKillFriendlies`、`ZealDamageIncrease`。
 
-其中 `DeathwishAttack`、`DamageFriendlyOnSpawn` 已完成上述原版整局验收，
+其中 `DeathwishAttack`、`DamageFriendlyOnSpawn`、`DrawCardOnTurnDamage`、
+`RevengeTriggerTwice` 已完成上述原版整局验收，
 其余新增遗物仍需各自证据。
 
 变更的共有遗物：`ApplyDazedOnAscendOrDescend`、`CopyConsumedCard`、`DamageOnEaten`、

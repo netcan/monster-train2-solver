@@ -29,7 +29,8 @@ armor/health observations. Continuous independent replay and 16 immutable
 branches pass. Native balance data excludes this runtime effect from piercing
 in 2.3.1; legacy 2.2.1 piercing evidence remains unchanged. Recheck with
 `scripts/Check-Game231DamageReactionBattle.ps1`. Together with `DeathwishAttack`,
-two of the 12 new relic owners have complete native battle acceptance.
+these two new relic owners have complete native battle acceptance. The damage
+threshold group below adds two more.
 
 The existing `DamageOnEaten` and `DamageOnBurnoutDeath` owners also have paired
 2.3.1 controls with both unchanged relics collected in each native battle.
@@ -40,8 +41,21 @@ All native room/train phases and continuous replay after authored turn-one
 setup pass, with 16 immutable branches. Deployment inputs are checked
 separately because native authoring occurs between deployment and turn one.
 Recheck with `scripts/Check-Game231FriendlyTriggerDamage.ps1`. Legacy 2.2.1
-captures still pass; these two existing owners do not increase the 2/12 new
+captures still pass; these two existing owners do not increase the 4/12 new
 relic count or imply full 614-card/236-relic revalidation.
+
+Two more unchanged new owners, `DrawCardOnTurnDamage` and `RevengeTriggerTwice`,
+pass a shared native battle. Existing friendly-damage statistics, conditional
+unit-trigger draws and registration-time trigger counts handle their behavior.
+Damage split across two allies reaches 9/10/11; only crossing ten draws, and
+healing then wounding again does not reset the once-per-turn condition. Seven
+turns each draw once, ten repeated hits are suppressed, and 542 complete manager
+callbacks match. Actual Hit rewards fire twice while Heal fires once; 41 preview
+observations preserve gold. All nine plays, seven EndTurns, 47 room and 13 train
+phases match, with continuous replay from the first input and 16 immutable
+parallel branches. Legacy heal-draw and combined trigger-count relic checks
+pass. Recheck with `scripts/Check-Game231DamageThresholdDraw.ps1`. New original
+relic battle acceptance is now **4/12**; full catalog revalidation remains open.
 
 Half-health Deathwish now also passes a complete authored native battle: two
 paid deployments, three damage/heal controls, natural later turns, Undying and

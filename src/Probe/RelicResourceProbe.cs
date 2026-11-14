@@ -289,8 +289,9 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (RelicCardDrawOnHealModel.IsEffect(type))
             {
-                unitTrigger = new RelicUnitResourceRule("OnHeal", data.GetParamSourceTeam().ToString(), null, Array.Empty<string>());
-                amount = data.GetParamInt();
+                bool damageThreshold = type == RelicCardDrawOnHealModel.DamageThresholdEffect;
+                unitTrigger = new RelicUnitResourceRule(damageThreshold ? "OnHit" : "OnHeal", data.GetParamSourceTeam().ToString(), null, Array.Empty<string>());
+                amount = damageThreshold ? data.GetParamInt2() : data.GetParamInt();
             }
             else if (effect is RelicEffectAddCardsStartOfBattle)
             {

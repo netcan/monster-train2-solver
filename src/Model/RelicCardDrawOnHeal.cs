@@ -18,11 +18,26 @@ namespace MonsterTrain2Poju.Model
     internal static class RelicCardDrawOnHealModel
     {
         internal const string Effect = "RelicEffectCardDrawOnHeal";
-        internal static bool IsEffect(string type) => type == Effect;
+        internal const string DamageThresholdEffect = "RelicEffectDrawOnFriendlyDamageThreshold";
+        internal const string DamageThresholdId = "2fb2972c-de3f-4ccc-8fd7-bcd15d9e1ada";
+        internal const string DamageThresholdKey = "DrawCardOnTurnDamage";
+        internal static bool IsEffect(string type) => type == Effect || type == DamageThresholdEffect;
 
         internal static string? Validate(CombatRelicState owner, RelicResourceEffect effect)
         {
             RelicUnitResourceRule? rule = effect.UnitTrigger;
+            if (effect.Type == DamageThresholdEffect)
+            {
+                RelicConditionState? condition = effect.Conditions.Count == 1 ? effect.Conditions[0] : null;
+                return owner.DataId == DamageThresholdId && owner.AssetKey == DamageThresholdKey && owner.IsCovenant == false &&
+                    owner.DisallowedInPlacementPhase == false && owner.EffectTypes.SequenceEqual(new[] { DamageThresholdEffect }) &&
+                    effect.EffectIndex == 0 && effect.ParamInt == 10 && effect.ParamInt2 == 1 && effect.Amount == 1 &&
+                    !effect.CanApplyInPreviewMode && effect.RequiredMutatorId == null &&
+                    rule is { Trigger: "OnHit", Team: "Monsters", Subtype: null } && rule.RequiredStatuses.Count == 0 &&
+                    condition is { TrackTriggerCount: false, AllowMultiple: false, Comparator: 6, Value: 10 } &&
+                    condition.Query.Type == "FriendlyDamageDealtToMonsters" && condition.Query.Duration == "ThisTurn" && condition.Query.SubtypeIsNone
+                    ? null : "Missing or changed original friendly-damage threshold draw definition.";
+            }
             return !IsEffect(effect.Type) || !owner.DisallowedInPlacementPhase.HasValue || rule == null ||
                 rule.Trigger != "OnHeal" || rule.Team is not ("Monsters" or "Heroes") || rule.Subtype != null ||
                 rule.RequiredStatuses.Count != 0 || effect.Amount != effect.ParamInt || effect.Amount < 0 ||
@@ -61,6 +76,8 @@ namespace MonsterTrain2Poju.Model
             RelicResourceEffect effect = effects[0];
             string? error = Validate(owner, effect);
             if (error != null) return Fail(error);
+            if (effect.Type == DamageThresholdEffect && source.Statistics?.MonsterDamage == null)
+                return Fail("Friendly-damage threshold draw requires captured game 2.3.1 damage statistics.");
             if (placement && owner.DisallowedInPlacementPhase == true || preview && !effect.CanApplyInPreviewMode)
                 return new RelicCardDrawOnHealResult(source);
 
@@ -69,7 +86,7 @@ namespace MonsterTrain2Poju.Model
             CombatContext context = evaluation.Context;
             RelicUnitResourceRule rule = effect.UnitTrigger!;
             bool teamMatches = unit.Team == CombatTeam.Player ? rule.Team == "Monsters" : rule.Team == "Heroes";
-            if (!evaluation.Passed || rule.Trigger != trigger || !teamMatches)
+            if (!evaluation.Passed || rule.Trigger != trigger || !teamMatches || effect.Type == DamageThresholdEffect && unit.IsPyre)
                 return new RelicCardDrawOnHealResult(context);
 
             TypedDrawResult draw = NextDrawUpgradeModel.DrawCards(context, effect.Amount, 0, definitions);
