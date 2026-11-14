@@ -9,14 +9,20 @@ internal static class EnchantmentCombatChecks
         using var document = FixtureDocument.Read(path);
         var root = document.RootElement;
         var samples = root.GetProperty("Samples").EnumerateArray().ToArray();
+        string version = root.GetProperty("GameVersion").GetString()!;
+        string frontKind = version == "2.3.1" ? "OnVanguard" : "OnDeathwish";
         // Compare independently before acceptance gates so a rejected native experiment gives
         // an exact field difference, rather than merely repeating its live comparison label.
         foreach (var sample in samples) Verify(sample);
         VerifyBoundaries(samples[0].GetProperty("Before").Deserialize<EnchantmentCombatState>()!);
-        VerifyDeathwish(samples);
+        VerifyDeathwish(samples, frontKind);
         VerifyGenericDeathwish();
-        Require(root.GetProperty("Schema").GetInt32() == 1 && root.GetProperty("GameModuleMvid").GetString() ==
-            "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" && root.GetProperty("Boundary").GetString() == "RealStatusAndDrainedQueue" &&
+        string mvid = root.GetProperty("GameModuleMvid").GetString()!;
+        Require(root.GetProperty("Schema").GetInt32() == 1 &&
+            (version == "2.2.1" && mvid == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" ||
+             version == "2.3.1" && mvid == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
+             root.GetProperty("FrontTriggerKind").GetString() == frontKind) &&
+            root.GetProperty("Boundary").GetString() == "RealStatusAndDrainedQueue" &&
             !root.GetProperty("StatusMutationsSuppressed").GetBoolean() && root.GetProperty("LiveContextUnchanged").GetBoolean() &&
             root.GetProperty("ExternalPreviewPreparationsRecorded").GetBoolean() &&
             root.GetProperty("Mismatches").GetInt32() == 0 && samples.Length == 41,
@@ -36,7 +42,7 @@ internal static class EnchantmentCombatChecks
         int requests = samples.Sum(sample => sample.GetProperty("Requests").GetArrayLength());
         int callbacks = samples.Sum(sample => sample.GetProperty("Callbacks").GetArrayLength());
         Console.WriteLine($"NATIVE-ENCHANTMENT-COMBAT-CHECKS PASS: {samples.Length} real status/train/effect transitions, {requests} status calls, " +
-            $"{callbacks} complete callback payloads, standalone Deathwish gold/armor drains, shared-world gold/armor drains and guarded unsupported mutations, " +
+            $"{callbacks} complete callback payloads, standalone {frontKind} gold/armor drains, shared-world gold/armor drains and guarded unsupported mutations, " +
             "guarded/direct reentry, retained per-effect maps/RNG and 32 isolated branches.");
     }
     private static void VerifyHordeGrowth(FixtureValue sample)
@@ -107,7 +113,7 @@ internal static class EnchantmentCombatChecks
             callbackKinds.Contains("OnAnyUnitDeathOnFloor") && !callbackKinds.Contains("OnDeath"),
             "Last-stack Horde aura removal did not preserve native simulated-death semantics.");
     }
-    private static void VerifyDeathwish(FixtureValue[] samples)
+    private static void VerifyDeathwish(FixtureValue[] samples, string frontKind)
     {
         EnchantmentCombatState State(string label, string field)
         {
@@ -122,7 +128,7 @@ internal static class EnchantmentCombatChecks
         EnchantmentCombatResult update = EnchantmentCombatModel.UpdateAll(before);
         Require(update.Supported, "Deathwish initial update: " + update.UnsupportedReason);
         int[] active = ActiveSources(update.State!);
-        EnchantmentCallback[] entries = update.Callbacks.Where(item => item.Kind == "OnDeathwish").ToArray();
+        EnchantmentCallback[] entries = update.Callbacks.Where(item => item.Kind == frontKind).ToArray();
         Require(active.Length == 1 && entries.Length == 2 && entries.Select(item => item.UnitId).Distinct().SequenceEqual(active) &&
             entries.Select(item => item.ExclusiveTriggerStateId).Distinct().Count() == 2,
             "Initial front activation did not retain separate exclusive Deathwish sources.");
@@ -176,6 +182,14 @@ internal static class EnchantmentCombatChecks
         RoomCombatState Room(CombatUnit front, CombatUnit back) => new(2, false, new[] { front, back }, Array.Empty<string>());
 
         CombatUnit front = Actor(1, false, 10), back = Actor(2, false, 20);
+        var healthTrigger = new CombatTrigger("OnDeathwish", false, false, false, 1, Array.Empty<CombatEffect>(),
+            stateId: 10, activationCondition: "HalfHealth");
+        CombatUnit healthSource = front.WithHealth(4).WithTriggers(new[] { healthTrigger });
+        Require(!DeathwishModel.Update(Room(healthSource, back)).Supported &&
+            RoomCombatModel.Validate(Room(healthSource, back))?.Contains("HalfHealth", StringComparison.Ordinal) == true &&
+            healthTrigger.WithStateId(30).WithOrigin("test", 0).ActivationCondition == "HalfHealth" &&
+            JsonSerializer.Deserialize<CombatTrigger>(JsonSerializer.Serialize(healthTrigger))!.ActivationCondition == "HalfHealth",
+            "New half-health Deathwish must retain its predicate across copies/archives and never use legacy front activation.");
         RoomCombatResult initial = EnchantmentWorldModel.Update(Room(front, back));
         Require(initial.Supported && Active(initial.State!).SequenceEqual(new[] { 1 }) &&
             initial.PendingCallbacks.Count == 2 && initial.PendingCallbacks.All(item => item.Kind == "OnDeathwish" && item.Unit.Id == 1) &&

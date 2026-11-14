@@ -1143,6 +1143,8 @@ namespace MonsterTrain2Poju.Model
                     return "Valor requires the armor status definition.";
                 foreach (CombatTrigger trigger in unit.Triggers)
                 {
+                    if (trigger.ActivationCondition != null)
+                        return "Uncalibrated conditional trigger activation: " + trigger.ActivationCondition;
                     if (trigger.Conditions != null && trigger.Conditions.RequiredStatuses.Concat(trigger.Conditions.RequiredDyingStatuses).Any(string.IsNullOrWhiteSpace))
                         return "Invalid trigger status condition.";
                     if (trigger.Origin?.OnlyIfEquipped == true && unit.EquipmentCards == null)
@@ -1461,7 +1463,7 @@ namespace MonsterTrain2Poju.Model
                                 effect.Value == 1 && effect.Action is { Target: "Tower", AllowPlayer: true, AllowEnemy: true } &&
                                 effect.Action.Filters?.Subtype == "SubtypesData_EntropicAngel";
                             bool debuff = effect.Type == "CardEffectDebuffDamage";
-                            if (debuff && (unit.AssetKey != "HeavyT1_BigAttackUpFront" || trigger.Kind != "OnDeathwishLost" ||
+                            if (debuff && (unit.AssetKey != "HeavyT1_BigAttackUpFront" || trigger.Kind is not ("OnDeathwishLost" or "OnVanguardLost") ||
                                 effect.Action?.Target != "Self"))
                                 return "Triggered attack reduction requires the original self DeathwishLost enemy signature.";
                             if (unit.Team != CombatTeam.Enemy || unit.SpawnerCardId != 0 || unit.Modifiers == null ||

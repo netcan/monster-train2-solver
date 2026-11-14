@@ -38,9 +38,14 @@ namespace MonsterTrain2Poju.Probe
                 Managers.GetRoomManager()!.GetRoom(floor).AddCharactersToList(actors, Team.Type.Monsters | Team.Type.Heroes);
             return actors.Where(unit => unit.IsAlive && !unit.IsDestroyed).ToArray();
         }
-        private static CharacterState[] DeathwishHosts() => LiveActors().Where(unit => !unit.IsPyreHeart())
+        // The Horde matrix targets the same-floor paid Train Steward. Its two
+        // enemy aura sources must survive that target's final-stack removal.
+        private static CharacterState[] DeathwishHosts() => LiveActors().Where(unit => unit.GetTeamType() == Team.Type.Heroes)
             .GroupBy(unit => (Room: unit.GetCurrentRoomIndex(), Team: unit.GetTeamType()))
-            .Where(group => group.Count() >= 2).Select(group => group.Take(2).ToArray()).FirstOrDefault() ?? Array.Empty<CharacterState>();
+            .Where(group => group.Count() >= 2 && LiveActors().Any(unit => unit.GetTeamType() == Team.Type.Monsters &&
+                unit.GetCurrentRoomIndex() == group.Key.Room &&
+                unit.GetSourceCharacterData().GetAssetKey().StartsWith("TrainSteward", StringComparison.Ordinal)))
+            .Select(group => group.Take(2).ToArray()).FirstOrDefault() ?? Array.Empty<CharacterState>();
         private static Dictionary<CardState, CardStatsEntry> CopyDeckStats(Dictionary<CardState, CardStatsEntry> source)
         {
             var copy = new Dictionary<CardState, CardStatsEntry>();
@@ -247,6 +252,7 @@ namespace MonsterTrain2Poju.Probe
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "enchantment-combat-calibration.mt2f");
             using (var archive = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
                 GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId, Boundary = "RealStatusAndDrainedQueue",
+                FrontTriggerKind = ConditionalActivationProbe.FrontKind,
                 StatusMutationsSuppressed = false, ExternalPreviewPreparationsRecorded = true, LiveContextUnchanged = restored, Mismatches = mismatches, Samples = samples }))
             using (var stream = File.Create(path)) archive.Write(stream);
             if (!restored || mismatches != 0) throw new InvalidOperationException("Real enchantment combat calibration differs/restoration failed: " + mismatches + "/" + restored);
@@ -292,8 +298,9 @@ namespace MonsterTrain2Poju.Probe
             void AddDeathwishTriggers()
             {
                 foreach (CharacterState host in hosts)
-                    foreach (CharacterTriggerData.Trigger kind in new[] { CharacterTriggerData.Trigger.OnDeathwish,
-                        CharacterTriggerData.Trigger.OnDeathwishLost })
+                    foreach (CharacterTriggerData.Trigger kind in new[] {
+                        (CharacterTriggerData.Trigger)Enum.Parse(typeof(CharacterTriggerData.Trigger), ConditionalActivationProbe.FrontKind),
+                        (CharacterTriggerData.Trigger)Enum.Parse(typeof(CharacterTriggerData.Trigger), ConditionalActivationProbe.FrontKind + "Lost") })
                     {
                         CharacterTriggerData data = HealingScenario.HealGold(1, false, true); Set(data, "trigger", kind);
                         var armor = new CardEffectData("CardEffectAddStatusEffect", null!, Team.Type.Monsters);

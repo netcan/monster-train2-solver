@@ -130,15 +130,17 @@ namespace MonsterTrain2Poju.Model
                 var installed = new CombatTrigger(definition.Kind, definition.Once, false, definition.IgnoreSilence,
                     1, definition.Effects, definition.SkipDuringDeployment, definition.TriggerAtThreshold,
                     new CombatTriggerOrigin("", 0, false, definition.Origin?.OnlyIfEquipped == true), next++,
-                    definition.Conditions, definition.RemoveOnRelentlessChange, rule.NoCountModifiersAllowed);
+                    definition.Conditions, definition.RemoveOnRelentlessChange, rule.NoCountModifiersAllowed,
+                    activationCondition: definition.ActivationCondition);
                 triggers.Insert(0, installed);
                 actor = actor.WithTriggerAllocation(triggers, next);
                 state = new RoomCombatState(state.RoomIndex, state.Deployment,
                     state.Units.Select(unit => unit.Id == unitId ? actor : unit).ToArray(), state.ExternalInteractions,
                     state.Context, state.Preview, state.ActiveCompanionBossIds);
-                // CharacterState.AddTrigger updates Deathwish immediately for
-                // OnDeathwish, before the next authored trigger is prepended.
-                if (definition.Kind == "OnDeathwish")
+                // AddTrigger updates legacy Deathwish on gain and new Vanguard
+                // on either kind, before the next authored trigger is prepended.
+                if (definition.Kind == "OnDeathwish" || definition.Kind == "OnVanguard" || definition.Kind == "OnVanguardLost" ||
+                    definition.Kind == "OnDeathwishLost" && definition.ActivationCondition != null)
                 {
                     RoomCombatResult updated = DeathwishModel.Update(state);
                     if (!updated.Supported) return updated;

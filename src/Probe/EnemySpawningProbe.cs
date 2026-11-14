@@ -223,7 +223,8 @@ namespace MonsterTrain2Poju.Probe
                 conditions: TriggerConditions(trigger), removeOnRelentlessChange: trigger.GetRemoveOnRelentlessChange(),
                 noCountModifiersAllowed: RelicProbe.HasTriggerCounts(AllGameManagers.Instance!) ? false : (bool?)null,
                 suppressTriggerNotification: trigger.GetTrigger() == CharacterTriggerData.Trigger.CorruptionAdded
-                    ? trigger.IsSuppressTriggerNotification() : (bool?)null);
+                    ? trigger.IsSuppressTriggerNotification() : (bool?)null,
+                activationCondition: ConditionalActivationProbe.Activation(trigger.GetTrigger().ToString()));
         }
 
         internal static CombatTriggerConditions? TriggerConditions(CharacterTriggerData data)

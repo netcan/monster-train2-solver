@@ -295,8 +295,11 @@ namespace MonsterTrain2Poju.Model
         public CombatTriggerOrigin? Origin { get; }
         // Per-unit allocation survives list shifts and removal; null denotes a legacy capture.
         public int? StateId { get; }
-        // Native deathWishSources membership is separate from the trigger's one-shot flag.
+        // Native conditional-source membership is separate from the one-shot flag.
         public bool? DeathwishActive { get; }
+        // Null preserves legacy front-position Deathwish and Vanguard captures.
+        // New health-based Deathwish must never be inferred from its old name.
+        public string? ActivationCondition { get; }
         public CombatTriggerConditions? Conditions { get; }
         public bool RemoveOnRelentlessChange { get; }
         public bool? NoCountModifiersAllowed { get; }
@@ -308,14 +311,15 @@ namespace MonsterTrain2Poju.Model
             int fireCount, IReadOnlyList<CombatEffect> effects, bool? skipDuringDeployment = null, int? triggerAtThreshold = null,
             CombatTriggerOrigin? origin = null, int? stateId = null, CombatTriggerConditions? conditions = null,
             bool removeOnRelentlessChange = false, bool? noCountModifiersAllowed = null, bool? deathwishActive = null,
-            bool? suppressTriggerNotification = null)
+            bool? suppressTriggerNotification = null, string? activationCondition = null)
         {
             Kind = kind; Once = once; HasTriggered = hasTriggered; IgnoreSilence = ignoreSilence;
             FireCount = fireCount; Effects = Array.AsReadOnly(effects.ToArray()); SkipDuringDeployment = skipDuringDeployment;
             TriggerAtThreshold = triggerAtThreshold;
             Origin = origin;
             StateId = stateId;
-            DeathwishActive = deathwishActive ?? (kind == "OnDeathwish" || kind == "OnDeathwishLost" ? false : (bool?)null);
+            DeathwishActive = deathwishActive ?? (DeathwishModel.CallbackKinds.Contains(kind) ? false : (bool?)null);
+            ActivationCondition = activationCondition;
             Conditions = conditions;
             RemoveOnRelentlessChange = removeOnRelentlessChange;
             NoCountModifiersAllowed = noCountModifiersAllowed;
@@ -328,7 +332,7 @@ namespace MonsterTrain2Poju.Model
             Kind = source.Kind; Once = source.Once; HasTriggered = hasTriggered; IgnoreSilence = source.IgnoreSilence;
             FireCount = fireCount ?? source.FireCount; Effects = Array.AsReadOnly(effects.ToArray()); SkipDuringDeployment = source.SkipDuringDeployment;
             TriggerAtThreshold = source.TriggerAtThreshold; Origin = source.Origin; Identity = source.Identity; StateId = stateId;
-            DeathwishActive = deathwishActive ?? source.DeathwishActive; Conditions = source.Conditions;
+            DeathwishActive = deathwishActive ?? source.DeathwishActive; ActivationCondition = source.ActivationCondition; Conditions = source.Conditions;
             RemoveOnRelentlessChange = source.RemoveOnRelentlessChange;
             NoCountModifiersAllowed = source.NoCountModifiersAllowed;
             SuppressTriggerNotification = source.SuppressTriggerNotification;
@@ -343,6 +347,6 @@ namespace MonsterTrain2Poju.Model
         internal CombatTrigger WithOrigin(string upgradeId, int equipmentCardId, int? stateId = null) => new CombatTrigger(Kind, Once, false,
             IgnoreSilence, FireCount, Effects, SkipDuringDeployment, TriggerAtThreshold,
             new CombatTriggerOrigin(upgradeId, equipmentCardId, equipmentCardId > 0, Origin?.OnlyIfEquipped == true), stateId, Conditions, RemoveOnRelentlessChange, NoCountModifiersAllowed,
-            suppressTriggerNotification: SuppressTriggerNotification);
+            suppressTriggerNotification: SuppressTriggerNotification, activationCondition: ActivationCondition);
     }
 }

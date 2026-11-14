@@ -63,7 +63,7 @@ namespace MonsterTrain2Poju.Model
             if (error != null) return Unsupported(error);
             if (source.Context == null || rule.CommonTriggers.Count == 0 ||
                 rule.CommonTriggers.Select(trigger => trigger.Kind).Distinct().Count() != rule.CommonTriggers.Count ||
-                rule.CommonTriggers.Any(trigger => trigger.Kind == "OnDeathwishLost"))
+                rule.CommonTriggers.Any(trigger => trigger.Kind is "OnDeathwishLost" or "OnVanguardLost"))
                 return Unsupported("Missing or unsupported native common ability triggers.");
             if (remove && rule.Permanent && source.Context.PermanentlyDisabledAbilities == null)
                 return Unsupported("Permanent ability removal requires the captured run disable list.");

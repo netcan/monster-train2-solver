@@ -54,9 +54,12 @@ internal static class OriginalEquipmentGrowthChecks
     }
     internal static void Native(FixtureValue root)
     {
+        string version = root.GetProperty("GameVersion").GetString()!;
+        string mvid = root.GetProperty("GameModuleMvid").GetString()!;
+        string frontKind = version == "2.3.1" ? "OnVanguard" : "OnDeathwish";
         Require(root.GetProperty("ModifierScenario").GetString() == "original-equipment-growth-relics" &&
-            root.GetProperty("GameVersion").GetString() == "2.2.1" &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
+            (version == "2.2.1" && mvid == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" ||
+             version == "2.3.1" && mvid == "bf93f060-beda-46b1-b808-95ebf1e9a99d") &&
             root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
             new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.All(name => root.GetProperty(name).GetInt32() == 0),
             "Original equipment growth battle failed native acceptance.");
@@ -72,7 +75,8 @@ internal static class OriginalEquipmentGrowthChecks
                     owner.EffectTypes.SequenceEqual([RelicModel.AddTrigger]) && addition.EffectIndex == 0 && addition.SourcePlayer &&
                     addition.SourceEnemy == (item.Key == "AdvancedGrowth") && addition.SubtypeIsNone && !addition.SubtypeIsPyre &&
                     addition.NoCountModifiersAllowed && addition.CharacterAssetKeys.Count == 0 && addition.Conditions.Count == 0 &&
-                    addition.ExternalInteractions.Count == 0 && addition.Triggers.Select(trigger => trigger.Kind).SequenceEqual(item.Kinds),
+                    addition.ExternalInteractions.Count == 0 && addition.Triggers.Select(trigger => trigger.Kind).SequenceEqual(
+                        item.Kinds.Select(kind => kind.Replace("OnDeathwish", frontKind, StringComparison.Ordinal))),
                     "Original equipment growth owner or source filter changed: " + item.Key);
                 foreach (var trigger in addition.Triggers)
                 {
@@ -92,7 +96,7 @@ internal static class OriginalEquipmentGrowthChecks
                             action.Lifetime == "TemporaryUntilUnitDeath" && upgrade.Stats.Damage == (item.Key == "AdvancedGrowth" ? 4 : 2) &&
                             upgrade.AssetKey == (item.Key == "AdvancedGrowth" ? "AdvancedGrowth_Upgrade" : "ArtifactBuffEquipment"),
                             "Original equipment buff payload changed.");
-                    else if (endCombatHealth && trigger.Kind == "OnDeathwishLost")
+                    else if (endCombatHealth && trigger.Kind == frontKind + "Lost")
                     {
                         var encounter = upgrade.TriggerUpgrades!.Single();
                         Require(upgrade.DataId == EndCombatTriggerUpgrade && upgrade.AssetKey == "PermanentHealthAtEndOfCombatTrigger" &&
@@ -134,9 +138,9 @@ internal static class OriginalEquipmentGrowthChecks
                     {
                         var precombat = upgrade.TriggerUpgrades!.Single(); var status = precombat.Effects.Single().Action!;
                         Require(upgrade.DataId == ValorUpgrade && upgrade.AssetKey == "ValorOnTurnStart" && upgrade.Stats.Damage == 0 &&
-                            action.Type == (trigger.Kind == "OnDeathwish" ? "UnitUpgrade" : "RemoveUnitUpgrade") &&
-                            effect.Type == (trigger.Kind == "OnDeathwish" ? "CardEffectAddTempCardUpgradeToUnits" : "CardEffectRemoveTempUpgradeFromUnit") &&
-                            action.Lifetime == (trigger.Kind == "OnDeathwish" ? "TemporaryUntilUnitDeath" : "TemporaryUntilEndOfBattle") &&
+                            action.Type == (trigger.Kind == frontKind ? "UnitUpgrade" : "RemoveUnitUpgrade") &&
+                            effect.Type == (trigger.Kind == frontKind ? "CardEffectAddTempCardUpgradeToUnits" : "CardEffectRemoveTempUpgradeFromUnit") &&
+                            action.Lifetime == (trigger.Kind == frontKind ? "TemporaryUntilUnitDeath" : "TemporaryUntilEndOfBattle") &&
                             precombat.Kind == "PreCombat" && precombat.IgnoreSilence && !precombat.Once &&
                             status.Type == "AddStatus" && status.Target == "Self" && status.AllowEnemy && status.AllowPlayer &&
                             status.Statuses.Single().Id == "valor" && status.Statuses.Single().Stacks == 2,
@@ -168,9 +172,9 @@ internal static class OriginalEquipmentGrowthChecks
             bool enemy = unit.Team == CombatTeam.Enemy;
             Require(unit.Triggers.Any(trigger => trigger.Kind == "OnDeath" && trigger.Effects.Any(effect => effect.UnitUpgrade?.Upgrade?.AssetKey == "AdvancedGrowth_Upgrade")),
                 "Both-team AdvancedGrowth installation missing.");
-            Require(unit.Triggers.Any(trigger => trigger.Kind == "OnDeathwish" && trigger.Effects.Any(effect => effect.UnitUpgrade?.Upgrade?.DataId == ValorUpgrade)) == !enemy &&
-                unit.Triggers.Any(trigger => trigger.Kind == "OnDeathwish" && trigger.Effects.Any(effect => effect.UnitUpgrade?.Upgrade?.DataId == EndCombatTriggerUpgrade)) == !enemy &&
-                unit.Triggers.Any(trigger => trigger.Kind == "OnDeathwishLost" && trigger.Effects.Any(effect => effect.UnitUpgrade?.Upgrade?.DataId == EndCombatTriggerUpgrade)) == !enemy &&
+            Require(unit.Triggers.Any(trigger => trigger.Kind == frontKind && trigger.Effects.Any(effect => effect.UnitUpgrade?.Upgrade?.DataId == ValorUpgrade)) == !enemy &&
+                unit.Triggers.Any(trigger => trigger.Kind == frontKind && trigger.Effects.Any(effect => effect.UnitUpgrade?.Upgrade?.DataId == EndCombatTriggerUpgrade)) == !enemy &&
+                unit.Triggers.Any(trigger => trigger.Kind == frontKind + "Lost" && trigger.Effects.Any(effect => effect.UnitUpgrade?.Upgrade?.DataId == EndCombatTriggerUpgrade)) == !enemy &&
                 unit.Triggers.Any(trigger => trigger.Kind == "OnKill" && trigger.Effects.Any(effect => effect.UnitUpgrade?.Upgrade?.AssetKey == "ArtifactBuffEquipment")) == !enemy,
                 "Friendly-only growth installation filter differs.");
             if (enemy) enemies++; else friends++;

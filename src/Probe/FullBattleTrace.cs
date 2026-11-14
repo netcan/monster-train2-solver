@@ -661,10 +661,6 @@ namespace MonsterTrain2Poju.Probe
         private static CombatTrigger[] CaptureTriggers(CharacterState unit, List<string> interactions)
         {
             object primary = AccessTools.Property(typeof(CharacterState), "PrimaryStateInformation").GetValue(unit);
-            var deathWishField = primary.GetType().GetField("deathwishSources") ?? primary.GetType().GetField("deathWishSources");
-            var deathWishSources = deathWishField?.GetValue(primary) as HashSet<CharacterTriggerState>
-                ?? throw new NotSupportedException("Unknown native deathwish source set: " +
-                    typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId);
             return unit.GetTriggers().Select(trigger =>
             {
                 if (RelicProbe.HasTriggerCounts(AllGameManagers.Instance!))
@@ -717,10 +713,10 @@ namespace MonsterTrain2Poju.Probe
                     data.GetTriggerAtThreshold(), new CombatTriggerOrigin(Active!.UpgradeKey(trigger.triggerId), equipmentId,
                         trigger.IsFromEquipment, data.GetOnlyTriggerIfEquipped()), Active!.TriggerStateId(unit, trigger), EnemySpawningProbe.TriggerConditions(data), data.GetRemoveOnRelentlessChange(),
                     RelicProbe.HasTriggerCounts(AllGameManagers.Instance!) ? trigger.isNoCountModifiersAllowed : (bool?)null,
-                    trigger.GetTrigger() == CharacterTriggerData.Trigger.OnDeathwish || trigger.GetTrigger() == CharacterTriggerData.Trigger.OnDeathwishLost
-                        ? deathWishSources.Contains(trigger) : (bool?)null,
+                    ConditionalActivationProbe.Active(unit, trigger),
                     trigger.GetTrigger() == CharacterTriggerData.Trigger.CorruptionAdded
-                        ? data.IsSuppressTriggerNotification() || trigger.isSuppressTriggerNotificationOverride : (bool?)null);
+                        ? data.IsSuppressTriggerNotification() || trigger.isSuppressTriggerNotificationOverride : (bool?)null,
+                    activationCondition: ConditionalActivationProbe.Activation(trigger.GetTrigger().ToString()));
             }).ToArray();
         }
 

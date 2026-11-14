@@ -281,12 +281,15 @@ namespace MonsterTrain2Poju.Model
                     for (int index = 0; index < triggers.Length; index++)
                     {
                         CombatTrigger trigger = triggers[index];
-                        if (trigger.Kind != "OnDeathwish" && trigger.Kind != "OnDeathwishLost") continue;
+                        if (!DeathwishModel.CallbackKinds.Contains(trigger.Kind)) continue;
+                        if (trigger.ActivationCondition != null)
+                        { error = "Uncalibrated conditional trigger activation: " + trigger.ActivationCondition; return; }
                         if (!trigger.DeathwishActive.HasValue || !trigger.StateId.HasValue)
                         { error = "Deathwish updates require captured source membership and persistent trigger identity."; return; }
                         if (trigger.DeathwishActive.Value == eligible) continue;
                         triggers[index] = trigger.WithDeathwishActive(eligible);
-                        pending.Add((eligible ? "OnDeathwish" : "OnDeathwishLost", trigger.StateId.Value));
+                        string kind = trigger.Kind.StartsWith("OnVanguard", StringComparison.Ordinal) ? "OnVanguard" : "OnDeathwish";
+                        pending.Add((eligible ? kind : kind + "Lost", trigger.StateId.Value));
                         changed = true;
                     }
                     if (!changed) continue;
