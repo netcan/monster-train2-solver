@@ -1094,8 +1094,10 @@ namespace MonsterTrain2Poju.Model
             bool halfHealthLifecycle = true)
         {
             // Real direct and battle queue scheduling share native callbacks.
-            // Shared aura worlds keep their independent guard.
-            halfHealthLifecycle &= state.Context?.Enchantments == null;
+            // Shared aura worlds keep their independent guard. Captured card
+            // hover copies additionally calibrate lethal half-health lifecycle.
+            halfHealthLifecycle &= state.Context?.Enchantments == null || state.Preview &&
+                state.Context?.Enchantments?.TemporaryPreviewUnitIds != null;
             bool linkedCombat = TrueFinalBossCombatModel.Supports(state, maximumPreview: linkedHealthOnly);
             linkedHealthOnly |= linkedCombat;
             string? relicError = RelicModel.Validate(state.Context);
@@ -3641,7 +3643,7 @@ namespace MonsterTrain2Poju.Model
             {
                 // Native MonsterManager's preview branch runs InnerCharacterDeath
                 // and adds the unit to its ignore list; it keeps the primary point.
-                if (source.Preview && context?.LifeLinks != null) return;
+                if (source.Preview && (context?.LifeLinks != null || context?.Enchantments?.TemporaryPreviewUnitIds != null)) return;
                 unit.Destroyed = true;
                 if (context != null) context = ConduitModel.Change(context, unit.RoomIndex, unit.Freeze(), source.Preview, remove: true);
                 // HeroManager no longer owns movement after physical removal,
@@ -6386,7 +6388,8 @@ namespace MonsterTrain2Poju.Model
                     context = context.WithStatistics(context.LiveStatistics);
                 // The native standby predicate observes preview deaths too;
                 // the outer preview transaction restores primary card piles.
-                if (context != null && (!source.Preview || context.LifeLinks != null))
+                if (context != null && (!source.Preview || context.LifeLinks != null ||
+                    context.Enchantments?.TemporaryPreviewUnitIds != null))
                     context = UnitStandbyModel.MarkDead(context, units.Where(unit => !unit.Alive).Select(unit => unit.Freeze()).ToArray());
                 var removedIds = new HashSet<int>(units.Where(unit => !unit.Alive || unit.Removed || unit.Despawned).Select(unit => unit.Source.Id));
                 if (battleWon && !source.Preview && context?.SpawnPoints is BattleSpawnPoints terminalPoints)

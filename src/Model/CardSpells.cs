@@ -2075,6 +2075,9 @@ namespace MonsterTrain2Poju.Model
 
             void RouteDeadCard(int cardId)
             {
+                // Native card-hover deaths only remove temporary actors; their
+                // real source cards remain in Standby throughout the preview.
+                if (source.Rooms.All(room => room.Preview)) return;
                 CombatContext current = state.Context!;
                 if (current.CardInstances != null && !current.CardInstances.Any(card => card.InstanceId == cardId) &&
                     (current.KillCamActivated == true || current.CardRegistry?.Any(card => card.InstanceId == cardId) == true))

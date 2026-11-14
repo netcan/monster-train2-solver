@@ -7,6 +7,14 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+The 2.3.1 ordinary/Horde/Undying/half-health maximum-health lethal card-hover
+protocol has 16 native controls with complete temporary targets, copied/effect/
+cancel states, gameplay RNG and 16 immutable branches each. Preview death keeps
+the real source card in Standby with a temporary ready condition; cancellation
+restores that condition and the living primary actor. Run
+`scripts/Check-Game231MaximumHealthLethalPreview.ps1`. Linked terminal previews
+and other callback/effect combinations remain separate.
+
 The 2.3.1 LifeLink maximum-health card-hover protocol now has 50 native
 `PreviewCardPlay` controls: complete copy/effect/cancel successors, 15 OnCast
 cases, five room sweeps, preserved gameplay RNG and 16 continuous immutable

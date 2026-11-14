@@ -69,8 +69,8 @@ namespace MonsterTrain2Poju.Model
             }
             CombatUnit changed = target.WithHealthAndMaxHealth(health, maxHealth);
             // Lethal native debuffs sacrifice the unit without attributing damage to the played card.
-            if (health <= 0 && halfHealth && source.Preview)
-                return Unsupported("Half-health Deathwish lethal maximum-health preview changes require native sacrifice/revival calibration.");
+            if (health <= 0 && halfHealth && source.Preview && context?.Enchantments?.TemporaryPreviewUnitIds == null)
+                return Unsupported("Half-health lethal maximum-health previews require captured temporary card-hover copies.");
             if (health <= 0) return RoomCombatModel.ApplyUnitModification(state, changed, refreshPyre: refreshPyre);
             var completed = new RoomCombatState(state.RoomIndex, state.Deployment,
                 state.Units.Select(unit => unit.Id == targetId ? changed : unit).ToArray(),

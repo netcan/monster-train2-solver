@@ -462,6 +462,7 @@ param(
     [switch] $EnchantmentCombatOnly,
     [switch] $HalfHealthDeathwishOnly,
     [switch] $HalfHealthLifecycleOnly,
+    [switch] $MaximumHealthLethalPreviewOnly,
     [switch] $ZealStatusOnly,
     [switch] $ZealHordeOnly,
     [switch] $HordeMaximumOnly,
@@ -1482,15 +1483,16 @@ if ($ZealStatusOnly -or $ZealHordeOnly -or $HordeMaximumOnly) {
     if (([int][bool]$ZealStatusOnly + [int][bool]$ZealHordeOnly + [int][bool]$HordeMaximumOnly) -ne 1 -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $zealArguments }).Count) { throw 'Health/status lifecycle requires one isolated component mode.' }
     $Policy = 'steward-once'
 }
-if ($HalfHealthLifecycleOnly -or $HalfHealthMaximumOnly -or $HalfHealthUpgradeOnly -or $HalfHealthUpgradeEffectsOnly -or $DamageReactionsOnly -or $DamageReactionRevivalOnly -or $DamageReactionFinalDeathOnly) {
-    $lifecycleArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'HalfHealthLifecycleOnly', 'HalfHealthMaximumOnly', 'HalfHealthUpgradeOnly', 'HalfHealthUpgradeEffectsOnly', 'DamageReactionsOnly', 'DamageReactionRevivalOnly', 'DamageReactionFinalDeathOnly',
+if ($MaximumHealthLethalPreviewOnly -or $HalfHealthLifecycleOnly -or $HalfHealthMaximumOnly -or $HalfHealthUpgradeOnly -or $HalfHealthUpgradeEffectsOnly -or $DamageReactionsOnly -or $DamageReactionRevivalOnly -or $DamageReactionFinalDeathOnly) {
+    $lifecycleArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'MaximumHealthLethalPreviewOnly', 'HalfHealthLifecycleOnly', 'HalfHealthMaximumOnly', 'HalfHealthUpgradeOnly', 'HalfHealthUpgradeEffectsOnly', 'DamageReactionsOnly', 'DamageReactionRevivalOnly', 'DamageReactionFinalDeathOnly',
         'BinaryCapture', 'CaptureJson', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction',
         'ProgressAction', 'ErrorVariable', 'WarningVariable', 'InformationVariable', 'OutVariable', 'OutBuffer', 'PipelineVariable')
-    if (@($HalfHealthLifecycleOnly, $HalfHealthMaximumOnly, $HalfHealthUpgradeOnly, $HalfHealthUpgradeEffectsOnly, $DamageReactionsOnly, $DamageReactionRevivalOnly, $DamageReactionFinalDeathOnly | Where-Object { $_ }).Count -ne 1 -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $lifecycleArguments }).Count) {
+    if (@($MaximumHealthLethalPreviewOnly, $HalfHealthLifecycleOnly, $HalfHealthMaximumOnly, $HalfHealthUpgradeOnly, $HalfHealthUpgradeEffectsOnly, $DamageReactionsOnly, $DamageReactionRevivalOnly, $DamageReactionFinalDeathOnly | Where-Object { $_ }).Count -ne 1 -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $lifecycleArguments }).Count) {
         throw 'Half-health lifecycle sampling requires one isolated component mode without other scenarios.'
     }
     $Policy = 'steward-once'
     if ($DamageReactionsOnly -or $DamageReactionRevivalOnly -or $DamageReactionFinalDeathOnly) { $PhysicalSpawnPoints = $true }
+    if ($MaximumHealthLethalPreviewOnly) { $PhysicalSpawnPoints = $true; $BranchCardMasks = $true }
 }
 if ($HalfHealthDeathwishOnly) {
     $halfHealthArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'HalfHealthDeathwishOnly',
@@ -1916,7 +1918,8 @@ $environment = @{
     MT2_PROBE_ENCHANTMENT_COMBAT = $(if ($EnchantmentCombat) { '1' } else { '0' })
     MT2_PROBE_ENCHANTMENT_COMBAT_ONLY = $(if ($EnchantmentCombatOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_DEATHWISH = $(if ($HalfHealthDeathwishOnly) { '1' } else { '0' })
-    MT2_PROBE_HALF_HEALTH_LIFECYCLE = $(if ($HalfHealthLifecycleOnly) { '1' } else { '0' })
+    MT2_PROBE_HALF_HEALTH_LIFECYCLE = $(if ($HalfHealthLifecycleOnly -or $MaximumHealthLethalPreviewOnly) { '1' } else { '0' })
+    MT2_PROBE_MAXIMUM_HEALTH_LETHAL_PREVIEW = $(if ($MaximumHealthLethalPreviewOnly) { '1' } else { '0' })
     MT2_PROBE_ZEAL_STATUS = $(if ($ZealStatusOnly -or $ZealHordeOnly -or $HordeMaximumOnly) { '1' } else { '0' })
     MT2_PROBE_ZEAL_HORDE = $(if ($ZealHordeOnly -or $HordeMaximumOnly) { '1' } else { '0' })
     MT2_PROBE_HORDE_MAXIMUM = $(if ($HordeMaximumOnly) { '1' } else { '0' })
@@ -2464,6 +2467,25 @@ Wait-NativeBattleExit -Process $process -Timer $nativeTimer -UnityLog $unityLog 
     -TimeoutSeconds $TimeoutSeconds -FailFastOnIsolatedUnitReject:$FailFastOnIsolatedUnitReject
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
+if ($MaximumHealthLethalPreviewOnly) {
+    $capturePath = Join-Path $profile 'maximum-health-lethal-preview.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Maximum-health lethal card preview component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Lethal maximum-health hover component failed; inspect $unityLog" }
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $captureDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
+    try {
+        $capture = $captureDocument.RootElement
+        if ($capture.GetProperty('Boundary').GetString() -cne 'NativeMaximumHealthLethalCardHover' -or
+            -not $capture.GetProperty('NativeCompleted').GetBoolean() -or $capture.GetProperty('Samples').GetArrayLength() -ne 16 -or
+            $capture.GetProperty('OriginalSuppression').GetInt32() -ne $capture.GetProperty('FinalSuppression').GetInt32()) {
+            throw 'Incomplete lethal maximum-health hover capture.'
+        }
+    } finally { $captureDocument.Dispose() }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        ModelAcceptance='Pending independent focused checker'; Trace=$capturePath } | ConvertTo-Json
+    return
+}
 if ($HalfHealthLifecycleOnly -or $HalfHealthMaximumOnly -or $HalfHealthUpgradeOnly -or $HalfHealthUpgradeEffectsOnly -or $DamageReactionsOnly -or $DamageReactionRevivalOnly -or $DamageReactionFinalDeathOnly) {
     $lifecycleFile = if ($DamageReactionFinalDeathOnly) { 'damage-reaction-final-death.mt2f' } elseif ($DamageReactionRevivalOnly) { 'damage-reaction-revival.mt2f' } elseif ($DamageReactionsOnly) { 'damage-reactions.mt2f' } elseif ($HalfHealthUpgradeEffectsOnly) { 'half-health-upgrade-effects.mt2f' } elseif ($HalfHealthUpgradeOnly) { 'half-health-upgrade.mt2f' } elseif ($HalfHealthMaximumOnly) { 'half-health-maximum.mt2f' } else { 'half-health-lifecycle.mt2f' }
     $lifecycleBoundary = if ($DamageReactionFinalDeathOnly) { 'NativeBloodshedPunishFinalDeathDamage' } elseif ($DamageReactionRevivalOnly) { 'NativeBloodshedPunishUndyingLifecycle' } elseif ($DamageReactionsOnly) { 'NativeBloodshedPunishDamageLifecycle' } elseif ($HalfHealthUpgradeEffectsOnly) { 'NativeHalfHealthUnitUpgradeEffects' } elseif ($HalfHealthUpgradeOnly) { 'NativeHalfHealthUnitUpgradeLifecycle' } elseif ($HalfHealthMaximumOnly) { 'NativeHalfHealthMaximumHealthLifecycle' } else { 'NativeHalfHealthDamageHealLifecycle' }

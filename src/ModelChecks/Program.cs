@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--maximum-health-lethal-preview-only")
+{
+    MaximumHealthLethalPreviewChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--true-final-boss-maximum-card-preview-only")
 {
     TrueFinalBossMaximumCardPreviewChecks.Native(args[1]);
