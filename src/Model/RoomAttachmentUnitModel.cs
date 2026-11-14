@@ -290,7 +290,7 @@ namespace MonsterTrain2Poju.Model
             return new RoomAttachmentUnitSyncResult(state);
         }
 
-        private static bool OriginalHellfurnace(RoomCapacityAttachmentState attachment) =>
+        internal static bool OriginalHellfurnace(RoomCapacityAttachmentState attachment) =>
             attachment is { AssetKey: "Hellfurnace", DataId: "5d34a8d1-be5c-44e0-bd7e-b6cd576df0bb", AttachmentType: 0,
                 CapacityDelta: 0, AffectsHeroes: true, AffectsMonsters: true, IgnoreBosses: false,
                 SpellCostDelta: 0, EnergyPerTurnDelta: 0, MoonPhase: null, PreCombat: null, PostCombat: null,
@@ -354,7 +354,8 @@ namespace MonsterTrain2Poju.Model
 
         private static bool OriginalCardlessRoomMoonSync(RoomCapacityAttachmentState attachment, CombatUnit unit) =>
             unit.Team == CombatTeam.Enemy && unit.SpawnerCardId == 0 &&
-            (OriginalMushy(attachment) || OriginalInferno(attachment) && attachment.AffectsHeroes);
+            (OriginalMushy(attachment) || OriginalHellfurnace(attachment) ||
+                OriginalInferno(attachment) && attachment.AffectsHeroes);
 
         internal static bool OriginalInferno(RoomCapacityAttachmentState attachment) =>
             attachment is { AssetKey: "InfernoRoom", DataId: "378cea0c-14e9-45fb-9918-fb853bd04a7d", CharacterUpgrades.Count: 1,

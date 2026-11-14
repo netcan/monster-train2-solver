@@ -20,6 +20,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool InactiveInfernoMovement => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_INFERNO_MOVEMENT") == "1";
         internal static bool InactiveInfernoExit => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_INFERNO_EXIT") == "1";
         internal static bool InactiveMushyMovement => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_MUSHY_MOVEMENT") == "1";
+        internal static bool InactiveHellfurnaceMovement => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_HELLFURNACE_MOVEMENT") == "1";
         internal static bool InactiveMushyTurn => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_MUSHY_TURN") == "1";
         internal static bool InactiveInfernoTurn => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_INFERNO_TURN") == "1";
         internal static bool InactiveMushyTwoTurns => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_MUSHY_TWO_TURNS") == "1";
@@ -105,10 +106,10 @@ namespace MonsterTrain2Poju.Probe
                 yield return RunInactiveRoomTurn(log, InactiveInfernoTurn, InactiveMushyTwoTurns);
                 yield break;
             }
-            if (InactiveMovement || InactiveInfernoMovement || InactiveInfernoExit || InactiveMushyMovement)
+            if (InactiveMovement || InactiveInfernoMovement || InactiveInfernoExit || InactiveMushyMovement || InactiveHellfurnaceMovement)
             {
                 yield return RunInactiveMovement(log, InactiveInfernoMovement || InactiveInfernoExit,
-                    InactiveInfernoExit, InactiveMushyMovement);
+                    InactiveInfernoExit, InactiveMushyMovement, InactiveHellfurnaceMovement);
                 yield break;
             }
             var data = Managers.GetAllGameData(); var cards = Managers.GetCardManager();
@@ -289,7 +290,7 @@ namespace MonsterTrain2Poju.Probe
                 " gameplayRngUnchanged=" + rngUnchanged);
         }
 
-        private static IEnumerator RunInactiveMovement(ManualLogSource log, bool inferno, bool staleExit, bool mushy)
+        private static IEnumerator RunInactiveMovement(ManualLogSource log, bool inferno, bool staleExit, bool mushy, bool hellfurnace)
         {
             var data = Managers.GetAllGameData();
             var rooms = Managers.GetRoomManager();
@@ -314,19 +315,20 @@ namespace MonsterTrain2Poju.Probe
             enemies.Clear(); rooms.GetRoom(1).AddCharactersToList(enemies, Team.Type.Heroes);
             CharacterState callbackEnemy = enemies.Single(unit => unit != ordinaryEnemy); Trace.UnitId(callbackEnemy);
             yield return combat.RunTriggerQueue();
-            CardData roomData = data.FindCardData(mushy ? MushyRoomScenario.DataId :
+            CardData roomData = data.FindCardData(hellfurnace ? "5d34a8d1-be5c-44e0-bd7e-b6cd576df0bb" :
+                mushy ? MushyRoomScenario.DataId :
                 inferno ? InfernoRoomScenario.DataId : EclipseChamberScenario.DataId)!;
             CardUpgradeData upgrade = roomData.GetEffects().Single(effect =>
                 effect.GetEffectStateName() == "CardEffectAttachTrainRoomAttachment").GetParamCardUpgradeData();
             CardState sourceCard = new CardState(roomData, save);
             Trace.CardId(sourceCard);
             yield return rooms.GetRoom(0).AddTrainRoomAttachment("poju-inactive-moon-movement", sourceCard, upgrade, null!,
-                inferno || mushy ? Team.Type.Monsters | Team.Type.Heroes : Team.Type.Monsters,
+                inferno || mushy || hellfurnace ? Team.Type.Monsters | Team.Type.Heroes : Team.Type.Monsters,
                 TrainRoomAttachmentType.Primary, Managers.GetCoreManagers(), skipTargeting: true);
             yield return combat.RunTriggerQueue();
             if (Trace.CaptureTrain().Context?.QueryFrame?.MoonPhaseTrackingActive != false)
                 throw new InvalidOperationException("Detached attachment source activated native moon tracking.");
-            if (mushy)
+            if (mushy || hellfurnace)
             {
                 yield return Move("full-ordinary-entry", ordinaryEnemy, -1);
                 yield return Move("full-ordinary-exit", ordinaryEnemy, 1);
@@ -374,6 +376,23 @@ namespace MonsterTrain2Poju.Probe
             }
             bool rngUnchanged = rows.All(row => JToken.DeepEquals(JObject.FromObject(row)["Before"]!["Rng"],
                 JObject.FromObject(row)["Actual"]!["Rng"]));
+            if (hellfurnace)
+            {
+                using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
+                    GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
+                    NativeCompleted = true, InactiveHellfurnaceMovement = true,
+                    RngUnchanged = rngUnchanged,
+                    PreviewUpdatesSuppressed = combat.SuppressCombatPreviewUpdates,
+                    Boundary = "AfterOriginalCoroutineAndTriggerQueue",
+                    OrdinaryEnemyId = Trace.UnitId(ordinaryEnemy), CallbackEnemyId = Trace.UnitId(callbackEnemy),
+                    Rows = rows }))
+                using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                    "room-moon-inactive-hellfurnace-movement-calibration.mt2f"))) document.Write(stream);
+                Completed = true;
+                log.LogInfo("ROOM-MOON-CALLBACK-NATIVE PASS inactiveHellfurnace=true rows=" + rows.Count +
+                    " gameplayRngUnchanged=" + rngUnchanged);
+                yield break;
+            }
             using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeCompleted = true, InactiveMovement = !inferno && !mushy,

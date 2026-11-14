@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current curated inventory (2026-11-14): 2,869 binary archives with verified
+Current curated inventory (2026-11-14): 2,870 binary archives with verified
 hashes and registrations. The card evidence index accepts 1,561 battle archives
 and 31,514 native actions; three historical captures with nonzero counters stay
 excluded. All 559 intrinsically playable logbook cards have a definition-matched
@@ -58,6 +58,15 @@ its mask changes 6 to 5 while the original room upgrade is removed; returning
 reapplies the upgrade without changing mask 5. Two independent native captures
 have equal complete roots. Preview, unknown spawner/attachment and moon callback
 paths remain guarded; this is a Bump component, not EndTurn ascension proof.
+
+Original Hellfurnace now uses the same structural inactive-moon movement rule
+for cardless enemies without moon callbacks. Six Full/New native Bumps cover
+application/removal of its unchanged room upgrade, stale New entry and stale
+New exit (mask 6 to 5). Two independent native processes produced equal complete
+roots; the model matches every train/context and gameplay RNG successor. The
+unchanged Hellfurnace shape includes its Pyregel stack bonus, but this enemy
+has no Pyregel status, so the witness does not test that bonus. Preview, card
+spawners, moon callbacks and natural EndTurn for this enemy remain separate.
 
 Original Mushy Room now uses the same cardless, callback-free enemy movement
 rule instead of enemy-name lists. Six original Full/New Bumps cover room upgrade
