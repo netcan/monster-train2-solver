@@ -20,8 +20,9 @@ internal static class InactiveFullMoonBasherBumpChecks
         JsonNode mutant = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
         JsonNode original = mutant["Spawn"]!["Train"]!["Rooms"]![0]!["Units"]!.AsArray().Single(item => item!["Id"]!.GetValue<int>() == 4)!;
         original["AssetKey"] = "UnknownUnit";
-        BattleActionResult rejected = BattleActionModel.PlayCard(mutant.Deserialize<BattleTurnState>(ModelJson.Options)!, action);
-        Require(!rejected.Supported, "Unknown unit movement must remain guarded.");
+        BattleActionResult generalized = BattleActionModel.PlayCard(mutant.Deserialize<BattleTurnState>(ModelJson.Options)!, action);
+        Require(generalized.Supported && generalized.State!.Spawn.Train.Rooms[1].Units.Single(item => item.Id == 4).MoonPhaseMask == 6,
+            "Inactive Basher movement must refresh moon understanding independently of the unit name.");
         string parent = JsonSerializer.Serialize(before, ModelJson.Options), expected = NativeBranchObservationChecks.Key(actual);
         Parallel.For(0, 4, _ =>
         {
@@ -29,7 +30,7 @@ internal static class InactiveFullMoonBasherBumpChecks
             Require(result.Supported && NativeBranchObservationChecks.Key(result.State!) == expected, "Concurrent Basher movement differs.");
         });
         Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "Basher movement mutated its parent.");
-        Console.WriteLine("INACTIVE-FULL-MOON-BASHER PASS: 17 native inputs, complete successor/RNG, unknown unit guard and four immutable branches.");
+        Console.WriteLine("INACTIVE-FULL-MOON-BASHER PASS: 17 native inputs, complete successor/RNG, unit-name independence and four immutable branches.");
     }
     internal static void Pair(FixtureValue original, FixtureValue repaired, FixtureValue repaired2, FixtureValue original2)
     {

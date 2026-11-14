@@ -21,8 +21,9 @@ internal static class InactiveNewMoonZealotBumpChecks
         JsonNode mutant = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
         JsonNode enemy = mutant["Spawn"]!["Train"]!["Rooms"]![0]!["Units"]!.AsArray().Single(item => item!["Id"]!.GetValue<int>() == 6)!;
         enemy["AssetKey"] = "UnknownHeavy";
-        BattleActionResult rejected = BattleActionModel.PlayCard(mutant.Deserialize<BattleTurnState>(ModelJson.Options)!, action);
-        Require(!rejected.Supported && rejected.Reason == Reason, "Unknown enemy movement must remain guarded.");
+        BattleActionResult generalized = BattleActionModel.PlayCard(mutant.Deserialize<BattleTurnState>(ModelJson.Options)!, action);
+        Require(generalized.Supported && generalized.State!.Spawn.Train.Rooms[1].Units.Single(item => item.Id == 6).MoonPhaseMask == 5,
+            "Inactive enemy movement must refresh moon understanding independently of the unit name.");
         string parent = JsonSerializer.Serialize(before, ModelJson.Options), expected = NativeBranchObservationChecks.Key(actual);
         Parallel.For(0, 4, _ =>
         {
@@ -30,7 +31,7 @@ internal static class InactiveNewMoonZealotBumpChecks
             Require(result.Supported && NativeBranchObservationChecks.Key(result.State!) == expected, "Concurrent zealot movement differs.");
         });
         Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "Movement mutated its parent.");
-        Console.WriteLine("INACTIVE-NEW-MOON-ZEALOT PASS: 6 native inputs, complete successor/RNG, unknown enemy guard and four immutable branches.");
+        Console.WriteLine("INACTIVE-NEW-MOON-ZEALOT PASS: 6 native inputs, complete successor/RNG, unit-name independence and four immutable branches.");
     }
 
     internal static void Pair(FixtureValue original, FixtureValue repaired, FixtureValue repaired2, FixtureValue original2)

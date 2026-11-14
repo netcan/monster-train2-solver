@@ -22,9 +22,9 @@ internal static class InactiveBumpMoonChecks
         JsonNode mutant = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
         JsonNode champion = mutant["Spawn"]!["Train"]!["Rooms"]![0]!["Units"]!.AsArray().Single(item => item!["Id"]!.GetValue<int>() == 2)!;
         champion["AssetKey"] = "UnknownChampion";
-        BattleActionResult rejected = BattleActionModel.PlayCard(mutant.Deserialize<BattleTurnState>(ModelJson.Options)!, action);
-        Require(!rejected.Supported && rejected.Reason == "Inactive movement moon understanding requires native calibration.",
-            "Unknown inactive movement signature must remain guarded.");
+        BattleActionResult generalized = BattleActionModel.PlayCard(mutant.Deserialize<BattleTurnState>(ModelJson.Options)!, action);
+        Require(generalized.Supported && generalized.State!.Spawn.Train.Rooms[1].Units.Single(item => item.Id == 2).MoonPhaseMask == 6,
+            "Inactive movement must refresh moon understanding independently of the unit name.");
         string immutable = JsonSerializer.Serialize(before, ModelJson.Options), expected = NativeBranchObservationChecks.Key(actual);
         Parallel.For(0, 4, _ =>
         {
@@ -32,7 +32,7 @@ internal static class InactiveBumpMoonChecks
             Require(result.Supported && NativeBranchObservationChecks.Key(result.State!) == expected, "Concurrent inactive movement differs.");
         });
         Require(immutable == JsonSerializer.Serialize(before, ModelJson.Options), "Inactive movement mutated its parent.");
-        Console.WriteLine("INACTIVE-BUMP-MOON PASS: 18 native inputs, complete successor/RNG, unknown signature guard and four concurrent replays.");
+        Console.WriteLine("INACTIVE-BUMP-MOON PASS: 18 native inputs, complete successor/RNG, unit-name independence and four concurrent replays.");
     }
 
     private static void HistoricalMismatch(BattleTurnState historical, BattleTurnState actual)

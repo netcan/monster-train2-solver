@@ -22,6 +22,13 @@ winning deep rolling replans or other final-boss variants. Mac runtime and the
 remaining complex moon combinations are tracked in
 [remaining acceptance goals](docs/remaining-goals.md).
 
+Moved characters now refresh inactive Full/New moon understanding through the
+same name-independent phase calculation as the native `CharacterState` method.
+Seven paired native observations cover player units, enemies and a boss in both
+phase directions; second-ring victory and seventh-ring defeat replays still
+match every recorded successor and RNG state. Preview movement, relic phase
+overrides, unknown callbacks and moon resource traits remain guarded.
+
 A further 34 original Conduit movement callbacks now match independently in
 complete context, private card trackers, physical points and gameplay RNG.
 This isolated component keeps the whole-battle physical guard: detached and dead

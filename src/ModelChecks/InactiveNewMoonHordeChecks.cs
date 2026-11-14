@@ -21,8 +21,9 @@ internal static class InactiveNewMoonHordeChecks
         JsonNode mutant = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
         JsonNode original = mutant["Spawn"]!["Train"]!["Rooms"]![2]!["Units"]!.AsArray().Single(item => item!["Id"]!.GetValue<int>() == 5)!;
         original["AssetKey"] = "UnknownUnit";
-        BattleActionResult rejected = BattleActionModel.PlayCard(mutant.Deserialize<BattleTurnState>(ModelJson.Options)!, action);
-        Require(!rejected.Supported, "Unknown unit movement must remain guarded.");
+        BattleActionResult generalized = BattleActionModel.PlayCard(mutant.Deserialize<BattleTurnState>(ModelJson.Options)!, action);
+        Require(generalized.Supported && generalized.State!.Spawn.Train.Rooms[1].Units.Single(item => item.Id == 5).MoonPhaseMask == 5,
+            "Inactive Horde movement must refresh moon understanding independently of the unit name.");
         mutant = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
         mutant["Spawn"]!["Train"]!["Context"]!["Relics"]![0]!["EffectTypes"]!.AsArray().Add("RelicEffectMoonPhaseAlwaysActive");
         TrainCombatState overridden = mutant.Deserialize<BattleTurnState>(ModelJson.Options)!.Spawn.Train;
@@ -36,7 +37,7 @@ internal static class InactiveNewMoonHordeChecks
             Require(result.Supported && NativeBranchObservationChecks.Key(result.State!) == expected, "Concurrent Horde movement differs.");
         });
         Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "Horde movement mutated its parent.");
-        Console.WriteLine("INACTIVE-NEW-MOON-HORDE PASS: 9 native inputs, complete successor/RNG, unit and relic guards and four immutable branches.");
+        Console.WriteLine("INACTIVE-NEW-MOON-HORDE PASS: 9 native inputs, complete successor/RNG, unit-name independence, relic guard and four immutable branches.");
     }
 
     internal static void Pair(FixtureValue original, FixtureValue repaired, FixtureValue repaired2, FixtureValue original2)
