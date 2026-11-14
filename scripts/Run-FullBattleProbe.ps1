@@ -38,6 +38,7 @@ param(
     [switch] $RoomMoonInactiveTriggerRooms,
     [switch] $RoomMoonInactiveMushyTurn,
     [ValidateSet('BoilerRoom', 'SacrificialChamber')] [string] $RoomMoonInactiveOriginalTurnRoom,
+    [ValidateSet('BoilerRoom', 'SacrificialChamber')] [string] $RoomMoonInactiveOriginalDeathRoom,
     [switch] $RoomMoonInactiveInfernoTurn,
     [switch] $RoomMoonInactiveMushyTwoTurns,
     [switch] $RoomMoonCallbacksShade,
@@ -756,6 +757,7 @@ if ($RoomMoonInactiveRoomBatch) { $RoomMoonCallbacks = $true }
 if ($RoomMoonInactiveTriggerRooms) { $RoomMoonCallbacks = $true }
 if ($RoomMoonInactiveMushyTurn) { $RoomMoonCallbacks = $true }
 if ($RoomMoonInactiveOriginalTurnRoom) { $RoomMoonCallbacks = $true }
+if ($RoomMoonInactiveOriginalDeathRoom) { $RoomMoonCallbacks = $true }
 if ($RoomMoonInactiveInfernoTurn) { $RoomMoonCallbacks = $true }
 if ($RoomMoonInactiveMushyTwoTurns) { $RoomMoonCallbacks = $true }
 if ($RoomMoonEnemyMovement) { $RoomMoonMovement = $true }
@@ -767,6 +769,7 @@ if ($RoomMoonCallbacks) {
     $allowed += 'RoomMoonSpellHandPowerRelic'
     $allowed += 'RoomMoonSpellStatusRelic'
     $allowed += 'RoomMoonSpellThresholdRelic'
+    $allowed += 'RoomMoonInactiveOriginalDeathRoom'
     $allowed += 'StartingCovenantLevel'
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'RoomMoonCallbacks is an isolated component calibration.' }
     if ($StartingCovenantLevel -gt 0 -and (-not $RoomMoonSpellAdvance -or $StartingCovenantLevel -gt 3 -or
@@ -776,7 +779,7 @@ if ($RoomMoonCallbacks) {
     }
     if ($RoomMoonSpellUpgrades -and ($RoomMoonCallbacksShade -or $RoomMoonMovement -or $RoomMoonEnemyMovement)) { throw 'Spell upgrade controls are a separate isolated component.' }
     if ($RoomMoonInactiveRefresh -and ($RoomMoonCallbacksShade -or $RoomMoonSpellUpgrades -or $StartingCovenantLevel -gt 0)) { throw 'Inactive moon refresh is a separate isolated component.' }
-    if (($RoomMoonInactiveMovement -or $RoomMoonInactiveInfernoMovement -or $RoomMoonInactiveInfernoExit -or $RoomMoonInactiveMushyMovement -or $RoomMoonInactiveHellfurnaceMovement -or $RoomMoonInactiveRoomBatch -or $RoomMoonInactiveTriggerRooms -or $RoomMoonInactiveMushyTurn -or $RoomMoonInactiveOriginalTurnRoom -or $RoomMoonInactiveInfernoTurn -or $RoomMoonInactiveMushyTwoTurns) -and ($RoomMoonInactiveRefresh -or $RoomMoonCallbacksShade -or $RoomMoonSpellUpgrades -or $StartingCovenantLevel -gt 0 -or @($RoomMoonInactiveMovement, $RoomMoonInactiveInfernoMovement, $RoomMoonInactiveInfernoExit, $RoomMoonInactiveMushyMovement, $RoomMoonInactiveHellfurnaceMovement, $RoomMoonInactiveRoomBatch, $RoomMoonInactiveTriggerRooms, $RoomMoonInactiveMushyTurn, $RoomMoonInactiveOriginalTurnRoom, $RoomMoonInactiveInfernoTurn, $RoomMoonInactiveMushyTwoTurns).Where({ $_ }).Count -ne 1)) { throw 'Inactive moon movement requires one separate isolated component.' }
+    if (($RoomMoonInactiveMovement -or $RoomMoonInactiveInfernoMovement -or $RoomMoonInactiveInfernoExit -or $RoomMoonInactiveMushyMovement -or $RoomMoonInactiveHellfurnaceMovement -or $RoomMoonInactiveRoomBatch -or $RoomMoonInactiveTriggerRooms -or $RoomMoonInactiveMushyTurn -or $RoomMoonInactiveOriginalTurnRoom -or $RoomMoonInactiveOriginalDeathRoom -or $RoomMoonInactiveInfernoTurn -or $RoomMoonInactiveMushyTwoTurns) -and ($RoomMoonInactiveRefresh -or $RoomMoonCallbacksShade -or $RoomMoonSpellUpgrades -or $StartingCovenantLevel -gt 0 -or @($RoomMoonInactiveMovement, $RoomMoonInactiveInfernoMovement, $RoomMoonInactiveInfernoExit, $RoomMoonInactiveMushyMovement, $RoomMoonInactiveHellfurnaceMovement, $RoomMoonInactiveRoomBatch, $RoomMoonInactiveTriggerRooms, $RoomMoonInactiveMushyTurn, $RoomMoonInactiveOriginalTurnRoom, $RoomMoonInactiveOriginalDeathRoom, $RoomMoonInactiveInfernoTurn, $RoomMoonInactiveMushyTwoTurns).Where({ $_ }).Count -ne 1)) { throw 'Inactive moon movement requires one separate isolated component.' }
     $Policy = 'no-cards'; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
 }
 if ($ConduitEnemyMovement) { $ConduitMovement = $true }
@@ -1621,6 +1624,7 @@ $environment = @{
     MT2_PROBE_ROOM_MOON_INACTIVE_TRIGGER_ROOMS = $(if ($RoomMoonInactiveTriggerRooms) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_INACTIVE_MUSHY_TURN = $(if ($RoomMoonInactiveMushyTurn) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_INACTIVE_ORIGINAL_TURN_ROOM = $RoomMoonInactiveOriginalTurnRoom
+    MT2_PROBE_ROOM_MOON_INACTIVE_ORIGINAL_DEATH_ROOM = $RoomMoonInactiveOriginalDeathRoom
     MT2_PROBE_ROOM_MOON_INACTIVE_INFERNO_TURN = $(if ($RoomMoonInactiveInfernoTurn) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_INACTIVE_MUSHY_TWO_TURNS = $(if ($RoomMoonInactiveMushyTwoTurns) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_SPELL_UPGRADES = $(if ($RoomMoonSpellUpgrades) { '1' } else { '0' })
@@ -2311,6 +2315,7 @@ if ($TrueFinalBossBirth) {
 if ($RoomMoonCallbacks) {
     $componentPath = Join-Path $profile $(if ($RoomMoonInactiveTriggerRooms) { 'room-moon-inactive-trigger-rooms-calibration.mt2f' } elseif ($RoomMoonInactiveRoomBatch) { 'room-moon-inactive-room-batch-calibration.mt2f' } elseif ($RoomMoonInactiveHellfurnaceMovement) { 'room-moon-inactive-hellfurnace-movement-calibration.mt2f' } elseif ($RoomMoonInactiveMushyTwoTurns) { 'room-moon-inactive-mushy-two-turns-calibration.mt2f' } elseif ($RoomMoonInactiveInfernoTurn) { 'room-moon-inactive-inferno-turn-calibration.mt2f' } elseif ($RoomMoonInactiveMushyTurn) { 'room-moon-inactive-mushy-turn-calibration.mt2f' } elseif ($RoomMoonInactiveMushyMovement) { 'room-moon-inactive-mushy-movement-calibration.mt2f' } elseif ($RoomMoonInactiveInfernoExit) { 'room-moon-inactive-inferno-exit-calibration.mt2f' } elseif ($RoomMoonInactiveInfernoMovement) { 'room-moon-inactive-inferno-movement-calibration.mt2f' } elseif ($RoomMoonInactiveMovement) { 'room-moon-inactive-movement-calibration.mt2f' } elseif ($RoomMoonInactiveRefresh) { 'room-moon-inactive-refresh-calibration.mt2f' } elseif ($RoomMoonSpellPhaseHealRelic) { 'room-moon-spell-phase-heal-relic-calibration.mt2f' } elseif ($RoomMoonSpellHealingRelic) { 'room-moon-spell-healing-relic-calibration.mt2f' } elseif ($RoomMoonSpellAttackRelic) { 'room-moon-spell-attack-relic-calibration.mt2f' } elseif ($RoomMoonSpellCostRelic) { 'room-moon-spell-cost-relic-calibration.mt2f' } elseif ($RoomMoonSpellAdvance) { 'room-moon-spell-advance-calibration.mt2f' } elseif ($RoomMoonSpellUpgrades) { 'room-moon-spell-upgrade-calibration.mt2f' } elseif ($RoomMoonEnemyMovement) { 'room-moon-enemy-movement-calibration.mt2f' } elseif ($RoomMoonMovement) { 'room-moon-movement-calibration.mt2f' } else { 'room-moon-callback-calibration.mt2f' })
     if ($RoomMoonInactiveOriginalTurnRoom) { $componentPath = Join-Path $profile ("room-moon-inactive-original-{0}-turn-calibration.mt2f" -f $RoomMoonInactiveOriginalTurnRoom.ToLowerInvariant()) }
+    if ($RoomMoonInactiveOriginalDeathRoom) { $componentPath = Join-Path $profile ("room-moon-inactive-original-{0}-death-calibration.mt2f" -f $RoomMoonInactiveOriginalDeathRoom.ToLowerInvariant()) }
     if ($RoomMoonSpellPhaseEnergyRelic) { $componentPath = Join-Path $profile 'room-moon-spell-phase-energy-relic-calibration.mt2f' }
     if ($RoomMoonSpellHandPowerRelic) { $componentPath = Join-Path $profile 'room-moon-spell-hand-power-relic-calibration.mt2f' }
     if ($RoomMoonSpellStatusRelic) { $componentPath = Join-Path $profile 'room-moon-spell-status-relic-calibration.mt2f' }
@@ -2323,11 +2328,12 @@ if ($RoomMoonCallbacks) {
     $component = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($componentPath)
     try {
         $captured = $component.RootElement.ToObjectGraph()
-        $isTurnComponent = $RoomMoonInactiveMushyTurn -or $RoomMoonInactiveOriginalTurnRoom -or $RoomMoonInactiveInfernoTurn -or $RoomMoonInactiveMushyTwoTurns
+        $isTurnComponent = $RoomMoonInactiveMushyTurn -or $RoomMoonInactiveOriginalTurnRoom -or $RoomMoonInactiveOriginalDeathRoom -or $RoomMoonInactiveInfernoTurn -or $RoomMoonInactiveMushyTwoTurns
         if (-not $captured.NativeCompleted -or (-not $isTurnComponent -and -not $captured.RngUnchanged) -or
             (-not $isTurnComponent -and -not $captured.PreviewUpdatesSuppressed) -or (-not $isTurnComponent -and $(if ($RoomMoonInactiveTriggerRooms -or $RoomMoonInactiveRoomBatch) { @($captured.Groups).Count -ne $(if ($RoomMoonInactiveTriggerRooms) { 2 } else { 5 }) -or @($captured.Groups | Where-Object { @($_.Rows).Count -ne 6 }).Count -ne 0 } else { @($captured.Rows).Count -ne $(if ($RoomMoonInactiveMushyMovement -or $RoomMoonInactiveHellfurnaceMovement) { 6 } elseif ($RoomMoonInactiveInfernoExit) { 2 } elseif ($RoomMoonInactiveInfernoMovement) { 4 } elseif ($RoomMoonInactiveMovement) { 8 } elseif ($RoomMoonInactiveRefresh) { 4 } elseif ($RoomMoonSpellHandPowerRelic) { 19 } elseif ($RoomMoonSpellUpgrades) { 15 } elseif ($RoomMoonEnemyMovement) { 39 } elseif ($RoomMoonMovement) { 37 } elseif ($RoomMoonCallbacksShade) { 15 } else { 13 }) })) -or
-            $(if ($RoomMoonInactiveTriggerRooms -or $RoomMoonInactiveRoomBatch) { $captured.EnemyId -le 0 } elseif ($RoomMoonInactiveMushyTwoTurns) { $captured.EnemyId -le 0 -or $captured.Before.Spawn.Turn -ge $captured.AfterFirst.Spawn.Turn -or $captured.AfterFirst.Spawn.Turn -ge $captured.AfterSecond.Spawn.Turn } elseif ($RoomMoonInactiveMushyTurn -or $RoomMoonInactiveOriginalTurnRoom -or $RoomMoonInactiveInfernoTurn) { $captured.EnemyId -le 0 -or $captured.Before.Spawn.Turn -ge $captured.Actual.Spawn.Turn } elseif ($RoomMoonInactiveMovement -or $RoomMoonInactiveInfernoMovement -or $RoomMoonInactiveInfernoExit -or $RoomMoonInactiveMushyMovement -or $RoomMoonInactiveHellfurnaceMovement) { $captured.OrdinaryEnemyId -le 0 -or $captured.CallbackEnemyId -le 0 -or $captured.OrdinaryEnemyId -eq $captured.CallbackEnemyId } else { @($captured.ActorIds).Count -ne $(if ($RoomMoonInactiveRefresh) { 2 } elseif ($RoomMoonSpellStatusRelic) { 2 } elseif ($RoomMoonSpellPhaseHealRelic) { 1 } elseif ($RoomMoonSpellUpgrades) { 0 } elseif ($RoomMoonEnemyMovement) { 12 } elseif ($RoomMoonCallbacksShade) { 6 } else { 3 }) }) -or
-            $captured.OriginalTurnRoom -ne $RoomMoonInactiveOriginalTurnRoom -or
+            $(if ($RoomMoonInactiveTriggerRooms -or $RoomMoonInactiveRoomBatch) { $captured.EnemyId -le 0 } elseif ($RoomMoonInactiveMushyTwoTurns) { $captured.EnemyId -le 0 -or $captured.Before.Spawn.Turn -ge $captured.AfterFirst.Spawn.Turn -or $captured.AfterFirst.Spawn.Turn -ge $captured.AfterSecond.Spawn.Turn } elseif ($RoomMoonInactiveOriginalDeathRoom) { $captured.EnemyId -le 0 -or $captured.DefenderId -le 0 -or @($captured.Rows).Count -ne 2 -or $captured.Before.Spawn.Turn -ge $captured.Actual.Spawn.Turn } elseif ($RoomMoonInactiveMushyTurn -or $RoomMoonInactiveOriginalTurnRoom -or $RoomMoonInactiveInfernoTurn) { $captured.EnemyId -le 0 -or $captured.Before.Spawn.Turn -ge $captured.Actual.Spawn.Turn } elseif ($RoomMoonInactiveMovement -or $RoomMoonInactiveInfernoMovement -or $RoomMoonInactiveInfernoExit -or $RoomMoonInactiveMushyMovement -or $RoomMoonInactiveHellfurnaceMovement) { $captured.OrdinaryEnemyId -le 0 -or $captured.CallbackEnemyId -le 0 -or $captured.OrdinaryEnemyId -eq $captured.CallbackEnemyId } else { @($captured.ActorIds).Count -ne $(if ($RoomMoonInactiveRefresh) { 2 } elseif ($RoomMoonSpellStatusRelic) { 2 } elseif ($RoomMoonSpellPhaseHealRelic) { 1 } elseif ($RoomMoonSpellUpgrades) { 0 } elseif ($RoomMoonEnemyMovement) { 12 } elseif ($RoomMoonCallbacksShade) { 6 } else { 3 }) }) -or
+            [string]$captured.OriginalTurnRoom -ne [string]$RoomMoonInactiveOriginalTurnRoom -or
+            [string]$captured.OriginalDeathRoom -ne [string]$RoomMoonInactiveOriginalDeathRoom -or
             [bool]$captured.InactiveMovement -ne [bool]$RoomMoonInactiveMovement -or
             [bool]$captured.InactiveInfernoMovement -ne [bool]$RoomMoonInactiveInfernoMovement -or
             [bool]$captured.InactiveInfernoExit -ne [bool]$RoomMoonInactiveInfernoExit -or
