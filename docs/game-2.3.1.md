@@ -449,8 +449,8 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -HalfHealt
 新模型为 False；不是通过删除旁观回调或只比较新增触发器来消除差异。
 
 本次只验收返回时的完整列车/上下文、来源分配与未执行队列，未结算触发效果。
-原有 27 组半血条件矩阵同批通过；原版 `DeathwishAttack` 遗物整局仍需独立验收，
-未增加任何新版原版卡牌或遗物的覆盖数。
+原有 27 组半血条件矩阵同批通过。本节组件不增加新版原版卡牌或遗物覆盖数；
+原版 `DeathwishAttack` 遗物的整局验收见下节。
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Game231HalfHealthTriggerInstallation.ps1
@@ -463,6 +463,40 @@ SHA256 `b292788ec2c83f91b2b5e3999c922c4f1718f273ed663f09e6e4dce3061b4ddf`。
 来源列车、全部 RNG 与帧不变，退出码零、`DEPTH-PASS` 及玩家文件未变检查通过。
 41 组 Vanguard、25 次出牌/7 次 EndTurn 的半血整链及四件装备成长遗物的新版
 24 次出牌/5 次 EndTurn/16 路策略分支定向回归通过，永久生命仍为新版的 +8。
+
+## 原版新增遗物 DeathwishAttack 的完整战斗
+
+原版 `DeathwishAttack`（`437ca81a-8c1b-4e53-adfd-e64381e1b0d9`）及其原生
+`Plus15Attack` 升级（`f9a9fd6b-de5b-46d9-b733-0db48a8902a7`）保持原定义。
+遗物安装两个忽略沉默的半血触发器，分别添加和移除同一份临时 +15 攻升级。
+场景实际获取原版遗物，再支付费用召唤两名控制单位；没有直接给单位写入遗物效果。
+
+七步控制检查每一步的生命、攻击修正与升级归属：生命 20 → 10 时加 15 攻，
+治疗到 11 时移除，再受伤至 10 时重新添加；另一楼层重复进入/退出。
+隔离 worker3 将列车员设为 20 生命、附加一层 Undying 和一次攻击时自疗 8，
+只改写未持有的控制法术。攻击时自疗使预演真正越过半血线，不能只靠观察到预演
+回调就宣称移除分支通过。原生证据有 22 份实际回调（16 次进入、6 次退出）和
+94 份预演回调（50 次进入、44 次退出），均完成且金币未变。
+两种模式分别观察到升级从无到有、从有到无，并有自然 Undying 复活证据。
+
+完整胜局的 24 次出牌、6 次 EndTurn、49 个房间和 11 个列车阶段均匹配。
+独立模型连续复放完整输入前后状态及 RNG；16 路并行分支保持父状态不变。
+此项复用已校准的条件触发、临时升级及移除模型，没有再为该遗物编写单独模拟器。
+新增 12 件可收集遗物中，本项取得一件原版遗物的新版整局验收；不将旧版 224 件
+覆盖直接转记到新版，也不增加改写控制牌的原版卡牌覆盖数。
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Game231OriginalDeathwishAttack.ps1
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -OriginalDeathwishAttack -GameSpeed Instant -SkipBuild
+```
+
+二进制 `mechanics/deathwish-attack/full-battle.mt2f` 为 66,610 字节，SHA256
+`56c991215df03f288abc0a37ea24968d386773e7316e0c64627db34a3759cf27`。
+来源 `.probe-runs/full-battle-units-spells-and-junk-20261114-163521-fae7b71e`，
+原生 75.74 秒，四类失败计数均零、退出码零、`DEPTH-PASS` 及玩家文件未变检查通过。
+Probe/ModelChecks 构建和 PowerShell 解析通过；原有半血整局的 25 次出牌、7 次 EndTurn、
+336 份回调及 16 路分支定向回归通过。
+共享附魔世界、直接升级 API 的预演及其他尚未校准的半血组合继续遵守各自边界。
 
 ## 可复验样本
 
@@ -502,6 +536,8 @@ Rule 投影发生变化的共有卡牌：`DantesInferno`、`FlickerRaiseOnSlayAb
 `DamageFriendlyOnSpawn`、`DeathwishAttack`、`DrawCardOnEarlyDiscard`、`DrawCardOnTurnDamage`、
 `EmberForDamagedPerFloor`、`FriendlyUnitPunish`、`MonolithDevotion`、`RevengeTriggerTwice`、
 `SpellsNoKillFriendlies`、`ZealDamageIncrease`。
+
+其中 `DeathwishAttack` 已完成上述原版整局验收，其余新增遗物仍需各自证据。
 
 变更的共有遗物：`ApplyDazedOnAscendOrDescend`、`CopyConsumedCard`、`DamageOnEaten`、
 `FriendlyUnitsGainDeathwishPermanentHealth`、`FriendlyUnitsGainDeathwishValor`、

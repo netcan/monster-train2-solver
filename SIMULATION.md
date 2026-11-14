@@ -32,8 +32,18 @@ do not add original card/relic coverage.
 Relic conditional-trigger installation has another 16 native controls and 35
 exclusive queue payloads with 32 immutable branches. Vanguard and half-health
 installation now refresh their own source sets independently, including stale
-bystanders and duplicate/prepend order. This calibrates queue admission, with
-original new relic owners still requiring complete battle acceptance.
+bystanders and duplicate/prepend order. This calibrates queue admission;
+original owner acceptance is recorded separately.
+
+Original new relic `DeathwishAttack` now has complete 2.3.1 battle acceptance
+with its owner and `Plus15Attack` upgrade definitions unchanged. Seven exact
+controls cover +15 attack at half health, removal above half and reentry.
+All 24 plays, six EndTurns, 49 room and 11 train phases match. The 116 completed
+callbacks include 94 in preview, with both gain and removal observed in each
+mode. Natural Undying, continuous independent replay and 16 immutable branches
+pass. This accepts one of the 12 newly added relic owners; it does not transfer
+the old 224-owner coverage to the new version. Recheck with
+`scripts/Check-Game231OriginalDeathwishAttack.ps1`.
 
 Game 2.2.1 curated inventory (2026-11-14): 2,874 binary archives with verified
 hashes and registrations. The card evidence index accepts 1,561 battle archives

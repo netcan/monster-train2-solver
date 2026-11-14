@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--original-deathwish-attack-only")
+{
+    OriginalDeathwishAttackChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--half-health-trigger-installation-only")
 {
     HalfHealthTriggerInstallationChecks.Native(args[1]);

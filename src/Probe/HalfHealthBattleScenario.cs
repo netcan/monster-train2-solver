@@ -21,6 +21,7 @@ namespace MonsterTrain2Poju.Probe
         private static string? rejection;
         internal static object Evidence => new { Prepared, ControlCardIds = cards, CompletedControlPlays = step, Transitions = transitions };
         private static readonly List<Transition> transitions = new List<Transition>();
+        internal static object CallbackEvidence => transitions;
         private sealed class Transition
         {
             public int Turn { get; set; }
@@ -102,7 +103,8 @@ namespace MonsterTrain2Poju.Probe
                 bool fromRunningTriggerQueue, CharacterState.FireTriggersData fireTriggersData, int triggerCount, CharacterTriggerState exclusiveTrigger,
                 ref IEnumerator __result)
             {
-                if (!Enabled || !Prepared || !fromRunningTriggerQueue || trigger.ToString() is not ("OnDeathwish" or "OnDeathwishLost")) return;
+                if (!(Enabled && Prepared || OriginalDeathwishAttackScenario.Enabled && OriginalDeathwishAttackScenario.Prepared) ||
+                    !fromRunningTriggerQueue || trigger.ToString() is not ("OnDeathwish" or "OnDeathwishLost")) return;
                 __result = Observe(__result, __instance, trigger, dyingCharacter, fireTriggersData, triggerCount, exclusiveTrigger);
             }
             private static IEnumerator Observe(IEnumerator native, CharacterState actor, CharacterTriggerData.Trigger kind,
