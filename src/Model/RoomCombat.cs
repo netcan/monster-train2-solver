@@ -3273,6 +3273,10 @@ namespace MonsterTrain2Poju.Model
                 // CharacterState counts Titanskin soak for Revenge, separately
                 // from damageBlocked used by last-attack damage statistics.
                 if (tookHit) FireTriggers(target, "OnHit", paramInt: damage, paramInt2: hitType);
+                // Modern CharacterState runs OnHit status effects in the damage
+                // coroutine, even while the character-trigger queue is already
+                // running. Horde observers therefore precede Punish/Deathwish.
+                if (modernDamageQueue && tookHit && !target.DeathFinished && target.Has("horde") && !SettleHordeHealth(target)) return;
                 bool friendlySource = actor != null ? actor.Source.Team == CombatTeam.Player : sourceCardId > 0 || relicSourced;
                 if (modernDamageQueue && tookHit && friendlySource && !target.DeathFinished)
                     FireTriggers(target, "OnPunish", paramInt: damage, paramInt2: hitType, paramStringOverride: "");
@@ -4206,6 +4210,15 @@ namespace MonsterTrain2Poju.Model
                     SelectNotificationRoom(currentRoom.Value);
             }
 
+            private bool SettleHordeHealth(WorkingUnit unit)
+            {
+                RoomCombatResult casualties = HordeStatusModel.SettleHealth(UpgradeRoom(unit), unit.Source.Id);
+                if (!casualties.Supported) { unsupportedReason = casualties.UnsupportedReason; return false; }
+                context = casualties.State!.Context; unit.Apply(casualties.State.Units.First(actor => actor.Id == unit.Source.Id));
+                foreach (QueuedCharacterTrigger callback in casualties.PendingCallbacks) QueueCallback(callback);
+                return unsupportedReason == null;
+            }
+
             private void ExecuteTriggers(WorkingUnit unit, string kind, bool canFireTriggers, int paramInt, WorkingUnit? overrideTarget, WorkingUnit? dyingCharacter, int triggerCount, int lastSpawnedOverrideUnitId,
                 int paramInt2 = 0, string? paramString = null, int? exclusiveTriggerStateId = null)
             {
@@ -4245,13 +4258,7 @@ namespace MonsterTrain2Poju.Model
                             context.QueryFrame.MoonPhase.Value), reset: true));
                     }
                 }
-                if (kind == "OnHit" && unit.Has("horde"))
-                {
-                    RoomCombatResult casualties = HordeStatusModel.SettleHealth(UpgradeRoom(unit), unit.Source.Id);
-                    if (!casualties.Supported) { unsupportedReason = casualties.UnsupportedReason; return; }
-                    context = casualties.State!.Context; unit.Apply(casualties.State.Units.First(actor => actor.Id == unit.Source.Id));
-                    foreach (QueuedCharacterTrigger callback in casualties.PendingCallbacks) QueueCallback(callback);
-                }
+                if (kind == "OnHit" && context?.Statistics?.MonsterDamage == null && unit.Has("horde") && !SettleHordeHealth(unit)) return;
                 for (int index = 0; index < unit.Triggers.Count; index++)
                 {
                     CombatTrigger trigger = unit.Triggers[index];

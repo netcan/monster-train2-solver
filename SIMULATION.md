@@ -30,6 +30,19 @@ These controls do not add original-card/relic coverage.
 
 Latest 2.3.1 acceptance: all **12/12 new original relics** have controlled
 whole-battle evidence; this does not revalidate all 614 cards or 236 relics.
+Nonlethal direct maximum-health changes now retain Horde casualty queues before
+Deathwish. Modern damage settles Horde in its immediate OnHit status phase,
+before queued Punish/Deathwish even inside healing or half-health callbacks.
+Twenty-two complete native API/queue/drained controls and 32 immutable branches
+cover both teams, wounded/healthy troops, healability/multiplier/immunity, caps,
+floors, signed no-ops and nested damage. Complete live train/all-RNG restoration
+passes. A five-play/seven-turn native victory removes three capped-health troops,
+awards 15 Harvest gold, heals to the cap and updates the spawner's temporary HP.
+Full successors/RNG, 16 battle branches, 128-state serial/parallel search and
+independent plan replay pass. Explicit unit/card controls add no original-card
+coverage. Run `scripts/Check-Game231HordeMaximum.ps1` for the 12,287-byte component
+and 34,240-byte battle archives. Lethal maximum-health sacrifice/revival and other
+Horde death/merge/callback combinations remain separate.
 Zeal removal now settles Horde casualties before Deathwish and outer status
 notifications, retaining the complete room, simulated deaths and observer queues.
 Thirteen native API/drained controls cover both teams, clipped/wounded casualties,
@@ -40,7 +53,7 @@ rounded Harvest rewards (15 gold), and records three spawner deaths. Complete
 successors/RNG, 16 full branches and 128-state serial/parallel action search pass.
 The original ZealDamageIncrease relic and bosses are retained; unit/card controls
 are explicit and add no original-card/relic coverage. Run
-`scripts/Check-Game231ZealHorde.ps1` for both binary archives. Other Horde health,
+`scripts/Check-Game231ZealHorde.ps1` for both binary archives. Other Horde lethal health,
 death/revival, merge and callback combinations still need separate acceptance.
 Three unchanged original cards now share calibrated floor-by-floor damage:
 DivinePunishment at levels 0/1/2, DantesInferno's permanent candles and armor

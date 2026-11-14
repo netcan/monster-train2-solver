@@ -4,16 +4,17 @@ using MonsterTrain2Poju.Model;
 
 internal static class ZealHordeBattleChecks
 {
-    internal static void Native(string path)
+    internal static void Native(string path, bool maximumHealth = false)
     {
         using var document = ModelJson.ReadFixture(path); FixtureValue root = document.RootElement;
         Require(root.GetProperty("GameVersion").GetString() == "2.3.1" &&
             root.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
-            root.GetProperty("ModifierScenario").GetString() == "zeal-horde-battle" &&
+            root.GetProperty("ModifierScenario").GetString() == (maximumHealth ? "horde-maximum-battle" : "zeal-horde-battle") &&
             root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
             new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.All(key => root.GetProperty(key).GetInt32() == 0),
             "Incomplete native Zeal/Horde battle.");
-        FixtureValue evidence = root.GetProperty("ZealHordeBattle");
+        FixtureValue evidence = root.GetProperty(maximumHealth ? "HordeMaximumBattle" : "ZealHordeBattle");
+        if (maximumHealth) Require(evidence.GetProperty("MaximumHealth").GetBoolean(), "Missing direct maximum-health control mode.");
         FixtureValue owner = evidence.GetProperty("OwnerDefinition");
         Require(evidence.GetProperty("Prepared").GetBoolean() && evidence.GetProperty("CompletedControlPlays").GetInt32() == 5 &&
             owner.GetProperty("Id").GetString() == "ee429978-fa41-4c66-93c6-3d3c7d5a4733" &&
@@ -28,13 +29,26 @@ internal static class ZealHordeBattleChecks
         CombatUnit Troop(BattleTurnState state) => state.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Status("horde") != null);
         CombatUnit original = Troop(Before(2)), partial = Troop(After(2)), added = Troop(After(3)), removed = Troop(After(4));
         Require(original.HordeDefinition is { Attack: 60, Health: 99999 } && original.Status("horde")!.Stacks == 4 &&
-            original.Status("zeal")!.Stacks == 3 && original.Health == 99999 && original.MaxHealth == 99999 &&
-            partial.Status("horde")!.Stacks == 1 && partial.Status("zeal")!.Stacks == 2 && partial.Health == 99998 && partial.MaxHealth == 99998 &&
-            partial.Modifiers!.AttackDamage == 60 && partial.Modifiers.DamageBuffFromStatusEffects == 4 &&
+            original.Modifiers!.AttackDamage == 240 && original.Health == 99999 && original.MaxHealth == 99999 &&
+            partial.Status("horde")!.Stacks == 1 && partial.Health == 99998 && partial.MaxHealth == 99998 &&
+            partial.Modifiers!.AttackDamage == 60 &&
             // Each authored two-gold trigger rounds to the native minimum five.
             After(2).Spawn.Train.Context!.Gold - Before(2).Spawn.Train.Context!.Gold == 15,
             "Missing capped-health three-casualty and Harvest witness.");
-        Require(added.Status("horde")!.Stacks == 1 && added.Status("zeal")!.Stacks == 4 && added.Health == 99998 && added.MaxHealth == 99999 &&
+        if (maximumHealth)
+        {
+            Require(new[] { original, partial, added, removed }.All(unit => unit.Status("zeal") == null &&
+                    unit.Modifiers!.DamageBuffFromStatusEffects == 0 && unit.Triggers.Any(trigger => trigger.Kind == "OnDeathwish") &&
+                    unit.Triggers.Any(trigger => trigger.Kind == "OnDeathwishLost")) &&
+                added.Status("horde")!.Stacks == 1 && added.Health == 99999 && added.MaxHealth == 99999 &&
+                removed.Status("horde")!.Stacks == 1 && removed.Health == 99996 && removed.MaxHealth == 99996 &&
+                After(3).Spawn.Train.Context!.FindCard(original.SpawnerCardId)!.Temporary.Offsets.Health -
+                    Before(3).Spawn.Train.Context!.FindCard(original.SpawnerCardId)!.Temporary.Offsets.Health == 2,
+                "Missing direct maximum-health debuff, capped healing, lifecycle triggers or temporary spawner offset.");
+        }
+        else Require(original.Status("zeal")!.Stacks == 3 && partial.Status("zeal")!.Stacks == 2 &&
+            partial.Modifiers!.DamageBuffFromStatusEffects == 4 &&
+            added.Status("horde")!.Stacks == 1 && added.Status("zeal")!.Stacks == 4 && added.Health == 99998 && added.MaxHealth == 99999 &&
             removed.Status("horde")!.Stacks == 1 && removed.Status("zeal") == null && removed.Health == 99995 && removed.MaxHealth == 99995 &&
             removed.Modifiers!.DamageBuffFromStatusEffects == 0, "Missing unhealed addition and final removal control.");
         foreach (string duration in new[] { "ThisTurn", "ThisBattle" })
@@ -59,7 +73,10 @@ internal static class ZealHordeBattleChecks
         }
         Require(Serialize(serial.BestState) == Serialize(parallel.BestState) && Serialize(source) == parent,
             "Serial/parallel Zeal/Horde search differs or mutated its source.");
-        Console.WriteLine("ZEAL-HORDE-BATTLE PASS: five actual plays, capped four-to-one troops, three simulated deaths/Harvest, unchanged original Zeal relic, full seven-turn successors/RNG and 16 immutable branches, 128-state serial/parallel action search and executable replay.");
+        Console.WriteLine((maximumHealth ? "HORDE-MAXIMUM-BATTLE" : "ZEAL-HORDE-BATTLE") +
+            " PASS: five actual plays, capped four-to-one troops, three simulated deaths/Harvest, " +
+            (maximumHealth ? "direct health loss/healing with Deathwish triggers and spawner offset, " : "unchanged original Zeal relic, ") +
+            "full seven-turn successors/RNG and 16 immutable branches, 128-state serial/parallel action search and executable replay.");
     }
     private static string Serialize(object? value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }

@@ -456,7 +456,9 @@ param(
     [switch] $HalfHealthLifecycleOnly,
     [switch] $ZealStatusOnly,
     [switch] $ZealHordeOnly,
+    [switch] $HordeMaximumOnly,
     [switch] $ZealHordeBattle,
+    [switch] $HordeMaximumBattle,
     [switch] $DevotionOnly,
     [switch] $RelentlessOnly,
     [switch] $HalfHealthMaximumOnly,
@@ -1401,6 +1403,7 @@ if ($DevoteBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Po
 if ($FloorDamageBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($RelentlessBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($ZealHordeBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($HordeMaximumBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDeathwishAttack) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStealthSlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1443,11 +1446,11 @@ if ($DevotionOnly) {
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $devotionArguments }).Count) { throw 'Devotion requires an isolated component mode.' }
     $Policy = 'steward-once'; $BranchCardMasks = $true
 }
-if ($ZealStatusOnly -or $ZealHordeOnly) {
-    $zealArguments = @('ZealStatusOnly', 'ZealHordeOnly', 'Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'CaptureJson', 'SkipBuild',
+if ($ZealStatusOnly -or $ZealHordeOnly -or $HordeMaximumOnly) {
+    $zealArguments = @('ZealStatusOnly', 'ZealHordeOnly', 'HordeMaximumOnly', 'Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'CaptureJson', 'SkipBuild',
         'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction', 'ProgressAction', 'ErrorVariable', 'WarningVariable',
         'InformationVariable', 'OutVariable', 'OutBuffer', 'PipelineVariable')
-    if (($ZealStatusOnly -and $ZealHordeOnly) -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $zealArguments }).Count) { throw 'Zeal lifecycle requires one isolated component mode.' }
+    if (([int][bool]$ZealStatusOnly + [int][bool]$ZealHordeOnly + [int][bool]$HordeMaximumOnly) -ne 1 -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $zealArguments }).Count) { throw 'Health/status lifecycle requires one isolated component mode.' }
     $Policy = 'steward-once'
 }
 if ($HalfHealthLifecycleOnly -or $HalfHealthMaximumOnly -or $HalfHealthUpgradeOnly -or $HalfHealthUpgradeEffectsOnly -or $DamageReactionsOnly -or $DamageReactionRevivalOnly -or $DamageReactionFinalDeathOnly) {
@@ -1878,8 +1881,9 @@ $environment = @{
     MT2_PROBE_ENCHANTMENT_COMBAT_ONLY = $(if ($EnchantmentCombatOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_DEATHWISH = $(if ($HalfHealthDeathwishOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_LIFECYCLE = $(if ($HalfHealthLifecycleOnly) { '1' } else { '0' })
-    MT2_PROBE_ZEAL_STATUS = $(if ($ZealStatusOnly -or $ZealHordeOnly) { '1' } else { '0' })
-    MT2_PROBE_ZEAL_HORDE = $(if ($ZealHordeOnly) { '1' } else { '0' })
+    MT2_PROBE_ZEAL_STATUS = $(if ($ZealStatusOnly -or $ZealHordeOnly -or $HordeMaximumOnly) { '1' } else { '0' })
+    MT2_PROBE_ZEAL_HORDE = $(if ($ZealHordeOnly -or $HordeMaximumOnly) { '1' } else { '0' })
+    MT2_PROBE_HORDE_MAXIMUM = $(if ($HordeMaximumOnly) { '1' } else { '0' })
     MT2_PROBE_DEVOTION = $(if ($DevotionOnly) { '1' } else { '0' })
     MT2_PROBE_RELENTLESS = $(if ($RelentlessOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_MAXIMUM = $(if ($HalfHealthMaximumOnly) { '1' } else { '0' })
@@ -2349,6 +2353,7 @@ if ($DevoteBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'devote-battle' }
 if ($FloorDamageBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'floor-damage-battle' }
 if ($RelentlessBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'relentless-battle-' + $RelentlessBattle.ToLowerInvariant() }
 if ($ZealHordeBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'zeal-horde-battle' }
+if ($HordeMaximumBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'horde-maximum-battle' }
 if ($OriginalDeathwishAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deathwish-attack' }
 if ($OriginalStealthSlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-stealth-slay' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
@@ -2493,8 +2498,8 @@ if ($DevotionOnly) {
         ModelAcceptance='Pending independent focused checker'; Trace=$devotionPath } | ConvertTo-Json
     return
 }
-if ($ZealStatusOnly -or $ZealHordeOnly) {
-    $zealPath = Join-Path $profile $(if ($ZealHordeOnly) { 'zeal-horde.mt2f' } else { 'zeal-status.mt2f' })
+if ($ZealStatusOnly -or $ZealHordeOnly -or $HordeMaximumOnly) {
+    $zealPath = Join-Path $profile $(if ($HordeMaximumOnly) { 'horde-maximum.mt2f' } elseif ($ZealHordeOnly) { 'zeal-horde.mt2f' } else { 'zeal-status.mt2f' })
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $zealPath) -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Zeal status lifecycle component captured' -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore) { throw "Zeal component failed; inspect $unityLog" }
@@ -2502,9 +2507,9 @@ if ($ZealStatusOnly -or $ZealHordeOnly) {
     $zealDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($zealPath)
     try {
         $zeal = $zealDocument.RootElement
-        if ($zeal.GetProperty('Boundary').GetString() -cne $(if ($ZealHordeOnly) { 'NativeZealHordeLifecycle' } else { 'NativeZealStatusLifecycle' }) -or
+        if ($zeal.GetProperty('Boundary').GetString() -cne $(if ($HordeMaximumOnly) { 'NativeHordeMaximumHealthLifecycle' } elseif ($ZealHordeOnly) { 'NativeZealHordeLifecycle' } else { 'NativeZealStatusLifecycle' }) -or
             -not $zeal.GetProperty('LiveContextUnchanged').GetBoolean() -or -not $zeal.GetProperty('EffectsDrained').GetBoolean() -or
-            $zeal.GetProperty('Mismatches').GetInt32() -ne 0 -or $zeal.GetProperty('Samples').GetArrayLength() -ne $(if ($ZealHordeOnly) { 13 } else { 19 })) {
+            $zeal.GetProperty('Mismatches').GetInt32() -ne 0 -or $zeal.GetProperty('Samples').GetArrayLength() -ne $(if ($HordeMaximumOnly) { 22 } elseif ($ZealHordeOnly) { 13 } else { 19 })) {
             throw 'Incomplete Zeal status lifecycle component.'
         }
     } finally { $zealDocument.Dispose() }
@@ -2928,6 +2933,13 @@ if ($ZealHordeBattle -and ($trace.ModifierScenario -cne 'zeal-horde-battle' -or
     -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
     throw 'Missing native Zeal/Horde victory, five actual inputs, settled effects or matching complete successors.'
+}
+if ($HordeMaximumBattle -and ($trace.ModifierScenario -cne 'horde-maximum-battle' -or
+    -not $trace.HordeMaximumBattle.Prepared -or -not $trace.HordeMaximumBattle.MaximumHealth -or $trace.HordeMaximumBattle.CompletedControlPlays -ne 5 -or
+    @($trace.Actions).Count -ne 5 -or @($trace.Turns).Count -ne 7 -or
+    -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
+    throw 'Missing native Horde maximum-health victory, five actual inputs, settled effects or matching complete successors.'
 }
 if ($RelentlessBattle) {
     $abandon = $RelentlessBattle -ceq 'Abandon'

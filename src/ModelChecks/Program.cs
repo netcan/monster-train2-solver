@@ -1,5 +1,15 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--horde-maximum-battle-only")
+{
+    ZealHordeBattleChecks.Native(args[1], maximumHealth: true);
+    return;
+}
+if (args.Length == 2 && args[0] == "--horde-maximum-only")
+{
+    HordeMaximumChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--zeal-horde-battle-only")
 {
     ZealHordeBattleChecks.Native(args[1]);

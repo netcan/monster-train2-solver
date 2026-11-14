@@ -62,7 +62,7 @@ internal static class ZealStatusChecks
                 "Missing independent Zeal effect/order control: " + label);
         }
     }
-    internal static void Verify(FixtureValue sample)
+    internal static void Verify(FixtureValue sample, bool maximumHealth = false)
     {
         string label = sample.GetProperty("Label").GetString()!;
         Require(sample.GetProperty("Completed").GetBoolean() && sample.GetProperty("Difference").ValueKind == FixtureKind.Null &&
@@ -78,7 +78,11 @@ internal static class ZealStatusChecks
             status.ParamInt == 1, "Missing original Zeal status/relic payload: " + label);
         string parent = Serialize(before), operation = input.GetProperty("Operation").GetString()!;
         int amount = input.GetProperty("Amount").GetInt32();
-        RoomCombatResult predicted = operation == "Remove" ? StatusRemovalModel.Remove(before, id, "zeal", amount) :
+        RoomCombatResult predicted = maximumHealth ? UnitHealthModel.ApplyNative(before, id, amount,
+            debuff: operation == "DebuffMaximum", heal: input.GetProperty("Heal").GetBoolean(),
+            triggerOnHeal: input.GetProperty("TriggerOnHeal").GetBoolean(), floor: input.GetProperty("Floor").GetInt32(),
+            decreaseHp: input.GetProperty("DecreaseHp").GetBoolean(), captureAllDispatches: true) :
+            operation == "Remove" ? StatusRemovalModel.Remove(before, id, "zeal", amount) :
             StatusApplicationModel.Apply(before, id, operation == "Purify" ?
                 before.Context.StatusRules.Single(rule => rule.Id == "purify").WithStacks(1) : status.WithStacks(amount));
         Require(predicted.Supported, label + ": " + predicted.UnsupportedReason);
@@ -95,7 +99,7 @@ internal static class ZealStatusChecks
                 HalfHealthLifecycleChecks.GameplayRng(sample.GetProperty("RngAfterApi")) &&
             HalfHealthLifecycleChecks.GameplayRng(sample.GetProperty("RngBefore")) ==
                 HalfHealthLifecycleChecks.GameplayRng(sample.GetProperty("RngAfter")), "Native gameplay RNG changed: " + label);
-        Require(Serialize(before) == parent, "Zeal branch mutated its parent: " + label);
+        Require(Serialize(before) == parent, "Lifecycle branch mutated its parent: " + label);
     }
     private static string Serialize(object? value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Equal(object? predicted, FixtureValue actual, string label) => Equal(predicted, actual.ToObjectGraph(), label);

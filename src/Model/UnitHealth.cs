@@ -28,8 +28,6 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Unmodeled maximum-health buff lifetime.");
             if (!debuff && heal && amount > 0 && target.Modifiers == null) return Unsupported("Maximum-health healing requires healability state.");
             bool halfHealth = source.Units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger));
-            if ((halfHealth || triggerOnHeal) && target.Status("horde")?.Stacks > 1)
-                return Unsupported("Half-health Deathwish maximum-health changes with Horde casualties require native calibration.");
             CombatContext? context = source.Context;
             // Native records the raw signed amount on the spawner, even when the unit does not change.
             if (recordSpawner && !debuff)
@@ -55,8 +53,16 @@ namespace MonsterTrain2Poju.Model
             RoomCombatResult settled = debuff ? HordeStatusModel.SettleHealth(completed, targetId) :
                 new RoomCombatResult(completed, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
             if (!settled.Supported || !lifecycle) return settled;
-            return RoomCombatModel.ApplyMaximumHealthLifecycle(settled.State!, targetId, amount, debuff, heal, triggerOnHeal,
+            RoomCombatResult lifecycleResult = RoomCombatModel.ApplyMaximumHealthLifecycle(settled.State!, targetId, amount, debuff, heal, triggerOnHeal,
                 captureAllDispatches, refreshPyre);
+            if (!lifecycleResult.Supported) return lifecycleResult;
+            // DebuffMaxHP removes Horde casualties before TryUpdateDeathwish.
+            // Those observer callbacks remain queued ahead of the later changes.
+            return new RoomCombatResult(lifecycleResult.State, lifecycleResult.Outcome, lifecycleResult.Rounds,
+                settled.Events.Concat(lifecycleResult.Events).ToList(),
+                pendingCallbacks: settled.PendingCallbacks.Concat(lifecycleResult.PendingCallbacks).ToArray(),
+                retainedUnits: settled.RetainedUnits.Concat(lifecycleResult.RetainedUnits).ToArray(),
+                dispatches: settled.Dispatches.Concat(lifecycleResult.Dispatches).ToArray());
         }
         internal static CombatContext? RecordSpawnerBuff(CombatContext? context, CombatUnit target, int amount, string lifetime,
             bool preview, out string? error)

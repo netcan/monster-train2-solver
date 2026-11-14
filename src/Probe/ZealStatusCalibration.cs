@@ -17,6 +17,7 @@ namespace MonsterTrain2Poju.Probe
         internal const string OwnerId = "ee429978-fa41-4c66-93c6-3d3c7d5a4733";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ZEAL_STATUS") == "1";
         internal static bool Horde => Environment.GetEnvironmentVariable("MT2_PROBE_ZEAL_HORDE") == "1";
+        internal static bool HordeMaximum => Environment.GetEnvironmentVariable("MT2_PROBE_HORDE_MAXIMUM") == "1";
         internal static bool Started { get; private set; }
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
@@ -72,6 +73,43 @@ namespace MonsterTrain2Poju.Probe
             public bool Active { get; set; }
             public string? Blocker { get; set; }
             public int Horde { get; set; }
+            public bool Heal { get; set; } = true;
+            public bool TriggerOnHeal { get; set; }
+            public bool DecreaseHp { get; set; } = true;
+            public int Floor { get; set; } = 1;
+            public bool CanHeal { get; set; } = true;
+            public int HealDamage { get; set; }
+            public int GainDamage { get; set; }
+            public int LossDamage { get; set; }
+        }
+        private static Input[] HordeMaximumCases()
+        {
+            var cases = new[] {
+                new Input { Label = "horde-buff-heal-leaves-half", Hp = 7, Maximum = 15, Active = true },
+                new Input { Label = "horde-buff-heal-remains-half", Hp = 3, Maximum = 15, Active = true },
+                new Input { Label = "horde-buff-noheal-enters-half", Hp = 8, Maximum = 15, Heal = false },
+                new Input { Label = "horde-buff-cannotheal-enters-half", Hp = 8, Maximum = 15, CanHeal = false },
+                new Input { Label = "horde-buff-onheal-before-loss", Hp = 7, Maximum = 15, Active = true, TriggerOnHeal = true },
+                new Input { Label = "horde-buff-heal-multiplier", Hp = 3, Maximum = 15, Active = true, Amount = 3, Blocker = "heal multiplier" },
+                new Input { Label = "horde-buff-ignores-heal-immunity", Hp = 7, Maximum = 15, Active = true, Blocker = "heal immunity" },
+                new Input { Label = "horde-debuff-one", Operation = "DebuffMaximum", Hp = 10, Maximum = 15 },
+                new Input { Label = "horde-enemy-debuff-one", Enemy = true, Operation = "DebuffMaximum", Hp = 10, Maximum = 15 },
+                new Input { Label = "horde-debuff-two-leaves-half", Operation = "DebuffMaximum", Hp = 5, Maximum = 18, Amount = 1, DecreaseHp = false, Active = true },
+                new Input { Label = "horde-debuff-two-remains-half", Operation = "DebuffMaximum", Hp = 3, Maximum = 18, Amount = 1, DecreaseHp = false, Active = true },
+                new Input { Label = "horde-debuff-clips-hp", Operation = "DebuffMaximum", Hp = 11, Maximum = 12, DecreaseHp = false },
+                new Input { Label = "horde-debuff-floor-retains-one", Operation = "DebuffMaximum", Hp = 1, Maximum = 2, Amount = 99, DecreaseHp = false, Active = true },
+                new Input { Label = "horde-debuff-zero-keeps-wounded", Operation = "DebuffMaximum", Hp = 5, Maximum = 15, Amount = 0, Active = true },
+                new Input { Label = "horde-debuff-negative-keeps-wounded", Operation = "DebuffMaximum", Hp = 5, Maximum = 15, Amount = -2, Active = true },
+                new Input { Label = "horde-debuff-healthy", Operation = "DebuffMaximum", Hp = 15, Maximum = 18, Amount = 1 },
+                new Input { Label = "horde-buff-zero-stale-half", Hp = 5, Maximum = 15, Amount = 0 },
+                new Input { Label = "horde-buff-negative-stale-half", Hp = 5, Maximum = 15, Amount = -2 },
+                new Input { Label = "horde-buff-capped", Hp = 50000, Maximum = 99999 },
+                new Input { Label = "horde-buff-onheal-damages-troops", Hp = 7, Maximum = 15, Active = true, TriggerOnHeal = true, HealDamage = 2 },
+                new Input { Label = "horde-buff-gain-damages-troops", Hp = 8, Maximum = 15, Heal = false, GainDamage = 1 },
+                new Input { Label = "horde-buff-loss-damages-troops", Hp = 7, Maximum = 15, Active = true, LossDamage = 2 }
+            };
+            foreach (Input input in cases) { input.Horde = 3; if (input.Operation == "Add") input.Operation = "BuffMaximum"; }
+            return cases;
         }
         private static Input[] HordeCases()
         {
@@ -116,6 +154,11 @@ namespace MonsterTrain2Poju.Probe
         };
         private static IEnumerator Run(ManualLogSource log)
         {
+            if (HordeMaximum)
+            {
+                HealingScenario.RegisterHealingStatus("heal immunity", "StatusEffectHealImmunityState", 0);
+                HealingScenario.RegisterHealingStatus("heal multiplier", "StatusEffectHealMultiplierState", 2);
+            }
             var save = Managers.GetSaveManager(); var rooms = Managers.GetRoomManager();
             RelicData owner = save.GetAllGameData().GetAllCollectableRelicData().Single(data => data.GetID() == OwnerId);
             RelicEffectData effect = owner.GetEffects().Single();
@@ -155,7 +198,7 @@ namespace MonsterTrain2Poju.Probe
             try
             {
                 Set(rooms, "_allowEnchantmentUpdates", false);
-                foreach (Input input in Horde ? HordeCases() : Cases())
+                foreach (Input input in HordeMaximum ? HordeMaximumCases() : Horde ? HordeCases() : Cases())
                 {
                     Set(saveData, "runStats", Get(((SaveData)saveData).CreatePreviewCopy(), "runStats"));
                     for (int index = 0; index < statFields.Length; index++)
@@ -184,6 +227,7 @@ namespace MonsterTrain2Poju.Probe
                     Set(primary, "deathwishSources", new HashSet<CharacterTriggerState>());
                     Set(primary, "vanguardSources", new HashSet<CharacterTriggerState>());
                     AccessTools.Property(StateType, "DamageBuffFromStatusEffects").SetValue(primary, 0);
+                    if (HordeMaximum) Set(primary, "canBeHealed", input.CanHeal);
                     host.SetHealth(20, 20);
                     if (input.Horde > 0) host.AddStatusEffect("horde", input.Horde);
                     if (input.Starting > 0) host.AddStatusEffect("zeal", input.Starting);
@@ -192,6 +236,13 @@ namespace MonsterTrain2Poju.Probe
                     {
                         CharacterTriggerData data = HealingScenario.HealGold(row.Item2, false, false);
                         Set(data, "trigger", Enum.Parse(typeof(CharacterTriggerData.Trigger), row.Item1));
+                        int damageAmount = row.Item1 == "OnHeal" ? input.HealDamage : row.Item1 == "OnDeathwish" ? input.GainDamage : input.LossDamage;
+                        if (damageAmount > 0)
+                        {
+                            var damage = new CardEffectData("CardEffectDamage", null!, Team.Type.Monsters | Team.Type.Heroes);
+                            damage.Cheat_SetTargetMode(TargetMode.Self); Set(damage, "paramInt", damageAmount);
+                            ((List<CardEffectData>)Get(data, "effects")).Add(damage);
+                        }
                         var trigger = new CharacterTriggerState(); trigger.Setup(data, host.GetTeamType(), save); host.GetTriggers().Add(trigger);
                     }
                     if (input.Active) { host.SetHealth(10, 20); AccessTools.Method(typeof(CharacterState), "TryUpdateDeathwish").Invoke(host, null); }
@@ -211,7 +262,9 @@ namespace MonsterTrain2Poju.Probe
                     RoomCombatState api; CharacterTriggerDispatch[] apiDispatches; EnchantmentCallback[] pending; int[] pendingCounts; object rngApi;
                     try
                     {
-                        if (input.Operation == "Remove") host.RemoveStatusEffect("zeal", input.Amount);
+                        if (input.Operation == "BuffMaximum") yield return host.BuffMaxHP(input.Amount, input.TriggerOnHeal, heal: input.Heal);
+                        else if (input.Operation == "DebuffMaximum") yield return host.DebuffMaxHP(input.Amount, input.Floor, input.DecreaseHp);
+                        else if (input.Operation == "Remove") host.RemoveStatusEffect("zeal", input.Amount);
                         else host.AddStatusEffect(input.Operation == "Purify" ? "purify" : "zeal", input.Operation == "Purify" ? 1 : input.Amount);
                         api = Trace.Capture(host.GetCurrentRoom()); apiDispatches = dispatches.ToArray(); rngApi = HalfHealthLifecycleCalibration.Rng();
                         pending = Queue.Select(item => new EnchantmentCallback(item.character.GetCurrentRoomIndex(), Trace.UnitId(item.character),
@@ -262,13 +315,15 @@ namespace MonsterTrain2Poju.Probe
             string? restoration = HalfHealthLifecycleCalibration.Difference(original, Trace.CaptureTrain()) ??
                 HalfHealthLifecycleCalibration.Difference(rngOriginal, HalfHealthLifecycleCalibration.Rng());
             using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
-                GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId, Boundary = Horde ? "NativeZealHordeLifecycle" : "NativeZealStatusLifecycle",
+                GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId, Boundary = HordeMaximum ? "NativeHordeMaximumHealthLifecycle" : Horde ? "NativeZealHordeLifecycle" : "NativeZealStatusLifecycle",
                 OwnerDefinition = definition, LiveContextUnchanged = restoration == null, RestorationDifference = restoration, EffectsDrained = true,
-                Mismatches = mismatches, Samples = samples }))
-            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, Horde ? "zeal-horde.mt2f" : "zeal-status.mt2f"))) document.Write(output);
+                RngBefore = rngOriginal, RngAfter = HalfHealthLifecycleCalibration.Rng(), Mismatches = mismatches, Samples = samples }))
+            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, HordeMaximum ? "horde-maximum.mt2f" : Horde ? "zeal-horde.mt2f" : "zeal-status.mt2f"))) document.Write(output);
             if (restoration != null || mismatches != 0) throw new InvalidOperationException("Zeal differs: " + mismatches + "; restoration: " + restoration);
         }
         private static RoomCombatResult Predict(RoomCombatState before, int actorId, Input input, CombatStatus zeal) =>
+            input.Operation is "BuffMaximum" or "DebuffMaximum" ? UnitHealthModel.ApplyNative(before, actorId, input.Amount,
+                input.Operation == "DebuffMaximum", input.Heal, input.TriggerOnHeal, input.Floor, input.DecreaseHp, captureAllDispatches: true) :
             input.Operation == "Remove" ? StatusRemovalModel.Remove(before, actorId, "zeal", input.Amount) :
                 StatusApplicationModel.Apply(before, actorId, input.Operation == "Purify" ?
                     before.Context!.StatusRules.Single(status => status.Id == "purify").WithStacks(1) : zeal.WithStacks(input.Amount));

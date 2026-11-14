@@ -10,12 +10,14 @@ namespace MonsterTrain2Poju.Probe
     internal static class ZealHordeBattleScenario
     {
         internal const string Name = "zeal-horde-battle";
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal const string MaximumName = "horde-maximum-battle";
+        internal static bool MaximumHealth => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == MaximumName;
+        internal static bool Enabled => MaximumHealth || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Prepared { get; private set; }
         private static int[] cards = Array.Empty<int>();
         private static int step;
         private static object? ownerDefinition;
-        internal static object Evidence => new { Prepared, ControlCardIds = cards, CompletedControlPlays = step, OwnerDefinition = ownerDefinition };
+        internal static object Evidence => new { Prepared, MaximumHealth, ControlCardIds = cards, CompletedControlPlays = step, OwnerDefinition = ownerDefinition };
         private static void Set(object owner, string field, object value) => AccessTools.Field(owner.GetType(), field).SetValue(owner, value);
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
@@ -43,7 +45,14 @@ namespace MonsterTrain2Poju.Probe
             var troop = UnityEngine.Object.Instantiate(observer); troop.name = "PojuZealHordeCapUnit";
             Set(troop, "id", "fc231a51-0000-4000-8000-000000000001"); Set(troop, "health", 99999);
             Set(troop, "triggers", new List<CharacterTriggerData>());
-            Set(troop, "startingStatusEffects", new[] { new StatusEffectStackData { statusId = "horde", count = 4 },
+            if (MaximumHealth)
+            {
+                var gained = HealingScenario.HealGold(5, false, false); Set(gained, "trigger", CharacterTriggerData.Trigger.OnDeathwish);
+                var lost = HealingScenario.HealGold(7, false, false); Set(lost, "trigger", CharacterTriggerData.Trigger.OnDeathwishLost);
+                Set(troop, "triggers", new List<CharacterTriggerData> { gained, lost });
+            }
+            Set(troop, "startingStatusEffects", MaximumHealth ? new[] { new StatusEffectStackData { statusId = "horde", count = 4 } } :
+                new[] { new StatusEffectStackData { statusId = "horde", count = 4 },
                 new StatusEffectStackData { statusId = "zeal", count = 3 } });
             Set(horde.GetEffects().Single(), "paramCharacterData", troop);
             ((List<CharacterData>)AccessTools.Field(typeof(AllGameData), "characterDatas").GetValue(all)).Add(troop);
@@ -53,14 +62,21 @@ namespace MonsterTrain2Poju.Probe
                 var card = UnityEngine.Object.Instantiate(all.FindCardData(DevotionSpawnBattleScenario.VenerateId)); card.name = "PojuZealHordeInput" + index;
                 Set(card, "id", "fc231a52-0000-4000-8000-00000000000" + index); Set(card, "cost", 0);
                 var action = new CardEffectData(type, null!, Team.Type.Monsters); action.Cheat_SetTargetMode(TargetMode.DropTargetCharacter);
-                Set(action, "paramStatusEffects", new[] { new StatusEffectStackData { statusId = "zeal", count = stacks } });
+                if (MaximumHealth)
+                {
+                    Set(action, "paramInt", stacks);
+                    if (type == "CardEffectBuffMaxHealth") Set(action, "additionalParamInt1", (int)UnitUpgradeLifetimeTempOnly.TemporaryUntilEndOfBattle);
+                }
+                else Set(action, "paramStatusEffects", new[] { new StatusEffectStackData { statusId = "zeal", count = stacks } });
                 Set(card, "effects", new List<CardEffectData> { action }); Set(card, "traits", new List<CardTraitData>());
                 Set(card, "triggers", new List<CardTriggerEffectData>()); Set(card, "effectTriggers", new List<CharacterTriggerData>());
                 Set(card, "startingUpgrades", new List<CardUpgradeData>()); Set(card, "targetless", false); Set(card, "targetsRoom", true);
                 ((List<CardData>)AccessTools.Field(typeof(AllGameData), "cardDatas").GetValue(all)).Add(card);
                 return card;
             }
-            var inputs = new[] { steward, horde, Control(1, "CardEffectRemoveStatusEffect", 1),
+            var inputs = MaximumHealth ? new[] { steward, horde, Control(1, "CardEffectDebuffMaxHealth", 1),
+                Control(2, "CardEffectBuffMaxHealth", 2), Control(3, "CardEffectDebuffMaxHealth", 3) } :
+                new[] { steward, horde, Control(1, "CardEffectRemoveStatusEffect", 1),
                 Control(2, "CardEffectAddStatusEffect", 2), Control(3, "CardEffectRemoveStatusEffect", 999) };
             foreach (CardState card in manager.GetHand().ToArray()) manager.MoveCardFromHandToTopOfDeck(card);
             manager.GetDrawPile().Clear(); save.AddRelic(owner);
@@ -69,7 +85,7 @@ namespace MonsterTrain2Poju.Probe
             managers.GetCardStatistics().GetStatValue(new CardStatistics.StatValueData { trackedValue = CardStatistics.TrackedValueType.TimesPlayed,
                 cardState = manager.GetHand()[0], entryDuration = CardStatistics.EntryDuration.ThisBattle, cardTypeTarget = CardStatistics.CardTypeTarget.Any });
             FullBattleTrace.Active!.InvalidateCardRules(); Prepared = true; Set(managers.GetCombatManager(), "combatStateChanged", true);
-            log.LogInfo("ZEAL-HORDE-BATTLE-PREPARED controlled capped four-troop unit; original Zeal relic and bosses retained.");
+            log.LogInfo("HORDE-BATTLE-PREPARED maximumHealth=" + MaximumHealth + "; controlled capped four-troop unit; original Zeal relic and bosses retained.");
         }
         internal static PlayCardAction? Choose(BattleTurnState state)
         {
