@@ -54,7 +54,7 @@ namespace MonsterTrain2Poju.Probe
                 filters: new CardTargetFilters(data.GetTargetModeHealthFilter().ToString(), data.GetTargetModeStatusEffectsFilter(),
                     data.GetTargetModeStatusEffectsExcludedFilter(), data.GetTargetIgnoreBosses(),
                     data.GetTargetCharacterSubtype().IsNone ? "" : data.GetTargetCharacterSubtype().Key,
-                    excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()));
+                    excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray(), selfHealthFilter: TargetFilterProbe.HasSelfHealthFilter));
             return new EnchantmentRule(target, data.GetParamStatusEffects().Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray());
         }
         internal static EnchantmentRule? Capture(CardEffectState state)

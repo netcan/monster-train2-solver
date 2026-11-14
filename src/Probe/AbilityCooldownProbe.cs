@@ -65,7 +65,7 @@ namespace MonsterTrain2Poju.Probe
                 filters: new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
                     effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),
                     effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
-                    excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()), cooldownParameter: remove ? null : (bool?)parameter);
+                    excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray(), selfHealthFilter: TargetFilterProbe.HasSelfHealthFilter), cooldownParameter: remove ? null : (bool?)parameter);
         }
         internal sealed class Record
         {

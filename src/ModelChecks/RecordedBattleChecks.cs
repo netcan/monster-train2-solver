@@ -5,7 +5,7 @@ using MonsterTrain2Poju.Model;
 internal static class RecordedBattleChecks
 {
     // Each child starts from the previous modeled result, never the next native snapshot.
-    internal static void Native(FixtureValue root, int firstTurn = 0)
+    internal static void Native(FixtureValue root, int firstTurn = 0, Action<BattleTurnState>? completed = null)
     {
         var actions = root.GetProperty("Actions").EnumerateArray().Where(InScope).ToArray();
         var turns = root.GetProperty("Turns").EnumerateArray().Where(InScope).ToArray();
@@ -33,6 +33,7 @@ internal static class RecordedBattleChecks
                 Compare(state, turn.GetProperty("Actual").Deserialize<BattleTurnState>()!, Terminal(next.Outcome), "after EndTurn");
             }
             while (actionIndex < actions.Length) Play(actions[actionIndex++]);
+            completed?.Invoke(state);
             void Play(FixtureValue row)
             {
                 Compare(state, row.GetProperty("Before").Deserialize<BattleTurnState>()!, false, "before play");

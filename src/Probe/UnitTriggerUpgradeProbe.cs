@@ -54,7 +54,7 @@ namespace MonsterTrain2Poju.Probe
                 new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
                     effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),
                     effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
-                    excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()), scaleUpgrade: scaleUpgrade);
+                    excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray(), selfHealthFilter: TargetFilterProbe.HasSelfHealthFilter), scaleUpgrade: scaleUpgrade);
         }
     }
 }

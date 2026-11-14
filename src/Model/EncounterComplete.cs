@@ -9,6 +9,7 @@ namespace MonsterTrain2Poju.Model
         // roster order is MonsterManager.activeMonsters, independent of floors.
         public static TrainCombatResult Apply(TrainCombatState source, IReadOnlyList<int> activeMonsterOrder)
         {
+            source = EnterPhase(source);
             var roster = source.Rooms.SelectMany(room => room.Units.Select(unit => (Room: room, Unit: unit)))
                 .Where(item => item.Unit.Team == CombatTeam.Player).ToArray();
             if (activeMonsterOrder.Distinct().Count() != activeMonsterOrder.Count ||
@@ -23,5 +24,9 @@ namespace MonsterTrain2Poju.Model
             }
             return TrainCombatModel.ApplyCharacterQueue(source, queue);
         }
+        // StopCombatLoop sets the phase after the terminal combat snapshot,
+        // before MonsterManager drains encounter-complete triggers.
+        internal static TrainCombatState EnterPhase(TrainCombatState source) => source.Context?.EnergyState is BattleEnergyState energy
+            ? CardSpellModel.WithContext(source, source.Context.WithEnergyState(energy.With(phase: "EndOfCombat"))) : source;
     }
 }

@@ -468,6 +468,7 @@ param(
     [switch] $DevotionDamageBattle,
     [switch] $DevotionSpawnBattle,
     [switch] $TenaciousBattle,
+    [switch] $CelebrateHealthBattle,
     [switch] $DamagedFloorEnergyBattle,
     [switch] $DevotionLateSpawnBattle,
     [switch] $OriginalDeathwishAttack,
@@ -1381,6 +1382,7 @@ if ($DamageThresholdDrawBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints
 if ($DevotionDamageBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($TenaciousBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($DevotionLateSpawnBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($CelebrateHealthBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($DamagedFloorEnergyBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($DevotionSpawnBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDeathwishAttack) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
@@ -2312,6 +2314,7 @@ if ($DamageThresholdDrawBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-
 if ($DevotionDamageBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'devotion-damage-battle' }
 if ($TenaciousBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'tenacious-battle' }
 if ($DevotionLateSpawnBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'devotion-late-spawn-battle' }
+if ($CelebrateHealthBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'celebrate-health-battle' }
 if ($DamagedFloorEnergyBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'damaged-floor-energy-battle' }
 if ($DevotionSpawnBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'devotion-spawn-battle' }
 if ($OriginalDeathwishAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deathwish-attack' }
@@ -2796,6 +2799,18 @@ if ($DevotionLateSpawnBattle -and ($trace.ModifierScenario -cne 'devotion-late-s
     @($trace.DevotionLateSpawnBattle.Records).Count -eq 0 -or
     @($trace.DevotionLateSpawnBattle.Records | Where-Object { -not $_.Completed -or $_.Error -or $_.Difference -or $_.UnsupportedReason }).Count -ne 0)) {
     throw 'Missing original late-spawn victory, eight inputs, native gates or complete callback comparisons.'
+}
+if ($CelebrateHealthBattle -and ($trace.ModifierScenario -cne 'celebrate-health-battle' -or
+    -not $trace.CelebrateHealthBattle.Prepared -or $trace.CelebrateHealthBattle.CompletedControlPlays -ne 9 -or
+    @($trace.Actions).Count -ne 9 -or -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+    -not $trace.CelebrateHealthBattle.Calibration.Completed -or -not $trace.CelebrateHealthBattle.Calibration.LiveContextUnchanged -or
+    @($trace.CelebrateHealthBattle.Calibration.Samples).Count -ne 48 -or
+    @($trace.CelebrateHealthBattle.Calibration.Samples | Where-Object { -not $_.Completed -or $null -ne $_.Difference }).Count -ne 0 -or
+    @($trace.OriginalEquipmentGrowthEncounterComplete).Count -ne 1 -or
+    -not $trace.OriginalEquipmentGrowthEncounterComplete[0].Completed -or
+    $null -eq $trace.OriginalEquipmentGrowthEncounterComplete[0].After)) {
+    throw 'Missing celebrate-health victory, nine inputs or settled encounter-complete observation.'
 }
 if ($DamagedFloorEnergyBattle -and ($trace.ModifierScenario -cne 'damaged-floor-energy-battle' -or
     -not $trace.DamagedFloorEnergyBattle.Prepared -or $trace.DamagedFloorEnergyBattle.CompletedControlPlays -ne 8 -or

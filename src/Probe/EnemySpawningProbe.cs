@@ -222,7 +222,7 @@ namespace MonsterTrain2Poju.Probe
                 trigger.GetTriggerAtThreshold(), new CombatTriggerOrigin("", 0, false, trigger.GetOnlyTriggerIfEquipped()),
                 conditions: TriggerConditions(trigger), removeOnRelentlessChange: trigger.GetRemoveOnRelentlessChange(),
                 noCountModifiersAllowed: RelicProbe.HasTriggerCounts(AllGameManagers.Instance!) ? false : (bool?)null,
-                suppressTriggerNotification: trigger.GetTrigger() == CharacterTriggerData.Trigger.CorruptionAdded
+                suppressTriggerNotification: trigger.GetTrigger() is CharacterTriggerData.Trigger.CorruptionAdded or CharacterTriggerData.Trigger.OnEncounterComplete
                     ? trigger.IsSuppressTriggerNotification() : (bool?)null,
                 activationCondition: ConditionalActivationProbe.Activation(trigger.GetTrigger().ToString()));
         }

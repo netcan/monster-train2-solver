@@ -131,7 +131,7 @@ namespace MonsterTrain2Poju.Model
                     1, definition.Effects, definition.SkipDuringDeployment, definition.TriggerAtThreshold,
                     new CombatTriggerOrigin("", 0, false, definition.Origin?.OnlyIfEquipped == true), next++,
                     definition.Conditions, definition.RemoveOnRelentlessChange, rule.NoCountModifiersAllowed,
-                    activationCondition: definition.ActivationCondition);
+                    activationCondition: definition.ActivationCondition, suppressTriggerNotification: definition.SuppressTriggerNotification);
                 triggers.Insert(0, installed);
                 actor = actor.WithTriggerAllocation(triggers, next);
                 state = new RoomCombatState(state.RoomIndex, state.Deployment,

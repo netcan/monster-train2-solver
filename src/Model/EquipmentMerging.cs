@@ -43,7 +43,7 @@ namespace MonsterTrain2Poju.Model
                 CardTargetFilters? f = effect.Filters;
                 effects.Add(new CardActionEffect(effect.Type, target, effect.Value, effect.AllowEnemy, effect.AllowPlayer,
                     effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range,
-                    f == null ? null : new CardTargetFilters(f.Health, f.RequiredStatuses, f.ExcludedStatuses, true, f.Subtype, f.ExcludedSubtypes),
+                    f == null ? null : new CardTargetFilters(f.Health, f.RequiredStatuses, f.ExcludedStatuses, true, f.Subtype, f.ExcludedSubtypes, f.SelfHealthFilter),
                     sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe,
                     ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel, devotionLevelsPerGrant: effect.DevotionLevelsPerGrant));
             }

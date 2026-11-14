@@ -1061,6 +1061,11 @@ namespace MonsterTrain2Poju.Probe
                 DevotionLateSpawnBattleScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
+            if (fullBattle && !numericModifiersPrepared && CelebrateHealthBattleScenario.Enabled)
+            {
+                CelebrateHealthBattleScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
             if (fullBattle && !numericModifiersPrepared && DamagedFloorEnergyBattleScenario.Enabled)
             {
                 DamagedFloorEnergyBattleScenario.Prepare(managers, log);
@@ -3232,6 +3237,7 @@ namespace MonsterTrain2Poju.Probe
                 if (HalfHealthBattleScenario.Enabled) pendingPlay = HalfHealthBattleScenario.Choose(decision);
                 if (DamageReactionBattleScenario.Enabled) pendingPlay = DamageReactionBattleScenario.Choose(decision);
                 if (DevotionLateSpawnBattleScenario.Enabled) pendingPlay = DevotionLateSpawnBattleScenario.Choose(decision);
+                else if (CelebrateHealthBattleScenario.Enabled) pendingPlay = CelebrateHealthBattleScenario.Choose(decision);
                 else if (DamagedFloorEnergyBattleScenario.Enabled) pendingPlay = DamagedFloorEnergyBattleScenario.Choose(decision);
                 else if (TenaciousBattleScenario.Enabled) pendingPlay = TenaciousBattleScenario.Choose(decision);
                 else if (DevotionSpawnBattleScenario.Enabled) pendingPlay = DevotionSpawnBattleScenario.Choose(decision);
@@ -3497,6 +3503,7 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario == DevotionDamageBattleScenario.Name && DevotionDamageBattleScenario.IsScenarioAction(action)) ||
                 (modifierScenario == TenaciousBattleScenario.Name && TenaciousBattleScenario.IsScenarioAction(action)) ||
                 (modifierScenario == DevotionLateSpawnBattleScenario.Name && DevotionLateSpawnBattleScenario.IsScenarioAction(action)) ||
+                (modifierScenario == CelebrateHealthBattleScenario.Name && CelebrateHealthBattleScenario.IsScenarioAction(action)) ||
                 (modifierScenario == DamagedFloorEnergyBattleScenario.Name && DamagedFloorEnergyBattleScenario.IsScenarioAction(action)) ||
                 (modifierScenario == DevotionSpawnBattleScenario.Name && DevotionSpawnBattleScenario.IsScenarioAction(action)) ||
                 (modifierScenario == OriginalDeathwishAttackScenario.Name && OriginalDeathwishAttackScenario.IsScenarioAction(action)) ||

@@ -322,7 +322,8 @@ internal static class BattleTurnChecks
             context = context.WithQueryFrame(new StatisticQueryFrame(frame.Energy, frame.RunningCombat, frame.Turn,
                 frame.ForgePoints, frame.DragonsHoard, frame.MoonPhase, frame.PyreResurrectionCount, frame.ActiveBattle,
                 forgeTrackingActive: frame.ForgeTrackingActive, forgeToggleActive: frame.ForgeToggleActive,
-                grosMichelCombatRoundCount: frame.GrosMichelCombatRoundCount));
+                grosMichelCombatRoundCount: frame.GrosMichelCombatRoundCount,
+                forcedRelentless: frame.ForcedRelentless, devotion: frame.Devotion));
         if (context?.SpawnPoints?.NextPreviewCopyId.HasValue == true)
         {
             BattleSpawnPoints points = context.SpawnPoints;

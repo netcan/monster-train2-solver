@@ -26,7 +26,7 @@ namespace MonsterTrain2Poju.Probe
                 filters: new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
                     effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),
                     effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
-                    excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()), abilityChange: change);
+                    excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray(), selfHealthFilter: TargetFilterProbe.HasSelfHealthFilter), abilityChange: change);
         }
         internal static UnitAbilityDefinition Definition(CardData data) => new UnitAbilityDefinition(data.GetID(),
             data.IsUnitAbility(), data.GetCooldownAfterActivated(), data.GetCooldownAtSpawn(), CardGenerationProbe.Creation(data));

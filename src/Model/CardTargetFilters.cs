@@ -12,10 +12,17 @@ namespace MonsterTrain2Poju.Model
         public bool IgnoreBosses { get; }
         public string Subtype { get; }
         public IReadOnlyList<string> ExcludedSubtypes { get; }
+        // 2.3.1 added health filtering to Self; absent legacy metadata keeps
+        // the old bypass. Team/status/subtype checks still do not apply.
+        public bool SelfHealthFilter { get; }
+        public bool ShouldSerializeSelfHealthFilter() => SelfHealthFilter;
         public CardTargetFilters(string health, IReadOnlyList<string> requiredStatuses, IReadOnlyList<string> excludedStatuses,
-            bool ignoreBosses, string subtype, IReadOnlyList<string> excludedSubtypes)
+            bool ignoreBosses, string subtype, IReadOnlyList<string> excludedSubtypes, bool selfHealthFilter = false)
         { Health = health; RequiredStatuses = Array.AsReadOnly(requiredStatuses.ToArray()); ExcludedStatuses = Array.AsReadOnly(excludedStatuses.ToArray());
-            IgnoreBosses = ignoreBosses; Subtype = subtype; ExcludedSubtypes = Array.AsReadOnly(excludedSubtypes.ToArray()); }
+            IgnoreBosses = ignoreBosses; Subtype = subtype; ExcludedSubtypes = Array.AsReadOnly(excludedSubtypes.ToArray()); SelfHealthFilter = selfHealthFilter; }
+
+        internal bool MatchesSelfHealth(int health, int maxHealth) => !SelfHealthFilter ||
+            (Health != "Damaged" || health != maxHealth) && (Health != "Undamaged" || health >= maxHealth);
 
         internal string? Validate() => new[] { "Both", "Damaged", "Undamaged" }.Contains(Health) ? null : "Unknown target health filter.";
         internal bool Matches(CombatUnit unit, bool dropOverride, out string? error)

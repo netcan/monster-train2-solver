@@ -5043,7 +5043,10 @@ namespace MonsterTrain2Poju.Model
                     return new CardTargets(candidates.Where(unit => unit.LastAttackerId == actor.Source.Id).Select(unit => unit.Source.Id).ToArray());
                 }
                 if (action.Target != "Self") return CardTargetModel.Collect(CurrentRoom(), action, Array.Empty<int>(), isTesting: testing || source.Preview, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId);
-                // Native Self bypasses team, health, status, subtype and untouchable filters.
+                // Self bypasses teams/status/subtype/untouchable. Modern native
+                // target helpers additionally honor the captured health filter.
+                if (action.Filters?.MatchesSelfHealth(actor.Health, actor.Source.MaxHealth) == false)
+                    return new CardTargets(Array.Empty<int>());
                 if (action.Filters?.IgnoreBosses == true)
                 {
                     if (!actor.Source.IsBoss.HasValue) return new CardTargets(Array.Empty<int>(), "Self boss filtering requires boss state.");

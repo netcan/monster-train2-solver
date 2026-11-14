@@ -666,7 +666,7 @@ namespace MonsterTrain2Poju.Probe
                 new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
                     effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),
                     effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
-                    excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()),
+                    excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray(), selfHealthFilter: TargetFilterProbe.HasSelfHealthFilter),
                 type == "Generate" ? CardGenerationProbe.Definition(effect) : generation, type == "AdjustCapacity" && effect.GetParamBool(),
                 cardFilter: (type == "DuplicateCard" || type == "FreezeAllCards" || type == "CopyLastTurn") && effect.GetParamCardFilter() != null ? CardUpgradeMaskProbe.Rule(effect.GetParamCardFilter()) : null,
                 copyHeroStats: type == "CopyUnits" ? effect.GetParamBool() : (bool?)null,

@@ -718,7 +718,7 @@ namespace MonsterTrain2Poju.Probe
                         trigger.IsFromEquipment, data.GetOnlyTriggerIfEquipped()), Active!.TriggerStateId(unit, trigger), EnemySpawningProbe.TriggerConditions(data), data.GetRemoveOnRelentlessChange(),
                     RelicProbe.HasTriggerCounts(AllGameManagers.Instance!) ? trigger.isNoCountModifiersAllowed : (bool?)null,
                     ConditionalActivationProbe.Active(unit, trigger),
-                    trigger.GetTrigger() == CharacterTriggerData.Trigger.CorruptionAdded
+                    trigger.GetTrigger() is CharacterTriggerData.Trigger.CorruptionAdded or CharacterTriggerData.Trigger.OnEncounterComplete
                         ? data.IsSuppressTriggerNotification() || trigger.isSuppressTriggerNotificationOverride : (bool?)null,
                     activationCondition: ConditionalActivationProbe.Activation(trigger.GetTrigger().ToString()));
             }).ToArray();
@@ -1709,6 +1709,7 @@ namespace MonsterTrain2Poju.Probe
                 DamageReactionBattle = DamageReactionBattleScenario.Enabled ? DamageReactionBattleScenario.Evidence : null,
                 TenaciousBattle = TenaciousBattleScenario.Enabled ? TenaciousBattleScenario.Evidence : null,
                 DevotionLateSpawnBattle = DevotionLateSpawnBattleScenario.Enabled ? DevotionLateSpawnBattleScenario.Evidence : null,
+                CelebrateHealthBattle = CelebrateHealthBattleScenario.Enabled ? CelebrateHealthBattleScenario.Evidence : null,
                 DamagedFloorEnergyBattle = DamagedFloorEnergyBattleScenario.Enabled ? DamagedFloorEnergyBattleScenario.Evidence : null,
                 DevotionSpawnBattle = DevotionSpawnBattleScenario.Enabled ? DevotionSpawnBattleScenario.Evidence : null,
                 DevotionDamageBattle = DevotionDamageBattleScenario.Enabled ? DevotionDamageBattleScenario.Evidence : null,

@@ -191,7 +191,8 @@ namespace MonsterTrain2Poju.Model
                 return new CardTargets(Array.Empty<int>(), "Self targeting requires the retained ability actor after removal.");
             if (actor != null && effect.Filters?.IgnoreBosses == true && actor.IsBoss == null)
                 return new CardTargets(Array.Empty<int>(), "Self boss filtering requires the captured boss classification.");
-            return new CardTargets(actor == null || effect.Filters?.IgnoreBosses == true && actor.IsBoss == true
+            return new CardTargets(actor == null || effect.Filters?.MatchesSelfHealth(actor.Health, actor.MaxHealth) == false ||
+                effect.Filters?.IgnoreBosses == true && actor.IsBoss == true
                 ? Array.Empty<int>() : new[] { id });
         }
 

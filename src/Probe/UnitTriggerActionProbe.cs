@@ -128,7 +128,8 @@ namespace MonsterTrain2Poju.Probe
                 range: effect.GetUseIntRange() ? new CardEffectRange(effect.GetParamMinInt(), effect.GetParamMaxInt(), effect.GetParamMultiplier()) : null,
                 filters: new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
                     effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),
-                    effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key, Array.Empty<string>()),
+                    effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key, Array.Empty<string>(),
+                    selfHealthFilter: TargetFilterProbe.HasSelfHealthFilter),
                 spawnFallbackUnit: spawnFallback,
                 disallowStatusStackModifiers: effect.GetDisallowStatusEffectStackModifiers());
         }
@@ -171,7 +172,7 @@ namespace MonsterTrain2Poju.Probe
                 filters: new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
                     effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),
                 effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
-                    excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray()), onlyIfNoEnemies: capacity && effect.GetParamBool(),
+                    excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray(), selfHealthFilter: TargetFilterProbe.HasSelfHealthFilter), onlyIfNoEnemies: capacity && effect.GetParamBool(),
                 doNotFullyRemove: sacrifice ? effect.GetParamBool() : null,
                 removeHalfStatusEffects: removeAllStatuses ? effect.GetParamBool() : null,
                 nullTargetless: nullEffect && effect.GetParamBool2(), nullForwardSelf: nullEffect && effect.GetAdditionalParamInt() == 1,
