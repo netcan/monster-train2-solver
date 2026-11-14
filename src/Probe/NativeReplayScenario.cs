@@ -761,6 +761,10 @@ namespace MonsterTrain2Poju.Probe
                 {
                     return;
                 }
+                // The end-turn command can leave the old decision ready until
+                // its coroutine advances. Stay in the bounded wait; never
+                // accept that old decision as the completed successor.
+                if (combat!.GetTurnCount() == initialTurn + expectedTurn - 1) return;
                 if (combat!.GetTurnCount() != initialTurn + expectedTurn)
                 {
                     Finish(false, "Expected turn " + expectedTurn + ", found " + combat.GetTurnCount());
