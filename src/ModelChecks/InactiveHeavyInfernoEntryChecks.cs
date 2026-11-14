@@ -26,7 +26,7 @@ internal static class InactiveHeavyInfernoEntryChecks
                 "Room entry differs: " + result.UnsupportedReason);
         });
         Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "EndTurn mutated its parent.");
-        foreach (string control in new[] { "HeavyT3_Basic", "HeavyT3_PyreDamageIfUnblocked", "AttackerT3_Sweep", "InfernoRoom" })
+        foreach (string control in new[] { "InfernoRoom" })
         {
             JsonNode altered = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
             void Rewrite(JsonNode? node)
@@ -44,7 +44,7 @@ internal static class InactiveHeavyInfernoEntryChecks
                 "Unknown entry signature escaped its guard: " + control);
         }
         if (replay.HasValue) { Native(replay.Value); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
-        Console.WriteLine("INACTIVE-HEAVY-INFERNO-ENTRY PASS: 20 native inputs/full state/RNG, three enemy masks 5->6, four immutable branches and four signature guards; independentPair=" + replay.HasValue);
+        Console.WriteLine("INACTIVE-HEAVY-INFERNO-ENTRY PASS: 20 native inputs/full state/RNG, three enemy masks 5->6, four immutable branches and original room guard; independentPair=" + replay.HasValue);
     }
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
 }

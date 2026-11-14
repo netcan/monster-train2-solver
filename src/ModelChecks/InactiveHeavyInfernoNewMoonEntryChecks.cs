@@ -28,7 +28,7 @@ internal static class InactiveHeavyInfernoNewMoonEntryChecks
                 "New moon room entry differs: " + result.UnsupportedReason);
         });
         Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "EndTurn mutated its parent.");
-        foreach (string control in new[] { "HeavyT3_PyreDamageIfUnblocked", "InfernoRoom" })
+        foreach (string control in new[] { "InfernoRoom" })
         {
             JsonNode altered = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
             void Rewrite(JsonNode? node)
@@ -62,11 +62,13 @@ internal static class InactiveHeavyInfernoNewMoonEntryChecks
             if (control == "AssetKey") unit[control] = "HeavyT3_Basic";
             else if (control == "FireCount") unit["Triggers"]![0]!["FireCount"] = 2;
             else unit[control] = unit[control]!.GetValue<int>() + 1;
-            Require(!Move(unit.Deserialize<CombatUnit>(ModelJson.Options)!).Supported,
-                "Changed enemy signature escaped its isolated movement guard: " + control);
+            RoomAttachmentUnitSyncResult generalized = Move(unit.Deserialize<CombatUnit>(ModelJson.Options)!);
+            Require(generalized.Supported && generalized.State!.Rooms[1].Units.Single().MoonPhaseMask == 5,
+                "Original Inferno entry still depends on enemy identity or combat statistics: " + control +
+                " " + generalized.UnsupportedReason);
         }
         if (replay.HasValue) { Native(replay.Value); NativeBranchObservationChecks.Pair(fixture, replay.Value); }
-        Console.WriteLine("INACTIVE-HEAVY-INFERNO-NEW-MOON-ENTRY PASS: 47 native inputs/terminal state/RNG, two enemy masks 6->5, four immutable branches and six guards; independentPair=" + replay.HasValue);
+        Console.WriteLine("INACTIVE-HEAVY-INFERNO-NEW-MOON-ENTRY PASS: 47 native inputs/terminal state/RNG, two enemy masks 6->5, four immutable branches, original room guard and identity-independent controls; independentPair=" + replay.HasValue);
     }
 
     private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }

@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current curated inventory (2026-11-14): 2,863 binary archives with verified
+Current curated inventory (2026-11-14): 2,864 binary archives with verified
 hashes and registrations. The card evidence index accepts 1,561 battle archives
 and 31,514 native actions; three historical captures with nonzero counters stay
 excluded. All 559 intrinsically playable logbook cards have a definition-matched
@@ -42,6 +42,14 @@ an enemy with original Nightingale callbacks. Complete post-action context,
 upgrades and RNG match the independent model, including the stale New phase
 after tracking-free assignment. Other attachment upgrades and natural enemy
 ascension remain separate coverage.
+
+The original Inferno room now accepts inactive-tracking entry for cardless
+enemies with no moon callbacks by its unchanged attachment payload, independent
+of enemy asset name. An original first-wave enemy gains and loses its room
+upgrade across four Full/New Bumps; stale New understanding changes from 6 to 5.
+Two independent native captures have equal complete rows, and model context/RNG
+matches each. Callback enemies, preview and uncalibrated attachment payloads
+remain guarded; ordinary EndTurn ascension needs separate integration evidence.
 
 A further 34 original Conduit movement callbacks now match independently in
 complete context, private card trackers, physical points and gameplay RNG.

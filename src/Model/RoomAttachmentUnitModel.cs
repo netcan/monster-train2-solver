@@ -263,7 +263,9 @@ namespace MonsterTrain2Poju.Model
                     {
                         bool originalObservedEntry = inactive.MoonPhase == 1 && OriginalMushyEntry(added, previousUnit) ||
                             inactive.MoonPhase == 2 && OriginalMushyDarkEntry(added, previousUnit) ||
-                            OriginalHellfurnaceEntry(added, previousUnit, inactive.MoonPhase.Value);
+                            OriginalHellfurnaceEntry(added, previousUnit, inactive.MoonPhase.Value) ||
+                            OriginalInferno(added) && added.AffectsHeroes && previousUnit.SpawnerCardId == 0 &&
+                            previousUnit.Team == CombatTeam.Enemy;
                         if (!originalObservedEntry && ((inactive.MoonPhase == 1 && previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
                             previousUnit.AssetKey != "HeavyT3_PyreDamageIfUnblocked") ||
                             previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&

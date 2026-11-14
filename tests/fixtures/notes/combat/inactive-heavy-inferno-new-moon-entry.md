@@ -10,7 +10,8 @@ The original 0.2.391 observation and an independent 0.2.392 model replay
 match every input, comparable native successor and gameplay RNG. The focused
 checker replays the complete chain, compares terminal battle state and RNG,
 and excludes terminal card-play rules under the existing terminal convention.
-Four concurrent model branches preserve the parent. Separate identity, attack,
-health and trigger-count perturbations exercise the isolated room-entry guard;
-unknown enemy and room payloads remain unsupported. The existing signature
-still requires the original enemy trigger and original Inferno payload.
+Four concurrent model branches preserve the parent. The original room payload
+remains required. The later inactive Inferno movement calibration validates
+name-independent entry for cardless enemies without moon callbacks; identity,
+attack, health and ordinary trigger-count changes now exercise that generalized
+path in isolation. Unknown attachment payloads remain unsupported.
