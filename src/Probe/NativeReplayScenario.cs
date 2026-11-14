@@ -1593,6 +1593,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalSpellCompositionsScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OnCastGroupsBattleScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("OnCast groups must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OnCastGroupsBattleScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalPositiveStatusScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original positive status fixture must start on deployment turn.");
@@ -3253,6 +3259,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalScaledMoonPhaseScenario.Enabled) pendingPlay = OriginalScaledMoonPhaseScenario.Choose(decision, OriginalScaledMoonPhaseScenario.CardIds);
                 if (OriginalPositiveStatusScenario.Enabled) pendingPlay = OriginalPositiveStatusScenario.Choose(decision, OriginalPositiveStatusScenario.CardIds);
                 if (OriginalSpellCompositionsScenario.Enabled) pendingPlay = OriginalSpellCompositionsScenario.Choose(decision, OriginalSpellCompositionsScenario.CardIds);
+                if (OnCastGroupsBattleScenario.Enabled) pendingPlay = OnCastGroupsBattleScenario.Choose(decision);
                 if (OriginalDiscardDrawScenario.Enabled) pendingPlay = OriginalDiscardDrawScenario.Choose(decision, OriginalDiscardDrawScenario.CardIds);
                 if (OriginalMoonCardUpgradesScenario.Enabled) pendingPlay = OriginalMoonCardUpgradesScenario.Choose(decision, OriginalMoonCardUpgradesScenario.CardIds);
                 if (OriginalRoomStatusDamageScenario.Enabled) pendingPlay = OriginalRoomStatusDamageScenario.Choose(decision, OriginalRoomStatusDamageScenario.CardIds);
@@ -3807,6 +3814,7 @@ namespace MonsterTrain2Poju.Probe
             if (next == Stage.Battle && (Environment.GetEnvironmentVariable("MT2_PROBE_RANDOM_DAMAGE_CARD_HOVER") == "1" ||
                     Environment.GetEnvironmentVariable("MT2_PROBE_DAMAGE_CARD_COMPOSITIONS") == "1" ||
                     Environment.GetEnvironmentVariable("MT2_PROBE_HEALING_DAMAGE_CARD_HOVER") == "1" ||
+                    Environment.GetEnvironmentVariable("MT2_PROBE_ONCAST_GROUPS_CARD_HOVER") == "1" ||
                     Environment.GetEnvironmentVariable("MT2_PROBE_DAMAGE_CARD_BOUNDARIES") == "1"))
                 seconds = Math.Max(seconds, 300f); // Bounded native card-hover calibration batches.
             // Planning and its independent full-path verification share this

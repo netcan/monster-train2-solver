@@ -46,10 +46,12 @@ namespace MonsterTrain2Poju.Model
                 rule.ExternalInteractions.Count != 0 || rule.Equipment != null || rule.Ability != null ||
                 rule.SpawnUnit != null || rule.Summon != null || rule.HasKillTriggers ||
                 rule.Effects.Count == 0 || rule.Effects.Concat(rule.OnCastEffects).Any(effect =>
-                    effect.Type is not ("BuffHealth" or "DebuffHealth" or "Damage" or "Heal") || effect.Target is not ("DropTargetCharacter" or "Room")))
+                    effect.Type is not ("BuffHealth" or "DebuffHealth" or "Damage" or "Heal") ||
+                    effect.Target is not ("DropTargetCharacter" or "Room") &&
+                        !(effect.Type is "Damage" or "Heal" && effect.Target == "LastTargetedCharacters")))
                 return new CardHoverPreviewResult("Card hover currently requires calibrated maximum-health, damage or healing spell effects.");
             if (rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Type is "Damage" or "Heal") &&
-                (links != null || rule.OnCastEffects.Count > 1 ||
+                (links != null || rule.OnCastEffects.Count > 1 && rule.OnCastEffectGroupSizes == null ||
                     rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Type is not ("Damage" or "Heal"))))
                 return new CardHoverPreviewResult("Damage/healing hover requires damage/healing main/OnCast effects and no linked bodies.");
             if (action.Operation != null || action.ActivatorUnitId != 0 || action.MixSelections.Count != 0 ||
@@ -63,6 +65,8 @@ namespace MonsterTrain2Poju.Model
                 return new CardHoverPreviewResult("Card hover with card traits or upgrades requires native calibration.");
             // Even empty native damage modifier planes clamp negative endpoints.
             rule = CardModifierModel.Resolve(rule, hovered);
+            string? groupError = CardTriggerGroupModel.Validate(rule.OnCastEffectGroupSizes, rule.OnCastEffects.Count);
+            if (groupError != null) return new CardHoverPreviewResult(groupError);
             if (rule.ExternalInteractions.Count != 0)
                 return new CardHoverPreviewResult("Card hover modifiers: " + string.Join("; ", rule.ExternalInteractions));
             string? rangeError = rule.Effects.Concat(rule.OnCastEffects).Select(effect => effect.Range?.Validate()).FirstOrDefault(error => error != null);
@@ -104,7 +108,7 @@ namespace MonsterTrain2Poju.Model
             // damage/healing effects in one queue and derive drop overrides from main only.
             TrainSpellResult effects = continuousEffects
                 ? CardSpellModel.ApplyCardHoverEffects(copied, action.RoomIndex, rule.Effects.Concat(rule.OnCastEffects).ToArray(),
-                    action.TargetUnitId, action.CardInstanceId, dropOverride, rule.Effects.Count)
+                    action.TargetUnitId, action.CardInstanceId, dropOverride, rule.Effects.Count, rule.OnCastEffectGroupSizes)
                 : CardSpellModel.Apply(copied, action.RoomIndex, rule.Effects, action.TargetUnitId, action.CardInstanceId);
             if (!effects.Supported) return new CardHoverPreviewResult("Card hover main effects: " + effects.UnsupportedReason);
             TrainCombatState after = effects.State!;

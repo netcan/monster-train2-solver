@@ -54,6 +54,7 @@ namespace MonsterTrain2Poju.Model
                 original.UpgradeInteractions, original.HandDiscardInteractions, original.HandConsumeInteractions, original.CostType, equipment,
                 cardType: original.CardType, isAnyAbility: original.IsAnyAbility, canPlayInEngineRoom: original.CanPlayInEngineRoom,
                 onCastEffects: original.OnCastEffects, onUnplayedNegativeEffects: original.OnUnplayedNegativeEffects,
+                onCastEffectGroupSizes: original.OnCastEffectGroupSizes,
                 unplayedNegativeOrder: original.UnplayedNegativeOrder, hasUnsupportedUnplayedTriggers: original.HasUnsupportedUnplayedTriggers,
                 forgeEligible: original.ForgeEligible, hasKillTriggers: original.HasKillTriggers, onForgeEffects: original.OnForgeEffects);
         }

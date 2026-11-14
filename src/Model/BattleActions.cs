@@ -213,6 +213,8 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<string>? HandDiscardInteractions { get; }
         public IReadOnlyList<string>? HandConsumeInteractions { get; }
         public IReadOnlyList<CardActionEffect> OnCastEffects { get; }
+        public IReadOnlyList<int>? OnCastEffectGroupSizes { get; }
+        public bool ShouldSerializeOnCastEffectGroupSizes() => OnCastEffectGroupSizes != null;
         public IReadOnlyList<CardActionEffect>? OnForgeEffects { get; }
         public IReadOnlyList<CardActionEffect> OnUnplayedNegativeEffects { get; }
         public int? UnplayedNegativeOrder { get; }
@@ -230,7 +232,7 @@ namespace MonsterTrain2Poju.Model
             bool? canPlayInEngineRoom = null, IReadOnlyList<CardActionEffect>? onCastEffects = null,
             IReadOnlyList<CardActionEffect>? onUnplayedNegativeEffects = null, int? unplayedNegativeOrder = null,
             bool hasUnsupportedUnplayedTriggers = false, bool? forgeEligible = null, bool hasKillTriggers = false,
-            IReadOnlyList<CardActionEffect>? onForgeEffects = null)
+            IReadOnlyList<CardActionEffect>? onForgeEffects = null, IReadOnlyList<int>? onCastEffectGroupSizes = null)
         {
             DataId = dataId; AssetKey = assetKey; Cost = cost; CostType = costType; Effect = effect; Destination = destination;
             Equipment = equipment; Ability = ability; CardType = cardType; IsAnyAbility = isAnyAbility; CanPlayInEngineRoom = canPlayInEngineRoom;
@@ -238,6 +240,7 @@ namespace MonsterTrain2Poju.Model
             Summon = summon;
             Effects = Array.AsReadOnly((effects ?? Array.Empty<CardActionEffect>()).ToArray());
             OnCastEffects = Array.AsReadOnly((onCastEffects ?? Array.Empty<CardActionEffect>()).ToArray());
+            OnCastEffectGroupSizes = onCastEffectGroupSizes == null ? null : Array.AsReadOnly(onCastEffectGroupSizes.ToArray());
             OnForgeEffects = onForgeEffects == null ? null : Array.AsReadOnly(onForgeEffects.ToArray());
             OnUnplayedNegativeEffects = Array.AsReadOnly((onUnplayedNegativeEffects ?? Array.Empty<CardActionEffect>()).ToArray());
             UnplayedNegativeOrder = unplayedNegativeOrder;
@@ -251,11 +254,11 @@ namespace MonsterTrain2Poju.Model
         internal CardPlayRule WithSpawn(CombatUnit unit) => new CardPlayRule(DataId, AssetKey, Cost, Effect, Destination,
             unit, ExternalInteractions, Effects, UpgradeInteractions, HandDiscardInteractions, HandConsumeInteractions, CostType, Equipment, Ability, Summon,
             CardType, IsAnyAbility, CanPlayInEngineRoom, OnCastEffects, OnUnplayedNegativeEffects, UnplayedNegativeOrder,
-            HasUnsupportedUnplayedTriggers, ForgeEligible, HasKillTriggers, OnForgeEffects);
+            HasUnsupportedUnplayedTriggers, ForgeEligible, HasKillTriggers, OnForgeEffects, OnCastEffectGroupSizes);
         internal CardPlayRule WithForgeEligibility(bool? eligible) => new CardPlayRule(DataId, AssetKey, Cost, Effect, Destination,
             SpawnUnit, ExternalInteractions, Effects, UpgradeInteractions, HandDiscardInteractions, HandConsumeInteractions, CostType, Equipment, Ability, Summon,
             CardType, IsAnyAbility, CanPlayInEngineRoom, OnCastEffects, OnUnplayedNegativeEffects, UnplayedNegativeOrder,
-            HasUnsupportedUnplayedTriggers, eligible, HasKillTriggers, OnForgeEffects);
+            HasUnsupportedUnplayedTriggers, eligible, HasKillTriggers, OnForgeEffects, OnCastEffectGroupSizes);
     }
 
     public sealed class ForgeUpgradeModifier
@@ -903,6 +906,7 @@ namespace MonsterTrain2Poju.Model
                 TrainSpellResult result = CardSpellModel.ApplyForCardPlay(train, action.RoomIndex, rule.OnCastEffects,
                     action.TargetUnitId, card.InstanceId, source.PlayRules, piles, recursionSelections: onCastSelections,
                     onCastEffects: true, priorTargets: lastMainTargets,
+                    onCastEffectGroupSizes: rule.OnCastEffectGroupSizes,
                     retainedDropTarget: retainedSpellUnits.LastOrDefault(unit => unit.Id == action.TargetUnitId));
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 foreach (CombatEvent damage in result.Events.Where(item => item.Kind == "Spell" && item.Amount > 0))

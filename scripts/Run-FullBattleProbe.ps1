@@ -281,6 +281,7 @@ param(
     [switch] $OriginalScaledMoonPhase,
     [switch] $OriginalPositiveStatus,
     [switch] $OriginalSpellCompositions,
+    [switch] $OnCastGroupsBattle,
     [switch] $OriginalDiscardDraw,
     [switch] $OriginalMoonCardUpgrades,
     [switch] $OriginalMoonCardUpgradesLiveRelics,
@@ -469,6 +470,7 @@ param(
     [switch] $DamageCardPreviewCompositions,
     [switch] $DamageCardPreviewBoundaries,
     [switch] $DamageCardPreviewHealing,
+    [switch] $DamageCardPreviewGroups,
     [Alias('DamageCardPreviewTeam')]
     [ValidateSet('Player', 'Enemy')]
     [string] $MaximumHealthLethalPreviewTeam = 'Player',
@@ -1223,6 +1225,7 @@ if ($OriginalScaledDamage) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $t
 if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OnCastGroupsBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDiscardDraw) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoonCardUpgradesThresholdRelic) {
     if ($OriginalMoonCardUpgradesCostRelic -or $OriginalMoonCardUpgradesAttackRelic -or $OriginalMoonCardUpgradesHealingRelic -or
@@ -1497,11 +1500,12 @@ if ($DamageCardPreviewRandom -and (-not $DamageCardPreviewOnly -or $DamageCardPr
 if ($DamageCardPreviewCompositions -and (-not $DamageCardPreviewOnly -or $DamageCardPreviewExtended -or $DamageCardPreviewRandom)) { throw 'Damage compositions require DamageCardPreviewOnly and cannot combine with Extended or Random.' }
 if ($DamageCardPreviewBoundaries -and (-not $DamageCardPreviewOnly -or $DamageCardPreviewExtended -or $DamageCardPreviewRandom -or $DamageCardPreviewCompositions)) { throw 'Damage composition boundaries require DamageCardPreviewOnly and no other damage-hover modifier.' }
 if ($DamageCardPreviewHealing -and (-not $DamageCardPreviewOnly -or $DamageCardPreviewExtended -or $DamageCardPreviewRandom -or $DamageCardPreviewCompositions -or $DamageCardPreviewBoundaries)) { throw 'Healing/damage compositions require DamageCardPreviewOnly and no other damage-hover modifier.' }
+if ($DamageCardPreviewGroups -and (-not $DamageCardPreviewOnly -or $DamageCardPreviewExtended -or $DamageCardPreviewRandom -or $DamageCardPreviewCompositions -or $DamageCardPreviewBoundaries -or $DamageCardPreviewHealing)) { throw 'OnCast groups require DamageCardPreviewOnly and no other damage-hover modifier.' }
 if ($PSBoundParameters.ContainsKey('MaximumHealthLethalPreviewTeam') -and -not ($MaximumHealthLethalPreviewOnly -or $DamageCardPreviewOnly)) {
     throw 'A card-hover target team requires MaximumHealthLethalPreviewOnly or DamageCardPreviewOnly.'
 }
 if ($MaximumHealthLethalPreviewOnly -or $DamageCardPreviewOnly -or $HalfHealthLifecycleOnly -or $HalfHealthMaximumOnly -or $HalfHealthUpgradeOnly -or $HalfHealthUpgradeEffectsOnly -or $DamageReactionsOnly -or $DamageReactionRevivalOnly -or $DamageReactionFinalDeathOnly) {
-    $lifecycleArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'MaximumHealthLethalPreviewOnly', 'DamageCardPreviewOnly', 'DamageCardPreviewExtended', 'DamageCardPreviewRandom', 'DamageCardPreviewCompositions', 'DamageCardPreviewBoundaries', 'DamageCardPreviewHealing', 'MaximumHealthLethalPreviewTeam', 'HalfHealthLifecycleOnly', 'HalfHealthMaximumOnly', 'HalfHealthUpgradeOnly', 'HalfHealthUpgradeEffectsOnly', 'DamageReactionsOnly', 'DamageReactionRevivalOnly', 'DamageReactionFinalDeathOnly',
+    $lifecycleArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'MaximumHealthLethalPreviewOnly', 'DamageCardPreviewOnly', 'DamageCardPreviewExtended', 'DamageCardPreviewRandom', 'DamageCardPreviewCompositions', 'DamageCardPreviewBoundaries', 'DamageCardPreviewHealing', 'DamageCardPreviewGroups', 'MaximumHealthLethalPreviewTeam', 'HalfHealthLifecycleOnly', 'HalfHealthMaximumOnly', 'HalfHealthUpgradeOnly', 'HalfHealthUpgradeEffectsOnly', 'DamageReactionsOnly', 'DamageReactionRevivalOnly', 'DamageReactionFinalDeathOnly',
         'BinaryCapture', 'CaptureJson', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction',
         'ProgressAction', 'ErrorVariable', 'WarningVariable', 'InformationVariable', 'OutVariable', 'OutBuffer', 'PipelineVariable')
     if (@($MaximumHealthLethalPreviewOnly, $DamageCardPreviewOnly, $HalfHealthLifecycleOnly, $HalfHealthMaximumOnly, $HalfHealthUpgradeOnly, $HalfHealthUpgradeEffectsOnly, $DamageReactionsOnly, $DamageReactionRevivalOnly, $DamageReactionFinalDeathOnly | Where-Object { $_ }).Count -ne 1 -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $lifecycleArguments }).Count) {
@@ -1925,8 +1929,8 @@ $environment = @{
     MT2_PROBE_BINARY_CAPTURE = $(if ($BinaryCapture) { '1' } else { '0' })
     MT2_PROBE_CAPTURE_JSON = $(if ($CaptureJson) { '1' } else { '0' })
     MT2_PROBE_NO_TIMEOUT = '1'
-    MT2_PROBE_ISOLATE_PREVIEW_RNG = $(if ($TriggeredStatus -or $PersistentEnchantments -or $OriginalSupportUnits -or $OriginalDivineDancer -or $OriginalIsolatedUnitBatch -or $OriginalIsolatedColdstrikeSiren -or $isolatedUnitIds.Count -gt 0) { '1' } else { '0' })
-    MT2_PROBE_ISOLATE_UI_RNG = $(if ($CompanionBoss -or $ConditionalTriggers -or $DetachedBonusDraw -or $RoomCapacity -or $RoomCapacityLethal -or $RoomCapacityAttachment -or $BonusDraw -or $BonusDrawLethal -or $NumericRanges -or $NumericRangesLethal -or $Drawing -or $TriggeredHealing -or $PostCombatHealing -or $TriggeredDamage -or $DamageDeathQueue -or $TerminalDeathDamage -or $HitKill -or $DyingUpgrades -or $AttackTriggers -or $TriggeredStatus) { '1' } else { '0' })
+    MT2_PROBE_ISOLATE_PREVIEW_RNG = $(if ($OnCastGroupsBattle -or $TriggeredStatus -or $PersistentEnchantments -or $OriginalSupportUnits -or $OriginalDivineDancer -or $OriginalIsolatedUnitBatch -or $OriginalIsolatedColdstrikeSiren -or $isolatedUnitIds.Count -gt 0) { '1' } else { '0' })
+    MT2_PROBE_ISOLATE_UI_RNG = $(if ($OnCastGroupsBattle -or $CompanionBoss -or $ConditionalTriggers -or $DetachedBonusDraw -or $RoomCapacity -or $RoomCapacityLethal -or $RoomCapacityAttachment -or $BonusDraw -or $BonusDrawLethal -or $NumericRanges -or $NumericRangesLethal -or $Drawing -or $TriggeredHealing -or $PostCombatHealing -or $TriggeredDamage -or $DamageDeathQueue -or $TerminalDeathDamage -or $HitKill -or $DyingUpgrades -or $AttackTriggers -or $TriggeredStatus) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_QUERIES = $(if ($StatisticQueries) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_OVERFLOW = $(if ($StatisticOverflow) { '1' } else { '0' })
     MT2_PROBE_MONSTER_DAMAGE_STATISTICS = $(if ($MonsterDamageStatistics) { '1' } else { '0' })
@@ -1941,6 +1945,7 @@ $environment = @{
     MT2_PROBE_COMPOSITE_DAMAGE_CARD_HOVER = $(if ($DamageCardPreviewExtended) { '1' } else { '0' })
     MT2_PROBE_RANDOM_DAMAGE_CARD_HOVER = $(if ($DamageCardPreviewRandom) { '1' } else { '0' })
     MT2_PROBE_HEALING_DAMAGE_CARD_HOVER = $(if ($DamageCardPreviewHealing) { '1' } else { '0' })
+    MT2_PROBE_ONCAST_GROUPS_CARD_HOVER = $(if ($DamageCardPreviewGroups) { '1' } else { '0' })
     MT2_PROBE_DAMAGE_CARD_COMPOSITIONS = $(if ($DamageCardPreviewCompositions) { '1' } else { '0' })
     MT2_PROBE_DAMAGE_CARD_BOUNDARIES = $(if ($DamageCardPreviewBoundaries) { '1' } else { '0' })
     MT2_PROBE_MAXIMUM_HEALTH_LETHAL_PREVIEW_ENEMY = $(if (($MaximumHealthLethalPreviewOnly -or $DamageCardPreviewOnly) -and $MaximumHealthLethalPreviewTeam -eq 'Enemy') { '1' } else { '0' })
@@ -2174,6 +2179,7 @@ if ($OriginalKillResource) {
 if ($OriginalScaledMoonPhase) { $environment['MT2_PROBE_MODIFIERS'] = 'original-scaled-moon-phase' }
 if ($OriginalPositiveStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-positive-status' }
 if ($OriginalSpellCompositions) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spell-compositions' }
+if ($OnCastGroupsBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'oncast-groups-battle' }
 if ($OriginalDiscardDraw) { $environment['MT2_PROBE_MODIFIERS'] = 'original-discard-draw' }
 if ($OriginalMoonCardUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-card-upgrades' }
 if ($OriginalMoonCardUpgradesLiveRelics) { $environment['MT2_PROBE_MOON_UPGRADE_LIVE_RELICS'] = '1' }
@@ -2492,10 +2498,10 @@ Wait-NativeBattleExit -Process $process -Timer $nativeTimer -UnityLog $unityLog 
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
 if ($MaximumHealthLethalPreviewOnly -or $DamageCardPreviewOnly) {
-    $hoverFile = if ($DamageCardPreviewHealing) { 'healing-damage-card-preview.mt2f' } elseif ($DamageCardPreviewBoundaries) { 'damage-card-preview-boundaries.mt2f' } elseif ($DamageCardPreviewCompositions) { 'damage-card-preview-compositions.mt2f' } elseif ($DamageCardPreviewRandom) { 'damage-card-preview-random.mt2f' } elseif ($DamageCardPreviewExtended) { 'damage-card-preview-extended.mt2f' } elseif ($DamageCardPreviewOnly) { 'damage-card-preview.mt2f' } else { 'maximum-health-lethal-preview.mt2f' }
-    $hoverBoundary = if ($DamageCardPreviewHealing) { 'NativeHealingDamageCardHover' } elseif ($DamageCardPreviewBoundaries) { 'NativeDamageCompositionBoundaryCardHover' } elseif ($DamageCardPreviewCompositions) { 'NativeDamageCompositionCardHover' } elseif ($DamageCardPreviewRandom) { 'NativeRandomDamageCardHover' } elseif ($DamageCardPreviewExtended) { 'NativeCompositeDamageCardHover' } elseif ($DamageCardPreviewOnly) { 'NativeDirectDamageCardHover' } else { 'NativeMaximumHealthLethalCardHover' }
+    $hoverFile = if ($DamageCardPreviewGroups) { 'oncast-groups-card-preview.mt2f' } elseif ($DamageCardPreviewHealing) { 'healing-damage-card-preview.mt2f' } elseif ($DamageCardPreviewBoundaries) { 'damage-card-preview-boundaries.mt2f' } elseif ($DamageCardPreviewCompositions) { 'damage-card-preview-compositions.mt2f' } elseif ($DamageCardPreviewRandom) { 'damage-card-preview-random.mt2f' } elseif ($DamageCardPreviewExtended) { 'damage-card-preview-extended.mt2f' } elseif ($DamageCardPreviewOnly) { 'damage-card-preview.mt2f' } else { 'maximum-health-lethal-preview.mt2f' }
+    $hoverBoundary = if ($DamageCardPreviewGroups) { 'NativeOnCastGroupsCardHover' } elseif ($DamageCardPreviewHealing) { 'NativeHealingDamageCardHover' } elseif ($DamageCardPreviewBoundaries) { 'NativeDamageCompositionBoundaryCardHover' } elseif ($DamageCardPreviewCompositions) { 'NativeDamageCompositionCardHover' } elseif ($DamageCardPreviewRandom) { 'NativeRandomDamageCardHover' } elseif ($DamageCardPreviewExtended) { 'NativeCompositeDamageCardHover' } elseif ($DamageCardPreviewOnly) { 'NativeDirectDamageCardHover' } else { 'NativeMaximumHealthLethalCardHover' }
     $hoverPass = if ($DamageCardPreviewOnly) { 'DEPTH-PASS Direct-damage card preview component captured' } else { 'DEPTH-PASS Maximum-health lethal card preview component captured' }
-    $hoverCount = if ($DamageCardPreviewHealing) { 640 } elseif ($DamageCardPreviewBoundaries) { 192 } elseif ($DamageCardPreviewCompositions) { 384 } elseif ($DamageCardPreviewRandom) { 512 } elseif ($DamageCardPreviewExtended) { 96 } elseif ($DamageCardPreviewOnly) { 32 } else { 16 }
+    $hoverCount = if ($DamageCardPreviewGroups) { 576 } elseif ($DamageCardPreviewHealing) { 640 } elseif ($DamageCardPreviewBoundaries) { 192 } elseif ($DamageCardPreviewCompositions) { 384 } elseif ($DamageCardPreviewRandom) { 512 } elseif ($DamageCardPreviewExtended) { 96 } elseif ($DamageCardPreviewOnly) { 32 } else { 16 }
     $capturePath = Join-Path $profile $hoverFile
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or
         -not (Select-String -LiteralPath $unityLog -Pattern $hoverPass -Quiet) -or
@@ -4016,6 +4022,10 @@ if ($OriginalDiscardDraw -and (-not $trace.OriginalDiscardDrawPrepared -or -not 
 }
 if ($OriginalSpellCompositions -and (-not $trace.OriginalSpellCompositionsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 10)) {
     throw 'Original spell compositions coverage incomplete.'
+}
+if ($OnCastGroupsBattle -and (-not $trace.OnCastGroupsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 10 -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
+    throw 'OnCast groups lack all eight control plays, a native victory or complete matching successors.'
 }
 if ($OriginalPositiveStatus -and (-not $trace.OriginalPositiveStatusPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 10 -or
     @($trace.OriginalPositiveStatusQueries).Count -ne 4 -or -not $trace.OriginalPositiveStatusQueriesUnchanged -or

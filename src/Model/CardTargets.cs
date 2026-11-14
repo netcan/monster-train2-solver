@@ -28,7 +28,7 @@ namespace MonsterTrain2Poju.Model
         public static CardTargets Collect(TrainCombatState train, int roomIndex, CardActionEffect effect, IReadOnlyList<int> lastTargets,
             CombatTeam? dropTeam = null, int dropPosition = -1, bool firstEffect = false, bool isTesting = false, int? pyreRoomIndex = null,
             IReadOnlyDictionary<int, int>? pendingDeadRooms = null, IReadOnlyDictionary<int, int>? unitPositions = null, int selfUnitId = 0,
-            bool ignorePyre = true, int lastSacrificedUnitId = 0)
+            bool ignorePyre = true, int lastSacrificedUnitId = 0, bool dropOverride = true)
         {
             RoomCombatState? room = train.Rooms.FirstOrDefault(item => item.RoomIndex == roomIndex);
             if (room == null) return new CardTargets(Array.Empty<int>(), "The selected target room does not exist.");
@@ -104,7 +104,7 @@ namespace MonsterTrain2Poju.Model
                 room = new RoomCombatState(roomIndex, room.Deployment, train.Rooms.SelectMany(item => item.Units).ToArray(),
                     Array.Empty<string>(), train.Context, room.Preview, room.ActiveCompanionBossIds);
             return Collect(room, effect, lastTargets, dropTeam, dropPosition, firstEffect, isTesting,
-                ignorePyre: ignorePyre, lastSacrificedUnitId: lastSacrificedUnitId, unitPositions: unitPositions);
+                ignorePyre: ignorePyre, lastSacrificedUnitId: lastSacrificedUnitId, unitPositions: unitPositions, dropOverride: dropOverride);
         }
 
         public static CardTargets Collect(RoomCombatState room, CardActionEffect effect, IReadOnlyList<int> lastTargets,

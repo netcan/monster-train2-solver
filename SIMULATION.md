@@ -7,7 +7,21 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
-The 2.3.1 card-hover protocol additionally has 1280 native healing/damage controls:
+The 2.3.1 spell engine now preserves ordered OnCast effect groups, group-local
+cancellation and shared target history. Native evidence covers 1152 damage/healing
+hovers with 16 immutable branches each, plus ten actual plays and five EndTurns
+to a native victory. All capture/mismatch/unsupported/pending counters are zero;
+continuous replay and serial/parallel search at 128 states match. The hover matrix
+contains 1536 quantity tests, 1600 application draws and 64 observable examples
+where flattening groups cancels a later group incorrectly. Binary evidence and
+targeted validation live in `scripts/Check-Game231OnCastGroups.ps1`.
+The independently committed queued attack-statistics correction has ten native
+stages and 32 branches each; see [its evidence](docs/queued-attack-statistics.md).
+Linked bodies, other hover effect types, card traits/upgrades and active callbacks
+still require further calibration. These authored controls do not increase the
+original-card/relic coverage or complete the 614-card/236-relic migration.
+
+The earlier card-hover protocol has 1280 native healing/damage controls:
 targeted/room healing, both effect orders, main/OnCast combinations, zero healing,
 immunity and post-lethal healing, with ordinary/Horde/Undying/half-health and armor.
 Healing samples its quantity only during application, still notifies OnHeal when
@@ -16,7 +30,7 @@ copies reset callback flags once; subsequent healing preserves those flags.
 The same continuous spell engine retains native queue timing and main-driven
 drop overrides. Binary evidence and optional per-team validation live in
 `scripts/Check-Game231HealingDamagePreview.ps1`. Linked healing, maximum-health
-combinations, multiple OnCast effects, traits, upgrades and other callbacks remain
+combinations, uncaptured OnCast partitions, traits, upgrades and other callbacks remain
 separate; authored controls do not increase original-card or relic coverage.
 All 1280 roots and 16 immutable branches each pass, including 448 damage tests,
 704 healing draws and 448 damage application draws. Release builds and focused

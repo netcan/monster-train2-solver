@@ -16,8 +16,9 @@ namespace MonsterTrain2Poju.Probe
         private static bool CompositeDamage => DirectDamage && Environment.GetEnvironmentVariable("MT2_PROBE_COMPOSITE_DAMAGE_CARD_HOVER") == "1";
         private static bool RandomDamage => DirectDamage && Environment.GetEnvironmentVariable("MT2_PROBE_RANDOM_DAMAGE_CARD_HOVER") == "1";
         private static bool HealingDamage => DirectDamage && Environment.GetEnvironmentVariable("MT2_PROBE_HEALING_DAMAGE_CARD_HOVER") == "1";
+        private static bool GroupedDamage => DirectDamage && Environment.GetEnvironmentVariable("MT2_PROBE_ONCAST_GROUPS_CARD_HOVER") == "1";
         private static bool CompositionBoundaries => DirectDamage && Environment.GetEnvironmentVariable("MT2_PROBE_DAMAGE_CARD_BOUNDARIES") == "1";
-        private static bool MixedDamage => DirectDamage && (HealingDamage || CompositionBoundaries || Environment.GetEnvironmentVariable("MT2_PROBE_DAMAGE_CARD_COMPOSITIONS") == "1");
+        private static bool MixedDamage => DirectDamage && (GroupedDamage || HealingDamage || CompositionBoundaries || Environment.GetEnvironmentVariable("MT2_PROBE_DAMAGE_CARD_COMPOSITIONS") == "1");
         private static bool BatchedControls => RandomDamage || MixedDamage;
         internal static bool Enabled => DirectDamage || Environment.GetEnvironmentVariable("MT2_PROBE_MAXIMUM_HEALTH_LETHAL_PREVIEW") == "1";
         private static bool EnemyTarget => Environment.GetEnvironmentVariable("MT2_PROBE_MAXIMUM_HEALTH_LETHAL_PREVIEW_ENEMY") == "1";
@@ -102,10 +103,10 @@ namespace MonsterTrain2Poju.Probe
             if (baseHealth < 2 || actors.Any(actor => actor.PreviewMode || actor.TemporaryPreviewsEnabled))
                 throw new InvalidOperationException("Lethal hover requires independent original primary actors and positive Horde base health.");
             foreach (var card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);
-            int[] modes = HealingDamage ? Enumerable.Range(13, 10).ToArray() : CompositionBoundaries ? new[] { 10, 11, 12 } : MixedDamage ? new[] { 4, 5, 6, 7, 8, 9 } : RandomDamage ? new[] { 0, 1, 2, 3 } : CompositeDamage ? new[] { 1, 2, 3 } : new[] { 0 };
+            int[] modes = GroupedDamage ? Enumerable.Range(23, 9).ToArray() : HealingDamage ? Enumerable.Range(13, 10).ToArray() : CompositionBoundaries ? new[] { 10, 11, 12 } : MixedDamage ? new[] { 4, 5, 6, 7, 8, 9 } : RandomDamage ? new[] { 0, 1, 2, 3 } : CompositeDamage ? new[] { 1, 2, 3 } : new[] { 0 };
             int[] rangeCases = MixedDamage ? new[] { 0, 1 } : RandomDamage ? new[] { 1, 2, 3, 4 } : new[] { 0 };
-            bool RoomMode(int mode) => mode is 1 or 3 or 5 or 7 or 9 or 12 or 14 or 18 or 19 or 22;
-            bool OnCastMode(int mode) => HealingDamage ? mode is 17 or 18 or 20 or 21 or 22 : mode >= 2 && mode != 6 && mode != 7 && mode != 10;
+            bool RoomMode(int mode) => mode is 1 or 3 or 5 or 7 or 9 or 12 or 14 or 18 or 19 or 22 or 28 or 31;
+            bool OnCastMode(int mode) => GroupedDamage || (HealingDamage ? mode is 17 or 18 or 20 or 21 or 22 : mode >= 2 && mode != 6 && mode != 7 && mode != 10);
             bool OnCastRoomMode(int mode) => HealingDamage ? mode == 17 : MixedDamage ? mode == 4 || mode == 9 : RoomMode(mode);
             bool NeedsDrop(int mode) => MixedDamage || !RoomMode(mode);
             var controls = new Dictionary<(int Amount, int Mode, int RangeCase), CardState>();
@@ -120,6 +121,14 @@ namespace MonsterTrain2Poju.Probe
             {
                 int amount = DamageAmount(horde, half, zero);
                 if (controls.ContainsKey((amount, mode, rangeCase))) continue;
+                if (GroupedDamage)
+                {
+                    var groupedData = OnCastGroupControls.Create(all, mode, amount, rangeCase, host.GetTeamType());
+                    ((List<CardData>)Get(all, "cardDatas")).Add(groupedData);
+                    var groupedCard = cards.AddNewCard(groupedData, CardPile.DeckPile, false, false, animate: false);
+                    controls.Add((amount, mode, rangeCase), groupedCard); trace.CardId(groupedCard); cards.GetDrawPile().Remove(groupedCard);
+                    continue;
+                }
                 var data = UnityEngine.Object.Instantiate(all.FindCardData(DevotionSpawnBattleScenario.VenerateId));
                 data.name = (DirectDamage ? "PojuDamageHover" : "PojuMaximumLethalHover") + mode + "_" + amount;
                 Set(data, "id", (HealingDamage ? "fc231b69" : CompositionBoundaries ? "fc231b68" : MixedDamage ? "fc231b67" : RandomDamage ? "fc231b66" : CompositeDamage ? "fc231b65" : DirectDamage ? "fc231b64" : "fc231b63") + "-0000-4000-8000-" + (rangeCase * 100000000 + mode * 1000000 + amount).ToString("D12")); Set(data, "cost", 2);
@@ -201,14 +210,14 @@ namespace MonsterTrain2Poju.Probe
                     }
                     AddTrigger(host, "OnDeathwish", 5); AddTrigger(host, "OnDeathwishLost", 7);
                     AddTrigger(host, "OnReanimated", 11); AddTrigger(host, "OnDeath", 13);
-                    if (HealingDamage)
+                    if (HealingDamage || GroupedDamage)
                     {
                         Set(Get(host, "_primaryStateInformation"), "canBeHealed", true);
                         AddTrigger(host, "OnHeal", 17);
                     }
                     foreach (var witness in actors.Where(actor => actor != host && actor.GetCurrentRoomIndex() == host.GetCurrentRoomIndex()))
                     {
-                        if (mode == 12) witness.SetHealth(10, 10);
+                        if (mode == 12 || GroupedDamage) witness.SetHealth(10, 10);
                         AddTrigger(witness, "OnAnyUnitDeathOnFloor", 2);
                     }
                     var hostStatuses = (Dictionary<string, CharacterState.StatusEffectStack>)Get(Get(host, "_primaryStateInformation"), "statusEffects");
@@ -273,10 +282,10 @@ namespace MonsterTrain2Poju.Probe
                 CombatPreviewControl.Set(combat, suppression);
             }
             using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
-                GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId, Boundary = HealingDamage ? "NativeHealingDamageCardHover" : CompositionBoundaries ? "NativeDamageCompositionBoundaryCardHover" : MixedDamage ? "NativeDamageCompositionCardHover" : RandomDamage ? "NativeRandomDamageCardHover" : CompositeDamage ? "NativeCompositeDamageCardHover" : DirectDamage ? "NativeDirectDamageCardHover" : "NativeMaximumHealthLethalCardHover",
+                GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId, Boundary = GroupedDamage ? "NativeOnCastGroupsCardHover" : HealingDamage ? "NativeHealingDamageCardHover" : CompositionBoundaries ? "NativeDamageCompositionBoundaryCardHover" : MixedDamage ? "NativeDamageCompositionCardHover" : RandomDamage ? "NativeRandomDamageCardHover" : CompositeDamage ? "NativeCompositeDamageCardHover" : DirectDamage ? "NativeDirectDamageCardHover" : "NativeMaximumHealthLethalCardHover",
                 NativeCompleted = true, AuthoredControls = true, TargetTeam = EnemyTarget ? "Enemy" : "Player", SelfTargetId = 0, BaseHealth = baseHealth, Samples = samples,
                 OriginalSuppression = originalSuppression, FinalSuppression = (int)Get(combat, "combatPreviewSuppressionCount") }))
-            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, HealingDamage ? "healing-damage-card-preview.mt2f" : CompositionBoundaries ? "damage-card-preview-boundaries.mt2f" : MixedDamage ? "damage-card-preview-compositions.mt2f" : RandomDamage ? "damage-card-preview-random.mt2f" : CompositeDamage ? "damage-card-preview-extended.mt2f" : DirectDamage ? "damage-card-preview.mt2f" : "maximum-health-lethal-preview.mt2f"))) document.Write(output);
+            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, GroupedDamage ? "oncast-groups-card-preview.mt2f" : HealingDamage ? "healing-damage-card-preview.mt2f" : CompositionBoundaries ? "damage-card-preview-boundaries.mt2f" : MixedDamage ? "damage-card-preview-compositions.mt2f" : RandomDamage ? "damage-card-preview-random.mt2f" : CompositeDamage ? "damage-card-preview-extended.mt2f" : DirectDamage ? "damage-card-preview.mt2f" : "maximum-health-lethal-preview.mt2f"))) document.Write(output);
         }
         [HarmonyPatch(typeof(CardEffectState), nameof(CardEffectState.GetIntInRange))]
         private static class RangePatch

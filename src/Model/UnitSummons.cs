@@ -110,7 +110,8 @@ namespace MonsterTrain2Poju.Model
                 definition.Effects, definition.UpgradeInteractions, definition.HandDiscardInteractions, definition.HandConsumeInteractions,
                 definition.CostType, definition.Equipment, definition.Ability, definition.Summon, definition.CardType, definition.IsAnyAbility,
                 definition.CanPlayInEngineRoom, definition.OnCastEffects, definition.OnUnplayedNegativeEffects,
-                definition.UnplayedNegativeOrder, definition.HasUnsupportedUnplayedTriggers, definition.ForgeEligible, definition.HasKillTriggers, definition.OnForgeEffects);
+                definition.UnplayedNegativeOrder, definition.HasUnsupportedUnplayedTriggers, definition.ForgeEligible, definition.HasKillTriggers, definition.OnForgeEffects,
+                definition.OnCastEffectGroupSizes);
             CardPlayRule resolved = card == null ? birthDefinition.WithSpawn(initialized) : CardModifierModel.Resolve(birthDefinition.WithSpawn(initialized), card);
             if (resolved.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", resolved.ExternalInteractions));
             CombatUnit template = resolved.SpawnUnit!;

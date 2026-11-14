@@ -5,6 +5,16 @@ if (args.Length == 2 && args[0] == "--queued-attack-statistics-only")
     QueuedAttackStatisticsChecks.Native(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--oncast-groups-hover-only")
+{
+    OnCastGroupsChecks.Hover(args[1]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--oncast-groups-battle-only")
+{
+    OnCastGroupsChecks.Battle(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--healing-damage-card-preview-only")
 {
     HealingDamageCardPreviewChecks.Native(args[1]);

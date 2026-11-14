@@ -132,9 +132,12 @@ namespace MonsterTrain2Poju.Model
             => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, fullTrain: true, otherPiles, selfUnitId);
 
         internal static TrainSpellResult ApplyCardHoverEffects(TrainCombatState source, int roomIndex,
-            IReadOnlyList<CardActionEffect> effects, int targetId, int sourceCardId, bool dropOverride, int mainEffectCount) =>
+            IReadOnlyList<CardActionEffect> effects, int targetId, int sourceCardId, bool dropOverride, int mainEffectCount,
+            IReadOnlyList<int>? onCastEffectGroupSizes) =>
             ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, null, fullTrain: true,
-                previewDropOverride: dropOverride, previewOnCastStartIndex: mainEffectCount);
+                previewDropOverride: dropOverride, effectGroupEnds: new[] { mainEffectCount }.Concat(
+                    CardTriggerGroupModel.Ends(onCastEffectGroupSizes ?? (effects.Count == mainEffectCount ? Array.Empty<int>() :
+                        new[] { effects.Count - mainEffectCount }), mainEffectCount)).ToArray());
 
         internal static RoomCombatResult ApplyRelicSelf(RoomCombatState source, CardActionEffect effect, int actorId)
         {
@@ -167,8 +170,14 @@ namespace MonsterTrain2Poju.Model
             int targetSpawnPointIndex = -1, IReadOnlyList<CardRecursionSelection>? recursionSelections = null, bool onCastEffects = false,
             bool onUnplayedNegativeEffects = false, IReadOnlyList<ElixirMixSelection>? mixSelections = null,
             IReadOnlyList<int>? priorTargets = null, int? abilityRoomIndex = null, bool resolveLiveEffects = true,
-            CombatUnit? retainedDropTarget = null)
+            CombatUnit? retainedDropTarget = null, IReadOnlyList<int>? onCastEffectGroupSizes = null)
         {
+            string? groupError = CardTriggerGroupModel.Validate(onCastEffectGroupSizes, effects.Count);
+            if (groupError != null) return UnsupportedTrain(groupError);
+            CardPlayRule? groupedRule = onCastEffectGroupSizes == null ? null : definitions.Cards.FirstOrDefault(rule =>
+                rule.DataId == source.Context?.FindCard(sourceCardId)?.DataId);
+            if (onCastEffectGroupSizes != null && groupedRule == null)
+                return UnsupportedTrain("Grouped OnCast requires its captured card definition.");
             if (onCastEffects && retainedDropTarget?.Id == targetId && retainedDropTarget.Health <= 0 &&
                 priorTargets?.Contains(targetId) == true && !source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == targetId) &&
                 CardMoonUpgradeModel.RetiredStarstruckTarget(source.Context?.FindCard(sourceCardId), effects))
@@ -191,7 +200,10 @@ namespace MonsterTrain2Poju.Model
                 recursionSelections: recursionSelections, onCastEffects: onCastEffects,
                 onUnplayedNegativeEffects: onUnplayedNegativeEffects, mixSelections: mixSelections,
                 priorTargets: priorTargets, playerActionPhase: true, abilityRoomIndex: abilityRoomIndex,
-                resolveLiveEffects: resolveLiveEffects);
+                resolveLiveEffects: resolveLiveEffects,
+                effectGroupEnds: onCastEffectGroupSizes == null ? null : CardTriggerGroupModel.Ends(onCastEffectGroupSizes),
+                previewDropOverride: groupedRule == null ? null : groupedRule.Effects.Any(effect =>
+                    effect.Target is "DropTargetCharacter" or "RoomExceptDropTarget" or "Self"));
         }
 
         internal static TrainSpellResult ApplyCachedEffects(TrainCombatState source, int roomIndex, IReadOnlyList<CardActionEffect> effects,
@@ -396,7 +408,7 @@ namespace MonsterTrain2Poju.Model
             bool onUnplayedNegativeEffects = false, IReadOnlyList<ElixirMixSelection>? mixSelections = null,
             IReadOnlyList<int>? priorTargets = null, bool playerActionPhase = false, bool resolveLiveEffects = true,
             int? abilityRoomIndex = null, bool duringRoomPreCombat = false,
-            bool? previewDropOverride = null, int? previewOnCastStartIndex = null)
+            bool? previewDropOverride = null, IReadOnlyList<int>? effectGroupEnds = null)
         {
             string? selectionError = CardRecursionModel.ValidateSelections(effects, recursionSelections);
             if (selectionError != null) return UnsupportedTrain(selectionError);
@@ -596,7 +608,8 @@ namespace MonsterTrain2Poju.Model
                     damageTargetError = DamagePerHpTargetError(state, effect, targets, selfUnitId);
                     if (damageTargetError != null) return UnsupportedTrain(damageTargetError);
                 }
-                Remember(effect, index, targets, ref last);
+                Remember(effect, index, targets, ref last, rememberFirst: !onCastEffects || effectGroupEnds == null,
+                    dropOverride: previewDropOverride ?? true);
                 // Runtime tests every effect, even if its initial casting test was disabled.
                 string? targetError = AttackTestError(state, collectionRoom, effect);
                 if (targetError != null) return UnsupportedTrain(targetError);
@@ -622,10 +635,11 @@ namespace MonsterTrain2Poju.Model
                         return UnsupportedTrain("A skipped first random effect retains uncaptured test-stream target history.");
                     if (effect.Tests?.CancelSubsequent == true)
                     {
-                        // Cancelling the remaining main effects still invokes
-                        // PreviewCardPlay's always-fired OnCast callback.
-                        if (previewOnCastStartIndex is int start && index < start && start < effects.Count)
-                        { index = start - 1; applicationsLeft = 1; }
+                        // Native cancellation stops this effect group; later
+                        // OnCast groups still execute in their original order.
+                        int end = effectGroupEnds?.FirstOrDefault(boundary => boundary > index) ?? effects.Count;
+                        if (end > index && end < effects.Count)
+                        { index = end - 1; applicationsLeft = 1; }
                         else break;
                     }
                     continue;
@@ -639,7 +653,8 @@ namespace MonsterTrain2Poju.Model
                 damageTargetError = DamagePerHpTargetError(state, effect, targets, selfUnitId);
                 if (damageTargetError != null) return UnsupportedTrain(damageTargetError);
                 collections.Add(new SpellTargetCollection(index, targets.UnitIds));
-                Remember(effect, index, targets, ref last);
+                Remember(effect, index, targets, ref last, rememberFirst: !onCastEffects || effectGroupEnds == null,
+                    dropOverride: previewDropOverride ?? true);
                 if (targets.BattleRng.HasValue)
                     state = WithContext(state, state.Context!.WithBattleRng(targets.BattleRng.Value));
                 if (initializedEffect != index)
@@ -2773,15 +2788,13 @@ namespace MonsterTrain2Poju.Model
             int sourceCardId = 0, int lastSacrificedUnitId = 0, bool hasPriorTargets = false, CombatUnit? retainedSelf = null,
             bool? previewDropOverride = null, CombatUnit? retainedDropTarget = null)
         {
-            if ((effect.Type is "Damage" or "Heal") && effect.Target == "DropTargetCharacter" && previewDropOverride.HasValue &&
-                state.Context?.Enchantments?.TemporaryPreviewUnitIds != null)
+            if ((effect.Type is "Damage" or "Heal") && effect.Target == "DropTargetCharacter" && previewDropOverride == true)
             {
                 RoomCombatState room = state.Rooms.Single(item => item.RoomIndex == roomIndex);
                 // GameEffectHelper decides whether to override DropTargetCharacter
                 // from the card's main effects, including while running OnCast.
-                if (!previewDropOverride.Value)
-                    return CardTargetModel.Collect(room, effect, last, isTesting: isTesting, dropOverride: false);
-                if (retainedDropTarget?.Health <= 0 && retainedDropTarget.DeathState?.HasFinishedDying == true &&
+                if (state.Context?.Enchantments?.TemporaryPreviewUnitIds != null &&
+                    retainedDropTarget?.Health <= 0 && retainedDropTarget.DeathState?.HasFinishedDying == true &&
                     !state.Rooms.SelectMany(item => item.Units).Any(unit => unit.Id == retainedDropTarget.Id))
                     return CardTargetModel.Collect(room.WithUnits(new[] { retainedDropTarget }), effect, last,
                         retainedDropTarget.Team, 0, isTesting: isTesting);
@@ -2849,13 +2862,14 @@ namespace MonsterTrain2Poju.Model
             return effect.Type is "Mix" or "MixRandom" or "Unbox" or "CraftSpike" || effect.Type == "HandUpgrade" && effect.Target == "Hand" || CardOnlyPileTarget(effect)
                 ? new CardTargets(Array.Empty<int>()) : CardTargetModel.Collect(state, roomIndex, effect, last, initial?.Team, dropPosition,
                     index == 0 && !hasPriorTargets, isTesting, definitions?.Rooms.FirstOrDefault(room => room.IsPyre)?.RoomIndex, pendingDeadRooms,
-                    positions, selfUnitId, lastSacrificedUnitId: lastSacrificedUnitId);
+                    positions, selfUnitId, lastSacrificedUnitId: lastSacrificedUnitId, dropOverride: previewDropOverride ?? true);
         }
 
-        private static void Remember(CardActionEffect effect, int index, CardTargets targets, ref IReadOnlyList<int> last)
+        private static void Remember(CardActionEffect effect, int index, CardTargets targets, ref IReadOnlyList<int> last,
+            bool rememberFirst = true, bool dropOverride = true)
         {
             if (effect.Type == "SpawnOrStatus") return;
-            if (index == 0 || effect.Target == "DropTargetCharacter") last = targets.UnitIds;
+            if (index == 0 && rememberFirst || effect.Target == "DropTargetCharacter" && dropOverride) last = targets.UnitIds;
         }
 
         private static int DropPosition(RoomCombatState source, CombatUnit? initial) => initial == null ? -1 :

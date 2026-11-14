@@ -212,6 +212,7 @@ namespace MonsterTrain2Poju.Probe
         {
             var interactions = new List<string>();
             var onCastEffects = new List<CardActionEffect>();
+            var onCastGroupSizes = new List<int>();
             var onForgeEffects = new List<CardActionEffect>();
             var onUnplayedNegativeEffects = new List<CardActionEffect>();
             bool hasUnsupportedUnplayedTriggers = false;
@@ -231,6 +232,7 @@ namespace MonsterTrain2Poju.Probe
                 }
                 if (triggerType == "OnCast")
                 {
+                    if (trigger.GetCardEffects().Count > 0) onCastGroupSizes.Add(trigger.GetCardEffects().Count);
                     foreach (CardEffectData effect in trigger.GetCardEffects())
                         onCastEffects.Add(DescribeTriggerEffect(effect, interactions, data));
                 }
@@ -365,7 +367,8 @@ namespace MonsterTrain2Poju.Probe
                 onUnplayedNegativeEffects: onUnplayedNegativeEffects, unplayedNegativeOrder: unplayedNegativeOrder,
                 hasUnsupportedUnplayedTriggers: hasUnsupportedUnplayedTriggers, forgeEligible: forgeEligible,
                 hasKillTriggers: data.GetCardTriggers().Any(trigger => trigger.GetTrigger() == CardTriggerType.OnKill),
-                onForgeEffects: onForgeEffects.Count == 0 ? null : onForgeEffects);
+                onForgeEffects: onForgeEffects.Count == 0 ? null : onForgeEffects,
+                onCastEffectGroupSizes: onCastGroupSizes);
         }
 
         private static bool SupportedSpellEffect(CardEffectData effect) =>
@@ -801,7 +804,7 @@ namespace MonsterTrain2Poju.Probe
                 rule.UpgradeInteractions, rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType,
                 rule.Equipment, rule.Ability, rule.Summon, rule.CardType, rule.IsAnyAbility, rule.CanPlayInEngineRoom, rule.OnCastEffects,
                 rule.OnUnplayedNegativeEffects, rule.UnplayedNegativeOrder, rule.HasUnsupportedUnplayedTriggers,
-                rule.ForgeEligible, rule.HasKillTriggers, rule.OnForgeEffects);
+                rule.ForgeEligible, rule.HasKillTriggers, rule.OnForgeEffects, rule.OnCastEffectGroupSizes);
         }
 
         private static string[] HandInteractions(CardData data, bool consume)
