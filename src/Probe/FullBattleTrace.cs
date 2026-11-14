@@ -244,6 +244,7 @@ namespace MonsterTrain2Poju.Probe
                 RelicCardUpgradeCalibration.Capture(this);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_STATISTIC_QUERIES") == "1") StatisticQueryCalibration.Capture(this);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_STATISTIC_OVERFLOW") == "1") StatisticOverflowCalibration.Capture(this);
+                if (Environment.GetEnvironmentVariable("MT2_PROBE_MONSTER_DAMAGE_STATISTICS") == "1") MonsterDamageStatisticsCalibration.Capture(this);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_HORDE_STATS") == "1") HordeStatCalibration.Capture(this);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_ENCHANTMENT_LIFECYCLE") == "1") EnchantmentCalibration.Capture(this);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "unit-upgrade-scaling") UnitUpgradeScalingScenario.Calibrate(this);

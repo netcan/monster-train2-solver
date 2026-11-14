@@ -400,6 +400,7 @@ param(
     [switch] $GenerationLethal,
     [switch] $StatisticQueries,
     [switch] $StatisticOverflow,
+    [switch] $MonsterDamageStatistics,
     [switch] $DamageScaling,
     [switch] $DynamicStatistics,
     [switch] $StatusScaling,
@@ -1784,6 +1785,7 @@ $environment = @{
     MT2_PROBE_ISOLATE_UI_RNG = $(if ($CompanionBoss -or $ConditionalTriggers -or $DetachedBonusDraw -or $RoomCapacity -or $RoomCapacityLethal -or $RoomCapacityAttachment -or $BonusDraw -or $BonusDrawLethal -or $NumericRanges -or $NumericRangesLethal -or $Drawing -or $TriggeredHealing -or $PostCombatHealing -or $TriggeredDamage -or $DamageDeathQueue -or $TerminalDeathDamage -or $HitKill -or $DyingUpgrades -or $AttackTriggers -or $TriggeredStatus) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_QUERIES = $(if ($StatisticQueries) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_OVERFLOW = $(if ($StatisticOverflow) { '1' } else { '0' })
+    MT2_PROBE_MONSTER_DAMAGE_STATISTICS = $(if ($MonsterDamageStatistics) { '1' } else { '0' })
     MT2_PROBE_HORDE_STATS = $(if ($HordeStats) { '1' } else { '0' })
     MT2_PROBE_ENCHANTMENT_LIFECYCLE = $(if ($EnchantmentLifecycle) { '1' } else { '0' })
     MT2_PROBE_ENCHANTMENT_COMBAT = $(if ($EnchantmentCombat) { '1' } else { '0' })
@@ -6937,6 +6939,7 @@ $result = [pscustomobject]@{
     StatisticQueryCalibration = $(if ($StatisticQueries) { Join-Path $profile 'statistic-query-calibration.json' } else { $null })
     StatisticOverflowCalibration = $(if ($StatisticOverflow) { Join-Path $profile 'statistic-overflow-calibration.json' } else { $null })
     StatisticZeroIncrementCalibration = $(if ($StatisticOverflow) { Join-Path $profile 'statistic-zero-increment-calibration.json' } else { $null })
+    MonsterDamageStatisticsCalibration = $(if ($MonsterDamageStatistics) { Join-Path $profile 'monster-damage-statistics.mt2f' } else { $null })
     Trace = $tracePath
     HordeStatCalibration = $(if ($HordeStats) { Join-Path $profile 'horde-stat-calibration.mt2f' } else { $null })
     EnchantmentLifecycleCalibration = $(if ($EnchantmentLifecycle) { Join-Path $profile 'enchantment-lifecycle-calibration.mt2f' } else { $null })
@@ -7307,6 +7310,18 @@ if ($StatisticQueries) {
     $queryCalibration = Get-Content -LiteralPath $queryPath -Raw | ConvertFrom-Json
     if (-not $queryCalibration.LiveContextUnchanged -or @($queryCalibration.Batches).Count -ne 6 -or
         @($queryCalibration.Batches.Samples).Count -lt 500) { throw 'Native statistic-query coverage is incomplete.' }
+}
+if ($MonsterDamageStatistics) {
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $damageDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'monster-damage-statistics.mt2f'))
+    try {
+        $damageRoot = $damageDocument.RootElement
+        if ($damageRoot.GetProperty('Boundary').GetString() -ne 'IsolatedNativeOnMonstersDamaged' -or
+            -not $damageRoot.GetProperty('LiveContextUnchanged').GetBoolean() -or
+            -not $damageRoot.GetProperty('BattleEndCountersZero').GetBoolean() -or
+            @($damageRoot.GetProperty('Rows').EnumerateArray()).Count -ne 43 -or
+            @($damageRoot.GetProperty('Queries').EnumerateArray()).Count -ne 6) { throw 'Incomplete monster damage statistics component.' }
+    } finally { $damageDocument.Dispose() }
 }
 if ($StatisticOverflow) {
     $overflow = Get-Content -LiteralPath (Join-Path $profile 'statistic-overflow-calibration.json') -Raw | ConvertFrom-Json

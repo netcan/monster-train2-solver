@@ -875,7 +875,7 @@ namespace MonsterTrain2Poju.Model
         internal static RoomCombatResult ApplyRelicDamage(RoomCombatState state, int targetId, int damage,
             Action<QueuedCharacterTrigger> enqueueCharacterTrigger, bool piercing = false) =>
             ApplyNativeCardDamageAfterTraits(state, targetId, damage, 0, enqueueCharacterTrigger: enqueueCharacterTrigger,
-                captureAllDispatches: true, piercing: piercing);
+                captureAllDispatches: true, piercing: piercing, relicSourced: true);
 
         internal static RoomCombatResult ApplyCardDamageAfterTraits(RoomCombatState state, int targetId, int damage, int sourceCardId,
             bool deferSpawnerExhaustion, int attackerUnitId = 0, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
@@ -889,7 +889,7 @@ namespace MonsterTrain2Poju.Model
             CombatUnit? externalActor = null, int externalActorRoomIndex = -1,
             Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool captureAllDispatches = false,
             bool piercing = false, IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
-            bool centerPhysicalRemovals = true)
+            bool centerPhysicalRemovals = true, bool relicSourced = false)
         {
             string? error = Validate(state);
             bool localAttacker = state.Units.Any(unit => unit.Id == attackerUnitId);
@@ -907,7 +907,7 @@ namespace MonsterTrain2Poju.Model
                 externalActorRoomIndex: externalActorRoomIndex, externalActorInRoom: false, externalTargets: externalTargets,
                 centerDamageDeaths: centerPhysicalRemovals)
                 .TraceAllDispatches(captureAllDispatches)
-                .CardDamage(targetId, damage, sourceCardId, false, attackerUnitId, piercing);
+                .CardDamage(targetId, damage, sourceCardId, false, attackerUnitId, piercing, relicSourced);
         }
 
         private static RoomCombatResult ApplyCardDamage(RoomCombatState state, int targetId, int damage, int sourceCardId,
@@ -2039,7 +2039,7 @@ namespace MonsterTrain2Poju.Model
                         WorkingUnit target = units.Single(unit => unit.Source.Id == id);
                         if (target.Destroyed) continue;
                         context = context!.WithQueryFrame(context.QueryFrame?.With(selectedRoomIndex: source.RoomIndex));
-                        if (target.Alive) Damage(null, target, effect.Amount, "Spell", applyTraits: false);
+                        if (target.Alive) Damage(null, target, effect.Amount, "Spell", applyTraits: false, relicSourced: true);
                         if (unsupportedReason != null) return;
                         if (!runningTriggerQueue && enqueueCharacterTrigger == null) DrainLocalTriggerQueue();
                     }
@@ -2092,7 +2092,7 @@ namespace MonsterTrain2Poju.Model
             }
 
             internal RoomCombatResult CardDamage(int targetId, int damage, int sourceCardId, bool applyTraits = true,
-                int attackerUnitId = 0, bool piercing = false)
+                int attackerUnitId = 0, bool piercing = false, bool relicSourced = false)
             {
                 CardInstanceState? card = context?.LifeLinks == null ? null : context.FindCard(sourceCardId);
                 plainSpellDamage = attackerUnitId == 0 && sourceCardId > 0 &&
@@ -2100,7 +2100,7 @@ namespace MonsterTrain2Poju.Model
                     card.Temporary.Upgrades.Count == 0 && CardBranchMaskModel.Resolve(card).Traits.Count == 0;
                 WorkingUnit target = units.Single(unit => unit.Source.Id == targetId);
                 Damage(units.FirstOrDefault(unit => unit.Source.Id == attackerUnitId), target, damage, "Spell", sourceCardId,
-                    applyTraits, piercing);
+                    applyTraits, piercing, relicSourced);
                 return Finish(battleWon ? RoomOutcome.BattleWon : target.Source.IsPyre && !target.Alive
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
@@ -2831,12 +2831,13 @@ namespace MonsterTrain2Poju.Model
             }
 
             private void Damage(WorkingUnit? actor, WorkingUnit target, int damage, string kind, int sourceCardId = 0,
-                bool applyTraits = true, bool piercing = false)
+                bool applyTraits = true, bool piercing = false, bool relicSourced = false)
             {
                 if (target.LastAttackerId.HasValue) target.LastAttackerId = actor != null && !actor.Source.IsPyre ? actor.Source.Id : 0;
                 int raw = damage;
                 int blocked = 0;
                 int titanSkinSoaked = 0;
+                int armorBlockedThisHit = 0;
                 bool direct = kind == "Attack";
                 bool attackingTrigger = direct || kind == "Trample";
                 if (applyTraits)
@@ -2957,6 +2958,7 @@ namespace MonsterTrain2Poju.Model
                     int armorBlocked = damage - remaining;
                     if (armorLimit > 0) armorBlocked = Math.Min(armorBlocked, unchecked(applicable * target.Statuses["armor"].ParamInt));
                     blocked += armorBlocked;
+                    armorBlockedThisHit = armorBlocked;
                     damage = remaining;
                     Trigger(target, "armor", spent);
                 }
@@ -2991,6 +2993,35 @@ namespace MonsterTrain2Poju.Model
                     FireTriggers(actor, "OnAttackingBeforeDamage", overrideTarget: target);
                 if (unsupportedReason != null) return;
                 if (!SetHealth(target, resultingHealth)) return;
+                if (!source.Preview && target.Source.Team == CombatTeam.Player && !target.Source.IsPyre &&
+                    context?.Statistics?.MonsterDamage != null)
+                {
+                    // Native caps HP damage at the pre-hit health and counts armor,
+                    // but excludes shield/Titanskin absorption. An attacker takes
+                    // precedence over a card/relic when classifying friendly sources.
+                    int sustained = Math.Min(previousHealth, damage);
+                    bool hit = damage > 0 || blocked > 0 || titanSkinSoaked > 0;
+                    int amount = unchecked(sustained + (hit ? armorBlockedThisHit : 0));
+                    bool friendly = actor != null ? actor.Source.Team == CombatTeam.Player : sourceCardId > 0 || relicSourced;
+                    int friendlyAmount = hit && friendly ? unchecked(sustained + armorBlockedThisHit) : 0;
+                    if (amount > 0 || friendlyAmount > 0)
+                    {
+                        int[] owned = context.Cards.Hand.Concat(context.Cards.Draw).Concat(context.Cards.Discard)
+                            .Concat(context.OtherPiles?.SelectMany(pile => pile.Cards) ?? Array.Empty<CardToken>())
+                            .Select(card => card.InstanceId).Distinct().ToArray();
+                        if (owned.Length == 0)
+                        {
+                            if (context.Statistics.DeckCards == null)
+                            { unsupportedReason = "Monster damage statistics require permanent deck membership when all piles are empty."; return; }
+                            owned = context.Statistics.DeckCards.ToArray();
+                        }
+                        if (owned.Select(context.FindCard).Any(card => card?.MaskDescriptor?.SourceTraits?.Any(trait =>
+                            trait.EntryDuration != "PreviousTurn" && (amount > 0 && trait.TrackedValue == "DamageDealtToMonsters" ||
+                                friendlyAmount > 0 && trait.TrackedValue == "FriendlyDamageDealtToMonsters")) == true))
+                        { unsupportedReason = "Monster damage statistic trait callbacks require native calibration."; return; }
+                        context = context.WithStatistics(context.Statistics.RecordMonsterDamage(amount, friendlyAmount, owned));
+                    }
+                }
                 if (context != null) context = ConduitModel.Alive(context, target.RoomIndex, target.Freeze());
                 if (!source.Preview && target.Source.IsPyre && context?.EnergyState != null)
                     context = context.WithEnergyState(context.EnergyState.With(pyreAlive: target.Alive));
@@ -4314,7 +4345,7 @@ namespace MonsterTrain2Poju.Model
                                 // Preview damage belongs to this engine's retained
                                 // units and death queue, without physical removal.
                                 Damage(null, units.Single(target => target.Source.Id == id), damage, "Spell", applyTraits: false,
-                                    piercing: !healDamage);
+                                    piercing: !healDamage, relicSourced: true);
                                 if (unsupportedReason != null) return false;
                                 continue;
                             }

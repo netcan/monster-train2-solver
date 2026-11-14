@@ -77,14 +77,25 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -Enchantme
 `19338ac248b2958af9d3885094eac9363cafe4ba4489219d03321d658b9f2596`。
 组件模式在完整 41 项采样及现场恢复通过后退出，后续无需重复跑完外围战斗。
 
-较早整场模式的外围记录仍有四项统计缓存差异，未归档为成功战斗。另一次新版
-`OriginalEquipmentGrowthRelics` 采样也有四项差异，尚不能把两件 Vanguard 遗物
-计入新版整场验收。其原生胜局不能替代状态一致性验收。
+较早两组整场采样各有四项统计缓存差异，失败记录保留用于定位，不作为成功样本。
+现已接入新版 `OnMonstersDamaged` 的四个原始计数及卡牌缓存刷新，区分友方来源、
+护甲与过量伤害，预演不累计，回合切换只清本回合计数。旧版捕获保留空标识，
+不会因此改变旧版缓存刷新规则。依赖新统计的卡牌更新回调仍显式返回未支持。
 
-已从新版源码定位：友方非薪火单位受伤后，`OnMonstersDamaged` 新增伤害统计，
-并调用 `UpdateDeckStats` 刷新卡牌缓存；旧模型没有这一边界，导致新生成的
-Scourge 缓存成员少一张。需要补齐新统计、伤害来源、护甲/过量伤害和刷新时序，
-再复验上述失败记录，不能删除统计字段来消除差异。
+独立原生组件覆盖 42 次增量调用（21 次预演对照）、无操作、惰性缓存、带符号
+整数溢出、回合/整场重置和六项查询；43 项转换各执行 32 路不可变分支。
+重新采集的列车员七回合战斗四项计数全零，55 项房间和 14 项列车转换、
+从根状态连续复放及 16 路独立分支通过。该次原生采样约 48 秒，玩家文件未变。
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Game231MonsterDamage.ps1
+```
+
+二进制样本及哈希保存在 `mechanics/monster-damage/`。组件来源为
+`.probe-runs/full-battle-units-spells-and-junk-20261114-125708-7cfaaf97`，
+七回合战斗来源为 `.probe-runs/full-battle-steward-once-20261114-125515-ed0b3633`。
+装备成长遗物的新采样同样四项计数全零，仍需完成新版数值定义的专用独立验收；
+半血 Deathwish 与新增卡牌/遗物的效果覆盖不由此获得验收。
 
 另一次玩家光环来源互相施加菌群的观察
 `.probe-runs/full-battle-units-and-junk-20261114-123510-0d0945c7`，在最终菌群移除

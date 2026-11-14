@@ -25,6 +25,14 @@ namespace MonsterTrain2Poju.Probe
                 new StatisticCount(pair.Key.ToString(System.Globalization.CultureInfo.InvariantCulture), pair.Value)).ToArray();
             StatisticCount[] Subtypes(string name) => Field<Dictionary<SubtypeData, int>>(name).Select(pair =>
                 new StatisticCount(pair.Key.Key, pair.Value)).ToArray();
+            var damageFields = new[] { "damageDealtToMonstersThisTurn", "damageDealtToMonstersThisBattle",
+                "friendlyDamageDealtToMonstersThisTurn", "friendlyDamageDealtToMonstersThisBattle" }
+                .Select(name => AccessTools.Field(typeof(CardStatistics), name)).ToArray();
+            if (damageFields.Any(field => field != null) && damageFields.Any(field => field == null))
+                throw new InvalidOperationException("Incomplete native monster damage statistics layout.");
+            MonsterDamageStatistics? monsterDamage = damageFields[0] == null ? null : new MonsterDamageStatistics(
+                (int)damageFields[0].GetValue(statistics), (int)damageFields[1].GetValue(statistics),
+                (int)damageFields[2].GetValue(statistics), (int)damageFields[3].GetValue(statistics));
             return new BattleStatistics(values,
                 Field<Dictionary<CardState, int>>("playedCardCostStats").Select(pair => new CardPlayedCost(cardId(pair.Key), pair.Value)).ToArray(),
                 Field<List<CardState>>("cardsPlayedThisTurn").Select(cardId).ToArray(),
@@ -37,7 +45,7 @@ namespace MonsterTrain2Poju.Probe
                 AllGameManagers.Instance!.GetSaveManager().GetDeckState().Select(cardId).ToArray(),
                 Field<Dictionary<CardState, CardStatsEntry>>("deckStats").Keys.Select(cardId).ToArray(),
                 ((List<CardState>)AccessTools.Field(typeof(CardManager), "cardsPlayedThisTurn").GetValue(AllGameManagers.Instance!.GetCardManager())).Select(cardId).ToArray(),
-                AllGameManagers.Instance!.GetCardManager()!.GetCardsPlayedLastTurn().Select(cardId).ToArray());
+                AllGameManagers.Instance!.GetCardManager()!.GetCardsPlayedLastTurn().Select(cardId).ToArray(), monsterDamage);
         }
     }
 }

@@ -53,6 +53,7 @@ namespace MonsterTrain2Poju.Model
         public int EnergyRemainingEndOfTurn { get; }
         public int GoldStartOfThisTurn { get; }
         public int LastAttackDamageDealt { get; }
+        public MonsterDamageStatistics? MonsterDamage { get; }
 
         public BattleStatistics(IReadOnlyList<CardStatisticValue> values, IReadOnlyList<CardPlayedCost> playedCosts,
             IReadOnlyList<int> cardsPlayedThisTurn, IReadOnlyList<StatisticCount> spawnedThisTurnPerFloor,
@@ -60,7 +61,8 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<StatisticCount> subtypesSpawnedThisBattle, int monstersDeadThisTurn, int monstersDeadThisBattle,
             int energyRemainingEndOfTurn, int goldStartOfThisTurn, int lastAttackDamageDealt, IReadOnlyList<int>? trackedCards = null,
             IReadOnlyList<int>? deckCards = null, IReadOnlyList<int>? storedCards = null,
-            IReadOnlyList<int>? handCardsPlayedThisTurn = null, IReadOnlyList<int>? handCardsPlayedLastTurn = null)
+            IReadOnlyList<int>? handCardsPlayedThisTurn = null, IReadOnlyList<int>? handCardsPlayedLastTurn = null,
+            MonsterDamageStatistics? monsterDamage = null)
         {
             Values = Array.AsReadOnly(values.Where(value => value.Value != 0).OrderBy(value => value.CardId)
                 .ThenBy(value => value.Duration, StringComparer.Ordinal).ThenBy(value => value.Type, StringComparer.Ordinal).ToArray());
@@ -78,6 +80,7 @@ namespace MonsterTrain2Poju.Model
             MonstersDeadThisTurn = monstersDeadThisTurn; MonstersDeadThisBattle = monstersDeadThisBattle;
             EnergyRemainingEndOfTurn = energyRemainingEndOfTurn; GoldStartOfThisTurn = goldStartOfThisTurn;
             LastAttackDamageDealt = lastAttackDamageDealt;
+            MonsterDamage = monsterDamage;
         }
 
         public static BattleStatistics Empty(int gold = 0, IReadOnlyList<int>? deckCards = null) => new BattleStatistics(Array.Empty<CardStatisticValue>(),
@@ -122,7 +125,7 @@ namespace MonsterTrain2Poju.Model
             new BattleStatistics(Values, PlayedCosts, CardsPlayedThisTurn, SpawnedThisTurnPerFloor, SpawnedThisBattlePerFloor,
                 SubtypesSpawnedThisTurn, SubtypesSpawnedThisBattle, MonstersDeadThisTurn, MonstersDeadThisBattle,
                 EnergyRemainingEndOfTurn, GoldStartOfThisTurn, LastAttackDamageDealt, TrackedCards,
-                DeckCards.Concat(cards).Distinct().ToArray(), StoredCards, HandCardsPlayedThisTurn, HandCardsPlayedLastTurn);
+                DeckCards.Concat(cards).Distinct().ToArray(), StoredCards, HandCardsPlayedThisTurn, HandCardsPlayedLastTurn, MonsterDamage);
         public BattleStatistics RecordPlayedCard(int cardId) => Copy(played: CardsPlayedThisTurn.Concat(new[] { cardId }).ToArray());
         internal BattleStatistics RecordHandCardPlayed(int cardId) => HandCardsPlayedThisTurn == null ? this :
             Copy(handPlayed: HandCardsPlayedThisTurn.Concat(new[] { cardId }).ToArray());
@@ -134,7 +137,7 @@ namespace MonsterTrain2Poju.Model
             new BattleStatistics(Values, PlayedCosts, CardsPlayedThisTurn, SpawnedThisTurnPerFloor, SpawnedThisBattlePerFloor,
                 SubtypesSpawnedThisTurn, SubtypesSpawnedThisBattle, MonstersDeadThisTurn, MonstersDeadThisBattle,
                 EnergyRemainingEndOfTurn, GoldStartOfThisTurn, LastAttackDamageDealt, TrackedCards,
-                DeckCards.Where(id => id != cardId).ToArray(), StoredCards, HandCardsPlayedThisTurn, HandCardsPlayedLastTurn);
+                DeckCards.Where(id => id != cardId).ToArray(), StoredCards, HandCardsPlayedThisTurn, HandCardsPlayedLastTurn, MonsterDamage);
         internal BattleStatistics WithOwnedCards(IEnumerable<int> cards)
         {
             if (StoredCards == null) return this;
@@ -160,6 +163,9 @@ namespace MonsterTrain2Poju.Model
 
         public BattleStatistics WithEndTurnEnergy(int energy) => Copy(energy: energy);
         public BattleStatistics WithLastAttackDamage(int damage) => Copy(lastDamage: damage);
+        internal BattleStatistics RecordMonsterDamage(int amount, int friendlyAmount, IEnumerable<int> ownedCards) =>
+            MonsterDamage == null || amount <= 0 && friendlyAmount <= 0 ? this :
+            Copy(monsterDamage: MonsterDamage.Increment(amount, friendlyAmount)).RefreshOwnedCards(ownedCards);
         internal BattleStatistics RetainPreviewQueries(BattleStatistics preview) => Copy(
             // Native preview restores actors, but GetStatValue's deckStats refresh
             // and the last-attack scalar are shared with the live battle.
@@ -175,7 +181,8 @@ namespace MonsterTrain2Poju.Model
                 new CardStatisticValue(value.CardId, "PreviousTurn", value.Type, value.Value))).ToArray(),
             played: Array.Empty<int>(), turnFloors: Array.Empty<StatisticCount>(), turnSubtypes: Array.Empty<StatisticCount>(),
             deadTurn: 0, energy: 0, gold: gold, stored: StoredCards == null ? null : TrackedCards,
-            handPlayed: HandCardsPlayedThisTurn == null ? null : Array.Empty<int>(), handLast: HandCardsPlayedThisTurn);
+            handPlayed: HandCardsPlayedThisTurn == null ? null : Array.Empty<int>(), handLast: HandCardsPlayedThisTurn,
+            monsterDamage: MonsterDamage?.NextTurn());
 
         internal string Signature() => string.Join(",", TrackedCards) + "|" + string.Join(";", Values.Select(value =>
             value.CardId + ":" + value.Duration + ":" + value.Type + ":" + value.Value)) + "|" +
@@ -187,21 +194,23 @@ namespace MonsterTrain2Poju.Model
             GoldStartOfThisTurn + ":" + LastAttackDamageDealt + "|" + (DeckCards == null ? "legacy" : string.Join(",", DeckCards)) + "|" +
             (StoredCards == null ? "legacy" : string.Join(",", StoredCards)) + "|" +
             (HandCardsPlayedThisTurn == null ? "legacy" : string.Join(",", HandCardsPlayedThisTurn)) + "|" +
-            (HandCardsPlayedLastTurn == null ? "legacy" : string.Join(",", HandCardsPlayedLastTurn));
+            (HandCardsPlayedLastTurn == null ? "legacy" : string.Join(",", HandCardsPlayedLastTurn)) + "|" +
+            (MonsterDamage == null ? "legacy" : MonsterDamage.Signature());
 
         private BattleStatistics Copy(IReadOnlyList<CardStatisticValue>? values = null, IReadOnlyList<int>? played = null, IReadOnlyList<int>? tracked = null,
             IReadOnlyList<StatisticCount>? turnFloors = null, IReadOnlyList<StatisticCount>? battleFloors = null,
             IReadOnlyList<StatisticCount>? turnSubtypes = null, IReadOnlyList<StatisticCount>? battleSubtypes = null,
             int? deadTurn = null, int? deadBattle = null, int? energy = null, int? gold = null, int? lastDamage = null,
             IReadOnlyList<CardPlayedCost>? costs = null, IReadOnlyList<int>? stored = null,
-            IReadOnlyList<int>? handPlayed = null, IReadOnlyList<int>? handLast = null) =>
+            IReadOnlyList<int>? handPlayed = null, IReadOnlyList<int>? handLast = null,
+            MonsterDamageStatistics? monsterDamage = null) =>
             new BattleStatistics(values ?? Values, costs ?? PlayedCosts, played ?? CardsPlayedThisTurn,
                 turnFloors ?? SpawnedThisTurnPerFloor, battleFloors ?? SpawnedThisBattlePerFloor,
                 turnSubtypes ?? SubtypesSpawnedThisTurn, battleSubtypes ?? SubtypesSpawnedThisBattle,
                 deadTurn ?? MonstersDeadThisTurn, deadBattle ?? MonstersDeadThisBattle,
                 energy ?? EnergyRemainingEndOfTurn, gold ?? GoldStartOfThisTurn, lastDamage ?? LastAttackDamageDealt,
                 tracked ?? TrackedCards, DeckCards, stored ?? StoredCards,
-                handPlayed ?? HandCardsPlayedThisTurn, handLast ?? HandCardsPlayedLastTurn);
+                handPlayed ?? HandCardsPlayedThisTurn, handLast ?? HandCardsPlayedLastTurn, monsterDamage ?? MonsterDamage);
 
         private static IReadOnlyList<StatisticCount> Counts(IReadOnlyList<StatisticCount> values) =>
             Array.AsReadOnly(values.Where(value => value.Value != 0).OrderBy(value => value.Key, StringComparer.Ordinal).ToArray());

@@ -181,6 +181,14 @@ namespace MonsterTrain2Poju.Model
                 return Finish(members.Count());
             }
             bool previous = query.Duration == "PreviousTurn";
+            if (query.Type == "DamageDealtToMonsters" || query.Type == "FriendlyDamageDealtToMonsters")
+            {
+                if (statistics.MonsterDamage == null) return Unsupported("Monster damage counters were not captured.");
+                if (previous) return Finish(Local(query.Type));
+                bool friendly = query.Type == "FriendlyDamageDealtToMonsters";
+                return Finish(query.Duration == "ThisBattle" ? (friendly ? statistics.MonsterDamage.FriendlyThisBattle : statistics.MonsterDamage.ThisBattle) :
+                    (friendly ? statistics.MonsterDamage.FriendlyThisTurn : statistics.MonsterDamage.ThisTurn));
+            }
             IReadOnlyList<StatisticCount> floors = query.Duration == "ThisBattle" ? statistics.SpawnedThisBattlePerFloor : statistics.SpawnedThisTurnPerFloor;
             if (!previous && query.Type == "AnyMonsterSpawned") return Finish(Sum(floors.Select(count => count.Value)));
             if (!previous && query.Type == "AnyMonsterSpawnedTopFloor") return Finish(floors.FirstOrDefault(count => count.Key == "2")?.Value ?? 0);

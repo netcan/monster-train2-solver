@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--monster-damage-statistics-only")
+{
+    MonsterDamageStatisticsChecks.Native(args[1]);
+    return;
+}
 if (args.Length is >= 2 and <= 5 && args[0] == "--hellfurnace-rax-exit-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
