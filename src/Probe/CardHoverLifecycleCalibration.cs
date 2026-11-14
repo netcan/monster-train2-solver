@@ -10,14 +10,17 @@ using MonsterTrain2Poju.Model;
 
 namespace MonsterTrain2Poju.Probe
 {
-    internal static class MaximumHealthLethalPreviewCalibration
+    internal static class CardHoverLifecycleCalibration
     {
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MAXIMUM_HEALTH_LETHAL_PREVIEW") == "1";
+        internal static bool DirectDamage => Environment.GetEnvironmentVariable("MT2_PROBE_DIRECT_DAMAGE_CARD_HOVER") == "1";
+        internal static bool Enabled => DirectDamage || Environment.GetEnvironmentVariable("MT2_PROBE_MAXIMUM_HEALTH_LETHAL_PREVIEW") == "1";
         private static bool EnemyTarget => Environment.GetEnvironmentVariable("MT2_PROBE_MAXIMUM_HEALTH_LETHAL_PREVIEW_ENEMY") == "1";
         private sealed class Record
         {
             public string Label = "";
             public bool Horde, Undying, ActiveHalfHealth, ZeroMaximum;
+            public bool Lethal;
+            public int Armor;
             public int CardId, TargetId, RoomIndex, Amount;
             public CardPlayRule Rule = null!;
             public TrainCombatState Before = null!, After = null!, Cleared = null!;
@@ -74,18 +77,19 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("Lethal hover requires independent original primary actors and positive Horde base health.");
             foreach (var card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);
             var controls = new Dictionary<int, CardState>();
+            int DamageAmount(bool horde, bool half, bool final) => DirectDamage
+                ? final ? baseHealth * (horde ? 3 : 1) + 3 : Math.Max(1, baseHealth / 3)
+                : final ? baseHealth * (horde ? 3 : 1) : (baseHealth * (horde ? 3 : 1)) / 2 + (half ? 0 : 1);
             foreach (bool horde in new[] { false, true })
             foreach (bool half in new[] { false, true })
             foreach (bool zero in new[] { false, true })
             {
-                int maximum = baseHealth * (horde ? 3 : 1);
-                int health = half ? maximum / 2 : maximum / 2 + 1;
-                int amount = zero ? maximum : health;
+                int amount = DamageAmount(horde, half, zero);
                 if (controls.ContainsKey(amount)) continue;
                 var data = UnityEngine.Object.Instantiate(all.FindCardData(DevotionSpawnBattleScenario.VenerateId));
-                data.name = "PojuMaximumLethalHover" + amount;
-                Set(data, "id", "fc231b63-0000-4000-8000-" + amount.ToString("D12")); Set(data, "cost", 2);
-                var effect = new CardEffectData("CardEffectDebuffMaxHealth", null!, host.GetTeamType()); effect.Cheat_SetTargetMode(TargetMode.DropTargetCharacter);
+                data.name = (DirectDamage ? "PojuDamageHover" : "PojuMaximumLethalHover") + amount;
+                Set(data, "id", (DirectDamage ? "fc231b64" : "fc231b63") + "-0000-4000-8000-" + amount.ToString("D12")); Set(data, "cost", 2);
+                var effect = new CardEffectData(DirectDamage ? "CardEffectDamage" : "CardEffectDebuffMaxHealth", null!, host.GetTeamType()); effect.Cheat_SetTargetMode(TargetMode.DropTargetCharacter);
                 Set(effect, "paramInt", amount); Set(data, "effects", new List<CardEffectData> { effect });
                 Set(data, "traits", new List<CardTraitData>()); Set(data, "triggers", new List<CardTriggerEffectData>());
                 Set(data, "effectTriggers", new List<CharacterTriggerData>()); Set(data, "startingUpgrades", new List<CardUpgradeData>());
@@ -105,6 +109,7 @@ namespace MonsterTrain2Poju.Probe
                 foreach (bool undying in new[] { false, true })
                 foreach (bool half in new[] { false, true })
                 foreach (bool zero in new[] { false, true })
+                foreach (int armor in DirectDamage ? new[] { 0, 3 } : new[] { 0 })
                 {
                     for (int index = 0; index < actors.Count; index++)
                     {
@@ -124,7 +129,7 @@ namespace MonsterTrain2Poju.Probe
                     foreach (var witness in actors.Where(actor => actor != host && actor.GetCurrentRoomIndex() == host.GetCurrentRoomIndex()))
                         AddTrigger(witness, "OnAnyUnitDeathOnFloor", 2);
                     var hostStatuses = (Dictionary<string, CharacterState.StatusEffectStack>)Get(Get(host, "_primaryStateInformation"), "statusEffects");
-                    foreach (var pair in new[] { (Id: "horde", Count: horde ? 2 : 0), (Id: "undying", Count: undying ? 1 : 0) })
+                    foreach (var pair in new[] { (Id: "horde", Count: horde ? 2 : 0), (Id: "undying", Count: undying ? 1 : 0), (Id: "armor", Count: armor) })
                     {
                         if (hostStatuses.TryGetValue(pair.Id, out var status)) status.Count = pair.Count;
                         else hostStatuses.Add(pair.Id, new CharacterState.StatusEffectStack(managers.GetStatusEffectManager().Create(pair.Id, host), pair.Count));
@@ -134,17 +139,20 @@ namespace MonsterTrain2Poju.Probe
                     AccessTools.Method(typeof(CharacterState), "TryUpdateDeathwish").Invoke(host, null);
                     var queue = (Queue<CombatManager.TriggerQueueData>)AccessTools.Property(typeof(CombatManager), "TriggerQueue").GetValue(combat); queue.Clear();
                     yield return managers.GetRoomManager().GetRoomUI().SetSelectedRoom(host.GetCurrentRoomIndex());
-                    var card = controls[zero ? maximum : health];
+                    int amount = DamageAmount(horde, half, zero);
+                    var card = controls[amount];
                     active = new Record { Label = (horde ? "horde" : "plain") + (undying ? "-undying" : "") +
-                        (half ? "-active" : "-inactive") + (zero ? "-zero" : "-retained"), Horde = horde, Undying = undying,
-                        ActiveHalfHealth = half, ZeroMaximum = zero, Amount = zero ? maximum : health,
+                        (half ? "-active" : "-inactive") + (DirectDamage ? (zero ? "-lethal" : "-wounded") + "-armor" + armor : zero ? "-zero" : "-retained"), Horde = horde, Undying = undying,
+                        ActiveHalfHealth = half, ZeroMaximum = !DirectDamage && zero, Lethal = !DirectDamage || zero, Armor = armor, Amount = amount,
                         CardId = trace.CardId(card), TargetId = trace.UnitId(host), RoomIndex = host.GetCurrentRoomIndex(),
                         Rule = BattleActionProbe.Definition(all.FindCardData(card.GetCardDataID())!) };
                     active.Before = Snapshot(); active.RngBefore = HalfHealthLifecycleCalibration.Rng(); dispatches.Clear();
-                    log.LogInfo("MAXIMUM-LETHAL-HOVER sample=" + samples.Count + " label=" + active.Label);
-                    combat.PreviewCardPlay(true, card, host.GetCurrentRoom(), host, host.GetSpawnPoint(), null!, null!);
+                    log.LogInfo((DirectDamage ? "DIRECT-DAMAGE-HOVER" : "MAXIMUM-LETHAL-HOVER") + " sample=" + samples.Count + " label=" + active.Label);
+                    // CommonSelectionBehavior passes the ability activator as selfTarget;
+                    // ordinary hand spells have no activator. The drop point selects the target.
+                    combat.PreviewCardPlay(true, card, host.GetCurrentRoom(), null!, host.GetSpawnPoint(), null!, null!);
                     active.NativeReturned = true; active.After = Snapshot();
-                    combat.PreviewCardPlay(false, card, host.GetCurrentRoom(), host, host.GetSpawnPoint(), null!, null!);
+                    combat.PreviewCardPlay(false, card, host.GetCurrentRoom(), null!, host.GetSpawnPoint(), null!, null!);
                     active.Cleared = Snapshot(); active.RngAfter = HalfHealthLifecycleCalibration.Rng(); active.Dispatches = dispatches.ToArray();
                     active.QueueEmpty = queue.Count == 0;
                     active.TemporaryDisabled = !save.PreviewMode && actors.All(actor => !actor.PreviewMode && !actor.TemporaryPreviewsEnabled);
@@ -166,10 +174,10 @@ namespace MonsterTrain2Poju.Probe
                 CombatPreviewControl.Set(combat, suppression);
             }
             using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
-                GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId, Boundary = "NativeMaximumHealthLethalCardHover",
-                NativeCompleted = true, AuthoredControls = true, TargetTeam = EnemyTarget ? "Enemy" : "Player", BaseHealth = baseHealth, Samples = samples,
+                GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId, Boundary = DirectDamage ? "NativeDirectDamageCardHover" : "NativeMaximumHealthLethalCardHover",
+                NativeCompleted = true, AuthoredControls = true, TargetTeam = EnemyTarget ? "Enemy" : "Player", SelfTargetId = 0, BaseHealth = baseHealth, Samples = samples,
                 OriginalSuppression = originalSuppression, FinalSuppression = (int)Get(combat, "combatPreviewSuppressionCount") }))
-            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "maximum-health-lethal-preview.mt2f"))) document.Write(output);
+            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, DirectDamage ? "damage-card-preview.mt2f" : "maximum-health-lethal-preview.mt2f"))) document.Write(output);
         }
         [HarmonyPatch(typeof(CombatManager), "SetTemporaryStateEnabled")]
         private static class CopyPatch

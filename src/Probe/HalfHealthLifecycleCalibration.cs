@@ -37,7 +37,7 @@ namespace MonsterTrain2Poju.Probe
                 Managers.GetRoomManager().GetRoom(room).AddCharactersToList(actors, Team.Type.Monsters | Team.Type.Heroes);
             return actors.Where(actor => actor.IsAlive && !actor.IsDestroyed).ToArray();
         }
-        private static CharacterState? Host() => UpgradeEffects || MaximumHealthLethalPreviewCalibration.Enabled ? Actors().FirstOrDefault(actor => actor.GetTeamType() == Team.Type.Monsters &&
+        private static CharacterState? Host() => UpgradeEffects || CardHoverLifecycleCalibration.Enabled ? Actors().FirstOrDefault(actor => actor.GetTeamType() == Team.Type.Monsters &&
             actor.GetSourceCharacterData().GetAssetKey().StartsWith("TrainSteward", StringComparison.Ordinal) && actor.GetSpawnerCard() != null) :
             Actors().FirstOrDefault(actor => actor.GetTeamType() == Team.Type.Heroes &&
             Actors().Any(other => other.GetTeamType() == Team.Type.Monsters && other.GetCurrentRoomIndex() == actor.GetCurrentRoomIndex() &&
@@ -46,8 +46,8 @@ namespace MonsterTrain2Poju.Probe
             (!UpgradeEffects || !Managers.GetReplayManager().IsCardPlaying() && !Managers.GetCombatManager().IsRunningTriggerQueue &&
                 !(Managers.GetHandUI()?.AreAnyCardsAnimating() ?? false));
         internal static void Start(ManualLogSource log)
-        { Started = true; Save.StartCoroutine(Protect(MaximumHealthLethalPreviewCalibration.Enabled
-            ? MaximumHealthLethalPreviewCalibration.Capture(Host()!, log) : Run(log), log)); }
+        { Started = true; Save.StartCoroutine(Protect(CardHoverLifecycleCalibration.Enabled
+            ? CardHoverLifecycleCalibration.Capture(Host()!, log) : Run(log), log)); }
         private static IEnumerator Protect(IEnumerator root, ManualLogSource log)
         {
             var stack = new Stack<IEnumerator>(); stack.Push(root);

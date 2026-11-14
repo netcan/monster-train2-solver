@@ -7,6 +7,15 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+The 2.3.1 card-hover protocol also supports one constant direct-damage effect
+against a drop target: 64 native player/enemy controls cover armor, ordinary/Horde/
+Undying/half-health and lethal/nonlethal damage. Complete temporary targets,
+copy/effect/cancel states, gameplay RNG and 16 immutable branches each match.
+Ordinary spells have no self/ability activator and preserve the last-attack scalar.
+Horde hit casualties precede final death/revival. Run
+`scripts/Check-Game231DamageCardPreview.ps1`. Damage sweeps, ranges, OnCast,
+linked bodies and modified cards/callbacks still require hover calibration.
+
 The 2.3.1 ordinary/Horde/Undying/half-health maximum-health lethal card-hover
 protocol has 32 native player/enemy controls with complete temporary targets, copied/effect/
 cancel states, gameplay RNG and 16 immutable branches each. Preview death keeps

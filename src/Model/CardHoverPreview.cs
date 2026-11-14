@@ -26,8 +26,8 @@ namespace MonsterTrain2Poju.Model
 
     // CombatManager.PreviewCardPlay has its own protocol. It does not pay for a
     // card, move piles, increment played-card statistics, or reset the TFB counter.
-    // Maximum-health spells use temporary room copies, including lethal ordinary
-    // units and the calibrated nonlethal linked-boss roster. Battle previews keep
+    // Calibrated maximum-health and direct-damage spells use temporary room copies,
+    // including lethal ordinary units and nonlethal linked maximum-health changes. Battle previews keep
     // their separate protocol and validation.
     public static class CardHoverPreviewModel
     {
@@ -46,8 +46,12 @@ namespace MonsterTrain2Poju.Model
                 rule.ExternalInteractions.Count != 0 || rule.Equipment != null || rule.Ability != null ||
                 rule.SpawnUnit != null || rule.Summon != null || rule.HasKillTriggers ||
                 rule.Effects.Count == 0 || rule.Effects.Concat(rule.OnCastEffects).Any(effect =>
-                    effect.Type is not ("BuffHealth" or "DebuffHealth") || effect.Target is not ("DropTargetCharacter" or "Room")))
-                return new CardHoverPreviewResult("Card hover currently requires calibrated maximum-health spell effects and OnCast effects.");
+                    effect.Type is not ("BuffHealth" or "DebuffHealth" or "Damage") || effect.Target is not ("DropTargetCharacter" or "Room")))
+                return new CardHoverPreviewResult("Card hover currently requires calibrated maximum-health or direct-damage spell effects.");
+            if (rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Type == "Damage") &&
+                (links != null || rule.OnCastEffects.Count != 0 || rule.Effects.Count != 1 ||
+                    rule.Effects[0] is not { Type: "Damage", Target: "DropTargetCharacter", Range: null }))
+                return new CardHoverPreviewResult("Direct-damage hover requires one constant targeted effect without linked bodies or OnCast effects.");
             if (action.Operation != null || action.ActivatorUnitId != 0 || action.MixSelections.Count != 0 ||
                 action.RecursionSelections.Count != 0 || !primary.Cards.Hand.Any(card =>
                     card.InstanceId == action.CardInstanceId && card.DataId == rule.DataId))

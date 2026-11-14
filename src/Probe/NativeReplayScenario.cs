@@ -2491,7 +2491,8 @@ namespace MonsterTrain2Poju.Probe
                 if (HalfHealthLifecycleCalibration.Error != null) throw new InvalidOperationException(HalfHealthLifecycleCalibration.Error);
                 if (HalfHealthLifecycleCalibration.Completed)
                 {
-                    Finish(true, MaximumHealthLethalPreviewCalibration.Enabled ?
+                    Finish(true, CardHoverLifecycleCalibration.DirectDamage ?
+                        "Direct-damage card preview component captured; independent model acceptance remains separate." : CardHoverLifecycleCalibration.Enabled ?
                         "Maximum-health lethal card preview component captured; independent model acceptance remains separate." : HalfHealthLifecycleCalibration.UpgradeEffects ?
                         "Half-health Deathwish unit-upgrade effects component captured; full card and battle acceptance is separate." : HalfHealthLifecycleCalibration.UnitUpgrades ?
                         "Half-health Deathwish unit-upgrade lifecycle component captured; trigger changes and death require separate acceptance." : HalfHealthLifecycleCalibration.MaximumHealth ?

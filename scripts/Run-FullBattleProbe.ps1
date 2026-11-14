@@ -463,6 +463,8 @@ param(
     [switch] $HalfHealthDeathwishOnly,
     [switch] $HalfHealthLifecycleOnly,
     [switch] $MaximumHealthLethalPreviewOnly,
+    [switch] $DamageCardPreviewOnly,
+    [Alias('DamageCardPreviewTeam')]
     [ValidateSet('Player', 'Enemy')]
     [string] $MaximumHealthLethalPreviewTeam = 'Player',
     [switch] $ZealStatusOnly,
@@ -1485,19 +1487,19 @@ if ($ZealStatusOnly -or $ZealHordeOnly -or $HordeMaximumOnly) {
     if (([int][bool]$ZealStatusOnly + [int][bool]$ZealHordeOnly + [int][bool]$HordeMaximumOnly) -ne 1 -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $zealArguments }).Count) { throw 'Health/status lifecycle requires one isolated component mode.' }
     $Policy = 'steward-once'
 }
-if ($PSBoundParameters.ContainsKey('MaximumHealthLethalPreviewTeam') -and -not $MaximumHealthLethalPreviewOnly) {
-    throw 'A lethal-hover target team requires MaximumHealthLethalPreviewOnly.'
+if ($PSBoundParameters.ContainsKey('MaximumHealthLethalPreviewTeam') -and -not ($MaximumHealthLethalPreviewOnly -or $DamageCardPreviewOnly)) {
+    throw 'A card-hover target team requires MaximumHealthLethalPreviewOnly or DamageCardPreviewOnly.'
 }
-if ($MaximumHealthLethalPreviewOnly -or $HalfHealthLifecycleOnly -or $HalfHealthMaximumOnly -or $HalfHealthUpgradeOnly -or $HalfHealthUpgradeEffectsOnly -or $DamageReactionsOnly -or $DamageReactionRevivalOnly -or $DamageReactionFinalDeathOnly) {
-    $lifecycleArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'MaximumHealthLethalPreviewOnly', 'MaximumHealthLethalPreviewTeam', 'HalfHealthLifecycleOnly', 'HalfHealthMaximumOnly', 'HalfHealthUpgradeOnly', 'HalfHealthUpgradeEffectsOnly', 'DamageReactionsOnly', 'DamageReactionRevivalOnly', 'DamageReactionFinalDeathOnly',
+if ($MaximumHealthLethalPreviewOnly -or $DamageCardPreviewOnly -or $HalfHealthLifecycleOnly -or $HalfHealthMaximumOnly -or $HalfHealthUpgradeOnly -or $HalfHealthUpgradeEffectsOnly -or $DamageReactionsOnly -or $DamageReactionRevivalOnly -or $DamageReactionFinalDeathOnly) {
+    $lifecycleArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'MaximumHealthLethalPreviewOnly', 'DamageCardPreviewOnly', 'MaximumHealthLethalPreviewTeam', 'HalfHealthLifecycleOnly', 'HalfHealthMaximumOnly', 'HalfHealthUpgradeOnly', 'HalfHealthUpgradeEffectsOnly', 'DamageReactionsOnly', 'DamageReactionRevivalOnly', 'DamageReactionFinalDeathOnly',
         'BinaryCapture', 'CaptureJson', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction',
         'ProgressAction', 'ErrorVariable', 'WarningVariable', 'InformationVariable', 'OutVariable', 'OutBuffer', 'PipelineVariable')
-    if (@($MaximumHealthLethalPreviewOnly, $HalfHealthLifecycleOnly, $HalfHealthMaximumOnly, $HalfHealthUpgradeOnly, $HalfHealthUpgradeEffectsOnly, $DamageReactionsOnly, $DamageReactionRevivalOnly, $DamageReactionFinalDeathOnly | Where-Object { $_ }).Count -ne 1 -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $lifecycleArguments }).Count) {
+    if (@($MaximumHealthLethalPreviewOnly, $DamageCardPreviewOnly, $HalfHealthLifecycleOnly, $HalfHealthMaximumOnly, $HalfHealthUpgradeOnly, $HalfHealthUpgradeEffectsOnly, $DamageReactionsOnly, $DamageReactionRevivalOnly, $DamageReactionFinalDeathOnly | Where-Object { $_ }).Count -ne 1 -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $lifecycleArguments }).Count) {
         throw 'Half-health lifecycle sampling requires one isolated component mode without other scenarios.'
     }
     $Policy = 'steward-once'
     if ($DamageReactionsOnly -or $DamageReactionRevivalOnly -or $DamageReactionFinalDeathOnly) { $PhysicalSpawnPoints = $true }
-    if ($MaximumHealthLethalPreviewOnly) { $PhysicalSpawnPoints = $true; $BranchCardMasks = $true }
+    if ($MaximumHealthLethalPreviewOnly -or $DamageCardPreviewOnly) { $PhysicalSpawnPoints = $true; $BranchCardMasks = $true }
 }
 if ($HalfHealthDeathwishOnly) {
     $halfHealthArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'HalfHealthDeathwishOnly',
@@ -1923,9 +1925,10 @@ $environment = @{
     MT2_PROBE_ENCHANTMENT_COMBAT = $(if ($EnchantmentCombat) { '1' } else { '0' })
     MT2_PROBE_ENCHANTMENT_COMBAT_ONLY = $(if ($EnchantmentCombatOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_DEATHWISH = $(if ($HalfHealthDeathwishOnly) { '1' } else { '0' })
-    MT2_PROBE_HALF_HEALTH_LIFECYCLE = $(if ($HalfHealthLifecycleOnly -or $MaximumHealthLethalPreviewOnly) { '1' } else { '0' })
+    MT2_PROBE_HALF_HEALTH_LIFECYCLE = $(if ($HalfHealthLifecycleOnly -or $MaximumHealthLethalPreviewOnly -or $DamageCardPreviewOnly) { '1' } else { '0' })
     MT2_PROBE_MAXIMUM_HEALTH_LETHAL_PREVIEW = $(if ($MaximumHealthLethalPreviewOnly) { '1' } else { '0' })
-    MT2_PROBE_MAXIMUM_HEALTH_LETHAL_PREVIEW_ENEMY = $(if ($MaximumHealthLethalPreviewOnly -and $MaximumHealthLethalPreviewTeam -eq 'Enemy') { '1' } else { '0' })
+    MT2_PROBE_DIRECT_DAMAGE_CARD_HOVER = $(if ($DamageCardPreviewOnly) { '1' } else { '0' })
+    MT2_PROBE_MAXIMUM_HEALTH_LETHAL_PREVIEW_ENEMY = $(if (($MaximumHealthLethalPreviewOnly -or $DamageCardPreviewOnly) -and $MaximumHealthLethalPreviewTeam -eq 'Enemy') { '1' } else { '0' })
     MT2_PROBE_ZEAL_STATUS = $(if ($ZealStatusOnly -or $ZealHordeOnly -or $HordeMaximumOnly) { '1' } else { '0' })
     MT2_PROBE_ZEAL_HORDE = $(if ($ZealHordeOnly -or $HordeMaximumOnly) { '1' } else { '0' })
     MT2_PROBE_HORDE_MAXIMUM = $(if ($HordeMaximumOnly) { '1' } else { '0' })
@@ -2473,20 +2476,24 @@ Wait-NativeBattleExit -Process $process -Timer $nativeTimer -UnityLog $unityLog 
     -TimeoutSeconds $TimeoutSeconds -FailFastOnIsolatedUnitReject:$FailFastOnIsolatedUnitReject
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
-if ($MaximumHealthLethalPreviewOnly) {
-    $capturePath = Join-Path $profile 'maximum-health-lethal-preview.mt2f'
+if ($MaximumHealthLethalPreviewOnly -or $DamageCardPreviewOnly) {
+    $hoverFile = if ($DamageCardPreviewOnly) { 'damage-card-preview.mt2f' } else { 'maximum-health-lethal-preview.mt2f' }
+    $hoverBoundary = if ($DamageCardPreviewOnly) { 'NativeDirectDamageCardHover' } else { 'NativeMaximumHealthLethalCardHover' }
+    $hoverPass = if ($DamageCardPreviewOnly) { 'DEPTH-PASS Direct-damage card preview component captured' } else { 'DEPTH-PASS Maximum-health lethal card preview component captured' }
+    $hoverCount = if ($DamageCardPreviewOnly) { 32 } else { 16 }
+    $capturePath = Join-Path $profile $hoverFile
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or
-        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Maximum-health lethal card preview component captured' -Quiet) -or
-        (Get-OriginalSignature) -cne $originalBefore) { throw "Lethal maximum-health hover component failed; inspect $unityLog" }
+        -not (Select-String -LiteralPath $unityLog -Pattern $hoverPass -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Card-hover component failed; inspect $unityLog" }
     Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
     $captureDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
     try {
         $capture = $captureDocument.RootElement
-        if ($capture.GetProperty('Boundary').GetString() -cne 'NativeMaximumHealthLethalCardHover' -or
+        if ($capture.GetProperty('Boundary').GetString() -cne $hoverBoundary -or
             $capture.GetProperty('TargetTeam').GetString() -cne $MaximumHealthLethalPreviewTeam -or
-            -not $capture.GetProperty('NativeCompleted').GetBoolean() -or $capture.GetProperty('Samples').GetArrayLength() -ne 16 -or
+            -not $capture.GetProperty('NativeCompleted').GetBoolean() -or $capture.GetProperty('Samples').GetArrayLength() -ne $hoverCount -or
             $capture.GetProperty('OriginalSuppression').GetInt32() -ne $capture.GetProperty('FinalSuppression').GetInt32()) {
-            throw 'Incomplete lethal maximum-health hover capture.'
+            throw 'Incomplete card-hover capture.'
         }
     } finally { $captureDocument.Dispose() }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;

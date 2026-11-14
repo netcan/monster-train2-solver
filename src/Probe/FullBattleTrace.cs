@@ -104,7 +104,7 @@ namespace MonsterTrain2Poju.Probe
         {
             get
             {
-                if (MaximumHealthLethalPreviewCalibration.Enabled || OuterBossPhaseProbe.TurnsEnabled || playerEnchantmentWorld ||
+                if (CardHoverLifecycleCalibration.Enabled || OuterBossPhaseProbe.TurnsEnabled || playerEnchantmentWorld ||
                     (nativeEnchantmentWorld ??= EnemySpawningProbe.RequiresEnchantmentWorld())) return true;
                 // A player unit can introduce an aura even when every enemy wave
                 // is aura-free. Revisit newly discovered/generated definitions.

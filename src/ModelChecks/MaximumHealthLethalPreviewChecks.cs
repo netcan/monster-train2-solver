@@ -5,21 +5,6 @@ using MonsterTrain2Poju.Model;
 internal static class MaximumHealthLethalPreviewChecks
 {
     private static void Require(bool condition, string reason) => TrueFinalBossChecks.Require(condition, reason);
-    private static string Json(object value) => JsonSerializer.Serialize(value, ModelJson.Options);
-    private static void Same(TrainCombatState expected, TrainCombatState actual, string stage)
-    {
-        string? difference = ModelJson.Difference(Json(expected), Json(actual));
-        Require(difference == null, stage + ": " + difference);
-    }
-    private static bool GameplayRng(FixtureValue before, FixtureValue after)
-    {
-        var left = before.GetProperty("Streams").EnumerateArray().ToArray();
-        var right = after.GetProperty("Streams").EnumerateArray().ToArray();
-        return left.Length == 16 && right.Length == 16 && before.GetProperty("Unity").GetArrayLength() == 4 &&
-            before.GetProperty("Unity").ContentEquals(after.GetProperty("Unity")) && left.Zip(right).All(pair =>
-                pair.First.GetProperty("Id").GetString() == pair.Second.GetProperty("Id").GetString() &&
-                (pair.First.GetProperty("Id").GetString() is "NonDeterministic" or "Chatter" || pair.First.ContentEquals(pair.Second)));
-    }
     internal static void Native(string path)
     {
         using var document = ModelJson.ReadFixture(path);
@@ -74,30 +59,9 @@ internal static class MaximumHealthLethalPreviewChecks
                 row.GetProperty("DisableCount").GetInt32() == 1 && observed.Health == (undying ? 1 : 0) &&
                 observed.MaxHealth == expectedMax && observed.DeathState?.IsSacrifice == !undying &&
                 observed.DeathState.HasFinishedDying == !undying && (observed.Status("horde")?.Stacks ?? 0) == (horde ? 2 : 0) &&
-                observed.Status("undying") == null && GameplayRng(row.GetProperty("RngBefore"), row.GetProperty("RngAfter")),
+                observed.Status("undying") == null && CardHoverFixtureChecks.GameplayRng(row.GetProperty("RngBefore"), row.GetProperty("RngAfter")),
                 "Native lethal hover lifecycle or gameplay RNG differs: " + label);
-            string frozen = Json(before);
-            var result = CardHoverPreviewModel.Apply(before, rule, action);
-            Require(result.Supported, "Lethal hover unsupported: " + label + ": " + result.UnsupportedReason);
-            Same(result.CopiedBefore!, row.GetProperty("CopiedBefore").Deserialize<TrainCombatState>()!, label + " copied before");
-            Same(result.AfterEffects!, native, label + " after lethal effects");
-            var predictedTarget = result.AfterEffects!.Rooms.SelectMany(room => room.Units)
-                .Concat(result.TemporaryRemovedUnits).Single(unit => unit.Id == targetId);
-            string? targetDifference = ModelJson.Difference(Json(predictedTarget), Json(observed));
-            Require(targetDifference == null, label + " temporary target: " + targetDifference);
-            Same(result.Restored!, restored, label + " restored primary");
-            Same(result.Restored!, row.GetProperty("Cleared").Deserialize<TrainCombatState>()!, label + " cleared visuals");
-            Require(result.CopiedIds.SequenceEqual(row.GetProperty("CopiedIds").EnumerateArray().Select(id => id.GetInt32())) &&
-                Json(before) == frozen, "Lethal hover changed its parent or copied different actors: " + label);
-            string expected = Json(result.AfterEffects!);
-            string expectedRemoved = Json(result.TemporaryRemovedUnits);
-            Parallel.For(0, 16, branch =>
-            {
-                var fork = CardHoverPreviewModel.Apply(before, rule, action);
-                Require(fork.Supported && Json(fork.AfterEffects!) == expected && Json(fork.Restored!) == Json(restored) &&
-                    Json(fork.TemporaryRemovedUnits) == expectedRemoved && Json(before) == frozen,
-                    "Lethal hover immutable branch differs: " + label + "/" + branch);
-            });
+            CardHoverFixtureChecks.Match(row);
         }
         Console.WriteLine("MAXIMUM-HEALTH-LETHAL-PREVIEW PASS: 16 native " + teamName + " card hovers, ordinary/Horde/Undying/half-health and zero/positive maximum, " +
             "complete copy/effect/cancel states, gameplay RNG and 16 immutable branches per root.");
