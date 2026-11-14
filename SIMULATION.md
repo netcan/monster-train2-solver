@@ -8,10 +8,12 @@ under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
 The 2.3.1 ordinary/Horde/Undying/half-health maximum-health lethal card-hover
-protocol has 16 native controls with complete temporary targets, copied/effect/
+protocol has 32 native player/enemy controls with complete temporary targets, copied/effect/
 cancel states, gameplay RNG and 16 immutable branches each. Preview death keeps
 the real source card in Standby with a temporary ready condition; cancellation
-restores that condition and the living primary actor. Run
+restores that condition and the living primary actor. Enemy-specific death notices
+remain single while generic Harvest doubles for two dead Horde stacks; Undying
+revival leaves both single. Concurrent checks include removed temporary actors. Run
 `scripts/Check-Game231MaximumHealthLethalPreview.ps1`. Linked terminal previews
 and other callback/effect combinations remain separate.
 

@@ -38,6 +38,23 @@ LifeLink 最大生命牺牲也已有下方原版五体首领证据；预演致�
 2.2.1/2.3.1 重新跑完七回合原生无出牌胜局，四项失败计数均零；各自连续
 模型复放及 16 路不可变分支通过，确认新资源字段跨回合保留且旧版跳过新接口。
 
+## 敌方最大生命致死卡牌悬停 · 2026-11-15
+
+沿用下方我方矩阵，另对原生敌方单位完成 **16 组**普通／群体／不灭／半血控制，
+累计敌我 **32 组**。敌方死亡派发 `OnAnyHeroDeathOnFloor`，不派发我方死亡通知；
+群体两层真正死亡时，敌方专属通知倍数仍为一，通用收割为二，不灭复活后两者均为一。
+这与原生 Horde 仅增幅 `OnAnyMonsterDeathOnFloor`／`OnAnyUnitDeathOnFloor` 的逻辑一致。
+完整临时目标（含移除者）、副本建立／执行／取消／清视觉、游戏 RNG，以及每组
+16 路不可变分支均匹配；并发检查同时比较移除对象，不只比较仍在列车内的单位。
+
+原生采样 **25.91 秒**，玩家文件未变。新增 `enemy.mt2f` 为 **13,678 字节**，SHA256
+`889ba69f750ca77fd7b4a2a320431ba0932168ed72f714be44502fb177ae83dc`；原我方归档保留。
+`scripts/Check-Game231MaximumHealthLethalPreview.ps1` 同时验证两份归档；重新采样敌方用
+`Run-FullBattleProbe.ps1 -MaximumHealthLethalPreviewOnly -MaximumHealthLethalPreviewTeam Enemy -NativeWorker 3 -GameSpeed Instant`。
+Probe／ModelChecks Release 构建、32 组专用校验及既有 50 次 LifeLink 悬停定向回归通过。
+本项补齐敌方机制证据，不增加原版卡牌／遗物目录覆盖。LifeLink 终局预演、活跃遗物／
+光环／打牌回调、特性／升级及其他预演效果仍需验收；614／236 整体复验与完整模拟未完成。
+
 ## 最大生命致死卡牌悬停 · 2026-11-15
 
 完整 `PreviewCardPlay` 路径另完成 **16 组**我方普通／群体／不灭／半血组合：群体与否、

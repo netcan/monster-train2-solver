@@ -31,6 +31,9 @@ internal static class MaximumHealthLethalPreviewChecks
             root.GetProperty("OriginalSuppression").GetInt32() == root.GetProperty("FinalSuppression").GetInt32(),
             "Incomplete native lethal maximum-health hover evidence.");
         var rows = root.GetProperty("Samples").EnumerateArray().ToArray();
+        string teamName = root.TryGetProperty("TargetTeam", out var team) ? team.GetString()! : "Player";
+        Require(teamName is "Player" or "Enemy", "Unknown native lethal-hover target team.");
+        CombatTeam targetTeam = teamName == "Enemy" ? CombatTeam.Enemy : CombatTeam.Player;
         Require(rows.Length == 16 && rows.Select(row => (row.GetProperty("Horde").GetBoolean(), row.GetProperty("Undying").GetBoolean(),
             row.GetProperty("ActiveHalfHealth").GetBoolean(), row.GetProperty("ZeroMaximum").GetBoolean())).Distinct().Count() == 16,
             "Missing Horde/Undying/half-health/zero-maximum lethal hover controls.");
@@ -44,10 +47,20 @@ internal static class MaximumHealthLethalPreviewChecks
             var rule = row.GetProperty("Rule").Deserialize<CardPlayRule>()!;
             var action = new PlayCardAction(row.GetProperty("CardId").GetInt32(), row.GetProperty("RoomIndex").GetInt32(), targetUnitId: targetId);
             var target = before.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == targetId);
+            Require(target.Team == targetTeam, "Native lethal-hover target team differs: " + label);
             var observed = row.GetProperty("ActualTarget").Deserialize<CombatUnit>()!;
             bool undying = row.GetProperty("Undying").GetBoolean(), horde = row.GetProperty("Horde").GetBoolean();
             int expectedMax = row.GetProperty("ZeroMaximum").GetBoolean() ? undying ? 1 : 0 : target.MaxHealth - row.GetProperty("Amount").GetInt32();
             var dispatches = row.GetProperty("Dispatches").EnumerateArray().ToArray();
+            string deathKind = targetTeam == CombatTeam.Enemy ? "OnAnyHeroDeathOnFloor" : "OnAnyMonsterDeathOnFloor";
+            string otherDeathKind = targetTeam == CombatTeam.Enemy ? "OnAnyMonsterDeathOnFloor" : "OnAnyHeroDeathOnFloor";
+            int observerCount = before.Rooms.Single(room => room.RoomIndex == action.RoomIndex).Units.Count - (undying ? 0 : 1);
+            Require(dispatches.Count(dispatch => dispatch.GetProperty("Kind").GetString() == deathKind) == observerCount &&
+                !dispatches.Any(dispatch => dispatch.GetProperty("Kind").GetString() == otherDeathKind) &&
+                dispatches.Where(dispatch => dispatch.GetProperty("Kind").GetString() == deathKind).All(dispatch =>
+                    dispatch.GetProperty("TriggerCount").GetInt32() == (targetTeam == CombatTeam.Player && horde && !undying ? 2 : 1)) &&
+                dispatches.Count(dispatch => dispatch.GetProperty("Kind").GetString() == "OnAnyUnitDeathOnFloor") == observerCount,
+                "Native team-specific death observers or Horde multiplicity differs: " + label);
             Require(target.Triggers.Where(HalfHealthDeathwishModel.IsTrigger).All(trigger =>
                     trigger.DeathwishActive == row.GetProperty("ActiveHalfHealth").GetBoolean()) &&
                 dispatches.Count(dispatch => dispatch.GetProperty("Kind").GetString() == "OnDeath") == 1 &&
@@ -77,14 +90,16 @@ internal static class MaximumHealthLethalPreviewChecks
             Require(result.CopiedIds.SequenceEqual(row.GetProperty("CopiedIds").EnumerateArray().Select(id => id.GetInt32())) &&
                 Json(before) == frozen, "Lethal hover changed its parent or copied different actors: " + label);
             string expected = Json(result.AfterEffects!);
+            string expectedRemoved = Json(result.TemporaryRemovedUnits);
             Parallel.For(0, 16, branch =>
             {
                 var fork = CardHoverPreviewModel.Apply(before, rule, action);
-                Require(fork.Supported && Json(fork.AfterEffects!) == expected && Json(fork.Restored!) == Json(restored) && Json(before) == frozen,
+                Require(fork.Supported && Json(fork.AfterEffects!) == expected && Json(fork.Restored!) == Json(restored) &&
+                    Json(fork.TemporaryRemovedUnits) == expectedRemoved && Json(before) == frozen,
                     "Lethal hover immutable branch differs: " + label + "/" + branch);
             });
         }
-        Console.WriteLine("MAXIMUM-HEALTH-LETHAL-PREVIEW PASS: 16 native card hovers, ordinary/Horde/Undying/half-health and zero/positive maximum, " +
+        Console.WriteLine("MAXIMUM-HEALTH-LETHAL-PREVIEW PASS: 16 native " + teamName + " card hovers, ordinary/Horde/Undying/half-health and zero/positive maximum, " +
             "complete copy/effect/cancel states, gameplay RNG and 16 immutable branches per root.");
     }
 }

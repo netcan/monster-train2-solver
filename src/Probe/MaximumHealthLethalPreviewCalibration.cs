@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class MaximumHealthLethalPreviewCalibration
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MAXIMUM_HEALTH_LETHAL_PREVIEW") == "1";
+        private static bool EnemyTarget => Environment.GetEnvironmentVariable("MT2_PROBE_MAXIMUM_HEALTH_LETHAL_PREVIEW_ENEMY") == "1";
         private sealed class Record
         {
             public string Label = "";
@@ -59,6 +60,10 @@ namespace MonsterTrain2Poju.Probe
                 actors.AddRange(floor);
             }
             actors = actors.Distinct().ToList();
+            if (EnemyTarget)
+                host = actors.FirstOrDefault(actor => actor.GetTeamType() == Team.Type.Heroes &&
+                    actor.GetCurrentRoomIndex() == target.GetCurrentRoomIndex() && actor.GetSourceCharacterData().GetHealth() >= 2)
+                    ?? throw new InvalidOperationException("Enemy lethal hover requires an original enemy beside the deployed Steward.");
             var stateType = AccessTools.Inner(typeof(CharacterState), "StateInformation");
             object Copy(object state) => AccessTools.Method(stateType, "DeepCopyForPreview").Invoke(state, null);
             var primary = actors.Select(actor => Get(actor, "_primaryStateInformation")).ToArray();
@@ -80,7 +85,7 @@ namespace MonsterTrain2Poju.Probe
                 var data = UnityEngine.Object.Instantiate(all.FindCardData(DevotionSpawnBattleScenario.VenerateId));
                 data.name = "PojuMaximumLethalHover" + amount;
                 Set(data, "id", "fc231b63-0000-4000-8000-" + amount.ToString("D12")); Set(data, "cost", 2);
-                var effect = new CardEffectData("CardEffectDebuffMaxHealth", null!, Team.Type.Monsters); effect.Cheat_SetTargetMode(TargetMode.DropTargetCharacter);
+                var effect = new CardEffectData("CardEffectDebuffMaxHealth", null!, host.GetTeamType()); effect.Cheat_SetTargetMode(TargetMode.DropTargetCharacter);
                 Set(effect, "paramInt", amount); Set(data, "effects", new List<CardEffectData> { effect });
                 Set(data, "traits", new List<CardTraitData>()); Set(data, "triggers", new List<CardTriggerEffectData>());
                 Set(data, "effectTriggers", new List<CharacterTriggerData>()); Set(data, "startingUpgrades", new List<CardUpgradeData>());
@@ -162,7 +167,7 @@ namespace MonsterTrain2Poju.Probe
             }
             using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
                 GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId, Boundary = "NativeMaximumHealthLethalCardHover",
-                NativeCompleted = true, AuthoredControls = true, BaseHealth = baseHealth, Samples = samples,
+                NativeCompleted = true, AuthoredControls = true, TargetTeam = EnemyTarget ? "Enemy" : "Player", BaseHealth = baseHealth, Samples = samples,
                 OriginalSuppression = originalSuppression, FinalSuppression = (int)Get(combat, "combatPreviewSuppressionCount") }))
             using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "maximum-health-lethal-preview.mt2f"))) document.Write(output);
         }
