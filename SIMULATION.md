@@ -1,11 +1,12 @@
 # Full battle simulation
 
-Current curated inventory (2026-10-21): 844 binary archives, including 781
-full battles and 63 component calibrations. The card index accepts 780 battles;
-one historical capture retains nonzero mismatch counters and stays excluded.
-Unchanged original relic evidence
-covers 224/224 catalog entries (100%): 206 battle owners, 17 campaign
-interface owners and one native no-op; see
+Current curated inventory (2026-11-14): 2,861 binary archives with verified
+hashes and registrations. The card evidence index accepts 1,561 battle archives
+and 31,514 native actions; three historical captures with nonzero counters stay
+excluded. All 559 intrinsically playable logbook cards have a definition-matched
+successful native play; four original cards are intrinsically unplayable.
+Unchanged original relic evidence covers 224/224 catalog entries (100%): 206
+battle owners, 17 campaign interface owners and one native no-op; see
 [the owner evidence table](tests/fixtures/inventory/relic-coverage.md). Whole-battle
 coverage for arbitrary combinations remains in progress. Exact deterministic
 search and probability policies now have explicit, scoped certificates and
