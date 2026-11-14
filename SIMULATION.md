@@ -17,9 +17,19 @@ queues across revival, one-HP gain/loss, active-half controls and once-only deat
 listeners. Final death in the native card-damage phase has 18 more native
 successors and two actual player/enemy removals, with 99 dispatch payloads and
 32 immutable branches each. Death effects, Harvest, retained actors, physical
-points and spawner exhaustion match. Actual Bloodshed/Punish effects in preview
-and other damage phases remain guarded; these components do not count as
-whole-card/relic acceptance on 2.3.1.
+points and spawner exhaustion match. These components do not count as
+whole-card/relic acceptance on 2.3.1; complete battle evidence follows below.
+
+Bloodshed/Punish now also pass native plays, natural attacks, self-damage turns,
+zero-HP callbacks, Undying/final death and preview in one complete battle with
+the unchanged `DamageFriendlyOnSpawn` Punish retaliation relic. All 29 plays,
+seven EndTurns, 54 room and 14 train phases match; 844 observed callbacks include
+674 in preview. Each mode has first-fire source changes and direct retaliation
+armor/health observations. Continuous independent replay and 16 immutable
+branches pass. Native balance data excludes this runtime effect from piercing
+in 2.3.1; legacy 2.2.1 piercing evidence remains unchanged. Recheck with
+`scripts/Check-Game231DamageReactionBattle.ps1`. Together with `DeathwishAttack`,
+two of the 12 new relic owners have complete native battle acceptance.
 
 Half-health Deathwish now also passes a complete authored native battle: two
 paid deployments, three damage/heal controls, natural later turns, Undying and

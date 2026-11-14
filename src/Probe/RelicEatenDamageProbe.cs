@@ -41,7 +41,8 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static readonly List<TestRecord> Tests = new List<TestRecord>();
         internal static readonly List<ApplicationRecord> Applications = new List<ApplicationRecord>();
-        private static bool Active => (OriginalEatenDamageScenario.Prepared || OriginalBurnoutDamageScenario.Prepared) && FullBattleTrace.Active != null &&
+        private static bool Active => (OriginalEatenDamageScenario.Prepared || OriginalBurnoutDamageScenario.Prepared ||
+            DamageReactionBattleScenario.Prepared) && FullBattleTrace.Active != null &&
             !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
         private static int[] Targets(RelicEffectDamageEnemyOnFriendlyTrigger effect) =>
             ((List<CharacterState>)AccessTools.Field(effect.GetType(), "_targets").GetValue(effect))

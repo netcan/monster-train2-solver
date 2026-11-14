@@ -52,10 +52,6 @@ internal static class DamageReactionChecks
         RoomCombatState missingStatistics = modern.WithContext(modern.Context!.WithStatistics(null));
         Require(RoomCombatModel.Validate(missingStatistics)?.Contains("2.3.1 damage lifecycle", StringComparison.Ordinal) == true,
             "Unversioned authored Bloodshed/Punish was accepted.");
-        RoomCombatState preview = new RoomCombatState(modern.RoomIndex, modern.Deployment, modern.Units,
-            modern.ExternalInteractions, modern.Context, true, modern.ActiveCompanionBossIds);
-        Require(RoomCombatModel.Validate(preview)?.Contains("preview callbacks", StringComparison.Ordinal) == true,
-            "Uncalibrated Bloodshed/Punish preview effects were accepted.");
         Parallel.For(0, 32, _ => { foreach (FixtureValue sample in samples) Verify(sample); });
         Console.WriteLine("DAMAGE-REACTIONS PASS: 33 native complete successors, two paid same-floor units, source precedence, shields/thresholds/once/silence, nested effects and half-health ordering; every dispatch/RNG and 32 immutable parallel branches match.");
     }
@@ -110,7 +106,7 @@ internal static class DamageReactionChecks
         Parallel.For(0, 32, _ => { foreach (FixtureValue sample in samples) Verify(sample); });
         Require(!Kinds(byLabel["revival-active-half-remains"]).Any(kind => kind is "OnDeathwish" or "OnDeathwishLost") &&
             !Kinds(byLabel["revival-active-half-heal-leaves"]).Contains("OnDeathwish"), "Active half-health revival repeated its gain callback.");
-        Console.WriteLine("DAMAGE-REACTION-REVIVAL PASS: 20 full native Undying successors, lethal friendly/enemy/self/relic sources, dead callback target controls, half-health queue before revival, one-HP gain/loss, active-half controls, reanimated/death healing, twice-revived once-listener, full dispatch/RNG/state and 32 immutable branches. Final death has separate acceptance; preview remains guarded.");
+        Console.WriteLine("DAMAGE-REACTION-REVIVAL PASS: 20 full native Undying successors, lethal friendly/enemy/self/relic sources, dead callback target controls, half-health queue before revival, one-HP gain/loss, active-half controls, reanimated/death healing, twice-revived once-listener, full dispatch/RNG/state and 32 immutable branches. Full battle/preview acceptance is checked separately.");
     }
     internal static void NativeFinalDeath(string path)
     {

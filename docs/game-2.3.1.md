@@ -418,7 +418,7 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -DamageRea
 
 共享附魔世界中的半血条件、直接升级 API 的预演、外部运行队列中的直接升级、
 致命最大生命/升级变化、升级安装触发/技能/状态等仍保持各自边界。
-实际 Bloodshed/Punish 效果的预演也仍受保护；本场景观察到的是原生伤害请求及半血效果。
+本场景观察到的是原生伤害请求及半血效果；实际 Bloodshed/Punish 的整局与预演见后节。
 
 ```powershell
 pwsh -NoProfile -File scripts/Check-Game231HalfHealthBattle.ps1
@@ -498,6 +498,54 @@ Probe/ModelChecks 构建和 PowerShell 解析通过；原有半血整局的 25 �
 336 份回调及 16 路分支定向回归通过。
 共享附魔世界、直接升级 API 的预演及其他尚未校准的半血组合继续遵守各自边界。
 
+## Bloodshed/Punish 的自然战斗、预演与原版反击遗物
+
+原版新增遗物 `DamageFriendlyOnSpawn`（`5253721f-c51c-4148-9958-d45550f08316`）
+的实际效果是友军 Punish 时对本层最前方敌人造成 5 点伤害；内部名称不作为机制依据。
+遗物及效果定义保持原样，实际获取后再出牌。只在隔离 worker3 改写控制单位/法术：
+两名保留原费用的 12 生命、一体积列车员同层部署，附加一层 Undying，
+Bloodshed/OnHit/Punish/重生/死亡奖励分别为 5/10/15/20/25 金币，回合开始自伤 6。
+随后实际打出五张友方伤害 7、治疗 8、伤害 1、伤害 7、治疗 8 的控制法术。
+
+原生完整胜局中 29 次出牌、7 次 EndTurn、54 个房间和 14 个列车阶段匹配。
+844 份完成的触发观察有 170 份实际、674 份预演。两种模式分别覆盖三个伤害触发器的
+首次执行标志、同层 Bloodshed 旁观者、普通攻击来源以及零生命角色保留回调；
+预演金币不变。另有自然 Undying、最终死亡和移除，独立模型连续推进完整状态及 RNG，
+16 路分支均一致且父状态未变。原有预演及非卡牌致命伤害保护在此证据下解除；
+缺失新版伤害统计标识的 Bloodshed/Punish 和新增 Punish 遗物仍拒绝模拟。
+
+第一轮真实采样暴露了版本间穿甲差异，造成 12 项整局不符：模型让反击直接扣生命，
+原生却将敌人的 25 护甲减到 20，生命不变。源码 `DamageHelper.IsPiercingDamage`
+按运行时效果类查询平衡表，新增观察直接保留原生效果类型及穿甲名单；
+2.3.1 的名单不含 `RelicEffectDamageEnemyOnFriendlyTrigger`。
+模型据已捕获的新版伤害统计标识选择新版规则，旧 2.2.1 归档继续采用原穿甲规则，
+也保留公共的全伤害穿甲修正。新版目录中 `DamageOnEaten` 已改用名单内的
+`RelicEffectDamageEnemyOnFriendlyTriggerPiercing` 派生效果，`DamageOnBurnoutDeath`
+仍用普通效果；它们需各自重新验收，旧归档通过不等于已获新版整局证据。
+
+在实际与预演中另直接捕获原版反击的目标前后状态，共六次实际、32 次预演，
+分别要求观察到护甲消耗和生命伤害；目标已含燃胶的伤害增加也在核对范围。
+实际执行还独立复放了六次原生遗物伤害及完整 Test 状态，包含正向、非匹配触发器、
+敌方来源与空房间对照。检查不会把“调用了预演回调”直接当作反击伤害已执行。
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Game231DamageReactionBattle.ps1
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -DamageReactionBattle -GameSpeed Instant -SkipBuild
+```
+
+33 项伤害、20 项 Undying、18 项最终死亡及每项 32 路分支回归通过；
+旧版 `DamageOnEaten` 和 `DamageOnBurnoutDeath` 的原生定向检查仍通过。
+半血整局与原版 `DeathwishAttack` 的完整连续复放及各 16 路分支通过，
+Probe、ModelChecks、Advisor 构建及 PowerShell 解析通过。
+新增遗物现有 `DeathwishAttack` 与 `DamageFriendlyOnSpawn` 两件取得新版原版整局证据，
+为 2/12；其余新增遗物、新版 614 张卡及 236 件遗物的全量重验仍未完成。
+更多嵌套效果及共享附魔世界组合不计入本次证据范围。
+
+二进制 `mechanics/damage-reactions/battle/full-battle.mt2f` 为 75,548 字节，SHA256
+`9d83a4e5a03409ededdc95765172611be2394f47b2996ca9537848b1315ca8a8`。
+来源 `.probe-runs/full-battle-units-spells-and-junk-20261114-170013-316a5a79`，
+原生 336.50 秒，四类失败计数均零、退出码零、`DEPTH-PASS` 及玩家文件未变检查通过。
+
 ## 可复验样本
 
 [版本化样本目录](../tests/compatibility/game-2.3.1/) 保存八份二进制归档：
@@ -537,7 +585,8 @@ Rule 投影发生变化的共有卡牌：`DantesInferno`、`FlickerRaiseOnSlayAb
 `EmberForDamagedPerFloor`、`FriendlyUnitPunish`、`MonolithDevotion`、`RevengeTriggerTwice`、
 `SpellsNoKillFriendlies`、`ZealDamageIncrease`。
 
-其中 `DeathwishAttack` 已完成上述原版整局验收，其余新增遗物仍需各自证据。
+其中 `DeathwishAttack`、`DamageFriendlyOnSpawn` 已完成上述原版整局验收，
+其余新增遗物仍需各自证据。
 
 变更的共有遗物：`ApplyDazedOnAscendOrDescend`、`CopyConsumedCard`、`DamageOnEaten`、
 `FriendlyUnitsGainDeathwishPermanentHealth`、`FriendlyUnitsGainDeathwishValor`、

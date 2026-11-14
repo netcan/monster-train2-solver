@@ -1703,6 +1703,7 @@ namespace MonsterTrain2Poju.Probe
                 Actions = actions.Records,
                 HalfHealthBattle = HalfHealthBattleScenario.Enabled ? HalfHealthBattleScenario.Evidence : null,
                 OriginalDeathwishAttack = OriginalDeathwishAttackScenario.Enabled ? OriginalDeathwishAttackScenario.Evidence : null,
+                DamageReactionBattle = DamageReactionBattleScenario.Enabled ? DamageReactionBattleScenario.Evidence : null,
                 PlannerRuns = PlannerReplayScenario.Records,
                 RollingDecisions = RollingAdviceScenario.Records,
                 BattleDistance = AllGameManagers.Instance!.GetSaveManager().GetCurrentDistance(),

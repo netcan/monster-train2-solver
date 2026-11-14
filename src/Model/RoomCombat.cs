@@ -1200,8 +1200,6 @@ namespace MonsterTrain2Poju.Model
                         return "Unmodeled trigger " + trigger.Kind;
                     if (trigger.Kind is "OnBloodshed" or "OnPunish" && state.Context?.Statistics?.MonsterDamage == null)
                         return trigger.Kind + " requires the game 2.3.1 damage lifecycle snapshot.";
-                    if (trigger.Kind is "OnBloodshed" or "OnPunish" && state.Preview)
-                        return trigger.Kind + " preview callbacks require native lifecycle calibration.";
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "PostCombat" && trigger.SkipDuringDeployment == null)
                         return trigger.Kind + " requires deployment timing state.";
                     if (trigger.TriggerAtThreshold > 0 && trigger.Kind != "OnDeath" && trigger.Kind != "OnHit" && trigger.Kind != "OnKill" && trigger.Kind != "OnBloodshed" && trigger.Kind != "OnPunish" &&
@@ -3059,12 +3057,6 @@ namespace MonsterTrain2Poju.Model
                 if (attackingTrigger && actor != null && actor != target)
                     FireTriggers(actor, "OnAttackingBeforeDamage", overrideTarget: target);
                 if (unsupportedReason != null) return;
-                if (!nativeCardDamage && resultingHealth <= 0 && target.Count("undying") <= 0 &&
-                    (target.Triggers.Any(trigger => trigger.Kind == "OnPunish") ||
-                    target.Source.Team == CombatTeam.Player && units.Any(unit => unit.InRoom && !unit.Removed &&
-                        unit.RoomIndex == target.RoomIndex && unit.Source.Team == CombatTeam.Player &&
-                        unit.Triggers.Any(trigger => trigger.Kind == "OnBloodshed"))))
-                { unsupportedReason = "Bloodshed/Punish lethal damage outside the native card phase requires death/revival lifecycle calibration."; return; }
                 if (!SetHealth(target, resultingHealth)) return;
                 if (!source.Preview && target.Source.Team == CombatTeam.Player && !target.Source.IsPyre &&
                     context?.Statistics?.MonsterDamage != null)
@@ -4444,6 +4436,7 @@ namespace MonsterTrain2Poju.Model
                         relic.EffectTypes[effectIndex] == RelicHealDamageModel.Effect)
                     {
                         bool healDamage = relic.EffectTypes[effectIndex] == RelicHealDamageModel.Effect;
+                        bool piercing = !healDamage && RelicFriendlyTriggerDamageModel.IsPiercing(context);
                         int damage = healDamage ? paramInt : 5;
                         RoomCombatState frame = CurrentRoom();
                         var train = new TrainCombatState([frame], [], 0, context);
@@ -4460,14 +4453,14 @@ namespace MonsterTrain2Poju.Model
                                 // Preview damage belongs to this engine's retained
                                 // units and death queue, without physical removal.
                                 Damage(null, units.Single(target => target.Source.Id == id), damage, "Spell", applyTraits: false,
-                                    piercing: !healDamage, relicSourced: true);
+                                    piercing: piercing, relicSourced: true);
                                 if (unsupportedReason != null) return false;
                                 continue;
                             }
-                            // The original balance list makes friendly-trigger
-                            // relic damage piercing, including burnout/death.
+                            // The 2.3.1 balance list excludes this ordinary
+                            // effect class, so its damage consumes armor.
                             RoomCombatResult damaged = ApplyRelicDamage(CurrentRoom(), id, damage,
-                                QueueRelicDamageCallback, piercing: !healDamage);
+                                QueueRelicDamageCallback, piercing: piercing);
                             if (!damaged.Supported) { unsupportedReason = damaged.UnsupportedReason; return false; }
                             MergeSummon(damaged);
                             foreach (QueuedCharacterTrigger callback in damaged.PendingCallbacks)

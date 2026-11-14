@@ -17,6 +17,12 @@ namespace MonsterTrain2Poju.Model
         internal const string AssetKey = "DamageOnEaten";
         internal const string BurnoutDataId = "cb54fe76-9b3c-47f9-972c-424ec3ee39f7";
         internal const string BurnoutAssetKey = "DamageOnBurnoutDeath";
+        internal const string PunishDataId = "5253721f-c51c-4148-9958-d45550f08316";
+        internal const string PunishAssetKey = "DamageFriendlyOnSpawn";
+        // DamageHelper checks the shared runtime effect class against balance
+        // data. The 2.2.1 captures pierce; the 2.3.1 class consumes armor. Its
+        // damage-statistics snapshot identifies that native ruleset.
+        internal static bool IsPiercing(CombatContext? context) => context?.Statistics?.MonsterDamage == null;
 
         internal static string? Validate(CombatRelicState owner, RelicResourceEffect effect)
         {
@@ -29,7 +35,10 @@ namespace MonsterTrain2Poju.Model
                 (effect.EffectIndex == 0 && trigger?.Trigger == "OnDeath" && trigger.RequiredStatuses.SequenceEqual(new[] { "ephemeral" }) ||
                  effect.EffectIndex == 1 && trigger?.Trigger == "OnBurnout" && trigger.RequiredStatuses.Count == 0) &&
                 effect.UnitDamage?.TargetMode == "Room";
-            return (eaten || burnout) && owner.DisallowedInPlacementPhase == false &&
+            bool punish = owner.DataId == PunishDataId && owner.AssetKey == PunishAssetKey &&
+                owner.EffectTypes.SequenceEqual(new[] { Effect }, StringComparer.Ordinal) && effect.EffectIndex == 0 &&
+                trigger?.Trigger == "OnPunish" && trigger.RequiredStatuses.Count == 0 && effect.UnitDamage?.TargetMode == "FrontInRoom";
+            return (eaten || burnout || punish) && owner.DisallowedInPlacementPhase == false &&
                 effect.ParamInt == 5 && effect.Amount == 5 && effect.ParamInt2 == 0 && effect.Conditions.Count == 0 &&
                 effect.CanApplyInPreviewMode && effect.RequiredMutatorId == null && trigger != null &&
                 trigger.Team == "Monsters" && trigger.Subtype == null
@@ -44,6 +53,8 @@ namespace MonsterTrain2Poju.Model
             CombatRelicState? owner = source.Context?.Relics?.ElementAtOrDefault(relicIndex);
             RelicResourceEffect? effect = owner?.ResourceEffects?.SingleOrDefault(rule => rule.Type == Effect && rule.EffectIndex == effectIndex);
             if (effect == null) return new(null, error: "Missing friendly-trigger damage owner/effect.");
+            if (owner!.DataId == PunishDataId && source.Context?.Statistics?.MonsterDamage == null)
+                return new(null, error: "Punish retaliation requires the game 2.3.1 damage lifecycle snapshot.");
             RelicUnitResourceRule rule = effect.UnitTrigger!;
             if (trigger != rule.Trigger || actor.Team != CombatTeam.Player || actor.IsPyre ||
                 rule.RequiredStatuses.Any(status => !(actor.Status(status)?.Stacks > 0)) ||
@@ -65,7 +76,7 @@ namespace MonsterTrain2Poju.Model
             foreach (int target in targets)
             {
                 TrainCombatResult damaged = RelicCardPlayDamageModel.ApplySelected(state, new[] { target },
-                    deferPhysicalRemoval, damageAmount: 5, selectTargetRoom: false, piercing: true);
+                    deferPhysicalRemoval, damageAmount: 5, selectTargetRoom: false, piercing: IsPiercing(state.Context));
                 if (!damaged.Supported) return damaged;
                 state = damaged.State!; rooms.AddRange(damaged.RoomResults);
                 if (damaged.Outcome != RoomOutcome.Exchanged) outcome = damaged.Outcome;

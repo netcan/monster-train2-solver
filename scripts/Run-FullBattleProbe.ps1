@@ -461,6 +461,7 @@ param(
     [switch] $DamageReactionRevivalOnly,
     [switch] $DamageReactionFinalDeathOnly,
     [switch] $HalfHealthBattle,
+    [switch] $DamageReactionBattle,
     [switch] $OriginalDeathwishAttack,
     [switch] $EnchantmentWorld,
     [switch] $HordeStatuses,
@@ -1367,6 +1368,7 @@ if ($OriginalNullRelic -or $OriginalNullRelicBaseline) { $BranchCardMasks = $tru
 if ($OriginalRelicCountAttack) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoreSpikes) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($HalfHealthBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($DamageReactionBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDeathwishAttack) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStealthSlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -2275,6 +2277,7 @@ if ($OriginalNullRelicBaseline) { $environment['MT2_PROBE_MODIFIERS'] = 'origina
 if ($OriginalRelicCountAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-relic-count-attack' }
 if ($OriginalMoreSpikes) { $environment['MT2_PROBE_MODIFIERS'] = 'original-more-spikes' }
 if ($HalfHealthBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'half-health-battle' }
+if ($DamageReactionBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-reaction-battle' }
 if ($OriginalDeathwishAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-deathwish-attack' }
 if ($OriginalStealthSlay) { $environment['MT2_PROBE_MODIFIERS'] = 'original-stealth-slay' }
 if ($OriginalUnitUpgradeTriggerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-upgrade-trigger-relic' }
@@ -2710,6 +2713,13 @@ if ($ChooseDiscard -and ($trace.ModifierScenario -ne 'card-effect-choose-discard
     -not (Select-String -LiteralPath $unityLog -Pattern 'CHOOSE-DISCARD-AUTOSELECT card=\d+ cost=2' -Quiet) -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 1)) {
     throw 'Original StarterScrap did not consume the selected cost-2 card in the native battle.'
+}
+if ($DamageReactionBattle -and ($trace.ModifierScenario -cne 'damage-reaction-battle' -or
+    -not $trace.DamageReactionBattle.Prepared -or $trace.DamageReactionBattle.CompletedControlPlays -ne 7 -or
+    @($trace.DamageReactionBattle.Transitions | Where-Object { -not $_.Completed -or $null -eq $_.After }).Count -ne 0 -or
+    @($trace.DamageReactionBattle.Transitions | Where-Object { -not $_.Preview }).Count -eq 0 -or
+    @($trace.DamageReactionBattle.Transitions | Where-Object Preview).Count -eq 0)) {
+    throw 'Damage reaction full-battle controls or callback evidence are incomplete.'
 }
 if ($OriginalDeathwishAttack -and ($trace.ModifierScenario -cne 'original-deathwish-attack' -or
     -not $trace.OriginalDeathwishAttack.Prepared -or $trace.OriginalDeathwishAttack.CompletedControlPlays -ne 7 -or
