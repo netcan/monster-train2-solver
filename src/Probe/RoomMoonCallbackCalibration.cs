@@ -22,6 +22,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool InactiveMushyMovement => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_MUSHY_MOVEMENT") == "1";
         internal static bool InactiveMushyTurn => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_MUSHY_TURN") == "1";
         internal static bool InactiveInfernoTurn => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_INFERNO_TURN") == "1";
+        internal static bool InactiveMushyTwoTurns => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_MUSHY_TWO_TURNS") == "1";
         internal static bool Shade => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_SHADE") == "1";
         internal static bool Movement => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_MOVEMENT") == "1";
         internal static bool Enemy => Movement && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_ENEMY") == "1";
@@ -99,9 +100,9 @@ namespace MonsterTrain2Poju.Probe
                 yield return RunInactiveRefresh(log);
                 yield break;
             }
-            if (InactiveMushyTurn || InactiveInfernoTurn)
+            if (InactiveMushyTurn || InactiveInfernoTurn || InactiveMushyTwoTurns)
             {
-                yield return RunInactiveRoomTurn(log, InactiveInfernoTurn);
+                yield return RunInactiveRoomTurn(log, InactiveInfernoTurn, InactiveMushyTwoTurns);
                 yield break;
             }
             if (InactiveMovement || InactiveInfernoMovement || InactiveInfernoExit || InactiveMushyMovement)
@@ -394,7 +395,7 @@ namespace MonsterTrain2Poju.Probe
                 " gameplayRngUnchanged=" + rngUnchanged);
         }
 
-        private static IEnumerator RunInactiveRoomTurn(ManualLogSource log, bool inferno)
+        private static IEnumerator RunInactiveRoomTurn(ManualLogSource log, bool inferno, bool twoTurns)
         {
             var data = Managers.GetAllGameData();
             var rooms = Managers.GetRoomManager();
@@ -442,6 +443,30 @@ namespace MonsterTrain2Poju.Probe
                 yield return null;
             }
             BattleTurnState actual = Trace.CaptureDecision();
+            if (twoTurns)
+            {
+                turn = combat.GetTurnCount();
+                AccessTools.Method(typeof(CheatManager), "Command_EndTurn").Invoke(null, null);
+                deadline = UnityEngine.Time.realtimeSinceStartup + 45f;
+                while (combat.GetTurnCount() <= turn || !combat.ShouldShowEndTurnButton() ||
+                    !NativeEffectSettlement.Ready(combat) || combat.IsRunningTriggerQueue)
+                {
+                    if (UnityEngine.Time.realtimeSinceStartup > deadline)
+                        throw new TimeoutException("Second native room EndTurn did not settle.");
+                    yield return null;
+                }
+                BattleTurnState afterSecond = Trace.CaptureDecision();
+                using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
+                    GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
+                    NativeCompleted = true, InactiveMushyTwoTurns = true,
+                    Boundary = "AfterTwoNativeEndTurnSettlements", EnemyId = enemyId,
+                    Before = before, AfterFirst = actual, AfterSecond = afterSecond }))
+                using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                    "room-moon-inactive-mushy-two-turns-calibration.mt2f"))) document.Write(stream);
+                Completed = true;
+                log.LogInfo("ROOM-MOON-CALLBACK-NATIVE PASS inactiveMushyTwoTurns=true enemy=" + enemyId);
+                yield break;
+            }
             using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 NativeCompleted = true, InactiveMushyTurn = !inferno,

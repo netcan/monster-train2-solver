@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current curated inventory (2026-11-14): 2,868 binary archives with verified
+Current curated inventory (2026-11-14): 2,869 binary archives with verified
 hashes and registrations. The card evidence index accepts 1,561 battle archives
 and 31,514 native actions; three historical captures with nonzero counters stay
 excluded. All 559 intrinsically playable logbook cards have a definition-matched
@@ -81,6 +81,15 @@ capture does not establish an Inferno damage hit. The enemy ascends out of room
 before the global phase resets to Full. Two independent native roots are byte
 identical; the complete settled successor and gameplay RNG match the model.
 Other room occupants, damage targets and later turns remain separate.
+
+An isolated Mushy Room two-EndTurn continuation now starts from one frozen
+native root and matches both settled successors without injecting a later
+native state. The original enemy moves through rooms 0, 1 and 2 while masks
+change 6, 5 and 5 and inactive global phases change New, Full and New.
+Independent replay from the native first-turn state and the planner's two-step
+replay also match the second native successor and gameplay RNG. Two separate
+native processes produced byte-identical roots; card plays, different enemies
+and longer continuations remain open.
 
 A further 34 original Conduit movement callbacks now match independently in
 complete context, private card trackers, physical points and gameplay RNG.
