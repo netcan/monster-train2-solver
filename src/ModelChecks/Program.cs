@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--half-health-lifecycle-only")
+{
+    HalfHealthLifecycleChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--half-health-deathwish-only")
 {
     HalfHealthDeathwishChecks.Native(args[1]);

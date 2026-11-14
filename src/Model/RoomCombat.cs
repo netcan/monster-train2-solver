@@ -870,7 +870,9 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static RoomCombatResult ApplyCardDamage(RoomCombatState state, int targetId, int damage, int sourceCardId = 0,
-            bool deferSpawnerExhaustion = false, int attackerUnitId = 0, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null) => ApplyCardDamage(state, targetId, damage, sourceCardId, deferSpawnerExhaustion, true, attackerUnitId, refreshPyre: refreshPyre);
+            bool deferSpawnerExhaustion = false, int attackerUnitId = 0, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
+            bool captureAllDispatches = false) => ApplyCardDamage(state, targetId, damage, sourceCardId, deferSpawnerExhaustion, true, attackerUnitId,
+                refreshPyre: refreshPyre, captureAllDispatches: captureAllDispatches);
 
         internal static RoomCombatResult ApplyRelicDamage(RoomCombatState state, int targetId, int damage,
             Action<QueuedCharacterTrigger> enqueueCharacterTrigger, bool piercing = false) =>
@@ -916,7 +918,9 @@ namespace MonsterTrain2Poju.Model
             CombatUnit? externalActor = null, int externalActorRoomIndex = -1,
             Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool captureAllDispatches = false)
         {
-            string? error = Validate(state, linkedHealthOnly: true);
+            string? error = Validate(state, linkedHealthOnly: true, halfHealthLifecycle: true);
+            if (enqueueCharacterTrigger != null && state.Units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)))
+                error = "Half-health Deathwish with an external damage callback queue requires native lifecycle calibration.";
             if (state.Units.Any(unit => unit.Id == targetId && unit.Status("lifelink") != null))
             {
                 CardInstanceState? source = sourceCardId == 0 ? null : state.Context?.FindCard(sourceCardId);
@@ -1008,14 +1012,15 @@ namespace MonsterTrain2Poju.Model
             return new RoomCombatResult(result.State, result.Outcome, result.Rounds, result.Events.ToList(), result.UnsupportedReason, callbacks);
         }
 
-        public static RoomCombatResult ApplyCardHeal(RoomCombatState state, int targetId, int amount, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+        public static RoomCombatResult ApplyCardHeal(RoomCombatState state, int targetId, int amount, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
+            bool captureAllDispatches = false)
         {
-            string? error = Validate(state, linkedHealthOnly: true);
+            string? error = Validate(state, linkedHealthOnly: true, halfHealthLifecycle: true);
             CombatUnit? target = state.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (error != null || amount < 0 || target?.Modifiers == null)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                     error ?? "Card healing requires a valid amount, target and healability state.");
-            return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre).CardHeal(targetId, amount);
+            return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre).TraceAllDispatches(captureAllDispatches).CardHeal(targetId, amount);
         }
 
         private static RoomCombatResult Run(RoomCombatState state, bool entireRoom,
@@ -1044,8 +1049,12 @@ namespace MonsterTrain2Poju.Model
                     ? new UnitSpawnPointState(point.UnitId, null, null, point.OuterBoss, point.SpawnedInPreview) : point).ToArray()));
         }
 
-        internal static string? Validate(RoomCombatState state, int? dyingTargetId = null, bool linkedHealthOnly = false)
+        internal static string? Validate(RoomCombatState state, int? dyingTargetId = null, bool linkedHealthOnly = false,
+            bool halfHealthLifecycle = false)
         {
+            // Only the direct, real damage/heal APIs have a drained-queue oracle.
+            // Preview, shared aura worlds and whole-room scheduling keep their guard.
+            halfHealthLifecycle &= !state.Preview && state.Context?.Enchantments == null;
             bool linkedCombat = TrueFinalBossCombatModel.Supports(state);
             linkedHealthOnly |= linkedCombat;
             string? relicError = RelicModel.Validate(state.Context);
@@ -1143,8 +1152,10 @@ namespace MonsterTrain2Poju.Model
                     return "Valor requires the armor status definition.";
                 foreach (CombatTrigger trigger in unit.Triggers)
                 {
-                    if (trigger.ActivationCondition != null)
+                    if (trigger.ActivationCondition != null && !(halfHealthLifecycle && HalfHealthDeathwishModel.IsTrigger(trigger)))
                         return "Uncalibrated conditional trigger activation: " + trigger.ActivationCondition;
+                    if (HalfHealthDeathwishModel.IsTrigger(trigger) && (!trigger.StateId.HasValue || !trigger.DeathwishActive.HasValue))
+                        return "Half-health Deathwish requires captured source membership and persistent trigger identity.";
                     if (trigger.Conditions != null && trigger.Conditions.RequiredStatuses.Concat(trigger.Conditions.RequiredDyingStatuses).Any(string.IsNullOrWhiteSpace))
                         return "Invalid trigger status condition.";
                     if (trigger.Origin?.OnlyIfEquipped == true && unit.EquipmentCards == null)
@@ -2833,7 +2844,7 @@ namespace MonsterTrain2Poju.Model
             private void Damage(WorkingUnit? actor, WorkingUnit target, int damage, string kind, int sourceCardId = 0,
                 bool applyTraits = true, bool piercing = false, bool relicSourced = false)
             {
-                if (target.LastAttackerId.HasValue) target.LastAttackerId = actor != null && !actor.Source.IsPyre ? actor.Source.Id : 0;
+                if (target.LastAttackerId.HasValue) target.LastAttackerId = actor != null && actor != target && !actor.Source.IsPyre ? actor.Source.Id : 0;
                 int raw = damage;
                 int blocked = 0;
                 int titanSkinSoaked = 0;
@@ -3114,6 +3125,11 @@ namespace MonsterTrain2Poju.Model
                     if (!drained.Supported) { unsupportedReason = drained.UnsupportedReason; return; }
                     MergeSummon(drained);
                 }
+                if (target.DeathFinished) return;
+                if (!target.Alive && (units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)) ||
+                    context?.Enchantments?.Rooms.SelectMany(room => room.Units).Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)) == true))
+                { unsupportedReason = "Lethal damage with half-health Deathwish requires native death/revival lifecycle calibration."; return; }
+                if (!UpdateHalfHealthDeathwish(target)) return;
                 // CharacterState.CheckDeathCardTriggers updates the dying
                 // enchanter after character Slay and hit callbacks. Removing a
                 // Silence aura earlier incorrectly enables the killer's Slay.
@@ -3800,6 +3816,21 @@ namespace MonsterTrain2Poju.Model
                 Emit(kind, unit, unit, unit.Health - old);
                 // Native ApplyHeal runs these even when clipping or immunity produces zero restoration.
                 FireTriggers(unit, "OnHeal", paramInt: unit.Health - old);
+                UpdateHalfHealthDeathwish(unit);
+            }
+
+            private bool UpdateHalfHealthDeathwish(WorkingUnit unit)
+            {
+                if (unsupportedReason != null) return false;
+                if (!unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)) return true;
+                var room = new RoomCombatState(unit.RoomIndex, source.Deployment,
+                    new[] { unit.Freeze() }, Array.Empty<string>(), context, source.Preview, CompanionBossSnapshot());
+                RoomCombatResult updated = HalfHealthDeathwishModel.Update(room, unit.Source.Id, context);
+                if (!updated.Supported) { unsupportedReason = updated.UnsupportedReason; return false; }
+                unit.Apply(updated.State!.Units.Single());
+                foreach (QueuedCharacterTrigger callback in updated.PendingCallbacks) QueueCallback(callback);
+                if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
+                return unsupportedReason == null;
             }
 
             private bool SetHealth(WorkingUnit target, int health)
@@ -5640,6 +5671,8 @@ namespace MonsterTrain2Poju.Model
                         if (!target.Alive) { unsupportedReason = "Retained dying maximum-health targets require native calibration."; return false; }
                         if (action.Type == "AdjustMaxHealth")
                         {
+                            if (target.Triggers.Any(HalfHealthDeathwishModel.IsTrigger))
+                            { unsupportedReason = "Half-health Deathwish maximum-health effects require native lifecycle calibration."; return false; }
                             CombatUnit? changed = TriggeredHealthModel.Adjust(target.Freeze(), amount);
                             if (changed == null) { unsupportedReason = "Maximum-health adjustment lowers maximum below current health."; return false; }
                             target.Apply(changed);

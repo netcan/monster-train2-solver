@@ -35,8 +35,8 @@
 - 旧版前排 Deathwish 在新版改名为 Vanguard，使用独立的 `vanguardSources`；
   新版 Deathwish 则按生命比例不高于 50% 判定，使用 `deathwishSources`。
   采集分别保留两类成员关系；旧版仍读取 `deathWishSources`。新版半血触发
-  带显式 `HalfHealth` 标识。半血条件与入队现已独立校准；受伤/治疗等效果生命周期
-  在完成原生复验前仍返回未支持，避免提前开放搜索中的转换。
+  带显式 `HalfHealth` 标识。半血条件、入队和非致命直接伤害/治疗的回调生命周期
+  已独立校准；最大生命、死亡复活、共享世界和整层调度仍受防护。
 - 组件归档的版本号取自运行游戏；目录采集校验本次原生枚举数量和唯一 ID，
   不再把旧版 668 个定义写死在采集器中。旧版固定目录验收仍保留。
 - EndTurn 调用后，原生协程有时尚未推进就暴露旧的 ready 状态；复放器在原有
@@ -136,8 +136,40 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -HalfHealt
 固定，来源为 `.probe-runs/full-battle-steward-once-20261114-131651-f51c0d60`。
 该矩阵验证条件与队列入队，主动保留未执行的队列边界。受伤先 OnHit、治疗先
 OnHeal，再进行半血更新；最大生命、触发安装/移除与复活也有独立调用点。
-这些效果生命周期仍须逐项原生复验，主战斗转换的 `HalfHealth` 防护继续保留，
-不把本组件通过计作全部半血卡牌、遗物或整场搜索的验收。
+伤害/治疗的直接 API 后继现由下述独立样本验证；其余效果生命周期仍须逐项
+原生复验，整层主战斗转换的 `HalfHealth` 防护继续保留，不把组件通过计作全部
+半血卡牌、遗物或整场搜索的验收。
+
+## 半血 Deathwish 伤害与治疗生命周期
+
+13 项原生协程验证非致命直接伤害和治疗：进入/离开半血、保持原有状态、零伤害、
+零治疗、护甲完全吸收及满血截断。嵌套对照包括 OnHit 先自疗、OnHeal 先自伤，
+以及半血获得回调自疗后失去、失去回调自伤后重新获得。模型在 OnHit/OnHeal
+队列完成后才检查半血，正在执行队列时追加独占回调，保持原生执行顺序。
+两项自伤对照也修正了最后攻击者记录：原生不会把自己登记为最后攻击者。
+
+样本使用原生敌方宿主和现场创作的金币/伤害/治疗回调；完整房间、上下文、触发
+成员关系、执行标记及全部回调载荷逐项匹配。原生金币调整将该场景的 2/3/5/7
+奖励各变为 5，检查使用调整后的实际值，并单独比较回调及独占来源身份。
+每项执行 32 路不可变并发分支，额外检查父状态不变及未校准入口继续拒绝。
+
+原生台词与表现会消耗 `Chatter`、`NonDeterministic` 随机流，原始前后值全部保留；
+其余每条随机流及 Unity RNG 在每步都不变，退出前全部随机流和现场上下文恢复。
+该边界允许协程推进帧，不沿用条件组件的同帧断言。
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Game231HalfHealthLifecycle.ps1
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -HalfHealthLifecycleOnly -GameSpeed Instant -SkipBuild
+```
+
+样本 `mechanics/half-health-deathwish/lifecycle.mt2f` 为 9,803 字节，由同目录 manifest
+固定哈希，来源 `.probe-runs/full-battle-steward-once-20261114-133558-78d06ace`。
+原生约 26 秒，组件差异零、`DEPTH-PASS`、退出码零和玩家文件未变均通过。
+旧版治疗触发、攻击触发及依赖最后攻击者的按血伤害三份房间/列车回归通过。
+
+本次开放直接非预演伤害/治疗 API。致命伤害与复活、最大生命、触发安装/移除、
+共享光环世界、外部伤害回调队列、原生法术分阶段 API 及整层调度仍受保护；
+尚未获得新增半血卡牌/遗物或整场搜索的完整验收。
 
 另一次玩家光环来源互相施加菌群的观察
 `.probe-runs/full-battle-units-and-junk-20261114-123510-0d0945c7`，在最终菌群移除
