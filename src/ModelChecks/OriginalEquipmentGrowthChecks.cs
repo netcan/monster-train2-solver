@@ -57,6 +57,7 @@ internal static class OriginalEquipmentGrowthChecks
         string version = root.GetProperty("GameVersion").GetString()!;
         string mvid = root.GetProperty("GameModuleMvid").GetString()!;
         string frontKind = version == "2.3.1" ? "OnVanguard" : "OnDeathwish";
+        int permanentHealth = version == "2.3.1" ? 8 : 6;
         Require(root.GetProperty("ModifierScenario").GetString() == "original-equipment-growth-relics" &&
             (version == "2.2.1" && mvid == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" ||
              version == "2.3.1" && mvid == "bf93f060-beda-46b1-b808-95ebf1e9a99d") &&
@@ -128,7 +129,7 @@ internal static class OriginalEquipmentGrowthChecks
                             endAction.Target == "Self" && endAction.AllowEnemy && endAction.AllowPlayer && endAction.ScaleUpgrade &&
                             endAction.Lifetime == "Permanent" && endAction.Statuses.Count == 0 && endAction.UpgradeFilters.Count == 0 &&
                             permanent.DataId == EndCombatHealthUpgrade && permanent.AssetKey == "PermanentHealthAtEndOfCombat" &&
-                            permanent.Stats?.Health == 6 && permanent.Stats.Damage == 0 && permanent.Stats.Cost == 0 && permanent.Stats.Heal == 0 &&
+                            permanent.Stats?.Health == permanentHealth && permanent.Stats.Damage == 0 && permanent.Stats.Cost == 0 && permanent.Stats.Heal == 0 &&
                             permanent.Stats.Size == 0 && permanent.Stats.XCost == 0 && permanent.Stats.EquipmentLimit == 0 && permanent.Stats.UpgradeSlotCount == 0 &&
                             !permanent.Unique && !permanent.RemoveOnDiscard && permanent.Statuses.Count == 0 && (permanent.TriggerUpgrades?.Count ?? 0) == 0 &&
                             permanent.ExternalInteractions.Count == 0,
@@ -237,12 +238,12 @@ internal static class OriginalEquipmentGrowthChecks
                     else if (healthDelta < 0 && unit.Health > 0) endHealthExits -= healthDelta;
                 }
         }
-        int endCombatHealth = EncounterCompleteChecks(root);
+        int endCombatHealth = EncounterCompleteChecks(root, permanentHealth);
         Require(enemies > 0 && friends > 0 && exclusiveBirths > 0 && slays > 0 && deaths > 0 && valor > 0 && enters > 0 && exits > 0 &&
             endHealthEnters > 0 && endHealthExits > 0,
             $"Missing original growth controls: friend={friends},enemy={enemies},exclusive={exclusiveBirths},slay={slays},death={deaths},valor={valor},enter={enters},exit={exits},healthEnter={endHealthEnters},healthExit={endHealthExits}.");
         BattleActionChecks.Native(root);
-        Console.WriteLine($"ORIGINAL-EQUIPMENT-GROWTH-NATIVE PASS: {births} exact births ({friends} friendly/{enemies} enemy, {exclusiveBirths} exclusive queues); owner ablations slay={slays}, death={deaths}, PreCombat Valor={valor}; Deathwish enter={enters}, exit={exits}; permanent end-combat health={endCombatHealth}.");
+        Console.WriteLine($"ORIGINAL-EQUIPMENT-GROWTH-NATIVE PASS: {births} exact births ({friends} friendly/{enemies} enemy, {exclusiveBirths} exclusive queues); owner ablations slay={slays}, death={deaths}, PreCombat Valor={valor}; {frontKind} enter={enters}, exit={exits}; permanent end-combat health={endCombatHealth} applications at +{permanentHealth}.");
     }
     private static int ValorCount(CombatUnit unit) => unit.Modifiers!.Upgrades.Count(upgrade => upgrade.DataId == ValorUpgrade);
     private static int EndCombatHealthTriggerCount(CombatUnit unit) => unit.Modifiers!.Upgrades.Count(upgrade => upgrade.DataId == EndCombatTriggerUpgrade);
@@ -287,7 +288,7 @@ internal static class OriginalEquipmentGrowthChecks
             Require(JsonSerializer.Serialize(source, ModelJson.Options) == parent, "Triggered equipment mutated its parent.");
         }
     }
-    private static int EncounterCompleteChecks(FixtureValue root)
+    private static int EncounterCompleteChecks(FixtureValue root, int permanentHealth)
     {
         var records = root.GetProperty("OriginalEquipmentGrowthEncounterComplete").EnumerateArray().ToArray();
         Require(records.Length == 1, "Deathwish permanent-health relic requires one native encounter-complete capture.");
@@ -325,7 +326,7 @@ internal static class OriginalEquipmentGrowthChecks
                     .Sum(upgrade => upgrade.Stats.Health);
                 int expectedGain = CardHealth(expectedCard!) - CardHealth(originalCard!);
                 int nativeGain = CardHealth(nativeCard!) - CardHealth(originalCard!);
-                Require(expectedGain == applications * 6 && nativeGain == expectedGain &&
+                Require(expectedGain == applications * permanentHealth && nativeGain == expectedGain &&
                     nativeUnit.Health == expectedUnit.Health && nativeUnit.MaxHealth == expectedUnit.MaxHealth &&
                     nativeUnit.Modifiers!.Upgrades.Where(upgrade => upgrade.DataId == EndCombatHealthUpgrade)
                         .Sum(upgrade => upgrade.Stats.Health) == expectedUnit.Modifiers!.Upgrades

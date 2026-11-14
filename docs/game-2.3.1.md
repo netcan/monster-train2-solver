@@ -94,7 +94,22 @@ pwsh -NoProfile -File scripts/Check-Game231MonsterDamage.ps1
 二进制样本及哈希保存在 `mechanics/monster-damage/`。组件来源为
 `.probe-runs/full-battle-units-spells-and-junk-20261114-125708-7cfaaf97`，
 七回合战斗来源为 `.probe-runs/full-battle-steward-once-20261114-125515-ed0b3633`。
-装备成长遗物的新采样同样四项计数全零，仍需完成新版数值定义的专用独立验收；
+装备成长遗物的新采样同样四项计数全零，并通过新版数值定义的专用独立验收：
+24 次完整出牌、5 次 EndTurn、最终薪火 80，以及策略从根状态复放、战斗中间
+根状态和 16 路不可变并发分支。40 项房间与 9 项列车转换也匹配。
+
+该场景覆盖 `UpgradeEquipmentOnDeath`、`AdvancedGrowth`、
+`FriendlyUnitsGainDeathwishValor`、`FriendlyUnitsGainDeathwishPermanentHealth`
+四件原有遗物，其中后两件在新版使用 Vanguard。永久生命遗物的原生增益
+由 +6 改为 +8；专用检查按精确版本/MVID 分别验证，三个战斗结束应用均匹配，
+旧版 +6 回归同时通过。新样本保存在 `mechanics/equipment-growth/`，约 61 KiB，
+原生采样约 115 秒，玩家文件未变。
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-equipment-growth-only tests/compatibility/game-2.3.1/mechanics/equipment-growth/full-battle.mt2f
+```
+
+这些是四件原有遗物的新版证据，不能据此沿用旧版 224 件总覆盖数。
 半血 Deathwish 与新增卡牌/遗物的效果覆盖不由此获得验收。
 
 另一次玩家光环来源互相施加菌群的观察
