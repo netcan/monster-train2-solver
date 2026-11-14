@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--chained-status-only")
+{
+    ChainedStatusChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--celebrate-health-battle-only")
 {
     CelebrateHealthBattleChecks.Native(args[1]);
