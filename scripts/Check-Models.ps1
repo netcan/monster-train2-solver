@@ -1792,6 +1792,8 @@ $fixtureNames = @('full-battle-event-grafted-equipment.mt2f', 'titanite-calibrat
     'room-moon-inactive-hellfurnace-movement-calibration.mt2f',
     'room-moon-inactive-room-batch-calibration.mt2f',
     'room-moon-inactive-trigger-rooms-calibration.mt2f',
+    'room-moon-inactive-original-boilerroom-turn-calibration.mt2f',
+    'room-moon-inactive-original-sacrificialchamber-turn-calibration.mt2f',
     'full-battle-eclipse-chamber-enemy-movement.mt2f',
     'full-battle-eclipse-chamber-enemy-movement-replay.mt2f',
     'full-battle-eclipse-chamber-enemy-callbacks.mt2f',
@@ -2495,6 +2497,19 @@ if ($Fixture.Count -gt 0) {
 }
 # Explicit selections for this composition have complete dedicated gates.
 # Avoid starting all unrelated pure checks before a component-only request.
+if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @(
+    'room-moon-inactive-original-boilerroom-turn-calibration.mt2f',
+    'room-moon-inactive-original-sacrificialchamber-turn-calibration.mt2f') }).Count -eq 0) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q
+        if ($LASTEXITCODE -ne 0) { throw 'Original room EndTurn checker build failed.' }
+    }
+    foreach ($fixturePath in $fixtures) {
+        dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --inactive-original-room-turn-only $fixturePath
+        if ($LASTEXITCODE -ne 0) { throw "Original room EndTurn check failed: $fixturePath" }
+    }
+    return
+}
 if ($Fixture.Count -gt 0 -and @($selectedFixtureNames | Where-Object { $_ -notin @('player-inactive-fragile-inferno-new-moon-entry-calibration.mt2f', 'player-inactive-fragile-inferno-new-moon-entry-replay-calibration.mt2f') }).Count -eq 0) {
     if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release -p:WarningLevel=0 -v:q

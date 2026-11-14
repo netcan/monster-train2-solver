@@ -591,6 +591,12 @@ if (args.Length == 2 && args[0] == "--inactive-trigger-rooms-only")
     InactiveRoomBatchChecks.TriggerRooms(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--inactive-original-room-turn-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    InactiveOriginalRoomTurnChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length is 2 or 5 && args[0] == "--inactive-new-moon-horde-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -11771,6 +11777,13 @@ foreach (string path in args.Where(path => path.EndsWith("room-moon-inactive-tri
 {
     using var document = ModelJson.ReadFixture(path);
     InactiveRoomBatchChecks.TriggerRooms(document.RootElement);
+}
+foreach (string path in args.Where(path =>
+    path.EndsWith("room-moon-inactive-original-boilerroom-turn-calibration.mt2f", StringComparison.OrdinalIgnoreCase) ||
+    path.EndsWith("room-moon-inactive-original-sacrificialchamber-turn-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    InactiveOriginalRoomTurnChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.EndsWith("full-battle-eclipse-chamber-movement.mt2f", StringComparison.OrdinalIgnoreCase)))
 {

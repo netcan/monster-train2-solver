@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current curated inventory (2026-11-14): 2,872 binary archives with verified
+Current curated inventory (2026-11-14): 2,874 binary archives with verified
 hashes and registrations. The card evidence index accepts 1,561 battle archives
 and 31,514 native actions; three historical captures with nonzero counters stay
 excluded. All 559 intrinsically playable logbook cards have a definition-matched
@@ -68,6 +68,14 @@ including stale mask 6 to 5. Two muted Instant captures are byte-identical;
 complete model successors and gameplay RNG match with four immutable branches.
 The death triggers themselves did not fire in this component. See
 [the trigger-room note](tests/fixtures/notes/combat/inactive-trigger-rooms.md).
+
+Separate natural EndTurns for BoilerRoom and SacrificialChamber now verify
+enemy ascension from floor 0 to 1, removal of the room upgrade and its OnDeath
+trigger, and stale Full understanding changing from mask 6 to 5. Each room has
+two byte-identical muted Instant captures; the complete settled turn, gameplay
+RNG and one-step planner replay match. There are no deaths in these turns, so
+the energy and gold death effects remain separate. See
+[the natural-turn note](tests/fixtures/notes/combat/inactive-original-trigger-room-turns.md).
 
 The same structural rule now covers inactive-tracking Inferno exit when a
 cardless enemy without moon callbacks carries stale Full understanding. A

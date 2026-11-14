@@ -24,6 +24,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool InactiveRoomBatch => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_ROOM_BATCH") == "1";
         internal static bool InactiveTriggerRooms => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_TRIGGER_ROOMS") == "1";
         internal static bool InactiveMushyTurn => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_MUSHY_TURN") == "1";
+        internal static string? InactiveOriginalTurnRoom => Enabled ? Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_ORIGINAL_TURN_ROOM") : null;
         internal static bool InactiveInfernoTurn => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_INFERNO_TURN") == "1";
         internal static bool InactiveMushyTwoTurns => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_MUSHY_TWO_TURNS") == "1";
         internal static bool Shade => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_SHADE") == "1";
@@ -108,9 +109,9 @@ namespace MonsterTrain2Poju.Probe
                 yield return RunInactiveRoomBatch(log, InactiveTriggerRooms);
                 yield break;
             }
-            if (InactiveMushyTurn || InactiveInfernoTurn || InactiveMushyTwoTurns)
+            if (InactiveMushyTurn || InactiveInfernoTurn || InactiveMushyTwoTurns || InactiveOriginalTurnRoom != null)
             {
-                yield return RunInactiveRoomTurn(log, InactiveInfernoTurn, InactiveMushyTwoTurns);
+                yield return RunInactiveRoomTurn(log, InactiveInfernoTurn, InactiveMushyTwoTurns, InactiveOriginalTurnRoom);
                 yield break;
             }
             if (InactiveMovement || InactiveInfernoMovement || InactiveInfernoExit || InactiveMushyMovement || InactiveHellfurnaceMovement)
@@ -421,7 +422,8 @@ namespace MonsterTrain2Poju.Probe
                 " gameplayRngUnchanged=" + rngUnchanged);
         }
 
-        private static IEnumerator RunInactiveRoomTurn(ManualLogSource log, bool inferno, bool twoTurns)
+        private static IEnumerator RunInactiveRoomTurn(ManualLogSource log, bool inferno, bool twoTurns,
+            string? originalRoom = null)
         {
             var data = Managers.GetAllGameData();
             var rooms = Managers.GetRoomManager();
@@ -444,7 +446,14 @@ namespace MonsterTrain2Poju.Probe
             yield return combat.RunTriggerQueue();
             var enemies = new List<CharacterState>(); rooms.GetRoom(0).AddCharactersToList(enemies, Team.Type.Heroes);
             CharacterState enemy = enemies.Single(); int enemyId = Trace.UnitId(enemy);
-            CardData roomData = data.FindCardData(inferno ? InfernoRoomScenario.DataId : MushyRoomScenario.DataId)!;
+            string roomId = originalRoom switch
+            {
+                "BoilerRoom" => "08001aa4-2e9d-42da-9ba7-ff4b0fd5ce80",
+                "SacrificialChamber" => "627f12a8-081e-437d-8a54-a20d719163b7",
+                null => inferno ? InfernoRoomScenario.DataId : MushyRoomScenario.DataId,
+                _ => throw new InvalidOperationException("Unknown original room turn: " + originalRoom)
+            };
+            CardData roomData = data.FindCardData(roomId)!;
             CardUpgradeData upgrade = roomData.GetEffects().Single(effect =>
                 effect.GetEffectStateName() == "CardEffectAttachTrainRoomAttachment").GetParamCardUpgradeData();
             CardState sourceCard = new CardState(roomData, save); Trace.CardId(sourceCard);
@@ -491,6 +500,20 @@ namespace MonsterTrain2Poju.Probe
                     "room-moon-inactive-mushy-two-turns-calibration.mt2f"))) document.Write(stream);
                 Completed = true;
                 log.LogInfo("ROOM-MOON-CALLBACK-NATIVE PASS inactiveMushyTwoTurns=true enemy=" + enemyId);
+                yield break;
+            }
+            if (originalRoom != null)
+            {
+                using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
+                    GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
+                    NativeCompleted = true, OriginalTurnRoom = originalRoom,
+                    Boundary = "AfterNativeEndTurnSettlement", EnemyId = enemyId,
+                    Before = before, Actual = actual }))
+                using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                    "room-moon-inactive-original-" + originalRoom.ToLowerInvariant() + "-turn-calibration.mt2f")))
+                    document.Write(stream);
+                Completed = true;
+                log.LogInfo("ROOM-MOON-CALLBACK-NATIVE PASS inactiveOriginalTurn=" + originalRoom + " enemy=" + enemyId);
                 yield break;
             }
             using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
