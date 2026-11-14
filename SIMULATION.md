@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current curated inventory (2026-11-14): 2,871 binary archives with verified
+Current curated inventory (2026-11-14): 2,872 binary archives with verified
 hashes and registrations. The card evidence index accepts 1,561 battle archives
 and 31,514 native actions; three historical captures with nonzero counters stay
 excluded. All 559 intrinsically playable logbook cards have a definition-matched
@@ -60,6 +60,14 @@ branches per input. The rule requires the original room and character-upgrade
 signatures, a cardless enemy and no moon callbacks. It does not establish room
 death effects, spell upgrades, ability activation or natural EndTurn behavior.
 See [the focused note](tests/fixtures/notes/combat/inactive-room-batch.md).
+
+The original BoilerRoom and SacrificialChamber now have the corresponding
+inactive-moon movement witness for rooms that install an OnDeath trigger.
+Twelve native Bumps verify trigger addition/removal and Full/New understanding,
+including stale mask 6 to 5. Two muted Instant captures are byte-identical;
+complete model successors and gameplay RNG match with four immutable branches.
+The death triggers themselves did not fire in this component. See
+[the trigger-room note](tests/fixtures/notes/combat/inactive-trigger-rooms.md).
 
 The same structural rule now covers inactive-tracking Inferno exit when a
 cardless enemy without moon callbacks carries stale Full understanding. A

@@ -5,19 +5,28 @@ using MonsterTrain2Poju.Model;
 
 internal static class InactiveRoomBatchChecks
 {
-    internal static void Native(FixtureValue root)
+    internal static void Native(FixtureValue root) => Check(root, triggerRooms: false);
+    internal static void TriggerRooms(FixtureValue root) => Check(root, triggerRooms: true);
+
+    private static void Check(FixtureValue root, bool triggerRooms)
     {
         Require(root.GetProperty("Schema").GetInt32() == 1 &&
             root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
             root.GetProperty("NativeCompleted").GetBoolean() &&
-            root.GetProperty("InactiveRoomBatch").GetBoolean() &&
+            root.GetProperty(triggerRooms ? "InactiveTriggerRooms" : "InactiveRoomBatch").GetBoolean() &&
             root.GetProperty("RngUnchanged").GetBoolean() &&
             root.GetProperty("PreviewUpdatesSuppressed").GetBoolean() &&
             root.GetProperty("Boundary").GetString() == "AfterOriginalCoroutineAndTriggerQueue",
             "Missing native inactive room batch.");
         int id = root.GetProperty("EnemyId").GetInt32();
         FixtureValue[] groups = root.GetProperty("Groups").EnumerateArray().ToArray();
-        string[] names = ["EnchantedChamber", "Infectory", "SpellSanctum", "TrapChute", "ZoneOfSilence"];
+        string[] names = triggerRooms ? ["BoilerRoom", "SacrificialChamber"] :
+            ["EnchantedChamber", "Infectory", "SpellSanctum", "TrapChute", "ZoneOfSilence"];
+        string[] cardIds = triggerRooms ?
+            ["08001aa4-2e9d-42da-9ba7-ff4b0fd5ce80", "627f12a8-081e-437d-8a54-a20d719163b7"] :
+            ["00f55f64-c5c1-4d5e-9f59-f50413341c1e", "e1a39d88-4a77-4399-98b2-0b81f44fe6a8",
+                "5af36c0f-ab98-4a49-903a-b08d93705af1", "8d65e688-d93d-4bfa-975d-8c5f046fe2db",
+                "56468ba5-86b6-49be-ba30-02baf7ffd6dd"];
         string[] labels = ["full-entry", "full-exit", "new-stale-entry", "new-exit", "new-stale-exit", "new-return"];
         int[] masksBefore = [6, 6, 6, 5, 6, 5], masksAfter = [6, 6, 5, 5, 5, 5];
         Require(id > 0 && groups.Length == names.Length, "Missing original room groups.");
@@ -27,7 +36,7 @@ internal static class InactiveRoomBatchChecks
             string key = group.GetProperty("Card").GetString()!;
             string cardId = group.GetProperty("DataId").GetString()!;
             FixtureValue[] rows = group.GetProperty("Rows").EnumerateArray().ToArray();
-            Require(key == names[roomIndex] && rows.Length == labels.Length,
+            Require(key == names[roomIndex] && cardId == cardIds[roomIndex] && rows.Length == labels.Length,
                 "Missing original room movement group: " + names[roomIndex]);
             for (int index = 0; index < rows.Length; index++)
             {
@@ -49,12 +58,15 @@ internal static class InactiveRoomBatchChecks
                     attachment.AssetKey == key && attachment.DataId == cardId && attachment.AffectsHeroes &&
                     attachment.AffectsMonsters == (key != "ZoneOfSilence") &&
                     attachment.CharacterUpgrades.Count == 1 &&
-                    RoomAttachmentUnitModel.OriginalBatchRoom(attachment) &&
+                    (triggerRooms ? RoomAttachmentUnitModel.OriginalTriggerRoom(attachment) :
+                        RoomAttachmentUnitModel.OriginalBatchRoom(attachment)) &&
                     prior is { AssetKey: "MageT1_Junker", Team: CombatTeam.Enemy, SpawnerCardId: 0 } &&
                     prior.Triggers.All(trigger => !trigger.Kind.Contains("Moon")) &&
                     prior.MoonPhaseMask == masksBefore[index] && moved.MoonPhaseMask == masksAfter[index] &&
                     (prior.Modifiers?.Upgrades.Count ?? -1) == (entry ? 0 : 1) &&
                     (moved.Modifiers?.Upgrades.Count ?? -1) == (entry ? 1 : 0) &&
+                    (!triggerRooms || prior.Triggers.Count == (entry ? 1 : 2) &&
+                        moved.Triggers.Count == (entry ? 2 : 1)) &&
                     row.GetProperty("Before").GetProperty("Rng").ContentEquals(row.GetProperty("Actual").GetProperty("Rng")),
                     "Missing original room movement witness: " + key + "/" + labels[index]);
                 RoomPlayRule[] rules = row.GetProperty("Rooms").Deserialize<RoomPlayRule[]>()!;
@@ -101,8 +113,10 @@ internal static class InactiveRoomBatchChecks
                 Reject(state => ChangeAttachment(state, attachment => attachment["DataId"] = "unknown"), "room identity");
                 JsonNode alteredUpgrade = JsonSerializer.SerializeToNode(before, ModelJson.Options)!;
                 ChangeAttachment(alteredUpgrade, item => item["CharacterUpgrades"]![0]!["DataId"] = "unknown");
-                Require(!RoomAttachmentUnitModel.OriginalBatchRoom(alteredUpgrade.Deserialize<TrainCombatState>(ModelJson.Options)!
-                    .Context!.RoomCapacities!.Single(room => room.RoomIndex == 0).Attachments!.Single()),
+                RoomCapacityAttachmentState alteredRoom = alteredUpgrade.Deserialize<TrainCombatState>(ModelJson.Options)!
+                    .Context!.RoomCapacities!.Single(room => room.RoomIndex == 0).Attachments!.Single();
+                Require(!(triggerRooms ? RoomAttachmentUnitModel.OriginalTriggerRoom(alteredRoom) :
+                    RoomAttachmentUnitModel.OriginalBatchRoom(alteredRoom)),
                     "Altered character upgrade retained original room allowance: " + key);
                 Reject(state => Unit(state)["SpawnerCardId"] = 999, "card spawner");
                 Reject(state => Unit(state)["Triggers"]![0]!["Kind"] = "OnMoonShade", "moon callback");
@@ -116,7 +130,9 @@ internal static class InactiveRoomBatchChecks
                     "Original " + key + " movement still depends on enemy name: " + generic.UnsupportedReason);
             }
         }
-        Console.WriteLine("INACTIVE-ROOM-BATCH PASS: five original rooms, 30 Full/New Bumps, complete context/RNG, guarded boundaries and four immutable branches.");
+        Console.WriteLine(triggerRooms
+            ? "INACTIVE-TRIGGER-ROOMS PASS: two original rooms, 12 Full/New Bumps, complete context/RNG and four immutable branches."
+            : "INACTIVE-ROOM-BATCH PASS: five original rooms, 30 Full/New Bumps, complete context/RNG, guarded boundaries and four immutable branches.");
     }
 
     private static void Require(bool condition, string message)

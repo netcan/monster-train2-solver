@@ -354,8 +354,40 @@ namespace MonsterTrain2Poju.Model
 
         private static bool OriginalCardlessRoomMoonSync(RoomCapacityAttachmentState attachment, CombatUnit unit) =>
             unit.Team == CombatTeam.Enemy && unit.SpawnerCardId == 0 &&
-            (OriginalBatchRoom(attachment) || OriginalMushy(attachment) || OriginalHellfurnace(attachment) ||
+            (OriginalBatchRoom(attachment) || OriginalTriggerRoom(attachment) ||
+                OriginalMushy(attachment) || OriginalHellfurnace(attachment) ||
                 OriginalInferno(attachment) && attachment.AffectsHeroes);
+
+        internal static bool OriginalTriggerRoom(RoomCapacityAttachmentState attachment)
+        {
+            if (attachment is not { AttachmentType: 0, CapacityDelta: 0, AffectsHeroes: true,
+                AffectsMonsters: true, IgnoreBosses: false, SpellCostDelta: 0, EnergyPerTurnDelta: 0,
+                MoonPhase: null, CharacterFilters.Count: 0, CharacterUpgrades.Count: 1,
+                PostCombat: null, PreCombat: null, StatusStackBonuses: null, SpawnCopySubtype: null,
+                SpellUpgrade: null, DeathEffect: null, Ability: null, CorruptionModifier: null, Echo: null } ||
+                !Guid.TryParse(attachment.AttachmentId, out Guid id) || id == Guid.Empty) return false;
+
+            CardUpgradeModifier upgrade = attachment.CharacterUpgrades[0];
+            if (upgrade.Stats is not { Damage: 0, Health: 0, Cost: 0, Heal: 0, Size: 0,
+                XCost: 0, EquipmentLimit: 0, UpgradeSlotCount: 0 } ||
+                upgrade.Statuses.Count != 0 || upgrade.ExternalInteractions.Count != 0 ||
+                upgrade.AbilityUpgrade != null || upgrade.TriggerUpgrades is not [
+                    { Kind: "OnDeath", Once: false, HasTriggered: false, IgnoreSilence: true,
+                        FireCount: 1, Effects.Count: 1 }]) return false;
+
+            CombatEffect effect = upgrade.TriggerUpgrades[0].Effects[0];
+            return attachment switch
+            {
+                { AssetKey: "BoilerRoom", DataId: "08001aa4-2e9d-42da-9ba7-ff4b0fd5ce80" } =>
+                    upgrade is { AssetKey: "FuelCar_Upgrade", DataId: "05e215c6-600c-4ecb-a75e-c806dd596bcf" } &&
+                    effect is { Type: "CardEffectGainEnergy", Value: 1,
+                        Action: { Type: "GainEnergy", Target: "Room", Value: 1 } },
+                { AssetKey: "SacrificialChamber", DataId: "627f12a8-081e-437d-8a54-a20d719163b7" } =>
+                    upgrade is { AssetKey: "SacrificialChamber", DataId: "e3b37138-8f47-4cd0-a52c-44494f65b369" } &&
+                    effect is { Type: "CardEffectRewardGold", Value: 10, Action: null },
+                _ => false
+            };
+        }
 
         internal static bool OriginalBatchRoom(RoomCapacityAttachmentState attachment)
         {
