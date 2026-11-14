@@ -35,7 +35,8 @@
 - 旧版前排 Deathwish 在新版改名为 Vanguard，使用独立的 `vanguardSources`；
   新版 Deathwish 则按生命比例不高于 50% 判定，使用 `deathwishSources`。
   采集分别保留两类成员关系；旧版仍读取 `deathWishSources`。新版半血触发
-  带显式 `HalfHealth` 标识，在生命周期校准完成前返回未支持，避免套用前排判断。
+  带显式 `HalfHealth` 标识。半血条件与入队现已独立校准；受伤/治疗等效果生命周期
+  在完成原生复验前仍返回未支持，避免提前开放搜索中的转换。
 - 组件归档的版本号取自运行游戏；目录采集校验本次原生枚举数量和唯一 ID，
   不再把旧版 668 个定义写死在采集器中。旧版固定目录验收仍保留。
 - EndTurn 调用后，原生协程有时尚未推进就暴露旧的 ready 状态；复放器在原有
@@ -110,7 +111,33 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-equipment-g
 ```
 
 这些是四件原有遗物的新版证据，不能据此沿用旧版 224 件总覆盖数。
-半血 Deathwish 与新增卡牌/遗物的效果覆盖不由此获得验收。
+新增卡牌/遗物的效果覆盖不由此获得验收。
+
+## 半血 Deathwish 条件与队列
+
+27 项原生矩阵验证半血进入/离开、重复更新、奇数最大生命、零/负 HP、零/负
+最大生命、99999 合法上限两侧、mute/silence 和 untouchable 对照。
+原生 `SetHealth` 会把高于 99999 的 HP/最大生命截断，矩阵使用合法值验证；
+模型计算保持原生 Single 除法。零血对象退出房间枚举后，直接更新仍可作用于
+保留的对象，样本显式补录这类对象，避免把“没有出现在房间中”当成没有触发。
+
+原生队列还验证：Vanguard 对全体单位更新完毕后才开始半血 Deathwish，来源
+集合与独占 trigger ID 分开保存；直接更新不受房间管理器的禁用或重入标记限制，
+全局 enchantment 更新则遵守这两个标记。27 项完整后继和队列载荷独立复放及
+每项 32 路不可变分支通过，旧版前排 Deathwish 和新版 Vanguard 的 41 项矩阵
+回归通过。原生采样约 29 秒，现场/玩家文件未变，全部随机流及帧均未变化。
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Game231HalfHealthDeathwish.ps1
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -HalfHealthDeathwishOnly -GameSpeed Instant -SkipBuild
+```
+
+样本在 `mechanics/half-health-deathwish/activation.mt2f`，哈希由同目录 manifest
+固定，来源为 `.probe-runs/full-battle-steward-once-20261114-131651-f51c0d60`。
+该矩阵验证条件与队列入队，主动保留未执行的队列边界。受伤先 OnHit、治疗先
+OnHeal，再进行半血更新；最大生命、触发安装/移除与复活也有独立调用点。
+这些效果生命周期仍须逐项原生复验，主战斗转换的 `HalfHealth` 防护继续保留，
+不把本组件通过计作全部半血卡牌、遗物或整场搜索的验收。
 
 另一次玩家光环来源互相施加菌群的观察
 `.probe-runs/full-battle-units-and-junk-20261114-123510-0d0945c7`，在最终菌群移除

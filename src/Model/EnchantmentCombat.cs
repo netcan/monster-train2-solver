@@ -282,6 +282,7 @@ namespace MonsterTrain2Poju.Model
                     {
                         CombatTrigger trigger = triggers[index];
                         if (!DeathwishModel.CallbackKinds.Contains(trigger.Kind)) continue;
+                        if (HalfHealthDeathwishModel.IsTrigger(trigger)) continue;
                         if (trigger.ActivationCondition != null)
                         { error = "Uncalibrated conditional trigger activation: " + trigger.ActivationCondition; return; }
                         if (!trigger.DeathwishActive.HasValue || !trigger.StateId.HasValue)
@@ -304,6 +305,18 @@ namespace MonsterTrain2Poju.Model
                         if (admissionError != null) { error = admissionError; return; }
                         if (admitted.Admission != RoomCombatModel.CharacterTriggerAdmission.Rejected) callbacks.Add(admitted);
                     }
+                }
+                // RoomManager finishes Vanguard for every actor before its
+                // separate half-health Deathwish pass starts.
+                foreach (int id in actorOrder)
+                {
+                    RoomCombatState? room = state.Train.Rooms.FirstOrDefault(item => item.Units.Any(actor => actor.Id == id));
+                    if (room == null) continue;
+                    if (!room.Units.Single(unit => unit.Id == id).Triggers.Any(HalfHealthDeathwishModel.IsTrigger)) continue;
+                    RoomCombatResult updated = HalfHealthDeathwishModel.Update(room, id, state.Train.Context);
+                    if (!updated.Supported) { error = updated.UnsupportedReason; return; }
+                    Replace(updated.State!.Units.Single(unit => unit.Id == id));
+                    callbacks.AddRange(updated.PendingCallbacks);
                 }
             }
             private bool IsDeathwishFront(RoomCombatState room, CombatUnit actor)

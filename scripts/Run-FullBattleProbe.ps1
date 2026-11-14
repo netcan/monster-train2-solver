@@ -452,6 +452,7 @@ param(
     [switch] $EnchantmentLifecycle,
     [switch] $EnchantmentCombat,
     [switch] $EnchantmentCombatOnly,
+    [switch] $HalfHealthDeathwishOnly,
     [switch] $EnchantmentWorld,
     [switch] $HordeStatuses,
     [switch] $HordeMerge,
@@ -1383,6 +1384,15 @@ if ($DamageOverflow) { $BranchCardMasks = $true; $Policy = 'units-spells-and-jun
 if ($BattleRelicUpgrades -or $SpawnStatusRelicsClones -or $OriginalRelicBatch -or $OriginalStingRelicBatch -or $OriginalDeployableRelic) { $BranchCardMasks = $true }
 if ($SpawnStatusRelicsClones) { $SpawnStatusRelics = $true; $UnitClone = $true }
 if ($EnchantmentWorld) { $EnchantmentCombat = $true }
+if ($HalfHealthDeathwishOnly) {
+    $halfHealthArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'HalfHealthDeathwishOnly',
+        'BinaryCapture', 'CaptureJson', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction',
+        'ProgressAction', 'ErrorVariable', 'WarningVariable', 'InformationVariable', 'OutVariable', 'OutBuffer', 'PipelineVariable')
+    if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $halfHealthArguments }).Count) {
+        throw 'HalfHealthDeathwishOnly requires an isolated component run without other scenarios.'
+    }
+    $Policy = 'steward-once'
+}
 if ($EnchantmentCombatOnly) {
     $componentArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'EnchantmentCombat',
         'EnchantmentCombatOnly', 'BinaryCapture', 'CaptureJson', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction',
@@ -1790,6 +1800,7 @@ $environment = @{
     MT2_PROBE_ENCHANTMENT_LIFECYCLE = $(if ($EnchantmentLifecycle) { '1' } else { '0' })
     MT2_PROBE_ENCHANTMENT_COMBAT = $(if ($EnchantmentCombat) { '1' } else { '0' })
     MT2_PROBE_ENCHANTMENT_COMBAT_ONLY = $(if ($EnchantmentCombatOnly) { '1' } else { '0' })
+    MT2_PROBE_HALF_HEALTH_DEATHWISH = $(if ($HalfHealthDeathwishOnly) { '1' } else { '0' })
     MT2_PROBE_ENCHANTMENT_WORLD = $(if ($EnchantmentWorld) { '1' } else { '0' })
     MT2_PROBE_TRIGGER_REPEATS = $(if ($TriggerRepeats) { '1' } else { '0' })
 }
@@ -2307,6 +2318,24 @@ Wait-NativeBattleExit -Process $process -Timer $nativeTimer -UnityLog $unityLog 
     -TimeoutSeconds $TimeoutSeconds -FailFastOnIsolatedUnitReject:$FailFastOnIsolatedUnitReject
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
+if ($HalfHealthDeathwishOnly) {
+    $halfHealthPath = Join-Path $profile 'half-health-deathwish.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $halfHealthPath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Half-health Deathwish activation component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Half-health activation component failed; inspect $unityLog" }
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $halfHealthDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($halfHealthPath)
+    try {
+        $halfHealth = $halfHealthDocument.RootElement
+        if ($halfHealth.GetProperty('Boundary').GetString() -ne 'NativeHalfHealthActivationAndQueueAdmission' -or
+            -not $halfHealth.GetProperty('LiveContextUnchanged').GetBoolean() -or $halfHealth.GetProperty('EffectsDrained').GetBoolean() -or
+            $halfHealth.GetProperty('Mismatches').GetInt32() -ne 0 -or
+            @($halfHealth.GetProperty('Samples').EnumerateArray()).Count -ne 27) { throw 'Incomplete half-health activation component.' }
+    } finally { $halfHealthDocument.Dispose() }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        ModelAcceptance='Pending independent focused checker'; Trace=$halfHealthPath } | ConvertTo-Json
+    return
+}
 if ($EnchantmentCombatOnly) {
     $componentPath = Join-Path $profile 'enchantment-combat-calibration.mt2f'
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath) -or

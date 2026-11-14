@@ -185,7 +185,9 @@ internal static class EnchantmentCombatChecks
         var healthTrigger = new CombatTrigger("OnDeathwish", false, false, false, 1, Array.Empty<CombatEffect>(),
             stateId: 10, activationCondition: "HalfHealth");
         CombatUnit healthSource = front.WithHealth(4).WithTriggers(new[] { healthTrigger });
-        Require(!DeathwishModel.Update(Room(healthSource, back)).Supported &&
+        RoomCombatResult halfHealth = DeathwishModel.Update(Room(healthSource, back));
+        Require(halfHealth.Supported && halfHealth.PendingCallbacks.Count == 1 &&
+            halfHealth.State!.Units.Single(unit => unit.Id == healthSource.Id).Triggers.Single().DeathwishActive == true &&
             RoomCombatModel.Validate(Room(healthSource, back))?.Contains("HalfHealth", StringComparison.Ordinal) == true &&
             healthTrigger.WithStateId(30).WithOrigin("test", 0).ActivationCondition == "HalfHealth" &&
             JsonSerializer.Deserialize<CombatTrigger>(JsonSerializer.Serialize(healthTrigger))!.ActivationCondition == "HalfHealth",

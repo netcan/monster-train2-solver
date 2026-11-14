@@ -2350,6 +2350,17 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 ChooseDiscardScenario.Prepare(managers, log);
             }
+            if (fullBattle && Environment.GetEnvironmentVariable("MT2_PROBE_HALF_HEALTH_DEATHWISH") == "1")
+            {
+                if (HalfHealthDeathwishCalibration.Error != null) throw new InvalidOperationException(HalfHealthDeathwishCalibration.Error);
+                if (HalfHealthDeathwishCalibration.Completed)
+                {
+                    Finish(true, "Half-health Deathwish activation component captured; effect lifecycle acceptance is separate.");
+                    return;
+                }
+                if (HalfHealthDeathwishCalibration.Eligible) HalfHealthDeathwishCalibration.Start(log);
+                if (HalfHealthDeathwishCalibration.Started) return;
+            }
             if (fullBattle && Environment.GetEnvironmentVariable("MT2_PROBE_ENCHANTMENT_COMBAT") == "1")
             {
                 if (EnchantmentCombatCalibration.Error != null) throw new InvalidOperationException(EnchantmentCombatCalibration.Error);
