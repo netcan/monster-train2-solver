@@ -114,6 +114,28 @@ internal static class AttackTriggerChecks
         var pyre = new CombatUnit(9, "pyre", CombatTeam.Player, 4, 10, 10, true, true, false, [], lastAttackerId: 0);
         var pyreAttack = RoomCombatModel.ApplyUnitTurn(Room(pyre, Unit(4, CombatTeam.Enemy, 0, 10, 10, last: 1)), 9);
         Require(pyreAttack.Supported && pyreAttack.State!.Units.Single(u => u.Id == 4).LastAttackerId == 0, "Pyre became a retained unit attacker.");
+        void VersionedAttribution()
+        {
+            foreach (bool modern in new[] { false, true })
+            {
+                CombatContext version = modern ? context.WithStatistics(new BattleStatistics([], [], [], [], [], [], [],
+                    0, 0, 0, 0, 0, trackedCards: [1], deckCards: [1], monsterDamage: new(0, 0, 0, 0))) : context;
+                foreach (int amount in new[] { 0, 1 })
+                    foreach (int attacker in new[] { 0, 1, 4, 9 })
+                    {
+                        RoomCombatState state = new(0, false, [Unit(1, CombatTeam.Player, 0, 10, 10),
+                            Unit(4, CombatTeam.Enemy, 0, 10, 10), pyre], [], version);
+                        string frozen = JsonSerializer.Serialize(state);
+                        RoomCombatResult damage = RoomCombatModel.ApplyCardDamage(state, 1, amount, attackerUnitId: attacker);
+                        int expected = attacker == 4 ? 4 : attacker == 1 && !modern ? 1 : 0;
+                        Require(damage.Supported && damage.State!.Units.Single(unit => unit.Id == 1).LastAttackerId == expected &&
+                            JsonSerializer.Serialize(state) == frozen,
+                            $"Damage attribution differs: modern={modern}, damage={amount}, attacker={attacker}: {damage.UnsupportedReason}");
+                    }
+            }
+        }
+        VersionedAttribution();
+        Parallel.For(0, 32, _ => VersionedAttribution());
         var history = new TrainCombatState([new(0, false, [Unit(1, CombatTeam.Player, 0, 10, 10, last: 4),
             Unit(5, CombatTeam.Enemy, 0, 10, 10, last: 99), Unit(6, CombatTeam.Enemy, 0, 10, 10, last: null)], [], context),
             new(1, false, [Unit(4, CombatTeam.Enemy, 0, 10, 10)], [], context)], [], 4, context);
@@ -125,7 +147,7 @@ internal static class AttackTriggerChecks
         Parallel.For(0, 32, _ => Require(JsonSerializer.Serialize(RoomCombatModel.ApplyUnitTurn(root, 1)) == JsonSerializer.Serialize(first) &&
             JsonSerializer.Serialize(RoomCombatModel.ApplyUnitTurn(sweepRoot, 1)) == JsonSerializer.Serialize(sweep), "Parallel attack callbacks diverged."));
         Require(JsonSerializer.Serialize(root) == parent, "Attack callback simulation mutated its parent.");
-        Console.WriteLine("ATTACK-TRIGGER PASS: cached damage/HP, pre/post upgrades/heals, blocked and skipped attacks, sweep overrides, victim history, filter bypass, dying targets/actors, thresholds/silence, damage types, Pyre and 32 parallel branches.");
+        Console.WriteLine("ATTACK-TRIGGER PASS: cached damage/HP, pre/post upgrades/heals, blocked and skipped attacks, sweep overrides, victim history, filter bypass, dying targets/actors, thresholds/silence, damage types, versioned self/absent/other/Pyre attribution at zero/positive damage and 32 parallel branches.");
     }
 
     internal static void Native(FixtureValue fixture)

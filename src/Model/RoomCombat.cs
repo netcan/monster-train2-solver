@@ -2899,7 +2899,10 @@ namespace MonsterTrain2Poju.Model
             private void Damage(WorkingUnit? actor, WorkingUnit target, int damage, string kind, int sourceCardId = 0,
                 bool applyTraits = true, bool piercing = false, bool relicSourced = false)
             {
-                if (target.LastAttackerId.HasValue) target.LastAttackerId = actor != null && actor != target && !actor.Source.IsPyre ? actor.Source.Id : 0;
+                // 2.2.1 retains self-damage attribution; 2.3.1 explicitly clears
+                // it. The new damage-counter snapshot identifies that protocol.
+                if (target.LastAttackerId.HasValue) target.LastAttackerId = actor != null && !actor.Source.IsPyre &&
+                    (actor != target || context?.Statistics?.MonsterDamage == null) ? actor.Source.Id : 0;
                 int raw = damage;
                 int blocked = 0;
                 int titanSkinSoaked = 0;

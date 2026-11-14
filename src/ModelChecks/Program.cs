@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 1 && args[0] == "--attack-trigger-pure")
+{
+    AttackTriggerChecks.Run();
+    return;
+}
 if (args.Length == 2 && args[0] == "--damage-reactions-only")
 {
     DamageReactionChecks.Native(args[1]);
