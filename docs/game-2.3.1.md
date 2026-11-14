@@ -32,8 +32,10 @@
 - 新版移除了预演暂停 Boolean，改为 Push/Pop 计数接口。兼容层只释放采样器
   自己持有的计数，保留原生调用方的计数；新旧原生组件均通过重复设置、嵌套保存、
   外部持有者和最终恢复检查。
-- 原生死亡愿望来源集合由 `deathWishSources` 改名为 `deathwishSources`；
-  采集兼容两种字段，未知结构显式失败。
+- 旧版前排 Deathwish 在新版改名为 Vanguard，使用独立的 `vanguardSources`；
+  新版 Deathwish 则按生命比例不高于 50% 判定，使用 `deathwishSources`。
+  采集分别保留两类成员关系；旧版仍读取 `deathWishSources`。新版半血触发
+  带显式 `HalfHealth` 标识，在生命周期校准完成前返回未支持，避免套用前排判断。
 - 组件归档的版本号取自运行游戏；目录采集校验本次原生枚举数量和唯一 ID，
   不再把旧版 668 个定义写死在采集器中。旧版固定目录验收仍保留。
 - EndTurn 调用后，原生协程有时尚未推进就暴露旧的 ready 状态；复放器在原有
@@ -46,6 +48,48 @@
 
 纯结束回合基线没有出牌，不计作新卡牌、遗物效果、复杂战斗或搜索胜率的验收。
 目录投影没有异常也不等于所有效果都已实现。
+
+## Vanguard 组件进展
+
+原生 `TryUpdateVanguard` 的前排判定、silenced/muted 限制和来源集合迁移已接入。
+新版组件矩阵 41 项独立复放通过：74 次状态 API 调用、135 份完整队列载荷、
+金币/护甲子效果、共享世界续推、父状态不可变及 32 路分支均匹配。其中五项
+专门覆盖前排来源激活、mute/解除、untouchable 引起的前排切换和返回。
+旧版同一 41 项矩阵及旧版装备成长遗物的完整策略复放也通过。
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Game231Vanguard.ps1
+```
+
+新版样本为 `mechanics/vanguard-enchantment.mt2f`，单独由其 `manifest.tsv` 固定
+哈希和字节数；通过的组件采样来源是
+`.probe-runs/full-battle-steward-once-20261114-124724-735d6888`。
+组件自身 `LiveContextUnchanged=true`、`Mismatches=0`，五项 Vanguard 的完整来源
+成员关系、独占触发 ID 和回调效果通过独立检查。组件矩阵要求两个敌方来源和
+同层友方列车员目标，采样器现显式等待这个前提。
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -EnchantmentCombatOnly -GameSpeed Instant -SkipBuild
+```
+
+该次采样约 34 秒，原生 `DEPTH-PASS`、进程退出码零及玩家文件未变均通过。
+它与较早的整场模式组件归档逐字节相同，SHA256 为
+`19338ac248b2958af9d3885094eac9363cafe4ba4489219d03321d658b9f2596`。
+组件模式在完整 41 项采样及现场恢复通过后退出，后续无需重复跑完外围战斗。
+
+较早整场模式的外围记录仍有四项统计缓存差异，未归档为成功战斗。另一次新版
+`OriginalEquipmentGrowthRelics` 采样也有四项差异，尚不能把两件 Vanguard 遗物
+计入新版整场验收。其原生胜局不能替代状态一致性验收。
+
+已从新版源码定位：友方非薪火单位受伤后，`OnMonstersDamaged` 新增伤害统计，
+并调用 `UpdateDeckStats` 刷新卡牌缓存；旧模型没有这一边界，导致新生成的
+Scourge 缓存成员少一张。需要补齐新统计、伤害来源、护甲/过量伤害和刷新时序，
+再复验上述失败记录，不能删除统计字段来消除差异。
+
+另一次玩家光环来源互相施加菌群的观察
+`.probe-runs/full-battle-units-and-junk-20261114-123510-0d0945c7`，在最终菌群移除
+导致两来源死亡时，模型保留来源 ID 而原生活跃投影为空，且采样现场未恢复。
+该观察未通过，也不计入当前组件覆盖；来源死亡与保留状态须另行隔离校准。
 
 ## 可复验样本
 
