@@ -2353,6 +2353,11 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && Environment.GetEnvironmentVariable("MT2_PROBE_ENCHANTMENT_COMBAT") == "1")
             {
                 if (EnchantmentCombatCalibration.Error != null) throw new InvalidOperationException(EnchantmentCombatCalibration.Error);
+                if (EnchantmentCombatCalibration.Completed && Environment.GetEnvironmentVariable("MT2_PROBE_ENCHANTMENT_COMBAT_ONLY") == "1")
+                {
+                    Finish(true, "Enchantment combat component captured; whole-battle acceptance is separate.");
+                    return;
+                }
                 if (!EnchantmentCombatCalibration.Completed && (EnchantmentCombatCalibration.Started || EnchantmentCombatCalibration.Eligible))
                 {
                     if (!EnchantmentCombatCalibration.Started) EnchantmentCombatCalibration.Start(log);

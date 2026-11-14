@@ -450,6 +450,7 @@ param(
     [switch] $HordeStats,
     [switch] $EnchantmentLifecycle,
     [switch] $EnchantmentCombat,
+    [switch] $EnchantmentCombatOnly,
     [switch] $EnchantmentWorld,
     [switch] $HordeStatuses,
     [switch] $HordeMerge,
@@ -1381,6 +1382,17 @@ if ($DamageOverflow) { $BranchCardMasks = $true; $Policy = 'units-spells-and-jun
 if ($BattleRelicUpgrades -or $SpawnStatusRelicsClones -or $OriginalRelicBatch -or $OriginalStingRelicBatch -or $OriginalDeployableRelic) { $BranchCardMasks = $true }
 if ($SpawnStatusRelicsClones) { $SpawnStatusRelics = $true; $UnitClone = $true }
 if ($EnchantmentWorld) { $EnchantmentCombat = $true }
+if ($EnchantmentCombatOnly) {
+    $componentArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'EnchantmentCombat',
+        'EnchantmentCombatOnly', 'BinaryCapture', 'CaptureJson', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction',
+        'WarningAction', 'InformationAction', 'ProgressAction', 'ErrorVariable', 'WarningVariable',
+        'InformationVariable', 'OutVariable', 'OutBuffer', 'PipelineVariable')
+    if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $componentArguments }).Count) {
+        throw 'EnchantmentCombatOnly requires an isolated component run without other scenarios.'
+    }
+    $EnchantmentCombat = $true
+    $Policy = 'steward-once'
+}
 if ($PersistentEnchantmentRevivals) { $PersistentEnchantmentDeaths = $true }
 if ($PersistentEnchantmentDeaths) { $PersistentEnchantments = $true }
 if ($PersistentEnchantmentRandomPools) { $PersistentEnchantments = $true }
@@ -1775,6 +1787,7 @@ $environment = @{
     MT2_PROBE_HORDE_STATS = $(if ($HordeStats) { '1' } else { '0' })
     MT2_PROBE_ENCHANTMENT_LIFECYCLE = $(if ($EnchantmentLifecycle) { '1' } else { '0' })
     MT2_PROBE_ENCHANTMENT_COMBAT = $(if ($EnchantmentCombat) { '1' } else { '0' })
+    MT2_PROBE_ENCHANTMENT_COMBAT_ONLY = $(if ($EnchantmentCombatOnly) { '1' } else { '0' })
     MT2_PROBE_ENCHANTMENT_WORLD = $(if ($EnchantmentWorld) { '1' } else { '0' })
     MT2_PROBE_TRIGGER_REPEATS = $(if ($TriggerRepeats) { '1' } else { '0' })
 }
@@ -2292,6 +2305,31 @@ Wait-NativeBattleExit -Process $process -Timer $nativeTimer -UnityLog $unityLog 
     -TimeoutSeconds $TimeoutSeconds -FailFastOnIsolatedUnitReject:$FailFastOnIsolatedUnitReject
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
+if ($EnchantmentCombatOnly) {
+    $componentPath = Join-Path $profile 'enchantment-combat-calibration.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Enchantment combat component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Enchantment combat component failed; inspect $unityLog" }
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $componentDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($componentPath)
+    try {
+        $component = $componentDocument.RootElement
+        $samples = @($component.GetProperty('Samples').EnumerateArray())
+        if ($component.GetProperty('Schema').GetInt32() -ne 1 -or
+            $component.GetProperty('Boundary').GetString() -ne 'RealStatusAndDrainedQueue' -or
+            -not $component.GetProperty('LiveContextUnchanged').GetBoolean() -or
+            $component.GetProperty('StatusMutationsSuppressed').GetBoolean() -or
+            -not $component.GetProperty('ExternalPreviewPreparationsRecorded').GetBoolean() -or
+            $component.GetProperty('Mismatches').GetInt32() -ne 0 -or $samples.Count -ne 41 -or
+            @($samples | Where-Object { -not $_.GetProperty('Completed').GetBoolean() -or
+                $_.GetProperty('Difference').ValueKind -ne 'Null' }).Count) {
+            throw 'Incomplete or mismatched enchantment combat component.'
+        }
+    } finally { $componentDocument.Dispose() }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        ModelAcceptance='Pending independent focused checker'; Trace=$componentPath } | ConvertTo-Json
+    return
+}
 if ($TrueFinalBossBirth) {
     $componentNames = @('true-final-boss-birth-calibration.mt2f')
     if ($TrueFinalBossSpawn) { $componentNames += 'true-final-boss-spawn-calibration.mt2f' }
