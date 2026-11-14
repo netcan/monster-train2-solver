@@ -561,6 +561,12 @@ if (args.Length == 2 && args[0] == "--inactive-mushy-turn-only")
     InactiveMushyTurnChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--inactive-inferno-turn-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    InactiveInfernoTurnChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length is 2 or 5 && args[0] == "--inactive-new-moon-horde-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -11716,6 +11722,11 @@ foreach (string path in args.Where(path => path.EndsWith("room-moon-inactive-mus
 {
     using var document = ModelJson.ReadFixture(path);
     InactiveMushyTurnChecks.Native(document.RootElement);
+}
+foreach (string path in args.Where(path => path.EndsWith("room-moon-inactive-inferno-turn-calibration.mt2f", StringComparison.OrdinalIgnoreCase)))
+{
+    using var document = ModelJson.ReadFixture(path);
+    InactiveInfernoTurnChecks.Native(document.RootElement);
 }
 foreach (string path in args.Where(path => path.EndsWith("full-battle-eclipse-chamber-movement.mt2f", StringComparison.OrdinalIgnoreCase)))
 {

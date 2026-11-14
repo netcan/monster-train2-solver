@@ -356,7 +356,7 @@ namespace MonsterTrain2Poju.Model
             unit.Team == CombatTeam.Enemy && unit.SpawnerCardId == 0 &&
             (OriginalMushy(attachment) || OriginalInferno(attachment) && attachment.AffectsHeroes);
 
-        private static bool OriginalInferno(RoomCapacityAttachmentState attachment) =>
+        internal static bool OriginalInferno(RoomCapacityAttachmentState attachment) =>
             attachment is { AssetKey: "InfernoRoom", DataId: "378cea0c-14e9-45fb-9918-fb853bd04a7d", CharacterUpgrades.Count: 1,
                 PreCombat: { DisallowedInDeployment: true, FocusRoom: true, Effects.Count: 1 } preCombat } &&
             RoomPreCombatModel.Validate(preCombat) == null &&

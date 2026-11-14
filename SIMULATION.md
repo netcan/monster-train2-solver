@@ -1,6 +1,6 @@
 # Full battle simulation
 
-Current curated inventory (2026-11-14): 2,867 binary archives with verified
+Current curated inventory (2026-11-14): 2,868 binary archives with verified
 hashes and registrations. The card evidence index accepts 1,561 battle archives
 and 31,514 native actions; three historical captures with nonzero counters stay
 excluded. All 559 intrinsically playable logbook cards have a definition-matched
@@ -49,7 +49,7 @@ of enemy asset name. An original first-wave enemy gains and loses its room
 upgrade across four Full/New Bumps; stale New understanding changes from 6 to 5.
 Two independent native captures have equal complete rows, and model context/RNG
 matches each. Callback enemies, preview and uncalibrated attachment payloads
-remain guarded; ordinary EndTurn ascension needs separate integration evidence.
+remain guarded; one natural EndTurn ascension is validated separately below.
 
 The same structural rule now covers inactive-tracking Inferno exit when a
 cardless enemy without moon callbacks carries stale Full understanding. A
@@ -73,6 +73,14 @@ stale Full understanding from mask 6 to 5; the global phase then resets to Full
 while tracking stays disabled. Two muted Instant captures have identical complete
 roots, and the model matches the full settled turn and gameplay RNG. This proves
 one complete room-exit turn, not arbitrary enemy callbacks or later turns.
+
+The original Inferno room has a matching natural EndTurn witness with a cardless
+HeavyT3_Basic. In the no-player-unit setup its health stays at 325, so the
+capture does not establish an Inferno damage hit. The enemy ascends out of room
+0, loses its room upgrade and changes stale Full understanding from mask 6 to 5
+before the global phase resets to Full. Two independent native roots are byte
+identical; the complete settled successor and gameplay RNG match the model.
+Other room occupants, damage targets and later turns remain separate.
 
 A further 34 original Conduit movement callbacks now match independently in
 complete context, private card trackers, physical points and gameplay RNG.

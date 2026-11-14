@@ -21,6 +21,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool InactiveInfernoExit => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_INFERNO_EXIT") == "1";
         internal static bool InactiveMushyMovement => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_MUSHY_MOVEMENT") == "1";
         internal static bool InactiveMushyTurn => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_MUSHY_TURN") == "1";
+        internal static bool InactiveInfernoTurn => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_INACTIVE_INFERNO_TURN") == "1";
         internal static bool Shade => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_SHADE") == "1";
         internal static bool Movement => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_MOVEMENT") == "1";
         internal static bool Enemy => Movement && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_MOON_ENEMY") == "1";
@@ -98,9 +99,9 @@ namespace MonsterTrain2Poju.Probe
                 yield return RunInactiveRefresh(log);
                 yield break;
             }
-            if (InactiveMushyTurn)
+            if (InactiveMushyTurn || InactiveInfernoTurn)
             {
-                yield return RunInactiveMushyTurn(log);
+                yield return RunInactiveRoomTurn(log, InactiveInfernoTurn);
                 yield break;
             }
             if (InactiveMovement || InactiveInfernoMovement || InactiveInfernoExit || InactiveMushyMovement)
@@ -393,7 +394,7 @@ namespace MonsterTrain2Poju.Probe
                 " gameplayRngUnchanged=" + rngUnchanged);
         }
 
-        private static IEnumerator RunInactiveMushyTurn(ManualLogSource log)
+        private static IEnumerator RunInactiveRoomTurn(ManualLogSource log, bool inferno)
         {
             var data = Managers.GetAllGameData();
             var rooms = Managers.GetRoomManager();
@@ -401,19 +402,22 @@ namespace MonsterTrain2Poju.Probe
             var combat = Managers.GetCombatManager();
             var save = Managers.GetSaveManager();
             if (Trace.CaptureTrain().Context?.QueryFrame?.MoonPhaseTrackingActive != false)
-                throw new InvalidOperationException("Inactive Mushy turn requires moon tracking off.");
+                throw new InvalidOperationException("Inactive room turn requires moon tracking off.");
             yield return player.SetMoonPhase(PlayerManager.MoonPhase.Full);
             var pattern = (SpawnPatternData)AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(Managers.GetHeroManager());
             var waves = new List<SpawnGroupPoolData>(); pattern.GetUnlockedWaves(save, waves);
-            CharacterData ordinary = ((IEnumerable)AccessTools.Field(typeof(SpawnGroupPoolData), "possibleGroups")
-                .GetValue(waves[0])).Cast<SpawnGroupData>()
-                .SelectMany(group => group.GetCharacters(save.GetCovenantsForSpawnPattern(), save, save.GetGeneratedBoss()))
-                .First(unit => !unit.GetTriggers().Any(trigger => trigger.GetTrigger().ToString().Contains("Moon")));
+            CharacterData ordinary = inferno
+                ? ((List<CharacterData>)AccessTools.Field(typeof(AllGameData), "characterDatas").GetValue(data))
+                    .Single(unit => unit.name == "HeavyT3_Basic")
+                : ((IEnumerable)AccessTools.Field(typeof(SpawnGroupPoolData), "possibleGroups")
+                    .GetValue(waves[0])).Cast<SpawnGroupData>()
+                    .SelectMany(group => group.GetCharacters(save.GetCovenantsForSpawnPattern(), save, save.GetGeneratedBoss()))
+                    .First(unit => !unit.GetTriggers().Any(trigger => trigger.GetTrigger().ToString().Contains("Moon")));
             yield return Managers.GetHeroManager().SpawnHeroInRoom(ordinary, 0, null!);
             yield return combat.RunTriggerQueue();
             var enemies = new List<CharacterState>(); rooms.GetRoom(0).AddCharactersToList(enemies, Team.Type.Heroes);
             CharacterState enemy = enemies.Single(); int enemyId = Trace.UnitId(enemy);
-            CardData roomData = data.FindCardData(MushyRoomScenario.DataId)!;
+            CardData roomData = data.FindCardData(inferno ? InfernoRoomScenario.DataId : MushyRoomScenario.DataId)!;
             CardUpgradeData upgrade = roomData.GetEffects().Single(effect =>
                 effect.GetEffectStateName() == "CardEffectAttachTrainRoomAttachment").GetParamCardUpgradeData();
             CardState sourceCard = new CardState(roomData, save); Trace.CardId(sourceCard);
@@ -426,7 +430,7 @@ namespace MonsterTrain2Poju.Probe
             if (before.Spawn.Train.Context?.QueryFrame is not { MoonPhaseTrackingActive: false, MoonPhase: 1 } ||
                 before.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0).Units
                     .Single(unit => unit.Id == enemyId).MoonPhaseMask != 6)
-                throw new InvalidOperationException("Native Mushy turn did not preserve stale Full understanding.");
+                throw new InvalidOperationException("Native room turn did not preserve stale Full understanding.");
             int turn = combat.GetTurnCount();
             AccessTools.Method(typeof(CheatManager), "Command_EndTurn").Invoke(null, null);
             float deadline = UnityEngine.Time.realtimeSinceStartup + 45f;
@@ -434,19 +438,20 @@ namespace MonsterTrain2Poju.Probe
                 !NativeEffectSettlement.Ready(combat) || combat.IsRunningTriggerQueue)
             {
                 if (UnityEngine.Time.realtimeSinceStartup > deadline)
-                    throw new TimeoutException("Native Mushy EndTurn did not settle.");
+                    throw new TimeoutException("Native room EndTurn did not settle.");
                 yield return null;
             }
             BattleTurnState actual = Trace.CaptureDecision();
             using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = "2.2.1",
                 GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
-                NativeCompleted = true, InactiveMushyTurn = true,
+                NativeCompleted = true, InactiveMushyTurn = !inferno,
                 Boundary = "AfterNativeEndTurnSettlement", EnemyId = enemyId,
                 Before = before, Actual = actual }))
             using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
-                "room-moon-inactive-mushy-turn-calibration.mt2f"))) document.Write(stream);
+                inferno ? "room-moon-inactive-inferno-turn-calibration.mt2f" :
+                    "room-moon-inactive-mushy-turn-calibration.mt2f"))) document.Write(stream);
             Completed = true;
-            log.LogInfo("ROOM-MOON-CALLBACK-NATIVE PASS inactiveMushyTurn=true enemy=" + enemyId);
+            log.LogInfo("ROOM-MOON-CALLBACK-NATIVE PASS inactiveInfernoTurn=" + inferno + " enemy=" + enemyId);
         }
     }
 }
