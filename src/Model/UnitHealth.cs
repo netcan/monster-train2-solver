@@ -39,7 +39,7 @@ namespace MonsterTrain2Poju.Model
                 source.ExternalInteractions, context, source.Preview, source.ActiveCompanionBossIds);
             if (amount <= 0) return new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
             bool linked = context?.LifeLinks?.Actors.Any(actor => actor.Id == targetId) == true;
-            if (linked && source.Preview)
+            if (linked && source.Preview && context!.LifeLinks!.TemporaryPreviewIds == null)
                 return Unsupported("Linked maximum-health preview changes require native copy and shared-health calibration.");
             bool protectedByLifeLink = debuff && target.Status("lifelink") != null &&
                 context?.LifeLinks != null && LifeLinkModel.Protected(context.LifeLinks, targetId);

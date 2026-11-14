@@ -1096,7 +1096,7 @@ namespace MonsterTrain2Poju.Model
             // Real direct and battle queue scheduling share native callbacks.
             // Shared aura worlds keep their independent guard.
             halfHealthLifecycle &= state.Context?.Enchantments == null;
-            bool linkedCombat = TrueFinalBossCombatModel.Supports(state);
+            bool linkedCombat = TrueFinalBossCombatModel.Supports(state, maximumPreview: linkedHealthOnly);
             linkedHealthOnly |= linkedCombat;
             string? relicError = RelicModel.Validate(state.Context);
             if (relicError != null) return relicError;
@@ -1110,7 +1110,8 @@ namespace MonsterTrain2Poju.Model
                 !linked.CalculatingPreview && linked.SharedPreviewHpChange == 0 && LifeLinkModel.Validate(linked) == null &&
                 state.Units.Count > 0 && state.Units.All(unit => unit.Status("lifelink") != null &&
                     linked.Actors.Any(actor => actor.Id == unit.Id && actor.TrueFinalBoss && actor.OuterBoss && actor.Health == unit.Health));
-            string[] interactions = state.ExternalInteractions.Where(item => !(linkedTargetOnly && item == "Outer train boss")).ToArray();
+            bool linkedMaximumPreview = linkedHealthOnly && linkedCombat && state.Preview && state.Context?.LifeLinks?.TemporaryPreviewIds != null;
+            string[] interactions = state.ExternalInteractions.Where(item => !((linkedTargetOnly || linkedMaximumPreview) && item == "Outer train boss")).ToArray();
             if (interactions.Length > 0)
                 return string.Join("; ", interactions);
             foreach (CardInstanceState instance in state.Context?.CardInstances ?? Array.Empty<CardInstanceState>())

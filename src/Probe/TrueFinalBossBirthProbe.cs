@@ -117,6 +117,7 @@ namespace MonsterTrain2Poju.Probe
                     LifeLinkCalibration.Capture(created, () => Snapshot(heroes));
                     TrueFinalBossHealthCalibration.Capture(created, () => Snapshot(heroes));
                     TrueFinalBossDeathCalibration.Arm(created);
+                    if (TrueFinalBossMaximumPreviewCalibration.Enabled) TrueFinalBossMaximumPreviewCalibration.Arm(created);
                     Completed = !TrueFinalBossDamageCalibration.Enabled && !TrueFinalBossMaximumHealthCalibration.Enabled;
                 }
                 catch (Exception error)

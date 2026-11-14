@@ -150,6 +150,13 @@ namespace MonsterTrain2Poju.Probe
                 if (TrueFinalBossBirthProbe.Error != null) Finish(false, TrueFinalBossBirthProbe.Error);
                 else
                 {
+                    if (TrueFinalBossMaximumPreviewCalibration.Enabled)
+                    {
+                        TrueFinalBossMaximumPreviewCalibration.Tick();
+                        if (TrueFinalBossMaximumPreviewCalibration.Error != null)
+                        { Finish(false, TrueFinalBossMaximumPreviewCalibration.Error); return; }
+                        if (!TrueFinalBossMaximumPreviewCalibration.Completed) return;
+                    }
                     if (TrueFinalBossDeathCalibration.Enabled)
                     {
                         TrueFinalBossDeathCalibration.Tick();

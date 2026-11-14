@@ -14,11 +14,13 @@ namespace MonsterTrain2Poju.Model
         public bool HasLifeLink { get; }
         public bool TrueFinalBoss { get; }
         public bool OuterBoss { get; }
+        public bool? HasPreviewHealthCopy { get; }
         public LifeLinkActor(int id, int linkedId, int health, int previewHealth, bool initialized,
-            bool hasLifeLink, bool trueFinalBoss, bool outerBoss)
+            bool hasLifeLink, bool trueFinalBoss, bool outerBoss, bool? hasPreviewHealthCopy = null)
         {
             Id = id; LinkedId = linkedId; Health = health; PreviewHealth = previewHealth;
             Initialized = initialized; HasLifeLink = hasLifeLink; TrueFinalBoss = trueFinalBoss; OuterBoss = outerBoss;
+            HasPreviewHealthCopy = hasPreviewHealthCopy;
         }
     }
     public sealed class LifeLinkContext
@@ -26,8 +28,11 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<LifeLinkActor> Actors { get; }
         public bool CalculatingPreview { get; }
         public int SharedPreviewHpChange { get; }
-        public LifeLinkContext(IReadOnlyList<LifeLinkActor> actors, bool calculatingPreview, int sharedPreviewHpChange)
-        { Actors = Array.AsReadOnly(actors.ToArray()); CalculatingPreview = calculatingPreview; SharedPreviewHpChange = sharedPreviewHpChange; }
+        public IReadOnlyList<int>? TemporaryPreviewIds { get; }
+        public LifeLinkContext(IReadOnlyList<LifeLinkActor> actors, bool calculatingPreview, int sharedPreviewHpChange,
+            IReadOnlyList<int>? temporaryPreviewIds = null)
+        { Actors = Array.AsReadOnly(actors.ToArray()); CalculatingPreview = calculatingPreview; SharedPreviewHpChange = sharedPreviewHpChange;
+            TemporaryPreviewIds = temporaryPreviewIds == null ? null : Array.AsReadOnly(temporaryPreviewIds.ToArray()); }
     }
     public sealed class LifeLinkDamageResult
     {
@@ -44,16 +49,26 @@ namespace MonsterTrain2Poju.Model
         {
             if (context.Actors.Any(actor => actor.Id <= 0) || context.Actors.Select(actor => actor.Id).Distinct().Count() != context.Actors.Count)
                 return "Life-link queries require distinct positive actor identities.";
+            if (context.TemporaryPreviewIds != null && (context.TemporaryPreviewIds.Count == 0 ||
+                context.TemporaryPreviewIds.Distinct().Count() != context.TemporaryPreviewIds.Count ||
+                context.TemporaryPreviewIds.Any(id => !context.Actors.Any(actor => actor.Id == id)) ||
+                context.Actors.Any(actor => !actor.HasPreviewHealthCopy.HasValue)))
+                return "Temporary life-link queries require distinct captured copied actors.";
             foreach (LifeLinkActor actor in context.Actors.Where(actor => actor.LinkedId != 0))
             {
                 LifeLinkActor? owner = context.Actors.SingleOrDefault(other => other.Id == actor.LinkedId);
-                bool independentPreview = context.CalculatingPreview && actor.TrueFinalBoss && actor.OuterBoss &&
-                    owner?.TrueFinalBoss == true && owner.OuterBoss;
+                bool independentPreview = IndependentCopy(context, actor) &&
+                    (context.TemporaryPreviewIds != null || owner?.TrueFinalBoss == true && owner.OuterBoss);
                 if (owner == null || owner.Id == actor.Id || owner.LinkedId != 0 || !independentPreview && owner.Health != actor.Health)
                     return "Life-link queries require a captured independent owner and matching shared health.";
             }
             return null;
         }
+        internal static bool IndependentCopy(LifeLinkContext context, LifeLinkActor actor) =>
+            context.TemporaryPreviewIds != null ? context.TemporaryPreviewIds.Contains(actor.Id) :
+                context.CalculatingPreview && actor.TrueFinalBoss && actor.OuterBoss;
+        internal static int HealthOwner(LifeLinkContext context, LifeLinkActor actor) =>
+            IndependentCopy(context, actor) || actor.LinkedId == 0 ? actor.Id : actor.LinkedId;
         public static bool Protected(LifeLinkContext context, int targetId, bool forPrediction = false)
         {
             string? invalid = Validate(context);

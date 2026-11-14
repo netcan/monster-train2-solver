@@ -15,27 +15,30 @@ namespace MonsterTrain2Poju.Model
             LifeLinkDamageResult? damageStage, string? unsupportedReason = null)
         { State = state; Events = Array.AsReadOnly(events.ToArray()); DamageStage = damageStage; UnsupportedReason = unsupportedReason; }
     }
-    // Bridge calibrated live health updates to all physical train rooms. This
-    // interface admits calibrated nonterminal damage/healing, while the TFB
-    // controller, attacks and terminal cleanup remain separate boundaries.
+    // Bridge calibrated health updates across physical train rooms. Temporary
+    // copies have their own numerical owners while retaining primary links
+    // and the independent HP cache from the preceding battle preview.
     public static class LinkedBossHealthModel
     {
         internal static CombatContext? WithMaximumHealth(CombatContext source, int targetId, int health, int maxHealth, out string? error, bool allowTerminal = false)
         {
-            if (source.LifeLinks == null || source.Enchantments == null || source.LifeLinks.CalculatingPreview || source.Enchantments.Preview)
-            { error = "Linked maximum-health updates require the captured live physical world."; return null; }
+            LifeLinkContext? links = source.LifeLinks;
+            bool preview = links?.CalculatingPreview == true || links?.TemporaryPreviewIds != null;
+            if (links == null || source.Enchantments == null || source.Enchantments.Preview != preview ||
+                links.TemporaryPreviewIds != null && !links.TemporaryPreviewIds.Contains(targetId))
+            { error = "Linked maximum-health updates require the matching physical world and copied preview target."; return null; }
             CombatContext? context = WithHealth(source, targetId, health, out error, allowTerminal);
             if (context == null) return null;
             LifeLinkActor target = context.LifeLinks!.Actors.Single(actor => actor.Id == targetId);
-            int owner = target.LinkedId == 0 ? target.Id : target.LinkedId;
-            var ids = context.LifeLinks.Actors.Where(actor => (actor.LinkedId == 0 ? actor.Id : actor.LinkedId) == owner)
+            int owner = LifeLinkModel.HealthOwner(context.LifeLinks, target);
+            var ids = context.LifeLinks.Actors.Where(actor => LifeLinkModel.HealthOwner(context.LifeLinks, actor) == owner)
                 .Select(actor => actor.Id).ToHashSet();
             EnchantmentWorld world = context.Enchantments!;
             CombatUnit Sync(CombatUnit unit) => ids.Contains(unit.Id) ? unit.WithHealthAndMaxHealth(health, maxHealth) : unit;
             return context.WithEnchantments(new EnchantmentWorld(world.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
                 room.Deployment, room.Units.Select(Sync).ToArray(), room.ExternalInteractions, null, room.Preview, room.ActiveCompanionBossIds)).ToArray(),
                 world.Movement, world.EnemySlotsPerRoom, world.RetainedUnits.Select(actor =>
-                    new EnchantmentRetainedUnit(actor.Preview ? actor.Unit : Sync(actor.Unit), actor.RoomIndex, actor.Preview)).ToArray(),
+                    new EnchantmentRetainedUnit(actor.Preview != preview ? actor.Unit : Sync(actor.Unit), actor.RoomIndex, actor.Preview)).ToArray(),
                 world.EnchanterIds, world.AllowUpdates, world.Updating, world.Preview, world.TestRng, world.AutomaticLifecycle, world.TemporaryPreviewUnitIds));
         }
 
@@ -46,8 +49,21 @@ namespace MonsterTrain2Poju.Model
             if (error != null) return null;
             LifeLinkActor? target = world!.Actors.SingleOrDefault(actor => actor.Id == targetId);
             if (target == null || health < 0 || health == 0 && (!allowTerminal || LifeLinkModel.Protected(world!, targetId)) ||
-                !world.CalculatingPreview && world.SharedPreviewHpChange != 0)
+                !world.CalculatingPreview && world.TemporaryPreviewIds == null && world.SharedPreviewHpChange != 0)
             { error = "Linked boss health requires a captured live target; preview and terminal updates remain guarded."; return null; }
+            if (world.TemporaryPreviewIds != null)
+            {
+                if (source.Enchantments?.Preview != true || !world.TemporaryPreviewIds.Contains(targetId) || health <= 0)
+                { error = "Temporary linked health requires a copied nonterminal target and matching preview world."; return null; }
+                int previewOwner = LifeLinkModel.HealthOwner(world, target), hp = Math.Min(health, 99999);
+                int change = unchecked(world.SharedPreviewHpChange + (target.OuterBoss ? target.Health - hp : 0));
+                return RebaseContext(source, new LifeLinkContext(world.Actors.Select(actor =>
+                {
+                    int next = LifeLinkModel.HealthOwner(world, actor) == previewOwner ? hp : actor.Health;
+                    return new LifeLinkActor(actor.Id, actor.LinkedId, next, actor.HasPreviewHealthCopy == true ? actor.PreviewHealth : next,
+                        actor.Initialized, actor.HasLifeLink, actor.TrueFinalBoss, actor.OuterBoss, actor.HasPreviewHealthCopy);
+                }).ToArray(), world.CalculatingPreview, change, world.TemporaryPreviewIds));
+            }
             if (world.CalculatingPreview)
             {
                 // Native preview writes only the selected body's HP and records

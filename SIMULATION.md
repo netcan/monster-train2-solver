@@ -30,6 +30,21 @@ These controls do not add original-card/relic coverage.
 
 Latest 2.3.1 acceptance: all **12/12 new original relics** have controlled
 whole-battle evidence; this does not revalidate all 614 cards or 236 relics.
+LifeLink maximum-health temporary copies now have 465 real API operations in
+30 sessions: Off/On/Calculating modes, five original bodies, partial/all-body
+copies, independent preview HP/max and primary links that still read a copied
+owner. Existing battle-preview HP stays separate; 75 native live/prediction
+protection differences are checked. Complete successors, frozen-root replay
+and 16 immutable concurrent chains per session pass. Native cancellation keeps
+primary gameplay and 14 gameplay streams plus Unity RNG unchanged; only the
+next unused preview-copy allocator is normalized. Audio/chatter streams and the
+shared preview accumulator left by cancellation are recorded explicitly.
+The probe waits for the first natural battle preview before owning suppression,
+and records its original counter/mode/suppression restoration. Native capture takes 53.99
+seconds with unchanged player files. Run
+`scripts/Check-Game231LifeLinkMaximumPreview.ps1` for the 20,152-byte binary.
+Full card-hover/UI battle preview, lethal previews and arbitrary mixed-copy
+combat remain separate acceptance boundaries. These controls add no catalog coverage.
 LifeLink terminal maximum-health changes now await native Sacrifice(null).
 Ten eleven-play/three-EndTurn original final-boss victories cover each of the
 five bodies with zero or retained positive maximum HP: 110 plays/30 EndTurns,
@@ -46,7 +61,7 @@ are excluded. Eleven captures have two distinct roots, so nine repeated searches
 are reused. Native chains/frontiers are still validated separately. Run
 `scripts/Check-Game231LifeLinkSacrifice.ps1`, optionally with `-Fixture`, for the
 eleven binary archives totaling 468,711 bytes.
-Linked temporary previews and other ordinary/Horde/half-health combinations
+Full card-hover/UI previews and other ordinary/Horde/half-health combinations
 remain open; authored controls do not increase original catalog coverage.
 LifeLink maximum-health protection now has 79 real native API calls with full
 room/shared-world successors, a frozen-root train replay and 16 immutable chains.
@@ -64,7 +79,7 @@ takes 29.82 seconds for the component and 52.25 seconds for the battle, with zer
 capture/mismatch/unsupported/pending counts and unchanged player files. Run
 `scripts/Check-Game231LifeLinkMaximum.ps1` for the 56,989-byte binary evidence.
 Control cards add no original coverage, and bounded search does not prove global
-optimality. Linked temporary previews and other ordinary/Horde/half-health
+optimality. Full linked card-hover/UI previews and other ordinary/Horde/half-health
 linked combinations still need acceptance; final-boss sacrifice is covered above.
 Lethal maximum-health changes now follow native Sacrifice(null) and skip the
 ordinary Horde/Deathwish update that follows the nonlethal path. Eight controlled

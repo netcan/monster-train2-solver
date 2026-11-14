@@ -87,6 +87,7 @@ param(
     [switch] $TrueFinalBossLifeLink,
     [switch] $TrueFinalBossHealthUpdates,
     [switch] $TrueFinalBossMaximumHealth,
+    [switch] $TrueFinalBossMaximumPreview,
     [switch] $TrueFinalBossMaximumBattle,
     [ValidateSet('', 'Dominion', 'Savagery', 'EntropyBot', 'EntropyMid', 'EntropyTop')]
     [string] $TrueFinalBossMaximumSacrifice = '',
@@ -966,7 +967,8 @@ if ($TrueFinalBossPyreBaneTargets) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossHealth) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossLifeLink) { $TrueFinalBossBirth = $true }
 if ($TrueFinalBossHealthUpdates) { $TrueFinalBossBirth = $true }
-if ($TrueFinalBossMaximumHealth) {
+if ($TrueFinalBossMaximumHealth -or $TrueFinalBossMaximumPreview) {
+    if ($TrueFinalBossMaximumHealth -and $TrueFinalBossMaximumPreview) { throw 'Live and temporary-copy maximum-health controls require separate captures.' }
     if ($TrueFinalBossDamage -or $TrueFinalBossDamageAllTargets -or $TrueFinalBossSpellDamage -or $TrueFinalBossDeath) {
         throw 'Maximum-health controls require their own original-birth coroutine chain.'
     }
@@ -1002,7 +1004,7 @@ if ($TrueFinalBossCovenant -and -not ($OriginalTrueFinalBoss -or ($TrueFinalBoss
     throw 'TrueFinalBossCovenant requires an isolated original route or complete spawn observation.'
 }
 if ($TrueFinalBossBirth) {
-    $allowed = @('TrueFinalBossBirth', 'TrueFinalBossCovenant', 'TrueFinalBossSpawn', 'TrueFinalBossScheduledSpawn', 'TrueFinalBossHealth', 'TrueFinalBossLifeLink', 'TrueFinalBossHealthUpdates', 'TrueFinalBossMaximumHealth', 'TrueFinalBossDamage', 'TrueFinalBossDamageAllTargets', 'TrueFinalBossSpellDamage', 'TrueFinalBossPyreBaneTargets', 'TrueFinalBossDeath', 'TrueFinalBossDeathSpellSource', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    $allowed = @('TrueFinalBossBirth', 'TrueFinalBossCovenant', 'TrueFinalBossSpawn', 'TrueFinalBossScheduledSpawn', 'TrueFinalBossHealth', 'TrueFinalBossLifeLink', 'TrueFinalBossHealthUpdates', 'TrueFinalBossMaximumHealth', 'TrueFinalBossMaximumPreview', 'TrueFinalBossDamage', 'TrueFinalBossDamageAllTargets', 'TrueFinalBossSpellDamage', 'TrueFinalBossPyreBaneTargets', 'TrueFinalBossDeath', 'TrueFinalBossDeathSpellSource', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'TrueFinalBossBirth is an isolated original birth observation.' }
     $Policy = 'no-cards'; $BattleDistance = 8; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
 }
@@ -1805,6 +1807,7 @@ $environment = @{
     MT2_PROBE_TRUE_FINAL_BOSS_LIFE_LINK = $(if ($TrueFinalBossLifeLink) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_HEALTH_UPDATES = $(if ($TrueFinalBossHealthUpdates) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_HEALTH = $(if ($TrueFinalBossMaximumHealth) { '1' } else { '0' })
+    MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_PREVIEW = $(if ($TrueFinalBossMaximumPreview) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_BATTLE = $(if ($TrueFinalBossMaximumBattle) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_SACRIFICE = $TrueFinalBossMaximumSacrifice
     MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_SACRIFICE_RETAIN = $(if ($TrueFinalBossMaximumSacrificeRetainMax) { '1' } else { '0' })
@@ -2601,6 +2604,7 @@ if ($TrueFinalBossBirth) {
     if ($TrueFinalBossLifeLink) { $componentNames += 'true-final-boss-life-link-calibration.mt2f' }
     if ($TrueFinalBossHealthUpdates) { $componentNames += 'true-final-boss-health-updates-calibration.mt2f' }
     if ($TrueFinalBossMaximumHealth) { $componentNames += 'true-final-boss-maximum-health.mt2f' }
+    if ($TrueFinalBossMaximumPreview) { $componentNames += 'true-final-boss-maximum-preview.mt2f' }
     if ($TrueFinalBossDamage) { $componentNames += $(if ($TrueFinalBossSpellDamage) { 'true-final-boss-spell-damage-calibration.mt2f' } elseif ($TrueFinalBossDamageAllTargets) { 'true-final-boss-all-target-damage-calibration.mt2f' } else { 'true-final-boss-damage-calibration.mt2f' }) }
     if ($TrueFinalBossDeath) { $componentNames += "true-final-boss-$(if ($TrueFinalBossDeathSpellSource) { 'spell-death' } else { 'death' })-$($TrueFinalBossDeath.ToLowerInvariant()).mt2f" }
     $componentPaths = @($componentNames | ForEach-Object { Join-Path $profile $_ })

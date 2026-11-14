@@ -124,15 +124,24 @@ namespace MonsterTrain2Poju.Model
                 upgrade.TriggerUpgrades?.Count is not > 0 && upgrade.AbilityUpgrade == null && upgrade.ExternalInteractions.Count == 0;
         }
 
-        internal static bool Supports(RoomCombatState room)
+        internal static bool Supports(RoomCombatState room) => Supports(room, maximumPreview: false);
+        internal static bool Supports(RoomCombatState room, bool maximumPreview)
         {
             LifeLinkContext? links = room.Context?.LifeLinks;
             EnchantmentWorld? world = room.Context?.Enchantments;
-            if (links == null || LifeLinkModel.Validate(links) != null || room.Preview != links.CalculatingPreview ||
+            // Temporary-copy API evidence does not admit arbitrary room combat
+            // with a mixture of primary actors and independent copies.
+            if (links?.TemporaryPreviewIds != null && !maximumPreview) return false;
+            if (links == null || LifeLinkModel.Validate(links) != null || room.Preview != (links.CalculatingPreview || links.TemporaryPreviewIds != null) ||
                 !room.Preview && links.SharedPreviewHpChange != 0 || links.Actors.Count != 5 ||
-                links.Actors.Any(actor => !actor.Initialized || !actor.TrueFinalBoss || !actor.HasLifeLink || actor.Health <= 0 || actor.Health != actor.PreviewHealth) ||
+                links.Actors.Any(actor => !actor.Initialized || !actor.TrueFinalBoss || !actor.HasLifeLink || actor.Health <= 0 ||
+                    links.TemporaryPreviewIds == null && actor.Health != actor.PreviewHealth) ||
                 world?.AutomaticLifecycle != true || world.Preview != room.Preview || world.Rooms.Count != 4 ||
-                world.Rooms.Where((floor, index) => floor.RoomIndex != index || floor.Preview != room.Preview || floor.ExternalInteractions.Count > 0).Any()) return false;
+                links.TemporaryPreviewIds != null && (world.TemporaryPreviewUnitIds == null ||
+                    !links.TemporaryPreviewIds.ToHashSet().SetEquals(world.TemporaryPreviewUnitIds.Where(id => links.Actors.Any(actor => actor.Id == id)))) ||
+                world.Rooms.Where((floor, index) => floor.RoomIndex != index || floor.Preview != room.Preview ||
+                    floor.ExternalInteractions.Any(interaction => !(maximumPreview && links.TemporaryPreviewIds != null &&
+                        interaction == "Outer train boss" && floor.Units.Any(unit => unit.AssetKey == "Boss_Level9_Entropy_Top_V2")))).Any()) return false;
             CombatUnit[] units = world.Rooms.SelectMany(floor => floor.Units).ToArray();
             int livingPyres = units.Count(unit => unit.IsPyre && unit.Health > 0);
             if (units.Any(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && !SupportsAlly(unit, room.Context)) ||
@@ -144,7 +153,6 @@ namespace MonsterTrain2Poju.Model
             CombatUnit[] bodies = units.Where(unit => links.Actors.Any(actor => actor.Id == unit.Id)).ToArray();
             if (bodies.Length != 5 || assets.Any(asset => bodies.Count(unit => unit.AssetKey == asset) != 1)) return false;
             int bottom = bodies.Single(unit => unit.AssetKey == assets[2]).Id;
-            int sharedMaxHealth = bodies.Single(unit => unit.Id == bottom).MaxHealth;
             for (int index = 0; index < 5; index++)
             {
                 CombatUnit unit = bodies.Single(actor => actor.AssetKey == assets[index]);
@@ -154,9 +162,12 @@ namespace MonsterTrain2Poju.Model
                     unit.Team != CombatTeam.Enemy || unit.Health != actor.Health || unit.MaxHealth <= 0 || unit.MaxHealth > 99999 || unit.Status("lifelink") == null ||
                     actor.OuterBoss != (index >= 2) || actor.LinkedId != (index >= 3 ? bottom : 0) ||
                     index != 1 && floor != floors[index] || index == 1 && floor > 2 ||
-                    index >= 2 && (unit.MaxHealth != sharedMaxHealth || unit.BumpRules?.OuterBoss != true || unit.BumpRules.OuterBossRelentlessPhase &&
+                    index >= 2 && (unit.MaxHealth != bodies.Single(body => body.Id ==
+                        (links.TemporaryPreviewIds == null ? bottom : LifeLinkModel.HealthOwner(links, actor))).MaxHealth ||
+                        unit.BumpRules?.OuterBoss != true || unit.BumpRules.OuterBossRelentlessPhase &&
                         (index != 4 || unit.Status("relentless")?.Stacks != 1) ||
-                        unit.BumpRules.CastingAnchorSlots?.Count != 4 || unit.BumpRules.RelentlessAnchorSlots?.Count != 4)) return false;
+                        (!maximumPreview || links.TemporaryPreviewIds == null) &&
+                        (unit.BumpRules.CastingAnchorSlots?.Count != 4 || unit.BumpRules.RelentlessAnchorSlots?.Count != 4))) return false;
             }
             return true;
         }
