@@ -109,11 +109,7 @@ internal static class TrueFinalBossMaximumHealthChecks
             foreach (FixtureValue row in rows) state = Step(state, row);
             Require(Json(state) == final && Json(initial) == parent, "Concurrent maximum-health chain diverged or mutated its parent: " + branch);
         });
-        FixtureValue unprotected = rows.Single(row => row.GetProperty("Label").GetString() == "unprotected-grow-one");
-        RoomCombatState terminalParent = unprotected.GetProperty("Before").Deserialize<RoomCombatState>()!;
-        string terminalImmutable = Json(terminalParent);
-        Require(!UnitHealthModel.ApplyNative(terminalParent, unprotected.GetProperty("TargetId").GetInt32(), 99, debuff: true).Supported &&
-            Json(terminalParent) == terminalImmutable, "Uncalibrated linked sacrifice must remain explicitly guarded.");
+        // Terminal sacrifice is calibrated separately by the five-body paid battle matrix.
         Require(!UnitHealthModel.ApplyNative(new RoomCombatState(initialRoom.RoomIndex, initialRoom.Deployment, initialRoom.Units,
             initialRoom.ExternalInteractions, initialRoom.Context, true, initialRoom.ActiveCompanionBossIds), bosses[0].Id, 1, debuff: true).Supported,
             "Live maximum-health evidence incorrectly enabled linked temporary previews.");

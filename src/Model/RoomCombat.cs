@@ -960,8 +960,9 @@ namespace MonsterTrain2Poju.Model
                 .CardDamage(targetId, damage, sourceCardId, applyTraits, attackerUnitId);
         }
 
-        internal static RoomCombatResult ApplyUnitModification(RoomCombatState state, CombatUnit changed, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null) =>
-            new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre).ModifyUnit(changed);
+        internal static RoomCombatResult ApplyUnitModification(RoomCombatState state, CombatUnit changed,
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, CombatContext? linkedContext = null) =>
+            new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre).ModifyUnit(changed, linkedContext);
 
         // The native revival API queues callbacks but leaves their execution to its caller.
         public static RoomCombatResult ApplyRevival(RoomCombatState state, int targetId, int sourceCardId = 0, int attackerUnitId = 0,
@@ -2194,8 +2195,16 @@ namespace MonsterTrain2Poju.Model
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
             }
 
-            internal RoomCombatResult ModifyUnit(CombatUnit changed)
+            internal RoomCombatResult ModifyUnit(CombatUnit changed, CombatContext? linkedContext = null)
             {
+                if (linkedContext != null)
+                {
+                    context = linkedContext;
+                    var shared = context.Enchantments!.Rooms.SelectMany(room => room.Units).ToDictionary(unit => unit.Id);
+                    foreach (WorkingUnit unit in units)
+                        if (shared.TryGetValue(unit.Source.Id, out CombatUnit? updated))
+                            unit.Apply(unit.Freeze().WithHealthAndMaxHealth(updated.Health, updated.MaxHealth));
+                }
                 int index = units.FindIndex(unit => unit.Source.Id == changed.Id);
                 WorkingUnit target = NewUnit(changed);
                 units[index] = target;
@@ -3658,8 +3667,8 @@ namespace MonsterTrain2Poju.Model
                 // the statistics once-listener. CoroutineSignal<T>.Invoke only
                 // advances the final multicast delegate's returned iterator, so
                 // the earlier CardStatistics coroutine never executes.
-                int[] ids = source.Context!.LifeLinks!.Actors.Select(actor => actor.Id).ToArray();
-                var roster = source.Context.Enchantments!.Rooms.SelectMany(room => room.Units.Select(unit => (room.RoomIndex, Unit: unit)))
+                int[] ids = context.LifeLinks!.Actors.Select(actor => actor.Id).ToArray();
+                var roster = context.Enchantments!.Rooms.SelectMany(room => room.Units.Select(unit => (room.RoomIndex, Unit: unit)))
                     .Where(actor => ids.Contains(actor.Unit.Id)).OrderByDescending(actor => actor.RoomIndex).ToArray();
                 foreach (var actor in roster)
                 {
@@ -3672,7 +3681,7 @@ namespace MonsterTrain2Poju.Model
                     }
                     if (unit == root && unit.Source.DeathState != null)
                         unit.Apply(unit.Freeze().WithDeathState(new UnitDeathState(true, true, false,
-                            isSacrifice: false, statisticsListenerOnce: false)));
+                            isSacrifice: unit.Source.DeathState.IsSacrifice, statisticsListenerOnce: false)));
                     unit.Removed = true;
                     RemovePhysicalPoint(unit);
                 }
@@ -3702,12 +3711,6 @@ namespace MonsterTrain2Poju.Model
                             triggerCount: 1, captureAllDispatches: traceAllDispatches));
                     if (enqueueCharacterTrigger == null || localUpgradeQueue) DrainLocalTriggerQueue();
                     if (unsupportedReason != null) return;
-                    foreach (CombatUnit observer in observers)
-                    {
-                        WorkingUnit? tracked = units.FirstOrDefault(unit => unit.Source.Id == observer.Id);
-                        CombatUnit? updated = context.Enchantments!.Rooms.SelectMany(room => room.Units).SingleOrDefault(unit => unit.Id == observer.Id);
-                        if (tracked != null && updated != null) tracked.Apply(updated);
-                    }
                 }
                 Emit("Death", attacker, root, 0);
             }

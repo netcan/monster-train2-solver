@@ -88,6 +88,10 @@ param(
     [switch] $TrueFinalBossHealthUpdates,
     [switch] $TrueFinalBossMaximumHealth,
     [switch] $TrueFinalBossMaximumBattle,
+    [ValidateSet('', 'Dominion', 'Savagery', 'EntropyBot', 'EntropyMid', 'EntropyTop')]
+    [string] $TrueFinalBossMaximumSacrifice = '',
+    [switch] $TrueFinalBossMaximumSacrificeRetainMax,
+    [switch] $TrueFinalBossMaximumTerminalCommand,
     [switch] $TrueFinalBossDamage,
     [switch] $TrueFinalBossDamageAllTargets,
     [switch] $TrueFinalBossSpellDamage,
@@ -880,6 +884,9 @@ if ($OriginalOuterBossVariant -and ($InputProfile -or $BattleDistance -ne 7 -or 
     throw 'OriginalOuterBossVariant requires a fresh isolated Ring8 route with OuterBossTurns.'
 }
 if ($OriginalOuterBossTrial -and -not $OriginalOuterBossVariant) { throw 'OriginalOuterBossTrial requires an explicit original outer-boss variant.' }
+if ($TrueFinalBossMaximumSacrificeRetainMax -and -not $TrueFinalBossMaximumSacrifice) { throw 'Retained maximum-health sacrifice requires an explicit original boss target.' }
+if ($TrueFinalBossMaximumTerminalCommand -and -not $TrueFinalBossMaximumSacrifice) { throw 'Terminal command control requires the original maximum-health battle prefix.' }
+if ($TrueFinalBossMaximumSacrifice) { $TrueFinalBossMaximumBattle = $true }
 if ($TrueFinalBossMaximumBattle) {
     if (-not $OriginalTrueFinalBoss -or -not $OuterBossTurns -or $TrueFinalBossLethal -or $TrueFinalBossLethalSpellTarget -or
         $TrueFinalBossProtectedSpellTarget -or $TrueFinalBossOrdinaryAlly -or $TrueFinalBossAllyUpgrade -or $TrueFinalBossDormantSavagery -or
@@ -1799,6 +1806,9 @@ $environment = @{
     MT2_PROBE_TRUE_FINAL_BOSS_HEALTH_UPDATES = $(if ($TrueFinalBossHealthUpdates) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_HEALTH = $(if ($TrueFinalBossMaximumHealth) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_BATTLE = $(if ($TrueFinalBossMaximumBattle) { '1' } else { '0' })
+    MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_SACRIFICE = $TrueFinalBossMaximumSacrifice
+    MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_SACRIFICE_RETAIN = $(if ($TrueFinalBossMaximumSacrificeRetainMax) { '1' } else { '0' })
+    MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_COMMAND = $(if ($TrueFinalBossMaximumTerminalCommand) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_DAMAGE = $(if ($TrueFinalBossDamage) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_DAMAGE_ALL_TARGETS = $(if ($TrueFinalBossDamageAllTargets) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_SPELL_DAMAGE = $(if ($TrueFinalBossSpellDamage) { '1' } else { '0' })
@@ -2696,9 +2706,11 @@ if ($BinaryCapture) {
 $inspectionTimer.Stop()
 Write-Output "FULL-BATTLE-INSPECTION elapsedSeconds=$($inspectionTimer.Elapsed.TotalSeconds.ToString('F3', [Globalization.CultureInfo]::InvariantCulture))"
 if ($TrueFinalBossMaximumBattle -and (-not $trace.TrueFinalBossMaximumBattle.Prepared -or
-    $trace.TrueFinalBossMaximumBattle.CompletedControlPlays -ne 10 -or @($trace.Actions).Count -ne 10 -or @($trace.Turns).Count -ne 4 -or
+    $trace.TrueFinalBossMaximumBattle.CompletedControlPlays -ne $(if ($TrueFinalBossMaximumSacrifice) { 11 } else { 10 }) -or
+    @($trace.Actions).Count -ne $(if ($TrueFinalBossMaximumSacrifice) { 11 } else { 10 }) -or
+    @($trace.Turns).Count -ne $(if ($TrueFinalBossMaximumSacrifice) { 3 } else { 4 }) -or
     -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled)) {
-    throw 'Original TFB maximum-health battle did not finish all ten inputs, four EndTurns and its native victory.'
+    throw 'Original TFB maximum-health battle did not finish its declared plays, EndTurns and native victory.'
 }
 if ($Planner) {
     $plannerRuns = @($trace.PlannerRuns)

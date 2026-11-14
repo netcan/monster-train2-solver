@@ -20,11 +20,11 @@ namespace MonsterTrain2Poju.Model
     // controller, attacks and terminal cleanup remain separate boundaries.
     public static class LinkedBossHealthModel
     {
-        internal static CombatContext? WithMaximumHealth(CombatContext source, int targetId, int health, int maxHealth, out string? error)
+        internal static CombatContext? WithMaximumHealth(CombatContext source, int targetId, int health, int maxHealth, out string? error, bool allowTerminal = false)
         {
             if (source.LifeLinks == null || source.Enchantments == null || source.LifeLinks.CalculatingPreview || source.Enchantments.Preview)
             { error = "Linked maximum-health updates require the captured live physical world."; return null; }
-            CombatContext? context = WithHealth(source, targetId, health, out error);
+            CombatContext? context = WithHealth(source, targetId, health, out error, allowTerminal);
             if (context == null) return null;
             LifeLinkActor target = context.LifeLinks!.Actors.Single(actor => actor.Id == targetId);
             int owner = target.LinkedId == 0 ? target.Id : target.LinkedId;

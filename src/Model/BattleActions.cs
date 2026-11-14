@@ -1066,7 +1066,7 @@ namespace MonsterTrain2Poju.Model
             if (!skipNaturalDiscard)
                 piles = piles.Select(pile => pile.Name == "DiscardBuffer" ? CardPileModel.Remove(pile, card.InstanceId) : pile).ToArray();
             if (terminal && rule.Destination != "Discard" && !(rule.Destination == "Standby" && rule.Effect == "SpawnMonster") &&
-                !(ephemeralPurgeCallbacks && discardInstance != null && CardCopyOnPlayModel.SupportsTerminalPurge(discardInstance)))
+                !(ephemeralPurgeCallbacks && discardInstance != null && CardTerminalPurgeModel.Supports(discardInstance)))
                 return Unsupported("Terminal routing for this card effect/destination is not validated.");
             if (!skipNaturalDiscard && rule.Destination == "Discard") discard.Add(card);
             else if (!skipNaturalDiscard)

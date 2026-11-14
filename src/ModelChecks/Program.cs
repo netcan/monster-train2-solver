@@ -3976,6 +3976,24 @@ if (args.Length == 2 && args[0] == "--true-final-boss-damage-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--true-final-boss-maximum-sacrifice-matrix")
+{
+    TrueFinalBossMaximumSacrificeChecks.Matrix(args[1]);
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--true-final-boss-maximum-command-only")
+{
+    TrueFinalBossMaximumCommandChecks.Native(args[1]);
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--true-final-boss-maximum-sacrifice-only")
+{
+    TrueFinalBossMaximumSacrificeChecks.Native(args[1]);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--true-final-boss-maximum-battle-only")
 {
     TrueFinalBossMaximumBattleChecks.Native(args[1]);

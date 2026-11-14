@@ -52,9 +52,15 @@ namespace MonsterTrain2Poju.Model
                     target.Statuses, fromMaxHealthChange: true) : target.Health;
             if (linked)
             {
-                if (health <= 0) return Unsupported("Terminal linked maximum-health changes require native sacrifice and encounter-completion calibration.");
-                context = LinkedBossHealthModel.WithMaximumHealth(context!, targetId, health, maxHealth, out string? linkedError);
+                bool terminal = health <= 0;
+                if (terminal && !TrueFinalBossTerminalCombatModel.SupportsRoot(state, targetId))
+                    return Unsupported("Linked maximum-health sacrifice requires the original unprotected final-boss group and supported floor observers.");
+                context = LinkedBossHealthModel.WithMaximumHealth(context!, targetId, health, maxHealth, out string? linkedError, allowTerminal: terminal);
                 if (context == null) return Unsupported(linkedError!);
+                // Preserve the live pre-death roster for terminal recognition;
+                // the sacrifice engine receives the already-updated shared HP/max.
+                if (terminal) return RoomCombatModel.ApplyUnitModification(state, target.WithHealthAndMaxHealth(health, maxHealth),
+                    refreshPyre: refreshPyre, linkedContext: context);
                 var byId = context.Enchantments!.Rooms.SelectMany(room => room.Units).ToDictionary(unit => unit.Id);
                 state = new RoomCombatState(state.RoomIndex, state.Deployment,
                     state.Units.Select(unit => byId.TryGetValue(unit.Id, out CombatUnit? shared) ?
