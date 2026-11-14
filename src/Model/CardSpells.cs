@@ -131,6 +131,16 @@ namespace MonsterTrain2Poju.Model
             int targetId, int sourceCardId = 0, BattlePlayRules? definitions = null, IReadOnlyList<CardPileState>? otherPiles = null, int selfUnitId = 0)
             => ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, fullTrain: true, otherPiles, selfUnitId);
 
+        internal static RoomCombatResult ApplyRelicSelf(RoomCombatState source, CardActionEffect effect, int actorId)
+        {
+            if (effect.Target != "Self") return new RoomCombatResult(null, RoomOutcome.Unsupported, 0,
+                new List<CombatEvent>(), "A local relic action must target its captured actor.");
+            TrainSpellResult result = ApplyCore(SingleRoom(source), source.RoomIndex, new[] { effect }, 0, 0,
+                null, null, null, fullTrain: false, selfUnitId: actorId, deferFinalCallbacks: true);
+            return new RoomCombatResult(result.State?.Rooms.Single(), result.Outcome, 0, result.Events.ToList(),
+                result.UnsupportedReason, pendingCallbacks: result.PendingCallbacks, retainedUnits: result.RetainedUnits);
+        }
+
         internal static RoomCombatResult ApplyRoomPreCombat(RoomCombatState source, IReadOnlyList<CardActionEffect> effects,
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre)
         {
@@ -673,6 +683,8 @@ namespace MonsterTrain2Poju.Model
                     }
                     continue;
                 }
+                if (effect.Type == DevotionStatusModel.Effect)
+                    effect = DevotionStatusModel.AsStatus(effect, DevotionStatusModel.Grants(state.Context, effect));
                 if ((effect.Type == "AddStatus" || effect.Type == "MultiplyStatus" || effect.Type == "SpawnOrStatus") && effect.Statuses.Count > 1)
                 {
                     // Native chooses one status for the whole effect, including an empty collection.
@@ -690,7 +702,7 @@ namespace MonsterTrain2Poju.Model
                         statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
                         healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
                         sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe,
-                        ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel);
+                        ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel, devotionLevelsPerGrant: effect.DevotionLevelsPerGrant);
                 }
                 if (effect.Type == "DuplicateCard")
                 {
@@ -2312,7 +2324,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 string? filterError = effect.Target == "Pyre" ? null : effect.Filters?.Validate();
                 if (filterError != null) return filterError;
-                if (effect.Type == "AddStatus" && (effect.Tests?.StrictTargets == true || effect.Target is "DropTargetCharacter" or "RoomExceptDropTarget") &&
+                if ((effect.Type == "AddStatus" || effect.Type == DevotionStatusModel.Effect) && (effect.Tests?.StrictTargets == true || effect.Target is "DropTargetCharacter" or "RoomExceptDropTarget") &&
                     effect.Statuses.Any(status => status.Stackable == false) &&
                     (effect.Statuses.Count != 1 || effect.TargetSubtype.Length != 0 || effect.Filters?.IgnoreBosses == true || CardTargetModel.IsRandom(effect.Target)))
                     return "Nonstackable status tests require one fixed status, an unrestricted subtype and deterministic targets.";
@@ -2320,7 +2332,7 @@ namespace MonsterTrain2Poju.Model
                     !AbilityLifecycleModel.IsEffect(effect.Type))
                 {
                     if (effect.Type == "AdjustAllStatusEffects") return "Status adjustment effects use a fixed integer value, not an integer range.";
-                    if (!EnergyModel.IsEffect(effect.Type) && effect.Type != ForgePointsModel.Effect && effect.Type != DevotionModel.Effect && !new[] { "Damage", "DamagePerHp", "Heal", "HealOverheal", "AddStatus", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
+                    if (!EnergyModel.IsEffect(effect.Type) && effect.Type != ForgePointsModel.Effect && effect.Type != DevotionModel.Effect && !new[] { "Damage", "DamagePerHp", "Heal", "HealOverheal", "AddStatus", DevotionStatusModel.Effect, "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
                         return "Unmodeled range consumer " + effect.Type;
                     string? rangeError = effect.Range.Validate();
                     if (rangeError != null) return rangeError;
@@ -2510,6 +2522,12 @@ namespace MonsterTrain2Poju.Model
                     if (!effect.DevotionPerLevel.HasValue) return "Missing native additional Devotion per level.";
                     continue;
                 }
+                if (effect.Type == DevotionStatusModel.Effect)
+                {
+                    string? devotionError = DevotionModel.Validate(source.Context);
+                    if (devotionError != null) return devotionError;
+                    if (!effect.DevotionLevelsPerGrant.HasValue) return "Missing native Devotion levels per status grant.";
+                }
                 if (effect.Type == ForgePointsModel.Effect)
                 {
                     string? forgeError = ForgePointsModel.Validate(source.Context);
@@ -2568,7 +2586,7 @@ namespace MonsterTrain2Poju.Model
                         return "Mix requires a positive draft size and captured elixir state.";
                     continue;
                 }
-                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "AttackTargetsWithSelfUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", "Sacrifice", "Kill", "AddStatus", "AddStatusPerCasterStatus", "AddStatusPerMissingHp", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
+                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "AttackTargetsWithSelfUnit", "Damage", "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", "Sacrifice", "Kill", "AddStatus", DevotionStatusModel.Effect, "AddStatusPerCasterStatus", "AddStatusPerMissingHp", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "TransferAllStatuses" &&
                     (effect.Target != "DropTargetCharacter" || effect.Statuses.Count != 1))
@@ -2588,7 +2606,7 @@ namespace MonsterTrain2Poju.Model
                     return "Status-scaled unit upgrades require a captured self target and status filters.";
                 if (effect.Type == "BuffEquipment" && effect.Lifetime != "TemporaryUntilUnitDeath")
                     return "Equipment buffs require the native unit-death lifetime.";
-                if (effect.Value < 0 && !AttackChange(effect) && effect.Type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "HealOverheal", "AddStatus", "AddStatusPerOtherEffect", "SpawnOrStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AdjustDragonsHoard", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
+                if (effect.Value < 0 && !AttackChange(effect) && effect.Type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", "DamagePerSourceAttack", "DamagePerHp", "Heal", "HealOverheal", "AddStatus", DevotionStatusModel.Effect, "AddStatusPerOtherEffect", "SpawnOrStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AdjustDragonsHoard", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
                     effect.Type == "FloorRearrange" && effect.Value > 1) return "Invalid spell effect value.";
                 if (effect.Type == "BuffHealth" && effect.Lifetime != "" && effect.Lifetime != "TemporaryUntilEndOfBattle" &&
                     effect.Lifetime != "TemporaryUntilUnitDeath") return "Unmodeled maximum-health buff lifetime.";
@@ -2598,7 +2616,7 @@ namespace MonsterTrain2Poju.Model
                     return "Uncalibrated floor rearrangement target selector.";
                 if (effect.Type == "AdjustAllStatusEffects" && (!effect.StatusAdjustmentFilter.HasValue || effect.StatusAdjustmentFilter < 0 || effect.StatusAdjustmentFilter > 1))
                     return "Unmodeled all-status adjustment filter.";
-                if ((effect.Type == "AddStatus" || effect.Type == "MultiplyStatus") && effect.Statuses.Count == 0)
+                if ((effect.Type == "AddStatus" || effect.Type == DevotionStatusModel.Effect || effect.Type == "MultiplyStatus") && effect.Statuses.Count == 0)
                     return "A status effect requires at least one status definition.";
                 if (effect.Type == "HealOverheal" && (effect.Overheal == null || effect.Value < 0 || effect.Range?.Min < 0))
                     return "Overheal requires its captured multipliers and a nonnegative healing amount.";
@@ -2645,7 +2663,7 @@ namespace MonsterTrain2Poju.Model
             // A completed OnShift death removes the native ability caster before
             // the following scalar status effects collect Self again. Keep the
             // rejection for unknown actors and other retained-actor effects.
-            if (effect.Target == "Self" && effect.Type is "AddStatus" or "AddStatusPerOtherEffect" &&
+            if (effect.Target == "Self" && effect.Type is "AddStatus" or DevotionStatusModel.Effect or "AddStatusPerOtherEffect" &&
                 retainedSelf?.Health <= 0 && retainedSelf.DeathState?.HasFinishedDying == true &&
                 retainedSelf.DeathState.IsBeingRemoved &&
                 state.Rooms.SelectMany(room => room.Units).All(unit => unit.Id != selfUnitId))
@@ -2721,6 +2739,9 @@ namespace MonsterTrain2Poju.Model
             RoomCombatState? room = null, bool? pyreAlive = null, int sourceCardId = 0)
         {
             if (!DevotionModel.MeetsRequirements(context, effect.Tests)) return false;
+            if (effect.Type == DevotionStatusModel.Effect)
+                return DevotionStatusModel.Grants(context, effect) > 0 && PassesTest(DevotionStatusModel.AsStatus(effect),
+                    count, bossDead, context, preview, room, pyreAlive, sourceCardId);
             if (effect.Type == "CraftSpike") return true;
             if (effect.Type == "CopyLastTurn") return !preview && !bossDead && count > 0;
             if (effect.Type == "FeederRules") return room?.Deployment == false;
@@ -2897,11 +2918,11 @@ namespace MonsterTrain2Poju.Model
                 statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
                 healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
                 sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe,
-                ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel);
+                ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel, devotionLevelsPerGrant: effect.DevotionLevelsPerGrant);
         }
         internal static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {
-            if (effect.Type == "AddStatus" && effect.Statuses.Count == 1 && effect.Statuses[0].Stackable == false &&
+            if ((effect.Type == "AddStatus" || effect.Type == DevotionStatusModel.Effect) && effect.Statuses.Count == 1 && effect.Statuses[0].Stackable == false &&
                 (effect.Tests?.StrictTargets == true || effect.Target is "DropTargetCharacter" or "RoomExceptDropTarget"))
                 return state.Rooms.SelectMany(room => room.Units).Count(unit => targets.UnitIds.Contains(unit.Id) &&
                     !unit.IsPyre && unit.Status(effect.Statuses[0].Id)?.Stacks is not > 0);

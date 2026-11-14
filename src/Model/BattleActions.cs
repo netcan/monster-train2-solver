@@ -79,6 +79,8 @@ namespace MonsterTrain2Poju.Model
         public bool IgnoreDualism { get; }
         public int? DevotionPerLevel { get; }
         public bool ShouldSerializeDevotionPerLevel() => DevotionPerLevel.HasValue;
+        public int? DevotionLevelsPerGrant { get; }
+        public bool ShouldSerializeDevotionLevelsPerGrant() => DevotionLevelsPerGrant.HasValue;
         public CardActionEffect(string type, string target, int value, bool allowEnemy, bool allowPlayer, IReadOnlyList<CombatStatus> statuses,
             CardUpgradeModifier? upgrade = null, string lifetime = "", CardEffectTests? tests = null, CardEffectRange? range = null, CardTargetFilters? filters = null,
             CardGenerationRule? generation = null, bool onlyIfNoEnemies = false, bool? cooldownParameter = null,
@@ -96,7 +98,7 @@ namespace MonsterTrain2Poju.Model
             int transferAttackMultiplier = 0, StatusTransferRule? statusTransfer = null, string? unitTriggerKind = null,
             int? healDamageMultiplier = null, UnitReturnRule? unitReturn = null, EquipmentMergeRule? equipmentMerge = null,
             string? sourceStatusMultiplier = null, bool? suppressPyreRoomFocus = null, ElixirRecipe? spikeRecipe = null,
-            bool ignoreDualism = false, int? devotionPerLevel = null)
+            bool ignoreDualism = false, int? devotionPerLevel = null, int? devotionLevelsPerGrant = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
             CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; ScaleUpgrade = scaleUpgrade;
@@ -114,7 +116,8 @@ namespace MonsterTrain2Poju.Model
             NullTargetless = nullTargetless; NullForwardSelf = nullForwardSelf; ChooseDiscard = chooseDiscard;
             TransferAttackMultiplier = transferAttackMultiplier; StatusTransfer = statusTransfer; UnitTriggerKind = unitTriggerKind;
             HealDamageMultiplier = healDamageMultiplier; UnitReturn = unitReturn; EquipmentMerge = equipmentMerge;
-            SuppressPyreRoomFocus = suppressPyreRoomFocus; SpikeRecipe = spikeRecipe; IgnoreDualism = ignoreDualism; DevotionPerLevel = devotionPerLevel; }
+            SuppressPyreRoomFocus = suppressPyreRoomFocus; SpikeRecipe = spikeRecipe; IgnoreDualism = ignoreDualism;
+            DevotionPerLevel = devotionPerLevel; DevotionLevelsPerGrant = devotionLevelsPerGrant; }
     }
 
     public sealed class StatusTransferRule
@@ -739,6 +742,20 @@ namespace MonsterTrain2Poju.Model
                     if (!grafted.Supported) return Unsupported(grafted.UnsupportedReason!);
                     spawnTriggers = new RoomCombatResult(grafted.State, grafted.Outcome, 0,
                         spawnTriggers.Events.Concat(grafted.Events).ToList());
+                    CombatUnit? lateActor = spawnTriggers.State!.Units.FirstOrDefault(unit => unit.Id == spawned.Id);
+                    if (lateActor != null && RelicUnitSpawnEffectModel.NeedsLateSpawn(spawnTriggers.State.Context, lateActor))
+                    {
+                        var lateFrame = new TrainCombatState(train.Rooms.Select(room => room.RoomIndex == target.RoomIndex
+                            ? spawnTriggers.State : room.WithContext(spawnTriggers.State.Context)).ToArray(), train.Movement,
+                            train.EnemySlotsPerRoom, spawnTriggers.State.Context);
+                        TrainCombatResult late = TrainCombatModel.ApplyCharacterQueue(lateFrame,
+                            new List<RoomCombatModel.QueuedCharacterTrigger> {
+                                new RoomCombatModel.QueuedCharacterTrigger(target.RoomIndex, lateActor, "OnSpawnLate") });
+                        if (!late.Supported) return Unsupported(late.UnsupportedReason!);
+                        train = late.State!;
+                        spawnTriggers = new RoomCombatResult(train.Rooms.Single(room => room.RoomIndex == target.RoomIndex),
+                            late.Outcome, 0, spawnTriggers.Events.Concat(late.RoomResults.SelectMany(result => result.Events)).ToList());
+                    }
                     if (RoomSpawnCopyModel.Active(spawnTriggers.State!))
                     {
                         var copyFrame = new TrainCombatState(train.Rooms.Select(room => room.RoomIndex == target.RoomIndex ? spawnTriggers.State! :

@@ -1708,6 +1708,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalDeathwishAttack = OriginalDeathwishAttackScenario.Enabled ? OriginalDeathwishAttackScenario.Evidence : null,
                 DamageReactionBattle = DamageReactionBattleScenario.Enabled ? DamageReactionBattleScenario.Evidence : null,
                 TenaciousBattle = TenaciousBattleScenario.Enabled ? TenaciousBattleScenario.Evidence : null,
+                DevotionLateSpawnBattle = DevotionLateSpawnBattleScenario.Enabled ? DevotionLateSpawnBattleScenario.Evidence : null,
                 DamagedFloorEnergyBattle = DamagedFloorEnergyBattleScenario.Enabled ? DamagedFloorEnergyBattleScenario.Evidence : null,
                 DevotionSpawnBattle = DevotionSpawnBattleScenario.Enabled ? DevotionSpawnBattleScenario.Evidence : null,
                 DevotionDamageBattle = DevotionDamageBattleScenario.Enabled ? DevotionDamageBattleScenario.Evidence : null,

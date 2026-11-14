@@ -45,7 +45,7 @@ namespace MonsterTrain2Poju.Model
                     effect.Statuses, effect.Upgrade, effect.Lifetime, effect.Tests, effect.Range,
                     f == null ? null : new CardTargetFilters(f.Health, f.RequiredStatuses, f.ExcludedStatuses, true, f.Subtype, f.ExcludedSubtypes),
                     sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe,
-                    ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel));
+                    ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel, devotionLevelsPerGrant: effect.DevotionLevelsPerGrant));
             }
             var equipment = new EquipmentDefinition(Sources.SelectMany(source => source.Definition.Equipment?.Upgrades ?? Array.Empty<CardUpgradeModifier>()).ToArray(),
                 false, original.DataId);

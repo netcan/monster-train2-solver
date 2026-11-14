@@ -209,7 +209,7 @@ namespace MonsterTrain2Poju.Probe
                 unitSpawnEffect = new RelicUnitSpawnEffectRule(
                     AccessTools.Field(effect.GetType(), "sourceTeam").GetValue(effect).ToString()!,
                     ((SubtypeData)AccessTools.Field(effect.GetType(), "subtypeData").GetValue(effect)).Key,
-                    action, interactions, metadata);
+                    action, interactions, metadata, (bool)AccessTools.Field(effect.GetType(), "lateSpawn").GetValue(effect));
                 amount = data.GetParamInt();
             }
             else if (effect is RelicEffectEnergyAndCardDrawOnCardPlaySequence)

@@ -1191,7 +1191,7 @@ namespace MonsterTrain2Poju.Model
                     if (trigger.Kind != "OnDeath" && trigger.Kind != "OnReanimated" && trigger.Kind != "OnBurnout" && trigger.Kind != "PostCombat" && trigger.Kind != "PostCombatHealing" && trigger.Kind != "OnEncounterComplete" && trigger.Kind != "OnHeal" &&
                         trigger.Kind != "CardMonsterPlayed" && trigger.Kind != "CardSpellPlayed" && trigger.Kind != "CardExhausted" && trigger.Kind != "OnOwnAbilityActivated" && trigger.Kind != "OnPreOwnAbilityActivated" &&
                         trigger.Kind != "OnEquipmentAdded" && trigger.Kind != "OnEquipmentAddedToAny" && trigger.Kind != "OnEquipmentRemoved" && trigger.Kind != "OnFoodSpawn" &&
-                        trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" && trigger.Kind != "AfterSpawnEnchant" &&
+                        trigger.Kind != "OnSpawn" && trigger.Kind != "OnUnscaledSpawn" && trigger.Kind != "OnSpawnNotFromCard" && trigger.Kind != "OnSpawnLate" && trigger.Kind != "AfterSpawnEnchant" &&
                         trigger.Kind != "OnTurnBegin" && trigger.Kind != "OnTeamTurnBegin" && trigger.Kind != "EndTurnPreHandDiscard" && trigger.Kind != "PreCombat" &&
                         trigger.Kind != "OnTrainRoomLoop" && trigger.Kind != "PostAscension" && trigger.Kind != "OnShift" && trigger.Kind != "OnSentry" &&
                         trigger.Kind != "PostDescension" && trigger.Kind != "PostAttemptedAscension" && trigger.Kind != "PostAttemptedDescension" &&
@@ -4428,10 +4428,19 @@ namespace MonsterTrain2Poju.Model
                     }
                     if (relic.EffectTypes[effectIndex] == RelicUnitSpawnEffectModel.Effect)
                     {
-                        RelicConditionEvaluation checkedEffect = RelicUnitSpawnEffectModel.Check(context, unit.Freeze(), kind, source.Preview);
+                        RelicConditionEvaluation checkedEffect = RelicUnitSpawnEffectModel.Check(context, unit.Freeze(), kind, source.Preview, relic.DataId);
                         if (!checkedEffect.Supported) { unsupportedReason = checkedEffect.UnsupportedReason; return false; }
                         context = checkedEffect.Context;
                         if (!checkedEffect.Passed) continue;
+                        if (relic.DataId == RelicUnitSpawnEffectModel.DevotionDataId)
+                        {
+                            // This owner's nested action targets only the spawning actor.
+                            RoomCombatResult self = RelicUnitSpawnEffectModel.ApplySelf(CurrentRoom(), unit.Source.Id, kind);
+                            if (!self.Supported) { unsupportedReason = self.UnsupportedReason; return false; }
+                            MergeSummon(self);
+                            foreach (QueuedCharacterTrigger callback in self.PendingCallbacks) QueueCallback(callback);
+                            continue;
+                        }
                         if (relicCharacterEffect == null)
                         { unsupportedReason = "Whelp spawn effects require a complete-train character callback."; return false; }
                         RoomCombatResult applied = relicCharacterEffect(CurrentRoom(), unit.Source.Id, kind);

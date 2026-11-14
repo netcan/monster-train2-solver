@@ -19,6 +19,8 @@ namespace MonsterTrain2Poju.Probe
 
         internal static CardActionEffect? Capture(CardEffectState state, List<string>? interactions = null)
         {
+            if (state.GetCardEffect().GetType().Name is "CardEffectGainDevotionPoints" or "CardEffectAddStatusEffectPerDevotionLevel")
+                return BattleActionProbe.DescribeTriggerEffect(state.GetSourceCardEffectData(), interactions ?? new List<string>());
             if (state.GetCardEffect() is CardEffectFloorRearrange && state.GetSourceCardEffectData().GetTargetMode() == TargetMode.LastAttackedCharacter)
                 return LastAttackedRearrangement(state.GetSourceCardEffectData());
             if (state.GetCardEffect() is CardEffectSynergizeStatusEffects) return Synergy(state.GetSourceCardEffectData());
@@ -53,6 +55,8 @@ namespace MonsterTrain2Poju.Probe
                     BattleActionProbe.Status(status.statusId, status.count)).ToArray() : null);
         }
         internal static CardActionEffect? Definition(CardEffectData effect, List<string>? interactions = null) =>
+            effect.GetEffectStateName() is "CardEffectGainDevotionPoints" or "CardEffectAddStatusEffectPerDevotionLevel"
+                ? BattleActionProbe.DescribeTriggerEffect(effect, interactions ?? new List<string>()) :
             effect.GetEffectStateName() == "CardEffectFloorRearrange" && effect.GetTargetMode() == TargetMode.LastAttackedCharacter
                 ? LastAttackedRearrangement(effect) :
             effect.GetEffectStateName() == "CardEffectSynergizeStatusEffects" ? Synergy(effect) :

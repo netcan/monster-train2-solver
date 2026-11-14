@@ -193,6 +193,9 @@ namespace MonsterTrain2Poju.Model
             }
             var queue = result.State!.Units.Where(unit => unit.Team == CombatTeam.Player)
                 .Select(unit => new RoomCombatModel.QueuedCharacterTrigger(source.RoomIndex, unit, "AfterSpawnEnchant")).ToList();
+            CombatUnit? lateActor = result.State.Units.FirstOrDefault(unit => unit.Id == spawned.Id);
+            if (lateActor != null && RelicUnitSpawnEffectModel.NeedsLateSpawn(result.State.Context, lateActor))
+                queue.Insert(0, new RoomCombatModel.QueuedCharacterTrigger(source.RoomIndex, lateActor, "OnSpawnLate"));
             if (isCardless)
                 queue.AddRange(result.State.Units.Where(unit => unit.Team == CombatTeam.Player && unit.Id != spawned.Id)
                     .Select(unit => new RoomCombatModel.QueuedCharacterTrigger(source.RoomIndex, unit,

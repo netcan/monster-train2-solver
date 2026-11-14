@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--devotion-late-spawn-battle-only")
+{
+    DevotionLateSpawnBattleChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--damaged-floor-energy-battle-only")
 {
     DamagedFloorEnergyBattleChecks.Native(args[1]);

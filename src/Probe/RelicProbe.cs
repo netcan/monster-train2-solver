@@ -16,7 +16,9 @@ namespace MonsterTrain2Poju.Probe
         internal static bool HasTriggerCounts(AllGameManagers managers) =>
             HalfHealthDeathwishCalibration.InstallationsRecording || HasReplayHistory(managers) || UnitRoomTriggerCountProbe.Captured(managers) || Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyTriggerCount || effect is RelicEffectAddTrigger));
         internal static bool HasStatusAttackHistory(AllGameManagers managers) =>
-            PyreResourceRefreshScenario.Enabled || Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyStatusMagnitude ||
+            // New-game Zeal can be installed by cards and late-spawn effects even
+            // without a magnitude relic; its accumulator is independent of stacks.
+            ConditionalActivationProbe.HasVanguard || PyreResourceRefreshScenario.Enabled || Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyStatusMagnitude ||
                 effect is IRebalanceValorRelicEffect ||
                 effect is RelicEffectAdjustAttackByStatusEffect ||
                 effect is RelicEffectPreventStatusEffectDecay decay && decay.GetStatusEffects().Any(status => status.statusId == "buff")));
