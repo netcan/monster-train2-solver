@@ -8,16 +8,7 @@ internal static class DamageReactionChecks
     {
         using var document = ModelJson.ReadFixture(path);
         FixtureValue root = document.RootElement;
-        FixtureValue[] samples = root.GetProperty("Samples").EnumerateArray().ToArray();
-        Require(root.GetProperty("Schema").GetInt32() == 1 && root.GetProperty("GameVersion").GetString() == "2.3.1" &&
-            root.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
-            root.GetProperty("Boundary").GetString() == "NativeBloodshedPunishDamageLifecycle" &&
-            root.GetProperty("LiveContextUnchanged").GetBoolean() && root.GetProperty("EffectsDrained").GetBoolean() &&
-            root.GetProperty("RestorationDifference").ValueKind == FixtureKind.Null && root.GetProperty("Mismatches").GetInt32() == 0 &&
-            samples.Length == 33 && samples.All(sample => sample.GetProperty("Completed").GetBoolean() &&
-                sample.GetProperty("Difference").ValueKind == FixtureKind.Null && sample.GetProperty("GameplayRngUnchanged").GetBoolean() &&
-                sample.GetProperty("PendingAfterDrain").GetInt32() == 0), "Incomplete native Bloodshed/Punish calibration.");
-        Require(Difference(root.GetProperty("RngBefore"), root.GetProperty("RngAfter")) == null, "Calibration did not restore all RNG streams.");
+        FixtureValue[] samples = Capture(root, revival: false);
         foreach (FixtureValue sample in samples) Verify(sample);
         var byLabel = samples.ToDictionary(sample => sample.GetProperty("Label").GetString()!);
         foreach (string source in new[] { "None", "Card", "Friendly", "Enemy", "Self", "Relic", "EnemyCard", "FriendlyCard", "EnemyRelic" })
@@ -70,6 +61,73 @@ internal static class DamageReactionChecks
             "Uncalibrated lethal Bloodshed/Punish effects were accepted.");
         Parallel.For(0, 32, _ => { foreach (FixtureValue sample in samples) Verify(sample); });
         Console.WriteLine("DAMAGE-REACTIONS PASS: 33 native complete successors, two paid same-floor units, source precedence, shields/thresholds/once/silence, nested effects and half-health ordering; every dispatch/RNG and 32 immutable parallel branches match.");
+    }
+    internal static void NativeRevival(string path)
+    {
+        using var document = ModelJson.ReadFixture(path);
+        FixtureValue[] samples = Capture(document.RootElement, revival: true);
+        foreach (FixtureValue sample in samples) Verify(sample);
+        var byLabel = samples.ToDictionary(sample => sample.GetProperty("Label").GetString()!);
+        foreach (string source in new[] { "Card", "Enemy", "Self", "Relic", "Friendly" })
+            Expect(byLabel["revival-source-" + source], 1, source == "Enemy" ? 105 : 125, 2, source == "Enemy" ? 0 : 1);
+        Expect(byLabel["revival-enemy-card"], 1, 110, 0, 1);
+        Expect(byLabel["revival-enemy-source"], 1, 90, 0, 0);
+        foreach (string label in new[] { "revival-bloodshed-heal", "revival-punish-heal", "revival-bloodshed-nested-damage", "revival-punish-nested-damage" })
+        {
+            Expect(byLabel[label], 1, 125, 2, 1);
+            Require(!Kinds(byLabel[label]).Contains("OnHeal"), "A dead damage target was healed before Undying revival.");
+        }
+        Expect(byLabel["revival-half-gain"], 1, 150, 2, 1);
+        Expect(byLabel["revival-half-gain-lost-one-maxhp"], 1, 180, 2, 1);
+        Expect(byLabel["revival-half-gain-heals"], 3, 150, 2, 1);
+        Expect(byLabel["revival-reanimated-heals"], 3, 125, 2, 1);
+        Expect(byLabel["revival-death-heals"], 3, 125, 2, 1);
+        Expect(byLabel["revival-twice-listener-once"], 1, 250, 4, 2);
+        Expect(byLabel["revival-reanimated-heals-leaves-half"], 2, 180, 2, 1);
+        Expect(byLabel["revival-active-half-remains"], 1, 125, 2, 1);
+        Expect(byLabel["revival-active-half-heal-leaves"], 2, 155, 2, 1);
+        foreach (FixtureValue sample in samples)
+        {
+            int id = sample.GetProperty("TargetId").GetInt32(), hits = sample.GetProperty("Input").GetProperty("Hits").GetInt32();
+            RoomCombatState before = sample.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            RoomCombatState actual = sample.GetProperty("Actual").Deserialize<RoomCombatState>()!;
+            CombatUnit unit = actual.Units.Single(actor => actor.Id == id);
+            bool player = unit.Team == CombatTeam.Player;
+            Require(unit.Health > 0 && (unit.Status("undying")?.Stacks ?? 0) == 0 && unit.DeathState?.HasFinishedDying == false &&
+                unit.DeathState.IsBeingRemoved == false && unit.DeathState.IsDestroyed != true &&
+                actual.Context!.Statistics!.MonstersDeadThisTurn - before.Context!.Statistics!.MonstersDeadThisTurn == (player ? 1 : 0) &&
+                (!player || unit.DeathState.HasStatisticsListener == false && unit.DeathState.StatisticsListenerOnce == false),
+                "Revival state or the death listener lifetime differs: " + sample.GetProperty("Label").GetString());
+            FixtureValue[] deaths = sample.GetProperty("Dispatches").EnumerateArray().Where(item => item.GetProperty("Kind").GetString() == "OnDeath").ToArray();
+            Require(deaths.Length == hits && deaths.All(item => item.GetProperty("ParamInt").GetInt32() == 1 &&
+                item.GetProperty("ParamString").GetString() == "") && Kinds(sample).Count(kind => kind == "OnReanimated") == hits,
+                "Undying death/reanimated payloads differ.");
+            if (unit.SpawnerCardId > 0)
+                Require(actual.Context.OtherPiles!.Single(pile => pile.Name == "Standby").Cards.Any(card => card.InstanceId == unit.SpawnerCardId),
+                    "Undying routed a living unit's spawner out of Standby.");
+        }
+        string[] oneHp = Kinds(byLabel["revival-half-gain-lost-one-maxhp"]);
+        Require(oneHp.Count(kind => kind == "OnDeathwish") == 2 && oneHp.TakeLast(2).All(kind => kind == "OnDeathwishLost") &&
+            Array.IndexOf(oneHp, "OnDeathwish") < Array.IndexOf(oneHp, "OnReanimated") &&
+            Array.IndexOf(oneHp, "OnDeath") < Array.IndexOf(oneHp, "OnDeathwishLost"), "Revival gain/loss queue order differs.");
+        Parallel.For(0, 32, _ => { foreach (FixtureValue sample in samples) Verify(sample); });
+        Require(!Kinds(byLabel["revival-active-half-remains"]).Any(kind => kind is "OnDeathwish" or "OnDeathwishLost") &&
+            !Kinds(byLabel["revival-active-half-heal-leaves"]).Contains("OnDeathwish"), "Active half-health revival repeated its gain callback.");
+        Console.WriteLine("DAMAGE-REACTION-REVIVAL PASS: 20 full native Undying successors, lethal friendly/enemy/self/relic sources, dead callback target controls, half-health queue before revival, one-HP gain/loss, active-half controls, reanimated/death healing, twice-revived once-listener, full dispatch/RNG/state and 32 immutable branches. Final death and preview remain guarded.");
+    }
+    private static FixtureValue[] Capture(FixtureValue root, bool revival)
+    {
+        FixtureValue[] samples = root.GetProperty("Samples").EnumerateArray().ToArray();
+        Require(root.GetProperty("Schema").GetInt32() == 1 && root.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            root.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
+            root.GetProperty("Boundary").GetString() == (revival ? "NativeBloodshedPunishUndyingLifecycle" : "NativeBloodshedPunishDamageLifecycle") &&
+            root.GetProperty("LiveContextUnchanged").GetBoolean() && root.GetProperty("EffectsDrained").GetBoolean() &&
+            root.GetProperty("RestorationDifference").ValueKind == FixtureKind.Null && root.GetProperty("Mismatches").GetInt32() == 0 &&
+            samples.Length == (revival ? 20 : 33) && samples.All(sample => sample.GetProperty("Completed").GetBoolean() &&
+                sample.GetProperty("Difference").ValueKind == FixtureKind.Null && sample.GetProperty("GameplayRngUnchanged").GetBoolean() &&
+                sample.GetProperty("PendingAfterDrain").GetInt32() == 0), "Incomplete native Bloodshed/Punish calibration.");
+        Require(Difference(root.GetProperty("RngBefore"), root.GetProperty("RngAfter")) == null, "Calibration did not restore all RNG streams.");
+        return samples;
     }
     private static void Verify(FixtureValue sample)
     {

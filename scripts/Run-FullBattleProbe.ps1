@@ -458,6 +458,7 @@ param(
     [switch] $HalfHealthUpgradeOnly,
     [switch] $HalfHealthUpgradeEffectsOnly,
     [switch] $DamageReactionsOnly,
+    [switch] $DamageReactionRevivalOnly,
     [switch] $EnchantmentWorld,
     [switch] $HordeStatuses,
     [switch] $HordeMerge,
@@ -1389,15 +1390,15 @@ if ($DamageOverflow) { $BranchCardMasks = $true; $Policy = 'units-spells-and-jun
 if ($BattleRelicUpgrades -or $SpawnStatusRelicsClones -or $OriginalRelicBatch -or $OriginalStingRelicBatch -or $OriginalDeployableRelic) { $BranchCardMasks = $true }
 if ($SpawnStatusRelicsClones) { $SpawnStatusRelics = $true; $UnitClone = $true }
 if ($EnchantmentWorld) { $EnchantmentCombat = $true }
-if ($HalfHealthLifecycleOnly -or $HalfHealthMaximumOnly -or $HalfHealthUpgradeOnly -or $HalfHealthUpgradeEffectsOnly -or $DamageReactionsOnly) {
-    $lifecycleArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'HalfHealthLifecycleOnly', 'HalfHealthMaximumOnly', 'HalfHealthUpgradeOnly', 'HalfHealthUpgradeEffectsOnly', 'DamageReactionsOnly',
+if ($HalfHealthLifecycleOnly -or $HalfHealthMaximumOnly -or $HalfHealthUpgradeOnly -or $HalfHealthUpgradeEffectsOnly -or $DamageReactionsOnly -or $DamageReactionRevivalOnly) {
+    $lifecycleArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'HalfHealthLifecycleOnly', 'HalfHealthMaximumOnly', 'HalfHealthUpgradeOnly', 'HalfHealthUpgradeEffectsOnly', 'DamageReactionsOnly', 'DamageReactionRevivalOnly',
         'BinaryCapture', 'CaptureJson', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction',
         'ProgressAction', 'ErrorVariable', 'WarningVariable', 'InformationVariable', 'OutVariable', 'OutBuffer', 'PipelineVariable')
-    if (@($HalfHealthLifecycleOnly, $HalfHealthMaximumOnly, $HalfHealthUpgradeOnly, $HalfHealthUpgradeEffectsOnly, $DamageReactionsOnly | Where-Object { $_ }).Count -ne 1 -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $lifecycleArguments }).Count) {
+    if (@($HalfHealthLifecycleOnly, $HalfHealthMaximumOnly, $HalfHealthUpgradeOnly, $HalfHealthUpgradeEffectsOnly, $DamageReactionsOnly, $DamageReactionRevivalOnly | Where-Object { $_ }).Count -ne 1 -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $lifecycleArguments }).Count) {
         throw 'Half-health lifecycle sampling requires one isolated component mode without other scenarios.'
     }
     $Policy = 'steward-once'
-    if ($DamageReactionsOnly) { $PhysicalSpawnPoints = $true }
+    if ($DamageReactionsOnly -or $DamageReactionRevivalOnly) { $PhysicalSpawnPoints = $true }
 }
 if ($HalfHealthDeathwishOnly) {
     $halfHealthArguments = @('Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'HalfHealthDeathwishOnly',
@@ -1821,6 +1822,7 @@ $environment = @{
     MT2_PROBE_HALF_HEALTH_UPGRADE = $(if ($HalfHealthUpgradeOnly) { '1' } else { '0' })
     MT2_PROBE_HALF_HEALTH_UPGRADE_EFFECTS = $(if ($HalfHealthUpgradeEffectsOnly) { '1' } else { '0' })
     MT2_PROBE_DAMAGE_REACTIONS = $(if ($DamageReactionsOnly) { '1' } else { '0' })
+    MT2_PROBE_DAMAGE_REACTION_REVIVAL = $(if ($DamageReactionRevivalOnly) { '1' } else { '0' })
     MT2_PROBE_ENCHANTMENT_WORLD = $(if ($EnchantmentWorld) { '1' } else { '0' })
     MT2_PROBE_TRIGGER_REPEATS = $(if ($TriggerRepeats) { '1' } else { '0' })
 }
@@ -2338,11 +2340,11 @@ Wait-NativeBattleExit -Process $process -Timer $nativeTimer -UnityLog $unityLog 
     -TimeoutSeconds $TimeoutSeconds -FailFastOnIsolatedUnitReject:$FailFastOnIsolatedUnitReject
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
-if ($HalfHealthLifecycleOnly -or $HalfHealthMaximumOnly -or $HalfHealthUpgradeOnly -or $HalfHealthUpgradeEffectsOnly -or $DamageReactionsOnly) {
-    $lifecycleFile = if ($DamageReactionsOnly) { 'damage-reactions.mt2f' } elseif ($HalfHealthUpgradeEffectsOnly) { 'half-health-upgrade-effects.mt2f' } elseif ($HalfHealthUpgradeOnly) { 'half-health-upgrade.mt2f' } elseif ($HalfHealthMaximumOnly) { 'half-health-maximum.mt2f' } else { 'half-health-lifecycle.mt2f' }
-    $lifecycleBoundary = if ($DamageReactionsOnly) { 'NativeBloodshedPunishDamageLifecycle' } elseif ($HalfHealthUpgradeEffectsOnly) { 'NativeHalfHealthUnitUpgradeEffects' } elseif ($HalfHealthUpgradeOnly) { 'NativeHalfHealthUnitUpgradeLifecycle' } elseif ($HalfHealthMaximumOnly) { 'NativeHalfHealthMaximumHealthLifecycle' } else { 'NativeHalfHealthDamageHealLifecycle' }
-    $lifecyclePass = if ($DamageReactionsOnly) { 'DEPTH-PASS Bloodshed/Punish damage lifecycle component captured' } elseif ($HalfHealthUpgradeEffectsOnly) { 'DEPTH-PASS Half-health Deathwish unit-upgrade effects component captured' } elseif ($HalfHealthUpgradeOnly) { 'DEPTH-PASS Half-health Deathwish unit-upgrade lifecycle component captured' } elseif ($HalfHealthMaximumOnly) { 'DEPTH-PASS Half-health Deathwish maximum-health lifecycle component captured' } else { 'DEPTH-PASS Half-health Deathwish damage/heal lifecycle component captured' }
-    $lifecycleCount = if ($DamageReactionsOnly) { 33 } elseif ($HalfHealthUpgradeEffectsOnly) { 28 } elseif ($HalfHealthUpgradeOnly) { 27 } elseif ($HalfHealthMaximumOnly) { 23 } else { 13 }
+if ($HalfHealthLifecycleOnly -or $HalfHealthMaximumOnly -or $HalfHealthUpgradeOnly -or $HalfHealthUpgradeEffectsOnly -or $DamageReactionsOnly -or $DamageReactionRevivalOnly) {
+    $lifecycleFile = if ($DamageReactionRevivalOnly) { 'damage-reaction-revival.mt2f' } elseif ($DamageReactionsOnly) { 'damage-reactions.mt2f' } elseif ($HalfHealthUpgradeEffectsOnly) { 'half-health-upgrade-effects.mt2f' } elseif ($HalfHealthUpgradeOnly) { 'half-health-upgrade.mt2f' } elseif ($HalfHealthMaximumOnly) { 'half-health-maximum.mt2f' } else { 'half-health-lifecycle.mt2f' }
+    $lifecycleBoundary = if ($DamageReactionRevivalOnly) { 'NativeBloodshedPunishUndyingLifecycle' } elseif ($DamageReactionsOnly) { 'NativeBloodshedPunishDamageLifecycle' } elseif ($HalfHealthUpgradeEffectsOnly) { 'NativeHalfHealthUnitUpgradeEffects' } elseif ($HalfHealthUpgradeOnly) { 'NativeHalfHealthUnitUpgradeLifecycle' } elseif ($HalfHealthMaximumOnly) { 'NativeHalfHealthMaximumHealthLifecycle' } else { 'NativeHalfHealthDamageHealLifecycle' }
+    $lifecyclePass = if ($DamageReactionRevivalOnly) { 'DEPTH-PASS Bloodshed/Punish Undying lifecycle component captured' } elseif ($DamageReactionsOnly) { 'DEPTH-PASS Bloodshed/Punish damage lifecycle component captured' } elseif ($HalfHealthUpgradeEffectsOnly) { 'DEPTH-PASS Half-health Deathwish unit-upgrade effects component captured' } elseif ($HalfHealthUpgradeOnly) { 'DEPTH-PASS Half-health Deathwish unit-upgrade lifecycle component captured' } elseif ($HalfHealthMaximumOnly) { 'DEPTH-PASS Half-health Deathwish maximum-health lifecycle component captured' } else { 'DEPTH-PASS Half-health Deathwish damage/heal lifecycle component captured' }
+    $lifecycleCount = if ($DamageReactionRevivalOnly) { 20 } elseif ($DamageReactionsOnly) { 33 } elseif ($HalfHealthUpgradeEffectsOnly) { 28 } elseif ($HalfHealthUpgradeOnly) { 27 } elseif ($HalfHealthMaximumOnly) { 23 } else { 13 }
     $lifecyclePath = Join-Path $profile $lifecycleFile
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $lifecyclePath) -or
         -not (Select-String -LiteralPath $unityLog -Pattern $lifecyclePass -Quiet) -or

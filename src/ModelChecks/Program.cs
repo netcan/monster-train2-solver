@@ -1,5 +1,18 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--native-revival-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    if (!fixture.RootElement.TryGetProperty("Revivals", out var revivals) || revivals.GetArrayLength() == 0)
+        throw new InvalidOperationException("Focused revival check requires native revival records.");
+    RevivalChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--damage-reaction-revival-only")
+{
+    DamageReactionChecks.NativeRevival(args[1]);
+    return;
+}
 if (args.Length == 1 && args[0] == "--attack-trigger-pure")
 {
     AttackTriggerChecks.Run();

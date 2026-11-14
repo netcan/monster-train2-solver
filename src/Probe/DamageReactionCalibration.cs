@@ -16,7 +16,8 @@ namespace MonsterTrain2Poju.Probe
     // trigger and statistics copies; the full train and every RNG stream are restored.
     internal static class DamageReactionCalibration
     {
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_DAMAGE_REACTIONS") == "1";
+        internal static bool Revival => Environment.GetEnvironmentVariable("MT2_PROBE_DAMAGE_REACTION_REVIVAL") == "1";
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_DAMAGE_REACTIONS") == "1" || Revival;
         internal static bool Started { get; private set; }
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
@@ -110,7 +111,7 @@ namespace MonsterTrain2Poju.Probe
             var originalIds = actors.Select(actor => Trace.TriggerStates(actor).ToDictionary(pair => pair.Key, pair => pair.Value)).ToArray();
             CardStatistics statistics = Managers.GetCardStatistics();
             string[] counterFields = { "lastAttackDamageDealt", "damageDealtToMonstersThisTurn", "damageDealtToMonstersThisBattle",
-                "friendlyDamageDealtToMonstersThisTurn", "friendlyDamageDealtToMonstersThisBattle" };
+                "friendlyDamageDealtToMonstersThisTurn", "friendlyDamageDealtToMonstersThisBattle", "numMonstersDeadThisTurn", "numMonstersDeadThisBattle" };
             object[] counters = counterFields.Select(field => Get(statistics, field)).ToArray();
             var deck = (Dictionary<CardState, CardStatsEntry>)Get(statistics, "deckStats");
             int gold = save.GetGold(); bool allow = rooms.AllowEnchantmentUpdates;
@@ -119,7 +120,7 @@ namespace MonsterTrain2Poju.Probe
             var samples = new List<object>(); int mismatches = 0;
             try
             {
-                foreach (Input input in Cases())
+                foreach (Input input in Revival ? RevivalCases() : Cases())
                 {
                     Queue.Clear(); Set(rooms, "_allowEnchantmentUpdates", false);
                     for (int index = 0; index < actors.Length; index++)
@@ -147,8 +148,9 @@ namespace MonsterTrain2Poju.Probe
                         input.Source.StartsWith("Friendly", StringComparison.Ordinal) ? witness : input.Source == "Self" ? target : null;
                     CardState? sourceCard = input.Source.Contains("Card") ? host.GetSpawnerCard() : null;
                     RelicState? sourceRelic = input.Source.Contains("Relic") ? relic : null;
-                    target.SetHealth(input.Hp, 20);
+                    target.SetHealth(input.Hp, input.MaxHp);
                     if (input.Status != null) Raw(target, input.Status, input.Stacks);
+                    if (input.Undying > 0) Raw(target, "undying", input.Undying);
                     if (input.Label == "silenced-witness") Raw(witness, "silenced", 1);
                     foreach (CharacterState actor in actors.Where(actor => actor.GetCurrentRoomIndex() == roomIndex))
                     {
@@ -160,8 +162,18 @@ namespace MonsterTrain2Poju.Probe
                     }
                     if (input.Half)
                     {
-                        Add(target, "OnDeathwish", 25, input);
+                        Add(target, "OnDeathwish", 25, input, input.GainEffect);
                         Add(target, "OnDeathwishLost", 30, input);
+                        if (input.ActiveHalf)
+                        {
+                            AccessTools.Method(typeof(CharacterState), "TryUpdateDeathwish").Invoke(target, null);
+                            Queue.Clear();
+                        }
+                    }
+                    if (Revival)
+                    {
+                        Add(target, "OnReanimated", 35, input, input.ReanimatedEffect);
+                        Add(target, "OnDeath", 40, input, input.DeathEffect);
                     }
                     RoomCombatState before = Trace.Capture(target.GetCurrentRoom()); object rngBefore = HalfHealthLifecycleCalibration.Rng();
                     RoomCombatResult predicted = Predict(before, Trace.UnitId(target), input.Amount, sourceCard == null ? 0 : Trace.CardId(sourceCard),
@@ -222,10 +234,12 @@ namespace MonsterTrain2Poju.Probe
             string? restoration = HalfHealthLifecycleCalibration.Difference(original, Trace.CaptureTrain()) ??
                 HalfHealthLifecycleCalibration.Difference(originalRng, HalfHealthLifecycleCalibration.Rng());
             using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
-                GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId, Boundary = "NativeBloodshedPunishDamageLifecycle",
+                GameModuleMvid = typeof(CharacterState).Assembly.ManifestModule.ModuleVersionId,
+                Boundary = Revival ? "NativeBloodshedPunishUndyingLifecycle" : "NativeBloodshedPunishDamageLifecycle",
                 LiveContextUnchanged = restoration == null, RestorationDifference = restoration, EffectsDrained = true,
                 RngBefore = originalRng, RngAfter = HalfHealthLifecycleCalibration.Rng(), Mismatches = mismatches, Samples = samples }))
-            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "damage-reactions.mt2f"))) document.Write(output);
+            using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                Revival ? "damage-reaction-revival.mt2f" : "damage-reactions.mt2f"))) document.Write(output);
             if (restoration != null || mismatches != 0) throw new InvalidOperationException("Damage reactions differ: " + mismatches + "; restoration: " + restoration);
         }
         private static HadesRNG NativeRng(RngId id) => (HadesRNG)AccessTools.Method(typeof(RandomManager), "GetRng").Invoke(null, new object[] { id });
@@ -260,6 +274,8 @@ namespace MonsterTrain2Poju.Probe
             public bool EnemyTarget { get; }
             public int Amount { get; }
             public int Hp { get; }
+            public int MaxHp { get; }
+            public int Undying { get; }
             public string? Status { get; }
             public int Stacks { get; }
             public int Threshold { get; }
@@ -269,11 +285,17 @@ namespace MonsterTrain2Poju.Probe
             public string? BloodEffect { get; }
             public string? PunishEffect { get; }
             public bool Half { get; }
+            public bool ActiveHalf { get; }
+            public string? GainEffect { get; }
+            public string? ReanimatedEffect { get; }
+            public string? DeathEffect { get; }
             internal Input(string label, string source = "Card", bool enemyTarget = false, int amount = 2, int hp = 15,
                 string? status = null, int stacks = 1, int threshold = 0, bool once = false, int hits = 1, bool ignoreSilence = false,
-                string? bloodEffect = null, string? punishEffect = null, bool half = false)
+                string? bloodEffect = null, string? punishEffect = null, bool half = false, int maxHp = 20, int undying = 0,
+                string? gainEffect = null, string? reanimatedEffect = null, string? deathEffect = null, bool activeHalf = false)
             { Label = label; Source = source; EnemyTarget = enemyTarget; Amount = amount; Hp = hp; Status = status; Stacks = stacks;
-                Threshold = threshold; Once = once; Hits = hits; IgnoreSilence = ignoreSilence; BloodEffect = bloodEffect; PunishEffect = punishEffect; Half = half; }
+                Threshold = threshold; Once = once; Hits = hits; IgnoreSilence = ignoreSilence; BloodEffect = bloodEffect; PunishEffect = punishEffect; Half = half;
+                MaxHp = maxHp; Undying = undying; GainEffect = gainEffect; ReanimatedEffect = reanimatedEffect; DeathEffect = deathEffect; ActiveHalf = activeHalf; }
         }
         private static IEnumerable<Input> Cases()
         {
@@ -300,6 +322,28 @@ namespace MonsterTrain2Poju.Probe
             yield return new Input("damage-enters-half", hp: 11, amount: 1, half: true);
             yield return new Input("bloodshed-heals-before-half", hp: 11, amount: 1, half: true, bloodEffect: "CardEffectHeal");
             yield return new Input("punish-heals-before-half", hp: 11, amount: 1, half: true, punishEffect: "CardEffectHeal");
+        }
+        private static IEnumerable<Input> RevivalCases()
+        {
+            foreach (string source in new[] { "Card", "Enemy", "Self", "Relic", "Friendly" })
+                yield return new Input("revival-source-" + source, source, hp: 2, amount: 3, undying: 1);
+            yield return new Input("revival-enemy-card", enemyTarget: true, hp: 2, amount: 3, undying: 1);
+            yield return new Input("revival-enemy-source", "Enemy", enemyTarget: true, hp: 2, amount: 3, undying: 1);
+            yield return new Input("revival-bloodshed-heal", hp: 2, amount: 3, undying: 1, bloodEffect: "CardEffectHeal");
+            yield return new Input("revival-punish-heal", hp: 2, amount: 3, undying: 1, punishEffect: "CardEffectHeal");
+            yield return new Input("revival-bloodshed-nested-damage", hp: 2, amount: 3, undying: 1, bloodEffect: "CardEffectDamage");
+            yield return new Input("revival-punish-nested-damage", hp: 2, amount: 3, undying: 1, punishEffect: "CardEffectDamage");
+            yield return new Input("revival-half-gain", hp: 11, amount: 11, undying: 1, half: true);
+            yield return new Input("revival-half-gain-lost-one-maxhp", hp: 1, maxHp: 1, amount: 1, undying: 1, half: true);
+            yield return new Input("revival-half-gain-heals", hp: 11, amount: 11, undying: 1, half: true, gainEffect: "CardEffectHeal");
+            yield return new Input("revival-reanimated-heals", hp: 2, amount: 3, undying: 1, reanimatedEffect: "CardEffectHeal");
+            yield return new Input("revival-death-heals", hp: 2, amount: 3, undying: 1, deathEffect: "CardEffectHeal");
+            yield return new Input("revival-twice-listener-once", hp: 2, amount: 3, undying: 2, hits: 2);
+            yield return new Input("revival-reanimated-heals-leaves-half", hp: 1, maxHp: 2, amount: 1, undying: 1, half: true,
+                reanimatedEffect: "CardEffectHeal");
+            yield return new Input("revival-active-half-remains", hp: 2, amount: 3, undying: 1, half: true, activeHalf: true);
+            yield return new Input("revival-active-half-heal-leaves", hp: 1, maxHp: 2, amount: 1, undying: 1, half: true, activeHalf: true,
+                reanimatedEffect: "CardEffectHeal");
         }
         [HarmonyPatch(typeof(CharacterState), nameof(CharacterState.FireTriggers))]
         private static class DispatchPatch

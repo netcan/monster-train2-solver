@@ -3061,7 +3061,7 @@ namespace MonsterTrain2Poju.Model
                 if (attackingTrigger && actor != null && actor != target)
                     FireTriggers(actor, "OnAttackingBeforeDamage", overrideTarget: target);
                 if (unsupportedReason != null) return;
-                if (resultingHealth <= 0 && (target.Triggers.Any(trigger => trigger.Kind == "OnPunish") ||
+                if (resultingHealth <= 0 && target.Count("undying") <= 0 && (target.Triggers.Any(trigger => trigger.Kind == "OnPunish") ||
                     target.Source.Team == CombatTeam.Player && units.Any(unit => unit.InRoom && !unit.Removed &&
                         unit.RoomIndex == target.RoomIndex && unit.Source.Team == CombatTeam.Player &&
                         unit.Triggers.Any(trigger => trigger.Kind == "OnBloodshed"))))
@@ -3206,10 +3206,13 @@ namespace MonsterTrain2Poju.Model
                     MergeSummon(drained);
                 }
                 if (target.DeathFinished) return;
-                if (!target.Alive && (units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)) ||
+                if (!target.Alive && target.Count("undying") <= 0 && (units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)) ||
                     context?.Enchantments?.Rooms.SelectMany(room => room.Units).Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger)) == true))
                 { unsupportedReason = "Lethal damage with half-health Deathwish requires native death/revival lifecycle calibration."; return; }
-                if (!UpdateHalfHealthDeathwish(target)) return;
+                // A lethal hit queues its half-health transition before
+                // CheckDeathCardTriggers revives Undying. Those callbacks run
+                // against the revived character, after the death signal.
+                if (!UpdateHalfHealthDeathwish(target, drain: target.Alive)) return;
                 // CharacterState.CheckDeathCardTriggers updates the dying
                 // enchanter after character Slay and hit callbacks. Removing a
                 // Silence aura earlier incorrectly enables the killer's Slay.
@@ -3383,7 +3386,8 @@ namespace MonsterTrain2Poju.Model
                     QueueHarvestGroup(revived, kind, team, HarvestModel.Count(revived, kind));
                 }
                 QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, revived, "OnReanimated"));
-                QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, revived, "OnDeath", paramInt: 1));
+                QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, revived, "OnDeath", paramInt: 1, paramString: ""));
+                if (!UpdateHalfHealthDeathwish(target, drain: false)) return;
                 DispatchDeathStatistics(actor, target, sourceCardId, sacrifice: false);
                 if (target.Source.DeathState?.StatisticsListenerOnce == true)
                     target.Apply(target.Freeze().WithDeathState(new UnitDeathState(false, target.Source.DeathState.IsBeingRemoved,
@@ -3857,7 +3861,7 @@ namespace MonsterTrain2Poju.Model
                     QueueHarvestGroup(revived, kind, team, HarvestModel.Count(revived, kind));
                 }
                 QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, revived, "OnReanimated"));
-                QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, revived, "OnDeath", paramInt: 1));
+                QueueCallback(new QueuedCharacterTrigger(source.RoomIndex, revived, "OnDeath", paramInt: 1, paramString: ""));
             }
 
             private void AlmostPostRoomCombat()

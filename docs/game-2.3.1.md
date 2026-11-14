@@ -169,7 +169,7 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -HalfHealt
 原生约 26 秒，组件差异零、`DEPTH-PASS`、退出码零和玩家文件未变均通过。
 旧版治疗触发、攻击触发及依赖最后攻击者的按血伤害三份房间/列车回归通过。
 
-本次开放直接非预演伤害/治疗 API，最大生命由下述独立样本验收。致命伤害与复活、触发安装/移除、
+本次开放直接非预演伤害/治疗 API，最大生命由下述独立样本验收。Undying 致命伤害另见下述 20 项组件；最终死亡、触发安装/移除、
 共享光环世界、外部伤害回调队列、原生法术分阶段 API 及整层调度仍受保护；
 尚未获得新增半血卡牌/遗物或整场搜索的完整验收。
 
@@ -295,7 +295,7 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -HalfHealt
 每项独立模型复放及 32 路不可变并发分支通过，游戏与 Unity RNG 未变；
 采样结束恢复全部 RNG 和原始列车上下文。采样期间持有独立的预演抑制计数，
 避免后台预演混入伤害记录，结束时释放自己持有的计数。
-缺失新版伤害统计快照、致命伤害和预演中的实际 Bloodshed/Punish 仍受保护。
+缺失新版伤害统计快照、无 Undying 的最终死亡和预演中的实际 Bloodshed/Punish 仍受保护。
 这批组件不计作新卡牌、新遗物或完整战斗的整体验收。
 
 ```powershell
@@ -321,6 +321,41 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -DamageRea
 ```powershell
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --attack-trigger-pure
 ```
+
+## Undying 致命伤害及半血回调
+
+20 项原生 Undying 组件已通过，包含 21 次直接伤害调用和 332 份完整调度载荷，
+每项均比较全部单位、召唤牌、统计缓存、站位、回调参数与游戏/Unity RNG。
+独立复放和每项 32 路不可变并发分支通过。
+
+原生致命伤害先在零生命时更新半血来源并入队，随后 Undying 将角色恢复为一血，
+减少一层状态，排入 Harvest、OnReanimated 和 `OnDeath(paramInt=1)`，
+再更新半血来源并派发死亡信号。模型保留这段延迟，回调执行时读取复活后的角色。
+OnDeath 的显式参数对象带空字符串载荷，与没有参数对象时的 null 区分。
+
+矩阵覆盖卡牌/敌方/自伤/遗物/其他友军来源、双方目标、两次连续复活及一次性
+死亡统计监听器、OnReanimated/OnDeath 治疗、半血 gain 中治疗、最大生命为 1
+时先 gain 后 lost，以及原本已处于半血的两项控制。Bloodshed/Punish 在零生命时
+仍可执行金币效果；针对已死目标的伤害/治疗会因目标不合法而跳过。
+两次复活的角色始终保留真实召唤牌和物理站位，玩家的一次性统计监听器只计一次。
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Game231DamageReactionRevival.ps1
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -NativeWorker 3 -DamageReactionRevivalOnly -GameSpeed Instant -SkipBuild
+```
+
+归档 `mechanics/damage-reactions/revival/revival.mt2f` 为 13,168 字节，SHA256
+`d0a0012f4059af99f42961a8999b81088657015ca4cd6f9968f59acbe4a04ee8`。
+来源 `.probe-runs/full-battle-steward-once-20261114-150344-e4d513b9`，原生约 34 秒，
+差异/待执行队列零、全部 RNG 与原始列车上下文恢复、`DEPTH-PASS`、退出码零和
+玩家文件未变均通过。原有 33 项伤害、13 项半血伤害/治疗、28 项升级效果通过；
+旧版 11 个复活边界/7 个直接操作/90 个回调阶段，以及附魔来源的 4 个自然复活
+边界/24 个阶段，各 16 路分支通过，相关生命周期纯检查也通过。
+
+旧历史反伤/复活归档的 78 输入复放仍被缺失 `MoonPhaseMask` 保护拦住，错误为
+`Movement moon understanding requires a captured prior mask.`；本次与修改前
+`a7720df6` 的独立模型副本复现一致，未计为通过，需补充原生位移证据。
+无 Undying 的最终死亡、预演、共享世界半血调度及完整出牌/整层战斗仍待校准。
 
 ## 可复验样本
 
