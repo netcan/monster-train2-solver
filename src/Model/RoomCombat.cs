@@ -3190,8 +3190,10 @@ namespace MonsterTrain2Poju.Model
                             { unsupportedReason = "Monster damage statistics require permanent deck membership when all piles are empty."; return; }
                             owned = context.Statistics.DeckCards.ToArray();
                         }
+                        // ScalingAddDamage only refreshes UI here; its damage getter reads
+                        // the live counter. Other statistic callbacks still need calibration.
                         if (owned.Select(context.FindCard).Any(card => card?.MaskDescriptor?.SourceTraits?.Any(trait =>
-                            trait.EntryDuration != "PreviousTurn" && (amount > 0 && trait.TrackedValue == "DamageDealtToMonsters" ||
+                            trait.Type != "CardTraitScalingAddDamage" && trait.EntryDuration != "PreviousTurn" && (amount > 0 && trait.TrackedValue == "DamageDealtToMonsters" ||
                                 friendlyAmount > 0 && trait.TrackedValue == "FriendlyDamageDealtToMonsters")) == true))
                         { unsupportedReason = "Monster damage statistic trait callbacks require native calibration."; return; }
                         context = context.WithStatistics(context.Statistics.RecordMonsterDamage(amount, friendlyAmount, owned));

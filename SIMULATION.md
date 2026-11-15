@@ -7,6 +7,17 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+Seven original 2.3.1 Punished spells now share one native battle acceptance:
+CruelLesson, EchoOfPain, Flagellate, CollectivePunishment, SpurTheFaithful,
+TomeOfAtonement and UnholyCommunion. Live monster-damage notifications permit
+ScalingAddDamage's UI-only refresh while retaining guards for other trait callbacks.
+The 29-input/seven-EndTurn victory passes 73 rooms/13 train stages, 79 native
+notifications/390 immutable card callbacks, full replay/16 branches and 128-state
+serial/parallel search with three-step replay and zero unsupported candidates.
+See [evidence and limits](docs/original-punished-spells.md) and
+`scripts/Check-Game231PunishedSpells.ps1`. A separate Pyre death from spikes still
+differs in last-attack damage statistics; full version revalidation remains open.
+
 Original 2.3.1 CollectorOfSorrows and AnointingOil now have shared missing-health
 status battle evidence. Friendly aggregation counts the caster's room or every
 monster floor including the Pyre; target-derived status uses each target's live
