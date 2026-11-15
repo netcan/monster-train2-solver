@@ -47,6 +47,28 @@ ModelChecks 调用，`BattleSearchModel`、实际出牌与回合切换没有调�
 734 个具体类中，448 个能关联到当前目录中的定义。它们包括大量已有实现；
 这些数字是代码审查范围，**不是剩余待实现数量或完成率**。
 
+现有代码通过[机制对账表](inventory/game-2.3.1-reconciliation.md)与
+[可排序队列](inventory/game-2.3.1-reconciliation.tsv)定位。工具读取编译后的
+Model／Probe／ModelChecks IL、原生父类和状态 ID，再用匹配的 PDB 校验当前
+源码；可找到归一化入口和继承实现，避免按类名漏搜后重写。当前 408 类有
+模型直接／继承／状态 ID 代码链接，442 类有探针链接，379 类有检查器链接；
+均是导航证据，不能计作支持或完成。首批八项人工审查区分战前输入标记、
+共享伤害路径、两类战后消费者，以及三个确认缺口。其余类继续按队列审查，
+不将 734 全部列为待实现，也不将没有类名引用的条目自动认作缺失。
+
+```powershell
+# 重建代码并生成对账；不启动游戏
+pwsh -NoProfile -File scripts/Get-MechanismReconciliation.ps1
+# 仅核对当前已构建的代码、源码与清单是否一致
+pwsh -NoProfile -File scripts/Get-MechanismReconciliation.ps1 -SkipBuild -Check
+```
+
+人工声明位于 `tests/compatibility/game-2.3.1/mechanism-reviews.tsv`，模型／
+采集方法和定向检查器必须存在，结论必须写清边界。已验证源码漂移、错配
+PDB、过期消费者和失效方法四种拒绝；故障输入均恢复原字节后再次核对通过。
+这一层先交付有限、可定位的审查队列；完整剩余实现数仍需逐组审查，不能把
+三个已确认缺口说成仅剩三个。
+
 各类记录原生覆盖方法、引用者数量、已捕获参数配置数和出现位置，便于先看
 影响最多定义的公共实现。参数配置不等于代码分支；继承方法也需检查。
 目录只捕获六种完整状态定义，所有 104 种状态实现类已列出；还需补齐状态

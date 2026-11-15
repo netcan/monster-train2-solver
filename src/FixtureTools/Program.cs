@@ -237,6 +237,10 @@ else if (args.Length is 3 or 4 && args[0] == "mechanism-inventory" && (args.Leng
 {
     MechanismInventory.Run(args[1], args[2], args.Length == 4);
 }
+else if (args.Length is 3 or 4 && args[0] == "mechanism-reconciliation" && (args.Length == 3 || args[3] == "--check"))
+{
+    MechanismReconciliation.Run(args[1], args[2], args.Length == 4);
+}
 else if (args.Length is 2 or 3 && args[0] == "card-inventory" && (args.Length == 2 || args[2] == "--check"))
 {
     CardCoverageInventory.Run(args[1], args.Length == 3);
@@ -321,6 +325,7 @@ else
     Console.Error.WriteLine("Spread deployment investigation: deployment-spread <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <max-candidates:1..4096> [first-unit-room:any|0..2] [start-sample:0..1000000] [unsupported-reason-substring]; sample legal joint placements across early and late units, resume at nextSample, with the same exact-root/complete-replay guards as deployment-grid; model prediction only.");
     Console.Error.WriteLine("Order spread investigation: deployment-order-spread uses the same arguments and guards, also sampling unit play order; first-unit-room applies to the first unit in each sampled order. Fixed opening spells remain unchanged; model prediction only.");
     Console.Error.WriteLine("Native mechanism audit: mechanism-inventory <workspace> <Assembly-CSharp.dll> [--check]; fixed-version source inventory, not runtime coverage.");
+    Console.Error.WriteLine("Native/model reconciliation: mechanism-reconciliation <workspace> <Assembly-CSharp.dll> [--check]; compiled code/PDB links and scoped reviews, not runtime coverage.");
     Console.Error.WriteLine("Strength rollout investigation: deployment-order-strength uses order-spread arguments and guards with the existing strength policy for later decisions; model prediction only.");
     Console.Error.WriteLine("Mixed placement investigation: deployment-order-mixed-strength uses independently mixed deterministic placement choices and strength rollout; resume with the same mode and nextSample; model prediction only.");
     Console.Error.WriteLine("Bounded three-input investigation: improve-triples <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <second-action-width:1..32> <third-action-width:1..16> <candidates-per-decision:1..256>; model prediction only.");
