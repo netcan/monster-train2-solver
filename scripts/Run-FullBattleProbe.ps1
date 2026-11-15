@@ -295,6 +295,7 @@ param(
     [switch] $OriginalPunishedSpike,
     [switch] $OriginalSummonChoice,
     [switch] $OriginalRoomHealthAttack,
+    [switch] $RoomHealthCardHover,
     [switch] $OriginalPunishedSkills,
     [switch] $OriginalSpiteEquipment,
     [ValidateSet('', 'Sweep', 'Single', 'Sustain')][string] $PyreSpikesMode = '',
@@ -1254,6 +1255,7 @@ if ($RoomHealthMechanismBatch -and $PlayerAdvisor) { throw 'Mechanism batch quer
 if ($SummonChoiceCalibration -and (-not $OriginalUpgradeEnchantment -or $PlayerAdvisor)) {
     throw 'SummonChoiceCalibration requires the isolated OriginalUpgradeEnchantment control scenario.'
 }
+if ($RoomHealthCardHover) { $OriginalRoomHealthAttack = $true }
 if ($OriginalRoomHealthAttack -and $PlayerAdvisor) { throw 'OriginalRoomHealthAttack requires an isolated worker.' }
 if ($OriginalRoomHealthAttack) { $SettleCardAnimations = $true; $SettleDeathDissolves = $true; $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSummonChoice -and ($PlayerAdvisor -or $SummonChoiceCalibration)) {
@@ -2233,6 +2235,7 @@ if ($OriginalRoomHealthAttack) {
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
+if ($RoomHealthCardHover) { $environment['MT2_PROBE_ROOM_HEALTH_CARD_HOVER'] = '1' }
 if ($OriginalPunishedSkills) { $environment['MT2_PROBE_MODIFIERS'] = 'original-punished-skills' }
 if ($OriginalSpiteEquipment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spite-equipment' }
 if ($OriginalPunishedSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-punished-spike' }
@@ -2561,6 +2564,25 @@ Wait-NativeBattleExit -Process $process -Timer $nativeTimer -UnityLog $unityLog 
     -TimeoutSeconds $TimeoutSeconds -FailFastOnIsolatedUnitReject:$FailFastOnIsolatedUnitReject
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
+if ($RoomHealthCardHover) {
+    $capturePath = Join-Path $profile 'room-health-card-hover.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Room-health card-hover component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Room-health card hover failed; inspect $unityLog" }
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $captureDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
+    try {
+        $capture = $captureDocument.RootElement
+        if ($capture.GetProperty('Boundary').GetString() -cne 'NativeOriginalRoomHealthCardHover' -or
+            -not $capture.GetProperty('NativeCompleted').GetBoolean() -or $capture.GetProperty('Samples').GetArrayLength() -ne 49 -or
+            $capture.GetProperty('OriginalSuppression').GetInt32() -ne $capture.GetProperty('FinalSuppression').GetInt32()) {
+            throw 'Incomplete room-health card-hover capture.'
+        }
+    } finally { $captureDocument.Dispose() }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        ModelAcceptance='Pending independent focused checker'; Trace=$capturePath } | ConvertTo-Json
+    return
+}
 if ($MaximumHealthLethalPreviewOnly -or $DamageCardPreviewOnly) {
     $hoverFile = if ($DamageCardPreviewGroups) { 'oncast-groups-card-preview.mt2f' } elseif ($DamageCardPreviewHealing) { 'healing-damage-card-preview.mt2f' } elseif ($DamageCardPreviewBoundaries) { 'damage-card-preview-boundaries.mt2f' } elseif ($DamageCardPreviewCompositions) { 'damage-card-preview-compositions.mt2f' } elseif ($DamageCardPreviewRandom) { 'damage-card-preview-random.mt2f' } elseif ($DamageCardPreviewExtended) { 'damage-card-preview-extended.mt2f' } elseif ($DamageCardPreviewOnly) { 'damage-card-preview.mt2f' } else { 'maximum-health-lethal-preview.mt2f' }
     $hoverBoundary = if ($DamageCardPreviewGroups) { 'NativeOnCastGroupsCardHover' } elseif ($DamageCardPreviewHealing) { 'NativeHealingDamageCardHover' } elseif ($DamageCardPreviewBoundaries) { 'NativeDamageCompositionBoundaryCardHover' } elseif ($DamageCardPreviewCompositions) { 'NativeDamageCompositionCardHover' } elseif ($DamageCardPreviewRandom) { 'NativeRandomDamageCardHover' } elseif ($DamageCardPreviewExtended) { 'NativeCompositeDamageCardHover' } elseif ($DamageCardPreviewOnly) { 'NativeDirectDamageCardHover' } else { 'NativeMaximumHealthLethalCardHover' }

@@ -24,6 +24,10 @@ original champion aura ranks, stacking, source/recipient movement, healing and
 source death. See [the batch](docs/room-health-query-batch.md) and
 [battle acceptance and remaining boundaries](docs/room-health-attack.md).
 
+The same original aura carriers now pass 49 ordinary damage/healing/maximum-health
+card hovers, 1,446 native attack queries and 16 immutable evaluations per sample.
+Ability and complex hover inputs remain separate; see [native preview evidence](docs/room-health-card-hover.md).
+
 Original GrimFlight's three upgraded skills now cover twelve actual selection
 dialogs and cardless births, subtype skips, over-capacity summons and fragment
 callbacks. A 107.55-second native victory has 49 inputs/five EndTurns and four

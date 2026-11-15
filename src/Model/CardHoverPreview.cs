@@ -31,6 +31,12 @@ namespace MonsterTrain2Poju.Model
     // their separate protocol and validation.
     public static class CardHoverPreviewModel
     {
+        // Ordinary hand-spell previews cannot activate an actor's own ability.
+        // Keep the original common callbacks in copied state, without treating
+        // them as damage/healing lifecycle callbacks.
+        private static bool InactiveCommonAbility(CombatTrigger trigger) =>
+            trigger.Origin?.UpgradeId == AbilityLifecycleModel.CommonOrigin &&
+            trigger.Kind is "OnOwnAbilityActivated" or "OnUnitAbilityAvailable" or "OnUnitAbilityUnavailable";
         public static CardHoverPreviewResult Apply(TrainCombatState source, CardPlayRule rule, PlayCardAction action)
         {
             CombatContext? primary = source.Context;
@@ -42,8 +48,6 @@ namespace MonsterTrain2Poju.Model
                 source.Rooms.Any(room => room.Preview) || primary.Enchantments is not EnchantmentWorld world ||
                 world.Preview || world.TemporaryPreviewUnitIds != null || primary.SpawnPoints?.NextPreviewCopyId == null)
                 return new CardHoverPreviewResult("Card hover requires captured primary life-link, health-cache, world and physical-copy state.");
-            if (source.Rooms.SelectMany(room => room.Units).Any(RoomHealthAttackModel.HasSource))
-                return new CardHoverPreviewResult("Friendly missing-health room modifiers require native card-hover lifecycle calibration.");
             if (rule.Effect != "Spell" || rule.CardType != "Spell" || rule.IsAnyAbility != false ||
                 rule.ExternalInteractions.Count != 0 || rule.Equipment != null || rule.Ability != null ||
                 rule.SpawnUnit != null || rule.Summon != null || rule.HasKillTriggers || rule.HasSpareTriggers ||
@@ -75,10 +79,11 @@ namespace MonsterTrain2Poju.Model
             if (rangeError != null) return new CardHoverPreviewResult("Card hover range: " + rangeError);
             if (world.EnchanterIds.Count != 0 || world.RetainedUnits.Count != 0 || primary.Relics == null ||
                 primary.Relics.Any(relic => relic.EffectTypes.Count != 0) || source.Rooms.SelectMany(room => room.Units)
-                    .Any(unit => unit.Triggers.Any(trigger => trigger.Kind is "CardSpellPlayed" or "OnPreOwnAbilityActivated" or "OnOwnAbilityActivated")))
+                    .Any(unit => unit.Triggers.Any(trigger => !InactiveCommonAbility(trigger) &&
+                        trigger.Kind is "CardSpellPlayed" or "OnPreOwnAbilityActivated" or "OnOwnAbilityActivated")))
                 return new CardHoverPreviewResult("Card hover with enchanters, retained actors, active relic effects or played-card callbacks requires native calibration.");
             if (source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Triggers.Any(trigger =>
-                trigger.Kind is not ("PostCombat" or "OnSpawn" or "OnTrainRoomLoop") &&
+                !InactiveCommonAbility(trigger) && trigger.Kind is not ("PostCombat" or "OnSpawn" or "OnTrainRoomLoop") &&
                 trigger.Effects.Any(effect => effect.Type != "CardEffectRewardGold"))))
                 return new CardHoverPreviewResult("Card hover lifecycle callbacks beyond the calibrated gold rewards require native calibration.");
             // Raw primary UI caches and the retained accumulator need not match

@@ -26,4 +26,4 @@ Zero catalog owners does not prove a class is unused. Only six status-rule defin
 - `tests/compatibility/game-2.3.1/projection-audits/punished-champions/catalog.mt2f` SHA-256: `e4031265f5e47933dfa5de2b43a29ddfc1445d265bb35bdc56fa6aa03483eed0`.
 - `tests/compatibility/game-2.3.1/2.3.1/relic-catalog.mt2f` SHA-256: `86ff34d5ffc0c70b443c0adfb9a59b9a042bf96d761779e86df9f9850faaed2d`.
 - `tests/compatibility/game-2.3.1/2.3.1/rule-catalog.mt2f` SHA-256: `7ae35691d7d504f1513790709f3816bd252472c82de2f9d2a1bc2c9760b35ef9`.
-- `tests/compatibility/game-2.3.1/mechanism-evidence.tsv` SHA-256: `41c1caed9fb6c2c798d365d62973e2a66ec77ba07c53d05b68d4f687b6b6eca5`; linked archive hashes are validated against this index.
+- `tests/compatibility/game-2.3.1/mechanism-evidence.tsv` SHA-256: `594fd1314ac919c36fc81131df019badd6a1af23a06aba36984f583f519489cc`; linked archive hashes are validated against this index.

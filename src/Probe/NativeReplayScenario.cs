@@ -2607,6 +2607,15 @@ namespace MonsterTrain2Poju.Probe
                 if (!DamageReactionCalibration.Started && DamageReactionCalibration.Eligible) DamageReactionCalibration.Start(log);
                 if (DamageReactionCalibration.Started) return;
             }
+#if DEVELOPMENT_PROBE
+            if (fullBattle && RoomHealthCardHoverCalibration.Enabled)
+            {
+                if (RoomHealthCardHoverCalibration.Error != null) throw new InvalidOperationException(RoomHealthCardHoverCalibration.Error);
+                if (RoomHealthCardHoverCalibration.Completed) { Finish(true, "Room-health card-hover component captured."); return; }
+                if (!RoomHealthCardHoverCalibration.Started && RoomHealthCardHoverCalibration.Eligible) RoomHealthCardHoverCalibration.Start(log);
+                if (RoomHealthCardHoverCalibration.Started) return;
+            }
+#endif
             if (fullBattle && (Environment.GetEnvironmentVariable("MT2_PROBE_HALF_HEALTH_LIFECYCLE") == "1" || HalfHealthLifecycleCalibration.MaximumHealth || HalfHealthLifecycleCalibration.UnitUpgrades || HalfHealthLifecycleCalibration.UpgradeEffects))
             {
                 if (HalfHealthLifecycleCalibration.Error != null) throw new InvalidOperationException(HalfHealthLifecycleCalibration.Error);

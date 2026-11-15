@@ -55,6 +55,11 @@ if (args.Length == 2 && args[0] == "--original-punished-units-only")
     OriginalPunishedUnitsChecks.Native(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--room-health-card-hover-only")
+{
+    RoomHealthCardHoverChecks.Native(args[1]);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--original-room-health-attack-only" &&
     (args.Length == 2 || args[2] is "--lifecycle-only" or "--search-only" or "--deep-search"))
 {
