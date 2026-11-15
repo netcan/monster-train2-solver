@@ -1608,6 +1608,11 @@ namespace MonsterTrain2Poju.Probe
                 PyreSpikesScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalPunishedSpikeScenario.Enabled)
+            {
+                OriginalPunishedSpikeScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalPunishedSpellsScenario.Enabled)
             {
                 OriginalPunishedSpellsScenario.Prepare(managers, log);
@@ -3130,7 +3135,11 @@ namespace MonsterTrain2Poju.Probe
                 RelicStatusStackProbe.Matrix();
                 RelicStatusMagnitudeProbe.Matrix();
                 RelicStatusDecayProbe.Matrix();
-                if (TrueFinalBossMaximumBattleScenario.Enabled)
+                if (OriginalPunishedSpikeScenario.Enabled)
+                {
+                    pendingPlay = OriginalPunishedSpikeScenario.Choose(decision);
+                }
+                else if (TrueFinalBossMaximumBattleScenario.Enabled)
                 {
                     pendingPlay = TrueFinalBossMaximumBattleScenario.Choose(decision);
                 }

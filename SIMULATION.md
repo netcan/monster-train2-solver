@@ -7,6 +7,17 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+Original PunishedSpike, Imprison and StarterSharedSentence now pass one native
+battle acceptance. Spike grants 8X zeal once before X separate damage calls;
+zero/one/three X, armor-driven chained hits, enemy/remote/lethal targets and
+natural immobile ascent match. The 22-input/seven-turn victory passes 55 rooms,
+13 train stages, six direct count getters/32 branches each, 13 damage calls,
+216 complete contexts, full replay/16 branches and zero-unsupported 128-state
+serial/parallel search. Fixed native capture avoids superseded policy work and
+duplicate frontier enumeration: this scene fell from 216.22 to 79.85 seconds.
+See [evidence and limits](docs/original-punished-spike.md) and
+`scripts/Check-Game231PunishedSpike.ps1`. Whole-version acceptance remains open.
+
 Lethal Pyre retaliation now stops the main combat coroutine before pending
 sweep callbacks or later targets run. Three native loss controls cover lethal
 sweep, single attacks and surviving sweeps; all pass 83 rooms/24 train stages,
