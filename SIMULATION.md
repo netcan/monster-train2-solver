@@ -7,6 +7,15 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+The original 2.3.1 `DragThemDown` composite now applies enemy statuses and
+drains the shared queue before reading and dealing friendly damage. Three
+native casts prove same-floor Chained propagation, armor and enemy death,
+an empty enemy floor, and lethal friendly damage with the full incoming
+request preserved for propagation. The seven-play/six-EndTurn native victory,
+16 continuous replay branches and 128-state serial/parallel search pass.
+See [evidence and remaining combinations](docs/drag-them-down.md) and
+`scripts/Check-Game231DragThemDown.ps1` for binary-only focused acceptance.
+
 The original 2.3.1 `WickedFervor` spell now snapshots eligible hand cards,
 discards them in order through existing callbacks, then scales Zeal by that
 count. Three frozen discards grant 15 Zeal; Persistent, Infusion and the

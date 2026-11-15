@@ -598,7 +598,7 @@ namespace MonsterTrain2Poju.Model
 
             int ResolveValue(CardActionEffect effect, int value)
             {
-                string stat = effect.Type == FloorDamageModel.Effect ? "Damage" :
+                string stat = effect.Type == FloorDamageModel.Effect || effect.Type == DragThemDownModel.Effect ? "Damage" :
                     effect.Type == "HealOverheal" || effect.Type == "HealRelative" ? "Heal" : effect.Type;
                 return stat == "Damage" || stat == "Heal"
                     ? UpgradedStat(UpgradedStat(value, stat, true, instance.Permanent), stat, true, instance.Temporary) : value;

@@ -760,6 +760,55 @@ namespace MonsterTrain2Poju.Model
                     }
                     continue;
                 }
+                if (effect.Type == DragThemDownModel.Effect)
+                {
+                    int statusRoom = targets.UnitIds.Count == 0 ? collectionRoom :
+                        state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == targets.UnitIds[0]))?.RoomIndex ?? collectionRoom;
+                    var statusEffect = new CardActionEffect("AddStatus", "Room", 0, true, false, effect.Statuses,
+                        ignoreDualism: effect.IgnoreDualism);
+                    CardTargets enemies = Collect(state, statusRoom, statusEffect, Array.Empty<int>(), null, -1, index,
+                        definitions, isTesting: state.Rooms.Any(room => room.Preview), selfUnitId: selfUnitId, sourceCardId: sourceCardId);
+                    if (!enemies.Supported) return UnsupportedTrain(enemies.UnsupportedReason!);
+                    if (enemies.UnitIds.Count > 0 && effect.Statuses.Count > 0)
+                    {
+                        if (effect.Statuses.Count > 1)
+                        {
+                            RngDraw choice = RuntimeRng(state).Range(0, effect.Statuses.Count);
+                            state = WithRuntimeRng(state, choice.State);
+                            statusEffect = new CardActionEffect("AddStatus", "Room", 0, true, false,
+                                new[] { effect.Statuses[choice.Value] }, ignoreDualism: effect.IgnoreDualism);
+                        }
+                        // This native composite walks enemies forwards, unlike
+                        // ordinary AddStatus, then drains the shared queue once.
+                        foreach (int enemyId in enemies.UnitIds)
+                        {
+                            RoomCombatState? enemyRoom = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == enemyId));
+                            if (enemyRoom == null) return UnsupportedTrain("Drag Them Down enemy left its room before status application.");
+                            RoomCombatResult added = ApplyOne(enemyRoom, statusEffect, enemyRoom.Units.Single(unit => unit.Id == enemyId),
+                                sourceCardId, null, null, selfUnitId: selfUnitId, sourceHasDuality: selfUnitId > 0 &&
+                                    state.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == selfUnitId && unit.Status("duality")?.Stacks > 0));
+                            if (!added.Supported) return UnsupportedTrain(added.UnsupportedReason!);
+                            state = ReplaceRoom(state, added.State!); events.AddRange(added.Events); callbacks.AddRange(added.PendingCallbacks);
+                            foreach (CombatUnit unit in added.RetainedUnits) retained[unit.Id] = unit;
+                            if (added.Outcome != RoomOutcome.Exchanged) outcome = added.Outcome;
+                        }
+                        DrainDeaths();
+                        if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
+                        // Native GetDamageAmount runs after this queue. Its
+                        // callbacks may have changed the source card's power.
+                        if (resolveLiveEffects && definitions != null && sourceCardId > 0 && state.Context.CardInstances != null)
+                        {
+                            CardInstanceState? liveCard = state.Context.FindCard(sourceCardId) ?? resolvingCard;
+                            CardPlayRule? liveRule = definitions.Cards.FirstOrDefault(rule => rule.DataId == liveCard?.DataId);
+                            CardPlayRule? resolved = liveCard == null || liveRule == null ? null : CardModifierModel.Resolve(liveRule, liveCard);
+                            IReadOnlyList<CardActionEffect>? liveEffects = onUnplayedNegativeEffects ? resolved?.OnUnplayedNegativeEffects :
+                                onCastEffects ? resolved?.OnCastEffects : resolved?.Effects;
+                            if (liveEffects == null || liveEffects.Count != effects.Count || liveEffects[index].Type != DragThemDownModel.Effect)
+                                return UnsupportedTrain("Drag Them Down lost its live damage effect after status callbacks.");
+                            effect = liveEffects[index]; resolvingCard = liveCard;
+                        }
+                    }
+                }
                 if (effect.Type == DiscardHandStatusModel.Effect)
                 {
                     int[]? eligible = DiscardHandStatusModel.EligibleCards(state.Context!, sourceCardId, out string? discardError);
@@ -2483,7 +2532,7 @@ namespace MonsterTrain2Poju.Model
                     !AbilityLifecycleModel.IsEffect(effect.Type))
                 {
                     if (effect.Type == "AdjustAllStatusEffects") return "Status adjustment effects use a fixed integer value, not an integer range.";
-                    if (!EnergyModel.IsEffect(effect.Type) && effect.Type != ForgePointsModel.Effect && effect.Type != DevotionModel.Effect && !new[] { "Damage", FloorDamageModel.Effect, "DamagePerHp", "Heal", "HealOverheal", "AddStatus", DevotionStatusModel.Effect, "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
+                    if (!EnergyModel.IsEffect(effect.Type) && effect.Type != ForgePointsModel.Effect && effect.Type != DevotionModel.Effect && !new[] { "Damage", DragThemDownModel.Effect, FloorDamageModel.Effect, "DamagePerHp", "Heal", "HealOverheal", "AddStatus", DevotionStatusModel.Effect, "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
                         return "Unmodeled range consumer " + effect.Type;
                     string? rangeError = effect.Range.Validate();
                     if (rangeError != null) return rangeError;
@@ -2737,7 +2786,7 @@ namespace MonsterTrain2Poju.Model
                         return "Mix requires a positive draft size and captured elixir state.";
                     continue;
                 }
-                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "AttackTargetsWithSelfUnit", "Damage", FloorDamageModel.Effect, "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", UnitHealthPercentModel.Effect, DiscardHandStatusModel.Effect, "Sacrifice", "Kill", "AddStatus", DevotionStatusModel.Effect, "AddStatusPerCasterStatus", "AddStatusPerMissingHp", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
+                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "AttackTargetsWithSelfUnit", "Damage", FloorDamageModel.Effect, "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", UnitHealthPercentModel.Effect, DiscardHandStatusModel.Effect, DragThemDownModel.Effect, "Sacrifice", "Kill", "AddStatus", DevotionStatusModel.Effect, "AddStatusPerCasterStatus", "AddStatusPerMissingHp", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "TransferAllStatuses" &&
                     (effect.Target != "DropTargetCharacter" || effect.Statuses.Count != 1))
@@ -2938,6 +2987,7 @@ namespace MonsterTrain2Poju.Model
                 case "RemoveStatus": return string.IsNullOrEmpty(effect.Filters?.Subtype) || count > 0;
                 case "Draw": return context != null && context.Cards.Hand.Count - 1 < context.MaxHandSize;
                 case "ScheduleNextDrawUpgrade": return context != null && (Math.Abs(effect.RequiredGold) == 0 || context.Gold >= Math.Abs(effect.RequiredGold));
+                case DragThemDownModel.Effect:
                 case FloorDamageModel.Effect:
                 case "Damage": return effect.Value >= 0 && (effect.Range == null || effect.Range.Max > 0) &&
                     (effect.Target != "DropTargetCharacter" || count > 0);
@@ -3067,7 +3117,7 @@ namespace MonsterTrain2Poju.Model
             effect.Type == "Draw" && effect.Target == "DrawPile" ||
             (effect.Type == "DrawType" || effect.Type == "ScheduleNextDrawUpgrade") &&
             (effect.Target == "DrawPile" || effect.Target == "Hand" || effect.Target == "LastDrawnCard");
-        private static bool IsDamage(CardActionEffect effect) => effect.Type == "Damage" || effect.Type == FloorDamageModel.Effect || effect.Type == "DamagePerSourceAttack";
+        private static bool IsDamage(CardActionEffect effect) => effect.Type == "Damage" || effect.Type == DragThemDownModel.Effect || effect.Type == FloorDamageModel.Effect || effect.Type == "DamagePerSourceAttack";
         private static bool QuantityTest(CardActionEffect effect) => IsDamage(effect) || effect.Type == "Draw";
         // RandomManager converts Battle to BattleTest while a native card hover
         // owns temporary copies. Tests and applications share that persistent stream.

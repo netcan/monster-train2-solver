@@ -1335,6 +1335,8 @@ namespace MonsterTrain2Poju.Probe
                 OriginalArbitraryVerdictIds = OriginalArbitraryVerdictScenario.CardIds,
                 OriginalWickedFervorPrepared = OriginalWickedFervorScenario.Prepared,
                 OriginalWickedFervorIds = OriginalWickedFervorScenario.CardIds,
+                OriginalDragThemDownPrepared = OriginalDragThemDownScenario.Prepared,
+                OriginalDragThemDownIds = OriginalDragThemDownScenario.CardIds,
                 OriginalWickedFervorDiscardIds = OriginalWickedFervorScenario.DiscardIds,
                 OriginalWickedFervorProtectedIds = OriginalWickedFervorScenario.ProtectedIds,
                 OnCastGroupsPrepared = OnCastGroupsBattleScenario.Prepared,

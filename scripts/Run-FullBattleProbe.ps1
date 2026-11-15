@@ -284,6 +284,7 @@ param(
     [switch] $OnCastGroupsBattle,
     [switch] $OriginalArbitraryVerdict,
     [switch] $OriginalWickedFervor,
+    [switch] $OriginalDragThemDown,
     [switch] $OriginalDiscardDraw,
     [switch] $OriginalMoonCardUpgrades,
     [switch] $OriginalMoonCardUpgradesLiveRelics,
@@ -1227,7 +1228,7 @@ if ($OriginalScaledDamage) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $t
 if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
-if ($OnCastGroupsBattle -or $OriginalArbitraryVerdict -or $OriginalWickedFervor) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OnCastGroupsBattle -or $OriginalArbitraryVerdict -or $OriginalWickedFervor -or $OriginalDragThemDown) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDiscardDraw) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoonCardUpgradesThresholdRelic) {
     if ($OriginalMoonCardUpgradesCostRelic -or $OriginalMoonCardUpgradesAttackRelic -or $OriginalMoonCardUpgradesHealingRelic -or
@@ -1931,8 +1932,8 @@ $environment = @{
     MT2_PROBE_BINARY_CAPTURE = $(if ($BinaryCapture) { '1' } else { '0' })
     MT2_PROBE_CAPTURE_JSON = $(if ($CaptureJson) { '1' } else { '0' })
     MT2_PROBE_NO_TIMEOUT = '1'
-    MT2_PROBE_ISOLATE_PREVIEW_RNG = $(if ($OriginalWickedFervor -or $OriginalArbitraryVerdict -or $OnCastGroupsBattle -or $TriggeredStatus -or $PersistentEnchantments -or $OriginalSupportUnits -or $OriginalDivineDancer -or $OriginalIsolatedUnitBatch -or $OriginalIsolatedColdstrikeSiren -or $isolatedUnitIds.Count -gt 0) { '1' } else { '0' })
-    MT2_PROBE_ISOLATE_UI_RNG = $(if ($OriginalWickedFervor -or $OriginalArbitraryVerdict -or $OnCastGroupsBattle -or $CompanionBoss -or $ConditionalTriggers -or $DetachedBonusDraw -or $RoomCapacity -or $RoomCapacityLethal -or $RoomCapacityAttachment -or $BonusDraw -or $BonusDrawLethal -or $NumericRanges -or $NumericRangesLethal -or $Drawing -or $TriggeredHealing -or $PostCombatHealing -or $TriggeredDamage -or $DamageDeathQueue -or $TerminalDeathDamage -or $HitKill -or $DyingUpgrades -or $AttackTriggers -or $TriggeredStatus) { '1' } else { '0' })
+    MT2_PROBE_ISOLATE_PREVIEW_RNG = $(if ($OriginalDragThemDown -or $OriginalWickedFervor -or $OriginalArbitraryVerdict -or $OnCastGroupsBattle -or $TriggeredStatus -or $PersistentEnchantments -or $OriginalSupportUnits -or $OriginalDivineDancer -or $OriginalIsolatedUnitBatch -or $OriginalIsolatedColdstrikeSiren -or $isolatedUnitIds.Count -gt 0) { '1' } else { '0' })
+    MT2_PROBE_ISOLATE_UI_RNG = $(if ($OriginalDragThemDown -or $OriginalWickedFervor -or $OriginalArbitraryVerdict -or $OnCastGroupsBattle -or $CompanionBoss -or $ConditionalTriggers -or $DetachedBonusDraw -or $RoomCapacity -or $RoomCapacityLethal -or $RoomCapacityAttachment -or $BonusDraw -or $BonusDrawLethal -or $NumericRanges -or $NumericRangesLethal -or $Drawing -or $TriggeredHealing -or $PostCombatHealing -or $TriggeredDamage -or $DamageDeathQueue -or $TerminalDeathDamage -or $HitKill -or $DyingUpgrades -or $AttackTriggers -or $TriggeredStatus) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_QUERIES = $(if ($StatisticQueries) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_OVERFLOW = $(if ($StatisticOverflow) { '1' } else { '0' })
     MT2_PROBE_MONSTER_DAMAGE_STATISTICS = $(if ($MonsterDamageStatistics) { '1' } else { '0' })
@@ -2184,6 +2185,7 @@ if ($OriginalSpellCompositions) { $environment['MT2_PROBE_MODIFIERS'] = 'origina
 if ($OnCastGroupsBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'oncast-groups-battle' }
 if ($OriginalArbitraryVerdict) { $environment['MT2_PROBE_MODIFIERS'] = 'original-arbitrary-verdict' }
 if ($OriginalWickedFervor) { $environment['MT2_PROBE_MODIFIERS'] = 'original-wicked-fervor' }
+if ($OriginalDragThemDown) { $environment['MT2_PROBE_MODIFIERS'] = 'original-drag-them-down' }
 if ($OriginalDiscardDraw) { $environment['MT2_PROBE_MODIFIERS'] = 'original-discard-draw' }
 if ($OriginalMoonCardUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-card-upgrades' }
 if ($OriginalMoonCardUpgradesLiveRelics) { $environment['MT2_PROBE_MOON_UPGRADE_LIVE_RELICS'] = '1' }
@@ -4026,6 +4028,10 @@ if ($OriginalDiscardDraw -and (-not $trace.OriginalDiscardDrawPrepared -or -not 
 }
 if ($OriginalSpellCompositions -and (-not $trace.OriginalSpellCompositionsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 10)) {
     throw 'Original spell compositions coverage incomplete.'
+}
+if ($OriginalDragThemDown -and (-not $trace.OriginalDragThemDownPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 7 -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
+    throw 'Original Drag Them Down lacks positive/empty/lethal plays, native victory or exact successors.'
 }
 if ($OriginalWickedFervor -and (-not $trace.OriginalWickedFervorPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 4 -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
