@@ -21,7 +21,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAdjustRoomCapacity", "CardEffectAdjustRoomMaxCorruption", "CardEffectAdjustCorruption",
             "CardEffectAddPermanentCorruption", "CardEffectAddStatusToRoomScalingByCasterStatusCount", "CardEffectAddStatusEffectPerMissingHp",
             "CardEffectSetMoonPhase", "CardEffectAdvanceMoonPhase", "CardEffectUpdateMoonPhaseResource",
-            "CardEffectAdjustForgePoints", "CardEffectGainDevotionPoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectChooseDiscard", "CardEffectAddBattleCard", "CardEffectAddRunCard", "CardEffectAddBattleCardPerTarget",
+            "CardEffectAdjustForgePoints", "CardEffectGainDevotionPoints", DiscardHandStatusModel.NativeEffect, "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectChooseDiscard", "CardEffectAddBattleCard", "CardEffectAddRunCard", "CardEffectAddBattleCardPerTarget",
             "CardEffectHeal", "CardEffectHealAndOverheal", "CardEffectHealAndDamageRelative", "CardEffectHealTrain", "CardEffectHealPyrePerEmberCost", "CardEffectSetHealth", UnitHealthPercentModel.NativeEffect, "CardEffectSacrifice", "CardEffectSacrificeOrFeed", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
             "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffectPerDevotionLevel", "CardEffectAddStatusEffect", "CardEffectMultiplyStatusEffect",
             "CardEffectMultiplyAllPositiveStatusEffects", "CardEffectAdjustAllStatusEffects", "CardEffectAddStatusEffectPerOtherEffect",
@@ -537,6 +537,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectHealAndDamageRelative" ? "HealRelative" :
                 effect.GetEffectStateName() == "CardEffectHealTrain" ? "HealTrain" :
                 effect.GetEffectStateName() == "CardEffectHealPyrePerEmberCost" ? "HealTrainPerEmber" :
+                effect.GetEffectStateName() == DiscardHandStatusModel.NativeEffect ? DiscardHandStatusModel.Effect :
                 effect.GetEffectStateName() == "CardEffectSetHealth" ? "SetHealth" :
                 effect.GetEffectStateName() == UnitHealthPercentModel.NativeEffect ? UnitHealthPercentModel.Effect :
                 effect.GetEffectStateName() == "CardEffectAddTempSwapStats" ? "SwapStats" :
@@ -628,7 +629,7 @@ namespace MonsterTrain2Poju.Probe
                     type == "AttachEquipment" ? "" : ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString();
             }
             var statuses = new List<CombatStatus>();
-            if (type == "AddStatus" || type == DevotionStatusModel.Effect || type == "HealOverheal" || type == "MultiplyStatus" || type == "AdjustAllStatusEffects" ||
+            if (type == "AddStatus" || type == DiscardHandStatusModel.Effect || type == DevotionStatusModel.Effect || type == "HealOverheal" || type == "MultiplyStatus" || type == "AdjustAllStatusEffects" ||
                 type == "TransferAllStatuses" ||
                 type == "AddStatusPerOtherEffect" || type == "AddStatusPerCasterStatus" || type == "AddStatusPerMissingHp" || type == "SpawnOrStatus" || type == "UnitUpgradePerStatus")
             {
@@ -686,7 +687,7 @@ namespace MonsterTrain2Poju.Probe
                 requireEquipment: (type == "AttackWithUnit" || type == "AttackTargetsWithSelfUnit") && effect.GetParamBool(), useSelectedRoom: type == "AttackWithUnit" && effect.GetParamBool2(),
                 countStatusOnlyOnTargets: type == "AddStatusPerOtherEffect" && effect.GetParamBool(), spawnFallbackUnit: spawnFallbackUnit,
                 disallowStatusStackModifiers: type == "SpawnOrStatus" && effect.GetDisallowStatusEffectStackModifiers(),
-                ignoreDualism: (type == "AddStatus" || type == DevotionStatusModel.Effect) && effect.GetParamBool2(),
+                ignoreDualism: (type == "AddStatus" || type == DiscardHandStatusModel.Effect || type == DevotionStatusModel.Effect) && effect.GetParamBool2(),
                 statusAdjustmentFilter: type == "AdjustAllStatusEffects" ? (int?)effect.GetAdditionalParamInt() : null,
                 damagePerHpLastAttacker: type == "DamagePerHp" && effect.GetParamBool(),
                 damagePerHpIncludeArmor: type == "DamagePerHp" && effect.GetParamBool2(), roomAttachment: roomAttachment,

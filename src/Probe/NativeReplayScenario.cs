@@ -1593,6 +1593,12 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalSpellCompositionsScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalWickedFervorScenario.Enabled)
+            {
+                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Wicked Fervor must start on deployment turn.");
+                numericModifiersPrepared = true;
+                OriginalWickedFervorScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalArbitraryVerdictScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original percentage health must start on deployment turn.");
@@ -3267,6 +3273,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalSpellCompositionsScenario.Enabled) pendingPlay = OriginalSpellCompositionsScenario.Choose(decision, OriginalSpellCompositionsScenario.CardIds);
                 if (OnCastGroupsBattleScenario.Enabled) pendingPlay = OnCastGroupsBattleScenario.Choose(decision);
                 if (OriginalArbitraryVerdictScenario.Enabled) pendingPlay = OriginalArbitraryVerdictScenario.Choose(decision);
+                if (OriginalWickedFervorScenario.Enabled) pendingPlay = OriginalWickedFervorScenario.Choose(decision);
                 if (OriginalDiscardDrawScenario.Enabled) pendingPlay = OriginalDiscardDrawScenario.Choose(decision, OriginalDiscardDrawScenario.CardIds);
                 if (OriginalMoonCardUpgradesScenario.Enabled) pendingPlay = OriginalMoonCardUpgradesScenario.Choose(decision, OriginalMoonCardUpgradesScenario.CardIds);
                 if (OriginalRoomStatusDamageScenario.Enabled) pendingPlay = OriginalRoomStatusDamageScenario.Choose(decision, OriginalRoomStatusDamageScenario.CardIds);

@@ -7,6 +7,14 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+The original 2.3.1 `WickedFervor` spell now snapshots eligible hand cards,
+discards them in order through existing callbacks, then scales Zeal by that
+count. Three frozen discards grant 15 Zeal; Persistent, Infusion and the
+resolving card are excluded, and a zero-count second play changes no target.
+The four-play/five-EndTurn native victory, 16 continuous replay branches and
+128-state serial/parallel search pass. See [evidence and remaining composition
+limits](docs/wicked-fervor.md) and `scripts/Check-Game231WickedFervor.ps1`.
+
 The original 2.3.1 `ArbitraryVerdict` room spell now uses the native raw
 percentage HP setter: float arithmetic, ceiling and the 99999 cap, without
 damage/heal callbacks or quantity-range RNG. Three unchanged original plays

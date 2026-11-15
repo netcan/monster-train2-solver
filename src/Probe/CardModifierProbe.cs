@@ -197,7 +197,7 @@ namespace MonsterTrain2Poju.Probe
                         Modifiers(card.GetTemporaryCardStateModifiers(), boxDepth: boxDepth + 1))).ToArray();
                 }
             }
-            if (modifiers.GetTemporaryTraits().Any(trait => !CardBranchMaskProbe.Enabled || trait is not (CardTraitFreeze or CardTraitSelfPurge or CardTraitRetain or CardTraitGraftedEquipment)) ||
+            if (modifiers.GetTemporaryTraits().Any(trait => !CardBranchMaskProbe.Enabled || trait is not (CardTraitFreeze or CardTraitSelfPurge or CardTraitRetain or CardTraitPersistent or CardTraitGraftedEquipment)) ||
                 modifiers.GetTraitReplacements().Count > 0 && !CardBranchMaskProbe.Enabled)
                 interactions.Add("Temporary/replaced card traits");
             return new CardModifiers(new CardStatModifier(Field("additionalDamage"), Field("additionalMaxHP"), Field("additionalCost"),

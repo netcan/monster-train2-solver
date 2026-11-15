@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--original-wicked-fervor-only")
+{
+    OriginalWickedFervorChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--health-percent-only")
 {
     HealthPercentChecks.Component(args[1]);

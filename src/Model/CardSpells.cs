@@ -760,6 +760,23 @@ namespace MonsterTrain2Poju.Model
                     }
                     continue;
                 }
+                if (effect.Type == DiscardHandStatusModel.Effect)
+                {
+                    int[]? eligible = DiscardHandStatusModel.EligibleCards(state.Context!, sourceCardId, out string? discardError);
+                    if (eligible == null) return UnsupportedTrain(discardError!);
+                    bool preview = state.Rooms.Any(room => room.Preview);
+                    if (!preview && eligible.Length > 0)
+                    {
+                        bool placement = state.Rooms.Single(room => room.RoomIndex == roomIndex).Deployment;
+                        HandRemovalResult discarded = HandRemovalModel.Apply(state.Context!, 0, sourceCardId, index, definitions, piles,
+                            selectedCardIds: eligible, effectCounterType: null, triggeredByCard: true, placement: placement,
+                            preview: false, onTreasure: Treasure);
+                        if (!discarded.Supported) return UnsupportedTrain(discarded.UnsupportedReason!);
+                        state = WithContext(state, discarded.Context!); piles = discarded.OtherPiles?.ToArray() ?? piles;
+                    }
+                    if (eligible.Length == 0) continue;
+                    effect = DevotionStatusModel.AsStatus(effect, eligible.Length);
+                }
                 if (effect.Type == DevotionStatusModel.Effect)
                     effect = DevotionStatusModel.AsStatus(effect, DevotionStatusModel.Grants(state.Context, effect));
                 if ((effect.Type == "AddStatus" || effect.Type == "MultiplyStatus" || effect.Type == "SpawnOrStatus") && effect.Statuses.Count > 1)
@@ -2720,7 +2737,7 @@ namespace MonsterTrain2Poju.Model
                         return "Mix requires a positive draft size and captured elixir state.";
                     continue;
                 }
-                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "AttackTargetsWithSelfUnit", "Damage", FloorDamageModel.Effect, "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", UnitHealthPercentModel.Effect, "Sacrifice", "Kill", "AddStatus", DevotionStatusModel.Effect, "AddStatusPerCasterStatus", "AddStatusPerMissingHp", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
+                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "AttackTargetsWithSelfUnit", "Damage", FloorDamageModel.Effect, "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", UnitHealthPercentModel.Effect, DiscardHandStatusModel.Effect, "Sacrifice", "Kill", "AddStatus", DevotionStatusModel.Effect, "AddStatusPerCasterStatus", "AddStatusPerMissingHp", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "TransferAllStatuses" &&
                     (effect.Target != "DropTargetCharacter" || effect.Statuses.Count != 1))
@@ -2885,6 +2902,8 @@ namespace MonsterTrain2Poju.Model
         private static bool PassesTest(CardActionEffect effect, int count, bool bossDead = false, CombatContext? context = null, bool preview = false,
             RoomCombatState? room = null, bool? pyreAlive = null, int sourceCardId = 0)
         {
+            if (effect.Type == DiscardHandStatusModel.Effect)
+                return PassesTest(DevotionStatusModel.AsStatus(effect), count, bossDead, context, preview, room, pyreAlive, sourceCardId);
             if (!DevotionModel.MeetsRequirements(context, effect.Tests)) return false;
             if (effect.Type == DevotionStatusModel.Effect)
                 return DevotionStatusModel.Grants(context, effect) > 0 && PassesTest(DevotionStatusModel.AsStatus(effect),
