@@ -10,8 +10,12 @@ internal static class CampaignBattleResourceChecks
     internal static void Native(string path)
     {
         using var document = ModelJson.ReadFixture(path); var root = document.RootElement;
-        Require(root.GetProperty("Schema").GetInt32() == 1 && root.GetProperty("GameVersion").GetString() == "2.2.1" &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
+        bool modern = root.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            root.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d";
+        bool legacy = root.GetProperty("GameVersion").GetString() == "2.2.1" &&
+            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
+        Require(root.GetProperty("Schema").GetInt32() == 1 && (modern || legacy) &&
+            (!modern || root.GetProperty("PunishCounts").GetBoolean()) &&
             root.GetProperty("Before").ContentEquals(root.GetProperty("After")), "End-battle capture identity/restoration differs.");
         var definitions = root.GetProperty("Owners").EnumerateArray().ToArray(); Require(definitions.Length == 2, "Missing original resource owners.");
         for (int i = 0; i < definitions.Length; i++)
@@ -22,23 +26,31 @@ internal static class CampaignBattleResourceChecks
                 effects[0].GetProperty("Type").GetString() == expected.Type && effects[0].GetProperty("Int").GetInt32() == expected.Amount &&
                 effects[0].GetProperty("Bool").GetBoolean() == expected.Required && effects[0].GetProperty("Conditions").GetInt32() == 0,
                 "Original end-battle resource owner changed.");
+            Require(RelicModel.Validate(new[] { new CombatRelicState(expected.Id, expected.Key, new[] { expected.Type }) }) == null,
+                "Campaign resource effect blocked ordinary combat validation.");
+            const string unknown = "UncalibratedEndBattleCompanionEffect";
+            Require(RelicModel.Validate(new[] { new CombatRelicState(expected.Id, expected.Key, new[] { expected.Type, unknown }) }) ==
+                "Unmodeled relic effect " + unknown + " on " + expected.Key + ".",
+                "Campaign resource effect hid an unknown companion effect.");
         }
         var rows = root.GetProperty("Rows").EnumerateArray().ToArray();
-        Require(rows.Length == 756 && rows.Select(row => (S(row, "Phase"), S(row, "Scenario"), I(row, "Cap"), I(row, "AmountCase"), I(row, "Repetition"))).Distinct().Count() == 756,
+        int expectedRows = modern ? 864 : 756;
+        Require(rows.Length == expectedRows && rows.Select(row => (S(row, "Phase"), S(row, "Scenario"), I(row, "Cap"), I(row, "AmountCase"), I(row, "Repetition"))).Distinct().Count() == expectedRows,
             "Incomplete or duplicated native end-battle matrix.");
         int gold = 0, hoard = 0, blocked = 0, reset = 0;
         foreach (var row in rows)
         {
             string phase = S(row, "Phase"), scenario = S(row, "Scenario");
             int[] indices = phase switch { "baseline" or "removed" => [], "gold" => [0], "both" => [0, 1], "hoard" => [1], "reversed" => [1, 0], _ => throw new InvalidOperationException("Unknown native phase.") };
-            Require(scenario is "idle" or "zero" or "negative" or "wrong-trigger" or "null-character" or "damage" or "reset-after-damage", "Unknown damage control.");
+            Require(scenario is "idle" or "zero" or "negative" or "wrong-trigger" or "null-character" or "damage" or "reset-after-damage" ||
+                modern && scenario == "punish", "Unknown damage control.");
             var native = row.GetProperty("Owned").EnumerateArray().ToArray(); Require(native.Length == indices.Length, "Native owner count differs.");
             var states = indices.Select(index => {
                 var definition = Owners[index]; var parent = new CampaignBattleResourceOwner(definition.Id, definition.Resource, definition.Amount, definition.Required, true);
                 var owner = CampaignBattleResourceModel.StartBattle(parent);
                 Require(parent.PyreWasDamaged && !owner.PyreWasDamaged, "Start-battle state mutated its parent or failed to reset.");
-                if (scenario != "idle") owner = CampaignBattleResourceModel.Observe(owner, scenario == "wrong-trigger" ? "OnDeath" : "OnHit",
-                    scenario != "null-character", scenario == "zero" ? 0 : scenario == "negative" ? -1 : 1);
+                if (scenario != "idle") owner = CampaignBattleResourceModel.Observe(owner, scenario == "punish" ? "OnPunish" : scenario == "wrong-trigger" ? "OnDeath" : "OnHit",
+                    scenario != "null-character", scenario == "zero" ? 0 : scenario == "negative" ? -1 : 1, includePunish: modern);
                 if (scenario == "reset-after-damage") owner = CampaignBattleResourceModel.StartBattle(owner);
                 return owner;
             }).ToArray();
@@ -65,7 +77,8 @@ internal static class CampaignBattleResourceChecks
             Require(result.Gold == 223 && result.Hoard == 3 && branch.Gold == 123 && branch.Hoard == 0 && JsonSerializer.Serialize(both) == branchJson,
                 "Parallel resource branches changed parent state.");
         });
-        Require(gold == 378 && hoard == 144 && blocked == 54 && reset == 24, "Native resource positives/damage/reset controls missing.");
+        Require(gold == (modern ? 432 : 378) && hoard == 144 && blocked == (modern ? 108 : 54) && reset == 24,
+            "Native resource positives/damage/reset controls missing.");
         Console.WriteLine($"CAMPAIGN-BATTLE-RESOURCE-NATIVE PASS: two unchanged original owners, {rows.Length} actual end-battle manager calls, {gold} gold and {hoard} hoard increases, {blocked} damage gates, {reset} reset recoveries, unchanged recorded state/frame/RNG and 16 parallel branches. Campaign resource consumer only; damage events are controlled native callbacks.");
     }
     private static string S(FixtureValue row, string key) => row.GetProperty(key).GetString()!;

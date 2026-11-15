@@ -3892,9 +3892,10 @@ if ($CampaignBattleResourceCalibration) {
     $battleResourceDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($battleResourcePath)
     try {
         $battleResourceRoot = $battleResourceDocument.RootElement
+        $resourceRows = if ($battleResourceRoot.GetProperty('GameVersion').GetString() -ceq '2.3.1') { 864 } else { 756 }
         if ($battleResourceRoot.GetProperty('Schema').GetInt32() -ne 1 -or
             $battleResourceRoot.GetProperty('Owners').GetArrayLength() -ne 2 -or
-            $battleResourceRoot.GetProperty('Rows').GetArrayLength() -ne 756 -or
+            $battleResourceRoot.GetProperty('Rows').GetArrayLength() -ne $resourceRows -or
             -not $battleResourceRoot.GetProperty('Before').ContentEquals($battleResourceRoot.GetProperty('After'))) {
             throw 'End-battle original-owner matrix or recorded state restoration is incomplete.'
         }

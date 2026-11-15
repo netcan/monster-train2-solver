@@ -29,6 +29,10 @@ namespace MonsterTrain2Poju.Probe
                 Deck = save.GetDeckState().Select(card => card.GetCardDataID()).ToArray(), Gold = save.GetGold(), Cap = save.GetDragonsHoardCap(),
                 Hoard = save.GetDragonsHoardAmount(), Health = save.GetTowerHP(), Maximum = save.GetMaxTowerHP(), Frame = UnityEngine.Time.frameCount, Rng = Rng() });
             JObject before = Snapshot(); var rows = new List<object>();
+            CharacterTriggerData.Trigger punishTrigger = default;
+            bool punishCounts = UnityEngine.Application.version == "2.3.1" && Enum.TryParse("OnPunish", out punishTrigger);
+            var scenarios = new List<string> { "idle", "zero", "negative", "wrong-trigger", "null-character", "damage", "reset-after-damage" };
+            if (punishCounts) scenarios.Add("punish");
             var parameters = new RelicEffectParams { saveManager = save, relicManager = relics, screenManager = managers.GetScreenManager() };
             void Remove(CollectableRelicData owner) => save.RemoveRelic(save.GetCollectedRelics().Single(item => item.GetRelicDataID() == owner.GetID()));
             void Reset()
@@ -39,12 +43,12 @@ namespace MonsterTrain2Poju.Probe
             }
             void Samples(string phase)
             {
-                foreach (string scenario in new[] { "idle", "zero", "negative", "wrong-trigger", "null-character", "damage", "reset-after-damage" })
+                foreach (string scenario in scenarios)
                 foreach (int cap in new[] { 0, 2, 5 })
                 foreach (int amountCase in new[] { 0, 1, 2 })
                 {
                     Reset();
-                    if (scenario != "idle") Drain(relics.ApplyCharacterTriggerRelicEffect(scenario == "wrong-trigger" ? CharacterTriggerData.Trigger.OnDeath : CharacterTriggerData.Trigger.OnHit,
+                    if (scenario != "idle") Drain(relics.ApplyCharacterTriggerRelicEffect(scenario == "punish" ? punishTrigger : scenario == "wrong-trigger" ? CharacterTriggerData.Trigger.OnDeath : CharacterTriggerData.Trigger.OnHit,
                         scenario == "null-character" ? null! : pyre, scenario == "zero" ? 0 : scenario == "negative" ? -1 : 1, 0, null));
                     if (scenario == "reset-after-damage") Reset();
                     foreach (int repetition in new[] { 0, 1 })
@@ -74,7 +78,7 @@ namespace MonsterTrain2Poju.Probe
             JObject after = Snapshot();
             if (!JToken.DeepEquals(before, after)) throw new InvalidOperationException("End-battle recorded state/frame/RNG changed.");
             using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameVersion = UnityEngine.Application.version,
-                GameModuleMvid = typeof(RelicState).Assembly.ManifestModule.ModuleVersionId, Before = before, After = after,
+                GameModuleMvid = typeof(RelicState).Assembly.ManifestModule.ModuleVersionId, PunishCounts = punishCounts, Before = before, After = after,
                 Owners = owners.Select(owner => new { Id = owner.GetID(), Key = owner.name, DisallowedInPlacementPhase = owner.DisallowInDeploymentPhase,
                     Effects = owner.GetEffects().Select(effect => new { Type = effect.GetEffectClassName(), Int = effect.GetParamInt(), Bool = effect.GetParamBool(),
                         Conditions = effect.GetEffectConditions().Count }).ToArray() }).ToArray(), Rows = rows }))

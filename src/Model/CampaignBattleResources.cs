@@ -37,8 +37,8 @@ namespace MonsterTrain2Poju.Model
 
         // The native Test callback records damage even though it always returns false.
         public static CampaignBattleResourceOwner Observe(CampaignBattleResourceOwner owner,
-            string trigger, bool isPyre, int damage) => owner.RequireNoPyreDamage &&
-            trigger == "OnHit" && isPyre && damage > 0 ? owner.WithDamage(true) : owner;
+            string trigger, bool isPyre, int damage, bool includePunish = false) => owner.RequireNoPyreDamage &&
+            (trigger == "OnHit" || includePunish && trigger == "OnPunish") && isPyre && damage > 0 ? owner.WithDamage(true) : owner;
 
         public static CampaignBattleResources EndBattle(CampaignBattleResources state,
             IReadOnlyList<CampaignBattleResourceOwner> owners, float goldRewardMultiplier = 1f)
