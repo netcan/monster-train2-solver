@@ -552,6 +552,7 @@ param(
     [switch] $PreviewReferences,
     [switch] $RelicCatalog,
     [switch] $CardCatalog,
+    [switch] $SummonChoiceCalibration,
     [switch] $CampaignRelicCalibration,
     [switch] $CampaignDraftCalibration,
     [switch] $CampaignPostBattleCalibration,
@@ -1246,6 +1247,10 @@ if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spell
 if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($PyreSpikesMode) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $Policy = 'no-cards' }
+if ($SummonChoiceCalibration -and (-not $OriginalUpgradeEnchantment -or $PlayerAdvisor)) {
+    throw 'SummonChoiceCalibration requires the isolated OriginalUpgradeEnchantment control scenario.'
+}
+if ($SummonChoiceCalibration) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true }
 if ($OriginalPunishedSkills -or $OriginalSpiteEquipment -or $OriginalPunishedSpike -or $OriginalPunishedSpells -or $OriginalMissingHealthStatus -or $OriginalPunishedUnits -or $OriginalHalo -or $OriginalPenitent -or $OriginalCloister -or $OriginalSpare -or $OriginalExaltation -or $OriginalUpgradeEnchantment) { $SettleCardAnimations = $true; $SettleDeathDissolves = $true }
 if ($OnCastGroupsBattle -or $OriginalArbitraryVerdict -or $OriginalWickedFervor -or $OriginalDevoteTreasure -or $OriginalPunishedSkills -or $OriginalSpiteEquipment -or $OriginalPunishedSpike -or $OriginalPunishedSpells -or $OriginalMissingHealthStatus -or $OriginalPunishedUnits -or $OriginalHalo -or $OriginalPenitent -or $OriginalCloister -or $OriginalSpare -or $OriginalExaltation -or $OriginalUpgradeEnchantment -or $OriginalFriendlyDamageStatus -or $OriginalMissingHealthUpgrade -or $OriginalDevotionUpgrade -or $OriginalDragThemDown) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDiscardDraw) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -1910,6 +1915,7 @@ $environment = @{
     MT2_PROBE_PREVIEW_REFERENCES = $(if ($PreviewReferences) { '1' } else { '0' })
     MT2_PROBE_RELIC_CATALOG = $(if ($RelicCatalog) { '1' } else { '0' })
     MT2_PROBE_CARD_CATALOG = $(if ($CardCatalog) { '1' } else { '0' })
+    MT2_PROBE_SUMMON_CHOICE_CALIBRATION = $(if ($SummonChoiceCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_RELICS = $(if ($CampaignRelicCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_DRAFTS = $(if ($CampaignDraftCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_POST_BATTLE = $(if ($CampaignPostBattleCalibration) { '1' } else { '0' })
@@ -5195,6 +5201,29 @@ if ($OriginalUnitUpgradeTriggerRelic -and ($trace.Schema -ne 133 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-UNIT-UPGRADE-TRIGGER-RELIC-PREPARED' -Quiet) -or
     @($trace.Actions).Count -eq 0)) {
     throw 'Original unit-upgrade trigger relic was not exercised in the expected full-battle capture.'
+}
+if ($SummonChoiceCalibration) {
+    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $summonChoiceDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'summon-choice-calibration.mt2f'))
+    try {
+        $summonChoiceRoot = $summonChoiceDocument.RootElement
+        $summonChoiceFrames = @($summonChoiceRoot.GetProperty('Frames').EnumerateArray())
+        if ($summonChoiceRoot.GetProperty('Scope').GetString() -ne 'SummonChoiceOffersOnly' -or
+            $summonChoiceRoot.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
+            $summonChoiceRoot.GetProperty('Definitions').GetArrayLength() -ne 12 -or
+            $summonChoiceFrames.Count -ne 13 -or @($trace.Actions).Count -ne 12) {
+            throw 'Summon choice component definitions or source decision frames are incomplete.'
+        }
+        foreach ($summonChoiceFrame in $summonChoiceFrames) {
+            if (-not $summonChoiceFrame.GetProperty('DecisionUnchanged').GetBoolean() -or
+                $summonChoiceFrame.GetProperty('FrameBefore').GetInt32() -ne $summonChoiceFrame.GetProperty('FrameAfter').GetInt32() -or
+                -not $summonChoiceFrame.GetProperty('RngBefore').ContentEquals($summonChoiceFrame.GetProperty('RngAfter')) -or
+                $summonChoiceFrame.GetProperty('Samples').GetArrayLength() -ne 864) {
+                throw 'Summon choice calibration changed native decision/RNG/frame or omitted controls.'
+            }
+        }
+        Write-Output 'NATIVE-SUMMON-CHOICE-OFFERS PASS: 11232 native comparisons; unchanged decision/RNG/frame, explicit platform input controls; offer stage only.'
+    } finally { $summonChoiceDocument.Dispose() }
 }
 if ($CardCatalog) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')

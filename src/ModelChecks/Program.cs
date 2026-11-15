@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--summon-choice-offers-only")
+{
+    SummonChoiceChecks.Native(args[1], args[2]);
+    return;
+}
 if (args.Length == 3 && args[0] == "--punished-champion-definitions-only")
 {
     PunishedChampionDefinitionChecks.Native(args[1], args[2]);

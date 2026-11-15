@@ -873,6 +873,9 @@ namespace MonsterTrain2Poju.Probe
                 if (records.Any(record => record.Actual == null)) throw new InvalidOperationException("Previous card action is pending.");
                 trace.InvalidateCardRules();
                 BattleTurnState before = trace.CaptureDecision(includeOuterBossForBump, ignoreOuterBossSpawnInteraction);
+#if DEVELOPMENT_PROBE
+                if (records.Count == 0) SummonChoiceCalibration.Capture(trace, AllGameManagers.Instance!, before, "before-first-action");
+#endif
                 records.Add(new Record { Index = records.Count, ScenarioAction = scenarioAction,
                     IncludeOuterBossForBump = includeOuterBossForBump,
                     IgnoreOuterBossSpawnInteraction = ignoreOuterBossSpawnInteraction, Before = before, Action = action,
@@ -889,6 +892,9 @@ namespace MonsterTrain2Poju.Probe
                 trace.InvalidateCardRules();
                 record.Actual = trace.CaptureDecision(record.IncludeOuterBossForBump,
                     record.IgnoreOuterBossSpawnInteraction);
+#if DEVELOPMENT_PROBE
+                SummonChoiceCalibration.Capture(trace, AllGameManagers.Instance!, record.Actual, "after-action-" + record.Index);
+#endif
                 record.ActualOutcome = trace.NativeWon == null ? RoomOutcome.Exchanged :
                     trace.NativeWon.Value ? RoomOutcome.BattleWon : RoomOutcome.PlayerDefeated;
                 if (record.Predicted.Supported)
