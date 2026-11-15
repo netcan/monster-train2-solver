@@ -11,6 +11,10 @@ Completion work now follows a pinned-version mechanism inventory, shared rule
 implementation and focused native differential checks, with full regression at
 milestones. See [the finite acceptance gates and automation work](docs/mechanism-completion.md)
 and [the generated native class inventory](docs/inventory/game-2.3.1-mechanisms.md).
+The first [fixed solver stage](docs/solver-stage.md) now passes all eight native
+battles: 190 plays/52 EndTurns, 481 room/98 train stages, continuous replay/16
+branches each, all recorded action frontiers and executable serial/parallel
+root plans. This is a scoped stage result, not whole-version completion.
 The inventory is a source-audit denominator. Its first two query-fixture links
 now include checker paths and unresolved integration boundaries; most evidence
 remains unmapped. These class counts are not completion percentages.
