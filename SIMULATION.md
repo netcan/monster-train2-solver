@@ -7,6 +7,13 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+Completion work now follows a pinned-version mechanism inventory, shared rule
+implementation and focused native differential checks, with full regression at
+milestones. See [the finite acceptance gates and automation work](docs/mechanism-completion.md)
+and [the generated native class inventory](docs/inventory/game-2.3.1-mechanisms.md).
+The inventory is a source-audit denominator; runtime evidence is not yet mapped
+to its rows and its class counts are not completion percentages.
+
 Original GrimFlight's three upgraded skills now cover twelve actual selection
 dialogs and cardless births, subtype skips, over-capacity summons and fragment
 callbacks. A 107.55-second native victory has 49 inputs/five EndTurns and four
