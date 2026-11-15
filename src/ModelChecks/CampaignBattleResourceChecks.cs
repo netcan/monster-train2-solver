@@ -81,6 +81,31 @@ internal static class CampaignBattleResourceChecks
             "Native resource positives/damage/reset controls missing.");
         Console.WriteLine($"CAMPAIGN-BATTLE-RESOURCE-NATIVE PASS: two unchanged original owners, {rows.Length} actual end-battle manager calls, {gold} gold and {hoard} hoard increases, {blocked} damage gates, {reset} reset recoveries, unchanged recorded state/frame/RNG and 16 parallel branches. Campaign resource consumer only; damage events are controlled native callbacks.");
     }
+    internal static void Natural(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            fixture.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
+            fixture.GetProperty("NativeWon").GetBoolean() && fixture.GetProperty("TerminalEffectsSettled").GetBoolean(),
+            "Natural resource-owner battle changed version or settled victory.");
+        foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
+            Require(fixture.GetProperty(key).GetInt32() == 0, "Natural resource-owner battle has " + key);
+        RandomCampaignChecks.Source(fixture, 20261115, 0, 0, "Banished", "Pyreborne", 3000);
+        var rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        Require(rows.Length == 21 && rows.Count(row => row.GetProperty("IsEndTurn").GetBoolean()) == 5,
+            "Natural checkpoint lost its 16 plays and five EndTurns.");
+        foreach (var row in rows)
+            foreach (string field in new[] { "Root", "Actual" })
+            {
+                var state = row.GetProperty(field).Deserialize<BattleTurnState>()!;
+                var owner = state.Spawn.Train.Context!.Relics!.Single(relic => relic.DataId == Owners[1].Id);
+                Require(owner.AssetKey == Owners[1].Key && owner.EffectTypes.SequenceEqual(new[] { Owners[1].Type }),
+                    "Natural battle dropped or replaced its original Hoard owner.");
+            }
+        var final = rows[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        Require(final.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health == 80,
+            "Natural battle changed its full-health victory.");
+        Console.WriteLine("CAMPAIGN-BATTLE-RESOURCE-NATURAL PASS: original carried Hoard owner in 42 root/successor states, default-budget natural seed, 16 plays/five EndTurns, full forecasts/state/RNG and Pyre80 native victory. No independent frozen native pair or later campaign rings claimed.");
+    }
     private static string S(FixtureValue row, string key) => row.GetProperty(key).GetString()!;
     private static int I(FixtureValue row, string key) => row.GetProperty(key).GetInt32();
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }

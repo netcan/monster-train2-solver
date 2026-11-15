@@ -7798,6 +7798,12 @@ if (args.Length == 2 && args[0] == "--campaign-battle-resources-only")
     CampaignBattleResourceChecks.Native(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--campaign-battle-resource-natural-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    CampaignBattleResourceChecks.Natural(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-health-choice-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

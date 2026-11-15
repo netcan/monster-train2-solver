@@ -33,7 +33,7 @@
 | CardEffectDamage | shared-path | Native Damage normalizes to the shared Damage action; current PunishedSpike battle exercises repeated damage, armor, target death and full successors. Existing target/scaling/callback guards remain; not an audit of every contextual branch. |
 | RelicEffectAddRelicStartOfRun | input-only | Sealed native class implements StartOfRun ApplyEffect, which adds the configured relic through SaveManager. Battle input captures the resulting relic roster. No combat callback override in this class; start-of-run campaign handling and carried-owner validation remain separate. |
 | RelicEffectCardUpgrade | input-only | Sealed native class only overrides editor descriptions and implements the empty ICardUpgradeRelicEffect marker. Its 148 catalog references include upgrade definitions; already acquired card upgrades are battle inputs, not 148 missing live battle handlers. Acquisition consumers are not certified by this review. |
-| RelicEffectModifyDragonsHoardEndOfBattle | campaign-only | Sealed native combat callbacks only remember private Pyre damage and return false; rewards use the separate campaign consumer. Current OnPunish and legacy OnHit gates calibrated; natural carried-owner battle integration remains separate. |
+| RelicEffectModifyDragonsHoardEndOfBattle | campaign-only | Sealed combat callbacks only remember private Pyre damage; campaign rewards have current OnPunish and legacy OnHit calibration. Natural seed20261115 Ring1 carried original owner across 21 inputs/42 full states, default3s budget, Pyre80 native win and independent forecasts/state/RNG. No independent frozen native pair or later rings claimed. |
 | RelicEffectModifyGoldEndOfBattle | campaign-only | Sealed native combat callbacks only remember private Pyre damage and return false; rewards use the separate campaign consumer. 864 current and 756 legacy component rows; natural carried-owner battle integration remains separate. |
 ## 第一批需核对的代码入口
 
@@ -59,10 +59,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `f5eb4fb077a3b2a7c1260b696fb7711774e1b84418e609996f8e40898552fb45`。
-- 人工审查索引 SHA-256: `c9e7335d6ffe1c3f701a1c1ea0ce8fdf8a5b6663f1d6126769ffa95573392e67`。
+- 人工审查索引 SHA-256: `d43a8d0dbb1ce0888e6e166d8af6b9dd30717d3319e9ca67301cabf2e013b97e`。
 - Model: PDB 校验过的项目源码集合 `af587fae2aec13d3aa7f5ce39f1ec68b4648169988682c9000209a7f49b96fc0`。
 - Probe: PDB 校验过的项目源码集合 `39bd1fdea2d4350223b9d93e75ea2bcedd9ee3b1073f38925f25be71be1c337a`。
-- ModelChecks: PDB 校验过的项目源码集合 `6c1267472cc189223ab0a3fb2db73dd604196ecdcf0f4e75a768d32b85debfe8`。
+- ModelChecks: PDB 校验过的项目源码集合 `8519c68ae20454bf490bd842c0aef311c83d22e313918ac3dde698b71cfc5404`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
