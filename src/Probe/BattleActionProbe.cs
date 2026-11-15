@@ -906,6 +906,14 @@ namespace MonsterTrain2Poju.Probe
                             .Select(property => property.Name));
                         log.LogInfo("ACTION-MODEL-DIFF index=" + record.Index + " fields=" + fields + " first=" +
                             UnitPlayModelProbe.FirstDifference(predicted, actual, "$"));
+                        if (OriginalPunishedSkillsScenario.Enabled)
+                        {
+                            using var diagnostic = MonsterTrain2Poju.Capture.NativeFixtureCapture.Capture(new {
+                                record.Index, record.Before, record.Action, record.Actual, Predicted = record.Predicted.State });
+                            using var output = System.IO.File.Create(System.IO.Path.Combine(
+                                Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "punished-skills-difference-" + record.Index + ".mt2f"));
+                            diagnostic.Write(output);
+                        }
                         if (OriginalFirstRoomAttachmentScenario.Enabled && fields.Contains("Rooms", StringComparison.Ordinal))
                         {
                             foreach (int roomIndex in record.Predicted.State!.Spawn.Train.Rooms.Select(room => room.RoomIndex)

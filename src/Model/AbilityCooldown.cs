@@ -11,6 +11,8 @@ namespace MonsterTrain2Poju.Model
         public int CooldownAtSpawn { get; }
         public bool FromEquipment { get; }
         public bool Resolving { get; }
+        public bool ReplacedWhileResolving { get; }
+        public bool ShouldSerializeReplacedWhileResolving() => ReplacedWhileResolving;
         public string? PreviousDataId { get; }
         public CardCreationRule? CardCreation { get; }
         public UnitAbilityDefinition? Definition { get; }
@@ -18,13 +20,15 @@ namespace MonsterTrain2Poju.Model
         public bool HasAbility => DataId.Length > 0;
         public UnitAbilityState(string dataId, int cooldown, int cooldownAtSpawn, bool fromEquipment = false,
             bool resolving = false, string? previousDataId = null, CardCreationRule? cardCreation = null,
-            UnitAbilityDefinition? definition = null, UnitAbilityDefinition? previousDefinition = null)
+            UnitAbilityDefinition? definition = null, UnitAbilityDefinition? previousDefinition = null, bool replacedWhileResolving = false)
         { DataId = dataId; Cooldown = cooldown; CooldownAtSpawn = cooldownAtSpawn; FromEquipment = fromEquipment;
-            Resolving = resolving; PreviousDataId = previousDataId; CardCreation = cardCreation; Definition = definition; PreviousDefinition = previousDefinition; }
+            Resolving = resolving; PreviousDataId = previousDataId; CardCreation = cardCreation; Definition = definition; PreviousDefinition = previousDefinition; ReplacedWhileResolving = replacedWhileResolving; }
         internal UnitAbilityState WithCooldown(int value) => new UnitAbilityState(DataId, Math.Max(1, value), CooldownAtSpawn,
-            FromEquipment, Resolving, PreviousDataId, CardCreation, Definition, PreviousDefinition);
+            FromEquipment, Resolving, PreviousDataId, CardCreation, Definition, PreviousDefinition, ReplacedWhileResolving);
         internal UnitAbilityState WithResolving(bool value) => new UnitAbilityState(DataId, Cooldown, CooldownAtSpawn,
-            FromEquipment, value, PreviousDataId, CardCreation, Definition, PreviousDefinition);
+            FromEquipment, value, PreviousDataId, CardCreation, Definition, PreviousDefinition, ReplacedWhileResolving);
+        internal UnitAbilityState WithReplacedWhileResolving(bool value) => new UnitAbilityState(DataId, Cooldown, CooldownAtSpawn,
+            FromEquipment, Resolving, PreviousDataId, CardCreation, Definition, PreviousDefinition, value);
     }
 
     public static class AbilityCooldownModel
@@ -44,6 +48,10 @@ namespace MonsterTrain2Poju.Model
             int stacks = target.Status("cooldown")?.Stacks ?? 0;
             if (effect.Type == "ResetCooldown")
             {
+                // Native SetUnitAbility marks replacement during activation. The next
+                // after-activation reset consumes it without cooling down the new skill.
+                if (!effect.CooldownParameter.Value && ability.ReplacedWhileResolving)
+                    return Match(Replace(source, Copy(target, AbilityLifecycleModel.Normalize(ability.WithReplacedWhileResolving(false)))));
                 int desired = effect.CooldownParameter.Value ? ability.CooldownAtSpawn : ability.Cooldown;
                 int delta = unchecked(desired - stacks);
                 if (delta <= 0) return Match(source);

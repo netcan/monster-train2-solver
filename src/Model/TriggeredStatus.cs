@@ -26,6 +26,10 @@ namespace MonsterTrain2Poju.Model
             CardActionEffect action = effect.Action!;
             if (action.Statuses.Count == 0) return "Triggered status requires a nonempty status pool.";
             if (action.Statuses.Any(status => !RoomCombatModel.KnowsStatus(status.Id))) return "Unmodeled triggered status definition.";
+            if (effect.Type == DevotionStatusModel.NativeEffect &&
+                (action.Type != DevotionStatusModel.Effect || action.Target != "Self" || action.Statuses.Count != 1 ||
+                action.Value != 0 || action.Range != null || action.DevotionLevelsPerGrant == null || effect.StatusScaling != null))
+                return "Devotion status triggers require a fixed single Self status and captured level divisor.";
             if (effect.Type == "CardEffectMultiplyStatusEffect")
             {
                 TriggeredStatusScaling? scaling = effect.StatusScaling;
@@ -64,6 +68,7 @@ namespace MonsterTrain2Poju.Model
         internal static bool Test(RoomCombatState room, CombatEffect effect, IReadOnlyList<int> targets, out string? error, CombatStatus? testedStatus = null)
         {
             error = null; CardActionEffect action = effect.Action!;
+            if (effect.Type == DevotionStatusModel.NativeEffect && DevotionStatusModel.Grants(room.Context, action) < 1) return false;
             if (effect.Type == "CardEffectAddStatusEffectBasedOnHealth")
                 return room.Units.Any(unit => targets.Contains(unit.Id) && HealthChoice(unit.Health, unit.MaxHealth,
                     effect.StatusScaling!.HealthChoicePercent!.Value, effect.StatusScaling.HealthChoiceAbove) < action.Statuses.Count);
@@ -111,6 +116,12 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Randomized status previews require the explicit isolated preview RNG protocol.");
             CombatContext context = source.Context;
             CombatStatus status = action.Statuses[0];
+            if (effect.Type == DevotionStatusModel.NativeEffect)
+            {
+                int grants = DevotionStatusModel.Grants(context, action);
+                if (grants < 1) return new RoomCombatResult(source, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
+                status = status.WithStacks(unchecked(status.Stacks * grants));
+            }
             if (action.Statuses.Count > 1)
             {
                 RngDraw choice = context.BattleRng.Range(0, action.Statuses.Count);

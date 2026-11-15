@@ -31,7 +31,7 @@ namespace MonsterTrain2Poju.Probe
         internal static UnitAbilityDefinition Definition(CardData data) => new UnitAbilityDefinition(data.GetID(),
             data.IsUnitAbility(), data.GetCooldownAfterActivated(), data.GetCooldownAtSpawn(), CardGenerationProbe.Creation(data));
 
-        internal static UnitAbilityRules Rules(CharacterData? data) => data == null ? new UnitAbilityRules(false, Array.Empty<CombatStatus>()) : new UnitAbilityRules(
+        internal static UnitAbilityRules Rules(CharacterData? data) => data == null ? new UnitAbilityRules(false, Array.Empty<CombatStatus>(), AbilityCooldownProbe.HasReplacementMarker) : new UnitAbilityRules(
             data.GetPreventAblitiesFromEquipment(), data.GetStartingStatusEffects().Select(status =>
             {
                 StatusEffectData rule = StatusEffectManager.Instance.GetStatusEffectDataById(status.statusId)!;
@@ -41,7 +41,7 @@ namespace MonsterTrain2Poju.Probe
                     BattleActionProbe.TriggeredVfx(rule, -1f), BattleActionProbe.TriggeredVfx(rule, 1f), rule.IsStackable(),
                     rule.IsHidden(), rule.GetDisplayCategory().ToString(), rule.IsPropagatable(),
                     rule.GetExcludeHeroPropagation(), rule.GetExcludeMonsterPropagation());
-            }).ToArray());
+            }).ToArray(), replacementSkipsCooldown: AbilityCooldownProbe.HasReplacementMarker);
 
         internal static string[] Disabled(SaveManager save)
         {

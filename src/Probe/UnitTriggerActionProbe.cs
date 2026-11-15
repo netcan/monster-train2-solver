@@ -101,7 +101,8 @@ namespace MonsterTrain2Poju.Probe
             effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
             effect.GetParamStatusEffects().Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray());
 
-        internal static TriggeredStatusScaling? Scaling(CardEffectState effect) => effect.GetCardEffect() is CardEffectAddStatusEffectBasedOnHealth ?
+        internal static TriggeredStatusScaling? Scaling(CardEffectState effect) => effect.GetCardEffect().GetType().Name == DevotionStatusModel.NativeEffect ? null :
+            effect.GetCardEffect() is CardEffectAddStatusEffectBasedOnHealth ?
             new TriggeredStatusScaling(healthChoicePercent: effect.GetParamInt(), healthChoiceAbove: effect.GetParamBool()) : effect.GetCardEffect() is CardEffectAddStatusEffect ?
             new TriggeredStatusScaling(effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null,
                 effect.GetUseHealthMissingStackMultiplier(), effect.GetUseMagicPowerMultiplier(), effect.GetParamBool2(),

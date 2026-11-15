@@ -7,6 +7,18 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+Original GrimDisciple, ChainBearer and ForsakenBerserker now pass one native
+battle with three original skills. Shared rules cover Devotion-level spawn
+statuses and the new one-shot cooldown skip after in-flight skill replacement;
+an explicit native capability preserves 2.2.1 behavior. Restricted combat,
+healing/replacement, two-way Flight/hit cooldown, chained attacks and five
+births at Devotion 0..4 match. The 92.79-second victory has 26 inputs/seven
+EndTurns, 61 rooms/13 train stages and four zero counters. Five native cooldown
+effects/32 branches, 236 contexts, full chain/16 branches and zero-unsupported
+128-state serial/parallel search with plan replay pass. Three legacy ability
+regressions and all three Release builds pass. See [evidence and limits](docs/original-punished-skills.md)
+and `scripts/Check-Game231PunishedSkills.ps1`. Whole-version acceptance remains open.
+
 Original SpitefulShackles and Sineater now pass native battle acceptance with
 five original skill uses. Spite reads current half-health after self damage;
 duplicate equipment, healing, armor/spikes, natural cooldown, removal and

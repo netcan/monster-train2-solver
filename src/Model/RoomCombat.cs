@@ -1562,6 +1562,14 @@ namespace MonsterTrain2Poju.Model
                             if (reactionFilter != null) return reactionFilter;
                             continue;
                         }
+                        if (effect.Type == DevotionStatusModel.NativeEffect)
+                        {
+                            if (effect.Action == null || trigger.Kind != "OnSpawn" || state.Context?.QueryFrame?.Devotion == null)
+                                return "Devotion status triggers require OnSpawn and the captured Devotion state.";
+                            string? devotionStatusError = TriggeredStatusModel.Validate(effect);
+                            if (devotionStatusError != null) return devotionStatusError;
+                            continue;
+                        }
                         if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectPyreDamageIfNoPlayerUnits" && effect.Type != "CardEffectAddStatusEffect" &&
                             effect.Type is not ("CardEffectAddStatsFromSelf" or "CardEffectRemoveEquipment" or "CardEffectAdjustDragonsHoardPerStatusEffect" or "CardEffectFeederRules" or "CardEffectSynergizeStatusEffects") &&
                             effect.Type is not ("CardEffectMultiplyStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or FriendlyDamageStatusModel.NativeEffect or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth"))
@@ -5312,7 +5320,7 @@ namespace MonsterTrain2Poju.Model
                             ? actor.Source.DamageHistory!.DamageTakenBeforeArmor > 0 && targets.UnitIds.Count > 0
                             : effect.Type is "CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectPyreDamageIfNoPlayerUnits"
                             ? NoPlayerUnitsInActorRoom(actor)
-                            : action.Type == "AddStatus" ? StatusTest(actor, effect, targets) : ActionTestValid(action, targets, TestActionAmount(action));
+                            : action.Type is "AddStatus" or DevotionStatusModel.Effect ? StatusTest(actor, effect, targets) : ActionTestValid(action, targets, TestActionAmount(action));
                     }
                     if (!valid && action.Tests?.FailToCast == true) return false;
                     passed |= valid;
@@ -5777,7 +5785,7 @@ namespace MonsterTrain2Poju.Model
                     ? actor.Source.DamageHistory!.DamageTakenBeforeArmor > 0 && tested.UnitIds.Count > 0
                     : effect.Type is "CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectPyreDamageIfNoPlayerUnits"
                     ? NoPlayerUnitsInActorRoom(actor)
-                    : action.Type == "AddStatus" ? StatusTest(actor, effect, tested) : ActionTestValid(action, tested, TestActionAmount(action));
+                    : action.Type is "AddStatus" or DevotionStatusModel.Effect ? StatusTest(actor, effect, tested) : ActionTestValid(action, tested, TestActionAmount(action));
                 if (unsupportedReason != null) return false;
                 if (!valid) return action.Tests?.CancelSubsequent != true;
                 CardTargets targets = TriggerTargets(actor, action, testing: false, overrideTarget, lastSpawnedOverrideUnitId);
@@ -5985,7 +5993,7 @@ namespace MonsterTrain2Poju.Model
                     }
                     return true;
                 }
-                if (action.Type == "AddStatus")
+                if (action.Type is "AddStatus" or DevotionStatusModel.Effect)
                 {
                     EnchantmentWorld? physicalWorld = context?.Enchantments;
                     int? damageActorId = effect.Type == FriendlyDamageStatusModel.NativeEffect ? overrideTarget?.Source.Id : null;
@@ -6374,14 +6382,14 @@ namespace MonsterTrain2Poju.Model
                     {
                         text.Append("|ability:").Append(ability.DataId).Append(':').Append(ability.Cooldown).Append(':')
                             .Append(ability.CooldownAtSpawn).Append(':').Append(ability.FromEquipment).Append(':')
-                            .Append(ability.Resolving).Append(':').Append(ability.PreviousDataId);
+                            .Append(ability.Resolving).Append(':').Append(ability.PreviousDataId).Append(':').Append(ability.ReplacedWhileResolving);
                         foreach (UnitAbilityDefinition? definition in new[] { ability.Definition, ability.PreviousDefinition })
                             if (definition != null) text.Append(':').Append(definition.IsUnitAbility).Append(':')
                                 .Append(definition.Cooldown).Append(':').Append(definition.CooldownAtSpawn);
                     }
                     if (unit.Source.AbilityRules is UnitAbilityRules abilityRules)
                     {
-                        text.Append("|ability-rules:").Append(abilityRules.PreventEquipmentAbilities);
+                        text.Append("|ability-rules:").Append(abilityRules.PreventEquipmentAbilities).Append(':').Append(abilityRules.ReplacementSkipsCooldown);
                         foreach (CombatStatus status in abilityRules.AuthoredStartingStatuses)
                             text.Append(':').Append(status.Id).Append(':').Append(status.Stacks);
                     }

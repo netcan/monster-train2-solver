@@ -6,6 +6,7 @@ namespace MonsterTrain2Poju.Model
     internal static class DevotionStatusModel
     {
         internal const string Effect = "AddStatusPerDevotion";
+        internal const string NativeEffect = "CardEffectAddStatusEffectPerDevotionLevel";
         internal static int Grants(CombatContext? context, CardActionEffect effect) =>
             Math.Max(0, context?.QueryFrame?.Devotion?.Level ?? 0) / Math.Max(1, effect.DevotionLevelsPerGrant ?? 0);
 

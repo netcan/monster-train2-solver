@@ -18,8 +18,11 @@ namespace MonsterTrain2Poju.Model
     {
         public bool PreventEquipmentAbilities { get; }
         public IReadOnlyList<CombatStatus> AuthoredStartingStatuses { get; }
-        public UnitAbilityRules(bool preventEquipmentAbilities, IReadOnlyList<CombatStatus> authoredStartingStatuses)
-        { PreventEquipmentAbilities = preventEquipmentAbilities; AuthoredStartingStatuses = Array.AsReadOnly(authoredStartingStatuses.ToArray()); }
+        public bool ReplacementSkipsCooldown { get; }
+        public bool ShouldSerializeReplacementSkipsCooldown() => ReplacementSkipsCooldown;
+        public UnitAbilityRules(bool preventEquipmentAbilities, IReadOnlyList<CombatStatus> authoredStartingStatuses, bool replacementSkipsCooldown = false)
+        { PreventEquipmentAbilities = preventEquipmentAbilities; AuthoredStartingStatuses = Array.AsReadOnly(authoredStartingStatuses.ToArray());
+            ReplacementSkipsCooldown = replacementSkipsCooldown; }
     }
     public sealed class AbilityChangeRule
     {
@@ -39,7 +42,7 @@ namespace MonsterTrain2Poju.Model
         internal static bool IsEffect(string type) => type == "SetUnitAbility" || type == "RemoveAbility";
         internal static UnitAbilityState? Normalize(UnitAbilityState? state) => state == null ||
             !state.HasAbility && state.Cooldown == 0 && state.CooldownAtSpawn == 0 && !state.FromEquipment &&
-            !state.Resolving && state.PreviousDataId == null ? null : state;
+            !state.Resolving && !state.ReplacedWhileResolving && state.PreviousDataId == null ? null : state;
 
         public static RoomCombatResult Apply(RoomCombatState source, int unitId, AbilityChangeRule rule, bool remove,
             bool deferCallbacks = false)
@@ -81,7 +84,8 @@ namespace MonsterTrain2Poju.Model
             if (!remove && previous != null)
             {
                 var history = new UnitAbilityState(previous.DataId, previous.Cooldown, previous.CooldownAtSpawn,
-                    previous.FromEquipment, previous.Resolving, remembered?.DataId, previous.CardCreation, previous.Definition, remembered);
+                    previous.FromEquipment, previous.Resolving, remembered?.DataId, previous.CardCreation, previous.Definition, remembered,
+                    replacedWhileResolving: actor.AbilityRules?.ReplacementSkipsCooldown == true && !rule.FromEquipment && previous.Resolving);
                 state = Replace(state, Copy(actor, Normalize(history), actor.Triggers, actor.NextTriggerId));
             }
             if (previous?.HasAbility == true)
@@ -108,7 +112,8 @@ namespace MonsterTrain2Poju.Model
                 CombatTrigger[] kept = source.Preview ? actor.Triggers.ToArray() : actor.Triggers.Where(trigger =>
                     trigger.Origin?.UpgradeId != CommonOrigin || rule.CommonTriggers.All(common => common.Kind != trigger.Kind)).ToArray();
                 var cleared = new UnitAbilityState("", 0, 0, previous.FromEquipment, previous.Resolving,
-                    previous.PreviousDataId, previousDefinition: previous.PreviousDefinition);
+                    previous.PreviousDataId, previousDefinition: previous.PreviousDefinition,
+                    replacedWhileResolving: actor.Ability?.ReplacedWhileResolving ?? false);
                 state = Replace(state, Copy(actor, Normalize(cleared), kept, actor.NextTriggerId));
                 if (remove && rule.Permanent)
                     state = Context(state, state.Context!.WithPermanentlyDisabledAbilities(
@@ -122,7 +127,8 @@ namespace MonsterTrain2Poju.Model
                 actor = state.Units.First(unit => unit.Id == unitId);
                 var added = new UnitAbilityState(definition.DataId, definition.Cooldown, definition.CooldownAtSpawn,
                     remove ? previous!.FromEquipment : rule.FromEquipment, previous?.Resolving ?? false,
-                    remove ? previous?.PreviousDataId : remembered?.DataId, definition.CardCreation, definition, remove ? restored : remembered);
+                    remove ? previous?.PreviousDataId : remembered?.DataId, definition.CardCreation, definition, remove ? restored : remembered,
+                    replacedWhileResolving: actor.Ability?.ReplacedWhileResolving ?? false);
                 state = Replace(state, Copy(actor, added, actor.Triggers, actor.NextTriggerId));
                 int cooldown = remove ? definition.Cooldown : definition.CooldownAtSpawn;
                 foreach (var application in new[] { ("unit_ability", 1, false), ("cooldown", cooldown, true) })
@@ -157,7 +163,8 @@ namespace MonsterTrain2Poju.Model
                 actor = state.Units.First(unit => unit.Id == unitId);
                 UnitAbilityState? current = actor.Ability;
                 if (current != null) current = new UnitAbilityState(current.DataId, current.Cooldown, current.CooldownAtSpawn,
-                    false, current.Resolving, cardCreation: current.CardCreation, definition: current.Definition);
+                    false, current.Resolving, cardCreation: current.CardCreation, definition: current.Definition,
+                    replacedWhileResolving: current.ReplacedWhileResolving);
                 state = Replace(state, Copy(actor, Normalize(current), actor.Triggers, actor.NextTriggerId));
             }
             // Subsequent manager callbacks refresh their actors from the shared

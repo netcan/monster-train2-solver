@@ -11,6 +11,7 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class AbilityCooldownProbe
     {
+        internal static readonly bool HasReplacementMarker = typeof(CharacterState).GetMethod("ConsumeUnitAbilityReplacedWhileResolving") != null;
         private static readonly ConcurrentDictionary<(Type Type, string Name), FieldInfo> DictionaryFields =
             new ConcurrentDictionary<(Type Type, string Name), FieldInfo>();
         private static object? DictionaryField(object target, string name) => DictionaryFields.GetOrAdd((target.GetType(), name), key =>
@@ -31,10 +32,11 @@ namespace MonsterTrain2Poju.Probe
             int cooldown = unit.GetUnitAbilityCooldown(), spawn = unit.GetUnitAbilityCooldownAtSpawn();
             CardData? previous = (CardData?)AccessTools.Field(state.GetType(), "prevUnitAbilityCardData").GetValue(state);
             bool equipment = unit.GetUnitAbilityIsFromEquipment(), resolving = (bool)AccessTools.Field(state.GetType(), "isUnitAbilityResolving").GetValue(state);
-            if (ability == null && cooldown == 0 && spawn == 0 && previous == null && !equipment && !resolving) return null;
+            bool replaced = HasReplacementMarker && (bool)DictionaryField(state, "unitAbilityReplacedWhileResolving")!;
+            if (ability == null && cooldown == 0 && spawn == 0 && previous == null && !equipment && !resolving && !replaced) return null;
             return new UnitAbilityState(ability?.GetID() ?? "", cooldown, spawn, equipment, resolving, previous?.GetID(),
                 ability == null ? null : CardGenerationProbe.Creation(ability), ability == null ? null : AbilityLifecycleProbe.Definition(ability),
-                previous == null ? null : AbilityLifecycleProbe.Definition(previous));
+                previous == null ? null : AbilityLifecycleProbe.Definition(previous), replacedWhileResolving: replaced);
         }
         internal static StatusDictionaryState CaptureDictionary(CharacterState unit)
         {
@@ -87,7 +89,10 @@ namespace MonsterTrain2Poju.Probe
             private static IEnumerable<MethodBase> TargetMethods() => new[] { typeof(CardEffectResetCooldown), typeof(CardEffectAdjustAbilityCooldown),
                 typeof(CardEffectRemoveStatusEffect) }.Select(type => AccessTools.Method(type, "ApplyEffect"));
             private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
-            { if ((AbilityCooldownScenario.Prepared || OriginalTomeOfContractsScenario.Prepared || PurifyScenario.Prepared || IncantScenario.Prepared || AbilityIncantScenario.Prepared) && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
+            { if ((AbilityCooldownScenario.Prepared || OriginalTomeOfContractsScenario.Prepared || PurifyScenario.Prepared || IncantScenario.Prepared || AbilityIncantScenario.Prepared ||
+                    OriginalPunishedSkillsScenario.Prepared && cardEffectState.GetCardEffect() is CardEffectResetCooldown &&
+                    cardEffectParams.sourceCharacterTriggerState?.GetTrigger().ToString() == "OnOwnAbilityActivated") &&
+                    FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
                     __result = Observe(__result, cardEffectState, cardEffectParams); }
         }
         private static IEnumerator Observe(IEnumerator native, CardEffectState effect, CardEffectParams parameters)

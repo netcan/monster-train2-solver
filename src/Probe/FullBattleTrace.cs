@@ -510,7 +510,7 @@ namespace MonsterTrain2Poju.Probe
                         OuterBossPhaseProbe.AnchorSlots(character, BossState.AttackPhase.Relentless))
                     : null, lastFeederId: triggers.Any(trigger => trigger.Kind == "OnEaten") || OriginalOpeningMorselsScenario.Enabled || OriginalMorselEatenScenario.Enabled || OriginalOnKillGenerationScenario.Enabled ?
                         (character.GetLastFeederCharacter() == null ? 0 : UnitId(character.GetLastFeederCharacter())) : (int?)null,
-                    moonPhaseMask: OriginalHaloScenario.Enabled || OriginalPenitentScenario.Enabled || OriginalCloisterScenario.Enabled || OriginalUpgradeEnchantmentScenario.Enabled || EclipseChamberScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || MoonPhaseCaptureProbe.CaptureMasks ? (int)character.GetMoonPhaseMask() : (int?)null, damageHistory: UnitDamageHistoryProbe.Capture(character, triggers));
+                    moonPhaseMask: OriginalPunishedSkillsScenario.Enabled || OriginalHaloScenario.Enabled || OriginalPenitentScenario.Enabled || OriginalCloisterScenario.Enabled || OriginalUpgradeEnchantmentScenario.Enabled || EclipseChamberScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || MoonPhaseCaptureProbe.CaptureMasks ? (int)character.GetMoonPhaseMask() : (int?)null, damageHistory: UnitDamageHistoryProbe.Capture(character, triggers));
         }
 
         internal CombatContext CaptureContext()
@@ -1344,6 +1344,9 @@ namespace MonsterTrain2Poju.Probe
                 OriginalCloisterPrepared = OriginalCloisterScenario.Prepared,
                 OriginalPenitentPrepared = OriginalPenitentScenario.Prepared,
                 OriginalMissingHealthStatusPrepared = OriginalMissingHealthStatusScenario.Prepared,
+                OriginalPunishedSkillsPrepared = OriginalPunishedSkillsScenario.Prepared,
+                OriginalPunishedSkillsIds = OriginalPunishedSkillsScenario.CardIds,
+                OriginalPunishedSkillsDefinitions = OriginalPunishedSkillsScenario.Definitions,
                 OriginalSpiteEquipmentPrepared = OriginalSpiteEquipmentScenario.Prepared,
                 OriginalSpiteEquipmentIds = OriginalSpiteEquipmentScenario.CardIds,
                 OriginalSpiteEquipmentDefinitions = OriginalSpiteEquipmentScenario.Definitions,
