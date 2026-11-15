@@ -9,7 +9,7 @@ namespace MonsterTrain2Poju.Probe
     {
         private static bool StatusEffect(string type) =>
             type is "CardEffectAddStatusEffect" or "CardEffectMultiplyStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or
-                "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth";
+                FriendlyDamageStatusModel.NativeEffect or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth";
         private static bool DamageEffect(string type) =>
             type is "CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits";
         private static bool HealthEffect(string type) => type is "CardEffectAdjustMaxHealth" or "CardEffectBuffMaxHealth";

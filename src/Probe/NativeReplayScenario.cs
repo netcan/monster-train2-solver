@@ -1598,6 +1598,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalDevoteTreasureScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalFriendlyDamageStatusScenario.Enabled)
+            {
+                numericModifiersPrepared = true;
+                OriginalFriendlyDamageStatusScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalMissingHealthUpgradeScenario.Enabled)
             {
                 numericModifiersPrepared = true;
@@ -3296,6 +3301,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalArbitraryVerdictScenario.Enabled) pendingPlay = OriginalArbitraryVerdictScenario.Choose(decision);
                 if (OriginalWickedFervorScenario.Enabled) pendingPlay = OriginalWickedFervorScenario.Choose(decision);
                 if (OriginalDevoteTreasureScenario.Enabled) pendingPlay = OriginalDevoteTreasureScenario.Choose(decision);
+                if (OriginalFriendlyDamageStatusScenario.Enabled) pendingPlay = OriginalFriendlyDamageStatusScenario.Choose(decision);
                 if (OriginalMissingHealthUpgradeScenario.Enabled) pendingPlay = OriginalMissingHealthUpgradeScenario.Choose(decision);
                 if (OriginalDevotionUpgradeScenario.Enabled) pendingPlay = OriginalDevotionUpgradeScenario.Choose(decision);
                 if (OriginalDragThemDownScenario.Enabled) pendingPlay = OriginalDragThemDownScenario.Choose(decision);

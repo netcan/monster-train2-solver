@@ -44,6 +44,7 @@ namespace MonsterTrain2Poju.Model
             }
             var overwrittenSummons = new HashSet<(int UnitId, int TriggerId, int EffectIndex)>();
             var sacrificeCards = new Dictionary<int, int>();
+            var damageHistories = new Dictionary<int, UnitDamageHistory>();
             int firstPreviewId = context.NextUnitId ?? int.MaxValue;
             int firstPreviewCardId = context.NextCardId;
             bool previewBirth = false;
@@ -97,6 +98,7 @@ namespace MonsterTrain2Poju.Model
                     // SacrificeCard lives outside CharacterState.PrimaryStateInformation.
                     // Preview cancellation restores HP and IsSacrifice, but keeps this reference.
                     if (unit.SacrificeCardId is int cardId) sacrificeCards[unit.Id] = cardId;
+                    if (unit.DamageHistory != null) damageHistories[unit.Id] = unit.DamageHistory;
                     for (int triggerIndex = 0; triggerIndex < unit.Triggers.Count; triggerIndex++)
                     for (int effectIndex = 0; effectIndex < unit.Triggers[triggerIndex].Effects.Count; effectIndex++)
                         if (unit.Triggers[triggerIndex].Effects[effectIndex].Summon?.FirstSpawnedUnitId >= firstPreviewId)
@@ -106,6 +108,9 @@ namespace MonsterTrain2Poju.Model
             CombatUnit RestorePrimaryEffects(CombatUnit unit)
             {
                 if (sacrificeCards.TryGetValue(unit.Id, out int cardId)) unit = unit.WithSacrifice(cardId, markSacrifice: false);
+                // These native fields live outside PrimaryStateInformation and
+                // survive UI preview cancellation, even when preview HP is restored.
+                if (unit.DamageHistory != null && damageHistories.TryGetValue(unit.Id, out UnitDamageHistory? history)) unit = unit.WithDamageHistory(history);
                 return overwrittenSummons.Count == 0 ? unit : unit.WithTriggers(unit.Triggers.Select((trigger, index) => trigger.WithEffects(trigger.Effects.Select((effect, effectIndex) =>
                     effect.Summon != null && overwrittenSummons.Contains((unit.Id, trigger.StateId ?? index, effectIndex))
                         ? effect.WithSummon(effect.Summon.WithFirstSpawned(0)) : effect).ToArray())).ToArray());

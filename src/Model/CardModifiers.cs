@@ -522,7 +522,7 @@ namespace MonsterTrain2Poju.Model
                     health, maxHealth, unit.CanAttack, unit.IsPyre, unit.EndsBattleOnDeath,
                     statuses.Values.Where(status => status.Stacks > 0).ToArray(), triggers,
                     unit.SpawnerCardId, Math.Max(1, UpgradedStat(unit.Size, "Size", false, modifiers)), unit.StatusImmunities, unit.Subtypes, unitModifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards, nextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules,
-                    lastFeederId: unit.LastFeederId ?? (triggers.Any(trigger => trigger.Kind == "OnEaten") ? 0 : (int?)null), moonPhaseMask: unit.MoonPhaseMask);
+                    lastFeederId: unit.LastFeederId ?? (triggers.Any(trigger => trigger.Kind == "OnEaten") ? 0 : (int?)null), moonPhaseMask: unit.MoonPhaseMask, damageHistory: unit.DamageHistory);
             }
             // Native Infusion/CraftedSpike cards merge equal upgrade triggers in
             // first-occurrence order. Scale their base payload before applying

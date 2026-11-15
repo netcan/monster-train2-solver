@@ -33,7 +33,7 @@ namespace MonsterTrain2Poju.Model
             checked(Unit.MaxHealth + (applyBirthStats ? BirthStats?.Health ?? 0 : 0)), Unit.CanAttack, false, Unit.EndsBattleOnDeath,
             Unit.Statuses, Unit.Triggers, size: Unit.Size, statusImmunities: Unit.StatusImmunities, subtypes: Unit.Subtypes,
             modifiers: applyBirthStats && BirthStats != null && BirthStats.Attack != 0 ? Unit.Modifiers!.WithDamageBuff(checked(Unit.Modifiers.DamageBuff + BirthStats.Attack)) : Unit.Modifiers,
-            isBoss: Unit.IsBoss, lastAttackerId: Unit.LastAttackerId.HasValue ? 0 : null, statusRegistry: Unit.StatusRegistry, equipmentCards: Unit.EquipmentCards, nextTriggerId: Unit.NextTriggerId, ability: Unit.Ability, statusDictionary: Unit.StatusDictionary, abilityRules: Unit.AbilityRules, hordeDefinition: Unit.HordeDefinition, isSpawning: Unit.IsSpawning, sacrificeCardId: Unit.SacrificeCardId, deathState: Unit.DeathState, bumpRules: Unit.BumpRules, lastFeederId: Unit.LastFeederId, moonPhaseMask: Unit.MoonPhaseMask);
+            isBoss: Unit.IsBoss, lastAttackerId: Unit.LastAttackerId.HasValue ? 0 : null, statusRegistry: Unit.StatusRegistry, equipmentCards: Unit.EquipmentCards, nextTriggerId: Unit.NextTriggerId, ability: Unit.Ability, statusDictionary: Unit.StatusDictionary, abilityRules: Unit.AbilityRules, hordeDefinition: Unit.HordeDefinition, isSpawning: Unit.IsSpawning, sacrificeCardId: Unit.SacrificeCardId, deathState: Unit.DeathState, bumpRules: Unit.BumpRules, lastFeederId: Unit.LastFeederId, moonPhaseMask: Unit.MoonPhaseMask, damageHistory: UnitDamageHistory.AtBirth(Unit));
     }
 
     public sealed class EnemyGroup

@@ -6,12 +6,13 @@ namespace MonsterTrain2Poju.Model
 {
     public static class PreviewEffectsModel
     {
-        // Trigger/effect objects are shared between the native primary and preview
-        // state information. Numeric unit state and primary once flags are restored.
+        // Trigger/effect objects and hit caches live outside the native primary
+        // state information. Primary HP/statuses and once flags are restored.
         public static CombatUnit Restore(CombatUnit primary, CombatUnit preview,
             IReadOnlyCollection<int> removedPreviewUnitIds, bool prepareEnchantments = false)
         {
             if (primary.Id != preview.Id) throw new ArgumentException("Preview restoration requires the same actor identity.");
+            if (primary.DamageHistory != null && preview.DamageHistory != null) primary = primary.WithDamageHistory(preview.DamageHistory);
             return primary.WithTriggers(primary.Triggers.Select((trigger, index) =>
             {
                 CombatTrigger? tested = trigger.StateId.HasValue ? preview.Triggers.FirstOrDefault(item => item.StateId == trigger.StateId) :

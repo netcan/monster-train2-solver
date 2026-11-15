@@ -7,6 +7,14 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+Original 2.3.1 ScourgedZealot now gains Zeal from cached pre-armor damage.
+Native controls cover direct/full-armor/partial-armor/zero/shield/Tenacious
+hits, independent victim histories and UI preview writes outside primary
+state. Fourteen inputs/five EndTurns, 16 replay branches and 128-state
+serial/parallel search pass with zero unsupported candidates. See
+[the native evidence and boundaries](docs/friendly-damage-status.md) and
+`scripts/Check-Game231FriendlyDamageStatus.ps1`.
+
 Original 2.3.1 Mournguard now accumulates its PostCombat upgrade from each
 unit's current missing HP. Two unchanged originals prove native Zeal,
 full-heal/damage/reset controls and one exact accumulated unit/source record.

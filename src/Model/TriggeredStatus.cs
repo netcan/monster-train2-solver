@@ -46,6 +46,8 @@ namespace MonsterTrain2Poju.Model
                 return null;
             }
             if (effect.StatusScaling?.HealthChoicePercent != null) return "Health-dependent status metadata on another effect.";
+            if (effect.Type == FriendlyDamageStatusModel.NativeEffect && action.Range != null)
+                return "Damage-taken status scaling does not support range initialization.";
             if (effect.Type == "CardEffectAddStatusEffectPerLastAttackDamage" && action.Range != null)
                 return "Last-attack status scaling does not use an integer range.";
             if (action.Tests?.StrictTargets == true || action.Target == "DropTargetCharacter")
@@ -89,7 +91,7 @@ namespace MonsterTrain2Poju.Model
         // The engine supplies a fixed collection and retains dying actor/target snapshots.
         // Native TestEffect selects on BattleTest; only actual application advances Battle here.
         internal static RoomCombatResult Apply(RoomCombatState source, int actorId, CombatEffect effect, IReadOnlyList<int> targetIds,
-            int? sourceCardId = null, bool isFromHiddenTrigger = false)
+            int? sourceCardId = null, bool isFromHiddenTrigger = false, int? damageActorId = null)
         {
             string? error = Validate(effect);
             CombatUnit? actor = source.Units.FirstOrDefault(unit => unit.Id == actorId);
@@ -98,12 +100,13 @@ namespace MonsterTrain2Poju.Model
             CardActionEffect action = effect.Action!;
             if (effect.Type == "CardEffectAddStatusEffectBasedOnHealth")
                 return ApplyHealthChoice(source, actor, effect, targetIds, sourceCardId, isFromHiddenTrigger);
+            bool perFriendlyDamage = effect.Type == FriendlyDamageStatusModel.NativeEffect;
             bool perSelfAttack = effect.Type == "CardEffectAddStatusEffectPerSelfAttack";
             bool perLastAttack = effect.Type == "CardEffectAddStatusEffectPerLastAttackDamage";
             if (perLastAttack && source.Context.Statistics == null)
                 return Unsupported("Last-attack status scaling requires captured battle statistics.");
             if (source.Preview && source.Context.IsolatedBattlePreview != true &&
-                (!perSelfAttack && !perLastAttack && (action.Range != null || action.Value != 0 && action.Value < 100) ||
+                (!perSelfAttack && !perLastAttack && !perFriendlyDamage && (action.Range != null || action.Value != 0 && action.Value < 100) ||
                     action.Statuses.Count > 1 || CardTargetModel.IsRandom(action.Target)))
                 return Unsupported("Randomized status previews require the explicit isolated preview RNG protocol.");
             CombatContext context = source.Context;
@@ -155,18 +158,29 @@ namespace MonsterTrain2Poju.Model
                 }
                 status = status.WithStacks(context.Statistics!.LastAttackDamageDealt / (action.Value == 0 ? 1 : action.Value));
             }
+            if (perFriendlyDamage)
+            {
+                CombatUnit? damaged = damageActorId.HasValue ? source.Units.FirstOrDefault(unit => unit.Id == damageActorId.Value) : actor;
+                if (damaged?.DamageHistory == null) return Unsupported("Damage-taken status scaling requires the damaged unit's captured hit history.");
+                int damage = damaged.DamageHistory.DamageTakenBeforeArmor;
+                // The native status-pool choice precedes the zero-damage guard.
+                if (damage <= 0) return new RoomCombatResult(WithContext(source, context), RoomOutcome.Exchanged, 0, new List<CombatEvent>());
+                int stacks = unchecked(damage * status.Stacks) / (action.Value == 0 ? 1 : action.Value);
+                if (stacks <= 0) return new RoomCombatResult(WithContext(source, context), RoomOutcome.Exchanged, 0, new List<CombatEvent>());
+                status = status.WithStacks(stacks);
+            }
             bool duality = effect.Type != "CardEffectMultiplyStatusEffect" && !isFromHiddenTrigger &&
                 scaling?.IgnoreDualism != true && actor.Status("duality")?.Stacks > 0;
             if (duality && status.Id != "armor" && status.DisplayCategory == null)
                 return Unsupported("Triggered Duality requires the captured status display category.");
-            int chance = perSelfAttack || perLastAttack ? 0 : action.Value;
-            if (!perSelfAttack && !perLastAttack && action.Range != null)
+            int chance = perSelfAttack || perLastAttack || perFriendlyDamage ? 0 : action.Value;
+            if (!perSelfAttack && !perLastAttack && !perFriendlyDamage && action.Range != null)
             {
                 RngDraw draw = action.Range.Sample(context.BattleRng); context = context.WithBattleRng(draw.State); chance = draw.Value;
             }
             RoomCombatState state = WithContext(source, context); var events = new List<CombatEvent>();
             var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
-            foreach (int id in targetIds.Reverse())
+            foreach (int id in perFriendlyDamage ? targetIds.AsEnumerable() : targetIds.Reverse())
             {
                 // Guaranteed chances still consume the native preview's test
                 // stream, but never the live Battle stream. A captured native

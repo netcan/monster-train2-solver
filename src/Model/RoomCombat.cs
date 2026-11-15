@@ -149,6 +149,8 @@ namespace MonsterTrain2Poju.Model
         public UnitDeathState? DeathState { get; }
         public UnitBumpRules? BumpRules { get; }
         public int? MoonPhaseMask { get; }
+        // Null denotes an uncaptured history; fresh tracked births start at zero.
+        public UnitDamageHistory? DamageHistory { get; }
         public int Attacks => AttackCount(Statuses);
 
         internal static int AttackCount(IEnumerable<CombatStatus> statuses)
@@ -170,9 +172,10 @@ namespace MonsterTrain2Poju.Model
             int? lastAttackerId = null, IReadOnlyList<CombatStatus>? statusRegistry = null, IReadOnlyList<int>? equipmentCards = null,
             int? nextTriggerId = null, UnitAbilityState? ability = null, StatusDictionaryState? statusDictionary = null,
             UnitAbilityRules? abilityRules = null, HordeBaseStats? hordeDefinition = null, bool? isSpawning = null, int? sacrificeCardId = null, UnitDeathState? deathState = null,
-            UnitBumpRules? bumpRules = null, int? lastFeederId = null, int? moonPhaseMask = null)
+            UnitBumpRules? bumpRules = null, int? lastFeederId = null, int? moonPhaseMask = null, UnitDamageHistory? damageHistory = null)
         {
             Id = id;
+            DamageHistory = damageHistory;
             LastAttackerId = lastAttackerId;
             LastFeederId = lastFeederId;
             NextTriggerId = nextTriggerId;
@@ -219,48 +222,52 @@ namespace MonsterTrain2Poju.Model
             return StatusRegistry.Count(status => status.Hidden == false &&
                 (status.DisplayCategory == "Positive" || status.DisplayCategory == "Negative"));
         }
+        internal CombatUnit WithDamageHistory(UnitDamageHistory history) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
+            CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
+            Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
+            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, BumpRules, LastFeederId, MoonPhaseMask, history);
         internal CombatUnit WithHealth(int health) => new CombatUnit(Id, AssetKey, Team, BaseAttack, health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
-            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, BumpRules, LastFeederId, MoonPhaseMask);
+            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, BumpRules, LastFeederId, MoonPhaseMask, damageHistory: DamageHistory);
         internal CombatUnit WithHealthAndMaxHealth(int health, int maxHealth) => new CombatUnit(Id, AssetKey, Team,
             BaseAttack, health, maxHealth, CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId,
             Size, StatusImmunities, Subtypes, Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards,
             NextTriggerId, Ability, StatusDictionary, AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId,
-            DeathState, BumpRules, LastFeederId, MoonPhaseMask);
+            DeathState, BumpRules, LastFeederId, MoonPhaseMask, damageHistory: DamageHistory);
         internal CombatUnit WithMoonPhaseMask(int mask, bool reset = false, bool initialize = false) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
             AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, BumpRules, LastFeederId,
-            MoonPhaseMask.HasValue || initialize ? (reset ? 0 : (MoonPhaseMask ?? 0) & ~3) | (mask & 3) : (int?)null);
+            MoonPhaseMask.HasValue || initialize ? (reset ? 0 : (MoonPhaseMask ?? 0) & ~3) | (mask & 3) : (int?)null, damageHistory: DamageHistory);
         internal CombatUnit WithSacrifice(int cardId, bool markSacrifice = true) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
             AbilityRules, HordeDefinition, IsSpawning, cardId, DeathState == null || !markSacrifice ? DeathState : new UnitDeathState(
                 DeathState.HasFinishedDying, DeathState.IsBeingRemoved, DeathState.HasStatisticsListener,
                 DeathState.PendingStatisticsCardId, DeathState.IsSacrifice.HasValue ? true : (bool?)null, DeathState.StatisticsListenerOnce,
-                DeathState.IsDespawned, DeathState.IsDestroyed).WithPreviewPrimary(DeathState.PreviewPrimary), bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask);
+                DeathState.IsDespawned, DeathState.IsDestroyed).WithPreviewPrimary(DeathState.PreviewPrimary), bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask, damageHistory: DamageHistory);
 
         internal CombatUnit WithDeathState(UnitDeathState state) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
             AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, state.WithLifecycle(
                 state.IsDespawned ?? DeathState?.IsDespawned, state.IsDestroyed ?? DeathState?.IsDestroyed)
-                    .WithPreviewPrimary(state.PreviewPrimary ?? DeathState?.PreviewPrimary), bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask);
+                    .WithPreviewPrimary(state.PreviewPrimary ?? DeathState?.PreviewPrimary), bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask, damageHistory: DamageHistory);
         internal CombatUnit WithTriggers(IReadOnlyList<CombatTrigger> triggers) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
-            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask);
+            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask, damageHistory: DamageHistory);
         internal CombatUnit WithTriggerAllocation(IReadOnlyList<CombatTrigger> triggers, int nextTriggerId) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, nextTriggerId, Ability, StatusDictionary,
-            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask);
+            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask, damageHistory: DamageHistory);
 
         internal CombatUnit WithBumpRules(UnitBumpRules rules) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
             AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: rules,
-            lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask);
+            lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask, damageHistory: DamageHistory);
 
         internal CombatUnit WithoutRemovedCompanion(ISet<int> activeIds)
         {
@@ -274,23 +281,23 @@ namespace MonsterTrain2Poju.Model
         internal CombatUnit WithStatusDamage(int amount) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers!.WithStatusDamage(amount), IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
-            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask);
+            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask, damageHistory: DamageHistory);
 
         internal CombatUnit WithStatusRegistry(IReadOnlyList<CombatStatus> statusRegistry) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers, IsBoss, LastAttackerId, statusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
-            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask);
+            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask, damageHistory: DamageHistory);
 
         internal CombatUnit AfterDestruction() => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             Modifiers?.AfterDestruction(), IsBoss, LastAttackerId, StatusRegistry,
             EquipmentCards == null ? null : Array.Empty<int>(), NextTriggerId, Ability, StatusDictionary,
             AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules,
-            lastFeederId: LastFeederId.HasValue ? 0 : (int?)null, moonPhaseMask: MoonPhaseMask);
+            lastFeederId: LastFeederId.HasValue ? 0 : (int?)null, moonPhaseMask: MoonPhaseMask, damageHistory: DamageHistory);
         internal CombatUnit WithModifiers(UnitModifiers modifiers) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,
-            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask);
+            AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask, damageHistory: DamageHistory);
 
         internal CombatUnit WithOuterBossPhase(bool canAttack, bool relentless) => new CombatUnit(Id, AssetKey, Team,
             BaseAttack, Health, MaxHealth, canAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId,
@@ -298,13 +305,13 @@ namespace MonsterTrain2Poju.Model
             NextTriggerId, Ability, StatusDictionary, AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId,
             DeathState, BumpRules == null ? null : new UnitBumpRules(BumpRules.Loops, BumpRules.CompanionBoss,
                 BumpRules.OuterBoss, relentless, BumpRules.PairedBossUnitId, BumpRules.CastingAnchorSlots,
-                BumpRules.RelentlessAnchorSlots), LastFeederId, MoonPhaseMask);
+                BumpRules.RelentlessAnchorSlots), LastFeederId, MoonPhaseMask, damageHistory: DamageHistory);
 
         internal CombatUnit WithEndsBattleOnDeath(bool endsBattleOnDeath) => endsBattleOnDeath == EndsBattleOnDeath ? this :
             new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth, CanAttack, IsPyre, endsBattleOnDeath,
                 Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, LastAttackerId,
                 StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary, AbilityRules, HordeDefinition,
-                IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask);
+                IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask, damageHistory: DamageHistory);
 
         internal static CombatStatus[] MergeStatusRegistry(IReadOnlyList<CombatStatus> registry, IReadOnlyList<CombatStatus> statuses)
         {
@@ -324,12 +331,12 @@ namespace MonsterTrain2Poju.Model
 
         internal CombatUnit WithoutRemovedAttacker(ISet<int> activeIds) => !LastAttackerId.HasValue || LastAttackerId == 0 || activeIds.Contains(LastAttackerId.Value)
             ? this : new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth, CanAttack, IsPyre, EndsBattleOnDeath, Statuses,
-                Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, 0, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary, AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask);
+                Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, 0, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary, AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask, damageHistory: DamageHistory);
         internal CombatUnit WithoutDestroyedFeeder(ISet<int> destroyedIds) => !LastFeederId.HasValue || !destroyedIds.Contains(LastFeederId.Value)
             ? this : new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth, CanAttack, IsPyre, EndsBattleOnDeath, Statuses,
                 Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes, Modifiers, IsBoss, LastAttackerId, StatusRegistry,
                 EquipmentCards, NextTriggerId, Ability, StatusDictionary, AbilityRules, HordeDefinition, IsSpawning,
-                SacrificeCardId, DeathState, bumpRules: BumpRules, lastFeederId: 0, moonPhaseMask: MoonPhaseMask);
+                SacrificeCardId, DeathState, bumpRules: BumpRules, lastFeederId: 0, moonPhaseMask: MoonPhaseMask, damageHistory: DamageHistory);
     }
 
     public sealed class RoomCombatState
@@ -1547,15 +1554,15 @@ namespace MonsterTrain2Poju.Model
                         }
                         if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectPyreDamageIfNoPlayerUnits" && effect.Type != "CardEffectAddStatusEffect" &&
                             effect.Type is not ("CardEffectAddStatsFromSelf" or "CardEffectRemoveEquipment" or "CardEffectAdjustDragonsHoardPerStatusEffect" or "CardEffectFeederRules" or "CardEffectSynergizeStatusEffects") &&
-                            effect.Type is not ("CardEffectMultiplyStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth"))
+                            effect.Type is not ("CardEffectMultiplyStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or FriendlyDamageStatusModel.NativeEffect or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth"))
                             return "Mismatched triggered action definition.";
                         if (effect.DamageStatusMultiplier != null && effect.Type is not ("CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits"))
                             return "Mismatched triggered damage multiplier.";
                         if (effect.StatusScaling != null && effect.Type is not ("CardEffectAddStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or
-                            "CardEffectMultiplyStatusEffect" or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth")) return "Mismatched triggered status scaling.";
+                            "CardEffectMultiplyStatusEffect" or FriendlyDamageStatusModel.NativeEffect or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth")) return "Mismatched triggered status scaling.";
                         if (effect.Type == "CardEffectDespawnCharacter") continue;
                         if (effect.Type == "CardEffectHeal" || effect.Type == "CardEffectDamage" || effect.Type == "CardEffectPyreDamageIfNoPlayerUnits" ||
-                            effect.Type is "CardEffectAddStatusEffect" or "CardEffectMultiplyStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth")
+                            effect.Type is "CardEffectAddStatusEffect" or "CardEffectMultiplyStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or FriendlyDamageStatusModel.NativeEffect or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth")
                         {
                             CardActionEffect? action = effect.Action;
                             if (action?.Type != (effect.Type == "CardEffectHeal" ? "Heal" : effect.Type is "CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits" ? "Damage" : "AddStatus")) return "Missing triggered action definition.";
@@ -1805,7 +1812,7 @@ namespace MonsterTrain2Poju.Model
                     Source.BaseAttack, Health, Source.MaxHealth, Source.CanAttack, Source.IsPyre,
                     Source.EndsBattleOnDeath, Statuses.Values.ToArray(), Triggers, Source.SpawnerCardId, Source.Size, Source.StatusImmunities, Source.Subtypes, Source.Modifiers, Source.IsBoss, LastAttackerId, statusRegistry, Source.EquipmentCards, Source.NextTriggerId, Source.Ability, dictionary, Source.AbilityRules, Source.HordeDefinition, Source.IsSpawning, Source.SacrificeCardId,
                     Source.DeathState?.WithLifecycle(Source.DeathState.IsDespawned.HasValue ? Despawned : (bool?)null,
-                        Source.DeathState.IsDestroyed.HasValue ? Destroyed : (bool?)null), bumpRules: Source.BumpRules, lastFeederId: LastFeederId, moonPhaseMask: Source.MoonPhaseMask);
+                        Source.DeathState.IsDestroyed.HasValue ? Destroyed : (bool?)null), bumpRules: Source.BumpRules, lastFeederId: LastFeederId, moonPhaseMask: Source.MoonPhaseMask, damageHistory: Source.DamageHistory);
                 result = TriggerCountModel.Refresh(getContext?.Invoke(), result, out string? error,
                     kind => roomTriggerModifier?.Invoke(this, kind) ?? 0);
                 if (error != null) reject?.Invoke(error);
@@ -2340,7 +2347,7 @@ namespace MonsterTrain2Poju.Model
                 CombatUnit unit = target.Freeze();
                 target.Apply(new CombatUnit(unit.Id, unit.AssetKey, unit.Team, unit.BaseAttack, unit.Health, unit.MaxHealth, unit.CanAttack,
                     unit.IsPyre, unit.EndsBattleOnDeath, unit.Statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities,
-                    unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, cards, unit.NextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules, lastFeederId: unit.LastFeederId, moonPhaseMask: unit.MoonPhaseMask));
+                    unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, cards, unit.NextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules, lastFeederId: unit.LastFeederId, moonPhaseMask: unit.MoonPhaseMask, damageHistory: unit.DamageHistory));
             }
             private string EquipmentUpgradeKey(int cardId, BattlePlayRules definitions) =>
                 EquipmentMergeModel.Definition(context, definitions, cardId)!.UpgradeId ?? EquipmentModel.UpgradeKey(cardId);
@@ -3122,6 +3129,8 @@ namespace MonsterTrain2Poju.Model
                     blocked = unchecked(blocked + adjusted.Prevented);
                 }
                 if (target.Has("untouchable")) { damage = 0; blocked = 0; titanSkinSoaked = 0; }
+                if (target.Source.DamageHistory != null) target.Source = target.Source.WithDamageHistory(
+                    target.Source.DamageHistory.WithModifiers(armorBlockedThisHit, lethalDamagePrevented));
                 int hpAfterPyreResurrection = 0;
                 if (target.Source.IsPyre && target.Health - damage <= 0 && context != null)
                 {
@@ -3262,6 +3271,7 @@ namespace MonsterTrain2Poju.Model
                 bool modernDamageQueue = context?.Statistics?.MonsterDamage != null;
                 if (modernDamageQueue && tookHit && target.Source.Team == CombatTeam.Player)
                 {
+                    if (target.Source.DamageHistory != null) target.Source = target.Source.WithDamageHistory(target.Source.DamageHistory.WithTaken(damage));
                     foreach (WorkingUnit friendly in units.Where(unit => unit.InRoom && !unit.Removed &&
                         unit.RoomIndex == target.RoomIndex && unit.Source.Team == CombatTeam.Player).ToArray())
                         QueueCallback(new QueuedCharacterTrigger(friendly.RoomIndex, friendly.Freeze(), "OnBloodshed",
@@ -3303,7 +3313,11 @@ namespace MonsterTrain2Poju.Model
                 }
                 // CharacterState counts Titanskin soak for Revenge, separately
                 // from damageBlocked used by last-attack damage statistics.
-                if (tookHit) FireTriggers(target, "OnHit", paramInt: damage, paramInt2: hitType);
+                if (tookHit)
+                {
+                    if (target.Source.DamageHistory != null) target.Source = target.Source.WithDamageHistory(target.Source.DamageHistory.WithTaken(damage));
+                    FireTriggers(target, "OnHit", paramInt: damage, paramInt2: hitType);
+                }
                 // Modern CharacterState runs OnHit status effects in the damage
                 // coroutine, even while the character-trigger queue is already
                 // running. Horde observers therefore precede Punish/Deathwish.
@@ -3519,7 +3533,7 @@ namespace MonsterTrain2Poju.Model
                         before.DeathState.HasStatisticsListener, isSacrifice: before.DeathState.IsSacrifice.HasValue ? false : (bool?)null,
                         statisticsListenerOnce: before.DeathState.StatisticsListenerOnce,
                         isDespawned: before.DeathState.IsDespawned, isDestroyed: before.DeathState.IsDestroyed)
-                        .WithPreviewPrimary(before.DeathState.PreviewPrimary), bumpRules: before.BumpRules, lastFeederId: before.LastFeederId, moonPhaseMask: before.MoonPhaseMask));
+                        .WithPreviewPrimary(before.DeathState.PreviewPrimary), bumpRules: before.BumpRules, lastFeederId: before.LastFeederId, moonPhaseMask: before.MoonPhaseMask, damageHistory: before.DamageHistory));
                 target.DeathFinished = false;
                 if (context != null) context = ConduitModel.Alive(context, target.RoomIndex, target.Freeze());
                 RemoveStatus(target, "undying", 1);
@@ -5943,8 +5957,10 @@ namespace MonsterTrain2Poju.Model
                 if (action.Type == "AddStatus")
                 {
                     EnchantmentWorld? physicalWorld = context?.Enchantments;
-                    RoomCombatResult applied = TriggeredStatusModel.Apply(RetainedStatusRoom(actor, targets.UnitIds), actor.Source.Id,
-                        effect, targets.UnitIds, isFromHiddenTrigger: hiddenTrigger);
+                    int? damageActorId = effect.Type == FriendlyDamageStatusModel.NativeEffect ? overrideTarget?.Source.Id : null;
+                    var roster = damageActorId.HasValue ? targets.UnitIds.Concat(new[] { damageActorId.Value }).Distinct().ToArray() : targets.UnitIds;
+                    RoomCombatResult applied = TriggeredStatusModel.Apply(RetainedStatusRoom(actor, roster), actor.Source.Id,
+                        effect, targets.UnitIds, isFromHiddenTrigger: hiddenTrigger, damageActorId: damageActorId);
                     if (!applied.Supported) { unsupportedReason = applied.UnsupportedReason; return false; }
                     context = applied.State!.Context;
                     foreach (CombatUnit changed in applied.State.Units) units.First(unit => unit.Source.Id == changed.Id).Apply(changed);
@@ -6312,6 +6328,7 @@ namespace MonsterTrain2Poju.Model
                         .Append(':').Append(unit.Source.MaxHealth).Append(':').Append(unit.Source.Size).Append(':');
                     text.Append(unit.LastAttackerId).Append(':').Append(unit.Removed).Append(':');
                     if (unit.Source.MoonPhaseMask.HasValue) text.Append("|moonMask:").Append(unit.Source.MoonPhaseMask);
+                    if (unit.Source.DamageHistory is UnitDamageHistory history) text.Append("|hit:").Append(history.DamageTaken).Append(':').Append(history.DamageTakenBeforeArmor).Append(':').Append(history.ArmorBlockedOnHit).Append(':').Append(history.LethalDamagePreventedOnHit);
                     if (unit.Source.Ability is UnitAbilityState ability)
                     {
                         text.Append("|ability:").Append(ability.DataId).Append(':').Append(ability.Cooldown).Append(':')
