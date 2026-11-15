@@ -11,8 +11,9 @@ Completion work now follows a pinned-version mechanism inventory, shared rule
 implementation and focused native differential checks, with full regression at
 milestones. See [the finite acceptance gates and automation work](docs/mechanism-completion.md)
 and [the generated native class inventory](docs/inventory/game-2.3.1-mechanisms.md).
-The inventory is a source-audit denominator; runtime evidence is not yet mapped
-to its rows and its class counts are not completion percentages.
+The inventory is a source-audit denominator. Its first two query-fixture links
+now include checker paths and unresolved integration boundaries; most evidence
+remains unmapped. These class counts are not completion percentages.
 
 The first definition-driven native batch now discovers five original missing-HP
 attack upgrades and generates 53 configurations/38,160 queries. Native queries
