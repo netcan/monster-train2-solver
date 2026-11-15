@@ -5,7 +5,7 @@ using MonsterTrain2Poju.Model;
 internal static class OriginalSummonChoiceChecks
 {
     private static void Require(bool condition, string reason) => TrueFinalBossChecks.Require(condition, reason);
-    internal static void Native(string path, bool searchOnly = false)
+    internal static void Native(string path, bool searchOnly = false, bool repeatedSearchOnly = false)
     {
         using var document = ModelJson.ReadFixture(path); var root = document.RootElement;
         Require(root.GetProperty("GameVersion").GetString() == "2.3.1" &&
@@ -14,6 +14,7 @@ internal static class OriginalSummonChoiceChecks
             root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Incomplete original summon-choice native battle.");
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
             Require(root.GetProperty(key).GetInt32() == 0, "Nonzero native " + key);
+        if (repeatedSearchOnly) { RepeatedSearch(root); return; }
         if (searchOnly) { SelectionSearch(root); return; }
         var definitions = root.GetProperty("OriginalSummonChoiceDefinitions");
         Require(definitions.GetProperty("Profile").GetString() == "installed-control", "Missing explicit isolated DLC input.");
@@ -135,6 +136,44 @@ internal static class OriginalSummonChoiceChecks
         Require(replay.Supported && BattleTurnChecks.Comparable(replay.State!) == BattleTurnChecks.Comparable(serial.BestState!),
             "Returned fragment selection did not replay to its complete searched successor.");
         Console.WriteLine("SUMMON-CHOICE-SELECTION-SEARCH PASS: full native-root frontier, one expanded decision, serial/parallel identical selected original fragment, complete returned-plan replay and immutable parent; broader 128-state search belongs to the full checker.");
+    }
+    private static void RepeatedSearch(FixtureValue root)
+    {
+        var source = root.GetProperty("Actions")[37].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        string parent = BattleTurnChecks.Comparable(source);
+        var ability = source.PlayRules!.Cards.Single(rule => rule.DataId == "24daf0a7-40fd-4f15-b6d1-60522568cad4");
+        string fragment = ability.Effects[1].SummonChoice!.Pool[2].Unit!.AssetKey;
+        double Score(BattleTurnState state, RoomOutcome _) => -state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+            .Count(unit => unit.AssetKey == fragment && unit.Health > 0);
+        BattleSearchResult Run(int workers)
+        {
+            var timer = System.Diagnostics.Stopwatch.StartNew();
+            var result = BattleSearchModel.Minimize(source, Score, new BattleSearchOptions(128, 0, workers));
+            Console.WriteLine($"SUMMON-CHOICE-REPEATED-SEARCH workers={workers} nodes={result.DecisionStatesVisited} score={result.Score} " +
+                $"unsupported={result.UnsupportedAttempts.Count} nodeLimit={result.ReachedNodeLimit} seconds={timer.Elapsed.TotalSeconds:F3} " +
+                "path=" + JsonSerializer.Serialize(result.Steps, ModelJson.Options));
+            foreach (var group in result.UnsupportedAttempts.GroupBy(attempt => attempt.Reason))
+                Console.WriteLine("SUMMON-CHOICE-REPEATED-BOUNDARY count=" + group.Count() + " reason=" + group.Key);
+            Require(result.BestState != null && result.Score <= -1 && result.DecisionStatesVisited <= 128 && !result.HasUnsupportedAttempts,
+                "Repeated search lacks a supported fragment path within its budget.");
+            var replayed = source;
+            foreach (var step in result.Steps)
+            {
+                Require(!step.IsEndTurn && step.Action != null, "Zero-turn repeated search unexpectedly ended its turn.");
+                var applied = BattleActionModel.PlayCard(replayed, step.Action!);
+                Require(applied.Supported, "Returned repeated-summon action failed: " + applied.Reason);
+                replayed = applied.State!;
+            }
+            Require(BattleTurnChecks.Comparable(replayed) == BattleTurnChecks.Comparable(result.BestState!) &&
+                parent == BattleTurnChecks.Comparable(source), "Repeated search failed full-state replay or changed its parent.");
+            return result;
+        }
+        var serial = Run(1); var parallel = Run(4);
+        Require(serial.Score == parallel.Score && serial.Outcome == parallel.Outcome &&
+            JsonSerializer.Serialize(serial.Steps, ModelJson.Options) == JsonSerializer.Serialize(parallel.Steps, ModelJson.Options) &&
+            BattleTurnChecks.Comparable(serial.BestState!) == BattleTurnChecks.Comparable(parallel.BestState!),
+            "Repeated-summon serial/parallel scores, paths or complete successors differ; see diagnostics above.");
+        Console.WriteLine("SUMMON-CHOICE-REPEATED-SEARCH PASS: native decision root, 128-node serial/parallel identical result, full returned-plan replay, zero unsupported and immutable parent; node cutoff does not certify optimality.");
     }
     private static PlayCardAction Copy(PlayCardAction action, IReadOnlyList<SummonChoiceSelection> choices) =>
         new(action.CardInstanceId, action.RoomIndex, action.PlayerPosition, action.TargetUnitId, action.ActivatorUnitId,

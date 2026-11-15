@@ -33,8 +33,11 @@ dialogs and cardless births, subtype skips, over-capacity summons and fragment
 callbacks. A 107.55-second native victory has 49 inputs/five EndTurns and four
 zero counters. Full continuous replay/16 branches, all recorded frontiers,
 baseline 128-state search and a focused serial/parallel fragment-selection
-witness pass. Repeated-summon deep search remains a separate acceptance gap;
-see [the evidence and precise boundaries](docs/summon-choice-battle.md).
+witness pass. A separate repeated-summon 128-node check now returns the same
+two-fragment, three-input path in serial and parallel, with complete model
+replay and zero unsupported attempts. Its node cutoff is not an optimality
+certificate or a fresh native replay of that alternative; see
+[the evidence and precise boundaries](docs/summon-choice-battle.md).
 
 Original GrimDisciple, ChainBearer and ForsakenBerserker now pass one native
 battle with three original skills. Shared rules cover Devotion-level spawn
