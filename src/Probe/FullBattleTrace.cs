@@ -1331,6 +1331,8 @@ namespace MonsterTrain2Poju.Probe
                 OriginalDiscardDrawCounts = OriginalDiscardDrawScenario.Counts,
                 OriginalDiscardDrawDiscards = OriginalDiscardDrawScenario.Discards,
                 OriginalSpellCompositionsPrepared = OriginalSpellCompositionsScenario.Prepared,
+                OriginalArbitraryVerdictPrepared = OriginalArbitraryVerdictScenario.Prepared,
+                OriginalArbitraryVerdictIds = OriginalArbitraryVerdictScenario.CardIds,
                 OnCastGroupsPrepared = OnCastGroupsBattleScenario.Prepared,
                 OnCastGroupsIds = OnCastGroupsBattleScenario.CardIds,
                 OnCastGroupsModes = OnCastGroupsBattleScenario.Modes,

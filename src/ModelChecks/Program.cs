@@ -1,5 +1,15 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--health-percent-only")
+{
+    HealthPercentChecks.Component(args[1]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-arbitrary-verdict-only")
+{
+    HealthPercentChecks.Battle(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--queued-attack-statistics-only")
 {
     QueuedAttackStatisticsChecks.Native(args[1]);

@@ -282,6 +282,7 @@ param(
     [switch] $OriginalPositiveStatus,
     [switch] $OriginalSpellCompositions,
     [switch] $OnCastGroupsBattle,
+    [switch] $OriginalArbitraryVerdict,
     [switch] $OriginalDiscardDraw,
     [switch] $OriginalMoonCardUpgrades,
     [switch] $OriginalMoonCardUpgradesLiveRelics,
@@ -1225,7 +1226,7 @@ if ($OriginalScaledDamage) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $t
 if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
-if ($OnCastGroupsBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OnCastGroupsBattle -or $OriginalArbitraryVerdict) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDiscardDraw) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoonCardUpgradesThresholdRelic) {
     if ($OriginalMoonCardUpgradesCostRelic -or $OriginalMoonCardUpgradesAttackRelic -or $OriginalMoonCardUpgradesHealingRelic -or
@@ -1929,8 +1930,8 @@ $environment = @{
     MT2_PROBE_BINARY_CAPTURE = $(if ($BinaryCapture) { '1' } else { '0' })
     MT2_PROBE_CAPTURE_JSON = $(if ($CaptureJson) { '1' } else { '0' })
     MT2_PROBE_NO_TIMEOUT = '1'
-    MT2_PROBE_ISOLATE_PREVIEW_RNG = $(if ($OnCastGroupsBattle -or $TriggeredStatus -or $PersistentEnchantments -or $OriginalSupportUnits -or $OriginalDivineDancer -or $OriginalIsolatedUnitBatch -or $OriginalIsolatedColdstrikeSiren -or $isolatedUnitIds.Count -gt 0) { '1' } else { '0' })
-    MT2_PROBE_ISOLATE_UI_RNG = $(if ($OnCastGroupsBattle -or $CompanionBoss -or $ConditionalTriggers -or $DetachedBonusDraw -or $RoomCapacity -or $RoomCapacityLethal -or $RoomCapacityAttachment -or $BonusDraw -or $BonusDrawLethal -or $NumericRanges -or $NumericRangesLethal -or $Drawing -or $TriggeredHealing -or $PostCombatHealing -or $TriggeredDamage -or $DamageDeathQueue -or $TerminalDeathDamage -or $HitKill -or $DyingUpgrades -or $AttackTriggers -or $TriggeredStatus) { '1' } else { '0' })
+    MT2_PROBE_ISOLATE_PREVIEW_RNG = $(if ($OriginalArbitraryVerdict -or $OnCastGroupsBattle -or $TriggeredStatus -or $PersistentEnchantments -or $OriginalSupportUnits -or $OriginalDivineDancer -or $OriginalIsolatedUnitBatch -or $OriginalIsolatedColdstrikeSiren -or $isolatedUnitIds.Count -gt 0) { '1' } else { '0' })
+    MT2_PROBE_ISOLATE_UI_RNG = $(if ($OriginalArbitraryVerdict -or $OnCastGroupsBattle -or $CompanionBoss -or $ConditionalTriggers -or $DetachedBonusDraw -or $RoomCapacity -or $RoomCapacityLethal -or $RoomCapacityAttachment -or $BonusDraw -or $BonusDrawLethal -or $NumericRanges -or $NumericRangesLethal -or $Drawing -or $TriggeredHealing -or $PostCombatHealing -or $TriggeredDamage -or $DamageDeathQueue -or $TerminalDeathDamage -or $HitKill -or $DyingUpgrades -or $AttackTriggers -or $TriggeredStatus) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_QUERIES = $(if ($StatisticQueries) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_OVERFLOW = $(if ($StatisticOverflow) { '1' } else { '0' })
     MT2_PROBE_MONSTER_DAMAGE_STATISTICS = $(if ($MonsterDamageStatistics) { '1' } else { '0' })
@@ -2180,6 +2181,7 @@ if ($OriginalScaledMoonPhase) { $environment['MT2_PROBE_MODIFIERS'] = 'original-
 if ($OriginalPositiveStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-positive-status' }
 if ($OriginalSpellCompositions) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spell-compositions' }
 if ($OnCastGroupsBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'oncast-groups-battle' }
+if ($OriginalArbitraryVerdict) { $environment['MT2_PROBE_MODIFIERS'] = 'original-arbitrary-verdict' }
 if ($OriginalDiscardDraw) { $environment['MT2_PROBE_MODIFIERS'] = 'original-discard-draw' }
 if ($OriginalMoonCardUpgrades) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-card-upgrades' }
 if ($OriginalMoonCardUpgradesLiveRelics) { $environment['MT2_PROBE_MOON_UPGRADE_LIVE_RELICS'] = '1' }
@@ -4022,6 +4024,23 @@ if ($OriginalDiscardDraw -and (-not $trace.OriginalDiscardDrawPrepared -or -not 
 }
 if ($OriginalSpellCompositions -and (-not $trace.OriginalSpellCompositionsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 10)) {
     throw 'Original spell compositions coverage incomplete.'
+}
+if ($OriginalArbitraryVerdict) {
+    if (-not $trace.OriginalArbitraryVerdictPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 7 -or
+        $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
+        throw 'Original percentage health lacks seven native plays, victory or matching successors.'
+    }
+    $componentPath = Join-Path (Split-Path $tracePath -Parent) 'health-percent.mt2f'
+    if (-not (Test-Path -LiteralPath $componentPath)) { throw 'Percentage health native component missing.' }
+    $component = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($componentPath)
+    try {
+        $captured = $component.RootElement.ToObjectGraph()
+        if ($captured.Schema -ne 1 -or $captured.Boundary -ne 'NativeSetHealthPercent' -or $captured.GameVersion -ne '2.3.1' -or
+            $captured.GameModuleMvid -ne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or @($captured.Samples).Count -ne 320 -or
+            -not $captured.NativeCompleted -or -not $captured.PrimaryRestored -or -not $captured.GameplayRngRestored) {
+            throw 'Incomplete percentage health native component.'
+        }
+    } finally { $component.Dispose() }
 }
 if ($OnCastGroupsBattle -and (-not $trace.OnCastGroupsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 10 -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {

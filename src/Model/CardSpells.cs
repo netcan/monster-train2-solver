@@ -1816,6 +1816,13 @@ namespace MonsterTrain2Poju.Model
                             unit.Id == id ? unit.WithHealth(effect.Value) : unit).ToArray()));
                         continue;
                     }
+                    if (effect.Type == UnitHealthPercentModel.Effect)
+                    {
+                        RoomCombatResult changed = UnitHealthPercentModel.Apply(targetRoom!, id, effect.Value);
+                        if (!changed.Supported) return UnsupportedTrain(changed.UnsupportedReason!);
+                        state = ReplaceRoom(state, changed.State!);
+                        continue;
+                    }
                     if (effect.Type == "RemoveStatus" || effect.Type == "RemoveAllStatusEffects")
                     {
                         RoomCombatResult removed = StatusRemovalModel.Effect(targetRoom!, id, effect, sourceCardId);
@@ -2713,7 +2720,7 @@ namespace MonsterTrain2Poju.Model
                         return "Mix requires a positive draft size and captured elixir state.";
                     continue;
                 }
-                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "AttackTargetsWithSelfUnit", "Damage", FloorDamageModel.Effect, "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", "Sacrifice", "Kill", "AddStatus", DevotionStatusModel.Effect, "AddStatusPerCasterStatus", "AddStatusPerMissingHp", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
+                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "AttackTargetsWithSelfUnit", "Damage", FloorDamageModel.Effect, "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", UnitHealthPercentModel.Effect, "Sacrifice", "Kill", "AddStatus", DevotionStatusModel.Effect, "AddStatusPerCasterStatus", "AddStatusPerMissingHp", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "TransferAllStatuses" &&
                     (effect.Target != "DropTargetCharacter" || effect.Statuses.Count != 1))

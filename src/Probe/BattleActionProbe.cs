@@ -22,7 +22,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAddPermanentCorruption", "CardEffectAddStatusToRoomScalingByCasterStatusCount", "CardEffectAddStatusEffectPerMissingHp",
             "CardEffectSetMoonPhase", "CardEffectAdvanceMoonPhase", "CardEffectUpdateMoonPhaseResource",
             "CardEffectAdjustForgePoints", "CardEffectGainDevotionPoints", "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectChooseDiscard", "CardEffectAddBattleCard", "CardEffectAddRunCard", "CardEffectAddBattleCardPerTarget",
-            "CardEffectHeal", "CardEffectHealAndOverheal", "CardEffectHealAndDamageRelative", "CardEffectHealTrain", "CardEffectHealPyrePerEmberCost", "CardEffectSetHealth", "CardEffectSacrifice", "CardEffectSacrificeOrFeed", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
+            "CardEffectHeal", "CardEffectHealAndOverheal", "CardEffectHealAndDamageRelative", "CardEffectHealTrain", "CardEffectHealPyrePerEmberCost", "CardEffectSetHealth", UnitHealthPercentModel.NativeEffect, "CardEffectSacrifice", "CardEffectSacrificeOrFeed", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
             "CardEffectBuffMaxHealth", "CardEffectDebuffMaxHealth", "CardEffectAddStatusEffectPerDevotionLevel", "CardEffectAddStatusEffect", "CardEffectMultiplyStatusEffect",
             "CardEffectMultiplyAllPositiveStatusEffects", "CardEffectAdjustAllStatusEffects", "CardEffectAddStatusEffectPerOtherEffect",
             "CardEffectSpawnMonsterOrAddStatusEffect", "CardEffectFloorRearrange", "CardEffectAddCardUpgradeToUnits", "CardEffectDrawType",
@@ -538,6 +538,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectHealTrain" ? "HealTrain" :
                 effect.GetEffectStateName() == "CardEffectHealPyrePerEmberCost" ? "HealTrainPerEmber" :
                 effect.GetEffectStateName() == "CardEffectSetHealth" ? "SetHealth" :
+                effect.GetEffectStateName() == UnitHealthPercentModel.NativeEffect ? UnitHealthPercentModel.Effect :
                 effect.GetEffectStateName() == "CardEffectAddTempSwapStats" ? "SwapStats" :
                 effect.GetEffectStateName() == "CardEffectSacrifice" ? "Sacrifice" :
                 effect.GetEffectStateName() == "CardEffectKill" ? "Kill" :
@@ -597,7 +598,7 @@ namespace MonsterTrain2Poju.Probe
                 upgrade = CardModifierProbe.Upgrade(upgradeState);
                 interactions.AddRange(CardModifierModel.UpgradeInteractions(upgrade));
             }
-            if (effect.GetUseIntRange() && !EnergyModel.IsEffect(type) && type != ForgePointsModel.Effect && type != DevotionModel.Effect &&
+            if (effect.GetUseIntRange() && type != UnitHealthPercentModel.Effect && !EnergyModel.IsEffect(type) && type != ForgePointsModel.Effect && type != DevotionModel.Effect &&
                 !new[] { "CopyUnits", "Bump", "Damage", FloorDamageModel.Effect, "DamagePerSourceAttack", "DamagePerHp", "Heal", "AddStatus", DevotionStatusModel.Effect, "MultiplyStatus",
                     "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType",
                     "ScheduleNextDrawUpgrade", "DrawNextTurn", "AdjustCapacity", "DiscardHand", "RandomDiscard", "Generate" }.Contains(type))
@@ -666,7 +667,7 @@ namespace MonsterTrain2Poju.Probe
                     ((ICardEffect)Activator.CreateInstance(typeof(CardEffectBase).Assembly.GetType(effect.GetEffectStateName())!)!).CanPlayAfterBossDead,
                     mustHaveValidTargets: type == "Kill" && effect.GetParamBool3(),
                     devotionRequirement: DevotionProbe.Requirement(effect), devotionRequirementMax: DevotionProbe.Requirement(effect, true)),
-                effect.GetUseIntRange() ? new CardEffectRange(effect.GetParamMinInt(), effect.GetParamMaxInt(), effect.GetParamMultiplier()) : null,
+                effect.GetUseIntRange() && type != UnitHealthPercentModel.Effect ? new CardEffectRange(effect.GetParamMinInt(), effect.GetParamMaxInt(), effect.GetParamMultiplier()) : null,
                 new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
                     effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),
                     effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,

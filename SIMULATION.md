@@ -7,6 +7,16 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+The original 2.3.1 `ArbitraryVerdict` room spell now uses the native raw
+percentage HP setter: float arithmetic, ceiling and the 99999 cap, without
+damage/heal callbacks or quantity-range RNG. Three unchanged original plays
+reduce, repeat and restore health; the winning seven-play/five-EndTurn chain,
+16 immutable replays and 128-state serial/parallel search pass. A 320-case
+native component also proves full unit successors, with 188 complete room
+successors; 132 retained nonpositive-actor cases remain explicit boundaries.
+See [percentage health evidence and limits](docs/health-percent.md) and run
+`scripts/Check-Game231HealthPercent.ps1` for focused binary-only acceptance.
+
 The 2.3.1 spell engine now preserves ordered OnCast effect groups, group-local
 cancellation and shared target history. Native evidence covers 1152 damage/healing
 hovers with 16 immutable branches each, plus ten actual plays and five EndTurns
