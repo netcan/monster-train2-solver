@@ -42,7 +42,7 @@ internal static class BattleSearchChecks
                     string.Join(" | ", frontier.UnsupportedAttempts.GroupBy(attempt => attempt.Reason).Select(group =>
                         group.Count() + "x " + group.Key + " action=" + JsonSerializer.Serialize(group.First().Action, ModelJson.Options))));
             SupportedActionCandidate? nativeCandidate = frontier.SupportedCandidates
-                .FirstOrDefault(candidate => SameAction(candidate.Action, nativeAction));
+                .FirstOrDefault(candidate => SameAction(candidate.Action, nativeAction, before));
             if (nativeCandidate == null)
             {
                 BattleActionResult replay = BattleActionModel.PlayCard(before, nativeAction);
@@ -149,9 +149,9 @@ internal static class BattleSearchChecks
     private static int PyreHealth(BattleTurnState state) => state.Spawn.Train.Rooms
         .SelectMany(room => room.Units).Where(unit => unit.IsPyre).Select(unit => unit.Health).DefaultIfEmpty(0).First();
 
-    private static bool SameAction(PlayCardAction first, PlayCardAction second) =>
+    private static bool SameAction(PlayCardAction first, PlayCardAction second, BattleTurnState source) =>
         first.CardInstanceId == second.CardInstanceId && first.RoomIndex == second.RoomIndex &&
-        first.PlayerPosition == second.PlayerPosition && first.TargetUnitId == second.TargetUnitId &&
+        SamePosition(first, second, source) && first.TargetUnitId == second.TargetUnitId &&
         first.ActivatorUnitId == second.ActivatorUnitId && first.ActivatorRoomIndex == second.ActivatorRoomIndex &&
         first.TargetSpawnPointIndex == second.TargetSpawnPointIndex && first.Operation == second.Operation &&
         first.RecursionSelections.Count == second.RecursionSelections.Count &&
@@ -166,6 +166,19 @@ internal static class BattleSearchChecks
         first.SummonSelections.Count == second.SummonSelections.Count &&
         first.SummonSelections.Zip(second.SummonSelections).All(pair =>
             pair.First.EffectIndex == pair.Second.EffectIndex && pair.First.CardDataId == pair.Second.CardDataId);
+
+    private static bool SamePosition(PlayCardAction first, PlayCardAction second, BattleTurnState source)
+    {
+        if (first.PlayerPosition == second.PlayerPosition) return true;
+        string? dataId = source.Spawn.Train.Context?.FindCard(first.CardInstanceId)?.DataId;
+        if (source.PlayRules?.Cards.FirstOrDefault(rule => rule.DataId == dataId)?.Effect != "SpawnMonster") return false;
+        // Native recording may omit the drop point. PlayCard resolves -1 to
+        // append, while search enumerates its explicit position once. The full
+        // cached successor is still compared against the native actual below.
+        int append = source.Spawn.Train.Rooms.Single(room => room.RoomIndex == first.RoomIndex).Units.Count(unit => unit.Team == CombatTeam.Player);
+        return (first.PlayerPosition == -1 ? append : first.PlayerPosition) ==
+            (second.PlayerPosition == -1 ? append : second.PlayerPosition);
+    }
 
     private static void Require(bool condition, string message)
     {
