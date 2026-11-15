@@ -285,6 +285,7 @@ param(
     [switch] $OriginalArbitraryVerdict,
     [switch] $OriginalWickedFervor,
     [switch] $OriginalDragThemDown,
+    [switch] $OriginalExaltation,
     [switch] $OriginalUpgradeEnchantment,
     [switch] $OriginalFriendlyDamageStatus,
     [switch] $OriginalMissingHealthUpgrade,
@@ -1233,8 +1234,8 @@ if ($OriginalScaledDamage) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $t
 if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
-if ($OriginalUpgradeEnchantment) { $SettleCardAnimations = $true; $SettleDeathDissolves = $true }
-if ($OnCastGroupsBattle -or $OriginalArbitraryVerdict -or $OriginalWickedFervor -or $OriginalDevoteTreasure -or $OriginalUpgradeEnchantment -or $OriginalFriendlyDamageStatus -or $OriginalMissingHealthUpgrade -or $OriginalDevotionUpgrade -or $OriginalDragThemDown) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalExaltation -or $OriginalUpgradeEnchantment) { $SettleCardAnimations = $true; $SettleDeathDissolves = $true }
+if ($OnCastGroupsBattle -or $OriginalArbitraryVerdict -or $OriginalWickedFervor -or $OriginalDevoteTreasure -or $OriginalExaltation -or $OriginalUpgradeEnchantment -or $OriginalFriendlyDamageStatus -or $OriginalMissingHealthUpgrade -or $OriginalDevotionUpgrade -or $OriginalDragThemDown) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDiscardDraw) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoonCardUpgradesThresholdRelic) {
     if ($OriginalMoonCardUpgradesCostRelic -or $OriginalMoonCardUpgradesAttackRelic -or $OriginalMoonCardUpgradesHealingRelic -or
@@ -1938,8 +1939,8 @@ $environment = @{
     MT2_PROBE_BINARY_CAPTURE = $(if ($BinaryCapture) { '1' } else { '0' })
     MT2_PROBE_CAPTURE_JSON = $(if ($CaptureJson) { '1' } else { '0' })
     MT2_PROBE_NO_TIMEOUT = '1'
-    MT2_PROBE_ISOLATE_PREVIEW_RNG = $(if ($OriginalDevoteTreasure -or $OriginalUpgradeEnchantment -or $OriginalFriendlyDamageStatus -or $OriginalMissingHealthUpgrade -or $OriginalDevotionUpgrade -or $OriginalDragThemDown -or $OriginalWickedFervor -or $OriginalArbitraryVerdict -or $OnCastGroupsBattle -or $TriggeredStatus -or $PersistentEnchantments -or $OriginalSupportUnits -or $OriginalDivineDancer -or $OriginalIsolatedUnitBatch -or $OriginalIsolatedColdstrikeSiren -or $isolatedUnitIds.Count -gt 0) { '1' } else { '0' })
-    MT2_PROBE_ISOLATE_UI_RNG = $(if ($OriginalDevoteTreasure -or $OriginalUpgradeEnchantment -or $OriginalFriendlyDamageStatus -or $OriginalMissingHealthUpgrade -or $OriginalDevotionUpgrade -or $OriginalDragThemDown -or $OriginalWickedFervor -or $OriginalArbitraryVerdict -or $OnCastGroupsBattle -or $CompanionBoss -or $ConditionalTriggers -or $DetachedBonusDraw -or $RoomCapacity -or $RoomCapacityLethal -or $RoomCapacityAttachment -or $BonusDraw -or $BonusDrawLethal -or $NumericRanges -or $NumericRangesLethal -or $Drawing -or $TriggeredHealing -or $PostCombatHealing -or $TriggeredDamage -or $DamageDeathQueue -or $TerminalDeathDamage -or $HitKill -or $DyingUpgrades -or $AttackTriggers -or $TriggeredStatus) { '1' } else { '0' })
+    MT2_PROBE_ISOLATE_PREVIEW_RNG = $(if ($OriginalDevoteTreasure -or $OriginalExaltation -or $OriginalUpgradeEnchantment -or $OriginalFriendlyDamageStatus -or $OriginalMissingHealthUpgrade -or $OriginalDevotionUpgrade -or $OriginalDragThemDown -or $OriginalWickedFervor -or $OriginalArbitraryVerdict -or $OnCastGroupsBattle -or $TriggeredStatus -or $PersistentEnchantments -or $OriginalSupportUnits -or $OriginalDivineDancer -or $OriginalIsolatedUnitBatch -or $OriginalIsolatedColdstrikeSiren -or $isolatedUnitIds.Count -gt 0) { '1' } else { '0' })
+    MT2_PROBE_ISOLATE_UI_RNG = $(if ($OriginalDevoteTreasure -or $OriginalExaltation -or $OriginalUpgradeEnchantment -or $OriginalFriendlyDamageStatus -or $OriginalMissingHealthUpgrade -or $OriginalDevotionUpgrade -or $OriginalDragThemDown -or $OriginalWickedFervor -or $OriginalArbitraryVerdict -or $OnCastGroupsBattle -or $CompanionBoss -or $ConditionalTriggers -or $DetachedBonusDraw -or $RoomCapacity -or $RoomCapacityLethal -or $RoomCapacityAttachment -or $BonusDraw -or $BonusDrawLethal -or $NumericRanges -or $NumericRangesLethal -or $Drawing -or $TriggeredHealing -or $PostCombatHealing -or $TriggeredDamage -or $DamageDeathQueue -or $TerminalDeathDamage -or $HitKill -or $DyingUpgrades -or $AttackTriggers -or $TriggeredStatus) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_QUERIES = $(if ($StatisticQueries) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_OVERFLOW = $(if ($StatisticOverflow) { '1' } else { '0' })
     MT2_PROBE_MONSTER_DAMAGE_STATISTICS = $(if ($MonsterDamageStatistics) { '1' } else { '0' })
@@ -2192,6 +2193,7 @@ if ($OnCastGroupsBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'oncast-groups-
 if ($OriginalArbitraryVerdict) { $environment['MT2_PROBE_MODIFIERS'] = 'original-arbitrary-verdict' }
 if ($OriginalWickedFervor) { $environment['MT2_PROBE_MODIFIERS'] = 'original-wicked-fervor' }
 if ($OriginalDevoteTreasure) { $environment['MT2_PROBE_MODIFIERS'] = 'original-devote-treasure' }
+if ($OriginalExaltation) { $environment['MT2_PROBE_MODIFIERS'] = 'original-exaltation' }
 if ($OriginalUpgradeEnchantment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-upgrade-enchantment' }
 if ($OriginalFriendlyDamageStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-friendly-damage-status' }
 if ($OriginalMissingHealthUpgrade) { $environment['MT2_PROBE_MODIFIERS'] = 'original-missing-health-upgrade' }
@@ -4043,6 +4045,10 @@ if ($OriginalSpellCompositions -and (-not $trace.OriginalSpellCompositionsPrepar
 if ($OriginalDevoteTreasure -and (-not $trace.OriginalDevoteTreasurePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 8 -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
     throw 'Original Treasure Devote lacks five operations, native victory or exact successors.'
+}
+if ($OriginalExaltation -and (-not $trace.OriginalExaltationPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 22 -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
+    throw 'Original Exaltation native battle failed.'
 }
 if ($OriginalUpgradeEnchantment -and (-not $trace.OriginalUpgradeEnchantmentPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 12 -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {

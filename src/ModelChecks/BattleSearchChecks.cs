@@ -23,7 +23,7 @@ internal static class BattleSearchChecks
         }
         Console.WriteLine("NATIVE-FRONTIER-DIAGNOSTICS PASS: " + index + " decisions, zero unsupported attempts.");
     }
-    internal static void Native(FixtureValue fixture)
+    internal static void Native(FixtureValue fixture, bool requireZeroUnsupported = false)
     {
         FixtureValue actions = fixture.GetProperty("Actions");
         Require(actions.GetArrayLength() > 0, "The native search fixture has no recorded card actions.");
@@ -62,6 +62,7 @@ internal static class BattleSearchChecks
             unsupportedAttempts += frontier.UnsupportedAttempts.Count;
         }
 
+        if (requireZeroUnsupported) Require(unsupportedAttempts == 0, "Recorded decisions contain unsupported candidates.");
         BattleTurnState searchRoot = root!;
         int initialPyre = PyreHealth(searchRoot);
         double Score(BattleTurnState state, RoomOutcome outcome)
@@ -77,6 +78,8 @@ internal static class BattleSearchChecks
             new BattleSearchOptions(maxNodes, maxTurns, maxDegreeOfParallelism: 1));
         BattleSearchResult search = BattleSearchModel.Minimize(searchRoot, Score,
             new BattleSearchOptions(maxNodes, maxTurns, maxDegreeOfParallelism: 4));
+        if (requireZeroUnsupported) Require(!serialSearch.HasUnsupportedAttempts && !search.HasUnsupportedAttempts,
+            "Serial or parallel search encountered unsupported candidates.");
         foreach (var group in search.UnsupportedAttempts.GroupBy(attempt => attempt.Reason).Take(5))
             Console.WriteLine("NATIVE-SEARCH-BOUNDARY count=" + group.Count() + " reason=" + group.Key);
         Require(search.BestState != null && search.Score.HasValue && search.Steps.Count > 0,

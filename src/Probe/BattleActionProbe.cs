@@ -16,7 +16,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAttachEquipment", "CardEffectAttachTrainRoomAttachment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment", "CardEffectRoomAbilityBumpToCurrentRoom",
             "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn",
             "CardEffectAdjustDragonsHoard", "CardEffectRewardGoldPerDragonHoard",
-            "CardEffectDamage", DragThemDownModel.NativeEffect, "CardEffectDamageFloorByFloor", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDamageByUnitsKilled", "CardEffectTransferAttackFromUnit", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
+            "CardEffectDamage", ExaltationModel.NativeEffect, DragThemDownModel.NativeEffect, "CardEffectDamageFloorByFloor", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDamageByUnitsKilled", "CardEffectTransferAttackFromUnit", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
             "CardEffectRemoveAllStatusEffects", "CardEffectTransferAllStatusEffectsFromUnit", "CardEffectTransferAllStatusEffects",
             "CardEffectAdjustRoomCapacity", "CardEffectAdjustRoomMaxCorruption", "CardEffectAdjustCorruption",
             "CardEffectAddPermanentCorruption", "CardEffectAddStatusToRoomScalingByCasterStatusCount", "CardEffectAddStatusEffectPerMissingHp",
@@ -537,6 +537,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectHealAndDamageRelative" ? "HealRelative" :
                 effect.GetEffectStateName() == "CardEffectHealTrain" ? "HealTrain" :
                 effect.GetEffectStateName() == "CardEffectHealPyrePerEmberCost" ? "HealTrainPerEmber" :
+                effect.GetEffectStateName() == ExaltationModel.NativeEffect ? ExaltationModel.Effect :
                 effect.GetEffectStateName() == DragThemDownModel.NativeEffect ? DragThemDownModel.Effect :
                 effect.GetEffectStateName() == DiscardHandStatusModel.NativeEffect ? DiscardHandStatusModel.Effect :
                 effect.GetEffectStateName() == "CardEffectSetHealth" ? "SetHealth" :
@@ -601,7 +602,7 @@ namespace MonsterTrain2Poju.Probe
                 interactions.AddRange(CardModifierModel.UpgradeInteractions(upgrade));
             }
             if (effect.GetUseIntRange() && type != UnitHealthPercentModel.Effect && !EnergyModel.IsEffect(type) && type != ForgePointsModel.Effect && type != DevotionModel.Effect &&
-                !new[] { "CopyUnits", "Bump", "Damage", DragThemDownModel.Effect, FloorDamageModel.Effect, "DamagePerSourceAttack", "DamagePerHp", "Heal", "AddStatus", DevotionStatusModel.Effect, "MultiplyStatus",
+                !new[] { "CopyUnits", "Bump", "Damage", ExaltationModel.Effect, DragThemDownModel.Effect, FloorDamageModel.Effect, "DamagePerSourceAttack", "DamagePerHp", "Heal", "AddStatus", DevotionStatusModel.Effect, "MultiplyStatus",
                     "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType",
                     "ScheduleNextDrawUpgrade", "DrawNextTurn", "AdjustCapacity", "DiscardHand", "RandomDiscard", "Generate" }.Contains(type))
                 interactions.Add("Unimplemented integer range consumer " + type);
@@ -713,7 +714,8 @@ namespace MonsterTrain2Poju.Probe
                 suppressPyreRoomFocus: type == "AttackWithUnit" && effect.GetTargetMode() == TargetMode.Pyre &&
                     effect.GetParamBool2() && effect.GetShouldSuppressPyreRoomFocus() ? true : (bool?)null,
                 devotionPerLevel: type == DevotionModel.Effect ? (int?)effect.GetAdditionalParamInt() : null,
-                devotionLevelsPerGrant: type == DevotionStatusModel.Effect ? (int?)effect.GetAdditionalParamInt() : null);
+                devotionLevelsPerGrant: type == DevotionStatusModel.Effect ? (int?)effect.GetAdditionalParamInt() : null,
+                exaltationHeal: type == ExaltationModel.Effect ? (int?)effect.GetAdditionalParamInt() : null);
         }
 
         private static EquipmentMergeRule? EquipmentMerge(CardEffectData effect, List<string> interactions)

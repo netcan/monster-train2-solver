@@ -845,7 +845,7 @@ namespace MonsterTrain2Poju.Model
                         statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
                         healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
                         sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe,
-                        ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel, devotionLevelsPerGrant: effect.DevotionLevelsPerGrant);
+                        ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel, devotionLevelsPerGrant: effect.DevotionLevelsPerGrant, exaltationHeal: effect.ExaltationHeal);
                 }
                 if (effect.Type == "DuplicateCard")
                 {
@@ -1026,6 +1026,50 @@ namespace MonsterTrain2Poju.Model
                         new[] { effect.Statuses[0].WithStacks(count) }, tests: effect.Tests, filters: effect.Filters);
                 }
                 if ((effect.Type == ForgePointsModel.Effect || effect.Type == DevotionModel.Effect) && selected.Preview) continue;
+                if (effect.Type == ExaltationModel.Effect)
+                {
+                    if (targets.UnitIds.Count == 0) continue;
+                    int[] healedIds = targets.UnitIds.ToArray();
+                    foreach (int healingId in healedIds)
+                    {
+                        RoomCombatState? healingRoom = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == healingId));
+                        CombatUnit? healingTarget = healingRoom?.Units.FirstOrDefault(unit => unit.Id == healingId);
+                        if (healingTarget == null) return UnsupportedTrain("Exaltation lost a retained healing target.");
+                        RoomCombatResult healed = RoomCombatModel.ApplyCardHeal(healingRoom!, healingId, effect.ExaltationHeal!.Value, refreshPyre: Refresh);
+                        if (!healed.Supported) return UnsupportedTrain(healed.UnsupportedReason!);
+                        state = ReplaceRoom(state, healed.State!); events.AddRange(healed.Events); callbacks.AddRange(healed.PendingCallbacks);
+                        foreach (CombatUnit unit in healed.RetainedUnits) retained[unit.Id] = unit;
+                        if (healingTarget.Triggers.Any(trigger => trigger.Kind == "OnHeal" && (!trigger.Once || !trigger.HasTriggered) &&
+                            (!healingRoom!.Deployment || trigger.SkipDuringDeployment != true) &&
+                            (trigger.IgnoreSilence || healingTarget.Status("silenced") == null))) focusedRoom = null;
+                        DrainDeaths();
+                        if (routingError != null) return UnsupportedTrain(routingError);
+                    }
+                    // GetDamageAmount follows every heal and its callbacks. Re-read
+                    // the live spell before sampling, then collect the first healed
+                    // actor's current room and exclude all original healed targets.
+                    if (resolveLiveEffects && definitions != null && sourceCardId > 0 && state.Context!.CardInstances != null)
+                    {
+                        CardInstanceState? liveCard = state.Context.FindCard(sourceCardId) ?? resolvingCard;
+                        CardPlayRule? liveRule = definitions.Cards.FirstOrDefault(rule => rule.DataId == liveCard?.DataId);
+                        CardPlayRule? resolved = liveCard == null || liveRule == null ? null : CardModifierModel.Resolve(liveRule, liveCard);
+                        IReadOnlyList<CardActionEffect>? liveEffects = onUnplayedNegativeEffects ? resolved?.OnUnplayedNegativeEffects :
+                            onCastEffects ? resolved?.OnCastEffects : resolved?.Effects;
+                        if (liveEffects == null || liveEffects.Count != effects.Count || liveEffects[index].Type != ExaltationModel.Effect)
+                            return UnsupportedTrain("Exaltation lost its live damage effect after healing callbacks.");
+                        effect = liveEffects[index]; resolvingCard = liveCard;
+                    }
+                    UnityRng damageRng = RuntimeRng(state);
+                    effect = Sample(effect, ref damageRng); state = WithRuntimeRng(state, damageRng);
+                    if (effect.Value <= 0) continue;
+                    RoomCombatState? splashRoom = state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == healedIds[0]));
+                    if (splashRoom == null) return UnsupportedTrain("Exaltation's first healed actor left the captured train.");
+                    effect = new CardActionEffect("Damage", "Room", effect.Value, true, true, Array.Empty<CombatStatus>());
+                    CardTargets splash = Collect(state, splashRoom.RoomIndex, effect, Array.Empty<int>(), null, -1, index, definitions,
+                        pendingDeadRooms: pendingDeadRooms, positions: positions, selfUnitId: selfUnitId, sourceCardId: sourceCardId);
+                    if (!splash.Supported) return UnsupportedTrain(splash.UnsupportedReason!);
+                    targets = new CardTargets(splash.UnitIds.Where(id => !healedIds.Contains(id)).ToArray());
+                }
                 UnityRng effectRng = RuntimeRng(state);
                 if (effect.Type != "CopyUnits" && effect.Type != "Bump" && effect.Type != "DiscardHand" && effect.Type != "Generate" && effect.Type != "AdjustCapacity" && effect.Type != "AttachRoomCapacity" && effect.Type != "ScheduleNextDrawUpgrade" && !AbilityCooldownModel.IsEffect(effect.Type) && !AbilityLifecycleModel.IsEffect(effect.Type)) effect = Sample(effect, ref effectRng);
                 state = WithRuntimeRng(state, effectRng);
@@ -2532,7 +2576,7 @@ namespace MonsterTrain2Poju.Model
                     !AbilityLifecycleModel.IsEffect(effect.Type))
                 {
                     if (effect.Type == "AdjustAllStatusEffects") return "Status adjustment effects use a fixed integer value, not an integer range.";
-                    if (!EnergyModel.IsEffect(effect.Type) && effect.Type != ForgePointsModel.Effect && effect.Type != DevotionModel.Effect && !new[] { "Damage", DragThemDownModel.Effect, FloorDamageModel.Effect, "DamagePerHp", "Heal", "HealOverheal", "AddStatus", DevotionStatusModel.Effect, "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
+                    if (!EnergyModel.IsEffect(effect.Type) && effect.Type != ForgePointsModel.Effect && effect.Type != DevotionModel.Effect && !new[] { "Damage", ExaltationModel.Effect, DragThemDownModel.Effect, FloorDamageModel.Effect, "DamagePerHp", "Heal", "HealOverheal", "AddStatus", DevotionStatusModel.Effect, "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DrawType", "DrawNextTurn" }.Contains(effect.Type))
                         return "Unmodeled range consumer " + effect.Type;
                     string? rangeError = effect.Range.Validate();
                     if (rangeError != null) return rangeError;
@@ -2738,6 +2782,12 @@ namespace MonsterTrain2Poju.Model
                 {
                     if (effect.UnitTriggerKind is not ("OnEaten" or "OnDeath") || effect.Range != null)
                         return "Unit-trigger cards require a calibrated fixed OnEaten or OnDeath payload.";
+                    continue;
+                }
+                if (effect.Type == ExaltationModel.Effect)
+                {
+                    if (!effect.ExaltationHeal.HasValue || effect.ExaltationHeal.Value < 0)
+                        return "Exaltation requires its captured nonnegative, unscaled healing amount.";
                     continue;
                 }
                 if (effect.Type == "HealRelative")
@@ -3002,6 +3052,7 @@ namespace MonsterTrain2Poju.Model
                 case "TransferAllStatuses": return count > 0;
                 case "Heal": return effect.Target == "Room" || count > 0;
                 case "HealOverheal": return count > 0;
+                case ExaltationModel.Effect:
                 case "HealRelative":
                 case "SwapStats": return count > 0;
                 case "HealTrain": case "HealTrainPerEmber": return count > 0;
@@ -3143,7 +3194,7 @@ namespace MonsterTrain2Poju.Model
                 statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
                 healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
                 sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe,
-                ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel, devotionLevelsPerGrant: effect.DevotionLevelsPerGrant);
+                ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel, devotionLevelsPerGrant: effect.DevotionLevelsPerGrant, exaltationHeal: effect.ExaltationHeal);
         }
         internal static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {

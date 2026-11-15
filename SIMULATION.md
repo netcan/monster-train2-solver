@@ -7,6 +7,15 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+Original 2.3.1 Exaltation now heals selected actors before collecting same-floor
+splash victims, excluding every healed actor. Seven original casts plus controls
+cover friendly/enemy healing, armor/lethal/isolated bystanders, damage-only spell
+power, healing immunity with OnHeal callbacks, and zero/negative/ranged damage.
+The 22-input/five-EndTurn victory passes 16 continuous replay branches and
+128-state serial/parallel search with zero unsupported candidates/search attempts.
+See [native evidence and remaining boundaries](docs/exaltation.md) and
+`scripts/Check-Game231Exaltation.ps1`; full catalog revalidation remains open.
+
 Three unchanged native BlindingDarkshard unit definitions now have upgrade-aura
 battle evidence through playable control proxies (the originals are nonplayable).
 Independent -3/-5/-7 buff-channel records stack and reverse on seal/reset,

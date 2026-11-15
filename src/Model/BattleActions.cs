@@ -72,6 +72,8 @@ namespace MonsterTrain2Poju.Model
         public StatusTransferRule? StatusTransfer { get; }
         public string? UnitTriggerKind { get; }
         public int? HealDamageMultiplier { get; }
+        public int? ExaltationHeal { get; }
+        public bool ShouldSerializeExaltationHeal() => ExaltationHeal.HasValue;
         public UnitReturnRule? UnitReturn { get; }
         public EquipmentMergeRule? EquipmentMerge { get; }
         public bool? SuppressPyreRoomFocus { get; }
@@ -98,7 +100,7 @@ namespace MonsterTrain2Poju.Model
             int transferAttackMultiplier = 0, StatusTransferRule? statusTransfer = null, string? unitTriggerKind = null,
             int? healDamageMultiplier = null, UnitReturnRule? unitReturn = null, EquipmentMergeRule? equipmentMerge = null,
             string? sourceStatusMultiplier = null, bool? suppressPyreRoomFocus = null, ElixirRecipe? spikeRecipe = null,
-            bool ignoreDualism = false, int? devotionPerLevel = null, int? devotionLevelsPerGrant = null)
+            bool ignoreDualism = false, int? devotionPerLevel = null, int? devotionLevelsPerGrant = null, int? exaltationHeal = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
             CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; ScaleUpgrade = scaleUpgrade;
@@ -117,7 +119,7 @@ namespace MonsterTrain2Poju.Model
             TransferAttackMultiplier = transferAttackMultiplier; StatusTransfer = statusTransfer; UnitTriggerKind = unitTriggerKind;
             HealDamageMultiplier = healDamageMultiplier; UnitReturn = unitReturn; EquipmentMerge = equipmentMerge;
             SuppressPyreRoomFocus = suppressPyreRoomFocus; SpikeRecipe = spikeRecipe; IgnoreDualism = ignoreDualism;
-            DevotionPerLevel = devotionPerLevel; DevotionLevelsPerGrant = devotionLevelsPerGrant; }
+            DevotionPerLevel = devotionPerLevel; DevotionLevelsPerGrant = devotionLevelsPerGrant; ExaltationHeal = exaltationHeal; }
     }
 
     public sealed class StatusTransferRule
