@@ -628,6 +628,8 @@ namespace MonsterTrain2Poju.Probe
                         BumpScenario.AcquireRelicBeforeBattle(managers!, log);
                     if (fullBattle && OriginalResourceRelicBatchScenario.Enabled && !OriginalResourceRelicBatchScenario.Prepared)
                         OriginalResourceRelicBatchScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && TurnEnergyScenario.Enabled)
+                        TurnEnergyScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && SpawnStatusScalingScenario.Enabled)
                         SpawnStatusScalingScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && PyreResourceRefreshScenario.Enabled && !PyreResourceRefreshScenario.Prepared)
@@ -1738,6 +1740,11 @@ namespace MonsterTrain2Poju.Probe
             {
                 numericModifiersPrepared = true;
                 SpawnStatusScalingScenario.Prepare(managers, log);
+            }
+            if (fullBattle && !numericModifiersPrepared && TurnEnergyScenario.Enabled)
+            {
+                numericModifiersPrepared = true;
+                TurnEnergyScenario.Prepare(managers, log);
             }
             if (fullBattle && !numericModifiersPrepared && OriginalArbitraryVerdictScenario.Enabled)
             {
@@ -3265,6 +3272,10 @@ namespace MonsterTrain2Poju.Probe
                 else if (SpawnStatusScalingScenario.Enabled)
                 {
                     pendingPlay = SpawnStatusScalingScenario.Choose(decision);
+                }
+                else if (TurnEnergyScenario.Enabled)
+                {
+                    pendingPlay = TurnEnergyScenario.Choose(decision);
                 }
                 else if (OriginalAddSnackOnKillScenario.Enabled)
                 {

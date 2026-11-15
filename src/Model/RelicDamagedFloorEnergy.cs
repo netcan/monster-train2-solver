@@ -8,14 +8,14 @@ namespace MonsterTrain2Poju.Model
 
         internal static string? ValidateBeforeDrawOrder(CombatContext context)
         {
-            if (!context.Relics!.Any(relic => relic.EffectTypes.Contains(Effect))) return null;
+            if (!context.Relics!.Any(relic => relic.EffectTypes.Contains(Effect) || relic.EffectTypes.Any(RelicTurnEnergyModel.IsEffect))) return null;
             // This older callback runs before RunMonsterTurn irrespective of owner order.
             if (context.Relics.Any(relic => relic.EffectTypes.Contains(RelicSoloUnitUpgradeModel.FrontRoomEffect)))
                 return "General start-of-turn max-health effects with damaged-floor energy require ordered native calibration.";
             bool earlierHealthEffect = false;
             foreach (string type in context.Relics.SelectMany(relic => relic.EffectTypes))
             {
-                if (type == Effect && earlierHealthEffect)
+                if ((type == Effect || RelicTurnEnergyModel.IsEffect(type)) && earlierHealthEffect)
                     return "Earlier before-draw healing, upgrades or nested room effects with damaged-floor energy require ordered native calibration.";
                 if (type == RelicResourceModel.StartTurnHeal || type == RelicResourceModel.StartTurnRoomEffect ||
                     type == RelicResourceModel.PileStartTurn || type == RelicSoloUnitUpgradeModel.Effect)

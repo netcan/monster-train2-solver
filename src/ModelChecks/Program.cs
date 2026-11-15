@@ -10,6 +10,16 @@ if (args.Length == 2 && args[0] == "--pile-spawn-upgrade-battle-only")
     PileSpawnUpgradeMechanismChecks.Battle(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--turn-energy-batch-only")
+{
+    TurnEnergyMechanismChecks.Batch(args[1]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--turn-energy-battle-only")
+{
+    TurnEnergyMechanismChecks.Battle(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--spawn-status-scaling-batch-only")
 {
     SpawnStatusScalingMechanismChecks.Batch(args[1]);

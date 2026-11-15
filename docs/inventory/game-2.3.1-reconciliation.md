@@ -9,16 +9,16 @@
 | 待办分类 | 类数 | 含目录引用 | 含类型声明 |
 | --- | ---: | ---: | ---: |
 | known-gap | 1 | 1 | 1 |
-| inspect-no-code-link | 73 | 73 | 73 |
+| inspect-no-code-link | 71 | 71 | 71 |
 | inspect-inherited-code | 13 | 13 | 13 |
 | inspect-projection-normalization | 59 | 59 | 59 |
 | inspect-guard-links | 50 | 50 | 50 |
 | review-existing-code | 235 | 235 | 235 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 286 | 0 | 0 |
-| scoped-review-recorded | 10 | 10 | 10 |
+| scoped-review-recorded | 12 | 12 | 12 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 12 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 14 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -39,6 +39,8 @@
 | RelicEffectCardUpgrade | input-only | Sealed native class only overrides editor descriptions and implements the empty ICardUpgradeRelicEffect marker. Its 148 catalog references include upgrade definitions; already acquired card upgrades are battle inputs, not 148 missing live battle handlers. Acquisition consumers are not certified by this review. |
 | RelicEffectModifyCharacterAttackOrHealthPercentage | shared-path | Shared ID-independent birth/query rules capture initialized native float, team/subtype/required-mutator filters and ordered raw attack/health setters. Six original owners/56 effects, 138 configurations and 7728 query/birth pairs; unchanged double-health mutator full native win, 16 branches/frontiers/root search. Other owners companion effects, mixed Covenant projections and conditional effects remain outside this integration. A later shared late-attack integration adds nonneutral percentage birth matrices and a combined unchanged two-mutator full native battle. |
 | RelicEffectModifyDragonsHoardEndOfBattle | campaign-only | Sealed combat callbacks only remember private Pyre damage; campaign rewards have current OnPunish and legacy OnHit calibration. Natural seed20261115 Ring1 carried original owner across 21 inputs/42 full states, default3s budget, Pyre80 native win and independent forecasts/state/RNG. No independent frozen native pair or later rings claimed. |
+| RelicEffectModifyEnergyReducingEveryTurn | shared-path | Shared initialized rule preserves cached display query, actual Test/Apply refresh even when zero, deployment gate, unchecked arithmetic and positive-only AddEnergy/one notification. Combined six original sources/90 configurations/2643 native calls and 63 expected overflow controls; detached batch intercepts energy/notification requests. Unchanged original SolarisT1/WormgutT3 plus capacity artifact native full win, zero-bonus cache refresh, size20 threshold, full successors/16 branches/frontiers/serial-parallel root search. Other tier lifecycles, mixed Covenants, prior before-draw effect ordering and complete hover remain outside integration. |
+| RelicEffectModifyEnergyWhenFloorsOccupied | shared-path | Shared initialized rule distinguishes registered actors from living capacity/GetSize clamp, excludes Pyre, exposes only base query, and preserves separate base/threshold energy clamps including RemoveEnergy(0) and one notification. Combined six sources/90 configurations/2643 native calls; native Int32.MinValue faults explicitly unsupported. Original WormgutT3 plus SolarisT1 and capacity artifact acquired before room setup, actual size20 threshold and full native win/16 branches/frontiers/root search. Other tier lifecycles, mixed Covenants, prior before-draw ordering and enemy-occupied draw cache remain outside integration. |
 | RelicEffectModifyGoldEndOfBattle | campaign-only | Sealed native combat callbacks only remember private Pyre damage and return false; rewards use the separate campaign consumer. 864 current and 756 legacy component rows; natural carried-owner battle integration remains separate. |
 | RelicEffectMultiplyAttackLate | shared-path | Shared parameter-driven late multiplier preserves manager order, champion filtering, captured native Pyre exemption and raw snapshots. Pinned one original owner; 640 native queries, 80 products, 640 actual attacks plus 7728 percentage query/birth pairs with nonneutral late. Unchanged half-attack plus double-enemy-health native win; full successors, 16 branches/frontiers and serial/parallel root search. Actual status callback interactions, all other owner combinations and mixed Covenants are not fully certified. |
 | RelicEffectScaleStatusApplicationsOnSpawn | shared-path | Shared initialized birth rule preserves actual enemy-only/inverted required-mutator gate, original-definition positive starting additions, ordered exact-type runtime trigger scaling and immutable source/target metadata; enchant capture reads runtime parameters. Four original sources/54 configurations/2592 native callbacks in detached objects; starting AddStatus requests intercepted, not applied there. Unchanged original endless RunDistance4 owner acquired before Pyre setup, authored enemy status/trigger and defender controls; native full win/four zero, 16 branches/frontiers/serial-parallel root search. Other source companions, complex status callback competition, mixed Covenants, scaled enchant gameplay lifecycle and complete hover query remain outside certification. |
@@ -57,19 +59,19 @@
 | RelicEffectBuffPyreForBossKill | inspect-no-code-link | 3 | 3 | 无直接链接 |
 | RelicEffectCardUpgradeRandomCardsInDeck | inspect-no-code-link | 3 | 3 | 无直接链接 |
 | RelicEffectGrantRewardStartOfRun | inspect-no-code-link | 3 | 3 | 无直接链接 |
-| RelicEffectModifyEnergyReducingEveryTurn | inspect-no-code-link | 3 | 3 | 无直接链接 |
-| RelicEffectModifyEnergyWhenFloorsOccupied | inspect-no-code-link | 3 | 3 | 无直接链接 |
 | RelicEffectPurgeCardsUntilDeckLimitMet | inspect-no-code-link | 3 | 3 | 无直接链接 |
 | RelicEffectPurgeStarterDeckMatchingFilter | inspect-no-code-link | 3 | 3 | 无直接链接 |
+| RelicEffectShowtime | inspect-no-code-link | 3 | 3 | 无直接链接 |
+| RelicEffectAddStartingUpgradeToUnitCards | inspect-no-code-link | 2 | 2 | 无直接链接 |
 
 ## 可重建输入
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `580207cc00d327d08cba9ab9e3e8a0f8460a58105320240c99c3388b1511ed78`。
-- Model: PDB 校验过的项目源码集合 `1c8aa90300796a08606afad2f74dfc744a9d04a0c597e9b88683acc7ff395d25`。
-- Probe: PDB 校验过的项目源码集合 `23f86f3eaac89c19be913517fde0f6dbfca3316b0133eb5aaf9b02a4cf654b07`。
-- ModelChecks: PDB 校验过的项目源码集合 `c9b3f40ee1487e3532f6af50245f1eb1e8b9047870d07566a4b15b0769108b88`。
+- 人工审查索引 SHA-256: `4bf1710a7f84ad1bd69be7a6179df520547891e75c18b03fdd19427d00793c75`。
+- Model: PDB 校验过的项目源码集合 `bc65218601edccf899df6da0fdc6951107720f3cae6ea94e88346baa2871f978`。
+- Probe: PDB 校验过的项目源码集合 `cfec06eaa798fc20dbf76e7a3c0f065575fb87e428cc3e78aed8950eb4677861`。
+- ModelChecks: PDB 校验过的项目源码集合 `0b1edaa9910b2ef2ba8e0dba187663f9d8308a9f1f1b88609fae846b0f2bdc01`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
