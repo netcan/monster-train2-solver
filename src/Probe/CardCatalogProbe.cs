@@ -77,6 +77,7 @@ namespace MonsterTrain2Poju.Probe
             var killTriggers = cards.Where(card => card.GetCardTriggers().Any(trigger => trigger.GetTrigger() == CardTriggerType.OnKill))
                 .Select(card => new { CardDataId = card.GetID(), Triggers = card.GetCardTriggers()
                     .Where(trigger => trigger.GetTrigger() == CardTriggerType.OnKill).Select(CardUpgradeLifecycleProbe.TriggerDefinition).ToArray() }).ToArray();
+            object[] punishedChampions = PunishedChampionDefinitionProbe.Capture(data);
             JObject afterRng = RngStates();
             bool unchanged = JToken.DeepEquals(before, JToken.FromObject(trace.CaptureDecision()));
             if (!unchanged || UnityEngine.Time.frameCount != frame || !JToken.DeepEquals(beforeRng, afterRng))
@@ -91,7 +92,8 @@ namespace MonsterTrain2Poju.Probe
                 Cards = entries, MoonPhaseUpgradeDefinitions = moonUpgrades,
                 CharacterRoomModifierDefinitions = characterRoomModifiers, EquipmentRoomModifierDefinitions = equipmentRoomModifiers,
                 CardTriggerEffectDefinitions = nativeCardTriggers,
-                CardKillTriggerDefinitions = killTriggers
+                CardKillTriggerDefinitions = killTriggers,
+                PunishedChampionUpgradeDefinitions = punishedChampions
             }))
             using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "card-catalog.mt2f")))
                 document.Write(output);

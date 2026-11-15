@@ -215,6 +215,7 @@ namespace MonsterTrain2Poju.Probe
                 Statuses = effect.GetParamStatusEffectStackData(), Card = effect.GetParamCardData()?.GetID(),
                 Character = effect.GetParamCharacterData()?.GetAssetKey(),
                 CardPool = candidates, HasCardFilter = effect.GetParamCardFilter() != null,
+                ParamSubtype = effect.GetParamSubtype().IsNone ? "" : effect.GetParamSubtype().Key,
                 HasUpgrade = effect.GetParamCardUpgradeData() != null,
                 CardSelectionMode = effect.GetTargetCardSelectionMode().ToString(),
                 CardType = effect.GetTargetCardType().ToString(),
