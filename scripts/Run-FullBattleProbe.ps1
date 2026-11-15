@@ -565,6 +565,7 @@ param(
     [switch] $LateAttackMechanism,
     [switch] $PyreDamageTakenMechanism,
     [switch] $PileSpawnUpgradeMechanism,
+    [switch] $SpawnStatusScalingMechanism,
     [switch] $CampaignRelicCalibration,
     [switch] $CampaignDraftCalibration,
     [switch] $CampaignPostBattleCalibration,
@@ -1285,6 +1286,12 @@ if ($PyreDamageTakenMechanism) {
 }
 if ($PileSpawnUpgradeMechanism) {
     if ($PlayerAdvisor) { throw 'Pile birth-upgrade mechanisms require an isolated worker.' }
+    $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
+    $SettleCardAnimations = $true; $SettleDeathDissolves = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($SpawnStatusScalingMechanism) {
+    if ($PlayerAdvisor) { throw 'Birth status-scaling mechanisms require an isolated worker.' }
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
     $SettleCardAnimations = $true; $SettleDeathDissolves = $true
     $Policy = 'units-spells-and-junk'
@@ -2273,6 +2280,11 @@ if ($PyreDamageTakenMechanism) {
 }
 if ($PileSpawnUpgradeMechanism) {
     $environment['MT2_PROBE_MODIFIERS'] = 'pile-spawn-upgrade'
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
+if ($SpawnStatusScalingMechanism) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'spawn-status-scaling'
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
@@ -4275,6 +4287,10 @@ if ($PyreDamageTakenMechanism -and (-not $trace.PyreDamageTakenPrepared -or -not
 if ($PileSpawnUpgradeMechanism -and (-not $trace.PileSpawnUpgradePrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 3 -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
     throw 'Pile birth upgrades lack three controls, settled victory or exact successors.'
+}
+if ($SpawnStatusScalingMechanism -and (-not $trace.SpawnStatusScalingPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 3 -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
+    throw 'Birth status scaling lack three controls, settled victory or exact successors.'
 }
 if ($OriginalArbitraryVerdict) {
     if (-not $trace.OriginalArbitraryVerdictPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 7 -or

@@ -68,7 +68,8 @@ namespace MonsterTrain2Poju.Probe
             EnchantmentRule? definition = Definition(state.GetSourceCardEffectData());
             if (definition == null) return null;
             var effect = state.GetCardEffect();
-            return new EnchantmentRule(definition.Targeting, definition.StatusPool, Snapshot(effect), Bound(effect), state.GetParentCardState() != null, definition.Upgrade);
+            return new EnchantmentRule(definition.Targeting, state.GetParamStatusEffectStackData().Select(status =>
+                BattleActionProbe.Status(status.statusId, status.count)).ToArray(), Snapshot(effect), Bound(effect), state.GetParentCardState() != null, definition.Upgrade);
         }
         internal static EnchantmentState Snapshot(ICardEffect effect)
         {

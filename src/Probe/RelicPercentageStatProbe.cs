@@ -30,7 +30,9 @@ namespace MonsterTrain2Poju.Probe
             return save.GetCovenants().Count == 0 && save.GetMutators().Count > 0 &&
                 save.GetMutators().All(owner => owner.GetEffects().Count > 0 && owner.GetEffects().All(effect =>
                     (effect is RelicEffectModifyCharacterAttackOrHealthPercentage || effect is RelicEffectMultiplyAttackLate ||
-                        effect is RelicEffectApplyExtraPyreDamage || effect is RelicEffectAddUnitUpgradePerPile) &&
+                        effect is RelicEffectApplyExtraPyreDamage || effect is RelicEffectAddUnitUpgradePerPile ||
+                        effect is RelicEffectScaleStatusApplicationsOnSpawn || effect is RelicEffectIncreasePyreAttack ||
+                        effect is RelicEffectIncreasePyreHealth) &&
                     ((RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect)).GetEffectConditions().Count == 0));
         }
     }

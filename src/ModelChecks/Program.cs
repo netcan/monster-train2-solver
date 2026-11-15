@@ -10,6 +10,16 @@ if (args.Length == 2 && args[0] == "--pile-spawn-upgrade-battle-only")
     PileSpawnUpgradeMechanismChecks.Battle(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--spawn-status-scaling-batch-only")
+{
+    SpawnStatusScalingMechanismChecks.Batch(args[1]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--spawn-status-scaling-battle-only")
+{
+    SpawnStatusScalingMechanismChecks.Battle(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--pyre-damage-taken-batch-only")
 {
     PyreDamageTakenMechanismChecks.Batch(args[1]);

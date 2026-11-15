@@ -30,7 +30,13 @@ namespace MonsterTrain2Poju.Model
         public int Value { get; }
         public bool AllowEnemy { get; }
         public bool AllowPlayer { get; }
-        public IReadOnlyList<CombatStatus> Statuses { get; }
+        public IReadOnlyList<CombatStatus> Statuses { get; private set; }
+        internal CardActionEffect WithStatuses(IReadOnlyList<CombatStatus> statuses)
+        {
+            var copy = (CardActionEffect)MemberwiseClone();
+            copy.Statuses = Array.AsReadOnly(statuses.ToArray());
+            return copy;
+        }
         public CardUpgradeModifier? Upgrade { get; }
         public string Lifetime { get; }
         public CardEffectTests? Tests { get; }

@@ -628,6 +628,8 @@ namespace MonsterTrain2Poju.Probe
                         BumpScenario.AcquireRelicBeforeBattle(managers!, log);
                     if (fullBattle && OriginalResourceRelicBatchScenario.Enabled && !OriginalResourceRelicBatchScenario.Prepared)
                         OriginalResourceRelicBatchScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && SpawnStatusScalingScenario.Enabled)
+                        SpawnStatusScalingScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && PyreResourceRefreshScenario.Enabled && !PyreResourceRefreshScenario.Prepared)
                         PyreResourceRefreshScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && SpawnStatusRelicScenario.OriginalCombatRelics && !SpawnStatusRelicScenario.OriginalCombatRelicsAcquired)
@@ -1731,6 +1733,11 @@ namespace MonsterTrain2Poju.Probe
             {
                 numericModifiersPrepared = true;
                 PileSpawnUpgradeScenario.Prepare(managers, log);
+            }
+            if (fullBattle && !numericModifiersPrepared && SpawnStatusScalingScenario.Enabled)
+            {
+                numericModifiersPrepared = true;
+                SpawnStatusScalingScenario.Prepare(managers, log);
             }
             if (fullBattle && !numericModifiersPrepared && OriginalArbitraryVerdictScenario.Enabled)
             {
@@ -3254,6 +3261,10 @@ namespace MonsterTrain2Poju.Probe
                 else if (PileSpawnUpgradeScenario.Enabled)
                 {
                     pendingPlay = PileSpawnUpgradeScenario.Choose(decision);
+                }
+                else if (SpawnStatusScalingScenario.Enabled)
+                {
+                    pendingPlay = SpawnStatusScalingScenario.Choose(decision);
                 }
                 else if (OriginalAddSnackOnKillScenario.Enabled)
                 {

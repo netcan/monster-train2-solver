@@ -241,6 +241,8 @@ namespace MonsterTrain2Poju.Model
             Generation = generation; UnitUpgrade = unitUpgrade; Action = action; DamageStatusMultiplier = damageStatusMultiplier; StatusScaling = statusScaling; Summon = summon;
             Enchantment = enchantment; BoxedPool = boxedPool == null ? null : Array.AsReadOnly(boxedPool.ToArray());
         }
+        internal CombatEffect WithAction(CardActionEffect action) => new CombatEffect(Type, Value, Counter,
+            Destination, Count, CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, action, DamageStatusMultiplier, StatusScaling, Summon, Enchantment, BoxedPool);
         internal CombatEffect WithCounter(int counter) => new CombatEffect(Type, Value, counter,
             Destination, Count, CardPool, SkipDuplicateInHand, Generation, UnitUpgrade, Action, DamageStatusMultiplier, StatusScaling, Summon, Enchantment, BoxedPool);
         internal CombatEffect WithSummon(TriggeredSummonRule summon) => new CombatEffect(Type, Value, Counter,

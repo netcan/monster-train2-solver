@@ -162,7 +162,19 @@ namespace MonsterTrain2Poju.Probe
             RelicOpeningDeckSpawnRule? deckSpawn = null;
             RelicDrawAndEnergyRule? drawAndEnergy = null;
             RelicPileSpawnUpgradeRule? pileSpawnUpgrade = null;
-            if (effect is RelicEffectAddUnitUpgradePerPile)
+            RelicSpawnStatusScalingRule? spawnStatusScaling = null;
+            if (effect is RelicEffectScaleStatusApplicationsOnSpawn)
+            {
+                object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
+                spawnStatusScaling = new RelicSpawnStatusScalingRule((float)Field("scaleFactor"),
+                    ((SubtypeData[])Field("excludeCharacterSubtypes")).Select(value => value.Key).ToArray(),
+                    (bool)Field("scaleStartingStatuses"), (bool)Field("scaleStatusesApplied"), (bool)Field("onlyScaleStatusesInList"),
+                    ((StatusEffectStackData[])Field("statusesToScale")).Select(status => status.statusId).ToArray(),
+                    managers.GetStatusEffectManager().GetAllStatusEffectsData().GetStatusEffectData().Where(status => status.ScalesInEndless()).Select(status => status.GetStatusId()).ToArray(),
+                    ((MutatorData?)Field("requiredMutator"))?.GetID());
+                amount = 0;
+            }
+            else if (effect is RelicEffectAddUnitUpgradePerPile)
             {
                 object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
                 var subtype = (SubtypeData)Field("characterSubtype");
@@ -540,7 +552,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
                 effect is RelicEffectAddPermanentCorruptionStartOfCombat || effect is RelicEffectChangeSingleFloorCapacity || effect is RelicEffectRandomCardCostOnDraw || effect is RelicEffectSuppressExhaust || effect is RelicEffectPyreHeartResurrection ? data.GetParamFloat() : 0,
-                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence, unitSpawnEffect, deathEffect, openingSpawn, deckSpawn, drawAndEnergy, pileSpawnUpgrade);
+                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence, unitSpawnEffect, deathEffect, openingSpawn, deckSpawn, drawAndEnergy, pileSpawnUpgrade, spawnStatusScaling);
         }
 
         internal static ResourceSnapshot Capture()

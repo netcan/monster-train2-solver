@@ -257,6 +257,7 @@ namespace MonsterTrain2Poju.Probe
                 LateAttackMechanismBatch.Capture(this, managers);
                 PyreDamageTakenMechanismBatch.Capture(this, managers);
                 PileSpawnUpgradeMechanismBatch.Capture(this, managers);
+                SpawnStatusScalingMechanismBatch.Capture(this, managers);
 #endif
                 RngCalibration.Capture();
                 GoldRewardCalibration.Capture(save);
@@ -1398,6 +1399,9 @@ namespace MonsterTrain2Poju.Probe
                 PyreDamageTakenIds = PyreDamageTakenScenario.CardIds,
                 PyreDamageTakenDefinition = PyreDamageTakenScenario.Definition,
                 PyreDamageTakenDefinitionAfter = PyreDamageTakenScenario.CurrentDefinition,
+                SpawnStatusScalingPrepared = SpawnStatusScalingScenario.Prepared,
+                SpawnStatusScalingDefinition = SpawnStatusScalingScenario.Definition,
+                SpawnStatusScalingDefinitionAfter = SpawnStatusScalingScenario.CurrentDefinition,
                 PileSpawnUpgradePrepared = PileSpawnUpgradeScenario.Prepared,
                 PileSpawnUpgradeIds = PileSpawnUpgradeScenario.CardIds,
                 PileSpawnUpgradeDefinition = PileSpawnUpgradeScenario.Definition,

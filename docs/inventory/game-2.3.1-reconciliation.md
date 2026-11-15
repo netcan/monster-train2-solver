@@ -9,16 +9,16 @@
 | 待办分类 | 类数 | 含目录引用 | 含类型声明 |
 | --- | ---: | ---: | ---: |
 | known-gap | 1 | 1 | 1 |
-| inspect-no-code-link | 74 | 74 | 74 |
+| inspect-no-code-link | 73 | 73 | 73 |
 | inspect-inherited-code | 13 | 13 | 13 |
 | inspect-projection-normalization | 59 | 59 | 59 |
 | inspect-guard-links | 50 | 50 | 50 |
 | review-existing-code | 235 | 235 | 235 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 286 | 0 | 0 |
-| scoped-review-recorded | 9 | 9 | 9 |
+| scoped-review-recorded | 10 | 10 | 10 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 11 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 12 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -41,13 +41,13 @@
 | RelicEffectModifyDragonsHoardEndOfBattle | campaign-only | Sealed combat callbacks only remember private Pyre damage; campaign rewards have current OnPunish and legacy OnHit calibration. Natural seed20261115 Ring1 carried original owner across 21 inputs/42 full states, default3s budget, Pyre80 native win and independent forecasts/state/RNG. No independent frozen native pair or later rings claimed. |
 | RelicEffectModifyGoldEndOfBattle | campaign-only | Sealed native combat callbacks only remember private Pyre damage and return false; rewards use the separate campaign consumer. 864 current and 756 legacy component rows; natural carried-owner battle integration remains separate. |
 | RelicEffectMultiplyAttackLate | shared-path | Shared parameter-driven late multiplier preserves manager order, champion filtering, captured native Pyre exemption and raw snapshots. Pinned one original owner; 640 native queries, 80 products, 640 actual attacks plus 7728 percentage query/birth pairs with nonneutral late. Unchanged half-attack plus double-enemy-health native win; full successors, 16 branches/frontiers and serial/parallel root search. Actual status callback interactions, all other owner combinations and mixed Covenants are not fully certified. |
+| RelicEffectScaleStatusApplicationsOnSpawn | shared-path | Shared initialized birth rule preserves actual enemy-only/inverted required-mutator gate, original-definition positive starting additions, ordered exact-type runtime trigger scaling and immutable source/target metadata; enchant capture reads runtime parameters. Four original sources/54 configurations/2592 native callbacks in detached objects; starting AddStatus requests intercepted, not applied there. Unchanged original endless RunDistance4 owner acquired before Pyre setup, authored enemy status/trigger and defender controls; native full win/four zero, 16 branches/frontiers/serial-parallel root search. Other source companions, complex status callback competition, mixed Covenants, scaled enchant gameplay lifecycle and complete hover query remain outside certification. |
 ## 第一批需核对的代码入口
 
 | 原生类 | 队列 | 声明引用 | 全部引用 | 模型／探针示例 |
 | --- | --- | ---: | ---: | --- |
 | RelicEffectCardDuplicator | inspect-no-code-link | 5 | 5 | 无直接链接 |
 | RelicEffectGetCardCopiesOnDeck | inspect-no-code-link | 5 | 5 | 无直接链接 |
-| RelicEffectScaleStatusApplicationsOnSpawn | inspect-no-code-link | 4 | 4 | 无直接链接 |
 | RelicEffectUpgradeCardOnPurchasingUpgrade | inspect-no-code-link | 4 | 4 | 无直接链接 |
 | CardTraitDrawOnPlay | inspect-no-code-link | 3 | 3 | 无直接链接 |
 | CardTraitScalingRewardGold | inspect-no-code-link | 3 | 3 | 无直接链接 |
@@ -60,15 +60,16 @@
 | RelicEffectModifyEnergyReducingEveryTurn | inspect-no-code-link | 3 | 3 | 无直接链接 |
 | RelicEffectModifyEnergyWhenFloorsOccupied | inspect-no-code-link | 3 | 3 | 无直接链接 |
 | RelicEffectPurgeCardsUntilDeckLimitMet | inspect-no-code-link | 3 | 3 | 无直接链接 |
+| RelicEffectPurgeStarterDeckMatchingFilter | inspect-no-code-link | 3 | 3 | 无直接链接 |
 
 ## 可重建输入
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `a9f7f8031cae8e4757df239c0d181fea4d1ce0ebb7504d74cdbec93841a5de62`。
-- Model: PDB 校验过的项目源码集合 `ca6495ee5312f18007de9d5625739fa57be0d5fabbe0fd5df7bda71fe0f7e44e`。
-- Probe: PDB 校验过的项目源码集合 `182a0460f6093f1dbd9fa794329fbd69c868f642274e74520cf5875dfe148f67`。
-- ModelChecks: PDB 校验过的项目源码集合 `dbdb45c6462d11a9e53d7e61f094f82f515fa5299bd015b3d2950d1659abfe2b`。
+- 人工审查索引 SHA-256: `580207cc00d327d08cba9ab9e3e8a0f8460a58105320240c99c3388b1511ed78`。
+- Model: PDB 校验过的项目源码集合 `1c8aa90300796a08606afad2f74dfc744a9d04a0c597e9b88683acc7ff395d25`。
+- Probe: PDB 校验过的项目源码集合 `23f86f3eaac89c19be913517fde0f6dbfca3316b0133eb5aaf9b02a4cf654b07`。
+- ModelChecks: PDB 校验过的项目源码集合 `c9b3f40ee1487e3532f6af50245f1eb1e8b9047870d07566a4b15b0769108b88`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 

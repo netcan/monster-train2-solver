@@ -66,4 +66,4 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -PileSpawnUpgradeMechanism
 
 同次源码核对确认，`RelicEffectScaleStatusApplicationsOnSpawn` 还会按源定义
 追加初始状态，并改写运行时触发器参数；其实际出生与显示预演的 requiredMutator
-条件相反，四个来源还带其他效果。该机制继续待实现，不以本组出生升级替代。
+条件相反，四个来源还带其他效果。该机制现已单独接入并验收，见[出生状态层数缩放](spawn-status-scaling-mechanism.md)；不以本组出生升级替代。
