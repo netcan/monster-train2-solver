@@ -504,7 +504,7 @@ namespace MonsterTrain2Poju.Model
             "buff", "debuff", "regen", "poison", "decay", "corruption", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "titanite", "duality", "conduit",
             "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch", "avarice", "inedible", "eatmany", "steelguard",
-            "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted", "unit_grafted_equipment", "mass", "zeal", "tenacious", "chained", "pain"
+            "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted", "unit_grafted_equipment", "mass", "zeal", "tenacious", "chained", "pain", "spite"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -3003,6 +3003,9 @@ namespace MonsterTrain2Poju.Model
                 int lifeLinkPrevented = 0;
                 bool direct = kind == "Attack";
                 bool attackingTrigger = direct || kind == "Trample";
+                if (actor?.Has("spite") == true)
+                    damage = SpiteStatusModel.Adjust(actor.Source.Team, actor.Health, actor.Source.MaxHealth, actor.Count("spite"),
+                        target.Source.Team, target.Alive, damage);
                 if (applyTraits)
                 {
                     bool retainedLegacy = context?.CardRegistry == null && legacyDetachedCards != null;

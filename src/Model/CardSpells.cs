@@ -2974,6 +2974,17 @@ namespace MonsterTrain2Poju.Model
                 retainedSelf.DeathState.IsBeingRemoved &&
                 state.Rooms.SelectMany(room => room.Units).All(unit => unit.Id != selfUnitId))
                 return new CardTargets(Array.Empty<int>());
+            // Self keeps the dead caster while its physical removal is queued.
+            // RunUnitTurn stops before attacking when IsDead. Admit this no-op
+            // only without turn triggers or statuses that execute turn effects;
+            // those require a separate retained-actor turn lifecycle.
+            if (effect.Target == "Self" && effect.Type == "AttackWithUnit" && !effect.UseSelectedRoom &&
+                retainedSelf?.Health <= 0 && retainedSelf.DeathState?.HasFinishedDying == true &&
+                retainedSelf.Triggers.All(trigger => trigger.Kind != "OnTurnBegin") && retainedSelf.Statuses.All(status =>
+                    status.Id is "cooldown" or "unit_ability" or "unit_ability_available" or "spite") &&
+                state.Rooms.SelectMany(room => room.Units).All(unit => unit.Id != selfUnitId))
+                return CardTargetModel.Collect(state.Rooms.Single(room => room.RoomIndex == roomIndex)
+                    .WithUnits(new[] { retainedSelf }), effect, last, isTesting: isTesting, selfUnitId: selfUnitId);
             if (effect.Type == "CopyLastTurn")
             {
                 IReadOnlyList<int> cards = CardLastTurnCopyModel.EligibleCards(state.Context!, effect, out string? error);

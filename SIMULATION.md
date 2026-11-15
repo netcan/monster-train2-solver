@@ -7,6 +7,16 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+Original SpitefulShackles and Sineater now pass native battle acceptance with
+five original skill uses. Spite reads current half-health after self damage;
+duplicate equipment, healing, armor/spikes, natural cooldown, removal and
+lethal self damage match. The 70.19-second native victory has 22 inputs/seven
+EndTurns, 56 rooms/13 train stages and four zero counters. Independent checks
+cover 123 direct/24 live or preview queries, 218 complete contexts, full chain/
+16 branches and zero-unsupported 128-state serial/parallel search with plan replay.
+See [evidence and limits](docs/original-spite-equipment.md) and
+`scripts/Check-Game231SpiteEquipment.ps1`. Whole-version acceptance remains open.
+
 Original PunishedSpike, Imprison and StarterSharedSentence now pass one native
 battle acceptance. Spike grants 8X zeal once before X separate damage calls;
 zero/one/three X, armor-driven chained hits, enemy/remote/lethal targets and

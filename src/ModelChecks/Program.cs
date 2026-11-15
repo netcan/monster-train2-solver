@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--original-spite-equipment-only")
+{
+    OriginalSpiteEquipmentChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-punished-spike-only")
 {
     OriginalPunishedSpikeChecks.Native(args[1]);

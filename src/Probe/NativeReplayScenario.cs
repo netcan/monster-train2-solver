@@ -1608,6 +1608,11 @@ namespace MonsterTrain2Poju.Probe
                 PyreSpikesScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalSpiteEquipmentScenario.Enabled)
+            {
+                OriginalSpiteEquipmentScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalPunishedSpikeScenario.Enabled)
             {
                 OriginalPunishedSpikeScenario.Prepare(managers, log);
@@ -3135,7 +3140,11 @@ namespace MonsterTrain2Poju.Probe
                 RelicStatusStackProbe.Matrix();
                 RelicStatusMagnitudeProbe.Matrix();
                 RelicStatusDecayProbe.Matrix();
-                if (OriginalPunishedSpikeScenario.Enabled)
+                if (OriginalSpiteEquipmentScenario.Enabled)
+                {
+                    pendingPlay = OriginalSpiteEquipmentScenario.Choose(decision);
+                }
+                else if (OriginalPunishedSpikeScenario.Enabled)
                 {
                     pendingPlay = OriginalPunishedSpikeScenario.Choose(decision);
                 }
