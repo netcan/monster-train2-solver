@@ -509,7 +509,7 @@ namespace MonsterTrain2Poju.Probe
                         OuterBossPhaseProbe.AnchorSlots(character, BossState.AttackPhase.Relentless))
                     : null, lastFeederId: triggers.Any(trigger => trigger.Kind == "OnEaten") || OriginalOpeningMorselsScenario.Enabled || OriginalMorselEatenScenario.Enabled || OriginalOnKillGenerationScenario.Enabled ?
                         (character.GetLastFeederCharacter() == null ? 0 : UnitId(character.GetLastFeederCharacter())) : (int?)null,
-                    moonPhaseMask: OriginalCloisterScenario.Enabled || OriginalUpgradeEnchantmentScenario.Enabled || EclipseChamberScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || MoonPhaseCaptureProbe.CaptureMasks ? (int)character.GetMoonPhaseMask() : (int?)null, damageHistory: UnitDamageHistoryProbe.Capture(character, triggers));
+                    moonPhaseMask: OriginalPenitentScenario.Enabled || OriginalCloisterScenario.Enabled || OriginalUpgradeEnchantmentScenario.Enabled || EclipseChamberScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || MoonPhaseCaptureProbe.CaptureMasks ? (int)character.GetMoonPhaseMask() : (int?)null, damageHistory: UnitDamageHistoryProbe.Capture(character, triggers));
         }
 
         internal CombatContext CaptureContext()
@@ -1341,6 +1341,9 @@ namespace MonsterTrain2Poju.Probe
                 OriginalDevoteTreasureIds = OriginalDevoteTreasureScenario.TreasureIds,
                 OriginalSparePrepared = OriginalSpareScenario.Prepared,
                 OriginalCloisterPrepared = OriginalCloisterScenario.Prepared,
+                OriginalPenitentPrepared = OriginalPenitentScenario.Prepared,
+                OriginalPenitentIds = OriginalPenitentScenario.CardIds,
+                OriginalPenitentDefinition = OriginalPenitentScenario.Definition,
                 OriginalCloisterIds = OriginalCloisterScenario.CardIds,
                 OriginalCloisterDefinition = OriginalCloisterScenario.Definition,
                 RoomEnemyEntries = RoomEnemyEntryProbe.Records,

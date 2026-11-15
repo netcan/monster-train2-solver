@@ -5,6 +5,7 @@ namespace MonsterTrain2Poju.Model
     public static class RoomAttachmentTriggerIdentity
     {
         public static bool Known(string dataId) => dataId is
+            "f4360a0a-2be3-40c0-b1f1-da59ca42ffac" or
             "00f55f64-c5c1-4d5e-9f59-f50413341c1e" or
             "08001aa4-2e9d-42da-9ba7-ff4b0fd5ce80" or "57921ae8-ca98-4a3b-a659-5e741d2e904a" or
             "6ee4f735-fc54-4f85-aa13-fd0d169af3b2" or "93759003-bb97-44e4-9ef6-472c55bee2d9" or
