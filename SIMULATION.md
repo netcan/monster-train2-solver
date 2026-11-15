@@ -7,6 +7,14 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+Original 2.3.1 Mournguard now accumulates its PostCombat upgrade from each
+unit's current missing HP. Two unchanged originals prove native Zeal,
+full-heal/damage/reset controls and one exact accumulated unit/source record.
+Eight inputs/five EndTurns, 16 continuous replay branches and 128-state
+serial/parallel search pass with zero unsupported candidates. See
+[the native evidence and remaining combinations](docs/missing-health-unit-upgrade.md)
+and `scripts/Check-Game231MissingHealthUpgrade.ps1`.
+
 Treasure discarded by the 2.3.1 Devote operation now casts through the
 complete train. Original DarkInitiate/GuardianAmulet witnesses cover level-up
 before free birth, capacity overflow, Pyre refusal, Freeze cleanup and exact

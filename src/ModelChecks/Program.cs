@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--original-missing-health-upgrade-only")
+{
+    OriginalMissingHealthUpgradeChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-devote-treasure-only")
 {
     OriginalDevoteTreasureChecks.Native(args[1]);

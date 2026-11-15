@@ -1601,13 +1601,15 @@ namespace MonsterTrain2Poju.Model
                         }
                         if (effect.Type == "CardEffectAddCardUpgradeToUnits" || effect.Type == "CardEffectAddTempCardUpgradeToUnits" ||
                             effect.Type == "CardEffectRemoveTempUpgradeFromUnit" || effect.Type == "CardEffectBuffEquipment" ||
-                            effect.Type is "CardEffectAddCardUpgradeToUnitsOnMoonPhase" or "CardEffectAddCardUpgradeToUnitsPerDragonsHoard" or "CardEffectAddCardUpgradeToUnitsPerStatusEffect" or DevotionModel.NativeUnitUpgrade)
+                            effect.Type is "CardEffectAddCardUpgradeToUnitsOnMoonPhase" or "CardEffectAddCardUpgradeToUnitsPerDragonsHoard" or "CardEffectAddCardUpgradeToUnitsPerStatusEffect" or DevotionModel.NativeUnitUpgrade or MissingHealthUnitUpgradeModel.NativeEffect)
                         {
                             CardActionEffect? action = effect.UnitUpgrade;
-                            if (action?.Upgrade == null || action.Type != (effect.Type == DevotionModel.NativeUnitUpgrade ? DevotionModel.UnitUpgrade : effect.Type == "CardEffectAddCardUpgradeToUnitsOnMoonPhase" ? "UnitUpgradeOnMoonPhase" :
+                            if (action?.Upgrade == null || action.Type != (effect.Type == MissingHealthUnitUpgradeModel.NativeEffect ? MissingHealthUnitUpgradeModel.Effect : effect.Type == DevotionModel.NativeUnitUpgrade ? DevotionModel.UnitUpgrade : effect.Type == "CardEffectAddCardUpgradeToUnitsOnMoonPhase" ? "UnitUpgradeOnMoonPhase" :
                                 effect.Type == "CardEffectAddCardUpgradeToUnitsPerDragonsHoard" ? "UnitUpgradePerHoard" :
                                 effect.Type == "CardEffectAddCardUpgradeToUnitsPerStatusEffect" ? "UnitUpgradePerStatus" : effect.Type == "CardEffectBuffEquipment" ? "BuffEquipment" : effect.Type == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade"))
                                 return "Missing triggered unit upgrade definition.";
+                            if (action.Type == MissingHealthUnitUpgradeModel.Effect && MissingHealthUnitUpgradeModel.Validate(action) is string missingHealthError)
+                                return missingHealthError;
                             if (action.Type == "UnitUpgradeOnMoonPhase" && (action.Value is < 0 or > 3 || state.Context?.QueryFrame?.MoonPhase is not (1 or 2)))
                                 return "Moon-dependent unit upgrades require a captured phase and a calibrated mask.";
                             if (action.Type == DevotionModel.UnitUpgrade && state.Context?.QueryFrame?.Devotion == null)
@@ -5299,6 +5301,17 @@ namespace MonsterTrain2Poju.Model
                     if (action.Type == "BuffEquipment")
                     {
                         if (!ApplyTriggeredEquipmentBuff(actor, target, action, kind, parentEquipmentId)) return false;
+                        continue;
+                    }
+                    if (action.Type == MissingHealthUnitUpgradeModel.Effect)
+                    {
+                        int count = Math.Max(0, target.Source.MaxHealth - target.Health) / action.Value;
+                        if (count == 0) continue;
+                        CardUpgradeModifier scaled = MissingHealthUnitUpgradeModel.Scale(action.Upgrade!, count);
+                        // This native effect calls ApplyCardUpgrade/AccumulateCardScale
+                        // directly and never runs source-card unit-upgrade scaling traits.
+                        if (!ApplyUpgrade(target, scaled, action.Lifetime, false, null, 0, kind, scaleUpgrade: true)) return false;
+                        Emit(action.Type, actor, target, count);
                         continue;
                     }
                     if (!ApplyUpgrade(target, action.Upgrade!, action.Lifetime, action.Type == "RemoveUnitUpgrade",
