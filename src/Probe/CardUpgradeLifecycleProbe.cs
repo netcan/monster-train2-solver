@@ -54,12 +54,15 @@ namespace MonsterTrain2Poju.Probe
                 (nativeEffects.Count == 1 && effects.Length == 0 && nativeActions[0].Type == "BuffSourceSpellDamage" ||
                  nativeEffects.Count == 0 && effects.Length == 1 && effects[0].GetEffectStateName() is "CardEffectGainEnergy" or "CardEffectAddBattleCard" or "CardEffectAddUpgradedCopy" or
                     "CardEffectRewardGold" or "CardEffectAdjustDragonsHoard" or "CardEffectAdjustForgePoints" or "CardEffectAdjustCorruption" or "CardEffectSpawnMonsterOrAddStatusEffect");
-            if (data.GetTrigger().ToString() != "OnCast" && !conversion && !supportedKill) interactions.Add("Unsupported card upgrade trigger " + data.GetTrigger());
+            bool supportedSpare = data.GetTrigger() == CardTriggerType.OnSpare && CardSpareTriggerModel.Supported(
+                new CardLifecycleTrigger("OnSpare", data.GetDescriptionKey(), nativeEffects.Select(effect => TypeNameCache.GetType(effect.cardTriggerEffect).Name)
+                    .Concat(effects.Select(effect => effect.GetEffectStateName())).ToArray(), id, actions, interactions.ToArray()));
+            if (data.GetTrigger().ToString() != "OnCast" && !conversion && !supportedKill && !supportedSpare) interactions.Add("Unsupported card upgrade trigger " + data.GetTrigger());
             return new CardLifecycleTrigger(data.GetTrigger().ToString(), data.GetDescriptionKey(),
                 nativeEffects.Select(effect => TypeNameCache.GetType(effect.cardTriggerEffect).Name)
                     .Concat(effects.Select(effect => effect.GetEffectStateName())).ToArray(), id, actions, interactions.Distinct().ToArray(),
-                data.GetTrigger() == CardTriggerType.OnKill ? !AllGameManagers.Instance!.GetAllGameData().GetBalanceData()
-                    .GetDisallowedDeploymentPhaseCardTriggers().Contains(CardTriggerType.OnKill) : (bool?)null);
+                data.GetTrigger() is CardTriggerType.OnKill or CardTriggerType.OnSpare ? !AllGameManagers.Instance!.GetAllGameData().GetBalanceData()
+                    .GetDisallowedDeploymentPhaseCardTriggers().Contains(data.GetTrigger()) : (bool?)null);
         }
         internal static CardLifecycleTrigger TriggerDefinition(CardTriggerEffectData data) => Trigger(data);
         private static CardLifecycleTrigger Trigger(CardTriggerEffectState state)

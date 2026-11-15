@@ -1026,6 +1026,7 @@ namespace MonsterTrain2Poju.Model
                         new[] { effect.Statuses[0].WithStacks(count) }, tests: effect.Tests, filters: effect.Filters);
                 }
                 if ((effect.Type == ForgePointsModel.Effect || effect.Type == DevotionModel.Effect) && selected.Preview) continue;
+                bool fireSpare = effect.Type == "Damage";
                 if (effect.Type == ExaltationModel.Effect)
                 {
                     if (targets.UnitIds.Count == 0) continue;
@@ -2195,6 +2196,24 @@ namespace MonsterTrain2Poju.Model
                             return UnsupportedTrain("Conflicting terminal results in one spell are not modeled.");
                         outcome = applied.Outcome;
                         bossDead |= outcome == RoomOutcome.BattleWon;
+                    }
+                    if (fireSpare && sourceCardId > 0 && state.Context!.FindCard(sourceCardId) is CardInstanceState sparedCard &&
+                        sparedCard.MaskDescriptor?.SpareTriggers?.Count > 0)
+                    {
+                        CombatUnit? survivor = state.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == id);
+                        if (survivor?.Health > 0)
+                        {
+                            DrainDeaths();
+                            if (routingError != null) return UnsupportedTrain(routingError);
+                            survivor = state.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == id);
+                            if (survivor?.Health > 0)
+                            {
+                                CombatContext changed = CardSpareTriggerModel.Apply(state.Context!, sparedCard, survivor,
+                                    selected.Preview, selected.Deployment, out string? spareError);
+                                if (spareError != null) return UnsupportedTrain(spareError);
+                                state = WithContext(state, changed);
+                            }
+                        }
                     }
                 }
                 if (effect.Type == FloorDamageModel.Effect && sweepRoom >= 0)

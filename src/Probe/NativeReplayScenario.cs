@@ -1598,6 +1598,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalDevoteTreasureScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalSpareScenario.Enabled)
+            {
+                OriginalSpareScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalExaltationScenario.Enabled)
             {
                 OriginalExaltationScenario.Prepare(managers, log);
@@ -3311,7 +3316,8 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalArbitraryVerdictScenario.Enabled) pendingPlay = OriginalArbitraryVerdictScenario.Choose(decision);
                 if (OriginalWickedFervorScenario.Enabled) pendingPlay = OriginalWickedFervorScenario.Choose(decision);
                 if (OriginalDevoteTreasureScenario.Enabled) pendingPlay = OriginalDevoteTreasureScenario.Choose(decision);
-                if (OriginalExaltationScenario.Enabled) pendingPlay = OriginalExaltationScenario.Choose(decision);
+                if (OriginalSpareScenario.Enabled) pendingPlay = OriginalSpareScenario.Choose(decision);
+                else if (OriginalExaltationScenario.Enabled) pendingPlay = OriginalExaltationScenario.Choose(decision);
                 else if (OriginalUpgradeEnchantmentScenario.Enabled) pendingPlay = OriginalUpgradeEnchantmentScenario.Choose(decision);
                 if (OriginalFriendlyDamageStatusScenario.Enabled) pendingPlay = OriginalFriendlyDamageStatusScenario.Choose(decision);
                 if (OriginalMissingHealthUpgradeScenario.Enabled) pendingPlay = OriginalMissingHealthUpgradeScenario.Choose(decision);

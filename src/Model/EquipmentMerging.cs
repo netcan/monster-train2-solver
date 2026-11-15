@@ -56,7 +56,7 @@ namespace MonsterTrain2Poju.Model
                 onCastEffects: original.OnCastEffects, onUnplayedNegativeEffects: original.OnUnplayedNegativeEffects,
                 onCastEffectGroupSizes: original.OnCastEffectGroupSizes,
                 unplayedNegativeOrder: original.UnplayedNegativeOrder, hasUnsupportedUnplayedTriggers: original.HasUnsupportedUnplayedTriggers,
-                forgeEligible: original.ForgeEligible, hasKillTriggers: original.HasKillTriggers, onForgeEffects: original.OnForgeEffects);
+                forgeEligible: original.ForgeEligible, hasKillTriggers: original.HasKillTriggers, onForgeEffects: original.OnForgeEffects, hasSpareTriggers: original.HasSpareTriggers);
         }
         internal CardMaskDescriptor Mask(CardMaskDescriptor descriptor)
         {
@@ -69,7 +69,7 @@ namespace MonsterTrain2Poju.Model
                 d.AuthoredUnitAbility, d.EquipmentUnitAbility, d.AuthoredGraft, d.CanScaleWithMagicPower, d.IsChampionCard,
                 d.UnmodifiedSpawnAttack, d.HasStartingUpgrades, d.UnmodifiedSpawnHealth);
             return new CardMaskDescriptor(definition, descriptor.BaseCost, descriptor.BaseTraits, descriptor.AuthoredCastEffects,
-                descriptor.Purified, descriptor.PermanentGraft, descriptor.TemporaryTraits, descriptor.PermanentReplacements, descriptor.SourceTraits, descriptor.KillTriggers, descriptor.HoldoverUpgradePending, descriptor.GraftedEquipment);
+                descriptor.Purified, descriptor.PermanentGraft, descriptor.TemporaryTraits, descriptor.PermanentReplacements, descriptor.SourceTraits, descriptor.KillTriggers, descriptor.HoldoverUpgradePending, descriptor.GraftedEquipment, descriptor.SpareTriggers);
         }
     }
 

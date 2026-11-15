@@ -7,6 +7,15 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+Original 2.3.1 PainTithe and TrialByFire now have OnSpare battle evidence:
+surviving damage targets grow the source spell or refund energy behind a friendly
+team test, including armor/shield/zero damage and Undying revival. The same spell
+is natively recalled and replayed to verify cumulative permanent damage. The
+19-input/five-EndTurn victory passes continuous replay/16 branches, 128-state
+serial/parallel search and three-step replay, with zero unsupported decisions
+or search attempts. See [native evidence and scope](docs/card-spare.md) and
+`scripts/Check-Game231Spare.ps1`; full catalog revalidation remains open.
+
 Original 2.3.1 Exaltation now heals selected actors before collecting same-floor
 splash victims, excluding every healed actor. Seven original casts plus controls
 cover friendly/enemy healing, armor/lethal/isolated bystanders, damage-only spell

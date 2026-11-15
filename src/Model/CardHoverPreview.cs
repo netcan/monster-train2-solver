@@ -44,7 +44,7 @@ namespace MonsterTrain2Poju.Model
                 return new CardHoverPreviewResult("Card hover requires captured primary life-link, health-cache, world and physical-copy state.");
             if (rule.Effect != "Spell" || rule.CardType != "Spell" || rule.IsAnyAbility != false ||
                 rule.ExternalInteractions.Count != 0 || rule.Equipment != null || rule.Ability != null ||
-                rule.SpawnUnit != null || rule.Summon != null || rule.HasKillTriggers ||
+                rule.SpawnUnit != null || rule.Summon != null || rule.HasKillTriggers || rule.HasSpareTriggers ||
                 rule.Effects.Count == 0 || rule.Effects.Concat(rule.OnCastEffects).Any(effect =>
                     effect.Type is not ("BuffHealth" or "DebuffHealth" or "Damage" or "Heal") ||
                     effect.Target is not ("DropTargetCharacter" or "Room") &&

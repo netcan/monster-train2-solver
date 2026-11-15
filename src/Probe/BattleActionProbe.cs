@@ -223,6 +223,8 @@ namespace MonsterTrain2Poju.Probe
             foreach (CardTriggerEffectData trigger in data.GetCardTriggers())
             {
                 string triggerType = trigger.GetTrigger().ToString();
+                if (triggerType == "OnSpare" && data.GetCardType() == CardType.Spell && !data.IsUnitAbility() && !data.IsRoomAbility() &&
+                    CardSpareTriggerModel.Supported(CardUpgradeLifecycleProbe.TriggerDefinition(trigger))) continue;
                 if (trigger.GetTriggerEffects().Count > 0 && !(triggerType == "OnKill" &&
                     CardKillTriggerModel.Supported(CardUpgradeLifecycleProbe.TriggerDefinition(trigger))))
                 {
@@ -368,7 +370,8 @@ namespace MonsterTrain2Poju.Probe
                 hasUnsupportedUnplayedTriggers: hasUnsupportedUnplayedTriggers, forgeEligible: forgeEligible,
                 hasKillTriggers: data.GetCardTriggers().Any(trigger => trigger.GetTrigger() == CardTriggerType.OnKill),
                 onForgeEffects: onForgeEffects.Count == 0 ? null : onForgeEffects,
-                onCastEffectGroupSizes: onCastGroupSizes);
+                onCastEffectGroupSizes: onCastGroupSizes,
+                hasSpareTriggers: data.GetCardTriggers().Any(trigger => trigger.GetTrigger() == CardTriggerType.OnSpare));
         }
 
         private static bool SupportedSpellEffect(CardEffectData effect) =>
@@ -379,6 +382,11 @@ namespace MonsterTrain2Poju.Probe
         internal static CardActionEffect DescribeTriggerEffect(CardEffectData effect, List<string> interactions, CardData? source = null,
             bool captureBirthLifecycle = false)
         {
+            if (effect.GetEffectStateName() == "CardEffectRequireTriggeredCharacterTeam")
+                return new CardActionEffect("RequireTriggeredTeam", effect.GetTargetMode().ToString(), 0,
+                    effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
+                    Array.Empty<CombatStatus>(), tests: new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(),
+                        effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, new CardEffectRequireTriggeredCharacterTeam().CanPlayAfterBossDead));
             if (effect.GetEffectStateName() == "CardEffectBalatroConvertCard")
             {
                 if (effect.GetParamCardData() == null)
@@ -809,7 +817,7 @@ namespace MonsterTrain2Poju.Probe
                 rule.UpgradeInteractions, rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType,
                 rule.Equipment, rule.Ability, rule.Summon, rule.CardType, rule.IsAnyAbility, rule.CanPlayInEngineRoom, rule.OnCastEffects,
                 rule.OnUnplayedNegativeEffects, rule.UnplayedNegativeOrder, rule.HasUnsupportedUnplayedTriggers,
-                rule.ForgeEligible, rule.HasKillTriggers, rule.OnForgeEffects, rule.OnCastEffectGroupSizes);
+                rule.ForgeEligible, rule.HasKillTriggers, rule.OnForgeEffects, rule.OnCastEffectGroupSizes, rule.HasSpareTriggers);
         }
 
         private static string[] HandInteractions(CardData data, bool consume)

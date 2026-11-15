@@ -415,6 +415,8 @@ namespace MonsterTrain2Poju.Model
             if (retainError != null) return retainError;
             string? killError = CardKillTriggerModel.Validate(instance);
             if (killError != null) return killError;
+            string? spareError = CardSpareTriggerModel.Validate(instance);
+            if (spareError != null) return spareError;
             string? moonError = CardMoonUpgradeModel.Validate(instance);
             if (moonError != null) return moonError;
             string? graftError = CardGraftedEquipmentModel.Validate(instance);
@@ -470,12 +472,16 @@ namespace MonsterTrain2Poju.Model
             if (graftError != null) interactions.Add(graftError);
             string? killError = CardKillTriggerModel.Validate(instance);
             if (killError != null) interactions.Add(killError);
+            string? spareError = CardSpareTriggerModel.Validate(instance);
+            if (spareError != null) interactions.Add(spareError);
             // Heuristic ranking also resolves unsupported cards. Keep their
             // captured guard instead of throwing while deriving branch traits.
             string? maskError = instance.MaskDescriptor == null ? null : UnsupportedReason(instance);
             if (maskError != null) interactions.Add(maskError);
             if (rule.HasKillTriggers && instance.MaskDescriptor?.KillTriggers?.Count > 0 != true)
                 interactions.Add("Card OnKill requires captured branch-owned trigger payloads.");
+            if (rule.HasSpareTriggers && instance.MaskDescriptor?.SpareTriggers?.Count > 0 != true)
+                interactions.Add("Card OnSpare requires captured branch-owned trigger payloads.");
             if (CardExhaustModel.HasConsume(instance) && instance.ExhaustState == null) interactions.Add("Consume requires captured private trait state.");
             if (rule.DataId != instance.DataId) interactions.Add("Card instance definition differs.");
             if (instance.Permanent.PersistentHealth != 0 || instance.Temporary.PersistentHealth != 0) interactions.Add("Persistent card health");
@@ -583,7 +589,7 @@ namespace MonsterTrain2Poju.Model
                 destination, unit, interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), effects, rule.UpgradeInteractions,
                 rule.HandDiscardInteractions, rule.HandConsumeInteractions, rule.CostType, rule.Equipment, rule.Ability, rule.Summon, rule.CardType,
                 rule.IsAnyAbility, rule.CanPlayInEngineRoom, onCastEffects, onUnplayedNegativeEffects,
-                rule.UnplayedNegativeOrder, unsupportedUnplayedTriggers, rule.ForgeEligible, rule.HasKillTriggers, rule.OnForgeEffects, onCastGroupSizes);
+                rule.UnplayedNegativeOrder, unsupportedUnplayedTriggers, rule.ForgeEligible, rule.HasKillTriggers, rule.OnForgeEffects, onCastGroupSizes, rule.HasSpareTriggers);
 
             CardActionEffect ResolveEffect(CardActionEffect effect) => ResolveMergedEffect(effect, 1);
             CardActionEffect ResolveMergedEffect(CardActionEffect effect, int count) => new CardActionEffect(effect.Type, effect.Target,

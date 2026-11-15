@@ -21,7 +21,9 @@ namespace MonsterTrain2Poju.Probe
                 holdoverUpgradePending: !CardTraitCompositionProbe.Bases(card).Concat(card.GetTemporaryCardStateModifiers().GetTemporaryTraits())
                     .Any(trait => trait is CardTraitRetain)
                     ? card.GetTraitStates().OfType<CardTraitRetain>().Select(trait => CardTraitCompositionProbe.Value(trait).HoldoverPending).FirstOrDefault()
-                    : null, graftedEquipment: UnitGraftProbe.EventRule(card));
+                    : null, graftedEquipment: UnitGraftProbe.EventRule(card),
+                spareTriggers: KillTriggers(card.GetTriggers().Where(trigger => trigger.GetTrigger() == CardTriggerType.OnSpare)
+                    .Select(trigger => CardUpgradeLifecycleProbe.TriggerDefinition(trigger.GetCardTriggerEffectData())).ToArray()));
         }
         internal static CardUpgradeMaskMetadata? Upgrade(CardUpgradeState upgrade) => !Enabled ? null :
             new CardUpgradeMaskMetadata(upgrade.GetStatusEffectUpgrades().Select(status =>
@@ -47,6 +49,8 @@ namespace MonsterTrain2Poju.Probe
                 .SelectMany(trigger => trigger.GetCardEffects()).Select(effect => effect.GetEffectStateName()).ToArray(),
                 sourceTraits: data.GetTraits().Select(CardSourceTraitProbe.Capture).ToArray(),
                 killTriggers: KillTriggers(data.GetCardTriggers().Where(trigger => trigger.GetTrigger() == CardTriggerType.OnKill)
+                    .Select(CardUpgradeLifecycleProbe.TriggerDefinition).ToArray()),
+                spareTriggers: KillTriggers(data.GetCardTriggers().Where(trigger => trigger.GetTrigger() == CardTriggerType.OnSpare)
                     .Select(CardUpgradeLifecycleProbe.TriggerDefinition).ToArray()));
         }
         private static CardLifecycleTrigger[]? KillTriggers(CardLifecycleTrigger[] triggers) => triggers.Length == 0 ? null : triggers;
