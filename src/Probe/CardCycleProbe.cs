@@ -183,7 +183,7 @@ namespace MonsterTrain2Poju.Probe
                 HandSize = count, MaxHandSize = cards.GetMaxHandSize(), PlayedCardId = id, Before = before,
                 Predicted = CardCycleModel.DrawCards(before, count, cards.GetMaxHandSize(), id) };
             CombatContext context = FullBattleTrace.Active.CaptureContext();
-            if (RelicCorruptedAngelsModel.Enabled(context))
+            if (RelicCorruptedAngelsModel.Enabled(context) || cardType == CardType.Invalid && context.Cards.NextDrawUpgrades?.Count > 0)
             {
                 record.StandbyContext = context.WithCards(before);
                 record.Definitions = FullBattleTrace.Active.CaptureDecision().PlayRules;

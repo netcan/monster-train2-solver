@@ -1717,6 +1717,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalJuiceUpgradesScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && JuiceUpgradeScenario.Enabled)
+            {
+                numericModifiersPrepared = true;
+                JuiceUpgradeScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalArbitraryVerdictScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original percentage health must start on deployment turn.");
@@ -3227,6 +3232,10 @@ namespace MonsterTrain2Poju.Probe
                 else if (OriginalBalatroEventYorickScenario.Enabled)
                 {
                     pendingPlay = OriginalBalatroEventYorickScenario.Choose(decision);
+                }
+                else if (JuiceUpgradeScenario.Enabled)
+                {
+                    pendingPlay = JuiceUpgradeScenario.Choose(decision);
                 }
                 else if (OriginalAddSnackOnKillScenario.Enabled)
                 {

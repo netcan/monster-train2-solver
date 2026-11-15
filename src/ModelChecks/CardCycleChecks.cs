@@ -88,7 +88,8 @@ internal static class CardCycleChecks
                         cycle.TryGetProperty("EphemeralCardIds", out var ephemeralIds) ? ephemeralIds.Deserialize<int[]>() : null,
                         cycle.TryGetProperty("PersistentCardIds", out var persistentIds) ? persistentIds.Deserialize<int[]>() : null,
                         cycle.TryGetProperty("InfusionCardIds", out var infusionIds) ? infusionIds.Deserialize<int[]>() : null);
-            if (drawContext != null && RelicCorruptedAngelsModel.Enabled(drawContext))
+            if (drawContext != null && (RelicCorruptedAngelsModel.Enabled(drawContext) ||
+                cycle.GetProperty("Kind").GetString() == "SpellDraw" && drawContext.Cards.NextDrawUpgrades?.Count > 0))
             {
                 BattlePlayRules definitions = cycle.GetProperty("Definitions").Deserialize<BattlePlayRules>()!;
                 TypedDrawResult draw = cycle.GetProperty("Kind").GetString() == "Draw"

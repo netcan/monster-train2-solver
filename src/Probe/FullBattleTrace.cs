@@ -252,6 +252,7 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                 RoomHealthMechanismBatch.Capture(this, managers);
                 JuiceMechanismBatch.Capture(this, managers);
+                JuiceUpgradeMechanismBatch.Capture(this, managers);
                 PercentageStatsMechanismBatch.Capture(this, managers);
                 LateAttackMechanismBatch.Capture(this, managers);
 #endif
@@ -1386,6 +1387,11 @@ namespace MonsterTrain2Poju.Probe
                 OriginalJuiceUpgradesIds = OriginalJuiceUpgradesScenario.CardIds,
                 OriginalJuiceUpgradesDefinitions = OriginalJuiceUpgradesScenario.Definitions,
                 OriginalJuiceUpgradesDefinitionsAfter = OriginalJuiceUpgradesScenario.CurrentDefinitions,
+                JuiceUpgradePrepared = JuiceUpgradeScenario.Prepared,
+                JuiceUpgradeIds = JuiceUpgradeScenario.CardIds,
+                JuiceUpgradeDefinitions = JuiceUpgradeScenario.Definitions,
+                JuiceUpgradeDefinitionsAfter = JuiceUpgradeScenario.CurrentDefinitions,
+                JuiceUpgradeCallbacks = JuiceUpgradeScenario.Samples,
                 OriginalDevoteTreasurePrepared = OriginalDevoteTreasureScenario.Prepared,
                 OriginalDevoteTreasureSetupIds = OriginalDevoteTreasureScenario.SetupIds,
                 OriginalDevoteTreasureIds = OriginalDevoteTreasureScenario.TreasureIds,

@@ -23,8 +23,8 @@ namespace MonsterTrain2Poju.Model
             card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade => upgrade.DataId == TripleUpgrade);
         internal static bool KnownTripleUpgrade(CardUpgradeModifier upgrade) => KnownJuiceUpgrade(upgrade, true);
         // Recognize a fully represented mechanism, independently of content IDs.
-        // Cast actions keep their ordinary dispatcher validation. Self-upgrade and
-        // ordered scaling callbacks are excluded by SimpleStatusOwner below.
+        // Cast actions keep their ordinary dispatcher validation. Parameter-
+        // upgrade cast effects and other ordered scaling remain guarded below.
         internal static bool SimpleUpgrade(CardUpgradeModifier upgrade) =>
             upgrade.Stats.Damage == 0 && upgrade.Stats.Health == 0 && upgrade.Stats.Cost == 0 &&
             upgrade.Stats.Heal == 0 && upgrade.Stats.Size == 0 && upgrade.Stats.XCost == 0 &&
@@ -49,16 +49,18 @@ namespace MonsterTrain2Poju.Model
         private static bool SimpleStatusOwner(CardInstanceState card, CardTraitCompositionState traits)
         {
             var descriptor = card.MaskDescriptor!;
+            bool KnownEffect(string effect) => effect is "CardEffectAddStatusEffect" or
+                "CardEffectAddTempCardUpgradeToNextDrawnCard" or "CardEffectDraw" or "CardEffectDrawType";
             if (descriptor.Definition.DataId != card.DataId || descriptor.Definition.CardType != "Spell" ||
                 descriptor.Definition.XCost || descriptor.Definition.IsSpawner || descriptor.Definition.HasSpawnData ||
                 descriptor.Definition.AuthoredGraft || descriptor.PermanentGraft || descriptor.GraftedEquipment != null ||
-                descriptor.AuthoredCastEffects.Any(effect => effect != "CardEffectAddStatusEffect") ||
+                descriptor.AuthoredCastEffects.Any(effect => !KnownEffect(effect)) ||
                 descriptor.PermanentReplacements.Count != 0 ||
                 descriptor.SourceTraits is not { Count: 0 } || descriptor.KillTriggers?.Count is > 0 ||
                 descriptor.SpareTriggers?.Count is > 0 || descriptor.Definition.MainEffectNames.Count == 0 ||
-                descriptor.Definition.MainEffectNames.Any(effect => effect != "CardEffectAddStatusEffect") ||
+                descriptor.Definition.MainEffectNames.Any(effect => !KnownEffect(effect)) ||
                 card.Permanent.Upgrades.Count != 1 || !SimpleUpgrade(card.Permanent.Upgrades[0]) ||
-                card.Temporary.Upgrades.Count != 0 || card.StatusScalingTraits?.Count is > 0 ||
+                card.Temporary.Upgrades.Any(upgrade => !SimpleStatusPayload(upgrade)) || card.StatusScalingTraits?.Count is > 0 ||
                 card.DamageScalingTraits?.Count is > 0 || card.UnitUpgradeScalingTraits?.Count is > 0 ||
                 card.TrainHealScalingTraits?.Count is > 0 || card.CapacityScalingTraits?.Count is > 0 ||
                 card.ForgeCountScalingTraits?.Count is > 0) return false;
@@ -69,6 +71,14 @@ namespace MonsterTrain2Poju.Model
                 traits.CombinedTraits.All(trait => IsTrait(trait.RuntimeType) ||
                     trait.RuntimeType == "CardTraitFreeze" && trait.DeclaredName == trait.RuntimeType && Ordinary(trait, 0));
         }
+        private static bool SimpleStatusPayload(CardUpgradeModifier upgrade) =>
+            upgrade.Stats.Damage == 0 && upgrade.Stats.Health == 0 && upgrade.Stats.Cost == 0 && upgrade.Stats.Heal == 0 &&
+            upgrade.Stats.Size == 0 && upgrade.Stats.XCost == 0 && upgrade.Stats.EquipmentLimit == 0 && upgrade.Stats.UpgradeSlotCount == 0 &&
+            upgrade.UnhealedHealth == 0 && upgrade.DamageBuff == 0 && upgrade.ExternalInteractions.Count == 0 &&
+            upgrade.AbilityUpgrade == null && upgrade.TriggerUpgrades?.Count is not > 0 && upgrade.SelfAttackRules?.Count is not > 0 &&
+            upgrade.Lifecycle is { AddedTraits.Count: 0, RemovedRuntimeTypes.Count: 0, TraitsModified.Count: 0,
+                ReplacedAssets.Count: 0, Triggers.Count: 0, AvoidClobbering: false } &&
+            upgrade.Statuses.All(status => RoomCombatModel.KnowsStatus(status.Id));
         private static bool KnownJuiceUpgrade(CardUpgradeModifier upgrade, bool triple) => upgrade.DataId == (triple ? TripleUpgrade : Upgrade) &&
             upgrade.AssetKey == (triple ? "TraitJuice3" : "TraitJuice") && upgrade.Stats.Damage == 0 && upgrade.Stats.Health == 0 &&
             upgrade.Stats.Cost == 0 && upgrade.Stats.Heal == 0 && upgrade.Stats.Size == 0 && upgrade.Stats.XCost == 0 &&
@@ -255,6 +265,17 @@ namespace MonsterTrain2Poju.Model
             trait.DefinitionParamInt == parameter && trait.ParamInt == parameter && trait.Removable &&
             trait.DefinitionRemovable == true && trait.StackMode == 0 && !trait.TemporaryReplacement;
         internal static int Apply(int stacks) => unchecked(stacks + StatusBonus(stacks, 2));
+        internal static CardUpgradeModifier OnCardBeingUpgraded(System.Collections.Generic.IEnumerable<CardTraitValue> traits,
+            int ownerCardId, int upgradingSourceCardId, CardUpgradeModifier upgrade)
+        {
+            // Native ignores the target card: the callback belongs to the
+            // source card. Clamp separately after each ordered trait callback.
+            if (upgradingSourceCardId <= 0 || upgradingSourceCardId != ownerCardId) return upgrade;
+            foreach (var trait in traits)
+                if (IsTrait(trait.RuntimeType))
+                    upgrade = upgrade.MapStatusStacks(count => UpgradeStacks(count, Multiplier(trait.RuntimeType)));
+            return upgrade;
+        }
         internal static int Apply(CardInstanceState owner, int stacks)
         {
             var traits = CardExhaustModel.RefreshTraits(owner).CombinedTraits!.Where(trait => IsTrait(trait.RuntimeType)).ToArray();

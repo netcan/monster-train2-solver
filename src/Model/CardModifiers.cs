@@ -117,6 +117,22 @@ namespace MonsterTrain2Poju.Model
                 EquipmentSourceUpgradeIndex, TriggerUpgrades, AbilityUpgrade, DoNotReplaceExistingAbility,
                 maskMetadata, CopyRemoveOnDiscard, CopyUnique, CopyExcludeFromClones, lifecycle, SharedReferenceId, SelfAttackRules);
         }
+        internal CardUpgradeModifier MapStatusStacks(Func<int, int> map)
+        {
+            var statuses = Statuses.Select(status => status.WithStacks(map(status.Stacks))).ToArray();
+            var mask = MaskMetadata == null ? null : new CardUpgradeMaskMetadata(MaskMetadata.Statuses.Select(status =>
+                new UpgradeMaskStatus(status.Id, map(status.Count), status.FromPermanentUpgrade)).ToArray(),
+                MaskMetadata.HasIcon, MaskMetadata.HideIcon, MaskMetadata.RegionRun, MaskMetadata.UnitAbility);
+            var lifecycle = Lifecycle == null ? null : Lifecycle.WithValues(new CardMaskUpgrade(Lifecycle.Values.DataId,
+                Lifecycle.Values.Stats, Lifecycle.Values.Statuses.Select(status =>
+                    new UpgradeMaskStatus(status.Id, map(status.Count), status.FromPermanentUpgrade)).ToArray(),
+                Lifecycle.Values.HasIcon, Lifecycle.Values.HideIcon, Lifecycle.Values.RegionRun, Lifecycle.Values.UnitAbility));
+            return new CardUpgradeModifier(DataId, AssetKey, Stats, statuses, RemoveOnDiscard, Unique, ExcludeFromClones,
+                UnhealedHealth, DamageBuff, ExternalInteractions, RestrictSizeToRoomCapacity, MagicPowerTraitScalingOnly,
+                CloneDamageBase, CloneHealBase, EquipmentSourceCardId, EquipmentSourceUpgradeIndex, TriggerUpgrades,
+                AbilityUpgrade, DoNotReplaceExistingAbility, mask, CopyRemoveOnDiscard, CopyUnique, CopyExcludeFromClones,
+                lifecycle, SharedReferenceId, SelfAttackRules);
+        }
         internal CardUpgradeModifier WithStats(CardStatModifier stats) => new CardUpgradeModifier(DataId, AssetKey,
             stats, Statuses, RemoveOnDiscard, Unique, ExcludeFromClones, UnhealedHealth, DamageBuff, ExternalInteractions,
             RestrictSizeToRoomCapacity, MagicPowerTraitScalingOnly, CloneDamageBase, CloneHealBase, EquipmentSourceCardId, EquipmentSourceUpgradeIndex, TriggerUpgrades, AbilityUpgrade, DoNotReplaceExistingAbility, MaskMetadata,

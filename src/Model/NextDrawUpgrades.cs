@@ -155,10 +155,19 @@ namespace MonsterTrain2Poju.Model
                 if (card.ExternalInteractions.Count > 0)
                 { error = string.Join("; ", card.ExternalInteractions); return source; }
                 bool accepted = true;
-                foreach (NextDrawUpgradeRule entry in pending)
+                for (int pendingIndex = 0; pendingIndex < pending.Count; pendingIndex++)
                 {
+                    NextDrawUpgradeRule entry = pending[pendingIndex];
                     if (entry.Upgrade.ExternalInteractions.Count > 0)
                     { error = string.Join("; ", entry.Upgrade.ExternalInteractions); return source; }
+                    if (accepted && context.FindCard(playedCardId) is CardInstanceState callbackOwner && CardJuiceModel.Present(callbackOwner))
+                    {
+                        var modified = CardJuiceModel.OnCardBeingUpgraded(Traits(callbackOwner), callbackOwner.InstanceId, playedCardId, entry.Upgrade);
+                        context = CardMagicPowerModel.ReplaceShared(context.WithCard(card),
+                            new Dictionary<int, CardUpgradeModifier> { [entry.Upgrade.SharedReferenceId!.Value] = modified });
+                        pending = context.Cards.NextDrawUpgrades!;
+                        entry = pending[pendingIndex]; card = context.FindCard(id)!;
+                    }
                     // CardManager shares this flag across all queued upgrades.
                     // Once a filter rejects, later filters and additions stop.
                     if (accepted)
@@ -166,7 +175,10 @@ namespace MonsterTrain2Poju.Model
                         {
                             if (card.MaskDescriptor == null)
                             { error = "Filtered next-draw upgrades require branch-owned card metadata."; return source; }
-                            if (!CardUpgradeMaskModel.FilterCard(filter, CardBranchMaskModel.Resolve(card)))
+                            CardUpgradeMaskCard mask;
+                            try { mask = CardBranchMaskModel.Resolve(card); }
+                            catch (InvalidOperationException maskError) { error = maskError.Message; return source; }
+                            if (!CardUpgradeMaskModel.FilterCard(filter, mask))
                             { accepted = false; break; }
                         }
                     if (accepted)

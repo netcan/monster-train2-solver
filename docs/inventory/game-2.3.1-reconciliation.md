@@ -11,9 +11,9 @@
 | known-gap | 2 | 2 |
 | inspect-no-code-link | 79 | 79 |
 | inspect-inherited-code | 15 | 15 |
-| inspect-projection-normalization | 60 | 60 |
-| inspect-guard-links | 51 | 51 |
-| review-existing-code | 234 | 234 |
+| inspect-projection-normalization | 59 | 59 |
+| inspect-guard-links | 50 | 50 |
+| review-existing-code | 236 | 236 |
 | resolve-entry | 286 | 0 |
 | scoped-review-recorded | 7 | 7 |
 
@@ -28,7 +28,7 @@
 | 原生类 | 结论 | 边界 |
 | --- | --- | --- |
 | CardEffectAddStatusEffectNextMonster | known-gap | Native Apply queues AddSpawningStatusEffect for a later monster, rather than modifying current targets. The direct spell effect allowlist has no subtype entry and model has no mapped pending-spawn status action. Requires pending queue capture, consumption timing and search state; parent AddStatus links do not implement it. |
-| CardTraitJuice4 | known-gap | Shared 2/3/4 multiplier and ID-independent simple status-spell contract now have five original upgrades, 180 native callback pairs, nine original soul-upgrade casts and complete native loss/16 branches/frontiers/root search. Mollis OnCast armor/poison use the existing dispatcher. Actual OnCardBeingUpgraded self-upgrade dispatch and ordered scaling combinations remain guarded; query evidence does not certify that lifecycle. |
+| CardTraitJuice4 | known-gap | Shared 2/3/4 multiplier and ID-independent simple status-spell contract now have five original upgrades, 180 native callback pairs, nine original soul-upgrade casts and complete native loss/16 branches/frontiers/root search. Mollis OnCast armor/poison use the existing dispatcher. Source OnCardBeingUpgraded and next-draw manager dispatch now have five original definitions, 540 relation controls/repeats and 300 ordered pairs; six native two-card draws verify deep copies, filtered shared originals and callback short circuit, with complete successors/16 branches/frontiers/root search. Parameter-upgrade cast effects and other mixed ordered scaling remain guarded; other consumers are not certified. No class-wide lifecycle completion. |
 | CardEffectDamage | shared-path | Native Damage normalizes to the shared Damage action; current PunishedSpike battle exercises repeated damage, armor, target death and full successors. Existing target/scaling/callback guards remain; not an audit of every contextual branch. |
 | RelicEffectAddRelicStartOfRun | input-only | Sealed native class implements StartOfRun ApplyEffect, which adds the configured relic through SaveManager. Battle input captures the resulting relic roster. No combat callback override in this class; start-of-run campaign handling and carried-owner validation remain separate. |
 | RelicEffectCardUpgrade | input-only | Sealed native class only overrides editor descriptions and implements the empty ICardUpgradeRelicEffect marker. Its 148 catalog references include upgrade definitions; already acquired card upgrades are battle inputs, not 148 missing live battle handlers. Acquisition consumers are not certified by this review. |
@@ -60,10 +60,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `f5eb4fb077a3b2a7c1260b696fb7711774e1b84418e609996f8e40898552fb45`。
-- 人工审查索引 SHA-256: `da9fe4b167c8d30b8af699573cca7fac3726f3af3de4823a3ce64c52a0f38228`。
-- Model: PDB 校验过的项目源码集合 `15a40d94bc8e8a610d291dc808a7522a671e744c8395b0225596cf632095a3a3`。
-- Probe: PDB 校验过的项目源码集合 `283ba65c9adf1238b41d0f402204230505f66e5cc52481b8d2937662b2a2601e`。
-- ModelChecks: PDB 校验过的项目源码集合 `19437b13901c5225d5693de924dc54fa42212114b143ec5caa70c817bdfed17e`。
+- 人工审查索引 SHA-256: `126e07d9608771544515650b10a0498fd55aeb3cb44674f1adc40f74d26c4be2`。
+- Model: PDB 校验过的项目源码集合 `8f3b6d5e270ced16e4f2f517fcd162a0abf0ac1febc96b15048515cf692fb22d`。
+- Probe: PDB 校验过的项目源码集合 `08af02c434272e64e555423a0658bb89b925c9749ab9f0843a0a070e37e56466`。
+- ModelChecks: PDB 校验过的项目源码集合 `42edb79426a616fe5cb3fceecb1cec37ba3c644b5a69e4c02fb8126dba60c4bf`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 

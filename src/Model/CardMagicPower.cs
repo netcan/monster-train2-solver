@@ -59,6 +59,14 @@ namespace MonsterTrain2Poju.Model
             refreshed = Refresh(card);
             foreach (CardUpgradeModifier upgrade in refreshed.Permanent.Upgrades.Concat(refreshed.Temporary.Upgrades))
                 if (upgrade.SharedReferenceId.HasValue) shared[upgrade.SharedReferenceId.Value] = upgrade;
+            return ReplaceShared(context.WithCard(refreshed), shared);
+        }
+
+        // Preserve native in-place mutations across every alias in this branch.
+        // Used by both magic-power refresh and source-card upgrade callbacks.
+        internal static CombatContext ReplaceShared(CombatContext context, IReadOnlyDictionary<int, CardUpgradeModifier> shared)
+        {
+            if (shared.Count == 0) return context;
             CardUpgradeModifier Replace(CardUpgradeModifier upgrade) =>
                 upgrade.SharedReferenceId.HasValue && shared.TryGetValue(upgrade.SharedReferenceId.Value, out CardUpgradeModifier? alias)
                     ? alias : upgrade;
@@ -66,8 +74,6 @@ namespace MonsterTrain2Poju.Model
                 modifiers.Upgrades.Select(Replace).ToArray(), modifiers.PersistentHealth, modifiers.ExternalInteractions);
             CardInstanceState ReplaceCard(CardInstanceState target) => target.WithModifiers(
                 ReplaceModifiers(target.Permanent), ReplaceModifiers(target.Temporary), refreshTraits: false);
-            context = context.WithCard(refreshed);
-            if (shared.Count == 0) return context;
             CardCycleState cards = context.Cards;
             BonusDrawState? bonus = cards.BonusDraw == null ? null : new BonusDrawState(cards.BonusDraw.Counters,
                 cards.BonusDraw.Listeners.Select(listener => new BonusDrawListener(listener.Key, Replace(listener.Upgrade))).ToArray());

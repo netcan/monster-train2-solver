@@ -559,6 +559,7 @@ param(
     [switch] $SummonChoiceCalibration,
     [switch] $RoomHealthMechanismBatch,
     [switch] $JuiceMechanismBatch,
+    [switch] $JuiceUpgradeMechanism,
 
     [switch] $PercentageStatsMechanism,
     [switch] $LateAttackMechanism,
@@ -1267,6 +1268,12 @@ if ($PercentageStatsMechanism) {
 if ($JuiceMechanismBatch) {
     if ($PlayerAdvisor) { throw 'Juice callback batches require an isolated probe instance.' }
     $BranchCardMasks = $true
+}
+if ($JuiceUpgradeMechanism) {
+    if ($PlayerAdvisor) { throw 'Juice upgrade callbacks require an isolated worker.' }
+    $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
+    $SettleCardAnimations = $true; $SettleDeathDissolves = $true
+    $Policy = 'units-spells-and-junk'
 }
 if ($SummonChoiceCalibration -and (-not $OriginalUpgradeEnchantment -or $PlayerAdvisor)) {
     throw 'SummonChoiceCalibration requires the isolated OriginalUpgradeEnchantment control scenario.'
@@ -2247,6 +2254,11 @@ if ($PercentageStatsMechanism) { $environment['MT2_PROBE_MODIFIERS'] = 'original
 if ($LateAttackMechanism) { $environment['MT2_PROBE_MODIFIERS'] = 'original-late-attack' }
 if ($OriginalJuiceUpgrades) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-juice-upgrades'
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
+if ($JuiceUpgradeMechanism) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'juice-upgrade'
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
@@ -4227,6 +4239,10 @@ if ($OriginalWickedFervor -and (-not $trace.OriginalWickedFervorPrepared -or -no
 if ($OriginalJuiceUpgrades -and (-not $trace.OriginalJuiceUpgradesPrepared -or -not $trace.TerminalEffectsSettled -or @($trace.Actions).Count -ne 12 -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
     throw 'Original Juice upgrades lack nine spell plays, a settled terminal outcome or exact successors.'
+}
+if ($JuiceUpgradeMechanism -and (-not $trace.JuiceUpgradePrepared -or -not $trace.TerminalEffectsSettled -or @($trace.Actions).Count -ne 8 -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
+    throw 'Juice source upgrades lack six two-card draws, settled terminal state or exact successors.'
 }
 if ($OriginalArbitraryVerdict) {
     if (-not $trace.OriginalArbitraryVerdictPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 7 -or
