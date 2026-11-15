@@ -563,6 +563,7 @@ param(
 
     [switch] $PercentageStatsMechanism,
     [switch] $LateAttackMechanism,
+    [switch] $PyreDamageTakenMechanism,
     [switch] $CampaignRelicCalibration,
     [switch] $CampaignDraftCalibration,
     [switch] $CampaignPostBattleCalibration,
@@ -1271,6 +1272,12 @@ if ($JuiceMechanismBatch) {
 }
 if ($JuiceUpgradeMechanism) {
     if ($PlayerAdvisor) { throw 'Juice upgrade callbacks require an isolated worker.' }
+    $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
+    $SettleCardAnimations = $true; $SettleDeathDissolves = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($PyreDamageTakenMechanism) {
+    if ($PlayerAdvisor) { throw 'Pyre damage mechanisms require an isolated worker.' }
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
     $SettleCardAnimations = $true; $SettleDeathDissolves = $true
     $Policy = 'units-spells-and-junk'
@@ -2252,6 +2259,11 @@ if ($OriginalArbitraryVerdict) { $environment['MT2_PROBE_MODIFIERS'] = 'original
 if ($OriginalWickedFervor) { $environment['MT2_PROBE_MODIFIERS'] = 'original-wicked-fervor' }
 if ($PercentageStatsMechanism) { $environment['MT2_PROBE_MODIFIERS'] = 'original-percentage-stats' }
 if ($LateAttackMechanism) { $environment['MT2_PROBE_MODIFIERS'] = 'original-late-attack' }
+if ($PyreDamageTakenMechanism) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'pyre-damage-taken'
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
 if ($OriginalJuiceUpgrades) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-juice-upgrades'
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
@@ -4243,6 +4255,10 @@ if ($OriginalJuiceUpgrades -and (-not $trace.OriginalJuiceUpgradesPrepared -or -
 if ($JuiceUpgradeMechanism -and (-not $trace.JuiceUpgradePrepared -or -not $trace.TerminalEffectsSettled -or @($trace.Actions).Count -ne 8 -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
     throw 'Juice source upgrades lack six two-card draws, settled terminal state or exact successors.'
+}
+if ($PyreDamageTakenMechanism -and (-not $trace.PyreDamageTakenPrepared -or -not $trace.TerminalEffectsSettled -or @($trace.Actions).Count -ne 7 -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
+    throw 'Extra Pyre damage lacks seven defense controls, settled terminal state or exact successors.'
 }
 if ($OriginalArbitraryVerdict) {
     if (-not $trace.OriginalArbitraryVerdictPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 7 -or

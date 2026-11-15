@@ -3175,6 +3175,12 @@ namespace MonsterTrain2Poju.Model
                     blocked = unchecked(blocked + adjusted.Prevented);
                 }
                 if (target.Has("untouchable")) { damage = 0; blocked = 0; titanSkinSoaked = 0; }
+                if (target.Source.IsPyre && context != null)
+                {
+                    RelicResourceResult modified = RelicResourceModel.ModifyPyreDamageTaken(context, damage, source.Deployment, source.Preview);
+                    if (!modified.Supported) { unsupportedReason = modified.UnsupportedReason; return; }
+                    context = modified.Context; damage = modified.Value;
+                }
                 if (target.Source.DamageHistory != null) target.Source = target.Source.WithDamageHistory(
                     target.Source.DamageHistory.WithModifiers(armorBlockedThisHit, lethalDamagePrevented));
                 int hpAfterPyreResurrection = 0;

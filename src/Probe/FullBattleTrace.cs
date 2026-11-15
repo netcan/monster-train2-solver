@@ -255,6 +255,7 @@ namespace MonsterTrain2Poju.Probe
                 JuiceUpgradeMechanismBatch.Capture(this, managers);
                 PercentageStatsMechanismBatch.Capture(this, managers);
                 LateAttackMechanismBatch.Capture(this, managers);
+                PyreDamageTakenMechanismBatch.Capture(this, managers);
 #endif
                 RngCalibration.Capture();
                 GoldRewardCalibration.Capture(save);
@@ -1392,6 +1393,10 @@ namespace MonsterTrain2Poju.Probe
                 JuiceUpgradeDefinitions = JuiceUpgradeScenario.Definitions,
                 JuiceUpgradeDefinitionsAfter = JuiceUpgradeScenario.CurrentDefinitions,
                 JuiceUpgradeCallbacks = JuiceUpgradeScenario.Samples,
+                PyreDamageTakenPrepared = PyreDamageTakenScenario.Prepared,
+                PyreDamageTakenIds = PyreDamageTakenScenario.CardIds,
+                PyreDamageTakenDefinition = PyreDamageTakenScenario.Definition,
+                PyreDamageTakenDefinitionAfter = PyreDamageTakenScenario.CurrentDefinition,
                 OriginalDevoteTreasurePrepared = OriginalDevoteTreasureScenario.Prepared,
                 OriginalDevoteTreasureSetupIds = OriginalDevoteTreasureScenario.SetupIds,
                 OriginalDevoteTreasureIds = OriginalDevoteTreasureScenario.TreasureIds,

@@ -514,6 +514,8 @@ namespace MonsterTrain2Poju.Probe
                 amount = (int)AccessTools.Field(effect.GetType(), "chanceToDestroySelf").GetValue(effect);
             else if (type == RelicDamagedFloorEnergyModel.Effect)
                 amount = (int)AccessTools.Field(effect.GetType(), "energyBonus").GetValue(effect);
+            else if (type == RelicResourceModel.ExtraPyreDamage)
+                amount = (int)AccessTools.Field(effect.GetType(), "extraDamage").GetValue(effect);
             else if (effect is RelicEffectEnergyOnCardEarlyDiscard)
                 amount = data.GetParamInt();
             else if (effect is RelicEffectAddGoldOnExhaust)

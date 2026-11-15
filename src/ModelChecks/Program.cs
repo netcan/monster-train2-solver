@@ -1,5 +1,15 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--pyre-damage-taken-batch-only")
+{
+    PyreDamageTakenMechanismChecks.Batch(args[1]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--pyre-damage-taken-battle-only")
+{
+    PyreDamageTakenMechanismChecks.Battle(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--juice-upgrade-batch-only")
 {
     JuiceUpgradeMechanismChecks.Batch(args[1]);
