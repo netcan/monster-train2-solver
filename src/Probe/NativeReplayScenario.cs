@@ -1608,6 +1608,13 @@ namespace MonsterTrain2Poju.Probe
                 PyreSpikesScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
+#if DEVELOPMENT_PROBE
+            if (fullBattle && !numericModifiersPrepared && OriginalRoomHealthAttackScenario.Enabled)
+            {
+                OriginalRoomHealthAttackScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
+#endif
             if (fullBattle && !numericModifiersPrepared && OriginalSummonChoiceScenario.Enabled)
             {
                 OriginalSummonChoiceScenario.Prepare(managers, log);
@@ -3150,6 +3157,13 @@ namespace MonsterTrain2Poju.Probe
                 RelicStatusStackProbe.Matrix();
                 RelicStatusMagnitudeProbe.Matrix();
                 RelicStatusDecayProbe.Matrix();
+#if DEVELOPMENT_PROBE
+                if (OriginalRoomHealthAttackScenario.Enabled)
+                {
+                    pendingPlay = OriginalRoomHealthAttackScenario.Choose(decision);
+                }
+                else
+#endif
                 if (OriginalSummonChoiceScenario.Enabled)
                 {
                     pendingPlay = OriginalSummonChoiceScenario.Choose(decision);

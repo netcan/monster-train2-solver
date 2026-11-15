@@ -55,6 +55,14 @@ if (args.Length == 2 && args[0] == "--original-punished-units-only")
     OriginalPunishedUnitsChecks.Native(args[1]);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--original-room-health-attack-only" &&
+    (args.Length == 2 || args[2] is "--lifecycle-only" or "--search-only" or "--deep-search"))
+{
+    if (args.Length == 3 && args[2] == "--search-only") OriginalRoomHealthAttackChecks.SearchOnly(args[1]);
+    else OriginalRoomHealthAttackChecks.Native(args[1], withSearch: args.Length == 2 || args[2] == "--deep-search",
+        deepSearch: args.Length == 3 && args[2] == "--deep-search");
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--original-halo-only")
 {
     OriginalHaloChecks.Native(args[1]);

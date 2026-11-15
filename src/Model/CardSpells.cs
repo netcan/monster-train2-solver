@@ -1148,7 +1148,8 @@ namespace MonsterTrain2Poju.Model
                     int casterId = selfUnitId > 0 ? selfUnitId : targetId;
                     CombatUnit? caster = state.Rooms.SelectMany(item => item.Units).FirstOrDefault(unit => unit.Id == casterId);
                     if (caster == null) return UnsupportedTrain("Source-attack caster left the captured train before damage resolution.");
-                    damageValue = unchecked(effect.Value * RelicResourceModel.AttackDamage(caster, state.Context));
+                    damageValue = unchecked(effect.Value * RelicResourceModel.AttackDamage(caster, state.Context,
+                        state.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == caster.Id))));
                     if (effect.UseCardTraits) damageAttackerId = 0;
                     else damageOwnerCardId = caster.SpawnerCardId > 0 ? caster.SpawnerCardId : sourceCardId;
                 }
@@ -1815,7 +1816,7 @@ namespace MonsterTrain2Poju.Model
                     if (recipient == null || effect.Value == 0 && recipient.Id == sourceUnit.Id ||
                         recipient.Status("equalizer") != null || recipient.Status("fixedattack") != null ||
                         recipient.Status("armorattack") != null) continue;
-                    int amount = unchecked(RelicResourceModel.AttackDamage(sourceUnit, state.Context) *
+                    int amount = unchecked(RelicResourceModel.AttackDamage(sourceUnit, state.Context, sourceRoom) *
                         Math.Max(1, effect.TransferAttackMultiplier));
                     if (amount <= 0) continue;
                     var stats = new CardStatModifier(damage: amount);

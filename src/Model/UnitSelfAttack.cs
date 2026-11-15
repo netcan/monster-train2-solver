@@ -17,18 +17,22 @@ namespace MonsterTrain2Poju.Model
     internal static class UnitSelfAttackModel
     {
         internal const string MissingHealth = "RoomStateSelfDamagePerMissingHp";
+        internal const string FriendlyMissingHealth = RoomHealthDamageModel.FriendlyOwn;
         internal static bool Known(string type) => type is "RoomStateSelfDamagePerGoldModifier" or
-            "RoomStateSelfDamagePerCorruptionModifier" or "RoomStateSelfDamagePerStatusEffectStack" or MissingHealth;
+            "RoomStateSelfDamagePerCorruptionModifier" or "RoomStateSelfDamagePerStatusEffectStack" or MissingHealth or FriendlyMissingHealth;
 
         internal static string? Validate(RoomCombatState source, CombatUnit unit)
         {
             if (unit.Modifiers?.SelfAttackRules is not { Count: > 0 } rules) return null;
             if (source.Context?.SpawnPoints == null)
                 return "Self attack modifiers require captured physical position ownership.";
+            if (rules.Any(rule => rule.Type == FriendlyMissingHealth) && source.Context.Enchantments == null)
+                return "Friendly room attack modifiers require the captured actor world.";
             foreach (UnitSelfAttackRule rule in rules)
             {
                 if (!Known(rule.Type) || rule.Divisor <= 0 ||
                     rule.Type == MissingHealth && (rule.Coefficient != 1 || rule.Divisor != 1 || rule.StatusId.Length != 0) ||
+                    rule.Type == FriendlyMissingHealth && rule.StatusId.Length != 0 ||
                     rule.Type == "RoomStateSelfDamagePerStatusEffectStack" && rule.StatusId.Length == 0)
                     return "Unsupported self attack modifier definition.";
                 if (rule.Type == "RoomStateSelfDamagePerGoldModifier" &&
@@ -50,6 +54,9 @@ namespace MonsterTrain2Poju.Model
             int value = 0;
             foreach (UnitSelfAttackRule rule in rules)
             {
+                // This source's friendly modifier is collected by the room query,
+                // which can also affect other units on its floor.
+                if (rule.Type == FriendlyMissingHealth) continue;
                 if (rule.Type == MissingHealth)
                 {
                     value = unchecked(value + RoomHealthDamageModel.Query(rule.Type, rule.Coefficient, rule.Divisor,
@@ -70,7 +77,8 @@ namespace MonsterTrain2Poju.Model
     internal static class UnitSelfAttackUpgradeModel
     {
         internal static string? Validate(CardUpgradeModifier upgrade) => upgrade.SelfAttackRules?.Any(rule =>
-            rule.Type != UnitSelfAttackModel.MissingHealth || rule.Coefficient != 1 || rule.Divisor != 1 || rule.StatusId.Length != 0) == true
+            rule.StatusId.Length != 0 || (rule.Type == UnitSelfAttackModel.FriendlyMissingHealth
+                ? rule.Divisor <= 0 : rule.Type != UnitSelfAttackModel.MissingHealth || rule.Coefficient != 1 || rule.Divisor != 1)) == true
             ? "Uncalibrated upgrade self attack modifier." : null;
 
         internal static IReadOnlyList<UnitSelfAttackRule>? BirthRules(IReadOnlyList<UnitSelfAttackRule>? original,

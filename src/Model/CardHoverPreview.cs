@@ -42,6 +42,8 @@ namespace MonsterTrain2Poju.Model
                 source.Rooms.Any(room => room.Preview) || primary.Enchantments is not EnchantmentWorld world ||
                 world.Preview || world.TemporaryPreviewUnitIds != null || primary.SpawnPoints?.NextPreviewCopyId == null)
                 return new CardHoverPreviewResult("Card hover requires captured primary life-link, health-cache, world and physical-copy state.");
+            if (source.Rooms.SelectMany(room => room.Units).Any(RoomHealthAttackModel.HasSource))
+                return new CardHoverPreviewResult("Friendly missing-health room modifiers require native card-hover lifecycle calibration.");
             if (rule.Effect != "Spell" || rule.CardType != "Spell" || rule.IsAnyAbility != false ||
                 rule.ExternalInteractions.Count != 0 || rule.Equipment != null || rule.Ability != null ||
                 rule.SpawnUnit != null || rule.Summon != null || rule.HasKillTriggers || rule.HasSpareTriggers ||

@@ -1750,6 +1750,7 @@ namespace MonsterTrain2Poju.Model
             private readonly Action<string>? reject;
             private readonly Func<WorkingUnit, string, int>? roomStatusModifier;
             private readonly Func<WorkingUnit, string, int>? roomTriggerModifier;
+            private readonly Func<WorkingUnit, int>? roomHealthDamage;
             internal bool Alive => Health > 0 && !Removed && !Despawned;
             internal int Attack
             {
@@ -1768,6 +1769,7 @@ namespace MonsterTrain2Poju.Model
                         (Source.Modifiers?.DamageBuffFromStatusEffects ?? unchecked(Amount("buff") + Amount("valor") + Amount("mass") - Amount("debuff"))) +
                         RelicStatusAttackModel.AdditionalAttack(Source.Modifiers?.StatusAttackModifiers, Source.Team, Statuses.Values.ToArray()) +
                         UnitSelfAttackModel.Additional(Source, getContext?.Invoke(), Statuses.Values, Health) +
+                        (roomHealthDamage?.Invoke(this) ?? 0) +
                         (roomStatusModifier?.Invoke(this, "buff") ?? 0) * Count("buff") +
                         (roomStatusModifier?.Invoke(this, "valor") ?? 0) * Count("valor") +
                         mageblade + (Source.IsPyre ? getContext?.Invoke()?.Resources?.PyreModifiedBaseAttack ?? 0 : 0)));
@@ -1776,11 +1778,13 @@ namespace MonsterTrain2Poju.Model
             internal int Attacks => CombatUnit.AttackCount(Statuses.Values);
 
             internal WorkingUnit(CombatUnit source, int roomIndex, Func<CombatContext?>? getContext = null, Action<string>? reject = null,
-                Func<WorkingUnit, string, int>? roomStatusModifier = null, Func<WorkingUnit, string, int>? roomTriggerModifier = null)
+                Func<WorkingUnit, string, int>? roomStatusModifier = null, Func<WorkingUnit, string, int>? roomTriggerModifier = null,
+                Func<WorkingUnit, int>? roomHealthDamage = null)
             {
                 this.roomIndex = roomIndex; this.getContext = getContext; this.reject = reject;
                 this.roomStatusModifier = roomStatusModifier;
                 this.roomTriggerModifier = roomTriggerModifier;
+                this.roomHealthDamage = roomHealthDamage;
                 Source = source; Health = source.Health; LastAttackerId = source.LastAttackerId;
                 LastFeederId = source.LastFeederId;
                 Despawned = source.DeathState?.IsDespawned == true; Destroyed = source.DeathState?.IsDestroyed == true;
@@ -1958,7 +1962,18 @@ namespace MonsterTrain2Poju.Model
 
             private WorkingUnit NewUnit(CombatUnit unit, bool inRoom = true, int? roomIndex = null) =>
                 new WorkingUnit(unit, roomIndex ?? source.RoomIndex, () => context, error => unsupportedReason = error,
-                    RoomStatusModifier, RoomTriggerModifier) { InRoom = inRoom };
+                    RoomStatusModifier, RoomTriggerModifier, RoomHealthDamage) { InRoom = inRoom };
+
+            private int RoomHealthDamage(WorkingUnit target)
+            {
+                if (target.Source.Team != CombatTeam.Player || !units.Any(unit => RoomHealthAttackModel.HasSource(unit.Source))) return 0;
+                var point = context?.SpawnPoints?.Units.SingleOrDefault(unit => unit.UnitId == target.Source.Id)?.Current;
+                if (point?.RoomIndex != target.RoomIndex) return 0;
+                return RoomHealthAttackModel.Additional(target.Source,
+                    units.Where(unit => unit.Alive && unit.InRoom && unit.RoomIndex == target.RoomIndex &&
+                        unit.Source.Team == target.Source.Team && RoomHealthAttackModel.HasSource(unit.Source) && !unit.Has("untouchable") &&
+                        !PyreBaneModel.ExcludedFromRoomMode(unit.Freeze(), "Room", false)).Select(unit => unit.Source), target.Health);
+            }
 
             private int RoomTriggerModifier(WorkingUnit target, string kind) => units.Where(unit => unit.Alive && unit.InRoom &&
                 unit.RoomIndex == target.RoomIndex && unit.Source.Team == target.Source.Team)

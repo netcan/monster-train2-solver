@@ -89,6 +89,6 @@ internal static class RoomHealthMechanismChecks
                 Require(battle.GetProperty(counter).GetInt32() == 0, "Nonzero source baseline " + counter);
             RecordedBattleChecks.Native(battle);
         }
-        Console.WriteLine($"ROOM-HEALTH-MECHANISM-BATCH PASS: {originals.Length} discovered original definitions, {definitions.Length} original/control configurations, {samples.Length} native queries, 16 immutable parallel evaluations; complete state/RNG/frame/queue/source restoration. Query component only; friendly-aura lifecycle and champion battle integration remain guarded.");
+        Console.WriteLine($"ROOM-HEALTH-MECHANISM-BATCH PASS: {originals.Length} discovered original definitions, {definitions.Length} original/control configurations, {samples.Length} native queries, 16 immutable parallel evaluations; complete state/RNG/frame/queue/source restoration. Query component only; battle and card-hover lifecycle acceptance is separate.");
     }
 }

@@ -19,8 +19,10 @@ The first definition-driven native batch now discovers five original missing-HP
 attack upgrades and generates 53 configurations/38,160 queries. Native queries
 take 2.214 seconds; independent comparison and 16 parallel evaluations take
 about 2.353 seconds. Shared plans stay outside production assemblies. This is
-query-component evidence; friendly-aura propagation and champion battle
-integration remain guarded. See [the batch and precise scope](docs/room-health-query-batch.md).
+query-component evidence. A separate native battle now integrates all three
+original champion aura ranks, stacking, source/recipient movement, healing and
+source death. See [the batch](docs/room-health-query-batch.md) and
+[battle acceptance and remaining boundaries](docs/room-health-attack.md).
 
 Original GrimFlight's three upgraded skills now cover twelve actual selection
 dialogs and cardless births, subtype skips, over-capacity summons and fragment

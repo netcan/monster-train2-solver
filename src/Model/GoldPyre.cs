@@ -103,10 +103,11 @@ namespace MonsterTrain2Poju.Model
 
         // Save's permanent adjustment participates in attack queries, not the
         // cached raw field written by PyreRoomState.HandleGoldChanged.
-        public static int AttackDamage(CombatUnit unit, CombatContext? context) => UnitAttackOverrideModel.Resolve(unit.Statuses, unit.MaxHealth) ?? Math.Max(0,
+        public static int AttackDamage(CombatUnit unit, CombatContext? context, RoomCombatState? room = null) => UnitAttackOverrideModel.Resolve(unit.Statuses, unit.MaxHealth) ?? Math.Max(0,
             unchecked(unit.AttackBeforeStatuses + unit.AttackFromStatuses +
                 RelicStatusAttackModel.AdditionalAttack(unit.Modifiers?.StatusAttackModifiers, unit.Team, unit.Statuses) +
                 UnitSelfAttackModel.Additional(unit, context) +
+                RoomHealthAttackModel.Additional(unit, context, room) +
                 (unit.IsPyre ? context?.Resources?.PyreModifiedBaseAttack ?? 0 : 0)));
     }
 

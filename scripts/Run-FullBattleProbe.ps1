@@ -294,6 +294,7 @@ param(
     [switch] $OriginalPunishedSpells,
     [switch] $OriginalPunishedSpike,
     [switch] $OriginalSummonChoice,
+    [switch] $OriginalRoomHealthAttack,
     [switch] $OriginalPunishedSkills,
     [switch] $OriginalSpiteEquipment,
     [ValidateSet('', 'Sweep', 'Single', 'Sustain')][string] $PyreSpikesMode = '',
@@ -1253,6 +1254,8 @@ if ($RoomHealthMechanismBatch -and $PlayerAdvisor) { throw 'Mechanism batch quer
 if ($SummonChoiceCalibration -and (-not $OriginalUpgradeEnchantment -or $PlayerAdvisor)) {
     throw 'SummonChoiceCalibration requires the isolated OriginalUpgradeEnchantment control scenario.'
 }
+if ($OriginalRoomHealthAttack -and $PlayerAdvisor) { throw 'OriginalRoomHealthAttack requires an isolated worker.' }
+if ($OriginalRoomHealthAttack) { $SettleCardAnimations = $true; $SettleDeathDissolves = $true; $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSummonChoice -and ($PlayerAdvisor -or $SummonChoiceCalibration)) {
     throw 'OriginalSummonChoice requires its own isolated worker scenario and installed-control platform input.'
 }
@@ -2225,6 +2228,11 @@ if ($OriginalHalo) { $environment['MT2_PROBE_MODIFIERS'] = 'original-halo' }
 if ($OriginalPunishedUnits) { $environment['MT2_PROBE_MODIFIERS'] = 'original-punished-units' }
 if ($OriginalMissingHealthStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-missing-health-status' }
 if ($OriginalSummonChoice) { $environment['MT2_PROBE_MODIFIERS'] = 'original-summon-choice' }
+if ($OriginalRoomHealthAttack) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-room-health-attack'
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
 if ($OriginalPunishedSkills) { $environment['MT2_PROBE_MODIFIERS'] = 'original-punished-skills' }
 if ($OriginalSpiteEquipment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spite-equipment' }
 if ($OriginalPunishedSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-punished-spike' }
@@ -4086,6 +4094,11 @@ if ($OriginalDevoteTreasure -and (-not $trace.OriginalDevoteTreasurePrepared -or
 if ($PyreSpikesMode -and (-not $trace.PyreSpikesPrepared -or $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
     @($trace.Actions).Count -ne 0 -or $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
     throw 'Pyre spikes terminal loss differs or has incomplete native observations.'
+}
+if ($OriginalRoomHealthAttack -and (-not $trace.OriginalRoomHealthAttackPrepared -or -not $trace.NativeWon -or
+    @($trace.Actions).Count -ne @($trace.OriginalRoomHealthAttackInputs).Count -or @($trace.Actions).Count -lt 30 -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
+    throw 'Original room-health aura battle lacks inputs, victory or exact successors.'
 }
 if ($OriginalSummonChoice -and (-not $trace.OriginalSummonChoicePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 49 -or
     @($trace.OriginalSummonChoiceDrafts).Count -ne 12 -or $trace.OriginalSummonChoiceDefinitions.Profile -cne 'installed-control' -or

@@ -120,6 +120,12 @@ namespace MonsterTrain2Poju.Probe
                 // without creating their cached CardState as an observation side effect.
                 var managers = AllGameManagers.Instance!;
                 var cards = managers.GetCardManager()!.GetAllCards(new List<CardState>());
+                if (cards.Any(card => card.GetCardStateModifiers().GetCardUpgrades()
+                    .Concat(card.GetTemporaryCardStateModifiers().GetCardUpgrades()).Any(upgrade =>
+                        upgrade.GetRoomModifierUpgrades().Any(modifier => modifier.GetRoomStateModifierClassName() == RoomHealthDamageModel.FriendlyOwn))) ||
+                    identities.Keys.Any(unit => unit != null && !unit.IsDestroyed && unit.GetRoomStateModifiers()
+                        .Any(modifier => modifier.GetType().Name == RoomHealthDamageModel.FriendlyOwn)))
+                    return playerEnchantmentWorld = true;
                 var abilities = cards.SelectMany(card => card.GetCardStateModifiers().GetCardUpgrades()
                     .Concat(card.GetTemporaryCardStateModifiers().GetCardUpgrades()))
                     .Select(upgrade => upgrade.GetUnitAbilityUpgrade())
@@ -508,8 +514,10 @@ namespace MonsterTrain2Poju.Probe
             bool attackOverride = character.HasStatusEffect("fixedattack") || character.HasStatusEffect("armorattack") || character.HasStatusEffect("equalizer");
             int baseAttack = attackOverride ? Math.Max(0, unchecked(modifiers.AttackDamage + modifiers.DamageBuff)) : character.GetAttackDamageWithoutStatusEffectBuffs();
             if (!attackOverride)
-                baseAttack = unchecked(baseAttack - character.GetRoomStateModifiers().Where(modifier => UnitSelfAttackModel.Known(modifier.GetType().Name))
+                baseAttack = unchecked(baseAttack - character.GetRoomStateModifiers().Where(modifier => UnitSelfAttackModel.Known(modifier.GetType().Name) &&
+                    modifier.GetType().Name != RoomHealthDamageModel.FriendlyOwn)
                     .Cast<RoomStateModifierBase>().Sum(modifier => modifier.GetDynamicInt(character)));
+            if (!attackOverride) baseAttack = unchecked(baseAttack - RoomHealthAttackProbe.Additional(character));
             if (!attackOverride && modifiers.MagebladeDamagePerMagicPower is int magebladeCoefficient && character.GetCurrentRoom() is RoomState currentRoom)
             {
                 AllGameManagers managers = AllGameManagers.Instance!;
@@ -1372,6 +1380,11 @@ namespace MonsterTrain2Poju.Probe
                 OriginalPenitentPrepared = OriginalPenitentScenario.Prepared,
                 OriginalMissingHealthStatusPrepared = OriginalMissingHealthStatusScenario.Prepared,
 #if DEVELOPMENT_PROBE
+                OriginalRoomHealthAttackPrepared = OriginalRoomHealthAttackScenario.Prepared,
+                OriginalRoomHealthAttackIds = OriginalRoomHealthAttackScenario.CardIds,
+                OriginalRoomHealthAttackInputs = OriginalRoomHealthAttackScenario.Inputs,
+                OriginalRoomHealthAttackDefinitions = OriginalRoomHealthAttackScenario.Definitions,
+                OriginalRoomHealthAttackDefinitionsAfter = OriginalRoomHealthAttackScenario.CurrentDefinitions,
                 OriginalSummonChoicePrepared = OriginalSummonChoiceScenario.Prepared,
                 OriginalSummonChoiceIds = OriginalSummonChoiceScenario.CardIds,
                 OriginalSummonChoiceDefinitions = OriginalSummonChoiceScenario.Definitions,

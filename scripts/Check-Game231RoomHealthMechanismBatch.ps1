@@ -19,4 +19,4 @@ $checkArguments = @('--room-health-mechanism-batch-only', (Join-Path $directory 
 if ($WithBaselineReplay) { $checkArguments += Join-Path $directory 'battle.mt2f' }
 dotnet $checker @checkArguments
 if ($LASTEXITCODE) { throw 'Independent generated room-health query comparison failed.' }
-Write-Output 'GAME-231-ROOM-HEALTH-MECHANISM-BATCH PASS: generated native query matrix; friendly aura/champion lifecycle integration remains guarded.'
+Write-Output 'GAME-231-ROOM-HEALTH-MECHANISM-BATCH PASS: generated native query matrix; battle and card-hover lifecycle acceptance is separate.'

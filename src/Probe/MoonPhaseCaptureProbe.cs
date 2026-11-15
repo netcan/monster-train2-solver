@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static bool Enabled => AdvisorRuntime.PlayerSession || RoomMoonCallbackCalibration.Enabled ||
 #if DEVELOPMENT_PROBE
-            RankThreeRoomSlayScenario.Enabled ||
+            RankThreeRoomSlayScenario.Enabled || OriginalRoomHealthAttackScenario.Enabled ||
 #endif
             // The isolation probe and live advisor compile separate copies of
             // AdvisorRuntime. A resumed campaign has no clan override, so the
