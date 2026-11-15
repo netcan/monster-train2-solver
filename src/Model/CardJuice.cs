@@ -9,13 +9,66 @@ namespace MonsterTrain2Poju.Model
         internal const string Upgrade = "0fc9f6e7-df71-4045-9867-67453769adf8";
         internal const string TripleTrait = "CardTraitJuice3";
         internal const string TripleUpgrade = "2f066286-dbef-449b-aa5f-b8acdcdce7aa";
-        private static bool Juice(string type) => type is Trait or TripleTrait;
+        internal const string QuadrupleTrait = "CardTraitJuice4";
+        internal static bool IsTrait(string type) => type is Trait or TripleTrait or QuadrupleTrait;
+        internal static int Multiplier(string type) => type switch
+        { Trait => 2, TripleTrait => 3, QuadrupleTrait => 4, _ => throw new ArgumentException("Unknown Juice trait.", nameof(type)) };
+        internal static int StatusBonus(int stacks, int multiplier) => unchecked(Math.Max(stacks, 0) * (multiplier - 1));
+        internal static int UpgradeStacks(int stacks, int multiplier) => Math.Max(unchecked(stacks * multiplier), 0);
+        private static bool Juice(string type) => IsTrait(type);
         internal static bool Present(CardInstanceState card) => card.MaskDescriptor != null &&
             (card.MaskDescriptor.BaseTraits.Concat(card.MaskDescriptor.TemporaryTraits).Any(trait => Juice(trait.RuntimeType)) ||
                 card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade =>
                     upgrade.Lifecycle?.AddedTraits.Any(trait => Juice(trait.RuntimeType)) == true)) ||
             card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade => upgrade.DataId == TripleUpgrade);
         internal static bool KnownTripleUpgrade(CardUpgradeModifier upgrade) => KnownJuiceUpgrade(upgrade, true);
+        // Recognize a fully represented mechanism, independently of content IDs.
+        // Cast actions keep their ordinary dispatcher validation. Self-upgrade and
+        // ordered scaling callbacks are excluded by SimpleStatusOwner below.
+        internal static bool SimpleUpgrade(CardUpgradeModifier upgrade) =>
+            upgrade.Stats.Damage == 0 && upgrade.Stats.Health == 0 && upgrade.Stats.Cost == 0 &&
+            upgrade.Stats.Heal == 0 && upgrade.Stats.Size == 0 && upgrade.Stats.XCost == 0 &&
+            upgrade.Stats.EquipmentLimit == 0 && upgrade.Stats.UpgradeSlotCount == 0 &&
+            upgrade.Statuses.Count == 0 && upgrade.UnhealedHealth == 0 && upgrade.DamageBuff == 0 &&
+            upgrade.AbilityUpgrade == null && upgrade.TriggerUpgrades?.Count is not > 0 &&
+            upgrade.SelfAttackRules?.Count is not > 0 && !upgrade.Unique && !upgrade.RemoveOnDiscard &&
+            !upgrade.RestrictSizeToRoomCapacity && !upgrade.MagicPowerTraitScalingOnly &&
+            upgrade.EquipmentSourceCardId == null && upgrade.EquipmentSourceUpgradeIndex == null &&
+            upgrade.CloneDamageBase == null && upgrade.CloneHealBase == null &&
+            upgrade.ExternalInteractions.All(value => value == "Upgrade traits") &&
+            upgrade.Lifecycle is { AddedTraits.Count: 1, RemovedRuntimeTypes.Count: 0,
+                TraitsModified.Count: 0, ReplacedAssets.Count: 0, AvoidClobbering: false } lifecycle &&
+            IsTrait(lifecycle.AddedTraits[0].RuntimeType) &&
+            lifecycle.AddedTraits[0].DeclaredName == lifecycle.AddedTraits[0].RuntimeType &&
+            Ordinary(lifecycle.AddedTraits[0], lifecycle.AddedTraits[0].DefinitionParamInt) &&
+            lifecycle.AddedTraits[0].ParameterUpgradeCastEffects.Count == 0 &&
+            lifecycle.Triggers.All(trigger => trigger.Type == "OnCast" && trigger.ExternalInteractions.Count == 0 &&
+                trigger.Effects.Count == trigger.Actions.Count &&
+                trigger.Effects.All(effect => effect == "CardEffectAddStatusEffect") &&
+                trigger.Actions.All(action => action.Type == "AddStatus"));
+        private static bool SimpleStatusOwner(CardInstanceState card, CardTraitCompositionState traits)
+        {
+            var descriptor = card.MaskDescriptor!;
+            if (descriptor.Definition.DataId != card.DataId || descriptor.Definition.CardType != "Spell" ||
+                descriptor.Definition.XCost || descriptor.Definition.IsSpawner || descriptor.Definition.HasSpawnData ||
+                descriptor.Definition.AuthoredGraft || descriptor.PermanentGraft || descriptor.GraftedEquipment != null ||
+                descriptor.AuthoredCastEffects.Any(effect => effect != "CardEffectAddStatusEffect") ||
+                descriptor.PermanentReplacements.Count != 0 ||
+                descriptor.SourceTraits is not { Count: 0 } || descriptor.KillTriggers?.Count is > 0 ||
+                descriptor.SpareTriggers?.Count is > 0 || descriptor.Definition.MainEffectNames.Count == 0 ||
+                descriptor.Definition.MainEffectNames.Any(effect => effect != "CardEffectAddStatusEffect") ||
+                card.Permanent.Upgrades.Count != 1 || !SimpleUpgrade(card.Permanent.Upgrades[0]) ||
+                card.Temporary.Upgrades.Count != 0 || card.StatusScalingTraits?.Count is > 0 ||
+                card.DamageScalingTraits?.Count is > 0 || card.UnitUpgradeScalingTraits?.Count is > 0 ||
+                card.TrainHealScalingTraits?.Count is > 0 || card.CapacityScalingTraits?.Count is > 0 ||
+                card.ForgeCountScalingTraits?.Count is > 0) return false;
+            var juice = traits.CombinedTraits!.Where(trait => IsTrait(trait.RuntimeType)).ToArray();
+            var added = card.Permanent.Upgrades[0].Lifecycle!.AddedTraits[0];
+            return juice.Length == 1 && juice[0].RuntimeType == added.RuntimeType &&
+                juice[0].DeclaredName == added.DeclaredName && Ordinary(juice[0], added.DefinitionParamInt) &&
+                traits.CombinedTraits.All(trait => IsTrait(trait.RuntimeType) ||
+                    trait.RuntimeType == "CardTraitFreeze" && trait.DeclaredName == trait.RuntimeType && Ordinary(trait, 0));
+        }
         private static bool KnownJuiceUpgrade(CardUpgradeModifier upgrade, bool triple) => upgrade.DataId == (triple ? TripleUpgrade : Upgrade) &&
             upgrade.AssetKey == (triple ? "TraitJuice3" : "TraitJuice") && upgrade.Stats.Damage == 0 && upgrade.Stats.Health == 0 &&
             upgrade.Stats.Cost == 0 && upgrade.Stats.Heal == 0 && upgrade.Stats.Size == 0 && upgrade.Stats.XCost == 0 &&
@@ -122,6 +175,9 @@ namespace MonsterTrain2Poju.Model
             // Ordered scaling callbacks and other owners remain explicit gaps.
             var refreshed = CardExhaustModel.RefreshTraits(card);
             var traits = refreshed.CombinedTraits!;
+            if (SimpleStatusOwner(card, refreshed)) return null;
+            if (traits.Any(trait => trait.RuntimeType == QuadrupleTrait))
+                return "Juice4 requires a captured simple status owner; ordered callbacks remain unsupported.";
             bool triple = traits.Any(trait => trait.RuntimeType == TripleTrait);
             if (triple && KnownTripleStarstruck(card, refreshed)) return null;
             if (triple && card.DataId == "d4366b7c-588c-49aa-b2c6-2aeb30b0e01b" &&
@@ -198,9 +254,13 @@ namespace MonsterTrain2Poju.Model
         private static bool Ordinary(CardTraitValue trait, int parameter) =>
             trait.DefinitionParamInt == parameter && trait.ParamInt == parameter && trait.Removable &&
             trait.DefinitionRemovable == true && trait.StackMode == 0 && !trait.TemporaryReplacement;
-        internal static int Apply(int stacks) => unchecked(stacks + Math.Max(stacks, 0));
-        internal static int Apply(CardInstanceState owner, int stacks) =>
-            CardExhaustModel.RefreshTraits(owner).CombinedTraits!.Any(trait => trait.RuntimeType == TripleTrait)
-                ? unchecked(stacks + Math.Max(stacks, 0) * 2) : Apply(stacks);
+        internal static int Apply(int stacks) => unchecked(stacks + StatusBonus(stacks, 2));
+        internal static int Apply(CardInstanceState owner, int stacks)
+        {
+            var traits = CardExhaustModel.RefreshTraits(owner).CombinedTraits!.Where(trait => IsTrait(trait.RuntimeType)).ToArray();
+            // Existing calibrated paths have one active Juice callback too.
+            foreach (var trait in traits) stacks = unchecked(stacks + StatusBonus(stacks, Multiplier(trait.RuntimeType)));
+            return stacks;
+        }
     }
 }

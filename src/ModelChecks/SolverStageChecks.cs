@@ -3,14 +3,14 @@ using MonsterTrain2Poju.Model;
 
 internal static class SolverStageChecks
 {
-    internal static void Native(string path)
+    internal static void Native(string path, bool requireVictory = true)
     {
         using var document = ModelJson.ReadFixture(path); var root = document.RootElement;
         void Require(bool condition, string message) => TrueFinalBossChecks.Require(condition, message);
         Require(root.GetProperty("GameVersion").GetString() == "2.3.1" &&
             root.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
-            root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean(),
-            "Stage input is not a complete native victory for the pinned version.");
+            (!requireVictory || root.GetProperty("NativeWon").GetBoolean()) && root.GetProperty("TerminalEffectsSettled").GetBoolean(),
+            "Input is not a complete native battle with the required outcome for the pinned version.");
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
             Require(root.GetProperty(key).GetInt32() == 0, "Nonzero native " + key);
         RoomCombatChecks.NativeRoomOnly(path);

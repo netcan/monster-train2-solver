@@ -284,6 +284,7 @@ param(
     [switch] $OnCastGroupsBattle,
     [switch] $OriginalArbitraryVerdict,
     [switch] $OriginalWickedFervor,
+    [switch] $OriginalJuiceUpgrades,
     [switch] $OriginalDragThemDown,
     [switch] $OriginalSpare,
     [switch] $OriginalCloister,
@@ -557,6 +558,7 @@ param(
     [switch] $CardCatalog,
     [switch] $SummonChoiceCalibration,
     [switch] $RoomHealthMechanismBatch,
+    [switch] $JuiceMechanismBatch,
     [switch] $CampaignRelicCalibration,
     [switch] $CampaignDraftCalibration,
     [switch] $CampaignPostBattleCalibration,
@@ -1252,12 +1254,18 @@ if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($PyreSpikesMode) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $Policy = 'no-cards' }
 if ($RoomHealthMechanismBatch -and $PlayerAdvisor) { throw 'Mechanism batch queries require an isolated probe instance.' }
+if ($JuiceMechanismBatch) {
+    if ($PlayerAdvisor) { throw 'Juice callback batches require an isolated probe instance.' }
+    $BranchCardMasks = $true
+}
 if ($SummonChoiceCalibration -and (-not $OriginalUpgradeEnchantment -or $PlayerAdvisor)) {
     throw 'SummonChoiceCalibration requires the isolated OriginalUpgradeEnchantment control scenario.'
 }
 if ($RoomHealthCardHover) { $OriginalRoomHealthAttack = $true }
 if ($OriginalRoomHealthAttack -and $PlayerAdvisor) { throw 'OriginalRoomHealthAttack requires an isolated worker.' }
 if ($OriginalRoomHealthAttack) { $SettleCardAnimations = $true; $SettleDeathDissolves = $true; $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalJuiceUpgrades -and $PlayerAdvisor) { throw 'OriginalJuiceUpgrades requires an isolated worker.' }
+if ($OriginalJuiceUpgrades) { $SettleCardAnimations = $true; $SettleDeathDissolves = $true; $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSummonChoice -and ($PlayerAdvisor -or $SummonChoiceCalibration)) {
     throw 'OriginalSummonChoice requires its own isolated worker scenario and installed-control platform input.'
 }
@@ -1928,6 +1936,7 @@ $environment = @{
     MT2_PROBE_CARD_CATALOG = $(if ($CardCatalog) { '1' } else { '0' })
     MT2_PROBE_SUMMON_CHOICE_CALIBRATION = $(if ($SummonChoiceCalibration) { '1' } else { '0' })
     MT2_PROBE_ROOM_HEALTH_MECHANISM_BATCH = $(if ($RoomHealthMechanismBatch) { '1' } else { '0' })
+    MT2_PROBE_JUICE_MECHANISM_BATCH = $(if ($JuiceMechanismBatch) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_RELICS = $(if ($CampaignRelicCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_DRAFTS = $(if ($CampaignDraftCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_POST_BATTLE = $(if ($CampaignPostBattleCalibration) { '1' } else { '0' })
@@ -2222,6 +2231,11 @@ if ($OriginalSpellCompositions) { $environment['MT2_PROBE_MODIFIERS'] = 'origina
 if ($OnCastGroupsBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'oncast-groups-battle' }
 if ($OriginalArbitraryVerdict) { $environment['MT2_PROBE_MODIFIERS'] = 'original-arbitrary-verdict' }
 if ($OriginalWickedFervor) { $environment['MT2_PROBE_MODIFIERS'] = 'original-wicked-fervor' }
+if ($OriginalJuiceUpgrades) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-juice-upgrades'
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
 if ($OriginalDevoteTreasure) { $environment['MT2_PROBE_MODIFIERS'] = 'original-devote-treasure' }
 if ($OriginalSpare) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spare' }
 if ($OriginalCloister) { $environment['MT2_PROBE_MODIFIERS'] = 'original-cloister' }
@@ -4195,6 +4209,10 @@ if ($OriginalDragThemDown -and (-not $trace.OriginalDragThemDownPrepared -or -no
 if ($OriginalWickedFervor -and (-not $trace.OriginalWickedFervorPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 4 -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
     throw 'Original Wicked Fervor lacks positive/zero discard plays, native victory or exact successors.'
+}
+if ($OriginalJuiceUpgrades -and (-not $trace.OriginalJuiceUpgradesPrepared -or -not $trace.TerminalEffectsSettled -or @($trace.Actions).Count -ne 12 -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
+    throw 'Original Juice upgrades lack nine spell plays, a settled terminal outcome or exact successors.'
 }
 if ($OriginalArbitraryVerdict) {
     if (-not $trace.OriginalArbitraryVerdictPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 7 -or

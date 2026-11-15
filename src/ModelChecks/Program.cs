@@ -1,5 +1,15 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--juice-mechanism-batch-only")
+{
+    JuiceMechanismChecks.Batch(args[1]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-juice-upgrades-only")
+{
+    JuiceMechanismChecks.Battle(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--solver-stage-case-only")
 {
     SolverStageChecks.Native(args[1]);

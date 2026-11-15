@@ -251,6 +251,7 @@ namespace MonsterTrain2Poju.Probe
                 CardCatalogProbe.Capture(this, managers);
 #if DEVELOPMENT_PROBE
                 RoomHealthMechanismBatch.Capture(this, managers);
+                JuiceMechanismBatch.Capture(this, managers);
 #endif
                 RngCalibration.Capture();
                 GoldRewardCalibration.Capture(save);
@@ -1372,6 +1373,10 @@ namespace MonsterTrain2Poju.Probe
                 OriginalArbitraryVerdictIds = OriginalArbitraryVerdictScenario.CardIds,
                 OriginalWickedFervorPrepared = OriginalWickedFervorScenario.Prepared,
                 OriginalWickedFervorIds = OriginalWickedFervorScenario.CardIds,
+                OriginalJuiceUpgradesPrepared = OriginalJuiceUpgradesScenario.Prepared,
+                OriginalJuiceUpgradesIds = OriginalJuiceUpgradesScenario.CardIds,
+                OriginalJuiceUpgradesDefinitions = OriginalJuiceUpgradesScenario.Definitions,
+                OriginalJuiceUpgradesDefinitionsAfter = OriginalJuiceUpgradesScenario.CurrentDefinitions,
                 OriginalDevoteTreasurePrepared = OriginalDevoteTreasureScenario.Prepared,
                 OriginalDevoteTreasureSetupIds = OriginalDevoteTreasureScenario.SetupIds,
                 OriginalDevoteTreasureIds = OriginalDevoteTreasureScenario.TreasureIds,

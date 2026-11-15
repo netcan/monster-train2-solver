@@ -28,7 +28,7 @@
 | 原生类 | 结论 | 边界 |
 | --- | --- | --- |
 | CardEffectAddStatusEffectNextMonster | known-gap | Native Apply queues AddSpawningStatusEffect for a later monster, rather than modifying current targets. The direct spell effect allowlist has no subtype entry and model has no mapped pending-spawn status action. Requires pending queue capture, consumption timing and search state; parent AddStatus links do not implement it. |
-| CardTraitJuice4 | known-gap | Native subtype inherits CardTraitJuice and overrides StackMultiplier to four. Model Juice predicate and upgrade gates currently recognize only base double and Juice3 triple; existing inherited code links must not certify the fourth multiplier. Generalize shared multiplier/upgrade handling with native batch evidence. |
+| CardTraitJuice4 | known-gap | Shared 2/3/4 multiplier and ID-independent simple status-spell contract now have five original upgrades, 180 native callback pairs, nine original soul-upgrade casts and complete native loss/16 branches/frontiers/root search. Mollis OnCast armor/poison use the existing dispatcher. Actual OnCardBeingUpgraded self-upgrade dispatch and ordered scaling combinations remain guarded; query evidence does not certify that lifecycle. |
 | RelicEffectModifyCharacterAttackOrHealthPercentage | known-gap | Native OnCharacterAdded rounds percentage attack/health, with team/subtype/required-mutator filters and an additional stat-query path. No dedicated captured modifier or accepted runtime effect type exists in current relic validation; preserve rejection until shared birth/stat projection is modeled and compared. |
 | CardEffectDamage | shared-path | Native Damage normalizes to the shared Damage action; current PunishedSpike battle exercises repeated damage, armor, target death and full successors. Existing target/scaling/callback guards remain; not an audit of every contextual branch. |
 | RelicEffectAddRelicStartOfRun | input-only | Sealed native class implements StartOfRun ApplyEffect, which adds the configured relic through SaveManager. Battle input captures the resulting relic roster. No combat callback override in this class; start-of-run campaign handling and carried-owner validation remain separate. |
@@ -59,10 +59,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `f5eb4fb077a3b2a7c1260b696fb7711774e1b84418e609996f8e40898552fb45`。
-- 人工审查索引 SHA-256: `d43a8d0dbb1ce0888e6e166d8af6b9dd30717d3319e9ca67301cabf2e013b97e`。
-- Model: PDB 校验过的项目源码集合 `af587fae2aec13d3aa7f5ce39f1ec68b4648169988682c9000209a7f49b96fc0`。
-- Probe: PDB 校验过的项目源码集合 `39bd1fdea2d4350223b9d93e75ea2bcedd9ee3b1073f38925f25be71be1c337a`。
-- ModelChecks: PDB 校验过的项目源码集合 `8519c68ae20454bf490bd842c0aef311c83d22e313918ac3dde698b71cfc5404`。
+- 人工审查索引 SHA-256: `e791708b4c80e57aa2c8a9389204cee2520d624f0c699558e400136060dce7f3`。
+- Model: PDB 校验过的项目源码集合 `83b294ad76d815345735ac88fce591d601aa181f0b6ef9f3a0531ab579171518`。
+- Probe: PDB 校验过的项目源码集合 `f417c98936a246604d5d7edc860c9b1562e0cd9f12cec611e93b0f7a8efa8217`。
+- ModelChecks: PDB 校验过的项目源码集合 `7275b8272578527364c5ad3f0ba646fc2123a575cc676c68a83c18df44b649d3`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 

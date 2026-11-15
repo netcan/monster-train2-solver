@@ -1702,6 +1702,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalWickedFervorScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalJuiceUpgradesScenario.Enabled)
+            {
+                numericModifiersPrepared = true;
+                OriginalJuiceUpgradesScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalArbitraryVerdictScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original percentage health must start on deployment turn.");
@@ -3409,6 +3414,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OnCastGroupsBattleScenario.Enabled) pendingPlay = OnCastGroupsBattleScenario.Choose(decision);
                 if (OriginalArbitraryVerdictScenario.Enabled) pendingPlay = OriginalArbitraryVerdictScenario.Choose(decision);
                 if (OriginalWickedFervorScenario.Enabled) pendingPlay = OriginalWickedFervorScenario.Choose(decision);
+                if (OriginalJuiceUpgradesScenario.Enabled) pendingPlay = OriginalJuiceUpgradesScenario.Choose(decision);
                 if (OriginalDevoteTreasureScenario.Enabled) pendingPlay = OriginalDevoteTreasureScenario.Choose(decision);
                 if (OriginalSpareScenario.Enabled) pendingPlay = OriginalSpareScenario.Choose(decision);
                 if (OriginalPunishedSpellsScenario.Enabled) pendingPlay = OriginalPunishedSpellsScenario.Choose(decision);
