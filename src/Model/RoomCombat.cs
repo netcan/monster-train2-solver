@@ -504,7 +504,7 @@ namespace MonsterTrain2Poju.Model
             "buff", "debuff", "regen", "poison", "decay", "corruption", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "titanite", "duality", "conduit",
             "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch", "avarice", "inedible", "eatmany", "steelguard",
-            "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted", "unit_grafted_equipment", "mass", "zeal", "tenacious", "chained"
+            "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted", "unit_grafted_equipment", "mass", "zeal", "tenacious", "chained", "pain"
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 

@@ -618,11 +618,11 @@ namespace MonsterTrain2Poju.Model
                 transferAttackMultiplier: effect.TransferAttackMultiplier, statusTransfer: effect.StatusTransfer,
                 unitTriggerKind: effect.UnitTriggerKind, healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
                 sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe,
-                ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel, devotionLevelsPerGrant: effect.DevotionLevelsPerGrant, exaltationHeal: effect.ExaltationHeal);
+                ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel, devotionLevelsPerGrant: effect.DevotionLevelsPerGrant, exaltationHeal: effect.ExaltationHeal, friendlyMissingHealthAllFloors: effect.FriendlyMissingHealthAllFloors);
 
             int ResolveValue(CardActionEffect effect, int value)
             {
-                string stat = effect.Type == FloorDamageModel.Effect || effect.Type == DragThemDownModel.Effect || effect.Type == ExaltationModel.Effect ? "Damage" :
+                string stat = effect.Type == FloorDamageModel.Effect || effect.Type == DragThemDownModel.Effect || effect.Type == ExaltationModel.Effect || effect.Type == MissingHealthStatusModel.CasterDamage ? "Damage" :
                     effect.Type == "HealOverheal" || effect.Type == "HealRelative" ? "Heal" : effect.Type;
                 return stat == "Damage" || stat == "Heal"
                     ? UpgradedStat(UpgradedStat(value, stat, true, instance.Permanent), stat, true, instance.Temporary) : value;

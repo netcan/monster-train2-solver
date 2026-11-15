@@ -1603,6 +1603,11 @@ namespace MonsterTrain2Poju.Probe
                 OriginalSpareScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalMissingHealthStatusScenario.Enabled)
+            {
+                OriginalMissingHealthStatusScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalPunishedUnitsScenario.Enabled)
             {
                 OriginalPunishedUnitsScenario.Prepare(managers, log);
@@ -3337,6 +3342,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalWickedFervorScenario.Enabled) pendingPlay = OriginalWickedFervorScenario.Choose(decision);
                 if (OriginalDevoteTreasureScenario.Enabled) pendingPlay = OriginalDevoteTreasureScenario.Choose(decision);
                 if (OriginalSpareScenario.Enabled) pendingPlay = OriginalSpareScenario.Choose(decision);
+                if (OriginalMissingHealthStatusScenario.Enabled) pendingPlay = OriginalMissingHealthStatusScenario.Choose(decision);
                 if (OriginalPunishedUnitsScenario.Enabled) pendingPlay = OriginalPunishedUnitsScenario.Choose(decision);
                 if (OriginalHaloScenario.Enabled) pendingPlay = OriginalHaloScenario.Choose(decision);
                 if (OriginalPenitentScenario.Enabled) pendingPlay = OriginalPenitentScenario.Choose(decision);

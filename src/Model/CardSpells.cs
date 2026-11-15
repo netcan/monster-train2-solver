@@ -845,7 +845,7 @@ namespace MonsterTrain2Poju.Model
                         statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
                         healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
                         sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe,
-                        ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel, devotionLevelsPerGrant: effect.DevotionLevelsPerGrant, exaltationHeal: effect.ExaltationHeal);
+                        ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel, devotionLevelsPerGrant: effect.DevotionLevelsPerGrant, exaltationHeal: effect.ExaltationHeal, friendlyMissingHealthAllFloors: effect.FriendlyMissingHealthAllFloors);
                 }
                 if (effect.Type == "DuplicateCard")
                 {
@@ -1013,17 +1013,26 @@ namespace MonsterTrain2Poju.Model
                         effect.TargetSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold,
                         effect.GoldCostRequired, effect.UseCardTraits, effect.RequireEquipment, effect.UseSelectedRoom);
                 }
-                if (effect.Type is "AddStatusPerCasterStatus" or "AddStatusPerMissingHp")
+                if (effect.Type == "AddStatusPerCasterStatus")
                 {
                     CombatUnit? actor = state.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == selfUnitId);
                     if (actor == null) return UnsupportedTrain("Scaled unit-skill status requires its activating unit.");
                     if (targets.UnitIds.Count == 0) continue;
-                    CombatUnit first = state.Rooms.SelectMany(room => room.Units).First(unit => unit.Id == targets.UnitIds[0]);
-                    int count = effect.Type == "AddStatusPerCasterStatus"
-                        ? unchecked((actor.Status(effect.Statuses[1].Id)?.Stacks ?? 0) * effect.Value)
-                        : first.MaxHealth - first.Health;
+                    int count = unchecked((actor.Status(effect.Statuses[1].Id)?.Stacks ?? 0) * effect.Value);
                     effect = new CardActionEffect("AddStatus", effect.Target, 0, effect.AllowEnemy, effect.AllowPlayer,
                         new[] { effect.Statuses[0].WithStacks(count) }, tests: effect.Tests, filters: effect.Filters);
+                }
+                if (effect.Type == "AddStatusPerMissingHp" && sourceCardId == 0) continue;
+                if (effect.Type == MissingHealthStatusModel.FriendlyEffect)
+                {
+                    int total = MissingHealthStatusModel.FriendlyMissingHealth(state, selfUnitId, effect.FriendlyMissingHealthAllFloors!.Value);
+                    if (total <= 0) continue;
+                    int stacks = unchecked(total * effect.Statuses[0].Stacks) / (effect.Value == 0 ? 1 : effect.Value);
+                    if (stacks <= 0) continue;
+                    // The native derived iterator applies forwards, unlike the base AddStatus effect.
+                    effect = new CardActionEffect(effect.Type, effect.Target, 0, effect.AllowEnemy, effect.AllowPlayer,
+                        new[] { effect.Statuses[0].WithStacks(stacks) }, tests: effect.Tests, filters: effect.Filters,
+                        ignoreDualism: effect.IgnoreDualism, friendlyMissingHealthAllFloors: effect.FriendlyMissingHealthAllFloors);
                 }
                 if ((effect.Type == ForgePointsModel.Effect || effect.Type == DevotionModel.Effect) && selected.Preview) continue;
                 bool fireSpare = effect.Type == "Damage";
@@ -1077,6 +1086,12 @@ namespace MonsterTrain2Poju.Model
                 int damageAttackerId = selfUnitId;
                 int damageOwnerCardId = sourceCardId;
                 int damageValue = effect.Value;
+                if (effect.Type == MissingHealthStatusModel.CasterDamage)
+                {
+                    CombatUnit? caster = state.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == selfUnitId);
+                    if (caster == null) return UnsupportedTrain("Status-scaled damage lost its activating caster.");
+                    damageValue = unchecked(effect.Value * (caster.Status(effect.Statuses[0].Id)?.Stacks ?? 0));
+                }
                 if (effect.Type == "DamagePerSourceAttack")
                 {
                     int casterId = selfUnitId > 0 ? selfUnitId : targetId;
@@ -2233,7 +2248,7 @@ namespace MonsterTrain2Poju.Model
                     positions = CardTargetModel.Positions(state);
                     if (state.Context!.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
                 }
-                if (effect.Type == "AddStatus" || effect.Type == "MultiplyStatus" ||
+                if (effect.Type == "AddStatus" || effect.Type == "AddStatusPerMissingHp" || effect.Type == MissingHealthStatusModel.FriendlyEffect || effect.Type == "MultiplyStatus" ||
                     effect.Type == "MultiplyAllPositiveStatusEffects" || effect.Type == "AdjustAllStatusEffects" || effect.Type == "SpawnOrStatus") DrainDeaths();
             }
             // Natural play records TimesPlayed before OnCast/unit-play callbacks
@@ -2398,12 +2413,22 @@ namespace MonsterTrain2Poju.Model
                 return "Self floor rearrangement requires its activating unit.";
             if (effects.Any(effect => effect.Type == "SacrificeOrFeed") && selfUnitId <= 0)
                 return "Sacrifice-or-feed requires its activating unit.";
-            foreach (CardActionEffect scaledStatus in effects.Where(effect => effect.Type is "AddStatusPerCasterStatus" or "AddStatusPerMissingHp"))
+            foreach (CardActionEffect scaledStatus in effects.Where(effect => effect.Type == "AddStatusPerCasterStatus"))
             {
-                if (selfUnitId <= 0 || scaledStatus.Statuses.Count < (scaledStatus.Type == "AddStatusPerCasterStatus" ? 2 : 1))
+                if (selfUnitId <= 0 || scaledStatus.Statuses.Count < 2)
                     return "Scaled skill statuses require a captured actor and their original status definitions.";
-                if (scaledStatus.Type == "AddStatusPerMissingHp" && scaledStatus.Target != "Self")
-                    return "Missing-HP status target ordering requires a separate multi-target witness.";
+            }
+            foreach (CardActionEffect scaledStatus in effects.Where(effect => effect.Type == "AddStatusPerMissingHp" ||
+                effect.Type == MissingHealthStatusModel.FriendlyEffect || effect.Type == MissingHealthStatusModel.CasterDamage))
+            {
+                if (scaledStatus.Statuses.Count != 1 || scaledStatus.Statuses[0].Stackable != true)
+                    return "Missing-health/status-derived effects require one captured stackable status.";
+                if (scaledStatus.Type == MissingHealthStatusModel.FriendlyEffect && !scaledStatus.FriendlyMissingHealthAllFloors.HasValue)
+                    return "Friendly missing-health status requires its native room/tower scope.";
+                if (!fullTrain && scaledStatus.Type == MissingHealthStatusModel.FriendlyEffect && scaledStatus.FriendlyMissingHealthAllFloors == true)
+                    return "Tower missing-health status requires the complete train state.";
+                if (scaledStatus.Type == MissingHealthStatusModel.CasterDamage && selfUnitId <= 0)
+                    return "Status-scaled damage requires its captured activating caster.";
             }
             if (!fullTrain && effects.Any(effect => CardTargetModel.IsCrossRoom(effect.Target)))
                 return "Cross-room spells require the complete train state.";
@@ -2855,7 +2880,7 @@ namespace MonsterTrain2Poju.Model
                         return "Mix requires a positive draft size and captured elixir state.";
                     continue;
                 }
-                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "AttackTargetsWithSelfUnit", "Damage", FloorDamageModel.Effect, "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", UnitHealthPercentModel.Effect, DiscardHandStatusModel.Effect, DragThemDownModel.Effect, "Sacrifice", "Kill", "AddStatus", DevotionStatusModel.Effect, "AddStatusPerCasterStatus", "AddStatusPerMissingHp", "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
+                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "AttackTargetsWithSelfUnit", "Damage", FloorDamageModel.Effect, "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", UnitHealthPercentModel.Effect, DiscardHandStatusModel.Effect, DragThemDownModel.Effect, "Sacrifice", "Kill", "AddStatus", DevotionStatusModel.Effect, "AddStatusPerCasterStatus", "AddStatusPerMissingHp", MissingHealthStatusModel.FriendlyEffect, MissingHealthStatusModel.CasterDamage, "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "TransferAllStatuses" &&
                     (effect.Target != "DropTargetCharacter" || effect.Statuses.Count != 1))
@@ -2875,7 +2900,7 @@ namespace MonsterTrain2Poju.Model
                     return "Status-scaled unit upgrades require a captured self target and status filters.";
                 if (effect.Type == "BuffEquipment" && effect.Lifetime != "TemporaryUntilUnitDeath")
                     return "Equipment buffs require the native unit-death lifetime.";
-                if (effect.Value < 0 && !AttackChange(effect) && effect.Type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", FloorDamageModel.Effect, "DamagePerSourceAttack", "DamagePerHp", "Heal", "HealOverheal", "AddStatus", DevotionStatusModel.Effect, "AddStatusPerOtherEffect", "SpawnOrStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AdjustDragonsHoard", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
+                if (effect.Value < 0 && !AttackChange(effect) && effect.Type != ForgePointsModel.Effect && !new[] { "CopyUnits", "Bump", "Damage", FloorDamageModel.Effect, "DamagePerSourceAttack", "DamagePerHp", "Heal", "HealOverheal", "AddStatus", DevotionStatusModel.Effect, MissingHealthStatusModel.FriendlyEffect, MissingHealthStatusModel.CasterDamage, "AddStatusPerOtherEffect", "SpawnOrStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AdjustDragonsHoard", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "Generate" }.Contains(effect.Type) ||
                     effect.Type == "FloorRearrange" && effect.Value > 1) return "Invalid spell effect value.";
                 if (effect.Type == "BuffHealth" && effect.Lifetime != "" && effect.Lifetime != "TemporaryUntilEndOfBattle" &&
                     effect.Lifetime != "TemporaryUntilUnitDeath") return "Unmodeled maximum-health buff lifetime.";
@@ -3088,7 +3113,10 @@ namespace MonsterTrain2Poju.Model
                 case "AdjustAllStatusEffects": return effect.Tests?.StrictTargets != true || count > 0;
                 case "AddStatusPerOtherEffect": return count > 0;
                 case "AddStatusPerCasterStatus": return effect.Statuses.Count >= 2 && count > 0;
-                case "AddStatusPerMissingHp": return effect.Tests?.StrictTargets != true || count > 0;
+                case "AddStatusPerMissingHp":
+                case MissingHealthStatusModel.FriendlyEffect:
+                    return effect.Tests?.StrictTargets != true && effect.Target is not ("DropTargetCharacter" or "RoomExceptDropTarget") || count > 0;
+                case MissingHealthStatusModel.CasterDamage: return count > 0;
                 case "SpawnOrStatus": return count > 0 || CanSpawnFallback(context, room, effect);
                 case "FloorRearrange":
                 case "CopyUnits":
@@ -3187,8 +3215,8 @@ namespace MonsterTrain2Poju.Model
             effect.Type == "Draw" && effect.Target == "DrawPile" ||
             (effect.Type == "DrawType" || effect.Type == "ScheduleNextDrawUpgrade") &&
             (effect.Target == "DrawPile" || effect.Target == "Hand" || effect.Target == "LastDrawnCard");
-        private static bool IsDamage(CardActionEffect effect) => effect.Type == "Damage" || effect.Type == DragThemDownModel.Effect || effect.Type == FloorDamageModel.Effect || effect.Type == "DamagePerSourceAttack";
-        private static bool QuantityTest(CardActionEffect effect) => IsDamage(effect) || effect.Type == "Draw";
+        private static bool IsDamage(CardActionEffect effect) => effect.Type == "Damage" || effect.Type == MissingHealthStatusModel.CasterDamage || effect.Type == DragThemDownModel.Effect || effect.Type == FloorDamageModel.Effect || effect.Type == "DamagePerSourceAttack";
+        private static bool QuantityTest(CardActionEffect effect) => IsDamage(effect) && effect.Type != MissingHealthStatusModel.CasterDamage || effect.Type == "Draw";
         // RandomManager converts Battle to BattleTest while a native card hover
         // owns temporary copies. Tests and applications share that persistent stream.
         private static UnityRng RuntimeRng(TrainCombatState state) =>
@@ -3213,7 +3241,7 @@ namespace MonsterTrain2Poju.Model
                 statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
                 healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
                 sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe,
-                ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel, devotionLevelsPerGrant: effect.DevotionLevelsPerGrant, exaltationHeal: effect.ExaltationHeal);
+                ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel, devotionLevelsPerGrant: effect.DevotionLevelsPerGrant, exaltationHeal: effect.ExaltationHeal, friendlyMissingHealthAllFloors: effect.FriendlyMissingHealthAllFloors);
         }
         internal static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {
@@ -3308,6 +3336,15 @@ namespace MonsterTrain2Poju.Model
             CombatUnit? externalActor = null, int externalActorRoomIndex = -1,
             Action<RoomCombatModel.QueuedCharacterTrigger>? enqueueCharacterTrigger = null)
         {
+            if (effect.Type == "AddStatusPerMissingHp")
+            {
+                // This native iterator uses the plain CharacterState overload: it
+                // supplies an actor, but no played-card parameters or attribution.
+                sourceCardId = 0;
+                effect = MissingHealthStatusModel.AsStatus(effect, unchecked(target.MaxHealth - target.Health));
+            }
+            else if (effect.Type == MissingHealthStatusModel.FriendlyEffect)
+                effect = MissingHealthStatusModel.AsStatus(effect, effect.Statuses[0].Stacks);
             if (IsDamage(effect)) return scaledDamage.HasValue
                 ? RoomCombatModel.ApplyCardDamageAfterTraits(state, target.Id, scaledDamage.Value, sourceCardId,
                     deferSpawnerExhaustion, selfUnitId, refreshPyre: refreshPyre, externalActor: externalActor,

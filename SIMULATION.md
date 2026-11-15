@@ -7,6 +7,17 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+Original 2.3.1 CollectorOfSorrows and AnointingOil now have shared missing-health
+status battle evidence. Friendly aggregation counts the caster's room or every
+monster floor including the Pyre; target-derived status uses each target's live
+missing HP and omits played-card status attribution. The original skill accumulates
+pain, then deals damage from its new count (5/18/28/28 across four activations).
+The 28-input/seven-EndTurn victory passes 93 rooms/13 train stages, seven direct
+native aggregates, three target-derived applications, four status-scaled attacks,
+full replay/16 branches and 128-state serial/parallel search with three-step replay
+and zero unsupported candidates. See [evidence and boundaries](docs/original-missing-health-status.md)
+and `scripts/Check-Game231MissingHealthStatus.ps1`; full version revalidation remains open.
+
 Six original 2.3.1 units now share one native battle acceptance: PenitentSentinel,
 TheCondemned, BrandedApostate, Lasher, Cantor and ScarredJusticar. Shared targeting
 now supports every physical unit in front of self; Punish retaliation uses the

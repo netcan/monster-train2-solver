@@ -20,6 +20,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectRemoveAllStatusEffects", "CardEffectTransferAllStatusEffectsFromUnit", "CardEffectTransferAllStatusEffects",
             "CardEffectAdjustRoomCapacity", "CardEffectAdjustRoomMaxCorruption", "CardEffectAdjustCorruption",
             "CardEffectAddPermanentCorruption", "CardEffectAddStatusToRoomScalingByCasterStatusCount", "CardEffectAddStatusEffectPerMissingHp",
+            "CardEffectAddStatusEffectPerFriendlyMissingHp", "CardEffectDamagePerStatusEffect",
             "CardEffectSetMoonPhase", "CardEffectAdvanceMoonPhase", "CardEffectUpdateMoonPhaseResource",
             "CardEffectAdjustForgePoints", "CardEffectGainDevotionPoints", DiscardHandStatusModel.NativeEffect, "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectChooseDiscard", "CardEffectAddBattleCard", "CardEffectAddRunCard", "CardEffectAddBattleCardPerTarget",
             "CardEffectHeal", "CardEffectHealAndOverheal", "CardEffectHealAndDamageRelative", "CardEffectHealTrain", "CardEffectHealPyrePerEmberCost", "CardEffectSetHealth", UnitHealthPercentModel.NativeEffect, "CardEffectSacrifice", "CardEffectSacrificeOrFeed", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
@@ -474,7 +475,7 @@ namespace MonsterTrain2Poju.Probe
                 interactions.Add("Unmodeled room-status transfer targets or status pool");
             // These native iterators read their own count/status parameters rather
             // than the inherited spell scaling fields or ParamSubtype.
-            if (effect.GetEffectStateName() is not ("CardEffectDamagePerHp" or "CardEffectAddBattleCard" or "CardEffectFloorRearrange" or "CardEffectAddStatusEffectPerOtherEffect" or "CardEffectAddStatusToRoomScalingByCasterStatusCount" or "CardEffectAddStatusEffectPerMissingHp" or "CardEffectBump" or "CardEffectRoomAbilityBumpToCurrentRoom") &&
+            if (effect.GetEffectStateName() is not ("CardEffectDamagePerStatusEffect" or "CardEffectDamagePerHp" or "CardEffectAddBattleCard" or "CardEffectFloorRearrange" or "CardEffectAddStatusEffectPerOtherEffect" or "CardEffectAddStatusToRoomScalingByCasterStatusCount" or "CardEffectAddStatusEffectPerMissingHp" or "CardEffectBump" or "CardEffectRoomAbilityBumpToCurrentRoom") &&
                 (effect.GetUseStatusEffectStackMultiplier() && effect.GetEffectStateName() != "CardEffectSpawnMonsterOrAddStatusEffect" ||
                 effect.GetUseHealthMissingStackMultiplier() && effect.GetEffectStateName() != "CardEffectHeal" || effect.GetUseMagicPowerMultiplier() ||
                 effect.GetEffectStateName() != "CardEffectSacrifice" && effect.GetEffectStateName() != "CardEffectKill" &&
@@ -558,6 +559,8 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectAddStatusEffectPerOtherEffect" ? "AddStatusPerOtherEffect" :
                 effect.GetEffectStateName() == "CardEffectAddStatusToRoomScalingByCasterStatusCount" ? "AddStatusPerCasterStatus" :
                 effect.GetEffectStateName() == "CardEffectAddStatusEffectPerMissingHp" ? "AddStatusPerMissingHp" :
+                effect.GetEffectStateName() == "CardEffectAddStatusEffectPerFriendlyMissingHp" ? MissingHealthStatusModel.FriendlyEffect :
+                effect.GetEffectStateName() == "CardEffectDamagePerStatusEffect" ? MissingHealthStatusModel.CasterDamage :
                 effect.GetEffectStateName() == "CardEffectMultiplyStatusEffect" ? "MultiplyStatus" :
                 effect.GetEffectStateName() == "CardEffectMultiplyAllPositiveStatusEffects" ? "MultiplyAllPositiveStatusEffects" :
                 effect.GetEffectStateName() == "CardEffectAdjustAllStatusEffects" ? "AdjustAllStatusEffects" :
@@ -641,7 +644,8 @@ namespace MonsterTrain2Poju.Probe
             var statuses = new List<CombatStatus>();
             if (type == "AddStatus" || type == DragThemDownModel.Effect || type == DiscardHandStatusModel.Effect || type == DevotionStatusModel.Effect || type == "HealOverheal" || type == "MultiplyStatus" || type == "AdjustAllStatusEffects" ||
                 type == "TransferAllStatuses" ||
-                type == "AddStatusPerOtherEffect" || type == "AddStatusPerCasterStatus" || type == "AddStatusPerMissingHp" || type == "SpawnOrStatus" || type == "UnitUpgradePerStatus")
+                type == "AddStatusPerOtherEffect" || type == "AddStatusPerCasterStatus" || type == "AddStatusPerMissingHp" ||
+                type == MissingHealthStatusModel.FriendlyEffect || type == MissingHealthStatusModel.CasterDamage || type == "SpawnOrStatus" || type == "UnitUpgradePerStatus")
             {
                 if (type != DragThemDownModel.Effect && type != "AdjustAllStatusEffects" && type != "HealOverheal" &&
                     effect.GetParamStatusEffects().Length == 0) interactions.Add("Empty status effect pool");
@@ -674,11 +678,11 @@ namespace MonsterTrain2Poju.Probe
                 type == "SpawnOrStatus" || effect.GetTargetTeamType().HasFlag(Team.Type.Heroes),
                 type != "SpawnOrStatus" && effect.GetTargetTeamType().HasFlag(Team.Type.Monsters), statuses, upgrade, lifetime,
                 new CardEffectTests(effect.GetShouldTest(), effect.GetShouldFailToCastIfTestFails(), effect.GetShouldCancelSubsequentEffectsIfTestFails(),
-                    (type == "AddStatus" || type == DevotionStatusModel.Effect || type == "AdjustAllStatusEffects") && effect.GetParamBool(),
+                    (type == "AddStatus" || type == DevotionStatusModel.Effect || type == MissingHealthStatusModel.FriendlyEffect || type == "AddStatusPerMissingHp" || type == "AdjustAllStatusEffects") && effect.GetParamBool(),
                     ((ICardEffect)Activator.CreateInstance(typeof(CardEffectBase).Assembly.GetType(effect.GetEffectStateName())!)!).CanPlayAfterBossDead,
                     mustHaveValidTargets: type == "Kill" && effect.GetParamBool3(),
                     devotionRequirement: DevotionProbe.Requirement(effect), devotionRequirementMax: DevotionProbe.Requirement(effect, true)),
-                effect.GetUseIntRange() && type != UnitHealthPercentModel.Effect ? new CardEffectRange(effect.GetParamMinInt(), effect.GetParamMaxInt(), effect.GetParamMultiplier()) : null,
+                effect.GetUseIntRange() && type != UnitHealthPercentModel.Effect && type != MissingHealthStatusModel.FriendlyEffect && type != "AddStatusPerMissingHp" ? new CardEffectRange(effect.GetParamMinInt(), effect.GetParamMaxInt(), effect.GetParamMultiplier()) : null,
                 new CardTargetFilters(effect.GetTargetModeHealthFilter().ToString(), effect.GetTargetModeStatusEffectsFilter(),
                     effect.GetTargetModeStatusEffectsExcludedFilter(), effect.GetTargetIgnoreBosses(),
                     effect.GetTargetCharacterSubtype().IsNone ? "" : effect.GetTargetCharacterSubtype().Key,
@@ -697,7 +701,7 @@ namespace MonsterTrain2Poju.Probe
                 requireEquipment: (type == "AttackWithUnit" || type == "AttackTargetsWithSelfUnit") && effect.GetParamBool(), useSelectedRoom: type == "AttackWithUnit" && effect.GetParamBool2(),
                 countStatusOnlyOnTargets: type == "AddStatusPerOtherEffect" && effect.GetParamBool(), spawnFallbackUnit: spawnFallbackUnit,
                 disallowStatusStackModifiers: type == "SpawnOrStatus" && effect.GetDisallowStatusEffectStackModifiers(),
-                ignoreDualism: (type == "AddStatus" || type == DragThemDownModel.Effect || type == DiscardHandStatusModel.Effect || type == DevotionStatusModel.Effect) && effect.GetParamBool2(),
+                ignoreDualism: (type == "AddStatus" || type == DragThemDownModel.Effect || type == DiscardHandStatusModel.Effect || type == DevotionStatusModel.Effect || type == MissingHealthStatusModel.FriendlyEffect) && effect.GetParamBool2(),
                 statusAdjustmentFilter: type == "AdjustAllStatusEffects" ? (int?)effect.GetAdditionalParamInt() : null,
                 damagePerHpLastAttacker: type == "DamagePerHp" && effect.GetParamBool(),
                 damagePerHpIncludeArmor: type == "DamagePerHp" && effect.GetParamBool2(), roomAttachment: roomAttachment,
@@ -723,7 +727,8 @@ namespace MonsterTrain2Poju.Probe
                     effect.GetParamBool2() && effect.GetShouldSuppressPyreRoomFocus() ? true : (bool?)null,
                 devotionPerLevel: type == DevotionModel.Effect ? (int?)effect.GetAdditionalParamInt() : null,
                 devotionLevelsPerGrant: type == DevotionStatusModel.Effect ? (int?)effect.GetAdditionalParamInt() : null,
-                exaltationHeal: type == ExaltationModel.Effect ? (int?)effect.GetAdditionalParamInt() : null);
+                exaltationHeal: type == ExaltationModel.Effect ? (int?)effect.GetAdditionalParamInt() : null,
+                friendlyMissingHealthAllFloors: type == MissingHealthStatusModel.FriendlyEffect ? (bool?)effect.GetParamBool() : null);
         }
 
         private static EquipmentMergeRule? EquipmentMerge(CardEffectData effect, List<string> interactions)
