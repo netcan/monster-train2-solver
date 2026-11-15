@@ -23,7 +23,8 @@ internal static class BattleSearchChecks
         }
         Console.WriteLine("NATIVE-FRONTIER-DIAGNOSTICS PASS: " + index + " decisions, zero unsupported attempts.");
     }
-    internal static void Native(FixtureValue fixture, bool requireZeroUnsupported = false)
+    internal static (BattleTurnState Root, BattleActionEnumeration Frontier, int Matched, int Unsupported)
+        RecordedFrontiers(FixtureValue fixture, bool requireZeroUnsupported = false)
     {
         FixtureValue actions = fixture.GetProperty("Actions");
         Require(actions.GetArrayLength() > 0, "The native search fixture has no recorded card actions.");
@@ -67,6 +68,13 @@ internal static class BattleSearchChecks
         }
 
         if (requireZeroUnsupported) Require(unsupportedAttempts == 0, "Recorded decisions contain unsupported candidates.");
+        Console.WriteLine($"NATIVE-RECORDED-FRONTIERS PASS: {matchedDecisions} exact native successors, {unsupportedAttempts} unsupported candidates.");
+        return (root!, rootFrontier!, matchedDecisions, unsupportedAttempts);
+    }
+
+    internal static void Native(FixtureValue fixture, bool requireZeroUnsupported = false)
+    {
+        var (root, rootFrontier, matchedDecisions, unsupportedAttempts) = RecordedFrontiers(fixture, requireZeroUnsupported);
         BattleTurnState searchRoot = root!;
         int initialPyre = PyreHealth(searchRoot);
         double Score(BattleTurnState state, RoomOutcome outcome)
