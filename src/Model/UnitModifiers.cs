@@ -62,6 +62,11 @@ namespace MonsterTrain2Poju.Model
             SpawnerMatchesDefinition, DamageBuffFromStatusEffects, MagebladeDamagePerMagicPower, StatusAttackModifiers,
             IsChampion, SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype, Graft,
             SynergizeStatuses, Sentry, TroopAura);
+        internal UnitModifiers WithRawAttack(int amount) => new UnitModifiers(amount, AttackDamageAdded, DamageBuff,
+            RawSize, EquipmentLimit, CanBeHealed, IsClone, Upgrades, HealthFromUpgrades, SpawnerMatchesDefinition,
+            DamageBuffFromStatusEffects, MagebladeDamagePerMagicPower, StatusAttackModifiers, IsChampion,
+            SelfAttackRules, RoomResources, RoomStatuses, RoomTriggerCounts, SpawnCopySubtype, Graft,
+            SynergizeStatuses, Sentry, TroopAura);
         internal UnitModifiers WithDamageBuff(int amount) => new UnitModifiers(AttackDamage, AttackDamageAdded, amount,
             RawSize, EquipmentLimit, CanBeHealed, IsClone, Upgrades, HealthFromUpgrades, SpawnerMatchesDefinition,
             DamageBuffFromStatusEffects, MagebladeDamagePerMagicPower, StatusAttackModifiers, IsChampion,

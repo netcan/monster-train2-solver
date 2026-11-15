@@ -8,14 +8,14 @@
 
 | 待办分类 | 类数 | 含捕获定义引用 |
 | --- | ---: | ---: |
-| known-gap | 3 | 3 |
+| known-gap | 2 | 2 |
 | inspect-no-code-link | 80 | 80 |
 | inspect-inherited-code | 15 | 15 |
 | inspect-projection-normalization | 60 | 60 |
 | inspect-guard-links | 51 | 51 |
 | review-existing-code | 234 | 234 |
 | resolve-entry | 286 | 0 |
-| scoped-review-recorded | 5 | 5 |
+| scoped-review-recorded | 6 | 6 |
 
 总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 8 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
@@ -29,10 +29,10 @@
 | --- | --- | --- |
 | CardEffectAddStatusEffectNextMonster | known-gap | Native Apply queues AddSpawningStatusEffect for a later monster, rather than modifying current targets. The direct spell effect allowlist has no subtype entry and model has no mapped pending-spawn status action. Requires pending queue capture, consumption timing and search state; parent AddStatus links do not implement it. |
 | CardTraitJuice4 | known-gap | Shared 2/3/4 multiplier and ID-independent simple status-spell contract now have five original upgrades, 180 native callback pairs, nine original soul-upgrade casts and complete native loss/16 branches/frontiers/root search. Mollis OnCast armor/poison use the existing dispatcher. Actual OnCardBeingUpgraded self-upgrade dispatch and ordered scaling combinations remain guarded; query evidence does not certify that lifecycle. |
-| RelicEffectModifyCharacterAttackOrHealthPercentage | known-gap | Native OnCharacterAdded rounds percentage attack/health, with team/subtype/required-mutator filters and an additional stat-query path. No dedicated captured modifier or accepted runtime effect type exists in current relic validation; preserve rejection until shared birth/stat projection is modeled and compared. |
 | CardEffectDamage | shared-path | Native Damage normalizes to the shared Damage action; current PunishedSpike battle exercises repeated damage, armor, target death and full successors. Existing target/scaling/callback guards remain; not an audit of every contextual branch. |
 | RelicEffectAddRelicStartOfRun | input-only | Sealed native class implements StartOfRun ApplyEffect, which adds the configured relic through SaveManager. Battle input captures the resulting relic roster. No combat callback override in this class; start-of-run campaign handling and carried-owner validation remain separate. |
 | RelicEffectCardUpgrade | input-only | Sealed native class only overrides editor descriptions and implements the empty ICardUpgradeRelicEffect marker. Its 148 catalog references include upgrade definitions; already acquired card upgrades are battle inputs, not 148 missing live battle handlers. Acquisition consumers are not certified by this review. |
+| RelicEffectModifyCharacterAttackOrHealthPercentage | shared-path | Shared ID-independent birth/query rules capture initialized native float, team/subtype/required-mutator filters and ordered raw attack/health setters. Six original owners/56 effects, 138 configurations and 7728 query/birth pairs; unchanged double-health mutator full native win, 16 branches/frontiers/root search. Other owners companion effects, mixed Covenant projections, conditional effects and nonneutral late providers remain outside this integration. |
 | RelicEffectModifyDragonsHoardEndOfBattle | campaign-only | Sealed combat callbacks only remember private Pyre damage; campaign rewards have current OnPunish and legacy OnHit calibration. Natural seed20261115 Ring1 carried original owner across 21 inputs/42 full states, default3s budget, Pyre80 native win and independent forecasts/state/RNG. No independent frozen native pair or later rings claimed. |
 | RelicEffectModifyGoldEndOfBattle | campaign-only | Sealed native combat callbacks only remember private Pyre damage and return false; rewards use the separate campaign consumer. 864 current and 756 legacy component rows; natural carried-owner battle integration remains separate. |
 ## 第一批需核对的代码入口
@@ -59,10 +59,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `f5eb4fb077a3b2a7c1260b696fb7711774e1b84418e609996f8e40898552fb45`。
-- 人工审查索引 SHA-256: `e791708b4c80e57aa2c8a9389204cee2520d624f0c699558e400136060dce7f3`。
-- Model: PDB 校验过的项目源码集合 `83b294ad76d815345735ac88fce591d601aa181f0b6ef9f3a0531ab579171518`。
-- Probe: PDB 校验过的项目源码集合 `f417c98936a246604d5d7edc860c9b1562e0cd9f12cec611e93b0f7a8efa8217`。
-- ModelChecks: PDB 校验过的项目源码集合 `7275b8272578527364c5ad3f0ba646fc2123a575cc676c68a83c18df44b649d3`。
+- 人工审查索引 SHA-256: `1407bfb580b0a9b3492e79edcf6ffb33b29b40d0fe5b92c3898460ce12ca846c`。
+- Model: PDB 校验过的项目源码集合 `4b3df8f2766f5e3b1b93c76acb127b743e77ac8485ab2d15831d4909c2aa1f74`。
+- Probe: PDB 校验过的项目源码集合 `c01e2436fb7131ba6d57f2d184085cbf910da4896a131e1b46858784a9e2b36a`。
+- ModelChecks: PDB 校验过的项目源码集合 `e5f7ad3f1dacc6e995157996fe5baa4b116b3caea1e73504b974202563551d78`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 

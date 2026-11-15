@@ -252,6 +252,7 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                 RoomHealthMechanismBatch.Capture(this, managers);
                 JuiceMechanismBatch.Capture(this, managers);
+                PercentageStatsMechanismBatch.Capture(this, managers);
 #endif
                 RngCalibration.Capture();
                 GoldRewardCalibration.Capture(save);
@@ -398,7 +399,7 @@ namespace MonsterTrain2Poju.Probe
             if (room.IsRoomEnabled() && !room.GetCombatAllowed()) interactions.Add("Disabled room combat");
             string? relicError = RelicModel.Validate(RelicProbe.Capture(managers));
             if (relicError != null) interactions.Add(relicError);
-            if (save.GetMutators().Count != 0 && !RelicCardModifierScenario.SupportedMutatorContext)
+            if (save.GetMutators().Count != 0 && !RelicCardModifierScenario.SupportedMutatorContext && !RelicPercentageStatProbe.SupportedMutators(managers))
                 interactions.Add("Mutator effects");
             if (room.Attachments.Count > 0 && !RoomCapacityProbe.SupportsAttachments(room)) interactions.Add("Room attachments");
             CharacterState? outerBoss = heroes.GetOuterTrainBossCharacter();
@@ -1373,6 +1374,9 @@ namespace MonsterTrain2Poju.Probe
                 OriginalArbitraryVerdictIds = OriginalArbitraryVerdictScenario.CardIds,
                 OriginalWickedFervorPrepared = OriginalWickedFervorScenario.Prepared,
                 OriginalWickedFervorIds = OriginalWickedFervorScenario.CardIds,
+                OriginalPercentageStatsPrepared = OriginalPercentageStatsScenario.Prepared,
+                OriginalPercentageStatsDefinition = OriginalPercentageStatsScenario.Definition,
+                OriginalPercentageStatsDefinitionAfter = OriginalPercentageStatsScenario.CurrentDefinition,
                 OriginalJuiceUpgradesPrepared = OriginalJuiceUpgradesScenario.Prepared,
                 OriginalJuiceUpgradesIds = OriginalJuiceUpgradesScenario.CardIds,
                 OriginalJuiceUpgradesDefinitions = OriginalJuiceUpgradesScenario.Definitions,

@@ -393,7 +393,10 @@ namespace MonsterTrain2Poju.Probe
                     soloUnitUpgrades: soloUnitUpgrades.Length > 0 ? soloUnitUpgrades : null,
                     monsterSpellTargetingModifiers: monsterSpellTargeting.Length > 0 ? monsterSpellTargeting : null,
                     cardPlayCorruptionModifiers: cardPlayCorruption.Length > 0 ? cardPlayCorruption : null,
-                    afterSpawnChanceRules: afterSpawnChanceRules.Length > 0 ? afterSpawnChanceRules : null);
+                    afterSpawnChanceRules: afterSpawnChanceRules.Length > 0 ? afterSpawnChanceRules : null,
+                    percentageStats: effects.Any(effect => effect is RelicEffectModifyCharacterAttackOrHealthPercentage)
+                        ? effects.Select((effect, index) => (effect, index)).Where(item => item.effect is RelicEffectModifyCharacterAttackOrHealthPercentage)
+                            .Select(item => RelicPercentageStatProbe.Capture((RelicEffectModifyCharacterAttackOrHealthPercentage)item.effect, item.index, managers.GetSaveManager())).ToArray() : null);
             }).ToArray();
         }
 

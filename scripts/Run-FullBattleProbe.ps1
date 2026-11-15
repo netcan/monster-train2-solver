@@ -559,6 +559,8 @@ param(
     [switch] $SummonChoiceCalibration,
     [switch] $RoomHealthMechanismBatch,
     [switch] $JuiceMechanismBatch,
+
+    [switch] $PercentageStatsMechanism,
     [switch] $CampaignRelicCalibration,
     [switch] $CampaignDraftCalibration,
     [switch] $CampaignPostBattleCalibration,
@@ -1254,6 +1256,12 @@ if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($PyreSpikesMode) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $Policy = 'no-cards' }
 if ($RoomHealthMechanismBatch -and $PlayerAdvisor) { throw 'Mechanism batch queries require an isolated probe instance.' }
+if ($PercentageStatsMechanism) {
+    if ($PlayerAdvisor) { throw 'Percentage mechanisms require an isolated worker.' }
+    $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
+    $SettleCardAnimations = $true; $SettleDeathDissolves = $true
+    $Policy = 'steward-once'
+}
 if ($JuiceMechanismBatch) {
     if ($PlayerAdvisor) { throw 'Juice callback batches require an isolated probe instance.' }
     $BranchCardMasks = $true
@@ -1937,6 +1945,7 @@ $environment = @{
     MT2_PROBE_SUMMON_CHOICE_CALIBRATION = $(if ($SummonChoiceCalibration) { '1' } else { '0' })
     MT2_PROBE_ROOM_HEALTH_MECHANISM_BATCH = $(if ($RoomHealthMechanismBatch) { '1' } else { '0' })
     MT2_PROBE_JUICE_MECHANISM_BATCH = $(if ($JuiceMechanismBatch) { '1' } else { '0' })
+    MT2_PROBE_PERCENTAGE_STATS_BATCH = $(if ($PercentageStatsMechanism) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_RELICS = $(if ($CampaignRelicCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_DRAFTS = $(if ($CampaignDraftCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_POST_BATTLE = $(if ($CampaignPostBattleCalibration) { '1' } else { '0' })
@@ -2231,6 +2240,7 @@ if ($OriginalSpellCompositions) { $environment['MT2_PROBE_MODIFIERS'] = 'origina
 if ($OnCastGroupsBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'oncast-groups-battle' }
 if ($OriginalArbitraryVerdict) { $environment['MT2_PROBE_MODIFIERS'] = 'original-arbitrary-verdict' }
 if ($OriginalWickedFervor) { $environment['MT2_PROBE_MODIFIERS'] = 'original-wicked-fervor' }
+if ($PercentageStatsMechanism) { $environment['MT2_PROBE_MODIFIERS'] = 'original-percentage-stats' }
 if ($OriginalJuiceUpgrades) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-juice-upgrades'
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'

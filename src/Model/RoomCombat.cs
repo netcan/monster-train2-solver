@@ -294,6 +294,13 @@ namespace MonsterTrain2Poju.Model
             EquipmentCards == null ? null : Array.Empty<int>(), NextTriggerId, Ability, StatusDictionary,
             AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState, bumpRules: BumpRules,
             lastFeederId: LastFeederId.HasValue ? 0 : (int?)null, moonPhaseMask: MoonPhaseMask, damageHistory: DamageHistory);
+        internal CombatUnit WithRawAttack(int amount) => new CombatUnit(Id, AssetKey, Team,
+            Math.Max(0, unchecked(amount + Modifiers!.DamageBuff)), Health, MaxHealth,
+            CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
+            Modifiers.WithRawAttack(amount), IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId,
+            Ability, StatusDictionary, AbilityRules, HordeDefinition, IsSpawning, SacrificeCardId, DeathState,
+            bumpRules: BumpRules, lastFeederId: LastFeederId, moonPhaseMask: MoonPhaseMask, damageHistory: DamageHistory);
+
         internal CombatUnit WithModifiers(UnitModifiers modifiers) => new CombatUnit(Id, AssetKey, Team, BaseAttack, Health, MaxHealth,
             CanAttack, IsPyre, EndsBattleOnDeath, Statuses, Triggers, SpawnerCardId, Size, StatusImmunities, Subtypes,
             modifiers, IsBoss, LastAttackerId, StatusRegistry, EquipmentCards, NextTriggerId, Ability, StatusDictionary,

@@ -1,5 +1,15 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--percentage-stats-batch-only")
+{
+    PercentageStatsMechanismChecks.Batch(args[1]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-percentage-stats-only")
+{
+    PercentageStatsMechanismChecks.Battle(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--juice-mechanism-batch-only")
 {
     JuiceMechanismChecks.Batch(args[1]);
