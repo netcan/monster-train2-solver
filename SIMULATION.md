@@ -7,6 +7,16 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+Original 2.3.1 CloisterofChains now has enemy room-entry battle evidence:
+birth, ascent and descent add chained; friendly and unrelated triggers are
+excluded. Distinct floor instances, replacement, removal, reinstall and chained
+reflection/death pass full native successors, including inactive moon cache
+refresh. The 16-input/seven-EndTurn victory passes 37 callback observations,
+continuous replay/16 branches, 128-state serial/parallel search and three-step
+replay, with zero unsupported decisions or search attempts. See
+[native evidence and scope](docs/room-enemy-entry.md) and
+`scripts/Check-Game231Cloister.ps1`; full catalog revalidation remains open.
+
 Original 2.3.1 PainTithe and TrialByFire now have OnSpare battle evidence:
 surviving damage targets grow the source spell or refund energy behind a friendly
 team test, including armor/shield/zero damage and Undying revival. The same spell

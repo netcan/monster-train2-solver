@@ -125,7 +125,7 @@ namespace MonsterTrain2Poju.Probe
         internal bool? TerminalEffectsSettled { get; private set; }
         internal BattleTurnState? TerminalDecision { get; private set; }
         private int captureFailures;
-        internal int CaptureFailures => RelicSpawnStatusProbe.Records.Count(record => !record.Completed || record.After == null) + SpawnEnchantScenario.Records.Count(record => !record.Completed || record.After == null) + (HeroCopyScenario.Error == null ? 0 : 1) + (UnitCopyScenario.Error == null ? 0 : 1) + (UnitCloneScenario.Error == null ? 0 : 1) + (BumpScenario.Error == null ? 0 : 1) + (HordeMergeScenario.Error == null ? 0 : 1) + (RevivalScenario.Error == null ? 0 : 1) + RevivalProbe.Records.Count(record => record.Error != null) + TriggeredSummonProbe.Damages.Count(record => record.Error != null) + TriggeredSummonProbe.Records.Count(record => record.Error != null) + BattleSpawnPointProbe.Compactions.Count(record => record.Error != null) + SpawnPointScenario.Records.Count(record => !record.Completed) + (SpawnPointScenario.Error == null ? 0 : 1) + PoolSummonProbe.Records.Count(record => !record.Completed) + FreshSpawnerProbe.Records.Count(record => !record.Completed) + FreshSpawnerProbe.Checks.Count(record => !record.Completed) + SpawnUpgradeProbe.Records.Count(record => !record.Completed) + (MultiSummonScenario.Error == null ? 0 : 1) + UnitBirthProbe.Clones.Count(record => !record.Completed) + UnitBirthProbe.Records.Count(record => !record.Completed) + (RallyScenario.Error == null ? 0 : 1) + (DyingHordeUpgradeScenario.Error == null ? 0 : 1) + (HordeUpgradeScenario.Error == null ? 0 : 1) + (HordeDeathScenario.Error == null ? 0 : 1) + (HordeRemovalScenario.Error == null ? 0 : 1) + (HarvestScenario.Error == null ? 0 : 1) + (EquipmentScenario.Error == null ? 0 : 1) + (ConditionalTriggerScenario.Error == null ? 0 : 1) + captureFailures + (TriggerMutationScenario.Error == null ? 0 : 1) + (DirectUnitUpgradeScenario.Error == null ? 0 : 1) + UncontrolledGroupGrowthProbe.Records.Count(record => record.Error != null) + DamageScalingScenario.Samples.Count(sample => sample.CaptureError != null) +
+        internal int CaptureFailures => RoomEnemyEntryProbe.Records.Count(record => !record.Completed || record.After == null) + RelicSpawnStatusProbe.Records.Count(record => !record.Completed || record.After == null) + SpawnEnchantScenario.Records.Count(record => !record.Completed || record.After == null) + (HeroCopyScenario.Error == null ? 0 : 1) + (UnitCopyScenario.Error == null ? 0 : 1) + (UnitCloneScenario.Error == null ? 0 : 1) + (BumpScenario.Error == null ? 0 : 1) + (HordeMergeScenario.Error == null ? 0 : 1) + (RevivalScenario.Error == null ? 0 : 1) + RevivalProbe.Records.Count(record => record.Error != null) + TriggeredSummonProbe.Damages.Count(record => record.Error != null) + TriggeredSummonProbe.Records.Count(record => record.Error != null) + BattleSpawnPointProbe.Compactions.Count(record => record.Error != null) + SpawnPointScenario.Records.Count(record => !record.Completed) + (SpawnPointScenario.Error == null ? 0 : 1) + PoolSummonProbe.Records.Count(record => !record.Completed) + FreshSpawnerProbe.Records.Count(record => !record.Completed) + FreshSpawnerProbe.Checks.Count(record => !record.Completed) + SpawnUpgradeProbe.Records.Count(record => !record.Completed) + (MultiSummonScenario.Error == null ? 0 : 1) + UnitBirthProbe.Clones.Count(record => !record.Completed) + UnitBirthProbe.Records.Count(record => !record.Completed) + (RallyScenario.Error == null ? 0 : 1) + (DyingHordeUpgradeScenario.Error == null ? 0 : 1) + (HordeUpgradeScenario.Error == null ? 0 : 1) + (HordeDeathScenario.Error == null ? 0 : 1) + (HordeRemovalScenario.Error == null ? 0 : 1) + (HarvestScenario.Error == null ? 0 : 1) + (EquipmentScenario.Error == null ? 0 : 1) + (ConditionalTriggerScenario.Error == null ? 0 : 1) + captureFailures + (TriggerMutationScenario.Error == null ? 0 : 1) + (DirectUnitUpgradeScenario.Error == null ? 0 : 1) + UncontrolledGroupGrowthProbe.Records.Count(record => record.Error != null) + DamageScalingScenario.Samples.Count(sample => sample.CaptureError != null) +
             StatusScalingScenario.Samples.Count(sample => sample.CaptureError != null) + StatusScalingScenario.Applications.Count(sample => sample.CaptureError != null) +
             UnitUpgradeScalingScenario.Samples.Count(sample => sample.CaptureError != null) + RelicPileStartTurnProbe.Records.Count(record => record.CaptureError != null) +
             RelicUnitResourceProbe.Records.Count(record => record.CaptureError != null) +
@@ -311,7 +311,8 @@ namespace MonsterTrain2Poju.Probe
             if (rooms != null)
                 for (int index = 0; index < rooms.GetNumRooms(); index++)
                     foreach (TrainRoomAttachmentState attachment in rooms.GetRoom(index).Attachments)
-                        if (attachment.CardState != null && RoomAttachmentTriggerIdentity.Known(attachment.CardState.GetCardDataID()) &&
+                        if (attachment.CardState != null && (RoomAttachmentTriggerIdentity.Known(attachment.CardState.GetCardDataID()) ||
+                            attachment.UpgradeStates.SelectMany(upgrade => upgrade.Item2.GetRoomModifierUpgrades()).Any(RoomEnemyEntryProbe.Known)) &&
                             !roomAttachmentTriggerKeys.ContainsKey(attachment.Guid))
                             roomAttachmentTriggerKeys.Add(attachment.Guid, RoomAttachmentTriggerIdentity.Key(
                                 attachment.CardState.GetCardDataID(), index, rooms.GetRoom(index).NumRoomAttachmentsAddedFromCard));
@@ -508,7 +509,7 @@ namespace MonsterTrain2Poju.Probe
                         OuterBossPhaseProbe.AnchorSlots(character, BossState.AttackPhase.Relentless))
                     : null, lastFeederId: triggers.Any(trigger => trigger.Kind == "OnEaten") || OriginalOpeningMorselsScenario.Enabled || OriginalMorselEatenScenario.Enabled || OriginalOnKillGenerationScenario.Enabled ?
                         (character.GetLastFeederCharacter() == null ? 0 : UnitId(character.GetLastFeederCharacter())) : (int?)null,
-                    moonPhaseMask: OriginalUpgradeEnchantmentScenario.Enabled || EclipseChamberScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || MoonPhaseCaptureProbe.CaptureMasks ? (int)character.GetMoonPhaseMask() : (int?)null, damageHistory: UnitDamageHistoryProbe.Capture(character, triggers));
+                    moonPhaseMask: OriginalCloisterScenario.Enabled || OriginalUpgradeEnchantmentScenario.Enabled || EclipseChamberScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || MoonPhaseCaptureProbe.CaptureMasks ? (int)character.GetMoonPhaseMask() : (int?)null, damageHistory: UnitDamageHistoryProbe.Capture(character, triggers));
         }
 
         internal CombatContext CaptureContext()
@@ -1339,6 +1340,10 @@ namespace MonsterTrain2Poju.Probe
                 OriginalDevoteTreasureSetupIds = OriginalDevoteTreasureScenario.SetupIds,
                 OriginalDevoteTreasureIds = OriginalDevoteTreasureScenario.TreasureIds,
                 OriginalSparePrepared = OriginalSpareScenario.Prepared,
+                OriginalCloisterPrepared = OriginalCloisterScenario.Prepared,
+                OriginalCloisterIds = OriginalCloisterScenario.CardIds,
+                OriginalCloisterDefinition = OriginalCloisterScenario.Definition,
+                RoomEnemyEntries = RoomEnemyEntryProbe.Records,
                 OriginalSpareIds = OriginalSpareScenario.CardIds,
                 OriginalSpareOrder = OriginalSpareScenario.Order,
                 OriginalSpareDefinitions = OriginalSpareScenario.Definitions,

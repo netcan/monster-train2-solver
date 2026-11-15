@@ -28,6 +28,8 @@ namespace MonsterTrain2Poju.Model
         public RoomAbilityState? Ability { get; }
         public RoomAttachmentCorruption? CorruptionModifier { get; }
         public RoomEchoState? Echo { get; }
+        public IReadOnlyList<RoomEnemyEntryRule>? EnemyEntry { get; }
+        public bool ShouldSerializeEnemyEntry() => EnemyEntry != null;
         public RoomCapacityAttachmentState(string dataId, string assetKey, int attachmentType, int capacityDelta,
             IReadOnlyList<CardUpgradeModifier>? characterUpgrades = null, bool affectsHeroes = false,
             bool affectsMonsters = true, bool ignoreBosses = false, string attachmentId = "", int spellCostDelta = 0,
@@ -35,7 +37,8 @@ namespace MonsterTrain2Poju.Model
             RoomPostCombatRule? postCombat = null, RoomPreCombatRule? preCombat = null,
             IReadOnlyList<RoomStatusStackRule>? statusStackBonuses = null, string? spawnCopySubtype = null,
             RoomSpellUpgradeState? spellUpgrade = null, RoomDeathEffectRule? deathEffect = null,
-            RoomAbilityState? ability = null, RoomAttachmentCorruption? corruptionModifier = null, RoomEchoState? echo = null)
+            RoomAbilityState? ability = null, RoomAttachmentCorruption? corruptionModifier = null, RoomEchoState? echo = null,
+            IReadOnlyList<RoomEnemyEntryRule>? enemyEntry = null)
         {
             DataId = dataId; AssetKey = assetKey; AttachmentId = attachmentId; AttachmentType = attachmentType; CapacityDelta = capacityDelta;
             CharacterUpgrades = characterUpgrades == null ? null : Array.AsReadOnly(characterUpgrades.ToArray());
@@ -49,19 +52,20 @@ namespace MonsterTrain2Poju.Model
             SpellUpgrade = spellUpgrade;
             DeathEffect = deathEffect;
             Ability = ability; CorruptionModifier = corruptionModifier; Echo = echo;
+            EnemyEntry = enemyEntry == null ? null : Array.AsReadOnly(enemyEntry.ToArray());
         }
         internal RoomCapacityAttachmentState WithSpellUpgrade(RoomSpellUpgradeState value) =>
             new RoomCapacityAttachmentState(DataId, AssetKey, AttachmentType, CapacityDelta, CharacterUpgrades,
                 AffectsHeroes, AffectsMonsters, IgnoreBosses, AttachmentId, SpellCostDelta, MoonPhase,
-                EnergyPerTurnDelta, CharacterFilters, PostCombat, PreCombat, StatusStackBonuses, SpawnCopySubtype, value, DeathEffect, Ability, CorruptionModifier, Echo);
+                EnergyPerTurnDelta, CharacterFilters, PostCombat, PreCombat, StatusStackBonuses, SpawnCopySubtype, value, DeathEffect, Ability, CorruptionModifier, Echo, EnemyEntry);
         internal RoomCapacityAttachmentState WithAbility(RoomAbilityState value) =>
             new RoomCapacityAttachmentState(DataId, AssetKey, AttachmentType, CapacityDelta, CharacterUpgrades,
                 AffectsHeroes, AffectsMonsters, IgnoreBosses, AttachmentId, SpellCostDelta, MoonPhase,
-                EnergyPerTurnDelta, CharacterFilters, PostCombat, PreCombat, StatusStackBonuses, SpawnCopySubtype, SpellUpgrade, DeathEffect, value, CorruptionModifier, Echo);
+                EnergyPerTurnDelta, CharacterFilters, PostCombat, PreCombat, StatusStackBonuses, SpawnCopySubtype, SpellUpgrade, DeathEffect, value, CorruptionModifier, Echo, EnemyEntry);
         internal RoomCapacityAttachmentState WithEcho(RoomEchoState value) =>
             new RoomCapacityAttachmentState(DataId, AssetKey, AttachmentType, CapacityDelta, CharacterUpgrades,
                 AffectsHeroes, AffectsMonsters, IgnoreBosses, AttachmentId, SpellCostDelta, MoonPhase,
-                EnergyPerTurnDelta, CharacterFilters, PostCombat, PreCombat, StatusStackBonuses, SpawnCopySubtype, SpellUpgrade, DeathEffect, Ability, CorruptionModifier, value);
+                EnergyPerTurnDelta, CharacterFilters, PostCombat, PreCombat, StatusStackBonuses, SpawnCopySubtype, SpellUpgrade, DeathEffect, Ability, CorruptionModifier, value, EnemyEntry);
     }
 
     public sealed class RoomCapacityState
@@ -133,6 +137,7 @@ namespace MonsterTrain2Poju.Model
                     attachment.SpawnCopySubtype is not (null or "") ||
                     attachment.SpellUpgrade != null && RoomSpellUpgradeModel.Validate(attachment.SpellUpgrade) != null ||
                     attachment.DeathEffect != null && RoomDeathEffectModel.Validate(attachment.DeathEffect) != null ||
+                    attachment.EnemyEntry?.Any(rule => RoomEnemyEntryModel.Validate(rule) != null) == true ||
                     attachment.Ability != null && (attachment.Ability.DataId.Length == 0 || attachment.Ability.Cooldown < 0 || attachment.Ability.CooldownAfterActivated < 0 || attachment.Ability.Creation.DataId != attachment.Ability.DataId) ||
                     attachment.MoonPhase != null && RoomMoonPhaseModel.Validate(attachment.MoonPhase) != null ||
                     attachment.PostCombat != null && (attachment.MoonPhase != null || RoomPostCombatModel.Validate(attachment.PostCombat) != null) ||
@@ -167,7 +172,7 @@ namespace MonsterTrain2Poju.Model
             RoomCapacityAttachmentState[] attachments = selected.Attachments?.ToArray() ?? Array.Empty<RoomCapacityAttachmentState>();
             int? attachmentsAddedFromCards = selected.AttachmentsAddedFromCards.HasValue
                 ? unchecked(selected.AttachmentsAddedFromCards.Value + 1) : null;
-            if (RoomAttachmentTriggerIdentity.Known(attachment.DataId))
+            if (RoomAttachmentTriggerIdentity.Known(attachment.DataId) || attachment.EnemyEntry?.Count > 0)
             {
                 if (attachmentsAddedFromCards == null) return new RoomCapacityResult(null, 0, "Room trigger attachments require a captured per-floor creation ordinal.");
                 attachment = RoomAttachmentTriggerIdentity.Bind(attachment, roomIndex, attachmentsAddedFromCards.Value);

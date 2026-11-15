@@ -355,6 +355,7 @@ namespace MonsterTrain2Poju.Model
         private static bool OriginalCardlessRoomMoonSync(RoomCapacityAttachmentState attachment, CombatUnit unit) =>
             unit.Team == CombatTeam.Enemy && unit.SpawnerCardId == 0 &&
             (OriginalBatchRoom(attachment) || OriginalTriggerRoom(attachment) ||
+                RoomEnemyEntryModel.IsStatusOnly(attachment) ||
                 OriginalMushy(attachment) || OriginalHellfurnace(attachment) ||
                 OriginalInferno(attachment) && attachment.AffectsHeroes);
 

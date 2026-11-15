@@ -4510,6 +4510,15 @@ namespace MonsterTrain2Poju.Model
                     if (remainingTriggerIndex >= 0) Store(unit.Triggers[remainingTriggerIndex].Fired(unit.Triggers[remainingTriggerIndex].Effects));
                 }
                 if (unsupportedReason == null && !ApplyRelicUnitUpgradeTriggers(unit, kind, paramInt, paramInt2)) return;
+                if (unsupportedReason == null && kind is "AfterSpawnEnchant" or "PostAscension" or "PostDescension" &&
+                    context?.RoomCapacities?.FirstOrDefault(room => room.RoomIndex == source.RoomIndex)?.Attachments?
+                        .Any(attachment => attachment.EnemyEntry?.Count > 0) == true)
+                {
+                    RoomCombatResult entry = RoomEnemyEntryModel.Apply(CurrentRoom(), unit.Source.Id, kind);
+                    if (!entry.Supported) { unsupportedReason = entry.UnsupportedReason; return; }
+                    ImportEnchantmentRoom(entry.State!);
+                    foreach (QueuedCharacterTrigger child in entry.PendingCallbacks) QueueCallback(child);
+                }
                 if (unsupportedReason == null && kind == "OnDeath" && !unit.Source.IsPyre &&
                     (unit.Alive || unit.Source.IsBoss != true && !unit.Source.EndsBattleOnDeath))
                     foreach (RoomCapacityAttachmentState attachment in context?.RoomCapacities?
