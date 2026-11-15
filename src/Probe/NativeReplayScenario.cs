@@ -1593,6 +1593,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalSpellCompositionsScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalDevotionUpgradeScenario.Enabled)
+            {
+                numericModifiersPrepared = true;
+                OriginalDevotionUpgradeScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalDragThemDownScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original Drag Them Down must start on deployment turn.");
@@ -3280,6 +3285,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OnCastGroupsBattleScenario.Enabled) pendingPlay = OnCastGroupsBattleScenario.Choose(decision);
                 if (OriginalArbitraryVerdictScenario.Enabled) pendingPlay = OriginalArbitraryVerdictScenario.Choose(decision);
                 if (OriginalWickedFervorScenario.Enabled) pendingPlay = OriginalWickedFervorScenario.Choose(decision);
+                if (OriginalDevotionUpgradeScenario.Enabled) pendingPlay = OriginalDevotionUpgradeScenario.Choose(decision);
                 if (OriginalDragThemDownScenario.Enabled) pendingPlay = OriginalDragThemDownScenario.Choose(decision);
                 if (OriginalDiscardDrawScenario.Enabled) pendingPlay = OriginalDiscardDrawScenario.Choose(decision, OriginalDiscardDrawScenario.CardIds);
                 if (OriginalMoonCardUpgradesScenario.Enabled) pendingPlay = OriginalMoonCardUpgradesScenario.Choose(decision, OriginalMoonCardUpgradesScenario.CardIds);

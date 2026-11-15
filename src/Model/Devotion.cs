@@ -33,6 +33,8 @@ namespace MonsterTrain2Poju.Model
     public static class DevotionModel
     {
         public const string Effect = "GainDevotion";
+        public const string NativeUnitUpgrade = "CardEffectAddCardUpgradeToUnitPerDevotionLevel";
+        public const string UnitUpgrade = "UnitUpgradePerDevotion";
         internal static bool HasRequirements(CardEffectTests? tests) => tests?.DevotionRequirement > 0 || tests?.DevotionRequirementMax > 0;
         internal static bool MeetsRequirements(CombatContext? context, CardEffectTests? tests) => !HasRequirements(tests) ||
             context?.QueryFrame?.Devotion is DevotionState state &&

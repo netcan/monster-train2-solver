@@ -1601,15 +1601,17 @@ namespace MonsterTrain2Poju.Model
                         }
                         if (effect.Type == "CardEffectAddCardUpgradeToUnits" || effect.Type == "CardEffectAddTempCardUpgradeToUnits" ||
                             effect.Type == "CardEffectRemoveTempUpgradeFromUnit" || effect.Type == "CardEffectBuffEquipment" ||
-                            effect.Type is "CardEffectAddCardUpgradeToUnitsOnMoonPhase" or "CardEffectAddCardUpgradeToUnitsPerDragonsHoard" or "CardEffectAddCardUpgradeToUnitsPerStatusEffect")
+                            effect.Type is "CardEffectAddCardUpgradeToUnitsOnMoonPhase" or "CardEffectAddCardUpgradeToUnitsPerDragonsHoard" or "CardEffectAddCardUpgradeToUnitsPerStatusEffect" or DevotionModel.NativeUnitUpgrade)
                         {
                             CardActionEffect? action = effect.UnitUpgrade;
-                            if (action?.Upgrade == null || action.Type != (effect.Type == "CardEffectAddCardUpgradeToUnitsOnMoonPhase" ? "UnitUpgradeOnMoonPhase" :
+                            if (action?.Upgrade == null || action.Type != (effect.Type == DevotionModel.NativeUnitUpgrade ? DevotionModel.UnitUpgrade : effect.Type == "CardEffectAddCardUpgradeToUnitsOnMoonPhase" ? "UnitUpgradeOnMoonPhase" :
                                 effect.Type == "CardEffectAddCardUpgradeToUnitsPerDragonsHoard" ? "UnitUpgradePerHoard" :
                                 effect.Type == "CardEffectAddCardUpgradeToUnitsPerStatusEffect" ? "UnitUpgradePerStatus" : effect.Type == "CardEffectBuffEquipment" ? "BuffEquipment" : effect.Type == "CardEffectRemoveTempUpgradeFromUnit" ? "RemoveUnitUpgrade" : "UnitUpgrade"))
                                 return "Missing triggered unit upgrade definition.";
                             if (action.Type == "UnitUpgradeOnMoonPhase" && (action.Value is < 0 or > 3 || state.Context?.QueryFrame?.MoonPhase is not (1 or 2)))
                                 return "Moon-dependent unit upgrades require a captured phase and a calibrated mask.";
+                            if (action.Type == DevotionModel.UnitUpgrade && state.Context?.QueryFrame?.Devotion == null)
+                                return "Devotion-scaled unit upgrades require captured Devotion state.";
                             if (action.Type == "UnitUpgradePerHoard" && state.Context?.QueryFrame?.DragonsHoard == null)
                                 return "Hoard-dependent unit upgrades require the current Hoard amount.";
                             if (action.Type == "UnitUpgradePerStatus" && (action.Target != "Self" || action.Statuses.Count == 0))
@@ -5279,12 +5281,14 @@ namespace MonsterTrain2Poju.Model
                 CardTargets tested = TriggerTargets(actor, action, testing: true, overrideTarget, lastSpawnedOverrideUnitId);
                 if (!tested.Supported) { unsupportedReason = tested.UnsupportedReason; return false; }
                 if (tested.BattleRng.HasValue) context = context!.WithBattleRng(tested.BattleRng.Value);
-                if (action.Type != "RemoveUnitUpgrade" && tested.UnitIds.Count == 0)
+                if (action.Type == DevotionModel.UnitUpgrade && context!.QueryFrame!.Devotion!.Level < 1 ||
+                    action.Type != "RemoveUnitUpgrade" && tested.UnitIds.Count == 0)
                     return action.Tests?.CancelSubsequent != true;
                 CardTargets targets = TriggerTargets(actor, action, testing: false, overrideTarget, lastSpawnedOverrideUnitId);
                 if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
                 if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
-                int repeats = action.Type == "UnitUpgradePerHoard" ? Math.Max(0, context!.QueryFrame!.DragonsHoard!.Value) * targets.UnitIds.Count :
+                int repeats = action.Type == DevotionModel.UnitUpgrade ? Math.Max(0, context!.QueryFrame!.Devotion!.Level) :
+                    action.Type == "UnitUpgradePerHoard" ? Math.Max(0, context!.QueryFrame!.DragonsHoard!.Value) * targets.UnitIds.Count :
                     action.Type == "UnitUpgradePerStatus" ? Math.Max(0, action.Statuses.Sum(status => actor.Count(status.Id))) : 1;
                 for (int repetition = 0; repetition < repeats; repetition++)
                 foreach (int targetId in targets.UnitIds)
@@ -5341,6 +5345,7 @@ namespace MonsterTrain2Poju.Model
                 action.Type == "SelfFeederRules" ? !source.Deployment :
                 action.Type == "RemoveEquipment" ? targets.UnitIds.Any(id => units.Any(unit => unit.Source.Id == id && unit.Source.EquipmentCards?.Count > 0)) :
                 action.Type == "DamagePerSourceAttack" ? targets.UnitIds.Count > 0 :
+                action.Type == DevotionModel.UnitUpgrade ? targets.UnitIds.Count > 0 && context?.QueryFrame?.Devotion?.Level > 0 :
                 action.Type == "UnitUpgradePerHoard" ? targets.UnitIds.Count > 0 && context?.QueryFrame?.DragonsHoard > 0 :
                 action.Type == "UnitUpgradeOnMoonPhase" ? targets.UnitIds.Any(id => units.Any(unit => unit.Source.Id == id && UpgradeMoonMatches(action, unit))) :
                 action.Type == "HealTrain" ? context?.EnergyState?.PyreAlive == true &&
