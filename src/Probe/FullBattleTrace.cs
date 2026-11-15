@@ -243,6 +243,9 @@ namespace MonsterTrain2Poju.Probe
             if (!calibrated)
             {
                 CardCatalogProbe.Capture(this, managers);
+#if DEVELOPMENT_PROBE
+                RoomHealthMechanismBatch.Capture(this, managers);
+#endif
                 RngCalibration.Capture();
                 GoldRewardCalibration.Capture(save);
                 CampaignRelicCalibration.Capture(managers);

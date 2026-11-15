@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--room-health-mechanism-batch-only")
+{
+    RoomHealthMechanismChecks.Native(args[1], args.Length == 3 ? args[2] : null);
+    return;
+}
 if (args.Length == 2 && args[0] is "--original-summon-choice-only" or "--summon-choice-selection-search-only")
 {
     OriginalSummonChoiceChecks.Native(args[1], searchOnly: args[0] == "--summon-choice-selection-search-only");

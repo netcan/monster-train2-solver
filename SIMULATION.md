@@ -14,6 +14,13 @@ and [the generated native class inventory](docs/inventory/game-2.3.1-mechanisms.
 The inventory is a source-audit denominator; runtime evidence is not yet mapped
 to its rows and its class counts are not completion percentages.
 
+The first definition-driven native batch now discovers five original missing-HP
+attack upgrades and generates 53 configurations/38,160 queries. Native queries
+take 2.214 seconds; independent comparison and 16 parallel evaluations take
+about 2.353 seconds. Shared plans stay outside production assemblies. This is
+query-component evidence; friendly-aura propagation and champion battle
+integration remain guarded. See [the batch and precise scope](docs/room-health-query-batch.md).
+
 Original GrimFlight's three upgraded skills now cover twelve actual selection
 dialogs and cardless births, subtype skips, over-capacity summons and fragment
 callbacks. A 107.55-second native victory has 49 inputs/five EndTurns and four

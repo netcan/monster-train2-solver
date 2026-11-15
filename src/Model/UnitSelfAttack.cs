@@ -50,10 +50,16 @@ namespace MonsterTrain2Poju.Model
             int value = 0;
             foreach (UnitSelfAttackRule rule in rules)
             {
+                if (rule.Type == MissingHealth)
+                {
+                    value = unchecked(value + RoomHealthDamageModel.Query(rule.Type, rule.Coefficient, rule.Divisor,
+                        unit.MaxHealth, currentHealth ?? unit.Health, unit.Team == CombatTeam.Player,
+                        true, true, true, true));
+                    continue;
+                }
                 int count = rule.Type == "RoomStateSelfDamagePerGoldModifier" ?
                     (context!.QueryFrame!.RunningCombat == true ? context.Statistics!.GoldStartOfThisTurn : context.Gold) / rule.Divisor :
                     rule.Type == "RoomStateSelfDamagePerCorruptionModifier" ? context!.RoomCapacities!.Single(room => room.RoomIndex == roomIndex.Value).Corruption!.Value :
-                    rule.Type == MissingHealth ? unchecked(unit.MaxHealth - (currentHealth ?? unit.Health)) :
                     (statuses ?? unit.Statuses).FirstOrDefault(status => status.Id == rule.StatusId)?.Stacks ?? 0;
                 value = unchecked(value + unchecked(count * rule.Coefficient));
             }

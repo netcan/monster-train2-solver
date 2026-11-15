@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Model\Model.csproj" />
     <ProjectReference Include="..\FixtureArchive\FixtureArchive.csproj" />
+    <Compile Include="../NativeCasePlans/*.cs" Link="NativeCasePlans/%(Filename)%(Extension)" />
   </ItemGroup>
   <Import Project="GameReferences.props" />
 </Project>

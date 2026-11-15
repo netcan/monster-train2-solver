@@ -554,6 +554,7 @@ param(
     [switch] $RelicCatalog,
     [switch] $CardCatalog,
     [switch] $SummonChoiceCalibration,
+    [switch] $RoomHealthMechanismBatch,
     [switch] $CampaignRelicCalibration,
     [switch] $CampaignDraftCalibration,
     [switch] $CampaignPostBattleCalibration,
@@ -1248,6 +1249,7 @@ if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spell
 if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($PyreSpikesMode) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $Policy = 'no-cards' }
+if ($RoomHealthMechanismBatch -and $PlayerAdvisor) { throw 'Mechanism batch queries require an isolated probe instance.' }
 if ($SummonChoiceCalibration -and (-not $OriginalUpgradeEnchantment -or $PlayerAdvisor)) {
     throw 'SummonChoiceCalibration requires the isolated OriginalUpgradeEnchantment control scenario.'
 }
@@ -1920,6 +1922,7 @@ $environment = @{
     MT2_PROBE_RELIC_CATALOG = $(if ($RelicCatalog) { '1' } else { '0' })
     MT2_PROBE_CARD_CATALOG = $(if ($CardCatalog) { '1' } else { '0' })
     MT2_PROBE_SUMMON_CHOICE_CALIBRATION = $(if ($SummonChoiceCalibration) { '1' } else { '0' })
+    MT2_PROBE_ROOM_HEALTH_MECHANISM_BATCH = $(if ($RoomHealthMechanismBatch) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_RELICS = $(if ($CampaignRelicCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_DRAFTS = $(if ($CampaignDraftCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_POST_BATTLE = $(if ($CampaignPostBattleCalibration) { '1' } else { '0' })
@@ -5211,6 +5214,31 @@ if ($OriginalUnitUpgradeTriggerRelic -and ($trace.Schema -ne 133 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-UNIT-UPGRADE-TRIGGER-RELIC-PREPARED' -Quiet) -or
     @($trace.Actions).Count -eq 0)) {
     throw 'Original unit-upgrade trigger relic was not exercised in the expected full-battle capture.'
+}
+if ($RoomHealthMechanismBatch) {
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $roomHealthBatchPath = Join-Path $profile 'room-health-mechanism-batch.mt2f'
+    if (!(Test-Path -LiteralPath $roomHealthBatchPath)) { throw 'Missing generated room-health native batch.' }
+    $roomHealthBatchDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($roomHealthBatchPath)
+    try {
+        $roomHealthBatchRoot = $roomHealthBatchDocument.RootElement
+        $roomHealthDefinitionCount = $roomHealthBatchRoot.GetProperty('Definitions').GetArrayLength()
+        $roomHealthSampleCount = $roomHealthBatchRoot.GetProperty('Samples').GetArrayLength()
+        if ($roomHealthBatchRoot.GetProperty('Scope').GetString() -ne 'DefinitionDrivenRoomHealthQueries' -or
+            $roomHealthBatchRoot.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
+            $roomHealthDefinitionCount -lt 50 -or $roomHealthSampleCount -ne $roomHealthDefinitionCount * 720 -or
+            -not $roomHealthBatchRoot.GetProperty('DecisionUnchanged').GetBoolean() -or
+            -not $roomHealthBatchRoot.GetProperty('DefinitionsUnchanged').GetBoolean() -or
+            -not $roomHealthBatchRoot.GetProperty('Before').ContentEquals($roomHealthBatchRoot.GetProperty('After')) -or
+            -not $roomHealthBatchRoot.GetProperty('OriginalDefinitions').ContentEquals($roomHealthBatchRoot.GetProperty('OriginalDefinitionsAfter')) -or
+            -not $roomHealthBatchRoot.GetProperty('RngBefore').ContentEquals($roomHealthBatchRoot.GetProperty('RngAfter')) -or
+            $roomHealthBatchRoot.GetProperty('FrameBefore').GetInt32() -ne $roomHealthBatchRoot.GetProperty('FrameAfter').GetInt32() -or
+            $roomHealthBatchRoot.GetProperty('QueueBefore').GetInt32() -ne 0 -or $roomHealthBatchRoot.GetProperty('QueueAfter').GetInt32() -ne 0) {
+            throw 'Generated room-health native input matrix or source/state/RNG/queue restoration is incomplete.'
+        }
+        Write-Output ("NATIVE-ROOM-HEALTH-MECHANISM-BATCH PASS: {0} queries, {1} configurations in {2:F3}s; query component only." -f
+            $roomHealthSampleCount, $roomHealthDefinitionCount, $roomHealthBatchRoot.GetProperty('Seconds').GetDouble())
+    } finally { $roomHealthBatchDocument.Dispose() }
 }
 if ($SummonChoiceCalibration) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
