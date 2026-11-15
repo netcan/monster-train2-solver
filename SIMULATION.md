@@ -7,6 +7,14 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+Original GrimFlight's three upgraded skills now cover twelve actual selection
+dialogs and cardless births, subtype skips, over-capacity summons and fragment
+callbacks. A 107.55-second native victory has 49 inputs/five EndTurns and four
+zero counters. Full continuous replay/16 branches, all recorded frontiers,
+baseline 128-state search and a focused serial/parallel fragment-selection
+witness pass. Repeated-summon deep search remains a separate acceptance gap;
+see [the evidence and precise boundaries](docs/summon-choice-battle.md).
+
 Original GrimDisciple, ChainBearer and ForsakenBerserker now pass one native
 battle with three original skills. Shared rules cover Devotion-level spawn
 statuses and the new one-shot cooldown skip after in-flight skill replacement;

@@ -703,6 +703,8 @@ namespace MonsterTrain2Poju.Probe
                 text.Append(showFullPlan ? " → 第 " : "\n第 ").Append(action.RoomIndex + 1).Append(" 层");
                 if (action.PlayerPosition >= 0) text.Append(" · 部署位 ").Append(action.PlayerPosition + 1);
                 if (action.TargetSpawnPointIndex >= 0) text.Append(" · 目标部署位 ").Append(action.TargetSpawnPointIndex + 1);
+                foreach (var selection in action.SummonSelections)
+                    text.Append(" · 选择 ").Append(managers.GetSaveManager().GetAllGameData().FindCardData(selection.CardDataId)?.GetName() ?? selection.CardDataId);
                 if (action.ActivatorRoomIndex.HasValue) text.Append(" · 来源：第 ").Append(action.ActivatorRoomIndex.Value + 1).Append(" 层房间技能");
                 if (action.TargetUnitId > 0)
                 {

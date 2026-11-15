@@ -339,6 +339,8 @@ namespace MonsterTrain2Poju.Model
                 if (action != null && action.MixSelections.Count > 0)
                     key += "|mix:" + string.Join(";", action.MixSelections.Select(selection =>
                         selection.EffectIndex + ":" + selection.MixNumber + ":" + selection.ChoiceIndex));
+                if (action != null && action.SummonSelections.Count > 0)
+                    key += "|summon:" + string.Join(";", action.SummonSelections.Select(selection => selection.EffectIndex + ":" + selection.CardDataId));
                 key += "|" + attempt.Reason;
                 if (unsupportedKeys.Add(key)) UnsupportedAttempts.Add(attempt);
             }

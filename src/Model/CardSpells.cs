@@ -34,12 +34,13 @@ namespace MonsterTrain2Poju.Model
         public BattlePlayRules? PlayRules { get; }
         internal IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> PendingCallbacks { get; }
         internal IReadOnlyList<NextDrawUpgradeRule>? DiscardDrawUpgrades { get; }
+        internal bool IllegalChoice { get; }
         public bool Supported => State != null;
         internal TrainSpellResult(TrainCombatState? state, RoomOutcome outcome, IReadOnlyList<CombatEvent> events, string? error = null,
             IReadOnlyList<SpellTargetCollection>? collections = null, IReadOnlyList<CardPileState>? otherPiles = null,
             IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? pendingCallbacks = null, IReadOnlyList<CombatUnit>? retainedUnits = null,
-            BattlePlayRules? playRules = null, IReadOnlyList<NextDrawUpgradeRule>? discardDrawUpgrades = null)
-        { State = state; Outcome = outcome; Events = Array.AsReadOnly(events.ToArray()); UnsupportedReason = error;
+            BattlePlayRules? playRules = null, IReadOnlyList<NextDrawUpgradeRule>? discardDrawUpgrades = null, bool illegalChoice = false)
+        { State = state; Outcome = outcome; Events = Array.AsReadOnly(events.ToArray()); UnsupportedReason = error; IllegalChoice = illegalChoice;
             TargetCollections = Array.AsReadOnly((collections ?? Array.Empty<SpellTargetCollection>()).ToArray());
             RetainedUnits = Array.AsReadOnly((retainedUnits ?? Array.Empty<CombatUnit>()).ToArray());
             OtherPiles = otherPiles == null ? null : Array.AsReadOnly(otherPiles.ToArray());
@@ -170,7 +171,8 @@ namespace MonsterTrain2Poju.Model
             int targetSpawnPointIndex = -1, IReadOnlyList<CardRecursionSelection>? recursionSelections = null, bool onCastEffects = false,
             bool onUnplayedNegativeEffects = false, IReadOnlyList<ElixirMixSelection>? mixSelections = null,
             IReadOnlyList<int>? priorTargets = null, int? abilityRoomIndex = null, bool resolveLiveEffects = true,
-            CombatUnit? retainedDropTarget = null, IReadOnlyList<int>? onCastEffectGroupSizes = null)
+            CombatUnit? retainedDropTarget = null, IReadOnlyList<int>? onCastEffectGroupSizes = null,
+            IReadOnlyList<SummonChoiceSelection>? summonSelections = null)
         {
             string? groupError = CardTriggerGroupModel.Validate(onCastEffectGroupSizes, effects.Count);
             if (groupError != null) return UnsupportedTrain(groupError);
@@ -198,7 +200,7 @@ namespace MonsterTrain2Poju.Model
             return ApplyCore(source, roomIndex, effects, targetId, sourceCardId, null, null, definitions, true, otherPiles,
                 selfUnitId, deferFinalCallbacks: true, targetSpawnPointIndex: targetSpawnPointIndex,
                 recursionSelections: recursionSelections, onCastEffects: onCastEffects,
-                onUnplayedNegativeEffects: onUnplayedNegativeEffects, mixSelections: mixSelections,
+                onUnplayedNegativeEffects: onUnplayedNegativeEffects, mixSelections: mixSelections, summonSelections: summonSelections,
                 priorTargets: priorTargets, playerActionPhase: true, abilityRoomIndex: abilityRoomIndex,
                 resolveLiveEffects: resolveLiveEffects,
                 effectGroupEnds: onCastEffectGroupSizes == null ? null : CardTriggerGroupModel.Ends(onCastEffectGroupSizes),
@@ -408,8 +410,13 @@ namespace MonsterTrain2Poju.Model
             bool onUnplayedNegativeEffects = false, IReadOnlyList<ElixirMixSelection>? mixSelections = null,
             IReadOnlyList<int>? priorTargets = null, bool playerActionPhase = false, bool resolveLiveEffects = true,
             int? abilityRoomIndex = null, bool duringRoomPreCombat = false,
-            bool? previewDropOverride = null, IReadOnlyList<int>? effectGroupEnds = null)
+            bool? previewDropOverride = null, IReadOnlyList<int>? effectGroupEnds = null,
+            IReadOnlyList<SummonChoiceSelection>? summonSelections = null)
         {
+            if (summonSelections?.Any(selection => selection.EffectIndex < 0 || selection.EffectIndex >= effects.Count ||
+                    effects[selection.EffectIndex].Type != "SummonChoice" || string.IsNullOrEmpty(selection.CardDataId)) == true ||
+                summonSelections?.GroupBy(selection => selection.EffectIndex).Any(group => group.Count() != 1) == true)
+                return IllegalSummon("Invalid or duplicate summon-choice input.");
             string? selectionError = CardRecursionModel.ValidateSelections(effects, recursionSelections);
             if (selectionError != null) return UnsupportedTrain(selectionError);
             if (mixSelections?.Any(selection => selection.MixNumber < 0 || selection.ChoiceIndex < 0 ||
@@ -666,6 +673,50 @@ namespace MonsterTrain2Poju.Model
                     applicationsLeft = applications.Value;
                     if (applicationsLeft <= 0) continue;
                 }
+                if (effect.Type == "SummonChoice")
+                {
+                    if (selected.Preview) continue;
+                    if (applicationsLeft > 1) return UnsupportedTrain("Repeated summon-choice applications require occurrence-specific native inputs.");
+                    var choiceRule = effect.SummonChoice!;
+                    var room = state.Rooms.Single(item => item.RoomIndex == roomIndex);
+                    var draft = SummonChoiceModel.Plan(room, choiceRule, state.Context!.BattleRng);
+                    if (!draft.Supported) return UnsupportedTrain(draft.UnsupportedReason!);
+                    var selection = summonSelections?.SingleOrDefault(item => item.EffectIndex == index);
+                    if (draft.Offers.Count == 0)
+                    {
+                        if (selection != null) return IllegalSummon("A skipped summon dialog does not accept a selection.");
+                        continue;
+                    }
+                    if (selection == null || !draft.Offers.Contains(selection.CardDataId))
+                        return IllegalSummon("Summon choice must select an offered original card definition.");
+                    state = WithContext(state, state.Context.WithBattleRng(draft.Rng));
+                    room = state.Rooms.Single(item => item.RoomIndex == roomIndex);
+                    var candidate = choiceRule.Pool.First(item => item.CardDataId == selection.CardDataId);
+                    if (candidate.Unit == null) return UnsupportedTrain("Selected summon has no captured unit definition.");
+                    var group = state.Context!.SpawnPoints!.SelectedGroup(roomIndex, CombatTeam.Player)!;
+                    int point = -1;
+                    for (int slot = group.GroupCount - 1; slot >= 0; slot--) if (group.Occupants[slot] == 0) { point = slot; break; }
+                    if (point < 0) continue;
+                    var definition = new CardPlayRule(candidate.CardDataId, candidate.Unit.AssetKey, 0, "SpawnMonster", "Standby",
+                        candidate.Unit, Array.Empty<string>(), costType: "NonPlayable");
+                    var born = UnitBirthModel.SpawnChoice(room, definition, point, choiceRule.CardlessStatus!, (birthRoom, queue) =>
+                    {
+                        state = ReplaceRoom(state, birthRoom); callbacks.AddRange(queue); DrainDeaths();
+                        return new RoomCombatResult(routingError == null ? state.Rooms.Single(item => item.RoomIndex == roomIndex) : null,
+                            routingError == null ? outcome : RoomOutcome.Unsupported, 0, new List<CombatEvent>(), routingError);
+                    });
+                    if (!born.Supported) return UnsupportedTrain(born.Result.UnsupportedReason!);
+                    state = ReplaceRoom(state, born.Result.State!); events.AddRange(born.Result.Events);
+                    if (born.Result.Outcome != RoomOutcome.Exchanged) outcome = born.Result.Outcome;
+                    bossDead |= outcome == RoomOutcome.BattleWon;
+                    var centered = BattleSpawnPointModel.Apply(state.Context!.SpawnPoints!, state.Rooms.Single(item => item.RoomIndex == roomIndex),
+                        "Compact", CombatTeam.Player);
+                    if (!centered.Supported) return UnsupportedTrain(centered.Error!);
+                    state = WithContext(state, state.Context.WithSpawnPoints(centered.State!));
+                    positions = CardTargetModel.Positions(state);
+                    if (state.Context.OtherPiles != null) piles = state.Context.OtherPiles.ToArray();
+                    continue;
+                }
                 if (effect.Type == "Null" || effect.Type == "StatusNull")
                 {
                     if (effect.Type == "Null" && effect.NullForwardSelf)
@@ -845,7 +896,7 @@ namespace MonsterTrain2Poju.Model
                         statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
                         healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
                         sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe,
-                        ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel, devotionLevelsPerGrant: effect.DevotionLevelsPerGrant, exaltationHeal: effect.ExaltationHeal, friendlyMissingHealthAllFloors: effect.FriendlyMissingHealthAllFloors);
+                        ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel, devotionLevelsPerGrant: effect.DevotionLevelsPerGrant, exaltationHeal: effect.ExaltationHeal, friendlyMissingHealthAllFloors: effect.FriendlyMissingHealthAllFloors, summonChoice: effect.SummonChoice);
                 }
                 if (effect.Type == "DuplicateCard")
                 {
@@ -1032,7 +1083,7 @@ namespace MonsterTrain2Poju.Model
                     // The native derived iterator applies forwards, unlike the base AddStatus effect.
                     effect = new CardActionEffect(effect.Type, effect.Target, 0, effect.AllowEnemy, effect.AllowPlayer,
                         new[] { effect.Statuses[0].WithStacks(stacks) }, tests: effect.Tests, filters: effect.Filters,
-                        ignoreDualism: effect.IgnoreDualism, friendlyMissingHealthAllFloors: effect.FriendlyMissingHealthAllFloors);
+                        ignoreDualism: effect.IgnoreDualism, friendlyMissingHealthAllFloors: effect.FriendlyMissingHealthAllFloors, summonChoice: effect.SummonChoice);
                 }
                 if ((effect.Type == ForgePointsModel.Effect || effect.Type == DevotionModel.Effect) && selected.Preview) continue;
                 bool fireSpare = effect.Type == "Damage";
@@ -2874,6 +2925,14 @@ namespace MonsterTrain2Poju.Model
                     continue;
                 }
                 if (effect.Type is "SwapStats" or "StatusNull" or "SacrificeOrFeed") continue;
+                if (effect.Type == "SummonChoice")
+                {
+                    if (effect.Target != "Room" || effect.SummonChoice?.CardlessStatus == null ||
+                        effect.SummonChoice.Pool.Any(card => card.HasSpawnCharacter && card.Unit == null) ||
+                        !source.Preview && source.Context.SpawnPoints == null)
+                        return "Summon choice requires a room, captured candidates, cardless status and physical positions.";
+                    continue;
+                }
                 if (effect.Type == "Mix")
                 {
                     if (effect.Value < 1 || source.Context.MixState == null || source.Context.OtherPiles == null)
@@ -2985,6 +3044,14 @@ namespace MonsterTrain2Poju.Model
                 state.Rooms.SelectMany(room => room.Units).All(unit => unit.Id != selfUnitId))
                 return CardTargetModel.Collect(state.Rooms.Single(room => room.RoomIndex == roomIndex)
                     .WithUnits(new[] { retainedSelf }), effect, last, isTesting: isTesting, selfUnitId: selfUnitId);
+            // Sacrifice's native Self target remains the ability actor even
+            // after an earlier damage effect removed it. Its own-ability and
+            // sacrifice callbacks still run against the retained object.
+            if (effect.Target == "Self" && effect.Type == "Sacrifice" &&
+                retainedSelf?.Health <= 0 && retainedSelf.DeathState?.HasFinishedDying == true &&
+                state.Rooms.SelectMany(room => room.Units).All(unit => unit.Id != selfUnitId))
+                return CardTargetModel.Collect(state.Rooms.Single(room => room.RoomIndex == roomIndex)
+                    .WithUnits(new[] { retainedSelf }), effect, last, isTesting: isTesting, selfUnitId: selfUnitId);
             if (effect.Type == "CopyLastTurn")
             {
                 IReadOnlyList<int> cards = CardLastTurnCopyModel.EligibleCards(state.Context!, effect, out string? error);
@@ -3062,6 +3129,7 @@ namespace MonsterTrain2Poju.Model
             if (effect.Type == DevotionStatusModel.Effect)
                 return DevotionStatusModel.Grants(context, effect) > 0 && PassesTest(DevotionStatusModel.AsStatus(effect),
                     count, bossDead, context, preview, room, pyreAlive, sourceCardId);
+            if (effect.Type == "SummonChoice") return !bossDead;
             if (effect.Type == "CraftSpike") return true;
             if (effect.Type == "CopyLastTurn") return !preview && !bossDead && count > 0;
             if (effect.Type == "FeederRules") return room?.Deployment == false;
@@ -3252,7 +3320,7 @@ namespace MonsterTrain2Poju.Model
                 statusTransfer: effect.StatusTransfer, unitTriggerKind: effect.UnitTriggerKind,
                 healDamageMultiplier: effect.HealDamageMultiplier, unitReturn: effect.UnitReturn, equipmentMerge: effect.EquipmentMerge,
                 sourceStatusMultiplier: effect.SourceStatusMultiplier, suppressPyreRoomFocus: effect.SuppressPyreRoomFocus, spikeRecipe: effect.SpikeRecipe,
-                ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel, devotionLevelsPerGrant: effect.DevotionLevelsPerGrant, exaltationHeal: effect.ExaltationHeal, friendlyMissingHealthAllFloors: effect.FriendlyMissingHealthAllFloors);
+                ignoreDualism: effect.IgnoreDualism, devotionPerLevel: effect.DevotionPerLevel, devotionLevelsPerGrant: effect.DevotionLevelsPerGrant, exaltationHeal: effect.ExaltationHeal, friendlyMissingHealthAllFloors: effect.FriendlyMissingHealthAllFloors, summonChoice: effect.SummonChoice);
         }
         internal static int TestCount(TrainCombatState state, CardActionEffect effect, CardTargets targets)
         {
@@ -3554,6 +3622,8 @@ namespace MonsterTrain2Poju.Model
             new CombatUnit(unit.Id, unit.AssetKey, unit.Team, unit.BaseAttack, health, unit.MaxHealth, unit.CanAttack,
                 unit.IsPyre, unit.EndsBattleOnDeath, statuses, unit.Triggers, unit.SpawnerCardId, unit.Size, unit.StatusImmunities, unit.Subtypes, unit.Modifiers, unit.IsBoss, unit.LastAttackerId, unit.StatusRegistry, unit.EquipmentCards, unit.NextTriggerId, unit.Ability, unit.StatusDictionary, unit.AbilityRules, unit.HordeDefinition, unit.IsSpawning, unit.SacrificeCardId, unit.DeathState, bumpRules: unit.BumpRules, lastFeederId: unit.LastFeederId, moonPhaseMask: unit.MoonPhaseMask, damageHistory: unit.DamageHistory);
         private static RoomCombatResult Unchanged(RoomCombatState state) => new RoomCombatResult(state, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
+        private static TrainSpellResult IllegalSummon(string reason) => new TrainSpellResult(null, RoomOutcome.Unsupported,
+            Array.Empty<CombatEvent>(), reason, illegalChoice: true);
         private static TrainSpellResult UnsupportedTrain(string reason) => new TrainSpellResult(null, RoomOutcome.Unsupported,
             Array.Empty<CombatEvent>(), reason);
     }

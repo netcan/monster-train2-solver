@@ -77,7 +77,7 @@ namespace MonsterTrain2Poju.Model
                     entry.UnaffordableCards[costKey] = rejected;
             }
             // Successful complex choices still require their complete payload.
-            if (action.RecursionSelections.Count != 0 || action.MixSelections.Count != 0)
+            if (action.RecursionSelections.Count != 0 || action.MixSelections.Count != 0 || action.SummonSelections.Count != 0)
             {
                 simulated++;
                 var selected = BattleActionModel.PlayCard(source, action);

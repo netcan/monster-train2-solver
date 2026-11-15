@@ -13,7 +13,7 @@ namespace MonsterTrain2Poju.Model
             PlayCardAction? action = step.Action;
             if (step.IsEndTurn || action == null || action.CardInstanceId != cardId || action.RoomIndex != room ||
                 action.ActivatorUnitId != 0 || action.ActivatorRoomIndex.HasValue ||
-                action.RecursionSelections.Count != 0 || action.MixSelections.Count != 0 ||
+                action.RecursionSelections.Count != 0 || action.MixSelections.Count != 0 || action.SummonSelections.Count != 0 ||
                 action.TargetSpawnPointIndex >= 0) return false;
             if (action.PlayerPosition >= 0)
                 return action.TargetUnitId == 0 && action.PlayerPosition == dropPosition;

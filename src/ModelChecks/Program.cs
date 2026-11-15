@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] is "--original-summon-choice-only" or "--summon-choice-selection-search-only")
+{
+    OriginalSummonChoiceChecks.Native(args[1], searchOnly: args[0] == "--summon-choice-selection-search-only");
+    return;
+}
 if (args.Length == 3 && args[0] == "--summon-choice-offers-only")
 {
     SummonChoiceChecks.Native(args[1], args[2]);

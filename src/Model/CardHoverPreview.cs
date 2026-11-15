@@ -54,7 +54,7 @@ namespace MonsterTrain2Poju.Model
                 (links != null || rule.OnCastEffects.Count > 1 && rule.OnCastEffectGroupSizes == null ||
                     rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Type is not ("Damage" or "Heal"))))
                 return new CardHoverPreviewResult("Damage/healing hover requires damage/healing main/OnCast effects and no linked bodies.");
-            if (action.Operation != null || action.ActivatorUnitId != 0 || action.MixSelections.Count != 0 ||
+            if (action.Operation != null || action.ActivatorUnitId != 0 || action.MixSelections.Count != 0 || action.SummonSelections.Count != 0 ||
                 action.RecursionSelections.Count != 0 || !primary.Cards.Hand.Any(card =>
                     card.InstanceId == action.CardInstanceId && card.DataId == rule.DataId))
                 return new CardHoverPreviewResult("Card hover requires the captured hand card and an ordinary spell input.");

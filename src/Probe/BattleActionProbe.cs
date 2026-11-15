@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Probe
     {
         private static readonly HashSet<string> SpellEffectTypes = new HashSet<string>(new[]
         {
-            "CardEffectNULL", "CardEffectAddStatusEffectNull", "CardEffectFeederRules", "CardEffectFreezeCard", "CardEffectFreezeAllCards", "CardEffectDuplicateCardInHand", "CardEffectCopyUnits", "CardEffectBump", "CardEffectUnitAbilityTeleport", "CardEffectAttackWithUnit", "CardEffectAttackTargetsWithSelfUnit", "CardEffectRemoveStatusEffect", "CardEffectPlayUnitTrigger",
+            "CardEffectNULL", "CardEffectAddStatusEffectNull", "CardEffectFeederRules", "CardEffectFreezeCard", "CardEffectFreezeAllCards", "CardEffectDuplicateCardInHand", "CardEffectCopyUnits", "CardEffectBump", "CardEffectUnitAbilityTeleport", "CardEffectChooseMonsterToSpawnInBack", "CardEffectAttackWithUnit", "CardEffectAttackTargetsWithSelfUnit", "CardEffectRemoveStatusEffect", "CardEffectPlayUnitTrigger",
             "CardEffectSetUnitAbility", "CardEffectRemoveAbility", "CardEffectResetCooldown", "CardEffectAdjustAbilityCooldown",
             "CardEffectAttachEquipment", "CardEffectAttachTrainRoomAttachment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment", "CardEffectRoomAbilityBumpToCurrentRoom",
             "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn",
@@ -160,8 +160,11 @@ namespace MonsterTrain2Poju.Probe
                     foreach (CardCreationRule child in CardGenerationProbe.Definition(effect).Pool) pending.Enqueue(child.DataId);
                 CombatUnit[] spawned = new[] { rule.SpawnUnit, rule.Summon?.Additional?.Unit }
                     .Where(unit => unit != null).Cast<CombatUnit>()
-                    .Concat(rule.Summon?.Pool.Select(choice => choice.Unit) ?? Array.Empty<CombatUnit>()).ToArray();
+                    .Concat(rule.Summon?.Pool.Select(choice => choice.Unit) ?? Array.Empty<CombatUnit>())
+                    .Concat(rule.Effects.Where(effect => effect.SummonChoice != null).SelectMany(effect => effect.SummonChoice!.Pool)
+                        .Select(card => card.Unit).Where(unit => unit != null).Cast<CombatUnit>()).ToArray();
                 foreach (string child in rule.Effects.Where(effect => effect.Generation != null && effect.Type != "CopyLastTurn").SelectMany(effect => effect.Generation!.Pool).Select(card => card.DataId)
+                    .Concat(rule.Effects.Where(effect => effect.SummonChoice != null).SelectMany(effect => effect.SummonChoice!.Pool).Select(card => card.CardDataId))
                     .Concat(rule.Effects.Where(effect => effect.SpikeRecipe != null).Select(effect => effect.SpikeRecipe!.Creation.DataId))
                     .Concat(rule.Effects.Where(effect => effect.EquipmentMerge != null).Select(effect => effect.EquipmentMerge!.Output.DataId))
                     .Concat(spawned.SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects).SelectMany(effect => effect.CardPool)))
@@ -475,7 +478,7 @@ namespace MonsterTrain2Poju.Probe
                 interactions.Add("Unmodeled room-status transfer targets or status pool");
             // These native iterators read their own count/status parameters rather
             // than the inherited spell scaling fields or ParamSubtype.
-            if (effect.GetEffectStateName() is not ("CardEffectDamagePerStatusEffect" or "CardEffectDamagePerHp" or "CardEffectAddBattleCard" or "CardEffectFloorRearrange" or "CardEffectAddStatusEffectPerOtherEffect" or "CardEffectAddStatusToRoomScalingByCasterStatusCount" or "CardEffectAddStatusEffectPerMissingHp" or "CardEffectBump" or "CardEffectRoomAbilityBumpToCurrentRoom") &&
+            if (effect.GetEffectStateName() is not ("CardEffectDamagePerStatusEffect" or "CardEffectDamagePerHp" or "CardEffectAddBattleCard" or "CardEffectFloorRearrange" or "CardEffectAddStatusEffectPerOtherEffect" or "CardEffectAddStatusToRoomScalingByCasterStatusCount" or "CardEffectAddStatusEffectPerMissingHp" or "CardEffectBump" or "CardEffectRoomAbilityBumpToCurrentRoom" or "CardEffectChooseMonsterToSpawnInBack") &&
                 (effect.GetUseStatusEffectStackMultiplier() && effect.GetEffectStateName() != "CardEffectSpawnMonsterOrAddStatusEffect" ||
                 effect.GetUseHealthMissingStackMultiplier() && effect.GetEffectStateName() != "CardEffectHeal" || effect.GetUseMagicPowerMultiplier() ||
                 effect.GetEffectStateName() != "CardEffectSacrifice" && effect.GetEffectStateName() != "CardEffectKill" &&
@@ -505,6 +508,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectBump" ? "Bump" :
                 effect.GetEffectStateName() == "CardEffectRoomAbilityBumpToCurrentRoom" ? "RoomAbilityBumpToCurrentRoom" :
                 effect.GetEffectStateName() == "CardEffectUnitAbilityTeleport" ? "AbilityTeleport" :
+                effect.GetEffectStateName() == "CardEffectChooseMonsterToSpawnInBack" ? "SummonChoice" :
                 effect.GetEffectStateName() == "CardEffectAttackWithUnit" ? "AttackWithUnit" :
                 effect.GetEffectStateName() == "CardEffectAttackTargetsWithSelfUnit" ? "AttackTargetsWithSelfUnit" :
                 effect.GetEffectStateName() == "CardEffectAttachEquipment" ? "AttachEquipment" :
@@ -728,7 +732,22 @@ namespace MonsterTrain2Poju.Probe
                 devotionPerLevel: type == DevotionModel.Effect ? (int?)effect.GetAdditionalParamInt() : null,
                 devotionLevelsPerGrant: type == DevotionStatusModel.Effect ? (int?)effect.GetAdditionalParamInt() : null,
                 exaltationHeal: type == ExaltationModel.Effect ? (int?)effect.GetAdditionalParamInt() : null,
-                friendlyMissingHealthAllFloors: type == MissingHealthStatusModel.FriendlyEffect ? (bool?)effect.GetParamBool() : null);
+                friendlyMissingHealthAllFloors: type == MissingHealthStatusModel.FriendlyEffect ? (bool?)effect.GetParamBool() : null,
+                summonChoice: type == "SummonChoice" ? SummonChoice(effect, interactions) : null);
+        }
+
+        private static SummonChoiceRule? SummonChoice(CardEffectData effect, List<string> interactions)
+        {
+            if (effect.GetParamCardPool() == null) { interactions.Add("Missing summon-choice card pool"); return null; }
+            var cards = new List<CardData>();
+            CardEffectState.GetFilteredCardListFromPool(effect.GetParamCardPool(), effect.GetParamCardFilter(),
+                AllGameManagers.Instance!.GetRelicManager(), ref cards);
+            return new SummonChoiceRule(cards.Select(card => {
+                var character = card.GetSpawnCharacterData();
+                return new SummonChoiceCandidate(card.GetID(), character != null, character?.GetSize() ?? 0,
+                    character == null ? null : SpawnTemplate(character, true, interactions, captureBirthLifecycle: true));
+            }).ToArray(), effect.GetParamInt(), effect.GetParamSubtype().IsNone ? "" : effect.GetParamSubtype().Key,
+                Status("cardless", 1));
         }
 
         private static EquipmentMergeRule? EquipmentMerge(CardEffectData effect, List<string> interactions)

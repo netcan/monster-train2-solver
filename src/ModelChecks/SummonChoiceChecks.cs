@@ -105,6 +105,6 @@ internal static class SummonChoiceChecks
         Require(!blockHistory[0].Floor0 && !blockHistory[0].Floor1 && blockHistory.Any(row => row.Floor0) && moved && unblockedAfterDeaths,
             "Missing native initial-empty, same-floor, move or final-death blocker controls.");
         OriginalUpgradeEnchantmentChecks.Native(battlePath);
-        Console.WriteLine($"SUMMON-CHOICE-OFFERS PASS: {samples} native samples across {frames.Length} settled frames; {blocked} subtype skips, {random} RNG selections, {ordered} ordered triples, {nonunit} spell filters, {empty} empty pools, {duplicate} duplicate-pool selections, {largeSize} size-1000 slot approvals; 16 immutable parallel branches per frame. Offer stage only; original skill/action/UI/birth integration remains pending.");
+        Console.WriteLine($"SUMMON-CHOICE-OFFERS PASS: {samples} native samples across {frames.Length} settled frames; {blocked} subtype skips, {random} RNG selections, {ordered} ordered triples, {nonunit} spell filters, {empty} empty pools, {duplicate} duplicate-pool selections, {largeSize} size-1000 slot approvals; 16 immutable parallel branches per frame. Original skill/action/UI/birth integration is not established by this offer-stage fixture.");
     }
 }

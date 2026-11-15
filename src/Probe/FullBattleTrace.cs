@@ -101,6 +101,7 @@ namespace MonsterTrain2Poju.Probe
         private bool? nativeEnchantmentWorld;
         private bool playerEnchantmentWorld;
         private readonly HashSet<CharacterData> checkedEnchantmentDefinitions = new HashSet<CharacterData>();
+        private readonly HashSet<CardData> checkedSummonChoiceDefinitions = new HashSet<CardData>();
         internal bool CapturesNativeEnchantments
         {
             get
@@ -114,6 +115,29 @@ namespace MonsterTrain2Poju.Probe
                     .Where(data => data != null))
                     if (checkedEnchantmentDefinitions.Add(data) && EnemySpawningProbe.RequiresActorWorld(data))
                         return playerEnchantmentWorld = true;
+                // A choice can introduce an aura before any member of its pool
+                // exists in a card pile or on the train. Include upgraded abilities
+                // without creating their cached CardState as an observation side effect.
+                var managers = AllGameManagers.Instance!;
+                var cards = managers.GetCardManager()!.GetAllCards(new List<CardState>());
+                var abilities = cards.SelectMany(card => card.GetCardStateModifiers().GetCardUpgrades()
+                    .Concat(card.GetTemporaryCardStateModifiers().GetCardUpgrades()))
+                    .Select(upgrade => upgrade.GetUnitAbilityUpgrade())
+                    .Concat(identities.Keys.Where(unit => unit != null).Select(unit => unit.GetUnitAbility()))
+                    .Where(card => card != null).Cast<CardData>();
+                foreach (CardData card in projection.KnownCards.Select(state => managers.GetSaveManager().GetAllGameData().FindCardData(state.GetCardDataID())).Where(data => data != null).Cast<CardData>().Concat(abilities))
+                {
+                    if (!checkedSummonChoiceDefinitions.Add(card)) continue;
+                    foreach (CardEffectData effect in card.GetEffects().Where(effect =>
+                        effect.GetEffectStateName() == "CardEffectChooseMonsterToSpawnInBack" && effect.GetParamCardPool() != null))
+                    {
+                        var choices = new List<CardData>();
+                        CardEffectState.GetFilteredCardListFromPool(effect.GetParamCardPool(), effect.GetParamCardFilter(),
+                            managers.GetRelicManager(), ref choices);
+                        if (choices.Select(choice => choice.GetSpawnCharacterData()).Any(data => data != null && EnemySpawningProbe.RequiresActorWorld(data)))
+                            return playerEnchantmentWorld = true;
+                    }
+                }
                 return false;
             }
         }
@@ -510,7 +534,7 @@ namespace MonsterTrain2Poju.Probe
                         OuterBossPhaseProbe.AnchorSlots(character, BossState.AttackPhase.Relentless))
                     : null, lastFeederId: triggers.Any(trigger => trigger.Kind == "OnEaten") || OriginalOpeningMorselsScenario.Enabled || OriginalMorselEatenScenario.Enabled || OriginalOnKillGenerationScenario.Enabled ?
                         (character.GetLastFeederCharacter() == null ? 0 : UnitId(character.GetLastFeederCharacter())) : (int?)null,
-                    moonPhaseMask: OriginalPunishedSkillsScenario.Enabled || OriginalHaloScenario.Enabled || OriginalPenitentScenario.Enabled || OriginalCloisterScenario.Enabled || OriginalUpgradeEnchantmentScenario.Enabled || EclipseChamberScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || MoonPhaseCaptureProbe.CaptureMasks ? (int)character.GetMoonPhaseMask() : (int?)null, damageHistory: UnitDamageHistoryProbe.Capture(character, triggers));
+                    moonPhaseMask: OriginalSummonChoiceScenario.Enabled || OriginalPunishedSkillsScenario.Enabled || OriginalHaloScenario.Enabled || OriginalPenitentScenario.Enabled || OriginalCloisterScenario.Enabled || OriginalUpgradeEnchantmentScenario.Enabled || EclipseChamberScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || MoonPhaseCaptureProbe.CaptureMasks ? (int)character.GetMoonPhaseMask() : (int?)null, damageHistory: UnitDamageHistoryProbe.Capture(character, triggers));
         }
 
         internal CombatContext CaptureContext()
@@ -1344,6 +1368,13 @@ namespace MonsterTrain2Poju.Probe
                 OriginalCloisterPrepared = OriginalCloisterScenario.Prepared,
                 OriginalPenitentPrepared = OriginalPenitentScenario.Prepared,
                 OriginalMissingHealthStatusPrepared = OriginalMissingHealthStatusScenario.Prepared,
+#if DEVELOPMENT_PROBE
+                OriginalSummonChoicePrepared = OriginalSummonChoiceScenario.Prepared,
+                OriginalSummonChoiceIds = OriginalSummonChoiceScenario.CardIds,
+                OriginalSummonChoiceDefinitions = OriginalSummonChoiceScenario.Definitions,
+                OriginalSummonChoiceDrafts = OriginalSummonChoiceScenario.Drafts,
+                OriginalSummonChoiceNativeDlcInstalled = OriginalSummonChoiceScenario.NativeDlcInstalled,
+#endif
                 OriginalPunishedSkillsPrepared = OriginalPunishedSkillsScenario.Prepared,
                 OriginalPunishedSkillsIds = OriginalPunishedSkillsScenario.CardIds,
                 OriginalPunishedSkillsDefinitions = OriginalPunishedSkillsScenario.Definitions,

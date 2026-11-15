@@ -12,7 +12,7 @@ namespace MonsterTrain2Poju.Model
         {
             if (action.Operation != Operation || action.CardInstanceId != 0 || action.PlayerPosition != -1 ||
                 action.TargetUnitId != 0 || action.ActivatorUnitId != 0 || action.ActivatorRoomIndex.HasValue ||
-                action.TargetSpawnPointIndex != -1 || action.RecursionSelections.Count != 0 || action.MixSelections.Count != 0)
+                action.TargetSpawnPointIndex != -1 || action.RecursionSelections.Count != 0 || action.MixSelections.Count != 0 || action.SummonSelections.Count != 0)
                 return Illegal("Devote has no card, target or selection payload.");
             if (source.PlayRules?.DevoteEnabled != true || source.Spawn.Train.Context == null)
                 return Unsupported("Devote requires captured native operation support and battle context.");

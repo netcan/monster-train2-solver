@@ -36,6 +36,10 @@ internal static class BattleSearchChecks
             BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
             PlayCardAction nativeAction = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
             BattleActionEnumeration frontier = BattleActionModel.EnumerateActions(before);
+            if (requireZeroUnsupported && frontier.HasUnsupportedAttempts)
+                throw new InvalidOperationException("Recorded decision " + index + " has unsupported candidates: " +
+                    string.Join(" | ", frontier.UnsupportedAttempts.GroupBy(attempt => attempt.Reason).Select(group =>
+                        group.Count() + "x " + group.Key + " action=" + JsonSerializer.Serialize(group.First().Action, ModelJson.Options))));
             SupportedActionCandidate? nativeCandidate = frontier.SupportedCandidates
                 .FirstOrDefault(candidate => SameAction(candidate.Action, nativeAction));
             if (nativeCandidate == null)
@@ -91,7 +95,8 @@ internal static class BattleSearchChecks
                 step.Action.RecursionSelections.Select(selection => selection.EffectIndex + "=" +
                     string.Join(",", selection.CardInstanceIds))) + ":" + string.Join(";",
                 step.Action.MixSelections.Select(selection => selection.EffectIndex + "=" +
-                    selection.MixNumber + "," + selection.ChoiceIndex))));
+                    selection.MixNumber + "," + selection.ChoiceIndex)) + ":" + string.Join(";",
+                step.Action.SummonSelections.Select(selection => selection.EffectIndex + "=" + selection.CardDataId))));
         Require(serialSearch.BestState != null && serialSearch.Outcome == search.Outcome &&
             serialSearch.Score == search.Score &&
             serialSearch.DecisionStatesVisited <= maxNodes && search.DecisionStatesVisited <= maxNodes &&
@@ -139,7 +144,8 @@ internal static class BattleSearchChecks
     private static bool SameAction(PlayCardAction first, PlayCardAction second) =>
         first.CardInstanceId == second.CardInstanceId && first.RoomIndex == second.RoomIndex &&
         first.PlayerPosition == second.PlayerPosition && first.TargetUnitId == second.TargetUnitId &&
-        first.ActivatorUnitId == second.ActivatorUnitId &&
+        first.ActivatorUnitId == second.ActivatorUnitId && first.ActivatorRoomIndex == second.ActivatorRoomIndex &&
+        first.TargetSpawnPointIndex == second.TargetSpawnPointIndex && first.Operation == second.Operation &&
         first.RecursionSelections.Count == second.RecursionSelections.Count &&
         first.RecursionSelections.Zip(second.RecursionSelections).All(pair =>
             pair.First.EffectIndex == pair.Second.EffectIndex &&
@@ -148,7 +154,10 @@ internal static class BattleSearchChecks
         first.MixSelections.Zip(second.MixSelections).All(pair =>
             pair.First.EffectIndex == pair.Second.EffectIndex &&
             pair.First.MixNumber == pair.Second.MixNumber &&
-            pair.First.ChoiceIndex == pair.Second.ChoiceIndex);
+            pair.First.ChoiceIndex == pair.Second.ChoiceIndex) &&
+        first.SummonSelections.Count == second.SummonSelections.Count &&
+        first.SummonSelections.Zip(second.SummonSelections).All(pair =>
+            pair.First.EffectIndex == pair.Second.EffectIndex && pair.First.CardDataId == pair.Second.CardDataId);
 
     private static void Require(bool condition, string message)
     {

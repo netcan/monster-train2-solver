@@ -257,7 +257,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static BattleSpawnPointResult Birth(BattleSpawnPoints source, RoomCombatState room, CombatUnit unit,
-            int position, bool shift)
+            int position, bool shift, bool compact = true)
         {
             SpawnPointGroupState? group = source.SelectedGroup(room.RoomIndex, unit.Team);
             if (group == null || position < 0 || position >= group.GroupCount) return Reject("Invalid physical birth point.");
@@ -281,7 +281,7 @@ namespace MonsterTrain2Poju.Model
                 target: new SpawnPointReference(room.RoomIndex, unit.Team, position, group.PreviewCopyId), newUnit: unit);
             if (placed.Supported && source.ActiveCopies.Count > 0)
                 placed = new BattleSpawnPointResult(placed.State!.WithBirthPrimary(unit.Id), pivotMoves: placed.PivotMoves);
-            if (!placed.Supported || !shift && unit.Team != CombatTeam.Player || room.Preview) return placed;
+            if (!compact || !placed.Supported || !shift && unit.Team != CombatTeam.Player || room.Preview) return placed;
             return Apply(placed.State!, new RoomCombatState(room.RoomIndex, room.Deployment, room.Units.Append(unit).ToArray(),
                 room.ExternalInteractions, room.Context, room.Preview, room.ActiveCompanionBossIds), "Compact", unit.Team);
         }

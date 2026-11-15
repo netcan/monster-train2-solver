@@ -74,6 +74,8 @@ namespace MonsterTrain2Poju.Model
         public int? HealDamageMultiplier { get; }
         public int? ExaltationHeal { get; }
         public bool ShouldSerializeExaltationHeal() => ExaltationHeal.HasValue;
+        public SummonChoiceRule? SummonChoice { get; }
+        public bool ShouldSerializeSummonChoice() => SummonChoice != null;
         public bool? FriendlyMissingHealthAllFloors { get; }
         public bool ShouldSerializeFriendlyMissingHealthAllFloors() => FriendlyMissingHealthAllFloors.HasValue;
         public UnitReturnRule? UnitReturn { get; }
@@ -103,7 +105,7 @@ namespace MonsterTrain2Poju.Model
             int? healDamageMultiplier = null, UnitReturnRule? unitReturn = null, EquipmentMergeRule? equipmentMerge = null,
             string? sourceStatusMultiplier = null, bool? suppressPyreRoomFocus = null, ElixirRecipe? spikeRecipe = null,
             bool ignoreDualism = false, int? devotionPerLevel = null, int? devotionLevelsPerGrant = null, int? exaltationHeal = null,
-            bool? friendlyMissingHealthAllFloors = null)
+            bool? friendlyMissingHealthAllFloors = null, SummonChoiceRule? summonChoice = null)
         { Type = type; Target = target; Value = value; AllowEnemy = allowEnemy; AllowPlayer = allowPlayer; Statuses = Array.AsReadOnly(statuses.ToArray());
             Upgrade = upgrade; Lifetime = lifetime; Tests = tests; Range = range; Filters = filters; Generation = generation; OnlyIfNoEnemies = onlyIfNoEnemies;
             CooldownParameter = cooldownParameter; AbilityChange = abilityChange; CopyHeroStats = copyHeroStats; ScaleUpgrade = scaleUpgrade;
@@ -123,7 +125,7 @@ namespace MonsterTrain2Poju.Model
             HealDamageMultiplier = healDamageMultiplier; UnitReturn = unitReturn; EquipmentMerge = equipmentMerge;
             SuppressPyreRoomFocus = suppressPyreRoomFocus; SpikeRecipe = spikeRecipe; IgnoreDualism = ignoreDualism;
             DevotionPerLevel = devotionPerLevel; DevotionLevelsPerGrant = devotionLevelsPerGrant; ExaltationHeal = exaltationHeal;
-            FriendlyMissingHealthAllFloors = friendlyMissingHealthAllFloors; }
+            FriendlyMissingHealthAllFloors = friendlyMissingHealthAllFloors; SummonChoice = summonChoice; }
     }
 
     public sealed class StatusTransferRule
@@ -333,15 +335,19 @@ namespace MonsterTrain2Poju.Model
         public int TargetSpawnPointIndex { get; }
         public IReadOnlyList<CardRecursionSelection> RecursionSelections { get; }
         public IReadOnlyList<ElixirMixSelection> MixSelections { get; }
+        public IReadOnlyList<SummonChoiceSelection> SummonSelections { get; }
+        public bool ShouldSerializeSummonSelections() => SummonSelections.Count != 0;
         public PlayCardAction(int cardInstanceId, int roomIndex, int playerPosition = -1, int targetUnitId = 0,
             int activatorUnitId = 0, int targetSpawnPointIndex = -1,
             IReadOnlyList<CardRecursionSelection>? recursionSelections = null,
-            IReadOnlyList<ElixirMixSelection>? mixSelections = null, int? activatorRoomIndex = null, string? operation = null)
+            IReadOnlyList<ElixirMixSelection>? mixSelections = null, int? activatorRoomIndex = null, string? operation = null,
+            IReadOnlyList<SummonChoiceSelection>? summonSelections = null)
         { CardInstanceId = cardInstanceId; RoomIndex = roomIndex; PlayerPosition = playerPosition; TargetUnitId = targetUnitId;
             ActivatorUnitId = activatorUnitId; TargetSpawnPointIndex = targetSpawnPointIndex;
             ActivatorRoomIndex = activatorRoomIndex; Operation = operation;
             RecursionSelections = Array.AsReadOnly((recursionSelections ?? Array.Empty<CardRecursionSelection>()).ToArray());
-            MixSelections = Array.AsReadOnly((mixSelections ?? Array.Empty<ElixirMixSelection>()).ToArray()); }
+            MixSelections = Array.AsReadOnly((mixSelections ?? Array.Empty<ElixirMixSelection>()).ToArray());
+            SummonSelections = Array.AsReadOnly((summonSelections ?? Array.Empty<SummonChoiceSelection>()).ToArray()); }
     }
 
     public enum ActionRejection { None, Illegal, Unsupported }
@@ -472,6 +478,11 @@ namespace MonsterTrain2Poju.Model
                 if (playingInstance == null) return Unsupported("Missing card instance modifiers.");
                 rule = CardModifierModel.Resolve(rule, playingInstance);
             }
+            var choiceEffects = rule.Effects.Concat(rule.OnCastEffects).ToArray();
+            if (action.SummonSelections.Any(selection => selection.EffectIndex < 0 || selection.EffectIndex >= choiceEffects.Length ||
+                choiceEffects[selection.EffectIndex].Type != "SummonChoice" || string.IsNullOrEmpty(selection.CardDataId)) ||
+                action.SummonSelections.GroupBy(selection => selection.EffectIndex).Any(group => group.Count() != 1))
+                return Illegal("Invalid or duplicate summon-choice input.");
             if (playingInstance != null && CardPlayRangeModel.HasLimitedRange(playingInstance))
             {
                 RoomPlayRule[] pyreRooms = source.PlayRules.Rooms.Where(room => room.IsPyre).ToArray();
@@ -868,8 +879,9 @@ namespace MonsterTrain2Poju.Model
                 TrainSpellResult result = CardSpellModel.ApplyForCardPlay(spellInput, action.RoomIndex, rule.Effects, action.TargetUnitId,
                     card.InstanceId, source.PlayRules, piles, recursionSelections: action.RecursionSelections
                         .Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray(),
-                    mixSelections: action.MixSelections.Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray());
-                if (!result.Supported) return Unsupported(result.UnsupportedReason!);
+                    mixSelections: action.MixSelections.Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray(),
+                    summonSelections: action.SummonSelections.Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray());
+                if (!result.Supported) return result.IllegalChoice ? Illegal(result.UnsupportedReason!) : Unsupported(result.UnsupportedReason!);
                 foreach (CombatEvent damage in result.Events.Where(item => item.Kind == "Spell" && item.Amount > 0))
                     lastDamagedUnitIds.Add(damage.Target);
                 piles = result.OtherPiles?.ToArray() ?? piles;
@@ -915,8 +927,10 @@ namespace MonsterTrain2Poju.Model
                     action.TargetUnitId, card.InstanceId, source.PlayRules, piles, recursionSelections: onCastSelections,
                     onCastEffects: true, priorTargets: lastMainTargets,
                     onCastEffectGroupSizes: rule.OnCastEffectGroupSizes,
-                    retainedDropTarget: retainedSpellUnits.LastOrDefault(unit => unit.Id == action.TargetUnitId));
-                if (!result.Supported) return Unsupported(result.UnsupportedReason!);
+                    retainedDropTarget: retainedSpellUnits.LastOrDefault(unit => unit.Id == action.TargetUnitId),
+                    summonSelections: action.SummonSelections.Where(selection => selection.EffectIndex >= rule.Effects.Count)
+                        .Select(selection => new SummonChoiceSelection(selection.EffectIndex - rule.Effects.Count, selection.CardDataId)).ToArray());
+                if (!result.Supported) return result.IllegalChoice ? Illegal(result.UnsupportedReason!) : Unsupported(result.UnsupportedReason!);
                 foreach (CombatEvent damage in result.Events.Where(item => item.Kind == "Spell" && item.Amount > 0))
                     lastDamagedUnitIds.Add(damage.Target);
                 piles = result.OtherPiles?.ToArray() ?? piles;
@@ -1387,7 +1401,8 @@ namespace MonsterTrain2Poju.Model
                     item.effect.Recursion?.SelectionMode is "ChooseToHand" or "ChooseToDeck").ToArray();
             if (choiceEffects.Length == 0)
             {
-                foreach (PlayCardAction branch in EnumerateMixChoices(source, action, rule)) yield return branch;
+                foreach (PlayCardAction mixed in EnumerateMixChoices(source, action, rule))
+                    foreach (PlayCardAction branch in SummonChoiceModel.Actions(rule, mixed)) yield return branch;
                 yield break;
             }
 
@@ -1401,7 +1416,8 @@ namespace MonsterTrain2Poju.Model
                 {
                     var chosen = new PlayCardAction(action.CardInstanceId, action.RoomIndex, action.PlayerPosition,
                         action.TargetUnitId, action.ActivatorUnitId, action.TargetSpawnPointIndex, selections, activatorRoomIndex: action.ActivatorRoomIndex);
-                    foreach (PlayCardAction branch in EnumerateMixChoices(source, chosen, rule)) yield return branch;
+                    foreach (PlayCardAction mixed in EnumerateMixChoices(source, chosen, rule))
+                        foreach (PlayCardAction branch in SummonChoiceModel.Actions(rule, mixed)) yield return branch;
                     yield break;
                 }
 

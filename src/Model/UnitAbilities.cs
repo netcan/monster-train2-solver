@@ -142,8 +142,8 @@ namespace MonsterTrain2Poju.Model
                 CardSpellModel.ApplyForCardPlay(train, action.RoomIndex, effects, action.TargetUnitId, cache.Card.InstanceId,
                     source.PlayRules, train.Context!.OtherPiles ?? source.OtherPiles, actorId, action.TargetSpawnPointIndex,
                     abilityRoomIndex: roomAbility ? actorRoom!.RoomIndex : (int?)null, mixSelections: action.MixSelections,
-                    recursionSelections: action.RecursionSelections);
-            if (!applied.Supported) return Unsupported(applied.UnsupportedReason!);
+                    recursionSelections: action.RecursionSelections, summonSelections: action.SummonSelections);
+            if (!applied.Supported) return applied.IllegalChoice ? Illegal(applied.UnsupportedReason!) : Unsupported(applied.UnsupportedReason!);
             train = applied.State!; if (Terminal(applied.Outcome)) outcome = applied.Outcome;
             context = train.Context!;
             // Cached cards enter global played history, but never discard or increment local play count.

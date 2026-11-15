@@ -1608,6 +1608,11 @@ namespace MonsterTrain2Poju.Probe
                 PyreSpikesScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalSummonChoiceScenario.Enabled)
+            {
+                OriginalSummonChoiceScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalPunishedSkillsScenario.Enabled)
             {
                 OriginalPunishedSkillsScenario.Prepare(managers, log);
@@ -3145,7 +3150,11 @@ namespace MonsterTrain2Poju.Probe
                 RelicStatusStackProbe.Matrix();
                 RelicStatusMagnitudeProbe.Matrix();
                 RelicStatusDecayProbe.Matrix();
-                if (OriginalPunishedSkillsScenario.Enabled)
+                if (OriginalSummonChoiceScenario.Enabled)
+                {
+                    pendingPlay = OriginalSummonChoiceScenario.Choose(decision);
+                }
+                else if (OriginalPunishedSkillsScenario.Enabled)
                 {
                     pendingPlay = OriginalPunishedSkillsScenario.Choose(decision);
                 }
@@ -3795,6 +3804,7 @@ namespace MonsterTrain2Poju.Probe
                 CharacterState actor = FullBattleTrace.Active!.KnownUnits.Single(unit => FullBattleTrace.Active.UnitId(unit) == action.ActivatorUnitId);
                 OriginalUnitAbilityScenario.ObserveEligibility(actor);
                 OriginalUnitAbilityScenario.Expect(action);
+                if (OriginalSummonChoiceScenario.Enabled) OriginalSummonChoiceScenario.Expect(action);
                 FullBattleTrace.Active.BeginCardPlay(action, scenarioAction: scenarioPrelude);
                 if (action.TargetUnitId > 0)
                 {

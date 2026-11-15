@@ -433,7 +433,7 @@ internal static partial class OfflineBattleSearch
         if (room == action.RoomIndex && targetId == action.TargetUnitId && activatorId == action.ActivatorUnitId &&
             activatorRoom == action.ActivatorRoomIndex) return action;
         return new PlayCardAction(action.CardInstanceId, room, action.PlayerPosition, targetId, activatorId,
-            action.TargetSpawnPointIndex, action.RecursionSelections, action.MixSelections, activatorRoom);
+            action.TargetSpawnPointIndex, action.RecursionSelections, action.MixSelections, activatorRoom, action.Operation, action.SummonSelections);
     }
 
     // Only breaks equal capped public scores. Keep win/Pyre ordering above

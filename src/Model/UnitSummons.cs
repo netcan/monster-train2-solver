@@ -76,11 +76,15 @@ namespace MonsterTrain2Poju.Model
             int position, bool isCardless, CombatStatus cardlessStatus, Action<RoomCombatModel.QueuedCharacterTrigger> enqueue,
             IReadOnlyList<CombatUnit> positionActors, bool selectedSlot = true)
             => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, enqueue, positionActors, selectedSlot);
+        internal static UnitBirthResult SpawnChoice(RoomCombatState source, CardPlayRule definition, int position,
+            CombatStatus cardlessStatus, Func<RoomCombatState, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>, RoomCombatResult> drain)
+            => SpawnCore(source, definition, 0, position, true, cardlessStatus, null, null, false,
+                drainBirthQueue: drain, compactBirth: false);
         private static UnitBirthResult SpawnCore(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
             int position, bool isCardless, CombatStatus? cardlessStatus, Action<RoomCombatModel.QueuedCharacterTrigger>? enqueue,
             IReadOnlyList<CombatUnit>? positionActors, bool selectedSlot, bool isClone = false,
             Func<RoomCombatState, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>, RoomCombatResult>? drainBirthQueue = null,
-            SpawnStatusApplication? cardStatus = null)
+            SpawnStatusApplication? cardStatus = null, bool compactBirth = true)
         {
             CombatContext? context = source.Context;
             CombatUnit? raw = definition.SpawnUnit;
@@ -152,7 +156,7 @@ namespace MonsterTrain2Poju.Model
             {
                 var scope = new RoomCombatState(source.RoomIndex, source.Deployment, positionActors ?? source.Units,
                     source.ExternalInteractions, context, source.Preview, source.ActiveCompanionBossIds);
-                var physical = BattleSpawnPointModel.Birth(context.SpawnPoints, scope, spawned, position, shift: selectedSlot);
+                var physical = BattleSpawnPointModel.Birth(context.SpawnPoints, scope, spawned, position, shift: selectedSlot, compact: compactBirth);
                 if (!physical.Supported) return Unsupported(physical.Error!);
                 context = context.WithSpawnPoints(physical.State!);
                 players.Add(spawned);

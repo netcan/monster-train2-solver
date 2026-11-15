@@ -293,6 +293,7 @@ param(
     [switch] $OriginalMissingHealthStatus,
     [switch] $OriginalPunishedSpells,
     [switch] $OriginalPunishedSpike,
+    [switch] $OriginalSummonChoice,
     [switch] $OriginalPunishedSkills,
     [switch] $OriginalSpiteEquipment,
     [ValidateSet('', 'Sweep', 'Single', 'Sustain')][string] $PyreSpikesMode = '',
@@ -1250,9 +1251,12 @@ if ($PyreSpikesMode) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $
 if ($SummonChoiceCalibration -and (-not $OriginalUpgradeEnchantment -or $PlayerAdvisor)) {
     throw 'SummonChoiceCalibration requires the isolated OriginalUpgradeEnchantment control scenario.'
 }
+if ($OriginalSummonChoice -and ($PlayerAdvisor -or $SummonChoiceCalibration)) {
+    throw 'OriginalSummonChoice requires its own isolated worker scenario and installed-control platform input.'
+}
 if ($SummonChoiceCalibration) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true }
-if ($OriginalPunishedSkills -or $OriginalSpiteEquipment -or $OriginalPunishedSpike -or $OriginalPunishedSpells -or $OriginalMissingHealthStatus -or $OriginalPunishedUnits -or $OriginalHalo -or $OriginalPenitent -or $OriginalCloister -or $OriginalSpare -or $OriginalExaltation -or $OriginalUpgradeEnchantment) { $SettleCardAnimations = $true; $SettleDeathDissolves = $true }
-if ($OnCastGroupsBattle -or $OriginalArbitraryVerdict -or $OriginalWickedFervor -or $OriginalDevoteTreasure -or $OriginalPunishedSkills -or $OriginalSpiteEquipment -or $OriginalPunishedSpike -or $OriginalPunishedSpells -or $OriginalMissingHealthStatus -or $OriginalPunishedUnits -or $OriginalHalo -or $OriginalPenitent -or $OriginalCloister -or $OriginalSpare -or $OriginalExaltation -or $OriginalUpgradeEnchantment -or $OriginalFriendlyDamageStatus -or $OriginalMissingHealthUpgrade -or $OriginalDevotionUpgrade -or $OriginalDragThemDown) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalSummonChoice -or $OriginalPunishedSkills -or $OriginalSpiteEquipment -or $OriginalPunishedSpike -or $OriginalPunishedSpells -or $OriginalMissingHealthStatus -or $OriginalPunishedUnits -or $OriginalHalo -or $OriginalPenitent -or $OriginalCloister -or $OriginalSpare -or $OriginalExaltation -or $OriginalUpgradeEnchantment) { $SettleCardAnimations = $true; $SettleDeathDissolves = $true }
+if ($OnCastGroupsBattle -or $OriginalArbitraryVerdict -or $OriginalWickedFervor -or $OriginalDevoteTreasure -or $OriginalSummonChoice -or $OriginalPunishedSkills -or $OriginalSpiteEquipment -or $OriginalPunishedSpike -or $OriginalPunishedSpells -or $OriginalMissingHealthStatus -or $OriginalPunishedUnits -or $OriginalHalo -or $OriginalPenitent -or $OriginalCloister -or $OriginalSpare -or $OriginalExaltation -or $OriginalUpgradeEnchantment -or $OriginalFriendlyDamageStatus -or $OriginalMissingHealthUpgrade -or $OriginalDevotionUpgrade -or $OriginalDragThemDown) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDiscardDraw) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoonCardUpgradesThresholdRelic) {
     if ($OriginalMoonCardUpgradesCostRelic -or $OriginalMoonCardUpgradesAttackRelic -or $OriginalMoonCardUpgradesHealingRelic -or
@@ -1957,8 +1961,8 @@ $environment = @{
     MT2_PROBE_BINARY_CAPTURE = $(if ($BinaryCapture) { '1' } else { '0' })
     MT2_PROBE_CAPTURE_JSON = $(if ($CaptureJson) { '1' } else { '0' })
     MT2_PROBE_NO_TIMEOUT = '1'
-    MT2_PROBE_ISOLATE_PREVIEW_RNG = $(if ($OriginalDevoteTreasure -or $OriginalPunishedSkills -or $OriginalSpiteEquipment -or $OriginalPunishedSpike -or $OriginalPunishedSpells -or $OriginalMissingHealthStatus -or $OriginalPunishedUnits -or $OriginalHalo -or $OriginalPenitent -or $OriginalCloister -or $OriginalSpare -or $OriginalExaltation -or $OriginalUpgradeEnchantment -or $OriginalFriendlyDamageStatus -or $OriginalMissingHealthUpgrade -or $OriginalDevotionUpgrade -or $OriginalDragThemDown -or $OriginalWickedFervor -or $OriginalArbitraryVerdict -or $OnCastGroupsBattle -or $TriggeredStatus -or $PersistentEnchantments -or $OriginalSupportUnits -or $OriginalDivineDancer -or $OriginalIsolatedUnitBatch -or $OriginalIsolatedColdstrikeSiren -or $isolatedUnitIds.Count -gt 0) { '1' } else { '0' })
-    MT2_PROBE_ISOLATE_UI_RNG = $(if ($OriginalDevoteTreasure -or $OriginalPunishedSkills -or $OriginalSpiteEquipment -or $OriginalPunishedSpike -or $OriginalPunishedSpells -or $OriginalMissingHealthStatus -or $OriginalPunishedUnits -or $OriginalHalo -or $OriginalPenitent -or $OriginalCloister -or $OriginalSpare -or $OriginalExaltation -or $OriginalUpgradeEnchantment -or $OriginalFriendlyDamageStatus -or $OriginalMissingHealthUpgrade -or $OriginalDevotionUpgrade -or $OriginalDragThemDown -or $OriginalWickedFervor -or $OriginalArbitraryVerdict -or $OnCastGroupsBattle -or $CompanionBoss -or $ConditionalTriggers -or $DetachedBonusDraw -or $RoomCapacity -or $RoomCapacityLethal -or $RoomCapacityAttachment -or $BonusDraw -or $BonusDrawLethal -or $NumericRanges -or $NumericRangesLethal -or $Drawing -or $TriggeredHealing -or $PostCombatHealing -or $TriggeredDamage -or $DamageDeathQueue -or $TerminalDeathDamage -or $HitKill -or $DyingUpgrades -or $AttackTriggers -or $TriggeredStatus) { '1' } else { '0' })
+    MT2_PROBE_ISOLATE_PREVIEW_RNG = $(if ($OriginalDevoteTreasure -or $OriginalSummonChoice -or $OriginalPunishedSkills -or $OriginalSpiteEquipment -or $OriginalPunishedSpike -or $OriginalPunishedSpells -or $OriginalMissingHealthStatus -or $OriginalPunishedUnits -or $OriginalHalo -or $OriginalPenitent -or $OriginalCloister -or $OriginalSpare -or $OriginalExaltation -or $OriginalUpgradeEnchantment -or $OriginalFriendlyDamageStatus -or $OriginalMissingHealthUpgrade -or $OriginalDevotionUpgrade -or $OriginalDragThemDown -or $OriginalWickedFervor -or $OriginalArbitraryVerdict -or $OnCastGroupsBattle -or $TriggeredStatus -or $PersistentEnchantments -or $OriginalSupportUnits -or $OriginalDivineDancer -or $OriginalIsolatedUnitBatch -or $OriginalIsolatedColdstrikeSiren -or $isolatedUnitIds.Count -gt 0) { '1' } else { '0' })
+    MT2_PROBE_ISOLATE_UI_RNG = $(if ($OriginalDevoteTreasure -or $OriginalSummonChoice -or $OriginalPunishedSkills -or $OriginalSpiteEquipment -or $OriginalPunishedSpike -or $OriginalPunishedSpells -or $OriginalMissingHealthStatus -or $OriginalPunishedUnits -or $OriginalHalo -or $OriginalPenitent -or $OriginalCloister -or $OriginalSpare -or $OriginalExaltation -or $OriginalUpgradeEnchantment -or $OriginalFriendlyDamageStatus -or $OriginalMissingHealthUpgrade -or $OriginalDevotionUpgrade -or $OriginalDragThemDown -or $OriginalWickedFervor -or $OriginalArbitraryVerdict -or $OnCastGroupsBattle -or $CompanionBoss -or $ConditionalTriggers -or $DetachedBonusDraw -or $RoomCapacity -or $RoomCapacityLethal -or $RoomCapacityAttachment -or $BonusDraw -or $BonusDrawLethal -or $NumericRanges -or $NumericRangesLethal -or $Drawing -or $TriggeredHealing -or $PostCombatHealing -or $TriggeredDamage -or $DamageDeathQueue -or $TerminalDeathDamage -or $HitKill -or $DyingUpgrades -or $AttackTriggers -or $TriggeredStatus) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_QUERIES = $(if ($StatisticQueries) { '1' } else { '0' })
     MT2_PROBE_STATISTIC_OVERFLOW = $(if ($StatisticOverflow) { '1' } else { '0' })
     MT2_PROBE_MONSTER_DAMAGE_STATISTICS = $(if ($MonsterDamageStatistics) { '1' } else { '0' })
@@ -2217,6 +2221,7 @@ if ($OriginalPenitent) { $environment['MT2_PROBE_MODIFIERS'] = 'original-peniten
 if ($OriginalHalo) { $environment['MT2_PROBE_MODIFIERS'] = 'original-halo' }
 if ($OriginalPunishedUnits) { $environment['MT2_PROBE_MODIFIERS'] = 'original-punished-units' }
 if ($OriginalMissingHealthStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-missing-health-status' }
+if ($OriginalSummonChoice) { $environment['MT2_PROBE_MODIFIERS'] = 'original-summon-choice' }
 if ($OriginalPunishedSkills) { $environment['MT2_PROBE_MODIFIERS'] = 'original-punished-skills' }
 if ($OriginalSpiteEquipment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spite-equipment' }
 if ($OriginalPunishedSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-punished-spike' }
@@ -4078,6 +4083,11 @@ if ($OriginalDevoteTreasure -and (-not $trace.OriginalDevoteTreasurePrepared -or
 if ($PyreSpikesMode -and (-not $trace.PyreSpikesPrepared -or $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
     @($trace.Actions).Count -ne 0 -or $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
     throw 'Pyre spikes terminal loss differs or has incomplete native observations.'
+}
+if ($OriginalSummonChoice -and (-not $trace.OriginalSummonChoicePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 49 -or
+    @($trace.OriginalSummonChoiceDrafts).Count -ne 12 -or $trace.OriginalSummonChoiceDefinitions.Profile -cne 'installed-control' -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
+    throw 'Original summon-choice battle lacks native choices, birth successors or victory.'
 }
 if ($OriginalPunishedSkills -and (-not $trace.OriginalPunishedSkillsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 26 -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {

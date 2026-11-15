@@ -17,4 +17,4 @@ foreach ($entry in $manifest) {
 }
 dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --summon-choice-offers-only (Join-Path $directory 'offers.mt2f') (Join-Path $directory 'battle.mt2f')
 if ($LASTEXITCODE) { throw 'Independent summon choice offer validation failed.' }
-Write-Output 'GAME-231-SUMMON-CHOICE PASS: native-calibrated offer stage, explicit DLC profiles, immutable parallel branches and baseline search; original skill/action/UI/birth integration remains pending.'
+Write-Output 'GAME-231-SUMMON-CHOICE PASS: native-calibrated offer stage, explicit DLC profiles, immutable parallel branches and baseline search; original skill/action/UI/birth integration is not established by this offer-stage fixture.'
