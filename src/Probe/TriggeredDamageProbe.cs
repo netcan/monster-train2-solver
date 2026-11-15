@@ -32,6 +32,7 @@ namespace MonsterTrain2Poju.Probe
             public bool? TestPassed { get; set; }
             public List<Request> Requests { get; set; } = new List<Request>();
             public string? Difference { get; set; }
+            public int? OwnerDamageBeforeArmor { get; set; }
         }
         internal sealed class Request
         {
@@ -45,7 +46,8 @@ namespace MonsterTrain2Poju.Probe
             public bool NullSourceCard { get; set; }
             public int SourceCardId { get; set; }
         }
-        private static bool Enabled() => (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "triggered-damage" && TriggeredDamageScenario.Prepared ||
+        private static bool Enabled() => (OriginalPunishedUnitsScenario.Prepared ||
+            Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "triggered-damage" && TriggeredDamageScenario.Prepared ||
             (Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is "damage-death-queue" or "terminal-death-damage") && DamageDeathQueueScenario.Prepared ||
             Environment.GetEnvironmentVariable("MT2_PROBE_STATUS_CALLBACKS") == "1" && TriggeredStatusScenario.Prepared) && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
         private static UnityRng Rng()
@@ -62,7 +64,9 @@ namespace MonsterTrain2Poju.Probe
                 Effect = UnitTriggerActionProbe.Capture(effect)!, StatusMultiplier = multiplier,
                 MultiplierStacks = multiplier == null ? 1 : actor.GetStatusEffectStacks(multiplier), ActorStatuses = unit.Statuses.ToArray(),
                 ActorPiercing = actor.HasStatusEffect("piercing"),
-                Targets = parameters.targets.Select(trace.UnitId).ToArray() };
+                Targets = parameters.targets.Select(trace.UnitId).ToArray(),
+                OwnerDamageBeforeArmor = effect.GetCardEffect() is CardEffectDamagePerOwnerDamageTaken
+                    ? actor.GetLastDamageTakenBeforeArmor() : (int?)null };
         }
         private static IEnumerator Wrap(IEnumerator native, CardEffectState effect, CardEffectParams parameters)
         {
@@ -95,11 +99,59 @@ namespace MonsterTrain2Poju.Probe
                 if (current != __state && current?.Stage == "Test")
                 {
                     current.TestPassed = __result; current.Completed = true;
-                    bool predicted = current.Amount >= 0 && (current.Effect.Range == null || current.Effect.Range.Max > 0) &&
-                        (current.Effect.Target != "DropTargetCharacter" || current.Targets.Length > 0);
+                    bool predicted = current.OwnerDamageBeforeArmor.HasValue
+                        ? current.OwnerDamageBeforeArmor > 0 && current.Targets.Length > 0
+                        : current.Amount >= 0 && (current.Effect.Range == null || current.Effect.Range.Max > 0) &&
+                            (current.Effect.Target != "DropTargetCharacter" || current.Targets.Length > 0);
                     if (predicted != __result) current.Difference = "Native triggered damage test differs.";
                 }
                 current = __state;
+            }
+        }
+        [HarmonyPatch(typeof(CardEffectDamagePerOwnerDamageTaken), nameof(CardEffectDamagePerOwnerDamageTaken.ApplyEffect))]
+        private static class OwnerEffectPatch
+        {
+            private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
+            {
+                if (Enabled() && cardEffectParams.selfTarget != null && !cardEffectParams.selfTarget.PreviewMode)
+                    __result = Wrap(__result, cardEffectState, cardEffectParams);
+            }
+        }
+        [HarmonyPatch(typeof(CardEffectDamagePerOwnerDamageTaken), nameof(CardEffectDamagePerOwnerDamageTaken.TestEffect))]
+        private static class OwnerTestPatch
+        {
+            private static void Prefix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, out Record? __state)
+            {
+                __state = current;
+                if (!Enabled() || cardEffectParams.selfTarget == null || cardEffectParams.selfTarget.PreviewMode) return;
+                current = Create(cardEffectState, cardEffectParams, "Test"); Records.Add(current);
+            }
+            private static void Postfix(bool __result, Record? __state)
+            {
+                if (current != __state && current?.Stage == "Test")
+                {
+                    current.TestPassed = __result; current.Completed = true; current.Sampled = true;
+                    current.BeforeRng = current.SampledRng = Rng();
+                    if ((current.OwnerDamageBeforeArmor > 0 && current.Targets.Length > 0) != __result)
+                        current.Difference = "Native owner-damage reaction test differs.";
+                }
+                current = __state;
+            }
+        }
+        [HarmonyPatch(typeof(CardEffectState), nameof(CardEffectState.GetUnmodifiedIntInRange), new Type[] { })]
+        private static class OwnerSamplePatch
+        {
+            private static void Prefix(CardEffectState __instance, out Record? __state)
+            {
+                __state = current?.OwnerDamageBeforeArmor != null && !current.Sampled && ReferenceEquals(current.Native, __instance) ? current : null;
+                if (__state != null) __state.BeforeRng = Rng();
+            }
+            private static void Postfix(int __result, Record? __state)
+            {
+                if (__state == null) return;
+                __state.Amount = __result; __state.SampledRng = Rng(); __state.Sampled = true;
+                if (__result != __state.Effect.Value || !__state.BeforeRng.Equals(__state.SampledRng))
+                    __state.Difference = "Native fixed owner-damage multiplier/RNG differs.";
             }
         }
         [HarmonyPatch(typeof(CardEffectState), nameof(CardEffectState.GetIntInRange))]

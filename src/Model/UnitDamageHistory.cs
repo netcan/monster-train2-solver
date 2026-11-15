@@ -19,12 +19,18 @@ namespace MonsterTrain2Poju.Model
         internal UnitDamageHistory WithTaken(int damage) => new UnitDamageHistory(damage,
             unchecked(damage + ArmorBlockedOnHit + LethalDamagePreventedOnHit), ArmorBlockedOnHit, LethalDamagePreventedOnHit);
         internal static UnitDamageHistory? AtBirth(CombatUnit template) => template.DamageHistory != null ||
-            template.Triggers.Any(trigger => trigger.Effects.Any(effect => effect.Type == FriendlyDamageStatusModel.NativeEffect))
+            template.Triggers.Any(trigger => trigger.Effects.Any(effect => effect.Type is
+                FriendlyDamageStatusModel.NativeEffect or OwnerDamageReactionModel.NativeEffect))
                 ? new UnitDamageHistory() : null;
     }
 
     public static class FriendlyDamageStatusModel
     {
         public const string NativeEffect = "CardEffectAddStatusEffectPerFriendlyDamageTaken";
+    }
+
+    public static class OwnerDamageReactionModel
+    {
+        public const string NativeEffect = "CardEffectDamagePerOwnerDamageTaken";
     }
 }

@@ -1552,6 +1552,16 @@ namespace MonsterTrain2Poju.Model
                             if (buffFilter != null) return buffFilter;
                             continue;
                         }
+                        if (effect.Type == OwnerDamageReactionModel.NativeEffect)
+                        {
+                            if (trigger.Kind != "OnPunish" || unit.DamageHistory == null ||
+                                effect.Action is not { Type: "Damage", Target: "FrontInRoom", Value: 4, AllowEnemy: true, AllowPlayer: false, Range: null } reaction ||
+                                effect.Value != 4 || effect.DamageStatusMultiplier != null)
+                                return "Owner-damage retaliation requires captured damage history and the original fixed Punish payload.";
+                            string? reactionFilter = reaction.Filters?.Validate();
+                            if (reactionFilter != null) return reactionFilter;
+                            continue;
+                        }
                         if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectPyreDamageIfNoPlayerUnits" && effect.Type != "CardEffectAddStatusEffect" &&
                             effect.Type is not ("CardEffectAddStatsFromSelf" or "CardEffectRemoveEquipment" or "CardEffectAdjustDragonsHoardPerStatusEffect" or "CardEffectFeederRules" or "CardEffectSynergizeStatusEffects") &&
                             effect.Type is not ("CardEffectMultiplyStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or FriendlyDamageStatusModel.NativeEffect or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth"))
@@ -1584,7 +1594,7 @@ namespace MonsterTrain2Poju.Model
                                 effect.Type == "CardEffectAddStatusEffect" && action.Target == "FrontInAllRooms" &&
                                 action.Range == null && action.Statuses.Count == 1 &&
                                 action.Statuses[0].Id == "corruption" && action.Statuses[0].Stacks == 5;
-                            if (!deferredDominionPostCombat && !new[] { "Self", "Room", "Tower", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets", "RandomInRoom", "LastAttackedCharacter", "LastAttackerCharacter", "LastSpawnedCharacter", "LastFeederCharacter", "Pyre" }.Contains(action.Target))
+                            if (!deferredDominionPostCombat && !new[] { "Self", "Room", "Tower", "FrontInRoom", "BackInRoom", "InFrontOfSelf", "Weakest", "RoomHealTargets", "RandomInRoom", "LastAttackedCharacter", "LastAttackerCharacter", "LastSpawnedCharacter", "LastFeederCharacter", "Pyre" }.Contains(action.Target))
                                 return "Unmodeled triggered action target " + action.Target;
                             if ((action.Range != null || action.Target == "RandomInRoom") && state.Context == null)
                                 return "Triggered action randomness requires shared battle context.";
@@ -5230,7 +5240,8 @@ namespace MonsterTrain2Poju.Model
                         return new CardTargets(Array.Empty<int>(), "Last-attacked targeting requires captured attacker relationships.");
                     return new CardTargets(candidates.Where(unit => unit.LastAttackerId == actor.Source.Id).Select(unit => unit.Source.Id).ToArray());
                 }
-                if (action.Target != "Self") return CardTargetModel.Collect(CurrentRoom(), action, Array.Empty<int>(), isTesting: testing || source.Preview, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId);
+                if (action.Target != "Self") return CardTargetModel.Collect(CurrentRoom(), action, Array.Empty<int>(), isTesting: testing || source.Preview,
+                    selfUnitId: actor.Source.Id, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId);
                 // Self bypasses teams/status/subtype/untouchable. Modern native
                 // target helpers additionally honor the captured health filter.
                 if (action.Filters?.MatchesSelfHealth(actor.Health, actor.Source.MaxHealth) == false)
@@ -5290,7 +5301,9 @@ namespace MonsterTrain2Poju.Model
                         CardTargets targets = TriggerTargets(actor, action, testing: true, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId);
                         if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
                         if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
-                        valid = effect.Type is "CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectPyreDamageIfNoPlayerUnits"
+                        valid = effect.Type == OwnerDamageReactionModel.NativeEffect
+                            ? actor.Source.DamageHistory!.DamageTakenBeforeArmor > 0 && targets.UnitIds.Count > 0
+                            : effect.Type is "CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectPyreDamageIfNoPlayerUnits"
                             ? NoPlayerUnitsInActorRoom(actor)
                             : action.Type == "AddStatus" ? StatusTest(actor, effect, targets) : ActionTestValid(action, targets, TestActionAmount(action));
                     }
@@ -5753,7 +5766,9 @@ namespace MonsterTrain2Poju.Model
                 CardTargets tested = TriggerTargets(actor, action, testing: true, overrideTarget, lastSpawnedOverrideUnitId);
                 if (!tested.Supported) { unsupportedReason = tested.UnsupportedReason; return false; }
                 if (tested.BattleRng.HasValue) context = context!.WithBattleRng(tested.BattleRng.Value);
-                bool valid = effect.Type is "CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectPyreDamageIfNoPlayerUnits"
+                bool valid = effect.Type == OwnerDamageReactionModel.NativeEffect
+                    ? actor.Source.DamageHistory!.DamageTakenBeforeArmor > 0 && tested.UnitIds.Count > 0
+                    : effect.Type is "CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectPyreDamageIfNoPlayerUnits"
                     ? NoPlayerUnitsInActorRoom(actor)
                     : action.Type == "AddStatus" ? StatusTest(actor, effect, tested) : ActionTestValid(action, tested, TestActionAmount(action));
                 if (unsupportedReason != null) return false;
@@ -6118,6 +6133,11 @@ namespace MonsterTrain2Poju.Model
                 }
                 // Native samples once after collection, including an empty Room target set.
                 if (action.Type == "DamagePerSourceAttack") amount = unchecked(amount * actor.Attack);
+                if (effect.Type == OwnerDamageReactionModel.NativeEffect)
+                {
+                    amount = unchecked(amount * actor.Source.DamageHistory!.DamageTakenBeforeArmor);
+                    if (amount <= 0) return true;
+                }
                 if (action.Type == "Damage" && effect.DamageStatusMultiplier != null)
                     amount = unchecked(amount * actor.Count(effect.DamageStatusMultiplier));
                 foreach (int targetId in targets.UnitIds)

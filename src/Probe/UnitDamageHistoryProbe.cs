@@ -8,7 +8,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class UnitDamageHistoryProbe
     {
         private static bool Required(IEnumerable<CombatTrigger> triggers) => triggers.Any(trigger =>
-            trigger.Effects.Any(effect => effect.Type == FriendlyDamageStatusModel.NativeEffect));
+            trigger.Effects.Any(effect => effect.Type is FriendlyDamageStatusModel.NativeEffect or OwnerDamageReactionModel.NativeEffect));
         internal static UnitDamageHistory? Initial(IEnumerable<CombatTrigger> triggers) =>
             Required(triggers) ? new UnitDamageHistory() : null;
         internal static UnitDamageHistory? Capture(CharacterState unit, IEnumerable<CombatTrigger> triggers) =>

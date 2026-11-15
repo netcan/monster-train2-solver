@@ -7,6 +7,18 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+Six original 2.3.1 units now share one native battle acceptance: PenitentSentinel,
+TheCondemned, BrandedApostate, Lasher, Cantor and ScarredJusticar. Shared targeting
+now supports every physical unit in front of self; Punish retaliation uses the
+owner's live pre-armor damage cache and the original fixed multiplier four.
+Permanent health/heal immunity, victim zeal, damaged-only PostCombat lifesteal
+and temporary attack reuse existing mechanisms. The 25-input/five-EndTurn victory
+passes 47 rooms/nine train stages, six direct retaliation applications, 44 victim
+buffs, 13 lifesteal grants, full replay/16 branches and 128-state serial/parallel
+search with three-step replay and zero unsupported candidates. See
+[native evidence and boundaries](docs/original-punished-units.md) and
+`scripts/Check-Game231PunishedUnits.ps1`; full version revalidation remains open.
+
 Original 2.3.1 ZealotsHalo now has missing-health equipment battle evidence:
 live health/healing, armor absorption, two-copy stacking, floor movement,
 remove-all/reinstall, host death isolation and oldest replacement pass 155

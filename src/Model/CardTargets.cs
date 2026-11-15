@@ -19,7 +19,7 @@ namespace MonsterTrain2Poju.Model
 
     public static class CardTargetModel
     {
-        public static bool Supports(string mode) => new[] { "Room", "FrontInRoom", "BackInRoom", "Weakest", "RoomHealTargets",
+        public static bool Supports(string mode) => new[] { "Room", "FrontInRoom", "BackInRoom", "InFrontOfSelf", "Weakest", "RoomHealTargets",
             "DropTargetCharacter", "Pyre", "LastTargetedCharacters", "StrongestLastTargetedCharacters", "RandomInRoom", "Self", "LastSpawnedCharacter", "LastSacrificedCharacter" }.Contains(mode) || IsCrossRoom(mode);
         public static bool IsCrossRoom(string mode) => new[] { "Tower", "RandomFromAnyRoom", "FrontInAllRooms",
             "FrontInRoomAndRoomAbove", "WeakestAllRooms", "StrongestAllRooms", "StrongestLastTargetedCharactersRoom" }.Contains(mode);
@@ -104,7 +104,8 @@ namespace MonsterTrain2Poju.Model
                 room = new RoomCombatState(roomIndex, room.Deployment, train.Rooms.SelectMany(item => item.Units).ToArray(),
                     Array.Empty<string>(), train.Context, room.Preview, room.ActiveCompanionBossIds);
             return Collect(room, effect, lastTargets, dropTeam, dropPosition, firstEffect, isTesting,
-                ignorePyre: ignorePyre, lastSacrificedUnitId: lastSacrificedUnitId, unitPositions: unitPositions, dropOverride: dropOverride);
+                selfUnitId: selfUnitId, ignorePyre: ignorePyre, lastSacrificedUnitId: lastSacrificedUnitId,
+                unitPositions: unitPositions, dropOverride: dropOverride);
         }
 
         public static CardTargets Collect(RoomCombatState room, CardActionEffect effect, IReadOnlyList<int> lastTargets,
@@ -145,6 +146,16 @@ namespace MonsterTrain2Poju.Model
                 !unit.Statuses.Any(status => status.Id == "untouchable") && !PyreBaneModel.ExcludedFromRoomMode(unit, effect.Target, inCombat) &&
                 MatchesFilters(effect, unit, false, ref filterError)).ToArray();
             if (filterError != null) return new CardTargets(Array.Empty<int>(), filterError);
+            if (effect.Target == "InFrontOfSelf")
+            {
+                if (room.Context?.SpawnPoints == null)
+                    return new CardTargets(Array.Empty<int>(), "In-front-of-self targeting requires physical position ownership.");
+                var self = room.Context.SpawnPoints.Units.SingleOrDefault(point => point.UnitId == selfUnitId)?.Current;
+                if (self == null || self.RoomIndex != room.RoomIndex) return new CardTargets(Array.Empty<int>());
+                candidates = candidates.Where(unit => unit.Id != selfUnitId &&
+                    room.Context.SpawnPoints.Units.SingleOrDefault(point => point.UnitId == unit.Id)?.Current is SpawnPointReference point &&
+                    point.RoomIndex == room.RoomIndex && point.Index < self.Index).ToArray();
+            }
             if (effect.Type == "Sacrifice" && effect.Target == "RandomInRoom" && effect.TargetSubtype.Length > 0)
                 candidates = candidates.Where(unit => unit.Subtypes.Contains(effect.TargetSubtype)).ToArray();
             if (effect.Target == "RandomInRoom")

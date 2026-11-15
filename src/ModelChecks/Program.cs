@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--original-punished-units-only")
+{
+    OriginalPunishedUnitsChecks.Native(args[1]);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--original-halo-only")
 {
     OriginalHaloChecks.Native(args[1]);

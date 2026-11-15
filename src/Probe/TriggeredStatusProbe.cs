@@ -103,7 +103,8 @@ namespace MonsterTrain2Poju.Probe
             {
                 bool pyreRevenge = OriginalPyreRevengeScenario.Prepared && cardEffectParams.selfTarget?.IsPyreHeart() == true &&
                     cardEffectParams.sourceCharacterTriggerState?.GetTrigger() == CharacterTriggerData.Trigger.OnHit;
-                if (((Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "triggered-status" && TriggeredStatusScenario.Prepared) || PurifyScenario.Prepared || OriginalEquipmentGrowthScenario.Prepared || pyreRevenge) &&
+                if (((Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "triggered-status" && TriggeredStatusScenario.Prepared) ||
+                    OriginalPunishedUnitsScenario.Prepared || PurifyScenario.Prepared || OriginalEquipmentGrowthScenario.Prepared || pyreRevenge) &&
                     FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode && cardEffectParams.selfTarget != null)
                     __result = Wrap(__result, cardEffectState, cardEffectParams, pyreRevenge);
             }
