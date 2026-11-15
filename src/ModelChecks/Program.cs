@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 4 && args[0] == "--pyre-spikes-only")
+{
+    PyreSpikesChecks.Native(args.Skip(1).ToArray());
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-punished-spells-only")
 {
     OriginalPunishedSpellsChecks.Native(args[1]);

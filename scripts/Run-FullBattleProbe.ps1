@@ -292,6 +292,7 @@ param(
     [switch] $OriginalPunishedUnits,
     [switch] $OriginalMissingHealthStatus,
     [switch] $OriginalPunishedSpells,
+    [ValidateSet('', 'Sweep', 'Single', 'Sustain')][string] $PyreSpikesMode = '',
     [switch] $OriginalExaltation,
     [switch] $OriginalUpgradeEnchantment,
     [switch] $OriginalFriendlyDamageStatus,
@@ -1241,6 +1242,7 @@ if ($OriginalScaledDamage) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $t
 if ($OriginalScaledMoonPhase) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($PyreSpikesMode) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $Policy = 'no-cards' }
 if ($OriginalPunishedSpells -or $OriginalMissingHealthStatus -or $OriginalPunishedUnits -or $OriginalHalo -or $OriginalPenitent -or $OriginalCloister -or $OriginalSpare -or $OriginalExaltation -or $OriginalUpgradeEnchantment) { $SettleCardAnimations = $true; $SettleDeathDissolves = $true }
 if ($OnCastGroupsBattle -or $OriginalArbitraryVerdict -or $OriginalWickedFervor -or $OriginalDevoteTreasure -or $OriginalPunishedSpells -or $OriginalMissingHealthStatus -or $OriginalPunishedUnits -or $OriginalHalo -or $OriginalPenitent -or $OriginalCloister -or $OriginalSpare -or $OriginalExaltation -or $OriginalUpgradeEnchantment -or $OriginalFriendlyDamageStatus -or $OriginalMissingHealthUpgrade -or $OriginalDevotionUpgrade -or $OriginalDragThemDown) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalDiscardDraw) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -2207,6 +2209,7 @@ if ($OriginalHalo) { $environment['MT2_PROBE_MODIFIERS'] = 'original-halo' }
 if ($OriginalPunishedUnits) { $environment['MT2_PROBE_MODIFIERS'] = 'original-punished-units' }
 if ($OriginalMissingHealthStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-missing-health-status' }
 if ($OriginalPunishedSpells) { $environment['MT2_PROBE_MODIFIERS'] = 'original-punished-spells' }
+if ($PyreSpikesMode) { $environment['MT2_PROBE_MODIFIERS'] = 'pyre-spikes-' + $PyreSpikesMode.ToLowerInvariant(); $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'; $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1' }
 if ($OriginalExaltation) { $environment['MT2_PROBE_MODIFIERS'] = 'original-exaltation' }
 if ($OriginalUpgradeEnchantment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-upgrade-enchantment' }
 if ($OriginalFriendlyDamageStatus) { $environment['MT2_PROBE_MODIFIERS'] = 'original-friendly-damage-status' }
@@ -4059,6 +4062,10 @@ if ($OriginalSpellCompositions -and (-not $trace.OriginalSpellCompositionsPrepar
 if ($OriginalDevoteTreasure -and (-not $trace.OriginalDevoteTreasurePrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 8 -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
     throw 'Original Treasure Devote lacks five operations, native victory or exact successors.'
+}
+if ($PyreSpikesMode -and (-not $trace.PyreSpikesPrepared -or $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+    @($trace.Actions).Count -ne 0 -or $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
+    throw 'Pyre spikes terminal loss differs or has incomplete native observations.'
 }
 if ($OriginalPunishedSpells -and (-not $trace.OriginalPunishedSpellsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 29 -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {

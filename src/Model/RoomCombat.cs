@@ -2728,14 +2728,14 @@ namespace MonsterTrain2Poju.Model
                 {
                     Trigger(unit, "ambush", 1);
                     Turn(unit);
-                    if (battleWon || CombatPreviewStopped()) return;
+                    if (battleWon || stoppedByRemotePyreDamage || CombatPreviewStopped()) return;
                 }
                 BeginTeam(CombatTeam.Enemy);
                 foreach (WorkingUnit unit in units.Where(unit => unit.InRoom && unit.Source.Team == CombatTeam.Enemy).ToArray())
-                { Turn(unit); if (battleWon || CombatPreviewStopped()) return; }
+                { Turn(unit); if (battleWon || stoppedByRemotePyreDamage || CombatPreviewStopped()) return; }
                 BeginTeam(CombatTeam.Player);
                 foreach (WorkingUnit unit in units.Where(unit => unit.InRoom && unit.Source.Team == CombatTeam.Player).ToArray())
-                    if (!quick.Contains(unit)) { Turn(unit); if (battleWon || CombatPreviewStopped()) return; }
+                    if (!quick.Contains(unit)) { Turn(unit); if (battleWon || stoppedByRemotePyreDamage || CombatPreviewStopped()) return; }
             }
 
             private bool CombatPreviewStopped() => source.Preview && units.Any(unit => !unit.Alive &&
@@ -2811,6 +2811,7 @@ namespace MonsterTrain2Poju.Model
                             // Native uses IsDestroyed here. Lethal retaliation during sweep
                             // leaves the attacker object available until the group is removed.
                             Damage(actor, target, actor.Despawned ? 0 : actor.Attack, "Attack");
+                            if (stoppedByRemotePyreDamage) return;
                             if (source.Preview && sweep)
                             {
                                 // RunAttack removes each preview victim while the sweep
@@ -3203,12 +3204,12 @@ namespace MonsterTrain2Poju.Model
                 if (!source.Preview && target.Source.IsPyre && context?.EnergyState != null)
                     context = context.WithEnergyState(context.EnergyState.With(pyreAlive: target.Alive));
                 // Tower HP changes stop the native combat coroutine immediately. A
-                // remote character-effect hit or ordinary lethal attack therefore
+                // remote character-effect hit or any live room-combat hit therefore
                 // never reaches post-hit triggers, CheckForDeath or kill-camera
                 // card clearing. Played-card resolution uses a separate queue
                 // which StopCombatLoop waits for.
                 if (!source.Preview && target.Source.IsPyre && !target.Alive &&
-                    (!target.InRoom && runningTriggerQueue || target.InRoom && kind == "Attack") && !nativeCardDamage)
+                    (!target.InRoom && runningTriggerQueue || target.InRoom && (kind == "Attack" || runningRoomCombat)) && !nativeCardDamage)
                 {
                     stoppedByRemotePyreDamage = true;
                     if (context?.QueryFrame?.SelectedRoomIndex != null)
@@ -3272,6 +3273,7 @@ namespace MonsterTrain2Poju.Model
                     int retaliation = StatusMagnitude(target, "spikes");
                     Trigger(target, "spikes", 1);
                     Damage(target, actor, retaliation, "Spikes");
+                    if (stoppedByRemotePyreDamage) return;
                 }
                 if (target.DeathFinished) return;
                 int hitType = kind == "Attack" ? 4 : kind == "Trample" ? 6 : kind == "Spikes" ? 1 : kind == "Poison" ? 2 :

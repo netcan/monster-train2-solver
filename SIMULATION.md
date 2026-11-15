@@ -7,6 +7,13 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+Lethal Pyre retaliation now stops the main combat coroutine before pending
+sweep callbacks or later targets run. Three native loss controls cover lethal
+sweep, single attacks and surviving sweeps; all pass 83 rooms/24 train stages,
+28 live statistic writes, complete chains/16 branches and 32 immutable branches
+per direct attack. See [native queue evidence](docs/pyre-spikes-terminal.md) and
+`scripts/Check-Game231PyreSpikes.ps1`. Whole-version acceptance remains open.
+
 Seven original 2.3.1 Punished spells now share one native battle acceptance:
 CruelLesson, EchoOfPain, Flagellate, CollectivePunishment, SpurTheFaithful,
 TomeOfAtonement and UnholyCommunion. Live monster-damage notifications permit
@@ -15,8 +22,8 @@ The 29-input/seven-EndTurn victory passes 73 rooms/13 train stages, 79 native
 notifications/390 immutable card callbacks, full replay/16 branches and 128-state
 serial/parallel search with three-step replay and zero unsupported candidates.
 See [evidence and limits](docs/original-punished-spells.md) and
-`scripts/Check-Game231PunishedSpells.ps1`. A separate Pyre death from spikes still
-differs in last-attack damage statistics; full version revalidation remains open.
+`scripts/Check-Game231PunishedSpells.ps1`. The separate Pyre death from spikes
+has been fixed using the three native controls above; full version revalidation remains open.
 
 Original 2.3.1 CollectorOfSorrows and AnointingOil now have shared missing-health
 status battle evidence. Friendly aggregation counts the caster's room or every

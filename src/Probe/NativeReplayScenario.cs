@@ -1603,6 +1603,11 @@ namespace MonsterTrain2Poju.Probe
                 OriginalSpareScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
             }
+            if (fullBattle && !numericModifiersPrepared && PyreSpikesScenario.Enabled)
+            {
+                PyreSpikesScenario.Prepare(managers, log);
+                numericModifiersPrepared = true;
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalPunishedSpellsScenario.Enabled)
             {
                 OriginalPunishedSpellsScenario.Prepare(managers, log);

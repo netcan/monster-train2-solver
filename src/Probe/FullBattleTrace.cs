@@ -59,6 +59,7 @@ namespace MonsterTrain2Poju.Probe
             finally { normalizeDestroyedAttacker = previous; }
         }
         internal int NextPhaseSequence() => ++phaseSequence;
+        internal int[] ActiveStageIds() => stages.Where(stage => stage.Actual == null).Select(stage => stage.Index).ToArray();
         internal TrainCombatState CaptureTrain(bool includeOuterBossForBump = false) =>
             trainCombat.Capture(includeOuterBossForBump: includeOuterBossForBump);
         internal TrainCombatState CaptureEnchantmentRooms() => trainCombat.Capture(false, includeOuterBossForBump: OuterBossPhaseProbe.CaptureAnchors);
@@ -1344,6 +1345,11 @@ namespace MonsterTrain2Poju.Probe
                 OriginalPenitentPrepared = OriginalPenitentScenario.Prepared,
                 OriginalMissingHealthStatusPrepared = OriginalMissingHealthStatusScenario.Prepared,
                 OriginalPunishedSpellsPrepared = OriginalPunishedSpellsScenario.Prepared,
+                PyreSpikesPrepared = PyreSpikesScenario.Prepared,
+                PyreSpikesSweep = PyreSpikesScenario.Sweep,
+                PyreSpikesInitial = PyreSpikesScenario.Initial,
+                PyreSpikesWrites = PyreSpikesScenario.Writes,
+                PyreSpikesEntries = PyreSpikesScenario.Entries,
                 OriginalPunishedSpellsIds = OriginalPunishedSpellsScenario.CardIds,
                 OriginalPunishedSpellsDefinitions = OriginalPunishedSpellsScenario.Definitions,
                 MonsterDamageTraitNotifications = MonsterDamageTraitProbe.Records,
