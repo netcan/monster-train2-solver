@@ -7,6 +7,17 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+Three unchanged native BlindingDarkshard unit definitions now have upgrade-aura
+battle evidence through playable control proxies (the originals are nonplayable).
+Independent -3/-5/-7 buff-channel records stack and reverse on seal/reset,
+movement and source death, including new waves and preview control-status expiry.
+The 12-input/five-EndTurn victory passes continuous replay/16 branches and
+128-state serial/parallel search with zero unsupported decisions/search attempts.
+The native run uses the existing animation/death-dissolve settlement protocol;
+synchronous queue callbacks and other upgrade combinations remain guarded.
+See [upgrade enchantment evidence and boundaries](docs/upgrade-enchantment.md).
+This does not complete the 614-card/236-relic migration or add playable-card counts.
+
 Original 2.3.1 ScourgedZealot now gains Zeal from cached pre-armor damage.
 Native controls cover direct/full-armor/partial-armor/zero/shield/Tenacious
 hits, independent victim histories and UI preview writes outside primary

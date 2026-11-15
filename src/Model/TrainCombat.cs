@@ -126,7 +126,7 @@ namespace MonsterTrain2Poju.Model
                         AfterDestruction(actor.Unit).WithoutRemovedAttacker(new HashSet<int>()).WithTriggers(actor.Unit.Triggers.Select(trigger =>
                             trigger.WithEffects(trigger.Effects.Select(effect => actor.Unit.DeathState?.IsDestroyed == true && effect.Enchantment != null
                                 ? effect.WithEnchantment(new EnchantmentRule(effect.Enchantment.Targeting, effect.Enchantment.StatusPool,
-                                    effect.Enchantment.State, false, effect.Enchantment.HasParentCard)) : effect).ToArray())).ToArray()))
+                                    effect.Enchantment.State, false, effect.Enchantment.HasParentCard, effect.Enchantment.Upgrade)) : effect).ToArray())).ToArray()))
                             .WithoutDestroyedFeeder(destroyedFeeders),
                         actor.RoomIndex, actor.Preview)).ToArray(), world.EnchanterIds, world.AllowUpdates, world.Updating,
                     world.Preview, world.TestRng, true, world.TemporaryPreviewUnitIds));
@@ -359,7 +359,7 @@ namespace MonsterTrain2Poju.Model
                                 .WithTriggers(actor.Unit.Triggers.Select(trigger => trigger.WithEffects(trigger.Effects.Select(effect =>
                                     effect.Enchantment == null ? effect : effect.WithEnchantment(new EnchantmentRule(
                                         effect.Enchantment.Targeting, effect.Enchantment.StatusPool, effect.Enchantment.State,
-                                        false, effect.Enchantment.HasParentCard))).ToArray())).ToArray()),
+                                        false, effect.Enchantment.HasParentCard, effect.Enchantment.Upgrade))).ToArray())).ToArray()),
                             -1, actor.Preview) : actor).ToArray(),
                     world.EnchanterIds, world.AllowUpdates, world.Updating, world.Preview, world.TestRng,
                     world.AutomaticLifecycle, world.TemporaryPreviewUnitIds));

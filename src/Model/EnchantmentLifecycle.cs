@@ -21,8 +21,9 @@ namespace MonsterTrain2Poju.Model
         public bool IsEnchanted { get; }
         // Native values: zero = none, one = add, two = remove. Skipped targets retain this value.
         public int NextAction { get; }
-        public EnchantmentTarget(int unitId, bool isEnchanted, int nextAction = 0)
-        { UnitId = unitId; IsEnchanted = isEnchanted; NextAction = nextAction; }
+        public CardUpgradeModifier? AppliedUpgrade { get; }
+        public EnchantmentTarget(int unitId, bool isEnchanted, int nextAction = 0, CardUpgradeModifier? appliedUpgrade = null)
+        { UnitId = unitId; IsEnchanted = isEnchanted; NextAction = nextAction; AppliedUpgrade = appliedUpgrade; }
     }
 
     public sealed class EnchantmentState

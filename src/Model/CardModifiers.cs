@@ -75,6 +75,19 @@ namespace MonsterTrain2Poju.Model
             CopyRemoveOnDiscard, CopyUnique, CopyExcludeFromClones, Lifecycle, SharedReferenceId);
         internal CardUpgradeModifier WithScaledStats(int damage, int health) => WithStats(
             new CardStatModifier(damage, health, Stats.Cost, Stats.Heal, Stats.Size, Stats.XCost, Stats.EquipmentLimit, Stats.UpgradeSlotCount));
+        internal CardUpgradeModifier MoveAttackReductionToBuffChannel()
+        {
+            if (Stats.Damage >= 0) return this;
+            CardUpgradeModifier normalized = WithScaledStats(0, Stats.Health);
+            return new CardUpgradeModifier(normalized.DataId, normalized.AssetKey, normalized.Stats, normalized.Statuses,
+                normalized.RemoveOnDiscard, normalized.Unique, normalized.ExcludeFromClones, normalized.UnhealedHealth,
+                unchecked(DamageBuff + Stats.Damage), normalized.ExternalInteractions, normalized.RestrictSizeToRoomCapacity,
+                normalized.MagicPowerTraitScalingOnly, normalized.CloneDamageBase, normalized.CloneHealBase,
+                normalized.EquipmentSourceCardId, normalized.EquipmentSourceUpgradeIndex, normalized.TriggerUpgrades,
+                normalized.AbilityUpgrade, normalized.DoNotReplaceExistingAbility, normalized.MaskMetadata,
+                normalized.CopyRemoveOnDiscard, normalized.CopyUnique, normalized.CopyExcludeFromClones,
+                normalized.Lifecycle, normalized.SharedReferenceId);
+        }
         internal CardUpgradeModifier WithForgePoints(int forgePoints)
         {
             var stats = new CardStatModifier(unchecked(Stats.Damage * forgePoints), unchecked(Stats.Health * forgePoints),

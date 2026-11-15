@@ -553,7 +553,7 @@ namespace MonsterTrain2Poju.Model
                     EnchantmentRule? shared = observed.Effects[index].Enchantment;
                     return effect.Enchantment == null || shared == null ? effect : effect.WithEnchantment(new EnchantmentRule(
                         effect.Enchantment.Targeting, effect.Enchantment.StatusPool, effect.Enchantment.State,
-                        !afterFrame && shared.Bound, shared.HasParentCard));
+                        !afterFrame && shared.Bound, shared.HasParentCard, shared.Upgrade));
                 }).ToArray());
             }).ToArray();
             return new CombatUnit(restored.Id, restored.AssetKey, restored.Team, restored.BaseAttack, restored.Health,

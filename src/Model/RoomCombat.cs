@@ -1114,7 +1114,7 @@ namespace MonsterTrain2Poju.Model
             string? relicError = RelicModel.Validate(state.Context);
             if (relicError != null) return relicError;
             if (state.Context?.Enchantments?.AutomaticLifecycle == false && state.Context.Enchantments.Rooms.SelectMany(room => room.Units).Any(unit =>
-                unit.Triggers.Any(trigger => trigger.Effects.Any(effect => effect.Type == "CardEffectEnchant"))) == true)
+                unit.Triggers.Any(trigger => trigger.Effects.Any(effect => effect.Enchantment != null))) == true)
                 return "CardEffectEnchant in the shared train requires automatic birth/movement/death lifecycle integration.";
             string? identityError = UnitIdentityModel.Validate(state.Context, state.Units);
             if (identityError != null) return identityError;
@@ -1282,7 +1282,7 @@ namespace MonsterTrain2Poju.Model
                                 return "Permanent Pyre attack adjustment requires a live, non-preview Pyre OnKill with captured resources.";
                             continue;
                         }
-                        if (effect.Type == "CardEffectEnchant")
+                        if (effect.Type is "CardEffectEnchant" or "CardEffectEnchantCardUpgrade")
                         {
                             if (state.Context?.Enchantments?.AutomaticLifecycle != true || effect.Enchantment == null)
                                 return "CardEffectEnchant requires a captured automatic lifecycle world and effect definition.";
@@ -1398,7 +1398,7 @@ namespace MonsterTrain2Poju.Model
                         }
                         if (effect.Type == "CardEffectFloorRearrange")
                         {
-                            bool self = effect.Action is { Type: "FloorRearrange", Target: "Self", Value: 0, Range: null };
+                            bool self = effect.Action is { Type: "FloorRearrange", Target: "Self", Value: 0 or 1, Range: null };
                             bool arkion = OuterBossDefinitions.IsArkionPush(unit.AssetKey) && trigger.Kind == "OnAttackingBeforeDamage" &&
                                 effect.Action is { Type: "FloorRearrange", Target: "LastAttackedCharacter", Value: 1, Range: null,
                                     AllowEnemy: true, AllowPlayer: true, UseCardTraits: false } && effect.Action.Statuses.Count == 0;
@@ -6248,6 +6248,11 @@ namespace MonsterTrain2Poju.Model
                 }
                 StatusCallbackModel.Removed(unit.RoomIndex, before, unit.Freeze(), id, callbacks);
                 foreach (QueuedCharacterTrigger callback in callbacks) QueueCallback(callback);
+                // CharacterState removes control stacks before refreshing all
+                // auras, including removal during the post-combat preview clear.
+                if ((before.RegisteredStatus(id)?.Stacks ?? 0) > (unit.Freeze().RegisteredStatus(id)?.Stacks ?? 0) &&
+                    (id == "silenced" || id == "muted" || id == "spark" && unit.Has("dormant")))
+                    UpdateEnchantments();
             }
 
             private int StatusMagnitude(WorkingUnit unit, string id)

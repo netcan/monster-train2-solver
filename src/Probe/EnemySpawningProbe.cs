@@ -42,7 +42,7 @@ namespace MonsterTrain2Poju.Probe
         }
 
         internal static bool RequiresActorWorld(CharacterData character) => character.GetTriggers().Any(trigger =>
-            trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectEnchant" ||
+            trigger.GetEffects().Any(effect => effect.GetEffectStateName() is "CardEffectEnchant" or "CardEffectEnchantCardUpgrade" ||
                 effect.GetTargetMode() is TargetMode.Tower or TargetMode.FrontInAllRooms));
 
         private EnemySpawnState CaptureState(bool canonicalReferences, bool includeOuterBossForBump,
@@ -173,7 +173,7 @@ namespace MonsterTrain2Poju.Probe
                     bumpRules: BattleSpawnPointProbe.Enabled || RoomMoonCallbackCalibration.Movement || EclipseChamberScenario.Movement || SentryAttackProbe.Definition(data) != null || TroopAuraProbe.Definition(data) != null || BumpScenario.Enabled || OriginalSupportSpellsScenario.CapturesBump || AbilityTeleportScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || OriginalHealingCleanseScenario.Enabled || OriginalMovementSpellsScenario.Enabled || OriginalRearrangeSpellsScenario.Enabled || OriginalReactiveUnitsScenario.Enabled || (OriginalUnitRelicBatchScenario.Enabled || OriginalTriggerRelicBatchScenario.Enabled || OriginalLifecycleRelicBatchScenario.Enabled) || OuterBossPhaseProbe.CaptureAnchors ? new UnitBumpRules(data.GetLoopsBetweenTrainFloors(), data.IsCompanionBoss(), data.IsOuterTrainBoss(),
                         castingAnchorSlots: captureBirthLifecycle && data.IsOuterTrainBoss() ? OuterBossPhaseProbe.AnchorSlots(BossState.AttackPhase.Casting) : null,
                         relentlessAnchorSlots: captureBirthLifecycle && data.IsOuterTrainBoss() ? OuterBossPhaseProbe.AnchorSlots(BossState.AttackPhase.Relentless) : null) : null,
-                    lastFeederId: data.GetTriggers().Any(trigger => trigger.GetTrigger() == CharacterTriggerData.Trigger.OnEaten) || OriginalOpeningMorselsScenario.Enabled || OriginalMorselEatenScenario.Enabled || OriginalOnKillGenerationScenario.Enabled ? 0 : (int?)null, moonPhaseMask: EclipseChamberScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || MoonPhaseCaptureProbe.CaptureMasks ? (int)PlayerManager.MoonPhase.None : (int?)null, damageHistory: UnitDamageHistoryProbe.Initial(triggers)),
+                    lastFeederId: data.GetTriggers().Any(trigger => trigger.GetTrigger() == CharacterTriggerData.Trigger.OnEaten) || OriginalOpeningMorselsScenario.Enabled || OriginalMorselEatenScenario.Enabled || OriginalOnKillGenerationScenario.Enabled ? 0 : (int?)null, moonPhaseMask: OriginalUpgradeEnchantmentScenario.Enabled || EclipseChamberScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || MoonPhaseCaptureProbe.CaptureMasks ? (int)PlayerManager.MoonPhase.None : (int?)null, damageHistory: UnitDamageHistoryProbe.Initial(triggers)),
                 data.GetAscendsTrainAutomatically(), data.GetLoopsBetweenTrainFloors(), interactions, data.IsCompanionBoss());
         }
 
@@ -201,7 +201,7 @@ namespace MonsterTrain2Poju.Probe
                 // These native iterators do not read shared copy/filter/upgrade
                 // fields, except generation, which captures them independently.
                 if (effect.GetEffectStateName() is not ("CardEffectBuffDamage" or "CardEffectDebuffDamage" or "CardEffectHeal" or "CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits" or "CardEffectAddBattleCard" or "CardEffectAddRunCard" or "CardEffectAddUnitCard" or "CardEffectAddStatusEffect" or
-                    "CardEffectAdjustForgePoints" or "CardEffectResetCooldown" or "CardEffectAddTempCardUpgradeToSpellsInDeck" or "CardEffectDamagePerSourceAttack" or "CardEffectRecursion" or "CardEffectDrawType" or "CardEffectAddTempCardUpgradeToNextDrawnCard" or "CardEffectFloorRearrange" or "CardEffectBump" or "CardEffectSpawnHero" or FriendlyDamageStatusModel.NativeEffect) && (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
+                    "CardEffectAdjustForgePoints" or "CardEffectResetCooldown" or "CardEffectAddTempCardUpgradeToSpellsInDeck" or "CardEffectDamagePerSourceAttack" or "CardEffectRecursion" or "CardEffectDrawType" or "CardEffectAddTempCardUpgradeToNextDrawnCard" or "CardEffectFloorRearrange" or "CardEffectBump" or "CardEffectSpawnHero" or FriendlyDamageStatusModel.NativeEffect or "CardEffectEnchantCardUpgrade") && (effect.GetCopyModifiersFromSource() || effect.GetFilterBasedOnMainSubClass() ||
                     effect.GetParamCardUpgradeData() != null && !UnitTriggerUpgradeProbe.Known(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn" && effect.GetEffectStateName() != "CardEffectSpawnMonster")) interactions.Add("Spawned effect modifiers");
                 var pool = new List<CardData>();
                 if (effect.GetEffectStateName() is "CardEffectAddBattleCard" or "CardEffectAddRunCard")

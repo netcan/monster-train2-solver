@@ -112,8 +112,8 @@ namespace MonsterTrain2Poju.Model
                 refreshPyre: refreshPyre, allowDyingTarget: allowDyingTarget);
 
         internal static RoomCombatResult ApplyDirectDeferred(RoomCombatState source, int targetId, CardUpgradeModifier upgrade,
-            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
-            => RoomCombatModel.ApplyDirectUnitUpgrade(source, targetId, upgrade, false, upgrade.DataId, null, deferCallbacks: true,
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, bool remove = false)
+            => RoomCombatModel.ApplyDirectUnitUpgrade(source, targetId, upgrade, remove, upgrade.DataId, null, deferCallbacks: true,
                 refreshPyre: refreshPyre);
 
         // A running room engine settles deaths on its existing unit references and trigger flags.

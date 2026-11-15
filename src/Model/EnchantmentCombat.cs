@@ -12,11 +12,12 @@ namespace MonsterTrain2Poju.Model
         public EnchantmentState State { get; }
         public bool Bound { get; }
         public bool HasParentCard { get; }
+        public CardUpgradeModifier? Upgrade { get; }
         public EnchantmentRule(CardActionEffect targeting, IReadOnlyList<CombatStatus> statusPool,
-            EnchantmentState? state = null, bool bound = false, bool hasParentCard = false)
+            EnchantmentState? state = null, bool bound = false, bool hasParentCard = false, CardUpgradeModifier? upgrade = null)
         { Targeting = targeting; StatusPool = Array.AsReadOnly(statusPool.ToArray()); State = state ?? new EnchantmentState();
-            Bound = bound; HasParentCard = hasParentCard; }
-        internal EnchantmentRule WithState(EnchantmentState state) => new EnchantmentRule(Targeting, StatusPool, state, Bound, HasParentCard);
+            Bound = bound; HasParentCard = hasParentCard; Upgrade = upgrade; }
+        internal EnchantmentRule WithState(EnchantmentState state) => new EnchantmentRule(Targeting, StatusPool, state, Bound, HasParentCard, Upgrade);
     }
 
     public sealed class EnchantmentRetainedUnit
@@ -259,7 +260,7 @@ namespace MonsterTrain2Poju.Model
                     CombatUnit unit = Find(id).Unit;
                     for (int trigger = 0; trigger < unit.Triggers.Count; trigger++)
                         for (int effect = 0; effect < unit.Triggers[trigger].Effects.Count; effect++)
-                            if (unit.Triggers[trigger].Effects[effect].Type == "CardEffectEnchant") Update(id, trigger, effect);
+                            if (unit.Triggers[trigger].Effects[effect].Enchantment != null) Update(id, trigger, effect);
                     if (error != null) break;
                 }
                 Set(updating: false);
@@ -352,6 +353,7 @@ namespace MonsterTrain2Poju.Model
                 if (state.Train.Context == null) { error = "Enchantment updates require shared combat context."; return; }
                 if (state.Train.Rooms.Any(item => item.ExternalInteractions.Count != 0))
                 { error = "Enchantment updates require modeled room/relic interactions."; return; }
+                if (rule.Upgrade != null) { UpdateUpgrade(id, trigger, effect, rule); return; }
                 int room = Find(id).RoomIndex;
                 // Status selection precedes target collection in the native effect.
                 var input = new EnchantmentInput("Update", id, true, state.Preview, state.Train.Context.BattleRng, state.TestRng,
@@ -389,6 +391,82 @@ namespace MonsterTrain2Poju.Model
                     // The foreach retains its actor reference and original skip decision through the API call.
                     Store(id, trigger, effect, EnchantmentLifecycleModel.Complete(Rule(id, trigger, effect).State, actor, state.Preview));
                 }
+            }
+            private void UpdateUpgrade(int id, int trigger, int effect, EnchantmentRule rule)
+            {
+                int roomIndex = Find(id).RoomIndex;
+                UnityRng rng = state.Preview ? state.TestRng : state.Train.Context!.BattleRng;
+                CardTargets targets = new CardTargets(Array.Empty<int>());
+                if (state.Train.Rooms.Any(room => room.RoomIndex == roomIndex))
+                {
+                    targets = CardTargetModel.Collect(WithContext(state.Train, state.Train.Context!.WithBattleRng(rng)),
+                        roomIndex, rule.Targeting, Array.Empty<int>(), selfUnitId: id, ignorePyre: rule.HasParentCard);
+                    if (!targets.Supported) { error = targets.UnsupportedReason; return; }
+                }
+                if (targets.BattleRng.HasValue)
+                {
+                    if (state.Preview) Set(testRng: targets.BattleRng.Value);
+                    else Set(train: WithContext(state.Train, state.Train.Context!.WithBattleRng(targets.BattleRng.Value)));
+                }
+                var plan = EnchantmentUpgradeModel.Begin(rule.State, id, rule.Targeting.Target == "Self", state.Preview,
+                    targets.UnitIds, Actors.Select(Actor).ToArray());
+                Store(id, trigger, effect, plan);
+                int[] order = (state.Preview ? plan.PreviewTargets : plan.PrimaryTargets).Select(entry => entry.UnitId).ToArray();
+                foreach (int targetId in order)
+                {
+                    var actor = Find(targetId);
+                    if (EnchantmentUpgradeModel.Skip(Actor(actor), state.Preview)) continue;
+                    var current = Rule(id, trigger, effect).State;
+                    var entry = EnchantmentUpgradeModel.Entry(current, targetId, state.Preview);
+                    CardUpgradeModifier? upgrade = null;
+                    bool remove = entry.NextAction == 2 && entry.IsEnchanted;
+                    bool add = entry.NextAction == 1 && !entry.IsEnchanted &&
+                        !(actor.Unit.Modifiers?.IsClone == true && rule.Upgrade!.ExcludeFromClones);
+                    if (add) upgrade = rule.Upgrade!.MoveAttackReductionToBuffChannel();
+                    if (remove) upgrade = entry.AppliedUpgrade;
+                    if (add || remove)
+                    {
+                        Store(id, trigger, effect, EnchantmentUpgradeModel.Replace(current,
+                            new EnchantmentTarget(targetId, add, entry.NextAction, add ? upgrade : entry.AppliedUpgrade), state.Preview));
+                        if (upgrade != null && !Upgrade(actor, upgrade, remove)) return;
+                    }
+                    current = Rule(id, trigger, effect).State;
+                    entry = EnchantmentUpgradeModel.Entry(current, targetId, state.Preview);
+                    Store(id, trigger, effect, EnchantmentUpgradeModel.Replace(current,
+                        new EnchantmentTarget(targetId, entry.IsEnchanted, 0, remove ? null : entry.AppliedUpgrade), state.Preview));
+                }
+            }
+            private bool Upgrade(EnchantmentRetainedUnit actor, CardUpgradeModifier upgrade, bool remove)
+            {
+                RoomCombatState? live = state.Train.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == actor.Unit.Id));
+                var room = live ?? new RoomCombatState(actor.RoomIndex, false, new[] { actor.Unit }, Array.Empty<string>(),
+                    state.Train.Context, actor.Preview);
+                // The direct API validates the complete room. Keep the outer aura update
+                // gated while the ordinary unit-upgrade engine runs its native phases.
+                var gated = new EnchantmentCombatState(state.Train, state.RetainedUnits, state.EnchanterIds,
+                    state.AllowUpdates, true, state.Preview, state.TestRng, state.TemporaryPreviewUnitIds);
+                room = new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions,
+                    state.Train.Context!.WithEnchantments(EnchantmentWorld.From(gated, true)), room.Preview, room.ActiveCompanionBossIds);
+                RoomCombatResult changed = UnitModifierModel.ApplyDirectDeferred(room, actor.Unit.Id, upgrade, remove: remove);
+                if (!changed.Supported) { error = changed.UnsupportedReason; return false; }
+                var target = changed.State!.Units.FirstOrDefault(unit => unit.Id == actor.Unit.Id) ??
+                    changed.PendingCallbacks.LastOrDefault(item => item.Unit.Id == actor.Unit.Id)?.Unit;
+                if (target == null) { error = "Upgrade removal lost its retained enchantment target."; return false; }
+                Replace(target);
+                var retained = state.RetainedUnits;
+                TrainCombatState train = state.Train;
+                if (live != null)
+                {
+                    train = new TrainCombatState(train.Rooms.Select(item => item.RoomIndex == live.RoomIndex ? changed.State! : item).ToArray(),
+                        train.Movement, train.EnemySlotsPerRoom, train.Context);
+                    if (!changed.State.Units.Any(unit => unit.Id == actor.Unit.Id) && !retained.Any(item => item.Unit.Id == actor.Unit.Id))
+                        retained = retained.Append(new EnchantmentRetainedUnit(target, live.RoomIndex, live.Preview)).ToArray();
+                }
+                Set(train: WithContext(train, changed.State.Context!.WithEnchantments(null)), retained: retained);
+                if (!remove && changed.PendingCallbacks.Count > 0)
+                { error = "Upgrade enchantment additions with synchronous queue callbacks require native calibration."; return false; }
+                callbacks.AddRange(changed.PendingCallbacks);
+                return true;
             }
             private bool Status(EnchantmentRequest request, EnchantmentRule rule)
             {

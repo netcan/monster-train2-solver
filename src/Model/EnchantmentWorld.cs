@@ -261,7 +261,7 @@ namespace MonsterTrain2Poju.Model
             if (!enchanter) return Sync(source);
             var bound = unit.WithTriggers(unit.Triggers.Select(trigger => trigger.WithEffects(trigger.Effects.Select(effect =>
                 effect.Enchantment == null ? effect : effect.WithEnchantment(new EnchantmentRule(effect.Enchantment.Targeting,
-                    effect.Enchantment.StatusPool, effect.Enchantment.State, true, effect.Enchantment.HasParentCard))).ToArray())).ToArray());
+                    effect.Enchantment.StatusPool, effect.Enchantment.State, true, effect.Enchantment.HasParentCard, effect.Enchantment.Upgrade))).ToArray())).ToArray());
             source = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units.Select(old => old.Id == unitId ? bound : old).ToArray(),
                 source.ExternalInteractions, source.Context, source.Preview, source.ActiveCompanionBossIds);
             CombatContext context = source.Context!;

@@ -9,16 +9,15 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class EnchantmentCombatProbe
     {
-        private static readonly Type EntryType = AccessTools.Inner(typeof(CardEffectEnchant), "EnchantedState");
         private static readonly System.Reflection.FieldInfo DestroyedState = AccessTools.Field(typeof(CharacterState), "destroyedState");
         private static readonly HashSet<int> RetainedRemovedSources = new HashSet<int>();
         internal static int RetainedRemovedSourceCount => RetainedRemovedSources.Count;
-        private static bool Bound(CardEffectEnchant effect)
+        private static bool Bound(ICardEffect effect)
         {
-            var source = (CharacterState?)AccessTools.Field(typeof(CardEffectEnchant), "enchanterCharacter").GetValue(effect);
-            var managers = (ICoreGameManagers?)AccessTools.Field(typeof(CardEffectEnchant), "cachedCoreGameManagers").GetValue(effect);
+            var source = (CharacterState?)AccessTools.Field(effect.GetType(), "enchanterCharacter").GetValue(effect);
+            var managers = (ICoreGameManagers?)AccessTools.Field(effect.GetType(), "cachedCoreGameManagers").GetValue(effect);
             return source != null && !managers.IsNullOrDestroyed() &&
-                AccessTools.Field(typeof(CardEffectEnchant), "cachedState").GetValue(effect) != null;
+                AccessTools.Field(effect.GetType(), "cachedState").GetValue(effect) != null;
         }
         internal static bool AwaitingSourceDestruction(IEnumerable<CharacterState> units)
         {
@@ -31,8 +30,9 @@ namespace MonsterTrain2Poju.Probe
                     AccessTools.Field(typeof(CharacterState), "triggers").GetValue(owner))
                     foreach (CardEffectState state in trigger.GetEffects())
                     {
-                        if (state.GetCardEffect() is not CardEffectEnchant effect) continue;
-                        var source = (CharacterState?)AccessTools.Field(typeof(CardEffectEnchant), "enchanterCharacter").GetValue(effect);
+                        var effect = state.GetCardEffect();
+                        if (effect.GetType().Name is not ("CardEffectEnchant" or "CardEffectEnchantCardUpgrade")) continue;
+                        var source = (CharacterState?)AccessTools.Field(effect.GetType(), "enchanterCharacter").GetValue(effect);
                         if (source != null && source.IsDestroyed && Bound(effect))
                         {
                             if ((CharacterState.DestroyedState)DestroyedState.GetValue(source) == CharacterState.DestroyedState.Destroyed)
@@ -45,7 +45,7 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static EnchantmentRule? Definition(CardEffectData data)
         {
-            if (data.GetEffectStateName() != "CardEffectEnchant") return null;
+            if (data.GetEffectStateName() is not ("CardEffectEnchant" or "CardEffectEnchantCardUpgrade")) return null;
             var excluded = new List<SubtypeData>(); data.GetTargetCharacterExcludedSubtypes(excluded);
             var target = new CardActionEffect("AddStatus", data.GetTargetMode().ToString(), 0,
                 data.GetTargetTeamType().HasFlag(Team.Type.Heroes), data.GetTargetTeamType().HasFlag(Team.Type.Monsters), Array.Empty<CombatStatus>(),
@@ -55,29 +55,39 @@ namespace MonsterTrain2Poju.Probe
                     data.GetTargetModeStatusEffectsExcludedFilter(), data.GetTargetIgnoreBosses(),
                     data.GetTargetCharacterSubtype().IsNone ? "" : data.GetTargetCharacterSubtype().Key,
                     excluded.Select(subtype => subtype.IsNone ? "" : subtype.Key).ToArray(), selfHealthFilter: TargetFilterProbe.HasSelfHealthFilter));
-            return new EnchantmentRule(target, data.GetParamStatusEffects().Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray());
+            CardUpgradeModifier? upgrade = null;
+            if (data.GetEffectStateName() == "CardEffectEnchantCardUpgrade" && data.GetParamCardUpgradeData() != null)
+            {
+                var state = new CardUpgradeState(); state.Setup(data.GetParamCardUpgradeData());
+                upgrade = CardModifierProbe.Upgrade(state, false, filtersAlreadyApplied: true);
+            }
+            return new EnchantmentRule(target, data.GetParamStatusEffects().Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray(), upgrade: upgrade);
         }
         internal static EnchantmentRule? Capture(CardEffectState state)
         {
             EnchantmentRule? definition = Definition(state.GetSourceCardEffectData());
             if (definition == null) return null;
-            var effect = (CardEffectEnchant)state.GetCardEffect();
-            return new EnchantmentRule(definition.Targeting, definition.StatusPool, Snapshot(effect), Bound(effect), state.GetParentCardState() != null);
+            var effect = state.GetCardEffect();
+            return new EnchantmentRule(definition.Targeting, definition.StatusPool, Snapshot(effect), Bound(effect), state.GetParentCardState() != null, definition.Upgrade);
         }
-        internal static EnchantmentState Snapshot(CardEffectEnchant effect)
+        internal static EnchantmentState Snapshot(ICardEffect effect)
         {
+            Type entryType = AccessTools.Inner(effect.GetType(), "EnchantedState");
+            bool upgradeAura = effect.GetType().Name == "CardEffectEnchantCardUpgrade";
             EnchantmentTarget[] Map(string field)
             {
                 var list = new List<EnchantmentTarget>();
-                foreach (DictionaryEntry entry in (IDictionary)AccessTools.Field(typeof(CardEffectEnchant), field).GetValue(effect))
+                foreach (DictionaryEntry entry in (IDictionary)AccessTools.Field(effect.GetType(), field).GetValue(effect))
                     list.Add(new EnchantmentTarget(FullBattleTrace.Active!.UnitId((CharacterState)entry.Key),
-                        (bool)AccessTools.Field(EntryType, "isEnchanted").GetValue(entry.Value),
-                        Convert.ToInt32(AccessTools.Field(EntryType, "nextStateAction").GetValue(entry.Value))));
+                        (bool)AccessTools.Field(entryType, "isEnchanted").GetValue(entry.Value),
+                        Convert.ToInt32(AccessTools.Field(entryType, "nextStateAction").GetValue(entry.Value)),
+                        upgradeAura && AccessTools.Field(entryType, "appliedUpgrade").GetValue(entry.Value) is CardUpgradeState upgrade
+                            ? CardModifierProbe.Upgrade(upgrade, false, filtersAlreadyApplied: true) : null));
                 return list.ToArray();
             }
-            var cached = (StatusEffectStackData?)AccessTools.Field(typeof(CardEffectEnchant), "statusEffect").GetValue(effect);
+            var cached = upgradeAura ? null : (StatusEffectStackData?)AccessTools.Field(effect.GetType(), "statusEffect").GetValue(effect);
             return new EnchantmentState(Map("_primaryEnchantedTargets"), Map("_previewEnchantedTargets"),
-                (bool)AccessTools.Field(typeof(CardEffectEnchant), "_previewEnchantedTargetsRequireSync").GetValue(effect), cached == null ? null :
+                (bool)AccessTools.Field(effect.GetType(), "_previewEnchantedTargetsRequireSync").GetValue(effect), cached == null ? null :
                     new EnchantmentStatus(cached.statusId, cached.count, AllGameManagers.Instance!.GetStatusEffectManager().GetStatusEffectDataById(cached.statusId)?.GetDisplayCategory().ToString()));
         }
     }
