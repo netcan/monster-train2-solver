@@ -240,7 +240,8 @@ namespace MonsterTrain2Poju.Model
                 upgrade.MagicPowerTraitScalingOnly, upgrade.CloneDamageBase, upgrade.CloneHealBase,
                 upgrade.EquipmentSourceCardId, upgrade.EquipmentSourceUpgradeIndex, upgrade.TriggerUpgrades,
                 upgrade.AbilityUpgrade, upgrade.DoNotReplaceExistingAbility, upgrade.MaskMetadata,
-                upgrade.CopyRemoveOnDiscard, upgrade.CopyUnique, upgrade.CopyExcludeFromClones, lifecycle);
+                upgrade.CopyRemoveOnDiscard, upgrade.CopyUnique, upgrade.CopyExcludeFromClones, lifecycle,
+                selfAttackRules: upgrade.SelfAttackRules);
         }
     }
 }

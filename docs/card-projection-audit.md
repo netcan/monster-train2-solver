@@ -1,5 +1,13 @@
 # 原版目录定义投影复核
 
+2026-11-15 补齐 `ZealotsHalo` 后再次使用未修改原版定义的目录重扫：
+724 个唯一定义、614 张图鉴卡，图鉴投影异常和显式
+`ExternalInteractions` 保护均为零，决策／RNG／帧号不变。
+新快照在 `tests/compatibility/game-2.3.1/mechanics/halo/catalog.mt2f`，
+配套独立检查为 `scripts/Check-Game231Halo.ps1`，见
+[装备原生证据及覆盖边界](zealots-halo.md)。这仍只是定义投影，完整卡牌
+组合及 614／236 整体复验没有完成。下面保留补齐前的对照记录。
+
 2026-11-15 在 `40bd1378` 模型上重扫本机 2.3.1、build 26650011：
 724 个唯一原版定义，614 张图鉴卡。图鉴卡没有投影异常，仍有显式
 `ExternalInteractions` 保护的只有 `ZealotsHalo`

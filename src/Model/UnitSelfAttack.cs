@@ -16,8 +16,9 @@ namespace MonsterTrain2Poju.Model
 
     internal static class UnitSelfAttackModel
     {
+        internal const string MissingHealth = "RoomStateSelfDamagePerMissingHp";
         internal static bool Known(string type) => type is "RoomStateSelfDamagePerGoldModifier" or
-            "RoomStateSelfDamagePerCorruptionModifier" or "RoomStateSelfDamagePerStatusEffectStack";
+            "RoomStateSelfDamagePerCorruptionModifier" or "RoomStateSelfDamagePerStatusEffectStack" or MissingHealth;
 
         internal static string? Validate(RoomCombatState source, CombatUnit unit)
         {
@@ -27,6 +28,7 @@ namespace MonsterTrain2Poju.Model
             foreach (UnitSelfAttackRule rule in rules)
             {
                 if (!Known(rule.Type) || rule.Divisor <= 0 ||
+                    rule.Type == MissingHealth && (rule.Coefficient != 1 || rule.Divisor != 1 || rule.StatusId.Length != 0) ||
                     rule.Type == "RoomStateSelfDamagePerStatusEffectStack" && rule.StatusId.Length == 0)
                     return "Unsupported self attack modifier definition.";
                 if (rule.Type == "RoomStateSelfDamagePerGoldModifier" &&
@@ -39,7 +41,8 @@ namespace MonsterTrain2Poju.Model
             return null;
         }
 
-        internal static int Additional(CombatUnit unit, CombatContext? context, IEnumerable<CombatStatus>? statuses = null)
+        internal static int Additional(CombatUnit unit, CombatContext? context, IEnumerable<CombatStatus>? statuses = null,
+            int? currentHealth = null)
         {
             if (unit.Modifiers?.SelfAttackRules is not { Count: > 0 } rules) return 0;
             int? roomIndex = context?.SpawnPoints?.Units.SingleOrDefault(point => point.UnitId == unit.Id)?.Current?.RoomIndex;
@@ -50,10 +53,45 @@ namespace MonsterTrain2Poju.Model
                 int count = rule.Type == "RoomStateSelfDamagePerGoldModifier" ?
                     (context!.QueryFrame!.RunningCombat == true ? context.Statistics!.GoldStartOfThisTurn : context.Gold) / rule.Divisor :
                     rule.Type == "RoomStateSelfDamagePerCorruptionModifier" ? context!.RoomCapacities!.Single(room => room.RoomIndex == roomIndex.Value).Corruption!.Value :
+                    rule.Type == MissingHealth ? unchecked(unit.MaxHealth - (currentHealth ?? unit.Health)) :
                     (statuses ?? unit.Statuses).FirstOrDefault(status => status.Id == rule.StatusId)?.Stacks ?? 0;
                 value = unchecked(value + unchecked(count * rule.Coefficient));
             }
             return value;
+        }
+    }
+
+    internal static class UnitSelfAttackUpgradeModel
+    {
+        internal static string? Validate(CardUpgradeModifier upgrade) => upgrade.SelfAttackRules?.Any(rule =>
+            rule.Type != UnitSelfAttackModel.MissingHealth || rule.Coefficient != 1 || rule.Divisor != 1 || rule.StatusId.Length != 0) == true
+            ? "Uncalibrated upgrade self attack modifier." : null;
+
+        internal static IReadOnlyList<UnitSelfAttackRule>? BirthRules(IReadOnlyList<UnitSelfAttackRule>? original,
+            IEnumerable<CardUpgradeModifier> upgrades)
+        {
+            var added = upgrades.SelectMany(upgrade => upgrade.SelfAttackRules ?? Array.Empty<UnitSelfAttackRule>()).ToArray();
+            return added.Length == 0 ? original : (original ?? Array.Empty<UnitSelfAttackRule>()).Concat(added).ToArray();
+        }
+
+        internal static IReadOnlyList<UnitSelfAttackRule>? Change(IReadOnlyList<UnitSelfAttackRule>? original,
+            CardUpgradeModifier upgrade, bool remove, out string? error)
+        {
+            error = Validate(upgrade);
+            if (error != null || upgrade.SelfAttackRules?.Count is not > 0) return original;
+            var rules = (original ?? Array.Empty<UnitSelfAttackRule>()).ToList();
+            foreach (var rule in upgrade.SelfAttackRules)
+            {
+                if (!remove) rules.Add(rule);
+                else
+                {
+                    int index = rules.FindLastIndex(value => value.Type == rule.Type && value.Coefficient == rule.Coefficient &&
+                        value.Divisor == rule.Divisor && value.StatusId == rule.StatusId);
+                    if (index < 0) { error = "Removing an upgrade requires its applied self attack modifier."; return original; }
+                    rules.RemoveAt(index);
+                }
+            }
+            return rules.Count == 0 ? null : rules.ToArray();
         }
     }
 }

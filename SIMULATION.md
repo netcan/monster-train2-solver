@@ -7,6 +7,18 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+Original 2.3.1 ZealotsHalo now has missing-health equipment battle evidence:
+live health/healing, armor absorption, two-copy stacking, floor movement,
+remove-all/reinstall, host death isolation and oldest replacement pass 155
+native attack getters and nine complete equipment transitions. The 25-input,
+seven-EndTurn victory passes 71 rooms/13 train stages, full replay/16 branches,
+128-state serial/parallel search and three-step replay with zero unsupported
+decisions/search attempts. A fresh unmodified catalog has zero projection
+errors or explicit guards across 614 logbook definitions; this is a definition
+audit, and whole-card combinations/full version revalidation remain open. See
+[native evidence and boundaries](docs/zealots-halo.md) and
+`scripts/Check-Game231Halo.ps1`.
+
 Original 2.3.1 PenitentSanctuary now has friendly room-trigger battle evidence:
 Punish heals 3 before adding 3 attack until battle end, including fully armored
 hits and the original ignore-silence flag. Replacement, removal, reinstall,

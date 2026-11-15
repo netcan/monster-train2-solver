@@ -132,7 +132,8 @@ namespace MonsterTrain2Poju.Model
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target?.Modifiers == null || source.Context?.CardInstances == null)
                 return Unsupported("Unit upgrades require unit and card instance modifier state.");
-            if (halfHealth && (changeHealth == null || upgrade.TriggerUpgrades?.Count > 0 || upgrade.AbilityUpgrade != null || upgrade.Statuses.Count > 0))
+            if (halfHealth && (changeHealth == null || upgrade.TriggerUpgrades?.Count > 0 || upgrade.AbilityUpgrade != null ||
+                upgrade.Statuses.Count > 0 || upgrade.SelfAttackRules?.Count > 0))
                 return Unsupported("Half-health Deathwish upgrades currently require calibrated numeric phases without trigger, ability or status changes.");
             if (halfHealth && target.Status("horde")?.Stacks > 1)
                 return Unsupported("Half-health Deathwish upgrade troop casualties require native calibration.");
@@ -145,6 +146,9 @@ namespace MonsterTrain2Poju.Model
             if (exhaustError != null) return Unsupported(exhaustError);
             roomCapacity = RoomCapacityModel.Maximum(source.Context, source.RoomIndex, target.Team) ?? roomCapacity;
             if (upgrade.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", upgrade.ExternalInteractions));
+            if (UnitSelfAttackUpgradeModel.Validate(upgrade) is string selfError) return Unsupported(selfError);
+            if (scaleUpgrade && upgrade.SelfAttackRules?.Count > 0)
+                return Unsupported("Scaled upgrades with self attack modifiers require native calibration.");
             if (scaleUpgrade && (remove || directApi || upgrade.Unique || upgrade.DataId.Length == 0))
                 return Unsupported("Scaled unit upgrades require a non-unique defined addition through the native effect.");
             if (!directApi) upgradeId = upgrade.DataId;
@@ -268,9 +272,15 @@ namespace MonsterTrain2Poju.Model
                     }
                     triggers = changedTriggers;
                 }
+                var selfAttackRules = modifiers.SelfAttackRules;
+                if (!partial)
+                {
+                    selfAttackRules = UnitSelfAttackUpgradeModel.Change(selfAttackRules, upgrade, remove, out string? ruleError);
+                    if (ruleError != null) return Unsupported(ruleError);
+                }
                 nextModifiers = new UnitModifiers(damage, added, buff, size, equipment, modifiers.CanBeHealed, modifiers.IsClone, upgrades,
                     healthFromUpgrades, modifiers.SpawnerMatchesDefinition, nextModifiers.DamageBuffFromStatusEffects,
-                    modifiers.MagebladeDamagePerMagicPower, modifiers.StatusAttackModifiers, modifiers.IsChampion, modifiers.SelfAttackRules, modifiers.RoomResources, modifiers.RoomStatuses, modifiers.RoomTriggerCounts, modifiers.SpawnCopySubtype, modifiers.Graft, modifiers.SynergizeStatuses, modifiers.Sentry, modifiers.TroopAura);
+                    modifiers.MagebladeDamagePerMagicPower, modifiers.StatusAttackModifiers, modifiers.IsChampion, selfAttackRules, modifiers.RoomResources, modifiers.RoomStatuses, modifiers.RoomTriggerCounts, modifiers.SpawnCopySubtype, modifiers.Graft, modifiers.SynergizeStatuses, modifiers.Sentry, modifiers.TroopAura);
                 CombatUnit Snapshot() => new CombatUnit(target.Id, target.AssetKey, target.Team, Math.Max(0, checked(damage + buff)), health, maxHealth,
                     target.CanAttack, target.IsPyre, target.EndsBattleOnDeath, statuses.Values.ToArray(), triggers, target.SpawnerCardId,
                     Math.Max(1, Math.Min(6, size)), target.StatusImmunities, target.Subtypes, nextModifiers, target.IsBoss, target.LastAttackerId, target.StatusRegistry, target.EquipmentCards, nextTriggerId, target.Ability, target.StatusDictionary, target.AbilityRules, target.HordeDefinition, target.IsSpawning, target.SacrificeCardId, target.DeathState, bumpRules: target.BumpRules, lastFeederId: target.LastFeederId, moonPhaseMask: target.MoonPhaseMask, damageHistory: target.DamageHistory);

@@ -18,6 +18,12 @@ namespace MonsterTrain2Poju.Probe
             public AttackQuery[] Attacks { get; set; } = Array.Empty<AttackQuery>();
         }
         internal static readonly List<Record> Records = new List<Record>();
+        internal static bool KnownUpgrade(IEnumerable<RoomModifierData> definitions)
+        {
+            var values = definitions.ToArray();
+            return values.Length == 1 && values[0].GetRoomStateModifierClassName() == UnitSelfAttackModel.MissingHealth &&
+                values[0].GetParamInt() == 1 && !values[0].DisallowedInDeploymentPhase;
+        }
         internal static void Observe(RoomCombatState room, IReadOnlyList<CharacterState> characters, FullBattleTrace trace)
         {
             if (room.Context == null || room.Preview) return;
@@ -30,7 +36,9 @@ namespace MonsterTrain2Poju.Probe
         {
             UnitSelfAttackRule[] rules = definitions.Where(definition => UnitSelfAttackModel.Known(definition.GetRoomStateModifierClassName()))
                 .Select(definition => new UnitSelfAttackRule(definition.GetRoomStateModifierClassName(), definition.GetParamInt(),
-                    Math.Max(1, definition.GetParamInt2()), (definition.GetParamStatusEffects() ?? Array.Empty<StatusEffectStackData>()).FirstOrDefault()?.statusId ?? ""))
+                    definition.GetRoomStateModifierClassName() == UnitSelfAttackModel.MissingHealth ? 1 : Math.Max(1, definition.GetParamInt2()),
+                    definition.GetRoomStateModifierClassName() == UnitSelfAttackModel.MissingHealth ? "" :
+                        (definition.GetParamStatusEffects() ?? Array.Empty<StatusEffectStackData>()).FirstOrDefault()?.statusId ?? ""))
                 .ToArray();
             return rules.Length == 0 ? null : rules;
         }

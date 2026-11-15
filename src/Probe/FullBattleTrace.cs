@@ -509,7 +509,7 @@ namespace MonsterTrain2Poju.Probe
                         OuterBossPhaseProbe.AnchorSlots(character, BossState.AttackPhase.Relentless))
                     : null, lastFeederId: triggers.Any(trigger => trigger.Kind == "OnEaten") || OriginalOpeningMorselsScenario.Enabled || OriginalMorselEatenScenario.Enabled || OriginalOnKillGenerationScenario.Enabled ?
                         (character.GetLastFeederCharacter() == null ? 0 : UnitId(character.GetLastFeederCharacter())) : (int?)null,
-                    moonPhaseMask: OriginalPenitentScenario.Enabled || OriginalCloisterScenario.Enabled || OriginalUpgradeEnchantmentScenario.Enabled || EclipseChamberScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || MoonPhaseCaptureProbe.CaptureMasks ? (int)character.GetMoonPhaseMask() : (int?)null, damageHistory: UnitDamageHistoryProbe.Capture(character, triggers));
+                    moonPhaseMask: OriginalHaloScenario.Enabled || OriginalPenitentScenario.Enabled || OriginalCloisterScenario.Enabled || OriginalUpgradeEnchantmentScenario.Enabled || EclipseChamberScenario.Enabled || OriginalMoonCardUpgradesScenario.Enabled || MoonPhaseCaptureProbe.CaptureMasks ? (int)character.GetMoonPhaseMask() : (int?)null, damageHistory: UnitDamageHistoryProbe.Capture(character, triggers));
         }
 
         internal CombatContext CaptureContext()
@@ -1342,6 +1342,9 @@ namespace MonsterTrain2Poju.Probe
                 OriginalSparePrepared = OriginalSpareScenario.Prepared,
                 OriginalCloisterPrepared = OriginalCloisterScenario.Prepared,
                 OriginalPenitentPrepared = OriginalPenitentScenario.Prepared,
+                OriginalHaloPrepared = OriginalHaloScenario.Prepared,
+                OriginalHaloIds = OriginalHaloScenario.CardIds,
+                OriginalHaloDefinition = OriginalHaloScenario.Definition,
                 OriginalPenitentIds = OriginalPenitentScenario.CardIds,
                 OriginalPenitentDefinition = OriginalPenitentScenario.Definition,
                 OriginalCloisterIds = OriginalCloisterScenario.CardIds,

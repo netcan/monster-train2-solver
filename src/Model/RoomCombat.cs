@@ -1749,7 +1749,7 @@ namespace MonsterTrain2Poju.Model
                     return Math.Max(0, unchecked(Source.AttackBeforeStatuses +
                         (Source.Modifiers?.DamageBuffFromStatusEffects ?? unchecked(Amount("buff") + Amount("valor") + Amount("mass") - Amount("debuff"))) +
                         RelicStatusAttackModel.AdditionalAttack(Source.Modifiers?.StatusAttackModifiers, Source.Team, Statuses.Values.ToArray()) +
-                        UnitSelfAttackModel.Additional(Source, getContext?.Invoke(), Statuses.Values) +
+                        UnitSelfAttackModel.Additional(Source, getContext?.Invoke(), Statuses.Values, Health) +
                         (roomStatusModifier?.Invoke(this, "buff") ?? 0) * Count("buff") +
                         (roomStatusModifier?.Invoke(this, "valor") ?? 0) * Count("valor") +
                         mageblade + (Source.IsPyre ? getContext?.Invoke()?.Resources?.PyreModifiedBaseAttack ?? 0 : 0)));

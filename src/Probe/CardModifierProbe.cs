@@ -254,9 +254,11 @@ namespace MonsterTrain2Poju.Probe
                 if (upgradeDepth > 16) interactions.Add("Recursive upgrade trigger definitions");
                 else triggers = upgrade.GetTriggerUpgrades().Select(trigger => EnemySpawningProbe.TriggerDefinition(trigger, interactions)).ToArray();
             }
+            UnitSelfAttackRule[]? selfAttackRules = !roomAttachmentUnitUpgrade && UnitSelfAttackProbe.KnownUpgrade(upgrade.GetRoomModifierUpgrades())
+                ? UnitSelfAttackProbe.Rules(upgrade.GetRoomModifierUpgrades()) : null;
             if (!roomAttachmentUnitUpgrade && upgrade.GetRoomModifierUpgrades().Count > 0)
             {
-                interactions.Add("Upgrade room modifiers");
+                if (selfAttackRules == null) interactions.Add("Upgrade room modifiers");
                 if (upgrade.GetCardUpgradeDataId() is CardPyremaniacUpgradeModel.DataId or CardPyremaniacUpgradeModel.SecondDataId &&
                     (!CardPyremaniacUpgradeModel.KnownIdentity(upgrade.GetCardUpgradeDataId(), upgrade.GetAssetName()) ||
                      upgrade.GetRoomModifierUpgrades().Count != 1 || !UnitRoomStatusProbe.KnownPyremaniac(upgrade.GetRoomModifierUpgrades()[0],
@@ -301,7 +303,7 @@ namespace MonsterTrain2Poju.Probe
                 doNotReplaceExistingAbility: upgrade.GetDoNotReplaceExistingUnitAbility(), maskMetadata: CardBranchMaskProbe.Upgrade(upgrade),
                 copyRemoveOnDiscard: copyDefinition == null ? null : false, copyUnique: copyDefinition?.IsUnique(),
                 copyExcludeFromClones: copyDefinition?.GetExcludeFromClones(), lifecycle: lifecycle,
-                sharedReferenceId: TypedDrawProbe.SharedReferenceId(upgrade));
+                sharedReferenceId: TypedDrawProbe.SharedReferenceId(upgrade), selfAttackRules: selfAttackRules);
             return TroopAuraProbe.Normalize(upgrade, captured);
         }
     }

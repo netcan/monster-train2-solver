@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--original-halo-only")
+{
+    OriginalHaloChecks.Native(args[1]);
+    if (args.Length == 3) OriginalHaloChecks.Catalog(args[2]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-penitent-only")
 {
     OriginalPenitentChecks.Native(args[1]);
