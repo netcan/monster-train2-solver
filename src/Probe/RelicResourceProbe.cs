@@ -161,7 +161,17 @@ namespace MonsterTrain2Poju.Probe
             RelicOpeningSpawnRule? openingSpawn = null;
             RelicOpeningDeckSpawnRule? deckSpawn = null;
             RelicDrawAndEnergyRule? drawAndEnergy = null;
-            if (effect is RelicEffectSpawnUnitFromDeck)
+            RelicPileSpawnUpgradeRule? pileSpawnUpgrade = null;
+            if (effect is RelicEffectAddUnitUpgradePerPile)
+            {
+                object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
+                var subtype = (SubtypeData)Field("characterSubtype");
+                pileSpawnUpgrade = new RelicPileSpawnUpgradeRule(Field("pileType").ToString()!, (int)Field("_statCountPerUpgrade"),
+                    RelicPercentageStatProbe.TeamName((Team.Type)Field("targetTeam")), subtype == null || subtype.IsNone ? "" : subtype.Key,
+                    CardModifierProbe.Upgrade((CardUpgradeState)Field("upgradeState"), false, filtersAlreadyApplied: true));
+                amount = 0;
+            }
+            else if (effect is RelicEffectSpawnUnitFromDeck)
             {
                 var cached = (List<CardState>)AccessTools.Field(effect.GetType(), "toProcessCards").GetValue(effect);
                 deckSpawn = new((int)AccessTools.Field(effect.GetType(), "roomIndex").GetValue(effect),
@@ -530,7 +540,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
                 effect is RelicEffectAddPermanentCorruptionStartOfCombat || effect is RelicEffectChangeSingleFloorCapacity || effect is RelicEffectRandomCardCostOnDraw || effect is RelicEffectSuppressExhaust || effect is RelicEffectPyreHeartResurrection ? data.GetParamFloat() : 0,
-                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence, unitSpawnEffect, deathEffect, openingSpawn, deckSpawn, drawAndEnergy);
+                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence, unitSpawnEffect, deathEffect, openingSpawn, deckSpawn, drawAndEnergy, pileSpawnUpgrade);
         }
 
         internal static ResourceSnapshot Capture()

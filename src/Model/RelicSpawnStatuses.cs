@@ -139,7 +139,7 @@ namespace MonsterTrain2Poju.Model
             string? error = RelicModel.Validate(source.Context);
             if (error != null) return Fail(error);
             if (source.Context?.Relics == null || !source.Context.Relics.Any(relic => relic.SpawnStatuses?.Count > 0 ||
-                relic.EffectTypes.Contains(RelicPyreResurrectionModel.Effect) ||
+                relic.EffectTypes.Contains(RelicPyreResurrectionModel.Effect) || relic.EffectTypes.Contains(RelicPileSpawnUpgradeModel.Effect) ||
                 relic.PercentageStats?.Count > 0 || relic.CardModifiers?.Count > 0 || relic.CardAttackModifiers?.Count > 0 || relic.TriggerAdditions?.Any(rule => rule.Triggers.Count > 0) == true ||
                 relic.CardPlayMagicPowerModifiers?.Count > 0 || relic.CardDrawOnCardPlayModifiers?.Count > 0 || relic.CardHealthModifiers?.Count > 0))
                 return new RoomCombatResult(source, RoomOutcome.Exchanged, 0, new List<CombatEvent>(), pendingCallbacks: prior);
@@ -161,6 +161,16 @@ namespace MonsterTrain2Poju.Model
                 for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
                     relic = state.Context!.Relics![relicIndex];
+                    if (relic.EffectTypes[effectIndex] == RelicPileSpawnUpgradeModel.Effect)
+                    {
+                        RoomCombatResult applied = RelicPileSpawnUpgradeModel.Apply(state, unitId,
+                            relic.ResourceEffects!.Single(rule => rule.EffectIndex == effectIndex), deferCallbacks: drainCallbacks == null);
+                        if (!applied.Supported) return applied;
+                        state = applied.State!; callbacks.AddRange(applied.PendingCallbacks); events.AddRange(applied.Events);
+                        if (applied.Outcome != RoomOutcome.Exchanged) outcome = applied.Outcome;
+                        if (!onlyCovenants && !DrainYield()) return failed!;
+                        continue;
+                    }
                     if (relic.EffectTypes[effectIndex] == RelicModel.AddTempUpgrade)
                     {
                         RelicCardModifier effect = relic.CardModifiers!.Single(item => item.EffectIndex == effectIndex);

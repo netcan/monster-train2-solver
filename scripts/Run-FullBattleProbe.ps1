@@ -564,6 +564,7 @@ param(
     [switch] $PercentageStatsMechanism,
     [switch] $LateAttackMechanism,
     [switch] $PyreDamageTakenMechanism,
+    [switch] $PileSpawnUpgradeMechanism,
     [switch] $CampaignRelicCalibration,
     [switch] $CampaignDraftCalibration,
     [switch] $CampaignPostBattleCalibration,
@@ -1278,6 +1279,12 @@ if ($JuiceUpgradeMechanism) {
 }
 if ($PyreDamageTakenMechanism) {
     if ($PlayerAdvisor) { throw 'Pyre damage mechanisms require an isolated worker.' }
+    $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
+    $SettleCardAnimations = $true; $SettleDeathDissolves = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($PileSpawnUpgradeMechanism) {
+    if ($PlayerAdvisor) { throw 'Pile birth-upgrade mechanisms require an isolated worker.' }
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
     $SettleCardAnimations = $true; $SettleDeathDissolves = $true
     $Policy = 'units-spells-and-junk'
@@ -2261,6 +2268,11 @@ if ($PercentageStatsMechanism) { $environment['MT2_PROBE_MODIFIERS'] = 'original
 if ($LateAttackMechanism) { $environment['MT2_PROBE_MODIFIERS'] = 'original-late-attack' }
 if ($PyreDamageTakenMechanism) {
     $environment['MT2_PROBE_MODIFIERS'] = 'pyre-damage-taken'
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
+if ($PileSpawnUpgradeMechanism) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'pile-spawn-upgrade'
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
@@ -4259,6 +4271,10 @@ if ($JuiceUpgradeMechanism -and (-not $trace.JuiceUpgradePrepared -or -not $trac
 if ($PyreDamageTakenMechanism -and (-not $trace.PyreDamageTakenPrepared -or -not $trace.TerminalEffectsSettled -or @($trace.Actions).Count -ne 7 -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
     throw 'Extra Pyre damage lacks seven defense controls, settled terminal state or exact successors.'
+}
+if ($PileSpawnUpgradeMechanism -and (-not $trace.PileSpawnUpgradePrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 3 -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
+    throw 'Pile birth upgrades lack three controls, settled victory or exact successors.'
 }
 if ($OriginalArbitraryVerdict) {
     if (-not $trace.OriginalArbitraryVerdictPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 7 -or

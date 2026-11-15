@@ -1727,6 +1727,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 PyreDamageTakenScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && PileSpawnUpgradeScenario.Enabled)
+            {
+                numericModifiersPrepared = true;
+                PileSpawnUpgradeScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalArbitraryVerdictScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original percentage health must start on deployment turn.");
@@ -3245,6 +3250,10 @@ namespace MonsterTrain2Poju.Probe
                 else if (PyreDamageTakenScenario.Enabled)
                 {
                     pendingPlay = PyreDamageTakenScenario.Choose(decision);
+                }
+                else if (PileSpawnUpgradeScenario.Enabled)
+                {
+                    pendingPlay = PileSpawnUpgradeScenario.Choose(decision);
                 }
                 else if (OriginalAddSnackOnKillScenario.Enabled)
                 {
