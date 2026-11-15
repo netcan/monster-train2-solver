@@ -10,7 +10,7 @@ using System.Text;
 internal static class MechanismReconciliation
 {
     private const string Module = "bf93f060-beda-46b1-b808-95ebf1e9a99d";
-    private sealed record Native(string Family, string Name, int Owners, string StatusId, string[] Parents);
+    private sealed record Native(string Family, string Name, int Owners, int DefinitionOwners, string StatusId, string[] Parents);
     private sealed record Link(string Symbol, string Source, string Match, bool Guard);
     private sealed record Review(string Class, string Disposition, string Model, string Probe, string Checker, string Boundary);
     private sealed record Index(string Hash, Dictionary<string, List<Link>> Links, HashSet<string> Symbols, string SourceHash);
@@ -38,34 +38,37 @@ internal static class MechanismReconciliation
             var m = model.Links[item.Name]; var p = probe.Links[item.Name]; var c = checks.Links[item.Name];
             reviews.TryGetValue(item.Name, out Review? review);
             Link[] directModel = m.Where(link => !link.Match.StartsWith("base-", StringComparison.Ordinal)).ToArray();
-            string queue = review?.Disposition == "known-gap" ? "known-gap" : review != null ? "scoped-review-recorded" : item.Owners == 0 ? "resolve-entry" :
+            string queue = item.Owners > 0 && item.DefinitionOwners == 0 ? "resolve-reference-only" :
+                review?.Disposition == "known-gap" ? "known-gap" : review != null ? "scoped-review-recorded" : item.Owners == 0 ? "resolve-entry" :
                 m.Count == 0 && p.Count == 0 ? "inspect-no-code-link" : directModel.Length == 0 && m.Count > 0 ? "inspect-inherited-code" :
                 m.Count == 0 ? "inspect-projection-normalization" : directModel.All(link => link.Guard) ? "inspect-guard-links" : "review-existing-code";
             rows.Add((item, queue, review, m, p, c));
         }
-        rows = rows.OrderBy(row => Rank(row.Queue)).ThenByDescending(row => row.Native.Owners).ThenBy(row => row.Native.Name, StringComparer.Ordinal).ToList();
-        var table = new StringBuilder("Queue\tFamily\tNativeClass\tCatalogOwners\tNativeStatusId\tNativeParentClasses\tModelMethods\tProbeMethods\tCheckerMethods\tModelExamples\tProbeExamples\tCheckerExamples\tReviewedDisposition\tReviewedModelSymbols\tReviewedProbeSymbols\tCheckScript\tBoundary\n");
+        rows = rows.OrderBy(row => Rank(row.Queue)).ThenByDescending(row => row.Native.DefinitionOwners)
+            .ThenByDescending(row => row.Native.Owners).ThenBy(row => row.Native.Name, StringComparer.Ordinal).ToList();
+        var table = new StringBuilder("Queue\tFamily\tNativeClass\tCatalogOwners\tNativeStatusId\tNativeParentClasses\tModelMethods\tProbeMethods\tCheckerMethods\tModelExamples\tProbeExamples\tCheckerExamples\tReviewedDisposition\tReviewedModelSymbols\tReviewedProbeSymbols\tCheckScript\tBoundary\tDefinitionOwners\n");
         foreach (var row in rows)
             table.AppendLine(string.Join("\t", row.Queue, row.Native.Family, row.Native.Name, row.Native.Owners,
                 Empty(row.Native.StatusId), Empty(string.Join(",", row.Native.Parents)), row.Model.Count, row.Probe.Count, row.Checks.Count,
                 Examples(row.Model), Examples(row.Probe), Examples(row.Checks), row.Review?.Disposition ?? "unreviewed",
-                row.Review?.Model ?? "-", row.Review?.Probe ?? "-", row.Review?.Checker ?? "-", row.Review?.Boundary ?? "No behavioral completion inference from code references."));
+                row.Review?.Model ?? "-", row.Review?.Probe ?? "-", row.Review?.Checker ?? "-", row.Review?.Boundary ?? "No behavioral completion inference from code references.", row.Native.DefinitionOwners));
         var summary = new StringBuilder("# 固定版本机制与现有代码对账\n\n");
         summary.AppendLine("固定 2.3.1 / build 26650011，MVID `" + Module + "`。由 `scripts/Get-MechanismReconciliation.ps1` 生成。\n");
         summary.AppendLine("扫描编译后的模型、采集探针与检查器 IL，索引实际字符串和原生类型操作数；状态类同时读取原生 `const StatusId`。非公共根类的继承引用标为 `base-*`，用于查共享实现，不能据此确认派生类行为。PDB 必须与程序集匹配，工作区源码校验和必须与 PDB 一致，两个消费者的模型字节必须一致。注释、未使用常量和文档不参与代码匹配。\n");
         summary.AppendLine("这是有限的源码审查队列，不是剩余未实现数量或完成率。一个方法中出现类型／状态名不能证明该类已实现：可能只是保护、快照、构造测试或归一化入口。状态 ID 引用同样不证明完整生命周期；探针包含生产采集与隔离测试代码，不能直接当作执行模型。\n");
-        summary.AppendLine("| 待办分类 | 类数 | 含捕获定义引用 |\n| --- | ---: | ---: |");
+        summary.AppendLine("| 待办分类 | 类数 | 含目录引用 | 含类型声明 |\n| --- | ---: | ---: | ---: |");
         foreach (var group in rows.GroupBy(row => row.Queue))
-            summary.AppendLine($"| {group.Key} | {group.Count()} | {group.Count(row => row.Native.Owners > 0)} |");
+            summary.AppendLine($"| {group.Key} | {group.Count()} | {group.Count(row => row.Native.Owners > 0)} | {group.Count(row => row.Native.DefinitionOwners > 0)} |");
         summary.AppendLine($"\n总计 {rows.Count} 个具体类，{rows.Count(row => row.Native.Owners > 0)} 类有目录引用；{native.Values.Count(item => item.StatusId.Length > 0)} 个状态类取得原生 StatusId。已记录 {reviews.Count} 项有边界的人工审查，仍未将任何类自动判为完整完成。\n");
         summary.AppendLine("`known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。\n");
-        summary.AppendLine("共享机制审查一次记录原生类、模型消费者、采集入口、定向检查器和明确边界，后续按真实反例修复；不为同一实现的每张卡各造一场战斗。`input-only` 记录战前取得的输入或定义标记，不认证其战役消费者已实现。清单 TSV 按审查类别、目录引用数排序，源码例子最多各列两个方法。\n");
+        summary.AppendLine("`DefinitionOwners` 只计目录中的类型声明／添加特性；过滤器条件、通用参数默认值和投影描述分别保留在原生清单。仅有这些引用的类进入 `resolve-reference-only`，先确认执行入口，再决定是否补实现；已有 known-gap 审查原样保留，不据此认定该类未使用或已经完成。含声明也不证明实战会执行。\n");
+        summary.AppendLine("共享机制审查一次记录原生类、模型消费者、采集入口、定向检查器和明确边界，后续按真实反例修复；不为同一实现的每张卡各造一场战斗。`input-only` 记录战前取得的输入或定义标记，不认证其战役消费者已实现。清单 TSV 按审查类别、类型声明引用数、全部引用数排序，源码例子最多各列两个方法。\n");
         summary.AppendLine("## 已有源码审查结论\n\n| 原生类 | 结论 | 边界 |\n| --- | --- | --- |");
         foreach (Review review in reviews.Values.OrderBy(item => item.Disposition == "known-gap" ? 0 : 1).ThenBy(item => item.Class, StringComparer.Ordinal))
             summary.AppendLine($"| {review.Class} | {review.Disposition} | {review.Boundary.Replace("|", "/")} |");
-        summary.AppendLine("## 第一批需核对的代码入口\n\n| 原生类 | 队列 | 目录引用 | 模型／探针示例 |\n| --- | --- | ---: | --- |");
-        foreach (var row in rows.Where(row => row.Native.Owners > 0 && row.Review == null).Take(15))
-            summary.AppendLine($"| {row.Native.Name} | {row.Queue} | {row.Native.Owners} | {MarkdownExample(row.Model.Concat(row.Probe).FirstOrDefault())} |");
+        summary.AppendLine("## 第一批需核对的代码入口\n\n| 原生类 | 队列 | 声明引用 | 全部引用 | 模型／探针示例 |\n| --- | --- | ---: | ---: | --- |");
+        foreach (var row in rows.Where(row => row.Native.DefinitionOwners > 0 && row.Review == null).Take(15))
+            summary.AppendLine($"| {row.Native.Name} | {row.Queue} | {row.Native.DefinitionOwners} | {row.Native.Owners} | {MarkdownExample(row.Model.Concat(row.Probe).FirstOrDefault())} |");
         summary.AppendLine("\n## 可重建输入\n");
         summary.AppendLine("- 原版 DLL SHA-256: `" + Hash(File.ReadAllBytes(gameAssembly)) + "`。");
         summary.AppendLine("- 原生类清单 SHA-256: `" + Hash(File.ReadAllBytes(Path.Combine(workspace, "docs/inventory/game-2.3.1-mechanisms.tsv"))) + "`。");
@@ -114,7 +117,8 @@ internal static class MechanismReconciliation
                 if (parents.Contains(name, StringComparer.Ordinal)) throw new InvalidDataException("Native base-class cycle.");
                 parents.Add(name); parent = definition.BaseType;
             }
-            native.Add(cells[1], new Native(cells[0], cells[1], int.Parse(cells[2]), id, parents.ToArray()));
+            if (cells.Length != 18) throw new InvalidDataException("Missing mechanism reference-role columns.");
+            native.Add(cells[1], new Native(cells[0], cells[1], int.Parse(cells[2]), int.Parse(cells[10]), id, parents.ToArray()));
         }
         return native;
     }
@@ -246,7 +250,7 @@ internal static class MechanismReconciliation
         }
         return reviews;
     }
-    private static int Rank(string queue) => queue switch { "known-gap" => 0, "inspect-no-code-link" => 1, "inspect-inherited-code" => 2, "inspect-projection-normalization" => 3, "inspect-guard-links" => 4, "review-existing-code" => 5, "resolve-entry" => 6, _ => 7 };
+    private static int Rank(string queue) => queue switch { "known-gap" => 0, "inspect-no-code-link" => 1, "inspect-inherited-code" => 2, "inspect-projection-normalization" => 3, "inspect-guard-links" => 4, "review-existing-code" => 5, "resolve-reference-only" => 6, "resolve-entry" => 7, _ => 8 };
     private static string Empty(string text) => text.Length == 0 ? "-" : text;
     private static string Qualified(string space, string name) => space.Length == 0 ? name : space + "." + name;
     private static string Examples(IEnumerable<Link> links) => Empty(string.Join(";", links.OrderBy(link => link.Guard).Take(2).Select(link => link.Source + " " + link.Symbol + " [" + link.Match + "]")));

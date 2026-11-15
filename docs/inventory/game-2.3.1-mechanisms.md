@@ -6,13 +6,15 @@ This is a finite list of concrete native classes for forward source review. It d
 
 2 classes have an explicitly scoped `native-query-fixture` link. This means an archived query matrix is available, not that the class lifecycle is complete or that current code has passed its checker. The TSV links the checker and unresolved integration boundary.
 
-| Family | Concrete classes | Referenced by captured definitions |
-| --- | ---: | ---: |
-| card-effect | 192 | 132 |
-| card-trait | 78 | 56 |
-| relic-effect | 307 | 226 |
-| room-modifier | 53 | 28 |
-| status-effect | 104 | 6 |
+`DefinitionOwners` counts captured type declarations and added traits; it is a source-review lead, not proof that a live battle executes them. Selector/mask references, generic source/target-trait parameters (including unused defaults), and projected descriptors have separate owner counts. One owner may occur in multiple roles; their sum is not the unique owner count. Unknown fields remain in `OtherOwners`, never silently discarded.
+
+| Family | Concrete classes | Any catalog reference | Captured type declaration | Reference without declaration |
+| --- | ---: | ---: | ---: | ---: |
+| card-effect | 192 | 132 | 128 | 4 |
+| card-trait | 78 | 56 | 53 | 3 |
+| relic-effect | 307 | 226 | 226 | 0 |
+| room-modifier | 53 | 28 | 28 | 0 |
+| status-effect | 104 | 6 | 6 | 0 |
 
 Catalog roots inspected: 724 card definitions, 676 relic-like definitions across all captured collections, 406 characters, 6 status-rule definitions. Relic-like definitions include mutators, upgrades and other collections; this is not the collectable relic count.
 
