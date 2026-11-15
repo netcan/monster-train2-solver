@@ -71,7 +71,8 @@ internal static class MechanismReconciliation
         summary.AppendLine("- 原生类清单 SHA-256: `" + Hash(File.ReadAllBytes(Path.Combine(workspace, "docs/inventory/game-2.3.1-mechanisms.tsv"))) + "`。");
         summary.AppendLine("- 人工审查索引 SHA-256: `" + Hash(File.ReadAllBytes(Path.Combine(workspace, reviewPath))) + "`。");
         foreach (var entry in new[] { ("Model", model), ("Probe", probe), ("ModelChecks", checks) })
-            summary.AppendLine($"- {entry.Item1}: DLL `{entry.Item2.Hash}`；PDB 校验过的工作区源码集合 `{entry.Item2.SourceHash}`。");
+            summary.AppendLine($"- {entry.Item1}: PDB 校验过的项目源码集合 `{entry.Item2.SourceHash}`。");
+        summary.AppendLine("\n源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。");
         summary.AppendLine("\n`-Check` 要求生成内容逐字一致，源码、构建或审查声明变化后必须重建。检查器链接只证明存在，仍需运行相应检查器确认当前通过；旧版本证据不能据此升级为新版整场证据。");
         Write("docs/inventory/game-2.3.1-reconciliation.tsv", table.ToString());
         Write("docs/inventory/game-2.3.1-reconciliation.md", summary.ToString());
@@ -138,7 +139,10 @@ internal static class MechanismReconciliation
                 algorithm == new Guid("ff1816ec-aa5e-4d10-87f7-6f4963833460") ? SHA1.HashData(bytes) : throw new InvalidDataException("Unsupported PDB checksum.");
             if (!hash.SequenceEqual(pdb.GetBlobBytes(document.Hash))) throw new InvalidDataException("Build is stale for source " + file);
             string source = Path.GetRelativePath(workspace, file).Replace('\\', '/');
-            documents.Add(handle, source); sourceHashes[source] = Hash(bytes);
+            documents.Add(handle, source);
+            // SDK AssemblyInfo embeds HEAD. A tracked report containing its hash
+            // would become stale every time the report itself is committed.
+            if (!source.Split('/').Any(part => part is "obj" or "bin")) sourceHashes[source] = Hash(bytes);
         }
         if (documents.Count == 0) throw new InvalidDataException("PDB has no verifiable workspace source: " + relative);
         var links = native.Keys.ToDictionary(name => name, _ => new List<Link>(), StringComparer.Ordinal);
