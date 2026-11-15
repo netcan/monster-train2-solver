@@ -1593,6 +1593,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalSpellCompositionsScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalDevoteTreasureScenario.Enabled)
+            {
+                numericModifiersPrepared = true;
+                OriginalDevoteTreasureScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalDevotionUpgradeScenario.Enabled)
             {
                 numericModifiersPrepared = true;
@@ -3285,6 +3290,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OnCastGroupsBattleScenario.Enabled) pendingPlay = OnCastGroupsBattleScenario.Choose(decision);
                 if (OriginalArbitraryVerdictScenario.Enabled) pendingPlay = OriginalArbitraryVerdictScenario.Choose(decision);
                 if (OriginalWickedFervorScenario.Enabled) pendingPlay = OriginalWickedFervorScenario.Choose(decision);
+                if (OriginalDevoteTreasureScenario.Enabled) pendingPlay = OriginalDevoteTreasureScenario.Choose(decision);
                 if (OriginalDevotionUpgradeScenario.Enabled) pendingPlay = OriginalDevotionUpgradeScenario.Choose(decision);
                 if (OriginalDragThemDownScenario.Enabled) pendingPlay = OriginalDragThemDownScenario.Choose(decision);
                 if (OriginalDiscardDrawScenario.Enabled) pendingPlay = OriginalDiscardDrawScenario.Choose(decision, OriginalDiscardDrawScenario.CardIds);

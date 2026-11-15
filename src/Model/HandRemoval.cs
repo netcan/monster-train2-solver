@@ -111,14 +111,25 @@ namespace MonsterTrain2Poju.Model
                     CardInstanceState? instance = context.FindCard(token.InstanceId);
                     if (IndirectSpellModel.IsTreasure(instance))
                     {
-                        // Native promotes a card-triggered Treasure discard to wasPlayed before trait callbacks.
-                        if (triggeredByCard) context = context.WithCard(instance!.WithPlayCount(unchecked(instance.PlayCount + 1)));
-                        if (onTreasure == null) return Unsupported("Treasure discard requires the complete-train indirect cast callback.");
-                        HandRemovalResult cast = onTreasure(context.WithOtherPiles(piles), token.InstanceId);
-                        if (!cast.Supported) return cast;
-                        context = cast.Context!; piles = cast.OtherPiles?.ToArray();
+                        CardPlayRule? definition = definitions?.Cards.FirstOrDefault(rule => rule.DataId == token.DataId);
+                        RoomPlayRule? selectedRoom = definitions?.Rooms.FirstOrDefault(room => room.RoomIndex == context.QueryFrame?.SelectedRoomIndex);
+                        if (definition == null || selectedRoom == null)
+                            return Unsupported("Treasure discard requires its native definition and selected room.");
+                        bool willCast = definition.CardType is "Spell" or "Monster" && selectedRoom.Enabled &&
+                            (definition.CardType != "Monster" || !selectedRoom.IsPyre);
+                        // WillPlayCardOnDiscard promotes the discard before trait callbacks,
+                        // including a Devote discard and an eventual failed play test.
+                        bool wasPlayed = triggeredByCard || willCast;
+                        if (wasPlayed) context = context.WithCard(instance!.WithPlayCount(unchecked(instance.PlayCount + 1)));
+                        if (willCast)
+                        {
+                            if (onTreasure == null) return Unsupported("Treasure discard requires the complete-train indirect cast callback.");
+                            HandRemovalResult cast = onTreasure(context.WithOtherPiles(piles), token.InstanceId);
+                            if (!cast.Supported) return cast;
+                            context = cast.Context!; piles = cast.OtherPiles?.ToArray();
+                        }
                         CardInstanceState discarded = context.FindCard(token.InstanceId)!;
-                        discarded = CardRetainModel.Discarded(discarded, triggeredByCard,
+                        discarded = CardRetainModel.Discarded(discarded, wasPlayed,
                             CardRetainModel.TriggersOnUnplayed(discarded, definitions?.Cards.FirstOrDefault(rule => rule.DataId == token.DataId)));
                         context = context.WithCard(discarded.OnDiscard(false));
                     }

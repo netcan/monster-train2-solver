@@ -38,12 +38,20 @@ namespace MonsterTrain2Poju.Model
             context = context.WithBattleRng(choice.State).WithQueryFrame(context.QueryFrame!.With(energy: source.Energy - 1));
             DevotionResult devotion = DevotionModel.AwardBeforeDevoteDiscard(context);
             if (!devotion.Supported) return Unsupported(devotion.UnsupportedReason!);
+            TrainCombatState train = CardSpellModel.WithContext(source.Spawn.Train, devotion.Context!);
+            HandRemovalResult Treasure(CombatContext frame, int cardId)
+            {
+                TrainSpellResult cast = IndirectSpellModel.Apply(CardSpellModel.WithContext(train, frame), cardId, source.PlayRules, action.RoomIndex);
+                if (!cast.Supported) return new HandRemovalResult(null, null, Array.Empty<CardToken>(), 0, cast.UnsupportedReason);
+                train = cast.State!;
+                return new HandRemovalResult(train.Context, train.Context!.OtherPiles, Array.Empty<CardToken>(), 0);
+            }
             HandRemovalResult discarded = HandRemovalModel.Apply(devotion.Context!, 0, 0, 0, source.PlayRules,
-                source.OtherPiles, selectedCardIds: new[] { eligible[choice.Value] }, effectCounterType: null, triggeredByCard: false);
+                source.OtherPiles, selectedCardIds: new[] { eligible[choice.Value] }, effectCounterType: null, triggeredByCard: false, onTreasure: Treasure);
             if (!discarded.Supported) return Unsupported(discarded.UnsupportedReason!);
             context = discarded.Context!;
             if (devotion.LeveledUp && (error = DevotionModel.ValidateLevelCallbacks(context)) != null) return Unsupported(error);
-            TrainCombatState train = CardSpellModel.WithContext(source.Spawn.Train, context);
+            train = CardSpellModel.WithContext(train, context);
             if (source.BattlePreviewEnabled)
             {
                 TrainCombatResult preview = BattlePreviewModel.Refresh(train, source.PlayRules);

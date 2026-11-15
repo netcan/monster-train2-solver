@@ -57,6 +57,9 @@ namespace MonsterTrain2Poju.Model
         public static UnitBirthResult Spawn(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
             int position, bool isCardless, CombatStatus? cardlessStatus = null)
             => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, null, null, true);
+        internal static UnitBirthResult SpawnIndirectCard(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
+            int position, Func<RoomCombatState, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>, RoomCombatResult> drainBirthQueue)
+            => SpawnCore(source, definition, spawnerCardId, position, false, null, null, null, false, false, drainBirthQueue);
         internal static UnitBirthResult SpawnFront(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
             int position, bool isCardless, CombatStatus? cardlessStatus)
             => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, null, null, false);

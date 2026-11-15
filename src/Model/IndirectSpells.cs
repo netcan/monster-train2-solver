@@ -10,6 +10,13 @@ namespace MonsterTrain2Poju.Model
         public static bool IsTreasure(CardInstanceState? card) => card?.MaskDescriptor != null &&
             CardBranchMaskModel.Resolve(card).Traits.Contains(TreasureTrait, StringComparer.Ordinal);
 
+        internal static TrainCombatState ApplyPlayedTraits(TrainCombatState source, int cardId)
+        {
+            CardInstanceState? card = source.Context?.FindCard(cardId);
+            if (card == null) return source;
+            CardInstanceState unfrozen = RelicFreezeHandUpgradeModel.Played(card);
+            return ReferenceEquals(card, unfrozen) ? source : CardSpellModel.WithContext(source, source.Context!.WithCard(unfrozen));
+        }
         // CardManager.PlayAnyCard(ignoreCost:true, discardCard:false, fromDirectPlay:false).
         public static TrainSpellResult Apply(TrainCombatState source, int cardId, BattlePlayRules definitions,
             int? selectedRoom = null, int targetId = 0, bool echo = false)
@@ -18,8 +25,8 @@ namespace MonsterTrain2Poju.Model
             CombatContext? context = source.Context;
             CardInstanceState? card = context?.FindCard(cardId);
             CardPlayRule? raw = definitions.Cards.FirstOrDefault(rule => rule.DataId == card?.DataId);
-            if (context == null || card == null || raw == null || raw.CardType != "Spell" || !echo && !IsTreasure(card))
-                return Unsupported("Indirect Treasure casting requires a captured original spell and trait.");
+            if (context == null || card == null || raw == null || (raw.CardType != "Spell" && (echo || raw.CardType != "Monster")) || !echo && !IsTreasure(card))
+                return Unsupported("Indirect Treasure casting requires a captured original spell/unit and trait.");
             bool waxenEcho = echo && EchoWaxenSpikeModel.Known(card, raw.Effects) && EchoWaxenSpikeModel.KnownRelics(context);
             CardPlayRule? juiceRule = echo && EchoJuiceSpikeModel.Known(card, raw.Effects) && EchoJuiceSpikeModel.KnownRelics(context)
                 ? CardModifierModel.Resolve(raw, card) : null;
@@ -35,6 +42,7 @@ namespace MonsterTrain2Poju.Model
             RoomCombatState? room = source.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex);
             if (room == null || !echo && rule.Effects.Any(effect => effect.Target == "DropTargetCharacter"))
                 return Unsupported("Indirect Treasure casting requires its selected room and automatic targets.");
+            if (raw.CardType == "Monster") return IndirectUnitModel.Apply(source, card, raw, definitions, roomIndex);
             SpellCastCheck tested = CardSpellModel.TestPlay(source, roomIndex, rule.Effects, targetId, definitions, sourceCardId: cardId);
             if (!tested.Supported) return Unsupported(tested.UnsupportedReason!);
             if (!tested.CanPlay) return new TrainSpellResult(source, RoomOutcome.Exchanged, Array.Empty<CombatEvent>());
@@ -91,6 +99,7 @@ namespace MonsterTrain2Poju.Model
                 events.AddRange(played.RoomResults.SelectMany(result => result.Events));
                 if (played.Outcome != RoomOutcome.Exchanged) outcome = played.Outcome;
             }
+            if (!echo) state = ApplyPlayedTraits(state, cardId);
             TrainCombatResult delayed = TrainCombatModel.ProcessDelayedStatusRemovalsAfterCardPlayed(state);
             if (!delayed.Supported) return Unsupported(delayed.UnsupportedReason!);
             state = delayed.State!;

@@ -7,12 +7,20 @@ has 614 logbook cards and 236 collectable relics. New/changed content remains
 under migration; the coverage figures below describe **game 2.2.1**. See
 [the versioned compatibility evidence and migration scope](docs/game-2.3.1.md).
 
+Treasure discarded by the 2.3.1 Devote operation now casts through the
+complete train. Original DarkInitiate/GuardianAmulet witnesses cover level-up
+before free birth, capacity overflow, Pyre refusal, Freeze cleanup and exact
+unit standby bindings. Eight inputs/five EndTurns, 16 replay branches and
+128-state serial/parallel search pass with no unsupported candidates. See
+[the native evidence and remaining combinations](docs/devote-treasure.md) and
+`scripts/Check-Game231DevoteTreasure.ps1`.
+
 The original 2.3.1 `DarkInitiate` now repeats its native unit upgrade once
 per Devotion level, preserving separate unit and source-card upgrade records.
 Unchanged original summons at levels zero/one/two produce 15/25, 30/30 and
 45/35 stats. Seven plays/five EndTurns, full native successors, 16 replay
-branches and 128-state serial/parallel search pass. Four Treasure/Devote
-alternatives remain guarded outside the searched path. See
+branches and 128-state serial/parallel search pass with no unsupported
+recorded-decision candidates. See
 [evidence and remaining combinations](docs/devotion-unit-upgrade.md) and
 `scripts/Check-Game231DevotionUpgrade.ps1`.
 
