@@ -63,6 +63,7 @@ namespace MonsterTrain2Poju.Model
         {
             CombatUnit? unit = source.Units.FirstOrDefault(actor => actor.Id == unitId);
             if (unit == null) return Fail("Missing percentage birth unit.");
+            if (RelicLateAttackModel.Validate(unit) is string lateError) return Fail(lateError);
             string team = unit.Team == CombatTeam.Player ? "Monsters" : "Heroes";
             bool subtype = rule.SubtypeKey.Length == 0 ? unit.Team != CombatTeam.Player || !unit.IsPyre :
                 unit.Subtypes.Contains(rule.SubtypeKey) && (!rule.SubtypeIsPyre || unit.Team != CombatTeam.Player || unit.IsPyre);
@@ -78,9 +79,8 @@ namespace MonsterTrain2Poju.Model
                 if (unit.Modifiers == null) return Fail("Percentage birth attack requires captured raw attack.");
                 int raw = UnitAttackOverrideModel.Resolve(unit.Statuses, unit.MaxHealth) ?? unit.Modifiers.AttackDamage;
                 int additional = RelicStatusAttackModel.AdditionalAttack(unit.Modifiers.StatusAttackModifiers, unit.Team, unit.Statuses);
-                // All accepted late-multiplier providers must be modeled before
-                // their relic types can pass RelicModel.Validate.
-                changed = unit.WithRawAttack(BirthAttack(raw, additional, 1f, rule.Multiplier!.Value));
+                changed = unit.WithRawAttack(BirthAttack(raw, additional,
+                    RelicLateAttackModel.Multiplier(unit, applyPyreSkip: false), rule.Multiplier!.Value));
             }
             return Match(source.WithUnits(source.Units.Select(actor => actor.Id == unitId ? changed : actor).ToArray()));
         }

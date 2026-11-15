@@ -1,5 +1,15 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--late-attack-batch-only")
+{
+    LateAttackMechanismChecks.Batch(args[1]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--original-late-attack-only")
+{
+    LateAttackMechanismChecks.Battle(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--percentage-stats-batch-only")
 {
     PercentageStatsMechanismChecks.Batch(args[1]);

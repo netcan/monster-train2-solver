@@ -117,7 +117,7 @@ namespace MonsterTrain2Poju.Model
         internal int AttackBeforeStatuses => Modifiers == null ? BaseAttack : unchecked(Modifiers.AttackDamage + Modifiers.DamageBuff);
         internal int AttackFromStatuses => Modifiers?.DamageBuffFromStatusEffects ??
             unchecked(StatusAmount("buff") + StatusAmount("valor") + StatusAmount("mass") - StatusAmount("debuff"));
-        public int Attack => UnitAttackOverrideModel.Resolve(Statuses, MaxHealth) ?? Math.Max(0, unchecked(AttackBeforeStatuses + AttackFromStatuses +
+        public int Attack => UnitAttackOverrideModel.Resolve(Statuses, MaxHealth) ?? RelicLateAttackModel.Apply(this, unchecked(AttackBeforeStatuses + AttackFromStatuses +
             RelicStatusAttackModel.AdditionalAttack(Modifiers?.StatusAttackModifiers, Team, Statuses)));
         public int Health { get; }
         public int MaxHealth { get; }
@@ -1120,6 +1120,8 @@ namespace MonsterTrain2Poju.Model
             linkedHealthOnly |= linkedCombat;
             string? relicError = RelicModel.Validate(state.Context);
             if (relicError != null) return relicError;
+            foreach (CombatUnit actor in state.Units)
+                if (RelicLateAttackModel.Validate(actor) is string lateError) return lateError;
             if (state.Context?.Enchantments?.AutomaticLifecycle == false && state.Context.Enchantments.Rooms.SelectMany(room => room.Units).Any(unit =>
                 unit.Triggers.Any(trigger => trigger.Effects.Any(effect => effect.Enchantment != null))) == true)
                 return "CardEffectEnchant in the shared train requires automatic birth/movement/death lifecycle integration.";
@@ -1772,7 +1774,7 @@ namespace MonsterTrain2Poju.Model
                             value.RoomIndex == roomIndex && value.Team == Source.Team);
                         mageblade = unchecked(coefficient * (power?.Value ?? 0));
                     }
-                    return Math.Max(0, unchecked(Source.AttackBeforeStatuses +
+                    return RelicLateAttackModel.Apply(Source, unchecked(Source.AttackBeforeStatuses +
                         (Source.Modifiers?.DamageBuffFromStatusEffects ?? unchecked(Amount("buff") + Amount("valor") + Amount("mass") - Amount("debuff"))) +
                         RelicStatusAttackModel.AdditionalAttack(Source.Modifiers?.StatusAttackModifiers, Source.Team, Statuses.Values.ToArray()) +
                         UnitSelfAttackModel.Additional(Source, getContext?.Invoke(), Statuses.Values, Health) +

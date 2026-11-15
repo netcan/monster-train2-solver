@@ -20,16 +20,24 @@ namespace MonsterTrain2Poju.Probe
             // without a magnitude relic; its accumulator is independent of stacks.
             ConditionalActivationProbe.HasVanguard || PyreResourceRefreshScenario.Enabled || Current(managers).Any(relic => relic.GetEffects().Any(effect => effect is RelicEffectModifyStatusMagnitude ||
                 effect is IRebalanceValorRelicEffect ||
-                effect is RelicEffectAdjustAttackByStatusEffect ||
+                effect is RelicEffectAdjustAttackByStatusEffect || effect is RelicEffectMultiplyAttackLate ||
                 effect is RelicEffectPreventStatusEffectDecay decay && decay.GetStatusEffects().Any(status => status.statusId == "buff")));
         internal static RelicStatusAttackModifier[] StatusAttackModifiers(AllGameManagers managers) =>
             Current(managers).SelectMany(owner => owner.GetEffects().Select((effect, index) => (owner, effect, index)))
-                .Where(item => item.effect is RelicEffectAdjustAttackByStatusEffect)
-                .Select(item => {
-                    object Field(string name) => AccessTools.Field(item.effect.GetType(), name).GetValue(item.effect);
-                    return new RelicStatusAttackModifier(item.index, (string)Field("statusId"),
-                        ((Team.Type)Field("team")).ToString(), (int)Field("multiplier"));
-                }).ToArray();
+                .Where(item => AttackProvider(item.effect))
+                .Select(item => AttackModifier(item.effect, item.index, managers)).ToArray();
+        private static bool AttackProvider(IRelicEffect effect) => effect is RelicEffectAdjustAttackByStatusEffect || effect is RelicEffectMultiplyAttackLate;
+        private static RelicStatusAttackModifier AttackModifier(IRelicEffect effect, int index, AllGameManagers managers)
+        {
+            object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
+            if (effect is RelicEffectMultiplyAttackLate)
+                return new RelicStatusAttackModifier(index, "", RelicPercentageStatProbe.TeamName((Team.Type)Field("team")), 0,
+                    new RelicLateAttackRule((float)Field("multiplier"), (bool)Field("ignoreChampion"),
+                        managers.GetSaveManager().GetMutators().Any(owner => owner.GetRelicDataID() == "8af5b701-3d86-4b69-8117-758e1f4cb16d"),
+                        ((RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect)).GetEffectConditions().Count != 0));
+            return new RelicStatusAttackModifier(index, (string)Field("statusId"),
+                ((Team.Type)Field("team")).ToString(), (int)Field("multiplier"));
+        }
         private static List<RelicState> Current(AllGameManagers managers)
         {
             var relics = new List<RelicState>();
@@ -381,7 +389,8 @@ namespace MonsterTrain2Poju.Probe
                     cardDrawOnCardPlay.Length > 0 ? cardDrawOnCardPlay : null,
                     corruptionStatuses.Length > 0 ? corruptionStatuses : null,
                     cardTypeCosts.Length > 0 ? cardTypeCosts : null,
-                    effects.Any(effect => effect is RelicEffectAdjustAttackByStatusEffect) ? StatusAttackModifiers(managers) : null,
+                    effects.Any(AttackProvider) ? effects.Select((effect, index) => (effect, index)).Where(item => AttackProvider(item.effect))
+                        .Select(item => AttackModifier(item.effect, item.index, managers)).ToArray() : null,
                     cardPlayRoomCapacity.Length > 0 ? cardPlayRoomCapacity : null,
                     moonPhaseHeals.Length > 0 ? moonPhaseHeals : null,
                     roomAttachmentReplications.Length > 0 ? roomAttachmentReplications : null,

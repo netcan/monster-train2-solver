@@ -70,7 +70,9 @@ internal static class PercentageStatsMechanismChecks
                         Math.Max(0, attack), row.GetProperty("InputHp").GetInt32(), row.GetProperty("InputMaximum").GetInt32(),
                         true, false, false, Array.Empty<CombatStatus>(), Array.Empty<CombatTrigger>(),
                         subtypes: row.GetProperty("Subtypes").EnumerateArray().Select(value => value.GetString()!).ToArray(),
-                        modifiers: new UnitModifiers(attack, 0, 0, 1, 0, true, false, Array.Empty<CardUpgradeModifier>()));
+                        modifiers: new UnitModifiers(attack, 0, 0, 1, 0, true, false, Array.Empty<CardUpgradeModifier>(), isChampion: false,
+                            statusAttackModifiers: new[] { new RelicStatusAttackModifier(0, "", team, 0,
+                                new RelicLateAttackRule(row.GetProperty("Late").GetSingle(), false, false)) }));
                     var state = new RoomCombatState(0, false, new[] { actor }, Array.Empty<string>());
                     var applied = RelicPercentageStatModel.Apply(state, actor.Id, rule);
                     Require(applied.Supported && applied.State!.Units.Single().Health == hp && applied.State.Units.Single().MaxHealth == maximum &&
@@ -103,7 +105,7 @@ internal static class PercentageStatsMechanismChecks
             isCovenant: false, disallowedInPlacementPhase: false, percentageStats: new[] { missingMultiplier }) }) != null &&
             RelicModel.Validate(new[] { accepted, new CombatRelicState("late", "late", new[] { "RelicEffectMultiplyAttackLate" },
                 isCovenant: false, disallowedInPlacementPhase: false) }) != null,
-            "Missing initialized float or unmodeled late provider was accepted.");
+            "Missing initialized float or late provider descriptor was accepted.");
         Require(RelicModel.Validate(new[] { new CombatRelicState("new", "new", new[] { RelicPercentageStatModel.Effect }, isCovenant: false) }) != null &&
             RelicModel.Validate(new[] { new CombatRelicState("new", "new", new[] { RelicPercentageStatModel.Effect, "UnknownCompanion" },
                 isCovenant: false, disallowedInPlacementPhase: false, percentageStats: new[] { ordinary }) }) != null,

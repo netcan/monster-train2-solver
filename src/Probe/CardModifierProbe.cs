@@ -89,6 +89,13 @@ namespace MonsterTrain2Poju.Probe
                     cardAttack = CardModifierModel.UpgradedStat(definition.SpawnUnit.BaseAttack + damage, "Damage", true, state.Permanent, state.Temporary);
                     cardHealth = CardModifierModel.UpgradedStat(definition.SpawnUnit.Health + health, "Health", true, state.Permanent, state.Temporary);
                 }
+                if (card.IsSpawnerCard() && rule.SpawnUnit?.Modifiers?.StatusAttackModifiers?.Any(item => item.LateAttack != null) == true)
+                {
+                    var displayStatuses = new List<StatusEffectStackData>();
+                    card.TryGetStatusEffects(displayStatuses);
+                    if (!displayStatuses.Any(status => status.statusId == "fixedattack" || status.statusId == "equalizer"))
+                        cardAttack = RelicLateAttackModel.Scale(cardAttack, RelicLateAttackModel.Multiplier(rule.SpawnUnit, applyPyreSkip: false));
+                }
                 if (data.GetCardType() == CardType.Monster && rule.SpawnUnit != null && (card.GetSize() != rule.SpawnUnit.Size ||
                     card.GetTotalAttackDamage() != cardAttack || (int)Math.Round(card.GetHealth()) != cardHealth))
                     interactions.Add("Unmodeled unit card statistics");

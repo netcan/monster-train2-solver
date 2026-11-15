@@ -253,6 +253,7 @@ namespace MonsterTrain2Poju.Probe
                 RoomHealthMechanismBatch.Capture(this, managers);
                 JuiceMechanismBatch.Capture(this, managers);
                 PercentageStatsMechanismBatch.Capture(this, managers);
+                LateAttackMechanismBatch.Capture(this, managers);
 #endif
                 RngCalibration.Capture();
                 GoldRewardCalibration.Capture(save);
@@ -514,13 +515,14 @@ namespace MonsterTrain2Poju.Probe
             StatusRegistryCalibration.Capture(character, id, statuses);
             UnitModifiers modifiers = UnitModifierProbe.Capture(character);
             bool attackOverride = character.HasStatusEffect("fixedattack") || character.HasStatusEffect("armorattack") || character.HasStatusEffect("equalizer");
-            int baseAttack = attackOverride ? Math.Max(0, unchecked(modifiers.AttackDamage + modifiers.DamageBuff)) : character.GetAttackDamageWithoutStatusEffectBuffs();
-            if (!attackOverride)
+            bool rawLate = modifiers.StatusAttackModifiers?.Any(rule => rule.LateAttack != null) == true;
+            int baseAttack = attackOverride || rawLate ? Math.Max(0, unchecked(modifiers.AttackDamage + modifiers.DamageBuff)) : character.GetAttackDamageWithoutStatusEffectBuffs();
+            if (!attackOverride && !rawLate)
                 baseAttack = unchecked(baseAttack - character.GetRoomStateModifiers().Where(modifier => UnitSelfAttackModel.Known(modifier.GetType().Name) &&
                     modifier.GetType().Name != RoomHealthDamageModel.FriendlyOwn)
                     .Cast<RoomStateModifierBase>().Sum(modifier => modifier.GetDynamicInt(character)));
-            if (!attackOverride) baseAttack = unchecked(baseAttack - RoomHealthAttackProbe.Additional(character));
-            if (!attackOverride && modifiers.MagebladeDamagePerMagicPower is int magebladeCoefficient && character.GetCurrentRoom() is RoomState currentRoom)
+            if (!attackOverride && !rawLate) baseAttack = unchecked(baseAttack - RoomHealthAttackProbe.Additional(character));
+            if (!attackOverride && !rawLate && modifiers.MagebladeDamagePerMagicPower is int magebladeCoefficient && character.GetCurrentRoom() is RoomState currentRoom)
             {
                 AllGameManagers managers = AllGameManagers.Instance!;
                 int roomMagicPower = currentRoom.GetRoomStateModifiedMagicPower(character.GetTeamType(), managers.GetCoreManagers()) +
@@ -1377,6 +1379,9 @@ namespace MonsterTrain2Poju.Probe
                 OriginalPercentageStatsPrepared = OriginalPercentageStatsScenario.Prepared,
                 OriginalPercentageStatsDefinition = OriginalPercentageStatsScenario.Definition,
                 OriginalPercentageStatsDefinitionAfter = OriginalPercentageStatsScenario.CurrentDefinition,
+                OriginalLateAttackPrepared = OriginalLateAttackScenario.Prepared,
+                OriginalLateAttackDefinition = OriginalLateAttackScenario.Definition,
+                OriginalLateAttackDefinitionAfter = OriginalLateAttackScenario.CurrentDefinition,
                 OriginalJuiceUpgradesPrepared = OriginalJuiceUpgradesScenario.Prepared,
                 OriginalJuiceUpgradesIds = OriginalJuiceUpgradesScenario.CardIds,
                 OriginalJuiceUpgradesDefinitions = OriginalJuiceUpgradesScenario.Definitions,

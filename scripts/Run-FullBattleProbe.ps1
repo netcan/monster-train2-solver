@@ -561,6 +561,7 @@ param(
     [switch] $JuiceMechanismBatch,
 
     [switch] $PercentageStatsMechanism,
+    [switch] $LateAttackMechanism,
     [switch] $CampaignRelicCalibration,
     [switch] $CampaignDraftCalibration,
     [switch] $CampaignPostBattleCalibration,
@@ -1256,6 +1257,7 @@ if ($OriginalPositiveStatus) { $BranchCardMasks = $true; $Policy = 'units-spells
 if ($OriginalSpellCompositions) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($PyreSpikesMode) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $Policy = 'no-cards' }
 if ($RoomHealthMechanismBatch -and $PlayerAdvisor) { throw 'Mechanism batch queries require an isolated probe instance.' }
+if ($LateAttackMechanism) { $PercentageStatsMechanism = $true }
 if ($PercentageStatsMechanism) {
     if ($PlayerAdvisor) { throw 'Percentage mechanisms require an isolated worker.' }
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
@@ -1946,6 +1948,7 @@ $environment = @{
     MT2_PROBE_ROOM_HEALTH_MECHANISM_BATCH = $(if ($RoomHealthMechanismBatch) { '1' } else { '0' })
     MT2_PROBE_JUICE_MECHANISM_BATCH = $(if ($JuiceMechanismBatch) { '1' } else { '0' })
     MT2_PROBE_PERCENTAGE_STATS_BATCH = $(if ($PercentageStatsMechanism) { '1' } else { '0' })
+    MT2_PROBE_LATE_ATTACK_BATCH = $(if ($LateAttackMechanism) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_RELICS = $(if ($CampaignRelicCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_DRAFTS = $(if ($CampaignDraftCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_POST_BATTLE = $(if ($CampaignPostBattleCalibration) { '1' } else { '0' })
@@ -2241,6 +2244,7 @@ if ($OnCastGroupsBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'oncast-groups-
 if ($OriginalArbitraryVerdict) { $environment['MT2_PROBE_MODIFIERS'] = 'original-arbitrary-verdict' }
 if ($OriginalWickedFervor) { $environment['MT2_PROBE_MODIFIERS'] = 'original-wicked-fervor' }
 if ($PercentageStatsMechanism) { $environment['MT2_PROBE_MODIFIERS'] = 'original-percentage-stats' }
+if ($LateAttackMechanism) { $environment['MT2_PROBE_MODIFIERS'] = 'original-late-attack' }
 if ($OriginalJuiceUpgrades) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-juice-upgrades'
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'

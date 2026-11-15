@@ -21,7 +21,7 @@ namespace MonsterTrain2Poju.Model
             source = source.WithUnits(source.Units.Select(unit => unit.Id == targetId ? target : unit).ToArray());
             int mageblade = unchecked((target.Modifiers!.MagebladeDamagePerMagicPower ?? 0) *
                 (source.Context.MagicPower?.FirstOrDefault(power => power.RoomIndex == source.RoomIndex && power.Team == target.Team)?.Value ?? 0));
-            int attack = Math.Max(0, unchecked(target.AttackBeforeStatuses + target.AttackFromStatuses +
+            int attack = RelicLateAttackModel.Apply(target, unchecked(target.AttackBeforeStatuses + target.AttackFromStatuses +
                 RelicStatusAttackModel.AdditionalAttack(target.Modifiers.StatusAttackModifiers, target.Team, target.Statuses) + mageblade +
                 (target.IsPyre ? source.Context.Resources?.PyreModifiedBaseAttack ?? 0 : 0)));
             CombatEffect? healer = target.Triggers.Where(trigger => trigger.Kind == "PostCombatHealing")

@@ -1702,6 +1702,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalWickedFervorScenario.Prepare(managers, log);
             }
+            if (fullBattle && !numericModifiersPrepared && OriginalLateAttackScenario.Enabled)
+            {
+                numericModifiersPrepared = true;
+                OriginalLateAttackScenario.Prepare(managers, log);
+            }
             if (fullBattle && !numericModifiersPrepared && OriginalPercentageStatsScenario.Enabled)
             {
                 numericModifiersPrepared = true;
