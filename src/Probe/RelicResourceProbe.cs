@@ -63,7 +63,7 @@ namespace MonsterTrain2Poju.Probe
         }
 
         internal static bool RequiresPhysicalWorld(AllGameManagers managers) => Current(managers)
-            .Any(owner => owner.GetEffects().Any(effect => effect is RelicEffectAdditionalDrawForEnemyOccupiedFloors));
+            .Any(owner => owner.GetEffects().Any(effect => effect is RelicEffectAdditionalDrawForEnemyOccupiedFloors || effect is RelicEffectAdditionalDrawDuringRelentless));
 
         internal static BattleResourceState? CaptureResources(AllGameManagers managers)
         {
@@ -465,11 +465,11 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (effect is RelicEffectChooseDiscardsDrawReplacementsOnPostOpeningDraw)
                 amount = data.GetParamInt();
-            else if (effect is RelicEffectChangeStartingHandSize || effect is RelicEffectAdditionalDrawOnTowerFullHealth || effect is RelicEffectAdditionalDrawForEnemyOccupiedFloors)
+            else if (effect is RelicEffectChangeStartingHandSize || effect is RelicEffectAdditionalDrawOnTowerFullHealth || effect is RelicEffectAdditionalDrawForEnemyOccupiedFloors || effect is RelicEffectAdditionalDrawDuringRelentless)
             {
                 var draw = (IBalanceEditingRelicEffect)effect;
                 value = draw.Value;
-                amount = effect is RelicEffectAdditionalDrawForEnemyOccupiedFloors ? 0 : effect is RelicEffectAdditionalDrawOnTowerFullHealth ? data.GetParamInt() : UnityEngine.Mathf.RoundToInt(draw.Value);
+                amount = effect is RelicEffectAdditionalDrawDuringRelentless ? (int)AccessTools.Field(effect.GetType(), "_cardsToDraw").GetValue(effect) : effect is RelicEffectAdditionalDrawForEnemyOccupiedFloors ? 0 : effect is RelicEffectAdditionalDrawOnTowerFullHealth ? data.GetParamInt() : UnityEngine.Mathf.RoundToInt(draw.Value);
                 var rules = (MutableRules?)AccessTools.Field(typeof(SaveManager), "mutableRules").GetValue(managers.GetSaveManager());
                 if (rules != null)
                 {

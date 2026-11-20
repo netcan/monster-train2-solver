@@ -9,16 +9,16 @@
 | 待办分类 | 类数 | 含目录引用 | 含类型声明 |
 | --- | ---: | ---: | ---: |
 | known-gap | 1 | 1 | 1 |
-| inspect-no-code-link | 70 | 70 | 70 |
+| inspect-no-code-link | 69 | 69 | 69 |
 | inspect-inherited-code | 13 | 13 | 13 |
 | inspect-projection-normalization | 59 | 59 | 59 |
 | inspect-guard-links | 50 | 50 | 50 |
-| review-existing-code | 235 | 235 | 235 |
+| review-existing-code | 234 | 234 | 234 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 286 | 0 | 0 |
-| scoped-review-recorded | 13 | 13 | 13 |
+| scoped-review-recorded | 15 | 15 | 15 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 15 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 17 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -35,8 +35,10 @@
 | CardEffectDamage | shared-path | Native Damage normalizes to the shared Damage action; current PunishedSpike battle exercises repeated damage, armor, target death and full successors. Existing target/scaling/callback guards remain; not an audit of every contextual branch. |
 | RelicEffectAddRelicStartOfRun | input-only | Sealed native class implements StartOfRun ApplyEffect, which adds the configured relic through SaveManager. Battle input captures the resulting relic roster. No combat callback override in this class; start-of-run campaign handling and carried-owner validation remain separate. |
 | RelicEffectAddUnitUpgradePerPile | shared-path | Shared ID-independent birth callback captures initialized pile/threshold/team/subtype/upgrade, snapshots visible count once, preserves repeated direct API calls with empty upgradeId and existing queue policy. Four original definitions/52 configurations/3744 native parent-coroutine upgrade requests with controlled counts; children are not executed in this matrix. Nine unmodified native pile queries; unchanged deck-size mutator full win, three births with individual applied records, 16 branches/frontiers/serial-parallel root search. Five model placement/Covenant/condition/threshold/identity controls. Soul attachment lifecycle, complex upgrade callback combinations and other owner combinations remain outside this integration; other spawn-status scaling is separate. |
+| RelicEffectAdditionalDrawDuringRelentless | shared-path | Shared initialized mutable cache refreshes at start/before draw, tests both teams physical status membership without alive filtering, excludes Pyre and preserves false Test/no notification/no signal. Two original sources/10 configurations/640 native callbacks with controlled status queries and real independent MutableRules integer queries, including float precision and Int32 endpoints. Original T2/T3 full native wins; positive/reset cache, combined occupied draw, T3 tenth play draws two through existing consumer; full successors/16 branches/frontiers/serial-parallel root search. Raw actor/case/death boundaries are source/model controls; later before-draw mutations remain guarded pending ordered integration; complex lifecycle, outer-boss anchors, mixed Covenants and full hover remain outside certification. |
 | RelicEffectAdditionalDrawForEnemyOccupiedFloors | shared-path | Shared installed mutable draw value retains stale queries, per-room EndTurn/after-draw Test refresh and MonsterTurn-only enemy birth/killed callbacks with distinct manager gates. Three original sources/2304 detached native callbacks with controlled floor/team/phase queries and intercepted signal requests; same immutable successors and 16 parallel numeric checks. Physical dead references retained until removal; first PostCombat Despawn filter, silenced and duplicate source controls. Unchanged original WarborneT1 native win, actual kill cache1->0, full successors/16 branches/frontiers/serial-parallel root search. Higher-tier Relentless/draw-on-play companions, actual MonsterTurn enemy birth, outer-boss anchors, complex competition, mixed Covenants and full hover are not certified. |
 | RelicEffectApplyExtraPyreDamage | shared-path | Shared ID-independent ordered post-defense Pyre damage rule captures initialized extraDamage, preserves per-effect signed overflow and nonpositive reset, and records RoomState notifications even in preview except Covenant owners. Four original definition parameters/40 callbacks and 650 native manager cases; unchanged +3 mutator native win, seven authored damage/armor/shield controls and natural attacks, full successors/16 branches/frontiers/serial-parallel root search. Other soul companion effects, mixed Covenants, condition combinations and other tower-damage interfaces are not certified; synchronous GetDamageToTarget and direct HP payments are separate paths. |
+| RelicEffectCardDrawOnCardPlay | shared-path | Existing ID-independent ordered consumer reuses card type/subtype/trait and statistic conditions, native draw pipeline and condition records. This review adds unchanged original WarborneT3 carried-owner integration with ten same-turn plays and an actual two-card tenth-play draw; all successors/RNG, 16 branches/frontiers and serial-parallel root search. Other original owners have separate component checks; their complete lifecycle, other condition mixtures, mixed Covenants and all card combinations are not certified here. |
 | RelicEffectCardUpgrade | input-only | Sealed native class only overrides editor descriptions and implements the empty ICardUpgradeRelicEffect marker. Its 148 catalog references include upgrade definitions; already acquired card upgrades are battle inputs, not 148 missing live battle handlers. Acquisition consumers are not certified by this review. |
 | RelicEffectModifyCharacterAttackOrHealthPercentage | shared-path | Shared ID-independent birth/query rules capture initialized native float, team/subtype/required-mutator filters and ordered raw attack/health setters. Six original owners/56 effects, 138 configurations and 7728 query/birth pairs; unchanged double-health mutator full native win, 16 branches/frontiers/root search. Other owners companion effects, mixed Covenant projections and conditional effects remain outside this integration. A later shared late-attack integration adds nonneutral percentage birth matrices and a combined unchanged two-mutator full native battle. |
 | RelicEffectModifyDragonsHoardEndOfBattle | campaign-only | Sealed combat callbacks only remember private Pyre damage; campaign rewards have current OnPunish and legacy OnHit calibration. Natural seed20261115 Ring1 carried original owner across 21 inputs/42 full states, default3s budget, Pyre80 native win and independent forecasts/state/RNG. No independent frozen native pair or later rings claimed. |
@@ -63,16 +65,16 @@
 | RelicEffectPurgeStarterDeckMatchingFilter | inspect-no-code-link | 3 | 3 | 无直接链接 |
 | RelicEffectShowtime | inspect-no-code-link | 3 | 3 | 无直接链接 |
 | RelicEffectAddStartingUpgradeToUnitCards | inspect-no-code-link | 2 | 2 | 无直接链接 |
-| RelicEffectAdditionalDrawDuringRelentless | inspect-no-code-link | 2 | 2 | 无直接链接 |
+| RelicEffectBumpOnTurnEnd | inspect-no-code-link | 2 | 2 | 无直接链接 |
 
 ## 可重建输入
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `397bb7d014c217aff49d3fcbe3bed47c053b909738be661d2c2045c9ea91ea91`。
-- Model: PDB 校验过的项目源码集合 `e714edda5acd9bf2b2b4b59002d6690b934f5ada9bf3f44ba0b94dadf6b23efe`。
-- Probe: PDB 校验过的项目源码集合 `f59945f85aa2cd3b929052cd0c752727ac79c2bddb37a9a3b3c16de4eb735113`。
-- ModelChecks: PDB 校验过的项目源码集合 `ff93190607f87ae2a53e3a7fb79ba53267608c89c2aeee5723a0a14fed191068`。
+- 人工审查索引 SHA-256: `8f08d037135a86955614df96820ebfaeaee9bbd1486ade755c59984f10f76345`。
+- Model: PDB 校验过的项目源码集合 `8ea1c9375ac7d8deb5faa2e494154630012d52e69e2b9b91c8a9ea93265c1a3d`。
+- Probe: PDB 校验过的项目源码集合 `95f568ceb6b3dc440c5e3cfb8a04bc8780896e1d46c48efdd15d0801d6681dd5`。
+- ModelChecks: PDB 校验过的项目源码集合 `f1fc9697060dd0df62f30fb2baa00c4769bb26f0248b0b7e0a2345a5bed67bcf`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 

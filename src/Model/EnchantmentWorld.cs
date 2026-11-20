@@ -105,7 +105,7 @@ namespace MonsterTrain2Poju.Model
                     referenced.UnionWith(source.Context.SpawnPoints?.Units.Where(unit => unit.SpawnedInPreview)
                         .Select(unit => unit.UnitId) ?? Array.Empty<int>());
                 }
-                if (RelicOccupiedFloorDrawModel.Has(source.Context))
+                if (RelicOccupiedFloorDrawModel.Has(source.Context) || RelicRelentlessDrawModel.Has(source.Context))
                     referenced.UnionWith(source.Context!.SpawnPoints?.Groups.SelectMany(group => group.Occupants) ?? Array.Empty<int>());
                 retained = retained.Where(actor => referenced.Contains(actor.Unit.Id)).Select(actor =>
                     new EnchantmentRetainedUnit(actor.Unit, actor.Unit.DeathState?.IsDestroyed == true ? -1 : actor.RoomIndex, actor.Preview)).ToList();
@@ -147,7 +147,7 @@ namespace MonsterTrain2Poju.Model
                 referenced.UnionWith(context.SpawnPoints?.Groups.SelectMany(group => group.Occupants) ?? Array.Empty<int>());
                 referenced.UnionWith(context.SpawnPoints?.Units.Where(unit => unit.SpawnedInPreview).Select(unit => unit.UnitId) ?? Array.Empty<int>());
             }
-            if (RelicOccupiedFloorDrawModel.Has(context))
+            if (RelicOccupiedFloorDrawModel.Has(context) || RelicRelentlessDrawModel.Has(context))
                 referenced.UnionWith(context.SpawnPoints?.Groups.SelectMany(group => group.Occupants) ?? Array.Empty<int>());
             var retained = world.RetainedUnits.Where(actor => referenced.Contains(actor.Unit.Id)).ToArray();
             return retained.Length == world.RetainedUnits.Count ? context : context.WithEnchantments(new EnchantmentWorld(

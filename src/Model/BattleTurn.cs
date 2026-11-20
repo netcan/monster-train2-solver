@@ -652,9 +652,9 @@ namespace MonsterTrain2Poju.Model
                 context = train.Context!;
                 spawn = WithTrain(spawn, train, turn, spawn.Rng);
             }
-            if (context.Relics?.Any(owner => owner.EffectTypes.Contains(RelicTurnDrawModel.FullHealth)) == true)
+            if (context.Relics?.Any(owner => owner.EffectTypes.Contains(RelicTurnDrawModel.FullHealth) || owner.EffectTypes.Contains(RelicRelentlessDrawModel.Effect)) == true)
             {
-                var refresh = RelicTurnDrawModel.BeforeDraw(context, train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health);
+                var refresh = RelicTurnDrawModel.BeforeDraw(context, train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health, train: train);
                 if (!refresh.Supported) return Unsupported(refresh.UnsupportedReason!);
                 var count = RelicResourceModel.GetDrawCount(refresh.Context!);
                 if (!count.Supported) return Unsupported(count.UnsupportedReason!);

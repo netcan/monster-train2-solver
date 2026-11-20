@@ -261,6 +261,7 @@ namespace MonsterTrain2Poju.Probe
                 SpawnStatusScalingMechanismBatch.Capture(this, managers);
                 TurnEnergyMechanismBatch.Capture(this, managers);
                 OccupiedFloorDrawMechanismBatch.Capture(this, managers);
+                RelentlessDrawMechanismBatch.Capture(this, managers);
 #endif
                 RngCalibration.Capture();
                 GoldRewardCalibration.Capture(save);
@@ -1402,6 +1403,8 @@ namespace MonsterTrain2Poju.Probe
                 PyreDamageTakenIds = PyreDamageTakenScenario.CardIds,
                 PyreDamageTakenDefinition = PyreDamageTakenScenario.Definition,
                 PyreDamageTakenDefinitionAfter = PyreDamageTakenScenario.CurrentDefinition,
+                RelentlessDrawVariant = OccupiedFloorDrawScenario.RelentlessVariant,
+                RelentlessDrawTests = RelentlessDrawMechanismBatch.Tests,
                 OccupiedFloorDrawPrepared = OccupiedFloorDrawScenario.Prepared,
                 OccupiedFloorDrawDefinition = OccupiedFloorDrawScenario.Definition,
                 OccupiedFloorDrawDefinitionAfter = OccupiedFloorDrawScenario.CurrentDefinition,

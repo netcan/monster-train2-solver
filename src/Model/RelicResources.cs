@@ -323,7 +323,7 @@ namespace MonsterTrain2Poju.Model
             type == RelicCardGenerationModel.AfterDraw || type == RelicCardGenerationModel.StartOfBattle ||
             type == RelicCardGenerationModel.PrecachedPlayerClan ||
             type == RelicCardGenerationModel.ChampionCardAfterDraw ||
-            type == RelicTurnDrawModel.FullHealth || type == RelicTurnDrawModel.Opening || type == RelicDeckTurnDrawModel.Effect || type == RelicOccupiedFloorDrawModel.Effect ||
+            type == RelicTurnDrawModel.FullHealth || type == RelicRelentlessDrawModel.Effect || type == RelicTurnDrawModel.Opening || type == RelicDeckTurnDrawModel.Effect || type == RelicOccupiedFloorDrawModel.Effect ||
             type == RelicCardPlayDamageModel.Effect || type == RelicConsumeDamageModel.Effect || RelicFriendlyTriggerDamageModel.IsEffect(type) || type == RelicHealDamageModel.Effect || type == RelicUnitSpawnEffectModel.Effect ||
             RelicUnitResourceModel.IsEffect(type) || RelicCardDrawOnHealModel.IsEffect(type) || type == RelicDevotionOnDamageModel.Effect || type == RelicRandomDrawCostModel.Effect || type == RelicSuppressExhaustModel.Effect || type == RelicEndTurnHealthModel.Effect || type == RelicCardTypeSequenceModel.Effect ||
             RelicUnitTriggerCardGenerationModel.IsEffect(type) ||
@@ -574,7 +574,12 @@ namespace MonsterTrain2Poju.Model
                 if (rule.Type == ConserveEnergyEndOfTurn && (rule.ParamInt != 0 || rule.ParamInt2 != 0 ||
                     rule.ParamMinInt != 0 || rule.Amount != 0 || rule.RequiredMutatorId != null || rule.CanApplyInPreviewMode))
                     return "End-of-turn conservation differs from the native conserve-all payload.";
-                if (rule.Type == RelicOccupiedFloorDrawModel.Effect)
+                if (rule.Type == RelicRelentlessDrawModel.Effect)
+                {
+                    string? relentlessError = RelicRelentlessDrawModel.Validate(relic, rule);
+                    if (relentlessError != null) return relentlessError;
+                }
+                else if (rule.Type == RelicOccupiedFloorDrawModel.Effect)
                 {
                     string? occupiedError = RelicOccupiedFloorDrawModel.Validate(relic, rule);
                     if (occupiedError != null) return occupiedError;
@@ -758,8 +763,8 @@ namespace MonsterTrain2Poju.Model
             // MutableRules tracks initialized object registration independently
             // of current manager order, preview, placement and outer conditions.
             foreach (RelicResourceEffect rule in source.Relics!.SelectMany(relic => relic.ResourceEffects ?? Array.Empty<RelicResourceEffect>())
-                .Where(rule => (rule.Type == Draw || rule.Type == RelicTurnDrawModel.FullHealth || rule.Type == RelicOccupiedFloorDrawModel.Effect) && rule.DrawMutationOrder.HasValue).OrderBy(rule => rule.DrawMutationOrder))
-                value = unchecked(value + (rule.Type == Draw ? rule.Amount : (int)rule.DrawValue!.Value));
+                .Where(rule => (rule.Type == Draw || rule.Type == RelicTurnDrawModel.FullHealth || rule.Type == RelicOccupiedFloorDrawModel.Effect || rule.Type == RelicRelentlessDrawModel.Effect) && rule.DrawMutationOrder.HasValue).OrderBy(rule => rule.DrawMutationOrder))
+                value = unchecked(value + (rule.Type == Draw ? rule.Amount : rule.Type == RelicRelentlessDrawModel.Effect ? RelicRelentlessDrawModel.RoundedValue(rule.DrawValue!.Value) : (int)rule.DrawValue!.Value));
             return new RelicResourceResult(source, Math.Min(source.Resources.MaxHandSize, Math.Max(1, value)));
         }
 
@@ -868,7 +873,7 @@ namespace MonsterTrain2Poju.Model
 
         public static RelicResourceResult StartTurn(CombatContext source, bool deployment = false, bool preview = false, int unitRoomEnergy = 0, TrainCombatState? train = null)
         {
-            string? error = Ready(source) ?? EnergyModel.Validate(source) ?? RelicDamagedFloorEnergyModel.ValidateBeforeDrawOrder(source);
+            string? error = Ready(source) ?? EnergyModel.Validate(source) ?? RelicDamagedFloorEnergyModel.ValidateBeforeDrawOrder(source) ?? RelicRelentlessDrawModel.ValidateBeforeDrawOrder(source);
             if (error != null) return Fail(error);
             CombatContext context = EnergyModel.SetPhase(source, "MonsterTurn");
             int income = unchecked(context.Resources!.BaseEnergy + context.EnergyState!.NextTurn + context.EnergyState.EveryTurn + RoomCapacityModel.EnergyPerTurnDelta(context) + unitRoomEnergy +

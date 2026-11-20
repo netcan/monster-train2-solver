@@ -60,6 +60,7 @@ pwsh -NoProfile -File scripts/Check-Game231OccupiedFloorDraw.ps1
 pwsh -NoProfile -File scripts/Check-Game231OccupiedFloorDraw.ps1 -SkipBuild -ComponentOnly
 ```
 
-T2/T3 伴随的 Relentless 抽牌、T3 出牌抽牌及完整等级生命周期仍需独立整合／验收。
+T2/T3 的 Relentless 与 T3 第十次出牌抽两张，已由[后续批次](relentless-draw-mechanism.md)
+按原版定义同场验收；完整等级生命周期仍需继续扩展。
 实际 MonsterTurn 敌方出生、外侧 Boss 多锚点、复杂出生死亡竞争、混合 Covenant
 与完整悬停组合也未在本次整场穷举；本组通过不等于全部 Warborne 等级已完整可用。

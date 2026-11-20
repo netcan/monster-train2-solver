@@ -11,27 +11,32 @@ namespace MonsterTrain2Poju.Model
         // Both native Test methods update the registered mutable value and return
         // false. Updating the value must not depend on executing an Apply body.
         public static RelicResourceResult BeforeDraw(CombatContext source, int pyreHealth,
-            bool placement = false, bool preview = false)
+            bool placement = false, bool preview = false, TrainCombatState? train = null)
         {
-            var maximum = RelicResourceModel.GetPyreMaxHealth(source);
+            if (source.Relics == null) return new RelicResourceResult(null, 0, "Missing turn-draw relic state.");
+            var maximum = source.Relics.Any(owner => owner.EffectTypes.Contains(FullHealth))
+                ? RelicResourceModel.GetPyreMaxHealth(source) : new RelicResourceResult(source, 0);
             if (!maximum.Supported) return maximum;
             var context = source;
-            for (int i = 0; i < source.Relics!.Count; i++)
+            for (int i = 0; i < source.Relics.Count; i++)
+            for (int j = 0; j < (context.Relics![i].ResourceEffects?.Count ?? 0); j++)
             {
-                var owner = context.Relics![i];
-                if (placement && owner.DisallowedInPlacementPhase == true) continue;
-                var effects = (owner.ResourceEffects ?? Array.Empty<RelicResourceEffect>()).ToArray(); bool changed = false;
-                for (int j = 0; j < effects.Length; j++)
+                var owner = context.Relics![i]; var effect = owner.ResourceEffects![j];
+                if (effect.Type == RelicRelentlessDrawModel.Effect)
                 {
-                    var effect = effects[j];
-                    if (effect.Type != FullHealth || preview && !effect.CanApplyInPreviewMode) continue;
-                    if (effect.Conditions.Count > 0) return new RelicResourceResult(null, 0, "Conditional full-health draw requires its native Test condition.");
-                    float value = pyreHealth == maximum.Value ? effect.ParamInt : 0;
-                    if (effect.DrawValue != value) { effects[j] = effect.WithDrawValue(value); changed = true; }
+                    if (train == null) return new RelicResourceResult(null, 0, "Relentless draw requires the complete train.");
+                    var refreshed = RelicRelentlessDrawModel.RefreshOne(CardSpellModel.WithContext(train, context), i, effect.EffectIndex, placement, preview);
+                    if (!refreshed.Supported) return refreshed;
+                    context = refreshed.Context!;
+                    continue;
                 }
-                if (changed)
+                if (effect.Type != FullHealth || placement && owner.DisallowedInPlacementPhase == true || preview && !effect.CanApplyInPreviewMode) continue;
+                if (effect.Conditions.Count > 0) return new RelicResourceResult(null, 0, "Conditional full-health draw requires its native Test condition.");
+                float value = pyreHealth == maximum.Value ? effect.ParamInt : 0;
+                if (effect.DrawValue != value)
                 {
-                    var owners = context.Relics!.ToArray(); owners[i] = owner.WithResourceEffects(effects); context = context.WithRelics(owners);
+                    var effects = owner.ResourceEffects.ToArray(); effects[j] = effect.WithDrawValue(value);
+                    var owners = context.Relics.ToArray(); owners[i] = owner.WithResourceEffects(effects); context = context.WithRelics(owners);
                 }
             }
             return new RelicResourceResult(context, 0);
