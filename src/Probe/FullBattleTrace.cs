@@ -119,6 +119,7 @@ namespace MonsterTrain2Poju.Probe
                 // exists in a card pile or on the train. Include upgraded abilities
                 // without creating their cached CardState as an observation side effect.
                 var managers = AllGameManagers.Instance!;
+                if (RelicResourceProbe.RequiresPhysicalWorld(managers)) return playerEnchantmentWorld = true;
                 var cards = managers.GetCardManager()!.GetAllCards(new List<CardState>());
                 if (cards.Any(card => card.GetCardStateModifiers().GetCardUpgrades()
                     .Concat(card.GetTemporaryCardStateModifiers().GetCardUpgrades()).Any(upgrade =>
@@ -259,6 +260,7 @@ namespace MonsterTrain2Poju.Probe
                 PileSpawnUpgradeMechanismBatch.Capture(this, managers);
                 SpawnStatusScalingMechanismBatch.Capture(this, managers);
                 TurnEnergyMechanismBatch.Capture(this, managers);
+                OccupiedFloorDrawMechanismBatch.Capture(this, managers);
 #endif
                 RngCalibration.Capture();
                 GoldRewardCalibration.Capture(save);
@@ -1400,6 +1402,10 @@ namespace MonsterTrain2Poju.Probe
                 PyreDamageTakenIds = PyreDamageTakenScenario.CardIds,
                 PyreDamageTakenDefinition = PyreDamageTakenScenario.Definition,
                 PyreDamageTakenDefinitionAfter = PyreDamageTakenScenario.CurrentDefinition,
+                OccupiedFloorDrawPrepared = OccupiedFloorDrawScenario.Prepared,
+                OccupiedFloorDrawDefinition = OccupiedFloorDrawScenario.Definition,
+                OccupiedFloorDrawDefinitionAfter = OccupiedFloorDrawScenario.CurrentDefinition,
+                OccupiedFloorDrawCallbacks = OccupiedFloorDrawScenario.Callbacks,
                 TurnEnergyPrepared = TurnEnergyScenario.Prepared,
                 TurnEnergyDefinition = TurnEnergyScenario.Definition,
                 TurnEnergyDefinitionAfter = TurnEnergyScenario.CurrentDefinition,

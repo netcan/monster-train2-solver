@@ -41,19 +41,29 @@ namespace MonsterTrain2Poju.Model
                 : Fail(drawn.UnsupportedReason!);
         }
 
-        internal static bool IsAfterDraw(string type) => type == Effect ||
+        internal static bool IsAfterDraw(string type) => type == Effect || type == RelicOccupiedFloorDrawModel.Effect ||
             type == RelicCardGenerationModel.AfterDraw || type == RelicCardGenerationModel.PrecachedPlayerClan ||
             type == RelicCardGenerationModel.ChampionCardAfterDraw;
 
         // These effects share one native timing interface. Preserve owner/effect
         // order so generated cards and extra draws see the same hand capacity.
-        internal static RelicResourceResult ApplyAfterDraw(CombatContext source, BattlePlayRules? definitions = null)
+        internal static RelicResourceResult ApplyAfterDraw(CombatContext source, BattlePlayRules? definitions = null, TrainCombatState? train = null)
         {
             CombatContext context = source;
-            foreach (CombatRelicState owner in source.Relics ?? Array.Empty<CombatRelicState>())
-            foreach (RelicResourceEffect effect in owner.ResourceEffects ?? Array.Empty<RelicResourceEffect>())
+            for (int ownerIndex = 0; ownerIndex < (source.Relics?.Count ?? 0); ownerIndex++)
+            foreach (RelicResourceEffect effect in source.Relics![ownerIndex].ResourceEffects ?? Array.Empty<RelicResourceEffect>())
             {
+                CombatRelicState owner = source.Relics![ownerIndex];
                 if (!IsAfterDraw(effect.Type)) continue;
+                if (effect.Type == RelicOccupiedFloorDrawModel.Effect)
+                {
+                    if (train == null) return Fail("Enemy-occupied after-draw refresh requires the complete train.");
+                    var refreshed = RelicOccupiedFloorDrawModel.RefreshOne(CardSpellModel.WithContext(train, context),
+                        ownerIndex, effect.EffectIndex, "AfterDraw");
+                    if (!refreshed.Supported) return refreshed;
+                    context = refreshed.Context!;
+                    continue;
+                }
                 if (effect.Type == Effect)
                 {
                     RelicResourceResult drawn = Apply(context, definitions);

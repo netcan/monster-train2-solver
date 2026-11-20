@@ -628,6 +628,8 @@ namespace MonsterTrain2Poju.Probe
                         BumpScenario.AcquireRelicBeforeBattle(managers!, log);
                     if (fullBattle && OriginalResourceRelicBatchScenario.Enabled && !OriginalResourceRelicBatchScenario.Prepared)
                         OriginalResourceRelicBatchScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OccupiedFloorDrawScenario.Enabled)
+                        OccupiedFloorDrawScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && TurnEnergyScenario.Enabled)
                         TurnEnergyScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && SpawnStatusScalingScenario.Enabled)
@@ -1740,6 +1742,11 @@ namespace MonsterTrain2Poju.Probe
             {
                 numericModifiersPrepared = true;
                 SpawnStatusScalingScenario.Prepare(managers, log);
+            }
+            if (fullBattle && !numericModifiersPrepared && OccupiedFloorDrawScenario.Enabled)
+            {
+                numericModifiersPrepared = true;
+                OccupiedFloorDrawScenario.Prepare(managers, log);
             }
             if (fullBattle && !numericModifiersPrepared && TurnEnergyScenario.Enabled)
             {
@@ -3272,6 +3279,10 @@ namespace MonsterTrain2Poju.Probe
                 else if (SpawnStatusScalingScenario.Enabled)
                 {
                     pendingPlay = SpawnStatusScalingScenario.Choose(decision);
+                }
+                else if (OccupiedFloorDrawScenario.Enabled)
+                {
+                    pendingPlay = OccupiedFloorDrawScenario.Choose(decision);
                 }
                 else if (TurnEnergyScenario.Enabled)
                 {

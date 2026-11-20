@@ -10,6 +10,16 @@ if (args.Length == 2 && args[0] == "--pile-spawn-upgrade-battle-only")
     PileSpawnUpgradeMechanismChecks.Battle(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--occupied-floor-draw-batch-only")
+{
+    OccupiedFloorDrawMechanismChecks.Batch(args[1]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--occupied-floor-draw-battle-only")
+{
+    OccupiedFloorDrawMechanismChecks.Battle(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--turn-energy-batch-only")
 {
     TurnEnergyMechanismChecks.Batch(args[1]);

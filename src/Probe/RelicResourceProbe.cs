@@ -62,6 +62,9 @@ namespace MonsterTrain2Poju.Probe
             return relics.ToArray();
         }
 
+        internal static bool RequiresPhysicalWorld(AllGameManagers managers) => Current(managers)
+            .Any(owner => owner.GetEffects().Any(effect => effect is RelicEffectAdditionalDrawForEnemyOccupiedFloors));
+
         internal static BattleResourceState? CaptureResources(AllGameManagers managers)
         {
             // Relics can be acquired before battle creates the card manager.
@@ -462,11 +465,11 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (effect is RelicEffectChooseDiscardsDrawReplacementsOnPostOpeningDraw)
                 amount = data.GetParamInt();
-            else if (effect is RelicEffectChangeStartingHandSize || effect is RelicEffectAdditionalDrawOnTowerFullHealth)
+            else if (effect is RelicEffectChangeStartingHandSize || effect is RelicEffectAdditionalDrawOnTowerFullHealth || effect is RelicEffectAdditionalDrawForEnemyOccupiedFloors)
             {
                 var draw = (IBalanceEditingRelicEffect)effect;
                 value = draw.Value;
-                amount = effect is RelicEffectAdditionalDrawOnTowerFullHealth ? data.GetParamInt() : UnityEngine.Mathf.RoundToInt(draw.Value);
+                amount = effect is RelicEffectAdditionalDrawForEnemyOccupiedFloors ? 0 : effect is RelicEffectAdditionalDrawOnTowerFullHealth ? data.GetParamInt() : UnityEngine.Mathf.RoundToInt(draw.Value);
                 var rules = (MutableRules?)AccessTools.Field(typeof(SaveManager), "mutableRules").GetValue(managers.GetSaveManager());
                 if (rules != null)
                 {

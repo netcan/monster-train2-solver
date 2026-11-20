@@ -323,7 +323,7 @@ namespace MonsterTrain2Poju.Model
             type == RelicCardGenerationModel.AfterDraw || type == RelicCardGenerationModel.StartOfBattle ||
             type == RelicCardGenerationModel.PrecachedPlayerClan ||
             type == RelicCardGenerationModel.ChampionCardAfterDraw ||
-            type == RelicTurnDrawModel.FullHealth || type == RelicTurnDrawModel.Opening || type == RelicDeckTurnDrawModel.Effect ||
+            type == RelicTurnDrawModel.FullHealth || type == RelicTurnDrawModel.Opening || type == RelicDeckTurnDrawModel.Effect || type == RelicOccupiedFloorDrawModel.Effect ||
             type == RelicCardPlayDamageModel.Effect || type == RelicConsumeDamageModel.Effect || RelicFriendlyTriggerDamageModel.IsEffect(type) || type == RelicHealDamageModel.Effect || type == RelicUnitSpawnEffectModel.Effect ||
             RelicUnitResourceModel.IsEffect(type) || RelicCardDrawOnHealModel.IsEffect(type) || type == RelicDevotionOnDamageModel.Effect || type == RelicRandomDrawCostModel.Effect || type == RelicSuppressExhaustModel.Effect || type == RelicEndTurnHealthModel.Effect || type == RelicCardTypeSequenceModel.Effect ||
             RelicUnitTriggerCardGenerationModel.IsEffect(type) ||
@@ -574,7 +574,12 @@ namespace MonsterTrain2Poju.Model
                 if (rule.Type == ConserveEnergyEndOfTurn && (rule.ParamInt != 0 || rule.ParamInt2 != 0 ||
                     rule.ParamMinInt != 0 || rule.Amount != 0 || rule.RequiredMutatorId != null || rule.CanApplyInPreviewMode))
                     return "End-of-turn conservation differs from the native conserve-all payload.";
-                if (rule.Type == Draw || rule.Type == RelicTurnDrawModel.FullHealth)
+                if (rule.Type == RelicOccupiedFloorDrawModel.Effect)
+                {
+                    string? occupiedError = RelicOccupiedFloorDrawModel.Validate(relic, rule);
+                    if (occupiedError != null) return occupiedError;
+                }
+                else if (rule.Type == Draw || rule.Type == RelicTurnDrawModel.FullHealth)
                 {
                     if (!rule.DrawValue.HasValue ||
                         (rule.Type == Draw ? rule.DrawValue.Value != (float)rule.ParamInt : rule.DrawValue.Value != 0 && rule.DrawValue.Value != rule.ParamInt) ||
@@ -753,7 +758,7 @@ namespace MonsterTrain2Poju.Model
             // MutableRules tracks initialized object registration independently
             // of current manager order, preview, placement and outer conditions.
             foreach (RelicResourceEffect rule in source.Relics!.SelectMany(relic => relic.ResourceEffects ?? Array.Empty<RelicResourceEffect>())
-                .Where(rule => (rule.Type == Draw || rule.Type == RelicTurnDrawModel.FullHealth) && rule.DrawMutationOrder.HasValue).OrderBy(rule => rule.DrawMutationOrder))
+                .Where(rule => (rule.Type == Draw || rule.Type == RelicTurnDrawModel.FullHealth || rule.Type == RelicOccupiedFloorDrawModel.Effect) && rule.DrawMutationOrder.HasValue).OrderBy(rule => rule.DrawMutationOrder))
                 value = unchecked(value + (rule.Type == Draw ? rule.Amount : (int)rule.DrawValue!.Value));
             return new RelicResourceResult(source, Math.Min(source.Resources.MaxHandSize, Math.Max(1, value)));
         }

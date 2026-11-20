@@ -567,6 +567,7 @@ param(
     [switch] $PileSpawnUpgradeMechanism,
     [switch] $SpawnStatusScalingMechanism,
     [switch] $TurnEnergyMechanism,
+    [switch] $OccupiedFloorDrawMechanism,
     [switch] $CampaignRelicCalibration,
     [switch] $CampaignDraftCalibration,
     [switch] $CampaignPostBattleCalibration,
@@ -1293,6 +1294,12 @@ if ($PileSpawnUpgradeMechanism) {
 }
 if ($SpawnStatusScalingMechanism) {
     if ($PlayerAdvisor) { throw 'Birth status-scaling mechanisms require an isolated worker.' }
+    $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
+    $SettleCardAnimations = $true; $SettleDeathDissolves = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($OccupiedFloorDrawMechanism) {
+    if ($PlayerAdvisor) { throw 'Occupied-floor draw requires an isolated worker.' }
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
     $SettleCardAnimations = $true; $SettleDeathDissolves = $true
     $Policy = 'units-spells-and-junk'
@@ -2292,6 +2299,11 @@ if ($PileSpawnUpgradeMechanism) {
 }
 if ($SpawnStatusScalingMechanism) {
     $environment['MT2_PROBE_MODIFIERS'] = 'spawn-status-scaling'
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
+if ($OccupiedFloorDrawMechanism) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'occupied-floor-draw'
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
@@ -4303,6 +4315,10 @@ if ($PileSpawnUpgradeMechanism -and (-not $trace.PileSpawnUpgradePrepared -or -n
 if ($SpawnStatusScalingMechanism -and (-not $trace.SpawnStatusScalingPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 3 -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
     throw 'Birth status scaling lack three controls, settled victory or exact successors.'
+}
+if ($OccupiedFloorDrawMechanism -and (-not $trace.OccupiedFloorDrawPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 4 -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
+    throw 'Occupied-floor draw lacks four controls, settled victory or exact successors.'
 }
 if ($TurnEnergyMechanism -and (-not $trace.TurnEnergyPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 4 -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {

@@ -1305,9 +1305,15 @@ namespace MonsterTrain2Poju.Model
                 queuedTrueFinalBoss: spawn.QueuedTrueFinalBoss, trueFinalBoss: spawn.TrueFinalBoss);
             spawn = ForcedRelentlessModel.Synchronize(spawn);
             if (context.RoomCapacities != null) outputPlayRules = outputPlayRules.WithCapacities(context.RoomCapacities);
+            int displayedDraw = source.DrawPerTurn - UnitRoomResourceModel.Amount(source.Spawn.Train, UnitRoomResourceModel.Draw);
+            if (RelicOccupiedFloorDrawModel.Has(train.Context))
+            {
+                var cachedDraw = RelicResourceModel.GetDrawCount(train.Context!);
+                if (!cachedDraw.Supported) return Unsupported(cachedDraw.UnsupportedReason!);
+                displayedDraw = cachedDraw.Value;
+            }
             return new BattleActionResult(new BattleTurnState(spawn, context.EnergyState == null ? source.Energy - energyPaidCost : context.QueryFrame!.Energy!.Value, source.EnergyPerTurn,
-                Math.Max(0, source.DrawPerTurn - UnitRoomResourceModel.Amount(source.Spawn.Train, UnitRoomResourceModel.Draw) +
-                    UnitRoomResourceModel.Amount(train, UnitRoomResourceModel.Draw)), context.QueryFrame?.ForgePoints ?? source.ForgePoints,
+                Math.Max(0, displayedDraw + UnitRoomResourceModel.Amount(train, UnitRoomResourceModel.Draw)), context.QueryFrame?.ForgePoints ?? source.ForgePoints,
                 context.QueryFrame?.DragonsHoard ?? source.DragonsHoard,
                 context.QueryFrame?.MoonPhase == 1 ? "New" : context.QueryFrame?.MoonPhase == 2 ? "Full" : source.MoonPhase,
                 source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,

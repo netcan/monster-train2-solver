@@ -177,6 +177,8 @@ namespace MonsterTrain2Poju.Probe
                 .SelectMany(unit => unit.Triggers).SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null)
                 .SelectMany(effect => effect.Enchantment!.State.PrimaryTargets.Concat(effect.Enchantment.State.PreviewTargets))
                 .Select(target => target.UnitId).Concat(enchanters).ToHashSet();
+            if (RelicResourceProbe.RequiresPhysicalWorld(AllGameManagers.Instance!))
+                referenced.UnionWith(BattleSpawnPointProbe.Capture(trace).Groups.SelectMany(group => group.Occupants));
             // A cardless real birth can die entirely between player captures.
             // Aura dictionaries still hold its managed object after destruction.
             // Close only missing references, without recapturing known actors or

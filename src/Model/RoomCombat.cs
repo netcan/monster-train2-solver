@@ -2177,9 +2177,15 @@ namespace MonsterTrain2Poju.Model
 
             private void RunEndTurnHealthRelics()
             {
-                foreach (CombatRelicState owner in context?.Relics ?? Array.Empty<CombatRelicState>())
-                foreach (RelicResourceEffect effect in owner.ResourceEffects ?? Array.Empty<RelicResourceEffect>())
+                for (int ownerIndex = 0; ownerIndex < (context?.Relics?.Count ?? 0); ownerIndex++)
+                foreach (RelicResourceEffect effect in context!.Relics![ownerIndex].ResourceEffects ?? Array.Empty<RelicResourceEffect>())
                 {
+                    CombatRelicState owner = context!.Relics![ownerIndex];
+                    if (effect.Type == RelicOccupiedFloorDrawModel.Effect)
+                    {
+                        if (!RefreshOccupiedDraw("EndTurn", ownerIndex, effect.EffectIndex)) return;
+                        continue;
+                    }
                     if (effect.Type != RelicEndTurnHealthModel.Effect || source.Deployment && owner.DisallowedInPlacementPhase == true) continue;
                     string? error = RelicEndTurnHealthModel.Validate(owner, effect);
                     if (error != null) { unsupportedReason = error; return; }
@@ -2196,6 +2202,16 @@ namespace MonsterTrain2Poju.Model
                         if (!runningTriggerQueue && enqueueCharacterTrigger == null) DrainLocalTriggerQueue();
                     }
                 }
+            }
+
+            private bool RefreshOccupiedDraw(string callback, int ownerIndex, int effectIndex, CombatUnit? actor = null)
+            {
+                var room = EnchantmentWorldModel.Sync(PhysicalRoom(), units.Where(unit => !unit.Alive || !unit.InRoom)
+                    .Select(unit => unit.Freeze()).ToArray(), ExternalEnchantmentUnits());
+                var result = RelicOccupiedFloorDrawModel.RefreshRoomOne(room, ownerIndex, effectIndex, callback, actor);
+                if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
+                context = result.Context;
+                return true;
             }
 
             private void RunRoomPostCombatEffects()
@@ -4350,6 +4366,12 @@ namespace MonsterTrain2Poju.Model
                     if (!cleanup.Supported) { unsupportedReason = cleanup.UnsupportedReason; return; }
                     ImportEnchantmentRoom(cleanup.State!);
                     foreach (var callback in cleanup.PendingCallbacks) QueueCallback(callback);
+                }
+                if (kind == "OnDeath" && paramInt != 1 && !unit.Despawned && !unit.Alive && RelicOccupiedFloorDrawModel.Has(context))
+                {
+                    for (int ownerIndex = 0; ownerIndex < context!.Relics!.Count; ownerIndex++)
+                    foreach (var effect in context.Relics[ownerIndex].ResourceEffects ?? Array.Empty<RelicResourceEffect>())
+                        if (effect.Type == RelicOccupiedFloorDrawModel.Effect && !RefreshOccupiedDraw("Killed", ownerIndex, effect.EffectIndex, unit.Freeze())) return;
                 }
                 if (traceAllDispatches || unit.Triggers.Any(trigger => trigger.Kind == kind))
                     dispatches.Add(new CharacterTriggerDispatch(unit.Source.Id, kind, dyingCharacter?.Source.Id ?? 0, triggerCount,

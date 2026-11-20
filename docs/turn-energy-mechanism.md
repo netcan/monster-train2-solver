@@ -63,4 +63,5 @@ pwsh -NoProfile -File scripts/Check-Game231TurnEnergy.ps1 -SkipBuild -ComponentO
 
 其他等级和来源组合的完整生命周期、混合 Covenant、完整悬停及尚未整合的
 回合顺序仍待验收。Warborne 的敌方占层抽牌属于另一类带缓存和多处刷新回调
-的机制，本次未实现。本组通过不等于所有灵魂或整个战斗模拟完成。
+的机制，已由[后续占层抽牌批次](occupied-floor-draw-mechanism.md)补齐基础缓存。
+本组通过不等于所有灵魂或整个战斗模拟完成。

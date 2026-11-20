@@ -660,6 +660,12 @@ namespace MonsterTrain2Poju.Model
                 if (!count.Supported) return Unsupported(count.UnsupportedReason!);
                 context = count.Context!; drawPerTurn = count.Value;
             }
+            if (RelicOccupiedFloorDrawModel.Has(context))
+            {
+                var cachedDraw = RelicResourceModel.GetDrawCount(context);
+                if (!cachedDraw.Supported) return Unsupported(cachedDraw.UnsupportedReason!);
+                drawPerTurn = cachedDraw.Value;
+            }
             // Deployment is turn zero. Native DrawOpeningHand runs on turn one:
             TypedDrawResult held = CardRetainModel.PreDrawHand(context, outputPlayRules, opening: turn == 1);
             if (!held.Supported) return Unsupported(held.UnsupportedReason!);
@@ -735,7 +741,7 @@ namespace MonsterTrain2Poju.Model
             }
             if (train.Context!.Relics?.Any(relic => relic.EffectTypes.Any(RelicDeckTurnDrawModel.IsAfterDraw)) == true)
             {
-                var generated = RelicDeckTurnDrawModel.ApplyAfterDraw(train.Context, outputPlayRules);
+                var generated = RelicDeckTurnDrawModel.ApplyAfterDraw(train.Context, outputPlayRules, train);
                 if (!generated.Supported) return Unsupported(generated.UnsupportedReason!);
                 train = WithContext(train, generated.Context!, false);
             }
@@ -813,8 +819,15 @@ namespace MonsterTrain2Poju.Model
                         }
                     }
                 }
+                int displayedDraw = drawPerTurn;
+                if (RelicOccupiedFloorDrawModel.Has(finalContext))
+                {
+                    var cachedDraw = RelicResourceModel.GetDrawCount(finalContext);
+                    if (!cachedDraw.Supported) return Unsupported(cachedDraw.UnsupportedReason!);
+                    displayedDraw = cachedDraw.Value;
+                }
                 return new BattleTurnResult(new BattleTurnState(spawn, energy, source.EnergyPerTurn,
-                    Math.Max(0, drawPerTurn + UnitRoomResourceModel.Amount(spawn.Train, UnitRoomResourceModel.Draw)),
+                    Math.Max(0, displayedDraw + UnitRoomResourceModel.Amount(spawn.Train, UnitRoomResourceModel.Draw)),
                     finalContext.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard, phase, streams, piles,
                     AfterActionInteractions(source, finalContext), outputPlayRules,
                     source.BattlePreviewEnabled, source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
