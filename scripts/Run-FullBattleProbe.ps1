@@ -64,6 +64,7 @@ param(
     [ValidateSet('', 'AllyBuffer', 'Fragile', 'Corrupter')][string] $OriginalOuterBossVariant = '',
     [switch] $OriginalOuterBossTrial,
     [switch] $OriginalEarlyOuterBossTrialBattle,
+    [switch] $OriginalCaelShieldTrialIsolateRng,
     [switch] $OriginalTrueFinalBoss,
     [ValidateSet('', 'Health', 'Damage')][string] $TrueFinalBossAllyUpgrade = '',
     [ValidateSet('', 'Steward', 'Warrior', 'Animus', 'Avenger')][string] $TrueFinalBossOrdinaryAlly = '',
@@ -975,8 +976,11 @@ $earlyTrialVariant = switch ($OriginalEarlyOuterBossVariant) {
 }
 $earlyTrialSubstitution = $OriginalOuterBossTrial -and $null -ne $earlyTrialVariant
 $caelShieldTrialDiagnostic = $earlyTrialSubstitution -and $OriginalEarlyOuterBossVariant -ceq 'CaelDamageShield'
-if ($OriginalEarlyOuterBossTrialBattle -and (-not $earlyTrialSubstitution -or $caelShieldTrialDiagnostic)) {
-    throw 'OriginalEarlyOuterBossTrialBattle requires an original Ring 3 Fleshweaver Titan Trial variant.'
+if ($OriginalEarlyOuterBossTrialBattle -and -not $earlyTrialSubstitution) {
+    throw 'OriginalEarlyOuterBossTrialBattle requires an original Fleshweaver or Cael shield Titan Trial variant.'
+}
+if ($OriginalCaelShieldTrialIsolateRng -and (-not $caelShieldTrialDiagnostic -or -not $OriginalEarlyOuterBossTrialBattle)) {
+    throw 'OriginalCaelShieldTrialIsolateRng requires the full original Cael shield Titan Trial.'
 }
 if ($OriginalOuterBossTrial -and -not $OriginalOuterBossVariant -and -not $earlyTrialSubstitution) {
     throw 'OriginalOuterBossTrial requires an explicit original outer-boss trial variant.'
@@ -2619,6 +2623,10 @@ if ($OriginalPunishedSkills) { $environment['MT2_PROBE_MODIFIERS'] = 'original-p
 if ($OriginalSpiteEquipment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spite-equipment' }
 if ($OriginalPunishedSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-punished-spike' }
 if ($OriginalPunishedSpells) { $environment['MT2_PROBE_MODIFIERS'] = 'original-punished-spells' }
+if ($OriginalCaelShieldTrialIsolateRng) {
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
 if ($PyreSpikesMode) { $environment['MT2_PROBE_MODIFIERS'] = 'pyre-spikes-' + $PyreSpikesMode.ToLowerInvariant(); $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'; $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1' }
 if ($OriginalExaltation) { $environment['MT2_PROBE_MODIFIERS'] = 'original-exaltation' }
 if ($OriginalUpgradeEnchantment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-upgrade-enchantment' }
@@ -3243,14 +3251,18 @@ if ($earlyTrialSubstitution) {
                 $matchingMappings[0].SourceId -cne $capture.SourceId -or $matchingMappings[0].ReplacementId -cne $capture.ReplacementId) {
                 throw 'Expected the original rank-zero Cael Trial and an exact authored mapping.'
             }
+            if ($OriginalCaelShieldTrialIsolateRng -and (-not $capture.IsolatePreviewRng -or -not $capture.IsolateUiRng)) {
+                throw 'Expected active preview and UI RNG isolation in the original Cael Trial capture.'
+            }
         } elseif ($capture.OuterBoss -or $capture.Source -cne $earlyTrialVariant.Source -or
             $capture.Replacement -cne ($earlyTrialVariant.Source + '_TitanTrial') -or $capture.Turn -lt 1) {
             throw 'Expected the original Fleshweaver trial mini after deployment.'
         }
     } finally { $document.Dispose() }
     if (-not $OriginalEarlyOuterBossTrialBattle) {
-        if ($capture.BranchCardMasksEnabled -ne $true -or (-not $caelShieldTrialDiagnostic -and $capture.Mismatches -ne 0)) {
-            throw "Original Ring 3 Titan Trial substitution component has missing card state or mismatches. Inspect $capturePath and $unityLog"
+        if ($capture.BranchCardMasksEnabled -ne $true -or $capture.Mismatches -ne 0 -or
+            ($caelShieldTrialDiagnostic -and $capture.Unsupported -ne 0)) {
+            throw "Original Titan Trial substitution component has missing card state, mismatches, or unsupported stages. Inspect $capturePath and $unityLog"
         }
         [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true; Source=$capture.Source;
             Replacement=$capture.Replacement; Mismatches=$capture.Mismatches; Unsupported=$capture.Unsupported;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using MonsterTrain2Poju.Model;
 
 namespace MonsterTrain2Poju.Probe
 {
@@ -31,14 +32,34 @@ namespace MonsterTrain2Poju.Probe
                 string after = replacement.GetAssetKey();
                 bool seraphTrial = before is "Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" or "Boss_Level8_Corrupter" &&
                     after == before + "_TitanTrial";
-                bool fleshweaverTrial = effects.Count == 1 &&
+                SaveManager save = managers.GetSaveManager();
+                string? scenario = save.GetCurrentScenarioData()?.name;
+                bool calibratedTrial = effects.Count == 1 && save.IsTitanTrialEnabled() &&
                     typeof(CardState).Module.ModuleVersionId == new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d") &&
-                    managers.GetSaveManager().IsTitanTrialEnabled() && MatchesFleshweaverTrial(data, replacement,
-                        effect.SourceRelicData, managers.GetSaveManager().GetCurrentScenarioData()?.name);
-                supported &= seraphTrial || fleshweaverTrial;
+                    (MatchesFleshweaverTrial(data, replacement, effect.SourceRelicData, scenario) ||
+                     scenario == "Level6BattleEaterDamageShield" && save.GetAscensionLevel() == 0 &&
+                     MatchesCaelShieldTrial(data, replacement, effect.SourceRelicData));
+                supported &= seraphTrial || calibratedTrial;
                 data = replacement;
             }
             return data;
+        }
+
+        private static bool MatchesCaelShieldTrial(CharacterData source, CharacterData replacement, RelicData owner)
+        {
+            var ownerEffects = owner.GetEffects();
+            if (owner.GetID() != OuterBossDefinitions.CaelShieldTrialOwnerId || owner.name != OuterBossDefinitions.CaelShieldTrialOwner ||
+                ownerEffects.Count != 2 || ownerEffects[0].GetEffectClassName() != "RelicEffectOnSpawnHeroSubstitution" ||
+                ownerEffects[1].GetEffectClassName() != "RelicEffectNull") return false;
+
+            return source.GetAssetKey() switch
+            {
+                "Boss_Level6_Cael_DamageShield" => source.GetID() == "168b33b6-361b-4691-bc64-aa58c66eb5db" &&
+                    replacement.GetAssetKey() == OuterBossDefinitions.CaelShieldTrial && replacement.GetID() == "3794c878-797d-4e81-8f0b-644869661970",
+                "Boss_Level6_FeedDamageShield" => source.GetID() == "43bbea4c-c1e8-4744-a4b1-e5b5f135c059" &&
+                    replacement.GetAssetKey() == "Boss_Level6_FeedDamageShield_TitanTrial" && replacement.GetID() == "b29a1359-c39b-48d6-9649-1740667ed97e",
+                _ => false
+            };
         }
 
         private static bool MatchesFleshweaverTrial(CharacterData source, CharacterData replacement, RelicData owner, string? scenario)

@@ -242,6 +242,7 @@ namespace MonsterTrain2Poju.Probe
                 OuterBoss = unit.IsOuterTrainBoss(), Turn = managers.GetCombatManager().GetTurnCount(), Room = unit.GetCurrentRoomIndex(),
                 Projection = new { Key = projected.Unit.AssetKey, projected.ExternalInteractions }, trace.Unsupported, trace.Mismatches,
                 BranchCardMasksEnabled = CardBranchMaskProbe.Enabled,
+                IsolatePreviewRng = PreviewRngIsolation.Enabled, IsolateUiRng = UiRngIsolation.Enabled,
                 Mappings = earlyTrialEntries.Select(entry => new { Source = entry.UnitBefore.GetAssetKey(), SourceId = entry.UnitBefore.GetID(),
                     Replacement = entry.UnitAfter.GetAssetKey(), ReplacementId = entry.UnitAfter.GetID() }).ToArray(),
                 Unit = trace.CaptureUnit(unit), Intro = TrialIntroControl, TitanTrial = save.IsTitanTrialEnabled() });
