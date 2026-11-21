@@ -219,6 +219,9 @@ namespace MonsterTrain2Poju.Probe
                 decision = PlannerReplayScenario.ReadWithoutNativeObservation<Decision>(frozen[Records.Count]);
                 if (!Equal(decision.Root, root, false)) throw new InvalidOperationException("Fresh rolling replay root differs at decision " + Records.Count + ": " +
                     UnitPlayModelProbe.FirstDifference(BattleTurnProbe.Comparable(decision.Root), BattleTurnProbe.Comparable(root), "$"));
+#if DEVELOPMENT_PROBE
+                bool recordedPrefix = decision.Mode == "prefix-replay";
+#endif
                 decision.Mode = "replay"; decision.Nodes = 0; decision.Actual = null; decision.Timing = null; decision.Difference = null;
 #if DEVELOPMENT_PROBE
                 if (ResumeRequested)
@@ -236,6 +239,12 @@ namespace MonsterTrain2Poju.Probe
                     decision.Generation = 0;
                     decision.ReusedContinuation = false;
                     decision.ReusedWinningContinuation = false;
+                }
+                if (recordedPrefix || ResumeRequested)
+                {
+                    decision.RequestedHorizon = 0;
+                    decision.TurnsPlanned = 0;
+                    decision.UsedShorterHorizon = false;
                 }
 #endif
             }

@@ -54,17 +54,38 @@ internal static class RollingAdviceChecks
         Require(expected != null ? fixture.GetProperty("ModifierScenario").GetString() == expected :
             string.IsNullOrEmpty(fixture.GetProperty("ModifierScenario").GetString()), "Unexpected rolling encounter calibration.");
     }
+    private static int ResumedPrefixLength(FixtureValue fixture, FixtureValue[] records)
+    {
+        if (!fixture.TryGetProperty("RollingPrefixResume", out FixtureValue resume) || resume.ValueKind == FixtureKind.Null)
+            return 0;
+        int count = resume.GetProperty("PrefixInputs").GetInt32();
+        int stale = resume.GetProperty("StalePredictions").GetInt32();
+        long firstFresh = resume.GetProperty("FirstFreshGeneration").GetInt64();
+        string? hash = resume.GetProperty("SourceSHA256").GetString();
+        Require(resume.GetProperty("Resumed").GetBoolean() && count > 0 && count < records.Length &&
+            stale >= 0 && stale <= count && hash?.Length == 64 && hash.All(Uri.IsHexDigit) &&
+            firstFresh > resume.GetProperty("ResumeGeneration").GetInt64() &&
+            records[count].GetProperty("Generation").GetInt64() == firstFresh,
+            "Incomplete native prefix handoff evidence.");
+        for (int index = 0; index < records.Length; index++)
+            Require(records[index].GetProperty("Mode").GetString() == (index < count ? "prefix-replay" : "rolling"),
+                "Native prefix handoff changed mode at decision " + index);
+        return count;
+    }
     internal static void Native(FixtureValue fixture, bool conduitCalibration = false, string? calibration = null)
     {
         Accepted(fixture, conduitCalibration, calibration);
         FixtureValue[] records = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
         Require(records.Length > 1, "Missing complete rolling decision sequence.");
+        int prefixLength = ResumedPrefixLength(fixture, records);
         BattleTurnState? previous = null;
         long generation = -1;
         int cards = 0, turns = 0;
         RoomOutcome outcome = RoomOutcome.Exchanged;
-        foreach (FixtureValue record in records)
+        for (int index = 0; index < records.Length; index++)
         {
+            FixtureValue record = records[index];
+            bool prefix = index < prefixLength;
             BattleTurnState root = State(record.GetProperty("Root"));
             if (previous != null) Require(Key(previous) == Key(root), "Rolling decisions do not form one native chain.");
             else Require(root.Spawn.Turn == 0, "Rolling advice did not start at the deployment turn.");
@@ -83,7 +104,12 @@ internal static class RollingAdviceChecks
                 SameRelentlessChoices(plan[0], record), "Driver did not execute the latest plan's first step.");
             BattleSearchStep[] steps = plan.Select(ReadStep).ToArray();
             BattleTurnState planned = BattlePlannerChecks.Replay(root, steps, out RoomOutcome plannedOutcome);
-            if (record.TryGetProperty("UsedShorterHorizon", out FixtureValue shorter) && shorter.GetBoolean())
+            if (prefix)
+                Require(plan.Length == 1 && outcome == RoomOutcome.Exchanged &&
+                    record.GetProperty("Generation").GetInt64() == 0 && record.GetProperty("Timing").ValueKind == FixtureKind.Null &&
+                    record.GetProperty("PolicyBaselineScore").ValueKind == FixtureKind.Null,
+                    "Verified native prefix retained an original search forecast.");
+            else if (record.TryGetProperty("UsedShorterHorizon", out FixtureValue shorter) && shorter.GetBoolean())
                 Require(!Terminal(plannedOutcome) && steps.Last().IsEndTurn &&
                     steps.Count(step => step.IsEndTurn) == record.GetProperty("TurnsPlanned").GetInt32() &&
                     record.GetProperty("TurnsPlanned").GetInt32() > 0 &&
@@ -107,7 +133,7 @@ internal static class RollingAdviceChecks
                 { double duration = timing.GetProperty(field).GetDouble(); Require(double.IsFinite(duration) && duration >= 0, "Invalid advice latency."); sum += duration; }
                 Require(timing.GetProperty("EndToEndMs").GetDouble() + 1 >= sum, "End-to-end latency omitted a measured stage.");
             }
-            else Require(record.GetProperty("Mode").GetString() == "replay" && record.GetProperty("Nodes").GetInt32() == 0,
+            else Require((prefix || record.GetProperty("Mode").GetString() == "replay") && record.GetProperty("Nodes").GetInt32() == 0,
                 "Frozen rolling replay searched again.");
             previous = State(record.GetProperty("Actual"));
         }
@@ -115,7 +141,7 @@ internal static class RollingAdviceChecks
             "Rolling sequence did not cover the whole native battle.");
         Require(cards == fixture.GetProperty("Actions").GetArrayLength() && turns == fixture.GetProperty("Turns").GetArrayLength(),
             "Some native inputs bypassed rolling advice.");
-        Console.WriteLine($"ROLLING-ADVICE PASS mode={records[0].GetProperty("Mode").GetString()} decisions={records.Length} cards={cards} turns={turns} outcome={outcome}");
+        Console.WriteLine($"ROLLING-ADVICE PASS mode={records[0].GetProperty("Mode").GetString()} decisions={records.Length} prefix={prefixLength} cards={cards} turns={turns} outcome={outcome}");
     }
     internal static void VictoryPair(FixtureValue source, FixtureValue replay, FixtureValue baseline)
     {
@@ -132,9 +158,12 @@ internal static class RollingAdviceChecks
         FixtureValue[] first = source.GetProperty("RollingDecisions").EnumerateArray().ToArray();
         FixtureValue[] second = replay.GetProperty("RollingDecisions").EnumerateArray().ToArray();
         Require(first.Length == second.Length, "Fresh rolling replay has a different decision count.");
+        int prefixLength = ResumedPrefixLength(source, first);
         for (int index = 0; index < first.Length; index++)
         {
-            Require(first[index].GetProperty("Mode").GetString() == (sourceFrozen ? "replay" : "rolling") && second[index].GetProperty("Mode").GetString() == "replay" &&
+            bool prefix = index < prefixLength;
+            string sourceMode = prefix ? "prefix-replay" : sourceFrozen ? "replay" : "rolling";
+            Require(first[index].GetProperty("Mode").GetString() == sourceMode && second[index].GetProperty("Mode").GetString() == "replay" &&
                 first[index].GetProperty("Action").ContentEquals(second[index].GetProperty("Action")) &&
                 first[index].GetProperty("IsEndTurn").ContentEquals(second[index].GetProperty("IsEndTurn")) &&
                 SameRelentlessChoices(first[index], second[index]), "Fresh rolling replay changed an input.");
@@ -145,10 +174,16 @@ internal static class RollingAdviceChecks
             foreach (string field in new[] { "PlanSteps", "PlannedOutcome", "Score", "PolicyBaselineScore", "Generation" })
                 Require(first[index].GetProperty(field).ContentEquals(second[index].GetProperty(field)),
                     "Fresh rolling replay changed the frozen forecast field " + field);
-            foreach (string field in new[] { "RequestedHorizon", "TurnsPlanned", "UsedShorterHorizon" })
-                if (first[index].TryGetProperty(field, out FixtureValue value))
-                    Require(second[index].TryGetProperty(field, out FixtureValue frozenValue) && value.ContentEquals(frozenValue),
-                        "Fresh rolling replay changed the planning window field " + field);
+            if (prefix)
+                Require(second[index].GetProperty("RequestedHorizon").GetInt32() == 0 &&
+                    second[index].GetProperty("TurnsPlanned").GetInt32() == 0 &&
+                    !second[index].GetProperty("UsedShorterHorizon").GetBoolean(),
+                    "Fresh rolling replay retained an original prefix planning window.");
+            else
+                foreach (string field in new[] { "RequestedHorizon", "TurnsPlanned", "UsedShorterHorizon" })
+                    if (first[index].TryGetProperty(field, out FixtureValue value))
+                        Require(second[index].TryGetProperty(field, out FixtureValue frozenValue) && value.ContentEquals(frozenValue),
+                            "Fresh rolling replay changed the planning window field " + field);
             bool plannedTerminal = Terminal(first[index].GetProperty("PlannedOutcome").Deserialize<RoomOutcome>());
             Require(Key(State(first[index].GetProperty("Planned")), plannedTerminal) ==
                 Key(State(second[index].GetProperty("Planned")), plannedTerminal), "Fresh replay changed the full forecast state or RNG.");
