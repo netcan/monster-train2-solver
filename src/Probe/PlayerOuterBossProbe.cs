@@ -26,7 +26,7 @@ namespace MonsterTrain2Poju.Probe
                 var harder = (bool)AccessTools.Field(typeof(HeroManager), "harderOuterTrainBossEnabled").GetValue(heroes);
                 CharacterData? data = pattern.GetOuterTrainBossCharacter(harder);
                 if (data == null) return false;
-                bool authoredCaelShield = data.GetAssetKey() == "Boss_Level6_Cael_DamageShield";
+                bool authoredCael = OuterBossDefinitions.IsCael(data.GetAssetKey());
                 data = OuterBossSubstitutionProbe.Resolve(data, out bool substitutionsSupported);
                 if (!substitutionsSupported) return false;
                 return (data.GetAssetKey() is "Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" or "Boss_Level8_Corrupter" or
@@ -34,7 +34,7 @@ namespace MonsterTrain2Poju.Probe
                     data.GetAssetKey() is "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth" or
                         "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth" or
                         "Boss_Level6_AngelDuo_Entropic_Variant3_HarvestHealth" ||
-                    OuterBossDefinitions.IsCael(data.GetAssetKey()) || authoredCaelShield && data.GetAssetKey() == OuterBossDefinitions.CaelShieldTrial ||
+                    OuterBossDefinitions.IsCael(data.GetAssetKey()) || authoredCael && OuterBossDefinitions.IsCaelTrial(data.GetAssetKey()) ||
                     OuterBossDefinitions.IsArkionPyre(data.GetAssetKey()) ||
                     OuterBossDefinitions.IsArkionRage(data.GetAssetKey()) || OuterBossDefinitions.IsArkionPush(data.GetAssetKey()) ||
                     OuterBossDefinitions.IsFleshweaver(data.GetAssetKey())) &&

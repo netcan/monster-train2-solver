@@ -37,29 +37,40 @@ namespace MonsterTrain2Poju.Probe
                 bool calibratedTrial = effects.Count == 1 && save.IsTitanTrialEnabled() &&
                     typeof(CardState).Module.ModuleVersionId == new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d") &&
                     (MatchesFleshweaverTrial(data, replacement, effect.SourceRelicData, scenario) ||
-                     scenario == "Level6BattleEaterDamageShield" && save.GetAscensionLevel() == 0 &&
-                     MatchesCaelShieldTrial(data, replacement, effect.SourceRelicData));
+                     save.GetAscensionLevel() == 0 && MatchesCaelTrial(data, replacement, effect.SourceRelicData, scenario));
                 supported &= seraphTrial || calibratedTrial;
                 data = replacement;
             }
             return data;
         }
 
-        private static bool MatchesCaelShieldTrial(CharacterData source, CharacterData replacement, RelicData owner)
+        private static bool MatchesCaelTrial(CharacterData source, CharacterData replacement, RelicData owner, string? scenario)
         {
+            (string? Variant, string OwnerId, string OuterSource, string OuterReplacement, string FeedSource, string FeedReplacement) trial = scenario switch
+            {
+                "Level6BattleEaterDamageShield" => ("DamageShield", OuterBossDefinitions.CaelShieldTrialOwnerId,
+                    "168b33b6-361b-4691-bc64-aa58c66eb5db", "3794c878-797d-4e81-8f0b-644869661970",
+                    "43bbea4c-c1e8-4744-a4b1-e5b5f135c059", "b29a1359-c39b-48d6-9649-1740667ed97e"),
+                "Level6BattleEaterAtkHP" => ("AtkHP", OuterBossDefinitions.CaelAtkHpTrialOwnerId,
+                    "e88fbe2c-a90d-457d-9d87-3246547a72ac", "7545c2d9-53ba-49d7-b937-a5018ef32e27",
+                    "104e4d49-1c74-4fc1-92ec-73fd69842a28", "85380a63-dbe3-4db4-98ec-a266a68a60e5"),
+                "Level6BattleEaterLifesteal" => ("Lifesteal", OuterBossDefinitions.CaelLifestealTrialOwnerId,
+                    "dee70287-3dd8-4b9b-8d4d-0a20344b92ea", "a7f04f71-f121-4471-85d7-2c7860e1ca50",
+                    "e795417c-eb95-470d-b8ff-46ff8bcb166a", "0a0b9e16-8f55-4f11-898b-9dbeb26b6fe3"),
+                _ => default
+            };
+            if (trial.Variant == null) return false;
             var ownerEffects = owner.GetEffects();
-            if (owner.GetID() != OuterBossDefinitions.CaelShieldTrialOwnerId || owner.name != OuterBossDefinitions.CaelShieldTrialOwner ||
+            if (owner.GetID() != trial.OwnerId || owner.name != "Enemy_SpawnHeroEaterFeed" + trial.Variant + "_TitanTrial" ||
                 ownerEffects.Count != 2 || ownerEffects[0].GetEffectClassName() != "RelicEffectOnSpawnHeroSubstitution" ||
                 ownerEffects[1].GetEffectClassName() != "RelicEffectNull") return false;
 
-            return source.GetAssetKey() switch
-            {
-                "Boss_Level6_Cael_DamageShield" => source.GetID() == "168b33b6-361b-4691-bc64-aa58c66eb5db" &&
-                    replacement.GetAssetKey() == OuterBossDefinitions.CaelShieldTrial && replacement.GetID() == "3794c878-797d-4e81-8f0b-644869661970",
-                "Boss_Level6_FeedDamageShield" => source.GetID() == "43bbea4c-c1e8-4744-a4b1-e5b5f135c059" &&
-                    replacement.GetAssetKey() == "Boss_Level6_FeedDamageShield_TitanTrial" && replacement.GetID() == "b29a1359-c39b-48d6-9649-1740667ed97e",
-                _ => false
-            };
+            string before = source.GetAssetKey();
+            if (replacement.GetAssetKey() != before + "_TitanTrial") return false;
+            return before == "Boss_Level6_Cael_" + trial.Variant && source.GetID() == trial.OuterSource &&
+                replacement.GetID() == trial.OuterReplacement ||
+                before == "Boss_Level6_Feed" + trial.Variant && source.GetID() == trial.FeedSource &&
+                replacement.GetID() == trial.FeedReplacement;
         }
 
         private static bool MatchesFleshweaverTrial(CharacterData source, CharacterData replacement, RelicData owner, string? scenario)
