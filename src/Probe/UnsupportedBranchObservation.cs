@@ -150,6 +150,7 @@ namespace MonsterTrain2Poju.Probe
                 GameModuleMvid = typeof(CardState).Module.ModuleVersionId.ToString(),
                 Request = request, NativeCompleted = true, Rows = rows,
                 NativeSelectionRejection = nativeSelectionRejection,
+                RedCrownEquipment = RedCrownEquipmentObservation.Capture(row.Action, actual),
                 PlayerAdvisor = PlayerAdvisorProbe.Evidence,
                 EquipmentOwnerRecoveries = FullBattleTrace.Active!.EquipmentOwnerRecoveries.ToArray(),
                 EquipmentPreviewClear = equipmentPreviewClear,

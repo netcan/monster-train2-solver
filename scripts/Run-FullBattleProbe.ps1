@@ -122,6 +122,7 @@ param(
     [string] $RollingInput = '',
     [switch] $ResumeRollingAdvice,
     [string] $UnsupportedBranchInput = '',
+    [switch] $ObserveRedCrownEquipment,
     [string] $InputProfile = '',
     [string] $PrimaryClan = '',
     [string] $SecondaryClan = '',
@@ -1155,8 +1156,9 @@ if ($ContinueToNextRing) {
         throw 'ContinueToNextRing requires live PlayerAdvisor and RollingAdvice, binary capture and a native InputProfile without scenario controls.'
     }
 }
+if ($ObserveRedCrownEquipment -and -not $UnsupportedBranchInput) { throw 'ObserveRedCrownEquipment requires an original branch request.' }
 if ($UnsupportedBranchInput) {
-    $allowed = @('UnsupportedBranchInput', 'InputProfile', 'BattleDistance', 'OuterBossTurns', 'OuterBossBirth', 'PhysicalSpawnPoints',
+    $allowed = @('UnsupportedBranchInput', 'ObserveRedCrownEquipment', 'InputProfile', 'BattleDistance', 'OuterBossTurns', 'OuterBossBirth', 'PhysicalSpawnPoints',
         'BranchCardMasks', 'SettleDeathDissolves', 'SettleCardAnimations', 'GameSpeed', 'TimeoutSeconds', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction')
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'UnsupportedBranchInput observes an original checkpoint without scenario controls.' }
     if ($RollingInput -or $Planner -or -not $InputProfile) { throw 'UnsupportedBranchInput requires an immutable native InputProfile and its own observation mode.' }
@@ -2137,6 +2139,10 @@ if ($UnsupportedBranchInput) {
     try {
         $branchRequest = $branchRequestDocument.RootElement
         [MonsterTrain2Poju.Fixtures.NativeBranchIdentity]::RequireModule($branchRequest, $nativeModule)
+        if ($ObserveRedCrownEquipment -and ($branchRequest.GetProperty('Reason').GetString() -cne 'Unmodeled status redcrown on LadyOfTheReformed' -or
+            $nativeModule.ToString() -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d')) {
+            throw 'ObserveRedCrownEquipment requires the original game 2.3.1 red crown branch request.'
+        }
     } finally { $branchRequestDocument.Dispose() }
 }
 if ($PlayerAdvisor) {
@@ -2243,6 +2249,7 @@ $environment = @{
     MT2_PROBE_ROLLING_INPUT = $(if ($RollingInput) { (Resolve-Path -LiteralPath $RollingInput).Path } else { '' })
     MT2_PROBE_RESUME_ROLLING_ADVICE = $(if ($ResumeRollingAdvice) { '1' } else { '0' })
     MT2_PROBE_UNSUPPORTED_BRANCH = $UnsupportedBranchInput
+    MT2_PROBE_OBSERVE_RED_CROWN_EQUIPMENT = $(if ($ObserveRedCrownEquipment) { '1' } else { '0' })
     MT2_PROBE_PREVIEW_ATTACK_TRACE = $(if ($PreviewAttackTrace) { '1' } else { '0' })
     MT2_PROBE_BOSS_ACTION_TARGETS = $(if ($BossActionTargets) { '1' } else { '0' })
     MT2_PROBE_BOSS_ACTION_CONTROLLERS = $(if ($BossActionControllers) { '1' } else { '0' })
@@ -3597,6 +3604,15 @@ if ($UnsupportedBranchInput) {
         if ([MonsterTrain2Poju.Fixtures.NativeBranchIdentity]::ObservationModule($branchResult) -ne $nativeModule -or
             -not $branchResult.GetProperty('Request').ContentEquals($branchRequest)) {
             throw "Native candidate observation changed its input request or module; inspect $unityLog"
+        }
+        if ($ObserveRedCrownEquipment) {
+            $redCrown = $branchResult.GetProperty('RedCrownEquipment')
+            if ($redCrown.GetProperty('Pool').GetString() -cne 'RedCrownEquipmentPool' -or
+                $redCrown.GetProperty('OrderedCardDataIds').GetArrayLength() -lt 1 -or
+                $redCrown.GetProperty('CardId').GetInt32() -lt 1 -or $redCrown.GetProperty('HostUnitId').GetInt32() -lt 1 -or
+                $redCrown.GetProperty('RngBefore').ContentEquals($redCrown.GetProperty('RngAfter'))) {
+                throw "Native red crown equipment pool or attachment observation is incomplete; inspect $unityLog"
+            }
         }
     } finally { $branchDocument.Dispose() }
     [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; OriginalFilesUnchanged = $true;
