@@ -43,8 +43,9 @@ internal static class OuterBossBirthChecks
         CombatUnit born = actual.Battle.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == actual.Boss.UnitId);
         EnchantmentRule[] auras = born.Triggers.SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null)
             .Select(effect => effect.Enchantment!).ToArray();
-        bool deferredAura = born.AssetKey is "Boss_Level8_Corrupter" or "Boss_Level8_Corrupter_TitanTrial" or OuterBossDefinitions.CaelShieldTrial ||
+        bool deferredAura = born.AssetKey is "Boss_Level8_Corrupter" or "Boss_Level8_Corrupter_TitanTrial" ||
             OuterBossDefinitions.IsAngelDuo(born.AssetKey) || OuterBossDefinitions.IsCael(born.AssetKey) ||
+            OuterBossDefinitions.IsCaelTrial(born.AssetKey) ||
             OuterBossDefinitions.IsArkionPyre(born.AssetKey) || OuterBossDefinitions.IsArkionRage(born.AssetKey) ||
             OuterBossDefinitions.IsArkionPush(born.AssetKey) || OuterBossDefinitions.IsFleshweaver(born.AssetKey) ? auras.Length == 0 :
             auras.Length == 1 && auras[0].Bound && auras[0].State.PrimaryTargets.Count == 0 && auras[0].State.CachedStatus == null;

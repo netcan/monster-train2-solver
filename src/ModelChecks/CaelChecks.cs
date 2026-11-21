@@ -4,10 +4,6 @@ using MonsterTrain2Poju.Model;
 internal static class CaelChecks
 {
     private const string TrialMvid = "bf93f060-beda-46b1-b808-95ebf1e9a99d";
-    private const string TrialScenario = "Level6BattleEaterDamageShield";
-    private const string TrialFeeder = "Boss_Level6_FeedDamageShield_TitanTrial";
-    private const string TrialUpgrade = "067b599f-ac23-4c99-8841-192fc5b7dd74";
-
     private static string Boss(string variant) => variant is "AtkHP" or "DamageShield" or "Lifesteal"
         ? "Boss_Level6_Cael_" + variant : throw new InvalidOperationException("Unknown original Cael variant.");
 
@@ -49,83 +45,116 @@ internal static class CaelChecks
         Console.WriteLine($"CAEL-BIRTH PASS {variant}: raw22/1800, native rank-two22/2500, exact original upgrade and complete creation/placement/controller/RNG.");
     }
 
-    internal static void ShieldTrial(FixtureValue substitution, FixtureValue birth)
+    internal static void ShieldTrial(FixtureValue substitution, FixtureValue birth) => Trial(substitution, birth, "DamageShield");
+
+    private static (string OuterId, string ReplacementId, string FeederId, string FeederReplacementId,
+        string OwnerId, string UpgradeId, int FeederHealth, int SelfDamage) TrialIdentity(string variant) => variant switch
+        {
+            "DamageShield" => ("168b33b6-361b-4691-bc64-aa58c66eb5db", "3794c878-797d-4e81-8f0b-644869661970",
+                "43bbea4c-c1e8-4744-a4b1-e5b5f135c059", "b29a1359-c39b-48d6-9649-1740667ed97e",
+                OuterBossDefinitions.CaelShieldTrialOwnerId, "067b599f-ac23-4c99-8841-192fc5b7dd74", 60, 20),
+            "AtkHP" => ("e88fbe2c-a90d-457d-9d87-3246547a72ac", "7545c2d9-53ba-49d7-b937-a5018ef32e27",
+                "104e4d49-1c74-4fc1-92ec-73fd69842a28", "85380a63-dbe3-4db4-98ec-a266a68a60e5",
+                OuterBossDefinitions.CaelAtkHpTrialOwnerId, "43d3af4b-44b7-4d8c-9aac-4768b7651a60", 30, 10),
+            "Lifesteal" => ("dee70287-3dd8-4b9b-8d4d-0a20344b92ea", "a7f04f71-f121-4471-85d7-2c7860e1ca50",
+                "e795417c-eb95-470d-b8ff-46ff8bcb166a", "0a0b9e16-8f55-4f11-898b-9dbeb26b6fe3",
+                OuterBossDefinitions.CaelLifestealTrialOwnerId, "3fde76c8-3100-4483-95e8-30dfc50eac6e", 30, 10),
+            _ => throw new ArgumentException("Unknown original Cael trial variant.")
+        };
+
+    internal static void Trial(FixtureValue substitution, FixtureValue birth, string variant)
     {
+        var identity = TrialIdentity(variant);
+        string scenario = "Level6BattleEater" + variant;
+        string bossSource = Boss(variant), bossReplacement = bossSource + "_TitanTrial";
+        string feederSource = "Boss_Level6_Feed" + variant, feederReplacement = feederSource + "_TitanTrial";
+        string ownerKey = "Enemy_SpawnHeroEaterFeed" + variant + "_TitanTrial";
         FixtureValue intro = substitution.GetProperty("Intro");
         Require(substitution.GetProperty("GameVersion").GetString() == "2.3.1" &&
             substitution.GetProperty("GameModuleMvid").GetString() == TrialMvid &&
             substitution.GetProperty("Boundary").GetString() == "NativeOriginalEarlyTitanTrialSubstitution" &&
-            substitution.GetProperty("Scenario").GetString() == TrialScenario &&
-            substitution.GetProperty("OwnerId").GetString() == OuterBossDefinitions.CaelShieldTrialOwnerId &&
-            substitution.GetProperty("OwnerKey").GetString() == OuterBossDefinitions.CaelShieldTrialOwner &&
+            substitution.GetProperty("Scenario").GetString() == scenario &&
+            substitution.GetProperty("OwnerId").GetString() == identity.OwnerId &&
+            substitution.GetProperty("OwnerKey").GetString() == ownerKey &&
             substitution.GetProperty("OwnerEffects").Deserialize<string[]>()!.SequenceEqual(["RelicEffectOnSpawnHeroSubstitution", "RelicEffectNull"]) &&
             substitution.GetProperty("AscensionLevel").GetInt32() == 0 &&
-            substitution.GetProperty("Source").GetString() == Boss("DamageShield") &&
-            substitution.GetProperty("SourceId").GetString() == "168b33b6-361b-4691-bc64-aa58c66eb5db" &&
-            substitution.GetProperty("ReplacementId").GetString() == "3794c878-797d-4e81-8f0b-644869661970" &&
-            substitution.GetProperty("Replacement").GetString() == OuterBossDefinitions.CaelShieldTrial &&
+            substitution.GetProperty("Source").GetString() == bossSource &&
+            substitution.GetProperty("SourceId").GetString() == identity.OuterId &&
+            substitution.GetProperty("ReplacementId").GetString() == identity.ReplacementId &&
+            substitution.GetProperty("Replacement").GetString() == bossReplacement &&
             substitution.GetProperty("OuterBoss").GetBoolean() && substitution.GetProperty("TitanTrial").GetBoolean() &&
             intro.GetProperty("EnabledAfter").GetBoolean() && intro.GetProperty("UiAfter").GetBoolean() &&
             intro.GetProperty("ChangedRngIds").EnumerateArray().All(stream => stream.GetString() == "NonDeterministic"),
-            "Expected the installed rank-zero Cael Shield trial and active native substitution source.");
+            "Expected the installed rank-zero Cael trial and active native substitution source.");
         FixtureValue projection = substitution.GetProperty("Projection");
-        Require(projection.GetProperty("Key").GetString() == OuterBossDefinitions.CaelShieldTrial &&
+        Require(projection.GetProperty("Key").GetString() == bossReplacement &&
             projection.GetProperty("ExternalInteractions").Deserialize<string[]>()!.SequenceEqual(["Spawned outer Boss actions"]) &&
             substitution.GetProperty("Unsupported").GetInt32() == 0 && substitution.GetProperty("Mismatches").GetInt32() == 0,
-            "The original Cael Shield Trial still has a projection or execution deferral.");
+            "The original Cael trial still has a projection or execution deferral.");
         FixtureValue mappings = substitution.GetProperty("Mappings");
-        Require(mappings.EnumerateArray().Count(map =>
-            map.GetProperty("Source").GetString() == Boss("DamageShield") &&
-            map.GetProperty("Replacement").GetString() == OuterBossDefinitions.CaelShieldTrial) == 1 &&
-            mappings.EnumerateArray().Count(map => map.GetProperty("Source").GetString() == "Boss_Level6_FeedDamageShield" &&
-                map.GetProperty("SourceId").GetString() == "43bbea4c-c1e8-4744-a4b1-e5b5f135c059" &&
-                map.GetProperty("Replacement").GetString() == TrialFeeder &&
-                map.GetProperty("ReplacementId").GetString() == "b29a1359-c39b-48d6-9649-1740667ed97e") == 1,
-            "The installed table must contain both original Shield replacements.");
+        Require(Mapped(bossSource, identity.OuterId, bossReplacement, identity.ReplacementId) &&
+            Mapped(feederSource, identity.FeederId, feederReplacement, identity.FeederReplacementId),
+            "The installed table must contain both original Cael trial replacements.");
 
         FixtureValue row = birth.GetProperty("Births").EnumerateArray().Single();
         OuterBossInstantiationState before = row.GetProperty("Instantiation").Deserialize<OuterBossInstantiationState>()!;
         OuterBossPhaseState placed = row.GetProperty("Actual").Deserialize<OuterBossPhaseState>()!;
         CombatUnit callback = substitution.GetProperty("Unit").Deserialize<CombatUnit>()!;
         CombatContext context = before.Battle.Spawn.Train.Context!;
-        Require(callback.Id == placed.Boss.UnitId && callback.AssetKey == placed.Boss.AssetKey &&
-            OuterBossDefinitions.CalibratedCaelShieldTrial(before.Definition.Actor.Unit, context) &&
-            !OuterBossDefinitions.CalibratedCaelShieldTrial(before.Definition.Actor.Unit,
-                context.WithRelics(context.Relics!.Where(owner => owner.DataId != OuterBossDefinitions.CaelShieldTrialOwnerId).ToArray())),
+        bool Calibrated(CombatContext input) => variant == "DamageShield"
+            ? OuterBossDefinitions.CalibratedCaelShieldTrial(before.Definition.Actor.Unit, input)
+            : OuterBossDefinitions.CalibratedCaelTrial(before.Definition.Actor.Unit, input);
+        Require(callback.Id == placed.Boss.UnitId && callback.AssetKey == placed.Boss.AssetKey && Calibrated(context) &&
+            !Calibrated(context.WithRelics(context.Relics!.Where(owner => owner.DataId != identity.OwnerId).ToArray())),
             "The captured replacement actor, exact owner requirement or native callback identity differs.");
         int selected = before.Battle.Spawn.SelectedGroups[0];
-        EnemyDefinition food = before.Battle.Spawn.Waves[0].Candidates[selected].Units.Single(entry => entry.Unit.AssetKey == TrialFeeder);
-        CombatUnit actualFood = placed.Battle.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.AssetKey == TrialFeeder);
+        EnemyDefinition food = before.Battle.Spawn.Waves[0].Candidates[selected].Units.Single(entry => entry.Unit.AssetKey == feederReplacement);
+        CombatUnit actualFood = placed.Battle.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.AssetKey == feederReplacement);
         Require(food.ExternalInteractions.Count == 0 && food.BirthStats == null && food.Unit.Id == 0 && actualFood.Id > 0 &&
-            actualFood.Id < callback.Id && Feeder(food.Unit) && Feeder(actualFood),
-            "The original first wave must already contain the resolved Feed actor and ordered Shield/SelfDamage OnEaten.");
+            actualFood.Id < callback.Id &&
+            Feeder(food.Unit, bossReplacement, identity.FeederHealth, identity.SelfDamage) &&
+            Feeder(actualFood, bossReplacement, identity.FeederHealth, identity.SelfDamage),
+            "The original first wave must contain its resolved Feed actor with the ordered OnEaten effects.");
         OuterBossBirthChecks.Native(birth, TrialMvid);
-        Console.WriteLine("CAEL-SHIELD-TRIAL PASS: original outer callback, resolved first wave and complete immutable placement, controller and RNG.");
+        Console.WriteLine($"CAEL-TRIAL PASS {variant}: original outer callback, resolved first wave and complete immutable placement, controller and RNG.");
+
+        bool Mapped(string source, string sourceId, string replacement, string replacementId) =>
+            mappings.EnumerateArray().Count(map => map.GetProperty("Source").GetString() == source &&
+                map.GetProperty("SourceId").GetString() == sourceId &&
+                map.GetProperty("Replacement").GetString() == replacement &&
+                map.GetProperty("ReplacementId").GetString() == replacementId) == 1;
     }
 
-    private static bool Feeder(CombatUnit unit) =>
-        unit is { Team: CombatTeam.Enemy, BaseAttack: 0, Attack: 0, Health: 60, MaxHealth: 60, Size: 1,
+    private static bool Feeder(CombatUnit unit, string boss, int health, int selfDamage) =>
+        unit.Health == health && unit.MaxHealth == health &&
+        unit is { Team: CombatTeam.Enemy, BaseAttack: 0, Attack: 0, Size: 1,
             EndsBattleOnDeath: false, BumpRules.OuterBoss: false, Statuses: [{ Id: "eatmany", Stacks: 3 }],
             Triggers: [{ Kind: "OnEaten", Effects: [
                 { Type: "CardEffectAddTempCardUpgradeToUnits", UnitUpgrade: {
                     Target: "LastFeederCharacter", Lifetime: "TemporaryUntilEndOfBattle", AllowEnemy: true, AllowPlayer: false,
-                    Upgrade: { DataId: TrialUpgrade, Statuses: [{ Id: "damage shield", Stacks: 1 }, { Id: "spell shield", Stacks: 1 }] } } },
-                { Type: "CardEffectDamage", Action: { Target: "Self", Value: 20 } }] }] };
+                    Upgrade: { } upgrade } },
+                { Type: "CardEffectDamage", Action: { Target: "Self", Value: var damage } }] }] } &&
+        damage == selfDamage && OuterBossDefinitions.CalibratedCaelTrialUpgrade(boss, upgrade);
 
-    internal static void ShieldTrialBattle(string path)
+    internal static void ShieldTrialBattle(string path) => TrialBattle(path, "DamageShield");
+
+    internal static void TrialBattle(string path, string variant)
     {
+        string scenario = "Level6BattleEater" + variant, baseBoss = Boss(variant);
+        string bossReplacement = baseBoss + "_TitanTrial", feederReplacement = "Boss_Level6_Feed" + variant + "_TitanTrial";
+        var identity = TrialIdentity(variant);
         using var document = ModelJson.ReadFixture(path);
         FixtureValue fixture = document.RootElement;
         FixtureValue input = fixture.GetProperty("NativeRunInput");
         FixtureValue route = fixture.GetProperty("OriginalOuterBossRoute");
-        Require(input.GetProperty("Scenario").GetString() == TrialScenario &&
+        Require(input.GetProperty("Scenario").GetString() == scenario &&
             input.GetProperty("Distance").GetInt32() == 5 && input.GetProperty("AscensionLevel").GetInt32() == 0 &&
             input.GetProperty("BattlesWon").GetInt32() == 5 && !input.GetProperty("WasDevCheatUsed").GetBoolean() &&
-            route.GetProperty("Boss").GetString() == Boss("DamageShield") &&
+            route.GetProperty("Boss").GetString() == baseBoss &&
             route.GetProperty("ScenarioAssetsUnchanged").GetBoolean() &&
             route.GetProperty("RngBefore").ContentEquals(route.GetProperty("RngAfter")) &&
             fixture.GetProperty("OriginalOuterBossTrialIntro").GetProperty("EnabledAfter").GetBoolean(),
-            "Expected native rank-zero Cael Shield Trial from a five-win original checkpoint.");
+            "Expected the native rank-zero Cael trial from a five-win original checkpoint.");
         int upgrades = 0;
         int feedings = 0;
         var births = new HashSet<int>();
@@ -136,31 +165,38 @@ internal static class CaelChecks
             var actual = row.GetProperty("Actual").Deserialize<TrainCombatState>()!;
             CombatUnit[] beforeUnits = before.Rooms.SelectMany(room => room.Units).ToArray();
             Dictionary<int, CombatUnit> actualUnits = actual.Rooms.SelectMany(room => room.Units).ToDictionary(unit => unit.Id);
-            if (beforeUnits.All(unit => unit.AssetKey != OuterBossDefinitions.CaelShieldTrial)) continue;
+            if (beforeUnits.All(unit => unit.AssetKey != bossReplacement)) continue;
             foreach (CombatUnit old in beforeUnits)
             {
-                if (old.AssetKey == TrialFeeder) births.Add(old.Id);
+                if (old.AssetKey == feederReplacement) births.Add(old.Id);
                 if (!actualUnits.TryGetValue(old.Id, out CombatUnit? next)) continue;
-                if (old.AssetKey == TrialFeeder && next.LastFeederId is int eaterId && eaterId > 0 &&
-                    old.Health - next.Health == 20 && (old.Status("eatmany")?.Stacks ?? 0) - (next.Status("eatmany")?.Stacks ?? 0) == 1 &&
+                if (old.AssetKey == feederReplacement && next.LastFeederId is int eaterId && eaterId > 0 &&
+                    old.Health - next.Health == identity.SelfDamage &&
+                    (old.Status("eatmany")?.Stacks ?? 0) - (next.Status("eatmany")?.Stacks ?? 0) == 1 &&
                     actualUnits.TryGetValue(eaterId, out CombatUnit? eater) &&
                     beforeUnits.SingleOrDefault(unit => unit.Id == eaterId) is { Team: CombatTeam.Enemy } oldEater &&
-                    UpgradeCount(eater) > UpgradeCount(oldEater) &&
-                    eater.Status("damage shield") is { Stacks: > 0 } && eater.Status("spell shield") is { Stacks: > 0 })
+                    UpgradeCount(eater) > UpgradeCount(oldEater) && AppliedTrialStatus(eater, 1))
                     feedings++;
                 int delta = UpgradeCount(next) - UpgradeCount(old);
                 if (delta <= 0) continue;
-                Require(old.Team == CombatTeam.Enemy, "The original Shield Trial's enemy upgrade reached a player unit.");
-                if ((next.Status("damage shield")?.Stacks ?? 0) >= delta && (next.Status("spell shield")?.Stacks ?? 0) >= delta)
+                Require(old.Team == CombatTeam.Enemy, "The original trial's enemy upgrade reached a player unit.");
+                if (AppliedTrialStatus(next, delta))
                     upgrades += delta;
             }
         }
         Require(births.Count > 0 && upgrades > 0 && feedings > 0,
-            "Expected a native wave feeder, consumption and positive application of both shields.");
+            "Expected a native wave feeder, consumption and positive application of its trial upgrade.");
         SolverStageChecks.Native(path, requireVictory: false);
-        Console.WriteLine($"CAEL-SHIELD-TRIAL-BATTLE PASS: {births.Count} original wave feeders, {feedings} witnessed feedings and {upgrades} dual-shield upgrades.");
+        Console.WriteLine($"CAEL-TRIAL-BATTLE PASS {variant}: {births.Count} original wave feeders, {feedings} witnessed feedings and {upgrades} trial upgrades.");
 
-        static int UpgradeCount(CombatUnit unit) => unit.Modifiers?.Upgrades.Count(value => value.DataId == TrialUpgrade) ?? 0;
+        int UpgradeCount(CombatUnit unit) => unit.Modifiers?.Upgrades.Count(value => value.DataId == identity.UpgradeId) ?? 0;
+        bool AppliedTrialStatus(CombatUnit unit, int count) => variant switch
+        {
+            "DamageShield" => (unit.Status("damage shield")?.Stacks ?? 0) >= count && (unit.Status("spell shield")?.Stacks ?? 0) >= count,
+            "AtkHP" => (unit.Status("spikes")?.Stacks ?? 0) >= 6 * count,
+            "Lifesteal" => (unit.Status("lifesteal")?.Stacks ?? 0) >= count,
+            _ => false
+        };
     }
 
     internal static void Battle(FixtureValue fixture, string path, string variant)
