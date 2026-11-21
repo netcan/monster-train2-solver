@@ -86,7 +86,7 @@
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
 - 人工审查索引 SHA-256: `d2cdd9362cfd5f167f60f5aff20cff0ec57914d8f565a0bf7d03f680a4c243c8`。
 - Model: PDB 校验过的项目源码集合 `6844ef5785a3cf2f42acf04f34cb457a9496411c806c6552e3ecf91bc6dc66f9`。
-- Probe: PDB 校验过的项目源码集合 `f0e151eb325f98c9ff15ee055dfb8caa4729f812f6fd7de490ac3e05825f6e72`。
+- Probe: PDB 校验过的项目源码集合 `5ba2669cff86e250605a2bc1de6095d77f5853e0ac24bd4b8921f5032b8aaf67`。
 - ModelChecks: PDB 校验过的项目源码集合 `6db98cdda5397f3e4b1beed3cc9606823825f4085c9a187fbf2f49b0f4eb1e3d`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。

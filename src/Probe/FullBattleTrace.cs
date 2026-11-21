@@ -1407,16 +1407,19 @@ namespace MonsterTrain2Poju.Probe
                 OriginalArbitraryVerdictIds = OriginalArbitraryVerdictScenario.CardIds,
                 OriginalWickedFervorPrepared = OriginalWickedFervorScenario.Prepared,
                 OriginalWickedFervorIds = OriginalWickedFervorScenario.CardIds,
+#if DEVELOPMENT_PROBE
                 OriginalPercentageStatsPrepared = OriginalPercentageStatsScenario.Prepared,
                 OriginalPercentageStatsDefinition = OriginalPercentageStatsScenario.Definition,
                 OriginalPercentageStatsDefinitionAfter = OriginalPercentageStatsScenario.CurrentDefinition,
                 OriginalLateAttackPrepared = OriginalLateAttackScenario.Prepared,
                 OriginalLateAttackDefinition = OriginalLateAttackScenario.Definition,
                 OriginalLateAttackDefinitionAfter = OriginalLateAttackScenario.CurrentDefinition,
+#endif
                 OriginalJuiceUpgradesPrepared = OriginalJuiceUpgradesScenario.Prepared,
                 OriginalJuiceUpgradesIds = OriginalJuiceUpgradesScenario.CardIds,
                 OriginalJuiceUpgradesDefinitions = OriginalJuiceUpgradesScenario.Definitions,
                 OriginalJuiceUpgradesDefinitionsAfter = OriginalJuiceUpgradesScenario.CurrentDefinitions,
+#if DEVELOPMENT_PROBE
                 JuiceUpgradePrepared = JuiceUpgradeScenario.Prepared,
                 JuiceUpgradeIds = JuiceUpgradeScenario.CardIds,
                 JuiceUpgradeDefinitions = JuiceUpgradeScenario.Definitions,
@@ -1477,12 +1480,10 @@ namespace MonsterTrain2Poju.Probe
                 OriginalElleDefinitionAfter = OriginalElleScenario.CurrentDefinition,
                 OriginalElleAcquisition = OriginalElleScenario.Acquisition,
                 OriginalElleWitness = OriginalElleScenario.Witness,
-#if DEVELOPMENT_PROBE
                 OriginalThikPrepared = OriginalThikDeckChangeScenario.FullBattle && OriginalThikDeckChangeScenario.Prepared,
                 OriginalThikDefinition = OriginalThikDeckChangeScenario.FullBattle ? OriginalThikDeckChangeScenario.Definition : null,
                 OriginalThikCards = OriginalThikDeckChangeScenario.FullBattle ? OriginalThikDeckChangeScenario.Cards : null,
                 OriginalThikCallbacks = OriginalThikDeckChangeScenario.FullBattle ? OriginalThikDeckChangeScenario.Callbacks : null,
-#endif
                 RelentlessDrawVariant = OccupiedFloorDrawScenario.RelentlessVariant,
                 RelentlessDrawTests = RelentlessDrawMechanismBatch.Tests,
                 OccupiedFloorDrawPrepared = OccupiedFloorDrawScenario.Prepared,
@@ -1499,6 +1500,7 @@ namespace MonsterTrain2Poju.Probe
                 PileSpawnUpgradeIds = PileSpawnUpgradeScenario.CardIds,
                 PileSpawnUpgradeDefinition = PileSpawnUpgradeScenario.Definition,
                 PileSpawnUpgradeDefinitionAfter = PileSpawnUpgradeScenario.CurrentDefinition,
+#endif
                 OriginalDevoteTreasurePrepared = OriginalDevoteTreasureScenario.Prepared,
                 OriginalDevoteTreasureSetupIds = OriginalDevoteTreasureScenario.SetupIds,
                 OriginalDevoteTreasureIds = OriginalDevoteTreasureScenario.TreasureIds,
