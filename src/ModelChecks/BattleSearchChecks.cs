@@ -74,6 +74,12 @@ internal static class BattleSearchChecks
 
     internal static void Native(FixtureValue fixture, bool requireZeroUnsupported = false)
     {
+        if (fixture.TryGetProperty("Boundary", out FixtureValue boundary) && boundary.ValueKind == FixtureKind.String &&
+            boundary.GetString() == "NativeOriginalAffordableNonPlayable")
+        {
+            NativeLargeBudget(fixture);
+            return;
+        }
         var (root, rootFrontier, matchedDecisions, unsupportedAttempts) = RecordedFrontiers(fixture, requireZeroUnsupported);
         BattleTurnState searchRoot = root!;
         int initialPyre = PyreHealth(searchRoot);
@@ -144,6 +150,35 @@ internal static class BattleSearchChecks
             $"{search.UnsupportedAttempts.Count} in search, serial/parallel best equal, " +
             $"{serialSearch.DecisionStatesVisited}/{search.DecisionStatesVisited} states, {search.Steps.Count} replayed steps, " +
             $"stop={limits}, score {search.Score}.");
+    }
+
+    private static void NativeLargeBudget(FixtureValue fixture)
+    {
+        BattleTurnState root = fixture.GetProperty("Affordable").GetProperty("Before").Deserialize<BattleTurnState>()!;
+        using var keys = new BattleStateKeys();
+        string parent = keys.Key(root);
+        int initialHand = root.Spawn.Train.Context!.Cards.Hand.Count;
+        double Score(BattleTurnState state, RoomOutcome _) => state.Spawn.Train.Context!.Cards.Hand.Count - initialHand;
+        Require(BattleActionModel.EnumerateSupportedPlays(root).Count >= 3, "The native root no longer exercises multiple child budgets.");
+        BattleSearchResult baseline = Search(1024, 1);
+        Require(!baseline.ReachedNodeLimit && !baseline.HasUnsupportedAttempts && baseline.Score == -2 && baseline.Steps.Count == 2,
+            "The native root must have an exhaustible two-play optimum within the control budget.");
+        foreach (int parallelism in new[] { 1, 4 })
+        {
+            BattleSearchResult search = Search(int.MaxValue, parallelism);
+            Require(!search.ReachedNodeLimit && !search.HasUnsupportedAttempts && search.Score == baseline.Score &&
+                search.DecisionStatesVisited == baseline.DecisionStatesVisited && search.Steps.Count == baseline.Steps.Count,
+                "Maximum node budget dropped native branches at parallelism " + parallelism +
+                $" (nodes {search.DecisionStatesVisited}/{baseline.DecisionStatesVisited}, score {search.Score}/{baseline.Score}).");
+            BattleTurnState replayed = BattlePlannerChecks.Replay(root, search.Steps, out RoomOutcome outcome);
+            Require(outcome == search.Outcome && keys.Key(replayed) == keys.Key(search.BestState!) &&
+                keys.Key(search.BestState!) == keys.Key(baseline.BestState!), "Large-budget replay did not preserve native state and RNG.");
+        }
+        Require(keys.Key(root) == parent, "Large-budget search changed its native root.");
+        Console.WriteLine($"NATIVE-LARGE-SEARCH-BUDGET PASS: {baseline.DecisionStatesVisited} decisions, two optimal plays, exact serial, parallel and bounded native replay.");
+
+        BattleSearchResult Search(int maxNodes, int parallelism) => BattleSearchModel.Minimize(root, Score,
+            new BattleSearchOptions(maxNodes, maxTurns: 0, maxDegreeOfParallelism: parallelism));
     }
 
     private static int PyreHealth(BattleTurnState state) => state.Spawn.Train.Rooms

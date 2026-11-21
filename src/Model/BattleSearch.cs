@@ -159,7 +159,8 @@ namespace MonsterTrain2Poju.Model
                     int childBudget = 0;
                     if (!IsTerminal(branch.Outcome) && remainingChildren > 0)
                     {
-                        childBudget = remaining == 0 ? 0 : (remaining + remainingChildren - 1) / remainingChildren;
+                        // Round up without overflowing a caller's maximum Int32 budget.
+                        childBudget = remaining == 0 ? 0 : 1 + (remaining - 1) / remainingChildren;
                     }
                     SearchSummary child = ExploreBranch(branch, childBudget, score, options, lowerBound,
                         cancellationToken, summary.Best?.Score);
