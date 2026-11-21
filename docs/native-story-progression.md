@@ -42,6 +42,11 @@
 出场时月相掩码为 5，登记 1 层 `newmoon`。顾问复用已有月相初始化。出场、首次行动、
 完整回合后继及随机流一致。二进制组件归档位于 `mechanics/siphon-rage-new-moon-birth/`。
 
+第 4 环顾问接续前 37 步后完成原版败局，验证了超时短方案可继续发布。另一路线离线求解后，
+在两个独立原版进程中复放全部 43 步，均以 10 点薪火生命获胜。输入、完整状态与随机流一致。
+归档为 `unlocked-covenant0-ring4-defeat.mt2f` 和 `unlocked-covenant0-ring4-victory.mt2f`。
+原版第 5 环战前档为 `.probe-runs/campaign-ring5-20261122-065100-a04d00d7`。
+
 2026-10-28重新检查第25组第七战入口的累计档案，额外薪火之心仍为0/9，
 剧情索引0、真终局未解锁。当前值为Pact0/7、Life326/475、Malicka0/1、
 Wyngh109/225、Fhyra3605/20000、Aquath460/12000、Bogworm169/3200、
