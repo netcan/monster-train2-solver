@@ -6,20 +6,20 @@ The gate is an identity filter. Allowed definitions can still reject uncalibrate
 
 | Original scenario | Model definition gate | Curated battles | Curated player pairs |
 | --- | --- | ---: | ---: |
-| Level3BattleHeavyHitter_PushAttack | allowed | 4 | 1 |
-| Level3BattleHeavyHitter_PyreDamage | allowed | 4 | 1 |
-| Level3BattleHeavyHitter_SiphonRage | allowed | 7 | 2 |
-| Level3ImmortalMass_Corruption | allowed | 4 | 1 |
-| Level3ImmortalMass_MoreMass | allowed | 4 | 1 |
-| Level3ImmortalMass_Spikes | allowed | 4 | 1 |
-| Level6AngelDuo_LoopAttackResolveHealth | allowed | 3 | 1 |
-| Level6AngelDuo_RallyAttackIncantHealth | allowed | 9 | 1 |
-| Level6AngelDuo_RevengeAttackHarvestHealth | allowed | 5 | 1 |
-| Level6BattleEaterAtkHP | allowed | 3 | 1 |
-| Level6BattleEaterDamageShield | allowed | 3 | 1 |
-| Level6BattleEaterLifesteal | allowed | 3 | 1 |
-| Level8FinalBossBuffer | allowed | 19 | 7 |
+| Level3BattleHeavyHitter_PushAttack | allowed | 9 | 2 |
+| Level3BattleHeavyHitter_PyreDamage | allowed | 15 | 5 |
+| Level3BattleHeavyHitter_SiphonRage | allowed | 13 | 5 |
+| Level3ImmortalMass_Corruption | allowed | 22 | 5 |
+| Level3ImmortalMass_MoreMass | allowed | 20 | 5 |
+| Level3ImmortalMass_Spikes | allowed | 12 | 5 |
+| Level6AngelDuo_LoopAttackResolveHealth | allowed | 9 | 1 |
+| Level6AngelDuo_RallyAttackIncantHealth | allowed | 19 | 2 |
+| Level6AngelDuo_RevengeAttackHarvestHealth | allowed | 15 | 1 |
+| Level6BattleEaterAtkHP | allowed | 15 | 2 |
+| Level6BattleEaterDamageShield | allowed | 25 | 5 |
+| Level6BattleEaterLifesteal | allowed | 8 | 2 |
+| Level8FinalBossBuffer | allowed | 28 | 7 |
 | Level8FinalBossCorrupter | allowed | 18 | 7 |
-| Level8FinalBossMeleeWeakness | allowed | 23 | 9 |
+| Level8FinalBossMeleeWeakness | allowed | 32 | 9 |
 
 The TSV retains native identities, growth signatures and exact player-source archives. True-final-boss routing, Titan Trial substitutions, Endless/test scenarios and Soul Savior definitions are separate and are not included in this denominator. Card/relic logbook completion does not establish boss advice coverage.
