@@ -20,8 +20,8 @@ namespace MonsterTrain2Poju.Probe
             EarlyTrialVariant() != null;
         internal static bool EarlyTrialFullBattle => EarlyTrialSubstitution &&
             Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_EARLY_TRIAL_FULL_BATTLE") == "1";
-        internal static bool CaelShieldTrialDiagnostic => EarlyTrialSubstitution &&
-            Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_EARLY_OUTER_BOSS") == "CaelDamageShield";
+        internal static bool CaelTrialDiagnostic => EarlyTrialSubstitution &&
+            Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_EARLY_OUTER_BOSS") is "CaelDamageShield" or "CaelAtkHP" or "CaelLifesteal";
         private static (string Scenario, string Owner, string OwnerId, string Source, string Replacement)? EarlyTrialVariant() =>
             Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_EARLY_OUTER_BOSS") switch
             {
@@ -34,6 +34,10 @@ namespace MonsterTrain2Poju.Probe
                     OuterBossSubstitutionProbe.FleshweaverSpikesTrialMini),
                 "CaelDamageShield" => ("Level6BattleEaterDamageShield", "Enemy_SpawnHeroEaterFeedDamageShield_TitanTrial",
                     "12f05d0b-df25-4cad-b7f3-9c52eac46e04", "Boss_Level6_Cael_DamageShield", "Boss_Level6_Cael_DamageShield_TitanTrial"),
+                "CaelAtkHP" => ("Level6BattleEaterAtkHP", "Enemy_SpawnHeroEaterFeedAtkHP_TitanTrial",
+                    "7e1b3da5-e6c6-408f-8d2b-055e4b286657", "Boss_Level6_Cael_AtkHP", "Boss_Level6_Cael_AtkHP_TitanTrial"),
+                "CaelLifesteal" => ("Level6BattleEaterLifesteal", "Enemy_SpawnHeroEaterFeedLifesteal_TitanTrial",
+                    "4501ae73-0ec3-489c-b78c-3d1155af0bd4", "Boss_Level6_Cael_Lifesteal", "Boss_Level6_Cael_Lifesteal_TitanTrial"),
                 _ => null
             };
         private static RelicData? earlyTrialOwner;
@@ -182,7 +186,7 @@ namespace MonsterTrain2Poju.Probe
                 var trial = EarlyTrialVariant()!.Value;
                 RelicData sin = selected.GetTitanTrialSin();
                 if (selected.name != trial.Scenario || sin == null || sin.name != trial.Owner || sin.GetID() != trial.OwnerId ||
-                    CaelShieldTrialDiagnostic && save.GetAscensionLevel() != 0)
+                    CaelTrialDiagnostic && save.GetAscensionLevel() != 0)
                     throw new InvalidOperationException("Expected the installed original Titan Trial owner and checkpoint.");
                 var substitutions = sin.GetEffects().Single(effect => effect.GetEffectClassName() == "RelicEffectOnSpawnHeroSubstitution")
                     .GetParamCharacterSubstitution();

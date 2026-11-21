@@ -64,6 +64,7 @@ param(
     [ValidateSet('', 'AllyBuffer', 'Fragile', 'Corrupter')][string] $OriginalOuterBossVariant = '',
     [switch] $OriginalOuterBossTrial,
     [switch] $OriginalEarlyOuterBossTrialBattle,
+    [switch] $OriginalCaelTrialBirthDiagnostic,
     [switch] $OriginalCaelShieldTrialIsolateRng,
     [switch] $OriginalCaelShieldTrialIsolateTestQueries,
     [switch] $OriginalTrueFinalBoss,
@@ -973,15 +974,23 @@ $earlyTrialVariant = switch ($OriginalEarlyOuterBossVariant) {
     'FleshweaverCorruption' { @{ Scenario='Level3ImmortalMass_Corruption'; Owner='Enemy_Boss_Level3_ImmortalMass_Corruption_TitanTrial'; OwnerId='52dc060c-bd51-4b7b-865a-6d70f9806e53'; Source='Boss_Level3_MiniFleshweaver_Corruption' } }
     'FleshweaverMass' { @{ Scenario='Level3ImmortalMass_MoreMass'; Owner='Enemy_Boss_Level3_ImmortalMass_MoreMass_TitanTrial'; OwnerId='28c0e907-d882-4052-93f4-0a07d88496af'; Source='Boss_Level3_MiniFleshweaver_MoreMass' } }
     'FleshweaverSpikes' { @{ Scenario='Level3ImmortalMass_Spikes'; Owner='Enemy_Boss_Level3_ImmortalMass_Spike_TitanTrial'; OwnerId='c4abfdc2-a89c-43cf-9e35-59f6ea3b39f7'; Source='Boss_Level3_MiniFleshweaver_Spike' } }
-    'CaelDamageShield' { @{ Scenario='Level6BattleEaterDamageShield'; Owner='Enemy_SpawnHeroEaterFeedDamageShield_TitanTrial'; OwnerId='12f05d0b-df25-4cad-b7f3-9c52eac46e04' } }
+    'CaelDamageShield' { @{ Scenario='Level6BattleEaterDamageShield'; Owner='Enemy_SpawnHeroEaterFeedDamageShield_TitanTrial'; OwnerId='12f05d0b-df25-4cad-b7f3-9c52eac46e04'
+        Source='Boss_Level6_Cael_DamageShield'; SourceId='168b33b6-361b-4691-bc64-aa58c66eb5db'; ReplacementId='3794c878-797d-4e81-8f0b-644869661970' } }
+    'CaelAtkHP' { @{ Scenario='Level6BattleEaterAtkHP'; Owner='Enemy_SpawnHeroEaterFeedAtkHP_TitanTrial'; OwnerId='7e1b3da5-e6c6-408f-8d2b-055e4b286657'
+        Source='Boss_Level6_Cael_AtkHP'; SourceId='e88fbe2c-a90d-457d-9d87-3246547a72ac'; ReplacementId='7545c2d9-53ba-49d7-b937-a5018ef32e27' } }
+    'CaelLifesteal' { @{ Scenario='Level6BattleEaterLifesteal'; Owner='Enemy_SpawnHeroEaterFeedLifesteal_TitanTrial'; OwnerId='4501ae73-0ec3-489c-b78c-3d1155af0bd4'
+        Source='Boss_Level6_Cael_Lifesteal'; SourceId='dee70287-3dd8-4b9b-8d4d-0a20344b92ea'; ReplacementId='a7f04f71-f121-4471-85d7-2c7860e1ca50' } }
 }
 $earlyTrialSubstitution = $OriginalOuterBossTrial -and $null -ne $earlyTrialVariant
-$caelShieldTrialDiagnostic = $earlyTrialSubstitution -and $OriginalEarlyOuterBossVariant -ceq 'CaelDamageShield'
-if ($OriginalEarlyOuterBossTrialBattle -and -not $earlyTrialSubstitution) {
-    throw 'OriginalEarlyOuterBossTrialBattle requires an original Fleshweaver or Cael shield Titan Trial variant.'
+$caelTrial = $earlyTrialSubstitution -and $null -ne $earlyTrialVariant.SourceId
+if ($OriginalCaelTrialBirthDiagnostic -and (-not $caelTrial -or $OriginalEarlyOuterBossTrialBattle -or $OriginalEarlyOuterBossVariant -ceq 'CaelDamageShield')) {
+    throw 'OriginalCaelTrialBirthDiagnostic requires the short original AtkHP or Lifesteal Titan Trial.'
 }
-if ($OriginalCaelShieldTrialIsolateRng -and (-not $caelShieldTrialDiagnostic -or -not $OriginalEarlyOuterBossTrialBattle)) {
-    throw 'OriginalCaelShieldTrialIsolateRng requires the full original Cael shield Titan Trial.'
+if ($OriginalEarlyOuterBossTrialBattle -and -not $earlyTrialSubstitution) {
+    throw 'OriginalEarlyOuterBossTrialBattle requires an original Fleshweaver or Cael Titan Trial variant.'
+}
+if ($OriginalCaelShieldTrialIsolateRng -and (-not $caelTrial -or -not $OriginalEarlyOuterBossTrialBattle)) {
+    throw 'OriginalCaelShieldTrialIsolateRng requires a full original Cael Titan Trial.'
 }
 if ($OriginalCaelShieldTrialIsolateTestQueries -and -not $OriginalCaelShieldTrialIsolateRng) {
     throw 'OriginalCaelShieldTrialIsolateTestQueries requires OriginalCaelShieldTrialIsolateRng.'
@@ -3250,9 +3259,10 @@ if ($earlyTrialSubstitution) {
             $capture.Replacement -cne $capture.Unit.AssetKey -or -not $capture.TitanTrial -or -not $capture.Intro.EnabledAfter) {
             throw 'Expected the original trial owner, source and installed replacement on a created boss.'
         }
-        if ($caelShieldTrialDiagnostic) {
+        if ($caelTrial) {
             if ($capture.AscensionLevel -ne 0 -or -not $capture.OuterBoss -or
-                $capture.SourceId -cne '168b33b6-361b-4691-bc64-aa58c66eb5db' -or $capture.ReplacementId -cne '3794c878-797d-4e81-8f0b-644869661970' -or
+                $capture.Source -cne $earlyTrialVariant.Source -or $capture.Replacement -cne ($earlyTrialVariant.Source + '_TitanTrial') -or
+                $capture.SourceId -cne $earlyTrialVariant.SourceId -or $capture.ReplacementId -cne $earlyTrialVariant.ReplacementId -or
                 $matchingMappings[0].SourceId -cne $capture.SourceId -or $matchingMappings[0].ReplacementId -cne $capture.ReplacementId) {
                 throw 'Expected the original rank-zero Cael Trial and an exact authored mapping.'
             }
@@ -3269,10 +3279,11 @@ if ($earlyTrialSubstitution) {
     } finally { $document.Dispose() }
     if (-not $OriginalEarlyOuterBossTrialBattle) {
         if ($capture.BranchCardMasksEnabled -ne $true -or $capture.Mismatches -ne 0 -or
-            ($caelShieldTrialDiagnostic -and $capture.Unsupported -ne 0)) {
+            ($caelTrial -and -not $OriginalCaelTrialBirthDiagnostic -and $capture.Unsupported -ne 0)) {
             throw "Original Titan Trial substitution component has missing card state, mismatches, or unsupported stages. Inspect $capturePath and $unityLog"
         }
         [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true; Source=$capture.Source;
+            BirthDiagnostic=$OriginalCaelTrialBirthDiagnostic.IsPresent;
             Replacement=$capture.Replacement; Mismatches=$capture.Mismatches; Unsupported=$capture.Unsupported;
             ProjectionInteractions=$capture.Projection.ExternalInteractions;
             Trace=$capturePath; Birth=$birthPath } | ConvertTo-Json

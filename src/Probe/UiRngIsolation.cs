@@ -12,7 +12,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ISOLATE_UI_RNG") == "1";
 #if DEVELOPMENT_PROBE
         internal static bool CaelShieldTrialTestQueries => Enabled && PreviewRngIsolation.Enabled &&
-            OriginalOuterBossRoute.CaelShieldTrialDiagnostic && OriginalOuterBossRoute.EarlyTrialFullBattle &&
+            OriginalOuterBossRoute.CaelTrialDiagnostic && OriginalOuterBossRoute.EarlyTrialFullBattle &&
             Environment.GetEnvironmentVariable("MT2_PROBE_CAEL_SHIELD_ISOLATE_TEST_QUERIES") == "1";
 #endif
         private static bool PreserveTestQueries
