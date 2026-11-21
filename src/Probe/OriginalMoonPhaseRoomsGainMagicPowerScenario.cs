@@ -14,6 +14,10 @@ namespace MonsterTrain2Poju.Probe
         internal const string OwnerId = "e96497a1-3c1e-4adf-b897-8ef09b931d1d";
         internal const string AssetKey = "MoonPhaseRoomsGainMagicPower";
         internal const string Effect = "RelicEffectApplyCardUpgradeToHandEndOfTurnOnMoon";
+        private const string CurrentModule = "bf93f060-beda-46b1-b808-95ebf1e9a99d";
+        private const string DivinePunishmentId = "83e4e7bd-e285-4239-8e99-6987b49db839";
+        private const string FloorDamageEffect = "CardEffectDamageFloorByFloor";
+        private static readonly bool currentBuild = typeof(CardState).Assembly.ManifestModule.ModuleVersionId.ToString() == CurrentModule;
 
         private sealed class Witness
         {
@@ -23,6 +27,8 @@ namespace MonsterTrain2Poju.Probe
             public bool ExpectedMatch { get; set; }
             public string Role { get; set; } = "";
             public string[] DefinitionTraits { get; set; } = Array.Empty<string>();
+            public string? NewEffect { get; set; }
+            public bool? UsesMagicPowerMultiplier { get; set; }
         }
 
         private static readonly List<Witness> witnesses = new List<Witness>();
@@ -91,16 +97,24 @@ namespace MonsterTrain2Poju.Probe
             var ownedIds = new HashSet<string>(managers.GetCardManager()!.GetAllCards(new List<CardState>())
                 .Select(card => card.GetCardDataID()), System.StringComparer.Ordinal);
             var candidates = managers.GetSaveManager().GetAllGameData().GetAllCardData()
-                .Where(card => card != null && !ownedIds.Contains(card.GetID()) && IsSafeWitnessDefinition(card))
+                .Where(card => card != null && !ownedIds.Contains(card.GetID()) && IsSafeWitnessDefinition(card) &&
+                    (!currentBuild || card.GetCostType() != CardData.CostType.NonPlayable))
                 .OrderBy(card => card.GetID(), System.StringComparer.Ordinal).ToArray();
-            CardData? positive = candidates.FirstOrDefault(card => Matches(card, filters, relicManager, 99));
+            bool floorDamageWitness = currentBuild && turn <= 2;
+            CardData? positive = floorDamageWitness
+                ? managers.GetSaveManager().GetAllGameData().FindCardData(DivinePunishmentId)
+                : candidates.FirstOrDefault(card => Matches(card, filters, relicManager, 99));
             if (positive == null)
                 throw new InvalidOperationException("No native card matches the moon-phase hand-upgrade filters at cost 99.");
+            if (floorDamageWitness &&
+                (positive.name != "DivinePunishment" || !positive.GetEffects().Select(effect => effect.GetEffectStateName())
+                    .SequenceEqual(new[] { FloorDamageEffect }) || !filters.All(filter => filter.FilterCard(positive, relicManager))))
+                throw new InvalidOperationException("The original DivinePunishment floor-damage definition or native filter changed.");
             CardData? control = candidates.FirstOrDefault(card => card.GetID() != positive.GetID() &&
                 !Matches(card, filters, relicManager, 99));
             if (control == null && filters.Count > 0)
                 throw new InvalidOperationException("No native nonmatching card is available as a filter control.");
-            AddWitness(managers, positive, turn, expectedMatch: true, "positive");
+            AddWitness(managers, positive, turn, expectedMatch: true, floorDamageWitness ? "added-floor-damage" : "positive");
             if (control != null && managers.GetCardManager()!.GetHand().Count < managers.GetCardManager()!.GetMaxHandSize())
                 AddWitness(managers, control, turn, expectedMatch: false, "filter-control");
             lastPreparedTurn = turn;
@@ -126,10 +140,21 @@ namespace MonsterTrain2Poju.Probe
 
         private static void AddWitness(AllGameManagers managers, CardData card, int turn, bool expectedMatch, string role)
         {
-            Set(card, "cost", 99);
+            bool floorDamageWitness = role == "added-floor-damage";
+            if (!floorDamageWitness) Set(card, "cost", 99);
             CardState? instance = managers.GetCardManager()!.AddNewCard(card, CardPile.HandPile, false, false, animate: false);
             if (instance == null || !managers.GetCardManager()!.GetHand().Contains(instance))
                 throw new InvalidOperationException("Moon-phase hand-upgrade " + role + " card did not enter the native hand.");
+            if (floorDamageWitness)
+            {
+                // Keep the original definition intact. The native cost-only
+                // instance modifier holds the witness in hand until pre-discard.
+                var hold = new CardUpgradeState();
+                hold.Setup();
+                hold.SetCostReduction(card.GetCost() - 99);
+                if (!instance.ApplyTemporaryUpgrade(hold, managers.GetSaveManager()))
+                    throw new InvalidOperationException("Could not hold the original floor-damage spell for the native callback.");
+            }
             witnesses.Add(new Witness
             {
                 Turn = turn,
@@ -137,7 +162,9 @@ namespace MonsterTrain2Poju.Probe
                 DataId = card.GetID(),
                 ExpectedMatch = expectedMatch,
                 Role = role,
-                DefinitionTraits = card.GetTraits().Select(trait => trait.GetTraitStateName()).ToArray()
+                DefinitionTraits = card.GetTraits().Select(trait => trait.GetTraitStateName()).ToArray(),
+                NewEffect = floorDamageWitness ? FloorDamageEffect : null,
+                UsesMagicPowerMultiplier = floorDamageWitness ? card.GetEffects().Single().GetUseMagicPowerMultiplier() : (bool?)null
             });
         }
 

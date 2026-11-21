@@ -54,10 +54,19 @@ internal static class Game231RecordedChainTriage
                 catch (InvalidOperationException rawFailure)
                 {
                     rawMismatch = rawFailure.Message;
-                    if (archive.Stage || !HasDocumentedTurnOneSetup(archive.Path, battle, rawMismatch)) throw;
-                    RecordedBattleChecks.ReplayOnce(battle, lastTurn: 0);
-                    RecordedBattleChecks.ReplayOnce(battle, firstTurn: 1);
-                    detail = "Verified deployment and turn 1 through terminal on either side of recorded test setup.";
+                    if (archive.Stage) throw;
+                    if (archive.Path == "mechanics/moon-phase-hand-upgrade/battle.mt2f")
+                    {
+                        OriginalMoonPhaseRoomsGainMagicPowerChecks.ReplayPreparedTurns(battle, rawMismatch);
+                        detail = "Verified all seven turns and six recorded original-card hand setups.";
+                    }
+                    else
+                    {
+                        if (!HasDocumentedTurnOneSetup(archive.Path, battle, rawMismatch)) throw;
+                        RecordedBattleChecks.ReplayOnce(battle, lastTurn: 0);
+                        RecordedBattleChecks.ReplayOnce(battle, firstTurn: 1);
+                        detail = "Verified deployment and turn 1 through terminal on either side of recorded test setup.";
+                    }
                     segmentPassed++;
                     status = "SEGMENT-PASS";
                 }

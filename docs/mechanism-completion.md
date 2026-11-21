@@ -69,6 +69,13 @@ Torch 自动获得留存，打出时在弃牌堆标记待返回，下回合回�
 EndTurn、60 个房间阶段、14 个列车阶段、录制候选及串并行计划通过。归档位于
 `tests/compatibility/game-2.3.1/mechanics/copy-consumed-card/`。
 
+满月法强遗物在 2.3.1 扩大了目标效果范围。原版 Divine Punishment 满月获得伤害和治疗
+各 +10，新月的同牌和不匹配的对照牌没有获得升级。该牌用于观察授予，本场未打出；
+原生 `CardEffectDamage` 的结算路径使用升级后的伤害参数。26 次出牌、7 次 EndTurn、
+58 个房间阶段及 14 个列车阶段通过。七个分段各自复放，另核对六处插牌布置和原始
+连续性差异。旧版专用检查通过。归档位于
+`tests/compatibility/game-2.3.1/mechanics/moon-phase-hand-upgrade/`。
+
 ## 工作单位
 
 2026-11-20 接入[回合前原生顺序分派](before-draw-order.md)：十二种已有 BeforeDraw

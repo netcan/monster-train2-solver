@@ -17,6 +17,18 @@ namespace MonsterTrain2Poju.Model
     {
         internal const string OwnerId = "e96497a1-3c1e-4adf-b897-8ef09b931d1d";
         internal const string OwnerKey = "MoonPhaseRoomsGainMagicPower";
+        private static readonly string[] legacyMagicPowerEffects = {
+            "CardEffectDamage", "CardEffectHeal", "CardEffectHealAndDamageRelative", "CardEffectHealAndOverheal",
+            "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp"
+        };
+        private static readonly string[] currentMagicPowerEffects = {
+            "CardEffectDamage", "CardEffectDamageFloorByFloor", ExaltationModel.NativeEffect, "CardEffectHeal",
+            "CardEffectHealAndDamageRelative", "CardEffectHealAndOverheal", "CardEffectDamagePerSourceAttack",
+            "CardEffectDamagePerHp", DragThemDownModel.NativeEffect
+        };
+
+        internal static bool MatchesOriginalMagicPowerEffects(IReadOnlyList<string> effects, bool current) =>
+            effects.SequenceEqual(current ? currentMagicPowerEffects : legacyMagicPowerEffects);
 
         // The original numeric hand upgrade has a native composition witness
         // with moon-owned traits, repeated stacks and room-mask refreshes.
@@ -50,13 +62,13 @@ namespace MonsterTrain2Poju.Model
                 content.Excluded.Count == 0 && content.RequiredOperator == op && content.ExcludedOperator == 0;
             string[] excluded = { "d861b6a6-d8ef-4d58-8ebd-9f0abc276456", "537f6adf-0fd2-4c6b-88a8-e6cefeb52a7e",
                 "6f23bf7b-49c3-4a30-aa84-542ab9f939d0", "10f64bfb-81cd-4b7c-bf46-6fc1fa832008" };
-            string[] effects = { "CardEffectDamage", "CardEffectHeal", "CardEffectHealAndDamageRelative",
-                "CardEffectHealAndOverheal", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp" };
             return filter.AssetKey == (positive ? "MagicPowerSpells" : "ExcludedSpellsFromMagicPower") &&
                 filter.CardType == (positive ? "Spell" : "Invalid") && filter.AdditionalCardTypes.Count == 0 &&
                 Empty(filter.Rarities, 1) && Empty(filter.Subtypes) && Empty(filter.Statuses) && Empty(filter.Traits) &&
                 Empty(filter.LinkedClans) && Empty(filter.Upgrades) && filter.AllowedPools.Count == 0 &&
-                (positive ? filter.DisallowedPools.Count == 0 && filter.Effects.Required.SequenceEqual(effects) &&
+                (positive ? filter.DisallowedPools.Count == 0 &&
+                    (MatchesOriginalMagicPowerEffects(filter.Effects.Required, current: false) ||
+                     MatchesOriginalMagicPowerEffects(filter.Effects.Required, current: true)) &&
                     filter.Effects.Excluded.Count == 0 && filter.Effects.RequiredOperator == 1 && filter.Effects.ExcludedOperator == 0
                     : filter.DisallowedPools.Count == 1 && filter.DisallowedPools[0].SequenceEqual(excluded) && Empty(filter.Effects)) &&
                 filter.RequiredSizes.Count == 0 && filter.ExcludedSizes.Count == 0 && filter.MinCost == 0 && filter.MaxCost == 99 &&

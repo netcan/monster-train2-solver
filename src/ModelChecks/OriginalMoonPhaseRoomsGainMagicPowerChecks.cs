@@ -10,10 +10,17 @@ internal static class OriginalMoonPhaseRoomsGainMagicPowerChecks
     private const string Effect = "RelicEffectApplyCardUpgradeToHandEndOfTurnOnMoon";
     private const string UpgradeId = "ba427938-c3ad-480b-aa27-44a6426a059c";
     private const string UpgradeKey = "MoonPhaseRooms_UpgradeData";
+    private const string CurrentModule = "bf93f060-beda-46b1-b808-95ebf1e9a99d";
+    private const string LegacyModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
+    private const string DivinePunishmentId = "83e4e7bd-e285-4239-8e99-6987b49db839";
 
     internal static void Native(FixtureValue root)
     {
-        Require(root.GetProperty("Schema").GetInt32() == 214 &&
+        string module = root.GetProperty("GameModuleMvid").GetString()!;
+        bool current = module == CurrentModule;
+        Require((current || module == LegacyModule) &&
+            root.GetProperty("GameVersion").GetString() == (current ? "2.3.1" : "2.2.1") &&
+            root.GetProperty("Schema").GetInt32() == 214 &&
             root.GetProperty("OriginalMoonPhaseRoomsGainMagicPowerSchema").GetInt32() == 214 &&
             root.GetProperty("ModifierScenario").GetString() == "original-moon-phase-rooms-magic-power" &&
             root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean(),
@@ -50,11 +57,14 @@ internal static class OriginalMoonPhaseRoomsGainMagicPowerChecks
             filters[1].GetProperty("AssetKey").GetString() == "ExcludedSpellsFromMagicPower" &&
             filters[1].GetProperty("DisallowedPools").GetArrayLength() == 1,
             "Native positive and exclusion mask definitions changed.");
+        CardUpgradeMaskRule positiveMask = filters[0].Deserialize<CardUpgradeMaskRule>()!;
+        Require(RelicMoonPhaseHandUpgradeModel.MatchesOriginalMagicPowerEffects(positiveMask.Effects.Required, current),
+            "The native Magic Power effect filter differs from this game's exact version.");
 
         FixtureValue[] witnesses = evidence.GetProperty("Witnesses").EnumerateArray().ToArray();
         FixtureValue[] callbacks = evidence.GetProperty("Callbacks").EnumerateArray().ToArray();
-        Require(witnesses.Length == 10 && callbacks.Length == 5 &&
-            callbacks.Select(item => item.GetProperty("Turn").GetInt32()).SequenceEqual(new[] { 1, 2, 3, 4, 5 }),
+        Require(current ? witnesses.Length >= 6 && callbacks.Length >= 3 : witnesses.Length == 10 && callbacks.Length == 5 &&
+                callbacks.Select(item => item.GetProperty("Turn").GetInt32()).SequenceEqual(new[] { 1, 2, 3, 4, 5 }),
             "Expected positive and filter-control witnesses at five pre-discard callbacks.");
         Require(witnesses.All(item => !item.GetProperty("DefinitionTraits").EnumerateArray()
                 .Select(trait => trait.GetString()).Any(trait =>
@@ -62,6 +72,7 @@ internal static class OriginalMoonPhaseRoomsGainMagicPowerChecks
             "A synthetic witness introduced an unrelated unsupported card callback.");
 
         int fullMoonApplications = 0, newMoonPositiveNoOps = 0, filterControls = 0;
+        bool floorSpellFullMoon = false, floorSpellNewMoon = false;
         foreach (FixtureValue callback in callbacks)
         {
             string phase = callback.GetProperty("Phase").GetString()!;
@@ -84,6 +95,16 @@ internal static class OriginalMoonPhaseRoomsGainMagicPowerChecks
                 bool shouldApply = expectedMatch && phase == "Full" && inHand;
                 Require(applied.Length == (shouldApply ? 1 : 0),
                     "The pre-discard native callback applied the moon upgrade on the wrong phase, card or hand state.");
+                if (role == "added-floor-damage")
+                {
+                    Require(current && expectedMatch && inHand &&
+                        witness.GetProperty("DataId").GetString() == DivinePunishmentId &&
+                        witness.GetProperty("NewEffect").GetString() == "CardEffectDamageFloorByFloor" &&
+                        !witness.GetProperty("UsesMagicPowerMultiplier").GetBoolean(),
+                        "The new effect witness must be the unchanged original floor-damage definition in hand.");
+                    floorSpellFullMoon |= shouldApply;
+                    floorSpellNewMoon |= phase == "New";
+                }
                 if (shouldApply)
                 {
                     CardUpgradeModifier actual = applied[0];
@@ -101,9 +122,76 @@ internal static class OriginalMoonPhaseRoomsGainMagicPowerChecks
                 }
             }
         }
-        Require(fullMoonApplications >= 2 && newMoonPositiveNoOps >= 1 && filterControls >= 5,
+        Require(fullMoonApplications >= 2 && newMoonPositiveNoOps >= 1 && filterControls >= (current ? 3 : 5) &&
+                (!current || floorSpellFullMoon && floorSpellNewMoon),
             "Native positive, opposite-phase or filter-control evidence is incomplete.");
         Console.WriteLine("ORIGINAL-MOON-PHASE-HAND-UPGRADE-NATIVE PASS: unchanged owner, Full/New phase gates, positive/exclusion masks, exact +10 damage/heal upgrade and pre-discard lifetime.");
+    }
+
+    internal static void ReplayPreparedTurns(FixtureValue root, string mismatch)
+    {
+        Require(root.GetProperty("GameModuleMvid").GetString() == CurrentModule &&
+            mismatch.StartsWith("before play 4 in turn 1: ", StringComparison.Ordinal),
+            "The first lunar setup breakpoint differs from the registered evidence.");
+        Native(root);
+        FixtureValue[] turns = root.GetProperty("Turns").EnumerateArray().ToArray();
+        FixtureValue[] plays = root.GetProperty("Actions").EnumerateArray().ToArray();
+        FixtureValue[] witnesses = root.GetProperty("OriginalMoonPhaseRoomsGainMagicPower").GetProperty("Witnesses")
+            .EnumerateArray().ToArray();
+        Require(turns.Select(RecordedBattleChecks.DecisionTurn).SequenceEqual(Enumerable.Range(0, 7)) &&
+            plays.Length == 26 && plays.All(play => RecordedBattleChecks.DecisionTurn(play) is >= 0 and <= 6) &&
+            witnesses.Length == 12, "Unexpected number or order of lunar test segments.");
+        int[] firstPlays = [3, 8, 11, 16, 19, 22];
+        for (int turn = 1; turn < turns.Length; turn++)
+        {
+            int index = firstPlays[turn - 1];
+            Require(RecordedBattleChecks.DecisionTurn(plays[index]) == turn &&
+                RecordedBattleChecks.DecisionTurn(plays[index - 1]) == turn - 1,
+                "The lunar preparation does not precede the first recorded play in turn " + turn);
+            FixtureValue before = turns[turn - 1].GetProperty("Actual");
+            FixtureValue after = plays[index].GetProperty("Before");
+            FixtureValue[] inserted = witnesses.Where(witness => witness.GetProperty("Turn").GetInt32() == turn).ToArray();
+            VerifyHandSetup(before, after, inserted, turn);
+        }
+        for (int turn = 0; turn < turns.Length; turn++)
+            RecordedBattleChecks.ReplayOnce(root, firstTurn: turn, lastTurn: turn);
+    }
+
+    private static void VerifyHandSetup(FixtureValue before, FixtureValue after, FixtureValue[] inserted, int turn)
+    {
+        FixtureValue Context(FixtureValue value) => value.GetProperty("Spawn").GetProperty("Train").GetProperty("Context");
+        FixtureValue oldContext = Context(before), newContext = Context(after);
+        FixtureValue oldCards = oldContext.GetProperty("Cards"), newCards = newContext.GetProperty("Cards");
+        int next = oldContext.GetProperty("NextCardId").GetInt32();
+        int CardId(FixtureValue card) => card.GetProperty("InstanceId").GetInt32();
+        Require(inserted.Select(CardId).SequenceEqual(new[] { next, next + 1 }) &&
+            newContext.GetProperty("NextCardId").GetInt32() == next + 2 &&
+            before.GetProperty("RngStreams").ContentEquals(after.GetProperty("RngStreams")) &&
+            before.GetProperty("OtherPiles").ContentEquals(after.GetProperty("OtherPiles")) &&
+            oldContext.GetProperty("BattleRng").ContentEquals(newContext.GetProperty("BattleRng")) &&
+            oldCards.GetProperty("Rng").ContentEquals(newCards.GetProperty("Rng")) &&
+            oldCards.GetProperty("Draw").ContentEquals(newCards.GetProperty("Draw")) &&
+            oldCards.GetProperty("Discard").ContentEquals(newCards.GetProperty("Discard")),
+            "Lunar hand setup changed allocator, RNG or other piles in turn " + turn);
+
+        foreach (var (oldValues, newValues, prepended) in new[] {
+            (oldCards.GetProperty("Hand"), newCards.GetProperty("Hand"), true),
+            (oldContext.GetProperty("CardInstances"), newContext.GetProperty("CardInstances"), false),
+            (oldContext.GetProperty("CardRegistry"), newContext.GetProperty("CardRegistry"), false)
+        })
+        {
+            FixtureValue[] previous = oldValues.EnumerateArray().ToArray();
+            FixtureValue[] prepared = newValues.EnumerateArray().ToArray();
+            FixtureValue[] expected = prepended ? inserted.Reverse().ToArray() : inserted;
+            int oldOffset = prepended ? inserted.Length : 0;
+            int newOffset = prepended ? 0 : previous.Length;
+            Require(prepared.Length == previous.Length + inserted.Length &&
+                previous.Select((card, index) => card.ContentEquals(prepared[oldOffset + index])).All(equal => equal) &&
+                prepared.Skip(newOffset).Take(expected.Length).Select(card =>
+                    (CardId(card), card.GetProperty("DataId").GetString())).SequenceEqual(expected.Select(witness =>
+                    (CardId(witness), witness.GetProperty("DataId").GetString()))),
+                "Lunar hand setup does not match the recorded original card insertions in turn " + turn);
+        }
     }
 
     internal static void Run()
