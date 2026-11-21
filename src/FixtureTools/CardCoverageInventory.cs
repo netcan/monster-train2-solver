@@ -86,7 +86,7 @@ internal static class CardCoverageInventory
                 FixtureValue rule = before.TryGetProperty("PlayRules", out FixtureValue rules)
                     ? Array(rules, "Cards").FirstOrDefault(value => Text(value, "DataId") == id) : default;
                 if (!card.Evidence.TryGetValue(relativePath, out Plays? plays)) card.Evidence.Add(relativePath, plays = new());
-                (MatchesOriginalPlay(card, rule, context, instance) ? plays.Direct : plays.Other).Add(index);
+                (MatchesOriginalPlay(card, rule, context, instance, currentBuild: true) ? plays.Direct : plays.Other).Add(index);
             }
         }
 
@@ -133,11 +133,11 @@ internal static class CardCoverageInventory
         record.TryGetProperty("Actual", out FixtureValue actual) && actual.ValueKind == FixtureKind.Object &&
         record.TryGetProperty("Difference", out FixtureValue difference) && difference.ValueKind == FixtureKind.Null;
 
-    private static bool MatchesOriginalPlay(Card card, FixtureValue rule, FixtureValue context, int instance)
+    private static bool MatchesOriginalPlay(Card card, FixtureValue rule, FixtureValue context, int instance, bool currentBuild = false)
     {
         FixtureValue original = card.Definition.GetProperty("Rule");
         return original.ValueKind == FixtureKind.Object && rule.ValueKind == FixtureKind.Object &&
-            Equivalent(original, rule, ruleRoot: true, cardRule: true) &&
+            Equivalent(original, rule, ruleRoot: true, cardRule: true, currentBuild: currentBuild) &&
             MatchesSourceMetadata(card.Definition, context, instance) && MatchesNativeKillTriggers(card, context, instance);
     }
 
@@ -777,7 +777,7 @@ internal static class CardCoverageInventory
     // only two omitted SpawnUnit.Modifiers defaults and the ordinary Funguy
     // fallback's context-conditional bump defaults have additional calibration.
     private static bool Equivalent(FixtureValue left, FixtureValue right, bool ruleRoot = false,
-        bool legacyMask = false, bool cardRule = false, string path = "$")
+        bool legacyMask = false, bool cardRule = false, string path = "$", bool currentBuild = false)
     {
         if (left.ValueKind != right.ValueKind) return false;
         if (left.ValueKind == FixtureKind.Object)
@@ -798,13 +798,21 @@ internal static class CardCoverageInventory
                     !b.ContainsKey("StatusAttackModifiers"))
                     a.Remove("StatusAttackModifiers");
             }
+            if (currentBuild && path == "$.SpawnUnit.AbilityRules")
+            {
+                // The pinned native module supplies this global capability via
+                // CharacterState, independently of a card's unit definition.
+                const string key = "ReplacementSkipsCooldown";
+                if (!a.ContainsKey(key) && b.TryGetValue(key, out FixtureValue captured) && captured.ValueKind == FixtureKind.True)
+                    b.Remove(key);
+            }
+            if (currentBuild && path == "$.SpawnUnit" && !a.ContainsKey("BumpRules") &&
+                b.TryGetValue("BumpRules", out FixtureValue physicalDefaults) && IsOrdinaryBumpDefault(physicalDefaults))
+                b.Remove("BumpRules");
             if (cardRule && path.Contains(".MaskDescriptor.KillTriggers[", StringComparison.Ordinal) &&
                 path.EndsWith(".SpawnFallbackUnit", StringComparison.Ordinal) && Text(left, "AssetKey") == "MonsterFunguy" &&
                 !a.ContainsKey("BumpRules") && b.TryGetValue("BumpRules", out FixtureValue bump) &&
-                bump.ValueKind == FixtureKind.Object && bump.EnumerateObject().Count() == 5 &&
-                new[] { "Loops", "CompanionBoss", "OuterBoss", "OuterBossRelentlessPhase" }
-                    .All(name => bump.TryGetProperty(name, out FixtureValue flag) && flag.ValueKind == FixtureKind.False) &&
-                bump.TryGetProperty("PairedBossUnitId", out FixtureValue paired) && paired.ValueKind == FixtureKind.Number && paired.GetInt32() == 0)
+                IsOrdinaryBumpDefault(bump))
             {
                 // Lunar Echo's native creation pool captures this unchanged fallback
                 // with explicit ordinary-unit defaults only when bump capture is enabled.
@@ -820,19 +828,27 @@ internal static class CardCoverageInventory
                 b.Remove("Action");
             }
             return a.Count == b.Count && a.All(pair => b.TryGetValue(pair.Key, out FixtureValue other) &&
-                Equivalent(pair.Value, other, legacyMask: legacyMask, cardRule: cardRule, path: path + "." + pair.Key));
+                Equivalent(pair.Value, other, legacyMask: legacyMask, cardRule: cardRule, path: path + "." + pair.Key,
+                    currentBuild: currentBuild));
         }
         if (left.ValueKind == FixtureKind.Array)
         {
             if (left.GetArrayLength() != right.GetArrayLength()) return false;
             FixtureValue[] a = left.EnumerateArray().ToArray(), b = right.EnumerateArray().ToArray();
             for (int index = 0; index < a.Length; index++)
-                if (!Equivalent(a[index], b[index], legacyMask: legacyMask, cardRule: cardRule, path: path + "[" + index + "]")) return false;
+                if (!Equivalent(a[index], b[index], legacyMask: legacyMask, cardRule: cardRule, path: path + "[" + index + "]",
+                    currentBuild: currentBuild)) return false;
             return true;
         }
         if (left.ValueKind == FixtureKind.Number) return left.GetDouble() == right.GetDouble();
         return left.ContentEquals(right);
     }
+
+    private static bool IsOrdinaryBumpDefault(FixtureValue bump) =>
+        bump.ValueKind == FixtureKind.Object && bump.EnumerateObject().Count() == 5 &&
+        new[] { "Loops", "CompanionBoss", "OuterBoss", "OuterBossRelentlessPhase" }
+            .All(name => bump.TryGetProperty(name, out FixtureValue flag) && flag.ValueKind == FixtureKind.False) &&
+        bump.TryGetProperty("PairedBossUnitId", out FixtureValue paired) && paired.ValueKind == FixtureKind.Number && paired.GetInt32() == 0;
 
     private static void CollectLegalityWitnesses(FixtureValue battle, string archive, Dictionary<string, Card> byId, List<LegalityWitness> witnesses)
     {
