@@ -111,3 +111,10 @@ Fleshweaver 出生 Mass 修正后，批量复放 127 场，112 场连续、15 �
 另用 2.3.1 原生前两场胜利后的未修改存档测试第三环，隔离顾问完成 24 次出牌、
 7 次 EndTurn，以 76 点薪火生命获胜。进程正常退出，四项采集计数为零。
 `current-ring3.mt2f` 另通过完整链、16 条独立分支和 31 次滚动建议预测复放。
+
+新版优先遗物清单 25 件均已有整局在场、效果列表有序匹配。最后五件在同一场
+隔离胜局取得，使用原版卡与遗物定义，三张防守卡实例增加测试耐久。原版出牌令
+锻造点 0→2→0，七次出牌、五次 EndTurn、完整链、16 条分支及合法候选匹配。
+128 节点串并行计划与复放一致，搜索达到节点与回合预算。归档为
+`tests/compatibility/game-2.3.1/mechanics/priority-relic-battle/battle.mt2f`，
+录制入口为 `Run-FullBattleProbe.ps1 -OriginalPriorityRelicBattle -BinaryCapture`。

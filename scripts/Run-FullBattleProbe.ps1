@@ -733,6 +733,7 @@ param(
     [switch] $OriginalHephsBlueprints,
     [switch] $OriginalHephsEquipmentPool,
     [switch] $OriginalChangedTempUpgradeRelics,
+    [switch] $OriginalPriorityRelicBattle,
     [switch] $OriginalAffordableNonPlayable,
     [switch] $OriginalRageOnBurnoutStackLoss,
     [switch] $OriginalPyreRevenge,
@@ -1438,6 +1439,17 @@ if ($OriginalHephsEquipmentPool -and ($OriginalHephsBlueprints -or $InputProfile
 if ($OriginalChangedTempUpgradeRelics) {
     if (-not $BinaryCapture) { throw 'OriginalChangedTempUpgradeRelics requires binary capture.' }
     $BranchCardMasks = $true
+}
+if ($OriginalPriorityRelicBattle) {
+    $priorityRelicArguments = @('OriginalPriorityRelicBattle', 'NativeWorker', 'NativeBuildRoot', 'GameSpeed',
+        'TimeoutSeconds', 'SkipBuild', 'BinaryCapture', 'Verbose', 'Debug', 'ErrorAction')
+    if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $priorityRelicArguments }).Count) {
+        throw 'OriginalPriorityRelicBattle requires a fresh isolated battle and binary capture.'
+    }
+    $Policy = 'units-and-junk'
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $SettleCardAnimations = $true
 }
 if ($OriginalAffordableNonPlayable) {
     if (-not $BinaryCapture) { throw 'OriginalAffordableNonPlayable requires binary capture.' }
@@ -2684,6 +2696,11 @@ if ($OriginalHephsEquipmentPool) {
     $environment['MT2_PROBE_HEPHS_POOL_CONTROLS'] = '1'
 }
 if ($OriginalChangedTempUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-changed-temp-upgrade-relics' }
+if ($OriginalPriorityRelicBattle) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-priority-relic-battle'
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
 if ($OriginalAffordableNonPlayable) { $environment['MT2_PROBE_MODIFIERS'] = 'original-affordable-nonplayable' }
 if ($OriginalRageOnBurnoutStackLoss) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rage-on-burnout-stack-loss' }
 if ($RankThreeRoomSlayExecution) { $environment['MT2_PROBE_MODIFIERS'] = 'rank-three-room-slay-execution' }
@@ -5740,6 +5757,35 @@ if ($OriginalHephsBlueprints -and ($trace.Schema -ne 200 -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 2 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-HEPHS-BLUEPRINTS-PREPARED points=3 equipment-filter control monster then eligible equipment' -Quiet))) {
     throw 'HephsBlueprints lacks its Equipment-filter control and eligible three-point native equipment play.'
+}
+if ($OriginalPriorityRelicBattle) {
+    $evidence = $trace.OriginalPriorityRelicBattle
+    if ($null -eq $evidence -or @($evidence.RelicIds).Count -ne 5 -or @($evidence.Defenders).Count -ne 3 -or
+        $trace.GameVersion -ne '2.3.1' -or $trace.GameModuleMvid -ne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+        -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+        $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
+        throw 'The five original priority relics lacked a complete native 2.3.1 battle.'
+    }
+    $expectedCardIds = @($evidence.Defenders) + @($evidence.ForgeCard, $evidence.Equipment, $evidence.Starter, $evidence.Vent)
+    $scenarioActions = @($trace.Actions | Where-Object ScenarioAction)
+    $observedCardIds = @($scenarioActions | ForEach-Object { $_.Action.CardInstanceId })
+    if (($observedCardIds -join ',') -cne ($expectedCardIds -join ',')) {
+        throw 'The priority relic battle lacked the original deployment, forge, starter or X-cost plays.'
+    }
+    $owners = @($scenarioActions[0].Before.Spawn.Train.Context.Relics | Where-Object { $_.DataId -in $evidence.RelicIds })
+    $orderedEffects = @($owners | ForEach-Object { $_.EffectTypes })
+    $expectedEffects = @('RelicEffectAddTempUpgrade') * 4 + @('RelicEffectModifyForgeUpgrade')
+    if ((@($owners | ForEach-Object DataId) -join ',') -cne ($evidence.RelicIds -join ',') -or
+        ($orderedEffects -join ',') -cne ($expectedEffects -join ',')) {
+        throw 'The first native decision did not capture the ordered roster of all five original relics.'
+    }
+    $forgeAction = $scenarioActions[3]
+    $equipmentAction = $scenarioActions[4]
+    if ($forgeAction.Before.ForgePoints -ne 0 -or $forgeAction.Actual.ForgePoints -ne 2 -or
+        $equipmentAction.Before.ForgePoints -ne 2 -or $equipmentAction.Actual.ForgePoints -ne 0) {
+        throw 'The native Startup Forge points were not earned and spent by the recorded original actions.'
+    }
+    Write-Output 'ORIGINAL-PRIORITY-RELIC-BATTLE PASS: five in-play original relics and seven ordered native actions.'
 }
 if ($OriginalRageOnBurnoutStackLoss -and ($trace.Schema -ne 177 -or
     $trace.ModifierScenario -ne 'original-rage-on-burnout-stack-loss' -or

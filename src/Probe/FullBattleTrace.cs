@@ -1030,6 +1030,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalBrokenRailPrepared = OriginalBrokenRailScenario.Prepared,
                 OriginalHephsBlueprintsPrepared = OriginalHephsBlueprintsScenario.Prepared,
                 OriginalHephsBlueprintsDefinition = OriginalHephsBlueprintsScenario.Definition,
+                OriginalPriorityRelicBattle = OriginalPriorityRelicBattleScenario.Evidence,
                 OriginalRageOnBurnoutStackLossPrepared = OriginalRageOnBurnoutStackLossScenario.Prepared,
                 OriginalPyreRevengePrepared = OriginalPyreRevengeScenario.Prepared,
                 OriginalExtractForEmberAndEchosPrepared = OriginalExtractForEmberAndEchosScenario.Prepared,

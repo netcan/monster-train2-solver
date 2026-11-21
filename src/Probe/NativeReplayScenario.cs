@@ -583,6 +583,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalBrokenRailScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalHephsBlueprintsScenario.Enabled && !OriginalHephsBlueprintsScenario.Acquired)
                         OriginalHephsBlueprintsScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalPriorityRelicBattleScenario.Enabled && !OriginalPriorityRelicBattleScenario.Acquired)
+                        OriginalPriorityRelicBattleScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalRageOnBurnoutStackLossScenario.Enabled && !OriginalRageOnBurnoutStackLossScenario.Acquired)
                         OriginalRageOnBurnoutStackLossScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPyreRevengeScenario.Enabled && !OriginalPyreRevengeScenario.Acquired)
@@ -694,6 +696,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalAfterDrawSpawnScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalHoldoverGrantScenario.Enabled && !OriginalHoldoverGrantScenario.Acquired)
                         OriginalHoldoverGrantScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalPriorityRelicBattleScenario.Enabled && !OriginalPriorityRelicBattleScenario.Acquired)
+                        OriginalPriorityRelicBattleScenario.AcquireBeforeBattle(managers!, log);
                     if (ReplayManager.TryClickButton(intro.GetFightButton())) Enter(Stage.Battle, 120f);
                 }
                 return;
@@ -893,6 +897,11 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && OriginalAfterDrawSpawnScenario.Enabled && !OriginalAfterDrawSpawnScenario.Prepared)
             {
                 OriginalAfterDrawSpawnScenario.Prepare(managers, log);
+                return;
+            }
+            if (fullBattle && OriginalPriorityRelicBattleScenario.Enabled && !OriginalPriorityRelicBattleScenario.Prepared)
+            {
+                OriginalPriorityRelicBattleScenario.Prepare(managers, log);
                 return;
             }
             if (fullBattle && OriginalHoldoverGrantScenario.Enabled && !OriginalHoldoverGrantScenario.Prepared)
@@ -3446,6 +3455,10 @@ namespace MonsterTrain2Poju.Probe
                 {
                     pendingPlay = OriginalHoldoverGrantScenario.Choose(decision);
                 }
+                else if (OriginalPriorityRelicBattleScenario.Enabled)
+                {
+                    pendingPlay = OriginalPriorityRelicBattleScenario.Choose(decision);
+                }
                 else if (OriginalThikDeckChangeScenario.FullBattle)
                 {
                     pendingPlay = OriginalThikDeckChangeScenario.Choose(decision);
@@ -4064,6 +4077,7 @@ namespace MonsterTrain2Poju.Probe
                 (OriginalEatenDamageScenario.Enabled && OriginalEatenDamageScenario.IsScenarioAction(action)) ||
                 (OriginalAfterDrawSpawnScenario.Enabled && OriginalAfterDrawSpawnScenario.IsScenarioAction(action)) ||
                 (OriginalHoldoverGrantScenario.Enabled && OriginalHoldoverGrantScenario.IsScenarioAction(action)) ||
+                (OriginalPriorityRelicBattleScenario.Enabled && OriginalPriorityRelicBattleScenario.IsScenarioAction(action)) ||
                 (OriginalThikDeckChangeScenario.FullBattle && OriginalThikDeckChangeScenario.IsScenarioAction(action)) ||
                 (OriginalElleScenario.Enabled && OriginalElleScenario.IsScenarioAction(action)) ||
                 (OriginalGoldieScenario.Enabled && OriginalGoldieScenario.IsScenarioAction(action)) ||
