@@ -1,6 +1,7 @@
 #requires -Version 7.4
 [CmdletBinding()]
 param(
+    [switch] $Current,
     [switch] $Check,
     [switch] $SkipBuild
 )
@@ -12,7 +13,8 @@ if (-not $SkipBuild) {
 }
 $inventoryArguments = @(
     (Join-Path $workspace 'src/FixtureTools/bin/Release/net8.0/FixtureTools.dll'),
-    'card-inventory', $workspace
+    $(if ($Current) { 'card-inventory-current' } else { 'card-inventory' }),
+    $workspace
 )
 if ($Check) { $inventoryArguments += '--check' }
 dotnet @inventoryArguments

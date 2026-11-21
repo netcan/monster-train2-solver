@@ -7,6 +7,11 @@ internal static class CardCoverageInventory
 {
     private const string GameModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
     private const string CatalogHash = "c9ea090d631034900d459f456e0027b8aa6863bb2f57e6de31fba6e6a4027723";
+    private const string CurrentVersion = "2.3.1";
+    private const string CurrentGameModule = "bf93f060-beda-46b1-b808-95ebf1e9a99d";
+    private const string CurrentCatalog = "mechanics/halo/catalog.mt2f";
+    private const string CurrentCatalogHash = "6cf391b6b184667761eaf02df6cdd8fa4d8f2ac435c32d8b9f2c6e97a1302208";
+    private static readonly string[] BattleCounters = ["CaptureFailures", "Mismatches", "Unsupported", "Pending"];
     private sealed class Card(FixtureValue definition)
     {
         internal readonly FixtureValue Definition = definition;
@@ -31,6 +36,164 @@ internal static class CardCoverageInventory
     }
     private sealed record TurnWitness(string DataId, string Archive, int TurnIndex, int SourceCardId, string Effect, string Observation);
     private sealed record LegalityWitness(string DataId, string Archive, int QueryIndex, int CardId, int RoomIndex, string Error, bool CanDiscard);
+    private sealed record ArchiveRegistration(long Bytes, string Sha256, bool Stage);
+
+    internal static void RunCurrent(string workspace, bool check)
+    {
+        workspace = Path.GetFullPath(workspace);
+        string directory = Path.Combine(workspace, "tests", "compatibility", "game-" + CurrentVersion);
+        var registrations = CurrentRegistrations(directory);
+        Require(registrations.TryGetValue(CurrentCatalog, out ArchiveRegistration? registeredCatalog) &&
+            registeredCatalog.Sha256 == CurrentCatalogHash, "Current catalog manifest differs from the frozen projection audit.");
+        using var catalog = FixtureDocument.Read(Path.Combine(directory, CurrentCatalog));
+        FixtureValue root = catalog.RootElement;
+        Require(root.GetProperty("Schema").GetInt32() == 1 && Text(root, "Scope") == "AllGameData" &&
+            Text(root, "GameVersion") == CurrentVersion && Text(root, "GameModuleMvid") == CurrentGameModule &&
+            Flag(root, "BranchCardMasksEnabled") && Flag(root, "DecisionUnchanged") &&
+            root.GetProperty("FrameBefore").ContentEquals(root.GetProperty("FrameAfter")) &&
+            root.GetProperty("RngBefore").ContentEquals(root.GetProperty("RngAfter")),
+            "Current catalog identity/state/RNG/frame guard failed.");
+        Card[] cards = Array(root, "Cards").Select(value => new Card(value)).ToArray();
+        Require(cards.Length == 724 && cards.Count(card => card.Logbook) == 614 && cards.All(card => Guid.TryParse(card.Id, out _)),
+            "Incomplete current card or logbook catalog.");
+        var byId = cards.ToDictionary(card => card.Id, StringComparer.Ordinal);
+        AttachKillTriggerDefinitions(root, byId);
+
+        int indexed = 0, wins = 0, excluded = 0, stage = 0;
+        int actions = 0, excludedActions = 0, unresolved = 0, outsideCatalog = 0;
+        foreach ((string relativePath, ArchiveRegistration registration) in registrations)
+        {
+            using var fixture = FixtureDocument.Read(Path.Combine(directory, relativePath));
+            FixtureValue battle = fixture.RootElement;
+            bool legacy = relativePath.StartsWith("2.2.1/", StringComparison.Ordinal);
+            Require(!(legacy && registration.Stage) && Text(battle, "GameModuleMvid") == (legacy ? GameModule : CurrentGameModule),
+                "Unexpected fixture module: " + relativePath);
+            if (legacy) continue;
+            bool hasActions = battle.TryGetProperty("Actions", out FixtureValue recorded) && recorded.ValueKind == FixtureKind.Array;
+            bool settled = hasActions && Flag(battle, "TerminalEffectsSettled") &&
+                BattleCounters.All(key => battle.TryGetProperty(key, out FixtureValue counter) && counter.ValueKind == FixtureKind.Number && counter.GetInt32() == 0);
+            if (registration.Stage)
+            {
+                Require(settled && Flag(battle, "NativeWon"), "Stage archive failed its native battle gate: " + relativePath);
+                stage++;
+            }
+            if (!hasActions) continue;
+            if (!settled) { excluded++; continue; }
+            indexed++;
+            if (Flag(battle, "NativeWon")) wins++;
+
+            int index = -1;
+            foreach (FixtureValue record in recorded.EnumerateArray())
+            {
+                index++;
+                if (!AcceptedPlay(record)) { excludedActions++; continue; }
+                actions++;
+                FixtureValue before = record.GetProperty("Before");
+                FixtureValue context = before.GetProperty("Spawn").GetProperty("Train").GetProperty("Context");
+                int instance = record.GetProperty("Action").GetProperty("CardInstanceId").GetInt32();
+                string? id = FindCardId(context, instance);
+                if (id == null) { unresolved++; continue; }
+                if (!byId.TryGetValue(id, out Card? card)) { outsideCatalog++; continue; }
+                FixtureValue rule = before.TryGetProperty("PlayRules", out FixtureValue rules)
+                    ? Array(rules, "Cards").FirstOrDefault(value => Text(value, "DataId") == id) : default;
+                if (!card.Evidence.TryGetValue(relativePath, out Plays? plays)) card.Evidence.Add(relativePath, plays = new());
+                (MatchesOriginalPlay(card, rule, context, instance) ? plays.Direct : plays.Other).Add(index);
+            }
+        }
+
+        var report = new StringBuilder();
+        Row(report, "GameVersion", "GameModuleMvid", "DataId", "AssetKey", "Role", "EligibleLogbookPlay", "Evidence", "MatchedPlays",
+            "OtherPlays", "WitnessArchive", "WitnessActionIndex");
+        Card[] eligible = cards.Where(card => card.Logbook && !IntrinsicallyUnplayable(card)).ToArray();
+        var eligibleIds = eligible.Select(card => card.Id).ToHashSet(StringComparer.Ordinal);
+        foreach (Card card in cards.OrderBy(card => card.Id, StringComparer.Ordinal))
+        {
+            bool matchedPlay = card.DirectPlays > 0;
+            var witness = card.Evidence.FirstOrDefault(pair => (matchedPlay ? pair.Value.Direct : pair.Value.Other).Count > 0);
+            int? witnessIndex = witness.Value == null ? null : (matchedPlay ? witness.Value.Direct : witness.Value.Other)[0];
+            Row(report, CurrentVersion, CurrentGameModule, card.Id, card.Name, card.Role,
+                eligibleIds.Contains(card.Id) ? "yes" : "no",
+                matchedPlay ? "definition-matched-play" : card.OtherPlays > 0 ? "identity-observed" : "no-recorded-play",
+                card.DirectPlays.ToString(CultureInfo.InvariantCulture), card.OtherPlays.ToString(CultureInfo.InvariantCulture),
+                witness.Key ?? "", witnessIndex?.ToString(CultureInfo.InvariantCulture) ?? "");
+        }
+        string output = Path.Combine(workspace, "results", "card-evidence-" + CurrentVersion + ".tsv");
+        string content = report.ToString();
+        if (check) Require(File.Exists(output) && File.ReadAllText(output) == content, "Current card evidence report is missing or stale: " + output);
+        else
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(output)!);
+            File.WriteAllText(output, content, new UTF8Encoding(false));
+        }
+        int matched = eligible.Count(card => card.DirectPlays > 0);
+        int identityOnly = eligible.Count(card => card.DirectPlays == 0 && card.OtherPlays > 0);
+        Console.WriteLine($"CARD-EVIDENCE {CurrentVersion} {(check ? "CHECK" : "WRITE")} PASS archived={registrations.Count} settledBattles={indexed} wins={wins} stageBattles={stage} excludedBattles={excluded} acceptedActions={actions} excludedActions={excludedActions} unresolvedIdentities={unresolved} outsideCatalog={outsideCatalog}");
+        Console.WriteLine($"logbook={cards.Count(card => card.Logbook)} eligible={eligible.Length} definitionMatched={matched} identityObservedOnly={identityOnly} noRecordedPlay={eligible.Length - matched - identityOnly} missingDefinitionMatch={eligible.Length - matched} report={output}");
+    }
+
+    private static SortedDictionary<string, ArchiveRegistration> CurrentRegistrations(string directory)
+    {
+        var archives = new SortedDictionary<string, ArchiveRegistration>(StringComparer.Ordinal);
+        string stagePath = Path.Combine(directory, "solver-stage.tsv");
+        foreach (string manifest in Directory.EnumerateFiles(directory, "manifest.tsv", SearchOption.AllDirectories).Append(stagePath))
+        {
+            bool stage = manifest == stagePath;
+            string[] lines = File.ReadAllLines(manifest);
+            string header = stage ? "case\tarchive\tbytes\tsha256" : "path\tbytes\tsha256";
+            Require(lines.Length > 1 && lines[0].Replace("\"", "", StringComparison.Ordinal) == header,
+                "Unexpected archive manifest header: " + manifest);
+            int offset = stage ? 1 : 0;
+            var listed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string line in lines.Skip(1))
+            {
+                string[] cells = line.Split('\t').Select(cell => cell.Trim('"')).ToArray();
+                Require(cells.Length == 3 + offset, "Invalid archive manifest row: " + manifest);
+                string relative = cells[offset];
+                string sha256 = cells[offset + 2].ToLowerInvariant();
+                long bytes = long.Parse(cells[offset + 1], NumberStyles.None, CultureInfo.InvariantCulture);
+                Require(bytes > 0 && sha256.Length == 64 && sha256.All(Uri.IsHexDigit) &&
+                    relative.EndsWith(".mt2f", StringComparison.Ordinal) && !Path.IsPathRooted(relative) &&
+                    !relative.Contains('\\') && !relative.Contains(':') &&
+                    relative.Split('/').All(part => part is not ("" or "." or "..")) && listed.Add(relative),
+                    "Invalid or duplicate archive path: " + relative);
+                string path = Path.Combine(Path.GetDirectoryName(manifest)!, relative);
+                string key = Path.GetRelativePath(directory, path).Replace('\\', '/');
+                if (archives.TryGetValue(key, out ArchiveRegistration? prior))
+                {
+                    Require(prior.Bytes == bytes && prior.Sha256 == sha256, "Conflicting archive registrations: " + key);
+                    archives[key] = prior with { Stage = stage || prior.Stage };
+                    continue;
+                }
+                Require(new FileInfo(path).Length == bytes && Hash(path) == sha256, "Archive integrity failed: " + key);
+                archives.Add(key, new ArchiveRegistration(bytes, sha256, stage));
+            }
+        }
+        return archives;
+    }
+
+    private static void AttachKillTriggerDefinitions(FixtureValue catalogRoot, Dictionary<string, Card> byId)
+    {
+        foreach (FixtureValue definition in Array(catalogRoot, "CardKillTriggerDefinitions"))
+            if (byId.TryGetValue(Text(definition, "CardDataId"), out Card? card) &&
+                Array(definition, "Triggers").Any(trigger => Strings(trigger, "Effects").Any(effect => effect.StartsWith("CardTriggerEffect", StringComparison.Ordinal))))
+                card.NativeKillTriggers = definition.GetProperty("Triggers");
+    }
+
+    private static bool AcceptedPlay(FixtureValue record) =>
+        record.TryGetProperty("Predicted", out FixtureValue predicted) && Flag(predicted, "Supported") &&
+        record.TryGetProperty("Actual", out FixtureValue actual) && actual.ValueKind == FixtureKind.Object &&
+        record.TryGetProperty("Difference", out FixtureValue difference) && difference.ValueKind == FixtureKind.Null;
+
+    private static bool MatchesOriginalPlay(Card card, FixtureValue rule, FixtureValue context, int instance)
+    {
+        FixtureValue original = card.Definition.GetProperty("Rule");
+        return original.ValueKind == FixtureKind.Object && rule.ValueKind == FixtureKind.Object &&
+            Equivalent(original, rule, ruleRoot: true, cardRule: true) &&
+            MatchesSourceMetadata(card.Definition, context, instance) && MatchesNativeKillTriggers(card, context, instance);
+    }
+
+    private static bool IntrinsicallyUnplayable(Card card) => Text(card.Definition.GetProperty("Rule"), "CostType") == "NonPlayable" ||
+        Array(card.Definition, "Traits").Any(trait => Text(trait, "Type") == "CardTraitUnplayable");
 
     internal static void Run(string workspace, bool check)
     {
@@ -47,10 +210,7 @@ internal static class CardCoverageInventory
             root.GetProperty("RngBefore").ContentEquals(root.GetProperty("RngAfter")), "Native catalog identity/state/RNG/frame guard failed.");
         Card[] cards = root.GetProperty("Cards").EnumerateArray().Select(value => new Card(value)).OrderBy(card => card.Name, StringComparer.Ordinal).ToArray();
         var byId = cards.ToDictionary(card => card.Id, StringComparer.Ordinal);
-        foreach (FixtureValue nativeDefinition in Array(root, "CardKillTriggerDefinitions"))
-            if (byId.TryGetValue(Text(nativeDefinition, "CardDataId"), out Card? triggered) &&
-                Array(nativeDefinition, "Triggers").Any(trigger => Strings(trigger, "Effects").Any(effect => effect.StartsWith("CardTriggerEffect", StringComparison.Ordinal))))
-                triggered.NativeKillTriggers = nativeDefinition.GetProperty("Triggers");
+        AttachKillTriggerDefinitions(root, byId);
         Require(cards.Length == 668 && cards.Count(card => card.Logbook) == 563, "Incomplete original card or logbook catalog.");
         using (var calibration = FixtureDocument.Read(fixtures.Resolve("card-upgrade-mask-calibration.mt2f")))
         {
@@ -79,8 +239,7 @@ internal static class CardCoverageInventory
             using var fixture = FixtureDocument.Read(path);
             FixtureValue battle = fixture.RootElement;
             Require(Text(battle, "GameModuleMvid") == GameModule, "Fixture has a different game module: " + archive);
-            string[] counters = ["CaptureFailures", "Mismatches", "Unsupported", "Pending"];
-            string[] counterErrors = counters.Select(name => !battle.TryGetProperty(name, out FixtureValue value) || value.ValueKind != FixtureKind.Number ? name + "=absent" :
+            string[] counterErrors = BattleCounters.Select(name => !battle.TryGetProperty(name, out FixtureValue value) || value.ValueKind != FixtureKind.Number ? name + "=absent" :
                 value.GetInt32() != 0 ? name + "=" + value.GetInt32().ToString(CultureInfo.InvariantCulture) : "").Where(error => error != "").ToArray();
             if (counterErrors.Length > 0)
             {
@@ -93,9 +252,7 @@ internal static class CardCoverageInventory
             foreach (FixtureValue record in actions.EnumerateArray())
             {
                 index++;
-                if (!record.TryGetProperty("Predicted", out FixtureValue predicted) || !Flag(predicted, "Supported") ||
-                    !record.TryGetProperty("Actual", out FixtureValue actual) || actual.ValueKind != FixtureKind.Object ||
-                    !record.TryGetProperty("Difference", out FixtureValue difference) || difference.ValueKind != FixtureKind.Null) continue;
+                if (!AcceptedPlay(record)) continue;
                 actionCount++;
                 FixtureValue before = record.GetProperty("Before"), action = record.GetProperty("Action");
                 FixtureValue context = before.GetProperty("Spawn").GetProperty("Train").GetProperty("Context");
@@ -107,11 +264,7 @@ internal static class CardCoverageInventory
                 foreach (string primitive in Primitives(rule, includeUnplayed: false)) mechanisms.TryAdd(primitive, archive);
                 if (!byId.TryGetValue(id, out Card? card)) { nonCatalogActions++; continue; }
                 if (!card.Evidence.TryGetValue(archive, out Plays? plays)) card.Evidence.Add(archive, plays = new());
-                FixtureValue original = card.Definition.GetProperty("Rule");
-                bool matches = original.ValueKind == FixtureKind.Object && Equivalent(original, rule, ruleRoot: true, cardRule: true) &&
-                    MatchesSourceMetadata(card.Definition, context, action.GetProperty("CardInstanceId").GetInt32()) &&
-                    MatchesNativeKillTriggers(card, context, action.GetProperty("CardInstanceId").GetInt32());
-                (matches ? plays.Direct : plays.Other).Add(index);
+                (MatchesOriginalPlay(card, rule, context, action.GetProperty("CardInstanceId").GetInt32()) ? plays.Direct : plays.Other).Add(index);
             }
             CollectUnplayedWitnesses(battle, archive, mechanisms, triggerWitnesses);
             CollectLegalityWitnesses(battle, archive, byId, legalityWitnesses);
@@ -768,9 +921,7 @@ internal static class CardCoverageInventory
         foreach (var group in cards.GroupBy(card => card.Role).OrderBy(group => group.Key, StringComparer.Ordinal)) text.Append($"| {group.Key} | {group.Count()} |\n");
         text.Append($"| **All definitions** | **{cards.Length}** |\n\n");
         text.Append($"The 563 native logbook entries are the primary card-inventory denominator, not the 668 internal definitions. Logbook visibility does not imply collectible/reward-pool membership; generated, event and non-mastery cards are included. Native mastery eligibility is a separate recorded predicate ({cards.Count(card => Flag(card.Definition, "CountsTowardsMastery"))} definitions). Abilities and other hidden definitions stay in the inventory.\n\n");
-        Card[] intrinsicallyUnplayable = cards.Where(card => card.Logbook &&
-            (Text(card.Definition.GetProperty("Rule"), "CostType") == "NonPlayable" ||
-                Array(card.Definition, "Traits").Any(trait => Text(trait, "Type") == "CardTraitUnplayable"))).ToArray();
+        Card[] intrinsicallyUnplayable = cards.Where(card => card.Logbook && IntrinsicallyUnplayable(card)).ToArray();
         Card[] eligible = cards.Where(card => card.Logbook && !intrinsicallyUnplayable.Contains(card)).ToArray();
         text.Append($"## Direct-play eligibility\n\n{eligible.Count(card => card.Coverage == "direct-native-play")}/{eligible.Length} logbook entries without intrinsic unplayability have a definition-matched successful native play. This is a direct-play evidence gate, not proof of every branch or combination. The following {intrinsicallyUnplayable.Length} original entries retain their native restriction and are not promoted to successful-play evidence:\n\n| Asset key | Native restriction |\n| --- | --- |\n");
         foreach (Card card in intrinsicallyUnplayable.OrderBy(card => card.Name, StringComparer.Ordinal))
