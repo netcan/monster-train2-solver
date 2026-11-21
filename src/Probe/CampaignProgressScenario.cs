@@ -626,12 +626,46 @@ namespace MonsterTrain2Poju.Probe
                     hasProgress, current, required, met = save.IsUnlockCriteriaMet(condition, noneValue: false),
                     unlocked = save.GetMetagameSave().HasUnlockedPyreHeart(character.GetID()) });
             }
+
+            BalanceData balance = save.GetBalanceData();
+            var trialGates = Enumerable.ToArray(Enumerable.Select(balance.GetTrueFinalBossUnlockInfos(), gate => new
+            {
+                gate.Distance, Ring = gate.Distance + 1,
+                RequiredWinsBeforeOffer = balance.GetNumTrueFinalBossTitanTrialsRequired(gate.Distance - 1),
+                RequiredWinsAfterBattle = balance.GetNumTrueFinalBossTitanTrialsRequired(gate.Distance),
+                Reward = gate.Reward?.name, StoryEvent = gate.StoryEvent?.name, StoryKnot = gate.StoryEvent?.KnotName
+            }));
+            // The main menu can cache the Class slot without activating or resuming it.
+            var classSave = (SaveData?)AccessTools.Method(typeof(SaveManager), "GetActiveSaveDataImpl")
+                .Invoke(save, new object[] { RunType.Class, string.Empty });
+            RunState? run = classSave?.GetRunState();
+            object? trialState = null;
+            if (classSave != null && run != null && save.HasRun(RunType.Class))
+            {
+                int distance = run.GetCurrentDistance();
+                int wins = classSave.GetNumTitanTrialsWon();
+                int requiredBeforeOffer = balance.GetNumTrueFinalBossTitanTrialsRequired(distance - 1);
+                RunType runType = classSave.GetRunTypeEnum();
+                bool eligibleForOffer = classSave.IsTrueFinalBossUnlocked() && runType.AllowTrueFinalBoss() &&
+                    !classSave.IsEndless() && runType != RunType.RegionRun && wins >= requiredBeforeOffer;
+                trialState = new
+                {
+                    Distance = distance, Ring = distance + 1, GameSequence = classSave.GetGameSequence().ToString(),
+                    RunType = runType.ToString(), Covenant = classSave.GetAscensionLevel(),
+                    RunUnlock = classSave.IsTrueFinalBossUnlocked(), ForceUnlock = save.Cheats.ForceTFBUnlocked,
+                    Wins = wins, RequiredWinsBeforeOffer = requiredBeforeOffer,
+                    RequiredWinsAfterBattle = balance.GetNumTrueFinalBossTitanTrialsRequired(distance),
+                    EligibleForOffer = eligibleForOffer, TrialEnabled = classSave.IsTitanTrialEnabled(),
+                    ChoseFight = run.HasChosenToFightTfb()
+                };
+            }
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "native-story-progression.json");
             using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write))
             using (var writer = new StreamWriter(stream))
                 writer.Write(JsonConvert.SerializeObject(new { Schema = 1, EvidenceKind = "NativeMetagameObservation",
                     AfterEndGame = afterEndGame, StoryProgression = save.GetStoryProgression(DLC.None),
-                    TrueFinalBossFeatureUnlocked = save.IsTrueFinalBossFeatureUnlocked(), Stories = rows,
+                    TrueFinalBossFeatureUnlocked = save.IsTrueFinalBossFeatureUnlocked(),
+                    TrueFinalBossTrials = new { Gates = trialGates, ClassRun = trialState }, Stories = rows,
                     PyreHearts = hearts }, Formatting.Indented));
         }
 
