@@ -3976,7 +3976,8 @@ namespace MonsterTrain2Poju.Model
             internal RoomCombatResult FeedOnly(CombatTeam team, IReadOnlyList<int>? foodIds = null, int triggerCount = 1, int selfFeederId = 0)
             {
                 Feed(team, foodIds, triggerCount, units.FirstOrDefault(unit => unit.Source.Id == selfFeederId));
-                if (unsupportedReason == null && context?.SpawnPoints != null) SummonPhysical("Compact", team: team);
+                // Forced feeding settles its selected slots; ordinary DoFeederRules leaves holes for the room phase.
+                if (foodIds != null && unsupportedReason == null && context?.SpawnPoints != null) SummonPhysical("Compact", team: team);
                 return Finish(RoomOutcome.Exchanged);
             }
 
