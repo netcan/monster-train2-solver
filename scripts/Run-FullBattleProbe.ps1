@@ -925,6 +925,11 @@ if ($ChosenIncantSpell -and ($StartingCovenantLevel -ne 10 -or $BattleDistance -
     $PlayerAdvisor -or $RollingAdvice -or $Planner -or $RollingInput -or $InputProfile)) {
     throw 'Chosen Incant control requires the original native rank-ten AllyBuffer battle and fixed native spell policy.'
 }
+if ($OriginalEarlyOuterBossTrialBattle) {
+    $PhysicalSpawnPoints = $true
+    $OuterBossBirth = $true
+    $OuterBossTurns = $true
+}
 if ($OuterBossTurns -and -not $PhysicalSpawnPoints) { throw '-OuterBossTurns requires -PhysicalSpawnPoints.' }
 if ($AngelDuoVariant -and (-not $InputProfile -or $BattleDistance -ne 5 -or -not $OuterBossBirth -or
     -not $OuterBossTurns -or $OriginalOuterBossVariant -or $OriginalTrueFinalBoss)) {
@@ -968,8 +973,8 @@ $earlyTrialVariant = switch ($OriginalEarlyOuterBossVariant) {
     'FleshweaverSpikes' { @{ Scenario='Level3ImmortalMass_Spikes'; Owner='Enemy_Boss_Level3_ImmortalMass_Spike_TitanTrial'; OwnerId='c4abfdc2-a89c-43cf-9e35-59f6ea3b39f7'; Source='Boss_Level3_MiniFleshweaver_Spike' } }
 }
 $earlyTrialSubstitution = $OriginalOuterBossTrial -and $null -ne $earlyTrialVariant
-if ($OriginalEarlyOuterBossTrialBattle -and (-not $earlyTrialSubstitution -or $OriginalEarlyOuterBossVariant -cne 'FleshweaverSpikes')) {
-    throw 'OriginalEarlyOuterBossTrialBattle requires the original Ring 3 FleshweaverSpikes Titan Trial.'
+if ($OriginalEarlyOuterBossTrialBattle -and -not $earlyTrialSubstitution) {
+    throw 'OriginalEarlyOuterBossTrialBattle requires an original Ring 3 Fleshweaver Titan Trial variant.'
 }
 if ($OriginalOuterBossTrial -and -not $OriginalOuterBossVariant -and -not $earlyTrialSubstitution) {
     throw 'OriginalOuterBossTrial requires an explicit original Ring 8 variant or a Ring 3 Fleshweaver substitution component.'
@@ -977,7 +982,7 @@ if ($OriginalOuterBossTrial -and -not $OriginalOuterBossVariant -and -not $early
 if ($earlyTrialSubstitution -and (-not $BinaryCapture -or $Policy -ne 'units-spells-and-junk' -or $PlayerAdvisor -or $Advisor -or $Planner -or $RollingInput -or $RollingAdvice)) {
     throw 'The original Ring 3 Titan Trial substitution component requires binary capture and the isolated units-spells-and-junk policy.'
 }
-if ($earlyTrialSubstitution -and -not $OriginalEarlyOuterBossTrialBattle) { $BranchCardMasks = $true }
+if ($earlyTrialSubstitution) { $BranchCardMasks = $true }
 if ($TrueFinalBossMaximumSacrificeRetainMax -and -not $TrueFinalBossMaximumSacrifice) { throw 'Retained maximum-health sacrifice requires an explicit original boss target.' }
 if ($TrueFinalBossMaximumTerminalCommand -and -not $TrueFinalBossMaximumSacrifice) { throw 'Terminal command control requires the original maximum-health battle prefix.' }
 if ($TrueFinalBossMaximumSacrifice) { $TrueFinalBossMaximumBattle = $true }
