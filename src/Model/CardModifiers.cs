@@ -458,11 +458,17 @@ namespace MonsterTrain2Poju.Model
                 return "Invalid or unmodeled card effect counters.";
             var interactions = instance.ExternalInteractions.Where(interaction => interaction != NonPlayableCostInteraction)
                 .Concat(instance.Permanent.ExternalInteractions)
-                .Concat(instance.Temporary.ExternalInteractions).Concat(instance.Permanent.Upgrades.Concat(instance.Temporary.Upgrades)
-                    .SelectMany(UpgradeInteractions)).ToList();
+                .Concat(instance.Temporary.ExternalInteractions)
+                .Concat(InstanceUpgradeInteractions(instance, CardShardtailImpCostModel.PermanentSource(instance))).ToList();
             if (instance.Permanent.PersistentHealth != 0 || instance.Temporary.PersistentHealth != 0) interactions.Add("Persistent card health");
             return interactions.Count == 0 ? null : string.Join("; ", interactions.Distinct());
         }
+
+        private static IEnumerable<string> InstanceUpgradeInteractions(CardInstanceState instance, CardUpgradeModifier? shardtailSource) =>
+            instance.Permanent.Upgrades.Concat(instance.Temporary.Upgrades).SelectMany(upgrade =>
+                UpgradeInteractions(upgrade).Where(interaction => !ReferenceEquals(upgrade, shardtailSource) ||
+                    interaction != CardCorruptionAttackUpgradeModel.Guard));
+
         public static int UpgradedStat(int baseValue, string stat, bool enforceFloor, params CardModifiers[] modifiers)
         {
             if (!new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }.Contains(stat))
@@ -483,9 +489,11 @@ namespace MonsterTrain2Poju.Model
         public static CardPlayRule Resolve(CardPlayRule rule, CardInstanceState instance)
         {
             if (instance.Permanent.MergedEquipment != null) rule = instance.Permanent.MergedEquipment.Resolve(rule);
+            CardUpgradeModifier? roomCostSource = rule.SpawnUnit?.AssetKey == CardShardtailImpCostModel.UnitKey
+                ? CardShardtailImpCostModel.PermanentSource(instance) : null;
             var interactions = rule.ExternalInteractions.Concat(instance.ExternalInteractions.Where(interaction => interaction != NonPlayableCostInteraction))
                 .Concat(instance.Permanent.ExternalInteractions).Concat(instance.Temporary.ExternalInteractions)
-                .Concat(instance.Permanent.Upgrades.Concat(instance.Temporary.Upgrades).SelectMany(UpgradeInteractions)).ToList();
+                .Concat(InstanceUpgradeInteractions(instance, roomCostSource)).ToList();
             string? exhaustError = CardExhaustModel.Validate(instance);
             if (exhaustError != null) interactions.Add(exhaustError);
             string? moonError = CardMoonUpgradeModel.Validate(instance);
@@ -550,7 +558,8 @@ namespace MonsterTrain2Poju.Model
                     original.CanBeHealed, original.IsClone, original.Upgrades, original.HealthFromUpgrades, original.SpawnerMatchesDefinition,
                     original.DamageBuffFromStatusEffects, original.MagebladeDamagePerMagicPower, original.StatusAttackModifiers,
                     original.IsChampion, UnitSelfAttackUpgradeModel.BirthRules(CardCorruptionAttackUpgradeModel.BirthRules(original.SelfAttackRules, cardUpgrades), cardUpgrades),
-                    CardSentientDrawUpgradeModel.BirthRules(original.RoomResources, cardUpgrades), CardPyremaniacUpgradeModel.BirthRules(original.RoomStatuses, cardUpgrades), original.RoomTriggerCounts, original.SpawnCopySubtype,
+                    CardShardtailImpCostModel.BirthRules(CardSentientDrawUpgradeModel.BirthRules(original.RoomResources, cardUpgrades), roomCostSource),
+                    CardPyremaniacUpgradeModel.BirthRules(original.RoomStatuses, cardUpgrades), original.RoomTriggerCounts, original.SpawnCopySubtype,
                     instance.MaskDescriptor?.GraftedEquipment ?? original.Graft, original.SynergizeStatuses, original.Sentry,
                     CardUnderlegionTroopUpgradeModel.BirthRule(original.TroopAura, cardUpgrades));
                 int? nextTriggerId = unit.NextTriggerId;

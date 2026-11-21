@@ -9,8 +9,9 @@ namespace MonsterTrain2Poju.Model
         public string Type { get; }
         public int Amount { get; }
         public bool DisallowedInDeployment { get; }
-        public UnitRoomResourceRule(string type, int amount, bool disallowedInDeployment)
-        { Type = type; Amount = amount; DisallowedInDeployment = disallowedInDeployment; }
+        public string? Subtype { get; }
+        public UnitRoomResourceRule(string type, int amount, bool disallowedInDeployment, string? subtype = null)
+        { Type = type; Amount = amount; DisallowedInDeployment = disallowedInDeployment; Subtype = subtype; }
     }
 
     internal static class UnitRoomResourceModel
@@ -18,10 +19,20 @@ namespace MonsterTrain2Poju.Model
         internal const string Energy = "RoomStateEnergyModifier";
         internal const string Draw = "RoomStateHandSizeModifier";
         internal const string HealCost = "RoomStateHealCostModifier";
-        internal static bool Known(string type) => type is Energy or Draw or HealCost;
-        internal static string? Validate(CombatUnit unit) => unit.Modifiers?.RoomResources?.Any(rule =>
-            !Known(rule.Type) || rule.DisallowedInDeployment || rule.Amount != (rule.Type == Energy ? 2 : rule.Type == Draw ? 1 : -1)) == true
-            ? "Uncalibrated unit room resource modifier." : null;
+        internal const string SubtypeCost = "RoomStateUnitCostModifier";
+        internal static bool Known(string type) => type is Energy or Draw or HealCost or SubtypeCost;
+        internal static string? Validate(CombatUnit unit)
+        {
+            var rules = unit.Modifiers?.RoomResources;
+            if (rules == null) return null;
+            if (rules.Any(rule => !Known(rule.Type) || rule.DisallowedInDeployment ||
+                rule.Amount != (rule.Type == Energy ? 2 : rule.Type == Draw ? 1 : -1) ||
+                (rule.Type == SubtypeCost
+                    ? rule.Subtype != CardShardtailImpCostModel.Subtype || unit.AssetKey != CardShardtailImpCostModel.UnitKey || unit.Team != CombatTeam.Player
+                    : rule.Subtype != null)) || rules.Count(rule => rule.Type == SubtypeCost) > 1)
+                return "Uncalibrated unit room resource modifier.";
+            return null;
+        }
         internal static int Amount(TrainCombatState train, string type, int? roomIndex = null) => train.Rooms
             .Where(room => !room.Preview && (!roomIndex.HasValue || room.RoomIndex == roomIndex)).SelectMany(room => room.Units)
             .Where(unit => unit.Team == CombatTeam.Player && unit.Health > 0 && unit.DeathState?.IsDestroyed != true)
@@ -36,5 +47,9 @@ namespace MonsterTrain2Poju.Model
             int amount = Amount(train, HealCost, roomIndex);
             return amount != 0 && EligibleForHealingCost(rule, card) ? amount : 0;
         }
+
+        internal static int UnitCostDelta(TrainCombatState train, int roomIndex, CardPlayRule rule) =>
+            rule.CardType == "Monster" && rule.SpawnUnit?.Subtypes.Contains(CardShardtailImpCostModel.Subtype) == true
+                ? Amount(train, SubtypeCost, roomIndex) : 0;
     }
 }

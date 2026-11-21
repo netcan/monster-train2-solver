@@ -526,9 +526,10 @@ namespace MonsterTrain2Poju.Model
                 try { effectiveCost = CardHandCostModel.Resolve(context, playingInstance, originalRule.Cost, rule.CardType); }
                 catch (InvalidOperationException error) { return Unsupported(error.Message); }
             }
-            int healingCostDelta = UnitRoomResourceModel.HealingCostDelta(train, action.RoomIndex, rule, playingInstance);
-            if (rule.CardType == "Spell" || healingCostDelta != 0)
-                effectiveCost = (int)Math.Clamp((long)effectiveCost + healingCostDelta +
+            int unitRoomCostDelta = UnitRoomResourceModel.HealingCostDelta(train, action.RoomIndex, rule, playingInstance) +
+                UnitRoomResourceModel.UnitCostDelta(train, action.RoomIndex, rule);
+            if (rule.CardType == "Spell" || unitRoomCostDelta != 0)
+                effectiveCost = (int)Math.Clamp((long)effectiveCost + unitRoomCostDelta +
                     (rule.CardType == "Spell" ? RoomCapacityModel.SpellCostDelta(context, action.RoomIndex) : 0), 0L, 99L);
             int paidCost = rule.CostType == "ConsumeRemainingEnergy" ? source.Energy : effectiveCost;
             if (source.Energy < 0) return Unsupported("Negative decision energy.");

@@ -64,9 +64,10 @@ namespace MonsterTrain2Poju.Probe
                 for (int index = 0; index < roomManager.GetNumRooms(); index++)
                 {
                     RoomState room = roomManager.GetRoom(index);
-                    int healingCostDelta = UnitRoomResourceProbe.HealingCostDelta(room, rule, state);
-                    int expectedCost = rule.CardType == "Spell" || healingCostDelta != 0
-                        ? (int)Math.Clamp((long)handCost + healingCostDelta + (rule.CardType == "Spell" ? RoomCapacityProbe.SpellCostDelta(room) : 0), 0L, 99L)
+                    int unitRoomCostDelta = UnitRoomResourceProbe.HealingCostDelta(room, rule, state) +
+                        UnitRoomResourceProbe.UnitCostDelta(managers, room, card);
+                    int expectedCost = rule.CardType == "Spell" || unitRoomCostDelta != 0
+                        ? (int)Math.Clamp((long)handCost + unitRoomCostDelta + (rule.CardType == "Spell" ? RoomCapacityProbe.SpellCostDelta(room) : 0), 0L, 99L)
                         : handCost;
                     if (card.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(), managers.GetRelicManager(), room) != expectedCost)
                         interactions.Add("Unmodeled room/trait/hand card cost");
@@ -283,6 +284,10 @@ namespace MonsterTrain2Poju.Probe
                      upgrade.GetRoomModifierUpgrades()[0].GetRoomStateModifierClassName() != CardCorruptionAttackUpgradeModel.Type ||
                      upgrade.GetRoomModifierUpgrades()[0].GetParamInt() != 5))
                     interactions.Add("Changed original corruption-attack room modifier definition");
+                if (upgrade.GetCardUpgradeDataId() == CardShardtailImpCostModel.UpgradeId &&
+                    (upgrade.GetAssetName() != CardShardtailImpCostModel.UpgradeKey || upgrade.GetRoomModifierUpgrades().Count != 1 ||
+                    !UnitRoomResourceProbe.KnownImpCost(upgrade.GetRoomModifierUpgrades()[0])))
+                    interactions.Add("Changed original Shardtail room modifier definition");
                 if (upgrade.GetCardUpgradeDataId() is (CardUnderlegionTroopUpgradeModel.DataId or CardUnderlegionTroopUpgradeModel.SecondDataId or
                     CardUnderlegionTroopUpgradeModel.ThirdDataId) &&
                     !TroopAuraProbe.KnownChampionUpgrade(upgrade))
