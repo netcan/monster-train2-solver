@@ -398,6 +398,9 @@ namespace MonsterTrain2Poju.Model
     public static class BattleActionModel
     {
         public static BattleActionResult PlayCard(BattleTurnState source, PlayCardAction action)
+            => PlayCard(source, action, null);
+
+        internal static BattleActionResult PlayCard(BattleTurnState source, PlayCardAction action, BattleSearchWorkspace? workspace)
         {
             if (action.Operation != null) return action.Operation == DevoteModel.Operation
                 ? DevoteModel.Apply(source, action) : Unsupported("Unknown battle operation: " + action.Operation);
@@ -430,7 +433,7 @@ namespace MonsterTrain2Poju.Model
             CombatTeam? originalTargetTeam = train.Rooms.SelectMany(room => room.Units)
                 .FirstOrDefault(unit => unit.Id == action.TargetUnitId)?.Team;
             BattlePlayRules outputPlayRules = source.PlayRules;
-            string? trainValidation = TrainCombatModel.Validate(train);
+            string? trainValidation = workspace == null ? TrainCombatModel.Validate(train) : workspace.ValidateTrain(source);
             if (trainValidation != null) return Unsupported(trainValidation);
             if (source.Spawn.NextUnitId <= 0 || train.Rooms.SelectMany(room => room.Units)
                 .Any(unit => unit.Id <= 0 || unit.Id >= source.Spawn.NextUnitId || unit.Size < 0))

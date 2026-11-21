@@ -148,7 +148,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static BattlePlanResult PlanCore(BattleTurnState source, Func<BattleTurnState, string> stateKey,
             BattlePlannerOptions? options, Func<BattleTurnState, RoomOutcome, double>? evaluate,
-            CancellationToken cancellationToken, bool optimizeTransitions, BattleEarlyStop? earlyStop = null)
+            CancellationToken cancellationToken, bool optimizeTransitions, BattleEarlyStop? earlyStop = null,
+            bool cacheTrainValidation = true)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (stateKey == null) throw new ArgumentNullException(nameof(stateKey));
@@ -157,7 +158,7 @@ namespace MonsterTrain2Poju.Model
             if (options.StopAtBestPyreHealth && evaluate == null) earlyStop ??= BattleEarlyStop.Create(source, cancellationToken);
             else earlyStop = null;
             evaluate ??= Evaluate;
-            var workspace = new BattleSearchWorkspace(optimizeTransitions);
+            var workspace = new BattleSearchWorkspace(optimizeTransitions, cacheTrainValidation);
             int maxTurns = options.SearchToBattleEnd ? options.MaxSteps + 1 : options.MaxTurns;
             int nodes = 0, duplicates = 0, pruned = 0;
             bool timedOut = false, cancelled = false, nodeLimit = false, actionLimit = false, stepLimit = false;

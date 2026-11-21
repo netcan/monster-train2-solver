@@ -93,5 +93,92 @@ internal static class SearchPruningChecks
         double newMs = results.Where(x => x.Optimized).Average(x => x.Plan.Elapsed.TotalMilliseconds);
         Console.WriteLine($"SEARCH-PRUNING PASS baselineMs={oldMs:F0} optimizedMs={newMs:F0} savedCandidates={baseline.SimulatedCandidates-improved.SimulatedCandidates} savedEndTurns={baseline.SimulatedEndTurns-improved.SimulatedEndTurns} identicalPlanStateRng=true");
     }
+
+    internal static void TrainValidation(string path, int[] decisionIndexes)
+    {
+        using var fixture = ModelJson.ReadFixture(path);
+        var decisions = fixture.RootElement.GetProperty("RollingDecisions");
+        var options = new BattlePlannerOptions(32, beamWidth: 8, timeLimit: TimeSpan.FromSeconds(60),
+            allowShorterHorizon: true, searchToBattleEnd: true);
+
+        foreach (int index in decisionIndexes)
+        {
+            BattleTurnState root = decisions[index].GetProperty("Root").Deserialize<BattleTurnState>()!;
+            CheckTrainValidationRejections(root);
+            using var comparisonKeys = new BattleStateKeys();
+            string rootKey = comparisonKeys.Key(root);
+            var baseline = new List<(double Milliseconds, long Bytes, int Validations)>();
+            var optimized = new List<(double Milliseconds, long Bytes, int Validations)>();
+            BattlePlanResult? expected = null;
+
+            // Warm the same paths, then alternate which variant runs first.
+            bool[] cacheOrder = [false, true, false, true, true, false, false, true, true, false];
+            for (int sample = 0; sample < cacheOrder.Length; sample++)
+            {
+                bool cache = cacheOrder[sample];
+                using var keys = new BattleStateKeys();
+                long before = GC.GetAllocatedBytesForCurrentThread();
+                BattlePlanResult plan = BattlePlanner.PlanCore(root, keys.Key, options, null, default,
+                    optimizeTransitions: true, cacheTrainValidation: cache);
+                long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+                Require(!plan.TimedOut && plan.ExpandedNodes == options.MaxNodes,
+                    "Train validation comparison did not finish its fixed node budget.");
+                BattleAdviceSession.Verify(root, plan);
+                if (expected != null)
+                    Require(plan.Score == expected.Score && plan.Outcome == expected.Outcome &&
+                        comparisonKeys.Key(plan.State) == comparisonKeys.Key(expected.State) &&
+                        JsonSerializer.Serialize(plan.Steps) == JsonSerializer.Serialize(expected.Steps) &&
+                        JsonSerializer.Serialize(plan.SearchMetrics) == JsonSerializer.Serialize(expected.SearchMetrics) &&
+                        JsonSerializer.Serialize(plan.UnsupportedAttempts) == JsonSerializer.Serialize(expected.UnsupportedAttempts),
+                        "Train validation caching changed plan, state, RNG, rejection or work counts.");
+                expected ??= plan;
+
+                if (sample >= 2)
+                    (cache ? optimized : baseline).Add((plan.Elapsed.TotalMilliseconds, allocated, plan.SearchMetrics.TrainValidations));
+            }
+
+            using var finalKeys = new BattleStateKeys();
+            Require(finalKeys.Key(root) == rootKey, "Train validation comparison mutated the root.");
+            int baselineValidations = baseline.Select(item => item.Validations).Distinct().Single();
+            int optimizedValidations = optimized.Select(item => item.Validations).Distinct().Single();
+            Require(optimizedValidations > 0 && optimizedValidations < baselineValidations,
+                "The original root did not exercise repeated train validation.");
+            double Median(IEnumerable<double> values) => values.Order().Skip(1).Take(2).Average();
+            Console.WriteLine($"SEARCH-TRAIN-VALIDATION PASS index={index} nodes={options.MaxNodes} " +
+                $"validations={baselineValidations}->{optimizedValidations} " +
+                $"medianMs={Median(baseline.Select(item => item.Milliseconds)):F1}->{Median(optimized.Select(item => item.Milliseconds)):F1} " +
+                $"medianAllocatedBytes={Median(baseline.Select(item => (double)item.Bytes)):F0}->{Median(optimized.Select(item => (double)item.Bytes)):F0} " +
+                "identicalPlanStateRng=true");
+        }
+    }
+
+    private static void CheckTrainValidationRejections(BattleTurnState root)
+    {
+        EnemySpawnState spawn = root.Spawn;
+        var train = new TrainCombatState([], [], spawn.Train.EnemySlotsPerRoom, spawn.Train.Context);
+        var invalidSpawn = new EnemySpawnState(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping,
+            spawn.Rng, spawn.NextUnitId, spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled,
+            spawn.FirstTreasureTurn, spawn.FirstTreasureRoom, spawn.Turn, spawn.ExternalInteractions);
+        var invalid = new BattleTurnState(invalidSpawn, root.Energy, root.EnergyPerTurn, root.DrawPerTurn,
+            root.ForgePoints, root.DragonsHoard, root.MoonPhase, root.RngStreams, root.OtherPiles,
+            root.ExternalInteractions, root.PlayRules);
+
+        var workspace = new BattleSearchWorkspace();
+        var badDestination = new PlayCardAction(-1, 0, targetSpawnPointIndex: 0);
+        BattleActionResult illegal = workspace.Play(invalid, badDestination);
+        Require(illegal.Rejection == ActionRejection.Illegal && workspace.Metrics.TrainValidations == 0,
+            "Train validation ran before the destination guard.");
+
+        foreach (int cardId in new[] { -1, -2 })
+        {
+            var action = new PlayCardAction(cardId, 0);
+            BattleActionResult expected = BattleActionModel.PlayCard(invalid, action);
+            BattleActionResult actual = workspace.Play(invalid, action);
+            Require(expected.Rejection == ActionRejection.Unsupported && expected.Reason == actual.Reason &&
+                actual.Rejection == expected.Rejection && workspace.Metrics.TrainValidations == 1,
+                "A cached train failure changed rejection order or repeated validation.");
+        }
+    }
+
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

@@ -3732,6 +3732,12 @@ if (args.Length >= 2 && args[0] is "--search-pruning-only" or "--search-frontier
     return;
 }
 
+if (args.Length >= 3 && args[0] == "--search-train-validation-only")
+{
+    SearchPruningChecks.TrainValidation(args[1], args.Skip(2).Select(int.Parse).ToArray());
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--deployment-advice-budget-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

@@ -14,17 +14,19 @@ namespace MonsterTrain2Poju.Model
         public int SimulatedEndTurns { get; }
         public int CachedEndTurns { get; }
         public int CachedPolicies { get; }
+        internal int TrainValidations { get; }
         internal BattleSearchMetrics(int requests = 0, int simulated = 0, int cached = 0, int filtered = 0,
-            int turns = 0, int simulatedTurns = 0, int cachedTurns = 0, int policies = 0)
+            int turns = 0, int simulatedTurns = 0, int cachedTurns = 0, int policies = 0, int trainValidations = 0)
         { CandidateRequests = requests; SimulatedCandidates = simulated; CachedCandidates = cached;
             PrefilteredCandidates = filtered; EndTurnRequests = turns; SimulatedEndTurns = simulatedTurns;
-            CachedEndTurns = cachedTurns; CachedPolicies = policies; }
+            CachedEndTurns = cachedTurns; CachedPolicies = policies; TrainValidations = trainValidations; }
         internal static BattleSearchMetrics Sum(IEnumerable<BattleSearchMetrics> values)
         {
             var all = values.ToArray();
             return new BattleSearchMetrics(all.Sum(x => x.CandidateRequests), all.Sum(x => x.SimulatedCandidates),
                 all.Sum(x => x.CachedCandidates), all.Sum(x => x.PrefilteredCandidates), all.Sum(x => x.EndTurnRequests),
-                all.Sum(x => x.SimulatedEndTurns), all.Sum(x => x.CachedEndTurns), all.Sum(x => x.CachedPolicies));
+                all.Sum(x => x.SimulatedEndTurns), all.Sum(x => x.CachedEndTurns), all.Sum(x => x.CachedPolicies),
+                all.Sum(x => x.TrainValidations));
         }
     }
 
@@ -34,12 +36,14 @@ namespace MonsterTrain2Poju.Model
     internal sealed class BattleSearchWorkspace
     {
         private readonly bool enabled;
+        private readonly bool cacheTrainValidation;
         internal bool OptimizeSelections => enabled;
         private readonly Dictionary<BattleTurnState, Entry> entries = new Dictionary<BattleTurnState, Entry>();
-        private int requests, simulated, cached, filtered, turns, simulatedTurns, cachedTurns, policies;
-        internal BattleSearchWorkspace(bool enabled = true) { this.enabled = enabled; }
+        private int requests, simulated, cached, filtered, turns, simulatedTurns, cachedTurns, policies, trainValidations;
+        internal BattleSearchWorkspace(bool enabled = true, bool cacheTrainValidation = true)
+        { this.enabled = enabled; this.cacheTrainValidation = enabled && cacheTrainValidation; }
         internal BattleSearchMetrics Metrics => new BattleSearchMetrics(requests, simulated, cached, filtered,
-            turns, simulatedTurns, cachedTurns, policies);
+            turns, simulatedTurns, cachedTurns, policies, trainValidations);
         private Entry For(BattleTurnState state)
         {
             if (!entries.TryGetValue(state, out var entry)) entries.Add(state, entry = new Entry());
@@ -56,7 +60,26 @@ namespace MonsterTrain2Poju.Model
             internal BattleTurnResult? End;
             internal readonly Dictionary<string, BattleTurnResult> DialogEnds = new Dictionary<string, BattleTurnResult>(StringComparer.Ordinal);
             internal (SupportedActionCandidate? Candidate, IReadOnlyList<UnsupportedActionAttempt> Omitted)? Policy;
+            internal bool TrainValidated;
+            internal string? TrainValidationError;
         }
+
+        internal string? ValidateTrain(BattleTurnState source)
+        {
+            // Direct card candidates check the same immutable train before any
+            // per-action work. Cache both success and failure at that boundary.
+            Entry? entry = cacheTrainValidation ? For(source) : null;
+            if (entry?.TrainValidated == true) return entry.TrainValidationError;
+            trainValidations++;
+            string? error = TrainCombatModel.Validate(source.Spawn.Train);
+            if (entry != null)
+            {
+                entry.TrainValidationError = error;
+                entry.TrainValidated = true;
+            }
+            return error;
+        }
+
         internal BattleActionResult Play(BattleTurnState source, PlayCardAction action)
         {
             requests++;
@@ -80,7 +103,7 @@ namespace MonsterTrain2Poju.Model
             if (action.RecursionSelections.Count != 0 || action.MixSelections.Count != 0 || action.SummonSelections.Count != 0)
             {
                 simulated++;
-                var selected = BattleActionModel.PlayCard(source, action);
+                var selected = BattleActionModel.PlayCard(source, action, this);
                 RememberCost(selected); return selected;
             }
             var key = (action.CardInstanceId, action.RoomIndex, action.PlayerPosition, action.TargetUnitId,
@@ -92,7 +115,7 @@ namespace MonsterTrain2Poju.Model
             var family = (action.CardInstanceId, action.RoomIndex, team, illegal ?? "");
             if (illegal != null && entry.IllegalInputs.TryGetValue(family, out result))
             { filtered++; return result; }
-            simulated++; result = BattleActionModel.PlayCard(source, action);
+            simulated++; result = BattleActionModel.PlayCard(source, action, this);
             RememberCost(result);
             if (entry.Actions.Count < 256) entry.Actions.Add(key, result);
             // The first representative must actually reach this exact legality
