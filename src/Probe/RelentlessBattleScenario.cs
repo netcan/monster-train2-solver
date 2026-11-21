@@ -74,14 +74,19 @@ namespace MonsterTrain2Poju.Probe
         internal static void RecordDialog(int turn, RelentlessDecision choice) => dialogs.Add(new
         { Turn = turn, choice.RoomIndex, choice.CompletedRounds, choice.Continue });
         internal static bool IsScenarioAction(PlayCardAction action) => action.CardInstanceId == cardId;
-        internal static IReadOnlyList<RelentlessDecision>? Plan(BattleTurnState before)
+        internal static IReadOnlyList<RelentlessDecision>? Plan(BattleTurnState before, bool record = true)
         {
             if (!Enabled) return null;
             var plan = new List<RelentlessDecision>();
             for (int count = 0; count < 64; count++)
             {
                 BattleTurnResult result = BattleTurnModel.EndTurn(before, plan);
-                if (result.Supported) { controlledPlan = Array.AsReadOnly(plan.ToArray()); return controlledPlan; }
+                if (result.Supported)
+                {
+                    var decisions = Array.AsReadOnly(plan.ToArray());
+                    if (record) controlledPlan = decisions;
+                    return decisions;
+                }
                 if (result.RelentlessChoice == null) throw new InvalidOperationException("Controlled Relentless turn: " + result.UnsupportedReason);
                 plan.Add(result.RelentlessChoice.Choose(!Abandon));
             }

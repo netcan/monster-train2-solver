@@ -201,7 +201,8 @@ namespace MonsterTrain2Poju.Probe
             current = root;
             for (int turn = 0; turn < record.Horizon; turn++)
             {
-                BattleTurnResult ended = BattleTurnModel.EndTurn(current);
+                BattleTurnResult ended = BattleTurnModel.EndTurn(current,
+                    RelentlessBattleScenario.Plan(current, record: false));
                 if (!ended.Supported) throw new InvalidOperationException(ended.UnsupportedReason);
                 current = ended.State!; outcome = ended.Outcome;
                 if (outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate) break;

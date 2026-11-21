@@ -82,7 +82,17 @@ internal static class BattlePlannerChecks
             bool end = steps[index].GetProperty("IsEndTurn").GetBoolean();
             PlayCardAction? action = end ? null : steps[index].GetProperty("Action").Deserialize<PlayCardAction>()!;
             Require(end == (steps[index].GetProperty("Action").ValueKind == FixtureKind.Null), "Invalid frozen plan step.");
-            state = Replay(state, new[] { new BattleSearchStep(action, end) }, out outcome);
+            RelentlessDecision[]? choices = RecordedBattleChecks.Decisions(steps[index]);
+            if (choices is { Length: > 0 })
+            {
+                var observedTurns = fixture.GetProperty("Turns").EnumerateArray()
+                    .Where(turn => RecordedBattleChecks.DecisionTurn(turn) == state.Spawn.Turn).ToArray();
+                Require(end && observedTurns.Length == 1 &&
+                    JsonSerializer.Serialize(choices, ModelJson.Options) ==
+                    JsonSerializer.Serialize(RecordedBattleChecks.Decisions(observedTurns[0]), ModelJson.Options),
+                    "Native Relentless choices differ at planner step " + index);
+            }
+            state = Replay(state, new[] { new BattleSearchStep(action, end, choices) }, out outcome);
             if (end) turns++;
             bool terminal = outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
             string wanted = BattleTurnChecks.Comparable(state, terminal);
