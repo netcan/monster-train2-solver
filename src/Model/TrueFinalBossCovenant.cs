@@ -26,6 +26,14 @@ namespace MonsterTrain2Poju.Model
                 owner.DataId == "92c18b99-e4c0-4953-ba2c-4815f570a66e" && owner.EffectTypes.Count == 0 ||
                 OrdinaryWaveExtensionOwner(owner));
 
+        internal static bool CalibratedCaelShieldTrialOwners(CombatRelicState[] owners) =>
+            owners is [{ AssetKey: "Covenant01_StrongerEnemiesMoreCards" } first, { AssetKey: "Covenant02_BattlesNewEnemies" }] &&
+            CalibratedOrdinaryWaveOwners(owners) &&
+            first.EffectTypes.SequenceEqual(new[] { "RelicEffectPurgeStarterDeck", "RelicEffectAddCardSetStartOfRun", "RelicEffectEnableSpecialCharacters" }
+                .Concat(Enumerable.Repeat("RelicEffectModifyCharacterMaxHealth", 6))
+                .Concat(Enumerable.Repeat("RelicEffectModifyCharacterAttackDamage", 5))
+                .Concat(Enumerable.Repeat("RelicEffectModifyCharacterMaxHealth", 3)));
+
         internal static bool OrdinaryWaveExtensionOwner(CombatRelicState owner) => MerchantOnlyOwner(owner) ||
             StrongerBossOwner(owner) || StartupCardsOwner(owner) || DraftOnlyOwner(owner) || WaveMessageOwner(owner) ||
             StrongerEnemyOwner(owner) || StartingPyreOwner(owner) || FlyingBossSelectionOwner(owner);
@@ -85,6 +93,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static bool CalibratedOuterBossOwners(CombatRelicState[] owners, string asset)
         {
+            if (asset == OuterBossDefinitions.CaelShieldTrial)
+                return owners.Length == 0 || CalibratedCaelShieldTrialOwners(owners);
             return owners.Length == 0 || (asset is "Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" or "Boss_Level8_Corrupter" ||
                 // Arkion's conditional Pyre damage uses the same captured
                 // Covenant stats and ordered birth callbacks as ordinary waves.

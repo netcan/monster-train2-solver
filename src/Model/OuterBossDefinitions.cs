@@ -53,7 +53,7 @@ namespace MonsterTrain2Poju.Model
         internal static bool CalibratedCaelShieldTrial(CombatUnit unit, CombatContext? context)
             => unit.AssetKey == CaelShieldTrial && CalibratedCaelTrial(unit, context);
 
-        internal static bool CalibratedCaelTrial(CombatUnit unit, CombatContext? context)
+        internal static bool CalibratedCaelTrial(CombatUnit unit, CombatContext? context, EnemyBirthStatAdjustment? birthStats = null)
         {
             if (unit is not { Team: CombatTeam.Enemy, BaseAttack: 22, Attack: 22,
                     Health: 1800, MaxHealth: 1800, Size: 6, CanAttack: true, IsBoss: true, EndsBattleOnDeath: true,
@@ -66,9 +66,14 @@ namespace MonsterTrain2Poju.Model
                             Type: "UnitUpgrade", Target: "FrontInRoom", AllowEnemy: true, AllowPlayer: false, Value: 0,
                             Lifetime: "TemporaryUntilEndOfBattle", Range: null, UseCardTraits: false, Filters.IgnoreBosses: true,
                             Upgrade: { } upgrade } }] }] } ||
-                !CalibratedCaelTrialUpgrade(unit.AssetKey, upgrade) ||
-                context?.Relics == null || context.Relics.Any(owner => owner.IsCovenant == true))
+                !CalibratedCaelTrialUpgrade(unit.AssetKey, upgrade) || context?.Relics == null)
                 return false;
+            CombatRelicState[] covenants = context.Relics.Where(owner => owner.IsCovenant == true).ToArray();
+            bool calibratedStats = covenants.Length == 0 ? birthStats == null :
+                unit.AssetKey == CaelShieldTrial && birthStats is { Attack: 0, Health: 700 } &&
+                TrueFinalBossCovenantModel.CalibratedCaelShieldTrialOwners(covenants) &&
+                birthStats.CovenantIds.SequenceEqual(covenants.Select(owner => owner.DataId));
+            if (!calibratedStats) return false;
             (string ownerId, string ownerKey) = unit.AssetKey switch
             {
                 CaelShieldTrial => (CaelShieldTrialOwnerId, CaelShieldTrialOwner),
