@@ -23,8 +23,10 @@ namespace MonsterTrain2Poju.Model
     {
         internal const string OtherStatusEffect = "CardEffectAddStatusEffectPerOtherEffect";
         internal const string OtherStatusAction = "AddStatusPerOtherEffect";
+        internal const string HealthPercentStatusEffect = "CardEffectAddStatusEffectDependingOnHealthPercent";
         internal const string OriginalSpurned = "Boss_SoulSavior_R4_Spurned_ArmorPerDebuff";
         internal const string OriginalSpurnedWitherbloom = "Boss_SoulSavior_R4_Spurned_WitherbloomOnAction";
+        internal const string OriginalSpurnedDuality = "Boss_SoulSavior_R4_Spurned_DualismAt50";
 
         internal static bool MatchesSpurnedAttack(CombatUnit actor, CombatTrigger trigger)
         {
@@ -34,16 +36,30 @@ namespace MonsterTrain2Poju.Model
             return actor.AssetKey switch
             {
                 OriginalSpurned => trigger.Effects.Count == 2 && MatchesOtherStatus(trigger.Effects[1], "Self", "armor", 3),
-                OriginalSpurnedWitherbloom => trigger.Effects.Count == 1 && trigger.RemoveOnRelentlessChange,
+                OriginalSpurnedWitherbloom or OriginalSpurnedDuality => trigger.Effects.Count == 1 && trigger.RemoveOnRelentlessChange,
                 _ => false
             };
         }
 
-        internal static bool MatchesSpurnedWitherbloomTurnBegin(CombatTrigger trigger) =>
+        internal static bool MatchesSpurnedTurnBegin(CombatUnit actor, CombatTrigger trigger) =>
             trigger.Kind == "OnTurnBegin" && !trigger.Once && !trigger.IgnoreSilence && trigger.RemoveOnRelentlessChange &&
             trigger.Effects.Count == 2 &&
             MatchesFixedRoomStatus(trigger.Effects[0], StatusAttackDamageModel.Malaise, 2, bothTeams: false) &&
-            MatchesFixedRoomStatus(trigger.Effects[1], RoomCombatModel.Witherbloom, 1, bothTeams: true);
+            (actor.AssetKey == OriginalSpurnedWitherbloom
+                ? MatchesFixedRoomStatus(trigger.Effects[1], RoomCombatModel.Witherbloom, 1, bothTeams: true)
+                : actor.AssetKey == OriginalSpurnedDuality && MatchesSpurnedHealthPercent(trigger.Effects[1]));
+
+        private static bool MatchesSpurnedHealthPercent(CombatEffect effect) =>
+            effect.Type == HealthPercentStatusEffect &&
+            effect.StatusScaling is { HealthChoicePercent: 50, HealthChoiceAbove: false, ActorStatus: null,
+                MissingHealth: false, MagicPower: false, IgnoreDualism: false, Subtype.Length: 0 } &&
+            effect.Action is { Type: "AddStatus", Target: "Self", Value: 50, AllowPlayer: true, AllowEnemy: true,
+                Range: null, CountStatusOnlyOnTargets: false, Statuses.Count: 2 } action &&
+            action.Statuses[0] is { Id: StatusAttackDamageModel.Malaise, Stacks: 0 } &&
+            action.Statuses[1] is { Id: "duality", Stacks: 1 } &&
+            action.Tests is { ShouldTest: true, FailToCast: false, CancelSubsequent: false, StrictTargets: false,
+                MustHaveValidTargets: false, DevotionRequirement: 0, DevotionRequirementMax: 0 } &&
+            HasNoTargetFilters(action.Filters);
 
         private static bool MatchesFixedRoomStatus(CombatEffect effect, string statusId, int stacks, bool bothTeams) =>
             effect.Type == "CardEffectAddStatusEffect" && NoStatusScaling(effect.StatusScaling) &&
@@ -101,6 +117,8 @@ namespace MonsterTrain2Poju.Model
                     return "Unsupported health-dependent status definition.";
                 return null;
             }
+            if (effect.Type == HealthPercentStatusEffect)
+                return MatchesSpurnedHealthPercent(effect) ? null : "Unmodeled Spurned health-percent status payload.";
             if (effect.StatusScaling?.HealthChoicePercent != null) return "Health-dependent status metadata on another effect.";
             if (effect.Type == FriendlyDamageStatusModel.NativeEffect && action.Range != null)
                 return "Damage-taken status scaling does not support range initialization.";
@@ -155,8 +173,13 @@ namespace MonsterTrain2Poju.Model
             if (error != null || actor == null || source.Context == null || targetIds.Any(id => source.Units.All(unit => unit.Id != id)))
                 return Unsupported(error ?? "Triggered status requires captured actor, targets and battle context.");
             CardActionEffect action = effect.Action!;
-            if (effect.Type == "CardEffectAddStatusEffectBasedOnHealth")
+            if (effect.Type is "CardEffectAddStatusEffectBasedOnHealth" or HealthPercentStatusEffect)
+            {
+                if (effect.Type == HealthPercentStatusEffect &&
+                    (actor.AssetKey != OriginalSpurnedDuality || targetIds.Any(id => id != actorId)))
+                    return Unsupported("The original Spurned health-percent status requires its Self target.");
                 return ApplyHealthChoice(source, actor, effect, targetIds, sourceCardId, isFromHiddenTrigger);
+            }
             bool perFriendlyDamage = effect.Type == FriendlyDamageStatusModel.NativeEffect;
             bool perSelfAttack = effect.Type == "CardEffectAddStatusEffectPerSelfAttack";
             bool perLastAttack = effect.Type == "CardEffectAddStatusEffectPerLastAttackDamage";
@@ -313,14 +336,16 @@ namespace MonsterTrain2Poju.Model
             foreach (int id in targets)
             {
                 var target = state.Units.First(unit => unit.Id == id);
-                int selected = HealthChoice(target.Health, target.MaxHealth, effect.StatusScaling!.HealthChoicePercent!.Value,
-                    effect.StatusScaling.HealthChoiceAbove);
+                int percent = effect.StatusScaling!.HealthChoicePercent!.Value;
+                bool healthPercent = effect.Type == HealthPercentStatusEffect;
+                int selected = healthPercent ? ((float)target.Health / Math.Max(1, target.MaxHealth) > percent / 100f ? 0 : 1) :
+                    HealthChoice(target.Health, target.MaxHealth, percent, effect.StatusScaling.HealthChoiceAbove);
                 if (selected >= effect.Action!.Statuses.Count) continue;
                 var status = effect.Action.Statuses[selected];
                 bool duality = !isFromHiddenTrigger && actor.Status("duality")?.Stacks > 0;
                 if (duality && status.Id != "armor" && status.DisplayCategory == null)
                     return Unsupported("Triggered Duality requires the captured status display category.");
-                var added = StatusApplicationModel.ApplyRetained(state, id, status, sourceCardId ?? actor.SpawnerCardId,
+                var added = StatusApplicationModel.ApplyRetained(state, id, status, healthPercent ? 0 : sourceCardId ?? actor.SpawnerCardId,
                     doubleForDuality: duality && AffectedByDuality(status));
                 if (!added.Supported) return added;
                 state = added.State!; callbacks.AddRange(added.PendingCallbacks);

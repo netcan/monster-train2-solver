@@ -6,6 +6,94 @@ internal static class SpurnedChecks
 {
     private const string Scenario = "SoulSavior_R4_BossBattle_EstrangedChild_2";
     private const string BossKey = TriggeredStatusModel.OriginalSpurned;
+    private const string DualityScenario = "SoulSavior_R4_BossBattle_EstrangedChild_1";
+
+    internal static void HealthThreshold(FixtureValue root)
+    {
+        Require(root.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            root.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
+            root.GetProperty("Boundary").GetString() == "NativeOriginalSpurnedHealthThreshold" &&
+            root.GetProperty("Scenario").GetString() == DualityScenario &&
+            root.GetProperty("BossKey").GetString() == TriggeredStatusModel.OriginalSpurnedDuality &&
+            root.GetProperty("TestScenario").GetBoolean(), "Expected the original Spurned health threshold witness.");
+
+        CombatTrigger trigger = root.GetProperty("Trigger").Deserialize<CombatTrigger>()!;
+        FixtureValue[] samples = root.GetProperty("Samples").EnumerateArray().ToArray();
+        Require(samples.Length == 3 && samples.Select(sample => sample.GetProperty("Health").GetInt32()).Order()
+            .SequenceEqual([599, 600, 601]), "The native health sample must cross the threshold and include equality.");
+        foreach (FixtureValue sample in samples)
+        {
+            CombatUnit before = sample.GetProperty("Before").Deserialize<CombatUnit>()!;
+            CombatUnit afterTest = sample.GetProperty("AfterTest").Deserialize<CombatUnit>()!;
+            CombatUnit after = sample.GetProperty("AfterThreshold").Deserialize<CombatUnit>()!;
+            int health = sample.GetProperty("Health").GetInt32();
+            Require(before.AssetKey == TriggeredStatusModel.OriginalSpurnedDuality &&
+                sample.GetProperty("Maximum").GetInt32() == 1200 && before.Health == health && before.MaxHealth == 1200 &&
+                TriggeredStatusModel.MatchesSpurnedTurnBegin(before, trigger), "Unexpected native boss or threshold definition.");
+            Require(sample.GetProperty("TestReturned").GetBoolean(), "The original non-strict Self test must admit both status choices.");
+            CompareActor(before, afterTest, $"test at {health} HP");
+            FixtureValue[] applications = sample.GetProperty("Applications").EnumerateArray().ToArray();
+            Require(applications.Select(application => application.GetProperty("Effect").GetString()).SequenceEqual(
+                ["CardEffectAddStatusEffect", TriggeredStatusModel.HealthPercentStatusEffect]),
+                "The original turn begins with Malaise on the room, followed by the Self threshold.");
+            FixtureValue threshold = applications[1];
+            UnityRng battle = Rng(sample, "RngBefore", "Battle");
+            UnityRng test = Rng(sample, "RngBefore", "BattleTest");
+            UnityRng drawnTest = Rng(sample, "RngAfterTest", "BattleTest");
+            Require(!test.Equals(drawnTest) && test.Range(0, 2).State.Equals(drawnTest) &&
+                battle.Equals(Rng(sample, "RngAfterTest", "Battle")) &&
+                Rng(threshold, "RngBefore", "Battle").Equals(Rng(threshold, "RngAfter", "Battle")) &&
+                Rng(threshold, "RngBefore", "BattleTest").Equals(Rng(threshold, "RngAfter", "BattleTest")),
+                $"Native test must draw once from BattleTest and application must preserve both streams at {health} HP.");
+            if (health > 600)
+                Require(after.RegisteredStatus(StatusAttackDamageModel.Malaise)?.Stacks == 0 && after.Status("duality") == null,
+                    "Above half health the original actor must register zero Malaise.");
+            else
+                Require(after.Status("duality")?.Stacks == 1, "At or below half health the original actor must gain Duality.");
+
+            var context = new CombatContext(new CardCycleState([], [], [], battle, 0, []), battle, 0, 1, 10);
+            var room = new RoomCombatState(0, false, [before], [], context);
+            CombatEffect effect = trigger.Effects[1];
+            Require(TriggeredStatusModel.Test(room, effect, [before.Id], out string? error), error ?? "Modeled threshold test rejected.");
+            FixtureValue malaiseEffect = applications[0];
+            CombatUnit targetBefore = malaiseEffect.GetProperty("TargetsBefore").Deserialize<CombatUnit[]>()!.Single();
+            CombatUnit targetAfter = malaiseEffect.GetProperty("TargetsAfter").Deserialize<CombatUnit[]>()!.Single();
+            Require(targetBefore.Team == CombatTeam.Player && targetBefore.AssetKey == "TrainStewardBig" && targetBefore.Id == targetAfter.Id &&
+                targetAfter.Status(StatusAttackDamageModel.Malaise)?.Stacks == 2, "Expected the original room target to receive two Malaise.");
+            CombatUnit originalActor = malaiseEffect.GetProperty("Before").Deserialize<CombatUnit>()!;
+            var duringTurnBegin = new RoomCombatState(0, false, [originalActor, targetBefore], [], context);
+            RoomCombatResult roomMalaise = TriggeredStatusModel.Apply(duringTurnBegin, before.Id, trigger.Effects[0], [targetBefore.Id]);
+            Require(roomMalaise.Supported, roomMalaise.UnsupportedReason ?? "Modeled turn-begin Malaise failed.");
+            CompareActor(roomMalaise.State!.Units.Single(unit => unit.Id == targetAfter.Id), targetAfter, $"room Malaise at {health} HP");
+            CombatUnit thresholdActor = threshold.GetProperty("Before").Deserialize<CombatUnit>()!;
+            CombatUnit[] thresholdTargets = threshold.GetProperty("TargetsBefore").Deserialize<CombatUnit[]>()!;
+            Require(thresholdTargets.Length == 1 && thresholdTargets[0].Id == before.Id &&
+                thresholdActor.Id == before.Id && thresholdActor.Health == health,
+                "Expected the original boss and unchanged HP entering the threshold callback.");
+            CompareActor(thresholdTargets[0], thresholdActor, $"native Self target before application at {health} HP");
+            CompareActor(threshold.GetProperty("TargetsAfter").Deserialize<CombatUnit[]>()!.Single(), after,
+                $"native Self target after application at {health} HP");
+            var thresholdRoom = new RoomCombatState(0, false, [thresholdActor], [], context);
+            RoomCombatResult applied = TriggeredStatusModel.Apply(thresholdRoom, before.Id, effect, [before.Id]);
+            Require(applied.Supported, applied.UnsupportedReason ?? "Modeled threshold application failed.");
+            Require(battle.Equals(applied.State!.Context!.BattleRng), "Modeled threshold application advanced Battle RNG.");
+            CompareActor(applied.State.Units.Single(), after, $"application at {health} HP");
+        }
+        Console.WriteLine("NATIVE-SPURNED-HEALTH PASS: 601/600/599 of 1200 HP, native test draw, unchanged application RNG and exact actor states.");
+
+        static UnityRng Rng(FixtureValue sample, string phase, string stream)
+        {
+            uint[] words = sample.GetProperty(phase).GetProperty(stream).Deserialize<uint[]>()!;
+            Require(words.Length == 4, "Expected four native RNG words.");
+            return new UnityRng(words[0], words[1], words[2], words[3]);
+        }
+
+        static void CompareActor(CombatUnit modeled, CombatUnit native, string operation)
+        {
+            string? difference = ModelJson.Difference(JsonSerializer.Serialize(modeled), JsonSerializer.Serialize(native));
+            Require(difference == null, $"Spurned {operation} differs from native at {difference}.");
+        }
+    }
 
     internal static void FullBattle(string path)
     {
@@ -15,20 +103,25 @@ internal static class SpurnedChecks
         string bossKey = identity.GetProperty("Scenario").GetString() switch
         {
             Scenario => BossKey,
+            DualityScenario => TriggeredStatusModel.OriginalSpurnedDuality,
             "SoulSavior_R4_BossBattle_EstrangedChild_3" => TriggeredStatusModel.OriginalSpurnedWitherbloom,
             _ => throw new InvalidOperationException("Expected an original supported Spurned battle.")
         };
         bool witherbloom = bossKey == TriggeredStatusModel.OriginalSpurnedWitherbloom;
+        bool duality = bossKey == TriggeredStatusModel.OriginalSpurnedDuality;
         Require(root.GetProperty("ModifierScenario").GetString() == "original-spurned-battle" &&
             identity.GetProperty("BossKey").GetString() == bossKey &&
             identity.GetProperty("TestScenario").GetBoolean(), "Expected the controlled original Spurned battle.");
-        if (witherbloom)
+        if (witherbloom || duality)
             Require(identity.GetProperty("CompanionKeys").GetArrayLength() == 0,
-                "Expected the original Witherbloom scenario with no companion boss.");
+                "Expected the original scenario with no companion boss.");
+        if (duality)
+            Require(identity.GetProperty("IsolatePreviewRng").GetBoolean() && identity.GetProperty("IsolateUiRng").GetBoolean(),
+                "The native health-threshold battle must isolate UI and preview RNG while retaining real trigger tests.");
 
         bool MatchesBoss(CombatUnit unit) => unit.AssetKey == bossKey &&
             unit.Triggers.Any(trigger => TriggeredStatusModel.MatchesSpurnedAttack(unit, trigger)) &&
-            (!witherbloom || unit.Triggers.Any(TriggeredStatusModel.MatchesSpurnedWitherbloomTurnBegin));
+            (!(witherbloom || duality) || unit.Triggers.Any(trigger => TriggeredStatusModel.MatchesSpurnedTurnBegin(unit, trigger)));
         FixtureValue[] turns = root.GetProperty("Turns").EnumerateArray().ToArray();
         Require(turns.Length >= 2, "The original Spurned battle must capture its opening and later turns.");
         BattleTurnState opening = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
@@ -60,6 +153,13 @@ internal static class SpurnedChecks
             Require(rooms.Any(room => room.Units.Any(unit => unit.Id == first!.UnitId && unit.Status(RoomCombatModel.Witherbloom)?.Stacks > 0) &&
                 room.Units.Any(unit => unit.Team == CombatTeam.Player && unit.Status(RoomCombatModel.Witherbloom)?.Stacks > 0)),
                 "No original complete-turn successor contains Witherbloom on both Spurned and a player unit on its floor.");
+        }
+        if (duality)
+            Require(rooms.SelectMany(room => room.Units).Any(unit => unit.Id == first!.UnitId &&
+                unit.Health > unit.MaxHealth / 2 && unit.RegisteredStatus(StatusAttackDamageModel.Malaise)?.Stacks == 0),
+                "The original battle must execute the above-threshold zero Malaise application.");
+        if (witherbloom || duality)
+        {
             Require(rooms.SelectMany(room => room.Units).Any(unit => unit.Id == first!.UnitId &&
                 unit.BumpRules is { OuterBoss: true, OuterBossRelentlessPhase: true } && unit.Triggers.Count == 0),
                 "The original Relentless snapshot must show both Casting triggers removed.");

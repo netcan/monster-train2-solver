@@ -1235,15 +1235,15 @@ namespace MonsterTrain2Poju.Model
                 if (!state.Deployment && unit.Status("valor") != null &&
                     state.Context?.StatusRules.FirstOrDefault(rule => rule.Id == "armor") == null)
                     return "Valor requires the armor status definition.";
-                if (unit.AssetKey == TriggeredStatusModel.OriginalSpurnedWitherbloom)
+                if (unit.AssetKey is TriggeredStatusModel.OriginalSpurnedWitherbloom or TriggeredStatusModel.OriginalSpurnedDuality)
                 {
                     CombatTrigger[] original = unit.Triggers.Where(trigger =>
                         string.IsNullOrEmpty(trigger.Origin?.UpgradeId) && trigger.Origin?.IsFromEquipment != true).ToArray();
                     bool nativeRoster = unit.BumpRules is { OuterBoss: true, OuterBossRelentlessPhase: true }
                         ? original.Length == 0
-                        : original.Length == 2 && TriggeredStatusModel.MatchesSpurnedWitherbloomTurnBegin(original[0]) &&
+                        : original.Length == 2 && TriggeredStatusModel.MatchesSpurnedTurnBegin(unit, original[0]) &&
                             TriggeredStatusModel.MatchesSpurnedAttack(unit, original[1]);
-                    if (!nativeRoster) return "Spurned Witherbloom requires its original triggers for the captured boss phase.";
+                    if (!nativeRoster) return "Spurned requires its original triggers for the captured boss phase.";
                 }
                 foreach (CombatTrigger trigger in unit.Triggers)
                 {
@@ -1612,6 +1612,13 @@ namespace MonsterTrain2Poju.Model
                         {
                             if (state.Context == null || !TriggeredStatusModel.MatchesSpurnedAttack(unit, trigger))
                                 return "Status-per-other triggers require the captured ordered Spurned attack payload.";
+                            continue;
+                        }
+                        if (effect.Type == TriggeredStatusModel.HealthPercentStatusEffect)
+                        {
+                            if (state.Context == null || unit.AssetKey != TriggeredStatusModel.OriginalSpurnedDuality ||
+                                !TriggeredStatusModel.MatchesSpurnedTurnBegin(unit, trigger))
+                                return "Health-percent status triggers require the original Spurned turn-begin payload.";
                             continue;
                         }
                         if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectPyreDamageIfNoPlayerUnits" && effect.Type != "CardEffectAddStatusEffect" &&
@@ -6336,6 +6343,11 @@ namespace MonsterTrain2Poju.Model
                 {
                     RngDraw choice = context.BattleRng.Range(0, effect.Action.Statuses.Count);
                     context = context.WithBattleRng(choice.State); selected = effect.Action.Statuses[choice.Value];
+                }
+                else if (effect.Type == TriggeredStatusModel.HealthPercentStatusEffect &&
+                    context?.Enchantments is { AutomaticLifecycle: true } world)
+                {
+                    context = context.WithEnchantments(world.WithTestRng(world.TestRng.Range(0, 2).State));
                 }
                 bool result = TriggeredStatusModel.Test(RetainedStatusRoom(actor, targets.UnitIds), effect, targets.UnitIds, out string? error, selected);
                 if (error != null) unsupportedReason = error;

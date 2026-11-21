@@ -7730,6 +7730,13 @@ if (args.Length == 2 && args[0] == "--native-spurned")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--native-spurned-health")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    SpurnedChecks.HealthThreshold(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--native-spurned-battle")
 {
     SpurnedChecks.FullBattle(args[1]);
