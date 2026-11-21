@@ -247,6 +247,11 @@ Cael 零盟约试炼的攻击与生命、吸血变体分别通过 26 次出牌�
 原版和模型的战斗上下文均结算为 1，回合结果现在也读取该值。使用 `--observed-successors-only`
 核对 `mechanics/end-turn-dragon-hoard/ring4-observed.mt2f`，33 个原版输入和 16 个列车阶段通过。
 
+使用 `-ResumeRollingAdvice` 从同一战前档固定复放这 33 个输入，期间顾问未启动搜索。
+原版结算与采集一致后，顾问从当前状态生成新建议，继续完成第 34 至 37 步。第四环实际结果为败局，
+四项采集计数均为零。`--rolling-advice-only` 独立复核了 28 次出牌或技能、9 次结束回合及终局。
+整场归档为 `mechanics/player-advisor-rolling/migrated-covenant10-ring4-defeat-resumed.mt2f`。
+
 2.3.1 的进食组件对照使用两次原版结算。隔离实例用原版接口发放测试用牌，再通过出牌
 与 EndTurn 触发结算。两次进食均将 Morsel Miner 的来源牌移入 Eaten，Primordium
 存活并减少一层 Eatmany。普通进食在房间结算前保留空位，Feast 结算后填补空位。
