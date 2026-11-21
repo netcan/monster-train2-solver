@@ -88,8 +88,8 @@ if ($BattleReplay) {
     if ($inputSave.gameSequence -ne 6 -or $inputSave.wasDevCheatUsed -or $StopBeforeRing -ne ([int]$inputSave.runState.distance + 2)) {
         throw 'BattleReplay must continue an unmodified BattleIntro checkpoint to the immediately following ring.'
     }
-    if (($OuterBossTurns -or $OuterBossBirth) -and [int]$inputSave.runState.distance -ne 7) {
-        throw 'Outer-boss replay probes require the Ring8 battle; omit them when replaying an earlier ring.'
+    if (($OuterBossTurns -or $OuterBossBirth) -and [int]$inputSave.runState.distance -notin 2, 5, 7) {
+        throw 'Outer-boss replay probes require an ordinary boss encounter at Ring 3, 6, or 8.'
     }
     Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
     $sourceDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($BattleReplay)
