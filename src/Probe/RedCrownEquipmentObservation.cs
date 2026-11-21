@@ -1,3 +1,4 @@
+#if DEVELOPMENT_PROBE
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -91,3 +92,4 @@ namespace MonsterTrain2Poju.Probe
         }
     }
 }
+#endif
