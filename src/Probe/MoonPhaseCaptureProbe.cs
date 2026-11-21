@@ -22,7 +22,11 @@ namespace MonsterTrain2Poju.Probe
         // Tracking may be enabled by a generated card during this battle.
         // Capture the real masks and definition defaults from deployment,
         // so enabling tracking does not change the shape of unrelated state.
-        internal static bool CaptureMasks => Enabled || Environment.GetEnvironmentVariable("MT2_PROBE_TURN_END_BUMP") != null;
+        internal static bool CaptureMasks => Enabled ||
+#if DEVELOPMENT_PROBE
+            UiRngIsolation.CaelShieldTrialTestQueries ||
+#endif
+            Environment.GetEnvironmentVariable("MT2_PROBE_TURN_END_BUMP") != null;
 
         private static readonly HashSet<string> Effects = new HashSet<string>(StringComparer.Ordinal)
         {

@@ -244,6 +244,7 @@ namespace MonsterTrain2Poju.Probe
                 BranchCardMasksEnabled = CardBranchMaskProbe.Enabled,
                 IsolatePreviewRng = PreviewRngIsolation.Enabled, IsolateUiRng = UiRngIsolation.Enabled,
                 IsolateTestQueries = UiRngIsolation.CaelShieldTrialTestQueries,
+                MoonPhaseMasksCaptured = MoonPhaseCaptureProbe.CaptureMasks,
                 Mappings = earlyTrialEntries.Select(entry => new { Source = entry.UnitBefore.GetAssetKey(), SourceId = entry.UnitBefore.GetID(),
                     Replacement = entry.UnitAfter.GetAssetKey(), ReplacementId = entry.UnitAfter.GetID() }).ToArray(),
                 Unit = trace.CaptureUnit(unit), Intro = TrialIntroControl, TitanTrial = save.IsTitanTrialEnabled() });
