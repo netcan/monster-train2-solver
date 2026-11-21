@@ -28,12 +28,14 @@ namespace MonsterTrain2Poju.Model
         public int VisibleDeckCount { get; }
         public int? CorruptionPerCorruptTrait { get; }
         public bool? OpeningCapacitySettled { get; }
+        public bool? OpeningPyreDamageSettled { get; }
+        public bool ShouldSerializeOpeningPyreDamageSettled() => OpeningPyreDamageSettled.HasValue;
         public BattleResourceState(int baseEnergy, int deploymentExtraEnergy, int baseDraw, int maxEnergy, int maxHandSize,
             string pyreDataId, int pyreBaseAttack, int basePyreMaxHealth, int pyrePersistentDamage, int pyreModifiedBaseAttack,
             IReadOnlyList<int> upgradeAttack, IReadOnlyList<int> upgradeHealth, IReadOnlyList<string> mutatorIds,
             float goldRewardMultiplier = 1f, int? baseFloorCapacity = null, int? dragonsHoardCap = null,
             bool? towerHealingDisabled = null, int visibleDeckCount = 0, int? corruptionPerCorruptTrait = null,
-            bool? openingCapacitySettled = null)
+            bool? openingCapacitySettled = null, bool? openingPyreDamageSettled = null)
         {
             BaseEnergy = baseEnergy; DeploymentExtraEnergy = deploymentExtraEnergy; BaseDraw = baseDraw;
             MaxEnergy = maxEnergy; MaxHandSize = maxHandSize; PyreDataId = pyreDataId; PyreBaseAttack = pyreBaseAttack;
@@ -46,21 +48,22 @@ namespace MonsterTrain2Poju.Model
             VisibleDeckCount = visibleDeckCount;
             CorruptionPerCorruptTrait = corruptionPerCorruptTrait;
             OpeningCapacitySettled = openingCapacitySettled;
+            OpeningPyreDamageSettled = openingPyreDamageSettled;
             UpgradeAttack = Array.AsReadOnly(upgradeAttack.ToArray()); UpgradeHealth = Array.AsReadOnly(upgradeHealth.ToArray());
             MutatorIds = Array.AsReadOnly(mutatorIds.ToArray());
         }
         internal BattleResourceState WithPyreModifiedBaseAttack(int value) => new(BaseEnergy, DeploymentExtraEnergy,
             BaseDraw, MaxEnergy, MaxHandSize, PyreDataId, PyreBaseAttack, BasePyreMaxHealth, PyrePersistentDamage,
             value, UpgradeAttack, UpgradeHealth, MutatorIds, GoldRewardMultiplier, BaseFloorCapacity, DragonsHoardCap,
-            TowerHealingDisabled, VisibleDeckCount, CorruptionPerCorruptTrait, OpeningCapacitySettled);
+            TowerHealingDisabled, VisibleDeckCount, CorruptionPerCorruptTrait, OpeningCapacitySettled, OpeningPyreDamageSettled);
         internal BattleResourceState WithVisibleDeckCount(int value) => new(BaseEnergy, DeploymentExtraEnergy,
             BaseDraw, MaxEnergy, MaxHandSize, PyreDataId, PyreBaseAttack, BasePyreMaxHealth, PyrePersistentDamage,
             PyreModifiedBaseAttack, UpgradeAttack, UpgradeHealth, MutatorIds, GoldRewardMultiplier, BaseFloorCapacity,
-            DragonsHoardCap, TowerHealingDisabled, value, CorruptionPerCorruptTrait, OpeningCapacitySettled);
+            DragonsHoardCap, TowerHealingDisabled, value, CorruptionPerCorruptTrait, OpeningCapacitySettled, OpeningPyreDamageSettled);
         internal BattleResourceState WithBasePyreMaxHealth(int value) => new(BaseEnergy, DeploymentExtraEnergy,
             BaseDraw, MaxEnergy, MaxHandSize, PyreDataId, PyreBaseAttack, value, PyrePersistentDamage,
             PyreModifiedBaseAttack, UpgradeAttack, UpgradeHealth, MutatorIds, GoldRewardMultiplier, BaseFloorCapacity,
-            DragonsHoardCap, TowerHealingDisabled, VisibleDeckCount, CorruptionPerCorruptTrait, OpeningCapacitySettled);
+            DragonsHoardCap, TowerHealingDisabled, VisibleDeckCount, CorruptionPerCorruptTrait, OpeningCapacitySettled, OpeningPyreDamageSettled);
     }
 
     public sealed class RelicPileStartTurnRule
@@ -342,7 +345,7 @@ namespace MonsterTrain2Poju.Model
             RelicUnitTriggerCardGenerationModel.IsEffect(type) ||
             RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type) || type == PileStartTurn || type == StartTurnHeal ||
             type == StartTurnRoomEffect || type == PostOpeningDiscardReplacement || type == RelicSingleFloorCapacityModel.Effect ||
-            RelicOpeningCapacityModel.IsEffect(type) || type == RelicGoldMagicPowerModel.Effect || type == RelicTurnEndBumpModel.Effect || type == RelicMooncycleRoomEffectModel.Effect;
+            RelicOpeningCapacityModel.IsEffect(type) || type == RelicGoldMagicPowerModel.Effect || type == RelicTurnEndBumpModel.Effect || type == RelicOpeningPyreDamageModel.Effect || type == RelicMooncycleRoomEffectModel.Effect;
 
         internal static string? Validate(CombatRelicState relic)
         {
@@ -439,6 +442,11 @@ namespace MonsterTrain2Poju.Model
                     if (mooncycleError != null) return mooncycleError;
                 }
                 else if (rule.MooncycleRoomEffect != null) return "Unexpected mooncycle room-effect payload on another effect.";
+                if (rule.Type == RelicOpeningPyreDamageModel.Effect)
+                {
+                    string? openingDamageError = RelicOpeningPyreDamageModel.Validate(relic, rule);
+                    if (openingDamageError != null) return openingDamageError;
+                }
                 if (rule.Type == RelicTurnEndBumpModel.Effect)
                 {
                     string? movementError = RelicTurnEndBumpModel.Validate(relic, rule);
@@ -653,6 +661,8 @@ namespace MonsterTrain2Poju.Model
                 raw.MutatorIds.Distinct().Count() != raw.MutatorIds.Count || context.MaxHandSize != raw.MaxHandSize ||
                 context.EnergyState?.Maximum != raw.MaxEnergy || float.IsNaN(raw.GoldRewardMultiplier) || float.IsInfinity(raw.GoldRewardMultiplier))
                 return "Invalid or inconsistent raw native resource inputs.";
+            if (RelicOpeningPyreDamageModel.Present(context) && raw.OpeningPyreDamageSettled != true)
+                return "Opening small-deck damage requires the settled native Pyre state.";
             string? openingCapacityError = RelicOpeningCapacityModel.Validate(context);
             if (openingCapacityError != null) return openingCapacityError;
             var orders = new List<int>();

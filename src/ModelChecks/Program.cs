@@ -15,6 +15,11 @@ if (args.Length == 2 && args[0] == "--pyre-capacity-carryover-only")
     OpeningCapacityChecks.Carryover(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--opening-pyre-damage-only")
+{
+    OpeningPyreDamageChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--turn-end-bump-only")
 {
     TurnEndBumpChecks.Native(args[1]);

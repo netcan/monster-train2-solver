@@ -648,6 +648,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalShowtimeScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalTurnEndBumpScenario.Enabled)
                         OriginalTurnEndBumpScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalSmallDeckDamageScenario.Enabled)
+                        OriginalSmallDeckDamageScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && PyreResourceRefreshScenario.Enabled && !PyreResourceRefreshScenario.Prepared)
                         PyreResourceRefreshScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && SpawnStatusRelicScenario.OriginalCombatRelics && !SpawnStatusRelicScenario.OriginalCombatRelicsAcquired)
@@ -2601,6 +2603,12 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return;
             }
+            if (fullBattle && OriginalSmallDeckDamageScenario.Enabled && !OriginalSmallDeckDamageScenario.Prepared)
+            {
+                numericModifiersPrepared = true;
+                OriginalSmallDeckDamageScenario.Prepare(managers, log);
+                return;
+            }
             if (fullBattle && OriginalTurnEndBumpScenario.Enabled && !OriginalTurnEndBumpScenario.Prepared)
             {
                 numericModifiersPrepared = true;
@@ -3329,6 +3337,10 @@ namespace MonsterTrain2Poju.Probe
                 {
                     pendingPlay = SpawnStatusScalingScenario.Choose(decision);
                 }
+                else if (OriginalSmallDeckDamageScenario.Enabled)
+                {
+                    pendingPlay = OriginalSmallDeckDamageScenario.Choose(decision);
+                }
                 else if (OriginalTurnEndBumpScenario.Enabled)
                 {
                     pendingPlay = OriginalTurnEndBumpScenario.Choose(decision);
@@ -3925,6 +3937,7 @@ namespace MonsterTrain2Poju.Probe
                 (OriginalCardPlayDamageScenario.Enabled && OriginalCardPlayDamageScenario.IsScenarioAction(action)) ||
                 (OriginalConsumeDamageScenario.Enabled && OriginalConsumeDamageScenario.IsScenarioAction(action)) ||
                 (OriginalEatenDamageScenario.Enabled && OriginalEatenDamageScenario.IsScenarioAction(action)) ||
+                (OriginalSmallDeckDamageScenario.Enabled && OriginalSmallDeckDamageScenario.IsScenarioAction(action)) ||
                 (OriginalTurnEndBumpScenario.Enabled && OriginalTurnEndBumpScenario.IsScenarioAction(action)) ||
                 (OriginalShowtimeScenario.Enabled && OriginalShowtimeScenario.IsScenarioAction(action)) ||
                 (OriginalMagicPowerPerGoldScenario.Enabled && OriginalMagicPowerPerGoldScenario.IsScenarioAction(action)) ||

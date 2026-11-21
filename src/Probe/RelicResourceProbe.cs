@@ -127,9 +127,10 @@ namespace MonsterTrain2Poju.Probe
             string? pyreArtifactId = save.GetActiveSavePyreArtifactState()?.GetRelicDataID();
             bool hasOpeningCapacity = mutatorIds.Contains(RelicOpeningCapacityModel.MutatorId) ||
                 (pyreArtifactId != null && RelicOpeningCapacityModel.IsPyreOwner(pyreArtifactId));
-            bool? openingCapacitySettled = hasOpeningCapacity
-                ? combat != null && (combat.GetTurnCount() > 0 || combat.HaveCardsBeenDrawnForCurrentTurn())
-                : null;
+            bool openingEffectsSettled = combat != null && (combat.GetTurnCount() > 0 || combat.HaveCardsBeenDrawnForCurrentTurn());
+            bool? openingCapacitySettled = hasOpeningCapacity ? openingEffectsSettled : null;
+            bool? openingPyreDamageSettled = save.GetCollectedRelics().Any(owner => owner.GetRelicDataID() is
+                RelicOpeningPyreDamageModel.Threshold30 or RelicOpeningPyreDamageModel.Threshold15) ? openingEffectsSettled : null;
             return new BattleResourceState(balance.GetStartOfTurnEnergy(), balance.GetStartOfDeploymentPhaseEnergy(),
                 balance.GetStartOfTurnCards(), balance.GetMaxEnergy(), balance.GetMaxHandSize(), character.GetID(),
                 pyre.GetAttack(), rawSave.GetMaxTowerHP(), save.GetRelicPersistentState()?.GetPyreDamageIncrease() ?? 0,
@@ -142,7 +143,7 @@ namespace MonsterTrain2Poju.Probe
                 baseFloorCapacity: balance.GetCharacterCapacityPerFloor(), dragonsHoardCap: save.GetDragonsHoardCap(),
                 towerHealingDisabled: save.GetRelicModifiedRules().GetTowerHealingDisabled(),
                 visibleDeckCount: save.GetVisibleDeckCount(), corruptionPerCorruptTrait: save.GetNumCorruptionAddedPerTraitCorrupt(),
-                openingCapacitySettled: openingCapacitySettled);
+                openingCapacitySettled: openingCapacitySettled, openingPyreDamageSettled: openingPyreDamageSettled);
         }
 
         internal static RelicResourceEffect Definition(IRelicEffect effect, int index, AllGameManagers managers)
@@ -526,6 +527,8 @@ namespace MonsterTrain2Poju.Probe
                 amount = (int)AccessTools.Field(effect.GetType(), "corruptionChange").GetValue(effect);
             else if (effect is RelicEffectAddPermanentCorruptionStartOfCombat)
                 amount = (int)AccessTools.Field(effect.GetType(), "addPermanentAmount").GetValue(effect);
+            else if (type == RelicOpeningPyreDamageModel.Effect)
+                amount = data.GetParamInt2();
             else if (type == RelicTurnEndBumpModel.Effect)
             {
                 if (data.GetParamSourceTeam() != Team.Type.Monsters)

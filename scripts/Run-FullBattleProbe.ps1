@@ -692,6 +692,7 @@ param(
     [switch] $OriginalMagicPowerPerGold,
     [ValidateRange(1, 3)][int] $OriginalShowtimeTier,
     [ValidateSet('Gravity', 'RaceYaThere')][string] $OriginalTurnEndBump,
+    [ValidateSet('Threshold30', 'Threshold15')][string] $OriginalSmallDeckDamage,
     [switch] $OriginalBurnoutDamageRelic,
     [switch] $OriginalHealDamageRelic,
     [switch] $OriginalKillAttackRelic,
@@ -1502,6 +1503,17 @@ if ($OriginalCardPlayDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoin
 if ($OriginalConsumeDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalEatenDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalMoreCapacityRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
+if ($OriginalSmallDeckDamage) {
+    if ($PlayerAdvisor -or $Planner -or $Advisor -or $DotNetPlanner -or $InputProfile -or $BattleDistance -ne 0 -or
+        $OriginalRandomRoomCapacityMutator -or $OriginalPyreCapacityCarryover -or $OriginalMagicPowerPerGold -or $OriginalShowtimeTier -or $OriginalTurnEndBump) {
+        throw 'Original small-deck damage calibration requires a fresh isolated first battle.'
+    }
+    $PhysicalSpawnPoints = $true
+    $BranchCardMasks = $true
+    $SettleCardAnimations = $true
+    $SettleDeathDissolves = $true
+    $Policy = 'units-and-junk'
+}
 if ($OriginalTurnEndBump) {
     if ($PlayerAdvisor -or $Planner -or $Advisor -or $DotNetPlanner -or $InputProfile -or $BattleDistance -ne 0 -or
         $OriginalRandomRoomCapacityMutator -or $OriginalPyreCapacityCarryover -or $OriginalMagicPowerPerGold -or $OriginalShowtimeTier) {
@@ -2597,6 +2609,12 @@ if ($OriginalCardPlayDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'origi
 if ($OriginalConsumeDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-consume-damage' }
 if ($OriginalEatenDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-eaten-damage' }
 if ($OriginalMoreCapacityRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-more-capacity' }
+if ($OriginalSmallDeckDamage) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-small-deck-damage'
+    $environment['MT2_PROBE_SMALL_DECK_DAMAGE'] = $OriginalSmallDeckDamage
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
 if ($OriginalTurnEndBump) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-turn-end-bump'
     $environment['MT2_PROBE_TURN_END_BUMP'] = $OriginalTurnEndBump
@@ -5120,6 +5138,36 @@ if ($OriginalRandomRoomCapacityMutator) {
         throw 'Random room capacity lacks its unchanged mutator, natural opening application, deployment capacity witness or exact battle successors.'
     }
     Write-Output "ORIGINAL-RANDOM-ROOM-CAPACITY PASS: floor $($witness.ReducedFloor) $($witness.OriginalMaximum) -> $($witness.Maximum), a rejected unit deployed on floor $($witness.AlternateFloor), and no later-turn application."
+}
+if ($OriginalSmallDeckDamage) {
+    $definition = $trace.OriginalSmallDeckDamageDefinition
+    $witness = $trace.OriginalSmallDeckDamageWitness
+    $controls = @($trace.Actions | Where-Object ScenarioAction)
+    $callbacks = @($trace.OriginalSmallDeckDamageCallbacks)
+    $tests = @($callbacks | Where-Object Kind -eq 'Test')
+    $applications = @($callbacks | Where-Object Kind -eq 'Apply')
+    if (-not $trace.OriginalSmallDeckDamagePrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or
+        $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+        -not $definition.ControlledAcquisition -or ('Threshold' + $definition.Threshold) -ne $OriginalSmallDeckDamage -or
+        $controls.Count -ne 3 -or ($controls.Action.CardInstanceId -join ',') -ne ($witness.CardIds -join ',') -or
+        ($controls.Action.RoomIndex -join ',') -ne ($witness.Floors -join ',') -or
+        $tests.Count -ne 1 -or $applications.Count -ne 1 -or -not $tests[0].Passed -or
+        @($callbacks | Where-Object { -not $_.Completed -or $_.Before.Turn -ne 0 -or -not $_.Before.Placement -or $_.Before.Preview }).Count -ne 0 -or
+        ($definition | ConvertTo-Json -Compress -Depth 6) -cne
+        ($trace.OriginalSmallDeckDamageDefinitionAfter | ConvertTo-Json -Compress -Depth 6)) {
+        throw 'Small-deck damage lacks the unchanged original, native opening application or exact battle successors.'
+    }
+    $application = $applications[0]
+    $expectedDamage = [Math]::Max(0, $definition.Threshold - $application.Before.DrawPileCount) * $definition.PerCard
+    $firstPyre = @($controls[0].Before.Spawn.Train.Rooms.Units | Where-Object IsPyre)
+    if ($expectedDamage -le 0 -or @($application.DamageCalls).Count -ne 1 -or
+        $application.DamageCalls[0].Amount -ne (-$expectedDamage) -or -not $application.DamageCalls[0].TriggerDamageTakenRelicEffects -or
+        $application.After.SaveHP -ne ($application.Before.SaveHP - $expectedDamage) -or $application.After.SaveHP -le 0 -or
+        $witness.FirstDecision.PyreHP -ne $application.After.SaveHP -or $firstPyre.Count -ne 1 -or
+        $firstPyre[0].Health -ne $application.After.SaveHP) {
+        throw 'Small-deck damage did not preserve the surviving post-damage Pyre at the first battle decision.'
+    }
+    Write-Output "ORIGINAL-SMALL-DECK-DAMAGE PASS: $OriginalSmallDeckDamage, native draw pile $($application.Before.DrawPileCount), damage $expectedDamage, settled Pyre HP $($application.After.SaveHP)."
 }
 if ($OriginalTurnEndBump) {
     $definition = $trace.OriginalTurnEndBumpDefinition
