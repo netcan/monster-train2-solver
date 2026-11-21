@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
@@ -32,7 +33,12 @@ internal static class BattleAdviceChecks
         if (advice.TryGetProperty("Failures", out FixtureValue failures)) Require(failures.GetInt32() == 0, "Live advisor failed.");
         if (advice.TryGetProperty("PanelVertices", out FixtureValue vertices))
             Require(vertices.GetInt32() > 0 && advice.GetProperty("PanelPixels").GetInt32() >= 1000, "Live native UI render is empty.");
-        Console.WriteLine($"NATIVE-ADVICE PASS seed={advice.GetProperty("Seed").GetString()} scenario={advice.GetProperty("Scenario").GetString()} published={advice.GetProperty("Published").GetInt32()} captures={advice.GetProperty("Captures").GetInt32()} purityFailures=0");
+        string? seed = fixture.TryGetProperty("NativeRunInput", out FixtureValue nativeInput) &&
+            nativeInput.ValueKind == FixtureKind.Object && nativeInput.TryGetProperty("Seed", out FixtureValue nativeSeed) &&
+            nativeSeed.ValueKind == FixtureKind.Number
+                ? nativeSeed.GetInt32().ToString(CultureInfo.InvariantCulture)
+                : advice.GetProperty("Seed").GetString();
+        Console.WriteLine($"NATIVE-ADVICE PASS seed={seed} scenario={advice.GetProperty("Scenario").GetString()} published={advice.GetProperty("Published").GetInt32()} captures={advice.GetProperty("Captures").GetInt32()} purityFailures=0");
     }
 
     internal static void Run(FixtureValue fixture)
