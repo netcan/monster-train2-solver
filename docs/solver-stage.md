@@ -209,6 +209,12 @@ Cael 零盟约试炼的攻击与生命、吸血变体分别通过 26 次出牌�
 连续、15 场分段，合计 2,157 次出牌或技能、966 次 EndTurn，零失败。报告为
 `results/recorded-chain-triage-20261122-020219-dcf98cab/report.tsv`。
 
+契约 2 的 Cael 护盾试炼出生已独立通过。2.3.1 隔离实例载入 2.2.1 的原版五胜存档，
+显式选择原版 Cael 护盾场景与试炼事件。原版外层 Cael 计入契约的 700 点生命加成，
+波次 Feed 保持 60 点生命。替换、放置后的完整战斗状态与随机流均匹配。
+归档在 `tests/compatibility/game-2.3.1/mechanics/cael-shield-rank-two-titan-trial/`，
+使用 `--native-cael-shield-rank-two-trial substitution.mt2f birth.mt2f` 复核。
+
 用 2.3.1 载入 2.2.1 原版第三环战前存档，隔离顾问在两线程、单次搜索三秒的配置下
 完成 24 次出牌和 9 次 EndTurn，以 80 点薪火生命获胜。进程正常退出，四项采集计数为零。
 同一归档另通过 33 次滚动建议与预测复放、完整链及 16 条独立分支。
