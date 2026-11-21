@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 
@@ -88,6 +89,137 @@ internal static class CombatVictoryStatisticsChecks
         if (retention.HasValue) Retention(retention.Value);
         Console.WriteLine("COMBAT-VICTORY-STATISTICS PASS:37 native inputs/full state/forecast/RNG and native train phases; preserved424/24 vs293/15 counterexample; exactly nine generated infusion entries removed, permanent stats retained; four immutable branches; independentPair=" + replay.HasValue);
     }
+
+    private static bool HasUiRefresh(FixtureValue row) =>
+        row.TryGetProperty("TerminalUiStatisticsRefresh", out var boundary) && boundary.ValueKind == FixtureKind.Object;
+
+    internal static void TerminalUiNative(FixtureValue fixture, FixtureValue? retention = null)
+    {
+        Require(fixture.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            fixture.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
+            fixture.GetProperty("NativeWon").GetBoolean() && fixture.GetProperty("TerminalEffectsSettled").GetBoolean() &&
+            fixture.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" &&
+            new[] { "CaptureFailures", "Unsupported", "Pending" }.All(field => fixture.GetProperty(field).GetInt32() == 0),
+            "Incomplete current terminal card-text statistics witness.");
+        FixtureValue[] stages = fixture.GetProperty("Stages").EnumerateArray().Where(HasUiRefresh).ToArray();
+        FixtureValue train = fixture.GetProperty("TrainPhases").EnumerateArray().Single(HasUiRefresh);
+        FixtureValue turn = fixture.GetProperty("Turns").EnumerateArray().Single(HasUiRefresh);
+        Require(stages.Length == 2 && stages.Select(row => row.GetProperty("Kind").GetString()).Order().SequenceEqual(new[] { "Exchange", "Room" }) &&
+            train.GetProperty("Kind").GetString() == "Combat" && (RoomOutcome)turn.GetProperty("ActualOutcome").GetInt32() == RoomOutcome.BattleWon &&
+            fixture.GetProperty("Mismatches").GetInt32() == 4 && stages.Append(train).Append(turn).All(row =>
+                row.GetProperty("Difference").ValueKind == FixtureKind.String &&
+                row.GetProperty("TerminalUiStatisticsRefresh").ContentEquals(turn.GetProperty("TerminalUiStatisticsRefresh"))),
+            "The raw room, exchange, train and turn rows must share exactly one observed UI refresh and retain their diagnostic differences.");
+
+        foreach (FixtureValue row in stages)
+        {
+            RoomCombatState before = row.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            RoomCombatState actual = row.GetProperty("Actual").Deserialize<RoomCombatState>()!;
+            int[]? pending = row.GetProperty("PendingPhysicalDeaths").Deserialize<int[]>();
+            var external = row.GetProperty("ExternalTargets").EnumerateArray().Select(target =>
+                (target.GetProperty("RoomIndex").GetInt32(), target.GetProperty("Unit").Deserialize<CombatUnit>()!)).ToArray();
+            CombatUnit? pyre = row.GetProperty("ExternalPyre").Deserialize<CombatUnit>();
+            bool exchange = row.GetProperty("Kind").GetString() == "Exchange";
+            RoomCombatResult modeled = exchange
+                ? RoomCombatModel.Exchange(before, externalTargets: external, pendingPhysicalDeathIds: pending)
+                : RoomCombatModel.Resolve(before, externalPyre: pyre, externalPyreRoomIndex: row.GetProperty("ExternalPyreRoomIndex").GetInt32(),
+                    externalTargets: external, relentlessDecisions: RecordedBattleChecks.Decisions(row));
+            Require(modeled.Supported && modeled.Outcome == (exchange ? RoomOutcome.Exchanged : RoomOutcome.BattleWon) &&
+                Equal(modeled.State!.Units, actual.Units),
+                "Native terminal room units or outcome differ.");
+            if (pyre != null)
+                Require(Equal(modeled.RetainedUnits.Single(unit => unit.Id == pyre.Id), row.GetProperty("ActualExternalPyre").Deserialize<CombatUnit>()),
+                    "Native terminal external Pyre differs.");
+            FixtureValue actualTargets = row.GetProperty("ActualExternalTargets");
+            foreach (var target in actualTargets.ValueKind == FixtureKind.Array ? actualTargets.EnumerateArray().ToArray() : Array.Empty<FixtureValue>())
+            {
+                CombatUnit actualTarget = target.GetProperty("Unit").Deserialize<CombatUnit>()!;
+                Require(Equal(modeled.RetainedUnits.Single(unit => unit.Id == actualTarget.Id), actualTarget), "Native terminal external target differs.");
+            }
+            CombatContext adjusted = ReplayUiRefresh(row, row.GetProperty("Turn").GetInt32(), before.Context!, modeled.State!.Context!, actual.Context!);
+            Require(Equal(BattleTurnChecks.ComparableContext(adjusted), BattleTurnChecks.ComparableContext(actual.Context)),
+                "Native terminal room context differs after the observed UI refresh.");
+        }
+
+        TrainCombatState trainBefore = train.GetProperty("Before").Deserialize<TrainCombatState>()!;
+        TrainCombatState trainActual = train.GetProperty("Actual").Deserialize<TrainCombatState>()!;
+        var roomRules = train.TryGetProperty("RoomRules", out FixtureValue rules) ? rules.Deserialize<RoomPlayRule[]>() : null;
+        TrainCombatResult trainModeled = TrainCombatModel.ResolveCombat(trainBefore, RecordedBattleChecks.Decisions(train), roomRules);
+        Require(trainModeled.Supported && trainModeled.Outcome == RoomOutcome.BattleWon &&
+            Equal(trainModeled.State!.Rooms.Select(room => new { room.RoomIndex, room.Units }),
+                trainActual.Rooms.Select(room => new { room.RoomIndex, room.Units })), "Native terminal train units or outcome differ.");
+        CombatContext trainAdjusted = ReplayUiRefresh(train, train.GetProperty("Turn").GetInt32(), trainBefore.Context!, trainModeled.State!.Context!, trainActual.Context!);
+        Require(Equal(BattleTurnChecks.ComparableContext(trainAdjusted), BattleTurnChecks.ComparableContext(trainActual.Context)),
+            "Native terminal train context differs after the observed UI refresh.");
+
+        BattleTurnState turnBefore = turn.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState turnActual = turn.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        BattleTurnResult turnModeled = BattleTurnModel.EndTurn(turnBefore, RecordedBattleChecks.Decisions(turn));
+        Require(turnModeled.Supported && turnModeled.Outcome == RoomOutcome.BattleWon, "Native terminal turn outcome differs.");
+        string modelBeforeAdjustment = BattleTurnChecks.Comparable(turnModeled.State!, terminal: true);
+        CombatContext turnAdjusted = ReplayUiRefresh(turn, turnBefore.Spawn.Turn, turnBefore.Spawn.Train.Context!,
+            turnModeled.State!.Spawn.Train.Context!, turnActual.Spawn.Train.Context!);
+        JsonNode modeledTurn = JsonNode.Parse(modelBeforeAdjustment)!;
+        modeledTurn["Context"]!["Statistics"] = JsonSerializer.SerializeToNode(turnAdjusted.Statistics);
+        Require(modeledTurn.ToJsonString() == BattleTurnChecks.Comparable(turnActual, terminal: true) &&
+            BattleTurnChecks.Comparable(turnModeled.State, terminal: true) == modelBeforeAdjustment,
+            "Native terminal turn differs after the observed UI refresh or its raw prediction changed.");
+
+        if (retention.HasValue) TerminalUiRetention(retention.Value);
+        Console.WriteLine("TERMINAL-UI-STATISTICS PASS: one native after-clear damage-text event, four independently replayed raw mismatch rows, exact permanent-deck refresh, retained control=" + retention.HasValue);
+    }
+
+    private static CombatContext ReplayUiRefresh(FixtureValue row, int turn, CombatContext before, CombatContext modeled, CombatContext actual)
+    {
+        FixtureValue boundary = row.GetProperty("TerminalUiStatisticsRefresh");
+        FixtureValue entry = boundary.GetProperty("Event");
+        int start = boundary.GetProperty("StartSequence").GetInt32(), end = boundary.GetProperty("EndSequence").GetInt32();
+        int[] prior = entry.GetProperty("BeforeStoredCards").Deserialize<int[]>()!;
+        int[] post = entry.GetProperty("AfterStoredCards").Deserialize<int[]>()!;
+        int[] deck = entry.GetProperty("DeckCards").Deserialize<int[]>()!;
+        string[] caller = entry.GetProperty("Caller").Deserialize<string[]>()!;
+        int query = Array.IndexOf(caller, "CardStatistics.GetStatValue");
+        int text = Array.IndexOf(caller, "CardTraitScalingAddDamage.GetCurrentEffectText");
+        int hand = Array.IndexOf(caller, "HandUI.UpdateCardUIAtEndOfFrame");
+        int late = Array.IndexOf(caller, "CardUI.LateUpdate");
+        int cardId = entry.GetProperty("CardId").GetInt32();
+        string cardDataId = entry.GetProperty("CardDataId").GetString()!;
+        Require(start >= 0 && end == start + 1 && entry.GetProperty("Sequence").GetInt32() == end &&
+            entry.GetProperty("Turn").GetInt32() == turn && entry.GetProperty("Frame").GetInt32() > 0 &&
+            entry.GetProperty("Phase").GetString() == actual.EnergyState?.Phase && actual.EnergyState?.Phase == "Combat" &&
+            query >= 0 && text > query && hand > text && late > hand &&
+            before.Cards.Hand.Any(card => card.InstanceId == cardId && card.DataId == cardDataId) &&
+            before.FindCard(cardId)?.MaskDescriptor?.BaseTraits.Any(trait => trait.RuntimeType == "CardTraitScalingAddDamage") == true &&
+            actual.FindCard(cardId)?.DataId == cardDataId && before.KillCamActivated == false &&
+            modeled.KillCamActivated == true && actual.KillCamActivated == true && modeled.CardInstances?.Count == 0 && actual.CardInstances?.Count == 0,
+            "Terminal UI query does not belong to this exact combat boundary.");
+        BattleStatistics stats = modeled.Statistics!;
+        Require(deck.Length > 0 && prior.Except(deck).Any() && post.SequenceEqual(deck) &&
+            before.Statistics!.StoredCards!.SequenceEqual(prior) && stats.StoredCards!.SequenceEqual(prior) &&
+            stats.DeckCards!.Order().SequenceEqual(deck) && actual.Statistics!.DeckCards!.Order().SequenceEqual(deck),
+            "The witnessed terminal statistics do not match both snapshots and the permanent deck.");
+        BattleStatistics refreshed = stats.RefreshDeckAfterCardTerminal();
+        Require(Equal(refreshed, actual.Statistics), "Observed UI refresh differs from the exact native statistic delta.");
+        return modeled.WithStatistics(refreshed);
+    }
+
+    private static void TerminalUiRetention(FixtureValue fixture)
+    {
+        FixtureValue row = fixture.GetProperty("Turns").EnumerateArray().Last();
+        BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnState actual = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        BattleTurnResult modeled = BattleTurnModel.EndTurn(before, RecordedBattleChecks.Decisions(row));
+        CombatContext native = actual.Spawn.Train.Context!;
+        BattleStatistics stats = native.Statistics!;
+        Require(!HasUiRefresh(row) && native.KillCamActivated == true && native.CardInstances?.Count == 0 &&
+            stats.StoredCards!.Except(stats.DeckCards!).Any() && modeled.Supported && modeled.Outcome == RoomOutcome.BattleWon &&
+            BattleTurnChecks.Comparable(modeled.State!, terminal: true) == BattleTurnChecks.Comparable(actual, terminal: true),
+            "The ordinary native victory control must retain off-deck statistics without a witnessed UI refresh.");
+    }
+
+    private static bool Equal<T>(T a, T b) =>
+        JsonSerializer.Serialize(a, ModelJson.Options) == JsonSerializer.Serialize(b, ModelJson.Options);
+
     private static void Retention(FixtureValue fixture)
     {
         var rows = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();

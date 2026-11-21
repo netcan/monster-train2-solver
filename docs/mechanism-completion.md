@@ -247,6 +247,12 @@ pwsh -NoProfile -File scripts/Get-MechanismInventory.ps1 -SkipBuild -Check
 
 ## 固定验收关口
 
+2.3.1 的终局统计诊断记录到击杀镜头清空牌堆后，卡面伤害文本在帧末触发了一次原版统计刷新。
+专项复放在房间、交战、列车和回合四个边界重放该事件，逐项匹配永久牌组投影。
+同版对照在没有该回调的终局保留临时卡统计。诊断归档保留四条原始差异，
+使用 `--terminal-ui-statistics-only` 复核。归档位于
+`tests/compatibility/game-2.3.1/mechanics/terminal-ui-statistics/`。
+
 | 关口 | 有限检查范围 | 退出条件 |
 | --- | --- | --- |
 | 原生定义与源码 | 卡牌效果、特性、遗物、房间修饰器、状态及其有效参数／触发位置；Boss 行为与升级定义 | 每项有共享实现映射或经源码证明的无战斗效果说明；有效参数与缺失定义已补齐 |

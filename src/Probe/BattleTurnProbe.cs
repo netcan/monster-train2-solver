@@ -123,6 +123,9 @@ namespace MonsterTrain2Poju.Probe
                 BattleTurnState before = Capture();
                 var choices = RelentlessBattleScenario.Plan(before);
                 var record = new Record { Index = records.Count, Before = before, RelentlessDecisions = choices,
+#if DEVELOPMENT_PROBE
+                    TerminalUiStatisticsStart = CardStatisticRefreshTraceProbe.Sequence(trace),
+#endif
                     Predicted = BattleTurnModel.EndTurn(before, choices) };
                 records.Add(record);
             }
@@ -135,6 +138,10 @@ namespace MonsterTrain2Poju.Probe
             try
             {
                 record.Actual = Capture(); record.ActualOutcome = outcome;
+#if DEVELOPMENT_PROBE
+                record.TerminalUiStatisticsRefresh = CardStatisticRefreshTraceProbe.Between(trace, record.TerminalUiStatisticsStart,
+                    record.Before.Spawn.Train.Context, record.Actual.Spawn.Train.Context);
+#endif
                 if (record.Predicted.Supported)
                 {
                     bool terminal = outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
@@ -197,6 +204,11 @@ namespace MonsterTrain2Poju.Probe
             public bool ShouldSerializeRelentlessDecisions() => RelentlessDecisions != null;
             public BattleTurnResult Predicted { get; set; } = null!;
             public BattleTurnState? Actual { get; set; }
+#if DEVELOPMENT_PROBE
+            internal int TerminalUiStatisticsStart { get; set; }
+            public CardStatisticRefreshTraceProbe.Boundary? TerminalUiStatisticsRefresh { get; set; }
+            public bool ShouldSerializeTerminalUiStatisticsRefresh() => TerminalUiStatisticsRefresh != null;
+#endif
             public RoomOutcome ActualOutcome { get; set; }
             public string? Difference { get; set; }
         }

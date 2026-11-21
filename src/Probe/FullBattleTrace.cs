@@ -825,6 +825,9 @@ namespace MonsterTrain2Poju.Probe
                     record = new StageRecord
                     {
                         Index = stages.Count,
+#if DEVELOPMENT_PROBE
+                        TerminalUiStatisticsStart = CardStatisticRefreshTraceProbe.Sequence(this),
+#endif
                         Turn = managers.GetCombatManager()!.GetTurnCount(),
                         Kind = kind,
                         TriggerQueueRunning = combat.IsRunningTriggerQueue,
@@ -868,6 +871,10 @@ namespace MonsterTrain2Poju.Probe
                 // Native unwinds these stages during StopCombat. Preserve its
                 // running-combat query frame and canonicalize only retired slots.
                 stage.Actual = ObserveStoppingStage(() => Capture(stage.Room));
+#if DEVELOPMENT_PROBE
+                stage.TerminalUiStatisticsRefresh = CardStatisticRefreshTraceProbe.Between(this,
+                    stage.TerminalUiStatisticsStart, stage.Before.Context, stage.Actual.Context);
+#endif
                 if (stage.ExternalPyre != null)
                     stage.ActualExternalPyre = Capture(AllGameManagers.Instance!.GetRoomManager()!
                         .GetRoom(stage.ExternalPyreRoomIndex), captureContext: false).Units
@@ -2265,6 +2272,11 @@ namespace MonsterTrain2Poju.Probe
             public int ExternalPyreRoomIndex { get; set; } = -1;
             public RoomCombatResult Predicted { get; set; } = null!;
             public RoomCombatState? Actual { get; set; }
+#if DEVELOPMENT_PROBE
+            internal int TerminalUiStatisticsStart { get; set; }
+            public CardStatisticRefreshTraceProbe.Boundary? TerminalUiStatisticsRefresh { get; set; }
+            public bool ShouldSerializeTerminalUiStatisticsRefresh() => TerminalUiStatisticsRefresh != null;
+#endif
             public CombatUnit? ActualExternalPyre { get; set; }
             public TowerTargetSnapshot[]? ActualExternalTargets { get; set; }
             public string? Difference { get; set; }

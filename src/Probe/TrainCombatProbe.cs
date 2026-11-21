@@ -94,6 +94,9 @@ namespace MonsterTrain2Poju.Probe
                     record = new Record
                     {
                         Index = records.Count, Turn = managers.GetCombatManager()!.GetTurnCount(),
+#if DEVELOPMENT_PROBE
+                        TerminalUiStatisticsStart = CardStatisticRefreshTraceProbe.Sequence(trace),
+#endif
                         Kind = kind, Before = before,
                         SettledDestructionIds = pendingDestruction.Select(trace.UnitId).OrderBy(id => id).ToArray(),
                         SettlementFrames = settlementFrames,
@@ -122,6 +125,10 @@ namespace MonsterTrain2Poju.Probe
             try
             {
                 record.Actual = trace.ObserveStoppingStage(() => Capture());
+#if DEVELOPMENT_PROBE
+                record.TerminalUiStatisticsRefresh = CardStatisticRefreshTraceProbe.Between(trace,
+                    record.TerminalUiStatisticsStart, record.Before.Context, record.Actual.Context);
+#endif
                 if (record.Predicted.Supported)
                 {
                     JToken expected = Comparable(record.Predicted.State!, record.Kind);
@@ -170,6 +177,11 @@ namespace MonsterTrain2Poju.Probe
             public bool ShouldSerializeRoomRules() => RoomRules != null;
             public TrainCombatResult Predicted { get; set; } = null!;
             public TrainCombatState? Actual { get; set; }
+#if DEVELOPMENT_PROBE
+            internal int TerminalUiStatisticsStart { get; set; }
+            public CardStatisticRefreshTraceProbe.Boundary? TerminalUiStatisticsRefresh { get; set; }
+            public bool ShouldSerializeTerminalUiStatisticsRefresh() => TerminalUiStatisticsRefresh != null;
+#endif
             public string? Difference { get; set; }
             public bool StoredCardCacheDiffers { get; set; }
         }

@@ -1602,6 +1602,13 @@ if (args.Length is 2 or 3 or 4 && args[0] == "--echo-waxen-spike-only")
     EchoWaxenSpikeChecks.Native(source.RootElement, endTurn?.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--terminal-ui-statistics-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var retention = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    CombatVictoryStatisticsChecks.TerminalUiNative(fixture.RootElement, retention?.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 or 4 && args[0] == "--combat-victory-statistics-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
