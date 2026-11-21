@@ -223,6 +223,11 @@ Cael 零盟约试炼的攻击与生命、吸血变体分别通过 26 次出牌�
 连续及 15 场分段，合计 2,183 次出牌或技能、972 次 EndTurn，零失败。报告为
 `results/recorded-chain-triage-20261122-023728-b5f56383/report.tsv`。
 
+2.3.1 载入原有 2.2.1 契约 10 第三环战前存档。Arkion 火炉路线用两线程、每次搜索十秒，
+完成 36 次出牌和 9 次 EndTurn，以 22 点薪火获胜。全新原版进程固定复放同样的 45 个输入，
+完整前后状态、预测和随机流逐项相同。两场均正常退出，四项采集计数均为零。
+归档为 `migrated-covenant10-arkion-pyre.mt2f` 和 `migrated-covenant10-arkion-pyre-frozen.mt2f`。
+
 2.3.1 的进食组件对照使用两次原版结算。隔离实例用原版接口发放测试用牌，再通过出牌
 与 EndTurn 触发结算。两次进食均将 Morsel Miner 的来源牌移入 Eaten，Primordium
 存活并减少一层 Eatmany。普通进食在房间结算前保留空位，Feast 结算后填补空位。
