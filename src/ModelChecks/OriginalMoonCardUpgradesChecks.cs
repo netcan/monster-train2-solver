@@ -161,6 +161,15 @@ internal static class OriginalMoonCardUpgradesChecks
                 CardUpgradeModifier numeric = source.Permanent.Upgrades.Single(upgrade => upgrade.CloneDamageBase > 0);
                 Require(numeric.Stats.Damage == numeric.CloneDamageBase * (phase == 2 ? 5 : 1), "Celestial Storm magic power must refresh from authored base.");
             }
+            if (index == 15 && root.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d")
+            {
+                var full = traits.Select(trait => trait.MoonPhaseUpgradeState).Single(state =>
+                    state?.Upgrade.DataId == "de575a7e-a3cf-45de-a67b-949ac05fcee6");
+                var trigger = full!.Upgrade.Lifecycle!.Triggers.Single();
+                Require(full.Active && trigger.Type == "OnCast" && trigger.Effects.SequenceEqual(new[] { "CardEffectDamageFloorByFloor" }) &&
+                    trigger.Actions.Single() is { Type: FloorDamageModel.Effect, Target: "Tower", Value: 80, AllowEnemy: true, AllowPlayer: false },
+                    "Current native Heavenfall must install its full-moon floor-by-floor upgrade.");
+            }
         }
         RecordedBattleChecks.Native(root);
         if (roomMask)

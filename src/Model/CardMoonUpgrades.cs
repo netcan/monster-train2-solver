@@ -22,6 +22,7 @@ namespace MonsterTrain2Poju.Model
     public static class CardMoonUpgradeModel
     {
         public const string Trait = "CardTraitAddCardUpgradeOnMoonPhase";
+        private const string HeavenfallFullMoonUpgrade = "de575a7e-a3cf-45de-a67b-949ac05fcee6";
         internal static bool Present(CardInstanceState card) => card.MaskDescriptor?.BaseTraits.Concat(card.MaskDescriptor.TemporaryTraits)
             .Any(trait => trait.RuntimeType == Trait) == true || card.MaskDescriptor?.PermanentReplacements.Any(rule => rule.OldName == Trait || rule.NewRuntimeType == Trait) == true ||
             card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == Trait) == true);
@@ -260,7 +261,7 @@ namespace MonsterTrain2Poju.Model
             {
                 "108b9153-0236-4ba2-ad20-d03a991bbd57" => new[] { "328c86e6-19c4-4bf8-a717-4bae655edf2b" },
                 "753f20a2-c625-47b3-be4b-8600b673841e" => new[] { "12793a9c-fae4-42ab-80bb-c3274e681c19" },
-                "8757357b-c36f-476d-88de-b9a481d89fcb" => new[] { "9492665d-c631-41a8-9b87-5acd0b80bd91", "de575a7e-a3cf-45de-a67b-949ac05fcee6" },
+                "8757357b-c36f-476d-88de-b9a481d89fcb" => new[] { "9492665d-c631-41a8-9b87-5acd0b80bd91", HeavenfallFullMoonUpgrade },
                 "87e45427-921e-45d3-b4c4-9c156a83cedf" => new[] { "6b7b5abc-4397-4e6e-9c25-3db5a7de0dd2", "3bbf752b-475b-4975-b3c7-b970f44a20b6" },
                 "cbf4d65d-afdb-4fd8-a7ce-216d58a6b486" => new[] { "0c025567-26a8-4dae-8dca-5d49cef0e291" },
                 _ => Array.Empty<string>()
@@ -281,6 +282,9 @@ namespace MonsterTrain2Poju.Model
                     definition.Bool != (definition.MoonPhaseUpgrade.DataId != "9492665d-c631-41a8-9b87-5acd0b80bd91") ||
                     !KnownPayload(definition.MoonPhaseUpgrade) || !KnownPayload(state.Upgrade) || state.Upgrade.DataId != definition.MoonPhaseUpgrade.DataId)
                     return Reject("Missing or uncalibrated original moon upgrade payload/private state.");
+                if (state.Upgrade.DataId == HeavenfallFullMoonUpgrade &&
+                    state.Upgrade.Lifecycle!.Triggers[0].Actions[0].Type != definition.MoonPhaseUpgrade.Lifecycle!.Triggers[0].Actions[0].Type)
+                    return Reject("Heavenfall full-moon source and runtime effect types differ.");
                 if (preview && !reset) continue;
                 // Native Exclusive uses a nonzero room override in place of
                 // global phase; Additive accepts either. The original Gravity
@@ -342,12 +346,38 @@ namespace MonsterTrain2Poju.Model
             {
                 "12793a9c-fae4-42ab-80bb-c3274e681c19" => effect.Type == "AddStatus" && effect.Target == "DropTargetCharacter" && effect.Statuses.Count == 1 && effect.Statuses[0].Id == "dazed" && effect.Statuses[0].Stacks == 1,
                 "9492665d-c631-41a8-9b87-5acd0b80bd91" => effect.Type == "Damage" && effect.Target == "Room" && effect.Value == 80,
-                "de575a7e-a3cf-45de-a67b-949ac05fcee6" => effect.Type == "Damage" && effect.Target == "Tower" && effect.Value == 80,
+                HeavenfallFullMoonUpgrade => effect.Target == "Tower" && effect.Value == 80 &&
+                    (effect.Type == "Damage" || MatchesHeavenfallFloorDamage(life.Triggers[0], effect)),
                 "6b7b5abc-4397-4e6e-9c25-3db5a7de0dd2" => effect.Type == "Bump" && effect.Target == "LastTargetedCharacters" && effect.Value == -1,
                 "3bbf752b-475b-4975-b3c7-b970f44a20b6" => effect.Type == "Bump" && effect.Target == "LastTargetedCharacters" && effect.Value == 1,
                 "0c025567-26a8-4dae-8dca-5d49cef0e291" => effect.Type == "Damage" && effect.Target == "FrontInRoom" && effect.Value == 25,
                 _ => false
             };
         }
+
+        // Build 26650011 projects the full-moon callback through the existing
+        // physical floor sweep. Older archives retain the original tower damage.
+        private static bool MatchesHeavenfallFloorDamage(CardLifecycleTrigger trigger, CardActionEffect effect) =>
+            trigger.Effects.Count == 1 && trigger.Effects[0] == "CardEffectDamageFloorByFloor" &&
+            effect is
+            {
+                Type: FloorDamageModel.Effect, AllowEnemy: true, AllowPlayer: false, Range: null,
+                Tests: { ShouldTest: true, FailToCast: false, CancelSubsequent: false, StrictTargets: false,
+                    CanPlayAfterBossDead: true, MustHaveValidTargets: false, DevotionRequirement: 0, DevotionRequirementMax: 0 },
+                Filters: { Health: "Both", RequiredStatuses.Count: 0, ExcludedStatuses.Count: 0, IgnoreBosses: false,
+                    Subtype: "", ExcludedSubtypes.Count: 0, SelfHealthFilter: true },
+                Statuses.Count: 0, Lifetime: "", Upgrade: null, Generation: null, OnlyIfNoEnemies: false,
+                CooldownParameter: null, AbilityChange: null, CopyHeroStats: null, ScaleUpgrade: false, DoNotFullyRemove: null,
+                TargetSubtype: "", TypedDraw: null, NextDrawUpgrade: null, RequiredGold: 0, GoldCostRequired: null,
+                UseCardTraits: false, RequireEquipment: false, UseSelectedRoom: false, CountStatusOnlyOnTargets: false,
+                SpawnFallbackUnit: null, DisallowStatusStackModifiers: false, SourceStatusMultiplier: null,
+                StatusAdjustmentFilter: null, RemoveHalfStatusEffects: null, Overheal: null, CorruptionAdd: null,
+                DamagePerHpLastAttacker: false, DamagePerHpIncludeArmor: false, RoomAttachment: null, Recursion: null,
+                CardFilter: null, UpgradeFilters.Count: 0, NullTargetless: false, NullForwardSelf: false, ChooseDiscard: null,
+                TransferAttackMultiplier: 0, StatusTransfer: null, UnitTriggerKind: null, HealDamageMultiplier: null,
+                UnitReturn: null, EquipmentMerge: null, SuppressPyreRoomFocus: null, SpikeRecipe: null, IgnoreDualism: false,
+                ExaltationHeal: null, SummonChoice: null, FriendlyMissingHealthAllFloors: null,
+                DevotionPerLevel: null, DevotionLevelsPerGrant: null
+            };
     }
 }
