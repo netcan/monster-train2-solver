@@ -9,16 +9,16 @@
 | 待办分类 | 类数 | 含目录引用 | 含类型声明 |
 | --- | ---: | ---: | ---: |
 | known-gap | 1 | 1 | 1 |
-| inspect-no-code-link | 68 | 68 | 68 |
+| inspect-no-code-link | 67 | 67 | 67 |
 | inspect-inherited-code | 13 | 13 | 13 |
 | inspect-projection-normalization | 59 | 59 | 59 |
 | inspect-guard-links | 49 | 49 | 49 |
 | review-existing-code | 233 | 233 | 233 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 286 | 0 | 0 |
-| scoped-review-recorded | 18 | 18 | 18 |
+| scoped-review-recorded | 19 | 19 | 19 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 20 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 21 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -48,6 +48,7 @@
 | RelicEffectModifyEnergyWhenFloorsOccupied | shared-path | Shared initialized rule distinguishes registered actors from living capacity/GetSize clamp, excludes Pyre, exposes only base query, and preserves separate base/threshold energy clamps including RemoveEnergy(0) and one notification. Combined six sources/90 configurations/2643 native calls; native Int32.MinValue faults explicitly unsupported. Original WormgutT3 plus SolarisT1 and capacity artifact acquired before room setup, actual size20 threshold and full native win/16 branches/frontiers/root search. Other tier lifecycles, mixed Covenants, prior before-draw ordering and enemy-occupied draw cache remain outside integration. |
 | RelicEffectModifyGoldEndOfBattle | campaign-only | Sealed native combat callbacks only remember private Pyre damage and return false; rewards use the separate campaign consumer. 864 current and 756 legacy component rows; natural carried-owner battle integration remains separate. |
 | RelicEffectModifyRandomRoomCapacity | input-only | Original mutator is captured after native deployment draw settles the turn-zero capacity callback. A native win proves one selected floor 5 to 2, one Battle RNG advance, later false Tests, exact capacity-based rejection and alternate-floor placement. Complete successors, 16 branches, frontiers and serial/parallel plans agree. The solver consumes settled room capacities, and pending opening mutations are rejected. Campaign carryover and other random-capacity owners remain separate. |
+| RelicEffectModifyRandomRoomCapacityAfterBattle | input-only | Capture settled native capacities after the opening callback. Original Bogwurm is naturally selected and the unchanged catalog Life artifact is attached in an isolated control. Capacity bonuses +2/0/+1 and the Life static -1 enter actual deployment legality, with an oversized legal summon and unchanged-floor denial. Original wins, exact successors, 16 branches, frontiers and serial/parallel plans pass. Campaign reward mutation remains native. |
 | RelicEffectMultiplyAttackLate | shared-path | Shared parameter-driven late multiplier preserves manager order, champion filtering, captured native Pyre exemption and raw snapshots. Pinned one original owner; 640 native queries, 80 products, 640 actual attacks plus 7728 percentage query/birth pairs with nonneutral late. Unchanged half-attack plus double-enemy-health native win; full successors, 16 branches/frontiers and serial/parallel root search. Actual status callback interactions, all other owner combinations and mixed Covenants are not fully certified. |
 | RelicEffectScaleStatusApplicationsOnSpawn | shared-path | Shared initialized birth rule preserves actual enemy-only/inverted required-mutator gate, original-definition positive starting additions, ordered exact-type runtime trigger scaling and immutable source/target metadata; enchant capture reads runtime parameters. Four original sources/54 configurations/2592 native callbacks in detached objects; starting AddStatus requests intercepted, not applied there. Unchanged original endless RunDistance4 owner acquired before Pyre setup, authored enemy status/trigger and defender controls; native full win/four zero, 16 branches/frontiers/serial-parallel root search. Other source companions, complex status callback competition, mixed Covenants, scaled enchant gameplay lifecycle and complete hover query remain outside certification. |
 ## 第一批需核对的代码入口
@@ -74,10 +75,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `df089502f993b271116f6fd5b16309232dd4b5d686ade66d239c7b2081971388`。
-- Model: PDB 校验过的项目源码集合 `fbc01f825afec4d9de863d0b07c58c5ea82f464856461c09356614d29348e547`。
-- Probe: PDB 校验过的项目源码集合 `f28889a88fabb81d39ff96d243dc208f68d6f2c3c16a7b25837f7488f9f13ee8`。
-- ModelChecks: PDB 校验过的项目源码集合 `0e550ef24ca22e2dd66cfae98fd29ca708e0a5db3a348161350a14c3a6dfe769`。
+- 人工审查索引 SHA-256: `7d06fdf517e944a152d398f58a2fd9ac89f71001dced348f0eac6fbd3ba1420f`。
+- Model: PDB 校验过的项目源码集合 `418b132a833c14384f4b7901b0195ccdbb3aa96e48eae797079a13737b3866f2`。
+- Probe: PDB 校验过的项目源码集合 `37ef4579ad9036fd96b1d931576dfb21c436072836c5680f3824e9fc8ef5d850`。
+- ModelChecks: PDB 校验过的项目源码集合 `0eb99ca9400c4bf38877ec842d0cbb081f555817463845459999724a6c58682d`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 

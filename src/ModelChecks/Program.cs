@@ -10,6 +10,11 @@ if (args.Length == 2 && args[0] == "--pile-spawn-upgrade-battle-only")
     PileSpawnUpgradeMechanismChecks.Battle(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--pyre-capacity-carryover-only")
+{
+    OpeningCapacityChecks.Carryover(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--opening-capacity-only")
 {
     OpeningCapacityChecks.Native(args[1]);

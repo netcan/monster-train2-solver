@@ -38,7 +38,7 @@ namespace MonsterTrain2Poju.Probe
             public object? After { get; set; }
         }
 
-        private sealed class Snapshot
+        internal class Snapshot
         {
             public int Turn { get; }
             public bool Placement { get; }
@@ -108,26 +108,38 @@ namespace MonsterTrain2Poju.Probe
             if (rooms.Length != 3 || reduced.PlayerMaximum is < 1 or > 6)
                 throw new InvalidOperationException("Random room capacity needs three deployment floors and a fillable reduced floor.");
 
+            cards = CreateDeploymentControls(managers, rooms.Length, reduced.PlayerMaximum);
+            ids = cards.Select(FullBattleTrace.Active!.CardId).ToArray();
+            Prepared = true;
+            RefreshDeploymentControls(managers);
+            log.LogInfo($"ORIGINAL-RANDOM-ROOM-CAPACITY-PREPARED floor={reducedRoom} maximum={reduced.PlayerMaximum}");
+        }
+
+        internal static CardState[] CreateDeploymentControls(AllGameManagers managers, int count, int firstSize)
+        {
             var save = managers.GetSaveManager();
             var manager = managers.GetCardManager();
             foreach (var card in manager.GetHand().ToArray()) manager.MoveCardFromHandToTopOfDeck(card);
             var steward = save.GetAllGameData().FindCardData(MagneticRelayScenario.StewardId)!;
-            cards = rooms.Select(_ => manager.AddNewCard(steward, CardPile.HandPile, false, false, animate: false)).ToArray();
-            for (int i = 0; i < cards.Length; i++)
+            var controls = Enumerable.Range(0, count)
+                .Select(_ => manager.AddNewCard(steward, CardPile.HandPile, false, false, animate: false)).ToArray();
+            for (int i = 0; i < controls.Length; i++)
             {
                 var upgrade = new CardUpgradeState();
                 upgrade.Setup();
                 upgrade.SetAttackDamage(80);
                 upgrade.SetAdditionalHP(1000);
                 upgrade.SetCostReduction(1);
-                if (i == 0) upgrade.SetAdditionalSize(reduced.PlayerMaximum - cards[i].GetSize());
-                cards[i].ApplyPermanentUpgrade(upgrade, save, ignoreUpgradeAnimation: true);
+                if (i == 0) upgrade.SetAdditionalSize(firstSize - controls[i].GetSize());
+                controls[i].ApplyPermanentUpgrade(upgrade, save, ignoreUpgradeAnimation: true);
             }
-            ids = cards.Select(FullBattleTrace.Active!.CardId).ToArray();
-            Prepared = true;
+            return controls;
+        }
+
+        internal static void RefreshDeploymentControls(AllGameManagers managers)
+        {
             AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
             AccessTools.Field(typeof(CombatManager), "combatStateChanged").SetValue(managers.GetCombatManager(), true);
-            log.LogInfo($"ORIGINAL-RANDOM-ROOM-CAPACITY-PREPARED floor={reducedRoom} maximum={reduced.PlayerMaximum}");
         }
 
         internal static PlayCardAction? Choose(BattleTurnState state)

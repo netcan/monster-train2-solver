@@ -3,6 +3,60 @@ using MonsterTrain2Poju.Model;
 
 internal static class OpeningCapacityChecks
 {
+    internal static void Carryover(string path)
+    {
+        using var archive = ModelJson.ReadFixture(path);
+        var root = archive.RootElement;
+        var definition = root.GetProperty("OriginalPyreCapacityCarryoverDefinition");
+        string? owner = definition.GetProperty("Id").GetString();
+        Require(root.GetProperty("OriginalPyreCapacityCarryoverPrepared").GetBoolean() &&
+            root.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
+            definition.ContentEquals(root.GetProperty("OriginalPyreCapacityCarryoverDefinitionAfter")) &&
+            owner != null && RelicOpeningCapacityModel.IsPyreOwner(owner), "Missing unchanged original Pyre capacity artifact.");
+
+        var callbacks = root.GetProperty("OriginalPyreCapacityCarryoverCallbacks").EnumerateArray().ToArray();
+        var tests = callbacks.Where(row => row.GetProperty("Kind").GetString() == "Test").ToArray();
+        Require(callbacks.All(row => row.GetProperty("Completed").GetBoolean()) && tests.Length > 1 &&
+            tests.All(row => row.GetProperty("Before").ContentEquals(row.GetProperty("After")) &&
+                row.GetProperty("Passed").GetBoolean() == (Int(row.GetProperty("Before"), "Turn") == 0)),
+            "Pyre opening Test must be pure and pass at deployment only.");
+        var application = callbacks.Single(row => row.GetProperty("Kind").GetString() == "Apply");
+        var before = application.GetProperty("Before");
+        var after = application.GetProperty("After");
+        var previousRooms = before.GetProperty("Rooms").Deserialize<RoomCapacityState[]>()!;
+        var nextRooms = after.GetProperty("Rooms").Deserialize<RoomCapacityState[]>()!;
+        int[] bonuses = { 2, 0, 1 };
+        Require(Int(before, "Turn") == 0 && Int(after, "SelectedRoom") == 0 &&
+            !before.GetProperty("Applied").GetBoolean() && after.GetProperty("Applied").GetBoolean() &&
+            before.GetProperty("BattleRng").ContentEquals(after.GetProperty("BattleRng")) &&
+            before.GetProperty("Bonuses").Deserialize<int[]>()!.SequenceEqual(bonuses) &&
+            before.GetProperty("Bonuses").ContentEquals(after.GetProperty("Bonuses")) &&
+            nextRooms.All(room => room.PlayerMaximum == previousRooms.Single(old => old.RoomIndex == room.RoomIndex).PlayerMaximum +
+                (room.IsPyre ? 0 : bonuses[room.RoomIndex])), "Native carryover did not apply the saved capacity once before deployment.");
+
+        var witness = root.GetProperty("OriginalPyreCapacityCarryoverWitness");
+        bool controlled = owner == RelicOpeningCapacityModel.LifeId;
+        Require(controlled == (definition.TryGetProperty("ControlledAttachment", out var definitionControl) && definitionControl.GetBoolean()) &&
+            controlled == (witness.TryGetProperty("ControlledAttachment", out var witnessControl) && witnessControl.GetBoolean()),
+            "Pyre carryover evidence must identify the controlled Life attachment.");
+        int expanded = Int(witness, "ExpandedFloor"), control = Int(witness, "ControlFloor"), id = Int(witness, "CardId");
+        var first = root.GetProperty("Actions").EnumerateArray().First();
+        var state = first.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var context = state.Spawn.Train.Context!;
+        var choices = BattleActionModel.EnumerateSupportedPlays(state, id);
+        Require(state.Spawn.Turn == 0 && Int(first.GetProperty("Action"), "CardInstanceId") == id &&
+            Int(first.GetProperty("Action"), "RoomIndex") == expanded &&
+            witness.GetProperty("NativeFits").GetBoolean() && witness.GetProperty("NativeControlBlocked").GetBoolean() &&
+            Int(witness, "CardSize") > Int(witness, "OriginalMaximum") &&
+            RelicModel.Validate(context) == null && context.Resources?.OpeningCapacitySettled == true &&
+            context.RoomCapacities!.Single(room => room.RoomIndex == expanded).PlayerMaximum == nextRooms.Single(room => room.RoomIndex == expanded).PlayerMaximum &&
+            choices.Any(action => action.RoomIndex == expanded) && choices.All(action => action.RoomIndex != control),
+            "Settled Pyre capacity did not preserve the additional legal deployment in the model.");
+        CardCycleChecks.Native(root);
+        SolverStageChecks.Native(path);
+        Console.WriteLine($"PYRE-CAPACITY-CARRYOVER PASS owner={definition.GetProperty("Mode").GetString()}, floors +2/0/+1, native deployment and complete search successors agree.");
+    }
+
     internal static void Native(string path)
     {
         using var archive = ModelJson.ReadFixture(path);

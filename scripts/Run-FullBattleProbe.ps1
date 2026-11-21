@@ -688,6 +688,7 @@ param(
     [switch] $OriginalEatenDamageRelic,
     [switch] $OriginalMoreCapacityRelic,
     [switch] $OriginalRandomRoomCapacityMutator,
+    [ValidateSet('Bogwurm', 'Life')][string] $OriginalPyreCapacityCarryover,
     [switch] $OriginalBurnoutDamageRelic,
     [switch] $OriginalHealDamageRelic,
     [switch] $OriginalKillAttackRelic,
@@ -1498,9 +1499,12 @@ if ($OriginalCardPlayDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoin
 if ($OriginalConsumeDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalEatenDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalMoreCapacityRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
-if ($OriginalRandomRoomCapacityMutator) {
+if ($OriginalPyreCapacityCarryover -and ($OriginalRandomRoomCapacityMutator -or $InputProfile -or $BattleDistance -ne 0)) {
+    throw 'Pyre capacity carryover selects one original Pyre in a fresh isolated run.'
+}
+if ($OriginalRandomRoomCapacityMutator -or $OriginalPyreCapacityCarryover) {
     if ($PlayerAdvisor -or $Planner -or $Advisor -or $DotNetPlanner) {
-        throw 'Random room capacity calibration uses three fixed deployment actions.'
+        throw 'Opening room capacity calibration uses three fixed deployment actions.'
     }
     $PhysicalSpawnPoints = $true
     $BranchCardMasks = $true
@@ -2557,10 +2561,11 @@ if ($OriginalCardPlayDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'origi
 if ($OriginalConsumeDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-consume-damage' }
 if ($OriginalEatenDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-eaten-damage' }
 if ($OriginalMoreCapacityRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-more-capacity' }
-if ($OriginalRandomRoomCapacityMutator) {
-    $environment['MT2_PROBE_MODIFIERS'] = 'original-random-room-capacity'
+if ($OriginalRandomRoomCapacityMutator -or $OriginalPyreCapacityCarryover) {
+    $environment['MT2_PROBE_MODIFIERS'] = if ($OriginalPyreCapacityCarryover) { 'original-pyre-capacity-carryover' } else { 'original-random-room-capacity' }
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+    if ($OriginalPyreCapacityCarryover) { $environment['MT2_PROBE_PYRE_CAPACITY_MODE'] = $OriginalPyreCapacityCarryover }
 }
 if ($OriginalBurnoutDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-burnout-death-damage' }
 if ($OriginalHealDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-heal-to-damage' }
@@ -5062,6 +5067,27 @@ if ($OriginalRandomRoomCapacityMutator) {
         throw 'Random room capacity lacks its unchanged mutator, natural opening application, deployment capacity witness or exact battle successors.'
     }
     Write-Output "ORIGINAL-RANDOM-ROOM-CAPACITY PASS: floor $($witness.ReducedFloor) $($witness.OriginalMaximum) -> $($witness.Maximum), a rejected unit deployed on floor $($witness.AlternateFloor), and no later-turn application."
+}
+if ($OriginalPyreCapacityCarryover) {
+    $callbacks = @($trace.OriginalPyreCapacityCarryoverCallbacks)
+    $controls = @($trace.Actions | Where-Object ScenarioAction)
+    $definition = $trace.OriginalPyreCapacityCarryoverDefinition
+    $witness = $trace.OriginalPyreCapacityCarryoverWitness
+    if (-not $trace.OriginalPyreCapacityCarryoverPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or
+        $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+        $definition.Mode -cne $OriginalPyreCapacityCarryover -or $controls.Count -ne 3 -or
+        -not $witness.NativeFits -or -not $witness.NativeControlBlocked -or $witness.CardSize -le $witness.OriginalMaximum -or
+        $controls[0].Action.CardInstanceId -ne $witness.CardId -or $controls[0].Action.RoomIndex -ne $witness.ExpandedFloor -or
+        @($callbacks | Where-Object { -not $_.Completed -or $_.Owner -ne $definition.Id }).Count -ne 0 -or
+        @($callbacks | Where-Object { $_.Kind -eq 'Apply' -and $_.Before.Turn -eq 0 -and -not $_.Before.Applied -and $_.After.Applied }).Count -ne 1 -or
+        @($callbacks | Where-Object Kind -eq 'Apply').Count -ne 1 -or
+        @($callbacks | Where-Object { $_.Kind -eq 'Test' -and $_.Passed -and $_.Before.Turn -eq 0 }).Count -ne 1 -or
+        @($callbacks | Where-Object { $_.Kind -eq 'Test' -and -not $_.Passed -and $_.Before.Turn -gt 0 }).Count -lt 1 -or
+        ($definition | ConvertTo-Json -Compress -Depth 6) -cne
+        ($trace.OriginalPyreCapacityCarryoverDefinitionAfter | ConvertTo-Json -Compress -Depth 6)) {
+        throw 'Pyre capacity carryover lacks its original selection, settled opening application, deployment witness or exact battle successors.'
+    }
+    Write-Output "ORIGINAL-PYRE-CAPACITY-CARRYOVER PASS: $OriginalPyreCapacityCarryover deployed size $($witness.CardSize) on floor $($witness.ExpandedFloor) with prior maximum $($witness.OriginalMaximum)."
 }
 if ($OriginalMoreCapacityRelic -and ($trace.Schema -ne 223 -or $trace.OriginalMoreCapacitySchema -ne 223 -or
     $trace.ModifierScenario -ne 'original-more-capacity' -or -not $trace.OriginalMoreCapacityPrepared -or

@@ -345,6 +345,8 @@ namespace MonsterTrain2Poju.Probe
                     runSetupRequested = true;
                     NativeStartingClans.Select(setup, save, log);
                     StartingCovenantScenario.Select(setup, save);
+                    if (fullBattle && OriginalPyreCapacityCarryoverScenario.Enabled)
+                        OriginalPyreCapacityCarryoverScenario.SelectBeforeRun(setup, save, log);
                     startRunFromSetup.Invoke(setup, null);
                     return;
                 }
@@ -638,6 +640,8 @@ namespace MonsterTrain2Poju.Probe
                         SpawnStatusScalingScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalRandomRoomCapacityScenario.Enabled)
                         OriginalRandomRoomCapacityScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalPyreCapacityCarryoverScenario.Enabled)
+                        OriginalPyreCapacityCarryoverScenario.SeedBeforeBattle(managers!, log);
                     if (fullBattle && PyreResourceRefreshScenario.Enabled && !PyreResourceRefreshScenario.Prepared)
                         PyreResourceRefreshScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && SpawnStatusRelicScenario.OriginalCombatRelics && !SpawnStatusRelicScenario.OriginalCombatRelicsAcquired)
@@ -2591,6 +2595,12 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return;
             }
+            if (fullBattle && OriginalPyreCapacityCarryoverScenario.Enabled && !OriginalPyreCapacityCarryoverScenario.Prepared)
+            {
+                numericModifiersPrepared = true;
+                OriginalPyreCapacityCarryoverScenario.Prepare(managers, log);
+                return;
+            }
             if (fullBattle && OriginalRandomRoomCapacityScenario.Enabled && !OriginalRandomRoomCapacityScenario.Prepared)
             {
                 numericModifiersPrepared = true;
@@ -3295,6 +3305,10 @@ namespace MonsterTrain2Poju.Probe
                 {
                     pendingPlay = SpawnStatusScalingScenario.Choose(decision);
                 }
+                else if (OriginalPyreCapacityCarryoverScenario.Enabled)
+                {
+                    pendingPlay = OriginalPyreCapacityCarryoverScenario.Choose(decision);
+                }
                 else if (OriginalRandomRoomCapacityScenario.Enabled)
                 {
                     pendingPlay = OriginalRandomRoomCapacityScenario.Choose(decision);
@@ -3875,6 +3889,7 @@ namespace MonsterTrain2Poju.Probe
                 (OriginalCardPlayDamageScenario.Enabled && OriginalCardPlayDamageScenario.IsScenarioAction(action)) ||
                 (OriginalConsumeDamageScenario.Enabled && OriginalConsumeDamageScenario.IsScenarioAction(action)) ||
                 (OriginalEatenDamageScenario.Enabled && OriginalEatenDamageScenario.IsScenarioAction(action)) ||
+                (OriginalPyreCapacityCarryoverScenario.Enabled && OriginalPyreCapacityCarryoverScenario.IsScenarioAction(action)) ||
                 (OriginalRandomRoomCapacityScenario.Enabled && OriginalRandomRoomCapacityScenario.IsScenarioAction(action)) ||
                 (OriginalMoreCapacityScenario.Enabled && OriginalMoreCapacityScenario.IsScenarioAction(action)) ||
                 (OriginalBurnoutDamageScenario.Enabled && OriginalBurnoutDamageScenario.IsScenarioAction(action)) ||

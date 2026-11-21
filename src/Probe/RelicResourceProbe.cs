@@ -123,7 +123,10 @@ namespace MonsterTrain2Poju.Probe
             if (rawSave == null) throw new InvalidOperationException("Missing native raw resource save.");
             string[] mutatorIds = rawSave.GetMutatorIDs().ToArray();
             CombatManager? combat = managers.GetCombatManager();
-            bool? openingCapacitySettled = mutatorIds.Contains(RelicOpeningCapacityModel.MutatorId)
+            string? pyreArtifactId = save.GetActiveSavePyreArtifactState()?.GetRelicDataID();
+            bool hasOpeningCapacity = mutatorIds.Contains(RelicOpeningCapacityModel.MutatorId) ||
+                (pyreArtifactId != null && RelicOpeningCapacityModel.IsPyreOwner(pyreArtifactId));
+            bool? openingCapacitySettled = hasOpeningCapacity
                 ? combat != null && (combat.GetTurnCount() > 0 || combat.HaveCardsBeenDrawnForCurrentTurn())
                 : null;
             return new BattleResourceState(balance.GetStartOfTurnEnergy(), balance.GetStartOfDeploymentPhaseEnergy(),
@@ -521,7 +524,7 @@ namespace MonsterTrain2Poju.Probe
                 amount = (int)AccessTools.Field(effect.GetType(), "corruptionChange").GetValue(effect);
             else if (effect is RelicEffectAddPermanentCorruptionStartOfCombat)
                 amount = (int)AccessTools.Field(effect.GetType(), "addPermanentAmount").GetValue(effect);
-            else if (effect is RelicEffectModifyRandomRoomCapacity)
+            else if (RelicOpeningCapacityModel.IsEffect(type))
                 amount = data.GetParamInt();
             else if (effect is RelicEffectChangeSingleFloorCapacity)
                 amount = (int)AccessTools.Field(effect.GetType(), "adjustAmount").GetValue(effect);
