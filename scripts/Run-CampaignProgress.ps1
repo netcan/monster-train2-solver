@@ -24,6 +24,7 @@ param(
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
+$explicitStartingCovenant = $PSBoundParameters.ContainsKey('StartingCovenantLevel')
 if ($CompleteDefeat -and (-not $BattleReplay -or -not $InputProfile)) {
     throw 'CompleteDefeat requires a settled native BattleReplay and its original InputProfile.'
 }
@@ -33,7 +34,7 @@ if ($NativeBuildRoot -and -not $SkipBuild) {
 if ($NewRunFromProfile -and ($InputProfile -or $BattleReplay -or $StoryProgressionOnly -or $StopBeforeRing -ne 1)) {
     throw 'NewRunFromProfile opens Ring1 from an idle native profile; omit InputProfile, BattleReplay and StoryProgressionOnly.'
 }
-if (($PrimaryClan -or $SecondaryClan -or $PSBoundParameters.ContainsKey('StartingCovenantLevel')) -and $InputProfile) {
+if (($PrimaryClan -or $SecondaryClan -or $explicitStartingCovenant) -and $InputProfile) {
     throw 'Clan and Covenant selection require a fresh native campaign.'
 }
 if ($PrimaryClan -and $SecondaryClan -and $PrimaryClan -ieq $SecondaryClan) { throw 'Starting clans must differ.' }
@@ -152,6 +153,7 @@ $inputMetagameHash = (Get-FileHash -LiteralPath (Join-Path $source 'metagameSave
     NewRunFromProfile = [bool]$NewRunFromProfile;
     StopBeforeRing = $StopBeforeRing; Seed = $Seed; NativeWorker = $NativeWorker; ExcludeUpgradeTrait = $ExcludeUpgradeTrait;
     PrimaryClan = $PrimaryClan; SecondaryClan = $SecondaryClan; StartingCovenantLevel = $StartingCovenantLevel;
+    ExplicitStartingCovenant = $explicitStartingCovenant;
     SkipMerchantPurchases = [bool]$SkipMerchantPurchases;
     StoryChoiceOrder = $StoryChoiceOrder;
     DraftChoiceRank = $DraftChoiceRank;
@@ -206,7 +208,6 @@ foreach ($name in @($start.Environment.Keys)) {
 $settings = @{
     MT2_PROBE_DATA_DIR = $profile; MT2_PROBE_SCENARIO = 'campaign'; MT2_PROBE_SEED = "$Seed"
     MT2_PROBE_PRIMARY_CLAN = $PrimaryClan; MT2_PROBE_SECONDARY_CLAN = $SecondaryClan
-    MT2_PROBE_STARTING_COVENANT_LEVEL = "$StartingCovenantLevel"
     MT2_PROBE_CAMPAIGN_STOP_RING = "$StopBeforeRing"; MT2_PROBE_SETTLE_CARD_ANIMATIONS = '1'
     MT2_PROBE_CAMPAIGN_STORY_ONLY = $(if ($StoryProgressionOnly) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_EXCLUDED_UPGRADE_TRAITS = ($ExcludeUpgradeTrait -join ';')
@@ -218,6 +219,7 @@ $settings = @{
     MT2_PROBE_OUTER_BOSS_TURNS = $(if ($OuterBossTurns) { '1' } else { '0' })
     MT2_PROBE_OUTER_BOSS_BIRTH = $(if ($OuterBossBirth) { '1' } else { '0' })
 }
+if ($explicitStartingCovenant) { $settings.MT2_PROBE_STARTING_COVENANT_LEVEL = [string]$StartingCovenantLevel }
 if ($InputProfile) { $settings.MT2_PROBE_RESUME_RUN = '1' }
 if ($BattleReplay) {
     $settings.MT2_PROBE_SCENARIO = 'native-replay'
@@ -279,6 +281,13 @@ $inputUnchanged = (Get-FileHash -LiteralPath (Join-Path $source 'saves/save-sing
     (Get-FileHash -LiteralPath (Join-Path $source 'metagameSave.json')).Hash -ceq $inputMetagameHash
 $passed = $process.ExitCode -eq 0 -and $audit.Count -gt 0 -and $audit[-1].kind -eq 'complete' -and $unchanged -and $inputUnchanged -and $replayPassed
 $runOutcome = @($audit | Where-Object kind -EQ 'run-outcome')
+if ($explicitStartingCovenant -and $passed) {
+    $covenant = @($audit | Where-Object kind -EQ 'starting-covenant')
+    $startingSavePath = if ($runOutcome.Count) { Join-Path $profile 'completed-save-singlePlayer.json' } else { $savePath }
+    $startingSave = Get-Content -LiteralPath $startingSavePath -Raw | ConvertFrom-Json
+    $passed = $covenant.Count -eq 1 -and $covenant[0].data.requested -eq $StartingCovenantLevel -and
+        $covenant[0].data.actual -eq $StartingCovenantLevel -and $startingSave.startingConditions.ascensionLevel -eq $StartingCovenantLevel
+}
 if ($CompleteDefeat) {
     $completedPath = Join-Path $profile 'completed-save-singlePlayer.json'
     $idle = Get-Content -LiteralPath $savePath -Raw | ConvertFrom-Json

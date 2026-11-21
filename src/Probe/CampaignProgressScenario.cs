@@ -23,8 +23,10 @@ namespace MonsterTrain2Poju.Probe
         private readonly string auditPath;
         private readonly int stopRing;
         private readonly int seed;
+        private readonly int? requestedStartingCovenant;
         private float nextAction, lastProgress, heartbeat, quitAt;
         private bool started, setup, menuRequested, checkpointSaving;
+        private bool startingCovenantObserved;
         private int? selectingRoom;
         private float roomSelectionRequestedAt;
         private int roomSelectionRetries;
@@ -53,6 +55,8 @@ namespace MonsterTrain2Poju.Probe
             completeDefeat = afterBattle && !battleWon && Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_COMPLETE_DEFEAT") == "1";
             stopRing = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_STOP_RING") ?? "5");
             seed = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_SEED") ?? "424242");
+            string? covenant = Environment.GetEnvironmentVariable("MT2_PROBE_STARTING_COVENANT_LEVEL");
+            requestedStartingCovenant = covenant == null ? (int?)null : int.Parse(covenant);
             auditPath = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "campaign-audit.jsonl");
             lastProgress = Time.realtimeSinceStartup;
             Record("start", new { seed, stopRing, resume = Environment.GetEnvironmentVariable("MT2_PROBE_RESUME_RUN") == "1" });
@@ -174,7 +178,10 @@ namespace MonsterTrain2Poju.Probe
                     setup = true;
                     NativeStartingClans.Select(runSetup, save, log);
 #if DEVELOPMENT_PROBE
-                    StartingCovenantScenario.Select(runSetup, save);
+                    if (requestedStartingCovenant == 0)
+                        AccessTools.Method(typeof(RunSetupScreen), "HandleAscensionLevelChanged").Invoke(runSetup, new object[] { 0 });
+                    else if (requestedStartingCovenant.HasValue)
+                        StartingCovenantScenario.Select(runSetup, save);
 #endif
                     AccessTools.Method(typeof(RunSetupScreen), "StartRun").Invoke(runSetup, null);
                     Record("run-setup", new { });
@@ -345,6 +352,14 @@ namespace MonsterTrain2Poju.Probe
             if (screen is BattleIntroScreen intro)
             {
                 int ring = save.GetCurrentDistance() + 1;
+                if (requestedStartingCovenant is int requested && !startingCovenantObserved)
+                {
+                    int actual = save.GetStartingConditions().AscensionLevel;
+                    if (ring != 1 || actual != requested)
+                        throw new InvalidOperationException($"Requested Covenant {requested} settled as Covenant {actual} at ring {ring}.");
+                    Record("starting-covenant", new { requested, actual });
+                    startingCovenantObserved = true;
+                }
                 if (savedRing != ring)
                 {
                     if (!checkpointSaving)
