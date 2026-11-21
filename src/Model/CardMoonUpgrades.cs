@@ -138,6 +138,10 @@ namespace MonsterTrain2Poju.Model
             if (relic.DataId == "07bdefdb-03b8-4159-b74b-be85f68c4c56" && relic.AssetKey == "ApplyUnitUpgradeWhenRich" &&
                 relic.DisallowedInPlacementPhase == false &&
                 relic.EffectTypes.SequenceEqual(new[] { "RelicEffectModifyTrialGoldRewards" })) return true;
+            // StealthWaxers handles its tracked condition on character birth.
+            if (relic is { DataId: "22f5ff29-69be-4043-9fe1-245392ea3c95", AssetKey: "StealthWaxers" } &&
+                relic.EffectTypes is [RelicModel.AddStatusOnSpawn])
+                return RelicSpawnStatusModel.Validate(relic) == null;
             // Sealed RelicEffectAddTrigger only installs character callbacks in
             // OnCharacterAdded. Refreshing a spell's moon upgrade neither adds
             // characters nor invokes those callbacks; retain ordered payload
