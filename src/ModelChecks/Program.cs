@@ -7633,10 +7633,11 @@ if (args.Length == 2 && args[0] == "--battle-frontier-only")
     BattleSearchChecks.FrontierDiagnostics(fixture.RootElement);
     return;
 }
-if (args.Length is 2 or 3 && args[0] == "--rolling-frontier-only")
+if (args.Length is >= 2 and <= 4 && args[0] == "--rolling-frontier-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    BattleSearchChecks.RollingFrontiers(fixture.RootElement, args.Length == 3 ? int.Parse(args[2]) : 64);
+    BattleSearchChecks.RollingFrontiers(fixture.RootElement, args.Length >= 3 ? int.Parse(args[2]) : 64,
+        args.Length == 4 ? int.Parse(args[3]) : null);
     return;
 }
 

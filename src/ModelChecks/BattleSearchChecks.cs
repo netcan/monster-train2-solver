@@ -24,13 +24,17 @@ internal static class BattleSearchChecks
         Console.WriteLine("NATIVE-FRONTIER-DIAGNOSTICS PASS: " + index + " decisions, zero unsupported attempts.");
     }
 
-    internal static void RollingFrontiers(FixtureValue fixture, int choiceBudget)
+    internal static void RollingFrontiers(FixtureValue fixture, int choiceBudget, int? decisionIndex = null)
     {
         Require(choiceBudget > 0, "The EndTurn choice budget must be positive.");
         FixtureValue[] roots = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
         Require(roots.Length > 0, "The fixture has no recorded rolling decisions.");
+        if (decisionIndex is int indexToCheck && (indexToCheck < 0 || indexToCheck >= roots.Length))
+            throw new ArgumentOutOfRangeException(nameof(decisionIndex), $"Expected a recorded decision index from 0 through {roots.Length - 1}.");
+        int first = decisionIndex ?? 0;
+        int end = decisionIndex.HasValue ? first + 1 : roots.Length;
         int actions = 0, turns = 0, unsupported = 0, limited = 0;
-        for (int index = 0; index < roots.Length; index++)
+        for (int index = first; index < end; index++)
         {
             FixtureValue record = roots[index];
             var before = record.GetProperty("Root").Deserialize<BattleTurnState>()!;
@@ -41,7 +45,13 @@ internal static class BattleSearchChecks
             var rejected = cards.UnsupportedAttempts.Concat(ends.UnsupportedAttempts).ToArray();
             unsupported += rejected.Length;
             foreach (var group in rejected.GroupBy(attempt => attempt.Reason))
+            {
                 Console.WriteLine($"NATIVE-ROLLING-FRONTIER decision={index} turn={before.Spawn.Turn} unsupported={group.Count()} reason={group.Key}");
+                if (decisionIndex.HasValue)
+                    foreach (UnsupportedActionAttempt attempt in group)
+                        Console.WriteLine("NATIVE-ROLLING-REJECTION input=" + (attempt.Action == null ? "EndTurn" :
+                            JsonSerializer.Serialize(attempt.Action, ModelJson.Options)));
+            }
             if (ends.ReachedNodeLimit)
             {
                 limited++;
@@ -70,7 +80,7 @@ internal static class BattleSearchChecks
             RecordedBattleChecks.Compare(predicted!, record.GetProperty("Actual").Deserialize<BattleTurnState>()!,
                 outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate, $"Rolling decision {index}");
         }
-        Console.WriteLine($"NATIVE-ROLLING-FRONTIER decisions={roots.Length} actions={actions} endTurns={turns} unsupported={unsupported} truncated={limited}");
+        Console.WriteLine($"NATIVE-ROLLING-FRONTIER decisions={end - first} actions={actions} endTurns={turns} unsupported={unsupported} truncated={limited}");
         Require(unsupported == 0 && limited == 0, "Recorded rolling roots contain unsupported or truncated alternatives.");
 
     }
