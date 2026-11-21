@@ -51,8 +51,8 @@ internal static partial class OfflineBattleSearch
                 FixtureValue row = rows[index];
                 Require(row.GetProperty("Difference").ValueKind == FixtureKind.Null &&
                     SameDecision(row.GetProperty("Root")), $"Recorded native prefix differs before decision {index}.");
-                Require(!HasRelentlessChoices(row.GetProperty("PlanSteps")[0]),
-                    $"Completion cannot freeze the Relentless choices at native decision {index}.");
+                Require(SameRelentlessChoices(row, row.GetProperty("PlanSteps")[0]),
+                    $"Recorded Relentless choices differ from the first forecast step at decision {index}.");
                 Append(row);
                 Require(!Terminal(outcome) && outcome == row.GetProperty("Outcome").Deserialize<RoomOutcome>() &&
                     SameDecision(row.GetProperty("Actual")), $"Recorded native prefix differs after decision {index}.");
@@ -117,17 +117,11 @@ internal static partial class OfflineBattleSearch
 
         void Append(FixtureValue value)
         {
-            var step = new Step { Action = value.GetProperty("Action").Deserialize<PlayCardAction>(),
-                IsEndTurn = value.GetProperty("IsEndTurn").GetBoolean() };
-            Require(!Terminal(outcome) && step.IsEndTurn == (step.Action == null) && !HasRelentlessChoices(value),
-                "Completion requires a nonterminal decision and a supported action format.");
-            current = Apply(current, step.Action, step.IsEndTurn, out outcome);
+            Step step = ReadStep(value);
+            Require(!Terminal(outcome), "Completion requires a nonterminal decision.");
+            current = ReplayStep(current, step, out outcome);
             steps.Add(step);
         }
-
-        static bool HasRelentlessChoices(FixtureValue value) =>
-            value.TryGetProperty("RelentlessDecisions", out FixtureValue choices) &&
-            choices.ValueKind == FixtureKind.Array && choices.GetArrayLength() > 0;
     }
 
     // Export a verified root plan as ordinary frozen native inputs. This does
@@ -147,11 +141,11 @@ internal static partial class OfflineBattleSearch
         var decisions = new List<Decision>();
         foreach (var value in plan.GetProperty("Steps").EnumerateArray())
         {
-            var step = new Step { Action = value.GetProperty("Action").Deserialize<PlayCardAction>(),
-                IsEndTurn = value.GetProperty("IsEndTurn").GetBoolean() };
-            Require(!Terminal(outcome) && step.IsEndTurn == (step.Action == null), "Invalid terminal root plan input.");
-            BattleTurnState next = Apply(current, step.Action, step.IsEndTurn, out outcome);
+            Step step = ReadStep(value);
+            Require(!Terminal(outcome), "Invalid terminal root plan input.");
+            BattleTurnState next = ReplayStep(current, step, out outcome);
             decisions.Add(new Decision { Root = current, Action = step.Action, IsEndTurn = step.IsEndTurn,
+                RelentlessDecisions = step.RelentlessDecisions,
                 Expected = next, Outcome = outcome, PlanSteps = new[] { step }, Planned = next, PlannedOutcome = outcome,
                 Score = BattlePlanner.Evaluate(next, outcome), Nodes = 0, Generation = decisions.Count + 1 });
             current = next;

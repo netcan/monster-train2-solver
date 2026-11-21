@@ -35,9 +35,7 @@ internal static partial class OfflineBattleSearch
         string immutable = keys.Key(root);
         Require(root.Spawn.Turn == 0 && keys.Key(fixture.GetProperty("Root").Deserialize<BattleTurnState>()!) == immutable,
             "Deployment baseline changed the original native root.");
-        var route = fixture.GetProperty("RollingDecisions").EnumerateArray().Select(row => new Step {
-            Action = row.GetProperty("Action").Deserialize<PlayCardAction>(),
-            IsEndTurn = row.GetProperty("IsEndTurn").GetBoolean() }).ToArray();
+        var route = fixture.GetProperty("RollingDecisions").EnumerateArray().Select(ReadStep).ToArray();
         var opening = route.TakeWhile(step => !step.IsEndTurn).ToArray();
         bool UnitPlay(Step step) => step.Action is { ActivatorUnitId: 0 } action &&
             root.PlayRules!.Cards.FirstOrDefault(rule => rule.DataId == root.Spawn.Train.Context!.CardInstances!
@@ -76,7 +74,7 @@ internal static partial class OfflineBattleSearch
             foreach (var step in failedPrefix)
             {
                 Require(!Terminal(replayOutcome), "Deployment failure prefix follows a terminal outcome.");
-                replay = Apply(replay, step.Action, step.IsEndTurn, out replayOutcome);
+                replay = ReplayStep(replay, step, out replayOutcome);
             }
             Require(keys.Key(replay) == keys.Key(failedRoot) && keys.Key(root) == immutable,
                 "Deployment failure prefix changed the native root or failed to reach its boundary.");

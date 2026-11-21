@@ -47,9 +47,7 @@ internal static partial class OfflineBattleSearch
         }
         BattleTurnState root = DeploymentRoot(trace);
         Require(root.Spawn.Turn == 0, "Improvement requires a native deployment root.");
-        var route = (predicted?.RootElement ?? trace).GetProperty("RollingDecisions").EnumerateArray().Select(row => new Step {
-            Action = row.GetProperty("Action").Deserialize<PlayCardAction>(),
-            IsEndTurn = row.GetProperty("IsEndTurn").GetBoolean() }).ToArray();
+        var route = (predicted?.RootElement ?? trace).GetProperty("RollingDecisions").EnumerateArray().Select(ReadStep).ToArray();
         Require(route.Length is > 0 and <= 256 && startDecision >= 0 && startDecision < route.Length,
             "Expected a bounded complete native battle and valid starting decision.");
         using var keys = new BattleStateKeys();
@@ -100,7 +98,7 @@ internal static partial class OfflineBattleSearch
             foreach (Step step in failedPrefix)
             {
                 Require(!Terminal(replayOutcome), "Failure prefix follows a terminal input.");
-                replay = Apply(replay, step.Action, step.IsEndTurn, out replayOutcome);
+                replay = ReplayStep(replay, step, out replayOutcome);
             }
             Require(keys.Key(replay) == keys.Key(failedRoot) && keys.Key(root) == immutable,
                 "Failure prefix changed its native root or failed to reach the rejected action.");
@@ -249,9 +247,14 @@ internal static partial class OfflineBattleSearch
                             { skippedSuffixInputs++; continue; }
                             if (next.IsEndTurn)
                             {
-                                BattleTurnResult ended = BattleTurnModel.EndTurn(branch);
+                                BattleTurnResult ended = BattleTurnModel.EndTurn(branch, next.RelentlessDecisions);
                                 if (!ended.Supported)
-                                { Unsupported(ended.UnsupportedReason ?? "Unsupported EndTurn.", null, branch, steps); skippedSuffixInputs++; continue; }
+                                {
+                                    if (next.RelentlessDecisions == null)
+                                        Unsupported(ended.UnsupportedReason ?? "Unsupported EndTurn.", null, branch, steps);
+                                    skippedSuffixInputs++;
+                                    continue;
+                                }
                                 branch = ended.State!; result = ended.Outcome; actions = 0;
                             }
                             else
@@ -384,7 +387,7 @@ internal static partial class OfflineBattleSearch
             {
                 Require(!Terminal(terminal) && step.IsEndTurn == (step.Action == null), "Invalid improvement input sequence.");
                 collect?.Add(state);
-                state = Apply(state, step.Action, step.IsEndTurn, out terminal);
+                state = ReplayStep(state, step, out terminal);
             }
             Require(Terminal(terminal), "Incomplete improvement route.");
             return state;

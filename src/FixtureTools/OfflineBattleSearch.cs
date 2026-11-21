@@ -41,7 +41,7 @@ internal static partial class OfflineBattleSearch
             foreach (Step step in forecastPrefix)
             {
                 Require(!Terminal(replayOutcome), "Failure prefix follows a terminal result.");
-                replay = Apply(replay, step.Action, step.IsEndTurn, out replayOutcome);
+                replay = ReplayStep(replay, step, out replayOutcome);
             }
             using var independent = new BattleStateKeys();
             Require(independent.Key(replay) == independent.Key(current) && independent.Key(root) == immutable,
@@ -78,13 +78,11 @@ internal static partial class OfflineBattleSearch
             {
                 if (decisionIndex >= fromDecision && Extract(current, forecastPrefix)) return;
                 Require(!Terminal(outcome), "Recorded forecast follows a terminal result.");
-                Step next = new Step { Action = stepValue.GetProperty("Action").Deserialize<PlayCardAction>(),
-                    IsEndTurn = stepValue.GetProperty("IsEndTurn").GetBoolean() };
-                current = Apply(current, next.Action, next.IsEndTurn, out outcome);
+                Step next = ReadStep(stepValue);
+                current = ReplayStep(current, next, out outcome);
                 forecastPrefix.Add(next);
             }
-            prefix.Add(new Step { Action = row.GetProperty("Action").Deserialize<PlayCardAction>(),
-                IsEndTurn = row.GetProperty("IsEndTurn").GetBoolean() });
+            prefix.Add(ReadStep(row));
             if (row.TryGetProperty("Actual", out FixtureValue actual) && actual.ValueKind == FixtureKind.Object &&
                 decisionIndex + 1 >= fromDecision && Extract(actual.Deserialize<BattleTurnState>()!, new List<Step>(prefix))) return;
             decisionIndex++;
@@ -154,7 +152,7 @@ internal static partial class OfflineBattleSearch
         BattleTurnState replayed = root;
         RoomOutcome outcome = RoomOutcome.Exchanged;
         foreach (BattleSearchStep step in plan.Steps)
-            replayed = Apply(replayed, step.Action, step.IsEndTurn, out outcome);
+            replayed = ReplayStep(replayed, Step.From(step), out outcome);
         using var independent = new BattleStateKeys();
         string finalKey = independent.Key(replayed);
         Require(outcome == plan.Outcome && finalKey == independent.Key(plan.State) && independent.Key(root) == rootKey &&
@@ -204,8 +202,9 @@ internal static partial class OfflineBattleSearch
         foreach (Step step in steps)
         {
             Require(!Terminal(outcome) && step.IsEndTurn == (step.Action == null), "Invalid action or action after terminal outcome.");
-            BattleTurnState next = Apply(current, step.Action, step.IsEndTurn, out outcome);
+            BattleTurnState next = ReplayStep(current, step, out outcome);
             decisions.Add(new Decision { Root = current, Action = step.Action, IsEndTurn = step.IsEndTurn,
+                RelentlessDecisions = step.RelentlessDecisions,
                 Expected = next, Outcome = outcome, PlanSteps = new[] { step }, Planned = next, PlannedOutcome = outcome,
                 Score = BattlePlanner.Evaluate(next, outcome), Nodes = 0, Generation = decisions.Count + 1 });
             current = next;
@@ -258,10 +257,12 @@ internal static partial class OfflineBattleSearch
             }
             foreach (UnsupportedActionAttempt attempt in plan.UnsupportedAttempts) unsupported.Add(attempt.Reason);
             Require(plan.Steps.Count > 0, "Planner produced no executable first step.");
-            BattleSearchStep step = plan.Steps[0];
-            BattleTurnState next = Apply(current, step.Action, step.IsEndTurn, out outcome);
+            Step[] steps = plan.Steps.Select(Step.From).ToArray();
+            Step step = steps[0];
+            BattleTurnState next = ReplayStep(current, step, out outcome);
             decisions.Add(new Decision { Root = current, Action = step.Action, IsEndTurn = step.IsEndTurn,
-                Expected = next, Outcome = outcome, PlanSteps = plan.Steps.Select(item => new Step { Action = item.Action, IsEndTurn = item.IsEndTurn }).ToArray(), Planned = plan.State, PlannedOutcome = plan.Outcome,
+                RelentlessDecisions = step.RelentlessDecisions,
+                Expected = next, Outcome = outcome, PlanSteps = steps, Planned = plan.State, PlannedOutcome = plan.Outcome,
                 Score = plan.Score, PolicyBaselineScore = plan.PolicyBaselineScore, Nodes = plan.ExpandedNodes, Generation = decisions.Count + 1,
                 ReusedContinuation = advice?.ReusedContinuation == true,
                 ReusedWinningContinuation = advice?.ReusedWinningContinuation == true });
@@ -303,25 +304,23 @@ internal static partial class OfflineBattleSearch
         {
             Require(!Terminal(outcome) && keys.Key(current) == keys.Key(row.GetProperty("Root").Deserialize<BattleTurnState>()!),
                 "Frozen model root differs or follows a terminal outcome.");
-            bool end = row.GetProperty("IsEndTurn").GetBoolean();
-            Require(end == (row.GetProperty("Action").ValueKind == FixtureKind.Null), "Invalid frozen first step.");
+            Step first = ReadStep(row);
             BattleTurnState forecast = current;
             RoomOutcome forecastOutcome = RoomOutcome.Exchanged;
             FixtureValue[] forecastSteps = row.GetProperty("PlanSteps").EnumerateArray().ToArray();
-            Require(forecastSteps.Length > 0 && forecastSteps[0].GetProperty("IsEndTurn").GetBoolean() == end &&
-                forecastSteps[0].GetProperty("Action").ContentEquals(row.GetProperty("Action")),
+            Require(forecastSteps.Length > 0 && forecastSteps[0].GetProperty("IsEndTurn").GetBoolean() == first.IsEndTurn &&
+                forecastSteps[0].GetProperty("Action").ContentEquals(row.GetProperty("Action")) &&
+                SameRelentlessChoices(row, forecastSteps[0]),
                 "Frozen first step differs from its forecast.");
             foreach (FixtureValue step in forecastSteps)
             {
-                Require(!Terminal(forecastOutcome) && step.GetProperty("IsEndTurn").GetBoolean() ==
-                    (step.GetProperty("Action").ValueKind == FixtureKind.Null), "Invalid frozen forecast step.");
-                forecast = Apply(forecast, step.GetProperty("Action").ValueKind == FixtureKind.Null ? null :
-                    step.GetProperty("Action").Deserialize<PlayCardAction>(), step.GetProperty("IsEndTurn").GetBoolean(), out forecastOutcome);
+                Require(!Terminal(forecastOutcome), "Invalid frozen forecast step.");
+                forecast = ReplayStep(forecast, ReadStep(step), out forecastOutcome);
             }
             Require(forecastOutcome == (RoomOutcome)row.GetProperty("PlannedOutcome").GetInt32() &&
                 keys.Key(forecast) == keys.Key(row.GetProperty("Planned").Deserialize<BattleTurnState>()!),
                 "Frozen complete forecast differs.");
-            current = Apply(current, end ? null : row.GetProperty("Action").Deserialize<PlayCardAction>(), end, out outcome);
+            current = ReplayStep(current, first, out outcome);
             Require(outcome == (RoomOutcome)row.GetProperty("Outcome").GetInt32() &&
                 keys.Key(current) == keys.Key(row.GetProperty("Expected").Deserialize<BattleTurnState>()!), "Frozen successor differs.");
         }
@@ -353,6 +352,16 @@ internal static partial class OfflineBattleSearch
                 "Score", "PolicyBaselineScore", "Generation" })
                 Require(first[index].GetProperty(name).ContentEquals(second[index].GetProperty(name)),
                     "Fresh native replay changed frozen decision " + index + " field " + name);
+            Require(SameRelentlessChoices(first[index], second[index]),
+                "Fresh native replay changed the frozen Relentless choices at decision " + index);
+            if (RelentlessChoices(first[index]) is { Length: > 0 })
+            {
+                int turn = first[index].GetProperty("Root").GetProperty("Spawn").GetProperty("Turn").GetInt32();
+                var observed = trace.GetProperty("Turns").EnumerateArray().Single(row =>
+                    row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() == turn);
+                Require(SameRelentlessChoices(first[index], observed),
+                    "Native EndTurn observations did not confirm the Relentless choices at decision " + index);
+            }
         }
         Require(trace.GetProperty("NativeWon").GetBoolean() ==
             ((RoomOutcome)source.RootElement.GetProperty("Outcome").GetInt32() == RoomOutcome.BattleWon), "Native terminal outcome differs.");
@@ -393,11 +402,29 @@ internal static partial class OfflineBattleSearch
         Require(trace.GetProperty("TerminalEffectsSettled").GetBoolean(), "Native input did not settle.");
     }
 
-    private static BattleTurnState Apply(BattleTurnState source, PlayCardAction? action, bool end, out RoomOutcome outcome)
+    internal static BattleSearchStep ReadBattleStep(FixtureValue value) =>
+        new(value.GetProperty("Action").Deserialize<PlayCardAction>(), value.GetProperty("IsEndTurn").GetBoolean(),
+            RelentlessChoices(value));
+    private static Step ReadStep(FixtureValue value) => Step.From(ReadBattleStep(value));
+    private static RelentlessDecision[] RelentlessChoices(FixtureValue value) =>
+        value.TryGetProperty("RelentlessDecisions", out FixtureValue choices) ?
+            choices.Deserialize<RelentlessDecision[]>() ?? Array.Empty<RelentlessDecision>() : Array.Empty<RelentlessDecision>();
+    private static bool SameRelentlessChoices(FixtureValue first, FixtureValue second)
     {
+        var left = RelentlessChoices(first);
+        var right = RelentlessChoices(second);
+        return left.Select(choice => (choice.RoomIndex, choice.CompletedRounds, choice.Continue))
+            .SequenceEqual(right.Select(choice => (choice.RoomIndex, choice.CompletedRounds, choice.Continue)));
+    }
+    private static BattleTurnState ReplayStep(BattleTurnState source, Step step, out RoomOutcome outcome) =>
+        Apply(source, step.Action, step.IsEndTurn, out outcome, step.RelentlessDecisions);
+    internal static BattleTurnState Apply(BattleTurnState source, PlayCardAction? action, bool end, out RoomOutcome outcome,
+        IReadOnlyList<RelentlessDecision>? choices = null)
+    {
+        Require(end == (action == null) && (end || choices?.Count is not > 0), "Invalid action or Relentless choices for the input.");
         if (end)
         {
-            BattleTurnResult result = BattleTurnModel.EndTurn(source);
+            BattleTurnResult result = BattleTurnModel.EndTurn(source, choices);
             Require(result.Supported, "Unsupported EndTurn: " + result.UnsupportedReason);
             outcome = result.Outcome; return result.State!;
         }
@@ -412,6 +439,8 @@ internal static partial class OfflineBattleSearch
         public BattleTurnState Root { get; set; } = null!;
         public PlayCardAction? Action { get; set; }
         public bool IsEndTurn { get; set; }
+        public IReadOnlyList<RelentlessDecision>? RelentlessDecisions { get; set; }
+        public bool ShouldSerializeRelentlessDecisions() => RelentlessDecisions?.Count > 0;
         public BattleTurnState Expected { get; set; } = null!;
         public RoomOutcome Outcome { get; set; }
         public IReadOnlyList<Step> PlanSteps { get; set; } = null!;
@@ -428,5 +457,9 @@ internal static partial class OfflineBattleSearch
     {
         public PlayCardAction? Action { get; set; }
         public bool IsEndTurn { get; set; }
+        public IReadOnlyList<RelentlessDecision>? RelentlessDecisions { get; set; }
+        public bool ShouldSerializeRelentlessDecisions() => RelentlessDecisions?.Count > 0;
+        internal static Step From(BattleSearchStep step) => new() { Action = step.Action, IsEndTurn = step.IsEndTurn,
+            RelentlessDecisions = step.RelentlessDecisions };
     }
 }

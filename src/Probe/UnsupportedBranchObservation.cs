@@ -88,6 +88,9 @@ namespace MonsterTrain2Poju.Probe
             NativeBranchIdentity.RequireModule(request, typeof(CardState).Module.ModuleVersionId);
             prefix = request.GetProperty("Prefix").EnumerateArray().ToArray();
             Require(prefix.Length <= 256, "Unsupported branch prefix exceeds the input bound.");
+            foreach (FixtureValue step in prefix)
+                PlannerReplayScenario.RequireNativeRelentlessExecution(PlannerReplayScenario.ReadChoices(step));
+            PlannerReplayScenario.RequireNativeRelentlessExecution(PlannerReplayScenario.ReadChoices(request));
             expected = Read<BattleTurnState>(request.GetProperty("Root"));
             Require(expected.Spawn.Turn == 0, "Branch observation must start at native deployment.");
         }

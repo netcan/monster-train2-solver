@@ -18,6 +18,11 @@ namespace MonsterTrain2Poju.Probe
         {
             public PlayCardAction? Action { get; set; }
             public bool IsEndTurn { get; set; }
+            public IReadOnlyList<RelentlessDecision>? RelentlessDecisions { get; set; }
+            public bool ShouldSerializeRelentlessDecisions() => RelentlessDecisions?.Count > 0;
+
+            internal static Step From(BattleSearchStep step) => new Step { Action = step.Action,
+                IsEndTurn = step.IsEndTurn, RelentlessDecisions = step.RelentlessDecisions };
         }
         internal sealed class Record
         {
@@ -140,8 +145,7 @@ namespace MonsterTrain2Poju.Probe
                 record.Mode = "replay";
                 record.Horizon = original.GetProperty("Horizon").GetInt32();
                 foreach (FixtureValue step in original.GetProperty("Steps").EnumerateArray())
-                    record.Steps.Add(new Step { IsEndTurn = step.GetProperty("IsEndTurn").GetBoolean(),
-                        Action = step.GetProperty("Action").ValueKind == FixtureKind.Null ? null : Read<PlayCardAction>(step.GetProperty("Action")) });
+                    record.Steps.Add(Read<Step>(step));
                 record.Planned = Read<BattleTurnState>(original.GetProperty("Planned"));
                 record.Score = original.GetProperty("Score").GetDouble();
                 if (original.TryGetProperty("PolicyBaselineScore", out FixtureValue policy) && policy.ValueKind == FixtureKind.Number)
@@ -163,7 +167,7 @@ namespace MonsterTrain2Poju.Probe
                 if (!plan.CompletedHorizon || plan.UnsupportedAttempts.Count != 0 || plan.Steps.Count == 0)
                     throw new InvalidOperationException("Native planner root has no complete supported recommendation: " +
                         string.Join("; ", plan.UnsupportedAttempts.Select(attempt => attempt.Reason)));
-                record.Steps = plan.Steps.Select(step => new Step { Action = step.Action, IsEndTurn = step.IsEndTurn }).ToList();
+                record.Steps = plan.Steps.Select(Step.From).ToList();
                 record.Planned = plan.State; record.Score = plan.Score; record.Nodes = plan.ExpandedNodes;
                 record.Duplicates = plan.DuplicateStates; record.BeamPruned = plan.BeamPruned;
                 record.ElapsedMs = plan.Elapsed.TotalMilliseconds; record.TimedOut = plan.TimedOut;
@@ -173,6 +177,7 @@ namespace MonsterTrain2Poju.Probe
             RoomOutcome outcome = RoomOutcome.Exchanged;
             foreach (Step step in record.Steps)
             {
+                RequireNativeRelentlessExecution(step.RelentlessDecisions);
                 if (step.IsEndTurn)
                 {
                     BattleTurnResult ended = BattleTurnModel.EndTurn(current);
@@ -205,6 +210,14 @@ namespace MonsterTrain2Poju.Probe
             log.LogInfo("PLANNER-READY mode=" + record.Mode + " turn=" + root.Spawn.Turn + " steps=" + record.Steps.Count +
                 " nodes=" + record.Nodes + " duplicates=" + record.Duplicates);
         }
+        internal static void RequireNativeRelentlessExecution(IReadOnlyList<RelentlessDecision>? choices)
+        {
+            if (choices?.Count > 0)
+                throw new InvalidOperationException("This native replay driver cannot execute explicit Relentless choices.");
+        }
+        internal static RelentlessDecision[]? ReadChoices(FixtureValue value) =>
+            value.TryGetProperty("RelentlessDecisions", out FixtureValue choices) && choices.ValueKind != FixtureKind.Null
+                ? Read<RelentlessDecision[]>(choices) : null;
         internal static T Read<T>(FixtureValue value) => Token(value).ToObject<T>()!;
         internal static T ReadWithoutNativeObservation<T>(FixtureValue value) =>
             new JObject(value.EnumerateObject().Where(property => property.Name is not "Actual" and not "Timing")

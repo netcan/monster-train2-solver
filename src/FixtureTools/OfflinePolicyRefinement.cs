@@ -51,10 +51,8 @@ internal static partial class OfflineBattleSearch
         {
             Require(!Terminal(outcome), "An input follows a terminal outcome.");
             prefixes.Add((current, prefix.ToArray(), keys.Key(current)));
-            var step = new Step { Action = row.GetProperty("Action").Deserialize<PlayCardAction>(),
-                IsEndTurn = row.GetProperty("IsEndTurn").GetBoolean() };
-            Require(step.IsEndTurn == (step.Action == null), "Invalid recorded input.");
-            current = Apply(current, step.Action, step.IsEndTurn, out outcome);
+            Step step = ReadStep(row);
+            current = ReplayStep(current, step, out outcome);
             BattleTurnState actual = row.GetProperty(predicted == null ? "Actual" : "Expected").Deserialize<BattleTurnState>()!;
             Require(outcome == (RoomOutcome)row.GetProperty("Outcome").GetInt32() &&
                 keys.SnapshotKey(current.RngStreams) == keys.SnapshotKey(actual.RngStreams) &&
@@ -76,7 +74,7 @@ internal static partial class OfflineBattleSearch
             foreach (Step step in failedPrefix)
             {
                 Require(!Terminal(replayOutcome), "Failure prefix follows a terminal input.");
-                replay = Apply(replay, step.Action, step.IsEndTurn, out replayOutcome);
+                replay = ReplayStep(replay, step, out replayOutcome);
             }
             using var independent = new BattleStateKeys();
             Require(independent.Key(replay) == independent.Key(failedRoot) && independent.Key(root) == immutable,

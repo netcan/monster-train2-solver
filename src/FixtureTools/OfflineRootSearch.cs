@@ -97,21 +97,8 @@ internal static class OfflineRootSearch
         foreach (FixtureValue step in steps)
         {
             Require(!Terminal(outcome), "A step follows the terminal outcome.");
-            bool end = step.GetProperty("IsEndTurn").GetBoolean();
-            PlayCardAction? action = step.GetProperty("Action").Deserialize<PlayCardAction>();
-            Require(end == (action == null), "Action/EndTurn pair differs.");
-            if (end)
-            {
-                BattleTurnResult next = BattleTurnModel.EndTurn(state);
-                Require(next.Supported, next.UnsupportedReason ?? "Unsupported EndTurn.");
-                state = next.State!; outcome = next.Outcome;
-            }
-            else
-            {
-                BattleActionResult next = BattleActionModel.PlayCard(state, action!);
-                Require(next.Supported, next.Reason ?? "Unsupported action.");
-                state = next.State!; outcome = next.Outcome;
-            }
+            BattleSearchStep input = OfflineBattleSearch.ReadBattleStep(step);
+            state = OfflineBattleSearch.Apply(state, input.Action, input.IsEndTurn, out outcome, input.RelentlessDecisions);
         }
         Require((int)outcome == plan.GetProperty("Outcome").GetInt32() &&
             keys.Key(state) == keys.Key(plan.GetProperty("State").Deserialize<BattleTurnState>()!) &&

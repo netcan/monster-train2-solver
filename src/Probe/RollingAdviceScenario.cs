@@ -20,6 +20,8 @@ namespace MonsterTrain2Poju.Probe
             public BattleTurnState Root { get; set; } = null!;
             public PlayCardAction? Action { get; set; }
             public bool IsEndTurn { get; set; }
+            public IReadOnlyList<RelentlessDecision>? RelentlessDecisions { get; set; }
+            public bool ShouldSerializeRelentlessDecisions() => RelentlessDecisions?.Count > 0;
             public BattleTurnState Expected { get; set; } = null!;
             public BattleTurnState? Actual { get; set; }
             public RoomOutcome Outcome { get; set; }
@@ -118,7 +120,13 @@ namespace MonsterTrain2Poju.Probe
                 if (frozen == null)
                 {
                     using var document = FixtureDocument.Read(Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_INPUT")!);
-                    frozen = document.RootElement.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+                    var rows = document.RootElement.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+                    foreach (FixtureValue row in rows)
+                    {
+                        PlannerReplayScenario.RequireNativeRelentlessExecution(PlannerReplayScenario.ReadChoices(row));
+                        PlannerReplayScenario.RequireNativeRelentlessExecution(PlannerReplayScenario.ReadChoices(row.GetProperty("PlanSteps")[0]));
+                    }
+                    frozen = rows;
                 }
                 if (Records.Count >= frozen.Length) throw new InvalidOperationException("Frozen rolling sequence ended before native combat.");
                 // Decode only the next input. Prior native observations are
@@ -146,11 +154,12 @@ namespace MonsterTrain2Poju.Probe
                     advice = advisor.CurrentAdvice; timing = advisor.Publications.Last();
                 }
                 BattlePlanResult plan = advice.Plan;
-                PlannerReplayScenario.Step[] steps = plan.Steps.Select(step => new PlannerReplayScenario.Step
-                    { Action = step.Action, IsEndTurn = step.IsEndTurn }).ToArray();
+                PlannerReplayScenario.Step[] steps = plan.Steps.Select(PlannerReplayScenario.Step.From).ToArray();
+                PlannerReplayScenario.RequireNativeRelentlessExecution(steps[0].RelentlessDecisions);
                 if (Records.Count > 0 && timing.Generation <= Records.Last().Generation)
                     throw new InvalidOperationException("Rolling action did not consume a new publication.");
                 decision = new Decision { Root = root, Action = steps[0].Action, IsEndTurn = steps[0].IsEndTurn,
+                    RelentlessDecisions = steps[0].RelentlessDecisions,
                     PlanSteps = steps.ToList(), Planned = plan.State, PlannedOutcome = plan.Outcome, Score = plan.Score,
                     PolicyBaselineScore = plan.PolicyBaselineScore, Nodes = plan.ExpandedNodes,
                     ReusedWinningContinuation = advice.ReusedWinningContinuation,
