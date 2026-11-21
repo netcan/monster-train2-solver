@@ -3887,6 +3887,20 @@ if (args.Length == 3 && args[0] is "--cael-birth-only" or "--cael-baseline-only"
     return;
 }
 
+if (args.Length == 3 && args[0] == "--native-cael-shield-trial")
+{
+    using var substitution = ModelJson.ReadFixture(args[1]);
+    using var birth = ModelJson.ReadFixture(args[2]);
+    CaelChecks.ShieldTrial(substitution.RootElement, birth.RootElement);
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--native-cael-shield-trial-battle")
+{
+    CaelChecks.ShieldTrialBattle(args[1]);
+    return;
+}
+
 if (args.Length == 2 && args[0] is "--angel-duo-harvest-death-only" or "--angel-duo-harvest-death-battle-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

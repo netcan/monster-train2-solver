@@ -4,10 +4,10 @@ using MonsterTrain2Poju.Model;
 
 internal static class OuterBossBirthChecks
 {
-    internal static void Native(FixtureValue fixture)
+    internal static void Native(FixtureValue fixture, string expectedMvid = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4")
     {
         Require(fixture.GetProperty("Schema").GetInt32() == 1 &&
-            fixture.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
+            fixture.GetProperty("GameModuleMvid").GetString() == expectedMvid &&
             fixture.GetProperty("Boundary").GetString() == "AfterCreateHeroStateBeforeInitialBossAction" &&
             fixture.GetProperty("Errors").GetArrayLength() == 0 && fixture.GetProperty("Births").GetArrayLength() == 1,
             "Initial boss placement requires one complete native creation boundary.");
@@ -43,7 +43,7 @@ internal static class OuterBossBirthChecks
         CombatUnit born = actual.Battle.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == actual.Boss.UnitId);
         EnchantmentRule[] auras = born.Triggers.SelectMany(trigger => trigger.Effects).Where(effect => effect.Enchantment != null)
             .Select(effect => effect.Enchantment!).ToArray();
-        bool deferredAura = born.AssetKey is "Boss_Level8_Corrupter" or "Boss_Level8_Corrupter_TitanTrial" ||
+        bool deferredAura = born.AssetKey is "Boss_Level8_Corrupter" or "Boss_Level8_Corrupter_TitanTrial" or OuterBossDefinitions.CaelShieldTrial ||
             OuterBossDefinitions.IsAngelDuo(born.AssetKey) || OuterBossDefinitions.IsCael(born.AssetKey) ||
             OuterBossDefinitions.IsArkionPyre(born.AssetKey) || OuterBossDefinitions.IsArkionRage(born.AssetKey) ||
             OuterBossDefinitions.IsArkionPush(born.AssetKey) || OuterBossDefinitions.IsFleshweaver(born.AssetKey) ? auras.Length == 0 :
