@@ -636,6 +636,8 @@ namespace MonsterTrain2Poju.Probe
                         TurnEnergyScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && SpawnStatusScalingScenario.Enabled)
                         SpawnStatusScalingScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalRandomRoomCapacityScenario.Enabled)
+                        OriginalRandomRoomCapacityScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && PyreResourceRefreshScenario.Enabled && !PyreResourceRefreshScenario.Prepared)
                         PyreResourceRefreshScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && SpawnStatusRelicScenario.OriginalCombatRelics && !SpawnStatusRelicScenario.OriginalCombatRelicsAcquired)
@@ -2589,6 +2591,12 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return;
             }
+            if (fullBattle && OriginalRandomRoomCapacityScenario.Enabled && !OriginalRandomRoomCapacityScenario.Prepared)
+            {
+                numericModifiersPrepared = true;
+                OriginalRandomRoomCapacityScenario.Prepare(managers, log);
+                return;
+            }
             if (fullBattle && OriginalMoreCapacityScenario.Enabled && !OriginalMoreCapacityScenario.Prepared)
             {
                 numericModifiersPrepared = true;
@@ -3287,6 +3295,10 @@ namespace MonsterTrain2Poju.Probe
                 {
                     pendingPlay = SpawnStatusScalingScenario.Choose(decision);
                 }
+                else if (OriginalRandomRoomCapacityScenario.Enabled)
+                {
+                    pendingPlay = OriginalRandomRoomCapacityScenario.Choose(decision);
+                }
                 else if (BeforeDrawOrderScenario.Enabled)
                 {
                     pendingPlay = BeforeDrawOrderScenario.Choose(decision);
@@ -3863,6 +3875,7 @@ namespace MonsterTrain2Poju.Probe
                 (OriginalCardPlayDamageScenario.Enabled && OriginalCardPlayDamageScenario.IsScenarioAction(action)) ||
                 (OriginalConsumeDamageScenario.Enabled && OriginalConsumeDamageScenario.IsScenarioAction(action)) ||
                 (OriginalEatenDamageScenario.Enabled && OriginalEatenDamageScenario.IsScenarioAction(action)) ||
+                (OriginalRandomRoomCapacityScenario.Enabled && OriginalRandomRoomCapacityScenario.IsScenarioAction(action)) ||
                 (OriginalMoreCapacityScenario.Enabled && OriginalMoreCapacityScenario.IsScenarioAction(action)) ||
                 (OriginalBurnoutDamageScenario.Enabled && OriginalBurnoutDamageScenario.IsScenarioAction(action)) ||
                 (OriginalHealDamageScenario.Enabled && OriginalHealDamageScenario.IsScenarioAction(action)) ||

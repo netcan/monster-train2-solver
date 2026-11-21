@@ -687,6 +687,7 @@ param(
     [switch] $OriginalConsumeDamageRelic,
     [switch] $OriginalEatenDamageRelic,
     [switch] $OriginalMoreCapacityRelic,
+    [switch] $OriginalRandomRoomCapacityMutator,
     [switch] $OriginalBurnoutDamageRelic,
     [switch] $OriginalHealDamageRelic,
     [switch] $OriginalKillAttackRelic,
@@ -1497,6 +1498,16 @@ if ($OriginalCardPlayDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoin
 if ($OriginalConsumeDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalEatenDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalMoreCapacityRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
+if ($OriginalRandomRoomCapacityMutator) {
+    if ($PlayerAdvisor -or $Planner -or $Advisor -or $DotNetPlanner) {
+        throw 'Random room capacity calibration uses three fixed deployment actions.'
+    }
+    $PhysicalSpawnPoints = $true
+    $BranchCardMasks = $true
+    $SettleCardAnimations = $true
+    $SettleDeathDissolves = $true
+    $Policy = 'units-and-junk'
+}
 if ($OriginalBurnoutDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalHealDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalKillAttackRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
@@ -2546,6 +2557,11 @@ if ($OriginalCardPlayDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'origi
 if ($OriginalConsumeDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-consume-damage' }
 if ($OriginalEatenDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-eaten-damage' }
 if ($OriginalMoreCapacityRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-more-capacity' }
+if ($OriginalRandomRoomCapacityMutator) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-random-room-capacity'
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
 if ($OriginalBurnoutDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-burnout-death-damage' }
 if ($OriginalHealDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-heal-to-damage' }
 if ($OriginalKillAttackRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-kill-attack' }
@@ -5026,6 +5042,26 @@ if ($OriginalBurnoutDamageRelic -and ($trace.Schema -ne 224 -or $trace.OriginalB
     @($trace.RelicBurnoutDamageApplications | Where-Object EffectIndex -eq 0).Count -lt 1 -or
     @($trace.RelicBurnoutDamageApplications | Where-Object EffectIndex -eq 1).Count -lt 1)) {
     throw 'Original burnout/death damage acceptance failed.'
+}
+if ($OriginalRandomRoomCapacityMutator) {
+    $callbacks = @($trace.OriginalRandomRoomCapacityCallbacks)
+    $controls = @($trace.Actions | Where-Object ScenarioAction)
+    $witness = $trace.OriginalRandomRoomCapacityWitness
+    if (-not $trace.OriginalRandomRoomCapacityPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or
+        $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+        $controls.Count -ne 3 -or -not $witness.NativeBlocked -or -not $witness.NativeOtherFits -or
+        $controls[0].Action.CardInstanceId -ne $witness.FirstCardId -or $controls[0].Action.RoomIndex -ne $witness.ReducedFloor -or
+        $controls[1].Action.CardInstanceId -ne $witness.BlockedCardId -or $controls[1].Action.RoomIndex -ne $witness.AlternateFloor -or
+        @($callbacks | Where-Object { -not $_.Completed }).Count -ne 0 -or
+        @($callbacks | Where-Object { $_.Kind -eq 'Apply' -and $_.Before.Turn -eq 0 }).Count -ne 1 -or
+        @($callbacks | Where-Object { $_.Kind -eq 'Apply' -and $_.Before.Turn -ne 0 }).Count -ne 0 -or
+        @($callbacks | Where-Object { $_.Kind -eq 'Test' -and $_.Passed -and $_.Before.Turn -eq 0 }).Count -ne 1 -or
+        @($callbacks | Where-Object { $_.Kind -eq 'Test' -and -not $_.Passed -and $_.Before.Turn -gt 0 }).Count -lt 1 -or
+        ($trace.OriginalRandomRoomCapacityDefinition | ConvertTo-Json -Compress -Depth 6) -cne
+        ($trace.OriginalRandomRoomCapacityDefinitionAfter | ConvertTo-Json -Compress -Depth 6)) {
+        throw 'Random room capacity lacks its unchanged mutator, natural opening application, deployment capacity witness or exact battle successors.'
+    }
+    Write-Output "ORIGINAL-RANDOM-ROOM-CAPACITY PASS: floor $($witness.ReducedFloor) $($witness.OriginalMaximum) -> $($witness.Maximum), a rejected unit deployed on floor $($witness.AlternateFloor), and no later-turn application."
 }
 if ($OriginalMoreCapacityRelic -and ($trace.Schema -ne 223 -or $trace.OriginalMoreCapacitySchema -ne 223 -or
     $trace.ModifierScenario -ne 'original-more-capacity' -or -not $trace.OriginalMoreCapacityPrepared -or

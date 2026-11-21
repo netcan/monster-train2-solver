@@ -32,7 +32,9 @@ namespace MonsterTrain2Poju.Probe
                     (effect is RelicEffectModifyCharacterAttackOrHealthPercentage || effect is RelicEffectMultiplyAttackLate ||
                         effect is RelicEffectApplyExtraPyreDamage || effect is RelicEffectAddUnitUpgradePerPile ||
                         effect is RelicEffectScaleStatusApplicationsOnSpawn || effect is RelicEffectIncreasePyreAttack ||
-                        effect is RelicEffectIncreasePyreHealth) &&
+                        effect is RelicEffectIncreasePyreHealth ||
+                        owner.GetRelicDataID() == RelicOpeningCapacityModel.MutatorId && owner.GetEffects().Count == 1 &&
+                        effect is RelicEffectModifyRandomRoomCapacity) &&
                     ((RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect)).GetEffectConditions().Count == 0));
         }
     }

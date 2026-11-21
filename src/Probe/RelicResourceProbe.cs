@@ -121,18 +121,24 @@ namespace MonsterTrain2Poju.Probe
             PyreHeartData pyre = character.GetPyreHeartData();
             var rawSave = (SaveData)AccessTools.Property(typeof(SaveManager), "ActiveSaveData").GetValue(save);
             if (rawSave == null) throw new InvalidOperationException("Missing native raw resource save.");
+            string[] mutatorIds = rawSave.GetMutatorIDs().ToArray();
+            CombatManager? combat = managers.GetCombatManager();
+            bool? openingCapacitySettled = mutatorIds.Contains(RelicOpeningCapacityModel.MutatorId)
+                ? combat != null && (combat.GetTurnCount() > 0 || combat.HaveCardsBeenDrawnForCurrentTurn())
+                : null;
             return new BattleResourceState(balance.GetStartOfTurnEnergy(), balance.GetStartOfDeploymentPhaseEnergy(),
                 balance.GetStartOfTurnCards(), balance.GetMaxEnergy(), balance.GetMaxHandSize(), character.GetID(),
                 pyre.GetAttack(), rawSave.GetMaxTowerHP(), save.GetRelicPersistentState()?.GetPyreDamageIncrease() ?? 0,
                 rawSave.GetTowerModifiedBaseAttack(),
                 ((int[])AccessTools.Field(typeof(PyreHeartData), "upgradeAttack").GetValue(pyre)).ToArray(),
                 ((int[])AccessTools.Field(typeof(PyreHeartData), "upgradeHP").GetValue(pyre)).ToArray(),
-                rawSave.GetMutatorIDs().ToArray(),
+                mutatorIds,
                 ((MutableRules)AccessTools.Field(typeof(SaveManager), "mutableRules").GetValue(save))
                     .GetRule(MutableRules.Condition.GoldRewardMultiplier, 1f),
                 baseFloorCapacity: balance.GetCharacterCapacityPerFloor(), dragonsHoardCap: save.GetDragonsHoardCap(),
                 towerHealingDisabled: save.GetRelicModifiedRules().GetTowerHealingDisabled(),
-                visibleDeckCount: save.GetVisibleDeckCount(), corruptionPerCorruptTrait: save.GetNumCorruptionAddedPerTraitCorrupt());
+                visibleDeckCount: save.GetVisibleDeckCount(), corruptionPerCorruptTrait: save.GetNumCorruptionAddedPerTraitCorrupt(),
+                openingCapacitySettled: openingCapacitySettled);
         }
 
         internal static RelicResourceEffect Definition(IRelicEffect effect, int index, AllGameManagers managers)
@@ -515,6 +521,8 @@ namespace MonsterTrain2Poju.Probe
                 amount = (int)AccessTools.Field(effect.GetType(), "corruptionChange").GetValue(effect);
             else if (effect is RelicEffectAddPermanentCorruptionStartOfCombat)
                 amount = (int)AccessTools.Field(effect.GetType(), "addPermanentAmount").GetValue(effect);
+            else if (effect is RelicEffectModifyRandomRoomCapacity)
+                amount = data.GetParamInt();
             else if (effect is RelicEffectChangeSingleFloorCapacity)
                 amount = (int)AccessTools.Field(effect.GetType(), "adjustAmount").GetValue(effect);
             else if (effect is RelicEffectConserveEnergyEndOfTurn conserve)
