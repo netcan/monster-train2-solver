@@ -65,9 +65,9 @@ namespace MonsterTrain2Poju.Model
                 !actor.Unit.Triggers.Any(trigger => trigger.Kind is "OnMoonLit" or "OnMoonlitLost" or
                     "OnMoonShade" or "OnMoonshadeLost" or "OnMoonPhaseShift");
             if (actor.ExternalInteractions.Count > 0) return Fail(string.Join("; ", actor.ExternalInteractions));
-            if (actor.Unit.AssetKey == OuterBossDefinitions.CaelShieldTrial &&
-                !OuterBossDefinitions.CalibratedCaelShieldTrial(actor.Unit, train.Context))
-                return Fail("Cael Shield Trial requires the original replacement, owner and rank-zero birth.");
+            if (OuterBossDefinitions.IsCaelTrial(actor.Unit.AssetKey) &&
+                !OuterBossDefinitions.CalibratedCaelTrial(actor.Unit, train.Context))
+                return Fail("Cael Titan Trial requires the original replacement, owner and rank-zero birth.");
             if (!TrueFinalBossCovenantModel.CalibratedOuterBossOwners(train.Context, actor.Unit.AssetKey))
                 return Fail("Outer-boss Covenant owners require separate calibration.");
             string? statError = EnemySpawningModel.ValidateBirthStats(actor, train.Context);

@@ -32,9 +32,9 @@ namespace MonsterTrain2Poju.Model
             TrainCombatState train = battle.Spawn.Train;
             bool duo = OuterBossDefinitions.IsAngelDuo(unit.AssetKey);
             if (source.ExternalInteractions.Count > 0) return Fail(string.Join("; ", source.ExternalInteractions));
-            if (unit.AssetKey == OuterBossDefinitions.CaelShieldTrial &&
-                !OuterBossDefinitions.CalibratedCaelShieldTrial(unit, train.Context))
-                return Fail("Cael Shield Trial requires the original replacement, owner and rank-zero birth.");
+            if (OuterBossDefinitions.IsCaelTrial(unit.AssetKey) &&
+                !OuterBossDefinitions.CalibratedCaelTrial(unit, train.Context))
+                return Fail("Cael Titan Trial requires the original replacement, owner and rank-zero birth.");
             if (!TrueFinalBossCovenantModel.CalibratedOuterBossOwners(train.Context, unit.AssetKey))
                 return Fail("Outer-boss Covenant owners require separate calibration.");
             var actorDefinition = new EnemyDefinition(unit, false, false, source.ExternalInteractions, false, source.BirthStats);
