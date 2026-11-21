@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using BepInEx.Logging;
 using HarmonyLib;
+using MonsterTrain2Poju.Capture;
 using Newtonsoft.Json.Linq;
 
 namespace MonsterTrain2Poju.Probe
@@ -13,6 +15,16 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static object? Control { get; private set; }
         internal static object? TrialIntroControl { get; private set; }
+#if DEVELOPMENT_PROBE
+        internal static bool EarlyTrialSubstitution => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_OUTER_BOSS_TRIAL") == "1" &&
+            Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_EARLY_OUTER_BOSS") == "FleshweaverSpikes";
+        internal static bool EarlyTrialFullBattle => EarlyTrialSubstitution &&
+            Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_EARLY_TRIAL_FULL_BATTLE") == "1";
+        private static RelicData? earlyTrialOwner;
+        private static IReadOnlyList<CharacterSubstitution.Entry>? earlyTrialEntries;
+        private static CharacterState? substitutedUnit;
+        private static bool earlyTrialCaptured;
+#endif
         private static Action? resumeSelection;
         internal static void ArmResume(SaveManager save, int distance, ManualLogSource log)
         {
@@ -146,6 +158,24 @@ namespace MonsterTrain2Poju.Probe
             var scenarios = new List<ScenarioData>();
             save.GetRunData().GetDistanceData(distance).GetAllScenarioDatas(scenarios);
             ScenarioData selected = scenarios.Single(scenario => scenario.GetOuterTrainBoss(false)?.GetAssetKey() == boss);
+#if DEVELOPMENT_PROBE
+            if (EarlyTrialSubstitution)
+            {
+                RelicData sin = selected.GetTitanTrialSin();
+                if (selected.name != OuterBossSubstitutionProbe.FleshweaverSpikesTrialScenario || sin == null ||
+                    sin.name != OuterBossSubstitutionProbe.FleshweaverSpikesTrialOwner ||
+                    sin.GetID() != OuterBossSubstitutionProbe.FleshweaverSpikesTrialOwnerId)
+                    throw new InvalidOperationException("Expected the installed Ring 3 Fleshweaver Spikes Titan Trial owner.");
+                var substitutions = sin.GetEffects().Single(effect => effect.GetEffectClassName() == "RelicEffectOnSpawnHeroSubstitution")
+                    .GetParamCharacterSubstitution();
+                if (substitutions == null || substitutions.Entries.Count == 0)
+                    throw new InvalidOperationException("Expected the installed trial's original substitution entries.");
+                earlyTrialOwner = sin;
+                earlyTrialEntries = substitutions.Entries;
+                log.LogInfo("ORIGINAL-EARLY-TRIAL-INPUT owner=" + sin.name + " entries=" + string.Join(",", earlyTrialEntries.Select(entry =>
+                    entry.UnitBefore.GetAssetKey() + "->" + entry.UnitAfter.GetAssetKey())));
+            }
+#endif
             NodeState node = save.GetRunState().GetNodeStateAtDistance(distance);
             int previous = node.scenarioIndex, index = scenarios.IndexOf(selected);
             string? generatedBefore = node.bossId, generatedAfter = selected.GetBossAtIndex(0)?.GetID();
@@ -162,6 +192,55 @@ namespace MonsterTrain2Poju.Probe
                 RngBefore = before, RngAfter = after, ScenarioAssetsUnchanged = true };
             log.LogInfo("ORIGINAL-EARLY-OUTER-BOSS-ROUTE boss=" + boss + " scenario=" + selected.name);
         }
+
+#if DEVELOPMENT_PROBE
+        internal static bool CaptureEarlyTrialBirth(AllGameManagers managers, ManualLogSource log)
+        {
+            if (earlyTrialCaptured) return true;
+            CharacterState? unit = substitutedUnit;
+            if (unit == null) return false;
+            SaveManager save = managers.GetSaveManager();
+            CharacterData source = unit.GetOriginalCharacterData();
+            CharacterData replacement = unit.GetSourceCharacterData();
+            if (earlyTrialOwner == null || earlyTrialEntries == null || source == null || TrialIntroControl == null ||
+                save.InTestScenario || !save.IsTitanTrialEnabled() || save.GetCurrentScenarioData().name != OuterBossSubstitutionProbe.FleshweaverSpikesTrialScenario ||
+                !earlyTrialEntries.Any(entry => entry.UnitBefore.GetID() == source.GetID() && entry.UnitAfter == replacement))
+                throw new InvalidOperationException("The installed Ring 3 trial did not create an authored substitution.");
+            var active = managers.GetRelicManager().GetRelicEffects(new List<RelicEffectOnSpawnHeroSubstitution>());
+            if (active.Count != 1 || !active[0].TryGetSubstitution(source, out CharacterData selected) || selected != replacement)
+                throw new InvalidOperationException("Expected one active native substitution supplying the created boss.");
+
+            if (!EarlyTrialFullBattle) OuterBossBirthProbe.Write(log);
+            using var archive = NativeFixtureCapture.Capture(new { Schema = 1, Boundary = "NativeOriginalEarlyTitanTrialSubstitution",
+                GameVersion = UnityEngine.Application.version, GameModuleMvid = typeof(CardState).Module.ModuleVersionId,
+                Scenario = save.GetCurrentScenarioData().name, OwnerId = earlyTrialOwner.GetID(), OwnerKey = earlyTrialOwner.name,
+                Source = source.GetAssetKey(), Replacement = replacement.GetAssetKey(), OuterBoss = unit.IsOuterTrainBoss(),
+                Mappings = earlyTrialEntries.Select(entry => new { Source = entry.UnitBefore.GetAssetKey(), Replacement = entry.UnitAfter.GetAssetKey() }).ToArray(),
+                Unit = FullBattleTrace.Active!.CaptureUnit(unit), Intro = TrialIntroControl, TitanTrial = save.IsTitanTrialEnabled() });
+            using var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "early-titan-trial-substitution.mt2f"));
+            archive.Write(output);
+            earlyTrialCaptured = true;
+            log.LogInfo("ORIGINAL-EARLY-TRIAL-BIRTH matched " + source.GetAssetKey() + " -> " + replacement.GetAssetKey());
+            return true;
+        }
+
+        [HarmonyPatch(typeof(HeroManager), "CreateHeroState")]
+        private static class EarlyTrialCreationPatch
+        {
+            private static void Prefix(CharacterData heroData, ref Action<CharacterState, CharacterData> afterCharacterCreated)
+            {
+                if (substitutedUnit != null || earlyTrialEntries == null || AllGameManagers.Instance.GetSaveManager().PreviewMode ||
+                    heroData.GetAssetKey() != OuterBossSubstitutionProbe.FleshweaverSpikesMini ||
+                    !earlyTrialEntries.Any(entry => entry.UnitBefore.GetID() == heroData.GetID())) return;
+                Action<CharacterState, CharacterData>? original = afterCharacterCreated;
+                afterCharacterCreated = (unit, data) =>
+                {
+                    substitutedUnit ??= unit;
+                    original?.Invoke(unit, data);
+                };
+            }
+        }
+#endif
 
         private static void SelectAngelDuo(SaveManager save, int distance, string variant, ManualLogSource log)
         {

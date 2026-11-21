@@ -908,6 +908,19 @@ namespace MonsterTrain2Poju.Probe
             {
                 return;
             }
+#if DEVELOPMENT_PROBE
+            if (fullBattle && OriginalOuterBossRoute.EarlyTrialSubstitution)
+            {
+                bool captured = OriginalOuterBossRoute.CaptureEarlyTrialBirth(managers, log);
+                if (captured && !OriginalOuterBossRoute.EarlyTrialFullBattle)
+                {
+                    Finish(true, "Original Ring 3 Titan Trial substitution captured.");
+                    return;
+                }
+                if (!captured && combat.GetTurnCount() >= 5)
+                    throw new InvalidOperationException("No matching original Ring 3 Titan Trial substitution was created by turn five.");
+            }
+#endif
             if (fullBattle && OriginalAffordableNonPlayableScenario.Enabled)
             {
                 OriginalAffordableNonPlayableScenario.Tick(managers, log);

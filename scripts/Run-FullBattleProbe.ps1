@@ -63,6 +63,7 @@ param(
     [switch] $OuterBossTurns,
     [ValidateSet('', 'AllyBuffer', 'Fragile', 'Corrupter')][string] $OriginalOuterBossVariant = '',
     [switch] $OriginalOuterBossTrial,
+    [switch] $OriginalEarlyOuterBossTrialBattle,
     [switch] $OriginalTrueFinalBoss,
     [ValidateSet('', 'Health', 'Damage')][string] $TrueFinalBossAllyUpgrade = '',
     [ValidateSet('', 'Steward', 'Warrior', 'Animus', 'Avenger')][string] $TrueFinalBossOrdinaryAlly = '',
@@ -961,7 +962,16 @@ if ($AngelDuoRelentless -and (-not $InputProfile -or $BattleDistance -ne 5 -or -
 if ($OriginalOuterBossVariant -and ($InputProfile -or $BattleDistance -ne 7 -or -not $OuterBossTurns)) {
     throw 'OriginalOuterBossVariant requires a fresh isolated Ring8 route with OuterBossTurns.'
 }
-if ($OriginalOuterBossTrial -and -not $OriginalOuterBossVariant) { throw 'OriginalOuterBossTrial requires an explicit original outer-boss variant.' }
+$earlyTrialSubstitution = $OriginalOuterBossTrial -and $OriginalEarlyOuterBossVariant -ceq 'FleshweaverSpikes'
+if ($OriginalEarlyOuterBossTrialBattle -and -not $earlyTrialSubstitution) {
+    throw 'OriginalEarlyOuterBossTrialBattle requires the original Ring 3 FleshweaverSpikes Titan Trial.'
+}
+if ($OriginalOuterBossTrial -and -not $OriginalOuterBossVariant -and -not $earlyTrialSubstitution) {
+    throw 'OriginalOuterBossTrial requires an explicit original Ring 8 variant or the Ring 3 FleshweaverSpikes substitution component.'
+}
+if ($earlyTrialSubstitution -and (-not $BinaryCapture -or $Policy -ne 'units-spells-and-junk' -or $PlayerAdvisor -or $Advisor -or $Planner -or $RollingInput -or $RollingAdvice)) {
+    throw 'The original Ring 3 Titan Trial substitution component requires binary capture and the isolated units-spells-and-junk policy.'
+}
 if ($TrueFinalBossMaximumSacrificeRetainMax -and -not $TrueFinalBossMaximumSacrifice) { throw 'Retained maximum-health sacrifice requires an explicit original boss target.' }
 if ($TrueFinalBossMaximumTerminalCommand -and -not $TrueFinalBossMaximumSacrifice) { throw 'Terminal command control requires the original maximum-health battle prefix.' }
 if ($TrueFinalBossMaximumSacrifice) { $TrueFinalBossMaximumBattle = $true }
@@ -2154,6 +2164,7 @@ $environment = @{
     MT2_PROBE_OUTER_BOSS_TURNS = $(if ($OuterBossTurns) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_OUTER_BOSS = $OriginalOuterBossVariant
     MT2_PROBE_ORIGINAL_OUTER_BOSS_TRIAL = $(if ($OriginalOuterBossTrial) { '1' } else { '0' })
+    MT2_PROBE_ORIGINAL_EARLY_TRIAL_FULL_BATTLE = $(if ($OriginalEarlyOuterBossTrialBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_TRUE_FINAL_BOSS = $(if ($OriginalTrueFinalBoss) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_DORMANT = $(if ($TrueFinalBossDormantSavagery) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_RELENTLESS = $(if ($TrueFinalBossRelentless) { '1' } else { '0' })
@@ -3192,6 +3203,32 @@ if ($EnchantmentCombatOnly) {
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
         ModelAcceptance='Pending independent focused checker'; Trace=$componentPath } | ConvertTo-Json
     return
+}
+if ($earlyTrialSubstitution) {
+    $capturePath = Join-Path $profile 'early-titan-trial-substitution.mt2f'
+    $birthPath = Join-Path $profile 'outer-boss-birth-calibration.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or -not (Test-Path -LiteralPath $birthPath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-EARLY-TRIAL-BIRTH matched' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Original Ring 3 Titan Trial substitution capture failed. Inspect $unityLog" }
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $document = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
+    try {
+        $capture = $document.RootElement.ToObjectGraph()
+        $matchingMappings = @($capture.Mappings | Where-Object { $_.Source -ceq $capture.Source -and $_.Replacement -ceq $capture.Replacement })
+        if ($capture.Schema -ne 1 -or $capture.Boundary -cne 'NativeOriginalEarlyTitanTrialSubstitution' -or
+            $capture.GameVersion -cne '2.3.1' -or $capture.GameModuleMvid -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+            $capture.Scenario -cne 'Level3ImmortalMass_Spikes' -or $capture.OwnerId -cne 'c4abfdc2-a89c-43cf-9e35-59f6ea3b39f7' -or
+            $matchingMappings.Count -ne 1 -or $capture.OuterBoss -or $capture.Source -cne 'Boss_Level3_MiniFleshweaver_Spike' -or
+            $capture.Replacement -cne 'Boss_Level3_MiniFleshweaver_Spike_TitanTrial' -or
+            $capture.Replacement -cne $capture.Unit.AssetKey -or -not $capture.TitanTrial -or -not $capture.Intro.EnabledAfter) {
+            throw 'Expected the original Ring 3 trial owner, source and installed replacement on a created boss.'
+        }
+    } finally { $document.Dispose() }
+    if (-not $OriginalEarlyOuterBossTrialBattle) {
+        [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true; Source=$capture.Source;
+            Replacement=$capture.Replacement; Trace=$capturePath; Birth=$birthPath } | ConvertTo-Json
+        return
+    }
 }
 if ($OriginalSpurned -and $OriginalSpurnedChallenge -eq 1) {
     $capturePath = Join-Path $profile 'spurned-health-threshold.mt2f'
