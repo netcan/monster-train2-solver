@@ -153,6 +153,13 @@ Duality。单次效果测试推进一次 BattleTest，阈值效果实际施加�
 及 902 次 EndTurn，零失败。报告为
 `results/recorded-chain-triage-20261121-spurned-duality/report.tsv`。
 
+第 3 环 Fleshweaver Spikes 使用原版战前检查点和泰坦试炼开关。Boss 受击后的原版出生回调
+确认，试炼遗物把召出的尖刺小怪替换为试炼版本。顾问采集保留效果的原版召唤定义身份和
+实际出生单位。专项回归逐项通过 30 次出牌、9 次 EndTurn、76 个战斗阶段及 18 个列车阶段，
+四项采集计数为零，原版终局判负。组件和整战归档位于
+`tests/compatibility/game-2.3.1/mechanics/fleshweaver-titan-trial/`。复放报告为
+`results/fleshweaver-spike-trial/recorded-chain-registered.tsv`。
+
 用 2.3.1 载入 2.2.1 原版第三环战前存档，隔离顾问在两线程、单次搜索三秒的配置下
 完成 24 次出牌和 9 次 EndTurn，以 80 点薪火生命获胜。进程正常退出，四项采集计数为零。
 同一归档另通过 33 次滚动建议与预测复放、完整链及 16 条独立分支。
