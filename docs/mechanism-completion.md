@@ -247,6 +247,12 @@ pwsh -NoProfile -File scripts/Get-MechanismInventory.ps1 -SkipBuild -Check
 
 ## 固定验收关口
 
+Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者共筛出 58 张，六次抽牌后
+实际生成和随机状态均与模型一致。原版胜局的五次出牌、七次 EndTurn 和十六条独立分支
+通过，旧版 348 张卡池也通过专项回归。隔离实例尚无法启用 Punished DLC，
+选中 Punished 卡牌的分支仍缺实机对照。归档位于
+`tests/compatibility/game-2.3.1/mechanics/garfield-box/`。
+
 2.3.1 的终局统计诊断记录到击杀镜头清空牌堆后，卡面伤害文本在帧末触发了一次原版统计刷新。
 专项复放在房间、交战、列车和回合四个边界重放该事件，逐项匹配永久牌组投影。
 同版对照在没有该回调的终局保留临时卡统计。诊断归档保留四条原始差异，

@@ -6,20 +6,24 @@ internal static class OriginalGarfieldBoxRandomCardChecks
 {
     private const string OwnerId = "d537c198-899f-4385-9552-f35f58826be4";
     private const string OwnerKey = "GarfieldBoxRandomCardPerTurn";
+    private const string PunishedClan = "b9dc21e2-e31a-4f74-b03d-09495c61e54b";
 
     internal static void Native(FixtureValue root)
     {
-        Require(root.GetProperty("Schema").GetInt32() == 189 &&
+        string version = root.GetProperty("GameVersion").GetString()!;
+        string module = root.GetProperty("GameModuleMvid").GetString()!;
+        bool current = version == "2.3.1" && module == "bf93f060-beda-46b1-b808-95ebf1e9a99d";
+        bool legacy = version == "2.2.1" && module == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
+        int poolCount = current ? 378 : 348;
+        Require((current || legacy) && root.GetProperty("Schema").GetInt32() == 189 &&
             root.GetProperty("ModifierScenario").GetString() == "original-garfield-box-random-card-per-turn" &&
-            root.GetProperty("GameVersion").GetString() == "2.2.1" &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
             root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
             root.GetProperty("OriginalGarfieldBoxRandomCardPrepared").GetBoolean() &&
             new[] { "CaptureFailures", "Unsupported", "Pending" }.All(name => root.GetProperty(name).GetInt32() == 0),
             "GarfieldBoxRandomCardPerTurn native battle failed acceptance.");
 
         var definitions = new Dictionary<string, string>();
-        int callbacks = 0, positive = 0, fullControls = 0, skippedForeign = 0;
+        int callbacks = 0, positive = 0, fullControls = 0, skippedForeign = 0, punishedSelections = 0, eligibleCount = 0;
         var turns = new HashSet<int>();
         foreach (FixtureValue row in root.GetProperty("RelicPrecachedPlayerClanGeneration").EnumerateArray())
         {
@@ -38,19 +42,20 @@ internal static class OriginalGarfieldBoxRandomCardChecks
                 owner.DisallowedInPlacementPhase == true && owner.EffectTypes.SequenceEqual([RelicCardGenerationModel.PrecachedPlayerClan]) &&
                 effect.Type == RelicCardGenerationModel.PrecachedPlayerClan && effect.Conditions.Count == 0 &&
                 effect.RequiredMutatorId == null && !effect.CanApplyInPreviewMode && rule.Destination == "HandPile" &&
-                rule.Count == 1 && rule.Permanent == false && rule.Pool.Count == 348 && eligibility.Length == 348 &&
-                eligibility.Count(value => value) == 58 && rule.Upgrade == null && !rule.UpgradeIsPermanent &&
+                rule.Count == 1 && rule.Permanent == false && rule.Pool.Count == poolCount && eligibility.Length == poolCount &&
+                rule.Upgrade == null && !rule.UpgradeIsPermanent &&
                 !rule.SkipDuplicateInHand && !rule.RequireHandSpace && !rule.CopyModifiers && !rule.IgnoreTemporaryModifiers &&
                 rule.DiscardCopyUpgrades.Count == 0 && !rule.DeterministicPoolSelection && !rule.SelectedPoolIndex.HasValue &&
                 !rule.RequireCopyableSource && rule.ExternalInteractions.Count == 0,
                 "Original GarfieldBox owner, timing or ordered MegaPool payload changed.");
 
-            string[] clans = rule.Pool.Select((creation, index) => (creation, index))
+            var clans = rule.Pool.Select((creation, index) => (creation, index))
                 .Where(item => eligibility[item.index])
                 .Select(item => item.creation.MaskDescriptor?.Definition.LinkedClan)
-                .Where(clan => clan != null).Distinct(StringComparer.Ordinal).ToArray()!;
-            Require(clans.Length == 2 && rule.Pool.Select((creation, index) => (creation, index))
-                .Where(item => eligibility[item.index]).All(item => item.creation.MaskDescriptor?.Definition.LinkedClan != null) &&
+                .GroupBy(clan => clan, StringComparer.Ordinal).ToArray();
+            eligibleCount = eligibility.Count(value => value);
+            Require(clans.Length == 2 && clans.All(group => !string.IsNullOrEmpty(group.Key) &&
+                    group.Count() == (current && group.Key == PunishedClan ? 30 : 29)) &&
                 rule.Pool.Select((creation, index) => (creation, index))
                     .Where(item => !eligibility[item.index]).All(item => item.creation.MaskDescriptor == null),
                 "GarfieldBox eligible and foreign-clan pool entries were not captured exactly.");
@@ -66,6 +71,7 @@ internal static class OriginalGarfieldBoxRandomCardChecks
                 oracle.Rng.Equals(row.GetProperty("SelectionRng").Deserialize<UnityRng>()) &&
                 before.BattleRng.Equals(row.GetProperty("TestRng").Deserialize<UnityRng>()),
                 "Native pool selection or partial-shuffle Battle RNG differs from the independent oracle.");
+            if (rule.Pool[oracle.PoolIndex].MaskDescriptor?.Definition.LinkedClan == PunishedClan) punishedSelections++;
 
             string parent = JsonSerializer.Serialize(before, ModelJson.Options);
             CardGenerationResult result = RelicCardGenerationModel.ApplyPrecachedPlayerClanOne(before, ownerId, effectIndex);
@@ -108,7 +114,7 @@ internal static class OriginalGarfieldBoxRandomCardChecks
             "Missing natural positive, full-hand or foreign-clan shuffle witnesses.");
         Require(root.GetProperty("Mismatches").GetInt32() == 0, "Full-battle turn replay has mismatches.");
         BattleActionChecks.Native(root);
-        Console.WriteLine($"ORIGINAL-GARFIELD-BOX-RANDOM-CARD-NATIVE PASS: {callbacks} exact post-draw callbacks, {positive} generated hand cards, {fullControls} synthetic full-hand RNG-only controls, {skippedForeign} skipped foreign-clan candidates; two-clan 58/348 pool, deployment/preview gates and independent partial-shuffle replay.");
+        Console.WriteLine($"ORIGINAL-GARFIELD-BOX-RANDOM-CARD-NATIVE PASS: {callbacks} exact post-draw callbacks, {positive} generated hand cards, {fullControls} synthetic full-hand RNG-only controls, {skippedForeign} skipped foreign-clan candidates, {punishedSelections} Punished selections; two-clan {eligibleCount}/{poolCount} pool, deployment/preview gates and independent partial-shuffle replay.");
     }
 
     private static (int PoolIndex, UnityRng Rng, int Skipped) Select(UnityRng start, IReadOnlyList<bool> eligibility)
