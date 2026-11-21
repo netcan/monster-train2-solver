@@ -18,7 +18,7 @@ namespace MonsterTrain2Poju.Model
         {
             CombatUnit[] pyres = source.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.IsPyre).ToArray();
             CombatContext? context = source.Spawn.Train.Context;
-            if (token.IsCancellationRequested || pyres.Length != 1) return null;
+            if (token.IsCancellationRequested || pyres.Length != 1 || RelicDeckPyreStatsModel.Present(context)) return null;
             CombatUnit pyre = pyres[0];
             // Ordinary healing/status upgrades must not offer another way to
             // increase this actor's health outside the native train-heal paths.

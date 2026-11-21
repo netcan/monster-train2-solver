@@ -8,15 +8,15 @@
 
 | 待办分类 | 类数 | 含目录引用 | 含类型声明 |
 | --- | ---: | ---: | ---: |
-| known-gap | 2 | 2 | 2 |
+| known-gap | 1 | 1 | 1 |
 | inspect-no-code-link | 58 | 58 | 58 |
 | inspect-inherited-code | 13 | 13 | 13 |
-| inspect-projection-normalization | 60 | 60 | 60 |
+| inspect-projection-normalization | 59 | 59 | 59 |
 | inspect-guard-links | 49 | 49 | 49 |
-| review-existing-code | 233 | 233 | 233 |
+| review-existing-code | 234 | 234 | 234 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 286 | 0 | 0 |
-| scoped-review-recorded | 26 | 26 | 26 |
+| scoped-review-recorded | 27 | 27 | 27 |
 
 总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 30 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
@@ -32,11 +32,11 @@
 | --- | --- | --- |
 | CardEffectAddStatusEffectNextMonster | known-gap | Native Apply queues AddSpawningStatusEffect for a later monster; the model has no pending-spawn status action. All five pinned catalog references are requiredCardEffects mask conditions, with zero captured type declarations. Resolve a real execution entry before prioritizing queue capture, consumption timing and search state. The latent implementation gap remains; parent AddStatus links do not implement it, and reference-only does not prove the class unused. |
 | CardTraitJuice4 | known-gap | Shared 2/3/4 multiplier and ID-independent simple status-spell contract now have five original upgrades, 180 native callback pairs, nine original soul-upgrade casts and complete native loss/16 branches/frontiers/root search. Mollis OnCast armor/poison use the existing dispatcher. Source OnCardBeingUpgraded and next-draw manager dispatch now have five original definitions, 540 relation controls/repeats and 300 ordered pairs; six native two-card draws verify deep copies, filtered shared originals and callback short circuit, with complete successors/16 branches/frontiers/root search. Parameter-upgrade cast effects and other mixed ordered scaling remain guarded; other consumers are not certified. No class-wide lifecycle completion. |
-| RelicEffectAddPyreAttackAndHealthPerCardInDeck | known-gap | Original Thik T3 attachment and three live deck-change callbacks agree with the model resource calculation. Permanent addition and removal change save and live Pyre health and attack. Temporary purge leaves both unchanged. Search successor integration and other tiers remain open. |
 | CardEffectDamage | shared-path | Native Damage normalizes to the shared Damage action; current PunishedSpike battle exercises repeated damage, armor, target death and full successors. Existing target/scaling/callback guards remain; not an audit of every contextual branch. |
 | CardEffectDamageByPercentRemainingHealth | shared-path | Original Beeziebub OnCast targets the Pyre, floors ten percent of actual remaining HP, and supplies no card damage attribution or trait scaling. Three isolated wins prove HP 80 to 72 and exact search successors. Randomized ranges, round-up and non-Pyre targets remain guarded. |
 | CardTraitDrawOnPlay | shared-path | Three unchanged original soul upgrades attached through native SoulHelper. Played discard draws 3/3/5 and the two higher tiers install the captured next-draw upgrade on actual cards. Full wins, exact successors, sixteen branches, frontiers and equal serial/parallel search and replay pass. Other carriers and mixed discard traits remain outside this evidence. |
 | CardTraitScalingRewardGold | shared-path | Three unchanged Goldie soul upgrades attached using native SoulHelper. Actual original Vent pays three Ember; its zero-base OnCast reward remains unchanged, while played discard grants 30/60/90 gold from captured paid-cost statistics. Next-turn Retain and complete native wins, full successors, sixteen branches, all recorded frontiers and serial/parallel plans pass. Other carriers and compound signed affordability remain outside this evidence. |
+| RelicEffectAddPyreAttackAndHealthPerCardInDeck | shared-path | Original Thik T3 attachment and three live deck-change callbacks agree with the model resource calculation. Permanent addition and removal change save and live Pyre health and attack. Temporary purge supplies a zero delta. The native full battle confirms exact successors, sixteen branches, complete recorded frontiers, and equal serial and parallel search and plan replay. T1 and T2 and mixed relic combinations still need native battle checks. |
 | RelicEffectAddRelicStartOfRun | input-only | Sealed native class implements StartOfRun ApplyEffect, which adds the configured relic through SaveManager. Battle input captures the resulting relic roster. No combat callback override in this class; start-of-run campaign handling and carried-owner validation remain separate. |
 | RelicEffectAddUnitUpgradePerPile | shared-path | Shared ID-independent birth callback captures initialized pile/threshold/team/subtype/upgrade, snapshots visible count once, preserves repeated direct API calls with empty upgradeId and existing queue policy. Four original definitions/52 configurations/3744 native parent-coroutine upgrade requests with controlled counts; children are not executed in this matrix. Nine unmodified native pile queries; unchanged deck-size mutator full win, three births with individual applied records, 16 branches/frontiers/serial-parallel root search. Five model placement/Covenant/condition/threshold/identity controls. Soul attachment lifecycle, complex upgrade callback combinations and other owner combinations remain outside this integration; other spawn-status scaling is separate. |
 | RelicEffectAdditionalDrawDuringRelentless | shared-path | Shared initialized mutable cache refreshes at start/before draw, tests both teams physical status membership without alive filtering, excludes Pyre and preserves false Test/no notification/no signal. Two original sources/10 configurations/640 native callbacks with controlled status queries and real independent MutableRules integer queries, including float precision and Int32 endpoints. Original T2/T3 full native wins; positive/reset cache, combined occupied draw, T3 tenth play draws two through existing consumer; full successors/16 branches/frontiers/serial-parallel root search. Raw actor/case/death boundaries are source/model controls; production BattleTurn now dispatches the modeled before-draw callbacks in owner/effect order; the focused legacy resource API retains its guard; complex lifecycle, outer-boss anchors, mixed Covenants and full hover remain outside certification. |
@@ -84,10 +84,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `9b6929f23131819ea319564483918367d23b159475e314db1bf81cc086eaf5f4`。
-- Model: PDB 校验过的项目源码集合 `7036b49e91eaf9a1479348477cd4e151506070becd7c7a1491db20e096b76345`。
-- Probe: PDB 校验过的项目源码集合 `f391720b76d4c8718791959cee20f6e4b64fb05ef09945c7e4d54ecb5c92ead0`。
-- ModelChecks: PDB 校验过的项目源码集合 `da6d08f7e7cf7f71d7d25a67667f17a0d495f9f9785bb71fee7c7e0ba5b2ff01`。
+- 人工审查索引 SHA-256: `d2cdd9362cfd5f167f60f5aff20cff0ec57914d8f565a0bf7d03f680a4c243c8`。
+- Model: PDB 校验过的项目源码集合 `6844ef5785a3cf2f42acf04f34cb457a9496411c806c6552e3ecf91bc6dc66f9`。
+- Probe: PDB 校验过的项目源码集合 `f0e151eb325f98c9ff15ee055dfb8caa4729f812f6fd7de490ac3e05825f6e72`。
+- ModelChecks: PDB 校验过的项目源码集合 `6db98cdda5397f3e4b1beed3cc9606823825f4085c9a187fbf2f49b0f4eb1e3d`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 

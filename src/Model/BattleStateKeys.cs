@@ -125,6 +125,8 @@ namespace MonsterTrain2Poju.Model
                     Field[] fields = Layout(type);
                     foreach (Field field in fields)
                     {
+                        if (value is RelicResourceEffect { LastKnownDeckCount: null } &&
+                            field.Name == nameof(RelicResourceEffect.LastKnownDeckCount)) continue;
                         Append(field.Name);
                         if (ignoreRoomSelection &&
                             (value is BattleTurnState && field.Name == nameof(BattleTurnState.SelectedRoom) ||

@@ -265,6 +265,7 @@ namespace MonsterTrain2Poju.Model
                 if (endCombatError != null) return endCombatError;
                 foreach (string effect in relic.EffectTypes)
                 {
+                    if (effect == RelicDeckPyreStatsModel.CardCopies && RelicDeckPyreStatsModel.IsOriginal(relic)) continue;
                     if (effect == RelicLateAttackModel.Effect) continue;
                     if (effect == RelicSpawnSilenceModel.Effect) continue;
                     if (effect == RelicFreezeHandUpgradeModel.Effect) continue;

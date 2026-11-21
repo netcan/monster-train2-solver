@@ -225,7 +225,10 @@ namespace MonsterTrain2Poju.Model
                 RoomCombatResult result = RoomCombatModel.ApplyCharacterPhase(WithContext(rooms[index], context), actor, kind, queue.Add,
                     refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
-                rooms[index] = result.State!; context = result.State!.Context; results.Add(result);
+                rooms[index] = result.State!;
+                RelicDeckPyreStatsModel.UpdateRemoteHealth(rooms, rooms[index].RoomIndex, context, result.State!.Context);
+                context = result.State.Context;
+                results.Add(result);
                 SetCompanionBosses(rooms, result.State!.ActiveCompanionBossIds);
                 if (Terminal(result.Outcome))
                 { outcome = result.Outcome; break; }
@@ -240,7 +243,10 @@ namespace MonsterTrain2Poju.Model
                     refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement),
                     externalTargets: tower ? targets : null);
                 if (!result.Supported) { queueError = result.UnsupportedReason; return false; }
-                rooms[queued.RoomIndex] = result.State!; context = result.State!.Context; results.Add(result);
+                rooms[queued.RoomIndex] = result.State!;
+                RelicDeckPyreStatsModel.UpdateRemoteHealth(rooms, queued.RoomIndex, context, result.State!.Context);
+                context = result.State.Context;
+                results.Add(result);
                 if (tower) ApplyTowerUpdates(rooms, targets, result.RetainedUnits);
                 SetCompanionBosses(rooms, result.State!.ActiveCompanionBossIds);
                 if (Terminal(result.Outcome)) outcome = result.Outcome;
@@ -250,7 +256,10 @@ namespace MonsterTrain2Poju.Model
                 RoomCombatResult result = RoomCombatModel.SettleQueuedSpawner(WithContext(rooms[queued.RoomIndex], context), queued.Unit,
                     refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
                 if (!result.Supported) { queueError = result.UnsupportedReason; return false; }
-                rooms[queued.RoomIndex] = result.State!; context = result.State!.Context; results.Add(result);
+                rooms[queued.RoomIndex] = result.State!;
+                RelicDeckPyreStatsModel.UpdateRemoteHealth(rooms, queued.RoomIndex, context, result.State!.Context);
+                context = result.State.Context;
+                results.Add(result);
                 SetCompanionBosses(rooms, result.State!.ActiveCompanionBossIds);
                 return true;
             }, () =>
@@ -293,6 +302,7 @@ namespace MonsterTrain2Poju.Model
                 if (!result.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported, results,
                     "Train combat floor " + index + ": " + result.UnsupportedReason, relentlessChoice: result.RelentlessChoice);
                 rooms[index] = result.State!; results.Add(result);
+                RelicDeckPyreStatsModel.UpdateRemoteHealth(rooms, rooms[index].RoomIndex, context, result.State!.Context);
                 context = result.State!.Context;
                 if (externalPyre != null)
                 {
@@ -774,7 +784,10 @@ namespace MonsterTrain2Poju.Model
                     externalPyre: externalPyre, externalPyreRoomIndex: externalPyre == null ? -1 : rooms[pyrePosition].RoomIndex,
                     externalTargets: tower ? targets : null);
                 if (!fired.Supported) { error = fired.UnsupportedReason; return false; }
-                rooms[roomPosition] = fired.State!; context = fired.State!.Context; results.Add(fired);
+                rooms[roomPosition] = fired.State!;
+                RelicDeckPyreStatsModel.UpdateRemoteHealth(rooms, queued.RoomIndex, context, fired.State!.Context);
+                context = fired.State.Context;
+                results.Add(fired);
                 if (externalPyre != null)
                 {
                     CombatUnit changed = fired.RetainedUnits.Single(unit => unit.Id == externalPyre.Id);
@@ -840,7 +853,10 @@ namespace MonsterTrain2Poju.Model
                         refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
                 }
                 if (!returned.Supported) { error = returned.UnsupportedReason; return false; }
-                rooms[roomPosition] = returned.State!; context = returned.State!.Context; results.Add(returned);
+                rooms[roomPosition] = returned.State!;
+                RelicDeckPyreStatsModel.UpdateRemoteHealth(rooms, queued.RoomIndex, context, returned.State!.Context);
+                context = returned.State.Context;
+                results.Add(returned);
                 SetCompanionBosses(rooms, returned.State!.ActiveCompanionBossIds); return true;
             }, () =>
             {

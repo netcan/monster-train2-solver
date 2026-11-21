@@ -355,9 +355,11 @@ namespace MonsterTrain2Poju.Model
                 statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded");
             foreach (CardToken card in discard.PurgedCards)
             {
-                if (statistics?.DeckCards?.Contains(card.InstanceId) == true && context.Resources != null)
-                    context = context.WithResources(context.Resources.WithVisibleDeckCount(context.Resources.VisibleDeckCount - 1));
-                statistics = statistics?.RemoveDeckCard(card.InstanceId);
+                CombatContext? changed = RelicDeckPyreStatsModel.RemoveCard(context.WithStatistics(statistics),
+                    card.InstanceId, out string? deckError);
+                if (changed == null) return Unsupported(deckError!);
+                context = changed;
+                statistics = changed.Statistics;
             }
             bool conserveEnergy = context.Relics?.Any(relic => relic.EffectTypes.Contains(RelicResourceModel.ConserveEnergyEndOfTurn)) == true;
             context = context.WithStatistics(conserveEnergy ? statistics :
@@ -893,10 +895,16 @@ namespace MonsterTrain2Poju.Model
         private static CombatContext WithCards(CombatContext context, CardCycleState cards) => new CombatContext(cards,
             context.BattleRng, context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, context.Statistics, context.CardInstances,
             context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades, context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts, context.Resources, context.MixState, context.ConduitRetained, context.LifeLinks);
-        private static TrainCombatState WithContext(TrainCombatState train, CombatContext context, bool deployment) =>
-            new TrainCombatState(train.Rooms.Select(room => new RoomCombatState(room.RoomIndex, deployment, room.Units,
-                room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds)).ToArray(),
-                train.Movement, train.EnemySlotsPerRoom, context);
+        private static TrainCombatState WithContext(TrainCombatState train, CombatContext context, bool deployment)
+        {
+            CombatUnit? adjustedPyre = RelicDeckPyreStatsModel.ChangedPyre(train.Context, context);
+            return new TrainCombatState(train.Rooms.Select(room =>
+            {
+                if (adjustedPyre != null) room = RelicDeckPyreStatsModel.ReplaceHealth(room, adjustedPyre);
+                return new RoomCombatState(room.RoomIndex, deployment, room.Units, room.ExternalInteractions,
+                    context, room.Preview, room.ActiveCompanionBossIds);
+            }).ToArray(), train.Movement, train.EnemySlotsPerRoom, context);
+        }
         private static EnemySpawnState WithTrain(EnemySpawnState spawn, TrainCombatState train, int turn, UnityRng rng) =>
             ForcedRelentlessModel.Synchronize(new EnemySpawnState(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, rng, train.Context?.NextUnitId ?? spawn.NextUnitId,
                 spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,

@@ -1,8 +1,10 @@
+#if DEVELOPMENT_PROBE
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Logging;
 using HarmonyLib;
+using MonsterTrain2Poju.Model;
 
 namespace MonsterTrain2Poju.Probe
 {
@@ -12,11 +14,10 @@ namespace MonsterTrain2Poju.Probe
         internal const string ThikT3Id = "490d737b-fa0d-4f16-bb90-4ff22af11530";
         private const string GeneratorDataId = RunCardGenerationScenario.FirstId;
         private const string PurgeDataId = OriginalPurgeToExhaustScenario.SelfPurgeBlightId;
-        private static readonly System.Reflection.FieldInfo LastKnownCardCount = AccessTools.Field(
-            typeof(RelicEffectAddPyreAttackAndHealthPerCardInDeck), "_lastKnownCardCount");
         private static readonly System.Reflection.PropertyInfo ActiveSave = AccessTools.Property(typeof(SaveManager), "ActiveSaveData");
 
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool FullBattle => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_THIK_FULL_BATTLE") == "1";
         internal static bool Acquired { get; private set; }
         internal static bool Prepared { get; private set; }
         internal static object? Definition { get; private set; }
@@ -32,6 +33,9 @@ namespace MonsterTrain2Poju.Probe
         private static CardState? generator;
         private static CardState? purgeCard;
         private static int playsStarted;
+        private static int generatorId;
+        private static int purgeCardId;
+        private static int[] defenderIds = Array.Empty<int>();
 
         internal sealed class Snapshot
         {
@@ -124,6 +128,10 @@ namespace MonsterTrain2Poju.Probe
                 !spell.GetEffects().Any(effect => effect.GetEffectStateName() == nameof(CardEffectAddRunCard)))
                 throw new InvalidOperationException("The original AnnihilateRoomDamage1 definition changed.");
 
+            FullBattleTrace trace = FullBattleTrace.Active!;
+            if (FullBattle)
+                defenderIds = OriginalRandomRoomCapacityScenario.CreateDeploymentControls(managers, 3, 1)
+                    .Select(trace.CardId).ToArray();
             int slotsNeeded = cards.GetHand().Contains(purgeCard) ? 1 : 2;
             foreach (CardState card in cards.GetHand().Where(card => card != purgeCard).ToArray())
             {
@@ -139,8 +147,9 @@ namespace MonsterTrain2Poju.Probe
                 save.GetDeckState().Contains(generator))
                 throw new InvalidOperationException("The deployment hand requires the temporary generator and the permanent Purge control.");
 
-            FullBattleTrace trace = FullBattleTrace.Active!;
-            Cards = new { GeneratorId = trace.CardId(generator), GeneratorDataId, PurgeCardId = trace.CardId(purgeCard), PurgeDataId };
+            generatorId = trace.CardId(generator);
+            purgeCardId = trace.CardId(purgeCard);
+            Cards = new { GeneratorId = generatorId, GeneratorDataId, PurgeCardId = purgeCardId, PurgeDataId, DefenderIds = defenderIds };
             CardData blight = save.GetAllGameData().FindCardData(PurgeDataId);
             int energyNeeded = spell.GetCost() + blight.GetCost() - managers.GetPlayerManager().GetEnergy();
             if (energyNeeded > 0) managers.GetPlayerManager().AddEnergy(energyNeeded);
@@ -150,6 +159,19 @@ namespace MonsterTrain2Poju.Probe
             Prepared = true;
             log.LogInfo("ORIGINAL-THIK-DECK-CHANGE-PREPARED native Annihilate and SelfPurgeBlight, deck=" + PreparedState.RawDeckCount + ".");
         }
+
+        internal static PlayCardAction? Choose(BattleTurnState state)
+        {
+            BattleStatistics stats = state.Spawn.Train.Context!.Statistics!;
+            int[] controls = new[] { generatorId, purgeCardId }.Concat(defenderIds).ToArray();
+            int next = Array.FindIndex(controls, id => stats.Value(id, "TimesPlayed", "ThisBattle") == 0);
+            if (next < 0) return null;
+            int floor = next < 2 ? RoomIndex : next - 2;
+            return BattleActionModel.EnumerateSupportedPlays(state, controls[next]).First(action => action.RoomIndex == floor);
+        }
+
+        internal static bool IsScenarioAction(PlayCardAction action) =>
+            action.CardInstanceId == generatorId || action.CardInstanceId == purgeCardId || defenderIds.Contains(action.CardInstanceId);
 
         internal static bool PlayNext(AllGameManagers managers, ManualLogSource log)
         {
@@ -217,7 +239,7 @@ namespace MonsterTrain2Poju.Probe
                 Phase = combat?.GetCombatPhase().ToString(),
                 RunningCombat = combat?.GetIsRunningCombat() == true,
                 AllScenarioBossesDead = combat?.AllScenarioBossesDead == true,
-                CachedDeckCount = (int?)LastKnownCardCount.GetValue(effect),
+                CachedDeckCount = RelicResourceProbe.ReadLastKnownDeckCount(effect),
                 RawDeckCount = deck.Count,
                 VisibleDeckCount = save.GetVisibleDeckCount(),
                 DeckDataIds = deck.Select(card => card.GetCardDataID()).ToArray(),
@@ -236,3 +258,4 @@ namespace MonsterTrain2Poju.Probe
         }
     }
 }
+#endif

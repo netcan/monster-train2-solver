@@ -29,9 +29,7 @@ namespace MonsterTrain2Poju.Model
                 cards.DeckDrawDisabledThisTurn));
             context = context.WithOtherPiles(source.OtherPiles.Select(pile => pile.Name == "Purged" ? CardPileModel.Add(pile, token) :
                 pile.Name is "DiscardBuffer" or "Exhausted" or "Standby" ? CardPileModel.Remove(pile, cardId) : pile).ToArray());
-            if (context.Statistics?.DeckCards?.Contains(cardId) == true && context.Resources != null)
-                context = context.WithResources(context.Resources.WithVisibleDeckCount(context.Resources.VisibleDeckCount - 1));
-            return context.WithStatistics(context.Statistics?.RemoveDeckCard(cardId));
+            return RelicDeckPyreStatsModel.RemoveCard(context, cardId, out error);
         }
     }
 }

@@ -2541,9 +2541,15 @@ namespace MonsterTrain2Poju.Model
         private static TrainCombatState SingleRoom(RoomCombatState room) => new TrainCombatState(new[] { room },
             Array.Empty<EnemyMovement>(), 1, room.Context);
 
-        internal static TrainCombatState WithContext(TrainCombatState source, CombatContext context) => new TrainCombatState(
-            source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment, room.Units,
-                room.ExternalInteractions, context, room.Preview, room.ActiveCompanionBossIds)).ToArray(), source.Movement, source.EnemySlotsPerRoom, context);
+        internal static TrainCombatState WithContext(TrainCombatState source, CombatContext context)
+        {
+            CombatUnit? adjustedPyre = RelicDeckPyreStatsModel.ChangedPyre(source.Context, context);
+            return new TrainCombatState(source.Rooms.Select(room =>
+            {
+                if (adjustedPyre != null) room = RelicDeckPyreStatsModel.ReplaceHealth(room, adjustedPyre);
+                return room.WithContext(context);
+            }).ToArray(), source.Movement, source.EnemySlotsPerRoom, context);
+        }
 
         private static bool RemovedLinkedGroup(TrainCombatState source, RoomCombatState changed) =>
             source.Context?.LifeLinks is { Actors.Count: 5 } links && links.Actors.All(actor => actor.TrueFinalBoss) &&
@@ -2556,6 +2562,8 @@ namespace MonsterTrain2Poju.Model
             bool removedLinkedGroup = RemovedLinkedGroup(source, changed);
             RoomCombatState[] rooms = removedLinkedGroup ? changed.Context!.Enchantments!.Rooms.ToArray() :
                 source.Rooms.Select(room => room.RoomIndex == changed.RoomIndex ? changed : room).ToArray();
+            if (!removedLinkedGroup)
+                RelicDeckPyreStatsModel.UpdateRemoteHealth(rooms, changed.RoomIndex, source.Context, changed.Context);
             if (!removedLinkedGroup && changed.Context?.LifeLinks is LifeLinkContext links && changed.Context.Enchantments is EnchantmentWorld world)
             {
                 // A body API can write the shared owner's HP/max HP on another

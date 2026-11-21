@@ -667,6 +667,7 @@ param(
     [switch] $OriginalPartFactory,
     [switch] $OriginalPerkeoRelic,
     [switch] $OriginalThikDeckChange,
+    [switch] $OriginalThikBattle,
     [switch] $OriginalCorruptedAngelsRelic,
     [ValidateSet('cost-first', 'cost-last')]
     [string] $CorruptedAngelsCostOrder,
@@ -1746,16 +1747,17 @@ if ($EnchantmentCombatOnly) {
     $EnchantmentCombat = $true
     $Policy = 'steward-once'
 }
-if ($OriginalThikDeckChange) {
-    $componentArguments = @('OriginalThikDeckChange', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'SkipBuild',
+if ($OriginalThikDeckChange -or $OriginalThikBattle) {
+    $componentArguments = @('OriginalThikDeckChange', 'OriginalThikBattle', 'InputProfile', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'SkipBuild',
         'ShowWindow', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction', 'ProgressAction',
         'ErrorVariable', 'WarningVariable', 'InformationVariable', 'OutVariable', 'OutBuffer', 'PipelineVariable')
-    if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $componentArguments }).Count) {
-        throw 'OriginalThikDeckChange requires an isolated first-battle run without other scenarios.'
+    if (($OriginalThikDeckChange -and $OriginalThikBattle) -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $componentArguments }).Count) {
+        throw 'Select one isolated Thik first-battle scenario.'
     }
     $BinaryCapture = $true
     $SettleCardAnimations = $true
-    $Policy = 'no-cards'
+    $Policy = if ($OriginalThikBattle) { 'units-spells-and-junk' } else { 'no-cards' }
+    if ($OriginalThikBattle) { $BranchCardMasks = $true }
 }
 if ($PersistentEnchantmentRevivals) { $PersistentEnchantmentDeaths = $true }
 if ($PersistentEnchantmentDeaths) { $PersistentEnchantments = $true }
@@ -1880,7 +1882,7 @@ $gameRoot = Join-Path $workspace $(if ($NativeWorker -gt 1) { ".sandbox-game-wor
 if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll') -PathType Leaf)) {
     throw "Native worker $NativeWorker is not initialized; run scripts/Initialize-NativeWorker.ps1 -Worker $NativeWorker first."
 }
-if ($OriginalThikDeckChange) {
+if ($OriginalThikDeckChange -or $OriginalThikBattle) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -2747,7 +2749,12 @@ if ($ForcedFeeding) { $environment['MT2_PROBE_FORCED_FEEDING'] = '1' }
 if ($ShroudSpikeFeeding) { $environment['MT2_PROBE_SHROUD_SPIKE'] = '1' }
 if ($OriginalOpeningDeckSpawnRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-deck-spawn' }
 if ($OriginalPerkeoRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-perkeo' }
-if ($OriginalThikDeckChange) { $environment['MT2_PROBE_MODIFIERS'] = 'original-thik-deck-change' }
+if ($OriginalThikDeckChange -or $OriginalThikBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'original-thik-deck-change' }
+if ($OriginalThikBattle) {
+    $environment['MT2_PROBE_THIK_FULL_BATTLE'] = '1'
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
 if ($OriginalCorruptedAngelsRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corrupted-angels' }
 if ($CorruptedAngelsCostOrder) { $environment['MT2_PROBE_ANGELS_COST_ORDER'] = $CorruptedAngelsCostOrder }
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
@@ -5239,6 +5246,18 @@ if ($OriginalRandomRoomCapacityMutator) {
         throw 'Random room capacity lacks its unchanged mutator, natural opening application, deployment capacity witness or exact battle successors.'
     }
     Write-Output "ORIGINAL-RANDOM-ROOM-CAPACITY PASS: floor $($witness.ReducedFloor) $($witness.OriginalMaximum) -> $($witness.Maximum), a rejected unit deployed on floor $($witness.AlternateFloor), and no later-turn application."
+}
+if ($OriginalThikBattle) {
+    $thikCards = $trace.OriginalThikCards
+    $thikControls = @($trace.Actions | Where-Object ScenarioAction)
+    if (-not $trace.OriginalThikPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or
+        $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+        ($trace.OriginalThikCallbacks.Delta -join ',') -cne '1,0,-1' -or $thikControls.Count -ne 5 -or
+        $thikControls[0].Action.CardInstanceId -ne $thikCards.GeneratorId -or
+        $thikControls[1].Action.CardInstanceId -ne $thikCards.PurgeCardId) {
+        throw 'Original Thik battle did not settle all controlled native actions and successors.'
+    }
+    Write-Output 'ORIGINAL-THIK-BATTLE PASS: the native deck grew, retained its count through temporary purge, and shrank through permanent purge.'
 }
 if ($OriginalElleTier) {
     $definition = $trace.OriginalElleDefinition

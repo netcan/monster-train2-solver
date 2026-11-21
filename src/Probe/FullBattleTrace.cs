@@ -960,6 +960,7 @@ namespace MonsterTrain2Poju.Probe
             // the entire capture and could still include an unfinished wrapper.
         }
 
+#if DEVELOPMENT_PROBE
         internal void WriteThikDeckChange()
         {
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "original-thik-deck-change.mt2f");
@@ -980,6 +981,7 @@ namespace MonsterTrain2Poju.Probe
             using var stream = File.Create(path);
             document.Write(stream);
         }
+#endif
 
         internal string Write()
         {
@@ -1475,6 +1477,12 @@ namespace MonsterTrain2Poju.Probe
                 OriginalElleDefinitionAfter = OriginalElleScenario.CurrentDefinition,
                 OriginalElleAcquisition = OriginalElleScenario.Acquisition,
                 OriginalElleWitness = OriginalElleScenario.Witness,
+#if DEVELOPMENT_PROBE
+                OriginalThikPrepared = OriginalThikDeckChangeScenario.FullBattle && OriginalThikDeckChangeScenario.Prepared,
+                OriginalThikDefinition = OriginalThikDeckChangeScenario.FullBattle ? OriginalThikDeckChangeScenario.Definition : null,
+                OriginalThikCards = OriginalThikDeckChangeScenario.FullBattle ? OriginalThikDeckChangeScenario.Cards : null,
+                OriginalThikCallbacks = OriginalThikDeckChangeScenario.FullBattle ? OriginalThikDeckChangeScenario.Callbacks : null,
+#endif
                 RelentlessDrawVariant = OccupiedFloorDrawScenario.RelentlessVariant,
                 RelentlessDrawTests = RelentlessDrawMechanismBatch.Tests,
                 OccupiedFloorDrawPrepared = OccupiedFloorDrawScenario.Prepared,

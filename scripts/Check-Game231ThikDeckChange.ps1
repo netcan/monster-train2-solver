@@ -8,9 +8,14 @@ if (-not $SkipBuild) {
 }
 $directory = Join-Path $workspace 'tests/compatibility/game-2.3.1/mechanics/thik-deck-change'
 $manifest = @(Import-Csv -LiteralPath (Join-Path $directory 'manifest.tsv') -Delimiter "`t")
-if ($manifest.Count -ne 1 -or $manifest[0].path -cne 'tier3.mt2f') { throw 'Unexpected Thik deck-change manifest.' }
-$archive = Join-Path $directory $manifest[0].path
-if ((Get-Item -LiteralPath $archive).Length -ne [long]$manifest[0].bytes -or
-    (Get-FileHash -LiteralPath $archive).Hash -ine $manifest[0].sha256) { throw 'Thik deck-change archive differs.' }
-& dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --thik-deck-change-only $archive
-if ($LASTEXITCODE) { throw 'Thik deck-change replay failed.' }
+if ($manifest.Count -ne 2 -or (($manifest.path | Sort-Object) -join ',') -cne 'tier3-battle.mt2f,tier3.mt2f') {
+    throw 'Unexpected Thik deck-change manifest.'
+}
+$checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
+foreach ($entry in $manifest) {
+    $archive = Join-Path $directory $entry.path
+    if ((Get-Item -LiteralPath $archive).Length -ne [long]$entry.bytes -or
+        (Get-FileHash -LiteralPath $archive).Hash -ine $entry.sha256) { throw "Thik deck-change archive differs: $($entry.path)" }
+    & dotnet $checker --thik-deck-change-only $archive
+    if ($LASTEXITCODE) { throw "Thik deck-change replay failed: $($entry.path)" }
+}

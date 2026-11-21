@@ -234,6 +234,7 @@ namespace MonsterTrain2Poju.Model
                 if (sourceCard.CanBeCopied == false) return new CardGenerationResult(source, Array.Empty<CardToken>());
             }
             CombatContext context = source;
+            bool hasDeckChange = rule.Permanent == true && RelicDeckPyreStatsModel.Present(source);
             var added = new List<CardToken>();
             for (int index = 0; index < Math.Max(1, rule.Count); index++)
             {
@@ -432,6 +433,16 @@ namespace MonsterTrain2Poju.Model
                     context.StatusRules, context.Statistics?.TrackCards(new[] { card.InstanceId }),
                     context.CardInstances?.Concat(new[] { candidate }).ToArray(), context.CardRegistry, context.AllScenarioBossesDead,
                     context.NextAddedTemporaryUpgrades == null ? null : Array.Empty<CardUpgradeModifier>(), context.OtherPiles, context.QueryFrame, context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts, context.Resources, context.MixState, context.ConduitRetained, context.LifeLinks);
+                if (hasDeckChange)
+                {
+                    if (context.Resources == null || context.Statistics?.DeckCards == null)
+                        return Unsupported("Thik requires the captured raw resources and permanent deck.");
+                    context = context.WithResources(context.Resources.WithVisibleDeckCount(checked(context.Resources.VisibleDeckCount + 1)))
+                        .WithStatistics(context.Statistics.AddDeckCards(new[] { card.InstanceId }));
+                    CombatContext? changed = RelicDeckPyreStatsModel.DeckChanged(context, out string? deckError);
+                    if (changed == null) return Unsupported(deckError!);
+                    context = changed;
+                }
                 if (creation.ActivatesMoonTracking == true && context.QueryFrame?.MoonPhaseTrackingActive == false)
                 {
                     if (context.EnergyState?.Phase != "Combat" && !GeneratedMoonTrackingModel.KnownPlayerCreation(context, creation))
@@ -461,10 +472,10 @@ namespace MonsterTrain2Poju.Model
                         .WithStatistics(context.Statistics?.Increment(card.InstanceId, "TimesExhausted"));
                 added.Add(card);
             }
-            if (rule.Permanent == true && added.Count > 0 && context.Resources != null)
+            if (rule.Permanent == true && added.Count > 0 && !hasDeckChange && context.Resources != null)
                 context = context.WithResources(context.Resources.WithVisibleDeckCount(
                     checked(context.Resources.VisibleDeckCount + added.Count)));
-            if (rule.Permanent == true && added.Count > 0 && context.Statistics?.DeckCards != null)
+            if (rule.Permanent == true && added.Count > 0 && !hasDeckChange && context.Statistics?.DeckCards != null)
                 context = context.WithStatistics(context.Statistics.AddDeckCards(added.Select(card => card.InstanceId)));
             return new CardGenerationResult(context, added);
         }

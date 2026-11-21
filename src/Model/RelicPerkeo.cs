@@ -55,10 +55,10 @@ namespace MonsterTrain2Poju.Model
             CombatContext context = source.WithCards(new CardCycleState(cycle.Hand.Where(item => item.InstanceId != cardId).ToArray(),
                 cycle.Draw, cycle.Discard, cycle.Rng, cycle.DrawModifier, cycle.ExternalInteractions, cycle.BonusDraw,
                 cycle.NextDrawUpgrades, cycle.NextUpgradeReferenceId, cycle.DeckDrawDisabledThisTurn))
-                .WithOtherPiles(source.OtherPiles.Select(pile => pile.Name == "Purged" ? CardPileModel.Add(pile, card) : pile).ToArray())
-                .WithStatistics(source.Statistics.RemoveDeckCard(cardId))
-                .WithResources(source.Resources.WithVisibleDeckCount(source.Resources.VisibleDeckCount - 1));
-            return CardGenerationModel.Apply(context, new CardGenerationRule("HandPile", 1, new[] { creation },
+                .WithOtherPiles(source.OtherPiles.Select(pile => pile.Name == "Purged" ? CardPileModel.Add(pile, card) : pile).ToArray());
+            CombatContext? purgedContext = RelicDeckPyreStatsModel.RemoveCard(context, cardId, out string? deckError);
+            if (purgedContext == null) return Fail(deckError!);
+            return CardGenerationModel.Apply(purgedContext, new CardGenerationRule("HandPile", 1, new[] { creation },
                 deterministicPoolSelection: true, permanent: true));
         }
         internal static CardGenerationResult ApplyUnplayed(CombatContext source)

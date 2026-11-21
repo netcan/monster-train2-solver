@@ -1208,9 +1208,11 @@ namespace MonsterTrain2Poju.Model
                 statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
             if (!skipNaturalDiscard && (rule.Destination == "Purged" || ephemeralEquipment))
             {
-                if (statistics?.DeckCards?.Contains(card.InstanceId) == true && context.Resources != null)
-                    context = context.WithResources(context.Resources.WithVisibleDeckCount(context.Resources.VisibleDeckCount - 1));
-                statistics = statistics?.RemoveDeckCard(card.InstanceId);
+                CombatContext? changed = RelicDeckPyreStatsModel.RemoveCard(context.WithStatistics(statistics),
+                    card.InstanceId, out string? deckError);
+                if (changed == null) return Unsupported(deckError!);
+                context = changed;
+                statistics = changed.Statistics;
             }
             context = context.AfterCardEffects();
             context = new CombatContext(new CardCycleState(hand, context.Cards.Draw, discard, context.Cards.Rng,
@@ -1268,8 +1270,10 @@ namespace MonsterTrain2Poju.Model
                     context = context.WithOtherPiles(context.OtherPiles!.Select(pile => pile.Name is "Standby" or "Exhausted"
                         ? CardPileModel.Remove(pile, card.InstanceId) : pile).ToArray());
             }
+            CombatUnit? adjustedPyre = RelicDeckPyreStatsModel.ChangedPyre(train.Context, context);
             RoomCombatState[] rooms = train.Rooms.Select(room =>
             {
+                if (adjustedPyre != null) room = RelicDeckPyreStatsModel.ReplaceHealth(room, adjustedPyre);
                 return new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions,
                     context, room.Preview, room.ActiveCompanionBossIds);
             }).ToArray();

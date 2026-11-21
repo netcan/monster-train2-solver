@@ -7,6 +7,11 @@ internal static class ThikDeckChangeChecks
     {
         using var document = ModelJson.ReadFixture(path);
         var root = document.RootElement;
+        if (root.TryGetProperty("OriginalThikPrepared", out var prepared) && prepared.GetBoolean())
+        {
+            Battle(path, root);
+            return;
+        }
         var definition = root.GetProperty("Definition");
         Require(Text(root, "Boundary") == "NativeOriginalThikDeckChange" && Text(root, "GameVersion") == "2.3.1" &&
             Text(root, "GameModuleMvid") == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
@@ -49,6 +54,40 @@ internal static class ThikDeckChangeChecks
             settled.All(row => Flag(row, "RunningCombat") && !Flag(row, "AllScenarioBossesDead") && Int(row, "PyreHP") > 0),
             "Both native plays must settle while the train is active.");
         Console.WriteLine($"THIK-DECK-CHANGE PASS callbacks={callbacks.Length} permanentChanges=2");
+    }
+
+    private static void Battle(string path, FixtureValue root)
+    {
+        var definition = root.GetProperty("OriginalThikDefinition");
+        Require(Text(definition, "Id") == "490d737b-fa0d-4f16-bb90-4ff22af11530" && Int(definition, "Tier") == 3,
+            "Expected the original Thik T3 in the full battle.");
+        var callbacks = root.GetProperty("OriginalThikCallbacks").EnumerateArray().ToArray();
+        Require(callbacks.Select(row => Int(row, "Delta")).SequenceEqual(new[] { 1, 0, -1 }),
+            "The native battle must record an add, an unchanged temporary removal, and a permanent removal.");
+        foreach (var callback in callbacks)
+            CheckDelta(callback.GetProperty("Before"), callback.GetProperty("After"), Int(callback, "Delta"), inBattle: true);
+
+        var cards = root.GetProperty("OriginalThikCards");
+        int generator = Int(cards, "GeneratorId"), purge = Int(cards, "PurgeCardId");
+        var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
+        CheckAction(generator, 1, 5, 2);
+        CheckAction(purge, -1, -5, -2);
+        CardCycleChecks.Native(root);
+        SolverStageChecks.Native(path);
+        Console.WriteLine("THIK-DECK-CHANGE-BATTLE PASS: permanent addition, temporary removal and permanent purge agree with native successors.");
+
+        void CheckAction(int cardId, int delta, int healthDelta, int attackDelta)
+        {
+            var row = actions.Single(action => Int(action.GetProperty("Action"), "CardInstanceId") == cardId);
+            var before = row.GetProperty("Before").Deserialize<BattleTurnState>()!.Spawn.Train;
+            var after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!.Spawn.Train;
+            CombatUnit pyreBefore = before.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre);
+            CombatUnit pyreAfter = after.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre);
+            Require(after.Context!.Statistics!.DeckCards!.Count - before.Context!.Statistics!.DeckCards!.Count == delta &&
+                pyreAfter.Health - pyreBefore.Health == healthDelta && pyreAfter.MaxHealth == pyreBefore.MaxHealth &&
+                after.Context.Resources!.PyreModifiedBaseAttack - before.Context.Resources!.PyreModifiedBaseAttack == attackDelta,
+                "The modeled decision states lost a native deck mutation or Pyre update.");
+        }
     }
 
     private static void CheckDelta(FixtureValue before, FixtureValue after, int delta, bool inBattle)

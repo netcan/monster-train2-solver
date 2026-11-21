@@ -194,8 +194,13 @@ namespace MonsterTrain2Poju.Model
                 source = source.WithCards(new CardCycleState(source.Cards.Hand, source.Cards.Draw, discard,
                     source.Cards.Rng, source.Cards.DrawModifier, source.Cards.ExternalInteractions,
                     source.Cards.BonusDraw, source.Cards.NextDrawUpgrades, source.Cards.NextUpgradeReferenceId, source.Cards.DeckDrawDisabledThisTurn))
-                    .WithOtherPiles(piles)
-                    .WithStatistics(ids.Aggregate(source.Statistics, (statistics, id) => statistics?.RemoveDeckCard(id)));
+                    .WithOtherPiles(piles);
+                foreach (int id in ids)
+                {
+                    CombatContext? changed = RelicDeckPyreStatsModel.RemoveCard(source, id, out string? deckError);
+                    if (changed == null) return Fail(source, deckError!);
+                    source = changed;
+                }
             }
 
             if (effect.Conditions.Count > 0)

@@ -64,7 +64,10 @@ namespace MonsterTrain2Poju.Probe
 
         internal static bool RequiresPhysicalWorld(AllGameManagers managers) => Current(managers)
             .Any(owner => owner.GetEffects().Any(effect => effect is RelicEffectAdditionalDrawForEnemyOccupiedFloors || effect is RelicEffectAdditionalDrawDuringRelentless ||
-                effect is RelicEffectBumpOnTurnEnd));
+                effect is RelicEffectBumpOnTurnEnd || effect is RelicEffectAddPyreAttackAndHealthPerCardInDeck));
+
+        internal static int? ReadLastKnownDeckCount(RelicEffectAddPyreAttackAndHealthPerCardInDeck effect) =>
+            (int?)AccessTools.Field(typeof(RelicEffectAddPyreAttackAndHealthPerCardInDeck), "_lastKnownCardCount").GetValue(effect);
 
         internal static BattleResourceState? CaptureResources(AllGameManagers managers)
         {
@@ -587,13 +590,17 @@ namespace MonsterTrain2Poju.Probe
                 amount = (int)AccessTools.Field(effect.GetType(), "energyChange").GetValue(effect);
             else if (effect is RelicEffectCorruptionOnCorruptRestrictedPlayed)
                 amount = (int)AccessTools.Field(effect.GetType(), "corruptionChange").GetValue(effect);
+            else if (effect is RelicEffectAddPyreAttackAndHealthPerCardInDeck)
+                amount = 0;
             else
                 amount = (int)AccessTools.Field(effect.GetType(), "energyChange").GetValue(effect);
             return new RelicResourceEffect(index, type, data.GetParamInt(), data.GetParamInt2(), amount,
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
                 effect is RelicEffectAddPermanentCorruptionStartOfCombat || effect is RelicEffectChangeSingleFloorCapacity || effect is RelicEffectRandomCardCostOnDraw || effect is RelicEffectSuppressExhaust || effect is RelicEffectPyreHeartResurrection ? data.GetParamFloat() : 0,
-                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence, unitSpawnEffect, deathEffect, openingSpawn, deckSpawn, drawAndEnergy, pileSpawnUpgrade, spawnStatusScaling, turnEnergy, goldMagicPowerCards);
+                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence, unitSpawnEffect, deathEffect, openingSpawn, deckSpawn, drawAndEnergy, pileSpawnUpgrade, spawnStatusScaling, turnEnergy, goldMagicPowerCards,
+                lastKnownDeckCount: effect is RelicEffectAddPyreAttackAndHealthPerCardInDeck deckChange
+                    ? ReadLastKnownDeckCount(deckChange) : null);
         }
 
         internal static ResourceSnapshot Capture()

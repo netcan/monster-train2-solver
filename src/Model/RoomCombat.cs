@@ -1189,7 +1189,8 @@ namespace MonsterTrain2Poju.Model
                 if (unit.Modifiers != null && (unit.Modifiers.HealthFromUpgrades.Any(item => item.Value < 0) ||
                     unit.Modifiers.HealthFromUpgrades.Select(item => item.Key).Distinct().Count() != unit.Modifiers.HealthFromUpgrades.Count))
                     return "Invalid attributed maximum-health ledger.";
-                if (unit.Health < 0 || unit.Health == 0 && unit.Id != dyingTargetId || unit.Health > unit.MaxHealth)
+                if (unit.Health < 0 || unit.Health == 0 && unit.Id != dyingTargetId ||
+                    unit.Health > unit.MaxHealth && !RelicDeckPyreStatsModel.AllowsHealthAboveCharacterMaximum(state.Context, unit))
                     return "Only living units with valid health can enter room combat.";
                 if (unit.Status("horde") != null && (unit.HordeDefinition == null || unit.HordeDefinition.Health <= 0 || unit.Modifiers == null))
                     return "Horde requires authored troop stats and raw modifier fields.";
@@ -4551,9 +4552,9 @@ namespace MonsterTrain2Poju.Model
                             else if (effect.Type == "CardEffectPurgeUnitOnDeath")
                             {
                                 if (source.Preview || unit.Has("cardless")) continue;
-                                CombatContext? purged = UnitCardPurgeModel.Apply(context!, unit.Source.SpawnerCardId, out string? purgeError);
+                                CombatContext? purged = UnitCardPurgeModel.Apply(DeckChangeSource(), unit.Source.SpawnerCardId, out string? purgeError);
                                 if (purged == null) { unsupportedReason = purgeError; break; }
-                                context = purged;
+                                ApplyDeckChange(purged);
                             }
                             else if (effect.Type == "CardEffectAdjustDragonsHoard")
                             {
@@ -4566,9 +4567,9 @@ namespace MonsterTrain2Poju.Model
                             }
                             else if (effect.Type == UnitCardCopyModel.Effect && !source.Preview && context != null)
                             {
-                                CardGenerationResult copied = UnitCardCopyModel.Apply(context, unit.Source.SpawnerCardId, effect);
+                                CardGenerationResult copied = UnitCardCopyModel.Apply(DeckChangeSource(), unit.Source.SpawnerCardId, effect);
                                 if (!copied.Supported) { unsupportedReason = copied.UnsupportedReason; break; }
-                                context = copied.Context;
+                                ApplyDeckChange(copied.Context!);
                                 foreach (CardToken card in copied.AddedCards) Emit("AddCard", unit, unit, card.InstanceId);
                             }
                             else if (effect.Type is "CardEffectAddBattleCard" or "CardEffectAddRunCard" && !source.Preview && context != null &&
@@ -4669,10 +4670,11 @@ namespace MonsterTrain2Poju.Model
             private bool ApplyRelicUnitTriggerCardGeneration(WorkingUnit unit, string kind, int paramInt,
                 CombatRelicState owner, RelicResourceEffect effect)
             {
-                CardGenerationResult result = RelicUnitTriggerCardGenerationModel.ApplyOne(context!, owner.DataId,
+                CardGenerationResult result = RelicUnitTriggerCardGenerationModel.ApplyOne(
+                    effect.CardGeneration?.Permanent == true ? DeckChangeSource() : context!, owner.DataId,
                     effect.EffectIndex, unit.Freeze(), kind, unit.Alive, paramInt, source.Deployment, source.Preview);
                 if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
-                context = result.Context;
+                ApplyDeckChange(result.Context!);
                 return true;
             }
 
@@ -6245,10 +6247,25 @@ namespace MonsterTrain2Poju.Model
             {
                 CardGenerationRule rule = effect.Generation ?? new CardGenerationRule(effect.Destination, effect.Count,
                     effect.CardPool.Select(id => new CardCreationRule(id, CardModifiers.Empty(), null, Array.Empty<string>())).ToArray(), effect.SkipDuplicateInHand);
-                CardGenerationResult result = CardGenerationModel.Apply(context!, rule, actor.Source.SpawnerCardId);
+                CardGenerationResult result = CardGenerationModel.Apply(rule.Permanent == true ? DeckChangeSource() : context!,
+                    rule, actor.Source.SpawnerCardId);
                 if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return; }
-                context = result.Context;
+                ApplyDeckChange(result.Context!);
                 foreach (CardToken card in result.AddedCards) Emit("AddCard", actor, actor, card.InstanceId);
+            }
+
+            private CombatContext DeckChangeSource()
+            {
+                if (!RelicDeckPyreStatsModel.Present(context)) return context!;
+                return EnchantmentWorldModel.Sync(PhysicalRoom(), externalUnits: ExternalEnchantmentUnits()).Context!;
+            }
+
+            private void ApplyDeckChange(CombatContext next)
+            {
+                CombatUnit? adjustedPyre = RelicDeckPyreStatsModel.ChangedPyre(context, next);
+                if (adjustedPyre != null)
+                    units.FirstOrDefault(unit => unit.Source.Id == adjustedPyre.Id)?.Apply(adjustedPyre);
+                context = next;
             }
 
             private void Trigger(WorkingUnit unit, string id, int count)

@@ -684,6 +684,8 @@ namespace MonsterTrain2Poju.Probe
                     (bool)fightAvailable.GetValue(intro)! && intro.GetFightButton().interactable)
                 {
                     OriginalOuterBossRoute.PrepareIntro(save, intro, log);
+                    if (fullBattle && OriginalThikDeckChangeScenario.Enabled && !OriginalThikDeckChangeScenario.Acquired)
+                        OriginalThikDeckChangeScenario.AcquireBeforeBattle(managers!, log);
                     if (ReplayManager.TryClickButton(intro.GetFightButton())) Enter(Stage.Battle, 120f);
                 }
                 return;
@@ -867,21 +869,27 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && OriginalThikDeckChangeScenario.Enabled)
             {
                 if (!OriginalThikDeckChangeScenario.Prepared)
+                {
                     OriginalThikDeckChangeScenario.Prepare(managers, log);
-                else if (managers.GetRoomManager().GetSelectedRoom() != OriginalThikDeckChangeScenario.RoomIndex)
+                    return;
+                }
+                if (!OriginalThikDeckChangeScenario.FullBattle)
                 {
-                    if (Time.realtimeSinceStartup - lastRoomSelectionRetry >= .25f)
+                    if (managers.GetRoomManager().GetSelectedRoom() != OriginalThikDeckChangeScenario.RoomIndex)
                     {
-                        lastRoomSelectionRetry = Time.realtimeSinceStartup;
-                        save.StartCoroutine(managers.GetRoomManager().GetRoomUI().SetSelectedRoom(OriginalThikDeckChangeScenario.RoomIndex));
+                        if (Time.realtimeSinceStartup - lastRoomSelectionRetry >= .25f)
+                        {
+                            lastRoomSelectionRetry = Time.realtimeSinceStartup;
+                            save.StartCoroutine(managers.GetRoomManager().GetRoomUI().SetSelectedRoom(OriginalThikDeckChangeScenario.RoomIndex));
+                        }
                     }
+                    else if (OriginalThikDeckChangeScenario.PlayNext(managers, log))
+                    {
+                        FullBattleTrace.Active!.WriteThikDeckChange();
+                        Finish(true, "Original Thik deck-change component captured.");
+                    }
+                    return;
                 }
-                else if (OriginalThikDeckChangeScenario.PlayNext(managers, log))
-                {
-                    FullBattleTrace.Active!.WriteThikDeckChange();
-                    Finish(true, "Original Thik deck-change component captured.");
-                }
-                return;
             }
             if (PlayerAdvisorProbe.Enabled && !PlayerAdvisorProbe.CaptureInitialized) return;
             if (fullBattle && TrueFinalBossAllyUpgradeScenario.Prepare()) return;
@@ -3382,6 +3390,10 @@ namespace MonsterTrain2Poju.Probe
                 {
                     pendingPlay = SpawnStatusScalingScenario.Choose(decision);
                 }
+                else if (OriginalThikDeckChangeScenario.FullBattle)
+                {
+                    pendingPlay = OriginalThikDeckChangeScenario.Choose(decision);
+                }
                 else if (OriginalElleScenario.Enabled)
                 {
                     pendingPlay = OriginalElleScenario.Choose(decision);
@@ -3994,6 +4006,7 @@ namespace MonsterTrain2Poju.Probe
                 (OriginalCardPlayDamageScenario.Enabled && OriginalCardPlayDamageScenario.IsScenarioAction(action)) ||
                 (OriginalConsumeDamageScenario.Enabled && OriginalConsumeDamageScenario.IsScenarioAction(action)) ||
                 (OriginalEatenDamageScenario.Enabled && OriginalEatenDamageScenario.IsScenarioAction(action)) ||
+                (OriginalThikDeckChangeScenario.FullBattle && OriginalThikDeckChangeScenario.IsScenarioAction(action)) ||
                 (OriginalElleScenario.Enabled && OriginalElleScenario.IsScenarioAction(action)) ||
                 (OriginalGoldieScenario.Enabled && OriginalGoldieScenario.IsScenarioAction(action)) ||
                 (OriginalBeeziebubScenario.Enabled && OriginalBeeziebubScenario.IsScenarioAction(action)) ||
