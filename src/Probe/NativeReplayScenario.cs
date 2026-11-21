@@ -257,7 +257,11 @@ namespace MonsterTrain2Poju.Probe
             }
             if (Time.realtimeSinceStartup > deadline)
             {
-                if (RollingAdviceScenario.Enabled)
+                if (RollingAdviceScenario.Enabled
+#if DEVELOPMENT_PROBE
+                    || fullBattle && OriginalSpurnedScenario.FullBattle
+#endif
+                    )
                 {
                     try { FullBattleTrace.Active?.Write(); }
                     catch (Exception exportError) { log.LogError("ROLLING-DIAGNOSTIC-EXPORT-FAIL " + exportError); }
@@ -271,7 +275,11 @@ namespace MonsterTrain2Poju.Probe
             }
             catch (Exception ex)
             {
-                if (RollingAdviceScenario.Enabled)
+                if (RollingAdviceScenario.Enabled
+#if DEVELOPMENT_PROBE
+                    || fullBattle && OriginalSpurnedScenario.FullBattle
+#endif
+                    )
                 {
                     try { FullBattleTrace.Active?.Write(); }
                     catch (Exception exportError) { log.LogError("ROLLING-DIAGNOSTIC-EXPORT-FAIL " + exportError); }
@@ -907,7 +915,9 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalAffordableNonPlayableScenario.Completed) Finish(true, "Original affordable nonplayable component captured.");
                 return;
             }
-            if (fullBattle && OriginalSpurnedScenario.Enabled)
+            if (fullBattle && OriginalSpurnedScenario.FullBattle)
+                OriginalSpurnedScenario.ObserveFullBattle(save, log);
+            if (fullBattle && OriginalSpurnedScenario.Component)
             {
                 if (OriginalSpurnedScenario.Completed) Finish(true, "Original Spurned component captured.");
                 else if (!OriginalSpurnedScenario.Tick(managers, log))

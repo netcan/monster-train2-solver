@@ -14,10 +14,14 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalSpurnedScenario
     {
         internal const string Name = "original-spurned";
+        internal const string FullBattleName = "original-spurned-battle";
         private const string ScenarioKey = "SoulSavior_R4_BossBattle_EstrangedChild_2";
         private const string BossKey = "Boss_SoulSavior_R4_Spurned_ArmorPerDebuff";
         private const string DefenderId = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool Component => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == FullBattleName;
+        internal static bool Enabled => Component || FullBattle;
+        internal static object? FullBattleEvidence { get; private set; }
         internal static bool Completed { get; private set; }
         private static bool requested;
         private static bool started;
@@ -78,6 +82,17 @@ namespace MonsterTrain2Poju.Probe
             started = true;
             save.StartCoroutine(Capture(managers, boss, target, log));
             return true;
+        }
+
+        internal static void ObserveFullBattle(SaveManager save, ManualLogSource log)
+        {
+            if (FullBattleEvidence != null) return;
+            ScenarioData scenario = save.GetCurrentScenarioData();
+            string boss = scenario.GetOuterTrainBoss(false)?.GetAssetKey() ?? "";
+            if (!requested || !save.InTestScenario || scenario.name != ScenarioKey || boss != BossKey)
+                throw new InvalidOperationException("Expected the installed Spurned battle to enter its original TestScenario.");
+            FullBattleEvidence = new { Scenario = scenario.name, BossKey = boss, TestScenario = save.InTestScenario };
+            log.LogInfo("ORIGINAL-SPURNED-BATTLE loaded " + scenario.name + " boss=" + boss + " testScenario=" + save.InTestScenario);
         }
 
         private static bool Play(CardManager cards, int index, SpawnPoint point)

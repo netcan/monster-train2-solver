@@ -738,6 +738,7 @@ param(
     [switch] $OriginalPriorityRelicBattle,
     [switch] $OriginalAffordableNonPlayable,
     [switch] $OriginalSpurned,
+    [switch] $OriginalSpurnedBattle,
     [switch] $OriginalRageOnBurnoutStackLoss,
     [switch] $OriginalPyreRevenge,
     [switch] $OriginalExtractForEmberAndEchos,
@@ -1462,6 +1463,17 @@ if ($OriginalAffordableNonPlayable) {
 }
 if ($OriginalSpurned -and (-not $BinaryCapture -or -not $InputProfile -or $BattleDistance -ne 3 -or $PlayerAdvisor -or $Planner)) {
     throw 'OriginalSpurned requires an isolated Ring 4 BattleIntro checkpoint and binary capture.'
+}
+if ($OriginalSpurnedBattle) {
+    if (-not $BinaryCapture -or -not $InputProfile -or $BattleDistance -ne 3 -or
+        $PlayerAdvisor -or $Planner -or $Advisor -or $RollingAdvice -or $RollingInput -or $OriginalSpurned) {
+        throw 'OriginalSpurnedBattle requires an isolated Ring 4 BattleIntro checkpoint and binary capture without other play or component modes.'
+    }
+    $PhysicalSpawnPoints = $true
+    $OuterBossTurns = $true
+    $OuterBossBirth = $true
+    $BranchCardMasks = $true
+    $Policy = 'units-spells-and-junk'
 }
 if ($OriginalRageOnBurnoutStackLoss) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPyreRevenge) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -2730,6 +2742,7 @@ if ($OriginalPriorityRelicBattle) {
 }
 if ($OriginalAffordableNonPlayable) { $environment['MT2_PROBE_MODIFIERS'] = 'original-affordable-nonplayable' }
 if ($OriginalSpurned) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spurned'; $environment['MT2_PROBE_PHYSICAL_SPAWNPOINTS'] = '1' }
+if ($OriginalSpurnedBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spurned-battle' }
 if ($OriginalRageOnBurnoutStackLoss) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rage-on-burnout-stack-loss' }
 if ($RankThreeRoomSlayExecution) { $environment['MT2_PROBE_MODIFIERS'] = 'rank-three-room-slay-execution' }
 if ($OriginalPyreRevenge) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-revenge' }
@@ -3376,6 +3389,16 @@ if ($BinaryCapture) {
 }
 $inspectionTimer.Stop()
 Write-Output "FULL-BATTLE-INSPECTION elapsedSeconds=$($inspectionTimer.Elapsed.TotalSeconds.ToString('F3', [Globalization.CultureInfo]::InvariantCulture))"
+if ($OriginalSpurnedBattle) {
+    $spurned = $trace.OriginalSpurnedBattle
+    if ($trace.ModifierScenario -cne 'original-spurned-battle' -or $trace.GameVersion -cne '2.3.1' -or
+        $trace.GameModuleMvid -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+        $spurned.Scenario -cne 'SoulSavior_R4_BossBattle_EstrangedChild_2' -or
+        $spurned.BossKey -cne 'Boss_SoulSavior_R4_Spurned_ArmorPerDebuff' -or -not $spurned.TestScenario -or
+        @($trace.Actions).Count -eq 0 -or @($trace.Turns).Count -eq 0 -or -not $trace.TerminalEffectsSettled) {
+        throw "Original Spurned battle did not complete ordinary inputs and terminal capture. Inspect $tracePath and $unityLog"
+    }
+}
 if ($TrueFinalBossMaximumBattle -and (-not $trace.TrueFinalBossMaximumBattle.Prepared -or
     $trace.TrueFinalBossMaximumBattle.CompletedControlPlays -ne $(if ($TrueFinalBossMaximumSacrifice) { 11 } else { 10 }) -or
     @($trace.Actions).Count -ne $(if ($TrueFinalBossMaximumSacrifice) { 11 } else { 10 }) -or

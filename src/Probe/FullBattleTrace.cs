@@ -1107,6 +1107,9 @@ namespace MonsterTrain2Poju.Probe
                 CopyOnPlayTerminalCardIds = CopyOnPlayTerminalScenario.CardIds,
                 Policy = Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY"),
                 ModifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS"),
+#if DEVELOPMENT_PROBE
+                OriginalSpurnedBattle = OriginalSpurnedScenario.FullBattleEvidence,
+#endif
                 OriginalChampionStartTurnHealSchema = OriginalChampionStartTurnHealScenario.Prepared ? 208 : 0,
                 OriginalChampionStartTurnHeal = OriginalChampionStartTurnHealScenario.Prepared ? OriginalChampionStartTurnHealScenario.Evidence : null,
                 OriginalNimsOathSchema = OriginalNimsOathScenario.Prepared ? 210 : 0,
