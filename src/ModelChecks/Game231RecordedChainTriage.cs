@@ -17,6 +17,8 @@ internal static class Game231RecordedChainTriage
                 throw new ArgumentException("Archive workers must be between 1 and 32.");
             archivePaths = archivePaths[1..];
         }
+        bool checkCardFrontiers = archivePaths.Length > 0 && archivePaths[0] == "--card-frontiers";
+        if (checkCardFrontiers) archivePaths = archivePaths[1..];
 
         string directory = Game231FixtureCatalog.DirectoryFor(workspace);
         var catalog = Game231FixtureCatalog.Load(directory);
@@ -32,14 +34,14 @@ internal static class Game231RecordedChainTriage
         Directory.CreateDirectory(Path.GetDirectoryName(output)!);
         using var writer = new StreamWriter(output) { AutoFlush = true };
         writer.WriteLine("archive\tstatus\tplays\tendTurns\tseconds\tstage\tdetail\trawMismatch\tarchiveSHA256\tcheckerSHA256\tmodelSHA256");
-        Console.WriteLine($"RECORDED-CHAIN-TRIAGE-START registered={catalog.Count} selected={(selected.Count == 0 ? catalog.Count : selected.Count)} workers={workers} checkerSHA256={checkerHash} modelSHA256={modelHash} report={output}");
+        Console.WriteLine($"RECORDED-CHAIN-TRIAGE-START registered={catalog.Count} selected={(selected.Count == 0 ? catalog.Count : selected.Count)} workers={workers} cardFrontiers={checkCardFrontiers} checkerSHA256={checkerHash} modelSHA256={modelHash} report={output}");
 
         int passed = 0, segmentPassed = 0, failed = 0, skipped = 0;
         IEnumerable<Game231FixtureRegistration> archives = catalog.Values.Where(archive => selected.Count == 0 || selected.Contains(archive.Path));
         IEnumerable<ArchiveResult> results = workers == 1
-            ? archives.Select(archive => ReplayArchive(directory, archive))
+            ? archives.Select(archive => ReplayArchive(directory, archive, checkCardFrontiers))
             : archives.AsParallel().AsOrdered().WithDegreeOfParallelism(workers)
-                .WithMergeOptions(ParallelMergeOptions.NotBuffered).Select(archive => ReplayArchive(directory, archive));
+                .WithMergeOptions(ParallelMergeOptions.NotBuffered).Select(archive => ReplayArchive(directory, archive, checkCardFrontiers));
         foreach (ArchiveResult result in results)
         {
             switch (result.Status)
@@ -68,7 +70,7 @@ internal static class Game231RecordedChainTriage
     private sealed record ArchiveResult(Game231FixtureRegistration Archive, string Status, int? Plays,
         int? EndTurns, double Seconds, string Detail, string RawMismatch);
 
-    private static ArchiveResult ReplayArchive(string directory, Game231FixtureRegistration archive)
+    private static ArchiveResult ReplayArchive(string directory, Game231FixtureRegistration archive, bool checkCardFrontiers)
     {
         var timer = Stopwatch.StartNew();
         int? plays = null, endTurns = null;
@@ -84,10 +86,10 @@ internal static class Game231RecordedChainTriage
 
             plays = battle.GetProperty("Actions").GetArrayLength();
             endTurns = battle.GetProperty("Turns").GetArrayLength();
+            string status = "PASS", detail = "";
             try
             {
                 RecordedBattleChecks.ReplayOnce(battle);
-                return Result("PASS");
             }
             catch (InvalidOperationException rawFailure)
             {
@@ -96,14 +98,26 @@ internal static class Game231RecordedChainTriage
                 if (archive.Path == "mechanics/moon-phase-hand-upgrade/battle.mt2f")
                 {
                     OriginalMoonPhaseRoomsGainMagicPowerChecks.ReplayPreparedTurns(battle, rawMismatch);
-                    return Result("SEGMENT-PASS", "Verified all seven turns and six recorded original-card hand setups.");
+                    detail = "Verified all seven turns and six recorded original-card hand setups.";
                 }
-
-                if (!HasDocumentedTurnOneSetup(archive.Path, battle, rawMismatch)) throw;
-                RecordedBattleChecks.ReplayOnce(battle, lastTurn: 0);
-                RecordedBattleChecks.ReplayOnce(battle, firstTurn: 1);
-                return Result("SEGMENT-PASS", "Verified deployment and turn 1 through terminal on either side of recorded test setup.");
+                else
+                {
+                    if (!HasDocumentedTurnOneSetup(archive.Path, battle, rawMismatch)) throw;
+                    RecordedBattleChecks.ReplayOnce(battle, lastTurn: 0);
+                    RecordedBattleChecks.ReplayOnce(battle, firstTurn: 1);
+                    detail = "Verified deployment and turn 1 through terminal on either side of recorded test setup.";
+                }
+                status = "SEGMENT-PASS";
             }
+
+            if (checkCardFrontiers)
+            {
+                if (plays > 0)
+                    BattleSearchChecks.RecordedFrontiers(battle, requireZeroUnsupported: true, report: false);
+                if (detail.Length > 0) detail += " ";
+                detail += $"Checked {plays} recorded card frontiers.";
+            }
+            return Result(status, detail);
         }
         catch (Exception failure)
         {

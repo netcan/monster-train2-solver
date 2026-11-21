@@ -79,7 +79,7 @@ internal static class BattleSearchChecks
     }
 
     internal static (BattleTurnState Root, BattleActionEnumeration Frontier, int Matched, int Unsupported)
-        RecordedFrontiers(FixtureValue fixture, bool requireZeroUnsupported = false)
+        RecordedFrontiers(FixtureValue fixture, bool requireZeroUnsupported = false, bool report = true)
     {
         FixtureValue actions = fixture.GetProperty("Actions");
         Require(actions.GetArrayLength() > 0, "The native search fixture has no recorded card actions.");
@@ -123,7 +123,8 @@ internal static class BattleSearchChecks
         }
 
         if (requireZeroUnsupported) Require(unsupportedAttempts == 0, "Recorded decisions contain unsupported candidates.");
-        Console.WriteLine($"NATIVE-RECORDED-FRONTIERS PASS: {matchedDecisions} exact native successors, {unsupportedAttempts} unsupported candidates.");
+        if (report)
+            Console.WriteLine($"NATIVE-RECORDED-FRONTIERS PASS: {matchedDecisions} exact native successors, {unsupportedAttempts} unsupported candidates.");
         return (root!, rootFrontier!, matchedDecisions, unsupportedAttempts);
     }
 
