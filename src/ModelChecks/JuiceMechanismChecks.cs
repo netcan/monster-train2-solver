@@ -122,4 +122,45 @@ internal static class JuiceMechanismChecks
         SolverStageChecks.Native(path, requireVictory: false);
         Console.WriteLine("ORIGINAL-JUICE-UPGRADES PASS: three original soul upgrades, nine unchanged status-spell plays, friendly/enemy OnCast armor/poison, ID-independent structural reuse; complete native chain/candidates and serial/parallel root search. Actual native won=" + root.GetProperty("NativeWon").GetBoolean());
     }
+
+    internal static void MollisCycleOfLife(string path)
+    {
+        using var document = ModelJson.ReadFixture(path);
+        FixtureValue battle = document.RootElement;
+        FixtureValue definition = battle.GetProperty("OriginalMollisCycleOfLifeDefinition");
+        Require(battle.GetProperty("OriginalMollisCycleOfLifePrepared").GetBoolean() &&
+            definition.ContentEquals(battle.GetProperty("OriginalMollisCycleOfLifeDefinitionAfter")) &&
+            definition.GetProperty("SoulKey").GetString() == "MollisT3" &&
+            definition.GetProperty("CardKey").GetString() == "CycleOfLife",
+            "Missing unmodified original Mollis and Cycle of Life.");
+
+        int cardId = battle.GetProperty("OriginalMollisCycleOfLifeCardId").GetInt32();
+        var installed = battle.GetProperty("OriginalMollisCycleOfLifeInstalledUpgrade").Deserialize<CardLifecycleUpgrade>()!;
+        Require(installed.AvoidClobbering && installed.TraitsModified.SequenceEqual(new[] { CardJuiceModel.QuadrupleTrait }),
+            "Missing the original soul attachment's recorded trait installation.");
+        FixtureValue action = battle.GetProperty("Actions").EnumerateArray().Single(row =>
+            row.GetProperty("ScenarioAction").GetBoolean() && row.GetProperty("Action").GetProperty("CardInstanceId").GetInt32() == cardId);
+        var input = action.GetProperty("Action").Deserialize<PlayCardAction>()!;
+        var before = action.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var after = action.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        var card = before.Spawn.Train.Context!.FindCard(cardId)!;
+        var upgrade = card.Permanent.Upgrades.Single(item => item.DataId == installed.Values.DataId);
+        Require(card.DataId == definition.GetProperty("CardId").GetString() && CardJuiceModel.Validate(card) == null &&
+            CardJuiceModel.SimpleUpgrade(upgrade), "Original cast did not use the verified shared Juice path.");
+        var target = before.Spawn.Train.Rooms.Single(room => room.RoomIndex == input.RoomIndex)
+            .Units.Single(unit => unit.Id == input.TargetUnitId);
+        var changed = after.Spawn.Train.Rooms.Single(room => room.RoomIndex == input.RoomIndex)
+            .Units.Single(unit => unit.Id == input.TargetUnitId);
+        int Delta(string id) => (changed.Status(id)?.Stacks ?? 0) - (target.Status(id)?.Stacks ?? 0);
+        Require(target.Team == CombatTeam.Player && changed.Health - target.Health == 10 &&
+            changed.MaxHealth - target.MaxHealth == 10 && Delta("spikes") == 32 && Delta("armor") == 12,
+            "Native unit upgrade, direct status or OnCast status differs.");
+
+        var rejected = JsonSerializer.SerializeToNode(card, ModelJson.Options)!;
+        rejected["MaskDescriptor"]!["Definition"]!["MainEffectNames"]![1] = "CardEffectAddTempCardUpgrade";
+        Require(CardJuiceModel.Validate(rejected.Deserialize<CardInstanceState>(ModelJson.Options)!) != null,
+            "An unverified card-upgrade callback escaped Juice validation.");
+        SolverStageChecks.Native(path, requireVictory: false);
+        Console.WriteLine("ORIGINAL-MOLLIS-CYCLE-OF-LIFE PASS: native soul attachment, +10 HP, +32 Spikes, +12 Armor, complete replay and search.");
+    }
 }

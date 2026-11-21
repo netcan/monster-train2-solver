@@ -55,3 +55,17 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalJuiceUpgrades -Ju
 
 新增类无需复制一套卡牌检查器：继续扩展共用结构契约与批量对照，只有新源码
 分支或实际差异才新增适配。日常检查本组与直接受影响的旧回归，阶段再跑全量。
+
+## Mollis 与生命循环
+
+原版 Mollis T3 的资格筛选接受 Cycle of Life。用原版魂魄接口挂载后，升级记录
+保留 `AvoidClobbering` 和唯一的 `CardTraitJuice4` 修改项。首回合施放消耗 3 余烬，
+使目标获得 10 点生命及生命上限、32 层尖刺、12 点护甲。数值升级沿用已有单位升级
+处理流程，后续直接状态与 OnCast 状态沿用已有倍率。接受的主效果顺序是临时单位
+升级后加状态，附带来源自升级回调的组合仍受现有保护。
+
+隔离战斗用原版临时 Freeze 将卡留到首回合。13 次出牌、5 次 EndTurn、42 个房间
+阶段、9 个列车阶段和 16 条独立分支通过，录制候选和串并行计划逐项一致。原版
+获胜且四项采集计数均为零。二进制归档为
+`tests/compatibility/game-2.3.1/mechanics/mollis-cycle-of-life/battle.mt2f`，
+由 `Check-Game231JuiceMechanism.ps1` 一并验证。

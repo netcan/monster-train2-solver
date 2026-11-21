@@ -20,5 +20,15 @@ if ($LASTEXITCODE) { throw 'Independent Juice callback matrix failed.' }
 if (!$ComponentOnly) {
     dotnet $checker --original-juice-upgrades-only (Join-Path $directory 'battle.mt2f')
     if ($LASTEXITCODE) { throw 'Independent original Juice upgrade battle failed.' }
+    $mollisDirectory = Join-Path $workspace 'tests/compatibility/game-2.3.1/mechanics/mollis-cycle-of-life'
+    $mollis = @(Import-Csv -LiteralPath (Join-Path $mollisDirectory 'manifest.tsv') -Delimiter "`t")
+    $battle = Join-Path $mollisDirectory 'battle.mt2f'
+    if ($mollis.Count -ne 1 -or $mollis[0].path -cne 'battle.mt2f' -or
+        (Get-Item -LiteralPath $battle).Length -ne [long]$mollis[0].bytes -or
+        (Get-FileHash -LiteralPath $battle -Algorithm SHA256).Hash -ine $mollis[0].sha256) {
+        throw 'Original Mollis battle size or hash differs.'
+    }
+    dotnet $checker --original-mollis-cycle-only $battle
+    if ($LASTEXITCODE) { throw 'Independent original Mollis Cycle of Life replay failed.' }
 }
 Write-Output "GAME-231-JUICE-MECHANISM PASS: five original upgrades, 180 native callback pairs; battle included=$(!$ComponentOnly)."

@@ -37,9 +37,12 @@ namespace MonsterTrain2Poju.Model
             upgrade.CloneDamageBase == null && upgrade.CloneHealBase == null &&
             upgrade.ExternalInteractions.All(value => value == "Upgrade traits") &&
             upgrade.Lifecycle is { AddedTraits.Count: 1, RemovedRuntimeTypes.Count: 0,
-                TraitsModified.Count: 0, ReplacedAssets.Count: 0, AvoidClobbering: false } lifecycle &&
+                ReplacedAssets.Count: 0 } lifecycle &&
             IsTrait(lifecycle.AddedTraits[0].RuntimeType) &&
             lifecycle.AddedTraits[0].DeclaredName == lifecycle.AddedTraits[0].RuntimeType &&
+            (lifecycle.AvoidClobbering
+                ? lifecycle.TraitsModified.Count == 1 && lifecycle.TraitsModified[0] == lifecycle.AddedTraits[0].DeclaredName
+                : lifecycle.TraitsModified.Count == 0) &&
             Ordinary(lifecycle.AddedTraits[0], lifecycle.AddedTraits[0].DefinitionParamInt) &&
             lifecycle.AddedTraits[0].ParameterUpgradeCastEffects.Count == 0 &&
             lifecycle.Triggers.All(trigger => trigger.Type == "OnCast" && trigger.ExternalInteractions.Count == 0 &&
@@ -51,14 +54,20 @@ namespace MonsterTrain2Poju.Model
             var descriptor = card.MaskDescriptor!;
             bool KnownEffect(string effect) => effect is "CardEffectAddStatusEffect" or
                 "CardEffectAddTempCardUpgradeToNextDrawnCard" or "CardEffectDraw" or "CardEffectDrawType";
+            var mainEffects = descriptor.Definition.MainEffectNames;
+            // The native unit-upgrade callback does not change unit stats for
+            // Juice. The subsequent status effect uses the ordinary multiplier.
+            bool upgradeThenStatus = mainEffects.Count == 2 &&
+                mainEffects[0] == "CardEffectAddTempCardUpgradeToUnits" &&
+                mainEffects[1] == "CardEffectAddStatusEffect";
             if (descriptor.Definition.DataId != card.DataId || descriptor.Definition.CardType != "Spell" ||
                 descriptor.Definition.XCost || descriptor.Definition.IsSpawner || descriptor.Definition.HasSpawnData ||
                 descriptor.Definition.AuthoredGraft || descriptor.PermanentGraft || descriptor.GraftedEquipment != null ||
                 descriptor.AuthoredCastEffects.Any(effect => !KnownEffect(effect)) ||
                 descriptor.PermanentReplacements.Count != 0 ||
                 descriptor.SourceTraits is not { Count: 0 } || descriptor.KillTriggers?.Count is > 0 ||
-                descriptor.SpareTriggers?.Count is > 0 || descriptor.Definition.MainEffectNames.Count == 0 ||
-                descriptor.Definition.MainEffectNames.Any(effect => !KnownEffect(effect)) ||
+                descriptor.SpareTriggers?.Count is > 0 || mainEffects.Count == 0 ||
+                !upgradeThenStatus && mainEffects.Any(effect => !KnownEffect(effect)) ||
                 card.Permanent.Upgrades.Count != 1 || !SimpleUpgrade(card.Permanent.Upgrades[0]) ||
                 card.Temporary.Upgrades.Any(upgrade => !SimpleStatusPayload(upgrade)) || card.StatusScalingTraits?.Count is > 0 ||
                 card.DamageScalingTraits?.Count is > 0 || card.UnitUpgradeScalingTraits?.Count is > 0 ||
