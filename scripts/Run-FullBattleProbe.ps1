@@ -733,6 +733,7 @@ param(
     [switch] $OriginalHephsBlueprints,
     [switch] $OriginalHephsEquipmentPool,
     [switch] $OriginalChangedTempUpgradeRelics,
+    [switch] $OriginalAffordableNonPlayable,
     [switch] $OriginalRageOnBurnoutStackLoss,
     [switch] $OriginalPyreRevenge,
     [switch] $OriginalExtractForEmberAndEchos,
@@ -1437,6 +1438,12 @@ if ($OriginalHephsEquipmentPool -and ($OriginalHephsBlueprints -or $InputProfile
 if ($OriginalChangedTempUpgradeRelics) {
     if (-not $BinaryCapture) { throw 'OriginalChangedTempUpgradeRelics requires binary capture.' }
     $BranchCardMasks = $true
+}
+if ($OriginalAffordableNonPlayable) {
+    if (-not $BinaryCapture) { throw 'OriginalAffordableNonPlayable requires binary capture.' }
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = 'units-and-junk'
 }
 if ($OriginalRageOnBurnoutStackLoss) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPyreRevenge) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -2669,6 +2676,7 @@ if ($OriginalHephsEquipmentPool) {
     $environment['MT2_PROBE_HEPHS_POOL_CONTROLS'] = '1'
 }
 if ($OriginalChangedTempUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-changed-temp-upgrade-relics' }
+if ($OriginalAffordableNonPlayable) { $environment['MT2_PROBE_MODIFIERS'] = 'original-affordable-nonplayable' }
 if ($OriginalRageOnBurnoutStackLoss) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rage-on-burnout-stack-loss' }
 if ($RankThreeRoomSlayExecution) { $environment['MT2_PROBE_MODIFIERS'] = 'rank-three-room-slay-execution' }
 if ($OriginalPyreRevenge) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-revenge' }
@@ -3092,6 +3100,14 @@ if ($EnchantmentCombatOnly) {
     } finally { $componentDocument.Dispose() }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
         ModelAcceptance='Pending independent focused checker'; Trace=$componentPath } | ConvertTo-Json
+    return
+}
+if ($OriginalAffordableNonPlayable) {
+    $capturePath = Join-Path $profile 'affordable-nonplayable.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original affordable nonplayable component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Original affordable nonplayable capture failed; inspect $unityLog" }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true; Trace=$capturePath } | ConvertTo-Json
     return
 }
 if ($OriginalChangedTempUpgradeRelics) {

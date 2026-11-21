@@ -874,6 +874,13 @@ namespace MonsterTrain2Poju.Probe
             {
                 return;
             }
+            if (fullBattle && OriginalAffordableNonPlayableScenario.Enabled)
+            {
+                OriginalAffordableNonPlayableScenario.Tick(managers, log);
+                if (OriginalAffordableNonPlayableScenario.Error is string error) throw new InvalidOperationException(error);
+                if (OriginalAffordableNonPlayableScenario.Completed) Finish(true, "Original affordable nonplayable component captured.");
+                return;
+            }
             if (fullBattle && OriginalChangedTempUpgradeRelicsScenario.Enabled)
             {
                 OriginalChangedTempUpgradeRelicsScenario.Run(managers, log);

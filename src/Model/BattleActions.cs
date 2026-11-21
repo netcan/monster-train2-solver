@@ -551,7 +551,8 @@ namespace MonsterTrain2Poju.Model
                 context.IsolatedBattlePreview == true || target.Preview);
             if (!pyreCost.Supported) return Unsupported(pyreCost.UnsupportedReason!);
             if (!pyreCost.CanPay) return Illegal("Insufficient energy.");
-            if (rule.CostType == "NonPlayable") return Unsupported("Affordable NonPlayable card execution requires native calibration.");
+            if (rule.CostType == "NonPlayable" && !IsOriginalNonPlayableSummon(originalRule))
+                return Unsupported("Affordable NonPlayable card execution requires native calibration.");
             if (playingInstance != null)
             {
                 string? corruptionError = CardCorruptRestrictedModel.Test(context, playingInstance, action.RoomIndex, out bool corruptionAllowed);
@@ -1711,6 +1712,13 @@ namespace MonsterTrain2Poju.Model
             }
             return null;
         }
+        private static bool IsOriginalNonPlayableSummon(CardPlayRule rule) =>
+            rule.DataId == "0127e3c2-b60d-4ac3-acf7-6395d44eb5ef" && rule.AssetKey == "ShatteringDarkshard" &&
+            rule.Cost == 1 && rule.CardType == "Monster" && rule.Effect == "SpawnMonster" && rule.Destination == "Standby" &&
+            rule.Summon == null && rule.Effects.Count == 0 && rule.OnCastEffects.Count == 0 &&
+            rule.SpawnUnit is { AssetKey: "MonsterShatteringDarkshard", Team: CombatTeam.Player, Attack: 0, MaxHealth: 10, Size: 1,
+                Ability.DataId: "0a24d29d-d009-43c0-8d98-2eb6ee90fe28" };
+
         private static BattleActionResult Illegal(string reason) => new BattleActionResult(null, ActionRejection.Illegal, reason);
         private static BattleActionResult Unsupported(string reason) => new BattleActionResult(null, ActionRejection.Unsupported, reason);
     }
