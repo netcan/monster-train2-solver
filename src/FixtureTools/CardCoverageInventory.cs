@@ -11,7 +11,10 @@ internal static class CardCoverageInventory
     private const string CurrentGameModule = Game231FixtureCatalog.Module;
     private const string CurrentCatalog = "mechanics/halo/catalog.mt2f";
     private const string CurrentCatalogHash = "6cf391b6b184667761eaf02df6cdd8fa4d8f2ac435c32d8b9f2c6e97a1302208";
+    private const string PreviousReleaseCatalogHash = "ddff96f4e067175bc50c62b8954eea65da0997a23e858d085272717954c173e1";
+    private const string CurrentReleaseCatalogHash = "54c7537846a3424f4ae567810bee9e01705bffcaf838cca300b4fc5ad91eb19c";
     private static readonly string[] BattleCounters = ["CaptureFailures", "Mismatches", "Unsupported", "Pending"];
+    private static readonly string[] PriorityDefinitionFields = ["Effects", "Traits", "Triggers", "Rule"];
     private sealed class Card(FixtureValue definition)
     {
         internal readonly FixtureValue Definition = definition;
@@ -28,6 +31,16 @@ internal static class CardCoverageInventory
         internal string Coverage = "unreviewed";
         internal int DirectPlays => Evidence.Values.Sum(value => value.Direct.Count);
         internal int OtherPlays => Evidence.Values.Sum(value => value.Other.Count);
+        internal string PlayEvidence => DirectPlays > 0 ? "definition-matched-play" :
+            OtherPlays > 0 ? "identity-observed" : "no-recorded-play";
+
+        internal (string Archive, string Action) FirstPlayWitness()
+        {
+            bool matched = DirectPlays > 0;
+            var witness = Evidence.FirstOrDefault(pair => (matched ? pair.Value.Direct : pair.Value.Other).Count > 0);
+            if (witness.Value == null) return ("", "");
+            return (witness.Key, (matched ? witness.Value.Direct : witness.Value.Other)[0].ToString(CultureInfo.InvariantCulture));
+        }
     }
     private sealed class Plays
     {
@@ -97,16 +110,70 @@ internal static class CardCoverageInventory
         var eligibleIds = eligible.Select(card => card.Id).ToHashSet(StringComparer.Ordinal);
         foreach (Card card in cards.OrderBy(card => card.Id, StringComparer.Ordinal))
         {
-            bool matchedPlay = card.DirectPlays > 0;
-            var witness = card.Evidence.FirstOrDefault(pair => (matchedPlay ? pair.Value.Direct : pair.Value.Other).Count > 0);
-            int? witnessIndex = witness.Value == null ? null : (matchedPlay ? witness.Value.Direct : witness.Value.Other)[0];
+            var (archive, action) = card.FirstPlayWitness();
             Row(report, CurrentVersion, CurrentGameModule, card.Id, card.Name, card.Role,
-                eligibleIds.Contains(card.Id) ? "yes" : "no",
-                matchedPlay ? "definition-matched-play" : card.OtherPlays > 0 ? "identity-observed" : "no-recorded-play",
+                eligibleIds.Contains(card.Id) ? "yes" : "no", card.PlayEvidence,
                 card.DirectPlays.ToString(CultureInfo.InvariantCulture), card.OtherPlays.ToString(CultureInfo.InvariantCulture),
-                witness.Key ?? "", witnessIndex?.ToString(CultureInfo.InvariantCulture) ?? "");
+                archive, action);
         }
         string output = Path.Combine(workspace, "results", "card-evidence-" + CurrentVersion + ".tsv");
+        var priority = BuildPriorityReport(directory, registrations, eligible);
+        string priorityOutput = Path.Combine(workspace, "results", "card-priority-version-delta-" + CurrentVersion + ".tsv");
+        WriteCurrentReport(output, report, check);
+        WriteCurrentReport(priorityOutput, priority.Report, check);
+        int matched = eligible.Count(card => card.DirectPlays > 0);
+        int identityOnly = eligible.Count(card => card.DirectPlays == 0 && card.OtherPlays > 0);
+        Console.WriteLine($"CARD-EVIDENCE {CurrentVersion} {(check ? "CHECK" : "WRITE")} PASS archived={registrations.Count} settledBattles={indexed} wins={wins} stageBattles={stage} excludedBattles={excluded} acceptedActions={actions} excludedActions={excludedActions} unresolvedIdentities={unresolved} outsideCatalog={outsideCatalog}");
+        Console.WriteLine($"logbook={cards.Count(card => card.Logbook)} eligible={eligible.Length} definitionMatched={matched} identityObservedOnly={identityOnly} noRecordedPlay={eligible.Length - matched - identityOnly} missingDefinitionMatch={eligible.Length - matched} report={output}");
+        Console.WriteLine($"priority={priority.Total} definitionMatched={priority.Matched} identityObservedOnly={priority.Identity} noRecordedPlay={priority.Total - priority.Matched - priority.Identity} report={priorityOutput}");
+    }
+
+    private static (StringBuilder Report, int Total, int Matched, int Identity) BuildPriorityReport(string directory,
+        IReadOnlyDictionary<string, Game231FixtureRegistration> registrations, Card[] eligible)
+    {
+        using var previous = ReadReleaseCatalog("2.2.1", GameModule, PreviousReleaseCatalogHash);
+        using var current = ReadReleaseCatalog(CurrentVersion, CurrentGameModule, CurrentReleaseCatalogHash);
+        var previousCards = Array(previous.RootElement, "Cards").ToDictionary(card => Text(card, "Id"), StringComparer.Ordinal);
+        var currentCards = Array(current.RootElement, "Cards").ToDictionary(card => Text(card, "Id"), StringComparer.Ordinal);
+        var report = new StringBuilder();
+        Row(report, "DataId", "AssetKey", "ChangedFields", "Evidence", "WitnessArchive", "WitnessActionIndex");
+        int total = 0, matched = 0, identity = 0;
+        foreach (Card card in eligible.OrderBy(card => card.Name, StringComparer.Ordinal).ThenBy(card => card.Id, StringComparer.Ordinal))
+        {
+            FixtureValue definition = currentCards[card.Id];
+            Require(Flag(definition, "AppearsInLogbook") && Text(definition, "AssetKey") == card.Name,
+                "Current release catalog identity differs for " + card.Id);
+            string differences = !previousCards.TryGetValue(card.Id, out FixtureValue before) || !Flag(before, "AppearsInLogbook")
+                ? "new-logbook" : string.Join(',', PriorityDefinitionFields.Where(field =>
+                    !Equivalent(before.GetProperty(field), definition.GetProperty(field))));
+            if (differences.Length == 0) continue;
+            var (archive, action) = card.FirstPlayWitness();
+            Row(report, card.Id, card.Name, differences, card.PlayEvidence, archive, action);
+            total++;
+            if (card.DirectPlays > 0) matched++;
+            else if (card.OtherPlays > 0) identity++;
+        }
+        return (report, total, matched, identity);
+
+        FixtureDocument ReadReleaseCatalog(string version, string module, string hash)
+        {
+            string path = version + "/card-catalog.mt2f";
+            Require(registrations.TryGetValue(path, out var registration) && registration.Sha256 == hash,
+                "Release comparison catalog manifest changed for " + version);
+            var document = FixtureDocument.Read(registrations[path].Verify(directory));
+            FixtureValue root = document.RootElement;
+            Require(root.GetProperty("Schema").GetInt32() == 1 && Text(root, "Scope") == "AllGameData" &&
+                Text(root, "GameVersion") == version && Text(root, "GameModuleMvid") == module &&
+                Flag(root, "BranchCardMasksEnabled") && Flag(root, "DecisionUnchanged") &&
+                root.GetProperty("FrameBefore").ContentEquals(root.GetProperty("FrameAfter")) &&
+                root.GetProperty("RngBefore").ContentEquals(root.GetProperty("RngAfter")),
+                "Release comparison catalog identity/state/RNG/frame guard failed for " + version);
+            return document;
+        }
+    }
+
+    private static void WriteCurrentReport(string output, StringBuilder report, bool check)
+    {
         string content = report.ToString();
         if (check) Require(File.Exists(output) && File.ReadAllText(output) == content, "Current card evidence report is missing or stale: " + output);
         else
@@ -114,10 +181,6 @@ internal static class CardCoverageInventory
             Directory.CreateDirectory(Path.GetDirectoryName(output)!);
             File.WriteAllText(output, content, new UTF8Encoding(false));
         }
-        int matched = eligible.Count(card => card.DirectPlays > 0);
-        int identityOnly = eligible.Count(card => card.DirectPlays == 0 && card.OtherPlays > 0);
-        Console.WriteLine($"CARD-EVIDENCE {CurrentVersion} {(check ? "CHECK" : "WRITE")} PASS archived={registrations.Count} settledBattles={indexed} wins={wins} stageBattles={stage} excludedBattles={excluded} acceptedActions={actions} excludedActions={excludedActions} unresolvedIdentities={unresolved} outsideCatalog={outsideCatalog}");
-        Console.WriteLine($"logbook={cards.Count(card => card.Logbook)} eligible={eligible.Length} definitionMatched={matched} identityObservedOnly={identityOnly} noRecordedPlay={eligible.Length - matched - identityOnly} missingDefinitionMatch={eligible.Length - matched} report={output}");
     }
 
     private static void AttachKillTriggerDefinitions(FixtureValue catalogRoot, Dictionary<string, Card> byId)
