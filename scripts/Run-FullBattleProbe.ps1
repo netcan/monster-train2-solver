@@ -977,6 +977,7 @@ if ($OriginalOuterBossTrial -and -not $OriginalOuterBossVariant -and -not $early
 if ($earlyTrialSubstitution -and (-not $BinaryCapture -or $Policy -ne 'units-spells-and-junk' -or $PlayerAdvisor -or $Advisor -or $Planner -or $RollingInput -or $RollingAdvice)) {
     throw 'The original Ring 3 Titan Trial substitution component requires binary capture and the isolated units-spells-and-junk policy.'
 }
+if ($earlyTrialSubstitution -and -not $OriginalEarlyOuterBossTrialBattle) { $BranchCardMasks = $true }
 if ($TrueFinalBossMaximumSacrificeRetainMax -and -not $TrueFinalBossMaximumSacrifice) { throw 'Retained maximum-health sacrifice requires an explicit original boss target.' }
 if ($TrueFinalBossMaximumTerminalCommand -and -not $TrueFinalBossMaximumSacrifice) { throw 'Terminal command control requires the original maximum-health battle prefix.' }
 if ($TrueFinalBossMaximumSacrifice) { $TrueFinalBossMaximumBattle = $true }
@@ -3232,8 +3233,12 @@ if ($earlyTrialSubstitution) {
         }
     } finally { $document.Dispose() }
     if (-not $OriginalEarlyOuterBossTrialBattle) {
+        if ($capture.BranchCardMasksEnabled -ne $true -or $capture.Mismatches -ne 0) {
+            throw "Original Ring 3 Titan Trial substitution component has missing card state or mismatches. Inspect $capturePath and $unityLog"
+        }
         [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true; Source=$capture.Source;
-            Replacement=$capture.Replacement; Unsupported=$capture.Unsupported; ProjectionInteractions=$capture.Projection.ExternalInteractions;
+            Replacement=$capture.Replacement; Mismatches=$capture.Mismatches; Unsupported=$capture.Unsupported;
+            ProjectionInteractions=$capture.Projection.ExternalInteractions;
             Trace=$capturePath; Birth=$birthPath } | ConvertTo-Json
         return
     }

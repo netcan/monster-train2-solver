@@ -234,7 +234,8 @@ namespace MonsterTrain2Poju.Probe
                 Scenario = save.GetCurrentScenarioData().name, OwnerId = earlyTrialOwner.GetID(), OwnerKey = earlyTrialOwner.name,
                 Source = source.GetAssetKey(), SourceId = source.GetID(), Replacement = replacement.GetAssetKey(), ReplacementId = replacement.GetID(),
                 OuterBoss = unit.IsOuterTrainBoss(), Turn = managers.GetCombatManager().GetTurnCount(), Room = unit.GetCurrentRoomIndex(),
-                Projection = new { Key = projected.Unit.AssetKey, projected.ExternalInteractions }, trace.Unsupported,
+                Projection = new { Key = projected.Unit.AssetKey, projected.ExternalInteractions }, trace.Unsupported, trace.Mismatches,
+                BranchCardMasksEnabled = CardBranchMaskProbe.Enabled,
                 Mappings = earlyTrialEntries.Select(entry => new { Source = entry.UnitBefore.GetAssetKey(), Replacement = entry.UnitAfter.GetAssetKey() }).ToArray(),
                 Unit = trace.CaptureUnit(unit), Intro = TrialIntroControl, TitanTrial = save.IsTitanTrialEnabled() });
             using var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "early-titan-trial-substitution.mt2f"));
