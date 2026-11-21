@@ -112,9 +112,27 @@ internal static class ExactBattleChecks
         var limited = ExactBattleSolver.Minimize(earlier, options: new ExactBattleOptions(1, TimeSpan.FromSeconds(15)));
         Require(limited.ReachedNodeLimit && limited.ExpandedNodes == 1 && !limited.CertifiedTerminalOptimal &&
             !limited.CertifiedHorizonOptimal, "Node cutoff was ignored or certified.");
+        CheckDeadline(root!, null, result.Outcome);
+        CheckDeadline(earlier, 1, RoomOutcome.Exchanged);
         Require(Json(root) == parent, "Exact solver mutated its native parent.");
         Console.WriteLine("EXACT-BATTLE PASS: native terminal optimality certificate, complete state/RNG and independent replay; " +
-            "node/time/cancellation/unsupported/horizon certificates distinguished.");
+            "node/time/cancellation/unsupported/horizon certificates distinguished, with completed leaves retained at cutoff.");
+
+        static void CheckDeadline(BattleTurnState source, int? horizon, RoomOutcome expected)
+        {
+            int checks = 0;
+            // These recorded EndTurns resolve directly. Expire the budget at
+            // the first check after the root expansion resolves its successors.
+            var expired = ExactBattleSolver.MinimizeCore(source, null, new ExactBattleOptions(64, turnHorizon: horizon),
+                CancellationToken.None, () => ++checks > 1);
+            Require(expired.TimedOut && !expired.Cancelled && expired.ExpandedNodes == 1 &&
+                expired.Outcome == expected && expired.Steps.Count == 1 && expired.Steps[0].IsEndTurn &&
+                expired.TerminalLeaves == (horizon.HasValue ? 0 : 1) && expired.HorizonLeaves == (horizon.HasValue ? 1 : 0) &&
+                !expired.ExhaustedEnumeratedFrontier && !expired.CertifiedTerminalOptimal && !expired.CertifiedHorizonOptimal,
+                "Exact cutoff discarded a completed native leaf or certified an interrupted frontier.");
+            var replay = BattlePlannerChecks.Replay(source, expired.Steps, out var outcome);
+            Require(outcome == expected && Json(replay) == Json(expired.State), "Exact cutoff result failed complete-state replay.");
+        }
     }
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }

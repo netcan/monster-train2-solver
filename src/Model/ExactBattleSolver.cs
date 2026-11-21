@@ -61,10 +61,16 @@ namespace MonsterTrain2Poju.Model
         public static ExactBattleResult Minimize(BattleTurnState source,
             Func<BattleTurnState, RoomOutcome, double>? evaluate = null, ExactBattleOptions? options = null,
             CancellationToken cancellationToken = default)
+            => MinimizeCore(source, evaluate, options, cancellationToken);
+
+        internal static ExactBattleResult MinimizeCore(BattleTurnState source,
+            Func<BattleTurnState, RoomOutcome, double>? evaluate, ExactBattleOptions? options,
+            CancellationToken cancellationToken, Func<bool>? deadlineReached = null)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             evaluate ??= BattlePlanner.Evaluate; options ??= new ExactBattleOptions();
             var watch = Stopwatch.StartNew();
+            deadlineReached ??= () => watch.Elapsed >= options.TimeLimit;
             using var keys = new BattleStateKeys();
             var visited = new HashSet<string>(StringComparer.Ordinal);
             var pending = new Stack<Node>();
@@ -76,16 +82,10 @@ namespace MonsterTrain2Poju.Model
             while (pending.Count > 0)
             {
                 cancelled = cancellationToken.IsCancellationRequested;
-                timedOut = watch.Elapsed >= options.TimeLimit;
+                timedOut = deadlineReached();
                 if (cancelled || timedOut) break;
                 Node node = pending.Pop();
-                if (Terminal(node.Outcome) || options.TurnHorizon.HasValue && node.Turns >= options.TurnHorizon.Value)
-                {
-                    if (Terminal(node.Outcome)) terminals++; else horizons++;
-                    double value = Value(node);
-                    if (best == null || value < score) { best = node; score = value; }
-                    continue;
-                }
+                if (ConsiderLeaf(node)) continue;
                 string key = keys.Key(node.State) + (options.TurnHorizon.HasValue ? "/" + node.Turns : "");
                 if (!visited.Add(key)) { duplicates++; continue; }
                 if (nodes >= options.MaxNodes) { limited = true; break; }
@@ -99,14 +99,23 @@ namespace MonsterTrain2Poju.Model
                     pending.Push(new Node(candidate.Result.State!, candidate.Result.Outcome, node,
                         new BattleSearchStep(candidate.Action, false), node.Turns));
                 BattleEndTurnFrontier ends = BattleEndTurnModel.Enumerate(node.State, Math.Max(0, options.MaxNodes - nodes),
-                    () => cancellationToken.IsCancellationRequested || watch.Elapsed >= options.TimeLimit);
+                    () => cancellationToken.IsCancellationRequested || deadlineReached());
                 nodes += ends.ChoiceNodes; limited |= ends.ReachedNodeLimit;
                 cancelled |= cancellationToken.IsCancellationRequested;
-                timedOut |= watch.Elapsed >= options.TimeLimit;
+                timedOut |= deadlineReached();
                 unsupported.AddRange(ends.UnsupportedAttempts);
                 foreach (BattleEndTurnCandidate end in ends.Candidates.Reverse())
                     pending.Push(new Node(end.Result.State!, end.Result.Outcome, node, end.Step, node.Turns + 1));
             }
+            // A cutoff prevents further expansions, but the frontier already
+            // contains fully simulated successors. Keep finished leaves in stack order.
+            cancelled |= cancellationToken.IsCancellationRequested;
+            if (!cancelled && (timedOut || limited))
+                foreach (Node completed in pending)
+                {
+                    if (cancellationToken.IsCancellationRequested) { cancelled = true; break; }
+                    if (completed.Step != null) ConsiderLeaf(completed);
+                }
             watch.Stop();
             Node chosen = best ?? fallback;
             var steps = new List<BattleSearchStep>();
@@ -114,6 +123,16 @@ namespace MonsterTrain2Poju.Model
             steps.Reverse();
             return new ExactBattleResult(chosen.State, chosen.Outcome, Value(chosen), steps, nodes, duplicates,
                 terminals, horizons, limited, timedOut, cancelled, watch.Elapsed, unsupported);
+
+            bool ConsiderLeaf(Node node)
+            {
+                if (Terminal(node.Outcome)) terminals++;
+                else if (options.TurnHorizon.HasValue && node.Turns >= options.TurnHorizon.Value) horizons++;
+                else return false;
+                double value = Value(node);
+                if (best == null || value < score) { best = node; score = value; }
+                return true;
+            }
             double Value(Node node)
             {
                 double value = evaluate(node.State, node.Outcome);
