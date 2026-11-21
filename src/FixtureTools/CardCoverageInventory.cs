@@ -773,9 +773,8 @@ internal static class CardCoverageInventory
     }
 
     // Only these root fields describe decision-context eligibility/order rather than
-    // card definitions. Missing null properties are equivalent across capture schemas;
-    // only two omitted SpawnUnit.Modifiers defaults and the ordinary Funguy
-    // fallback's context-conditional bump defaults have additional calibration.
+    // card definitions. Missing null properties are equivalent across capture schemas.
+    // Other differences require a specific capture default or a verified projection.
     private static bool Equivalent(FixtureValue left, FixtureValue right, bool ruleRoot = false,
         bool legacyMask = false, bool cardRule = false, string path = "$", bool currentBuild = false)
     {
@@ -788,6 +787,13 @@ internal static class CardCoverageInventory
                 !(ruleRoot && property.Name is "ForgeEligible" or "UnplayedNegativeOrder");
             var a = left.EnumerateObject().Where(Include).ToDictionary(property => property.Name, property => property.Value, StringComparer.Ordinal);
             var b = right.EnumerateObject().Where(Include).ToDictionary(property => property.Name, property => property.Value, StringComparer.Ordinal);
+            if (currentBuild && cardRule && ruleRoot && IsEmptyArray(a, "OnCastEffects") && IsEmptyArray(b, "OnCastEffects"))
+            {
+                // With zero effects CardTriggerGroupModel accepts both encodings.
+                const string groups = "OnCastEffectGroupSizes";
+                if (!b.ContainsKey(groups) && IsEmptyArray(a, groups)) a.Remove(groups);
+                if (!a.ContainsKey(groups) && IsEmptyArray(b, groups)) b.Remove(groups);
+            }
             if (cardRule && path == "$.SpawnUnit.Modifiers")
             {
                 if (a.TryGetValue("IsChampion", out FixtureValue isChampion) && isChampion.ValueKind == FixtureKind.False &&
@@ -806,9 +812,14 @@ internal static class CardCoverageInventory
                 if (!a.ContainsKey(key) && b.TryGetValue(key, out FixtureValue captured) && captured.ValueKind == FixtureKind.True)
                     b.Remove(key);
             }
-            if (currentBuild && path == "$.SpawnUnit" && !a.ContainsKey("BumpRules") &&
-                b.TryGetValue("BumpRules", out FixtureValue physicalDefaults) && IsOrdinaryBumpDefault(physicalDefaults))
-                b.Remove("BumpRules");
+            if (currentBuild && path == "$.SpawnUnit")
+            {
+                if (!a.ContainsKey("BumpRules") && b.TryGetValue("BumpRules", out FixtureValue physicalDefaults) &&
+                    IsOrdinaryBumpDefault(physicalDefaults)) b.Remove("BumpRules");
+                // EnemySpawningProbe emits native MoonPhase.None when mask capture is enabled.
+                if (!a.ContainsKey("MoonPhaseMask") && b.TryGetValue("MoonPhaseMask", out FixtureValue moonPhase) &&
+                    moonPhase.ValueKind == FixtureKind.Number && moonPhase.GetInt32() == 4) b.Remove("MoonPhaseMask");
+            }
             if (cardRule && path.Contains(".MaskDescriptor.KillTriggers[", StringComparison.Ordinal) &&
                 path.EndsWith(".SpawnFallbackUnit", StringComparison.Ordinal) && Text(left, "AssetKey") == "MonsterFunguy" &&
                 !a.ContainsKey("BumpRules") && b.TryGetValue("BumpRules", out FixtureValue bump) &&
@@ -843,6 +854,9 @@ internal static class CardCoverageInventory
         if (left.ValueKind == FixtureKind.Number) return left.GetDouble() == right.GetDouble();
         return left.ContentEquals(right);
     }
+
+    private static bool IsEmptyArray(Dictionary<string, FixtureValue> fields, string name) =>
+        fields.TryGetValue(name, out FixtureValue value) && value.ValueKind == FixtureKind.Array && value.GetArrayLength() == 0;
 
     private static bool IsOrdinaryBumpDefault(FixtureValue bump) =>
         bump.ValueKind == FixtureKind.Object && bump.EnumerateObject().Count() == 5 &&
