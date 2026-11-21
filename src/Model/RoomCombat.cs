@@ -2334,7 +2334,8 @@ namespace MonsterTrain2Poju.Model
                     target.Apply(target.Freeze().WithSacrifice(0));
                     if (!TryRevive(null, target, 0))
                     {
-                        Death(null, target, 0, sacrifice: true);
+                        Death(null, target, 0, sacrifice: true,
+                            maximumHealthSacrifice: linkedContext != null && changed.MaxHealth == 0);
                         if (!source.Preview && context?.SpawnPoints != null) CenterAfterSummon();
                     }
                 }
@@ -3697,12 +3698,12 @@ namespace MonsterTrain2Poju.Model
 
             private void Death(WorkingUnit? actor, WorkingUnit target, int sourceCardId, bool deferRemoval = false, bool sacrifice = false,
                 bool immediateHarvest = false, bool doNotFullyRemove = false, bool returnSpawnerAfterQueue = false,
-                WorkingUnit? waitForRevival = null)
+                WorkingUnit? waitForRevival = null, bool maximumHealthSacrifice = false)
             {
                 if (target.DeathFinished) return;
                 if (!source.Preview && target.Health == 0 && TrueFinalBossTerminalCombatModel.SupportsRoot(source, target.Source.Id,
                     plainSpellDamage: plainSpellDamage && actor == null && sourceCardId > 0, triggeredCommand: triggeredCommand,
-                    ordinaryPyreAttack: ordinaryPyreAttack && actor?.Source.IsPyre == true))
+                    ordinaryPyreAttack: ordinaryPyreAttack && actor?.Source.IsPyre == true, maximumHealthSacrifice: maximumHealthSacrifice))
                 {
                     RemoveTrueFinalBossGroup(actor, target, sourceCardId);
                     return;

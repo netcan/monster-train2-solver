@@ -53,7 +53,7 @@ namespace MonsterTrain2Poju.Model
             if (linked)
             {
                 bool terminal = health <= 0;
-                if (terminal && !TrueFinalBossTerminalCombatModel.SupportsRoot(state, targetId))
+                if (terminal && !TrueFinalBossTerminalCombatModel.SupportsRoot(state, targetId, maximumHealthSacrifice: debuff && maxHealth == 0))
                     return Unsupported("Linked maximum-health sacrifice requires the original unprotected final-boss group and supported floor observers.");
                 context = LinkedBossHealthModel.WithMaximumHealth(context!, targetId, health, maxHealth, out string? linkedError, allowTerminal: terminal);
                 if (context == null) return Unsupported(linkedError!);
