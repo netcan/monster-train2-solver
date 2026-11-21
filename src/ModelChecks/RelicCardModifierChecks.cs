@@ -349,7 +349,12 @@ internal static class RelicCardModifierChecks
     {
         if (!root.TryGetProperty("RelicCardModifiersEnabled", out var enabled) || !enabled.GetBoolean())
         { Require(!required, "Fixture lacks enabled native relic manager card modifiers."); return; }
-        Require(root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
+        string? module = root.GetProperty("GameModuleMvid").GetString();
+        bool currentPermafrost = module == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
+            root.GetProperty("GameVersion").GetString() == "2.3.1" && root.GetProperty("Schema").GetInt32() == 235 &&
+            root.TryGetProperty("ModifierScenario", out var currentScenario) &&
+            currentScenario.GetString() == "original-expensive-card-upgrade";
+        Require((module == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" || currentPermafrost) &&
             root.GetProperty("CaptureFailures").GetInt32() == 0 && root.GetProperty("Pending").GetInt32() == 0,
             "Native relic manager capture is incomplete or from another game build.");
         var rows = root.GetProperty("RelicCardModifiers").EnumerateArray().Select(row => (

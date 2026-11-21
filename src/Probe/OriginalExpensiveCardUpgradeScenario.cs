@@ -21,8 +21,10 @@ namespace MonsterTrain2Poju.Probe
         private static bool mark;
         private static bool control;
         private static bool observing;
+        private static bool? copyExcludesPermafrost;
         internal static object Evidence => new { OwnerId = RelicExpensiveCardUpgradeModel.DataId, Units, Carriers,
-            Roles = new[] { "three-cost-spell", "two-cost-spell", "zero-X-spell", "retained-four-cost", "cost-threshold-cycle", "three-cost-monster" } };
+            Roles = new[] { "three-cost-spell", "two-cost-spell", "zero-X-spell", "retained-four-cost", "cost-threshold-cycle", "three-cost-monster" },
+            CopyExcludesPermafrost = copyExcludesPermafrost };
         internal sealed class Record
         {
             public string Kind { get; set; } = "";
@@ -42,13 +44,6 @@ namespace MonsterTrain2Poju.Probe
         {
             SaveManager save = managers.GetSaveManager(); AllGameData data = save.GetAllGameData();
             if (Acquired || save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle) throw new InvalidOperationException("Expected pre-battle Permafrost acquisition.");
-            CardData steward = save.GetDeckState().Select(card => data.FindCardData(card.GetCardDataID()))
-                .First(card => card?.GetSpawnCharacterData()?.name.StartsWith("TrainSteward", StringComparison.Ordinal) == true)!;
-            CharacterData unit = steward.GetSpawnCharacterData()!;
-            Set(unit, "health", 80); Set(unit, "attackDamage", 30); Set(unit, "size", 1); Set(unit, "unitAbility", null!);
-            Set(unit, "triggers", new List<CharacterTriggerData>()); Set(unit, "startingStatusEffects", Array.Empty<StatusEffectStackData>());
-            Set(steward, "cost", 0); Set(steward, "traits", new List<CardTraitData>()); save.GetDeckState().Clear();
-            for (int i = 0; i < 2; i++) save.AddCardToDeck(steward, applyExistingRelicModifiers: false, showAnimation: false, notifyDeckCount: false);
             save.AddRelic(data.GetAllCollectableRelicData().Single(relic => relic.GetID() == RelicExpensiveCardUpgradeModel.DataId));
             string? error = RelicModel.Validate(new[] { RelicProbe.Capture(managers).Single(owner => owner.DataId == RelicExpensiveCardUpgradeModel.DataId) });
             if (error != null) throw new InvalidOperationException(error);
@@ -57,33 +52,53 @@ namespace MonsterTrain2Poju.Probe
         internal static void PrepareDeployment(AllGameManagers managers)
         {
             if (Prepared || managers.GetCombatManager()!.GetTurnCount() != 0) throw new InvalidOperationException("Expected one Permafrost deployment setup.");
-            CardManager cards = managers.GetCardManager()!; AllGameData data = managers.GetSaveManager().GetAllGameData();
-            Units = cards.GetHand().Select(FullBattleTrace.Active!.CardId).ToArray();
-            CardData spell = data.GetAllCardData().First(card => card.GetCardType() == CardType.Spell);
-            CardData steward = data.FindCardData(cards.GetHand()[0].GetCardDataID())!;
-            var created = new List<CardState>(); int[] costs = { 3, 2, 0, 4, 2, 3 };
-            for (int i = 0; i < costs.Length; i++)
+            CardManager cards = managers.GetCardManager()!;
+            SaveManager save = managers.GetSaveManager();
+            AllGameData data = save.GetAllGameData();
+            CardState[] units = cards.GetHand().Where(card => card.GetSpawnCharacterData() != null).Take(2).ToArray();
+            if (units.Length != 2) throw new InvalidOperationException("Two original unit cards are required in the deployment hand.");
+            Units = units.Select(FullBattleTrace.Active!.CardId).ToArray();
+            foreach (CardState unit in units)
             {
-                CardData card = UnityEngine.Object.Instantiate(i == 5 ? steward : spell); card.name = "PojuExpensiveCard" + i;
-                Set(card, "id", "bc057005-0000-4000-8000-00000000000" + i); Set(card, "cost", costs[i]);
-                Set(card, "costType", i == 2 ? CardData.CostType.ConsumeRemainingEnergy : CardData.CostType.Default);
-                Set(card, "targetless", true); Set(card, "targetsRoom", true); Set(card, "isUnitAbility", false); Set(card, "isRoomAbility", false);
-                Set(card, "traits", new List<CardTraitData>()); Set(card, "startingUpgrades", new List<CardUpgradeData>());
-                Set(card, "triggers", new List<CardTriggerEffectData>()); Set(card, "effectTriggers", new List<CharacterTriggerData>());
-                if (i != 5) Set(card, "effects", new List<CardEffectData>());
-                ((List<CardData>)AccessTools.Field(typeof(AllGameData), "cardDatas").GetValue(data)).Add(card);
-                CardState added = cards.AddNewCard(card, i == 5 ? CardPile.DeckPile : CardPile.HandPile, false, false, animate: false)
-                    ?? throw new InvalidOperationException("Could not create Permafrost carrier.");
-                created.Add(added);
+                var combat = new CardUpgradeState();
+                combat.Setup();
+                combat.SetAdditionalHP(70);
+                combat.SetAttackDamage(30);
+                unit.ApplyPermanentUpgrade(combat, save, ignoreUpgradeAnimation: true);
             }
+            CardData torch = data.GetAllCardData().Single(card => card.name == "StarterTorch");
+            CardData vent = data.GetAllCardData().Single(card => card.name == "Vent");
+            CardData steward = data.FindCardData(units[1].GetCardDataID())!;
+            if (torch.GetCost() != 1 || vent.GetCostType() != CardData.CostType.ConsumeRemainingEnergy)
+                throw new InvalidOperationException("The original Permafrost Torch or Vent input changed.");
+            CardState Add(CardData definition, int? cost)
+            {
+                CardState card = cards.AddNewCard(definition, CardPile.HandPile, false, true, animate: false)
+                    ?? throw new InvalidOperationException("Could not add original Permafrost carrier " + definition.name);
+                if (cost.HasValue)
+                {
+                    var adjustment = new CardUpgradeState();
+                    adjustment.Setup();
+                    adjustment.SetCostReduction(definition.GetCost() - cost.Value);
+                    card.ApplyPermanentUpgrade(adjustment, save, ignoreUpgradeAnimation: true);
+                }
+                return card;
+            }
+            CardState[] created = {
+                Add(torch, 3), Add(torch, 2), Add(vent, null), Add(torch, 4), Add(torch, 2),
+                Add(steward, 3)
+            };
             Carriers = created.Select(FullBattleTrace.Active!.CardId).ToArray(); Prepared = true;
             FullBattleTrace.Active!.InvalidateCardRules();
             var effect = managers.GetSaveManager().GetCollectedRelics().Single(owner => owner.GetRelicDataID() == RelicExpensiveCardUpgradeModel.DataId)
                 .GetEffects().OfType<RelicEffectAddCardUpgradeToExpensiveCards>().Single();
-            RelicManager relics = managers.GetRelicManager(); SaveManager save = managers.GetSaveManager(); control = true;
+            RelicManager relics = managers.GetRelicManager(); control = true;
             try
             {
                 foreach (CardState card in created) { relics.ApplyCardStateModifiers(card, false); effect.HasAppliedCardStateModifiers(card); }
+                var ignoredCopyUpgrades = new List<string>();
+                created[0].GetTemporaryCardStateModifiers().TryGetIgnoredUpgrades(ignoredCopyUpgrades);
+                copyExcludesPermafrost = ignoredCopyUpgrades.Contains(RelicExpensiveCardUpgradeModel.Effect);
                 void ChangeCost(int reduction)
                 {
                     var upgrade = new CardUpgradeState(); upgrade.SetCostReduction(reduction);
@@ -95,17 +110,19 @@ namespace MonsterTrain2Poju.Probe
                 created[0].RemoveUpgrade(RelicExpensiveCardUpgradeModel.Effect, created[0].GetTemporaryCardStateModifiers()); created[0].UpdateCardBodyText();
                 effect.PreviewPermanentCardStateModifiers(created[0], relics, save);
                 effect.PreviewPermanentCardStateModifiers(created[0], relics, save);
-                created[2].RemoveUpgrade(RelicExpensiveCardUpgradeModel.Effect, created[2].GetTemporaryCardStateModifiers()); created[2].UpdateCardBodyText();
-                relics.ApplyCardAddedToHandRelicEffects(created[2]);
             }
             finally { control = false; }
             Set(managers.GetCombatManager()!, "combatStateChanged", true);
         }
         internal static PlayCardAction? Choose(BattleTurnState source)
         {
-            if (step >= 4 || step >= 2 && source.Spawn.Turn == 0) return null;
+            if (step >= 4 || step >= 2 && source.Spawn.Turn == 0 || step == 3 && source.Spawn.Turn == 1) return null;
             int id = step < 2 ? Units[step] : Carriers[step == 2 ? 0 : 2];
-            PlayCardAction? action = BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(play => play.CardInstanceId == id && play.RoomIndex == 0);
+            int? junker = step == 2 ? source.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .FirstOrDefault(unit => unit.AssetKey == "MageT1_Junker")?.Id : null;
+            PlayCardAction? action = BattleActionModel.EnumerateSupportedPlays(source).Where(play => play.CardInstanceId == id)
+                .OrderByDescending(play => junker.HasValue && play.TargetUnitId == junker.Value)
+                .ThenBy(play => play.RoomIndex == 0 ? 0 : 1).FirstOrDefault();
             if (action == null) throw new InvalidOperationException("Missing Permafrost play " + step);
             step++; mark = true; return action;
         }

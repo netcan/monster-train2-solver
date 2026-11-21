@@ -27,13 +27,15 @@ namespace MonsterTrain2Poju.Model
         {
             RelicExpensiveCardUpgradeRule? rule = modifier.ExpensiveCardUpgrade;
             CardUpgradeModifier? upgrade = rule?.Upgrade;
+            // The original 2.3.1 upgrade sets ExcludeFromClones. The captured
+            // value is consumed by the normal card copy pipeline.
             return owner.DataId == DataId && owner.AssetKey == AssetKey && owner.IsCovenant == false && owner.DisallowedInPlacementPhase == false &&
                 owner.EffectTypes.SequenceEqual(new[] { Effect }) && modifier.EffectIndex == 0 && modifier.Rule == null && modifier.Upgrade == null &&
                 modifier.NoUpgradeCost == null && modifier.TraitReplacement == null && modifier.MoonPhaseHandUpgrade == null && modifier.FreezeHandUpgrade == null &&
                 modifier.RandomFreeze == null && modifier.RandomHandUpgrade == null && !modifier.ApplyToCardlessSpawns && modifier.Conditions.Count == 0 && modifier.ConditionCount == 0 &&
                 rule?.CardType == "Invalid" && rule.MinimumCost == 3 && rule.IncludeXCost && rule.ExternalInteractions.Count == 0 &&
                 rule.Filters.Count == 1 && OriginalFilter(rule.Filters[0]) && upgrade != null && upgrade.DataId == Effect && upgrade.Unique &&
-                !upgrade.RemoveOnDiscard && !upgrade.ExcludeFromClones && upgrade.UnhealedHealth == 0 && upgrade.DamageBuff == 0 &&
+                !upgrade.RemoveOnDiscard && upgrade.UnhealedHealth == 0 && upgrade.DamageBuff == 0 &&
                 !upgrade.RestrictSizeToRoomCapacity && !upgrade.MagicPowerTraitScalingOnly && upgrade.AbilityUpgrade == null &&
                 (upgrade.TriggerUpgrades?.Count ?? 0) == 0 && upgrade.Statuses.Count == 0 && !CardModifierModel.UpgradeInteractions(upgrade).Any() &&
                 new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }.All(stat => upgrade.Stats.Value(stat) == 0) &&

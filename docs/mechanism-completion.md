@@ -91,6 +91,12 @@ EndTurn、60 个房间阶段、14 个列车阶段、录制候选及串并行计�
 均被遗物筛选排除。六项原生组件对照均通过，旧版整局仍通过。
 归档位于 `tests/compatibility/game-2.3.1/mechanics/hephs-blueprints-equipment-pool/`。
 
+新版高费永冻遗物的升级带有复制排除标记。原版复制筛选和模型均排除来源卡上的该升级，
+满足费用条件的副本仍可独立获得升级。专项检查覆盖 7 次添加、1 次费用下降后移除升级但
+保留冻结、1 次重抽、6 次查询及两次预演。四次出牌、五次 EndTurn、39 个房间阶段、
+九个列车阶段通过。SuperUltra 的胜局正常退出，旧版归档也通过。
+归档位于 `tests/compatibility/game-2.3.1/mechanics/expensive-card-permafrost/`。
+
 ## 工作单位
 
 2026-11-20 接入[回合前原生顺序分派](before-draw-order.md)：十二种已有 BeforeDraw

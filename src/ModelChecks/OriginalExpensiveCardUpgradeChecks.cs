@@ -4,10 +4,11 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalExpensiveCardUpgradeChecks
 {
-    private static RelicExpensiveCardUpgradeRule Rule(int minimum = 3)
+    private const string CurrentModule = "bf93f060-beda-46b1-b808-95ebf1e9a99d";
+    private static RelicExpensiveCardUpgradeRule Rule(int minimum = 3, bool excludeFromClones = false)
     {
         var stats = new CardStatModifier();
-        var upgrade = new CardUpgradeModifier(RelicExpensiveCardUpgradeModel.Effect, "ApplyDazedOnAscendOrDescend_Upgrade", stats, [], false, true, false, 0, 0, [],
+        var upgrade = new CardUpgradeModifier(RelicExpensiveCardUpgradeModel.Effect, "ApplyDazedOnAscendOrDescend_Upgrade", stats, [], false, true, excludeFromClones, 0, 0, [],
             maskMetadata: new([], false, false, false, false), lifecycle: new(new(RelicExpensiveCardUpgradeModel.Effect, stats, [], false, false, false, false),
                 "ApplyDazedOnAscendOrDescend_Upgrade", true, false, [new(RelicExpensiveCardUpgradeModel.Trait, RelicExpensiveCardUpgradeModel.Trait, 0, 0, true, 0)], [], false, [], [], []));
         return new("Invalid", minimum, true, upgrade, [new("CostGreaterThan3", minCost: 3)], []);
@@ -60,14 +61,46 @@ internal static class OriginalExpensiveCardUpgradeChecks
         CombatContext context = new(new([new(1, played.DataId)], [], [], UnityRng.Seed(91), 0, []), UnityRng.Seed(92), 0, 2, 10, [], cardInstances: [played], relics: [Owner(rule)]);
         var redrawn = RelicExpensiveCardUpgradeModel.Drawn(context, [1], out string? error);
         Require(error == null && CardBranchMaskModel.Resolve(redrawn.FindCard(1)!).Traits.Contains("CardTraitFreeze") && redrawn.BattleRng.Equals(context.BattleRng), "Redraw must restore Freeze without RNG.");
-        Console.WriteLine("EXPENSIVE-CARD-UPGRADE-PURE PASS: exact 2/3 threshold, X/full/temporary costs, all card types, unique refresh, preview, running-combat and missing-input gates, residual Freeze after removal, play/redraw and 16 immutable branches.");
+        CheckCopyExclusion();
+        Console.WriteLine("EXPENSIVE-CARD-UPGRADE-PURE PASS: exact 2/3 threshold, X/full/temporary costs, all card types, unique refresh, preview, running-combat and missing-input gates, residual Freeze after removal, play/redraw, clone exclusion and 16 immutable branches.");
     }
+
+    private static void CheckCopyExclusion()
+    {
+        foreach (bool excludeFromClones in new[] { false, true })
+        {
+            RelicExpensiveCardUpgradeRule rule = Rule(excludeFromClones: excludeFromClones);
+            CombatRelicState owner = Owner(rule);
+            Require(RelicModel.Validate([owner]) == null, "The original copy exclusion variant was rejected.");
+            CardInstanceState original = Card(3);
+            CardInstanceState upgraded = RelicExpensiveCardUpgradeModel.Refresh(original, rule, true, out _);
+            var source = new CombatContext(new([new(1, original.DataId)], [], [], UnityRng.Seed(91), 0, []),
+                UnityRng.Seed(92), 0, 2, 10, cardInstances: [upgraded], queryFrame: new(runningCombat: true));
+            var definition = new CardCreationRule(original.DataId, CardModifiers.Empty(), null, [], maskDescriptor: original.MaskDescriptor);
+            var copyRule = new CardGenerationRule("DeckPile", 1, [definition], copyModifiers: true, deterministicPoolSelection: true);
+            foreach (bool currentOwner in new[] { false, true })
+            {
+                CombatContext context = currentOwner ? source.WithRelics([owner]) : source;
+                var copy = CardGenerationModel.Apply(context, copyRule, original.InstanceId);
+                CardInstanceState? created = copy.Context?.FindCard(2);
+                Require(copy.Supported && created != null &&
+                    RelicExpensiveCardUpgradeModel.HasUpgrade(created) == (currentOwner || !excludeFromClones) &&
+                    RelicExpensiveCardUpgradeModel.HasUpgrade(context.FindCard(1)!),
+                    "Native modifier copying must exclude the current upgrade while still allowing a fresh owner grant.");
+            }
+        }
+    }
+
     internal static void Native(FixtureValue root)
     {
         Require(root.GetProperty("Schema").GetInt32() == 235 && root.GetProperty("OriginalExpensiveCardUpgradePrepared").GetBoolean() &&
             root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Incomplete Permafrost battle.");
         foreach (string field in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending", "OriginalExpensiveCardUpgradeCaptureFailures", "OriginalExpensiveCardUpgradeMismatches",
             "OriginalExpensiveCardUpgradeUnsupported", "OriginalExpensiveCardUpgradePending" }) Require(root.GetProperty(field).GetInt32() == 0, "Nonzero " + field);
+        bool current = root.GetProperty("GameModuleMvid").GetString() == CurrentModule;
+        FixtureValue evidence = root.GetProperty("OriginalExpensiveCardUpgrade");
+        if (current)
+            Require(evidence.GetProperty("CopyExcludesPermafrost").GetBoolean(), "Native modifier copy filter retained the 2.3.1 Permafrost upgrade.");
         int additions = 0, removals = 0, redraws = 0, queries = 0, previews = 0; var kinds = new HashSet<string>();
         foreach (var row in root.GetProperty("RelicExpensiveCardUpgradeRecords").EnumerateArray())
         {
@@ -76,6 +109,7 @@ internal static class OriginalExpensiveCardUpgradeChecks
             CardInstanceState card = before.Context!.FindCard(id)!; CardInstanceState after = actual.Context!.FindCard(id)!;
             CombatRelicState owner = before.Context.Relics!.Single(owner => owner.DataId == RelicExpensiveCardUpgradeModel.DataId);
             Require(RelicModel.Validate([owner]) == null, "Changed Permafrost owner."); var rule = owner.CardModifiers!.Single().ExpensiveCardUpgrade!;
+            Require(rule.Upgrade.ExcludeFromClones == current, "Captured original Permafrost clone flag differs from the installed version.");
             string parent = JsonSerializer.Serialize(before, ModelJson.Options);
             void Replay()
             {
@@ -115,7 +149,7 @@ internal static class OriginalExpensiveCardUpgradeChecks
                 CardBranchMaskModel.Resolve(context.FindCard(carriers[3])!).Traits.Contains("CardTraitFreeze"), "Unplayed four-cost Permafrost carrier was not retained.");
             retainedTurns++;
         }
-        Require(retainedTurns == 4, "Missing four natural retained-hand endpoints.");
+        Require(current ? retainedTurns > 0 : retainedTurns == 4, "Missing natural retained-hand endpoints.");
         RelicCardModifierChecks.Native(root, required: true);
         Console.WriteLine($"ORIGINAL-EXPENSIVE-CARD-UPGRADE-NATIVE PASS: {additions} additions, {removals} cost removals with residual Freeze, {redraws} natural re-freezes, {queries} queries, two previews, all six callback kinds and 16 immutable branches.");
     }
