@@ -10,7 +10,8 @@ namespace MonsterTrain2Poju.Probe
     internal static class RoomPreCombatProbe
     {
         internal const string SirenSongId = "8ccceee7-0eb9-4aa0-9268-ff83b6f6c54e";
-        internal static bool RequiresWorld(FullBattleTrace trace) => trace.KnownCards.Any(card => card.GetCardDataID() == SirenSongId || card.GetCardDataID() == RoomEchoProbe.CardId);
+        internal static bool RequiresWorld(FullBattleTrace trace) => OriginalStartRoomAttachmentScenario.InstalledInferno ||
+            trace.KnownCards.Any(card => card.GetCardDataID() == SirenSongId || card.GetCardDataID() == RoomEchoProbe.CardId);
         internal static RoomPreCombatRule? Rule(CardUpgradeData upgrade, List<string> interactions)
         {
             RoomModifierData[] modifiers = upgrade.GetRoomModifierUpgrades().ToArray();

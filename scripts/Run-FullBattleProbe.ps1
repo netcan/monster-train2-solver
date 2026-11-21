@@ -638,6 +638,7 @@ param(
     [switch] $OriginalStartRoomAttachment,
     [switch] $OriginalStartRoomAttachmentFloor2,
     [switch] $OriginalStartRoomAttachmentFloor3,
+    [switch] $OriginalInstalledInfernoRooms,
     [switch] $UnplayedCardTrigger,
     [switch] $UnplayedCardEffects,
     [switch] $OriginalRoomEntryStatusRelics,
@@ -1464,6 +1465,16 @@ if ($OriginalExtractForEmberAndEchos) { $BranchCardMasks = $true; $Policy = 'uni
 if ($OriginalCarriageJack) { $Policy = 'units-and-junk' }
 if ($OriginalFirstRoomAttachment) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalStartRoomAttachment -or $OriginalStartRoomAttachmentFloor2 -or $OriginalStartRoomAttachmentFloor3) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalInstalledInfernoRooms) {
+    if ($OriginalStartRoomAttachment -or $OriginalStartRoomAttachmentFloor2 -or $OriginalStartRoomAttachmentFloor3 -or
+        $InfernoRoom -or $Planner -or $Advisor -or $PlayerAdvisor -or $BattleDistance -ne 0) {
+        throw 'Original installed Inferno rooms require a separate first-battle test.'
+    }
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $SettleDeathDissolves = $true
+    $Policy = 'units-spells-and-junk'
+}
 if ($UnplayedCardTrigger) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($UnplayedCardEffects) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalRoomEntryStatusRelics) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -2724,6 +2735,7 @@ if ($OriginalFirstRoomAttachment) { $environment['MT2_PROBE_MODIFIERS'] = 'origi
 if ($OriginalStartRoomAttachment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-start-room-attachment' }
 if ($OriginalStartRoomAttachmentFloor2) { $environment['MT2_PROBE_MODIFIERS'] = 'original-start-room-attachment-floor2' }
 if ($OriginalStartRoomAttachmentFloor3) { $environment['MT2_PROBE_MODIFIERS'] = 'original-start-room-attachment-floor3' }
+if ($OriginalInstalledInfernoRooms) { $environment['MT2_PROBE_MODIFIERS'] = 'original-installed-inferno-rooms' }
 if ($UnplayedCardTrigger) { $environment['MT2_PROBE_MODIFIERS'] = 'unplayed-card-trigger' }
 if ($UnplayedCardEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'unplayed-card-effects' }
 if ($OriginalRoomEntryStatusRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-room-entry-status-relics' }
@@ -4140,6 +4152,36 @@ if ($OriginalStartRoomAttachment -or $OriginalStartRoomAttachmentFloor2 -or $Ori
         -not $trace.NativeWon) {
         throw 'The selected original start-of-combat attachment relic did not complete its clean full battle setup.'
     }
+}
+if ($OriginalInstalledInfernoRooms) {
+    $inferno = $trace.OriginalInstalledInfernoRooms
+    $rooms = @($inferno.Rooms)
+    $effects = @($inferno.Before.Effects)
+    $upgradeId = '96547940-8feb-4f73-b147-c763a64161c2'
+    if ($trace.ModifierScenario -cne 'original-installed-inferno-rooms' -or -not $trace.OriginalStartRoomAttachmentPrepared -or
+        $inferno.Before.Id -cne 'a5b3592e-e0ee-457d-8cd4-9fa102dfdc32' -or $rooms.Count -ne 3 -or $effects.Count -ne 3 -or
+        ($rooms.RoomIndex -join ',') -cne '0,1,2' -or ($effects.RoomIndex -join ',') -cne '0,1,2' -or
+        @($rooms.Guid | Sort-Object -Unique).Count -ne 3 -or @($rooms | Where-Object {
+            $_.AttachType -ne 0 -or $_.UpgradeId -cne $upgradeId -or $_.AttachmentsAddedFromCards -ne 0 -or
+            $_.Projection.DataId -cne $upgradeId -or $_.Projection.AttachmentId -cne $_.Guid -or
+            -not $_.Projection.AffectsHeroes -or -not $_.Projection.AffectsMonsters
+        }).Count -ne 0 -or ($inferno.Before | ConvertTo-Json -Depth 16 -Compress) -cne ($inferno.After | ConvertTo-Json -Depth 16 -Compress)) {
+        throw 'The original mutator did not install its three unchanged cardless Inferno rooms.'
+    }
+    $damageSeen = $false
+    foreach ($step in @($trace.RoomPreCombatRecords | Where-Object { $_.Completed -and $_.Turn -gt 0 })) {
+        $beforeRoom = $step.Before.Rooms | Where-Object RoomIndex -EQ $step.RoomIndex
+        $afterRoom = $step.After.Rooms | Where-Object RoomIndex -EQ $step.RoomIndex
+        foreach ($enemy in @($beforeRoom.Units | Where-Object Team -EQ 0)) {
+            $after = $afterRoom.Units | Where-Object Id -EQ $enemy.Id
+            if (-not $after -or $after.Health -lt $enemy.Health -or
+                [int]($after.Statuses | Where-Object Id -EQ 'armor').Stacks -lt [int]($enemy.Statuses | Where-Object Id -EQ 'armor').Stacks) {
+                $damageSeen = $true
+            }
+        }
+    }
+    if (-not $damageSeen) { throw 'The original Inferno rooms did not record a settled damage application to an enemy.' }
+    Write-Output 'ORIGINAL-INSTALLED-INFERNO NATIVE all three cardless rooms and enemy pre-combat damage observed.'
 }
 if ($UnplayedCardTrigger) {
     $triggerCardIds = @(
@@ -8784,7 +8826,7 @@ if (-not $cardEffectKillSubtypeCoverage) { throw 'Native CardEffectKill did not 
 if (-not $cardRecursionCoverage) { throw 'Native WurmkinEtchings recursion did not restore the expected cards in a matched full battle action.' }
 $result | ConvertTo-Json
 if ($SettleDeathDissolves) {
-    if (-not $trace.DeathDissolveSettlementEnabled -or $trace.Schema -ne $(if ($UnplayedCardTrigger) { 161 } elseif ($UnplayedCardEffects) { 163 } elseif ($OriginalBigDamageFromManyMorsels) { 169 } elseif ($OriginalFloorCapacityRelics) { 119 } elseif ($PyreResourceRefresh) { 118 } elseif ($OriginalResourceRelicBatch) { 117 } elseif ($OriginalLifecycleRelicBatch) { 115 } elseif ($TypedDraw) { 112 } elseif ($SpawnStatusRelicsClones) { 111 } elseif ($SpawnStatusRelics) { 110 } elseif ($IncantRelic) { 109 } elseif ($AbilityIncant) { 108 } elseif ($SettleCardAnimations) { 106 } else { 105 }) -or
+    if (-not $trace.DeathDissolveSettlementEnabled -or $trace.Schema -ne $(if ($OriginalInstalledInfernoRooms) { 168 } elseif ($UnplayedCardTrigger) { 161 } elseif ($UnplayedCardEffects) { 163 } elseif ($OriginalBigDamageFromManyMorsels) { 169 } elseif ($OriginalFloorCapacityRelics) { 119 } elseif ($PyreResourceRefresh) { 118 } elseif ($OriginalResourceRelicBatch) { 117 } elseif ($OriginalLifecycleRelicBatch) { 115 } elseif ($TypedDraw) { 112 } elseif ($SpawnStatusRelicsClones) { 111 } elseif ($SpawnStatusRelics) { 110 } elseif ($IncantRelic) { 109 } elseif ($AbilityIncant) { 108 } elseif ($SettleCardAnimations) { 106 } else { 105 }) -or
         @($trace.DeathDissolveSettlements).Count -eq 0 -or
         @($trace.DeathDissolveSettlements | Where-Object { -not $_.Completed -or $_.PendingAfter -ne 0 -or $_.Error }).Count -ne 0 -or
         @($trace.DeathDissolveCallbacks | Where-Object { $_.Error }).Count -ne 0) {

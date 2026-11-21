@@ -696,6 +696,8 @@ namespace MonsterTrain2Poju.Probe
                     (bool)fightAvailable.GetValue(intro)! && intro.GetFightButton().interactable)
                 {
                     OriginalOuterBossRoute.PrepareIntro(save, intro, log);
+                    if (fullBattle && OriginalStartRoomAttachmentScenario.InstalledInferno && !OriginalStartRoomAttachmentScenario.Acquired)
+                        OriginalStartRoomAttachmentScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalThikDeckChangeScenario.Enabled && !OriginalThikDeckChangeScenario.Acquired)
                         OriginalThikDeckChangeScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalMollisCycleOfLifeScenario.Enabled)

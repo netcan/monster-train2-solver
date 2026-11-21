@@ -6,7 +6,7 @@ using MonsterTrain2Poju.Model;
 
 namespace MonsterTrain2Poju.Probe
 {
-    internal static class OriginalStartRoomAttachmentScenario
+    internal static partial class OriginalStartRoomAttachmentScenario
     {
         internal const string Name = "original-start-room-attachment";
         internal const string Floor2Name = "original-start-room-attachment-floor2";
@@ -32,7 +32,7 @@ namespace MonsterTrain2Poju.Probe
         private static string TargetRelicKey => Floor3 ? Floor3RelicKey : Floor2 ? Floor2RelicKey : RelicKey;
         private static string TargetUpgradeId => Floor3 ? Floor3UpgradeId : Floor2 ? Floor2UpgradeId : UpgradeId;
         private static string TargetUpgradeKey => Floor3 ? Floor3UpgradeKey : Floor2 ? Floor2UpgradeKey : UpgradeKey;
-        internal static bool Enabled => Mode == Name || Floor2 || Floor3;
+        internal static bool Enabled => Mode == Name || Floor2 || Floor3 || InstalledInferno;
         internal static bool Acquired { get; private set; }
         internal static bool Prepared { get; private set; }
         internal static CoverageRecord Evidence { get; } = new CoverageRecord();
@@ -43,6 +43,12 @@ namespace MonsterTrain2Poju.Probe
             SaveManager save = managers.GetSaveManager();
             if (save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle)
                 throw new InvalidOperationException("The start-room attachment relic must be acquired before battle setup.");
+            if (InstalledInferno)
+            {
+                AcquireInferno(save, log);
+                Acquired = true;
+                return;
+            }
             CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData()
                 .Single(item => item.GetID() == TargetRelicId);
             CheckOriginal(relic);
@@ -60,6 +66,12 @@ namespace MonsterTrain2Poju.Probe
             if (!Acquired || managers.GetCombatManager()!.GetTurnCount() != 0)
                 throw new InvalidOperationException("The start-room attachment relic must be inspected on deployment turn.");
             SaveManager save = managers.GetSaveManager();
+            if (InstalledInferno)
+            {
+                PrepareInferno(managers, log);
+                Prepared = true;
+                return;
+            }
             CollectableRelicData relic = save.GetAllGameData().GetAllCollectableRelicData()
                 .Single(item => item.GetID() == TargetRelicId);
             CheckOriginal(relic);

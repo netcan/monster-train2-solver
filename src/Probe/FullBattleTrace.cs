@@ -2024,6 +2024,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalCarriageJackCoverage = OriginalCarriageJackScenario.Evidence,
                 OriginalFirstRoomAttachmentCoverage = OriginalFirstRoomAttachmentScenario.Evidence,
                 OriginalStartRoomAttachmentCoverage = OriginalStartRoomAttachmentScenario.Evidence,
+                OriginalInstalledInfernoRooms = OriginalStartRoomAttachmentScenario.InstalledInfernoEvidence,
                 CrossRoomTargets = CrossRoomSpellScenario.Targets,
                 NumericRanges = NumericRangeScenario.Samples,
                 FilteredTargets = TargetFilterScenario.Targets,
