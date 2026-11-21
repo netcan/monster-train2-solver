@@ -8,6 +8,16 @@ internal static class Game231RecordedChainTriage
 {
     internal static void Run(string workspace, string output, string[] archivePaths)
     {
+        int workers = 1;
+        const string workerOption = "--workers=";
+        if (archivePaths.Length > 0 && archivePaths[0].StartsWith(workerOption, StringComparison.Ordinal))
+        {
+            if (!int.TryParse(archivePaths[0].AsSpan(workerOption.Length), NumberStyles.None, CultureInfo.InvariantCulture, out workers) ||
+                workers is < 1 or > 32)
+                throw new ArgumentException("Archive workers must be between 1 and 32.");
+            archivePaths = archivePaths[1..];
+        }
+
         string directory = Game231FixtureCatalog.DirectoryFor(workspace);
         var catalog = Game231FixtureCatalog.Load(directory);
         var selected = archivePaths.Select(path => path.Replace('\\', '/')).ToHashSet(StringComparer.Ordinal);
@@ -22,65 +32,30 @@ internal static class Game231RecordedChainTriage
         Directory.CreateDirectory(Path.GetDirectoryName(output)!);
         using var writer = new StreamWriter(output) { AutoFlush = true };
         writer.WriteLine("archive\tstatus\tplays\tendTurns\tseconds\tstage\tdetail\trawMismatch\tarchiveSHA256\tcheckerSHA256\tmodelSHA256");
-        Console.WriteLine($"RECORDED-CHAIN-TRIAGE-START registered={catalog.Count} selected={(selected.Count == 0 ? catalog.Count : selected.Count)} checkerSHA256={checkerHash} modelSHA256={modelHash} report={output}");
+        Console.WriteLine($"RECORDED-CHAIN-TRIAGE-START registered={catalog.Count} selected={(selected.Count == 0 ? catalog.Count : selected.Count)} workers={workers} checkerSHA256={checkerHash} modelSHA256={modelHash} report={output}");
 
         int passed = 0, segmentPassed = 0, failed = 0, skipped = 0;
-        foreach (Game231FixtureRegistration archive in catalog.Values)
+        IEnumerable<Game231FixtureRegistration> archives = catalog.Values.Where(archive => selected.Count == 0 || selected.Contains(archive.Path));
+        IEnumerable<ArchiveResult> results = workers == 1
+            ? archives.Select(archive => ReplayArchive(directory, archive))
+            : archives.AsParallel().AsOrdered().WithDegreeOfParallelism(workers)
+                .WithMergeOptions(ParallelMergeOptions.NotBuffered).Select(archive => ReplayArchive(directory, archive));
+        foreach (ArchiveResult result in results)
         {
-            if (selected.Count > 0 && !selected.Contains(archive.Path)) continue;
-            var timer = Stopwatch.StartNew();
-            int? plays = null, endTurns = null;
-            string detail = "";
-            string rawMismatch = "";
-            string status = "FAIL";
-            try
+            switch (result.Status)
             {
-                using var document = FixtureDocument.Read(archive.Verify(directory));
-                FixtureValue battle = document.RootElement;
-                Game231FixtureKind kind = Game231FixtureCatalog.Classify(archive, battle);
-                if (kind != Game231FixtureKind.SettledBattle)
-                {
-                    skipped++;
-                    continue;
-                }
-                plays = battle.GetProperty("Actions").GetArrayLength();
-                endTurns = battle.GetProperty("Turns").GetArrayLength();
-                try
-                {
-                    RecordedBattleChecks.ReplayOnce(battle);
-                    passed++;
-                    status = "PASS";
-                }
-                catch (InvalidOperationException rawFailure)
-                {
-                    rawMismatch = rawFailure.Message;
-                    if (archive.Stage) throw;
-                    if (archive.Path == "mechanics/moon-phase-hand-upgrade/battle.mt2f")
-                    {
-                        OriginalMoonPhaseRoomsGainMagicPowerChecks.ReplayPreparedTurns(battle, rawMismatch);
-                        detail = "Verified all seven turns and six recorded original-card hand setups.";
-                    }
-                    else
-                    {
-                        if (!HasDocumentedTurnOneSetup(archive.Path, battle, rawMismatch)) throw;
-                        RecordedBattleChecks.ReplayOnce(battle, lastTurn: 0);
-                        RecordedBattleChecks.ReplayOnce(battle, firstTurn: 1);
-                        detail = "Verified deployment and turn 1 through terminal on either side of recorded test setup.";
-                    }
-                    segmentPassed++;
-                    status = "SEGMENT-PASS";
-                }
+                case "SKIP": skipped++; continue;
+                case "PASS": passed++; break;
+                case "SEGMENT-PASS": segmentPassed++; break;
+                default:
+                    failed++;
+                    Console.WriteLine($"RECORDED-CHAIN-TRIAGE FAIL {result.Archive.Path} {result.Detail}");
+                    break;
             }
-            catch (Exception failure)
-            {
-                failed++;
-                detail = failure.Message;
-                Console.WriteLine($"RECORDED-CHAIN-TRIAGE FAIL {archive.Path} {detail}");
-            }
-            string seconds = timer.Elapsed.TotalSeconds.ToString("F3", CultureInfo.InvariantCulture);
-            WriteRow(writer, archive.Path, status, plays?.ToString(CultureInfo.InvariantCulture) ?? "",
-                endTurns?.ToString(CultureInfo.InvariantCulture) ?? "", seconds, archive.Stage ? "yes" : "no", detail, rawMismatch,
-                archive.Sha256, checkerHash, modelHash);
+            Game231FixtureRegistration archive = result.Archive;
+            WriteRow(writer, archive.Path, result.Status, result.Plays?.ToString(CultureInfo.InvariantCulture) ?? "",
+                result.EndTurns?.ToString(CultureInfo.InvariantCulture) ?? "", result.Seconds.ToString("F3", CultureInfo.InvariantCulture),
+                archive.Stage ? "yes" : "no", result.Detail, result.RawMismatch, archive.Sha256, checkerHash, modelHash);
         }
 
         Console.WriteLine($"RECORDED-CHAIN-TRIAGE-RESULT passed={passed} segmentPassed={segmentPassed} failed={failed} skipped={skipped} report={output}");
@@ -88,6 +63,52 @@ internal static class Game231RecordedChainTriage
             throw new InvalidOperationException("The checker or model changed during archive triage.");
         if (failed > 0) throw new InvalidOperationException($"{failed} registered archive check(s) failed. See {output}");
         if (passed == 0 && segmentPassed == 0) throw new InvalidOperationException("No settled native battles were selected.");
+    }
+
+    private sealed record ArchiveResult(Game231FixtureRegistration Archive, string Status, int? Plays,
+        int? EndTurns, double Seconds, string Detail, string RawMismatch);
+
+    private static ArchiveResult ReplayArchive(string directory, Game231FixtureRegistration archive)
+    {
+        var timer = Stopwatch.StartNew();
+        int? plays = null, endTurns = null;
+        string rawMismatch = "";
+        ArchiveResult Result(string status, string detail = "") =>
+            new(archive, status, plays, endTurns, timer.Elapsed.TotalSeconds, detail, rawMismatch);
+        try
+        {
+            using var document = FixtureDocument.Read(archive.Verify(directory));
+            FixtureValue battle = document.RootElement;
+            if (Game231FixtureCatalog.Classify(archive, battle) != Game231FixtureKind.SettledBattle)
+                return Result("SKIP");
+
+            plays = battle.GetProperty("Actions").GetArrayLength();
+            endTurns = battle.GetProperty("Turns").GetArrayLength();
+            try
+            {
+                RecordedBattleChecks.ReplayOnce(battle);
+                return Result("PASS");
+            }
+            catch (InvalidOperationException rawFailure)
+            {
+                rawMismatch = rawFailure.Message;
+                if (archive.Stage) throw;
+                if (archive.Path == "mechanics/moon-phase-hand-upgrade/battle.mt2f")
+                {
+                    OriginalMoonPhaseRoomsGainMagicPowerChecks.ReplayPreparedTurns(battle, rawMismatch);
+                    return Result("SEGMENT-PASS", "Verified all seven turns and six recorded original-card hand setups.");
+                }
+
+                if (!HasDocumentedTurnOneSetup(archive.Path, battle, rawMismatch)) throw;
+                RecordedBattleChecks.ReplayOnce(battle, lastTurn: 0);
+                RecordedBattleChecks.ReplayOnce(battle, firstTurn: 1);
+                return Result("SEGMENT-PASS", "Verified deployment and turn 1 through terminal on either side of recorded test setup.");
+            }
+        }
+        catch (Exception failure)
+        {
+            return Result("FAIL", failure.Message);
+        }
     }
 
     // These legacy test scenarios explicitly prepare state outside the recorded action list.
