@@ -214,6 +214,11 @@ Cael 零盟约试炼的攻击与生命、吸血变体分别通过 26 次出牌�
 波次 Feed 保持 60 点生命。替换、放置后的完整战斗状态与随机流均匹配。
 归档在 `tests/compatibility/game-2.3.1/mechanics/cael-shield-rank-two-titan-trial/`，
 使用 `--native-cael-shield-rank-two-trial substitution.mt2f birth.mt2f` 复核。
+同一路线的整战补录通过 26 次出牌、6 次 EndTurn、59 个房间阶段及 12 个列车阶段。
+首次整战发现，未死亡的 Feed 被进食后，模型提前刷新了预演光环。修复后四处差异消失，
+五个波次替换体、九次进食、十五次试炼升级均有原版记录。原版终局判负，四项采集计数均为零。
+录制出牌候选、16 条独立分支、串并行搜索及计划复放均通过。整战使用 `battle.mt2f` 和
+`--native-cael-shield-rank-two-trial-battle` 复核。
 
 用 2.3.1 载入 2.2.1 原版第三环战前存档，隔离顾问在两线程、单次搜索三秒的配置下
 完成 24 次出牌和 9 次 EndTurn，以 80 点薪火生命获胜。进程正常退出，四项采集计数为零。
