@@ -71,6 +71,15 @@ internal static class BeforeDrawOrderChecks
                     "Dispatch grouped callbacks by family, dropped passive owners, or repeated a selected callback.");
                 Require(result.State.Rooms.SelectMany(room => room.Units).Where(unit => unit.Team == CombatTeam.Player && !unit.IsPyre).All(unit => unit.Health == unit.MaxHealth),
                     "Ordered healing failed to carry actor state forward.");
+
+                var previewTrain = new TrainCombatState(train.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
+                    false, room.Units, room.ExternalInteractions, frame, true, room.ActiveCompanionBossIds)).ToArray(),
+                    train.Movement, train.EnemySlotsPerRoom, frame);
+                var preview = RelicTurnPhaseModel.BeforeDraw(previewTrain, source.PlayRules);
+                Require(preview.Supported && preview.State!.Context!.QueryFrame!.Energy == 3 &&
+                    preview.State.Rooms.SelectMany(room => room.Units).Where(unit => unit.Team == CombatTeam.Player && !unit.IsPyre)
+                        .All(unit => unit.Health == unit.MaxHealth - 1),
+                    "Preview ran the original non-preview energy or healing callback.");
             }
         }
         var simpleRules = new[] {

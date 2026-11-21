@@ -27,8 +27,12 @@ namespace MonsterTrain2Poju.Model
         internal static TrainCombatResult GeneralStart(TrainCombatState source)
         {
             var state = source;
+            bool placement = source.Rooms.Any(room => room.Deployment);
+            bool preview = source.Rooms.Any(room => room.Preview);
             foreach (var key in Keys(source, type => type == RelicSoloUnitUpgradeModel.FrontRoomEffect || type == RelicCardTypeSequenceModel.Effect))
             {
+                if (placement && state.Context!.Relics![key.Owner].DisallowedInPlacementPhase == true) continue;
+                if (preview && key.Type == RelicCardTypeSequenceModel.Effect) continue;
                 if (key.Type == RelicSoloUnitUpgradeModel.FrontRoomEffect)
                 {
                     var result = RelicSoloUnitUpgradeModel.Apply(state, key.Owner, key.Effect);
@@ -58,6 +62,8 @@ namespace MonsterTrain2Poju.Model
                 bool preview = state.Rooms.Any(room => room.Preview);
                 var owner = context.Relics![key.Owner];
                 if (placement && owner.DisallowedInPlacementPhase == true) continue;
+                if (preview && (key.Type == RelicSoloUnitUpgradeModel.Effect ||
+                    key.Type == RelicStartTurnHealModel.Effect || key.Type == RelicFirstCardCostModel.Effect)) continue;
                 int selected = context.QueryFrame?.SelectedRoomIndex ?? -1;
                 string? error = null; RoomOutcome outcome = RoomOutcome.Exchanged;
                 switch (key.Type)
