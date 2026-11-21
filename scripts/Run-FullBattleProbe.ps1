@@ -740,6 +740,7 @@ param(
     [switch] $OriginalSpurned,
     [switch] $OriginalSpurnedBattle,
     [ValidateRange(2, 3)][int] $OriginalSpurnedChallenge = 2,
+    [switch] $OriginalSpurnedRetainPiles,
     [switch] $OriginalRageOnBurnoutStackLoss,
     [switch] $OriginalPyreRevenge,
     [switch] $OriginalExtractForEmberAndEchos,
@@ -1477,6 +1478,9 @@ if ($OriginalSpurnedBattle) {
     $Policy = 'units-spells-and-junk'
 } elseif ($PSBoundParameters.ContainsKey('OriginalSpurnedChallenge')) {
     throw 'OriginalSpurnedChallenge requires OriginalSpurnedBattle.'
+}
+if ($OriginalSpurnedRetainPiles -and (-not $OriginalSpurnedBattle -or $OriginalSpurnedChallenge -ne 3)) {
+    throw 'OriginalSpurnedRetainPiles requires OriginalSpurnedBattle with OriginalSpurnedChallenge 3.'
 }
 if ($OriginalRageOnBurnoutStackLoss) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPyreRevenge) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -2748,6 +2752,7 @@ if ($OriginalSpurned) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spurned'
 if ($OriginalSpurnedBattle) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-spurned-battle'
     $environment['MT2_PROBE_SPURNED_CHALLENGE'] = [string]$OriginalSpurnedChallenge
+    $environment['MT2_PROBE_SPURNED_RETAIN_PILES'] = $(if ($OriginalSpurnedRetainPiles) { '1' } else { '0' })
 }
 if ($OriginalRageOnBurnoutStackLoss) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rage-on-burnout-stack-loss' }
 if ($RankThreeRoomSlayExecution) { $environment['MT2_PROBE_MODIFIERS'] = 'rank-three-room-slay-execution' }
@@ -3388,8 +3393,28 @@ $inspectionTimer = [System.Diagnostics.Stopwatch]::StartNew()
 if ($BinaryCapture) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
     $archive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($tracePath)
-    $trace = $archive.RootElement.ToObjectGraph()
-    $archive.Dispose()
+    try {
+        $trace = $archive.RootElement.ToObjectGraph()
+        if ($OriginalSpurnedRetainPiles) {
+            $referencePath = Join-Path $workspace 'tests/compatibility/game-2.3.1/mechanics/spurned/witherbloom-battle.mt2f'
+            $reference = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($referencePath)
+            try {
+                $plays = @($archive.RootElement.GetProperty('Actions').EnumerateArray())
+                $referencePlays = @($reference.RootElement.GetProperty('Actions').EnumerateArray())
+                if ($plays.Count -ne 20 -or $referencePlays.Count -lt $plays.Count) {
+                    throw "Original Spurned retained-pile route must capture 20 plays. Inspect $tracePath and $unityLog"
+                }
+                for ($i = 0; $i -lt $plays.Count; $i++) {
+                    $turn = $plays[$i].GetProperty('Before').GetProperty('Spawn').GetProperty('Turn').GetInt32()
+                    $referenceTurn = $referencePlays[$i].GetProperty('Before').GetProperty('Spawn').GetProperty('Turn').GetInt32()
+                    if ($turn -ne $referenceTurn -or $turn -ge 4 -or
+                        -not $plays[$i].GetProperty('Action').ContentEquals($referencePlays[$i].GetProperty('Action'))) {
+                        throw "Original Spurned retained-pile route changed opening play $i. Inspect $tracePath and $unityLog"
+                    }
+                }
+            } finally { $reference.Dispose() }
+        }
+    } finally { $archive.Dispose() }
 } else {
     $trace = Get-Content -LiteralPath $tracePath -Raw | ConvertFrom-Json
 }
@@ -3404,6 +3429,18 @@ if ($OriginalSpurnedBattle) {
         $spurned.BossKey -cne $spurnedBoss -or -not $spurned.TestScenario -or
         @($trace.Actions).Count -eq 0 -or @($trace.Turns).Count -eq 0 -or -not $trace.TerminalEffectsSettled) {
         throw "Original Spurned battle did not complete ordinary inputs and terminal capture. Inspect $tracePath and $unityLog"
+    }
+    if ($OriginalSpurnedRetainPiles) {
+        $endTurns = @($trace.Turns | ForEach-Object { $_.Before.Spawn.Turn })
+        $terminal = $trace.Turns[-1].Actual.Spawn.Train.Context
+        $exhausted = @($terminal.OtherPiles | Where-Object Name -CEQ 'Exhausted')
+        if ($spurned.EndTurnOnlyFromTurn -ne 4 -or ($endTurns -join ',') -cne '0,1,2,3,4,5,6' -or
+            $trace.NativeWon -ne $false -or $terminal.KillCamActivated -ne $false -or
+            @($terminal.CardInstances).Count -ne 25 -or @($terminal.Cards.Draw).Count -ne 3 -or
+            @($terminal.Cards.Discard).Count -ne 10 -or $exhausted.Count -ne 1 -or @($exhausted[0].Cards).Count -ne 12) {
+            throw "Original Spurned retained-pile route did not settle the expected defeat and card piles. Inspect $tracePath and $unityLog"
+        }
+        Write-Output 'ORIGINAL-SPURNED-RETAIN-PILES PASS: 20 matching opening plays, seven EndTurns, and 25 retained cards.'
     }
 }
 if ($TrueFinalBossMaximumBattle -and (-not $trace.TrueFinalBossMaximumBattle.Prepared -or

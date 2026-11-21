@@ -20,9 +20,13 @@ namespace MonsterTrain2Poju.Probe
         private const string WitherbloomScenarioKey = "SoulSavior_R4_BossBattle_EstrangedChild_3";
         private const string WitherbloomBossKey = "Boss_SoulSavior_R4_Spurned_WitherbloomOnAction";
         private const string DefenderId = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
+        private const int RetainPilesEndTurnOnlyFrom = 4;
         internal static bool Component => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == FullBattleName;
         internal static bool Enabled => Component || FullBattle;
+        private static bool RetainPiles => FullBattle && Environment.GetEnvironmentVariable("MT2_PROBE_SPURNED_CHALLENGE") == "3" &&
+            Environment.GetEnvironmentVariable("MT2_PROBE_SPURNED_RETAIN_PILES") == "1";
+        internal static bool EndTurnOnly(int turn) => RetainPiles && turn >= RetainPilesEndTurnOnlyFrom;
         internal static object? FullBattleEvidence { get; private set; }
         internal static bool Completed { get; private set; }
         private static bool requested;
@@ -99,7 +103,8 @@ namespace MonsterTrain2Poju.Probe
             scenario.GetSpawnPattern().CollectReferencedCharacters(characters);
             string[] companions = characters.Where(character => character.IsCompanionBoss())
                 .Select(character => character.GetAssetKey()).OrderBy(key => key, StringComparer.Ordinal).ToArray();
-            FullBattleEvidence = new { Scenario = scenario.name, BossKey = boss, CompanionKeys = companions, TestScenario = save.InTestScenario };
+            FullBattleEvidence = new { Scenario = scenario.name, BossKey = boss, CompanionKeys = companions, TestScenario = save.InTestScenario,
+                EndTurnOnlyFromTurn = RetainPiles ? RetainPilesEndTurnOnlyFrom : (int?)null };
             log.LogInfo("ORIGINAL-SPURNED-BATTLE loaded " + scenario.name + " boss=" + boss +
                 " companions=[" + string.Join(",", companions) + "] testScenario=" + save.InTestScenario);
         }

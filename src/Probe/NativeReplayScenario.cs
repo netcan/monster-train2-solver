@@ -3376,6 +3376,13 @@ namespace MonsterTrain2Poju.Probe
                 else PlayPendingPolicyCard(managers, cards!);
                 return;
             }
+#if DEVELOPMENT_PROBE
+            if (fullBattle && OriginalSpurnedScenario.EndTurnOnly(combat.GetTurnCount()))
+            {
+                AdvanceTurn(combat);
+                return;
+            }
+#endif
             if (IsUnitAndJunkPolicy())
             {
                 if (fullBattle && MagebladeScenario.Enabled && !MagebladeScenario.CaptureReady)
