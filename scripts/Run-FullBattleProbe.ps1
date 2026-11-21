@@ -668,6 +668,7 @@ param(
     [switch] $OriginalPerkeoRelic,
     [switch] $OriginalThikDeckChange,
     [switch] $OriginalThikBattle,
+    [ValidateRange(1, 3)][int] $OriginalThikTier = 3,
     [switch] $OriginalCorruptedAngelsRelic,
     [ValidateSet('cost-first', 'cost-last')]
     [string] $CorruptedAngelsCostOrder,
@@ -1748,7 +1749,7 @@ if ($EnchantmentCombatOnly) {
     $Policy = 'steward-once'
 }
 if ($OriginalThikDeckChange -or $OriginalThikBattle) {
-    $componentArguments = @('OriginalThikDeckChange', 'OriginalThikBattle', 'InputProfile', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'SkipBuild',
+    $componentArguments = @('OriginalThikDeckChange', 'OriginalThikBattle', 'OriginalThikTier', 'InputProfile', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'SkipBuild',
         'ShowWindow', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction', 'ProgressAction',
         'ErrorVariable', 'WarningVariable', 'InformationVariable', 'OutVariable', 'OutBuffer', 'PipelineVariable')
     if (($OriginalThikDeckChange -and $OriginalThikBattle) -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $componentArguments }).Count) {
@@ -1758,6 +1759,8 @@ if ($OriginalThikDeckChange -or $OriginalThikBattle) {
     $SettleCardAnimations = $true
     $Policy = if ($OriginalThikBattle) { 'units-spells-and-junk' } else { 'no-cards' }
     if ($OriginalThikBattle) { $BranchCardMasks = $true }
+} elseif ($PSBoundParameters.ContainsKey('OriginalThikTier')) {
+    throw 'OriginalThikTier requires an isolated Thik scenario.'
 }
 if ($PersistentEnchantmentRevivals) { $PersistentEnchantmentDeaths = $true }
 if ($PersistentEnchantmentDeaths) { $PersistentEnchantments = $true }
@@ -2749,7 +2752,10 @@ if ($ForcedFeeding) { $environment['MT2_PROBE_FORCED_FEEDING'] = '1' }
 if ($ShroudSpikeFeeding) { $environment['MT2_PROBE_SHROUD_SPIKE'] = '1' }
 if ($OriginalOpeningDeckSpawnRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-deck-spawn' }
 if ($OriginalPerkeoRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-perkeo' }
-if ($OriginalThikDeckChange -or $OriginalThikBattle) { $environment['MT2_PROBE_MODIFIERS'] = 'original-thik-deck-change' }
+if ($OriginalThikDeckChange -or $OriginalThikBattle) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-thik-deck-change'
+    $environment['MT2_PROBE_THIK_TIER'] = $OriginalThikTier.ToString([Globalization.CultureInfo]::InvariantCulture)
+}
 if ($OriginalThikBattle) {
     $environment['MT2_PROBE_THIK_FULL_BATTLE'] = '1'
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
@@ -3048,12 +3054,16 @@ if ($OriginalThikDeckChange) {
     $captureDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
     try {
         $capture = $captureDocument.RootElement
+        $definition = $capture.GetProperty('Definition')
         if ($capture.GetProperty('Boundary').GetString() -cne 'NativeOriginalThikDeckChange' -or
+            $definition.GetProperty('Tier').GetInt32() -ne $OriginalThikTier -or
             $capture.GetProperty('SettledPlays').GetArrayLength() -ne 2) { throw 'Incomplete original Thik deck-change capture.' }
-        $soulId = $capture.GetProperty('Definition').GetProperty('Id').GetString()
+        $soulId = $definition.GetProperty('Id').GetString()
     } finally { $captureDocument.Dispose() }
-    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
-        ThikT3Id=$soulId; Trace=$capturePath } | ConvertTo-Json
+    $summary = [ordered]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        ThikTier=$OriginalThikTier; ThikId=$soulId; Trace=$capturePath }
+    if ($OriginalThikTier -eq 3) { $summary['ThikT3Id'] = $soulId }
+    [pscustomobject]$summary | ConvertTo-Json
     return
 }
 if ($TrueFinalBossBirth) {
@@ -5251,13 +5261,14 @@ if ($OriginalThikBattle) {
     $thikCards = $trace.OriginalThikCards
     $thikControls = @($trace.Actions | Where-Object ScenarioAction)
     if (-not $trace.OriginalThikPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or
+        $trace.OriginalThikDefinition.Tier -ne $OriginalThikTier -or
         $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
         ($trace.OriginalThikCallbacks.Delta -join ',') -cne '1,0,-1' -or $thikControls.Count -ne 5 -or
         $thikControls[0].Action.CardInstanceId -ne $thikCards.GeneratorId -or
         $thikControls[1].Action.CardInstanceId -ne $thikCards.PurgeCardId) {
         throw 'Original Thik battle did not settle all controlled native actions and successors.'
     }
-    Write-Output 'ORIGINAL-THIK-BATTLE PASS: the native deck grew, retained its count through temporary purge, and shrank through permanent purge.'
+    Write-Output "ORIGINAL-THIK-BATTLE PASS: tier $OriginalThikTier added one permanent card, purged a temporary card, and removed one permanent card."
 }
 if ($OriginalElleTier) {
     $definition = $trace.OriginalElleDefinition

@@ -8,7 +8,7 @@ if (-not $SkipBuild) {
 }
 $directory = Join-Path $workspace 'tests/compatibility/game-2.3.1/mechanics/thik-deck-change'
 $manifest = @(Import-Csv -LiteralPath (Join-Path $directory 'manifest.tsv') -Delimiter "`t")
-if ($manifest.Count -ne 2 -or (($manifest.path | Sort-Object) -join ',') -cne 'tier3-battle.mt2f,tier3.mt2f') {
+if ((($manifest.path | Sort-Object) -join ',') -cne 'tier1-battle.mt2f,tier2-battle.mt2f,tier3-battle.mt2f,tier3.mt2f') {
     throw 'Unexpected Thik deck-change manifest.'
 }
 $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'

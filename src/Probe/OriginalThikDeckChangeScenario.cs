@@ -1,6 +1,7 @@
 #if DEVELOPMENT_PROBE
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using BepInEx.Logging;
 using HarmonyLib;
@@ -11,7 +12,6 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalThikDeckChangeScenario
     {
         internal const string Name = "original-thik-deck-change";
-        internal const string ThikT3Id = "490d737b-fa0d-4f16-bb90-4ff22af11530";
         private const string GeneratorDataId = RunCardGenerationScenario.FirstId;
         private const string PurgeDataId = OriginalPurgeToExhaustScenario.SelfPurgeBlightId;
         private static readonly System.Reflection.PropertyInfo ActiveSave = AccessTools.Property(typeof(SaveManager), "ActiveSaveData");
@@ -81,14 +81,26 @@ namespace MonsterTrain2Poju.Probe
                 save.GetSelectedSouls().Count != 0 || save.GetRelicPersistentState().HasHealthBuffPerCardInDeckBeenAppliedThisRun())
                 throw new InvalidOperationException("Thik requires pre-battle acquisition in a fresh run.");
 
+            int tier = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_THIK_TIER") ?? "3", CultureInfo.InvariantCulture);
+            string soulId = tier switch
+            {
+                1 => "7254e0f3-890a-43d9-b767-76df34b8fa05",
+                2 => "7ec532ca-5126-4a49-9895-67f33426f0c9",
+                3 => "490d737b-fa0d-4f16-bb90-4ff22af11530",
+                _ => throw new InvalidOperationException("Thik requires a tier between 1 and 3.")
+            };
+            int healthPerCard = tier + 2;
+            int attackPerCard = tier == 3 ? 2 : 0;
+            string soulKey = "ThikT" + tier;
             AllGameData data = save.GetAllGameData();
-            SoulData soul = data.GetAllSoulDatas().Single(item => item.GetID() == ThikT3Id);
+            SoulData soul = data.GetAllSoulDatas().Single(item => item.GetID() == soulId);
             var effects = soul.GetEffects();
-            var healthEffect = effects.Single(effect => effect.GetEffectClassName() == nameof(RelicEffectAddPyreAttackAndHealthPerCardInDeck));
-            if (soul.name != "ThikT3" || soul.GetTierLevel() != 3 || healthEffect.GetParamInt() != 2 || healthEffect.GetParamInt2() != 5 ||
-                healthEffect.GetEffectConditions().Count != 0 ||
-                effects.Count(effect => effect.GetEffectClassName() == "RelicEffectGetCardCopiesOnDeck") != 1)
-                throw new InvalidOperationException("The installed Thik T3 effects changed.");
+            var healthEffect = effects.Single(effect => effect.GetEffectClassName() == RelicDeckPyreStatsModel.Effect);
+            var copiesEffect = effects.Single(effect => effect.GetEffectClassName() == RelicDeckPyreStatsModel.CardCopies);
+            if (soul.name != soulKey || soul.GetTierLevel() != tier || effects.Count != 2 ||
+                healthEffect.GetParamInt() != attackPerCard || healthEffect.GetParamInt2() != healthPerCard ||
+                healthEffect.GetEffectConditions().Count != 0 || copiesEffect.GetParamInt() != 1)
+                throw new InvalidOperationException("The installed " + soulKey + " effects changed.");
 
             CardData blight = data.FindCardData(PurgeDataId) ?? throw new InvalidOperationException("The original SelfPurgeBlight is missing.");
             if (blight.name != "SelfPurgeBlight" || blight.GetCardType() != CardType.Blight ||
@@ -99,19 +111,21 @@ namespace MonsterTrain2Poju.Probe
             save.AddSelectedSoul(soul);
             SoulState selected = save.GetSelectedSouls().Single(owner => owner.GetRelicDataID() == soul.GetID());
             if (selected.GetSoulType() != SoulData.SoulType.Artifact)
-                throw new InvalidOperationException("Thik T3 requires its original Artifact soul attachment path.");
+                throw new InvalidOperationException(soulKey + " requires its original Artifact soul attachment path.");
             deckEffect = selected.GetEffects().OfType<RelicEffectAddPyreAttackAndHealthPerCardInDeck>().Single();
             AcquisitionBefore = Capture(managers, save, deckEffect);
             SoulHelper.AttachSoulEffect(selected, playerInitiated: false, managers.GetRelicManager(), save);
             AcquisitionAfter = Capture(managers, save, deckEffect);
-            if (AcquisitionAfter.CachedDeckCount != AcquisitionAfter.RawDeckCount || !AcquisitionAfter.HealthBuffApplied)
-                throw new InvalidOperationException("The installed Thik T3 did not apply its native attachment buff.");
+            if (AcquisitionAfter.CachedDeckCount != AcquisitionAfter.RawDeckCount || !AcquisitionAfter.HealthBuffApplied ||
+                AcquisitionAfter.RawSaveMaxHP - AcquisitionBefore.RawSaveMaxHP != healthPerCard * AcquisitionAfter.RawDeckCount ||
+                AcquisitionAfter.SaveModifiedAttack - AcquisitionBefore.SaveModifiedAttack != attackPerCard * AcquisitionAfter.RawDeckCount)
+                throw new InvalidOperationException("The installed " + soulKey + " did not apply its native attachment buff.");
 
             Definition = new { Id = soul.GetID(), Key = soul.name, Tier = soul.GetTierLevel(),
                 Effects = effects.Select(effect => new { Type = effect.GetEffectClassName(), Int = effect.GetParamInt(),
                     Int2 = effect.GetParamInt2(), Conditions = effect.GetEffectConditions().Count }).ToArray() };
             Acquired = true;
-            log.LogInfo("ORIGINAL-THIK-DECK-CHANGE-ACQUIRED native ThikT3 " + soul.GetID() + " and permanent SelfPurgeBlight.");
+            log.LogInfo("ORIGINAL-THIK-DECK-CHANGE-ACQUIRED native " + soulKey + " " + soul.GetID() + " and permanent SelfPurgeBlight.");
         }
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
