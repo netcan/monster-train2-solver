@@ -122,20 +122,23 @@ namespace MonsterTrain2Poju.Probe
             {
                 lastHeartbeat = Time.realtimeSinceStartup;
                 AllGameManagers? current = AllGameManagers.Instance;
+                CombatManager? currentCombat = current?.GetCombatManager();
                 log.LogInfo("DEPTH-WAIT stage=" + stage + " pass=" + pass +
-                    " turn=" + (current?.GetCombatManager()?.GetTurnCount().ToString() ?? "none") +
+                    " turn=" + (currentCombat?.GetTurnCount().ToString() ?? "none") +
                     " sequence=" + (current?.GetSaveManager()?.GetGameSequence().ToString() ?? "none") +
                     " loading=" + LoadingScreen.IsWorking() + " screen=" + current?.GetScreenManager()?.GetTopScreen() +
-                    " endTurn=" + current?.GetCombatManager()?.ShouldShowEndTurnButton() +
-                    " drawn=" + current?.GetCombatManager()?.HaveCardsBeenDrawnForCurrentTurn() +
-                    " triggers=" + current?.GetCombatManager()?.IsRunningTriggerQueue +
+                    " endTurn=" + currentCombat?.ShouldShowEndTurnButton() +
+                    " drawn=" + currentCombat?.HaveCardsBeenDrawnForCurrentTurn() +
+                    " triggers=" + currentCombat?.IsRunningTriggerQueue +
                     " animations=" + CardAnimationSettlement.Ready() +
                     " handAnimating=" + current?.GetHandUI()?.AreAnyCardsAnimating() +
                     " preview=" + current?.GetSaveManager()?.PreviewMode + " isolatedPreview=" + PreviewRngIsolation.Active +
                     " playing=" + current?.GetReplayManager()?.IsCardPlaying() +
-                    " dirty=" + (current?.GetCombatManager() == null ? null : AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(current.GetCombatManager())) +
+                    " dirty=" + (currentCombat == null ? null : AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(currentCombat)) +
                     (PlayerAdvisorProbe.Enabled && current?.GetSaveManager()?.GetGameSequence() == SaveData.GameSequence.InBattle
-                        ? PlayerAdvisorProbe.WaitState : ""));
+                        ? PlayerAdvisorProbe.WaitState : "") +
+                    (stage == Stage.Battle && current != null && currentCombat != null
+                        ? DescribeDecisionWait(current, currentCombat) : ""));
             }
             if (stage == Stage.Quitting)
             {
@@ -4232,6 +4235,24 @@ namespace MonsterTrain2Poju.Probe
             CombatManager combat, CardManager cards)
         {
             return TwoTurnScenario.CaptureSnapshot(label, managers, save, combat, cards, log);
+        }
+
+        private static string DescribeDecisionWait(AllGameManagers managers, CombatManager combat)
+        {
+            if (!combat.ShouldShowEndTurnButton() || !combat.HaveCardsBeenDrawnForCurrentTurn())
+                return "";
+
+            var effects = AccessTools.Field(typeof(CombatManager), "effectsQueue")?.GetValue(combat) as System.Collections.ICollection;
+            object? resolving = AccessTools.Field(typeof(CombatManager), "cardEffectResolving")?.GetValue(combat);
+            var loop = AccessTools.Field(typeof(CombatManager), "mainCombatLoop")?.GetValue(combat) as CoroutineController;
+            return " externalInput=" + combat.AllowExternalInput + " queuedEffects=" + effects?.Count +
+                " resolvingEffect=" + resolving + " devoteActive=" + DevotionProbe.IsDevoteInProgress +
+                " dialogActive=" + managers.GetScreenManager()?.GetScreenActive(ScreenName.Dialog) +
+                " handSelection=" + managers.GetHandUI()?.IsHandSelectionActive() +
+                " moonResetPending=" + managers.GetPlayerManager()?.GetWasMoonPhaseResetMidBattle +
+                " combatLoopRunning=" + (loop?.IsRunning().ToString() ?? "none") +
+                " combatLoopStack=[" + loop?.PrintStack(" > ") + "]" +
+                (PlayerAdvisorProbe.Enabled ? PlayerAdvisorProbe.DecisionWaitState : "");
         }
 
         private static bool Ready(AllGameManagers managers, SaveManager save, CombatManager? combat, CardManager? cards)

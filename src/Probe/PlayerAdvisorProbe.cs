@@ -88,6 +88,10 @@ namespace MonsterTrain2Poju.Probe
                         unit.name + ":preview=" + unit.SpawnedInPreviewMode));
             }
         }
+        internal static string DecisionWaitState => " captureInitialized=" + CaptureInitialized +
+            " playerWasInBattle=" + Field<bool>("wasInBattle") +
+            " playerHasBattleKey=" + (Field<string?>("manualBattleKey") != null) +
+            " playerHiddenPause=" + Property("HiddenPause");
         internal static BattleAdvice Advice => Get<BattleAdvice>("CurrentAdvice");
         internal static BattleAdvisorOverlay.Publication LatestTiming =>
             JArray.FromObject(Get<object>("Publications")).Last!.ToObject<BattleAdvisorOverlay.Publication>()!;
