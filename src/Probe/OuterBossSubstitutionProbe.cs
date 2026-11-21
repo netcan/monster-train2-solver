@@ -37,7 +37,9 @@ namespace MonsterTrain2Poju.Probe
                 bool calibratedTrial = effects.Count == 1 && save.IsTitanTrialEnabled() &&
                     typeof(CardState).Module.ModuleVersionId == new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d") &&
                     (MatchesFleshweaverTrial(data, replacement, effect.SourceRelicData, scenario) ||
-                     save.GetAscensionLevel() == 0 && MatchesCaelTrial(data, replacement, effect.SourceRelicData, scenario));
+                     (save.GetAscensionLevel() == 0 || scenario == "Level6BattleEaterDamageShield" &&
+                        CovenantBirthStatProbe.RankTwoCaelShieldTrialCalibrated(save)) &&
+                     MatchesCaelTrial(data, replacement, effect.SourceRelicData, scenario));
                 supported &= seraphTrial || calibratedTrial;
                 data = replacement;
             }

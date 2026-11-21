@@ -28,6 +28,15 @@ namespace MonsterTrain2Poju.Probe
                 save.GetCovenants().Select(owner => owner.GetRelicDataID())) &&
             (Calibrated(save) || OrdinaryWavesCalibrated(save));
 
+        internal static bool RankTwoCaelShieldTrialCalibrated(SaveManager save)
+        {
+            var owners = save.GetCovenants();
+            return save.GetAscensionLevel() == 2 &&
+                save.GetCovenantsForSpawnPattern().Select(owner => owner.GetRelicDataID()).SequenceEqual(
+                    owners.Select(owner => owner.GetRelicDataID())) &&
+                TrueFinalBossCovenantModel.CalibratedCaelShieldTrialOwners(owners.Select(CaptureOwner).ToArray());
+        }
+
         private static bool OrdinaryWavesCalibrated(SaveManager save)
         {
             var owners = save.GetCovenants();
@@ -43,12 +52,12 @@ namespace MonsterTrain2Poju.Probe
                     AdditionalWaveOwner(owner));
         }
 
-        private static bool AdditionalWaveOwner(CovenantState owner)
-        {
-            var captured = new CombatRelicState(owner.GetRelicDataID(), owner.GetSourceRelicData().name,
+        private static bool AdditionalWaveOwner(CovenantState owner) =>
+            TrueFinalBossCovenantModel.OrdinaryWaveExtensionOwner(CaptureOwner(owner));
+
+        private static CombatRelicState CaptureOwner(CovenantState owner) =>
+            new CombatRelicState(owner.GetRelicDataID(), owner.GetSourceRelicData().name,
                 owner.GetEffects().Select(effect => effect.GetType().Name).ToArray(), isCovenant: true);
-            return TrueFinalBossCovenantModel.OrdinaryWaveExtensionOwner(captured);
-        }
 
         internal static EnemyBirthStatAdjustment? Capture(CharacterData data)
         {
