@@ -629,6 +629,10 @@ Ephemeral 路径继续由原来的证据约束；其他升级／替换组合仍�
 和每份 16 条分支。三份二进制位于 `mechanics/lifelink-early-sacrifice/`。
 既有三个归档的出牌和结束回合候选检查也已通过，报告为
 `results/early-entropy-frontiers-20261122-033924/report.tsv`。
+全新底层采录用 `-TrueFinalBossMaximumEarlyEntropy Bottom`，44.61 秒结算为 72 血胜局，
+六次出牌、两次结束回合及四项零计数均通过。已登记 `entropy-bottom-battle.mt2f`。
+批量复放核对部署、受控手牌设置前后，以及第一回合至终局的完整输入链，六个出牌根和
+两个结束回合根也通过候选检查。
 
 ## LifeLink 最大生命与原版终局首领 · 2026-11-15
 
