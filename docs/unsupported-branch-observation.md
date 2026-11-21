@@ -29,3 +29,12 @@ matched the26 input prefix and completed the27th EndTurn in87.09 seconds, retain
 the original rejection and observing the Harvester's tower-wide movement. Native
 process exit and protected source files were verified; model acceptance of that
 successor is a separate requirement. No full regression was needed.
+
+The 2.3.1 Judge’s Scales Ring 8 run exposed a legal third-floor Eager Conscript
+play that the model rejected. The native probe replayed 23 preparatory inputs
+from the original checkpoint and then accepted that play. The new Fun Guy went
+from 4 to 7 HP and entered its troop aura’s target cache. The existing enemy
+enchanters remained active, and the preview copy left the primary target cache
+unchanged. The recorded successor and RNG match the corrected model. The
+registered component is
+`tests/compatibility/game-2.3.1/mechanics/troop-aura-enchantment/native-branch.mt2f`.
