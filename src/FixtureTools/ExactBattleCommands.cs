@@ -27,7 +27,7 @@ internal static class ExactBattleCommands
         {
             if (step.IsEndTurn)
             {
-                var next = BattleTurnModel.EndTurn(replay); Require(next.Supported, next.UnsupportedReason ?? "Unsupported EndTurn.");
+                var next = BattleTurnModel.EndTurn(replay, step.RelentlessDecisions); Require(next.Supported, next.UnsupportedReason ?? "Unsupported EndTurn.");
                 replay = next.State!; outcome = next.Outcome;
             }
             else

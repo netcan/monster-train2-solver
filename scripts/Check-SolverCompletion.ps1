@@ -32,6 +32,24 @@ try {
     $null = New-Item -ItemType Directory -Path $output
     dotnet $tools solve-exact $original (Join-Path $output 'node-cutoff.mt2f') 1 30000 1
     if ($LASTEXITCODE -ne 0) { throw 'Exact-search CLI export/independent replay failed.' }
+    $relentless = 'tests/compatibility/game-2.3.1/mechanics/relentless-battle/abandon.mt2f'
+    $exactRelentless = Join-Path $output 'relentless-choices.mt2f'
+    dotnet $tools solve-exact $relentless $exactRelentless 200 12000 2
+    if ($LASTEXITCODE -ne 0) { throw 'Exact-search CLI failed to replay its Relentless choices.' }
+    Add-Type -Path (Join-Path (Split-Path $tools) 'FixtureArchive.dll')
+    $exactDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Resolve-Path -LiteralPath $exactRelentless).Path)
+    try {
+        $exactResult = $exactDocument.RootElement.GetProperty('Result')
+        $choiceSteps = @($exactResult.GetProperty('Steps').EnumerateArray() | Where-Object {
+            $choices = [MonsterTrain2Poju.Fixtures.FixtureValue]::new()
+            $_.GetProperty('IsEndTurn').GetBoolean() -and $_.TryGetProperty('RelentlessDecisions', [ref]$choices) -and
+                $choices.ValueKind -eq 'Array' -and $choices.GetArrayLength() -gt 0
+        })
+        if (-not $exactDocument.RootElement.GetProperty('Verified').GetBoolean() -or
+            -not $exactResult.GetProperty('CertifiedHorizonOptimal').GetBoolean() -or $choiceSteps.Count -eq 0) {
+            throw 'The verified exact-search export must contain an EndTurn with Relentless choices.'
+        }
+    } finally { $exactDocument.Dispose() }
     $policy = Join-Path $output 'belief.mt2f'
     dotnet $tools plan-belief $original $policy 8 2 128 30000 7
     if ($LASTEXITCODE -ne 0) { throw 'Probability-policy CLI export failed.' }
