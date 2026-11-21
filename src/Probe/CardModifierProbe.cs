@@ -31,7 +31,7 @@ namespace MonsterTrain2Poju.Probe
                 if (captured != null && captured.TryGetValue(card, out CardInstanceState cached)) return cached;
                 var interactions = new List<string>();
                 if (card.IsPurified) interactions.Add("Purified card");
-                if (card.IsNonPlayableEnergyCostType()) interactions.Add("Nonplayable card cost type");
+                if (card.IsNonPlayableEnergyCostType()) interactions.Add(CardModifierModel.NonPlayableCostInteraction);
                 if (card.GetRemoveFromStandByPileOverride(out _)) interactions.Add("Overridden standby return pile");
                 CardData data = managers.GetSaveManager().GetAllGameData().FindCardData(card.GetCardDataID())!;
                 if (card.IsConsumeRemainingEnergyCostType() != (data.GetCostType() == CardData.CostType.ConsumeRemainingEnergy) ||

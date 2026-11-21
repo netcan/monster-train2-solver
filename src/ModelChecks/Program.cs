@@ -8091,6 +8091,12 @@ if (args.Length == 1 && args[0] == "--original-moon-phase-hand-upgrade-pure")
     OriginalMoonPhaseRoomsGainMagicPowerChecks.Run();
     return;
 }
+if (args.Length == 2 && args[0] == "--nonplayable-card-witness-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalMoonPhaseRoomsGainMagicPowerChecks.NonPlayableWitness(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-moon-phase-hand-upgrade-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

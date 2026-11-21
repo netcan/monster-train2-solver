@@ -413,6 +413,7 @@ namespace MonsterTrain2Poju.Model
 
     public static class CardModifierModel
     {
+        internal const string NonPlayableCostInteraction = "Nonplayable card cost type";
         public static IEnumerable<string> UpgradeInteractions(CardUpgradeModifier upgrade) =>
             (upgrade.Lifecycle?.ReplacedAssets.Count > 0
                 ? upgrade.ExternalInteractions.Where(interaction => interaction != "Upgrade replacements")
@@ -455,7 +456,8 @@ namespace MonsterTrain2Poju.Model
                 counter.Value < 0 || counter.Type != "CardEffectDiscardHand") ||
                 instance.EffectCounters.Select(counter => counter.EffectIndex).Distinct().Count() != instance.EffectCounters.Count))
                 return "Invalid or unmodeled card effect counters.";
-            var interactions = instance.ExternalInteractions.Concat(instance.Permanent.ExternalInteractions)
+            var interactions = instance.ExternalInteractions.Where(interaction => interaction != NonPlayableCostInteraction)
+                .Concat(instance.Permanent.ExternalInteractions)
                 .Concat(instance.Temporary.ExternalInteractions).Concat(instance.Permanent.Upgrades.Concat(instance.Temporary.Upgrades)
                     .SelectMany(UpgradeInteractions)).ToList();
             if (instance.Permanent.PersistentHealth != 0 || instance.Temporary.PersistentHealth != 0) interactions.Add("Persistent card health");
@@ -481,7 +483,7 @@ namespace MonsterTrain2Poju.Model
         public static CardPlayRule Resolve(CardPlayRule rule, CardInstanceState instance)
         {
             if (instance.Permanent.MergedEquipment != null) rule = instance.Permanent.MergedEquipment.Resolve(rule);
-            var interactions = rule.ExternalInteractions.Concat(instance.ExternalInteractions)
+            var interactions = rule.ExternalInteractions.Concat(instance.ExternalInteractions.Where(interaction => interaction != NonPlayableCostInteraction))
                 .Concat(instance.Permanent.ExternalInteractions).Concat(instance.Temporary.ExternalInteractions)
                 .Concat(instance.Permanent.Upgrades.Concat(instance.Temporary.Upgrades).SelectMany(UpgradeInteractions)).ToList();
             string? exhaustError = CardExhaustModel.Validate(instance);

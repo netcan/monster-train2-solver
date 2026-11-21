@@ -455,6 +455,8 @@ namespace MonsterTrain2Poju.Model
             if (uiRangeError != null) return Unsupported(uiRangeError);
             if (rule == null) return Unsupported("Missing play definition for " + card.DataId);
             CardInstanceState? playingInstance = context.CardInstances?.FirstOrDefault(item => item.InstanceId == card.InstanceId);
+            if (rule.CostType != "NonPlayable" && playingInstance?.ExternalInteractions.Contains(CardModifierModel.NonPlayableCostInteraction) == true)
+                return Unsupported("Native nonplayable cost type differs from the captured play rule.");
             if (playingInstance != null && CardCopyOnPlayModel.ReverseCopyBeforeConsume(playingInstance) &&
                 (context.OtherPiles == null || !context.OtherPiles.Any(pile => pile.Name == "Standby") ||
                  !context.OtherPiles.Any(pile => pile.Name == "Exhausted")))
@@ -512,7 +514,7 @@ namespace MonsterTrain2Poju.Model
             string[] unsupportedInteractions = rule.ExternalInteractions.Where(interaction =>
                 interaction != "Card traits" || !supportsCorruptRestrictedTrait).ToArray();
             if (unsupportedInteractions.Length > 0) return Unsupported(string.Join("; ", unsupportedInteractions));
-            if (rule.CostType != "Default" && rule.CostType != "ConsumeRemainingEnergy")
+            if (rule.CostType != "Default" && rule.CostType != "ConsumeRemainingEnergy" && rule.CostType != "NonPlayable")
                 return Unsupported("Unmodeled card cost type " + rule.CostType);
             if (rule.Cost < 0) return Unsupported("Negative card costs are not implemented.");
             int effectiveCost = rule.Cost;
@@ -549,6 +551,7 @@ namespace MonsterTrain2Poju.Model
                 context.IsolatedBattlePreview == true || target.Preview);
             if (!pyreCost.Supported) return Unsupported(pyreCost.UnsupportedReason!);
             if (!pyreCost.CanPay) return Illegal("Insufficient energy.");
+            if (rule.CostType == "NonPlayable") return Unsupported("Affordable NonPlayable card execution requires native calibration.");
             if (playingInstance != null)
             {
                 string? corruptionError = CardCorruptRestrictedModel.Test(context, playingInstance, action.RoomIndex, out bool corruptionAllowed);

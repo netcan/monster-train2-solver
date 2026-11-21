@@ -14,6 +14,52 @@ internal static class OriginalMoonPhaseRoomsGainMagicPowerChecks
     private const string LegacyModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
     private const string DivinePunishmentId = "83e4e7bd-e285-4239-8e99-6987b49db839";
 
+    internal static void NonPlayableWitness(FixtureValue root)
+    {
+        const string darkshard = "0127e3c2-b60d-4ac3-acf7-6395d44eb5ef";
+        Require(root.GetProperty("GameModuleMvid").GetString() == CurrentModule && root.GetProperty("NativeWon").GetBoolean(),
+            "Expected the current native battle with Shattering Darkshard.");
+        var rows = root.GetProperty("Turns").EnumerateArray().Where(row => row.GetProperty("Predicted")
+            .GetProperty("UnsupportedReason").GetString() == CardModifierModel.NonPlayableCostInteraction).ToArray();
+        Require(rows.Length > 0, "The native archive must retain the old nonplayable-cost rejection.");
+        BattleTurnState before = rows[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        CombatContext context = before.Spawn.Train.Context!;
+        CardToken inHand = context.Cards.Hand.Single(card => card.DataId == darkshard);
+        CardInstanceState instance = context.FindCard(inHand.InstanceId)!;
+        CardPlayRule rule = before.PlayRules!.Cards.Single(card => card.DataId == darkshard);
+        Require(before.Spawn.Turn == 4 && rule.CostType == "NonPlayable" && rule.Cost == 99 && before.Energy < rule.Cost &&
+            instance.ExternalInteractions.Contains(CardModifierModel.NonPlayableCostInteraction) && CardModifierModel.UnsupportedReason(instance) == null,
+            "Missing native passive-cost metadata and the deliberately unaffordable card instance.");
+        var room = before.PlayRules.Rooms.First(item => item.Enabled && !item.IsPyre && !item.SummonBlocked &&
+            before.Spawn.Train.Rooms.Single(state => state.RoomIndex == item.RoomIndex).Units
+                .Where(unit => unit.Team == CombatTeam.Player).Sum(unit => unit.Size) + rule.SpawnUnit!.Size <= item.PlayerCapacity);
+        BattleActionResult direct = BattleActionModel.PlayCard(before, new PlayCardAction(inHand.InstanceId, room.RoomIndex, 0));
+        BattleActionEnumeration frontier = BattleActionModel.EnumerateActions(before);
+        var torchIds = before.PlayRules.Cards.Where(candidate => candidate.AssetKey == "StarterTorch").Select(candidate => candidate.DataId).ToHashSet();
+        int[] torches = context.Cards.Hand.Where(card => torchIds.Contains(card.DataId)).Select(card => card.InstanceId).ToArray();
+        Require(direct.Rejection == ActionRejection.Illegal && direct.Reason == "Insufficient energy." &&
+            frontier.SupportedCandidates.Any(candidate => torches.Contains(candidate.Action.CardInstanceId) && candidate.Result.Supported) &&
+            !frontier.SupportedActions.Any(action => action.CardInstanceId == inHand.InstanceId) &&
+            !frontier.UnsupportedAttempts.Any(attempt => attempt.Action?.CardInstanceId == inHand.InstanceId ||
+                attempt.Reason.Contains(CardModifierModel.NonPlayableCostInteraction, StringComparison.Ordinal)),
+            "The unaffordable card must not disable supported search branches. Direct=" + direct.Rejection + " " + direct.Reason +
+            ", frontier=" + string.Join(", ", frontier.UnsupportedAttempts.Where(attempt => attempt.Action?.CardInstanceId == inHand.InstanceId)
+                .Select(attempt => attempt.Reason).Distinct()));
+
+        foreach (FixtureValue row in rows)
+        {
+            BattleTurnState input = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            BattleTurnState actual = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            BattleTurnResult predicted = BattleTurnModel.EndTurn(input, RecordedBattleChecks.Decisions(row));
+            Require(predicted.Supported, "Native EndTurn remains unsupported: " + predicted.UnsupportedReason);
+            bool terminal = predicted.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
+            string? difference = ModelJson.Difference(BattleTurnChecks.Comparable(predicted.State!, terminal), BattleTurnChecks.Comparable(actual, terminal));
+            Require(predicted.Outcome == (RoomOutcome)row.GetProperty("ActualOutcome").GetInt32() && difference == null,
+                "Native EndTurn differs at turn " + input.Spawn.Turn + ": " + difference);
+        }
+        Console.WriteLine($"NONPLAYABLE-CARD-WITNESS PASS: {rows.Length} native EndTurns, passive original Shattering Darkshard and exact unaffordable-card rejection.");
+    }
+
     internal static void Native(FixtureValue root)
     {
         string module = root.GetProperty("GameModuleMvid").GetString()!;
