@@ -1820,6 +1820,13 @@ if (args.Length is 2 or 3 && args[0] == "--sentient-draw-upgrade-only")
     else { using var replay = ModelJson.ReadFixture(args[2]); SentientDrawUpgradeChecks.Native(source.RootElement, replay.RootElement); }
     return;
 }
+if (args.Length == 3 && args[0] == "--shardtail-imp-cost-only")
+{
+    using var deployment = ModelJson.ReadFixture(args[1]);
+    using var observation = ModelJson.ReadFixture(args[2]);
+    ShardtailImpCostChecks.Native(deployment.RootElement, observation.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--unsupported-card-ranking-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
