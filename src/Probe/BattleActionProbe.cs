@@ -16,7 +16,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAttachEquipment", "CardEffectAttachTrainRoomAttachment", "CardEffectBuffEquipment", "CardEffectRemoveEquipment", "CardEffectRoomAbilityBumpToCurrentRoom",
             "CardEffectRewardGold", "CardEffectGainEnergy", "CardEffectAdjustEnergy", "CardEffectGainEnergyNextTurn", "CardEffectGainEnergyEveryTurn",
             "CardEffectAdjustDragonsHoard", "CardEffectRewardGoldPerDragonHoard",
-            "CardEffectDamage", ExaltationModel.NativeEffect, DragThemDownModel.NativeEffect, "CardEffectDamageFloorByFloor", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDamageByUnitsKilled", "CardEffectTransferAttackFromUnit", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
+            "CardEffectDamage", "CardEffectDamageByPercentRemainingHealth", ExaltationModel.NativeEffect, DragThemDownModel.NativeEffect, "CardEffectDamageFloorByFloor", "CardEffectDamagePerSourceAttack", "CardEffectDamagePerHp", "CardEffectDamageByUnitsKilled", "CardEffectTransferAttackFromUnit", "CardEffectDraw", "CardEffectDrawAdditionalNextTurn",
             "CardEffectRemoveAllStatusEffects", "CardEffectTransferAllStatusEffectsFromUnit", "CardEffectTransferAllStatusEffects",
             "CardEffectAdjustRoomCapacity", "CardEffectAdjustRoomMaxCorruption", "CardEffectAdjustCorruption",
             "CardEffectAddPermanentCorruption", "CardEffectAddStatusToRoomScalingByCasterStatusCount", "CardEffectAddStatusEffectPerMissingHp",
@@ -520,6 +520,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectDamage" ? "Damage" :
                 effect.GetEffectStateName() == "CardEffectDamageFloorByFloor" ? FloorDamageModel.Effect :
                 effect.GetEffectStateName() == "CardEffectDamagePerSourceAttack" ? "DamagePerSourceAttack" :
+                effect.GetEffectStateName() == "CardEffectDamageByPercentRemainingHealth" ? "DamageCurrentHealthPercent" :
                 effect.GetEffectStateName() == "CardEffectDamagePerHp" ? "DamagePerHp" :
                 effect.GetEffectStateName() == "CardEffectDamageByUnitsKilled" ? "DamageByUnitsKilled" :
                 effect.GetEffectStateName() == "CardEffectTransferAttackFromUnit" ? "TransferAttackFromUnit" :
@@ -645,6 +646,9 @@ namespace MonsterTrain2Poju.Probe
                     effect.GetEffectStateName() == "CardEffectAddPermanentCardUpgradeToCardsInHand" ? "Permanent" : "TemporaryUntilEndOfBattle" :
                     type == "AttachEquipment" ? "" : ((UnitUpgradeLifetime)effect.GetAdditionalParamInt1()).ToString();
             }
+            if (type == "DamageCurrentHealthPercent" && (effect.GetUseIntRange() || effect.GetParamBool() ||
+                effect.GetTargetMode() != TargetMode.Pyre || effect.GetParamInt() < 0 || effect.GetParamInt() > 100))
+                interactions.Add("Unmodeled remaining-health damage parameters");
             var statuses = new List<CombatStatus>();
             if (type == "AddStatus" || type == DragThemDownModel.Effect || type == DiscardHandStatusModel.Effect || type == DevotionStatusModel.Effect || type == "HealOverheal" || type == "MultiplyStatus" || type == "AdjustAllStatusEffects" ||
                 type == "TransferAllStatuses" ||

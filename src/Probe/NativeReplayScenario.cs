@@ -650,6 +650,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalTurnEndBumpScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalSmallDeckDamageScenario.Enabled)
                         OriginalSmallDeckDamageScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalBeeziebubScenario.Enabled)
+                        OriginalBeeziebubScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && PyreResourceRefreshScenario.Enabled && !PyreResourceRefreshScenario.Prepared)
                         PyreResourceRefreshScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && SpawnStatusRelicScenario.OriginalCombatRelics && !SpawnStatusRelicScenario.OriginalCombatRelicsAcquired)
@@ -2603,6 +2605,12 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return;
             }
+            if (fullBattle && OriginalBeeziebubScenario.Enabled && !OriginalBeeziebubScenario.Prepared)
+            {
+                numericModifiersPrepared = true;
+                OriginalBeeziebubScenario.Prepare(managers, log);
+                return;
+            }
             if (fullBattle && OriginalSmallDeckDamageScenario.Enabled && !OriginalSmallDeckDamageScenario.Prepared)
             {
                 numericModifiersPrepared = true;
@@ -3337,6 +3345,10 @@ namespace MonsterTrain2Poju.Probe
                 {
                     pendingPlay = SpawnStatusScalingScenario.Choose(decision);
                 }
+                else if (OriginalBeeziebubScenario.Enabled)
+                {
+                    pendingPlay = OriginalBeeziebubScenario.Choose(decision);
+                }
                 else if (OriginalSmallDeckDamageScenario.Enabled)
                 {
                     pendingPlay = OriginalSmallDeckDamageScenario.Choose(decision);
@@ -3937,6 +3949,7 @@ namespace MonsterTrain2Poju.Probe
                 (OriginalCardPlayDamageScenario.Enabled && OriginalCardPlayDamageScenario.IsScenarioAction(action)) ||
                 (OriginalConsumeDamageScenario.Enabled && OriginalConsumeDamageScenario.IsScenarioAction(action)) ||
                 (OriginalEatenDamageScenario.Enabled && OriginalEatenDamageScenario.IsScenarioAction(action)) ||
+                (OriginalBeeziebubScenario.Enabled && OriginalBeeziebubScenario.IsScenarioAction(action)) ||
                 (OriginalSmallDeckDamageScenario.Enabled && OriginalSmallDeckDamageScenario.IsScenarioAction(action)) ||
                 (OriginalTurnEndBumpScenario.Enabled && OriginalTurnEndBumpScenario.IsScenarioAction(action)) ||
                 (OriginalShowtimeScenario.Enabled && OriginalShowtimeScenario.IsScenarioAction(action)) ||

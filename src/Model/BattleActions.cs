@@ -1174,7 +1174,7 @@ namespace MonsterTrain2Poju.Model
                     CardScaledEnergyResult gained = CardScaledEnergyModel.Discarded(context, energyCard, wasPlayed: true);
                     if (!gained.Supported) return Unsupported(gained.UnsupportedReason!);
                     context = gained.Context!;
-                    if (CardDiscardDrawModel.Present(energyCard))
+                    if (CardDiscardDrawModel.Present(energyCard) || CardPlayedDrawModel.Present(energyCard))
                     {
                         // Earlier discard traits have already removed the played card before
                         // its scaling draw runs. Keep the cards that this callback draws.
@@ -1183,7 +1183,9 @@ namespace MonsterTrain2Poju.Model
                             context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId, context.Cards.DeckDrawDisabledThisTurn)).WithOtherPiles(piles);
                         TypedDrawResult discardDraw = CardDiscardDrawModel.Discarded(context, energyCard, wasPlayed: true, source.PlayRules);
                         if (!discardDraw.Supported) return Unsupported(discardDraw.UnsupportedReason!);
-                        context = discardDraw.Context!;
+                        TypedDrawResult playedDraw = CardPlayedDrawModel.Discarded(discardDraw.Context!, energyCard, wasPlayed: true, source.PlayRules);
+                        if (!playedDraw.Supported) return Unsupported(playedDraw.UnsupportedReason!);
+                        context = playedDraw.Context!;
                         hand = context.Cards.Hand.ToList(); discard = context.Cards.Discard.ToList();
                     }
                 }

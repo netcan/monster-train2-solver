@@ -312,6 +312,9 @@ namespace MonsterTrain2Poju.Model
                     // BalanceData.GetUpgradeSlots, not combat callbacks. Its
                     // acquired card upgrades are already in the native input.
                     if (effect == "RelicEffectAddSpellUpgradeSlot" || effect == "RelicEffectAddUnitUpgradeSlot") continue;
+                    // SoulHelper applies this marker's upgrade while attaching the soul.
+                    // The battle model reads the resulting card modifiers.
+                    if (effect == "RelicEffectCardUpgrade") continue;
                     // IRelicEffectModifyTrialGoldRewards is consumed only by
                     // SaveManager.GetAdjustedGoldAmount for trial rewards.
                     // Acquired gold and permanent upgrades are already captured;

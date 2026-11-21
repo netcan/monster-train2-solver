@@ -2056,17 +2056,27 @@ namespace MonsterTrain2Poju.Model
                     }
                     if (effect.Type == "HealOverheal" && target.Status("heal immunity")?.Stacks > 0) continue;
                     int? scaledDamage = null;
+                    bool currentHealthPercent = effect.Type == "DamageCurrentHealthPercent";
+                    int attributedCardId = currentHealthPercent ? 0 : sourceCardId;
                     bool nativeDamagePhase = IsDamage(effect) && targetRoom!.Context?.SpawnPoints != null &&
                         (!targetRoom.Preview || targetRoom.Context.Enchantments?.TemporaryPreviewUnitIds != null);
                     // Native calculates trait damage and defensive status focus before its trigger
                     // queue drains the previous victim's standby return. Preserve that value once.
                     if (IsDamage(effect))
                     {
-                        DamageScalingResult scaled = DamageScalingModel.Apply(state.Context, damageOwnerCardId, sourceCardId,
-                            Math.Max(0, damageValue), selectedRoom: state.Rooms.FirstOrDefault(room => room.RoomIndex == state.Context?.QueryFrame?.SelectedRoomIndex), targetStatuses: target.Statuses, attackerUnitId: damageAttackerId);
-                        if (!scaled.Supported) return UnsupportedTrain(scaled.UnsupportedReason!);
-                        state = WithContext(state, scaled.Context!);
-                        scaledDamage = Math.Max(0, scaled.Damage);
+                        if (currentHealthPercent)
+                        {
+                            if (!target.IsPyre || damageAttackerId != 0) return UnsupportedTrain("Remaining-health damage requires its native Pyre target and no character source.");
+                            scaledDamage = (int)Math.Floor((float)effect.Value / 100f * (float)target.Health);
+                        }
+                        else
+                        {
+                            DamageScalingResult scaled = DamageScalingModel.Apply(state.Context, damageOwnerCardId, sourceCardId,
+                                Math.Max(0, damageValue), selectedRoom: state.Rooms.FirstOrDefault(room => room.RoomIndex == state.Context?.QueryFrame?.SelectedRoomIndex), targetStatuses: target.Statuses, attackerUnitId: damageAttackerId);
+                            if (!scaled.Supported) return UnsupportedTrain(scaled.UnsupportedReason!);
+                            state = WithContext(state, scaled.Context!);
+                            scaledDamage = Math.Max(0, scaled.Damage);
+                        }
                         FocusDamageStatuses(target, targetRoom!, scaledDamage.Value);
                         if (!nativeDamagePhase || callbacks.Any(queued => queued.Kind != "OnDeath" || !queued.DeferUntilRemoval)) DrainDeaths();
                         // Draining a prior death updates shared statistics; the next target must read that new context.
@@ -2084,7 +2094,7 @@ namespace MonsterTrain2Poju.Model
                     var priorDeaths = nativeDamagePhase ? callbacks.ToArray() : Array.Empty<RoomCombatModel.QueuedCharacterTrigger>();
                     if (nativeDamagePhase) callbacks.Clear();
                     TrainSpellResult? nativeApplied = nativeDamagePhase ? ApplyNativeDamageStep(state, targetRoom!.RoomIndex, id,
-                        scaledDamage!.Value, sourceCardId, priorDeaths, damageAttackerId,
+                        scaledDamage!.Value, attributedCardId, priorDeaths, damageAttackerId,
                         enqueueCharacterTrigger: externalDamageActor == null ? null : callbacks.Add,
                         drainQueuedTriggers: externalDamageActor == null ? null : frame =>
                         {
@@ -2098,7 +2108,7 @@ namespace MonsterTrain2Poju.Model
                         ? new RoomCombatResult(nativeApplied.State!.Rooms.Single(room => room.RoomIndex == targetRoom!.RoomIndex),
                             nativeApplied.Outcome, 0, nativeApplied.Events.ToList(), pendingCallbacks: nativeApplied.PendingCallbacks,
                             retainedUnits: nativeApplied.RetainedUnits)
-                        : ApplyOne(targetRoom!, effect, target, sourceCardId,
+                        : ApplyOne(targetRoom!, effect, target, attributedCardId,
                         RoomCapacityModel.Maximum(state.Context, targetRoom!.RoomIndex, CombatTeam.Player) ?? capacity?.PlayerCapacity ?? playerCapacity,
                         RoomCapacityModel.Maximum(state.Context, targetRoom!.RoomIndex, CombatTeam.Enemy) ?? capacity?.EnemyCapacity ?? enemyCapacity,
                         deferSpawnerExhaustion: piles != null, scaledDamage: scaledDamage, selfUnitId: damageAttackerId,
@@ -2940,7 +2950,7 @@ namespace MonsterTrain2Poju.Model
                         return "Mix requires a positive draft size and captured elixir state.";
                     continue;
                 }
-                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "AttackTargetsWithSelfUnit", "Damage", FloorDamageModel.Effect, "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", UnitHealthPercentModel.Effect, DiscardHandStatusModel.Effect, DragThemDownModel.Effect, "Sacrifice", "Kill", "AddStatus", DevotionStatusModel.Effect, "AddStatusPerCasterStatus", "AddStatusPerMissingHp", MissingHealthStatusModel.FriendlyEffect, MissingHealthStatusModel.CasterDamage, "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
+                if (!new[] { "Null", "CopyUnits", "Bump", "AbilityTeleport", "AttackWithUnit", "AttackTargetsWithSelfUnit", "Damage", "DamageCurrentHealthPercent", FloorDamageModel.Effect, "DamagePerSourceAttack", "DamagePerHp", "DamageByUnitsKilled", "TransferAttackFromUnit", "TransferAllStatusesFromUnit", "TransferAllStatuses", "Heal", "HealOverheal", "SetHealth", UnitHealthPercentModel.Effect, DiscardHandStatusModel.Effect, DragThemDownModel.Effect, "Sacrifice", "Kill", "AddStatus", DevotionStatusModel.Effect, "AddStatusPerCasterStatus", "AddStatusPerMissingHp", MissingHealthStatusModel.FriendlyEffect, MissingHealthStatusModel.CasterDamage, "RemoveAllStatusEffects", "MultiplyStatus", "MultiplyAllPositiveStatusEffects", "AdjustAllStatusEffects", "AddStatusPerOtherEffect", "SpawnOrStatus", "FloorRearrange", "UnitUpgrade", "UnitUpgradePerStatus", "BuffEquipment", "RemoveUnitUpgrade", "AttachEquipment", "RemoveEquipment", "BuffAttack", "DebuffAttack", "BuffHealth", "DebuffHealth", "Draw", "DiscardHand", "RandomDiscard", "Generate" }.Contains(effect.Type))
                     return "Unimplemented spell effect " + effect.Type;
                 if (effect.Type == "TransferAllStatuses" &&
                     (effect.Target != "DropTargetCharacter" || effect.Statuses.Count != 1))
@@ -3166,7 +3176,8 @@ namespace MonsterTrain2Poju.Model
                 case "Damage": return effect.Value >= 0 && (effect.Range == null || effect.Range.Max > 0) &&
                     (effect.Target != "DropTargetCharacter" || count > 0);
                 case "DamagePerSourceAttack": return count > 0;
-                case "DamagePerHp": return count > 0;
+                case "DamagePerHp":
+                case "DamageCurrentHealthPercent": return count > 0;
                 case "DamageByUnitsKilled": return count > 0;
                 case "TransferAttackFromUnit": return count > 0;
                 case "ReturnUnit": return count > 0;
@@ -3295,8 +3306,8 @@ namespace MonsterTrain2Poju.Model
             effect.Type == "Draw" && effect.Target == "DrawPile" ||
             (effect.Type == "DrawType" || effect.Type == "ScheduleNextDrawUpgrade") &&
             (effect.Target == "DrawPile" || effect.Target == "Hand" || effect.Target == "LastDrawnCard");
-        private static bool IsDamage(CardActionEffect effect) => effect.Type == "Damage" || effect.Type == MissingHealthStatusModel.CasterDamage || effect.Type == DragThemDownModel.Effect || effect.Type == FloorDamageModel.Effect || effect.Type == "DamagePerSourceAttack";
-        private static bool QuantityTest(CardActionEffect effect) => IsDamage(effect) && effect.Type != MissingHealthStatusModel.CasterDamage || effect.Type == "Draw";
+        private static bool IsDamage(CardActionEffect effect) => effect.Type is "Damage" or "DamageCurrentHealthPercent" || effect.Type == MissingHealthStatusModel.CasterDamage || effect.Type == DragThemDownModel.Effect || effect.Type == FloorDamageModel.Effect || effect.Type == "DamagePerSourceAttack";
+        private static bool QuantityTest(CardActionEffect effect) => IsDamage(effect) && effect.Type is not (MissingHealthStatusModel.CasterDamage or "DamageCurrentHealthPercent") || effect.Type == "Draw";
         // RandomManager converts Battle to BattleTest while a native card hover
         // owns temporary copies. Tests and applications share that persistent stream.
         private static UnityRng RuntimeRng(TrainCombatState state) =>
@@ -3425,6 +3436,14 @@ namespace MonsterTrain2Poju.Model
             }
             else if (effect.Type == MissingHealthStatusModel.FriendlyEffect)
                 effect = MissingHealthStatusModel.AsStatus(effect, effect.Statuses[0].Stacks);
+            if (effect.Type == "DamageCurrentHealthPercent" && !scaledDamage.HasValue)
+            {
+                if (!target.IsPyre || selfUnitId != 0 || effect.Value < 0 || effect.Value > 100 || effect.Range != null)
+                    return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
+                        "Unsupported remaining-health Pyre damage inputs.");
+                scaledDamage = (int)Math.Floor((float)effect.Value / 100f * (float)target.Health);
+                sourceCardId = 0;
+            }
             if (IsDamage(effect)) return scaledDamage.HasValue
                 ? RoomCombatModel.ApplyCardDamageAfterTraits(state, target.Id, scaledDamage.Value, sourceCardId,
                     deferSpawnerExhaustion, selfUnitId, refreshPyre: refreshPyre, externalActor: externalActor,

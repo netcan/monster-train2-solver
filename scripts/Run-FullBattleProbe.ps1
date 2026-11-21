@@ -693,6 +693,7 @@ param(
     [ValidateRange(1, 3)][int] $OriginalShowtimeTier,
     [ValidateSet('Gravity', 'RaceYaThere')][string] $OriginalTurnEndBump,
     [ValidateSet('Threshold30', 'Threshold15')][string] $OriginalSmallDeckDamage,
+    [ValidateRange(1, 3)][int] $OriginalBeeziebubTier,
     [switch] $OriginalBurnoutDamageRelic,
     [switch] $OriginalHealDamageRelic,
     [switch] $OriginalKillAttackRelic,
@@ -1503,6 +1504,18 @@ if ($OriginalCardPlayDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoin
 if ($OriginalConsumeDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalEatenDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalMoreCapacityRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
+if ($OriginalBeeziebubTier) {
+    if ($PlayerAdvisor -or $Planner -or $Advisor -or $DotNetPlanner -or $InputProfile -or $BattleDistance -ne 0 -or
+        $OriginalRandomRoomCapacityMutator -or $OriginalPyreCapacityCarryover -or $OriginalMagicPowerPerGold -or $OriginalShowtimeTier -or
+        $OriginalTurnEndBump -or $OriginalSmallDeckDamage -or $OriginalSmeltedTreasure) {
+        throw 'Original Beeziebub calibration requires a fresh isolated first battle with fixed controls.'
+    }
+    $PhysicalSpawnPoints = $true
+    $BranchCardMasks = $true
+    $SettleCardAnimations = $true
+    $SettleDeathDissolves = $true
+    $Policy = 'units-spells-and-junk'
+}
 if ($OriginalSmallDeckDamage) {
     if ($PlayerAdvisor -or $Planner -or $Advisor -or $DotNetPlanner -or $InputProfile -or $BattleDistance -ne 0 -or
         $OriginalRandomRoomCapacityMutator -or $OriginalPyreCapacityCarryover -or $OriginalMagicPowerPerGold -or $OriginalShowtimeTier -or $OriginalTurnEndBump) {
@@ -2609,6 +2622,12 @@ if ($OriginalCardPlayDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'origi
 if ($OriginalConsumeDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-consume-damage' }
 if ($OriginalEatenDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-eaten-damage' }
 if ($OriginalMoreCapacityRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-more-capacity' }
+if ($OriginalBeeziebubTier) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-beeziebub'
+    $environment['MT2_PROBE_BEEZIEBUB_TIER'] = $OriginalBeeziebubTier.ToString()
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
 if ($OriginalSmallDeckDamage) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-small-deck-damage'
     $environment['MT2_PROBE_SMALL_DECK_DAMAGE'] = $OriginalSmallDeckDamage
@@ -5138,6 +5157,31 @@ if ($OriginalRandomRoomCapacityMutator) {
         throw 'Random room capacity lacks its unchanged mutator, natural opening application, deployment capacity witness or exact battle successors.'
     }
     Write-Output "ORIGINAL-RANDOM-ROOM-CAPACITY PASS: floor $($witness.ReducedFloor) $($witness.OriginalMaximum) -> $($witness.Maximum), a rejected unit deployed on floor $($witness.AlternateFloor), and no later-turn application."
+}
+if ($OriginalBeeziebubTier) {
+    $definition = $trace.OriginalBeeziebubDefinition
+    $witness = $trace.OriginalBeeziebubWitness
+    $callbacks = @($trace.OriginalBeeziebubCallbacks)
+    $controls = @($trace.Actions | Where-Object ScenarioAction)
+    $cast = @($callbacks | Where-Object Kind -eq 'OnCast')
+    $draw = @($callbacks | Where-Object { $_.Kind -eq 'DrawOnPlay' -and $_.WasPlayed })
+    $purge = @($callbacks | Where-Object { $_.Kind -eq 'SelfPurge' -and $_.WasPlayed -and -not $_.IsRecast })
+    if (-not $trace.OriginalBeeziebubPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or
+        $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+        $definition.Tier -ne $OriginalBeeziebubTier -or $controls.Count -ne 4 -or $controls[3].Action.CardInstanceId -ne $witness.SpellId -or
+        $cast.Count -ne 1 -or $draw.Count -ne 1 -or $purge.Count -ne 1 -or
+        @($callbacks | Where-Object { -not $_.Completed }).Count -ne 0 -or
+        ($definition | ConvertTo-Json -Compress -Depth 8) -cne
+        ($trace.OriginalBeeziebubDefinitionAfter | ConvertTo-Json -Compress -Depth 8)) {
+        throw 'Beeziebub lacks its unchanged original soul, real card callbacks or exact battle successors.'
+    }
+    $drawn = @($draw[0].After.Hand | Where-Object { $_.Id -notin $draw[0].Before.Hand.Id })
+    if ($cast[0].After.PyreHP -ge $cast[0].Before.PyreHP -or $cast[0].After.PyreHP -le 0 -or
+        $drawn.Count -ne $definition.DrawCount -or $purge[0].After.InSavedDeck -or $purge[0].After.Purged -le 0 -or
+        ($definition.DrawUpgrade -and @($drawn | Where-Object { $definition.DrawUpgrade.Id -in $_.TempUpgradeIds }).Count -lt 1)) {
+        throw 'The unchanged Beeziebub card did not realize Pyre damage, drawing, its draw upgrade or purge.'
+    }
+    Write-Output "ORIGINAL-BEEZIEBUB PASS: tier $OriginalBeeziebubTier, drew $($drawn.Count), Pyre HP $($cast[0].Before.PyreHP)->$($cast[0].After.PyreHP), native self-purge."
 }
 if ($OriginalSmallDeckDamage) {
     $definition = $trace.OriginalSmallDeckDamageDefinition

@@ -15,7 +15,14 @@ namespace MonsterTrain2Poju.Probe
             handCostTargetType: data.GetTraitStateName() == "CardTraitIncreaseCostOfCardsInHand" ? data.GetParamCardType().ToString() : null,
             graftSevered: data.GetTraitStateName() == CardGraftedEquipmentModel.Trait ? false : (bool?)null,
             holdoverPending: data.GetTraitStateName() == CardRetainModel.Trait ? false : (bool?)null,
-            copyOnPlayUpgrade: CopyUpgrade(data));
+            copyOnPlayUpgrade: CopyUpgrade(data), drawOnPlayUpgrade: DrawUpgrade(data));
+        private static NextDrawUpgradeRule? DrawUpgrade(CardTraitData data)
+        {
+            if (data.GetTraitStateName() != CardPlayedDrawModel.Trait || data.GetCardUpgradeDataParam() is not CardUpgradeData upgrade) return null;
+            var state = new CardUpgradeState(); state.Setup(upgrade);
+            return new NextDrawUpgradeRule(CardModifierProbe.Upgrade(state, rejectFilters: false, filtersAlreadyApplied: true),
+                upgrade.GetFilters().Select(CardUpgradeMaskProbe.Rule).ToArray());
+        }
         private static CardUpgradeModifier? CopyUpgrade(CardTraitData data)
         {
             if (data.GetTraitStateName() != CardCopyOnPlayModel.Trait || data.GetCardUpgradeDataParam() == null) return null;
@@ -54,7 +61,7 @@ namespace MonsterTrain2Poju.Probe
                     ? MoonPhaseCardUpgradeCalibration.State(trait) : null,
                 graftSevered: trait is CardTraitGraftedEquipment graft ? graft.Severed : (bool?)null,
                 holdoverPending: trait is CardTraitRetain ? (bool?)AccessTools.Field(typeof(CardTraitRetain), "retained").GetValue(trait) : null,
-                copyOnPlayUpgrade: data == null ? null : CopyUpgrade(data));
+                copyOnPlayUpgrade: data == null ? null : CopyUpgrade(data), drawOnPlayUpgrade: data == null ? null : DrawUpgrade(data));
         }
         internal static List<CardTraitState> Bases(CardState card) => (List<CardTraitState>)AccessTools.Field(typeof(CardState), "traits").GetValue(card);
         internal static List<CardTraitState> Combined(CardState card) => (List<CardTraitState>)AccessTools.Field(typeof(CardState), "combinedTraits").GetValue(card);
