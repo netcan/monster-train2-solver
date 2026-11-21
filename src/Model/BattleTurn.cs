@@ -716,9 +716,15 @@ namespace MonsterTrain2Poju.Model
             }
             if (train.Context!.Relics?.Any(relic => relic.EffectTypes.Any(RelicDeckTurnDrawModel.IsAfterDraw)) == true)
             {
-                var generated = RelicDeckTurnDrawModel.ApplyAfterDraw(train.Context, outputPlayRules, train);
-                if (!generated.Supported) return Unsupported(generated.UnsupportedReason!);
-                train = WithContext(train, generated.Context!, false);
+                TrainCombatResult afterDraw = RelicDeckTurnDrawModel.ApplyAfterDraw(train, outputPlayRules);
+                if (!afterDraw.Supported) return Unsupported(afterDraw.UnsupportedReason!);
+                if (!RouteDeadUnits(train, afterDraw)) return Unsupported("After-draw relic deaths require standby card routing.");
+                train = afterDraw.State!;
+                if (Terminal(afterDraw.Outcome))
+                {
+                    spawn = WithTrain(spawn, train, turn, spawn.Rng);
+                    return Finish(afterDraw.Outcome, train.Context!.QueryFrame?.Energy ?? 0, moon);
+                }
             }
             ScorchStatusResult scorched = ScorchStatusModel.StartTurn(train);
             if (!scorched.Supported) return Unsupported(scorched.UnsupportedReason!);

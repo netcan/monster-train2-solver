@@ -669,6 +669,7 @@ param(
     [switch] $OriginalThikDeckChange,
     [switch] $OriginalThikBattle,
     [ValidateRange(1, 3)][int] $OriginalThikTier = 3,
+    [ValidateSet('Morsels', 'CultLeader')][string] $OriginalAfterDrawSpawn,
     [switch] $OriginalCorruptedAngelsRelic,
     [ValidateSet('cost-first', 'cost-last')]
     [string] $CorruptedAngelsCostOrder,
@@ -1748,6 +1749,17 @@ if ($EnchantmentCombatOnly) {
     $EnchantmentCombat = $true
     $Policy = 'steward-once'
 }
+if ($OriginalAfterDrawSpawn) {
+    $spawnArguments = @('OriginalAfterDrawSpawn', 'InputProfile', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds',
+        'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction', 'ProgressAction')
+    if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $spawnArguments }).Count) {
+        throw 'OriginalAfterDrawSpawn requires an isolated first-battle capture.'
+    }
+    $Policy = 'units-and-junk'
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $SettleCardAnimations = $true
+}
 if ($OriginalThikDeckChange -or $OriginalThikBattle) {
     $componentArguments = @('OriginalThikDeckChange', 'OriginalThikBattle', 'OriginalThikTier', 'InputProfile', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'SkipBuild',
         'ShowWindow', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction', 'ProgressAction',
@@ -2752,6 +2764,12 @@ if ($ForcedFeeding) { $environment['MT2_PROBE_FORCED_FEEDING'] = '1' }
 if ($ShroudSpikeFeeding) { $environment['MT2_PROBE_SHROUD_SPIKE'] = '1' }
 if ($OriginalOpeningDeckSpawnRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-deck-spawn' }
 if ($OriginalPerkeoRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-perkeo' }
+if ($OriginalAfterDrawSpawn) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-after-draw-spawn'
+    $environment['MT2_PROBE_AFTER_DRAW_SPAWN'] = $OriginalAfterDrawSpawn
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
 if ($OriginalThikDeckChange -or $OriginalThikBattle) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-thik-deck-change'
     $environment['MT2_PROBE_THIK_TIER'] = $OriginalThikTier.ToString([Globalization.CultureInfo]::InvariantCulture)
@@ -5256,6 +5274,16 @@ if ($OriginalRandomRoomCapacityMutator) {
         throw 'Random room capacity lacks its unchanged mutator, natural opening application, deployment capacity witness or exact battle successors.'
     }
     Write-Output "ORIGINAL-RANDOM-ROOM-CAPACITY PASS: floor $($witness.ReducedFloor) $($witness.OriginalMaximum) -> $($witness.Maximum), a rejected unit deployed on floor $($witness.AlternateFloor), and no later-turn application."
+}
+if ($OriginalAfterDrawSpawn) {
+    $spawnCallbacks = @($trace.OriginalAfterDrawSpawnCallbacks)
+    if (-not $trace.OriginalAfterDrawSpawnPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or
+        $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+        $spawnCallbacks.Count -lt 2 -or -not $spawnCallbacks[0].Deployment -or
+        @($spawnCallbacks | Where-Object { $null -eq $_.After }).Count -ne 0) {
+        throw 'The original after-draw spawn did not settle in deployment and a later turn.'
+    }
+    Write-Output "ORIGINAL-AFTER-DRAW-SPAWN PASS: $OriginalAfterDrawSpawn settled $($spawnCallbacks.Count) callbacks."
 }
 if ($OriginalThikBattle) {
     $thikCards = $trace.OriginalThikCards

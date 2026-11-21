@@ -2555,7 +2555,7 @@ namespace MonsterTrain2Poju.Model
             source.Context?.LifeLinks is { Actors.Count: 5 } links && links.Actors.All(actor => actor.TrueFinalBoss) &&
             changed.Context?.LifeLinks == null && changed.Context?.AllScenarioBossesDead == true && changed.Context.Enchantments != null;
 
-        private static TrainCombatState ReplaceRoom(TrainCombatState source, RoomCombatState changed)
+        internal static TrainCombatState ReplaceRoom(TrainCombatState source, RoomCombatState changed)
         {
             // Removing an original true-final-boss body removes its complete
             // linked group, including actors on the other three floors.

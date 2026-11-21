@@ -557,6 +557,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalPerkeoScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalThikDeckChangeScenario.Enabled && !OriginalThikDeckChangeScenario.Acquired)
                         OriginalThikDeckChangeScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalAfterDrawSpawnScenario.Enabled && !OriginalAfterDrawSpawnScenario.Acquired)
+                        OriginalAfterDrawSpawnScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCorruptedAngelsScenario.Enabled && !OriginalCorruptedAngelsScenario.Acquired)
                         OriginalCorruptedAngelsScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPartFactoryScenario.Enabled && !OriginalPartFactoryScenario.Acquired)
@@ -686,6 +688,8 @@ namespace MonsterTrain2Poju.Probe
                     OriginalOuterBossRoute.PrepareIntro(save, intro, log);
                     if (fullBattle && OriginalThikDeckChangeScenario.Enabled && !OriginalThikDeckChangeScenario.Acquired)
                         OriginalThikDeckChangeScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalAfterDrawSpawnScenario.Enabled && !OriginalAfterDrawSpawnScenario.Acquired)
+                        OriginalAfterDrawSpawnScenario.AcquireBeforeBattle(managers!, log);
                     if (ReplayManager.TryClickButton(intro.GetFightButton())) Enter(Stage.Battle, 120f);
                 }
                 return;
@@ -864,6 +868,11 @@ namespace MonsterTrain2Poju.Probe
             }
             if (stage != Stage.Battle || !Ready(managers, save, combat, cards))
             {
+                return;
+            }
+            if (fullBattle && OriginalAfterDrawSpawnScenario.Enabled && !OriginalAfterDrawSpawnScenario.Prepared)
+            {
+                OriginalAfterDrawSpawnScenario.Prepare(managers, log);
                 return;
             }
             if (fullBattle && OriginalThikDeckChangeScenario.Enabled)
@@ -3390,6 +3399,10 @@ namespace MonsterTrain2Poju.Probe
                 {
                     pendingPlay = SpawnStatusScalingScenario.Choose(decision);
                 }
+                else if (OriginalAfterDrawSpawnScenario.Enabled)
+                {
+                    pendingPlay = OriginalAfterDrawSpawnScenario.Choose(decision);
+                }
                 else if (OriginalThikDeckChangeScenario.FullBattle)
                 {
                     pendingPlay = OriginalThikDeckChangeScenario.Choose(decision);
@@ -4006,6 +4019,7 @@ namespace MonsterTrain2Poju.Probe
                 (OriginalCardPlayDamageScenario.Enabled && OriginalCardPlayDamageScenario.IsScenarioAction(action)) ||
                 (OriginalConsumeDamageScenario.Enabled && OriginalConsumeDamageScenario.IsScenarioAction(action)) ||
                 (OriginalEatenDamageScenario.Enabled && OriginalEatenDamageScenario.IsScenarioAction(action)) ||
+                (OriginalAfterDrawSpawnScenario.Enabled && OriginalAfterDrawSpawnScenario.IsScenarioAction(action)) ||
                 (OriginalThikDeckChangeScenario.FullBattle && OriginalThikDeckChangeScenario.IsScenarioAction(action)) ||
                 (OriginalElleScenario.Enabled && OriginalElleScenario.IsScenarioAction(action)) ||
                 (OriginalGoldieScenario.Enabled && OriginalGoldieScenario.IsScenarioAction(action)) ||

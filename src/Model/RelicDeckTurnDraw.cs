@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace MonsterTrain2Poju.Model
@@ -43,18 +44,48 @@ namespace MonsterTrain2Poju.Model
 
         internal static bool IsAfterDraw(string type) => type == Effect || type == RelicOccupiedFloorDrawModel.Effect ||
             type == RelicCardGenerationModel.AfterDraw || type == RelicCardGenerationModel.PrecachedPlayerClan ||
-            type == RelicCardGenerationModel.ChampionCardAfterDraw;
+            type == RelicCardGenerationModel.ChampionCardAfterDraw || type == RelicAfterDrawSpawnModel.Effect;
+
+        internal static RelicResourceResult ApplyAfterDraw(CombatContext source, BattlePlayRules? definitions = null, TrainCombatState? train = null)
+            => ApplyAfterDraw(source, definitions, ref train, null, out _);
+
+        internal static TrainCombatResult ApplyAfterDraw(TrainCombatState source, BattlePlayRules? definitions)
+        {
+            TrainCombatState? train = source;
+            var roomResults = new List<RoomCombatResult>();
+            var applied = ApplyAfterDraw(source.Context!, definitions, ref train, roomResults, out RoomOutcome outcome);
+            return applied.Supported
+                ? new TrainCombatResult(CardSpellModel.WithContext(train!, applied.Context!), outcome, roomResults)
+                : new TrainCombatResult(null, RoomOutcome.Unsupported, Array.Empty<RoomCombatResult>(), applied.UnsupportedReason);
+        }
 
         // These effects share one native timing interface. Preserve owner/effect
-        // order so generated cards and extra draws see the same hand capacity.
-        internal static RelicResourceResult ApplyAfterDraw(CombatContext source, BattlePlayRules? definitions = null, TrainCombatState? train = null)
+        // order and carry both the live hand and train to the next callback.
+        private static RelicResourceResult ApplyAfterDraw(CombatContext source, BattlePlayRules? definitions,
+            ref TrainCombatState? train, List<RoomCombatResult>? roomResults, out RoomOutcome outcome)
         {
             CombatContext context = source;
+            outcome = RoomOutcome.Exchanged;
             for (int ownerIndex = 0; ownerIndex < (source.Relics?.Count ?? 0); ownerIndex++)
             foreach (RelicResourceEffect effect in source.Relics![ownerIndex].ResourceEffects ?? Array.Empty<RelicResourceEffect>())
             {
                 CombatRelicState owner = source.Relics![ownerIndex];
                 if (!IsAfterDraw(effect.Type)) continue;
+                if (effect.Type == RelicAfterDrawSpawnModel.Effect)
+                {
+                    if (train == null) return Fail("After-draw unit birth requires the complete train.");
+                    var born = RelicAfterDrawSpawnModel.Apply(CardSpellModel.WithContext(train, context), owner, effect, definitions);
+                    if (!born.Supported) return Fail(born.UnsupportedReason!);
+                    train = born.State!;
+                    context = train.Context!;
+                    roomResults?.AddRange(born.RoomResults);
+                    if (born.Outcome != RoomOutcome.Exchanged)
+                    {
+                        outcome = born.Outcome;
+                        return new RelicResourceResult(context, 0);
+                    }
+                    continue;
+                }
                 if (effect.Type == RelicOccupiedFloorDrawModel.Effect)
                 {
                     if (train == null) return Fail("Enemy-occupied after-draw refresh requires the complete train.");

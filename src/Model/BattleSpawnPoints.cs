@@ -33,10 +33,16 @@ namespace MonsterTrain2Poju.Model
         public SpawnPointGroupState? Group(int roomIndex, CombatTeam team, int? previewCopyId = null) =>
             Groups.SingleOrDefault(group => group.RoomIndex == roomIndex && group.Team == team && group.PreviewCopyId == previewCopyId);
         public int FirstEmpty(int roomIndex, CombatTeam team)
+            => FirstEmpty(roomIndex, team, fromBack: false);
+        internal int FirstEmpty(int roomIndex, CombatTeam team, bool fromBack)
         {
             SpawnPointGroupState? group = SelectedGroup(roomIndex, team);
             if (group == null) return -1;
-            for (int index = 0; index < group.GroupCount; index++) if (group.Occupants[index] == 0) return index;
+            for (int offset = 0; offset < group.GroupCount; offset++)
+            {
+                int index = fromBack ? group.GroupCount - 1 - offset : offset;
+                if (group.Occupants[index] == 0) return index;
+            }
             return -1;
         }
         internal SpawnPointGroupState? SelectedGroup(int roomIndex, CombatTeam team) => ActiveCopies.Count == 0 ?

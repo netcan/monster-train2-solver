@@ -342,7 +342,7 @@ namespace MonsterTrain2Poju.Model
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == StartCombatHoard || type == Draw ||
             type == PyreAttack || type == PyreHealth || type == ExtraPyreDamage || type == RelicPileSpawnUpgradeModel.Effect || type == RelicSpawnStatusScalingModel.Effect || type == PayCardCostWithPyreHealth || type == FloorCapacity || type == MoonPhaseEnergy || type == MoonPhaseStatus || type == RelicDamagedFloorEnergyModel.Effect || RelicTurnEnergyModel.IsEffect(type) ||
             type == EnergyOnCardEarlyDiscard || type == RelicEndCombatModel.GrosMichelDestroy || type == RelicPyreResurrectionModel.Effect || type == RelicDecayDeathModel.Effect ||
-            type == GoldOnExhaust || type == RelicOpeningSpawnModel.Effect || type == RelicOpeningDeckSpawnModel.Effect || type == RelicCorruptedAngelsModel.Effect ||
+            type == GoldOnExhaust || type == RelicOpeningSpawnModel.Effect || type == RelicAfterDrawSpawnModel.Effect || type == RelicOpeningDeckSpawnModel.Effect || type == RelicCorruptedAngelsModel.Effect ||
             type == EnergyOnCorruptRestrictedPlayed || type == CorruptionOnCorruptRestrictedPlayed ||
             type == AdditionalSmeltEmber || type == AdjustMixAmount || type == ConserveEnergyEndOfTurn || type == ConserveForgePoints ||
             type == RelicCardGenerationModel.AfterDraw || type == RelicCardGenerationModel.StartOfBattle ||
@@ -378,6 +378,11 @@ namespace MonsterTrain2Poju.Model
                 {
                     string? openingError = RelicOpeningSpawnModel.Validate(relic, rule);
                     if (openingError != null) return openingError;
+                }
+                else if (rule.Type == RelicAfterDrawSpawnModel.Effect)
+                {
+                    string? spawnError = RelicAfterDrawSpawnModel.Validate(relic, rule);
+                    if (spawnError != null) return spawnError;
                 }
                 else if (rule.OpeningSpawn != null) return "Unexpected opening-spawn payload on another effect.";
                 if (rule.Type == RelicOpeningDeckSpawnModel.Effect)

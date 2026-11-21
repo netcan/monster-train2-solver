@@ -613,12 +613,14 @@ namespace MonsterTrain2Poju.Probe
                 if (observedCards != projection.KnownCards.Count() || observedUnits != identities.Count)
                     BattleSpawnPointProbe.Decisions.RemoveRange(decisionStart, BattleSpawnPointProbe.Decisions.Count - decisionStart);
             } while (observedCards != projection.KnownCards.Count() || observedUnits != identities.Count);
+            var relics = RelicProbe.Capture(managers);
+            bool turnSpawn = relics.Any(owner => owner.EffectTypes.Contains(nameof(RelicEffectSpawnMonsterOnTurnStart)));
             var context = new CombatContext(new CardCycleState(state.Hand, state.Draw, state.Discard,
                 new UnityRng(draw[0], draw[1], draw[2], draw[3]), state.DrawModifier, Array.Empty<string>(), bonusDraw,
                 TypedDrawProbe.CaptureQueue(cards), TypedDrawProbe.NextUpgradeReferenceId,
                 OriginalDiscardDrawScenario.Enabled ? cards.GetDrawingDeckCardsDisabledThisTurn() : (bool?)null),
                 new UnityRng(battle[0], battle[1], battle[2], battle[3]), state.Gold, projection.NextCardId,
-                cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel", "relentless", "cooldown", "unit_ability", "unit_ability_available", "horde", "duality" }.Concat(OriginalOpeningMorselsScenario.Enabled || TriggeredSummonProbe.Enabled || TriggeredSummonProbe.HasPlayerBirths || UnitCloneScenario.Enabled || UnitCopyScenario.Enabled || HeroCopyScenario.Enabled || HasCopyUnitsCard(managers) ? new[] { "cardless" } : Array.Empty<string>()).Concat(new[] { "undying", "endless" })
+                cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel", "relentless", "cooldown", "unit_ability", "unit_ability_available", "horde", "duality" }.Concat(turnSpawn || OriginalOpeningMorselsScenario.Enabled || TriggeredSummonProbe.Enabled || TriggeredSummonProbe.HasPlayerBirths || UnitCloneScenario.Enabled || UnitCopyScenario.Enabled || HeroCopyScenario.Enabled || HasCopyUnitsCard(managers) ? new[] { "cardless" } : Array.Empty<string>()).Concat(new[] { "undying", "endless" })
                     .Concat(registry.Any(card => UnitGraftProbe.Known(card.DataId) || card.MaskDescriptor?.GraftedEquipment != null) ? new[] { "unit_grafted_equipment" } : Array.Empty<string>())
                     .Concat(ConditionalActivationProbe.HasVanguard ? new[] { "zeal" } : Array.Empty<string>())
                     .Concat(ZealStatusCalibration.Enabled ? new[] { "purify" } : Array.Empty<string>())
@@ -640,7 +642,7 @@ namespace MonsterTrain2Poju.Probe
                 lastSpawnedId, NextUnitId, spawnPoints,
                 TriggeredSummonProbe.Catalog(), enchantments,
                 managers.GetSaveManager().GetBalanceData().GetDisallowedPurifyCharacterTriggers().Select(kind => kind.ToString()).ToArray(),
-                RelicProbe.Capture(managers), RelicProbe.TriggerCounts(managers),
+                relics, RelicProbe.TriggerCounts(managers),
                 resources: RelicResourceProbe.CaptureResources(managers),
                 mixState: new MixRuntimeState(managers.GetCombatManager()!.LastMixCardSelected?.GetID(),
                     managers.GetCombatManager()!.LastMixUpgradeSelected?.GetID()),
@@ -1484,6 +1486,10 @@ namespace MonsterTrain2Poju.Probe
                 OriginalThikDefinition = OriginalThikDeckChangeScenario.FullBattle ? OriginalThikDeckChangeScenario.Definition : null,
                 OriginalThikCards = OriginalThikDeckChangeScenario.FullBattle ? OriginalThikDeckChangeScenario.Cards : null,
                 OriginalThikCallbacks = OriginalThikDeckChangeScenario.FullBattle ? OriginalThikDeckChangeScenario.Callbacks : null,
+                OriginalAfterDrawSpawnPrepared = OriginalAfterDrawSpawnScenario.Prepared,
+                OriginalAfterDrawSpawnDefinition = OriginalAfterDrawSpawnScenario.Definition,
+                OriginalAfterDrawSpawnDefinitionAfter = OriginalAfterDrawSpawnScenario.CurrentDefinition,
+                OriginalAfterDrawSpawnCallbacks = OriginalAfterDrawSpawnScenario.Enabled ? OriginalAfterDrawSpawnScenario.Callbacks : null,
                 RelentlessDrawVariant = OccupiedFloorDrawScenario.RelentlessVariant,
                 RelentlessDrawTests = RelentlessDrawMechanismBatch.Tests,
                 OccupiedFloorDrawPrepared = OccupiedFloorDrawScenario.Prepared,

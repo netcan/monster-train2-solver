@@ -11,6 +11,9 @@ namespace MonsterTrain2Poju.Probe
     // independent native results. Acquisitions precede battle/card projection.
     internal static class RelicResourceProbe
     {
+        internal const string AfterDrawMorselsId = "84e8fb5f-ebfa-4ebd-99d5-607d5ff45d3b";
+        internal const string AfterDrawCultLeaderId = "80ccdba4-3fa5-487a-8fdf-2dfea52f9541";
+
         internal sealed class ResourceSnapshot
         {
             public BattleResourceState Resources { get; set; } = null!;
@@ -64,7 +67,8 @@ namespace MonsterTrain2Poju.Probe
 
         internal static bool RequiresPhysicalWorld(AllGameManagers managers) => Current(managers)
             .Any(owner => owner.GetEffects().Any(effect => effect is RelicEffectAdditionalDrawForEnemyOccupiedFloors || effect is RelicEffectAdditionalDrawDuringRelentless ||
-                effect is RelicEffectBumpOnTurnEnd || effect is RelicEffectAddPyreAttackAndHealthPerCardInDeck));
+                effect is RelicEffectBumpOnTurnEnd || effect is RelicEffectAddPyreAttackAndHealthPerCardInDeck ||
+                effect is RelicEffectSpawnMonsterOnTurnStart));
 
         internal static int? ReadLastKnownDeckCount(RelicEffectAddPyreAttackAndHealthPerCardInDeck effect) =>
             (int?)AccessTools.Field(typeof(RelicEffectAddPyreAttackAndHealthPerCardInDeck), "_lastKnownCardCount").GetValue(effect);
@@ -216,6 +220,17 @@ namespace MonsterTrain2Poju.Probe
                 var cached = (List<CardState>)AccessTools.Field(effect.GetType(), "toProcessCards").GetValue(effect);
                 deckSpawn = new((int)AccessTools.Field(effect.GetType(), "roomIndex").GetValue(effect),
                     cached.Select(card => FullBattleTrace.Active!.CardId(card)).ToArray());
+                amount = 0;
+            }
+            else if (effect is RelicEffectSpawnMonsterOnTurnStart)
+            {
+                var roster = (IEnumerable<CharacterData>)AccessTools.Field(effect.GetType(), "paramCharacters").GetValue(effect);
+                openingSpawn = new RelicOpeningSpawnRule("Monsters", roster.Select(character =>
+                {
+                    var interactions = new List<string>();
+                    CombatUnit unit = BattleActionProbe.SpawnTemplate(character, true, interactions);
+                    return new SummonUnitDefinition(character.GetID(), unit, null, interactions);
+                }).ToArray());
                 amount = 0;
             }
             else if (effect is RelicEffectSpawnUnitStartOfCombat)
