@@ -568,17 +568,11 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             context = train.Context!;
-            if (context.Cards.DeckDrawDisabledThisTurn.HasValue)
-                context = context.WithCards(context.Cards.WithDrawDisabled(false));
-            RelicFirstCardCostResult sequenceStart = RelicCardTypeSequenceModel.StartTurn(context);
-            if (!sequenceStart.Supported) return Unsupported(sequenceStart.UnsupportedReason!);
-            context = sequenceStart.Context;
-            RelicFirstCardCostResult firstCardCostBeforeDraw = RelicFirstCardCostModel.StartTurnBeforeDraw(context,
-                source.PlayRules);
-            if (!firstCardCostBeforeDraw.Supported) return Unsupported(firstCardCostBeforeDraw.UnsupportedReason!);
-            context = firstCardCostBeforeDraw.Context;
-            // Boss handling resumes from train.Context even without a boss action.
-            // Keep the start-turn relic resets before resuming that context.
+            TrainCombatResult generalStart = RelicTurnPhaseModel.GeneralStart(train);
+            if (!generalStart.Supported) return Unsupported(generalStart.UnsupportedReason!);
+            if (!RouteDeadUnits(train, generalStart)) return Unsupported("General turn-start relic deaths require standby card routing.");
+            train = generalStart.State!;
+            context = train.Context!;
             train = WithContext(train, context, false);
             if (train.Movement.Any(rule => rule.CompanionBoss))
             {
@@ -596,6 +590,8 @@ namespace MonsterTrain2Poju.Model
             string? preBossError = ResolveOuterBoss(true, moon);
             if (preBossError != null) return Unsupported(preBossError);
             context = train.Context!;
+            if (context.Cards.DeckDrawDisabledThisTurn.HasValue)
+                context = context.WithCards(context.Cards.WithDrawDisabled(false));
             // RunMonsterTurn centers every room after boss actions and before
             // granting energy. Ascension relic deaths can leave vacancies until here.
             if (context.SpawnPoints != null)
@@ -614,27 +610,25 @@ namespace MonsterTrain2Poju.Model
             if (context.Resources != null)
             {
                 RelicResourceResult resourceEnergy = RelicResourceModel.StartTurn(context,
-                    unitRoomEnergy: UnitRoomResourceModel.Amount(train, UnitRoomResourceModel.Energy), train: train);
+                    unitRoomEnergy: UnitRoomResourceModel.Amount(train, UnitRoomResourceModel.Energy), train: train, applyTiming: false);
                 if (!resourceEnergy.Supported) return Unsupported(resourceEnergy.UnsupportedReason!);
                 context = resourceEnergy.Context!;
             }
             else context = EnergyModel.StartTurn(context, source.EnergyPerTurn + UnitRoomResourceModel.Amount(train, UnitRoomResourceModel.Energy));
             train = WithContext(train, context, false);
-            RelicSoloUnitUpgradeResult soloUnitUpgrades = RelicSoloUnitUpgradeModel.Apply(train);
-            if (!soloUnitUpgrades.Supported) return Unsupported(soloUnitUpgrades.UnsupportedReason!);
-            train = soloUnitUpgrades.State!;
-            int startTurnRoom = train.Context!.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom;
-            RoomCapacityResult singleFloorCapacity = RelicSingleFloorCapacityModel.Apply(train.Context!, turn);
-            if (!singleFloorCapacity.Supported) return Unsupported(singleFloorCapacity.UnsupportedReason!);
-            train = WithContext(train, singleFloorCapacity.Context!, false);
-            RelicStartTurnHealResult startTurnHealing = RelicStartTurnHealModel.Apply(train, turn, startTurnRoom);
-            if (!startTurnHealing.Supported) return Unsupported(startTurnHealing.UnsupportedReason!);
-            train = startTurnHealing.State!;
-            RelicStartTurnStatusResult startTurnStatus = RelicStartTurnStatusModel.Apply(train, outputPlayRules?.Rooms, turn);
-            if (!startTurnStatus.Supported) return Unsupported(startTurnStatus.UnsupportedReason!);
-            train = startTurnStatus.State!;
+            TrainCombatResult beforeDrawRelics = RelicTurnPhaseModel.BeforeDraw(train, outputPlayRules);
+            if (!beforeDrawRelics.Supported) return Unsupported(beforeDrawRelics.UnsupportedReason!);
+            if (!RouteDeadUnits(train, beforeDrawRelics)) return Unsupported("Before-draw relic deaths require standby card routing.");
+            train = beforeDrawRelics.State!;
             spawn = WithTrain(spawn, train, turn, spawn.Rng);
             context = train.Context!;
+            if (Terminal(beforeDrawRelics.Outcome)) return Finish(beforeDrawRelics.Outcome, context.QueryFrame?.Energy ?? 0, moon);
+            if (context.Resources != null)
+            {
+                var cachedDraw = RelicResourceModel.GetDrawCount(context);
+                if (!cachedDraw.Supported) return Unsupported(cachedDraw.UnsupportedReason!);
+                drawPerTurn = cachedDraw.Value;
+            }
             context = UnitStandbyModel.ReturnReady(context);
             train = WithContext(train, context, false);
             TrainCombatResult returnedEquipment = EquipmentModel.ReturnUnattached(train, source.SelectedRoom);
@@ -644,28 +638,6 @@ namespace MonsterTrain2Poju.Model
             context = train.Context!;
             spawn = WithTrain(spawn, train, turn, spawn.Rng);
             if (Terminal(returnedEquipment.Outcome)) return Finish(returnedEquipment.Outcome, 0, moon);
-            if (context.Relics?.Any(owner => owner.EffectTypes.Contains(RelicResourceModel.PileStartTurn)) == true)
-            {
-                TrainSpellResult pileStart = RelicPileStartTurnModel.Apply(train, outputPlayRules);
-                if (!pileStart.Supported) return Unsupported(pileStart.UnsupportedReason!);
-                train = pileStart.State!;
-                context = train.Context!;
-                spawn = WithTrain(spawn, train, turn, spawn.Rng);
-            }
-            if (context.Relics?.Any(owner => owner.EffectTypes.Contains(RelicTurnDrawModel.FullHealth) || owner.EffectTypes.Contains(RelicRelentlessDrawModel.Effect)) == true)
-            {
-                var refresh = RelicTurnDrawModel.BeforeDraw(context, train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health, train: train);
-                if (!refresh.Supported) return Unsupported(refresh.UnsupportedReason!);
-                var count = RelicResourceModel.GetDrawCount(refresh.Context!);
-                if (!count.Supported) return Unsupported(count.UnsupportedReason!);
-                context = count.Context!; drawPerTurn = count.Value;
-            }
-            if (RelicOccupiedFloorDrawModel.Has(context))
-            {
-                var cachedDraw = RelicResourceModel.GetDrawCount(context);
-                if (!cachedDraw.Supported) return Unsupported(cachedDraw.UnsupportedReason!);
-                drawPerTurn = cachedDraw.Value;
-            }
             // Deployment is turn zero. Native DrawOpeningHand runs on turn one:
             TypedDrawResult held = CardRetainModel.PreDrawHand(context, outputPlayRules, opening: turn == 1);
             if (!held.Supported) return Unsupported(held.UnsupportedReason!);

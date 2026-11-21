@@ -19,7 +19,7 @@ namespace MonsterTrain2Poju.Model
         internal static bool Test(CombatContext source, int turn) => turn == 0 &&
             source.RoomCapacities?.Any(room => room.RoomIndex == 1) == true;
 
-        internal static RoomCapacityResult Apply(CombatContext source, int turn, bool preview = false)
+        internal static RoomCapacityResult Apply(CombatContext source, int turn, bool preview = false, int? onlyOwner = null, int? onlyEffect = null)
         {
             CombatRelicState[] owners = source.Relics?.Where(owner => owner.EffectTypes.Contains(Effect)).ToArray()
                 ?? Array.Empty<CombatRelicState>();
@@ -29,6 +29,8 @@ namespace MonsterTrain2Poju.Model
             CombatContext context = source;
             foreach (CombatRelicState owner in owners)
             {
+                if (onlyOwner.HasValue && !ReferenceEquals(source.Relics![onlyOwner.Value], owner)) continue;
+                if (onlyEffect.HasValue && owner.ResourceEffects!.All(rule => rule.EffectIndex != onlyEffect)) continue;
                 if (preview || !Test(context, turn)) continue;
                 RoomCapacityResult applied = RoomCapacityModel.Apply(context, 1,
                     new CardActionEffect("AdjustCapacity", "Room", 2, false, true, Array.Empty<CombatStatus>()));

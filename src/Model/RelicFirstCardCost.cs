@@ -40,14 +40,16 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static RelicFirstCardCostResult ApplyOnCardAdded(CombatContext source, int cardId,
-            BattlePlayRules? definitions)
+            BattlePlayRules? definitions, int? onlyOwner = null, int? onlyEffect = null)
         {
             CombatContext context = source;
             for (int relicIndex = 0; relicIndex < (context.Relics?.Count ?? 0); relicIndex++)
             {
+                if (onlyOwner.HasValue && relicIndex != onlyOwner) continue;
                 CombatRelicState relic = context.Relics![relicIndex];
                 foreach (RelicCardTypeCost rule in relic.CardTypeCosts ?? Array.Empty<RelicCardTypeCost>())
                 {
+                    if (onlyEffect.HasValue && rule.EffectIndex != onlyEffect) continue;
                     if (rule.FirstCardUpgrade == null || !rule.WaitingForFirstCard!.Value) continue;
                     if (!Eligible(context, cardId, rule, definitions, out bool eligible, out string? error))
                         return Fail(context, error!);
@@ -73,14 +75,14 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static RelicFirstCardCostResult StartTurnBeforeDraw(CombatContext source,
-            BattlePlayRules? definitions)
+            BattlePlayRules? definitions, int? onlyOwner = null, int? onlyEffect = null)
         {
-            RelicFirstCardCostResult reset = SetWaiting(source, true);
+            RelicFirstCardCostResult reset = SetWaiting(source, true, onlyOwner, onlyEffect);
             if (!reset.Supported) return reset;
             CombatContext context = reset.Context;
             foreach (CardToken card in context.Cards.Hand)
             {
-                RelicFirstCardCostResult applied = ApplyOnCardAdded(context, card.InstanceId, definitions);
+                RelicFirstCardCostResult applied = ApplyOnCardAdded(context, card.InstanceId, definitions, onlyOwner, onlyEffect);
                 if (!applied.Supported) return applied;
                 context = applied.Context;
             }
@@ -124,19 +126,20 @@ namespace MonsterTrain2Poju.Model
 
         internal static RelicFirstCardCostResult EndRoomCombat(CombatContext source) => SetWaiting(source, true);
 
-        private static RelicFirstCardCostResult SetWaiting(CombatContext source, bool waiting)
+        private static RelicFirstCardCostResult SetWaiting(CombatContext source, bool waiting, int? onlyOwner = null, int? onlyEffect = null)
         {
             CombatRelicState[]? relics = source.Relics?.ToArray();
             if (relics == null) return new RelicFirstCardCostResult(source);
             for (int relicIndex = 0; relicIndex < relics.Length; relicIndex++)
             {
+                if (onlyOwner.HasValue && relicIndex != onlyOwner) continue;
                 CombatRelicState owner = relics[relicIndex];
                 RelicCardTypeCost[] rules = owner.CardTypeCosts?.ToArray() ?? Array.Empty<RelicCardTypeCost>();
                 bool changed = false;
                 for (int index = 0; index < rules.Length; index++)
                 {
                     RelicCardTypeCost rule = rules[index];
-                    if (rule.FirstCardUpgrade == null) continue;
+                    if (rule.FirstCardUpgrade == null || onlyEffect.HasValue && rule.EffectIndex != onlyEffect) continue;
                     rules[index] = rule.WithFirstCardState(rule.FirstCardUpgrade, waiting);
                     changed = true;
                 }

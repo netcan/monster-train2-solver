@@ -569,6 +569,8 @@ param(
     [switch] $TurnEnergyMechanism,
     [switch] $OccupiedFloorDrawMechanism,
     [switch] $RelentlessDrawMechanism,
+    [switch] $BeforeDrawOrdering,
+    [ValidateSet('energy-first', 'heal-first')][string] $BeforeDrawOrder = 'energy-first',
     [ValidateSet(2, 3)][int] $RelentlessDrawTier = 2,
     [switch] $CampaignRelicCalibration,
     [switch] $CampaignDraftCalibration,
@@ -1296,6 +1298,12 @@ if ($PileSpawnUpgradeMechanism) {
 }
 if ($SpawnStatusScalingMechanism) {
     if ($PlayerAdvisor) { throw 'Birth status-scaling mechanisms require an isolated worker.' }
+    $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
+    $SettleCardAnimations = $true; $SettleDeathDissolves = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($BeforeDrawOrdering) {
+    if ($PlayerAdvisor) { throw 'Before-draw ordering requires an isolated worker.' }
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
     $SettleCardAnimations = $true; $SettleDeathDissolves = $true
     $Policy = 'units-spells-and-junk'
@@ -2301,6 +2309,11 @@ if ($PileSpawnUpgradeMechanism) {
 }
 if ($SpawnStatusScalingMechanism) {
     $environment['MT2_PROBE_MODIFIERS'] = 'spawn-status-scaling'
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
+if ($BeforeDrawOrdering) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'before-draw-order-' + $BeforeDrawOrder
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
@@ -4318,6 +4331,10 @@ if ($PileSpawnUpgradeMechanism -and (-not $trace.PileSpawnUpgradePrepared -or -n
 if ($SpawnStatusScalingMechanism -and (-not $trace.SpawnStatusScalingPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 3 -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
     throw 'Birth status scaling lack three controls, settled victory or exact successors.'
+}
+if ($BeforeDrawOrdering -and (-not $trace.BeforeDrawOrderPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6 -or
+    $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
+    throw 'Before-draw ordering lacks six controls, settled victory or exact successors.'
 }
 if (($OccupiedFloorDrawMechanism -or $RelentlessDrawMechanism) -and (-not $trace.OccupiedFloorDrawPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or @($trace.Actions).Count -ne $(if ($RelentlessDrawMechanism -and $RelentlessDrawTier -eq 3) { 10 } else { 4 }) -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {

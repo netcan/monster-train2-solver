@@ -769,7 +769,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static RelicResourceResult ApplyEnergyTiming(CombatContext source, bool deployment = false,
-            bool preview = false, bool placement = false, bool startOfCombat = false, TrainCombatState? train = null)
+            bool preview = false, bool placement = false, bool startOfCombat = false, TrainCombatState? train = null, int? onlyOwner = null, int? onlyEffect = null)
         {
             string? error = Ready(source) ?? EnergyModel.Validate(source);
             if (error != null) return Fail(error);
@@ -781,6 +781,7 @@ namespace MonsterTrain2Poju.Model
                 for (int ruleIndex = 0; ruleIndex < (owner.ResourceEffects?.Count ?? 0); ruleIndex++)
                 {
                     RelicResourceEffect rule = context.Relics[relicIndex].ResourceEffects![ruleIndex];
+                    if (onlyOwner.HasValue && relicIndex != onlyOwner || onlyEffect.HasValue && rule.EffectIndex != onlyEffect) continue;
                     bool dynamic = !startOfCombat && !deployment && (rule.Type == RelicDamagedFloorEnergyModel.Effect || RelicTurnEnergyModel.IsEffect(rule.Type));
                     if (rule.Type != (startOfCombat ? StartCombatEnergy : deployment ? DeploymentEnergy : Energy) && !dynamic || preview && !rule.CanApplyInPreviewMode) continue;
                     RelicConditionEvaluation evaluation = RelicConditionModel.Evaluate(context, rule.Conditions);
@@ -871,9 +872,10 @@ namespace MonsterTrain2Poju.Model
             return new RelicResourceResult(context, context.QueryFrame!.Energy!.Value, events: events);
         }
 
-        public static RelicResourceResult StartTurn(CombatContext source, bool deployment = false, bool preview = false, int unitRoomEnergy = 0, TrainCombatState? train = null)
+        public static RelicResourceResult StartTurn(CombatContext source, bool deployment = false, bool preview = false, int unitRoomEnergy = 0, TrainCombatState? train = null, bool applyTiming = true)
         {
-            string? error = Ready(source) ?? EnergyModel.Validate(source) ?? RelicDamagedFloorEnergyModel.ValidateBeforeDrawOrder(source) ?? RelicRelentlessDrawModel.ValidateBeforeDrawOrder(source);
+            string? error = Ready(source) ?? EnergyModel.Validate(source) ?? (applyTiming ?
+                RelicDamagedFloorEnergyModel.ValidateBeforeDrawOrder(source) ?? RelicRelentlessDrawModel.ValidateBeforeDrawOrder(source) : null);
             if (error != null) return Fail(error);
             CombatContext context = EnergyModel.SetPhase(source, "MonsterTurn");
             int income = unchecked(context.Resources!.BaseEnergy + context.EnergyState!.NextTurn + context.EnergyState.EveryTurn + RoomCapacityModel.EnergyPerTurnDelta(context) + unitRoomEnergy +
@@ -888,6 +890,7 @@ namespace MonsterTrain2Poju.Model
                 context = deployed.Context!; events.AddRange(deployed.Events);
             }
             context = context.WithEnergyState(context.EnergyState!.With(nextTurn: 0));
+            if (!applyTiming) return new RelicResourceResult(context, context.QueryFrame!.Energy!.Value, events: events);
             RelicResourceResult timed = ApplyEnergyTiming(context, preview: preview, placement: deployment, train: train);
             if (!timed.Supported) return timed;
             events.AddRange(timed.Events);

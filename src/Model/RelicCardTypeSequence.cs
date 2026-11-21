@@ -84,11 +84,12 @@ namespace MonsterTrain2Poju.Model
             RelicFirstCardCostResult tested = Test(evaluated.Context, card?.CardType, card?.IsAnyAbility, out bool passed);
             return !tested.Supported || !passed ? tested : Apply(tested.Context, playedCardId, definitions);
         }
-        internal static RelicFirstCardCostResult StartTurn(CombatContext source)
+        internal static RelicFirstCardCostResult StartTurn(CombatContext source, int? onlyOwner = null)
         {
             CombatContext context = source;
             for (int index = 0; index < (source.Relics?.Count ?? 0); index++)
             {
+                if (onlyOwner.HasValue && index != onlyOwner) continue;
                 RelicResourceEffect? resource = source.Relics![index].ResourceEffects?.SingleOrDefault(rule => rule.Type == Effect);
                 if (resource == null) continue;
                 string? error = Validate(source.Relics[index], resource); if (error != null) return new(source, error);

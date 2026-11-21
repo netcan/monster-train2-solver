@@ -90,7 +90,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static RelicStartTurnStatusResult Apply(TrainCombatState source, IReadOnlyList<RoomPlayRule>? roomRules,
-            int turn, bool placement = false, bool preview = false)
+            int turn, bool placement = false, bool preview = false, int? onlyOwner = null, int? onlyEffect = null)
         {
             CombatContext? context = source.Context;
             if (context?.Relics?.Any(relic => relic.EffectTypes.Contains(Effect)) != true)
@@ -105,11 +105,13 @@ namespace MonsterTrain2Poju.Model
             TrainCombatState state = source;
             var allCandidates = new List<int>();
             int? selectedRoom = null;
-            foreach (CombatRelicState relic in context.Relics!)
+            for (int ownerIndex = 0; ownerIndex < context.Relics!.Count; ownerIndex++)
             {
+                if (onlyOwner.HasValue && ownerIndex != onlyOwner) continue;
+                CombatRelicState relic = state.Context!.Relics![ownerIndex];
                 foreach (RelicResourceEffect resource in relic.ResourceEffects ?? Array.Empty<RelicResourceEffect>())
                 {
-                    if (resource.Type != Effect) continue;
+                    if (resource.Type != Effect || onlyEffect.HasValue && resource.EffectIndex != onlyEffect) continue;
                     if (placement && relic.DisallowedInPlacementPhase == true || preview && !resource.CanApplyInPreviewMode)
                         continue;
                     error = Validate(relic, resource);

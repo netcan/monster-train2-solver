@@ -43,7 +43,7 @@ namespace MonsterTrain2Poju.Model
             return null;
         }
 
-        internal static RelicStartTurnHealResult Apply(TrainCombatState source, int turn, int selectedRoom, bool placement = false)
+        internal static RelicStartTurnHealResult Apply(TrainCombatState source, int turn, int selectedRoom, bool placement = false, int? onlyOwner = null, int? onlyEffect = null)
         {
             if (source.Context?.Relics?.Any(relic => relic.EffectTypes.Contains(Effect)) != true)
                 return new RelicStartTurnHealResult(source);
@@ -52,14 +52,17 @@ namespace MonsterTrain2Poju.Model
             if (placement) return new RelicStartTurnHealResult(source);
 
             TrainCombatState state = source;
-            foreach (CombatRelicState relic in state.Context!.Relics!)
+            for (int ownerIndex = 0; ownerIndex < state.Context!.Relics!.Count; ownerIndex++)
             {
+                if (onlyOwner.HasValue && ownerIndex != onlyOwner) continue;
+                CombatRelicState relic = state.Context.Relics[ownerIndex];
                 if (!relic.EffectTypes.Contains(Effect)) continue;
                 error = Validate(relic);
                 if (error != null) return Fail(error);
                 foreach (RelicStartTurnHealRule rule in relic.ResourceEffects!
                     .Where(item => item.Type == Effect).Select(item => item.StartTurnHeal!))
                 {
+                    if (onlyEffect.HasValue && rule.EffectIndex != onlyEffect) continue;
                     int callbackNumber = turn;
                     if (rule.MaxTurns == 0 || callbackNumber < 1 || callbackNumber > rule.MaxTurns) continue;
                     // Native TargetMode.Tower spans all player floors despite roomIndex being populated.

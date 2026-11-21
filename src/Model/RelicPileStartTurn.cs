@@ -29,7 +29,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static TrainSpellResult Apply(TrainCombatState source, BattlePlayRules? definitions,
-            int selectedRoom = -1, bool placement = false, bool preview = false)
+            int selectedRoom = -1, bool placement = false, bool preview = false, int? onlyOwner = null, int? onlyEffect = null)
         {
             CombatContext? initial = source.Context;
             if (initial == null || initial.Relics == null || initial.Resources == null)
@@ -42,15 +42,17 @@ namespace MonsterTrain2Poju.Model
             TrainCombatState state = source;
             var events = new List<CombatEvent>();
             RoomOutcome outcome = RoomOutcome.Exchanged;
-            foreach (CombatRelicState owner in initial.Relics)
+            for (int ownerIndex = 0; ownerIndex < initial.Relics.Count; ownerIndex++)
             {
+                if (onlyOwner.HasValue && ownerIndex != onlyOwner) continue;
+                CombatRelicState owner = state.Context!.Relics![ownerIndex];
                 if (placement && owner.DisallowedInPlacementPhase == true) continue;
                 foreach (RelicResourceEffect resource in owner.ResourceEffects ?? Array.Empty<RelicResourceEffect>())
                 {
-                    if (resource.Type != Effect) continue;
+                    if (resource.Type != Effect || onlyEffect.HasValue && resource.EffectIndex != onlyEffect) continue;
                     RelicPileStartTurnRule rule = resource.PileStartTurn!;
                     if (preview && !resource.CanApplyInPreviewMode) continue;
-                    int applications = Applications(initial.Resources.VisibleDeckCount, rule.Threshold);
+                    int applications = Applications(state.Context!.Resources!.VisibleDeckCount, rule.Threshold);
                     if (applications <= 0) continue;
                     if (definitions == null) return Unsupported("Deck-scaled relic requires native room play definitions.");
                     int[] roomIndices = rule.ApplyAllRooms

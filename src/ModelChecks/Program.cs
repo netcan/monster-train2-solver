@@ -10,6 +10,16 @@ if (args.Length == 2 && args[0] == "--pile-spawn-upgrade-battle-only")
     PileSpawnUpgradeMechanismChecks.Battle(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--before-draw-pair-only")
+{
+    BeforeDrawOrderChecks.Battle(args[1], componentOnly: true);
+    return;
+}
+if (args.Length == 2 && args[0] == "--before-draw-order-only")
+{
+    BeforeDrawOrderChecks.Battle(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--relentless-draw-batch-only")
 {
     RelentlessDrawMechanismChecks.Batch(args[1]);

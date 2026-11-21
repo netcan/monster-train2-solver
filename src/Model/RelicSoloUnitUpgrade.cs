@@ -73,7 +73,7 @@ namespace MonsterTrain2Poju.Model
             return null;
         }
 
-        internal static RelicSoloUnitUpgradeResult Apply(TrainCombatState source)
+        internal static RelicSoloUnitUpgradeResult Apply(TrainCombatState source, int? onlyOwner = null, int? onlyEffect = null)
         {
             CombatContext? context = source.Context;
             if (context?.Relics == null || context.Relics.All(relic =>
@@ -87,11 +87,13 @@ namespace MonsterTrain2Poju.Model
             TrainCombatState state = source;
             for (int relicIndex = 0; relicIndex < state.Context!.Relics!.Count; relicIndex++)
             {
+                if (onlyOwner.HasValue && relicIndex != onlyOwner) continue;
                 CombatRelicState relic = state.Context.Relics[relicIndex];
                 var rules = relic.SoloUnitUpgrades?.ToArray() ?? Array.Empty<RelicSoloUnitUpgrade>();
                 if (rules.Length == 0) continue;
                 foreach (RelicSoloUnitUpgrade rule in rules)
                 {
+                    if (onlyEffect.HasValue && rule.EffectIndex != onlyEffect) continue;
                     if (rule.FrontInEachRoom)
                     {
                         foreach (RoomCombatState room in state.Rooms.OrderBy(item => item.RoomIndex))

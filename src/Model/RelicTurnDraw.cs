@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Model
         // Both native Test methods update the registered mutable value and return
         // false. Updating the value must not depend on executing an Apply body.
         public static RelicResourceResult BeforeDraw(CombatContext source, int pyreHealth,
-            bool placement = false, bool preview = false, TrainCombatState? train = null)
+            bool placement = false, bool preview = false, TrainCombatState? train = null, int? onlyOwner = null, int? onlyEffect = null)
         {
             if (source.Relics == null) return new RelicResourceResult(null, 0, "Missing turn-draw relic state.");
             var maximum = source.Relics.Any(owner => owner.EffectTypes.Contains(FullHealth))
@@ -22,6 +22,7 @@ namespace MonsterTrain2Poju.Model
             for (int j = 0; j < (context.Relics![i].ResourceEffects?.Count ?? 0); j++)
             {
                 var owner = context.Relics![i]; var effect = owner.ResourceEffects![j];
+                if (onlyOwner.HasValue && i != onlyOwner || onlyEffect.HasValue && effect.EffectIndex != onlyEffect) continue;
                 if (effect.Type == RelicRelentlessDrawModel.Effect)
                 {
                     if (train == null) return new RelicResourceResult(null, 0, "Relentless draw requires the complete train.");
