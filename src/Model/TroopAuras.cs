@@ -202,6 +202,8 @@ namespace MonsterTrain2Poju.Model
                 source.Train.Context?.SpawnPoints?.Units.Any(point => point.UnitId == id &&
                     (source.Preview ? point.SpawnedInPreview : !point.SpawnedInPreview &&
                         point.Current?.RoomIndex == room.RoomIndex && point.Current.Team == CombatTeam.Player)) != true)) return false;
+            if (third && added.Length == 1 && rule.Targets.Count == 3 && rule.Targets.All(targets.Contains) &&
+                KnownMeatShieldPreviewAddition(source, room, owner, rule, added[0])) return true;
             bool originalChampion = !source.Preview && source.Train.Context != null &&
                 PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context);
             bool originalSycophant = originalChampion && added.Length == 1 && room.Units.Single(unit => unit.Id == added[0]) is
@@ -622,10 +624,6 @@ namespace MonsterTrain2Poju.Model
                 room.Units.Any(unit => unit is { AssetKey: "MonsterSneezyWhelp", Team: CombatTeam.Player, BaseAttack: 4,
                     Health: 1, MaxHealth: 1, Size: 1, Modifiers.Upgrades.Count: 0 } && rule.Targets.Contains(unit.Id) &&
                     source.Train.Context.FindCard(unit.SpawnerCardId)?.DataId == "eef8abd9-3550-4da6-a8bd-d5f63e9d2b16");
-            bool OriginalFightClub(CardUpgradeModifier item) => item is {
-                DataId: RelicStartCombatAttachmentModel.Floor3UpgradeId, AssetKey: RelicStartCombatAttachmentModel.Floor3UpgradeKey,
-                Stats: { Damage: 15, Health: 0, Cost: 0, Heal: 0, Size: 0, XCost: 0, EquipmentLimit: 0, UpgradeSlotCount: 0 },
-                Statuses.Count: 0, ExternalInteractions.Count: 0, AbilityUpgrade: null, TriggerUpgrades: null };
             bool fightClubCompanionsBirth = source.Train.Context != null &&
                 PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, source.Train.Context) &&
                 owner is { BaseAttack: 95, MaxHealth: 110, Size: 1, Triggers.Count: 1, Modifiers.Upgrades: [
@@ -843,6 +841,45 @@ namespace MonsterTrain2Poju.Model
                     allowTwoRetiredMixedPreview: fightClubPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count > 4 || originalPreviewBirth && room.Units.Single(unit => unit.Id == added[0]).Modifiers!.Upgrades.Count == 6 || originalLavaTwoRetiredPreviewBirth || fightClubRetiredPuffballBirth || fightClubStewardPreviewBirth,
                     allowTwoPreviewRetired: originalSixHordeStewardCompanionPreviewBirth || originalPreviewBirth && (OriginalStewardCompanion() || OriginalTwoPlainCompanions()) || fightClubSmallStewardMissingTarget || fightClubStewardRecruitMissingPreviewBirth || fightClubWoundedCompanionsMissingPreviewBirth) :
                 OnlyTitanskinSources(source.Train.Rooms, source.RetainedUnits, source.EnchanterIds);
+        }
+
+        private static bool OriginalFightClub(CardUpgradeModifier item) => item is {
+            DataId: RelicStartCombatAttachmentModel.Floor3UpgradeId, AssetKey: RelicStartCombatAttachmentModel.Floor3UpgradeKey,
+            Stats: { Damage: 15, Health: 0, Cost: 0, Heal: 0, Size: 0, XCost: 0, EquipmentLimit: 0, UpgradeSlotCount: 0 },
+            Statuses.Count: 0, ExternalInteractions.Count: 0, AbilityUpgrade: null, TriggerUpgrades: null };
+
+        private static bool KnownMeatShieldPreviewAddition(EnchantmentCombatState source, RoomCombatState room,
+            CombatUnit owner, TroopAuraState rule, int birthId)
+        {
+            if (!source.Preview || source.Train.Context is not CombatContext context || source.EnchanterIds.Count != 3 ||
+                owner is not { BaseAttack: 80 or 95, Health: 62 or 72, MaxHealth: 115, Triggers.Count: 2 } ||
+                !PreviewBirthModel.IsOriginalChampionEnemyDeath(owner, context) ||
+                !PreviewBirthModel.IsOriginalMeatShieldHeal(owner.Triggers[1], owner, context) ||
+                !rule.Targets.Contains(owner.Id) || room.Units.Single(unit => unit.Id == birthId) is not
+                    { AssetKey: "MonsterFunguy", Team: CombatTeam.Player, SpawnerCardId: 0, Size: 1,
+                        HordeDefinition: { Attack: 3, Health: 4 }, Modifiers.Upgrades: { } upgrades } birth) return false;
+
+            // The unchanged room attachment contributes its attack upgrade before the troop writes.
+            bool fightClub = owner.BaseAttack == 95;
+            int horde = fightClub ? 3 : 6;
+            int firstAuraUpgrade = fightClub ? 1 : 0;
+            if (fightClub ? upgrades.Count is not (1 or 4 or 7) || !OriginalFightClub(upgrades[0]) : upgrades.Count is not (9 or 15))
+                return false;
+            if (birth.Status("horde")?.Stacks != horde || birth.BaseAttack != (fightClub ? 24 : 18) ||
+                birth.Health != horde * 4 + 3 * (upgrades.Count - firstAuraUpgrade) || birth.MaxHealth != birth.Health ||
+                upgrades.Skip(firstAuraUpgrade).Any(item => item.DataId != Key(owner.Id) || item.AssetKey != rule.Upgrade.AssetKey ||
+                    item.Stats is not { Damage: 0, Health: 3, Cost: 0, Heal: 0, Size: 0, XCost: 0, EquipmentLimit: 0, UpgradeSlotCount: 0 } ||
+                    item.Statuses.Count != 0 || item.ExternalInteractions.Count != 0 || item.AbilityUpgrade != null || item.TriggerUpgrades?.Count > 0))
+                return false;
+
+            bool OriginalCompanion(CombatUnit unit, int attack) => rule.Targets.Contains(unit.Id) &&
+                unit.BaseAttack == attack && (!fightClub || unit.Modifiers?.Upgrades.LastOrDefault() is CardUpgradeModifier last && OriginalFightClub(last));
+            return (!fightClub || OriginalCompanion(owner, 95)) && room.Units.Any(unit => OriginalCompanion(unit, owner.BaseAttack - 56) &&
+                    unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, Health: 35, MaxHealth: 35 } &&
+                    context.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83") &&
+                room.Units.Any(unit => OriginalCompanion(unit, owner.BaseAttack - 75) && unit is { Health: 5, MaxHealth: 5 } &&
+                    PreviewBirthModel.IsOriginalGreenRecruit(unit, context)) &&
+                OnlyFragileBuffSource(source, allowTwoLivePreview: fightClub, allowPreviewRetired: true);
         }
 
         internal static bool OnlyFragileBuffSource(EnchantmentCombatState source, bool allowLiveCombat = false, bool allowTwoLiveCombat = false, bool allowTwoLivePreview = false, bool allowMixedCombat = false, bool allowPreviewRetired = false, bool allowSingleRetiredPreview = false, bool allowTwoRetiredMixedPreview = false, bool allowSingleRetiredCombat = false, int? pendingDyingRoom = null, bool pendingDyingPreview = false, bool allowSingleNonPreviewRetiredPreview = false, bool allowTwoPreviewRetired = false)
