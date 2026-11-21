@@ -6438,6 +6438,12 @@ if (args.Length == 2 && args[0] == "--card-backed-feeding-only")
     CardBackedFeedingChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-source-backed-feeding")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    SourceBackedFeedingChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 1 && args[0] == "--decay-death-pure")
 {
     OriginalDecayDeathChecks.Run();
