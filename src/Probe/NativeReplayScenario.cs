@@ -644,6 +644,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalPyreCapacityCarryoverScenario.SeedBeforeBattle(managers!, log);
                     if (fullBattle && OriginalMagicPowerPerGoldScenario.Enabled)
                         OriginalMagicPowerPerGoldScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalShowtimeScenario.Enabled)
+                        OriginalShowtimeScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && PyreResourceRefreshScenario.Enabled && !PyreResourceRefreshScenario.Prepared)
                         PyreResourceRefreshScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && SpawnStatusRelicScenario.OriginalCombatRelics && !SpawnStatusRelicScenario.OriginalCombatRelicsAcquired)
@@ -2597,6 +2599,12 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return;
             }
+            if (fullBattle && OriginalShowtimeScenario.Enabled && !OriginalShowtimeScenario.Prepared)
+            {
+                numericModifiersPrepared = true;
+                OriginalShowtimeScenario.Prepare(managers, log);
+                return;
+            }
             if (fullBattle && OriginalMagicPowerPerGoldScenario.Enabled && !OriginalMagicPowerPerGoldScenario.Prepared)
             {
                 numericModifiersPrepared = true;
@@ -3313,6 +3321,10 @@ namespace MonsterTrain2Poju.Probe
                 {
                     pendingPlay = SpawnStatusScalingScenario.Choose(decision);
                 }
+                else if (OriginalShowtimeScenario.Enabled)
+                {
+                    pendingPlay = OriginalShowtimeScenario.Choose(decision);
+                }
                 else if (OriginalMagicPowerPerGoldScenario.Enabled)
                 {
                     pendingPlay = OriginalMagicPowerPerGoldScenario.Choose(decision);
@@ -3901,6 +3913,7 @@ namespace MonsterTrain2Poju.Probe
                 (OriginalCardPlayDamageScenario.Enabled && OriginalCardPlayDamageScenario.IsScenarioAction(action)) ||
                 (OriginalConsumeDamageScenario.Enabled && OriginalConsumeDamageScenario.IsScenarioAction(action)) ||
                 (OriginalEatenDamageScenario.Enabled && OriginalEatenDamageScenario.IsScenarioAction(action)) ||
+                (OriginalShowtimeScenario.Enabled && OriginalShowtimeScenario.IsScenarioAction(action)) ||
                 (OriginalMagicPowerPerGoldScenario.Enabled && OriginalMagicPowerPerGoldScenario.IsScenarioAction(action)) ||
                 (OriginalPyreCapacityCarryoverScenario.Enabled && OriginalPyreCapacityCarryoverScenario.IsScenarioAction(action)) ||
                 (OriginalRandomRoomCapacityScenario.Enabled && OriginalRandomRoomCapacityScenario.IsScenarioAction(action)) ||

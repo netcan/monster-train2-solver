@@ -15,6 +15,11 @@ if (args.Length == 2 && args[0] == "--pyre-capacity-carryover-only")
     OpeningCapacityChecks.Carryover(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--showtime-only")
+{
+    ShowtimeChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--gold-magic-power-only")
 {
     GoldMagicPowerChecks.Native(args[1]);

@@ -115,7 +115,7 @@ namespace MonsterTrain2Poju.Probe
             log.LogInfo($"ORIGINAL-RANDOM-ROOM-CAPACITY-PREPARED floor={reducedRoom} maximum={reduced.PlayerMaximum}");
         }
 
-        internal static CardState[] CreateDeploymentControls(AllGameManagers managers, int count, int firstSize)
+        internal static CardState[] CreateDeploymentControls(AllGameManagers managers, int count, int firstSize, int? secondSize = null)
         {
             var save = managers.GetSaveManager();
             var manager = managers.GetCardManager();
@@ -131,6 +131,7 @@ namespace MonsterTrain2Poju.Probe
                 upgrade.SetAdditionalHP(1000);
                 upgrade.SetCostReduction(1);
                 if (i == 0) upgrade.SetAdditionalSize(firstSize - controls[i].GetSize());
+                else if (i == 1 && secondSize.HasValue) upgrade.SetAdditionalSize(secondSize.Value - controls[i].GetSize());
                 controls[i].ApplyPermanentUpgrade(upgrade, save, ignoreUpgradeAnimation: true);
             }
             return controls;

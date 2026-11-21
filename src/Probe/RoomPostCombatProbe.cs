@@ -12,10 +12,12 @@ namespace MonsterTrain2Poju.Probe
         internal static RoomPostCombatRule? Rule(CardUpgradeData upgrade, List<string> interactions)
         {
             RoomModifierData[] modifiers = upgrade.GetRoomModifierUpgrades().ToArray();
-            if (modifiers.Length != 1 || modifiers[0].GetRoomStateModifierClassName() != "RoomStateAddEffectPostCombatModifier") return null;
-            var rule = new RoomPostCombatRule(modifiers[0].GetParamCardEffectData()
-                .Select(effect => BattleActionProbe.DescribeTriggerEffect(effect, interactions)).ToArray(), modifiers[0].DisallowedInDeploymentPhase);
-            string? error = RoomPostCombatModel.Validate(rule);
+            bool showtime = RelicShowtimeModel.AttachmentCapacity(upgrade.GetID()) > 0;
+            var post = modifiers.Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateAddEffectPostCombatModifier").ToArray();
+            if (post.Length != 1 || modifiers.Length != (showtime ? 2 : 1)) return null;
+            var rule = new RoomPostCombatRule(post[0].GetParamCardEffectData()
+                .Select(effect => BattleActionProbe.DescribeTriggerEffect(effect, interactions)).ToArray(), post[0].DisallowedInDeploymentPhase);
+            string? error = RoomPostCombatModel.Validate(rule, showtime);
             if (error != null) interactions.Add(error);
             return rule;
         }

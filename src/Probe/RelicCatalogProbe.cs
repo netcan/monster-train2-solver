@@ -107,6 +107,20 @@ namespace MonsterTrain2Poju.Probe
             CharacterTriggers = data.GetCharacterTriggerUpgrades().Select(trigger => trigger.GetTrigger().ToString()).ToArray(),
             CardTriggers = data.GetCardTriggerUpgrades().Select(trigger => trigger.GetTrigger().ToString()).ToArray(),
             RoomModifierCount = data.GetRoomModifierUpgrades().Count,
+            RoomModifiers = data.GetRoomModifierUpgrades().Select(modifier => new
+            {
+                Type = modifier.GetRoomStateModifierClassName(), Int = modifier.GetParamInt(),
+                Statuses = (modifier.GetParamStatusEffects() ?? Array.Empty<StatusEffectStackData>())
+                    .Select(status => new { status.statusId, status.count }).ToArray(),
+                modifier.DisallowedInDeploymentPhase,
+                Effects = modifier.GetParamCardEffectData()?.Select(effect => new
+                {
+                    Type = effect.GetEffectStateName(), Target = effect.GetTargetMode().ToString(),
+                    Team = effect.GetTargetTeamType().ToString(), Int = effect.GetParamInt(),
+                    Statuses = (effect.GetParamStatusEffects() ?? Array.Empty<StatusEffectStackData>())
+                        .Select(status => new { status.statusId, status.count }).ToArray()
+                }).ToArray()
+            }).ToArray(),
             ReplacedUpgradeIds = data.GetUpgradesToRemove().Select(upgrade => upgrade.GetID()).ToArray(),
             UnitAbilityId = data.GetUnitAbilityUpgrade()?.GetID(), RoomAbilityId = data.GetRoomAbilityUpgrade()?.GetID(),
             Filters = data.GetFilters().Select(CardUpgradeMaskProbe.Definition).ToArray()

@@ -690,6 +690,7 @@ param(
     [switch] $OriginalRandomRoomCapacityMutator,
     [ValidateSet('Bogwurm', 'Life')][string] $OriginalPyreCapacityCarryover,
     [switch] $OriginalMagicPowerPerGold,
+    [ValidateRange(1, 3)][int] $OriginalShowtimeTier,
     [switch] $OriginalBurnoutDamageRelic,
     [switch] $OriginalHealDamageRelic,
     [switch] $OriginalKillAttackRelic,
@@ -1500,6 +1501,17 @@ if ($OriginalCardPlayDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoin
 if ($OriginalConsumeDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalEatenDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalMoreCapacityRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
+if ($OriginalShowtimeTier) {
+    if ($PlayerAdvisor -or $Planner -or $Advisor -or $DotNetPlanner -or $InputProfile -or $BattleDistance -ne 0 -or
+        $OriginalRandomRoomCapacityMutator -or $OriginalPyreCapacityCarryover -or $OriginalMagicPowerPerGold) {
+        throw 'Original Showtime calibration requires a fresh isolated first battle with fixed deployment controls.'
+    }
+    $PhysicalSpawnPoints = $true
+    $BranchCardMasks = $true
+    $SettleCardAnimations = $true
+    $SettleDeathDissolves = $true
+    $Policy = 'units-and-junk'
+}
 if ($OriginalMagicPowerPerGold) {
     if ($PlayerAdvisor -or $Planner -or $Advisor -or $DotNetPlanner -or $InputProfile -or $BattleDistance -ne 0 -or
         $OriginalRandomRoomCapacityMutator -or $OriginalPyreCapacityCarryover -or $OriginalSmeltedTreasure) {
@@ -2573,6 +2585,12 @@ if ($OriginalCardPlayDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'origi
 if ($OriginalConsumeDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-consume-damage' }
 if ($OriginalEatenDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-eaten-damage' }
 if ($OriginalMoreCapacityRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-more-capacity' }
+if ($OriginalShowtimeTier) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-showtime'
+    $environment['MT2_PROBE_SHOWTIME_TIER'] = $OriginalShowtimeTier.ToString()
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
 if ($OriginalMagicPowerPerGold) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-magic-power-per-gold'
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
@@ -5084,6 +5102,39 @@ if ($OriginalRandomRoomCapacityMutator) {
         throw 'Random room capacity lacks its unchanged mutator, natural opening application, deployment capacity witness or exact battle successors.'
     }
     Write-Output "ORIGINAL-RANDOM-ROOM-CAPACITY PASS: floor $($witness.ReducedFloor) $($witness.OriginalMaximum) -> $($witness.Maximum), a rejected unit deployed on floor $($witness.AlternateFloor), and no later-turn application."
+}
+if ($OriginalShowtimeTier) {
+    $definition = $trace.OriginalShowtimeDefinition
+    $witness = $trace.OriginalShowtimeWitness
+    $controls = @($trace.Actions | Where-Object ScenarioAction)
+    $opening = @($trace.OriginalShowtimeOpeningCallbacks)
+    $postCombat = @($trace.OriginalShowtimePostCombat)
+    $frontOnly = @(foreach ($callback in $postCombat) {
+        if ($callback.Before.Turn -le 0 -or $callback.Before.Room -ne $witness.Room) { continue }
+        $frontBefore = @($callback.Before.Actors | Where-Object CardId -eq $witness.FrontCardId)
+        $rearBefore = @($callback.Before.Actors | Where-Object CardId -eq $witness.RearCardId)
+        $frontAfter = @($callback.After.Actors | Where-Object CardId -eq $witness.FrontCardId)
+        $rearAfter = @($callback.After.Actors | Where-Object CardId -eq $witness.RearCardId)
+        if ($frontBefore.Count -eq 1 -and $rearBefore.Count -eq 1 -and $frontAfter.Count -eq 1 -and $rearAfter.Count -eq 1 -and
+            $frontAfter[0].UpgradeCount -eq $frontBefore[0].UpgradeCount + 1 -and
+            $rearAfter[0].UpgradeCount -eq $rearBefore[0].UpgradeCount) { $callback }
+    })
+    if (-not $trace.OriginalShowtimePrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or
+        $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+        $definition.Tier -ne $OriginalShowtimeTier -or $controls.Count -ne 4 -or
+        $controls[0].Action.CardInstanceId -ne $witness.FrontCardId -or $controls[1].Action.CardInstanceId -ne $witness.RearCardId -or
+        $controls[0].Action.RoomIndex -ne $witness.Room -or $controls[1].Action.RoomIndex -ne $witness.Room -or
+        ($witness.FrontSize + $witness.RearSize) -le $witness.OriginalCapacity -or
+        @($opening | Where-Object { -not $_.Completed }).Count -ne 0 -or
+        @($opening | Where-Object Kind -eq 'Apply').Count -ne 1 -or
+        @($opening | Where-Object { $_.Kind -eq 'Test' -and $_.Passed -and $_.Before.Turn -eq 0 }).Count -ne 1 -or
+        @($opening | Where-Object { $_.Kind -eq 'Test' -and -not $_.Passed -and $_.Before.Turn -gt 0 }).Count -lt 1 -or
+        @($postCombat | Where-Object { -not $_.Completed }).Count -ne 0 -or $frontOnly.Count -lt 2 -or
+        ($definition | ConvertTo-Json -Compress -Depth 8) -cne
+        ($trace.OriginalShowtimeDefinitionAfter | ConvertTo-Json -Compress -Depth 8)) {
+        throw 'Showtime lacks its original opening attachment, front-only upgrades across turns, or exact battle successors.'
+    }
+    Write-Output "ORIGINAL-SHOWTIME PASS: tier $OriginalShowtimeTier expanded floor $($witness.Room) $($witness.OriginalCapacity) -> $($witness.ExpandedCapacity); $($frontOnly.Count) front-only post-combat upgrades."
 }
 if ($OriginalMagicPowerPerGold) {
     $callbacks = @($trace.OriginalMagicPowerPerGoldCallbacks)

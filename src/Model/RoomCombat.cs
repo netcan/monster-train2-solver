@@ -2222,7 +2222,7 @@ namespace MonsterTrain2Poju.Model
                     RoomMoonPhaseRule? rule = attachment.MoonPhase;
                     RoomPostCombatRule? post = attachment.PostCombat;
                     if (rule == null && post == null || source.Deployment && (rule?.DisallowedInDeployment ?? post!.DisallowedInDeployment)) continue;
-                    string? error = rule != null ? RoomMoonPhaseModel.Validate(rule) : RoomPostCombatModel.Validate(post!);
+                    string? error = rule != null ? RoomMoonPhaseModel.Validate(rule) : RoomPostCombatModel.Validate(post!, RelicShowtimeModel.IsAttachment(attachment));
                     if (error != null) { unsupportedReason = error; return; }
                     RoomCombatResult result = CardSpellModel.Apply(CurrentRoom(), rule?.PostCombatEffects ?? post!.Effects, 0);
                     if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return; }

@@ -13,7 +13,8 @@ namespace MonsterTrain2Poju.Model
     }
     public static class RoomPostCombatModel
     {
-        public static string? Validate(RoomPostCombatRule rule) => rule.Effects.Count != 1 || rule.Effects.Any(effect =>
+        public static string? Validate(RoomPostCombatRule rule, bool showtime = false) =>
+            showtime && RelicShowtimeModel.IsPostCombat(rule) ? null : rule.Effects.Count != 1 || rule.Effects.Any(effect =>
             !SupportedPayload(effect, rule.DisallowedInDeployment) || effect.Target != "Room" ||
             effect.Range != null || effect.Upgrade != null || effect.Filters != null &&
                 (effect.Filters.Health != "Both" || effect.Filters.RequiredStatuses.Count > 0 || effect.Filters.ExcludedStatuses.Count > 0 ||

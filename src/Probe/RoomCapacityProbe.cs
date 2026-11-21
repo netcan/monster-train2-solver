@@ -29,7 +29,9 @@ namespace MonsterTrain2Poju.Probe
             var result = new List<RoomCapacityAttachmentState>();
             foreach (TrainRoomAttachmentState attachment in room.Attachments)
             {
-                if (!attachment.IsActive || (int)attachment.AttachType != 0 || attachment.UpgradeStates.Count == 0 ||
+                bool showtime = (int)attachment.AttachType == RelicShowtimeModel.HiddenAttachment && attachment.CardState == null &&
+                    attachment.UpgradeStates.Count == 1 && RelicShowtimeModel.AttachmentCapacity(attachment.UpgradeStates[0].Item2.GetID()) > 0;
+                if (!attachment.IsActive || (int)attachment.AttachType != 0 && !showtime || attachment.UpgradeStates.Count == 0 ||
                     attachment.CardState == null && attachment.UpgradeStates.Count != 1) return null;
                 int delta = 0;
                 RoomMoonPhaseRule? moon = null;
@@ -76,7 +78,7 @@ namespace MonsterTrain2Poju.Probe
                         (attachment.CardState == null || state.GetTriggerUpgrades().Count == 0 || RoomAttachmentTriggerIdentity.Known(attachment.CardState.GetCardDataID())) && state.GetCardTriggerUpgrades().Count == 0 &&
                         state.GetUpgradesToRemove().Count == 0 && RoomCapacityModel.ValidateCharacterFilters(filters) == null &&
                         state.GetUnitAbilityUpgrade() == null && !state.IsUnique();
-                    if (!supported) return null;
+                    if (!supported || showtime && (post == null || roomModifiers.Length != 2 || capacityModifiers.Length != 1)) return null;
                     if (capacityModifiers.Length == 1) delta = unchecked(delta + capacityModifiers[0].GetParamInt());
                     characterUpgrades.Add(CardModifierProbe.Upgrade(state, rejectFilters: false,
                         filtersAlreadyApplied: true, roomAttachmentUnitUpgrade: true));
@@ -91,7 +93,7 @@ namespace MonsterTrain2Poju.Probe
                 result.Add(new RoomCapacityAttachmentState(dataId, assetKey, (int)attachment.AttachType, delta,
                     characterUpgrades, attachment.TrainSide.HasFlag(Team.Type.Heroes),
                     attachment.TrainSide.HasFlag(Team.Type.Monsters), ignoreBosses,
-                    attachment.CardState == null ? attachment.Guid : RoomAttachmentTriggerIdentity.Known(dataId) || enemyEntry.Count > 0 ? FullBattleTrace.Active!.UpgradeKey(attachment.Guid) : "", spellCostDelta, moon,
+                    showtime ? "" : attachment.CardState == null ? attachment.Guid : RoomAttachmentTriggerIdentity.Known(dataId) || enemyEntry.Count > 0 ? FullBattleTrace.Active!.UpgradeKey(attachment.Guid) : "", spellCostDelta, moon,
                     attachment.UpgradeStates.SelectMany(item => item.Item2.GetRoomModifierUpgrades())
                         .Where(modifier => modifier.GetRoomStateModifierClassName() == "RoomStateEnergyModifier").Sum(modifier => modifier.GetParamInt()), characterFilters, postCombat, preCombat,
                         statusStacks.Count == 0 ? null : statusStacks, spawnCopySubtype, RoomSpellUpgradeProbe.Capture(attachment), deathEffect,
