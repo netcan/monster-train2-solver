@@ -49,7 +49,8 @@ internal static class OfflineRootSearch
         }
         Console.WriteLine($"PLAN-ROOT outcome={plan.Outcome} complete={plan.CompletedHorizon} partial={plan.UsedShorterHorizon} " +
             $"turn={root.Spawn.Turn} forecastTurns={plan.TurnsCompleted} steps={plan.Steps.Count} nodes={plan.ExpandedNodes} " +
-            $"maxNodes={maxNodes} workers={plan.SearchWorkers} searchMs={plan.Elapsed.TotalMilliseconds:F1} output={output}; model prediction only.");
+            $"beamNodes={plan.BeamExpandedNodes} maxNodes={maxNodes} workers={plan.SearchWorkers} " +
+            $"searchMs={plan.Elapsed.TotalMilliseconds:F1} output={output}; model prediction only.");
     }
 
     internal static void Verify(string input)
@@ -71,6 +72,9 @@ internal static class OfflineRootSearch
         int requestedWorkers = fixture.GetProperty("RequestedWorkers").GetInt32();
         // Earlier root predictions used the fixed player default and have no declaration.
         int requestedNodes = fixture.TryGetProperty("RequestedMaxNodes", out var nodes) ? nodes.GetInt32() : 256;
+        int expandedNodes = plan.GetProperty("ExpandedNodes").GetInt32();
+        if (plan.TryGetProperty("BeamExpandedNodes", out var beamNodes))
+            Require(beamNodes.GetInt32() >= 0 && beamNodes.GetInt32() <= expandedNodes, "Prediction changed its beam expansion count.");
         int[] threads = plan.GetProperty("WorkerThreadIds").EnumerateArray().Select(value => value.GetInt32()).ToArray();
         Require(milliseconds is >= 100 and <= 30000 && requestedWorkers is 1 or 2 && requestedNodes is >= 1 and <= 4096 &&
             TimeSpan.Parse(options.GetProperty("TimeLimit").GetString()!, System.Globalization.CultureInfo.InvariantCulture) == TimeSpan.FromMilliseconds(milliseconds) &&
@@ -79,7 +83,7 @@ internal static class OfflineRootSearch
         Require(!plan.GetProperty("Cancelled").GetBoolean() &&
             (plan.GetProperty("CompletedHorizon").GetBoolean() || plan.GetProperty("UsedShorterHorizon").GetBoolean()) &&
             plan.GetProperty("SearchedToBattleEnd").GetBoolean() && plan.GetProperty("MaxSteps").GetInt32() == 256 &&
-            plan.GetProperty("ExpandedNodes").GetInt32() > 0 && plan.GetProperty("ExpandedNodes").GetInt32() <= requestedNodes &&
+            expandedNodes > 0 && expandedNodes <= requestedNodes &&
             steps.Length is > 0 and <= 256,
             "Prediction lost its completion, whole-battle or shared budget bounds.");
         Require(options.GetProperty("MaxNodes").GetInt32() == requestedNodes && options.GetProperty("MaxTurns").GetInt32() == 3 &&

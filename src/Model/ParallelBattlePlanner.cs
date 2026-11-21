@@ -76,7 +76,8 @@ namespace MonsterTrain2Poju.Model
                 results.Any(result => result.ReachedStepLimit), best.MaxSteps,
                 results.SelectMany(result => result.WorkerThreadIds).Distinct().ToArray(),
                 BattleSearchMetrics.Sum(results.Select(result => result.SearchMetrics)),
-                results.Any(result => result.StoppedEarly), earlyStop?.PyreHealthUpperBound);
+                results.Any(result => result.StoppedEarly), earlyStop?.PyreHealthUpperBound,
+                results.Sum(result => result.BeamExpandedNodes));
         }
 
         internal static BattlePlanResult SelectBest(System.Collections.Generic.IEnumerable<BattlePlanResult> results) =>

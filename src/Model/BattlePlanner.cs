@@ -49,6 +49,9 @@ namespace MonsterTrain2Poju.Model
         public int ExpandedNodes { get; }
         public int DuplicateStates { get; }
         public int BeamPruned { get; }
+        // Frontier states expanded by the beam loop. Rollouts and extra
+        // Relentless choice nodes contribute only to ExpandedNodes.
+        public int BeamExpandedNodes { get; }
         public TimeSpan Elapsed { get; }
         public bool TimedOut { get; }
         public bool Cancelled { get; }
@@ -74,10 +77,12 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<UnsupportedActionAttempt> unsupported, double? policyBaselineScore,
             int requestedTurns = 0, bool usedShorterHorizon = false, bool searchedToBattleEnd = false,
             bool stepLimit = false, int maxSteps = 256, IReadOnlyList<int>? workerThreadIds = null,
-            BattleSearchMetrics? searchMetrics = null, bool stoppedEarly = false, int? pyreHealthUpperBound = null)
+            BattleSearchMetrics? searchMetrics = null, bool stoppedEarly = false, int? pyreHealthUpperBound = null,
+            int beamExpandedNodes = 0)
         {
             State = state; Outcome = outcome; Steps = Array.AsReadOnly(steps.ToArray()); Score = score;
             TurnsCompleted = turns; ExpandedNodes = nodes; DuplicateStates = duplicates; BeamPruned = beamPruned;
+            BeamExpandedNodes = beamExpandedNodes;
             Elapsed = elapsed; TimedOut = timedOut; Cancelled = cancelled; ReachedNodeLimit = nodeLimit;
             ReachedActionLimit = actionLimit; CompletedHorizon = completed;
             UnsupportedAttempts = Array.AsReadOnly(unsupported.ToArray());
@@ -160,7 +165,7 @@ namespace MonsterTrain2Poju.Model
             evaluate ??= Evaluate;
             var workspace = new BattleSearchWorkspace(optimizeTransitions, cacheTrainValidation);
             int maxTurns = options.SearchToBattleEnd ? options.MaxSteps + 1 : options.MaxTurns;
-            int nodes = 0, duplicates = 0, pruned = 0;
+            int nodes = 0, duplicates = 0, pruned = 0, beamNodes = 0;
             bool timedOut = false, cancelled = false, nodeLimit = false, actionLimit = false, stepLimit = false;
             var seen = new HashSet<string>(StringComparer.Ordinal);
             var unsupported = new List<UnsupportedActionAttempt>();
@@ -457,6 +462,7 @@ namespace MonsterTrain2Poju.Model
                     if (Stop()) break;
                     if (!CanExpand(node)) continue;
                     nodes++;
+                    beamNodes++;
                     if (node.Actions < options.MaxActionsPerTurn)
                     {
                         BattleActionEnumeration actions = workspace.Enumerate(node.State);
@@ -501,7 +507,8 @@ namespace MonsterTrain2Poju.Model
             return new BattlePlanResult(selected.State, selected.Outcome, selected.Steps, selected.Score, selected.Turns,
                 nodes, duplicates, pruned, watch.Elapsed, timedOut, cancelled, nodeLimit, actionLimit, best != null && !shorter, unsupported, policyBaselineScore,
                 maxTurns, shorter, options.SearchToBattleEnd, stepLimit, options.MaxSteps, searchMetrics: workspace.Metrics,
-                stoppedEarly: earlyStop?.Reached == true, pyreHealthUpperBound: earlyStop?.PyreHealthUpperBound);
+                stoppedEarly: earlyStop?.Reached == true, pyreHealthUpperBound: earlyStop?.PyreHealthUpperBound,
+                beamExpandedNodes: beamNodes);
         }
 
         private sealed class Node
