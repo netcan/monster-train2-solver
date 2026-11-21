@@ -689,6 +689,7 @@ param(
     [switch] $OriginalMoreCapacityRelic,
     [switch] $OriginalRandomRoomCapacityMutator,
     [ValidateSet('Bogwurm', 'Life')][string] $OriginalPyreCapacityCarryover,
+    [switch] $OriginalMagicPowerPerGold,
     [switch] $OriginalBurnoutDamageRelic,
     [switch] $OriginalHealDamageRelic,
     [switch] $OriginalKillAttackRelic,
@@ -1499,6 +1500,17 @@ if ($OriginalCardPlayDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoin
 if ($OriginalConsumeDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalEatenDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalMoreCapacityRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
+if ($OriginalMagicPowerPerGold) {
+    if ($PlayerAdvisor -or $Planner -or $Advisor -or $DotNetPlanner -or $InputProfile -or $BattleDistance -ne 0 -or
+        $OriginalRandomRoomCapacityMutator -or $OriginalPyreCapacityCarryover -or $OriginalSmeltedTreasure) {
+        throw 'Original gold-to-power calibration requires a fresh isolated first battle with fixed deployment controls.'
+    }
+    $PhysicalSpawnPoints = $true
+    $BranchCardMasks = $true
+    $SettleCardAnimations = $true
+    $SettleDeathDissolves = $true
+    $Policy = 'units-spells-and-junk'
+}
 if ($OriginalPyreCapacityCarryover -and ($OriginalRandomRoomCapacityMutator -or $InputProfile -or $BattleDistance -ne 0)) {
     throw 'Pyre capacity carryover selects one original Pyre in a fresh isolated run.'
 }
@@ -2561,6 +2573,11 @@ if ($OriginalCardPlayDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'origi
 if ($OriginalConsumeDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-consume-damage' }
 if ($OriginalEatenDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-eaten-damage' }
 if ($OriginalMoreCapacityRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-more-capacity' }
+if ($OriginalMagicPowerPerGold) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-magic-power-per-gold'
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
 if ($OriginalRandomRoomCapacityMutator -or $OriginalPyreCapacityCarryover) {
     $environment['MT2_PROBE_MODIFIERS'] = if ($OriginalPyreCapacityCarryover) { 'original-pyre-capacity-carryover' } else { 'original-random-room-capacity' }
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
@@ -5067,6 +5084,29 @@ if ($OriginalRandomRoomCapacityMutator) {
         throw 'Random room capacity lacks its unchanged mutator, natural opening application, deployment capacity witness or exact battle successors.'
     }
     Write-Output "ORIGINAL-RANDOM-ROOM-CAPACITY PASS: floor $($witness.ReducedFloor) $($witness.OriginalMaximum) -> $($witness.Maximum), a rejected unit deployed on floor $($witness.AlternateFloor), and no later-turn application."
+}
+if ($OriginalMagicPowerPerGold) {
+    $callbacks = @($trace.OriginalMagicPowerPerGoldCallbacks)
+    $opening = @($callbacks | Where-Object { $_.Kind -eq 'Apply' -and $_.Before.Turn -eq 0 })
+    $nextTurn = @($callbacks | Where-Object { $_.Kind -eq 'Apply' -and $_.Before.Turn -eq 1 })
+    $payment = $trace.OriginalMagicPowerPerGoldAfterPayment
+    $controls = @($trace.Actions | Where-Object ScenarioAction)
+    if (-not $trace.OriginalMagicPowerPerGoldPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or
+        $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+        $controls.Count -ne 4 -or $controls[3].Action.CardInstanceId -ne $payment.Permanent.Id -or
+        $opening.Count -ne 1 -or $nextTurn.Count -ne 1 -or $opening[0].After.Gold -ne 100 -or $payment.Gold -ne 50 -or
+        $payment.Turn -ne 0 -or $nextTurn[0].After.Gold -ne 50 -or
+        @($opening[0].After.Permanent.Upgrades).Count -ne 1 -or $opening[0].After.Permanent.Upgrades[0].Damage -ne 1 -or
+        @($payment.Permanent.Upgrades).Count -ne 1 -or $payment.Permanent.Upgrades[0].Damage -ne 1 -or
+        @($nextTurn[0].After.Permanent.Upgrades).Count -ne 1 -or $nextTurn[0].After.Permanent.Upgrades[0].Damage -ne 0 -or
+        @($nextTurn[0].After.Generated.Upgrades).Count -ne 0 -or -not $nextTurn[0].After.Generated.Eligible -or
+        $nextTurn[0].After.Generated.InDeck -or $nextTurn[0].After.Generated.TrackedByRelic -or
+        @($callbacks | Where-Object { -not $_.Completed -or ($_.Kind -eq 'Test' -and -not $_.Passed) }).Count -ne 0 -or
+        ($trace.OriginalMagicPowerPerGoldDefinition | ConvertTo-Json -Compress -Depth 6) -cne
+        ($trace.OriginalMagicPowerPerGoldDefinitionAfter | ConvertTo-Json -Compress -Depth 6)) {
+        throw 'Gold-to-power calibration lacks the native 100 to 50 gold bracket transition, unchanged mutator or exact battle successors.'
+    }
+    Write-Output 'ORIGINAL-MAGIC-POWER-PER-GOLD PASS: 100 to 50 gold payment preserved power midturn; next BeforeDraw refreshed only the permanent card.'
 }
 if ($OriginalPyreCapacityCarryover) {
     $callbacks = @($trace.OriginalPyreCapacityCarryoverCallbacks)

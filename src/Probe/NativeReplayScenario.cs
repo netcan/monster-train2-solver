@@ -642,6 +642,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalRandomRoomCapacityScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPyreCapacityCarryoverScenario.Enabled)
                         OriginalPyreCapacityCarryoverScenario.SeedBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalMagicPowerPerGoldScenario.Enabled)
+                        OriginalMagicPowerPerGoldScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && PyreResourceRefreshScenario.Enabled && !PyreResourceRefreshScenario.Prepared)
                         PyreResourceRefreshScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && SpawnStatusRelicScenario.OriginalCombatRelics && !SpawnStatusRelicScenario.OriginalCombatRelicsAcquired)
@@ -2595,6 +2597,12 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return;
             }
+            if (fullBattle && OriginalMagicPowerPerGoldScenario.Enabled && !OriginalMagicPowerPerGoldScenario.Prepared)
+            {
+                numericModifiersPrepared = true;
+                OriginalMagicPowerPerGoldScenario.Prepare(managers, log);
+                return;
+            }
             if (fullBattle && OriginalPyreCapacityCarryoverScenario.Enabled && !OriginalPyreCapacityCarryoverScenario.Prepared)
             {
                 numericModifiersPrepared = true;
@@ -3305,6 +3313,10 @@ namespace MonsterTrain2Poju.Probe
                 {
                     pendingPlay = SpawnStatusScalingScenario.Choose(decision);
                 }
+                else if (OriginalMagicPowerPerGoldScenario.Enabled)
+                {
+                    pendingPlay = OriginalMagicPowerPerGoldScenario.Choose(decision);
+                }
                 else if (OriginalPyreCapacityCarryoverScenario.Enabled)
                 {
                     pendingPlay = OriginalPyreCapacityCarryoverScenario.Choose(decision);
@@ -3889,6 +3901,7 @@ namespace MonsterTrain2Poju.Probe
                 (OriginalCardPlayDamageScenario.Enabled && OriginalCardPlayDamageScenario.IsScenarioAction(action)) ||
                 (OriginalConsumeDamageScenario.Enabled && OriginalConsumeDamageScenario.IsScenarioAction(action)) ||
                 (OriginalEatenDamageScenario.Enabled && OriginalEatenDamageScenario.IsScenarioAction(action)) ||
+                (OriginalMagicPowerPerGoldScenario.Enabled && OriginalMagicPowerPerGoldScenario.IsScenarioAction(action)) ||
                 (OriginalPyreCapacityCarryoverScenario.Enabled && OriginalPyreCapacityCarryoverScenario.IsScenarioAction(action)) ||
                 (OriginalRandomRoomCapacityScenario.Enabled && OriginalRandomRoomCapacityScenario.IsScenarioAction(action)) ||
                 (OriginalMoreCapacityScenario.Enabled && OriginalMoreCapacityScenario.IsScenarioAction(action)) ||

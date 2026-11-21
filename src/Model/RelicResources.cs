@@ -183,6 +183,14 @@ namespace MonsterTrain2Poju.Model
         public RelicPileSpawnUpgradeRule? PileSpawnUpgrade { get; }
         public RelicSpawnStatusScalingRule? SpawnStatusScaling { get; }
         public RelicTurnEnergyRule? TurnEnergy { get; private set; }
+        public IReadOnlyList<int>? GoldMagicPowerCards { get; private set; }
+        public bool ShouldSerializeGoldMagicPowerCards() => GoldMagicPowerCards != null;
+        internal RelicResourceEffect WithGoldMagicPowerCards(IEnumerable<int> cards)
+        {
+            var copy = (RelicResourceEffect)MemberwiseClone();
+            copy.GoldMagicPowerCards = Array.AsReadOnly(cards.OrderBy(id => id).ToArray());
+            return copy;
+        }
         internal RelicResourceEffect WithTurnEnergy(RelicTurnEnergyRule rule)
         { var copy = (RelicResourceEffect)MemberwiseClone(); copy.TurnEnergy = rule; return copy; }
         public RelicResourceEffect(int effectIndex, string type, int paramInt, int paramInt2, int amount,
@@ -199,7 +207,8 @@ namespace MonsterTrain2Poju.Model
             RelicUnitSpawnEffectRule? unitSpawnEffect = null, RelicDeathEffectRule? deathEffect = null,
             RelicOpeningSpawnRule? openingSpawn = null, RelicOpeningDeckSpawnRule? deckSpawn = null,
             RelicDrawAndEnergyRule? drawAndEnergy = null, RelicPileSpawnUpgradeRule? pileSpawnUpgrade = null,
-            RelicSpawnStatusScalingRule? spawnStatusScaling = null, RelicTurnEnergyRule? turnEnergy = null)
+            RelicSpawnStatusScalingRule? spawnStatusScaling = null, RelicTurnEnergyRule? turnEnergy = null,
+            IReadOnlyList<int>? goldMagicPowerCards = null)
         {
             EffectIndex = effectIndex; Type = type; ParamInt = paramInt; ParamInt2 = paramInt2; Amount = amount;
             ParamMinInt = paramMinInt;
@@ -224,6 +233,7 @@ namespace MonsterTrain2Poju.Model
             DeckSpawn = deckSpawn;
             DrawAndEnergy = drawAndEnergy;
             PileSpawnUpgrade = pileSpawnUpgrade; SpawnStatusScaling = spawnStatusScaling; TurnEnergy = turnEnergy;
+            GoldMagicPowerCards = goldMagicPowerCards == null ? null : Array.AsReadOnly(goldMagicPowerCards.OrderBy(id => id).ToArray());
             CanApplyInPreviewMode = canApplyInPreviewMode; RequiredMutatorId = requiredMutatorId;
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
             DrawValue = drawValue; DrawMutationOrder = drawMutationOrder;
@@ -231,30 +241,30 @@ namespace MonsterTrain2Poju.Model
         }
         internal RelicResourceEffect WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
-                RequiredMutatorId, conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal, StartTurnRoomEffect, CardPlayDamage, UnitDamage, MooncycleRoomEffect, RandomDrawCost, SuppressExhaust, EndTurnHealth, CardTypeSequence, UnitSpawnEffect, DeathEffect, OpeningSpawn, DeckSpawn, DrawAndEnergy, PileSpawnUpgrade, SpawnStatusScaling, TurnEnergy);
+                RequiredMutatorId, conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal, StartTurnRoomEffect, CardPlayDamage, UnitDamage, MooncycleRoomEffect, RandomDrawCost, SuppressExhaust, EndTurnHealth, CardTypeSequence, UnitSpawnEffect, DeathEffect, OpeningSpawn, DeckSpawn, DrawAndEnergy, PileSpawnUpgrade, SpawnStatusScaling, TurnEnergy, GoldMagicPowerCards);
         internal RelicResourceEffect WithDrawValue(float value) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
-                RequiredMutatorId, Conditions, value, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal, StartTurnRoomEffect, CardPlayDamage, UnitDamage, MooncycleRoomEffect, RandomDrawCost, SuppressExhaust, EndTurnHealth, CardTypeSequence, UnitSpawnEffect, DeathEffect, OpeningSpawn, DeckSpawn, DrawAndEnergy, PileSpawnUpgrade, SpawnStatusScaling, TurnEnergy);
+                RequiredMutatorId, Conditions, value, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal, StartTurnRoomEffect, CardPlayDamage, UnitDamage, MooncycleRoomEffect, RandomDrawCost, SuppressExhaust, EndTurnHealth, CardTypeSequence, UnitSpawnEffect, DeathEffect, OpeningSpawn, DeckSpawn, DrawAndEnergy, PileSpawnUpgrade, SpawnStatusScaling, TurnEnergy, GoldMagicPowerCards);
         internal RelicResourceEffect WithCardGeneration(CardGenerationRule generation) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
                 RequiredMutatorId, Conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder,
-                ParamMinInt, ParamFloat, generation, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal, StartTurnRoomEffect, CardPlayDamage, UnitDamage, MooncycleRoomEffect, RandomDrawCost, SuppressExhaust, EndTurnHealth, CardTypeSequence, UnitSpawnEffect, DeathEffect, OpeningSpawn, DeckSpawn, DrawAndEnergy, PileSpawnUpgrade, SpawnStatusScaling, TurnEnergy);
+                ParamMinInt, ParamFloat, generation, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal, StartTurnRoomEffect, CardPlayDamage, UnitDamage, MooncycleRoomEffect, RandomDrawCost, SuppressExhaust, EndTurnHealth, CardTypeSequence, UnitSpawnEffect, DeathEffect, OpeningSpawn, DeckSpawn, DrawAndEnergy, PileSpawnUpgrade, SpawnStatusScaling, TurnEnergy, GoldMagicPowerCards);
         internal RelicResourceEffect WithSuppressExhaust(RelicSuppressExhaustRule rule) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
                 RequiredMutatorId, Conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder,
                 ParamMinInt, ParamFloat, CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal,
-                StartTurnRoomEffect, CardPlayDamage, UnitDamage, MooncycleRoomEffect, RandomDrawCost, rule, EndTurnHealth, CardTypeSequence, UnitSpawnEffect, DeathEffect, OpeningSpawn, DeckSpawn, DrawAndEnergy, PileSpawnUpgrade, SpawnStatusScaling, TurnEnergy);
+                StartTurnRoomEffect, CardPlayDamage, UnitDamage, MooncycleRoomEffect, RandomDrawCost, rule, EndTurnHealth, CardTypeSequence, UnitSpawnEffect, DeathEffect, OpeningSpawn, DeckSpawn, DrawAndEnergy, PileSpawnUpgrade, SpawnStatusScaling, TurnEnergy, GoldMagicPowerCards);
         internal RelicResourceEffect WithCardTypeSequence(RelicCardTypeSequenceRule rule) =>
             new RelicResourceEffect(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode,
                 RequiredMutatorId, Conditions, DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat,
                 CardGeneration, UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal, StartTurnRoomEffect,
-                CardPlayDamage, UnitDamage, MooncycleRoomEffect, RandomDrawCost, SuppressExhaust, EndTurnHealth, rule, UnitSpawnEffect, DeathEffect, OpeningSpawn, DeckSpawn, DrawAndEnergy, PileSpawnUpgrade, SpawnStatusScaling, TurnEnergy);
+                CardPlayDamage, UnitDamage, MooncycleRoomEffect, RandomDrawCost, SuppressExhaust, EndTurnHealth, rule, UnitSpawnEffect, DeathEffect, OpeningSpawn, DeckSpawn, DrawAndEnergy, PileSpawnUpgrade, SpawnStatusScaling, TurnEnergy, GoldMagicPowerCards);
         internal RelicResourceEffect WithDeckSpawn(RelicOpeningDeckSpawnRule rule) =>
             new(EffectIndex, Type, ParamInt, ParamInt2, Amount, CanApplyInPreviewMode, RequiredMutatorId, Conditions,
                 DrawValue, DrawMutationOrder, CapacityValue, CapacityMutationOrder, ParamMinInt, ParamFloat, CardGeneration,
                 UnitTrigger, OpeningDraw, PileStartTurn, MoonPhaseStatus, StartTurnHeal, StartTurnRoomEffect, CardPlayDamage,
                 UnitDamage, MooncycleRoomEffect, RandomDrawCost, SuppressExhaust, EndTurnHealth, CardTypeSequence,
-                UnitSpawnEffect, DeathEffect, OpeningSpawn, rule, DrawAndEnergy, PileSpawnUpgrade, SpawnStatusScaling, TurnEnergy);
+                UnitSpawnEffect, DeathEffect, OpeningSpawn, rule, DrawAndEnergy, PileSpawnUpgrade, SpawnStatusScaling, TurnEnergy, GoldMagicPowerCards);
     }
 
     public sealed class RelicResourceEvent
@@ -332,7 +342,7 @@ namespace MonsterTrain2Poju.Model
             RelicUnitTriggerCardGenerationModel.IsEffect(type) ||
             RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type) || type == PileStartTurn || type == StartTurnHeal ||
             type == StartTurnRoomEffect || type == PostOpeningDiscardReplacement || type == RelicSingleFloorCapacityModel.Effect ||
-            RelicOpeningCapacityModel.IsEffect(type) || type == RelicMooncycleRoomEffectModel.Effect;
+            RelicOpeningCapacityModel.IsEffect(type) || type == RelicGoldMagicPowerModel.Effect || type == RelicMooncycleRoomEffectModel.Effect;
 
         internal static string? Validate(CombatRelicState relic)
         {
@@ -429,6 +439,11 @@ namespace MonsterTrain2Poju.Model
                     if (mooncycleError != null) return mooncycleError;
                 }
                 else if (rule.MooncycleRoomEffect != null) return "Unexpected mooncycle room-effect payload on another effect.";
+                if (rule.Type == RelicGoldMagicPowerModel.Effect)
+                {
+                    string? error = RelicGoldMagicPowerModel.Validate(relic, rule);
+                    if (error != null) return error;
+                }
                 if (RelicOpeningCapacityModel.IsEffect(rule.Type))
                 {
                     string? openingCapacityError = RelicOpeningCapacityModel.Validate(relic, rule);

@@ -176,6 +176,7 @@ namespace MonsterTrain2Poju.Probe
             RelicPileSpawnUpgradeRule? pileSpawnUpgrade = null;
             RelicSpawnStatusScalingRule? spawnStatusScaling = null;
             RelicTurnEnergyRule? turnEnergy = null;
+            int[]? goldMagicPowerCards = null;
             if (effect is RelicEffectModifyEnergyReducingEveryTurn || effect is RelicEffectModifyEnergyWhenFloorsOccupied)
             {
                 object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
@@ -524,6 +525,12 @@ namespace MonsterTrain2Poju.Probe
                 amount = (int)AccessTools.Field(effect.GetType(), "corruptionChange").GetValue(effect);
             else if (effect is RelicEffectAddPermanentCorruptionStartOfCombat)
                 amount = (int)AccessTools.Field(effect.GetType(), "addPermanentAmount").GetValue(effect);
+            else if (type == RelicGoldMagicPowerModel.Effect)
+            {
+                amount = data.GetParamInt();
+                var tracked = (Dictionary<CardState, CardUpgradeState>)AccessTools.Field(effect.GetType(), "modifiedCardMagicPower").GetValue(effect);
+                goldMagicPowerCards = tracked.Keys.Select(card => FullBattleTrace.Active!.CardId(card)).ToArray();
+            }
             else if (RelicOpeningCapacityModel.IsEffect(type))
                 amount = data.GetParamInt();
             else if (effect is RelicEffectChangeSingleFloorCapacity)
@@ -576,7 +583,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
                 effect is RelicEffectAddPermanentCorruptionStartOfCombat || effect is RelicEffectChangeSingleFloorCapacity || effect is RelicEffectRandomCardCostOnDraw || effect is RelicEffectSuppressExhaust || effect is RelicEffectPyreHeartResurrection ? data.GetParamFloat() : 0,
-                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence, unitSpawnEffect, deathEffect, openingSpawn, deckSpawn, drawAndEnergy, pileSpawnUpgrade, spawnStatusScaling, turnEnergy);
+                generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence, unitSpawnEffect, deathEffect, openingSpawn, deckSpawn, drawAndEnergy, pileSpawnUpgrade, spawnStatusScaling, turnEnergy, goldMagicPowerCards);
         }
 
         internal static ResourceSnapshot Capture()

@@ -22,7 +22,8 @@ namespace MonsterTrain2Poju.Model
             type == RelicSoloUnitUpgradeModel.Effect || type == RelicSingleFloorCapacityModel.Effect ||
             type == RelicStartTurnHealModel.Effect || type == RelicStartTurnStatusModel.Effect ||
             type == RelicPileStartTurnModel.Effect || type == RelicTurnDrawModel.FullHealth ||
-            type == RelicRelentlessDrawModel.Effect || type == RelicFirstCardCostModel.Effect;
+            type == RelicRelentlessDrawModel.Effect || type == RelicFirstCardCostModel.Effect ||
+            type == RelicGoldMagicPowerModel.Effect;
 
         internal static TrainCombatResult GeneralStart(TrainCombatState source)
         {
@@ -115,6 +116,13 @@ namespace MonsterTrain2Poju.Model
                         int health = state.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health;
                         var result = RelicTurnDrawModel.BeforeDraw(context, health, placement, preview, state, key.Owner, key.Effect);
                         error = result.UnsupportedReason; if (result.Supported) state = CardSpellModel.WithContext(state, result.Context!);
+                        break;
+                    }
+                    case RelicGoldMagicPowerModel.Effect:
+                    {
+                        var result = RelicGoldMagicPowerModel.Apply(context, key.Owner, key.Effect);
+                        error = result.UnsupportedReason;
+                        if (result.Supported) state = CardSpellModel.WithContext(state, result.Context);
                         break;
                     }
                     case RelicFirstCardCostModel.Effect:

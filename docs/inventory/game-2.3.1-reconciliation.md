@@ -9,16 +9,16 @@
 | 待办分类 | 类数 | 含目录引用 | 含类型声明 |
 | --- | ---: | ---: | ---: |
 | known-gap | 1 | 1 | 1 |
-| inspect-no-code-link | 67 | 67 | 67 |
+| inspect-no-code-link | 66 | 66 | 66 |
 | inspect-inherited-code | 13 | 13 | 13 |
 | inspect-projection-normalization | 59 | 59 | 59 |
 | inspect-guard-links | 49 | 49 | 49 |
 | review-existing-code | 233 | 233 | 233 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 286 | 0 | 0 |
-| scoped-review-recorded | 19 | 19 | 19 |
+| scoped-review-recorded | 20 | 20 | 20 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 21 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 22 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -47,6 +47,7 @@
 | RelicEffectModifyEnergyWhenDamagedUnitOnEachFloor | shared-path | Existing physical wounded-floor predicate now executes in full-owner/effect order in the battle turn pipeline. Unchanged EmberForDamagedPerFloor and ChampsHealBeginningOfTurn acquired in both orders: three authored injured champions heal fully, actual first normal income4 versus3. Both full native wins/successors/16 branches/frontiers/serial-parallel root search; two model orders/16 parallel pairs and same-owner selection. Focused legacy energy API retains its restricted ordering guard. Complex nested callbacks and all condition/owner permutations remain outside certification. |
 | RelicEffectModifyEnergyWhenFloorsOccupied | shared-path | Shared initialized rule distinguishes registered actors from living capacity/GetSize clamp, excludes Pyre, exposes only base query, and preserves separate base/threshold energy clamps including RemoveEnergy(0) and one notification. Combined six sources/90 configurations/2643 native calls; native Int32.MinValue faults explicitly unsupported. Original WormgutT3 plus SolarisT1 and capacity artifact acquired before room setup, actual size20 threshold and full native win/16 branches/frontiers/root search. Other tier lifecycles, mixed Covenants, prior before-draw ordering and enemy-occupied draw cache remain outside integration. |
 | RelicEffectModifyGoldEndOfBattle | campaign-only | Sealed native combat callbacks only remember private Pyre damage and return false; rewards use the separate campaign consumer. 864 current and 756 legacy component rows; natural carried-owner battle integration remains separate. |
+| RelicEffectModifyMagicPowerPerGold | shared-path | Original Echoes mutator observes exact permanent-deck membership and effect-owned card identity. Native 100 gold yields +1 damage/heal. Original Smelted Treasure pays 50 during the turn while +1 stays installed. Next ordered BeforeDraw refresh yields +0. Same-definition generated card excluded. Full native win, exact successors, sixteen immutable branches, recorded frontiers and serial/parallel search agree. Mixed mutators and other permanent-deck replacement paths remain outside this evidence. |
 | RelicEffectModifyRandomRoomCapacity | input-only | Original mutator is captured after native deployment draw settles the turn-zero capacity callback. A native win proves one selected floor 5 to 2, one Battle RNG advance, later false Tests, exact capacity-based rejection and alternate-floor placement. Complete successors, 16 branches, frontiers and serial/parallel plans agree. The solver consumes settled room capacities, and pending opening mutations are rejected. Campaign carryover and other random-capacity owners remain separate. |
 | RelicEffectModifyRandomRoomCapacityAfterBattle | input-only | Capture settled native capacities after the opening callback. Original Bogwurm is naturally selected and the unchanged catalog Life artifact is attached in an isolated control. Capacity bonuses +2/0/+1 and the Life static -1 enter actual deployment legality, with an oversized legal summon and unchanged-floor denial. Original wins, exact successors, 16 branches, frontiers and serial/parallel plans pass. Campaign reward mutation remains native. |
 | RelicEffectMultiplyAttackLate | shared-path | Shared parameter-driven late multiplier preserves manager order, champion filtering, captured native Pyre exemption and raw snapshots. Pinned one original owner; 640 native queries, 80 products, 640 actual attacks plus 7728 percentage query/birth pairs with nonneutral late. Unchanged half-attack plus double-enemy-health native win; full successors, 16 branches/frontiers and serial/parallel root search. Actual status callback interactions, all other owner combinations and mixed Covenants are not fully certified. |
@@ -75,10 +76,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `7d06fdf517e944a152d398f58a2fd9ac89f71001dced348f0eac6fbd3ba1420f`。
-- Model: PDB 校验过的项目源码集合 `418b132a833c14384f4b7901b0195ccdbb3aa96e48eae797079a13737b3866f2`。
-- Probe: PDB 校验过的项目源码集合 `37ef4579ad9036fd96b1d931576dfb21c436072836c5680f3824e9fc8ef5d850`。
-- ModelChecks: PDB 校验过的项目源码集合 `0eb99ca9400c4bf38877ec842d0cbb081f555817463845459999724a6c58682d`。
+- 人工审查索引 SHA-256: `bf1f0b4a2191ee853675d4fe156a81a86da6a8978eb9aa072bb3648b773bd3c1`。
+- Model: PDB 校验过的项目源码集合 `fd06a3670af35049798400405c211835b14cd6a670ea755701689664cf7629b2`。
+- Probe: PDB 校验过的项目源码集合 `3872a1eee5b079c2d8efd6a9c3428f956cafa6a2f6da99ae0ae8102006e261f5`。
+- ModelChecks: PDB 校验过的项目源码集合 `e9fd962d51eec9785fbaf86bdb85d7ebd8e8f9b8b5ef4662474eff8bdbd37c29`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
