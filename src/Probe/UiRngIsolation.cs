@@ -10,6 +10,21 @@ namespace MonsterTrain2Poju.Probe
     internal static class UiRngIsolation
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ISOLATE_UI_RNG") == "1";
+#if DEVELOPMENT_PROBE
+        internal static bool CaelShieldTrialTestQueries => Enabled && PreviewRngIsolation.Enabled &&
+            OriginalOuterBossRoute.CaelShieldTrialDiagnostic && OriginalOuterBossRoute.EarlyTrialFullBattle &&
+            Environment.GetEnvironmentVariable("MT2_PROBE_CAEL_SHIELD_ISOLATE_TEST_QUERIES") == "1";
+#endif
+        private static bool PreserveTestQueries
+        {
+            get
+            {
+#if DEVELOPMENT_PROBE
+                if (CaelShieldTrialTestQueries) return true;
+#endif
+                return !Enabled && AdvisorRuntime.PlayerSession;
+            }
+        }
         internal static readonly List<Record> Records = new List<Record>();
         private static long playerCalls, playerRestoredDraws, playerExceptions;
         [ThreadStatic] private static int playerQueryDepth;
@@ -53,7 +68,7 @@ namespace MonsterTrain2Poju.Probe
         }
         private static PlayerScope BeginPlayerQuery()
         {
-            if (Enabled || !AdvisorRuntime.PlayerSession || AllGameManagers.Instance?.GetSaveManager() == null) return default;
+            if (!PreserveTestQueries || AllGameManagers.Instance?.GetSaveManager() == null) return default;
             // A composite TestEffects query can contain several TestEffect calls.
             // Keep their internal random sequence intact, then restore once at
             // the outer query boundary. Standalone effect tests are queries too.
@@ -80,14 +95,14 @@ namespace MonsterTrain2Poju.Probe
         [HarmonyPatch(typeof(CombatManager), nameof(CombatManager.TestEffects))]
         private static class EffectsQueryPatch
         {
-            [HarmonyPrepare] private static bool Prepare() => !Enabled && AdvisorRuntime.PlayerSession;
+            [HarmonyPrepare] private static bool Prepare() => PreserveTestQueries;
             private static void Prefix(out PlayerScope __state) => __state = BeginPlayerQuery();
             private static Exception? Finalizer(Exception? __exception, PlayerScope __state) => EndPlayerQuery(__exception, __state);
         }
         [HarmonyPatch(typeof(GameEffectHelper), nameof(GameEffectHelper.TestEffect))]
         private static class EffectQueryPatch
         {
-            [HarmonyPrepare] private static bool Prepare() => !Enabled && AdvisorRuntime.PlayerSession;
+            [HarmonyPrepare] private static bool Prepare() => PreserveTestQueries;
             private static void Prefix(out PlayerScope __state) => __state = BeginPlayerQuery();
             private static Exception? Finalizer(Exception? __exception, PlayerScope __state) => EndPlayerQuery(__exception, __state);
         }

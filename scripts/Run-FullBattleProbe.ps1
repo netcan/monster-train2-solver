@@ -65,6 +65,7 @@ param(
     [switch] $OriginalOuterBossTrial,
     [switch] $OriginalEarlyOuterBossTrialBattle,
     [switch] $OriginalCaelShieldTrialIsolateRng,
+    [switch] $OriginalCaelShieldTrialIsolateTestQueries,
     [switch] $OriginalTrueFinalBoss,
     [ValidateSet('', 'Health', 'Damage')][string] $TrueFinalBossAllyUpgrade = '',
     [ValidateSet('', 'Steward', 'Warrior', 'Animus', 'Avenger')][string] $TrueFinalBossOrdinaryAlly = '',
@@ -981,6 +982,9 @@ if ($OriginalEarlyOuterBossTrialBattle -and -not $earlyTrialSubstitution) {
 }
 if ($OriginalCaelShieldTrialIsolateRng -and (-not $caelShieldTrialDiagnostic -or -not $OriginalEarlyOuterBossTrialBattle)) {
     throw 'OriginalCaelShieldTrialIsolateRng requires the full original Cael shield Titan Trial.'
+}
+if ($OriginalCaelShieldTrialIsolateTestQueries -and -not $OriginalCaelShieldTrialIsolateRng) {
+    throw 'OriginalCaelShieldTrialIsolateTestQueries requires OriginalCaelShieldTrialIsolateRng.'
 }
 if ($OriginalOuterBossTrial -and -not $OriginalOuterBossVariant -and -not $earlyTrialSubstitution) {
     throw 'OriginalOuterBossTrial requires an explicit original outer-boss trial variant.'
@@ -2627,6 +2631,7 @@ if ($OriginalCaelShieldTrialIsolateRng) {
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
+if ($OriginalCaelShieldTrialIsolateTestQueries) { $environment['MT2_PROBE_CAEL_SHIELD_ISOLATE_TEST_QUERIES'] = '1' }
 if ($PyreSpikesMode) { $environment['MT2_PROBE_MODIFIERS'] = 'pyre-spikes-' + $PyreSpikesMode.ToLowerInvariant(); $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'; $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1' }
 if ($OriginalExaltation) { $environment['MT2_PROBE_MODIFIERS'] = 'original-exaltation' }
 if ($OriginalUpgradeEnchantment) { $environment['MT2_PROBE_MODIFIERS'] = 'original-upgrade-enchantment' }
@@ -3253,6 +3258,9 @@ if ($earlyTrialSubstitution) {
             }
             if ($OriginalCaelShieldTrialIsolateRng -and (-not $capture.IsolatePreviewRng -or -not $capture.IsolateUiRng)) {
                 throw 'Expected active preview and UI RNG isolation in the original Cael Trial capture.'
+            }
+            if ($OriginalCaelShieldTrialIsolateTestQueries -and -not $capture.IsolateTestQueries) {
+                throw 'Expected the advisor test query isolation in the original Cael Trial capture.'
             }
         } elseif ($capture.OuterBoss -or $capture.Source -cne $earlyTrialVariant.Source -or
             $capture.Replacement -cne ($earlyTrialVariant.Source + '_TitanTrial') -or $capture.Turn -lt 1) {
