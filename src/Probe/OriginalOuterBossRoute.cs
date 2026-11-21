@@ -17,12 +17,26 @@ namespace MonsterTrain2Poju.Probe
         internal static object? TrialIntroControl { get; private set; }
 #if DEVELOPMENT_PROBE
         internal static bool EarlyTrialSubstitution => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_OUTER_BOSS_TRIAL") == "1" &&
-            Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_EARLY_OUTER_BOSS") == "FleshweaverSpikes";
+            EarlyTrialVariant() != null;
         internal static bool EarlyTrialFullBattle => EarlyTrialSubstitution &&
             Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_EARLY_TRIAL_FULL_BATTLE") == "1";
+        private static (string Scenario, string Owner, string OwnerId, string Source, string Replacement)? EarlyTrialVariant() =>
+            Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_EARLY_OUTER_BOSS") switch
+            {
+                "FleshweaverCorruption" => ("Level3ImmortalMass_Corruption", "Enemy_Boss_Level3_ImmortalMass_Corruption_TitanTrial",
+                    "52dc060c-bd51-4b7b-865a-6d70f9806e53", "Boss_Level3_MiniFleshweaver_Corruption", "Boss_Level3_MiniFleshweaver_Corruption_TitanTrial"),
+                "FleshweaverMass" => ("Level3ImmortalMass_MoreMass", "Enemy_Boss_Level3_ImmortalMass_MoreMass_TitanTrial",
+                    "28c0e907-d882-4052-93f4-0a07d88496af", "Boss_Level3_MiniFleshweaver_MoreMass", "Boss_Level3_MiniFleshweaver_MoreMass_TitanTrial"),
+                "FleshweaverSpikes" => (OuterBossSubstitutionProbe.FleshweaverSpikesTrialScenario, OuterBossSubstitutionProbe.FleshweaverSpikesTrialOwner,
+                    OuterBossSubstitutionProbe.FleshweaverSpikesTrialOwnerId, OuterBossSubstitutionProbe.FleshweaverSpikesMini,
+                    OuterBossSubstitutionProbe.FleshweaverSpikesTrialMini),
+                _ => null
+            };
         private static RelicData? earlyTrialOwner;
         private static IReadOnlyList<CharacterSubstitution.Entry>? earlyTrialEntries;
         private static CharacterState? substitutedUnit;
+        private static CharacterData? requestedSubstitution;
+        private static CharacterData? callbackSubstitution;
         private static bool earlyTrialCaptured;
 #endif
         private static Action? resumeSelection;
@@ -161,11 +175,10 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
             if (EarlyTrialSubstitution)
             {
+                var trial = EarlyTrialVariant()!.Value;
                 RelicData sin = selected.GetTitanTrialSin();
-                if (selected.name != OuterBossSubstitutionProbe.FleshweaverSpikesTrialScenario || sin == null ||
-                    sin.name != OuterBossSubstitutionProbe.FleshweaverSpikesTrialOwner ||
-                    sin.GetID() != OuterBossSubstitutionProbe.FleshweaverSpikesTrialOwnerId)
-                    throw new InvalidOperationException("Expected the installed Ring 3 Fleshweaver Spikes Titan Trial owner.");
+                if (selected.name != trial.Scenario || sin == null || sin.name != trial.Owner || sin.GetID() != trial.OwnerId)
+                    throw new InvalidOperationException("Expected the installed Ring 3 Fleshweaver Titan Trial owner.");
                 var substitutions = sin.GetEffects().Single(effect => effect.GetEffectClassName() == "RelicEffectOnSpawnHeroSubstitution")
                     .GetParamCharacterSubstitution();
                 if (substitutions == null || substitutions.Entries.Count == 0)
@@ -199,24 +212,31 @@ namespace MonsterTrain2Poju.Probe
             if (earlyTrialCaptured) return true;
             CharacterState? unit = substitutedUnit;
             if (unit == null) return false;
+            var trial = EarlyTrialVariant()!.Value;
             SaveManager save = managers.GetSaveManager();
             CharacterData source = unit.GetOriginalCharacterData();
             CharacterData replacement = unit.GetSourceCharacterData();
-            if (earlyTrialOwner == null || earlyTrialEntries == null || source == null || TrialIntroControl == null ||
-                save.InTestScenario || !save.IsTitanTrialEnabled() || save.GetCurrentScenarioData().name != OuterBossSubstitutionProbe.FleshweaverSpikesTrialScenario ||
+            if (earlyTrialOwner == null || earlyTrialEntries == null || source == null || requestedSubstitution != source || callbackSubstitution != replacement ||
+                TrialIntroControl == null || save.InTestScenario || !save.IsTitanTrialEnabled() || save.GetCurrentScenarioData().name != trial.Scenario ||
+                source.GetAssetKey() != trial.Source || replacement.GetAssetKey() != trial.Replacement ||
                 !earlyTrialEntries.Any(entry => entry.UnitBefore.GetID() == source.GetID() && entry.UnitAfter == replacement))
                 throw new InvalidOperationException("The installed Ring 3 trial did not create an authored substitution.");
             var active = managers.GetRelicManager().GetRelicEffects(new List<RelicEffectOnSpawnHeroSubstitution>());
-            if (active.Count != 1 || !active[0].TryGetSubstitution(source, out CharacterData selected) || selected != replacement)
+            if (active.Count != 1 || active[0].SourceRelicData != earlyTrialOwner ||
+                !active[0].TryGetSubstitution(source, out CharacterData selected) || selected != replacement)
                 throw new InvalidOperationException("Expected one active native substitution supplying the created boss.");
 
             if (!EarlyTrialFullBattle) OuterBossBirthProbe.Write(log);
+            FullBattleTrace trace = FullBattleTrace.Active!;
+            var projected = EnemySpawningProbe.Definition(source);
             using var archive = NativeFixtureCapture.Capture(new { Schema = 1, Boundary = "NativeOriginalEarlyTitanTrialSubstitution",
                 GameVersion = UnityEngine.Application.version, GameModuleMvid = typeof(CardState).Module.ModuleVersionId,
                 Scenario = save.GetCurrentScenarioData().name, OwnerId = earlyTrialOwner.GetID(), OwnerKey = earlyTrialOwner.name,
-                Source = source.GetAssetKey(), Replacement = replacement.GetAssetKey(), OuterBoss = unit.IsOuterTrainBoss(),
+                Source = source.GetAssetKey(), SourceId = source.GetID(), Replacement = replacement.GetAssetKey(), ReplacementId = replacement.GetID(),
+                OuterBoss = unit.IsOuterTrainBoss(), Turn = managers.GetCombatManager().GetTurnCount(), Room = unit.GetCurrentRoomIndex(),
+                Projection = new { Key = projected.Unit.AssetKey, projected.ExternalInteractions }, trace.Unsupported,
                 Mappings = earlyTrialEntries.Select(entry => new { Source = entry.UnitBefore.GetAssetKey(), Replacement = entry.UnitAfter.GetAssetKey() }).ToArray(),
-                Unit = FullBattleTrace.Active!.CaptureUnit(unit), Intro = TrialIntroControl, TitanTrial = save.IsTitanTrialEnabled() });
+                Unit = trace.CaptureUnit(unit), Intro = TrialIntroControl, TitanTrial = save.IsTitanTrialEnabled() });
             using var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "early-titan-trial-substitution.mt2f"));
             archive.Write(output);
             earlyTrialCaptured = true;
@@ -230,12 +250,17 @@ namespace MonsterTrain2Poju.Probe
             private static void Prefix(CharacterData heroData, ref Action<CharacterState, CharacterData> afterCharacterCreated)
             {
                 if (substitutedUnit != null || earlyTrialEntries == null || AllGameManagers.Instance.GetSaveManager().PreviewMode ||
-                    heroData.GetAssetKey() != OuterBossSubstitutionProbe.FleshweaverSpikesMini ||
+                    heroData.GetAssetKey() != EarlyTrialVariant()!.Value.Source ||
                     !earlyTrialEntries.Any(entry => entry.UnitBefore.GetID() == heroData.GetID())) return;
                 Action<CharacterState, CharacterData>? original = afterCharacterCreated;
                 afterCharacterCreated = (unit, data) =>
                 {
-                    substitutedUnit ??= unit;
+                    if (substitutedUnit == null)
+                    {
+                        substitutedUnit = unit;
+                        requestedSubstitution = heroData;
+                        callbackSubstitution = data;
+                    }
                     original?.Invoke(unit, data);
                 };
             }
