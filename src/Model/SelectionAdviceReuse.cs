@@ -60,7 +60,8 @@ namespace MonsterTrain2Poju.Model
             if (key == originalKey)
             { plan = Reused(advice.Plan, advice.Plan.State); proof = advice.Continuation; return true; }
             if (!SameBattle(advice.Root, root)) return false;
-            return Replay(advice.Plan, root, retainPlans, token, out plan, out proof, advice.SelectionCache, key);
+            return Replay(advice.Plan, root, retainPlans, token, out plan, out proof,
+                advice.Continuation, advice.SelectionCache, key);
         }
 
         // Called after an actual input, never by a floor-view event. Reproduce
@@ -101,9 +102,8 @@ namespace MonsterTrain2Poju.Model
             }
             if (!AdvanceTo(actual)) return null;
             BattlePlanResult remaining = VerifiedAdviceContinuation.Remaining(advice.Plan, index);
-            // Reproduce the complete suffix from the latest actual root. Never
-            // publish an old final snapshot with a different preview allocator.
-            return Replay(remaining, actual, true, token, out _, out VerifiedAdviceContinuation? proof) ? proof : null;
+            return Replay(remaining, actual, true, token, out _, out VerifiedAdviceContinuation? proof,
+                advice.Continuation) ? proof : null;
 
             bool AdvanceTo(BattleTurnState checkpoint)
             {
@@ -142,7 +142,7 @@ namespace MonsterTrain2Poju.Model
 
         private static bool Replay(BattlePlanResult original, BattleTurnState root, bool retainPlans,
             CancellationToken token, out BattlePlanResult plan, out VerifiedAdviceContinuation? proof,
-            Dictionary<string, Result>? cache = null, string? key = null)
+            VerifiedAdviceContinuation? previous = null, Dictionary<string, Result>? cache = null, string? key = null)
         {
             plan = original; proof = null;
             BattleTurnState state = root;
@@ -151,11 +151,18 @@ namespace MonsterTrain2Poju.Model
             var roots = retainPlans && VerifiedAdviceContinuation.CanRetain(plan) ? new List<string>() : null;
             using var fullKeys = new BattleStateKeys();
             var fullRoots = roots == null ? null : new List<string>();
+            VerifiedAdviceContinuation? suffix = roots == null ? null : previous?.ForReplay(plan);
             foreach (BattleSearchStep step in plan.Steps)
             {
                 token.ThrowIfCancellationRequested();
-                roots?.Add(continuationKeys.Key(state));
-                fullRoots?.Add(fullKeys.Key(state));
+                if (roots != null)
+                {
+                    string fullKey = fullKeys.Key(state);
+                    proof = suffix?.JoinAt(plan, fullKey, roots, fullRoots!);
+                    if (proof != null) { state = plan.State; break; }
+                    roots.Add(continuationKeys.Key(state));
+                    fullRoots!.Add(fullKey);
+                }
                 if (step.IsEndTurn)
                 {
                     BattleTurnResult next = BattleTurnModel.EndTurn(state, step.RelentlessDecisions);
@@ -170,9 +177,9 @@ namespace MonsterTrain2Poju.Model
                     state = next.State!; outcome = next.Outcome;
                 }
             }
-            if (outcome != plan.Outcome || !SameBattle(state, plan.State)) return false;
+            if (proof == null && (outcome != plan.Outcome || !SameBattle(state, plan.State))) return false;
             plan = Reused(plan, state);
-            if (roots != null) proof = new VerifiedAdviceContinuation(plan, roots.ToArray(), fullRoots!.ToArray());
+            if (roots != null && proof == null) proof = new VerifiedAdviceContinuation(plan, roots.ToArray(), fullRoots!.ToArray());
             // Preview allocators can advance on every browse. Bound retained
             // calibration graphs even if none of those exact roots repeat.
             if (cache != null && key != null)

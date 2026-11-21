@@ -33,6 +33,13 @@ internal static class AutomaticViewContinuationChecks
         Require(session.SearchCount == 1 && session.Current!.ReusedContinuation && session.Current.Plan.Steps.Count == 22 &&
             session.Current.Plan.Outcome == RoomOutcome.BattleWon,
             "Automatic turn focus restarted search or lost the complete winning suffix.");
+        BattleAdvice focused = session.Current!;
+        Require(SelectionAdviceReuse.TryRebase(focused, actual, true, default, out BattlePlanResult rebased,
+            out VerifiedAdviceContinuation? proof) && proof?.ReusedVerifiedSteps == 21,
+            "Native automatic focus did not rejoin the full-state proof after one replayed input.");
+        var fromActual = BattlePlannerChecks.Replay(actual, rebased.Steps, out RoomOutcome actualOutcome);
+        Require(keys.Key(fromActual) == keys.Key(rebased.State) && actualOutcome == rebased.Outcome,
+            "Rejoined suffix changed the full forecast state or RNG.");
         long generation = session.Generation;
         session.BrowseRoom(actual.SelectedRoom, force: true);
         Require(session.MatchesCurrentRoot(actual) && session.SearchCount == 1 && session.Generation == generation,
@@ -48,7 +55,7 @@ internal static class AutomaticViewContinuationChecks
         Require(SelectionAdviceReuse.MatchAfterObservations(original, [], changed.Deserialize<BattleTurnState>(ModelJson.Options)!, default) == null,
             "Automatic view reuse hid RNG divergence.");
         Require(parent == JsonSerializer.Serialize(observed, ModelJson.Options), "Continuation changed its native parent.");
-        Console.WriteLine("AUTOMATIC-VIEW-CONTINUATION PASS: 26 native successors; first EndTurn auto-focus keeps verified22-input winning suffix; one search; late view retains generation; energy/RNG divergence rejected.");
+        Console.WriteLine("AUTOMATIC-VIEW-CONTINUATION PASS: 26 native successors; first EndTurn auto-focus reuses 21 of 22 verified inputs; one search; full state and RNG match; energy/RNG divergence rejected.");
     }
 
     private static void Pump(BattleAdviceSession session)

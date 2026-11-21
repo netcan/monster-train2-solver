@@ -16,6 +16,7 @@ namespace MonsterTrain2Poju.Model
         private readonly int offset;
 
         internal bool IsWinning => original.Outcome == RoomOutcome.BattleWon;
+        internal int ReusedVerifiedSteps { get; }
         internal bool SamePosition(VerifiedAdviceContinuation other) =>
             ReferenceEquals(original, other.original) && offset == other.offset;
         internal static bool CanRetain(BattlePlanResult plan) => plan.Steps.Count > 0 &&
@@ -24,8 +25,42 @@ namespace MonsterTrain2Poju.Model
         internal VerifiedAdviceContinuation(BattlePlanResult original, string[] roots, string[] fullRoots)
             : this(original, roots, fullRoots, 0) { }
 
-        private VerifiedAdviceContinuation(BattlePlanResult original, string[] roots, string[] fullRoots, int offset)
-        { this.original = original; this.roots = roots; this.fullRoots = fullRoots; this.offset = offset; }
+        private VerifiedAdviceContinuation(BattlePlanResult original, string[] roots, string[] fullRoots, int offset,
+            int reusedVerifiedSteps = 0)
+        {
+            this.original = original; this.roots = roots; this.fullRoots = fullRoots; this.offset = offset;
+            ReusedVerifiedSteps = reusedVerifiedSteps;
+        }
+
+        internal VerifiedAdviceContinuation? ForReplay(BattlePlanResult plan)
+        {
+            int start = original.Steps.Count - plan.Steps.Count;
+            if (start < offset || !ReferenceEquals(original.State, plan.State) || original.Outcome != plan.Outcome ||
+                original.Score != plan.Score ||
+                original.CompletedHorizon != plan.CompletedHorizon || original.UsedShorterHorizon != plan.UsedShorterHorizon ||
+                original.SearchedToBattleEnd != plan.SearchedToBattleEnd || original.MaxSteps != plan.MaxSteps ||
+                Math.Max(0, original.RequestedTurns - original.Steps.Take(start).Count(step => step.IsEndTurn)) != plan.RequestedTurns)
+                return null;
+            for (int i = 0; i < plan.Steps.Count; i++)
+                if (!ReferenceEquals(original.Steps[start + i], plan.Steps[i])) return null;
+            return new VerifiedAdviceContinuation(original, roots, fullRoots, start);
+        }
+
+        // The prefix has already been replayed from the actual root. Joining
+        // the verified suffix requires the complete state at the same action.
+        internal VerifiedAdviceContinuation? JoinAt(BattlePlanResult plan, string fullKey,
+            List<string> prefix, List<string> fullPrefix)
+        {
+            int index = offset + prefix.Count;
+            if (fullRoots[index] != fullKey) return null;
+            int reused = fullRoots.Length - index;
+            string[] joined = new string[plan.Steps.Count], fullJoined = new string[plan.Steps.Count];
+            prefix.CopyTo(joined);
+            fullPrefix.CopyTo(fullJoined);
+            Array.Copy(roots, index, joined, prefix.Count, reused);
+            Array.Copy(fullRoots, index, fullJoined, fullPrefix.Count, reused);
+            return new VerifiedAdviceContinuation(plan, joined, fullJoined, 0, reused);
+        }
 
         internal VerifiedAdviceContinuation? Match(BattleTurnState state)
         {
