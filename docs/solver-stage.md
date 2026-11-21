@@ -103,4 +103,7 @@ Fleshweaver 出生 Mass 修正后，批量复放 127 场，112 场连续、15 �
 用 2.3.1 载入 2.2.1 原版第三环战前存档，隔离顾问在两线程、单次搜索三秒的配置下
 完成 24 次出牌和 9 次 EndTurn，以 80 点薪火生命获胜。进程正常退出，四项采集计数为零。
 同一归档另通过 33 次滚动建议与预测复放、完整链及 16 条独立分支。
-归档为 `tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/migrated-ring3.mt2f`。
+独立原生进程从同一存档复放固定方案，仍以 80 点薪火生命获胜。两场的 33 个输入、
+完整前后状态、预测和随机流逐项一致。两份归档位于
+`tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/`，用
+`--rolling-replay-pair-only migrated-ring3.mt2f migrated-ring3-frozen.mt2f` 核对。
