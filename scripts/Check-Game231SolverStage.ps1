@@ -10,7 +10,10 @@ if (-not $SkipBuild) {
 }
 $directory = Join-Path $workspace 'tests/compatibility/game-2.3.1'
 $manifest = @(Import-Csv -LiteralPath (Join-Path $directory 'solver-stage.tsv') -Delimiter "`t")
-if ($manifest.Count -ne 8 -or @($manifest.case | Select-Object -Unique).Count -ne 8) { throw 'Unexpected pinned stage matrix.' }
+if ($manifest.Count -ne 8 -or @($manifest.case | Sort-Object -Unique).Count -ne 8 -or
+    @($manifest.archive | Sort-Object -Unique).Count -ne 8 -or @($manifest.sha256 | Sort-Object -Unique).Count -ne 8) {
+    throw 'Expected eight distinct fixed stage cases and native archives.'
+}
 foreach ($name in $Case) { if ($name -cnotin $manifest.case) { throw "Unknown stage case: $name" } }
 $selected = @($manifest | Where-Object { $Case.Count -eq 0 -or $_.case -cin $Case })
 foreach ($entry in $selected) {
@@ -32,16 +35,17 @@ foreach ($entry in $selected) {
     $log = Join-Path $outputDirectory ($entry.case + '.log')
     $timer = [Diagnostics.Stopwatch]::StartNew()
     try {
-        & dotnet $checker --solver-stage-case-only (Join-Path $directory $entry.archive) *> $log
+        & dotnet $checker --solver-stage-case-only (Join-Path $directory $entry.archive) $entry.case *> $log
         $exitCode = $LASTEXITCODE
     } catch { $exitCode = 1; $_ | Out-File -LiteralPath $log -Append }
     $timer.Stop()
-    $detail = if ($exitCode -eq 0) { @(Select-String -LiteralPath $log -Pattern '^SOLVER-STAGE-CASE PASS ' | ForEach-Object Line) | Select-Object -Last 1 }
+    $passPattern = '^SOLVER-STAGE-CASE PASS case=' + [regex]::Escape($entry.case) + ' '
+    $detail = if ($exitCode -eq 0) { @(Select-String -LiteralPath $log -Pattern $passPattern -CaseSensitive | ForEach-Object Line) | Select-Object -Last 1 }
         else { @(Select-String -LiteralPath $log -Pattern 'Exception:|Unhandled exception' | ForEach-Object Line) | Select-Object -First 1 }
     $passed = $exitCode -eq 0 -and [bool]$detail
     $rows.Add([pscustomobject]@{ case=$entry.case; status=$(if ($passed) { 'PASS' } else { 'FAIL' });
         seconds=$timer.Elapsed.TotalSeconds.ToString('F3', [Globalization.CultureInfo]::InvariantCulture); detail=$detail; log=$log;
-        checkerSHA256=$checkerHash; modelSHA256=$modelHash })
+        archive=$entry.archive; archiveSHA256=$entry.sha256; checkerSHA256=$checkerHash; modelSHA256=$modelHash })
     $rows | Export-Csv -LiteralPath $report -Delimiter "`t" -NoTypeInformation
     Write-Output "SOLVER-STAGE $($entry.case) $($rows[-1].status) seconds=$($rows[-1].seconds) detail=$detail"
 }

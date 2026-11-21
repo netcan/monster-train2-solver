@@ -1,9 +1,10 @@
 using System.Text.Json;
+using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 
 internal static class SolverStageChecks
 {
-    internal static void Native(string path, bool requireVictory = true)
+    internal static void Native(string path, bool requireVictory = true, string? expectedCase = null)
     {
         using var document = ModelJson.ReadFixture(path); var root = document.RootElement;
         void Require(bool condition, string message) => TrueFinalBossChecks.Require(condition, message);
@@ -13,6 +14,7 @@ internal static class SolverStageChecks
             "Input is not a complete native battle with the required outcome for the pinned version.");
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
             Require(root.GetProperty(key).GetInt32() == 0, "Nonzero native " + key);
+        if (expectedCase != null) RequireCase(root, expectedCase);
         RoomCombatChecks.NativeRoomOnly(path);
         TrainCombatChecks.Native(root);
         RecordedBattleChecks.Native(root);
@@ -38,8 +40,28 @@ internal static class SolverStageChecks
             JsonSerializer.Serialize(serial.Steps, ModelJson.Options) == JsonSerializer.Serialize(parallel.Steps, ModelJson.Options) &&
             BattleTurnChecks.Comparable(serial.BestState!) == BattleTurnChecks.Comparable(parallel.BestState!) &&
             parent == JsonSerializer.Serialize(source, ModelJson.Options), "Stage serial/parallel result or immutable parent differs.");
-        Console.WriteLine($"SOLVER-STAGE-CASE PASS plays={root.GetProperty("Actions").GetArrayLength()} " +
+        string identity = expectedCase == null ? "" : $"case={expectedCase} ";
+        Console.WriteLine($"SOLVER-STAGE-CASE PASS {identity}plays={root.GetProperty("Actions").GetArrayLength()} " +
             $"endTurns={root.GetProperty("Turns").GetArrayLength()} decisions={matched} " +
             "nativeFourZero=true completeChainBranches=16 recordedFrontiers=complete rootSearch=complete serialParallel=equal planReplay=equal");
+    }
+
+    private static void RequireCase(FixtureValue root, string name)
+    {
+        (string scenario, string? prepared) = name switch
+        {
+            "punished-spells" => ("original-punished-spells", "OriginalPunishedSpellsPrepared"),
+            "punished-units" => ("original-punished-units", "OriginalPunishedUnitsPrepared"),
+            "punished-skills" => ("original-punished-skills", "OriginalPunishedSkillsPrepared"),
+            "spite-equipment" => ("original-spite-equipment", "OriginalSpiteEquipmentPrepared"),
+            "summon-choice" => ("original-summon-choice", "OriginalSummonChoicePrepared"),
+            "room-health-aura" => ("original-room-health-attack", "OriginalRoomHealthAttackPrepared"),
+            "relentless-abandon" => ("relentless-battle-abandon", null),
+            "relentless-continue" => ("relentless-battle-continue", null),
+            _ => throw new ArgumentException("Unknown fixed solver stage case: " + name)
+        };
+        TrueFinalBossChecks.Require(root.GetProperty("ModifierScenario").GetString() == scenario &&
+            (prepared == null || root.GetProperty(prepared).GetBoolean()),
+            $"The native archive does not attest fixed solver stage case '{name}'.");
     }
 }

@@ -58,8 +58,10 @@ pwsh -NoProfile -File scripts/Check-Game231SummonChoiceBattle.ps1 -SkipBuild -Se
 pwsh -NoProfile -File scripts/Check-Game231SummonChoiceBattle.ps1 -SkipBuild -RepeatedSearchOnly
 ```
 
+清单要求八个不同的归档路径和哈希。检查器逐项核对归档内的场景与布置标记，
+例如将继续的归档传给放弃项会在搜索前失败。
 结果逐项写入 `results/solver-stage-<timestamp>-<id>/report.tsv`，包含通过／失败、
-耗时、具体日志及被测检查器／模型哈希。单项失败后继续运行余项，最后汇总并
+耗时、具体日志及归档／检查器／模型哈希。单项失败后继续运行余项，最后汇总并
 返回失败，便于形成有限的阻塞清单；`-Case` 子集不能计作八项整体通过。
 `-ModelChecker <ModelChecks.dll>` 配合 `-SkipBuild` 可验隔离构建，运行中不替换
 正在被测的二进制。报告和日志不加入 Git，二进制原生证据继续由清单引用。

@@ -170,9 +170,9 @@ if (args.Length == 2 && args[0] == "--original-juice-upgrades-only")
     JuiceMechanismChecks.Battle(args[1]);
     return;
 }
-if (args.Length == 2 && args[0] == "--solver-stage-case-only")
+if (args.Length is 2 or 3 && args[0] == "--solver-stage-case-only")
 {
-    SolverStageChecks.Native(args[1]);
+    SolverStageChecks.Native(args[1], expectedCase: args.Length == 3 ? args[2] : null);
     return;
 }
 if (args.Length is 2 or 3 && args[0] == "--room-health-mechanism-batch-only")
