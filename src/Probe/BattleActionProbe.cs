@@ -908,10 +908,10 @@ namespace MonsterTrain2Poju.Probe
             }
             catch (Exception error) { trace.CaptureFailure(error); }
         }
-        internal void Complete()
+        internal PlayCardAction? Complete()
         {
             Record? record = records.LastOrDefault(item => item.Actual == null);
-            if (record == null) return;
+            if (record == null) return null;
             try
             {
                 trace.InvalidateCardRules();
@@ -963,6 +963,7 @@ namespace MonsterTrain2Poju.Probe
                 else log.LogInfo("ACTION-MODEL-UNSUPPORTED " + record.Predicted.Reason);
             }
             catch (Exception error) { trace.CaptureFailure(error); }
+            return record.Action;
         }
         internal sealed class Record
         {

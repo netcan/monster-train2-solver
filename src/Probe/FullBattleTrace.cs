@@ -390,9 +390,13 @@ namespace MonsterTrain2Poju.Probe
             actions.Begin(action, scenarioAction, includeOuterBossForBump, ignoreOuterBossSpawnInteraction);
         internal void CompleteCardPlay()
         {
-            actions.Complete();
 #if DEVELOPMENT_PROBE
-            if (PlayerAdvisorProbe.Enabled) PlayerAdvisorProbe.CheckInputRecorded();
+            PlayCardAction? action = actions.Complete();
+            // Devote is emitted through the monolith interface, separately from PlayAnyCard.
+            if (PlayerAdvisorProbe.Enabled && action?.Operation != DevoteModel.Operation)
+                PlayerAdvisorProbe.CheckInputRecorded();
+#else
+            actions.Complete();
 #endif
         }
 
