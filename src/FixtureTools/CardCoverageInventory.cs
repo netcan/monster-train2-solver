@@ -7,8 +7,8 @@ internal static class CardCoverageInventory
 {
     private const string GameModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
     private const string CatalogHash = "c9ea090d631034900d459f456e0027b8aa6863bb2f57e6de31fba6e6a4027723";
-    private const string CurrentVersion = "2.3.1";
-    private const string CurrentGameModule = "bf93f060-beda-46b1-b808-95ebf1e9a99d";
+    private const string CurrentVersion = Game231FixtureCatalog.Version;
+    private const string CurrentGameModule = Game231FixtureCatalog.Module;
     private const string CurrentCatalog = "mechanics/halo/catalog.mt2f";
     private const string CurrentCatalogHash = "6cf391b6b184667761eaf02df6cdd8fa4d8f2ac435c32d8b9f2c6e97a1302208";
     private static readonly string[] BattleCounters = ["CaptureFailures", "Mismatches", "Unsupported", "Pending"];
@@ -36,16 +36,15 @@ internal static class CardCoverageInventory
     }
     private sealed record TurnWitness(string DataId, string Archive, int TurnIndex, int SourceCardId, string Effect, string Observation);
     private sealed record LegalityWitness(string DataId, string Archive, int QueryIndex, int CardId, int RoomIndex, string Error, bool CanDiscard);
-    private sealed record ArchiveRegistration(long Bytes, string Sha256, bool Stage);
 
     internal static void RunCurrent(string workspace, bool check)
     {
         workspace = Path.GetFullPath(workspace);
-        string directory = Path.Combine(workspace, "tests", "compatibility", "game-" + CurrentVersion);
-        var registrations = CurrentRegistrations(directory);
-        Require(registrations.TryGetValue(CurrentCatalog, out ArchiveRegistration? registeredCatalog) &&
+        string directory = Game231FixtureCatalog.DirectoryFor(workspace);
+        var registrations = Game231FixtureCatalog.Load(directory);
+        Require(registrations.TryGetValue(CurrentCatalog, out Game231FixtureRegistration? registeredCatalog) &&
             registeredCatalog.Sha256 == CurrentCatalogHash, "Current catalog manifest differs from the frozen projection audit.");
-        using var catalog = FixtureDocument.Read(Path.Combine(directory, CurrentCatalog));
+        using var catalog = FixtureDocument.Read(registrations[CurrentCatalog].Verify(directory));
         FixtureValue root = catalog.RootElement;
         Require(root.GetProperty("Schema").GetInt32() == 1 && Text(root, "Scope") == "AllGameData" &&
             Text(root, "GameVersion") == CurrentVersion && Text(root, "GameModuleMvid") == CurrentGameModule &&
@@ -61,29 +60,19 @@ internal static class CardCoverageInventory
 
         int indexed = 0, wins = 0, excluded = 0, stage = 0;
         int actions = 0, excludedActions = 0, unresolved = 0, outsideCatalog = 0;
-        foreach ((string relativePath, ArchiveRegistration registration) in registrations)
+        foreach ((string relativePath, Game231FixtureRegistration registration) in registrations)
         {
-            using var fixture = FixtureDocument.Read(Path.Combine(directory, relativePath));
+            using var fixture = FixtureDocument.Read(registration.Verify(directory));
             FixtureValue battle = fixture.RootElement;
-            bool legacy = relativePath.StartsWith("2.2.1/", StringComparison.Ordinal);
-            Require(!(legacy && registration.Stage) && Text(battle, "GameModuleMvid") == (legacy ? GameModule : CurrentGameModule),
-                "Unexpected fixture module: " + relativePath);
-            if (legacy) continue;
-            bool hasActions = battle.TryGetProperty("Actions", out FixtureValue recorded) && recorded.ValueKind == FixtureKind.Array;
-            bool settled = hasActions && Flag(battle, "TerminalEffectsSettled") &&
-                BattleCounters.All(key => battle.TryGetProperty(key, out FixtureValue counter) && counter.ValueKind == FixtureKind.Number && counter.GetInt32() == 0);
-            if (registration.Stage)
-            {
-                Require(settled && Flag(battle, "NativeWon"), "Stage archive failed its native battle gate: " + relativePath);
-                stage++;
-            }
-            if (!hasActions) continue;
-            if (!settled) { excluded++; continue; }
+            Game231FixtureKind kind = Game231FixtureCatalog.Classify(registration, battle);
+            if (registration.Stage) stage++;
+            if (kind is Game231FixtureKind.Legacy or Game231FixtureKind.Component) continue;
+            if (kind == Game231FixtureKind.UnsettledBattle) { excluded++; continue; }
             indexed++;
             if (Flag(battle, "NativeWon")) wins++;
 
             int index = -1;
-            foreach (FixtureValue record in recorded.EnumerateArray())
+            foreach (FixtureValue record in battle.GetProperty("Actions").EnumerateArray())
             {
                 index++;
                 if (!AcceptedPlay(record)) { excludedActions++; continue; }
@@ -129,46 +118,6 @@ internal static class CardCoverageInventory
         int identityOnly = eligible.Count(card => card.DirectPlays == 0 && card.OtherPlays > 0);
         Console.WriteLine($"CARD-EVIDENCE {CurrentVersion} {(check ? "CHECK" : "WRITE")} PASS archived={registrations.Count} settledBattles={indexed} wins={wins} stageBattles={stage} excludedBattles={excluded} acceptedActions={actions} excludedActions={excludedActions} unresolvedIdentities={unresolved} outsideCatalog={outsideCatalog}");
         Console.WriteLine($"logbook={cards.Count(card => card.Logbook)} eligible={eligible.Length} definitionMatched={matched} identityObservedOnly={identityOnly} noRecordedPlay={eligible.Length - matched - identityOnly} missingDefinitionMatch={eligible.Length - matched} report={output}");
-    }
-
-    private static SortedDictionary<string, ArchiveRegistration> CurrentRegistrations(string directory)
-    {
-        var archives = new SortedDictionary<string, ArchiveRegistration>(StringComparer.Ordinal);
-        string stagePath = Path.Combine(directory, "solver-stage.tsv");
-        foreach (string manifest in Directory.EnumerateFiles(directory, "manifest.tsv", SearchOption.AllDirectories).Append(stagePath))
-        {
-            bool stage = manifest == stagePath;
-            string[] lines = File.ReadAllLines(manifest);
-            string header = stage ? "case\tarchive\tbytes\tsha256" : "path\tbytes\tsha256";
-            Require(lines.Length > 1 && lines[0].Replace("\"", "", StringComparison.Ordinal) == header,
-                "Unexpected archive manifest header: " + manifest);
-            int offset = stage ? 1 : 0;
-            var listed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (string line in lines.Skip(1))
-            {
-                string[] cells = line.Split('\t').Select(cell => cell.Trim('"')).ToArray();
-                Require(cells.Length == 3 + offset, "Invalid archive manifest row: " + manifest);
-                string relative = cells[offset];
-                string sha256 = cells[offset + 2].ToLowerInvariant();
-                long bytes = long.Parse(cells[offset + 1], NumberStyles.None, CultureInfo.InvariantCulture);
-                Require(bytes > 0 && sha256.Length == 64 && sha256.All(Uri.IsHexDigit) &&
-                    relative.EndsWith(".mt2f", StringComparison.Ordinal) && !Path.IsPathRooted(relative) &&
-                    !relative.Contains('\\') && !relative.Contains(':') &&
-                    relative.Split('/').All(part => part is not ("" or "." or "..")) && listed.Add(relative),
-                    "Invalid or duplicate archive path: " + relative);
-                string path = Path.Combine(Path.GetDirectoryName(manifest)!, relative);
-                string key = Path.GetRelativePath(directory, path).Replace('\\', '/');
-                if (archives.TryGetValue(key, out ArchiveRegistration? prior))
-                {
-                    Require(prior.Bytes == bytes && prior.Sha256 == sha256, "Conflicting archive registrations: " + key);
-                    archives[key] = prior with { Stage = stage || prior.Stage };
-                    continue;
-                }
-                Require(new FileInfo(path).Length == bytes && Hash(path) == sha256, "Archive integrity failed: " + key);
-                archives.Add(key, new ArchiveRegistration(bytes, sha256, stage));
-            }
-        }
-        return archives;
     }
 
     private static void AttachKillTriggerDefinitions(FixtureValue catalogRoot, Dictionary<string, Card> byId)

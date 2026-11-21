@@ -7,6 +7,14 @@ internal static class RecordedBattleChecks
     // Each child starts from the previous modeled result, never the next native snapshot.
     internal static void Native(FixtureValue root, int firstTurn = 0, Action<BattleTurnState>? completed = null)
     {
+        var (plays, turns) = Replay(root, firstTurn, completed, branches: 16);
+        Console.WriteLine($"RECORDED-BATTLE-CHAIN PASS: {plays} plays, {turns} EndTurns, first turn {firstTurn}, full native decision comparisons and 16 independent immutable branches.");
+    }
+
+    internal static void ReplayOnce(FixtureValue root) => Replay(root, 0, null, branches: 0);
+
+    private static (int Plays, int EndTurns) Replay(FixtureValue root, int firstTurn, Action<BattleTurnState>? completed, int branches)
+    {
         var actions = root.GetProperty("Actions").EnumerateArray().Where(InScope).ToArray();
         var turns = root.GetProperty("Turns").EnumerateArray().Where(InScope).ToArray();
         bool InScope(FixtureValue row) => row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() >= firstTurn;
@@ -24,29 +32,33 @@ internal static class RecordedBattleChecks
             {
                 int number = turn.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32();
                 while (actionIndex < actions.Length && actions[actionIndex].GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() <= number)
-                    Play(actions[actionIndex++]);
-                Compare(state, turn.GetProperty("Before").Deserialize<BattleTurnState>()!, false, "before EndTurn");
+                    Play(actionIndex++);
+                string label = $"EndTurn {number}";
+                Compare(state, turn.GetProperty("Before").Deserialize<BattleTurnState>()!, false, "before " + label);
                 BattleTurnResult next = BattleTurnModel.EndTurn(state, Decisions(turn));
-                Require(next.Supported, next.UnsupportedReason ?? "EndTurn unsupported.");
-                Require(next.Outcome == turn.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(), "EndTurn outcome differs.");
+                Require(next.Supported, label + ": " + (next.UnsupportedReason ?? "Unsupported."));
+                Require(next.Outcome == turn.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(), label + ": Outcome differs.");
                 state = next.State!;
-                Compare(state, turn.GetProperty("Actual").Deserialize<BattleTurnState>()!, Terminal(next.Outcome), "after EndTurn");
+                Compare(state, turn.GetProperty("Actual").Deserialize<BattleTurnState>()!, Terminal(next.Outcome), "after " + label);
             }
-            while (actionIndex < actions.Length) Play(actions[actionIndex++]);
+            while (actionIndex < actions.Length) Play(actionIndex++);
             completed?.Invoke(state);
-            void Play(FixtureValue row)
+            void Play(int index)
             {
-                Compare(state, row.GetProperty("Before").Deserialize<BattleTurnState>()!, false, "before play");
+                FixtureValue row = actions[index];
+                string label = $"play {index + 1} in turn {state.Spawn.Turn}";
+                Compare(state, row.GetProperty("Before").Deserialize<BattleTurnState>()!, false, "before " + label);
                 BattleActionResult next = BattleActionModel.PlayCard(state, row.GetProperty("Action").Deserialize<PlayCardAction>()!);
-                Require(next.Supported, next.Reason ?? "Card action unsupported.");
-                Require(next.Outcome == row.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(), "Card outcome differs.");
+                Require(next.Supported, label + ": " + (next.Reason ?? "Unsupported."));
+                Require(next.Outcome == row.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(), label + ": Outcome differs.");
                 state = next.State!;
-                Compare(state, row.GetProperty("Actual").Deserialize<BattleTurnState>()!, Terminal(next.Outcome), "after play");
+                Compare(state, row.GetProperty("Actual").Deserialize<BattleTurnState>()!, Terminal(next.Outcome), "after " + label);
             }
         }
-        Replay(); Parallel.For(0, 16, _ => Replay());
+        Replay();
+        if (branches > 0) Parallel.For(0, branches, _ => Replay());
         Require(parent == JsonSerializer.Serialize(initial, ModelJson.Options), "Recorded full chain mutated its parent.");
-        Console.WriteLine($"RECORDED-BATTLE-CHAIN PASS: {actions.Length} plays, {turns.Length} EndTurns, first turn {firstTurn}, full native decision comparisons and 16 independent immutable branches.");
+        return (actions.Length, turns.Length);
     }
     private static bool Terminal(RoomOutcome outcome) => outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
     internal static RelentlessDecision[]? Decisions(FixtureValue row) => row.TryGetProperty("RelentlessDecisions", out var choices) &&

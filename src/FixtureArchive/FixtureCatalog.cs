@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Globalization;
+using System.Security.Cryptography;
 
 namespace MonsterTrain2Poju.Fixtures;
 
@@ -40,5 +42,86 @@ public sealed class FixtureCatalog
         // An isolated native run has no curated manifest; its sidecars belong
         // to that run's own directory.
         return Path.Combine(directory, name);
+    }
+}
+
+public enum Game231FixtureKind { Legacy, Component, UnsettledBattle, SettledBattle }
+
+public sealed record Game231FixtureRegistration(string Path, long Bytes, string Sha256, bool Stage)
+{
+    public string Verify(string directory)
+    {
+        string fullPath = System.IO.Path.Combine(directory, Path);
+        using var stream = File.OpenRead(fullPath);
+        if (stream.Length != Bytes || !Convert.ToHexString(SHA256.HashData(stream)).Equals(Sha256, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("Archive integrity failed: " + Path);
+        return fullPath;
+    }
+}
+
+public static class Game231FixtureCatalog
+{
+    public const string Version = "2.3.1";
+    public const string Module = "bf93f060-beda-46b1-b808-95ebf1e9a99d";
+    private const string LegacyModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
+    private static readonly string[] BattleCounters = ["CaptureFailures", "Mismatches", "Unsupported", "Pending"];
+
+    public static string DirectoryFor(string workspace) => Path.Combine(Path.GetFullPath(workspace), "tests", "compatibility", "game-" + Version);
+
+    public static IReadOnlyDictionary<string, Game231FixtureRegistration> Load(string directory)
+    {
+        var archives = new SortedDictionary<string, Game231FixtureRegistration>(StringComparer.Ordinal);
+        string stagePath = Path.Combine(directory, "solver-stage.tsv");
+        foreach (string manifest in Directory.EnumerateFiles(directory, "manifest.tsv", SearchOption.AllDirectories).Append(stagePath))
+        {
+            bool stage = manifest == stagePath;
+            string[] lines = File.ReadAllLines(manifest);
+            string header = stage ? "case\tarchive\tbytes\tsha256" : "path\tbytes\tsha256";
+            if (lines.Length < 2 || lines[0].Replace("\"", "", StringComparison.Ordinal) != header)
+                throw new InvalidDataException("Unexpected archive manifest header: " + manifest);
+            int offset = stage ? 1 : 0;
+            var listed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string line in lines.Skip(1))
+            {
+                string[] cells = line.Split('\t').Select(cell => cell.Trim('"')).ToArray();
+                if (cells.Length != 3 + offset) throw new InvalidDataException("Invalid archive manifest row: " + manifest);
+                string relative = cells[offset];
+                string sha256 = cells[offset + 2].ToLowerInvariant();
+                long bytes = long.Parse(cells[offset + 1], NumberStyles.None, CultureInfo.InvariantCulture);
+                if (bytes <= 0 || sha256.Length != 64 || !sha256.All(Uri.IsHexDigit) ||
+                    !relative.EndsWith(".mt2f", StringComparison.Ordinal) || Path.IsPathRooted(relative) ||
+                    relative.Contains('\\') || relative.Contains(':') ||
+                    relative.Split('/').Any(part => part is "" or "." or "..") || !listed.Add(relative))
+                    throw new InvalidDataException("Invalid or duplicate archive path: " + relative);
+                string path = Path.Combine(Path.GetDirectoryName(manifest)!, relative);
+                string key = Path.GetRelativePath(directory, path).Replace('\\', '/');
+                if (archives.TryGetValue(key, out Game231FixtureRegistration? prior))
+                {
+                    if (prior.Bytes != bytes || prior.Sha256 != sha256)
+                        throw new InvalidDataException("Conflicting archive registrations: " + key);
+                    archives[key] = prior with { Stage = stage || prior.Stage };
+                    continue;
+                }
+                archives.Add(key, new Game231FixtureRegistration(key, bytes, sha256, stage));
+            }
+        }
+        return archives;
+    }
+
+    public static Game231FixtureKind Classify(Game231FixtureRegistration archive, FixtureValue root)
+    {
+        bool legacy = archive.Path.StartsWith("2.2.1/", StringComparison.Ordinal);
+        if ((legacy && archive.Stage) || !root.TryGetProperty("GameModuleMvid", out FixtureValue module) ||
+            module.ValueKind != FixtureKind.String || module.GetString() != (legacy ? LegacyModule : Module))
+            throw new InvalidDataException("Unexpected fixture module: " + archive.Path);
+        if (legacy) return Game231FixtureKind.Legacy;
+        bool hasActions = root.TryGetProperty("Actions", out FixtureValue actions) && actions.ValueKind == FixtureKind.Array;
+        bool settled = hasActions && root.TryGetProperty("Turns", out FixtureValue turns) && turns.ValueKind == FixtureKind.Array &&
+            root.TryGetProperty("TerminalEffectsSettled", out FixtureValue terminal) && terminal.ValueKind == FixtureKind.True &&
+            BattleCounters.All(key => root.TryGetProperty(key, out FixtureValue counter) && counter.ValueKind == FixtureKind.Number && counter.GetInt32() == 0);
+        if (archive.Stage && (!settled || !root.TryGetProperty("NativeWon", out FixtureValue won) || won.ValueKind != FixtureKind.True))
+            throw new InvalidDataException("Stage archive failed its native battle gate: " + archive.Path);
+        if (settled) return Game231FixtureKind.SettledBattle;
+        return hasActions ? Game231FixtureKind.UnsettledBattle : Game231FixtureKind.Component;
     }
 }
