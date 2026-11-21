@@ -128,6 +128,11 @@ namespace MonsterTrain2Poju.Model
         private static bool IndependentRelic(CombatRelicState relic)
         {
             if (relic.IsCovenant != false) return false;
+            // The original Hoard reward observes Pyre damage and settles after
+            // combat. It has no moon change or CardUpdated callback.
+            if (relic.DataId == "26c9bc93-f5a6-439d-8239-14c22cbeb02e" &&
+                relic.AssetKey == "ModifyDragonsHoardBattleEnd" && relic.DisallowedInPlacementPhase == false &&
+                relic.EffectTypes.SequenceEqual(new[] { "RelicEffectModifyDragonsHoardEndOfBattle" })) return true;
             // This original reward-only effect changes trial gold after combat.
             // It receives neither moon transitions nor CardUpdated callbacks.
             if (relic.DataId == "07bdefdb-03b8-4159-b74b-be85f68c4c56" && relic.AssetKey == "ApplyUnitUpgradeWhenRich" &&

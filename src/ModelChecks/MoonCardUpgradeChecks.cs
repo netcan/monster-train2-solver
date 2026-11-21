@@ -48,8 +48,41 @@ internal static class MoonCardUpgradeChecks
         CardMaskDescriptor changedDescriptor = new(descriptor.Definition, descriptor.BaseCost, descriptor.BaseTraits, descriptor.AuthoredCastEffects,
             descriptor.Purified, descriptor.PermanentGraft, descriptor.TemporaryTraits, descriptor.PermanentReplacements, [changed]);
         Require(!CardMoonUpgradeModel.Update(guard.WithMaskDescriptor(changedDescriptor), 2).Supported, "Changed source moon parameters must remain unsupported.");
+        CheckHoardRewardIndependence(guard);
         Console.WriteLine("MOON-CARD-UPGRADE PASS: five original spells, seven upgrade definitions, 135 complete native card states, phase reversal/repeat, preview no-op, draw/discard reset, magic-power rescaling, existing-trait protection and 16 immutable branches. Whole-battle callbacks require separate integration witnesses.");
     }
+
+    private static void CheckHoardRewardIndependence(CardInstanceState card)
+    {
+        const string assetKey = "ModifyDragonsHoardBattleEnd";
+        const string dataId = "26c9bc93-f5a6-439d-8239-14c22cbeb02e";
+        const string effect = "RelicEffectModifyDragonsHoardEndOfBattle";
+        var exact = new CombatRelicState(dataId, assetKey, [effect], isCovenant: false, disallowedInPlacementPhase: false);
+        UnityRng rng = UnityRng.Seed(17);
+        var root = new CombatContext(new CardCycleState([new(card.InstanceId, card.DataId)], [], [], rng, 0, []),
+            rng, 20, card.InstanceId + 1, 10, cardInstances: [card], queryFrame: new(moonPhase: 2, selectedRoomIndex: 0));
+        CombatContext expected = CardMoonUpgradeModel.RefreshHand(root, out string? baselineError);
+        CombatContext withReward = root.WithRelics([exact]);
+        string parent = Json(withReward);
+        CombatContext actual = CardMoonUpgradeModel.RefreshHand(withReward, out string? error);
+        Require(baselineError == null && error == null && Json(actual) == Json(expected.WithRelics([exact])) && Json(withReward) == parent,
+            "The original Hoard reward changed moon hand refresh or its parent.");
+
+        var unknown = new[]
+        {
+            new CombatRelicState("unknown", assetKey, [effect], isCovenant: false, disallowedInPlacementPhase: false),
+            new CombatRelicState(dataId, "unknown", [effect], isCovenant: false, disallowedInPlacementPhase: false),
+            new CombatRelicState(dataId, assetKey, [effect, RelicModel.ModifyCardHealingPower], isCovenant: false, disallowedInPlacementPhase: false),
+            new CombatRelicState(dataId, assetKey, [effect], isCovenant: false, disallowedInPlacementPhase: true)
+        };
+        foreach (CombatRelicState owner in unknown)
+        {
+            CardMoonUpgradeModel.RefreshHand(root.WithRelics([owner]), out error);
+            Require(error == "Uncalibrated moon hand-refresh relic: " + owner.AssetKey + ".",
+                "An uncalibrated Hoard reward signature passed moon hand refresh.");
+        }
+    }
+
     private static string Json(object? value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Require(bool condition, string reason) { if (!condition) throw new InvalidOperationException(reason); }
 }
