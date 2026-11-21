@@ -40,6 +40,78 @@ internal static class TrueFinalBossMaximumSacrificeChecks
         Require(Json(serial.BestState) == Json(parallel.BestState) && Json(source) == parent, "Terminal search mutated its parent or diverged.");
         searched?.Add(key);
     }
+
+    internal static void EarlyEntropy(string path)
+    {
+        using var document = ModelJson.ReadFixture(path);
+        FixtureValue root = document.RootElement, control = root.GetProperty("TrueFinalBossMaximumBattle");
+        FixtureValue[] actions = root.GetProperty("Actions").EnumerateArray().ToArray();
+        Require(root.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            root.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
+            root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
+            root.GetProperty("Unsupported").GetInt32() is 0 or 1 &&
+            new[] { "CaptureFailures", "Mismatches", "Pending" }.All(key => root.GetProperty(key).GetInt32() == 0) &&
+            control.GetProperty("EarlyEntropy").GetBoolean() && control.GetProperty("OriginalBossDefinitionsAndBirthStats").GetBoolean() &&
+            actions.Length == 6 && root.GetProperty("Turns").GetArrayLength() == 2,
+            "Missing the original early Entropy controlled native boundary.");
+        FixtureValue route = root.GetProperty("OriginalTrueFinalBossRoute");
+        Require(route.GetProperty("ScenarioAssetsUnchanged").GetBoolean() && route.GetProperty("CharacterAssetsUnchanged").GetBoolean(),
+            "The native control changed an original boss definition.");
+        FixtureValue last = actions[^1];
+        var before = last.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var actual = last.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        var action = last.GetProperty("Action").Deserialize<PlayCardAction>()!;
+        CombatContext context = before.Spawn.Train.Context!;
+        LifeLinkContext links = context.LifeLinks!;
+        string? targetAsset = action.RoomIndex switch
+        {
+            0 => "Boss_Level9_Entropy_Bot_V2",
+            1 => "Boss_Level9_Entropy_Mid_V2",
+            2 => "Boss_Level9_Entropy_Top_V2",
+            _ => null
+        };
+        Require(targetAsset != null && action.TargetUnitId == 4 + action.RoomIndex && before.Spawn.Turn == 2 &&
+            context.FindCard(action.CardInstanceId)?.DataId == "fc231b61-0000-4000-8000-000000000006" &&
+            links.Actors.Select(actor => actor.Health).SequenceEqual([1, 1, 8, 8, 8]) &&
+            links.Actors.Select(actor => actor.LinkedId).SequenceEqual([0, 0, 0, 4, 4]) && !LifeLinkModel.Protected(links, action.TargetUnitId),
+            "The native action did not target an unprotected original Entropy body at eight HP.");
+        Require(root.GetProperty("Unsupported").GetInt32() == 0 ||
+            last.GetProperty("Predicted").GetProperty("Reason").GetString() ==
+                "Linked maximum-health sacrifice requires the original unprotected final-boss group and supported floor observers.",
+            "The diagnostic must record only the historical terminal rejection.");
+
+        FixtureValue operation = control.GetProperty("TerminalSacrifices").EnumerateArray().Single();
+        CombatUnit nativeRoot = operation.GetProperty("Root").Deserialize<CombatUnit>()!;
+        CombatUnit[] dying = operation.GetProperty("Actors").Deserialize<CombatUnit[]>()!;
+        Require(nativeRoot.Id == action.TargetUnitId && nativeRoot.AssetKey == targetAsset && nativeRoot is { Health: 0, MaxHealth: 0 } &&
+            dying.Select(unit => unit.Health).SequenceEqual([1, 1, 0, 0, 0]) && operation.GetProperty("SourceCardId").GetInt32() == 0 &&
+            operation.GetProperty("NativeReturned").GetBoolean() && operation.GetProperty("IsSacrifice").GetBoolean() &&
+            operation.GetProperty("Destroyed").GetBoolean() && operation.GetProperty("AllBossesDead").GetBoolean(),
+            "Native sacrifice did not settle shared zero health/max and terminal death.");
+        FixtureValue[] removals = control.GetProperty("TerminalRemovals").EnumerateArray().ToArray();
+        var roster = removals.First().GetProperty("ActiveBefore").Deserialize<TrueFinalBossRemovalActor[]>()!;
+        var group = TrueFinalBossRemovalModel.Plan(roster, action.TargetUnitId, true, true, true);
+        Require(group.Supported && group.Steps.Select(step => (step.Id, step.Room, step.LastDeath)).SequenceEqual(removals.Select(row =>
+            (row.GetProperty("Id").GetInt32(), row.GetProperty("Room").GetInt32(), row.GetProperty("LastDeath").GetBoolean()))) &&
+            removals.All(row => row.GetProperty("Death").GetBoolean() && row.GetProperty("Vanish").GetBoolean()) &&
+            control.GetProperty("TerminalHarvest").GetArrayLength() == 0, "Native group removal order or observer scope differs.");
+
+        RoomCombatState floor = before.Spawn.Train.Rooms[action.RoomIndex];
+        Require(!TrueFinalBossTerminalCombatModel.SupportsRoot(floor, action.TargetUnitId) &&
+            TrueFinalBossTerminalCombatModel.SupportsRoot(floor, action.TargetUnitId, maximumHealthSacrifice: true),
+            "The early terminal admission must be scoped to maximum-health sacrifice.");
+        var frontier = BattleActionModel.EnumerateActions(before, action.CardInstanceId, includeAbilities: false);
+        Require(frontier.SupportedCandidates.Any(candidate => candidate.Action.RoomIndex == action.RoomIndex &&
+            candidate.Action.TargetUnitId == action.TargetUnitId && candidate.Result.Outcome == RoomOutcome.BattleWon),
+            "The exact native winning action is missing from the advisor frontier.");
+        Require(actual.Spawn.Train.Context!.LifeLinks == null && actual.Spawn.Train.Context.AllScenarioBossesDead == true,
+            "The terminal observed state retains LifeLink.");
+        BattleTurnChecks.Native(root);
+        RecordedBattleChecks.Native(root, firstTurn: 1, completed: state =>
+            RecordedBattleChecks.Compare(state, actual, true, "early Entropy terminal sacrifice"));
+        Console.WriteLine("EARLY ENTROPY SACRIFICE PASS: six native plays, two EndTurns, full successor/RNG, five removals and 16 immutable branches.");
+    }
+
     internal static void Native(string path, HashSet<string>? searched = null)
     {
         using var document = ModelJson.ReadFixture(path);

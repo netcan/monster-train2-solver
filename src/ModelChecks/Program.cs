@@ -4482,6 +4482,11 @@ if (args.Length == 2 && args[0] == "--true-final-boss-maximum-sacrifice-only")
     TrueFinalBossMaximumSacrificeChecks.Native(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--true-final-boss-early-entropy-only")
+{
+    TrueFinalBossMaximumSacrificeChecks.EarlyEntropy(args[1]);
+    return;
+}
 
 if (args.Length == 2 && args[0] == "--true-final-boss-maximum-battle-only")
 {
