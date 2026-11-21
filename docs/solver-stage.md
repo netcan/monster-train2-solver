@@ -223,6 +223,12 @@ Cael 零盟约试炼的攻击与生命、吸血变体分别通过 26 次出牌�
 连续及 15 场分段，合计 2,183 次出牌或技能、972 次 EndTurn，零失败。报告为
 `results/recorded-chain-triage-20261122-023728-b5f56383/report.tsv`。
 
+2.3.1 的进食组件对照使用两次原版结算。隔离实例用原版接口发放测试用牌，再通过出牌
+与 EndTurn 触发结算。两次进食均将 Morsel Miner 的来源牌移入 Eaten，Primordium
+存活并减少一层 Eatmany。普通进食在房间结算前保留空位，Feast 结算后填补空位。
+两条完整后继各通过 16 条独立分支。使用 `--native-source-backed-feeding` 复核
+`tests/compatibility/game-2.3.1/mechanics/original-source-backed-feeding/source-backed-feeding.mt2f`。
+
 用 2.3.1 载入 2.2.1 原版第三环战前存档，隔离顾问在两线程、单次搜索三秒的配置下
 完成 24 次出牌和 9 次 EndTurn，以 80 点薪火生命获胜。进程正常退出，四项采集计数为零。
 同一归档另通过 33 次滚动建议与预测复放、完整链及 16 条独立分支。
