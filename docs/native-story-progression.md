@@ -22,6 +22,11 @@
 `.probe-runs/campaign-ring1-20261122-054703-6a8ac9f3`，主存档 SHA256 为
 `c06ee6618d4dcf387a505bd092af567bf7e4b9658aac781966bf3daf3e218d33`。
 
+第 1 环原版胜局保留 50 点薪火生命。独立进程复放 18 次出牌或技能和 5 次结束回合，
+完整状态、随机流与终局一致。原版战役结算保存第 2 环战前档，已记录一场普通胜利。
+归档为 `unlocked-covenant0-ring1.mt2f` 与 `unlocked-covenant0-ring1-frozen.mt2f`，
+续接档位于 `.probe-runs/campaign-ring2-20261122-055103-b991b69c`。
+
 2026-10-28重新检查第25组第七战入口的累计档案，额外薪火之心仍为0/9，
 剧情索引0、真终局未解锁。当前值为Pact0/7、Life326/475、Malicka0/1、
 Wyngh109/225、Fhyra3605/20000、Aquath460/12000、Bogworm169/3200、
