@@ -53,8 +53,7 @@ internal static class BattleSearchChecks
             if (record.GetProperty("IsEndTurn").GetBoolean())
             {
                 var choices = RecordedBattleChecks.Decisions(record) ?? [];
-                var result = ends.Candidates.FirstOrDefault(candidate => candidate.Decisions.Select(Choice)
-                    .SequenceEqual(choices.Select(Choice)))?.Result;
+                var result = FindEndTurn(ends, choices);
                 if (result == null && ends.ReachedNodeLimit) result = BattleTurnModel.EndTurn(before, choices);
                 predicted = result?.State;
                 outcome = result?.Outcome;
@@ -74,8 +73,33 @@ internal static class BattleSearchChecks
         Console.WriteLine($"NATIVE-ROLLING-FRONTIER decisions={roots.Length} actions={actions} endTurns={turns} unsupported={unsupported} truncated={limited}");
         Require(unsupported == 0 && limited == 0, "Recorded rolling roots contain unsupported or truncated alternatives.");
 
-        static (int Room, int Rounds, bool Continue) Choice(RelentlessDecision choice) =>
-            (choice.RoomIndex, choice.CompletedRounds, choice.Continue);
+    }
+
+    private static BattleTurnResult? FindEndTurn(BattleEndTurnFrontier frontier, IReadOnlyList<RelentlessDecision> choices) =>
+        frontier.Candidates.FirstOrDefault(candidate => candidate.Decisions.Select(Choice)
+            .SequenceEqual(choices.Select(Choice)))?.Result;
+
+    private static (int Room, int Rounds, bool Continue) Choice(RelentlessDecision choice) =>
+        (choice.RoomIndex, choice.CompletedRounds, choice.Continue);
+
+    internal static void RecordedEndTurnFrontiers(FixtureValue fixture, int choiceBudget)
+    {
+        foreach (FixtureValue entry in fixture.GetProperty("Turns").EnumerateArray())
+        {
+            var before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            string label = $"EndTurn {before.Spawn.Turn} frontier";
+            var frontier = BattleEndTurnModel.Enumerate(before, choiceBudget);
+            if (frontier.UnsupportedAttempts.Count > 0)
+                throw new InvalidOperationException(label + " has unsupported candidates: " +
+                    string.Join(" | ", frontier.UnsupportedAttempts.GroupBy(attempt => attempt.Reason)
+                        .Select(group => group.Count() + "x " + group.Key)));
+            Require(!frontier.ReachedNodeLimit, label + $" reached the choice budget of {choiceBudget}.");
+            var native = FindEndTurn(frontier, RecordedBattleChecks.Decisions(entry) ?? []);
+            Require(native?.State != null && native.Outcome == entry.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(),
+                label + " does not contain the recorded native outcome for the recorded choices.");
+            RecordedBattleChecks.Compare(native!.State!, entry.GetProperty("Actual").Deserialize<BattleTurnState>()!,
+                native.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated, label);
+        }
     }
 
     internal static (BattleTurnState Root, BattleActionEnumeration Frontier, int Matched, int Unsupported)
