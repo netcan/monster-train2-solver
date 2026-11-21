@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace MonsterTrain2Poju.Model
 {
@@ -28,26 +26,6 @@ namespace MonsterTrain2Poju.Model
                 unit = unit.WithHealthAndMaxHealth(adding ? unit.Health : Math.Min(unit.Health, maximum), maximum);
             }
             return new StatusAttackDamageResult(unit, magnitude.Context);
-        }
-
-        // BuffMaxHPNoHeal/DebuffMaxHPNoSacrifice update Deathwish before the
-        // outer status API enqueues its status-change notifications.
-        internal static RoomCombatResult Membership(RoomCombatState source, CombatUnit unit, CombatStatus status, int delta, bool removing = false)
-        {
-            var scope = new RoomCombatState(source.RoomIndex, source.Deployment,
-                source.Units.Select(actor => actor.Id == unit.Id ? unit : actor).ToArray(),
-                source.ExternalInteractions, source.Context, source.Preview, source.ActiveCompanionBossIds);
-            if (status.Id != "zeal" || delta <= 0 || unchecked(status.ParamInt * delta) <= 0)
-                return new RoomCombatResult(scope, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
-            // DebuffMaxHPNoSacrifice clips HP, removes Horde casualties (including
-            // their statistics and observer callbacks), then updates Deathwish.
-            RoomCombatResult casualties = removing ? HordeStatusModel.SettleHealth(scope, unit.Id) :
-                new RoomCombatResult(scope, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
-            if (!casualties.Supported) return casualties;
-            RoomCombatResult membership = HalfHealthDeathwishModel.Update(casualties.State!, unit.Id);
-            return membership.Supported ? new RoomCombatResult(membership.State, membership.Outcome, 0,
-                casualties.Events.Concat(membership.Events).ToList(),
-                pendingCallbacks: casualties.PendingCallbacks.Concat(membership.PendingCallbacks).ToArray()) : membership;
         }
     }
 }

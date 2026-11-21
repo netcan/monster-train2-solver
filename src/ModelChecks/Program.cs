@@ -7723,6 +7723,13 @@ if (args.Length == 1 && args[0] == "--status-per-other-effect-pure")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--native-spurned")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    SpurnedChecks.Native(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--titan-skin-pure")
 {
     TitanSkinChecks.Run();

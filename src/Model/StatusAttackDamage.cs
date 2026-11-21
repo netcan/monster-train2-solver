@@ -29,6 +29,21 @@ namespace MonsterTrain2Poju.Model
         internal static StatusAttackDamageResult Change(CombatContext? context, CombatUnit unit, CombatStatus status, int delta, bool adding)
         {
             if (status.Id == "zeal") return ZealStatusModel.Change(context, unit, status, delta, adding);
+            if (status.Id == Malaise)
+            {
+                string? error = ValidateMalaise(unit, status, context);
+                if (error != null) return new StatusAttackDamageResult(null, context, error);
+                if (delta <= 0) return new StatusAttackDamageResult(unit, context);
+                StatusScalingResult magnitude = RelicStatusMagnitudeModel.GetModifier(context, status.Id,
+                    unit.Team == CombatTeam.Player ? 2 : 1);
+                if (!magnitude.Supported) return new StatusAttackDamageResult(null, null, magnitude.UnsupportedReason);
+                int malaiseAmount = unchecked((status.ParamInt + magnitude.Stacks) * delta);
+                if (malaiseAmount <= 0) return new StatusAttackDamageResult(unit, magnitude.Context);
+                int maximum = adding ? Math.Max(1, unit.MaxHealth - malaiseAmount) : Math.Min(99999, unit.MaxHealth + malaiseAmount);
+                int attack = unchecked(unit.Modifiers!.DamageBuffFromStatusEffects!.Value + (adding ? -malaiseAmount : malaiseAmount));
+                unit = unit.WithHealthAndMaxHealth(Math.Min(unit.Health, maximum), maximum).WithStatusDamage(attack);
+                return new StatusAttackDamageResult(unit, magnitude.Context);
+            }
             if (delta > 0 && status.Id == "mageblade")
             {
                 if (unit.Modifiers == null)
@@ -58,6 +73,44 @@ namespace MonsterTrain2Poju.Model
             int sign = (adding ? 1 : -1) * (status.Id == "debuff" ? -1 : 1);
             int damage = unchecked(unit.Modifiers.DamageBuffFromStatusEffects.Value + sign * amount);
             return new StatusAttackDamageResult(unit.WithStatusDamage(damage), context);
+        }
+
+        internal const string Malaise = "malaise";
+
+        internal static string? ValidateMalaise(CombatUnit unit, CombatStatus status, CombatContext? context)
+        {
+            if (status.ParamInt != 1 || status.Stackable != true || status.Hidden != false || status.DisplayCategory != "Negative" ||
+                status.Propagatable != false || status.TriggerVfxEnemy != false || status.TriggerVfxPlayer != false ||
+                status.RemoveWhenTriggered || status.RemoveStackAtEnd || status.RemoveAllAtEnd || status.RemoveAfterPostCombat ||
+                status.PreventRemovalDuringRelentless || status.SkipDuringDeployment || status.RemoveDuringDeployment ||
+                status.RemoveWhenTriggeredAfterCardPlayed || status.RemoveAtEndOfTurnIfTriggered || status.MarkedForRemovalAfterCardPlayed)
+                return "Malaise requires the captured native status definition.";
+            if (unit.Modifiers?.DamageBuffFromStatusEffects.HasValue != true)
+                return "Malaise requires the native status attack accumulator.";
+            if (unit.Status("lifelink") != null || context?.LifeLinks?.Actors.Any(actor => actor.Id == unit.Id) == true)
+                return "Malaise on linked units requires native maximum-health lifecycle evidence.";
+            return null;
+        }
+
+        internal static bool ChangesMaximumHealth(string statusId) => statusId is "zeal" or Malaise;
+
+        internal static RoomCombatResult HealthMembership(RoomCombatState source, CombatUnit unit, CombatStatus status,
+            int delta, bool removing = false)
+        {
+            var scope = new RoomCombatState(source.RoomIndex, source.Deployment,
+                source.Units.Select(actor => actor.Id == unit.Id ? unit : actor).ToArray(),
+                source.ExternalInteractions, source.Context, source.Preview, source.ActiveCompanionBossIds);
+            if (delta <= 0 || unchecked(status.ParamInt * delta) <= 0)
+                return new RoomCombatResult(scope, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
+            // Native clips HP and settles Horde casualties before updating Deathwish.
+            bool reducedMaximum = status.Id == Malaise ? !removing : removing;
+            RoomCombatResult casualties = reducedMaximum ? HordeStatusModel.SettleHealth(scope, unit.Id) :
+                new RoomCombatResult(scope, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
+            if (!casualties.Supported) return casualties;
+            RoomCombatResult membership = HalfHealthDeathwishModel.Update(casualties.State!, unit.Id);
+            return membership.Supported ? new RoomCombatResult(membership.State, membership.Outcome, 0,
+                casualties.Events.Concat(membership.Events).ToList(),
+                pendingCallbacks: casualties.PendingCallbacks.Concat(membership.PendingCallbacks).ToArray()) : membership;
         }
     }
 }

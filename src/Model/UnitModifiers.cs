@@ -330,7 +330,7 @@ namespace MonsterTrain2Poju.Model
                         bool removingStatus = remove || status.Stacks < 0;
                         if (removingStatus && existing == null && target.RegisteredStatus(status.Id) == null) continue;
                         if (!removingStatus && (target.StatusImmunities.Contains(status.Id) || target.Status("immune") != null)) continue;
-                        if (!removingStatus && (permanentStatus || status.Id is "conduit" or "mageblade" || nextModifiers.DamageBuffFromStatusEffects.HasValue ||
+                        if (!removingStatus && (permanentStatus || status.Id is "conduit" or "mageblade" or StatusAttackDamageModel.Malaise || nextModifiers.DamageBuffFromStatusEffects.HasValue ||
                             state.Context?.Relics?.Any(relic => relic.StatusStackAdditions?.Count > 0) == true))
                         {
                             RoomCombatResult appliedStatus = StatusApplicationModel.ApplyRetained(Stage(), targetId, status, 0,
@@ -354,12 +354,13 @@ namespace MonsterTrain2Poju.Model
                             state = new RoomCombatState(state.RoomIndex, state.Deployment, state.Units,
                                 state.ExternalInteractions, attack.Context, state.Preview, state.ActiveCompanionBossIds);
                             Refresh(attack.Unit!);
-                            if (status.Id == "zeal")
+                            if (StatusAttackDamageModel.ChangesMaximumHealth(status.Id))
                             {
-                                RoomCombatResult membership = ZealStatusModel.Membership(Stage(), Snapshot(),
-                                    existing ?? target.RegisteredStatus(status.Id) ?? status, oldStacks - stacks);
+                                RoomCombatResult membership = StatusAttackDamageModel.HealthMembership(Stage(), Snapshot(),
+                                    existing ?? target.RegisteredStatus(status.Id) ?? status, oldStacks - stacks,
+                                    removing: status.Id == StatusAttackDamageModel.Malaise);
                                 if (!membership.Supported) return membership;
-                                Refresh(membership.State!.Units[0]); statusCallbacks.AddRange(membership.PendingCallbacks);
+                                Refresh(membership.State!.Units.Single(unit => unit.Id == targetId)); statusCallbacks.AddRange(membership.PendingCallbacks);
                             }
                             if (status.Id == "conduit")
                             {

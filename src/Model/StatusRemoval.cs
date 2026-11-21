@@ -67,9 +67,9 @@ namespace MonsterTrain2Poju.Model
                 context = context.WithStatistics(context.LiveStatistics!.Increment(sourceCardId, "AnyStatusEffectStacksRemoved", status.Stacks - count,
                     requireTrackedCard: context.CardInstances?.Count == 0));
             var callbacks = relicAdded.PendingCallbacks.ToList();
-            if (id == "zeal")
+            if (StatusAttackDamageModel.ChangesMaximumHealth(id))
             {
-                RoomCombatResult membership = ZealStatusModel.Membership(source.WithContext(context), changed, status, status.Stacks - count, removing: true);
+                RoomCombatResult membership = StatusAttackDamageModel.HealthMembership(source.WithContext(context), changed, status, status.Stacks - count, removing: true);
                 if (!membership.Supported) return membership;
                 changed = membership.State!.Units.First(unit => unit.Id == targetId);
                 source = membership.State; context = source.Context; callbacks.AddRange(membership.PendingCallbacks);

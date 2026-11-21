@@ -158,9 +158,9 @@ namespace MonsterTrain2Poju.Model
                 context = context.WithStatistics(context.LiveStatistics!.Increment(sourceCardId, "AnyStatusEffectStacksAdded", count - old,
                     requireTrackedCard: context.CardInstances?.Count == 0));
             var queue = new List<RoomCombatModel.QueuedCharacterTrigger>();
-            if (added.Id == "zeal")
+            if (StatusAttackDamageModel.ChangesMaximumHealth(added.Id))
             {
-                RoomCombatResult membership = ZealStatusModel.Membership(source.WithContext(context), changed, existing ?? added, count - old);
+                RoomCombatResult membership = StatusAttackDamageModel.HealthMembership(source.WithContext(context), changed, existing ?? added, count - old);
                 if (!membership.Supported) return membership;
                 changed = membership.State!.Units.First(unit => unit.Id == targetId);
                 source = membership.State; context = source.Context; queue.AddRange(membership.PendingCallbacks);

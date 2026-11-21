@@ -511,7 +511,8 @@ namespace MonsterTrain2Poju.Model
             "buff", "debuff", "regen", "poison", "decay", "corruption", "corrupt_poison", "melee weakness", "spell weakness", "silenced", "muted", "valor", "pyregel",
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "titanite", "duality", "conduit",
             "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch", "avarice", "inedible", "eatmany", "steelguard",
-            "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted", "unit_grafted_equipment", "mass", "zeal", "tenacious", "chained", "pain", "spite"
+            "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted", "unit_grafted_equipment", "mass", "zeal", "tenacious", "chained", "pain", "spite",
+            StatusAttackDamageModel.Malaise
         };
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
@@ -1174,6 +1175,9 @@ namespace MonsterTrain2Poju.Model
                     return "Missing native status attack accumulator.";
                 if (unit.RegisteredStatus("zeal") != null && unit.Modifiers?.DamageBuffFromStatusEffects.HasValue != true)
                     return "Zeal requires the native status attack accumulator.";
+                if (unit.RegisteredStatus(StatusAttackDamageModel.Malaise) is CombatStatus malaise &&
+                    StatusAttackDamageModel.ValidateMalaise(unit, malaise, state.Context) is string malaiseError)
+                    return malaiseError;
                 if (unit.Ability?.CardCreation != null && unit.Ability.DataId != unit.Ability.CardCreation.DataId)
                     return "Unit ability and cached card creation definitions differ.";
                 if (unit.Ability?.Definition != null && (unit.Ability.DataId != unit.Ability.Definition.DataId || !unit.Ability.Definition.IsUnitAbility) ||
@@ -6351,9 +6355,9 @@ namespace MonsterTrain2Poju.Model
                         status.Stacks - (after.RegisteredStatus(id)?.Stacks ?? 0), adding: false);
                     if (!changed.Supported) { unsupportedReason = changed.UnsupportedReason; return; }
                     context = changed.Context; unit.Apply(changed.Unit!);
-                    if (id == "zeal")
+                    if (StatusAttackDamageModel.ChangesMaximumHealth(id))
                     {
-                        RoomCombatResult membership = ZealStatusModel.Membership(CurrentRoom(), unit.Freeze(), status,
+                        RoomCombatResult membership = StatusAttackDamageModel.HealthMembership(CurrentRoom(), unit.Freeze(), status,
                             status.Stacks - (after.RegisteredStatus(id)?.Stacks ?? 0), removing: true);
                         if (!membership.Supported) { unsupportedReason = membership.UnsupportedReason; return; }
                         context = membership.State!.Context;
