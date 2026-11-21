@@ -12,6 +12,9 @@ namespace MonsterTrain2Poju.Probe
     internal static class TrueFinalBossMaximumBattleScenario
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_BATTLE") == "1";
+        private static string EarlyEntropyTarget => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_EARLY_ENTROPY") ?? "";
+        private static bool EarlyEntropy => Enabled && EarlyEntropyTarget.Length > 0;
+        private static bool EarlyBoundaryReached => EarlyEntropy && step == 6;
         internal static string SacrificeTarget => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_SACRIFICE") ?? "";
         internal static bool Sacrifice => SacrificeTarget.Length > 0;
         private static bool TerminalCommand => Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_COMMAND") == "1";
@@ -27,7 +30,7 @@ namespace MonsterTrain2Poju.Probe
         internal static object Evidence => new { Prepared, ControlCardIds = cards, CompletedControlPlays = step,
             AuthoredCardsAndDrawOrder = true, OriginalBossDefinitionsAndBirthStats = true, Before = before, Actual = actual,
             TerminalHarvest = terminalHarvest, SacrificeTarget, RetainMaximum, TerminalCommand, TerminalCommandCardId = terminalCommandCardId,
-            TerminalSacrifices = terminalSacrifices, TerminalRemovals = terminalRemovals };
+            TerminalSacrifices = terminalSacrifices, TerminalRemovals = terminalRemovals, EarlyEntropy };
         private static void Set(object owner, string field, object value) => AccessTools.Field(owner.GetType(), field).SetValue(owner, value);
         internal static bool Prepare()
         {
@@ -83,7 +86,7 @@ namespace MonsterTrain2Poju.Probe
         internal static PlayCardAction? Choose(BattleTurnState state)
         {
             int opening = Sacrifice ? 4 : 3;
-            if (!Prepared || step == cards.Length || state.Spawn.Turn < (step < opening ? 1 : step < opening + 4 ? 2 : 3)) return null;
+            if (!Prepared || step == cards.Length || EarlyBoundaryReached || state.Spawn.Turn < (step < opening ? 1 : step < opening + 4 ? 2 : 3)) return null;
             if (!state.Spawn.Train.Context!.Cards.Hand.Any(card => card.InstanceId == cards[step]))
                 return null;
             if (step == 10 && TerminalCommand)
@@ -99,8 +102,24 @@ namespace MonsterTrain2Poju.Probe
                 step is 1 or 9 ? "Boss_Level9_Entropy_Mid_V2" : step == 2 ? "Boss_Level9_Entropy_Bot_V2" : "Boss_Level9_Entropy_Top_V2";
             if (step == 10) asset = "Boss_Level9_" + (SacrificeTarget == "Dominion" || SacrificeTarget == "Savagery" ? SacrificeTarget :
                 "Entropy_" + (SacrificeTarget == "EntropyBot" ? "Bot" : SacrificeTarget == "EntropyMid" ? "Mid" : "Top")) + "_V2";
+            if (EarlyEntropy && step == 5)
+                asset = EarlyEntropyTarget switch
+                {
+                    "Bottom" => "Boss_Level9_Entropy_Bot_V2",
+                    "Middle" => "Boss_Level9_Entropy_Mid_V2",
+                    "Top" => "Boss_Level9_Entropy_Top_V2",
+                    _ => throw new InvalidOperationException("Unknown original early Entropy target.")
+                };
             RoomCombatState room = state.Spawn.Train.Rooms.Single(floor => floor.Units.Any(unit => unit.AssetKey == asset));
             int target = room.Units.Single(unit => unit.AssetKey == asset).Id;
+            if (EarlyEntropy && step == 5)
+            {
+                LifeLinkContext links = state.Spawn.Train.Context!.LifeLinks!;
+                if (state.Spawn.Turn != 2 || !links.Actors.Select(actor => actor.Health).SequenceEqual(new[] { 1, 1, 8, 8, 8 }) ||
+                    !links.Actors.Select(actor => actor.LinkedId).SequenceEqual(new[] { 0, 0, 0, 4, 4 }) ||
+                    LifeLinkModel.Protected(links, target))
+                    throw new InvalidOperationException("The original early Entropy action requires the recorded unprotected linked-health state.");
+            }
             var action = new PlayCardAction(cards[step], room.RoomIndex, targetUnitId: target);
             // These declared inputs use native legality as the calibration
             // oracle; model rejections must be recorded, not stop observation.
@@ -113,7 +132,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(CharacterState __instance, CardState damageSourceCard, ref IEnumerator __result)
             {
-                if (Enabled && Sacrifice && Prepared && step == cards.Length && __instance.IsTrueFinalBoss())
+                if (Enabled && Prepared && (Sacrifice && step == cards.Length || EarlyBoundaryReached) && __instance.IsTrueFinalBoss())
                     __result = Observe(__instance, damageSourceCard, __result);
             }
             private static IEnumerator Observe(CharacterState actor, CardState card, IEnumerator operation)
@@ -133,7 +152,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Prefix(CharacterState __instance, List<CharacterState> activeList, bool death, bool vanishUnit, bool isLastDeathInSet)
             {
-                if (Enabled && Sacrifice && Prepared && step == cards.Length && __instance.IsTrueFinalBoss())
+                if (Enabled && Prepared && (Sacrifice && step == cards.Length || EarlyBoundaryReached) && __instance.IsTrueFinalBoss())
                     terminalRemovals.Add(new { Id = FullBattleTrace.Active!.UnitId(__instance), Room = __instance.GetCurrentRoomIndex(),
                         ActiveBefore = activeList.Select(unit => new TrueFinalBossRemovalActor(FullBattleTrace.Active!.UnitId(unit),
                             unit.GetCurrentRoomIndex(), unit.IsTrueFinalBoss())).ToArray(), Death = death, Vanish = vanishUnit, LastDeath = isLastDeathInSet });

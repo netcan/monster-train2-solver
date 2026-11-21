@@ -95,6 +95,8 @@ param(
     [switch] $TrueFinalBossMaximumPreview,
     [switch] $TrueFinalBossMaximumCardPreview,
     [switch] $TrueFinalBossMaximumBattle,
+    [ValidateSet('', 'Bottom', 'Middle', 'Top')]
+    [string] $TrueFinalBossMaximumEarlyEntropy = '',
     [ValidateSet('', 'Dominion', 'Savagery', 'EntropyBot', 'EntropyMid', 'EntropyTop')]
     [string] $TrueFinalBossMaximumSacrifice = '',
     [switch] $TrueFinalBossMaximumSacrificeRetainMax,
@@ -1012,6 +1014,10 @@ if ($earlyTrialSubstitution) { $BranchCardMasks = $true }
 if ($TrueFinalBossMaximumSacrificeRetainMax -and -not $TrueFinalBossMaximumSacrifice) { throw 'Retained maximum-health sacrifice requires an explicit original boss target.' }
 if ($TrueFinalBossMaximumTerminalCommand -and -not $TrueFinalBossMaximumSacrifice) { throw 'Terminal command control requires the original maximum-health battle prefix.' }
 if ($TrueFinalBossMaximumSacrifice) { $TrueFinalBossMaximumBattle = $true }
+if ($TrueFinalBossMaximumEarlyEntropy) {
+    if ($TrueFinalBossMaximumSacrifice) { throw 'Choose a single native maximum-health sacrifice boundary.' }
+    $TrueFinalBossMaximumBattle = $true
+}
 if ($TrueFinalBossMaximumBattle) {
     if (-not $OriginalTrueFinalBoss -or -not $OuterBossTurns -or $TrueFinalBossLethal -or $TrueFinalBossLethalSpellTarget -or
         $TrueFinalBossProtectedSpellTarget -or $TrueFinalBossOrdinaryAlly -or $TrueFinalBossAllyUpgrade -or $TrueFinalBossDormantSavagery -or
@@ -2244,6 +2250,7 @@ $environment = @{
     MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_PREVIEW = $(if ($TrueFinalBossMaximumPreview) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_CARD_PREVIEW = $(if ($TrueFinalBossMaximumCardPreview) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_BATTLE = $(if ($TrueFinalBossMaximumBattle) { '1' } else { '0' })
+    MT2_PROBE_TRUE_FINAL_BOSS_EARLY_ENTROPY = $TrueFinalBossMaximumEarlyEntropy
     MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_SACRIFICE = $TrueFinalBossMaximumSacrifice
     MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_SACRIFICE_RETAIN = $(if ($TrueFinalBossMaximumSacrificeRetainMax) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_MAXIMUM_COMMAND = $(if ($TrueFinalBossMaximumTerminalCommand) { '1' } else { '0' })
@@ -3627,7 +3634,16 @@ if ($OriginalSpurnedBattle) {
         Write-Output 'ORIGINAL-SPURNED-RETAIN-PILES PASS: 20 matching opening plays, seven EndTurns, and 25 retained cards.'
     }
 }
-if ($TrueFinalBossMaximumBattle -and (-not $trace.TrueFinalBossMaximumBattle.Prepared -or
+if ($TrueFinalBossMaximumEarlyEntropy) {
+    $earlyEntropyFloor = @{Bottom=0; Middle=1; Top=2}[$TrueFinalBossMaximumEarlyEntropy]
+    $terminalAction = @($trace.Actions)[-1].Action
+    if (-not $trace.TrueFinalBossMaximumBattle.Prepared -or -not $trace.TrueFinalBossMaximumBattle.EarlyEntropy -or
+        $trace.TrueFinalBossMaximumBattle.CompletedControlPlays -ne 6 -or @($trace.Actions).Count -ne 6 -or @($trace.Turns).Count -ne 2 -or
+        $terminalAction.RoomIndex -ne $earlyEntropyFloor -or $terminalAction.TargetUnitId -ne (4 + $earlyEntropyFloor) -or
+        -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled) {
+        throw 'Original early Entropy did not finish its declared native target and terminal path.'
+    }
+} elseif ($TrueFinalBossMaximumBattle -and (-not $trace.TrueFinalBossMaximumBattle.Prepared -or
     $trace.TrueFinalBossMaximumBattle.CompletedControlPlays -ne $(if ($TrueFinalBossMaximumSacrifice) { 11 } else { 10 }) -or
     @($trace.Actions).Count -ne $(if ($TrueFinalBossMaximumSacrifice) { 11 } else { 10 }) -or
     @($trace.Turns).Count -ne $(if ($TrueFinalBossMaximumSacrifice) { 3 } else { 4 }) -or
