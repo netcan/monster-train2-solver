@@ -40,7 +40,7 @@ namespace MonsterTrain2Poju.Model
         // UI previews can allocate additional copies between settled captures.
         // Only their next unused number is irrelevant to a retained verified line;
         // allocator presence, existing copy identities and every RNG remain keyed.
-        internal BattleStateKeys(bool ignorePreviewCopyAllocator) : this(ignorePreviewCopyAllocator, false) { }
+        public BattleStateKeys(bool ignorePreviewCopyAllocator) : this(ignorePreviewCopyAllocator, false) { }
 
         internal BattleStateKeys(bool ignorePreviewCopyAllocator, bool ignoreRoomSelection)
         { this.ignorePreviewCopyAllocator = ignorePreviewCopyAllocator; this.ignoreRoomSelection = ignoreRoomSelection; }
