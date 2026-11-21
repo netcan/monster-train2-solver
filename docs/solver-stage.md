@@ -237,6 +237,12 @@ Cael 零盟约试炼的攻击与生命、吸血变体分别通过 26 次出牌�
 技能缓存卡后，`--observed-successors-only` 回放已采集的 15 个输入与四个列车阶段均通过。
 两份对照归档分别位于 `mechanics/shardtail-imp-cost/` 和 `mechanics/avarice-unit-skill/`。
 
+同一存档第 27 个输入结束第五回合。原版 Harvester 出场时先给楼上的四个敌人增加一层连击，
+随后把它们移到底层。顾问复用本次回调已更新的楼层状态，并按原版顺序先登记房间附加触发器，
+再登记契约触发器。`--observed-successors-only` 核对了归档内 27 个原版输入的完整后继和随机流，
+以及 12 个列车结算阶段。归档为 `mechanics/covenant-harvester-spawn/ring4-observed.mt2f`，
+记录结束于这次输入，第四环胜负需由整场复放验证。
+
 2.3.1 的进食组件对照使用两次原版结算。隔离实例用原版接口发放测试用牌，再通过出牌
 与 EndTurn 触发结算。两次进食均将 Morsel Miner 的来源牌移入 Eaten，Primordium
 存活并减少一层 Eatmany。普通进食在房间结算前保留空位，Feast 结算后填补空位。
