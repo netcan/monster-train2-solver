@@ -5025,6 +5025,12 @@ if (args.Length == 2 && args[0] == "--exact-battle-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--exact-battle-multi-turn-only")
+{
+    ExactBattleChecks.NativeMultiTurn(args[1]);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--clone-refresh-only")
 {
     CardGenerationChecks.Run();

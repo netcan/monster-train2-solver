@@ -4,6 +4,51 @@ using MonsterTrain2Poju.Model;
 
 internal static class ExactBattleChecks
 {
+    internal static void NativeMultiTurn(string workspace)
+    {
+        string directory = Game231FixtureCatalog.DirectoryFor(workspace);
+        var registration = Game231FixtureCatalog.Load(directory)["mechanics/tenacious/full-battle.mt2f"];
+        using var document = FixtureDocument.Read(registration.Verify(directory));
+        FixtureValue fixture = document.RootElement;
+        Require(Game231FixtureCatalog.Classify(registration, fixture) == Game231FixtureKind.SettledBattle &&
+            fixture.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            fixture.GetProperty("NativeWon").GetBoolean(), "Expected the registered 2.3.1 Tenacious victory.");
+
+        FixtureValue[] turns = fixture.GetProperty("Turns").EnumerateArray().TakeLast(2).ToArray();
+        if (turns.Length != 2) throw new InvalidOperationException("The native Tenacious suffix requires two EndTurns.");
+        BattleTurnState root = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        int firstTurn = root.Spawn.Turn;
+        Require(RecordedBattleChecks.DecisionTurn(turns[1]) == firstTurn + 1 &&
+            fixture.GetProperty("Actions").EnumerateArray().All(row => RecordedBattleChecks.DecisionTurn(row) < firstTurn),
+            "The Tenacious suffix must contain two consecutive native EndTurns without intervening plays.");
+        int[] legalPlays = [LegalPlays(root), LegalPlays(turns[1].GetProperty("Before").Deserialize<BattleTurnState>()!)];
+        Require(legalPlays.All(count => count >= 2), "Both native turns must have multiple supported plays.");
+        RecordedBattleChecks.ReplayOnce(fixture, firstTurn);
+
+        string parent = Json(root);
+        var options = new ExactBattleOptions(4096, TimeSpan.FromSeconds(45));
+        var result = ExactBattleSolver.Minimize(root, options: options);
+        Require(result.CertifiedTerminalOptimal && result.TerminalLeaves > 1 && result.Outcome == RoomOutcome.BattleWon &&
+            result.Steps.Count(step => step.IsEndTurn) == 2,
+            $"The two-turn Tenacious search did not exhaust its supported terminal frontier (nodes={result.ExpandedNodes}, " +
+            $"terminals={result.TerminalLeaves}, unsupported={result.UnsupportedAttempts.Count}).");
+        BattleTurnState replay = BattlePlannerChecks.Replay(root, result.Steps, out RoomOutcome outcome);
+        Require(outcome == result.Outcome && Json(replay) == Json(result.State) && Json(root) == parent,
+            "The exact two-turn plan failed independent replay or changed its root.");
+        var native = turns[1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        RecordedBattleChecks.Compare(replay, native, terminal: true, "Exact Tenacious terminal");
+        Console.WriteLine($"EXACT-NATIVE-MULTI-TURN PASS turn={firstTurn} legalPlays={string.Join("/", legalPlays)} " +
+            $"nodes={result.ExpandedNodes} duplicates={result.DuplicateStates} terminals={result.TerminalLeaves} " +
+            $"steps={result.Steps.Count} score={result.Score} seconds={result.Elapsed.TotalSeconds:F3}");
+
+        static int LegalPlays(BattleTurnState state)
+        {
+            var frontier = BattleActionModel.EnumerateActions(state);
+            Require(!frontier.HasUnsupportedAttempts, "The recorded Tenacious decision has unsupported plays.");
+            return frontier.SupportedCandidates.Count;
+        }
+    }
+
     internal static void Native(FixtureValue fixture)
     {
         foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
