@@ -185,8 +185,11 @@ namespace MonsterTrain2Poju.Probe
             {
                 var trial = EarlyTrialVariant()!.Value;
                 RelicData sin = selected.GetTitanTrialSin();
+                bool rankTwoShieldDiagnostic = variant == "CaelDamageShield" && !EarlyTrialFullBattle &&
+                    Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_CAEL_TRIAL_COVENANT") == "2";
+                int expectedCaelCovenant = rankTwoShieldDiagnostic ? 2 : 0;
                 if (selected.name != trial.Scenario || sin == null || sin.name != trial.Owner || sin.GetID() != trial.OwnerId ||
-                    CaelTrialDiagnostic && save.GetAscensionLevel() != 0)
+                    CaelTrialDiagnostic && save.GetAscensionLevel() != expectedCaelCovenant)
                     throw new InvalidOperationException("Expected the installed original Titan Trial owner and checkpoint.");
                 var substitutions = sin.GetEffects().Single(effect => effect.GetEffectClassName() == "RelicEffectOnSpawnHeroSubstitution")
                     .GetParamCharacterSubstitution();

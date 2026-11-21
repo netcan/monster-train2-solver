@@ -65,6 +65,7 @@ param(
     [switch] $OriginalOuterBossTrial,
     [switch] $OriginalEarlyOuterBossTrialBattle,
     [switch] $OriginalCaelTrialBirthDiagnostic,
+    [ValidateSet(0, 2)][int] $OriginalCaelTrialCovenant = 0,
     [switch] $OriginalCaelShieldTrialIsolateRng,
     [switch] $OriginalCaelShieldTrialIsolateTestQueries,
     [switch] $OriginalTrueFinalBoss,
@@ -983,8 +984,13 @@ $earlyTrialVariant = switch ($OriginalEarlyOuterBossVariant) {
 }
 $earlyTrialSubstitution = $OriginalOuterBossTrial -and $null -ne $earlyTrialVariant
 $caelTrial = $earlyTrialSubstitution -and $null -ne $earlyTrialVariant.SourceId
-if ($OriginalCaelTrialBirthDiagnostic -and (-not $caelTrial -or $OriginalEarlyOuterBossTrialBattle -or $OriginalEarlyOuterBossVariant -ceq 'CaelDamageShield')) {
-    throw 'OriginalCaelTrialBirthDiagnostic requires the short original AtkHP or Lifesteal Titan Trial.'
+if ($OriginalCaelTrialCovenant -eq 2 -and (-not $OriginalCaelTrialBirthDiagnostic -or
+    -not $caelTrial -or $OriginalEarlyOuterBossVariant -cne 'CaelDamageShield')) {
+    throw 'OriginalCaelTrialCovenant 2 requires the original Cael shield birth diagnostic.'
+}
+if ($OriginalCaelTrialBirthDiagnostic -and (-not $caelTrial -or $OriginalEarlyOuterBossTrialBattle -or
+    ($OriginalEarlyOuterBossVariant -ceq 'CaelDamageShield' -and $OriginalCaelTrialCovenant -eq 0))) {
+    throw 'OriginalCaelTrialBirthDiagnostic requires a short original AtkHP, Lifesteal, or rank-two Cael shield Titan Trial.'
 }
 if ($OriginalEarlyOuterBossTrialBattle -and -not $earlyTrialSubstitution) {
     throw 'OriginalEarlyOuterBossTrialBattle requires an original Fleshweaver or Cael Titan Trial variant.'
@@ -2129,6 +2135,10 @@ if ($InputProfile) {
     if ($checkpointData.gameSequence -ne 6 -or $checkpointData.runState.distance -ne $BattleDistance) {
         throw 'InputProfile must be a native BattleIntro checkpoint at BattleDistance.'
     }
+    if ($OriginalCaelTrialCovenant -eq 2 -and ([int]$checkpointData.startingConditions.ascensionLevel -ne 2 -or
+        $checkpointData.runState.numBattlesCompleted -ne 5 -or $checkpointData.wasDevCheatUsed)) {
+        throw 'The Cael shield birth diagnostic requires an original rank-two BattleIntro checkpoint after five wins.'
+    }
     $null = New-Item -ItemType Directory -Path $profile
     foreach ($item in Get-ChildItem -LiteralPath $checkpoint) {
         if ($item.Name -in @('saves', 'metagameSave.json', 'preferences.json', 'preferences-local.json')) {
@@ -2195,6 +2205,7 @@ $environment = @{
     MT2_PROBE_ORIGINAL_OUTER_BOSS = $OriginalOuterBossVariant
     MT2_PROBE_ORIGINAL_OUTER_BOSS_TRIAL = $(if ($OriginalOuterBossTrial) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_EARLY_TRIAL_FULL_BATTLE = $(if ($OriginalEarlyOuterBossTrialBattle) { '1' } else { '0' })
+    MT2_PROBE_ORIGINAL_CAEL_TRIAL_COVENANT = $OriginalCaelTrialCovenant.ToString([Globalization.CultureInfo]::InvariantCulture)
     MT2_PROBE_ORIGINAL_TRUE_FINAL_BOSS = $(if ($OriginalTrueFinalBoss) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_DORMANT = $(if ($TrueFinalBossDormantSavagery) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_RELENTLESS = $(if ($TrueFinalBossRelentless) { '1' } else { '0' })
@@ -3260,11 +3271,11 @@ if ($earlyTrialSubstitution) {
             throw 'Expected the original trial owner, source and installed replacement on a created boss.'
         }
         if ($caelTrial) {
-            if ($capture.AscensionLevel -ne 0 -or -not $capture.OuterBoss -or
+            if ($capture.AscensionLevel -ne $OriginalCaelTrialCovenant -or -not $capture.OuterBoss -or
                 $capture.Source -cne $earlyTrialVariant.Source -or $capture.Replacement -cne ($earlyTrialVariant.Source + '_TitanTrial') -or
                 $capture.SourceId -cne $earlyTrialVariant.SourceId -or $capture.ReplacementId -cne $earlyTrialVariant.ReplacementId -or
                 $matchingMappings[0].SourceId -cne $capture.SourceId -or $matchingMappings[0].ReplacementId -cne $capture.ReplacementId) {
-                throw 'Expected the original rank-zero Cael Trial and an exact authored mapping.'
+                throw 'Expected the selected original Cael Trial rank and an exact authored mapping.'
             }
             if ($OriginalCaelShieldTrialIsolateRng -and (-not $capture.IsolatePreviewRng -or -not $capture.IsolateUiRng)) {
                 throw 'Expected active preview and UI RNG isolation in the original Cael Trial capture.'
@@ -3283,7 +3294,7 @@ if ($earlyTrialSubstitution) {
             throw "Original Titan Trial substitution component has missing card state, mismatches, or unsupported stages. Inspect $capturePath and $unityLog"
         }
         [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true; Source=$capture.Source;
-            BirthDiagnostic=$OriginalCaelTrialBirthDiagnostic.IsPresent;
+            BirthDiagnostic=$OriginalCaelTrialBirthDiagnostic.IsPresent; AscensionLevel=$capture.AscensionLevel;
             Replacement=$capture.Replacement; Mismatches=$capture.Mismatches; Unsupported=$capture.Unsupported;
             ProjectionInteractions=$capture.Projection.ExternalInteractions;
             Trace=$capturePath; Birth=$birthPath } | ConvertTo-Json
