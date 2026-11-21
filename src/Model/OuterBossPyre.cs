@@ -51,8 +51,9 @@ namespace MonsterTrain2Poju.Model
             if (combat.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated)
             {
                 CombatContext terminal = train.Context!;
-                terminal = terminal.WithQueryFrame(terminal.QueryFrame?.With(runningCombat: false))
-                    .WithOtherPiles((terminal.OtherPiles ?? battle.OtherPiles).Select(CardPileModel.Clear).ToArray());
+                terminal = terminal.WithQueryFrame(terminal.QueryFrame?.With(runningCombat: false));
+                if (terminal.KillCamActivated != false)
+                    terminal = terminal.WithOtherPiles((terminal.OtherPiles ?? battle.OtherPiles).Select(CardPileModel.Clear).ToArray());
                 train = CardSpellModel.WithContext(train, terminal);
             }
             if (battle.CanonicalDecisionReferences) train = TrainCombatModel.CompleteFrameRemovals(train);
