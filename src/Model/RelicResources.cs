@@ -342,7 +342,7 @@ namespace MonsterTrain2Poju.Model
             RelicUnitTriggerCardGenerationModel.IsEffect(type) ||
             RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type) || type == PileStartTurn || type == StartTurnHeal ||
             type == StartTurnRoomEffect || type == PostOpeningDiscardReplacement || type == RelicSingleFloorCapacityModel.Effect ||
-            RelicOpeningCapacityModel.IsEffect(type) || type == RelicGoldMagicPowerModel.Effect || type == RelicMooncycleRoomEffectModel.Effect;
+            RelicOpeningCapacityModel.IsEffect(type) || type == RelicGoldMagicPowerModel.Effect || type == RelicTurnEndBumpModel.Effect || type == RelicMooncycleRoomEffectModel.Effect;
 
         internal static string? Validate(CombatRelicState relic)
         {
@@ -439,6 +439,11 @@ namespace MonsterTrain2Poju.Model
                     if (mooncycleError != null) return mooncycleError;
                 }
                 else if (rule.MooncycleRoomEffect != null) return "Unexpected mooncycle room-effect payload on another effect.";
+                if (rule.Type == RelicTurnEndBumpModel.Effect)
+                {
+                    string? movementError = RelicTurnEndBumpModel.Validate(relic, rule);
+                    if (movementError != null) return movementError;
+                }
                 if (rule.Type == RelicGoldMagicPowerModel.Effect)
                 {
                     string? error = RelicGoldMagicPowerModel.Validate(relic, rule);

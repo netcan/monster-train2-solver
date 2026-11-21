@@ -54,15 +54,16 @@ namespace MonsterTrain2Poju.Model
         public RoomOutcome Outcome { get; }
         public IReadOnlyList<RoomCombatResult> RoomResults { get; }
         public IReadOnlyList<int> DestroyedRoomIndexes { get; }
+        internal IReadOnlyList<RoomPlayRule>? RoomRules { get; }
         public string? UnsupportedReason { get; }
         public RelentlessChoiceRequest? RelentlessChoice { get; }
         public bool ShouldSerializeRelentlessChoice() => RelentlessChoice != null;
         public bool Supported => State != null;
         internal TrainCombatResult(TrainCombatState? state, RoomOutcome outcome,
             IReadOnlyList<RoomCombatResult> roomResults, string? reason = null, IReadOnlyList<int>? destroyedRoomIndexes = null,
-            RelentlessChoiceRequest? relentlessChoice = null)
+            RelentlessChoiceRequest? relentlessChoice = null, IReadOnlyList<RoomPlayRule>? roomRules = null)
         { State = state; Outcome = outcome; RoomResults = Array.AsReadOnly(roomResults.ToArray());
-            UnsupportedReason = reason; RelentlessChoice = relentlessChoice;
+            UnsupportedReason = reason; RelentlessChoice = relentlessChoice; RoomRules = roomRules;
             DestroyedRoomIndexes = Array.AsReadOnly((destroyedRoomIndexes ?? Array.Empty<int>()).Distinct().ToArray()); }
     }
 
@@ -263,7 +264,8 @@ namespace MonsterTrain2Poju.Model
             return new TrainCombatResult(Freeze(source, rooms, context), outcome, results);
         }
 
-        public static TrainCombatResult ResolveCombat(TrainCombatState source, IReadOnlyList<RelentlessDecision>? relentlessDecisions = null)
+        public static TrainCombatResult ResolveCombat(TrainCombatState source, IReadOnlyList<RelentlessDecision>? relentlessDecisions = null,
+            IReadOnlyList<RoomPlayRule>? roomRules = null)
         {
             string? error = Validate(source) ?? RelicEndCombatModel.Validate(source.Context);
             if (error != null) return Unsupported(error);
@@ -319,17 +321,29 @@ namespace MonsterTrain2Poju.Model
                     rooms[index] = WithContext(rooms[index], context);
                 }
             }
-            return FinishCombat(source, rooms, context, RoomOutcome.Cleared, results, removedFromDeck);
+            return FinishCombat(source, rooms, context, RoomOutcome.Cleared, results, removedFromDeck, roomRules);
         }
 
         private static TrainCombatResult FinishCombat(TrainCombatState source, RoomCombatState[] rooms,
-            CombatContext? context, RoomOutcome outcome, IReadOnlyList<RoomCombatResult> results,
-            IReadOnlyCollection<int> removedFromDeck)
+            CombatContext? context, RoomOutcome outcome, List<RoomCombatResult> results,
+            IReadOnlyCollection<int> removedFromDeck, IReadOnlyList<RoomPlayRule>? roomRules)
         {
+            IReadOnlyList<RoomPlayRule>? updatedRoomRules = null;
             if (context != null)
             {
-                context = RelicEndCombatModel.Apply(context, out string? error, removedFromDeck);
-                if (error != null) return Unsupported(error);
+                if (RelicTurnEndBumpModel.Present(context) && !rooms.Any(room => room.Deployment || room.Preview))
+                {
+                    TrainCombatResult moved = RelicTurnEndBumpModel.Apply(Freeze(source, rooms, context), roomRules, removedFromDeck, results);
+                    if (!moved.Supported || Terminal(moved.Outcome)) return moved;
+                    source = moved.State!;
+                    rooms = source.Rooms.ToArray(); context = source.Context!;
+                    updatedRoomRules = moved.RoomRules;
+                }
+                else
+                {
+                    context = RelicEndCombatModel.Apply(context, out string? error, removedFromDeck);
+                    if (error != null) return Unsupported(error);
+                }
                 // The live hand display refreshes Rail Spike's statistic after the
                 // full train settles, rather than inside an individual room.
                 if (outcome == RoomOutcome.Cleared && !rooms.Any(room => room.Preview) && context.Statistics?.StoredCards != null &&
@@ -337,7 +351,7 @@ namespace MonsterTrain2Poju.Model
                     context = context.WithStatistics(context.Statistics.RefreshOwnedCards(context.Cards.Hand.Concat(context.Cards.Draw)
                         .Concat(context.Cards.Discard).Concat(context.OtherPiles?.SelectMany(pile => pile.Cards) ?? Array.Empty<CardToken>()).Select(token => token.InstanceId)));
             }
-            return new TrainCombatResult(Freeze(source, rooms, context), outcome, results);
+            return new TrainCombatResult(Freeze(source, rooms, context), outcome, results, roomRules: updatedRoomRules);
         }
 
         public static TrainCombatResult Ascend(TrainCombatState source)

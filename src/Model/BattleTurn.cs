@@ -418,11 +418,12 @@ namespace MonsterTrain2Poju.Model
             else context = context.WithQueryFrame(context.QueryFrame?.With(energy: 0));
             context = EnergyModel.SetPhase(context, "Combat");
             train = WithContext(train, context, spawn.Turn == 0);
-            TrainCombatResult combat = TrainCombatModel.ResolveCombat(train, relentlessDecisions);
+            TrainCombatResult combat = TrainCombatModel.ResolveCombat(train, relentlessDecisions, outputPlayRules?.Rooms);
             if (!combat.Supported) return new BattleTurnResult(null, RoomOutcome.Unsupported, combat.UnsupportedReason,
                 combat.RelentlessChoice);
             if (!RouteDeadUnits(train, combat)) return Unsupported("Missing unit death event or card routing.");
             train = combat.State!;
+            if (outputPlayRules != null && combat.RoomRules != null) outputPlayRules = outputPlayRules.WithRooms(combat.RoomRules);
             spawn = WithTrain(spawn, train, spawn.Turn, spawn.Rng);
             if (Terminal(combat.Outcome)) return Finish(combat.Outcome, 0, source.MoonPhase);
             train = WithContext(train, EnergyModel.SetPhase(train.Context!, "HeroTurn"), spawn.Turn == 0);

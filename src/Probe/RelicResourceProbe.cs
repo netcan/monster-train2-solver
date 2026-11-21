@@ -63,7 +63,8 @@ namespace MonsterTrain2Poju.Probe
         }
 
         internal static bool RequiresPhysicalWorld(AllGameManagers managers) => Current(managers)
-            .Any(owner => owner.GetEffects().Any(effect => effect is RelicEffectAdditionalDrawForEnemyOccupiedFloors || effect is RelicEffectAdditionalDrawDuringRelentless));
+            .Any(owner => owner.GetEffects().Any(effect => effect is RelicEffectAdditionalDrawForEnemyOccupiedFloors || effect is RelicEffectAdditionalDrawDuringRelentless ||
+                effect is RelicEffectBumpOnTurnEnd));
 
         internal static BattleResourceState? CaptureResources(AllGameManagers managers)
         {
@@ -525,6 +526,12 @@ namespace MonsterTrain2Poju.Probe
                 amount = (int)AccessTools.Field(effect.GetType(), "corruptionChange").GetValue(effect);
             else if (effect is RelicEffectAddPermanentCorruptionStartOfCombat)
                 amount = (int)AccessTools.Field(effect.GetType(), "addPermanentAmount").GetValue(effect);
+            else if (type == RelicTurnEndBumpModel.Effect)
+            {
+                if (data.GetParamSourceTeam() != Team.Type.Monsters)
+                    throw new InvalidOperationException("Unsupported combat-end movement team.");
+                amount = data.GetParamInt();
+            }
             else if (type == RelicGoldMagicPowerModel.Effect)
             {
                 amount = data.GetParamInt();

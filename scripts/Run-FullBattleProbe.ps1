@@ -691,6 +691,7 @@ param(
     [ValidateSet('Bogwurm', 'Life')][string] $OriginalPyreCapacityCarryover,
     [switch] $OriginalMagicPowerPerGold,
     [ValidateRange(1, 3)][int] $OriginalShowtimeTier,
+    [ValidateSet('Gravity', 'RaceYaThere')][string] $OriginalTurnEndBump,
     [switch] $OriginalBurnoutDamageRelic,
     [switch] $OriginalHealDamageRelic,
     [switch] $OriginalKillAttackRelic,
@@ -1501,6 +1502,17 @@ if ($OriginalCardPlayDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoin
 if ($OriginalConsumeDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalEatenDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalMoreCapacityRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
+if ($OriginalTurnEndBump) {
+    if ($PlayerAdvisor -or $Planner -or $Advisor -or $DotNetPlanner -or $InputProfile -or $BattleDistance -ne 0 -or
+        $OriginalRandomRoomCapacityMutator -or $OriginalPyreCapacityCarryover -or $OriginalMagicPowerPerGold -or $OriginalShowtimeTier) {
+        throw 'Original turn-end movement calibration requires a fresh isolated first battle with fixed deployment controls.'
+    }
+    $PhysicalSpawnPoints = $true
+    $BranchCardMasks = $true
+    $SettleCardAnimations = $true
+    $SettleDeathDissolves = $true
+    $Policy = 'units-and-junk'
+}
 if ($OriginalShowtimeTier) {
     if ($PlayerAdvisor -or $Planner -or $Advisor -or $DotNetPlanner -or $InputProfile -or $BattleDistance -ne 0 -or
         $OriginalRandomRoomCapacityMutator -or $OriginalPyreCapacityCarryover -or $OriginalMagicPowerPerGold) {
@@ -2585,6 +2597,12 @@ if ($OriginalCardPlayDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'origi
 if ($OriginalConsumeDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-consume-damage' }
 if ($OriginalEatenDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-eaten-damage' }
 if ($OriginalMoreCapacityRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-more-capacity' }
+if ($OriginalTurnEndBump) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-turn-end-bump'
+    $environment['MT2_PROBE_TURN_END_BUMP'] = $OriginalTurnEndBump
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
 if ($OriginalShowtimeTier) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-showtime'
     $environment['MT2_PROBE_SHOWTIME_TIER'] = $OriginalShowtimeTier.ToString()
@@ -5102,6 +5120,44 @@ if ($OriginalRandomRoomCapacityMutator) {
         throw 'Random room capacity lacks its unchanged mutator, natural opening application, deployment capacity witness or exact battle successors.'
     }
     Write-Output "ORIGINAL-RANDOM-ROOM-CAPACITY PASS: floor $($witness.ReducedFloor) $($witness.OriginalMaximum) -> $($witness.Maximum), a rejected unit deployed on floor $($witness.AlternateFloor), and no later-turn application."
+}
+if ($OriginalTurnEndBump) {
+    $definition = $trace.OriginalTurnEndBumpDefinition
+    $witness = $trace.OriginalTurnEndBumpWitness
+    $controls = @($trace.Actions | Where-Object ScenarioAction)
+    $callbacks = @($trace.OriginalTurnEndBumpCallbacks)
+    $applications = @($callbacks | Where-Object Kind -eq 'Apply')
+    $moved = @(foreach ($application in $applications) {
+        $changed = foreach ($actor in $application.Before.Actors | Where-Object { $_.CardId -in $witness.CardIds }) {
+            $after = @($application.After.Actors | Where-Object Id -eq $actor.Id)
+            if ($after.Count -eq 1 -and $after[0].Room -ne $actor.Room) { $actor.Id }
+        }
+        if ($changed.Count -gt 0) { $application }
+    })
+    if (-not $trace.OriginalTurnEndBumpPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or
+        $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+        $definition.Key -cne $OriginalTurnEndBump -or $controls.Count -ne 3 -or
+        ($controls.Action.CardInstanceId -join ',') -ne ($witness.CardIds -join ',') -or
+        ($controls.Action.RoomIndex -join ',') -ne ($witness.Floors -join ',') -or
+        @($callbacks | Where-Object { -not $_.Completed -or $_.Before.Turn -eq 0 -or ($_.Kind -eq 'Test' -and -not $_.Passed) }).Count -ne 0 -or
+        @($applications.Bumps | Where-Object { -not $_.Completed -or $_.Amount -ne $definition.Amount }).Count -ne 0 -or
+        @($moved.Before.Turn | Sort-Object -Unique).Count -lt 2 -or
+        ($definition | ConvertTo-Json -Compress -Depth 6) -cne
+        ($trace.OriginalTurnEndBumpDefinitionAfter | ConvertTo-Json -Compress -Depth 6)) {
+        throw 'Turn-end movement lacks unchanged mutator definition, repeated native moves, or exact battle successors.'
+    }
+    foreach ($application in $applications) {
+        $bumps = @($application.Bumps)
+        if ($bumps.Count -eq 0) { continue }
+        $rooms = @($bumps.Room)
+        $expectedOrder = if ($definition.Amount -gt 0) { $rooms | Sort-Object -Descending } else { $rooms | Sort-Object }
+        $targets = @($bumps.Targets)
+        if (($rooms -join ',') -ne ($expectedOrder -join ',') -or
+            $targets.Count -ne @($targets | Sort-Object -Unique).Count) {
+            throw 'Native turn-end movement did not visit the expected floor order or targeted a unit twice.'
+        }
+    }
+    Write-Output "ORIGINAL-TURN-END-BUMP PASS: $OriginalTurnEndBump matched $($applications.Count) end-combat callbacks and $($moved.Count) callbacks with actual floor movement."
 }
 if ($OriginalShowtimeTier) {
     $definition = $trace.OriginalShowtimeDefinition

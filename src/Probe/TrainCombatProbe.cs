@@ -89,6 +89,8 @@ namespace MonsterTrain2Poju.Probe
                 if (managers != null && !managers.GetSaveManager().PreviewMode && trace.NativeWon == null)
                 {
                     TrainCombatState before = Capture();
+                    var roomRules = kind == "Combat" && RelicTurnEndBumpModel.Present(before.Context)
+                        ? BattleActionProbe.CaptureRoomRules() : null;
                     record = new Record
                     {
                         Index = records.Count, Turn = managers.GetCombatManager()!.GetTurnCount(),
@@ -96,7 +98,8 @@ namespace MonsterTrain2Poju.Probe
                         SettledDestructionIds = pendingDestruction.Select(trace.UnitId).OrderBy(id => id).ToArray(),
                         SettlementFrames = settlementFrames,
                         RelentlessDecisions = kind == "Combat" ? RelentlessBattleScenario.CurrentPlan : null,
-                        Predicted = kind == "Combat" ? TrainCombatModel.ResolveCombat(before, RelentlessBattleScenario.CurrentPlan) : TrainCombatModel.Ascend(before)
+                        RoomRules = roomRules,
+                        Predicted = kind == "Combat" ? TrainCombatModel.ResolveCombat(before, RelentlessBattleScenario.CurrentPlan, roomRules) : TrainCombatModel.Ascend(before)
                     };
                     records.Add(record);
                 }
@@ -163,6 +166,8 @@ namespace MonsterTrain2Poju.Probe
             public TrainCombatState Before { get; set; } = null!;
             public IReadOnlyList<RelentlessDecision>? RelentlessDecisions { get; set; }
             public bool ShouldSerializeRelentlessDecisions() => RelentlessDecisions != null;
+            public IReadOnlyList<RoomPlayRule>? RoomRules { get; set; }
+            public bool ShouldSerializeRoomRules() => RoomRules != null;
             public TrainCombatResult Predicted { get; set; } = null!;
             public TrainCombatState? Actual { get; set; }
             public string? Difference { get; set; }

@@ -36,7 +36,9 @@ namespace MonsterTrain2Poju.Probe
                         owner.GetRelicDataID() == RelicOpeningCapacityModel.MutatorId && owner.GetEffects().Count == 1 &&
                         effect is RelicEffectModifyRandomRoomCapacity ||
                         owner.GetRelicDataID() == RelicGoldMagicPowerModel.MutatorId && owner.GetEffects().Count == 1 &&
-                        effect is RelicEffectModifyMagicPowerPerGold) &&
+                        effect is RelicEffectModifyMagicPowerPerGold ||
+                        RelicTurnEndBumpModel.IsOwner(owner.GetRelicDataID()) && owner.GetEffects().Count == 1 &&
+                        effect is RelicEffectBumpOnTurnEnd) &&
                     ((RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect)).GetEffectConditions().Count == 0));
         }
     }
