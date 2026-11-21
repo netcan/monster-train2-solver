@@ -5696,6 +5696,12 @@ namespace MonsterTrain2Poju.Model
                         CardInstanceState? card = context.FindCard(id);
                         if (action.Target is "Exhaust" or "Eaten" && card != null &&
                             (card.ExhaustState != null || CardRetainModel.Present(card))) context = context.WithCard(CardExhaustModel.ResetTraits(card));
+                        if (restored.Cards!.Hand.Any(token => token.InstanceId == id))
+                        {
+                            var holdover = RelicHoldoverGrantModel.CardAdded(context, id);
+                            if (!holdover.Supported) { unsupportedReason = holdover.UnsupportedReason; return false; }
+                            context = holdover.Context!;
+                        }
                         Emit("Recursion", actor, actor, id);
                     }
                     return true;

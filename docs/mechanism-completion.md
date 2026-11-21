@@ -56,6 +56,13 @@ ModelChecks 调用，`BattleSearchModel`、实际出牌与回合切换没有调�
 16 条分支、合法候选及串并行计划全部通过。两版专用原生检查都通过，归档在
 `tests/compatibility/game-2.3.1/mechanics/room-entry-status-relics/`。
 
+新版 `AddHoldoverToSpells` 的原版对照覆盖抽牌后检查与逐张进手牌的两条回调。原版
+Torch 自动获得留存，打出时在弃牌堆标记待返回，下回合回手后清除标记。另有四次
+原版生成 Sting 获得留存、十三次不合格卡回调、五次抽牌后回调。隔离胜局包含四次
+出牌、五次 EndTurn、九次牌堆切换检查，整链、16 条分支、合法候选及串并行计划通过。
+原版遗物与突变器参数在采样前后保持一致。归档位于
+`tests/compatibility/game-2.3.1/mechanics/holdover-grant/`。
+
 ## 工作单位
 
 2026-11-20 接入[回合前原生顺序分派](before-draw-order.md)：十二种已有 BeforeDraw

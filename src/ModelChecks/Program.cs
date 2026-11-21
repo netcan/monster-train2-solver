@@ -20,6 +20,11 @@ if (args.Length == 2 && args[0] == "--after-draw-spawn-only")
     AfterDrawSpawnChecks.Native(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--holdover-grant-only")
+{
+    HoldoverGrantChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--thik-deck-change-only")
 {
     ThikDeckChangeChecks.Native(args[1]);

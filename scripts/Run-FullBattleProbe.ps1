@@ -670,6 +670,7 @@ param(
     [switch] $OriginalThikBattle,
     [ValidateRange(1, 3)][int] $OriginalThikTier = 3,
     [ValidateSet('Morsels', 'CultLeader')][string] $OriginalAfterDrawSpawn,
+    [switch] $OriginalHoldoverGrant,
     [switch] $OriginalCorruptedAngelsRelic,
     [ValidateSet('cost-first', 'cost-last')]
     [string] $CorruptedAngelsCostOrder,
@@ -1760,6 +1761,17 @@ if ($OriginalAfterDrawSpawn) {
     $PhysicalSpawnPoints = $true
     $SettleCardAnimations = $true
 }
+if ($OriginalHoldoverGrant) {
+    $holdoverArguments = @('OriginalHoldoverGrant', 'InputProfile', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds',
+        'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction', 'ProgressAction')
+    if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $holdoverArguments }).Count) {
+        throw 'OriginalHoldoverGrant requires an isolated first-battle capture.'
+    }
+    $Policy = 'units-and-junk'
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $SettleCardAnimations = $true
+}
 if ($OriginalThikDeckChange -or $OriginalThikBattle) {
     $componentArguments = @('OriginalThikDeckChange', 'OriginalThikBattle', 'OriginalThikTier', 'InputProfile', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'SkipBuild',
         'ShowWindow', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction', 'ProgressAction',
@@ -2767,6 +2779,11 @@ if ($OriginalPerkeoRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-perk
 if ($OriginalAfterDrawSpawn) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-after-draw-spawn'
     $environment['MT2_PROBE_AFTER_DRAW_SPAWN'] = $OriginalAfterDrawSpawn
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
+if ($OriginalHoldoverGrant) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-holdover-grant'
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
@@ -5284,6 +5301,16 @@ if ($OriginalAfterDrawSpawn) {
         throw 'The original after-draw spawn did not settle in deployment and a later turn.'
     }
     Write-Output "ORIGINAL-AFTER-DRAW-SPAWN PASS: $OriginalAfterDrawSpawn settled $($spawnCallbacks.Count) callbacks."
+}
+if ($OriginalHoldoverGrant) {
+    if (-not $trace.OriginalHoldoverGrantPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or
+        $trace.GameVersion -ne '2.3.1' -or $trace.GameModuleMvid -ne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+        $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+        $trace.OriginalHoldoverGrantTorch -le 0 -or
+        @($trace.OriginalHoldoverGrantCallbacks | Where-Object { $null -eq $_.After }).Count -ne 0) {
+        throw 'Original Holdover hand grant lacked a settled native battle.'
+    }
+    Write-Output "ORIGINAL-HOLDOVER-GRANT PASS: $(@($trace.OriginalHoldoverGrantCallbacks).Count) native callbacks."
 }
 if ($OriginalThikBattle) {
     $thikCards = $trace.OriginalThikCards

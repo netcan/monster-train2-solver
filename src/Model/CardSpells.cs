@@ -981,6 +981,9 @@ namespace MonsterTrain2Poju.Model
                             changed = RelicExpensiveCardUpgradeModel.Drawn(changed, new[] { restoredCardId },
                                 out string? restoredDrawError, definitions);
                             if (restoredDrawError != null) return UnsupportedTrain(restoredDrawError);
+                            var holdover = RelicHoldoverGrantModel.CardAdded(changed, restoredCardId);
+                            if (!holdover.Supported) return UnsupportedTrain(holdover.UnsupportedReason!);
+                            changed = holdover.Context!;
                         }
                     }
                     state = WithContext(state, changed);

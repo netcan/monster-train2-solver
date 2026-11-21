@@ -72,15 +72,23 @@ namespace MonsterTrain2Poju.Model
                 cards.Rng, cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId, cards.DeckDrawDisabledThisTurn);
             CombatContext context = source.WithCards(moved).WithStatistics(source.Statistics?.Increment(cardId, "TimesDrawn"));
             context = Apply(context, new[] { cardId }, playedCardId, definitions, out string? error);
-            if (error == null && RelicCorruptedAngelsModel.Enabled(context))
+            if (error != null) return new TypedDrawResult(null, Array.Empty<int>(), error);
+            bool interleaved = RelicCorruptedAngelsModel.Enabled(context);
+            if (interleaved)
             {
                 var added = RelicFirstCardCostModel.ApplyOnCardAdded(context, cardId, definitions);
                 if (!added.Supported) return new(null, Array.Empty<int>(), added.UnsupportedReason);
                 context = added.Context;
+            }
+            var holdover = RelicHoldoverGrantModel.CardAdded(context, cardId);
+            if (!holdover.Supported) return new TypedDrawResult(null, Array.Empty<int>(), holdover.UnsupportedReason);
+            context = holdover.Context!;
+            if (interleaved)
+            {
                 var existing = new HashSet<int>(source.Cards.Hand.Select(card => card.InstanceId));
                 return new(context, context.Cards.Hand.Reverse().Where(card => !existing.Contains(card.InstanceId)).Select(card => card.InstanceId).ToArray());
             }
-            return error == null ? new TypedDrawResult(context, new[] { cardId }) : new TypedDrawResult(null, Array.Empty<int>(), error);
+            return new TypedDrawResult(context, new[] { cardId });
         }
 
         // Spell draws apply upgrades as each card enters the hand. The ordinary

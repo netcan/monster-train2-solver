@@ -44,7 +44,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static bool IsAfterDraw(string type) => type == Effect || type == RelicOccupiedFloorDrawModel.Effect ||
             type == RelicCardGenerationModel.AfterDraw || type == RelicCardGenerationModel.PrecachedPlayerClan ||
-            type == RelicCardGenerationModel.ChampionCardAfterDraw || type == RelicAfterDrawSpawnModel.Effect;
+            type == RelicCardGenerationModel.ChampionCardAfterDraw || type == RelicAfterDrawSpawnModel.Effect ||
+            type == RelicHoldoverGrantModel.Effect;
 
         internal static RelicResourceResult ApplyAfterDraw(CombatContext source, BattlePlayRules? definitions = null, TrainCombatState? train = null)
             => ApplyAfterDraw(source, definitions, ref train, null, out _);
@@ -71,6 +72,14 @@ namespace MonsterTrain2Poju.Model
             {
                 CombatRelicState owner = source.Relics![ownerIndex];
                 if (!IsAfterDraw(effect.Type)) continue;
+                if (effect.Type == RelicHoldoverGrantModel.Effect)
+                {
+                    var applied = RelicHoldoverGrantModel.AfterDraw(context, owner, effect,
+                        train?.Rooms.Any(room => room.Preview) == true);
+                    if (!applied.Supported) return applied;
+                    context = applied.Context!;
+                    continue;
+                }
                 if (effect.Type == RelicAfterDrawSpawnModel.Effect)
                 {
                     if (train == null) return Fail("After-draw unit birth requires the complete train.");

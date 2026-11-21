@@ -39,6 +39,8 @@ namespace MonsterTrain2Poju.Probe
                         effect is RelicEffectModifyMagicPowerPerGold ||
                         RelicTurnEndBumpModel.IsOwner(owner.GetRelicDataID()) && owner.GetEffects().Count == 1 &&
                         effect is RelicEffectBumpOnTurnEnd ||
+                        owner.GetRelicDataID() == RelicHoldoverGrantModel.OwnerId && owner.GetEffects().Count == 1 &&
+                        effect is RelicEffectAddTraitToHand ||
                         owner.GetRelicDataID() is RelicResourceProbe.AfterDrawMorselsId or RelicResourceProbe.AfterDrawCultLeaderId &&
                         owner.GetEffects().Count == 1 && effect is RelicEffectSpawnMonsterOnTurnStart) &&
                     ((RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect)).GetEffectConditions().Count == 0));

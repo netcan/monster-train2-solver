@@ -185,6 +185,7 @@ namespace MonsterTrain2Poju.Probe
             RelicPileSpawnUpgradeRule? pileSpawnUpgrade = null;
             RelicSpawnStatusScalingRule? spawnStatusScaling = null;
             RelicTurnEnergyRule? turnEnergy = null;
+            RelicHandTraitRule? handTrait = null;
             int[]? goldMagicPowerCards = null;
             if (effect is RelicEffectModifyEnergyReducingEveryTurn || effect is RelicEffectModifyEnergyWhenFloorsOccupied)
             {
@@ -193,6 +194,16 @@ namespace MonsterTrain2Poju.Probe
                     (int)Field("_initialEnergyChange"), (int)Field("_reductionPerTurn"), (bool)Field("_allowDuringDeploymentPhase"),
                     (int)Field("_lastCheckedTurnIndex"), 0, 0, 0) : new RelicTurnEnergyRule(0, 0, false, 0,
                     (int)Field("minOccupancyBonus"), (int)Field("capacityThreshold"), (int)Field("capacityThresholdBonus"));
+                amount = 0;
+            }
+            else if (effect is RelicEffectAddTraitToHand)
+            {
+                object Field(string name) => AccessTools.Field(effect.GetType(), name).GetValue(effect);
+                var traits = (List<CardTraitData>?)Field("_traits");
+                var excluded = (List<CardTraitData>?)Field("_excludedTraits");
+                handTrait = new RelicHandTraitRule(Field("_cardType").ToString()!, Field("_sourceTeam").ToString()!,
+                    traits?.Select(CardTraitCompositionProbe.Definition).ToArray() ?? Array.Empty<CardTraitValue>(),
+                    excluded?.Select(trait => trait.GetTraitStateName()).ToArray());
                 amount = 0;
             }
             else if (effect is RelicEffectScaleStatusApplicationsOnSpawn)
@@ -615,7 +626,7 @@ namespace MonsterTrain2Poju.Probe
                 effect is RelicEffectAddPermanentCorruptionStartOfCombat || effect is RelicEffectChangeSingleFloorCapacity || effect is RelicEffectRandomCardCostOnDraw || effect is RelicEffectSuppressExhaust || effect is RelicEffectPyreHeartResurrection ? data.GetParamFloat() : 0,
                 generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence, unitSpawnEffect, deathEffect, openingSpawn, deckSpawn, drawAndEnergy, pileSpawnUpgrade, spawnStatusScaling, turnEnergy, goldMagicPowerCards,
                 lastKnownDeckCount: effect is RelicEffectAddPyreAttackAndHealthPerCardInDeck deckChange
-                    ? ReadLastKnownDeckCount(deckChange) : null);
+                    ? ReadLastKnownDeckCount(deckChange) : null, handTrait: handTrait);
         }
 
         internal static ResourceSnapshot Capture()

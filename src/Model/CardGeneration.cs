@@ -455,7 +455,12 @@ namespace MonsterTrain2Poju.Model
                 // selection normalization must not hide a missing upgrade when
                 // the copy is played again without changing floors.
                 if (rule.Destination == "HandPile" && !overflow)
+                {
+                    var holdover = RelicHoldoverGrantModel.CardAdded(context, card.InstanceId);
+                    if (!holdover.Supported) return Unsupported(holdover.UnsupportedReason!);
+                    context = holdover.Context!;
                     context = ConduitModel.Updated(ConduitModel.Drawn(context, new[] { card.InstanceId }), card.InstanceId);
+                }
                 // Setup/upgrade refresh builds scaling trait text in an active battle.
                 // Those native statistic queries refresh deckStats after the new card
                 // enters its pile, even when the displayed scaling value is zero.
