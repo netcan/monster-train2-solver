@@ -23,6 +23,61 @@ internal static class BattleSearchChecks
         }
         Console.WriteLine("NATIVE-FRONTIER-DIAGNOSTICS PASS: " + index + " decisions, zero unsupported attempts.");
     }
+
+    internal static void RollingFrontiers(FixtureValue fixture, int choiceBudget)
+    {
+        Require(choiceBudget > 0, "The EndTurn choice budget must be positive.");
+        FixtureValue[] roots = fixture.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+        Require(roots.Length > 0, "The fixture has no recorded rolling decisions.");
+        int actions = 0, turns = 0, unsupported = 0, limited = 0;
+        for (int index = 0; index < roots.Length; index++)
+        {
+            FixtureValue record = roots[index];
+            var before = record.GetProperty("Root").Deserialize<BattleTurnState>()!;
+            var cards = BattleActionModel.EnumerateActions(before);
+            var ends = BattleEndTurnModel.Enumerate(before, choiceBudget);
+            actions += cards.SupportedCandidates.Count;
+            turns += ends.Candidates.Count;
+            var rejected = cards.UnsupportedAttempts.Concat(ends.UnsupportedAttempts).ToArray();
+            unsupported += rejected.Length;
+            foreach (var group in rejected.GroupBy(attempt => attempt.Reason))
+                Console.WriteLine($"NATIVE-ROLLING-FRONTIER decision={index} turn={before.Spawn.Turn} unsupported={group.Count()} reason={group.Key}");
+            if (ends.ReachedNodeLimit)
+            {
+                limited++;
+                Console.WriteLine($"NATIVE-ROLLING-FRONTIER decision={index} turn={before.Spawn.Turn} choiceBudget={choiceBudget} reached=true");
+            }
+
+            BattleTurnState? predicted;
+            RoomOutcome? outcome;
+            if (record.GetProperty("IsEndTurn").GetBoolean())
+            {
+                var choices = RecordedBattleChecks.Decisions(record) ?? [];
+                var result = ends.Candidates.FirstOrDefault(candidate => candidate.Decisions.Select(Choice)
+                    .SequenceEqual(choices.Select(Choice)))?.Result;
+                if (result == null && ends.ReachedNodeLimit) result = BattleTurnModel.EndTurn(before, choices);
+                predicted = result?.State;
+                outcome = result?.Outcome;
+            }
+            else
+            {
+                var input = record.GetProperty("Action").Deserialize<PlayCardAction>()!;
+                var result = cards.SupportedCandidates.FirstOrDefault(candidate => SameAction(candidate.Action, input, before))?.Result;
+                predicted = result?.State;
+                outcome = result?.Outcome;
+            }
+            Require(predicted != null && outcome == record.GetProperty("Outcome").Deserialize<RoomOutcome>(),
+                $"Recorded rolling input {index} differs from the available model successor.");
+            RecordedBattleChecks.Compare(predicted!, record.GetProperty("Actual").Deserialize<BattleTurnState>()!,
+                outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate, $"Rolling decision {index}");
+        }
+        Console.WriteLine($"NATIVE-ROLLING-FRONTIER decisions={roots.Length} actions={actions} endTurns={turns} unsupported={unsupported} truncated={limited}");
+        Require(unsupported == 0 && limited == 0, "Recorded rolling roots contain unsupported or truncated alternatives.");
+
+        static (int Room, int Rounds, bool Continue) Choice(RelentlessDecision choice) =>
+            (choice.RoomIndex, choice.CompletedRounds, choice.Continue);
+    }
+
     internal static (BattleTurnState Root, BattleActionEnumeration Frontier, int Matched, int Unsupported)
         RecordedFrontiers(FixtureValue fixture, bool requireZeroUnsupported = false)
     {
