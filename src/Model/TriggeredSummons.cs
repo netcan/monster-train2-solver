@@ -62,6 +62,42 @@ namespace MonsterTrain2Poju.Model
     }
     internal static class TriggeredSummonModel
     {
+        internal const string FleshweaverSpike = "Boss_Level3_Fleshweaver_Spike";
+        internal const string FleshweaverSpikeMiniId = "eb00da55-1597-4768-85bc-2fa241af11cb";
+        internal const string FleshweaverSpikeTrialMini = "Boss_Level3_MiniFleshweaver_Spike_TitanTrial";
+        internal const string FleshweaverSpikeTrialOwnerId = "c4abfdc2-a89c-43cf-9e35-59f6ea3b39f7";
+        internal const string FleshweaverSpikeTrialOwnerKey = "Enemy_Boss_Level3_ImmortalMass_Spike_TitanTrial";
+
+        private static bool KnownFleshweaverSpikeTrial(RoomCombatState state, CombatUnit? actor, string? triggerKind,
+            TriggeredSummonRule rule, SummonUnitDefinition mini)
+        {
+            if (actor is not { AssetKey: FleshweaverSpike, BumpRules.OuterBoss: true } ||
+                triggerKind != "OnHit" || rule.CharacterId != FleshweaverSpikeMiniId ||
+                mini.CharacterId != FleshweaverSpikeMiniId || mini.Unit.AssetKey != FleshweaverSpikeTrialMini ||
+                rule.Tests is not { ShouldTest: true, FailToCast: false, CancelSubsequent: false, StrictTargets: false,
+                    DevotionRequirement: 0, DevotionRequirementMax: 0 })
+                return false;
+            CombatRelicState[] owners = state.Context!.Relics?.Where(owner => owner.DataId == FleshweaverSpikeTrialOwnerId).ToArray() ??
+                Array.Empty<CombatRelicState>();
+            if (owners.Length != 1 || owners[0] is not { AssetKey: FleshweaverSpikeTrialOwnerKey, IsCovenant: false,
+                    DisallowedInPlacementPhase: false, SpawnStatuses: [
+                        { EffectIndex: 2, TargetPlayer: true, TargetEnemy: true, RequiredSubtype: "SubtypesData_BossAll",
+                            SubtypeIsNone: false, SubtypeIsPyre: false, Conditions.Count: 0,
+                            Statuses: [{ Id: "mass", Stacks: 4, ParamInt: 2 }] }] } owner ||
+                !owner.EffectTypes.SequenceEqual(new[] { "RelicEffectOnSpawnHeroSubstitution", "RelicEffectNull",
+                    "RelicEffectAddStatusEffectOnSpawn", "RelicEffectNull", "RelicEffectNull" }))
+                return false;
+            return mini.HeroDefinition is { Ascends: true, Loops: false, CompanionBoss: false, BirthStats: null,
+                ExternalInteractions.Count: 0,
+                Unit: { Id: 0, AssetKey: FleshweaverSpikeTrialMini, Team: CombatTeam.Enemy, BaseAttack: 3, Attack: 3,
+                    Health: 9, MaxHealth: 9, CanAttack: true, IsBoss: false, EndsBattleOnDeath: false, SpawnerCardId: 0,
+                    Size: 1, Subtypes.Count: 0, Ability: null, Modifiers.Upgrades.Count: 0,
+                    Statuses: [{ Id: "rooted", Stacks: 1 }, { Id: "spikes", Stacks: 2, ParamInt: 1 }],
+                    Triggers: [{ Kind: "OnSpawn", IgnoreSilence: true, Once: false, RemoveOnRelentlessChange: false,
+                        Effects: [{ Type: "CardEffectFloorRearrange", Action: {
+                            Type: "FloorRearrange", Target: "Self", Value: 0, Range: null } }] }] } };
+        }
+
         private static bool KnownAthaneRock(SummonUnitDefinition unit) =>
             unit.HeroDefinition is { Ascends: false, Loops: false, CompanionBoss: false, BirthStats: null,
                 Unit: { Id: 0, AssetKey: "SpikyRockT3_Chosen_Boss_BasicNonAttack", Team: CombatTeam.Enemy,
@@ -75,7 +111,8 @@ namespace MonsterTrain2Poju.Model
                             { Type: "CardEffectFloorRearrange", Action: { Type: "FloorRearrange", Target: "Self" } },
                             { Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Self",
                                 Statuses: [{ Id: "immobile", Stacks: 1 }] } }] }] } };
-        internal static string? Validate(RoomCombatState state, TriggeredSummonRule? rule)
+        internal static string? Validate(RoomCombatState state, TriggeredSummonRule? rule,
+            CombatUnit? actor = null, string? triggerKind = null)
         {
             TriggeredSummonCatalog? catalog = state.Context?.SummonCatalog;
             if (rule == null || catalog == null || state.Context?.SpawnPoints == null || state.Context.NextUnitId == null)
@@ -96,7 +133,8 @@ namespace MonsterTrain2Poju.Model
                 if (rule.EnemyHero && (unit.HeroDefinition == null || unit.HeroDefinition.Unit.Team != CombatTeam.Enemy ||
                     unit.HeroDefinition.Unit.IsBoss == true || unit.HeroDefinition.Unit.EndsBattleOnDeath ||
                     !athane && unit.HeroDefinition.Unit.AssetKey is not ("Boss_Level3_MiniFleshweaver_MoreMass" or
-                        "Boss_Level3_MiniFleshweaver_Corruption" or "Boss_Level3_MiniFleshweaver_Spike")))
+                        "Boss_Level3_MiniFleshweaver_Corruption" or "Boss_Level3_MiniFleshweaver_Spike") &&
+                    !KnownFleshweaverSpikeTrial(state, actor, triggerKind, rule, unit)))
                     return "Triggered enemy birth requires its calibrated original Fleshweaver mini definition.";
                 if (rule.EnemyHero)
                 {

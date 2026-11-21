@@ -831,7 +831,7 @@ namespace MonsterTrain2Poju.Model
                 trigger.Effects[effectIndex].Summon == null || !present && actor.Health > 0 ||
                 actor.SpawnerCardId > 0 && state.Context?.FindCard(actor.SpawnerCardId)?.PlayedRoomUnitIds == null)
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error ?? "Invalid native triggered summon effect.");
-            error = TriggeredSummonModel.Validate(state, trigger.Effects[effectIndex].Summon);
+            error = TriggeredSummonModel.Validate(state, trigger.Effects[effectIndex].Summon, actor, trigger.Kind);
             if (error != null) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error);
             retainedOccupants ??= Array.Empty<CombatUnit>();
             if (retainedOccupants.Select(unit => unit.Id).Distinct().Count() != retainedOccupants.Count ||
@@ -1328,7 +1328,7 @@ namespace MonsterTrain2Poju.Model
                         }
                         if (effect.Type is "CardEffectSpawnMonster" or "CardEffectSpawnHero")
                         {
-                            string? summonError = TriggeredSummonModel.Validate(state, effect.Summon);
+                            string? summonError = TriggeredSummonModel.Validate(state, effect.Summon, unit, trigger.Kind);
                             if (summonError != null) return summonError;
                             continue;
                         }

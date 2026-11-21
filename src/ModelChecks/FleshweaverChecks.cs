@@ -3,6 +3,84 @@ using MonsterTrain2Poju.Model;
 
 internal static class FleshweaverChecks
 {
+    private const string SpikeTrialScenario = "Level3ImmortalMass_Spikes";
+
+    internal static void SpikeTrialSubstitution(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            fixture.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
+            fixture.GetProperty("Boundary").GetString() == "NativeOriginalEarlyTitanTrialSubstitution" &&
+            fixture.GetProperty("Scenario").GetString() == SpikeTrialScenario &&
+            fixture.GetProperty("OwnerId").GetString() == TriggeredSummonModel.FleshweaverSpikeTrialOwnerId &&
+            fixture.GetProperty("OwnerKey").GetString() == TriggeredSummonModel.FleshweaverSpikeTrialOwnerKey &&
+            fixture.GetProperty("TitanTrial").GetBoolean() && !fixture.GetProperty("OuterBoss").GetBoolean(),
+            "Expected the installed Ring 3 Titan Trial summon witness.");
+        const string source = "Boss_Level3_MiniFleshweaver_Spike";
+        Require(fixture.GetProperty("Source").GetString() == source &&
+            fixture.GetProperty("Replacement").GetString() == TriggeredSummonModel.FleshweaverSpikeTrialMini &&
+            fixture.GetProperty("Mappings").EnumerateArray().Count(entry =>
+                entry.GetProperty("Source").GetString() == source &&
+                entry.GetProperty("Replacement").GetString() == TriggeredSummonModel.FleshweaverSpikeTrialMini) == 1,
+            "Expected the original mini source and exact installed replacement.");
+        FixtureValue intro = fixture.GetProperty("Intro");
+        Require(intro.GetProperty("EnabledAfter").GetBoolean() && intro.GetProperty("UiAfter").GetBoolean() &&
+            intro.GetProperty("ChangedRngIds").EnumerateArray().All(stream => stream.GetString() == "NonDeterministic"),
+            "The original Trial toggle changed gameplay RNG.");
+
+        CombatUnit mini = fixture.GetProperty("Unit").Deserialize<CombatUnit>()!;
+        Require(mini is { Id: > 0, AssetKey: TriggeredSummonModel.FleshweaverSpikeTrialMini, Team: CombatTeam.Enemy,
+            Health: 9, MaxHealth: 9, BaseAttack: 3, Attack: 3, Size: 1, SpawnerCardId: 0, EndsBattleOnDeath: false,
+            IsBoss: false, BumpRules.OuterBoss: false, Triggers: [{ Kind: "OnSpawn", HasTriggered: true }] } &&
+            mini.Statuses.Count == 1 && mini.Status("spikes")?.Stacks == 2 && mini.RegisteredStatus("rooted")?.Stacks == 0 &&
+            mini.AbilityRules?.AuthoredStartingStatuses.Any(status => status.Id == "rooted" && status.Stacks == 1) == true,
+            "The original replacement's completed spawn state differs.");
+        Console.WriteLine("FLESHWEAVER-SPIKE-TRIAL-SUBSTITUTION PASS: native trial owner, exact source/replacement, Spikes2 and settled Rooted removal.");
+    }
+
+    internal static void SpikeTrialBattle(string path)
+    {
+        using var fixture = ModelJson.ReadFixture(path);
+        FixtureValue root = fixture.RootElement;
+        FixtureValue input = root.GetProperty("NativeRunInput");
+        FixtureValue route = root.GetProperty("OriginalOuterBossRoute");
+        Require(input.GetProperty("Scenario").GetString() == SpikeTrialScenario &&
+            input.GetProperty("Distance").GetInt32() == 2 && input.GetProperty("AscensionLevel").GetInt32() == 0 &&
+            input.GetProperty("BattlesWon").GetInt32() == 2 && !input.GetProperty("WasDevCheatUsed").GetBoolean() &&
+            route.GetProperty("Boss").GetString() == TriggeredSummonModel.FleshweaverSpike &&
+            route.GetProperty("SelectedScenario").GetString() == SpikeTrialScenario &&
+            route.GetProperty("ScenarioAssetsUnchanged").GetBoolean() &&
+            route.GetProperty("RngBefore").ContentEquals(route.GetProperty("RngAfter")) &&
+            root.GetProperty("OriginalOuterBossTrialIntro").GetProperty("EnabledAfter").GetBoolean(),
+            "Expected the original Ring 3 Trial selected from the progressed native checkpoint.");
+        int births = 0;
+        foreach (FixtureValue row in root.GetProperty("Actions").EnumerateArray())
+        {
+            BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            BattleTurnState after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            CombatUnit[] previous = before.Spawn.Train.Rooms.SelectMany(room => room.Units).ToArray();
+            CombatUnit[] current = after.Spawn.Train.Rooms.SelectMany(room => room.Units).ToArray();
+            foreach (CombatUnit mini in current.Where(unit => unit.AssetKey == TriggeredSummonModel.FleshweaverSpikeTrialMini &&
+                previous.All(old => old.Id != unit.Id)))
+            {
+                CombatUnit boss = previous.Single(unit => unit.AssetKey == TriggeredSummonModel.FleshweaverSpike);
+                CombatUnit nextBoss = current.Single(unit => unit.Id == boss.Id);
+                Trigger(boss, "Spike");
+                Require(boss.Triggers.Single(trigger => trigger.Kind == "OnHit").Effects[0].Summon!.CharacterId ==
+                    TriggeredSummonModel.FleshweaverSpikeMiniId &&
+                    before.Spawn.Train.Context!.SummonCatalog!.Units.Any(unit =>
+                        unit.CharacterId == TriggeredSummonModel.FleshweaverSpikeMiniId &&
+                        unit.HeroDefinition?.Unit.AssetKey == TriggeredSummonModel.FleshweaverSpikeTrialMini) &&
+                    boss.AttackFromMass() > nextBoss.AttackFromMass() &&
+                    mini.Status("spikes")?.Stacks == 2 && mini.BumpRules?.OuterBoss == false && !mini.EndsBattleOnDeath,
+                    "The original hit must retain the source GUID, create the trial mini and consume Mass.");
+                births++;
+            }
+        }
+        Require(births > 0, "The native trial must contain a successful substituted summon.");
+        SolverStageChecks.Native(path, requireVictory: false);
+        Console.WriteLine($"FLESHWEAVER-SPIKE-TRIAL-BATTLE PASS: {births} substituted births after native card actions.");
+    }
+
     internal static string Variant(string variant) => variant switch
     { "Mass" => "MoreMass", "Corruption" => "Corruption", "Spikes" => "Spike", _ => throw new ArgumentException("Unknown original Fleshweaver variant.") };
     internal static void Input(FixtureValue fixture, string variant)

@@ -3793,6 +3793,19 @@ if (args.Length == 3 && args[0] is "--fleshweaver-birth-only" or "--fleshweaver-
     return;
 }
 
+if (args.Length == 2 && args[0] == "--native-fleshweaver-spike-trial")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    FleshweaverChecks.SpikeTrialSubstitution(fixture.RootElement);
+    return;
+}
+
+if (args.Length == 2 && args[0] == "--native-fleshweaver-spike-trial-battle")
+{
+    FleshweaverChecks.SpikeTrialBattle(args[1]);
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--player-arkion-push-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);
