@@ -251,6 +251,8 @@ Cael 零盟约试炼的攻击与生命、吸血变体分别通过 26 次出牌�
 原版结算与采集一致后，顾问从当前状态生成新建议，继续完成第 34 至 37 步。第四环实际结果为败局，
 四项采集计数均为零。`--rolling-advice-only` 独立复核了 28 次出牌或技能、9 次结束回合及终局。
 整场归档为 `mechanics/player-advisor-rolling/migrated-covenant10-ring4-defeat-resumed.mt2f`。
+另一原版进程固定复放全部 37 步并原版结算败局。`--rolling-prefix-resume-pair-only` 逐项匹配
+输入、起点、完整后继、预测与随机流。第二份归档为 `migrated-covenant10-ring4-defeat-frozen.mt2f`。
 
 2.3.1 的进食组件对照使用两次原版结算。隔离实例用原版接口发放测试用牌，再通过出牌
 与 EndTurn 触发结算。两次进食均将 Morsel Miner 的来源牌移入 Eaten，Primordium
