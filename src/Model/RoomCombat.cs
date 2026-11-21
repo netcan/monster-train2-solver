@@ -4037,7 +4037,8 @@ namespace MonsterTrain2Poju.Model
                         }
                     }
                     Emit("Eaten", feeder, unit, 1);
-                    if (!UpdateEnchantments()) return;
+                    // A surviving Eatmany meal leaves the room roster in place.
+                    if (dies && !UpdateEnchantments()) return;
                 }
                 runningTriggerQueue = true;
                 for (int repeat = 0; repeat < unchecked(food.Length * triggerCount); repeat++) FireTriggers(feeder, "OnFeed");
