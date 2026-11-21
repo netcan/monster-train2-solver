@@ -50,6 +50,7 @@ namespace MonsterTrain2Poju.Probe
         private readonly FieldInfo fightAvailable;
         private readonly List<string> sourceSignatures = new List<string>();
         private readonly List<int> sourceReplayCounts = new List<int>();
+        private readonly RollingJudgesScalesChoice rollingJudgesScales = new RollingJudgesScalesChoice();
         private Stage stage;
         private Pass pass;
         private float deadline;
@@ -718,6 +719,9 @@ namespace MonsterTrain2Poju.Probe
             CombatManager? combat = managers!.GetCombatManager();
             CardManager? cards = managers.GetCardManager();
             ReplayManager replay = managers.GetReplayManager();
+            if (stage == Stage.Battle && PlayerAdvisorProbe.Enabled &&
+                RollingAdviceScenario.Enabled && combat != null && cards != null &&
+                rollingJudgesScales.Tick(managers, combat, cards, log)) return;
             if (stage == Stage.Restarting)
             {
                 if (save.IsInRestartBattleMode || !Ready(managers, save, combat, cards) ||
