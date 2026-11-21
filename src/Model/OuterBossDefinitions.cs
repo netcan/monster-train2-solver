@@ -26,7 +26,8 @@ namespace MonsterTrain2Poju.Model
             "Boss_Level3_Fleshweaver_MoreMass" or "Boss_Level3_Fleshweaver_Spike";
         public static bool Supports(string assetKey) => assetKey is
             "Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" or "Boss_Level8_Corrupter" or
-            "Boss_Level8_AllyBuffer_TitanTrial" or "Boss_Level8_Fragile_TitanTrial" or "Boss_Level8_Corrupter_TitanTrial" ||
+            "Boss_Level8_AllyBuffer_TitanTrial" or "Boss_Level8_Fragile_TitanTrial" or "Boss_Level8_Corrupter_TitanTrial" or
+            "Boss_SoulSavior_R4_Spurned_ArmorPerDebuff" ||
             IsAngelDuo(assetKey) || IsCael(assetKey) || IsArkionPyre(assetKey) || IsArkionRage(assetKey) || IsArkionPush(assetKey) || IsFleshweaver(assetKey);
     }
 }

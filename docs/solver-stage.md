@@ -122,6 +122,13 @@ Fleshweaver 出生 Mass 修正后，批量复放 127 场，112 场连续、15 �
 同一模型源码的八项固定验收也全部通过，报告为
 `results/solver-stage-20261121-214802-288fb822/report.tsv`。
 
+Soul Savior 第四环的 Spurned ArmorPerDebuff 变体使用原版 TestScenario 加载。
+原版战败归档有 32 次出牌、7 次 EndTurn、67 个房间阶段和 14 个列车阶段，
+四项采集计数均为零。整战复放同时验证原版角色的出生、选层、Relentless
+转相及到达薪火层。原版攻击挂载与 Witherbloom 邻位伤害另有独立组件归档。
+入口为 `ModelChecks --native-spurned-battle <archive.mt2f>`，归档位于
+`tests/compatibility/game-2.3.1/mechanics/spurned/`。
+
 用 2.3.1 载入 2.2.1 原版第三环战前存档，隔离顾问在两线程、单次搜索三秒的配置下
 完成 24 次出牌和 9 次 EndTurn，以 80 点薪火生命获胜。进程正常退出，四项采集计数为零。
 同一归档另通过 33 次滚动建议与预测复放、完整链及 16 条独立分支。
