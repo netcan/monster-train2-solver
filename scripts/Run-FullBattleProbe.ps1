@@ -700,6 +700,7 @@ param(
     [ValidateSet('Threshold30', 'Threshold15')][string] $OriginalSmallDeckDamage,
     [ValidateRange(1, 3)][int] $OriginalBeeziebubTier,
     [ValidateRange(1, 3)][int] $OriginalGoldieTier,
+    [switch] $OriginalMollisCycleOfLife,
     [ValidateRange(1, 3)][int] $OriginalElleTier,
     [switch] $OriginalBurnoutDamageRelic,
     [switch] $OriginalHealDamageRelic,
@@ -1544,6 +1545,17 @@ if ($OriginalElleTier) {
         $OriginalRandomRoomCapacityMutator -or $OriginalPyreCapacityCarryover -or $OriginalMagicPowerPerGold -or $OriginalShowtimeTier -or
         $OriginalTurnEndBump -or $OriginalSmallDeckDamage -or $OriginalBeeziebubTier -or $OriginalGoldieTier) {
         throw 'Original Elle calibration requires a fresh isolated first battle with fixed controls.'
+    }
+    $PhysicalSpawnPoints = $true
+    $BranchCardMasks = $true
+    $SettleCardAnimations = $true
+    $SettleDeathDissolves = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($OriginalMollisCycleOfLife) {
+    if ($PlayerAdvisor -or $Planner -or $Advisor -or $DotNetPlanner -or $BattleDistance -ne 0 -or
+        $OriginalBeeziebubTier -or $OriginalGoldieTier -or $OriginalElleTier -or $OriginalJuiceUpgrades) {
+        throw 'Original Mollis requires an isolated first battle with its own native Soul assignment.'
     }
     $PhysicalSpawnPoints = $true
     $BranchCardMasks = $true
@@ -2759,6 +2771,11 @@ if ($OriginalElleTier) {
 if ($OriginalGoldieTier) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-goldie'
     $environment['MT2_PROBE_GOLDIE_TIER'] = $OriginalGoldieTier.ToString()
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
+if ($OriginalMollisCycleOfLife) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-mollis-cycle-of-life'
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
@@ -5446,6 +5463,31 @@ if ($OriginalElleTier) {
         throw 'Elle lacks the expected permanent original upgrades, native carrier play or exact battle successors.'
     }
     Write-Output "ORIGINAL-ELLE PASS: tier $OriginalElleTier upgraded $(@($acquisition.UpgradedIds).Count) owned cards, preserved Rewards RNG on reattach, and played an upgraded Torch."
+}
+if ($OriginalMollisCycleOfLife) {
+    $definition = $trace.OriginalMollisCycleOfLifeDefinition
+    $installed = $trace.OriginalMollisCycleOfLifeInstalledUpgrade
+    $plays = @($trace.Actions | Where-Object { $_.Action.CardInstanceId -eq $trace.OriginalMollisCycleOfLifeCardId })
+    if (-not $trace.OriginalMollisCycleOfLifePrepared -or -not $trace.TerminalEffectsSettled -or
+        $definition.SoulKey -cne 'MollisT3' -or -not $installed.AvoidClobbering -or
+        $installed.AddedTraits[0].RuntimeType -cne 'CardTraitJuice4' -or $plays.Count -ne 1 -or
+        ($definition | ConvertTo-Json -Compress -Depth 24) -cne
+        ($trace.OriginalMollisCycleOfLifeDefinitionAfter | ConvertTo-Json -Compress -Depth 24)) {
+        throw 'Original Mollis lacks its unchanged Soul assignment and single settled Cycle of Life cast.'
+    }
+    $play = $plays[0]
+    $before = $play.Before.Spawn.Train.Rooms.Units | Where-Object Id -EQ $play.Action.TargetUnitId
+    $after = $play.Actual.Spawn.Train.Rooms.Units | Where-Object Id -EQ $play.Action.TargetUnitId
+    $spikesBefore = ($before.Statuses | Where-Object Id -EQ 'spikes').Stacks
+    $spikesAfter = ($after.Statuses | Where-Object Id -EQ 'spikes').Stacks
+    $armorBefore = ($before.Statuses | Where-Object Id -EQ 'armor').Stacks
+    $armorAfter = ($after.Statuses | Where-Object Id -EQ 'armor').Stacks
+    if (-not $before -or -not $after -or $play.Before.Energy - $play.Actual.Energy -ne 3 -or
+        $after.Health - $before.Health -ne 10 -or $after.MaxHealth - $before.MaxHealth -ne 10 -or
+        [int]$spikesAfter - [int]$spikesBefore -ne 32 -or [int]$armorAfter - [int]$armorBefore -ne 12) {
+        throw 'Original Mollis Cycle of Life did not realize the native temporary health, Spikes and OnCast Armor deltas.'
+    }
+    Write-Output 'ORIGINAL-MOLLIS-CYCLE NATIVE: +10 HP/max HP, +32 Spikes and +12 Armor on one legal friendly cast.'
 }
 if ($OriginalGoldieTier) {
     $definition = $trace.OriginalGoldieDefinition

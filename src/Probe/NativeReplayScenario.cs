@@ -561,6 +561,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalPerkeoScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalThikDeckChangeScenario.Enabled && !OriginalThikDeckChangeScenario.Acquired)
                         OriginalThikDeckChangeScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalMollisCycleOfLifeScenario.Enabled)
+                        OriginalMollisCycleOfLifeScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalAfterDrawSpawnScenario.Enabled && !OriginalAfterDrawSpawnScenario.Acquired)
                         OriginalAfterDrawSpawnScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalHoldoverGrantScenario.Enabled && !OriginalHoldoverGrantScenario.Acquired)
@@ -696,6 +698,8 @@ namespace MonsterTrain2Poju.Probe
                     OriginalOuterBossRoute.PrepareIntro(save, intro, log);
                     if (fullBattle && OriginalThikDeckChangeScenario.Enabled && !OriginalThikDeckChangeScenario.Acquired)
                         OriginalThikDeckChangeScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalMollisCycleOfLifeScenario.Enabled)
+                        OriginalMollisCycleOfLifeScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalAfterDrawSpawnScenario.Enabled && !OriginalAfterDrawSpawnScenario.Acquired)
                         OriginalAfterDrawSpawnScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalHoldoverGrantScenario.Enabled && !OriginalHoldoverGrantScenario.Acquired)
@@ -2715,6 +2719,11 @@ namespace MonsterTrain2Poju.Probe
                 OriginalGoldieScenario.Prepare(managers, log);
                 return;
             }
+            if (fullBattle && OriginalMollisCycleOfLifeScenario.Enabled && !OriginalMollisCycleOfLifeScenario.Prepared)
+            {
+                OriginalMollisCycleOfLifeScenario.Prepare(managers, log);
+                return;
+            }
             if (fullBattle && OriginalBeeziebubScenario.Enabled && !OriginalBeeziebubScenario.Prepared)
             {
                 numericModifiersPrepared = true;
@@ -3480,6 +3489,10 @@ namespace MonsterTrain2Poju.Probe
                 {
                     pendingPlay = OriginalGoldieScenario.Choose(decision);
                 }
+                else if (OriginalMollisCycleOfLifeScenario.Enabled)
+                {
+                    pendingPlay = OriginalMollisCycleOfLifeScenario.Choose(decision);
+                }
                 else if (OriginalBeeziebubScenario.Enabled)
                 {
                     pendingPlay = OriginalBeeziebubScenario.Choose(decision);
@@ -4095,6 +4108,7 @@ namespace MonsterTrain2Poju.Probe
                 (OriginalThikDeckChangeScenario.FullBattle && OriginalThikDeckChangeScenario.IsScenarioAction(action)) ||
                 (OriginalElleScenario.Enabled && OriginalElleScenario.IsScenarioAction(action)) ||
                 (OriginalGoldieScenario.Enabled && OriginalGoldieScenario.IsScenarioAction(action)) ||
+                (OriginalMollisCycleOfLifeScenario.Enabled && OriginalMollisCycleOfLifeScenario.CardId == action.CardInstanceId) ||
                 (OriginalBeeziebubScenario.Enabled && OriginalBeeziebubScenario.IsScenarioAction(action)) ||
                 (OriginalSmallDeckDamageScenario.Enabled && OriginalSmallDeckDamageScenario.IsScenarioAction(action)) ||
                 (OriginalTurnEndBumpScenario.Enabled && OriginalTurnEndBumpScenario.IsScenarioAction(action)) ||
