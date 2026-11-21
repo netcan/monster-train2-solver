@@ -71,6 +71,10 @@ namespace MonsterTrain2Poju.Probe
             FirstFreshGeneration = firstFreshGeneration
         };
 
+        private static bool PlayerAdviceReady() => resumed
+            ? PlayerAdvisorProbe.ReadyAfterFrozenPrefix(resumeGeneration)
+            : PlayerAdvisorProbe.ReadyFor();
+
         private static int VerifyResumePrefix(FixtureValue archive, FixtureValue[] rows, Guid nativeModule)
         {
             if (NativeBranchIdentity.SourceModule(archive) != nativeModule ||
@@ -160,8 +164,7 @@ namespace MonsterTrain2Poju.Probe
                     resumed = true;
                     return true;
                 }
-                if (resumed) return !PlayerAdvisorProbe.ReadyAfterFrozenPrefix(resumeGeneration);
-                return !Replay && !PlayerAdvisorProbe.ReadyFor();
+                return !Replay && !PlayerAdviceReady();
             }
 #endif
             Observe(root, false);
@@ -243,7 +246,7 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                 if (PlayerAdvisorProbe.Enabled)
                 {
-                    if (!PlayerAdvisorProbe.ReadyFor()) throw new InvalidOperationException("Rolling driver consumed stale player advice.");
+                    if (!PlayerAdviceReady()) throw new InvalidOperationException("Rolling driver consumed stale player advice.");
                     advice = PlayerAdvisorProbe.Advice; timing = PlayerAdvisorProbe.LatestTiming;
                 }
                 else
