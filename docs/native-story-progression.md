@@ -50,6 +50,9 @@
 第 5 环的首次整场对照从 10 点薪火生命开始，原版判负且四项采集计数为零。另一条部署路线验证了
 StealthWaxers 的出生条件与月相手牌更新可同时生效。两次部署与结束回合的后继在原版完全一致，
 归档为 `mechanics/stealth-waxers-moon-refresh/native-branch.mt2f`。
+从同一第 4 环胜局另选原版左路，生成第 5 环战前档 `.probe-runs/campaign-ring5-20261122-071048-39525a08`。
+左右两条路线均已对账至原版终局，均判负。右路记录 10 个输入，左路记录 26 个输入。
+整战归档为 `unlocked-covenant0-ring5-right-defeat.mt2f` 和 `unlocked-covenant0-ring5-left-defeat.mt2f`。
 
 2026-10-28重新检查第25组第七战入口的累计档案，额外薪火之心仍为0/9，
 剧情索引0、真终局未解锁。当前值为Pact0/7、Life326/475、Malicka0/1、
