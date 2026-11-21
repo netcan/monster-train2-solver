@@ -228,6 +228,9 @@ Cael 零盟约试炼的攻击与生命、吸血变体分别通过 26 次出牌�
 存活并减少一层 Eatmany。普通进食在房间结算前保留空位，Feast 结算后填补空位。
 两条完整后继各通过 16 条独立分支。使用 `--native-source-backed-feeding` 复核
 `tests/compatibility/game-2.3.1/mechanics/original-source-backed-feeding/source-backed-feeding.mt2f`。
+原版录制入口为 `Run-FullBattleProbe.ps1 -OriginalSourceBackedFeeding`。
+此专项修复后的批量回归仍是 162 场通过，报告为
+`results/recorded-chain-triage-20261122-024257-c2d5e98a/report.tsv`。
 
 用 2.3.1 载入 2.2.1 原版第三环战前存档，隔离顾问在两线程、单次搜索三秒的配置下
 完成 24 次出牌和 9 次 EndTurn，以 80 点薪火生命获胜。进程正常退出，四项采集计数为零。
