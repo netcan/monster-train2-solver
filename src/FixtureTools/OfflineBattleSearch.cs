@@ -190,12 +190,17 @@ internal static partial class OfflineBattleSearch
     internal static void Freeze(string input, string actionsJson, string output)
     {
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
-        using var source = FixtureDocument.Read(input);
+        using var source = ReadHashedArchive(input, out string sourceHash);
         RequireNativeInput(source.RootElement);
         BattleTurnState root = DeploymentRoot(source.RootElement);
         Require(root.Spawn.Turn == 0, "Frozen whole-battle actions require the native deployment root.");
         Step[] steps = System.Text.Json.JsonSerializer.Deserialize<Step[]>(actionsJson)!;
-        Require(steps.Length is > 0 and <= 256, "Expected 1..256 frozen actions.");
+        Freeze(root, steps, Path.GetFileName(input), sourceHash, output);
+    }
+
+    private static void Freeze(BattleTurnState root, IReadOnlyList<Step> steps, string sourceArchive, string sourceHash, string output)
+    {
+        Require(steps.Count is > 0 and <= 256, "Expected 1..256 frozen actions.");
         var decisions = new List<Decision>();
         BattleTurnState current = root;
         RoomOutcome outcome = RoomOutcome.Exchanged;
@@ -211,7 +216,7 @@ internal static partial class OfflineBattleSearch
         }
         Require(Terminal(outcome), "Frozen actions end before the battle's terminal outcome.");
         using (var document = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelPrediction",
-            SourceArchive = Path.GetFileName(input), SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+            SourceArchive = sourceArchive, SourceSHA256 = sourceHash,
             Strategy = "external-frozen-actions", Root = root, Final = current, Outcome = outcome,
             RollingDecisions = decisions }))
         using (var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write)) document.Write(stream);
@@ -290,7 +295,11 @@ internal static partial class OfflineBattleSearch
     internal static void Verify(string input)
     {
         using var document = FixtureDocument.Read(input);
-        FixtureValue trace = document.RootElement;
+        Verify(document.RootElement);
+    }
+
+    private static void Verify(FixtureValue trace)
+    {
         Require(trace.GetProperty("Schema").GetInt32() == 1 && trace.GetProperty("EvidenceKind").GetString() == "ModelPrediction",
             "Expected an offline prediction, not native acceptance evidence.");
         using var keys = new BattleStateKeys();

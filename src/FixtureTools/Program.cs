@@ -89,9 +89,25 @@ else if (args.Length == 3 && args[0] == "freeze-root-plan")
 {
     OfflineBattleSearch.FreezeRootPlan(args[1], args[2]);
 }
-else if (args.Length is 5 or 6 && args[0] == "complete-root-plan" && (args.Length == 5 || args[5] == "--strength"))
+else if (args.Length >= 5 && args[0] == "complete-root-plan")
 {
-    OfflineBattleSearch.CompleteRootPlan(args[1], args[2], args[3], int.Parse(args[4]), args.Length == 6);
+    bool strength = false;
+    string? baseline = null;
+    for (int index = 5; index < args.Length; index++)
+    {
+        switch (args[index])
+        {
+            case "--strength" when !strength:
+                strength = true;
+                break;
+            case "--baseline" when baseline == null && index + 1 < args.Length && !args[index + 1].StartsWith("--", StringComparison.Ordinal):
+                baseline = args[++index];
+                break;
+            default:
+                throw new ArgumentException("Expected optional --strength and --baseline <verified-prediction.mt2f>.");
+        }
+    }
+    OfflineBattleSearch.CompleteRootPlan(args[1], args[2], args[3], int.Parse(args[4]), strength, baseline);
 }
 else if (args.Length is >= 6 and <= 8 && args[0] == "plan-battle" &&
     args.Skip(6).All(flag => flag is "--tactical" or "--player-continuation") &&
@@ -316,7 +332,7 @@ else
     Console.Error.WriteLine("Captured mismatch: extract-inactive-fragile-inferno-new-moon-entry <native.mt2f> <new-request.mt2f>; validate the original 41-step prefix and repaired end turn before independent native observation.");
     Console.Error.WriteLine("EndTurn diagnostics: extract-unsupported-endturn <native-or-deployment.mt2f> <new-output.mt2f> <exact-rejection-reason> [floor:0..2] [--strength]; match policy-battle's stronger heuristic when reproducing a deployment branch.");
     Console.Error.WriteLine("Player root: plan-root <capture.mt2f> <new-output.mt2f> <milliseconds> [decision-index] [workers] [shared-nodes] | verify-root-plan <prediction.mt2f> | freeze-root-plan <prediction.mt2f> <new-output.mt2f>; nodes default256, other node budgets are offline experiments.");
-    Console.Error.WriteLine("Partial forecast: complete-root-plan <native.mt2f> <verified-root-prediction.mt2f> <new-output.mt2f> <deployment-room> [--strength]; preserves the entire verified prefix before policy completion; model evidence only.");
+    Console.Error.WriteLine("Forecast completion: complete-root-plan <native.mt2f> <verified-root-prediction.mt2f> <new-output.mt2f> <deployment-room> [--strength] [--baseline <verified-prediction.mt2f>]; preserves the verified prefix before policy completion; model evidence only.");
     Console.Error.WriteLine("Counterexample: refine-policy <native.mt2f> <new-winning-output.mt2f> <milliseconds> [start-decision] [last-decision]; bounded single-decision alternatives followed by legal tactical choices, model prediction only.");
     Console.Error.WriteLine("Iterated counterexample: improve-policy <native.mt2f> <new-output.mt2f> <milliseconds> [passes] [start-decision]; retain complete improvements between sweeps; exported outcome may still be a defeat and needs native validation.");
     Console.Error.WriteLine("Resume improvement: improve-prediction <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> [passes] [start-decision]; independently verifies the full baseline and binds its source hash and complete native deployment root.");

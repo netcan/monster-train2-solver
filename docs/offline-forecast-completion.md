@@ -11,6 +11,20 @@ dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll complete-root-plan `
 保留原预测全部步骤，再用现有战术策略补到结算。可用 `--strength`
 选择现有启发式策略。不会增加玩家搜索预算或操作游戏。
 
+同一场战斗可在一条已经完整复放的模型路线中再次选择重搜点。用 `plan-root`
+读取该路线的零起始决策索引，再把同一文件传给 `complete-root-plan --baseline`。
+
+```powershell
+dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll plan-root `
+  <baseline.mt2f> <new-root-prediction.mt2f> 10000 58
+dotnet src/FixtureTools/bin/Release/net8.0/FixtureTools.dll complete-root-plan `
+  <native.mt2f> <new-root-prediction.mt2f> <new-output.mt2f> 2 --baseline <baseline.mt2f>
+```
+
+工具先独立复放整条基线，核对原生归档的哈希、部署根和新预测记录的基线哈希，
+再从原生部署根逐步重放至指定决策，比较完整输入后继和 RNG。新预测若已到终局，
+直接保存拼接后的整条路线。输出继续引用原生归档，可作为下一次重搜的基线。
+
 全程最多256输入，每回合最多18次后续出牌。完整路线导出前从原生部署根重放，
 独立比较终局完整状态和RNG。超出步骤限制不导出；后续结束回合遇到未支持机制
 时，另存绑定原生归档及部分预测哈希的`.unsupported.mt2f`，供隔离原生校准。

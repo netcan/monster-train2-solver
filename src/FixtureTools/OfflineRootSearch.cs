@@ -58,7 +58,7 @@ internal static class OfflineRootSearch
         Verify(document.RootElement);
     }
 
-    private static void Verify(FixtureValue fixture)
+    internal static void Verify(FixtureValue fixture)
     {
         Require(fixture.GetProperty("Schema").GetInt32() == 1 &&
             fixture.GetProperty("EvidenceKind").GetString() == "ModelRootPrediction" &&

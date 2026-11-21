@@ -1,43 +1,73 @@
 using System.Security.Cryptography;
-using System.Text.Json;
 using MonsterTrain2Poju.Capture;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 
 internal static partial class OfflineBattleSearch
 {
-    // Preserve a verified, nonterminal forecast exactly, then finish it with
-    // the existing policy. Completion is new model evidence, never acceptance.
-    internal static void CompleteRootPlan(string nativeInput, string prediction, string output, int floor, bool strength)
+    // Preserve an independently verified prefix and forecast, then use the
+    // existing policy only when the forecast has more battle to resolve.
+    internal static void CompleteRootPlan(string nativeInput, string prediction, string output, int floor, bool strength,
+        string? baselinePath = null)
     {
         Require(floor is >= 0 and <= 2, "Expected a deployment room in0..2.");
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         string unsupportedOutput = output + ".unsupported.mt2f";
         if (File.Exists(unsupportedOutput)) throw new IOException("Output already exists: " + unsupportedOutput);
-        OfflineRootSearch.Verify(prediction);
-        using var native = FixtureDocument.Read(nativeInput);
+        using var native = ReadHashedArchive(nativeInput, out string sourceHash);
         RequireNativeInput(native.RootElement);
-        using var source = FixtureDocument.Read(prediction);
+        using var source = ReadHashedArchive(prediction, out string forecastHash);
         var fixture = source.RootElement;
-        string sourceHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(nativeInput))).ToLowerInvariant();
-        Require(fixture.GetProperty("SourceSHA256").GetString() == sourceHash,
-            "Completion requires the exact native source archive.");
+        string baselineHash = sourceHash;
+        using var baseline = baselinePath == null ? null : ReadHashedArchive(baselinePath, out baselineHash);
+        if (baseline == null)
+            OfflineRootSearch.Verify(fixture);
+        else
+        {
+            Verify(baseline.RootElement);
+            Require(baseline.RootElement.GetProperty("SourceSHA256").GetString() == sourceHash,
+                "The baseline must reference the exact native source archive.");
+        }
+        Require(fixture.GetProperty("SourceSHA256").GetString() == baselineHash,
+            baseline == null ? "Completion requires the exact native source archive." :
+                "The forecast must reference the exact baseline prediction.");
         int sourceDecision = fixture.GetProperty("SourceDecisionIndex").GetInt32();
         var plan = fixture.GetProperty("Plan");
         FixtureValue[] forecast = plan.GetProperty("Steps").EnumerateArray().ToArray();
-        Require(!plan.GetProperty("CompletedHorizon").GetBoolean() && plan.GetProperty("UsedShorterHorizon").GetBoolean(),
+        bool partial = !plan.GetProperty("CompletedHorizon").GetBoolean() && plan.GetProperty("UsedShorterHorizon").GetBoolean();
+        Require(partial || baseline != null && Terminal(plan.GetProperty("Outcome").Deserialize<RoomOutcome>()),
             "Completion requires a verified partial root plan.");
         using var keys = new BattleStateKeys();
         using var projectedKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
         BattleTurnState root = DeploymentRoot(native.RootElement);
         string immutable = keys.Key(root);
         Require(root.Spawn.Turn == 0 && sourceDecision >= 0 && sourceDecision <= 256 - forecast.Length,
-            "Completion requires a deployment root and a bounded native prefix and plan.");
+            "Completion requires a deployment root and a bounded prefix and plan.");
         BattleTurnState current = root;
         RoomOutcome outcome = RoomOutcome.Exchanged;
         var steps = new List<Step>();
         string forecastRootKey = fixture.GetProperty("RootKey").GetString()!;
-        if (sourceDecision == 0)
+        if (baseline != null)
+        {
+            FixtureValue trace = baseline.RootElement;
+            Require(keys.Key(trace.GetProperty("Root").Deserialize<BattleTurnState>()!) == immutable,
+                "The baseline changed the native deployment root.");
+            FixtureValue rows = trace.GetProperty("RollingDecisions");
+            Require(sourceDecision < rows.GetArrayLength(), "The forecast decision index is outside the baseline.");
+            Require(keys.Key(rows[sourceDecision].GetProperty("Root").Deserialize<BattleTurnState>()!) == forecastRootKey,
+                "The forecast root differs from the indexed baseline decision.");
+            for (int index = 0; index < sourceDecision; index++)
+            {
+                FixtureValue row = rows[index];
+                Require(SameDecision(row.GetProperty("Root"), keys), $"Baseline prefix differs before decision {index}.");
+                Append(row);
+                Require(!Terminal(outcome) && outcome == row.GetProperty("Outcome").Deserialize<RoomOutcome>() &&
+                    SameDecision(row.GetProperty("Expected"), keys), $"Baseline prefix differs after decision {index}.");
+            }
+            Require(keys.Key(current) == forecastRootKey, "The replayed baseline prefix does not reach the forecast root.");
+            OfflineRootSearch.Verify(fixture);
+        }
+        else if (sourceDecision == 0)
             Require(immutable == forecastRootKey, "The forecast changed the native deployment root.");
         else
         {
@@ -50,21 +80,21 @@ internal static partial class OfflineBattleSearch
             {
                 FixtureValue row = rows[index];
                 Require(row.GetProperty("Difference").ValueKind == FixtureKind.Null &&
-                    SameDecision(row.GetProperty("Root")), $"Recorded native prefix differs before decision {index}.");
+                    SameDecision(row.GetProperty("Root"), projectedKeys), $"Recorded native prefix differs before decision {index}.");
                 Require(SameRelentlessChoices(row, row.GetProperty("PlanSteps")[0]),
                     $"Recorded Relentless choices differ from the first forecast step at decision {index}.");
                 Append(row);
                 Require(!Terminal(outcome) && outcome == row.GetProperty("Outcome").Deserialize<RoomOutcome>() &&
-                    SameDecision(row.GetProperty("Actual")), $"Recorded native prefix differs after decision {index}.");
+                    SameDecision(row.GetProperty("Actual"), projectedKeys), $"Recorded native prefix differs after decision {index}.");
             }
             Require(projectedKeys.Key(current) == projectedKeys.Key(capturedRoot),
                 "The replayed native prefix does not reach the forecast root.");
         }
 
         foreach (FixtureValue value in forecast) Append(value);
-        Require(!Terminal(outcome) && steps[^1].IsEndTurn &&
-            (sourceDecision == 0 ? keys.Key(current) == keys.Key(plan.GetProperty("State").Deserialize<BattleTurnState>()!) :
-                SameDecision(plan.GetProperty("State"))),
+        Require(outcome == plan.GetProperty("Outcome").Deserialize<RoomOutcome>() &&
+            (!partial || !Terminal(outcome) && steps[^1].IsEndTurn) &&
+            SameDecision(plan.GetProperty("State"), baseline != null || sourceDecision == 0 ? keys : projectedKeys),
             "The independently replayed forecast prefix differs.");
         int prefix = steps.Count, played = 0;
         var unsupported = new HashSet<string>(StringComparer.Ordinal);
@@ -93,7 +123,7 @@ internal static partial class OfflineBattleSearch
                         SourceSHA256 = sourceHash,
                         SourceGameModuleMvid = NativeBranchIdentity.SourceModule(native.RootElement),
                         RootPlanArchive = Path.GetFileName(prediction),
-                        RootPlanSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(prediction))).ToLowerInvariant(),
+                        RootPlanSHA256 = forecastHash,
                         Root = root, Prefix = steps, FailedRoot = current, Action = (PlayCardAction?)null, IsEndTurn = true,
                         Reason = ended.UnsupportedReason, NativeValidationRequired = true });
                     using (var stream = new FileStream(unsupportedOutput, FileMode.CreateNew, FileAccess.Write)) boundary.Write(stream);
@@ -106,14 +136,15 @@ internal static partial class OfflineBattleSearch
         }
         Require(Terminal(outcome) && keys.Key(root) == immutable,
             "Completion exceeded256 inputs or mutated its native root.");
-        Freeze(nativeInput, JsonSerializer.Serialize(steps), output);
+        Freeze(DeploymentRoot(native.RootElement), steps, Path.GetFileName(nativeInput), sourceHash, output);
         using var exported = FixtureDocument.Read(output);
         Require(keys.Key(exported.RootElement.GetProperty("Final").Deserialize<BattleTurnState>()!) == keys.Key(current),
             "Independent completion export changed its terminal state/RNG.");
         Console.WriteLine($"COMPLETE-ROOT outcome={outcome} prefix={prefix} steps={steps.Count} room={floor} strength={strength} " +
             $"sourceDecision={sourceDecision} unsupportedReasons={unsupported.Count}; model prediction only, native validation required.");
 
-        bool SameDecision(FixtureValue value) => projectedKeys.Key(current) == projectedKeys.Key(value.Deserialize<BattleTurnState>()!);
+        bool SameDecision(FixtureValue value, BattleStateKeys comparison) =>
+            comparison.Key(current) == comparison.Key(value.Deserialize<BattleTurnState>()!);
 
         void Append(FixtureValue value)
         {
@@ -122,6 +153,14 @@ internal static partial class OfflineBattleSearch
             current = ReplayStep(current, step, out outcome);
             steps.Add(step);
         }
+    }
+
+    private static FixtureDocument ReadHashedArchive(string path, out string sha256)
+    {
+        using var stream = File.OpenRead(path);
+        sha256 = Convert.ToHexString(SHA256.HashData(stream)).ToLowerInvariant();
+        stream.Position = 0;
+        return FixtureDocument.Read(stream);
     }
 
     // Export a verified root plan as ordinary frozen native inputs. This does
