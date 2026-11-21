@@ -81,6 +81,7 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (scenarioName == "native-replay")
             {
+                RollingAdviceScenario.StartPrefixVerification();
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE") == "1")
                     new FullBattleTrace(Logger);
                 if (BattleAdvisorOverlay.Enabled) new BattleAdvisorOverlay(Logger);

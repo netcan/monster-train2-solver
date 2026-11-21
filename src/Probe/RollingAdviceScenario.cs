@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using BepInEx.Logging;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Capture;
@@ -57,17 +58,23 @@ namespace MonsterTrain2Poju.Probe
         private static FixtureValue[]? frozen;
         private static bool waiting;
         private static bool terminalObserved;
+        private static int FrozenCount =>
+#if DEVELOPMENT_PROBE
+            preparedPrefix?.Inputs.Length ??
+#endif
+            frozen?.Length ?? 0;
 #if DEVELOPMENT_PROBE
         private static bool deploymentExportAttempted;
         private static bool ResumeRequested => Environment.GetEnvironmentVariable("MT2_PROBE_RESUME_ROLLING_ADVICE") == "1";
         private static bool resumed;
-        private static string? prefixSourceHash;
-        private static int stalePredictions;
+        private static Task<PreparedPrefix>? prefixVerification;
+        private static PreparedPrefix? preparedPrefix;
         private static long resumeGeneration, firstFreshGeneration;
         internal static object? PrefixResumeEvidence => !ResumeRequested ? null : new
         {
-            SourceSHA256 = prefixSourceHash, PrefixInputs = frozen?.Length ?? 0, Resumed = resumed,
-            StalePredictions = stalePredictions, ResumeGeneration = resumeGeneration,
+            SourceSHA256 = preparedPrefix?.SourceSHA256, PrefixInputs = FrozenCount, Resumed = resumed,
+            StalePredictions = preparedPrefix?.StalePredictions ?? 0, ResumeGeneration = resumeGeneration,
+            VerificationMilliseconds = preparedPrefix?.VerificationMilliseconds,
             FirstFreshGeneration = firstFreshGeneration
         };
 
@@ -75,13 +82,56 @@ namespace MonsterTrain2Poju.Probe
             ? PlayerAdvisorProbe.ReadyAfterFrozenPrefix(resumeGeneration)
             : PlayerAdvisorProbe.ReadyFor();
 
-        private static int VerifyResumePrefix(FixtureValue archive, FixtureValue[] rows, Guid nativeModule)
+        private sealed class PreparedPrefix
+        {
+            internal FixtureValue Archive { get; }
+            internal Decision[] Inputs { get; }
+            internal string SourceSHA256 { get; }
+            internal int StalePredictions { get; }
+            internal long VerificationMilliseconds { get; }
+
+            internal PreparedPrefix(FixtureValue archive, Decision[] inputs, string sourceSHA256,
+                int stalePredictions, long verificationMilliseconds)
+            {
+                Archive = archive;
+                Inputs = inputs;
+                SourceSHA256 = sourceSHA256;
+                StalePredictions = stalePredictions;
+                VerificationMilliseconds = verificationMilliseconds;
+            }
+        }
+
+        internal static void StartPrefixVerification()
+        {
+            if (!Enabled || !ResumeRequested || prefixVerification != null) return;
+            string? source = Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_INPUT");
+            Guid nativeModule = typeof(CardState).Module.ModuleVersionId;
+            prefixVerification = Task.Run(() => LoadResumePrefix(source, nativeModule));
+        }
+
+        private static PreparedPrefix LoadResumePrefix(string? source, Guid nativeModule)
+        {
+            if (string.IsNullOrEmpty(source)) throw new InvalidOperationException("Native prefix resume requires a replay archive.");
+            var timer = System.Diagnostics.Stopwatch.StartNew();
+            using var input = File.OpenRead(source);
+            using var document = FixtureDocument.Read(input);
+            FixtureValue archive = document.RootElement;
+            FixtureValue[] rows = archive.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+            Decision[] inputs = VerifyResumePrefix(archive, rows, nativeModule, out int staleCount);
+            input.Position = 0;
+            using var sha = System.Security.Cryptography.SHA256.Create();
+            string hash = BitConverter.ToString(sha.ComputeHash(input)).Replace("-", "").ToLowerInvariant();
+            return new PreparedPrefix(archive, inputs, hash, staleCount, timer.ElapsedMilliseconds);
+        }
+
+        private static Decision[] VerifyResumePrefix(FixtureValue archive, FixtureValue[] rows, Guid nativeModule, out int staleCount)
         {
             if (NativeBranchIdentity.SourceModule(archive) != nativeModule ||
                 archive.GetProperty("PlayerAdvisor").GetProperty("Assembly").GetString() != "MonsterTrain2Poju.Advisor" ||
                 rows.Length is < 1 or >= 256)
                 throw new InvalidOperationException("Resume requires a bounded native player prefix from the installed game module.");
-            int staleCount = 0;
+            staleCount = 0;
+            var inputs = new Decision[rows.Length];
             BattleTurnState? previous = null;
             for (int index = 0; index < rows.Length; index++)
             {
@@ -91,34 +141,42 @@ namespace MonsterTrain2Poju.Probe
                     !row.GetProperty("IsEndTurn").ContentEquals(plannedStep.GetProperty("IsEndTurn")) ||
                     !PlannerReplayScenario.SameChoices(PlannerReplayScenario.ReadChoices(row), PlannerReplayScenario.ReadChoices(plannedStep)))
                     throw new InvalidOperationException("Archived resume input differs from its recorded entry at decision " + (index + 1));
-                Decision decision = PlannerReplayScenario.ReadWithoutNativeObservation<Decision>(row);
-                BattleTurnState actual = PlannerReplayScenario.Read<BattleTurnState>(row.GetProperty("Actual"));
-                if (actual == null || decision.Outcome != RoomOutcome.Exchanged ||
-                    (previous == null ? decision.Root.Spawn.Turn != 0 : !Equal(previous, decision.Root, false)) ||
-                    decision.IsEndTurn != (decision.Action == null))
+                BattleTurnState root = PlannerReplayScenario.Read<BattleTurnState>(row.GetProperty("Root"));
+                FixtureValue observed = row.GetProperty("Actual");
+                BattleTurnState actual = PlannerReplayScenario.Read<BattleTurnState>(observed);
+                PlannerReplayScenario.Step step = PlannerReplayScenario.Read<PlannerReplayScenario.Step>(plannedStep);
+                if (actual == null || row.GetProperty("Outcome").GetInt32() != (int)RoomOutcome.Exchanged ||
+                    (previous == null ? root.Spawn.Turn != 0 : !Equal(previous, root, false)) ||
+                    step.IsEndTurn != (step.Action == null) || !step.IsEndTurn && step.RelentlessDecisions?.Count > 0)
                     throw new InvalidOperationException("Incomplete or discontinuous native resume prefix at decision " + (index + 1));
 
                 BattleTurnState? latest;
                 RoomOutcome outcome;
-                if (decision.IsEndTurn)
+                if (step.IsEndTurn)
                 {
-                    BattleTurnResult turn = BattleTurnModel.EndTurn(decision.Root, decision.RelentlessDecisions);
+                    BattleTurnResult turn = BattleTurnModel.EndTurn(root, step.RelentlessDecisions);
                     latest = turn.State; outcome = turn.Outcome;
                 }
                 else
                 {
-                    BattleActionResult played = BattleActionModel.PlayCard(decision.Root, decision.Action!);
+                    BattleActionResult played = BattleActionModel.PlayCard(root, step.Action!);
                     latest = played.State; outcome = played.Outcome;
                 }
                 if (latest == null || outcome != RoomOutcome.Exchanged || !Equal(latest, actual, false))
                     throw new InvalidOperationException("Current model does not reproduce archived native resume decision " + (index + 1));
-                bool stale = !Equal(decision.Expected, actual, false);
-                if (stale != (decision.Difference != null))
+                FixtureValue expected = row.GetProperty("Expected");
+                bool stale = !expected.ContentEquals(observed) &&
+                    !Equal(PlannerReplayScenario.Read<BattleTurnState>(expected), actual, false);
+                if (row.GetProperty("Difference").ValueKind != (stale ? FixtureKind.String : FixtureKind.Null))
                     throw new InvalidOperationException("Archived resume prediction disagrees with recorded mismatch at decision " + (index + 1));
                 if (stale) staleCount++;
+                inputs[index] = new Decision { Mode = "prefix-replay", Root = root, Action = step.Action,
+                    IsEndTurn = step.IsEndTurn, RelentlessDecisions = step.RelentlessDecisions,
+                    Expected = actual, Planned = actual, Outcome = outcome, PlannedOutcome = outcome,
+                    PlanSteps = new List<PlannerReplayScenario.Step> { step }, Score = BattlePlanner.Evaluate(actual, outcome) };
                 previous = actual;
             }
-            return staleCount;
+            return inputs;
         }
 
         private static void ExportPlayerDeployment(bool frozenObservation = false)
@@ -144,6 +202,8 @@ namespace MonsterTrain2Poju.Probe
         {
             if (!Enabled) return false;
 #if DEVELOPMENT_PROBE
+            if (ResumeRequested && !PlayerAdvisorProbe.Enabled)
+                throw new InvalidOperationException("Native prefix resume requires the player advisor.");
             if (PlayerAdvisorProbe.Enabled)
             {
                 if (!PlayerAdvisorProbe.CaptureInitialized) return true;
@@ -156,9 +216,16 @@ namespace MonsterTrain2Poju.Probe
                     return false;
                 }
                 ExportPlayerDeployment();
-                if (Replay && Records.Count == 0 && PlayerAdvisorProbe.ReplayFloorBrowsing()) return true;
+                if (ResumeRequested && preparedPrefix == null)
+                {
+                    PlayerAdvisorProbe.PauseForFrozenPlan();
+                    if (prefixVerification == null) throw new InvalidOperationException("Native prefix verification did not start.");
+                    if (!prefixVerification.IsCompleted) return true;
+                    preparedPrefix = prefixVerification.GetAwaiter().GetResult();
+                }
+                if (Replay && Records.Count == 0 && PlayerAdvisorProbe.ReplayFloorBrowsing(preparedPrefix?.Archive)) return true;
                 if (waiting) Observe(PlayerAdvisorProbe.Capture(), false);
-                if (ResumeRequested && !resumed && frozen != null && Records.Count == frozen.Length)
+                if (ResumeRequested && !resumed && Records.Count == FrozenCount)
                 {
                     resumeGeneration = PlayerAdvisorProbe.ResumeAfterFrozenPrefix();
                     resumed = true;
@@ -189,64 +256,9 @@ namespace MonsterTrain2Poju.Probe
             Decision decision;
             if (Replay)
             {
-                if (frozen == null)
-                {
-                    string source = Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_INPUT")!;
-                    using var input = System.IO.File.OpenRead(source);
-                    using var document = FixtureDocument.Read(input);
-                    var rows = document.RootElement.GetProperty("RollingDecisions").EnumerateArray().ToArray();
-                    foreach (FixtureValue row in rows)
-                    {
-                        if (!PlannerReplayScenario.SameChoices(PlannerReplayScenario.ReadChoices(row),
-                            PlannerReplayScenario.ReadChoices(row.GetProperty("PlanSteps")[0])))
-                            throw new InvalidOperationException("Frozen Relentless choices differ from the first forecast step.");
-                    }
-#if DEVELOPMENT_PROBE
-                    if (ResumeRequested)
-                    {
-                        if (!PlayerAdvisorProbe.Enabled) throw new InvalidOperationException("Native prefix resume requires the player advisor.");
-                        stalePredictions = VerifyResumePrefix(document.RootElement, rows, typeof(CardState).Module.ModuleVersionId);
-                        input.Position = 0;
-                        using var sha = System.Security.Cryptography.SHA256.Create();
-                        prefixSourceHash = BitConverter.ToString(sha.ComputeHash(input)).Replace("-", "").ToLowerInvariant();
-                    }
-#endif
-                    frozen = rows;
-                }
-                if (Records.Count >= frozen.Length) throw new InvalidOperationException("Frozen rolling sequence ended before native combat.");
-                // Decode only the next input. Prior native observations are
-                // replaced below; expanding them eagerly duplicates whole states.
-                decision = PlannerReplayScenario.ReadWithoutNativeObservation<Decision>(frozen[Records.Count]);
+                decision = ReplayDecision();
                 if (!Equal(decision.Root, root, false)) throw new InvalidOperationException("Fresh rolling replay root differs at decision " + Records.Count + ": " +
                     UnitPlayModelProbe.FirstDifference(BattleTurnProbe.Comparable(decision.Root), BattleTurnProbe.Comparable(root), "$"));
-#if DEVELOPMENT_PROBE
-                bool recordedPrefix = decision.Mode == "prefix-replay";
-#endif
-                decision.Mode = "replay"; decision.Nodes = 0; decision.Actual = null; decision.Timing = null; decision.Difference = null;
-#if DEVELOPMENT_PROBE
-                if (ResumeRequested)
-                {
-                    decision.Mode = "prefix-replay";
-                    decision.Expected = PlannerReplayScenario.Read<BattleTurnState>(frozen[Records.Count].GetProperty("Actual"));
-                    decision.PlanSteps = new List<PlannerReplayScenario.Step> { new PlannerReplayScenario.Step
-                    {
-                        Action = decision.Action, IsEndTurn = decision.IsEndTurn, RelentlessDecisions = decision.RelentlessDecisions
-                    } };
-                    decision.Planned = decision.Expected;
-                    decision.PlannedOutcome = decision.Outcome;
-                    decision.Score = BattlePlanner.Evaluate(decision.Expected, decision.Outcome);
-                    decision.PolicyBaselineScore = null;
-                    decision.Generation = 0;
-                    decision.ReusedContinuation = false;
-                    decision.ReusedWinningContinuation = false;
-                }
-                if (recordedPrefix || ResumeRequested)
-                {
-                    decision.RequestedHorizon = 0;
-                    decision.TurnsPlanned = 0;
-                    decision.UsedShorterHorizon = false;
-                }
-#endif
             }
             else
             {
@@ -309,6 +321,42 @@ namespace MonsterTrain2Poju.Probe
             return true;
         }
 
+        private static Decision ReplayDecision()
+        {
+#if DEVELOPMENT_PROBE
+            if (ResumeRequested)
+            {
+                if (preparedPrefix == null || Records.Count >= preparedPrefix.Inputs.Length)
+                    throw new InvalidOperationException("The verified native prefix is not available for this input.");
+                return preparedPrefix.Inputs[Records.Count];
+            }
+#endif
+            if (frozen == null)
+            {
+                using var document = FixtureDocument.Read(Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_INPUT")!);
+                var rows = document.RootElement.GetProperty("RollingDecisions").EnumerateArray().ToArray();
+                foreach (FixtureValue row in rows)
+                    if (!PlannerReplayScenario.SameChoices(PlannerReplayScenario.ReadChoices(row),
+                        PlannerReplayScenario.ReadChoices(row.GetProperty("PlanSteps")[0])))
+                        throw new InvalidOperationException("Frozen Relentless choices differ from the first forecast step.");
+                frozen = rows;
+            }
+            if (Records.Count >= frozen.Length) throw new InvalidOperationException("Frozen rolling sequence ended before native combat.");
+            // Decode only the next input. Prior native observations are
+            // replaced below; expanding them eagerly duplicates whole states.
+            Decision decision = PlannerReplayScenario.ReadWithoutNativeObservation<Decision>(frozen[Records.Count]);
+#if DEVELOPMENT_PROBE
+            if (decision.Mode == "prefix-replay")
+            {
+                decision.RequestedHorizon = 0;
+                decision.TurnsPlanned = 0;
+                decision.UsedShorterHorizon = false;
+            }
+#endif
+            decision.Mode = "replay"; decision.Nodes = 0; decision.Actual = null; decision.Timing = null; decision.Difference = null;
+            return decision;
+        }
+
         private static bool Equal(BattleTurnState expected, BattleTurnState actual, bool terminal) =>
             JToken.DeepEquals(BattleTurnProbe.Comparable(expected, terminal), BattleTurnProbe.Comparable(actual, terminal));
 
@@ -339,7 +387,7 @@ namespace MonsterTrain2Poju.Probe
                 FullBattleTrace.Active!.TerminalDecision ?? throw new InvalidOperationException("Native terminal checkpoint is missing."), true);
             if (Records.Last().Outcome is not (RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated))
                 throw new InvalidOperationException("Rolling model did not predict native combat completion.");
-            if (Replay && frozen!.Length != Records.Count) throw new InvalidOperationException("Native battle ended before the frozen rolling sequence.");
+            if (Replay && FrozenCount != Records.Count) throw new InvalidOperationException("Native battle ended before the frozen rolling sequence.");
             terminalObserved = true;
             log.LogInfo("ROLLING-REPLAY-PASS decisions=" + Records.Count + " mode=" + Records.Last().Mode);
         }

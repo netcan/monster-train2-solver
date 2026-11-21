@@ -577,13 +577,15 @@ namespace MonsterTrain2Poju.Probe
             return true;
         }
 
-        internal static bool ReplayFloorBrowsing()
+        internal static bool ReplayFloorBrowsing(FixtureValue? preparedArchive = null)
         {
             if (replayBrowseCount < 0)
             {
-                using var fixture = FixtureDocument.Read(Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_INPUT")!);
+                using var fixture = preparedArchive.HasValue ? null :
+                    FixtureDocument.Read(Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_INPUT")!);
+                FixtureValue archive = preparedArchive ?? fixture!.RootElement;
                 replayBrowseCount = 0;
-                if (fixture.RootElement.TryGetProperty("PlayerAdvisor", out FixtureValue player) && player.ValueKind != FixtureKind.Null &&
+                if (archive.TryGetProperty("PlayerAdvisor", out FixtureValue player) && player.ValueKind != FixtureKind.Null &&
                     player.TryGetProperty("FloorBrowse", out FixtureValue browse) &&
                     browse.ValueKind != FixtureKind.Null && browse.GetProperty("Passed").GetBoolean())
                 {
