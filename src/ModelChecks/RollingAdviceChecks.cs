@@ -151,6 +151,12 @@ internal static class RollingAdviceChecks
         Pair(source, replay, baseline);
         Console.WriteLine("ROLLING-ADVICE-VICTORY PASS: actual boss, native victory and winning fresh frozen replay.");
     }
+    internal static void PrefixResumePair(FixtureValue source, FixtureValue replay)
+    {
+        Require(source.TryGetProperty("RollingPrefixResume", out FixtureValue resume) && resume.ValueKind == FixtureKind.Object,
+            "Source capture has no native prefix handoff.");
+        FrozenPair(source, replay);
+    }
     internal static void FrozenPair(FixtureValue source, FixtureValue replay, bool conduitCalibration = false, string? calibration = null,
         bool sourceFrozen = false)
     {
