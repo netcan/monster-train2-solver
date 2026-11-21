@@ -3337,7 +3337,13 @@ namespace MonsterTrain2Poju.Model
                             unsupportedReason = "Avarice requires captured native damage source card metadata.";
                             return;
                         }
-                        eligible = sourceCard.MaskDescriptor.Definition.AuthoredUnitAbility;
+                        // The authored mask describes whether the card spawns an ability owner.
+                        // Match the damage source to the activating unit's cached skill card.
+                        eligible = sourceCard.MaskDescriptor.Definition.AuthoredUnitAbility ||
+                            actor.Source.Ability is { Definition.IsUnitAbility: true } ability &&
+                            context?.LastAbilityActivatorUnitId == actor.Source.Id &&
+                            sourceCard.DataId == ability.DataId &&
+                            context.AbilityCardCache?.Any(entry => entry.InstanceId == sourceCardId && entry.DataId == ability.DataId) == true;
                     }
                     if (eligible && !source.Preview)
                     {
