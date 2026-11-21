@@ -144,12 +144,12 @@ namespace MonsterTrain2Poju.Model
             // validation and the separate character/global-moon dispatchers.
             if (relic.EffectTypes.Count > 0 && relic.EffectTypes.All(type => type == RelicModel.AddTrigger))
                 return RelicCharacterTriggerModel.Validate(relic) == null;
-            // Arkion's original artifact combines a character-death trigger
-            // installer with a sealed no-op effect. Neither receives moon or
-            // CardUpdated callbacks; keep its complete effect order and the
-            // separately validated character-trigger payload.
-            if (relic.DataId == "85ee2dcc-aa59-4be3-90ad-2a1d6ecba3df" &&
-                relic.AssetKey == "Enemy_Boss_Level3SiphonRage" && relic.DisallowedInPlacementPhase == false &&
+            // Both original Siphon Rage owners install a character-death trigger
+            // and carry a no-op effect. The character callback is validated separately.
+            if ((relic.DataId, relic.AssetKey) is
+                    ("85ee2dcc-aa59-4be3-90ad-2a1d6ecba3df", "Enemy_Boss_Level3SiphonRage") or
+                    ("1ee2320c-75e1-4d28-93c6-24c160bab659", "Enemy_Boss_Level3SiphonRage_TitanTrial") &&
+                relic.DisallowedInPlacementPhase == false &&
                 relic.EffectTypes.SequenceEqual(new[] { RelicModel.AddTrigger, RelicModel.Null }))
                 return RelicCharacterTriggerModel.Validate(relic) == null;
             // Start-turn propagation has its own before-draw dispatcher. A
