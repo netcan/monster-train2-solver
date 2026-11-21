@@ -145,7 +145,8 @@ internal static class Game231RecordedChainTriage
             "mechanics/friendly-trigger-damage/eaten.mt2f" => "OriginalEatenDamage",
             _ => null
         };
-        bool lifeLinkSetup = archive == "mechanics/lifelink-maximum/full-battle.mt2f" ||
+        bool earlyEntropy = archive == "mechanics/lifelink-early-sacrifice/entropy-bottom-battle.mt2f";
+        bool lifeLinkSetup = earlyEntropy || archive == "mechanics/lifelink-maximum/full-battle.mt2f" ||
             archive.StartsWith("mechanics/lifelink-sacrifice/", StringComparison.Ordinal);
         if (friendlySetup == null && !lifeLinkSetup) return false;
 
@@ -174,7 +175,8 @@ internal static class Game231RecordedChainTriage
         }
 
         if (!battle.TryGetProperty("TrueFinalBossMaximumBattle", out FixtureValue control) || control.ValueKind != FixtureKind.Object ||
-            !Flag(control, "Prepared") || !Flag(control, "AuthoredCardsAndDrawOrder")) return false;
+            !Flag(control, "Prepared") || !Flag(control, "AuthoredCardsAndDrawOrder") ||
+            earlyEntropy && !Flag(control, "EarlyEntropy")) return false;
         BattleTurnState before = control.GetProperty("Before").Deserialize<BattleTurnState>()!;
         BattleTurnState after = control.GetProperty("Actual").Deserialize<BattleTurnState>()!;
         RecordedBattleChecks.Compare(deployed, before, false, "before recorded LifeLink hand setup");
