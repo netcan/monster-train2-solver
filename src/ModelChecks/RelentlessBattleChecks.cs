@@ -39,10 +39,10 @@ internal static class RelentlessBattleChecks
         foreach (FixtureValue turn in turns)
         {
             int number = turn.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32();
-            var expected = RecordedBattleChecks.Decisions(turn)!;
+            var expected = RecordedBattleChecks.Decisions(turn) ?? Array.Empty<RelentlessDecision>();
             var observed = dialogs.Where(dialog => dialog.GetProperty("Turn").GetInt32() == number).Select(dialog => new RelentlessDecision(
                 dialog.GetProperty("RoomIndex").GetInt32(), dialog.GetProperty("CompletedRounds").GetInt32(), dialog.GetProperty("Continue").GetBoolean())).ToArray();
-            Require(expected != null && Serialize(expected) == Serialize(observed) && expected.All(choice =>
+            Require(Serialize(expected) == Serialize(observed) && expected.All(choice =>
                 choice.CompletedRounds % 3 == 0 && choice.Continue != abandon), "Native input sequence differs from recorded plan.");
         }
         RoomCombatChecks.NativeRoomOnly(path); TrainCombatChecks.Native(root); BattleTurnChecks.Native(root);

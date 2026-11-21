@@ -830,6 +830,12 @@ Pyregel 归档，以及逐层伤害和供奉的整局与串并行搜索定向回
 `scripts/Run-FullBattleProbe.ps1 -RelentlessBattle Abandon`（或 `Continue`），
 配合 `-NativeWorker 3 -GameSpeed Instant -BinaryCapture`。
 
+通用冻结回放另有两份独立的原版胜局，每场复放一次出牌和七次 EndTurn。
+两场通过原版按钮分别确认一次「放弃」和十次「继续」，核对每次对话的楼层、轮次、
+选择顺序，以及完整后继和 RNG。两份二进制归档合计 60,115 字节，哈希见
+[回放归档清单](../tests/compatibility/game-2.3.1/mechanics/relentless-frozen-replay/manifest.tsv)。
+运行 `scripts/Check-Game231RelentlessFrozenReplay.ps1` 可离线复验。
+
 实际薪火长战的无通知分支尚未由该组件单独验收。旧归档缺少间隔时保留其旧输入
 语义。隐藏世界策略的选择前沿尚未接入，614／236 的全量重验仍未完成。
 
