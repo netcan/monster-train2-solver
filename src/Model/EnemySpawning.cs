@@ -164,7 +164,7 @@ namespace MonsterTrain2Poju.Model
                     CombatUnit unit = AbilityLifecycleModel.SuppressAtSpawn(definition.Create(allocated.UnitId), context);
                     Insert(rooms[roomIndex], unit);
                     movement.Add(new EnemyMovement(unit.Id, 1, definition.Ascends, definition.Loops, definition.CompanionBoss));
-                    error = Initialize(unit, roomIndex);
+                    error = Initialize(unit, roomIndex, enteredDuringCreation: true);
                     if (error != null) return Unsupported(error);
                     enteredPyre |= roomIndex == pyre;
                     entered.Add(unit.Id);
@@ -220,7 +220,7 @@ namespace MonsterTrain2Poju.Model
             }
             return Finish();
 
-            string? Initialize(CombatUnit unit, int index)
+            string? Initialize(CombatUnit unit, int index, bool enteredDuringCreation = false)
             {
                 if (context?.SpawnPoints != null)
                 {
@@ -271,17 +271,25 @@ namespace MonsterTrain2Poju.Model
                             callbacks.Add(new RoomCombatModel.QueuedCharacterTrigger(index, initialized, gained));
                     }
                 }
+                // A regular wave enters the train inside CreateHeroState's callback.
+                // Creation then updates room attachments before wave Covenant callbacks.
+                if (enteredDuringCreation && ApplyAttachment() is string attachmentError) return attachmentError;
                 RoomCombatResult relics = RelicSpawnStatusModel.CharacterAdded(new RoomCombatState(index, original.Deployment,
                     rooms[index], original.ExternalInteractions, context, original.Preview, original.ActiveCompanionBossIds), unit.Id, 0, true);
                 if (!relics.Supported) return relics.UnsupportedReason;
                 ImportRoom(relics.State!); callbacks.AddRange(relics.PendingCallbacks);
-                RoomCombatState attachmentRoom = new RoomCombatState(index, original.Deployment, rooms[index],
-                    original.ExternalInteractions, context, original.Preview, original.ActiveCompanionBossIds);
-                RoomCombatState? attached = RoomAttachmentUnitModel.ApplyToNewCharacter(attachmentRoom, unit.Id, out error);
-                if (error != null || attached == null) return error ?? "Room attachment enemy-birth synchronization failed.";
-                attached = EnchantmentWorldModel.Sync(attached);
-                context = attached.Context; rooms[index] = attached.Units.ToList();
-                return null;
+                return enteredDuringCreation ? null : ApplyAttachment();
+
+                string? ApplyAttachment()
+                {
+                    var attachmentRoom = new RoomCombatState(index, original.Deployment, rooms[index],
+                        original.ExternalInteractions, context, original.Preview, original.ActiveCompanionBossIds);
+                    RoomCombatState? attached = RoomAttachmentUnitModel.ApplyToNewCharacter(attachmentRoom, unit.Id, out string? failure);
+                    if (failure != null || attached == null) return failure ?? "Room attachment enemy-birth synchronization failed.";
+                    attached = EnchantmentWorldModel.Sync(attached);
+                    context = attached.Context; rooms[index] = attached.Units.ToList();
+                    return null;
+                }
             }
 
             void ImportRoom(RoomCombatState changed)
