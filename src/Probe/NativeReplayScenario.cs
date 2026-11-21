@@ -695,6 +695,14 @@ namespace MonsterTrain2Poju.Probe
                     screen.GetScreen(ScreenName.BattleIntro) is BattleIntroScreen intro &&
                     (bool)fightAvailable.GetValue(intro)! && intro.GetFightButton().interactable)
                 {
+#if DEVELOPMENT_PROBE
+                    if (fullBattle && OriginalSpurnedScenario.Enabled)
+                    {
+                        OriginalSpurnedScenario.Request(save, log);
+                        Enter(Stage.Battle, 120f);
+                        return;
+                    }
+#endif
                     OriginalOuterBossRoute.PrepareIntro(save, intro, log);
                     if (fullBattle && OriginalStartRoomAttachmentScenario.InstalledInferno && !OriginalStartRoomAttachmentScenario.Acquired)
                         OriginalStartRoomAttachmentScenario.AcquireBeforeBattle(managers!, log);
@@ -897,6 +905,16 @@ namespace MonsterTrain2Poju.Probe
                 OriginalAffordableNonPlayableScenario.Tick(managers, log);
                 if (OriginalAffordableNonPlayableScenario.Error is string error) throw new InvalidOperationException(error);
                 if (OriginalAffordableNonPlayableScenario.Completed) Finish(true, "Original affordable nonplayable component captured.");
+                return;
+            }
+            if (fullBattle && OriginalSpurnedScenario.Enabled)
+            {
+                if (OriginalSpurnedScenario.Completed) Finish(true, "Original Spurned component captured.");
+                else if (!OriginalSpurnedScenario.Tick(managers, log))
+                {
+                    if (combat.GetTurnCount() >= 5) throw new InvalidOperationException("No native Spurned attack input by turn five.");
+                    AdvanceTurn(combat);
+                }
                 return;
             }
             if (fullBattle && OriginalChangedTempUpgradeRelicsScenario.Enabled)

@@ -486,7 +486,9 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() != "CardEffectFeederRules" &&
                 !effect.GetParamSubtype().IsNone) ||
                 (handUpgrade ? effect.GetTargetMode() != TargetMode.Hand && effect.GetTargetMode() != TargetMode.Room :
-                    !cardOnlyGenerationTarget && !cardOnlyDrawTarget && !randomDiscardHandTarget && !recursionCardPileTarget && !CardTargetModel.Supports(effect.GetTargetMode().ToString())))
+                    !cardOnlyGenerationTarget && !cardOnlyDrawTarget && !randomDiscardHandTarget && !recursionCardPileTarget &&
+                    !(cardTrigger && effect.GetEffectStateName() == "CardEffectAddStatusEffectPerOtherEffect" && effect.GetTargetMode() == TargetMode.LastAttackedCharacter) &&
+                    !CardTargetModel.Supports(effect.GetTargetMode().ToString())))
                 interactions.Add("Spell scaling or target filters");
             string type = EnergyModel.IsNativeEffect(effect.GetEffectStateName()) ? EnergyEffectProbe.Type(effect) :
                 effect.GetEffectStateName() == "CardEffectNULL" ? "Null" :

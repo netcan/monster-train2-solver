@@ -737,6 +737,7 @@ param(
     [switch] $OriginalChangedTempUpgradeRelics,
     [switch] $OriginalPriorityRelicBattle,
     [switch] $OriginalAffordableNonPlayable,
+    [switch] $OriginalSpurned,
     [switch] $OriginalRageOnBurnoutStackLoss,
     [switch] $OriginalPyreRevenge,
     [switch] $OriginalExtractForEmberAndEchos,
@@ -1458,6 +1459,9 @@ if ($OriginalAffordableNonPlayable) {
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
     $Policy = 'units-and-junk'
+}
+if ($OriginalSpurned -and (-not $BinaryCapture -or -not $InputProfile -or $BattleDistance -ne 3 -or $PlayerAdvisor -or $Planner)) {
+    throw 'OriginalSpurned requires an isolated Ring 4 BattleIntro checkpoint and binary capture.'
 }
 if ($OriginalRageOnBurnoutStackLoss) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPyreRevenge) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -2725,6 +2729,7 @@ if ($OriginalPriorityRelicBattle) {
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
 if ($OriginalAffordableNonPlayable) { $environment['MT2_PROBE_MODIFIERS'] = 'original-affordable-nonplayable' }
+if ($OriginalSpurned) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spurned'; $environment['MT2_PROBE_PHYSICAL_SPAWNPOINTS'] = '1' }
 if ($OriginalRageOnBurnoutStackLoss) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rage-on-burnout-stack-loss' }
 if ($RankThreeRoomSlayExecution) { $environment['MT2_PROBE_MODIFIERS'] = 'rank-three-room-slay-execution' }
 if ($OriginalPyreRevenge) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-revenge' }
@@ -3154,6 +3159,32 @@ if ($EnchantmentCombatOnly) {
     } finally { $componentDocument.Dispose() }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
         ModelAcceptance='Pending independent focused checker'; Trace=$componentPath } | ConvertTo-Json
+    return
+}
+if ($OriginalSpurned) {
+    $capturePath = Join-Path $profile 'spurned-attack.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Spurned component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Original Spurned capture failed; inspect $unityLog" }
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $document = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
+    try {
+        $capture = $document.RootElement.ToObjectGraph()
+        $damage = @($capture.TickDamage)
+        if ($capture.Schema -ne 1 -or $capture.Boundary -cne 'NativeOriginalSpurnedAttack' -or
+            $capture.GameVersion -cne '2.3.1' -or $capture.GameModuleMvid -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+            $capture.Scenario -cne 'SoulSavior_R4_BossBattle_EstrangedChild_2' -or -not $capture.TestScenario -or
+            $capture.Attacks -ne 1 -or -not $capture.TickFired -or $null -eq $capture.AfterAttack.Train.Context.SpawnPoints -or
+            ($damage.Before.Id -join ',') -ne "$($capture.AfterAttack.Target.Id),$($capture.AfterAttack.Boss.Id)" -or
+            @($damage | Where-Object { $_.Amount -ne 2 -or $null -eq $_.After }).Count -ne 0 -or
+            $capture.AfterMalaise.Boss.MaxHealth - $capture.BeforeMalaise.Boss.MaxHealth -ne -2 -or
+            $capture.AfterRemoval.Boss.MaxHealth -ne $capture.BeforeMalaise.Boss.MaxHealth -or
+            ($capture.AfterAttack.Boss.Statuses | Where-Object Id -EQ 'armor').Stacks -ne 6 -or
+            ($capture.AfterAttack.Target.Statuses | Where-Object Id -EQ 'witherbloom').Stacks -ne 2) {
+            throw 'Original Spurned component did not observe Malaise, a native attack and ordered Witherbloom damage.'
+        }
+    } finally { $document.Dispose() }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true; TestScenario=$true; Trace=$capturePath } | ConvertTo-Json
     return
 }
 if ($OriginalAffordableNonPlayable) {
