@@ -6949,10 +6949,11 @@ if (args.Length == 5 && args[0] == "--outer-boss-fragile-only")
     return;
 }
 
-if (args.Length == 2 && args[0] == "--outer-boss-birth-only")
+if (args.Length is 2 or 3 && args[0] == "--outer-boss-birth-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    OuterBossBirthChecks.Native(fixture.RootElement);
+    if (args.Length == 3) OuterBossBirthChecks.Native(fixture.RootElement, args[2]);
+    else OuterBossBirthChecks.Native(fixture.RootElement);
     return;
 }
 
