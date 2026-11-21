@@ -984,9 +984,9 @@ $earlyTrialVariant = switch ($OriginalEarlyOuterBossVariant) {
 }
 $earlyTrialSubstitution = $OriginalOuterBossTrial -and $null -ne $earlyTrialVariant
 $caelTrial = $earlyTrialSubstitution -and $null -ne $earlyTrialVariant.SourceId
-if ($OriginalCaelTrialCovenant -eq 2 -and (-not $OriginalCaelTrialBirthDiagnostic -or
+if ($OriginalCaelTrialCovenant -eq 2 -and ((-not $OriginalCaelTrialBirthDiagnostic -and -not $OriginalEarlyOuterBossTrialBattle) -or
     -not $caelTrial -or $OriginalEarlyOuterBossVariant -cne 'CaelDamageShield')) {
-    throw 'OriginalCaelTrialCovenant 2 requires the original Cael shield birth diagnostic.'
+    throw 'OriginalCaelTrialCovenant 2 requires an original Cael shield trial capture.'
 }
 if ($OriginalCaelTrialBirthDiagnostic -and (-not $caelTrial -or $OriginalEarlyOuterBossTrialBattle -or
     ($OriginalEarlyOuterBossVariant -ceq 'CaelDamageShield' -and $OriginalCaelTrialCovenant -eq 0))) {
