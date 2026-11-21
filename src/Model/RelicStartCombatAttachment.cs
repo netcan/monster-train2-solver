@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace MonsterTrain2Poju.Model
@@ -18,12 +19,23 @@ namespace MonsterTrain2Poju.Model
         internal const string Floor2UpgradeKey = "SpellSanctum_Upgrade";
         internal const string Floor3UpgradeId = "f93ac9f7-45d2-47a4-a159-a1b326bd047f";
         internal const string Floor3UpgradeKey = "FightClub";
+        internal const string InfernoMutatorId = "a5b3592e-e0ee-457d-8cd4-9fa102dfdc32";
+        internal const string InfernoMutatorKey = "Echoes_InfernoRoomInstalled";
+        internal const string InfernoUpgradeId = "96547940-8feb-4f73-b147-c763a64161c2";
+        internal const string InfernoUpgradeKey = "InfernoRoom";
+
+        private static bool IsInfernoMutator(CombatRelicState relic) =>
+            relic.DataId == InfernoMutatorId && relic.AssetKey == InfernoMutatorKey;
 
         internal static string? Validate(CombatRelicState relic)
         {
             int[] indices = relic.EffectTypes.Select((type, index) => (type, index))
                 .Where(item => item.type == Effect).Select(item => item.index).ToArray();
             if (indices.Length == 0) return null;
+            if (IsInfernoMutator(relic))
+                return relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false &&
+                    relic.EffectTypes.Count == 3 && indices.Length == 3
+                    ? null : "Unmodeled opening Inferno mutator effect order.";
             bool knownOwner = relic.DataId == RelicId && relic.AssetKey == RelicKey ||
                 relic.DataId == Floor2RelicId && relic.AssetKey == Floor2RelicKey ||
                 relic.DataId == Floor3RelicId && relic.AssetKey == Floor3RelicKey;
@@ -39,6 +51,12 @@ namespace MonsterTrain2Poju.Model
             if (context == null || context.RoomCapacities == null) return "Missing captured start-of-combat room attachment state.";
             foreach (CombatRelicState owner in owners)
             {
+                if (IsInfernoMutator(owner))
+                {
+                    string? error = ValidateInfernoRooms(context);
+                    if (error != null) return error;
+                    continue;
+                }
                 bool floor2 = owner.DataId == Floor2RelicId;
                 bool floor3 = owner.DataId == Floor3RelicId;
                 int roomIndex = floor3 ? 2 : floor2 ? 1 : 0;
@@ -50,9 +68,7 @@ namespace MonsterTrain2Poju.Model
                 // This relic installs once. A later card can replace that
                 // ordinary slot; require the captured creation ordinal and a
                 // current card-owned replacement instead of the retired slot.
-                if (room?.IsPyre == false && attachments.Length == 0 && room.AttachmentsAddedFromCards > 0 &&
-                    room.Attachments?.Count == 1 && room.Attachments.All(item => item.AttachmentType == 0 &&
-                        context.CardInstances?.Any(card => card.DataId == item.DataId) == true)) continue;
+                if (attachments.Length == 0 && HasCardReplacement(context, room)) continue;
                 if (room?.IsPyre != false || attachments.Length != 1)
                     return "Incomplete original start-of-combat room attachment state.";
                 RoomCapacityAttachmentState attachment = attachments[0];
@@ -79,6 +95,33 @@ namespace MonsterTrain2Poju.Model
                 }
                 else if (upgrade.TriggerUpgrades?.Count != 1 || upgrade.TriggerUpgrades[0].Kind != "OnDeath")
                     return "Unmodeled original FuelCar room attachment upgrade payload.";
+            }
+            return null;
+        }
+
+        private static bool HasCardReplacement(CombatContext context, RoomCapacityState? room) =>
+            room is { IsPyre: false, AttachmentsAddedFromCards: > 0, Attachments: [{ AttachmentType: 0 } attachment] } &&
+            context.CardInstances?.Any(card => card.DataId == attachment.DataId) == true;
+
+        private static string? ValidateInfernoRooms(CombatContext context)
+        {
+            if (context.Relics!.Count(IsInfernoMutator) != 1)
+                return "Expected one original opening Inferno mutator.";
+            var identities = new HashSet<Guid>();
+            for (int floor = 0; floor < 3; floor++)
+            {
+                RoomCapacityState? room = context.RoomCapacities!.FirstOrDefault(item => item.RoomIndex == floor);
+                if (HasCardReplacement(context, room)) continue;
+                if (room?.IsPyre != false || room.Attachments?.Where(attachment => attachment.AttachmentType == 0).ToArray() is not
+                    [{ DataId: InfernoUpgradeId, AssetKey: InfernoUpgradeKey, CapacityDelta: 0, SpellCostDelta: 0,
+                       EnergyPerTurnDelta: 0, AffectsHeroes: true, AffectsMonsters: true, IgnoreBosses: false,
+                       MoonPhase: null, PostCombat: null, DeathEffect: null, SpellUpgrade: null, Ability: null,
+                       Echo: null, CorruptionModifier: null, SpawnCopySubtype: null } attachment] ||
+                    attachment.CharacterFilters?.Count > 0 || attachment.StatusStackBonuses?.Count > 0 ||
+                    attachment.EnemyEntry?.Count > 0 || !Guid.TryParse(attachment.AttachmentId, out Guid identity) ||
+                    identity == Guid.Empty || !identities.Add(identity) ||
+                    !RoomAttachmentUnitModel.InfernoPayload(attachment))
+                    return "Incomplete original opening Inferno room attachment state.";
             }
             return null;
         }

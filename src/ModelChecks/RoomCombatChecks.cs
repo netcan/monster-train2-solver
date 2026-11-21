@@ -244,7 +244,9 @@ internal static class RoomCombatChecks
                     target.GetProperty("Unit").Deserialize<CombatUnit>()!)).ToArray()
                 : Array.Empty<(int, CombatUnit)>();
             RoomCombatResult result = stage.GetProperty("Kind").GetString() == "Exchange"
-                ? RoomCombatModel.Exchange(state, externalTargets: externalTargets) : RoomCombatModel.Resolve(state,
+                ? RoomCombatModel.Exchange(state, externalTargets: externalTargets,
+                    pendingPhysicalDeathIds: stage.TryGetProperty("PendingPhysicalDeaths", out FixtureValue deaths)
+                        ? deaths.Deserialize<int[]>() : null) : RoomCombatModel.Resolve(state,
                     externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets,
                     relentlessDecisions: RecordedBattleChecks.Decisions(stage));
             if (!result.Supported) { unsupported++; firstUnsupported ??= result.UnsupportedReason; continue; }

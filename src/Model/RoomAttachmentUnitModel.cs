@@ -431,10 +431,14 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static bool OriginalInferno(RoomCapacityAttachmentState attachment) =>
-            attachment is { AssetKey: "InfernoRoom", DataId: "378cea0c-14e9-45fb-9918-fb853bd04a7d", CharacterUpgrades.Count: 1,
+            attachment.DataId == "378cea0c-14e9-45fb-9918-fb853bd04a7d" && InfernoPayload(attachment);
+
+        internal static bool InfernoPayload(RoomCapacityAttachmentState attachment) =>
+            attachment is { AssetKey: RelicStartCombatAttachmentModel.InfernoUpgradeKey, CharacterUpgrades.Count: 1,
                 PreCombat: { DisallowedInDeployment: true, FocusRoom: true, Effects.Count: 1 } preCombat } &&
             RoomPreCombatModel.Validate(preCombat) == null &&
-            attachment.CharacterUpgrades[0] is { AssetKey: "InfernoRoom", DataId: "96547940-8feb-4f73-b147-c763a64161c2" } upgrade &&
+            attachment.CharacterUpgrades[0] is { AssetKey: RelicStartCombatAttachmentModel.InfernoUpgradeKey,
+                DataId: RelicStartCombatAttachmentModel.InfernoUpgradeId } upgrade &&
             new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }.All(stat => upgrade.Stats.Value(stat) == 0) &&
             upgrade.Statuses.Count == 0 && upgrade.ExternalInteractions.Count == 0 && upgrade.TriggerUpgrades?.Count is not > 0 && upgrade.AbilityUpgrade == null;
 

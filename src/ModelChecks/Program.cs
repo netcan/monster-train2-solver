@@ -7900,6 +7900,12 @@ if (args.Length == 2 && args[0] == "--original-start-room-attachment-only")
     Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={document.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={document.UniqueNodeCount}");
     return;
 }
+if (args.Length == 2 && args[0] == "--installed-inferno-rooms-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    InstalledInfernoRoomChecks.Native(document.RootElement);
+    return;
+}
 if (args.Length == 1 && args[0] == "--relic-card-draw-on-card-play-model-only")
 {
     RelicCardDrawOnCardPlayChecks.Run();
