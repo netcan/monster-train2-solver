@@ -93,6 +93,17 @@ namespace MonsterTrain2Poju.Model
             BattleSpawnPoints points = context.SpawnPoints!;
             context = context.WithSpawnPoints(points.WithState(points.Groups, points.Units.Append(
                 new UnitSpawnPointState(allocation.UnitId, null, null, outerBoss: true)).ToArray()));
+            CombatUnit created = actor.Create(allocation.UnitId, applyBirthStats: false);
+            // Native setup applies starting Mass before placement. Captured stat history
+            // stores its attack contribution separately from the registered stacks.
+            if (OuterBossDefinitions.IsFleshweaver(created.AssetKey) && created.Modifiers?.DamageBuffFromStatusEffects == 0 &&
+                created.Status("mass") is CombatStatus mass)
+            {
+                StatusAttackDamageResult startingMass = StatusAttackDamageModel.Change(context, created, mass, mass.Stacks, adding: true);
+                if (!startingMass.Supported) return Fail(startingMass.UnsupportedReason!);
+                created = startingMass.Unit!;
+                context = startingMass.Context!;
+            }
             train = CardSpellModel.WithContext(train, context);
             var spawn = new EnemySpawnState(train, old.Waves, old.SelectedGroups, old.Phase, old.Looping, old.Rng,
                 allocation.NextUnitId, old.Treasures, old.TreasuresRemaining, old.TreasureEnabled, old.FirstTreasureTurn,
@@ -102,7 +113,6 @@ namespace MonsterTrain2Poju.Model
                 battle.ForgePoints, battle.DragonsHoard, battle.MoonPhase, battle.RngStreams, battle.OtherPiles,
                 battle.ExternalInteractions, battle.PlayRules, battle.BattlePreviewEnabled, battle.UiRngIsolated,
                 battle.CanonicalDecisionReferences, battle.CanonicalPhysicalReferences, battle.SelectedRoom, battle.MoonPhaseTrackingActive);
-            CombatUnit created = actor.Create(allocation.UnitId, applyBirthStats: false);
             if (calibratedMoon)
                 created = MoonPhaseStatusModel.WithPhase(created, moon).WithMoonPhaseMask(moon);
             else if (battle.MoonPhaseTrackingActive == false && created.MoonPhaseMask.HasValue && moon is 1 or 2)
