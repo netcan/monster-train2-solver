@@ -432,9 +432,47 @@ internal static class CardCoverageInventory
         return false; // Legacy schemas without base-trait evidence stay unverified.
     }
 
+    private static bool MatchesRecordedStatisticTrait(FixtureValue trait, int amount, string trackedValue, string duration,
+        bool scaling = false, string? statusId = null)
+    {
+        if (trait.GetProperty("Int").GetInt32() != amount ||
+            trait.GetProperty("Int2").GetInt32() != 0 || trait.GetProperty("Int3").GetInt32() != 0 ||
+            trait.GetProperty("Bool").ValueKind != FixtureKind.False || trait.GetProperty("Str").GetString() != "" ||
+            trait.GetProperty("Float").GetDouble() != 1 ||
+            trait.GetProperty("Scaling").ValueKind != (scaling ? FixtureKind.True : FixtureKind.False) ||
+            Text(trait, "TrackedValue") != trackedValue || Text(trait, "EntryDuration") != duration ||
+            !new[] { "StatusQueryTeam", "StatusQueryStatuses", "HandCostTargetType", "DeploymentDrawFlag",
+                "SpecificCardDataId", "MoonPhaseUpgrade" }.All(name => trait.GetProperty(name).ValueKind == FixtureKind.Null))
+            return false;
+
+        FixtureValue statuses = trait.GetProperty("StatusEffectIds");
+        return statusId == null ? statuses.ValueKind == FixtureKind.Null :
+            statuses.ValueKind == FixtureKind.Array && Strings(trait, "StatusEffectIds").SequenceEqual(new[] { statusId });
+    }
+
     private static bool CalibratedSourceTrait(FixtureValue trait, string cardId)
     {
         string type = Text(trait, "Type");
+        // Original Devotion and Punished battle captures retain these statistic query parameters.
+        if (type == "CardTraitScalingAddDamage")
+        {
+            if (cardId == "b64904e9-ab9c-44d8-ac40-f53a9c9edd03") // Agonize
+                return MatchesRecordedStatisticTrait(trait, 30, "MonolithLevel", "ThisTurn", scaling: true);
+            if (cardId == "83e4e7bd-e285-4239-8e99-6987b49db839") // DivinePunishment
+                return MatchesRecordedStatisticTrait(trait, 20, "MonolithLevel", "ThisTurn", scaling: true);
+            if (cardId == "0c6d7cb8-510a-4658-8cb0-4ec6752d97db") // EchoOfPain
+                return MatchesRecordedStatisticTrait(trait, 1, "DamageDealtToMonsters", "ThisBattle");
+        }
+        if (cardId == "6dc0af49-3ede-4091-afeb-8676eca15ca2" && type == "CardTraitScalingAddStatusEffect") // InitiateSermon
+            return MatchesRecordedStatisticTrait(trait, 2, "MonolithLevel", "ThisTurn", statusId: "zeal");
+        if (cardId == "1f703e6f-ef57-4904-8d3f-ddd38040ad1a") // PunishedSpike
+            return type switch
+            {
+                "CardTraitExhaustState" => MatchesRecordedStatisticTrait(trait, 10, "PlayedCost", "ThisTurn"),
+                "CardTraitScalingAddEffectApplications" => MatchesRecordedStatisticTrait(trait, 1, "PlayedCost", "ThisTurn"),
+                "CardTraitScalingAddStatusEffect" => MatchesRecordedStatisticTrait(trait, 8, "PlayedCost", "ThisTurn", statusId: "zeal"),
+                _ => false
+            };
         bool infusion = cardId is "3cf25a9b-daa1-42cd-8174-eb0f59cd590f" or "b4029b77-12b3-4d88-b10b-c6c0e6b62db8" or
             "3f0d7968-ba33-4ad7-94d7-b0f867de837a" or "af13aa32-5442-408a-b491-229362c634f8";
         bool actorCorrupt = cardId is "c59d1814-0e0e-414c-b82f-a71cead2951f" or "127b5582-1e59-4ce0-afdb-9ccc2d59f913";
