@@ -317,10 +317,13 @@ namespace MonsterTrain2Poju.Model
                         externalTargets: tower ? targets : null,
                         birthBump: (frame, action, actorId) =>
                         {
+                            // An earlier effect in the same spawn callback can already have changed remote actors.
+                            EnchantmentWorld? world = frame.Context?.Enchantments;
                             var train = EnchantmentWorldModel.Rebase(new TrainCombatState(source.Train.Rooms.Select((originalRoom, at) =>
-                                at == frame.RoomIndex ? frame : new RoomCombatState(at, originalRoom.Deployment, rooms[at],
+                                at == frame.RoomIndex ? frame : new RoomCombatState(at, originalRoom.Deployment,
+                                    world?.Rooms.FirstOrDefault(shared => shared.RoomIndex == at)?.Units ?? rooms[at],
                                     originalRoom.ExternalInteractions, frame.Context, originalRoom.Preview, originalRoom.ActiveCompanionBossIds))
-                                .ToArray(), movement, source.Train.EnemySlotsPerRoom, frame.Context));
+                                .ToArray(), world?.Movement ?? movement, source.Train.EnemySlotsPerRoom, frame.Context));
                             if (roomRules == null)
                                 return new BumpResult(null, RoomOutcome.Unsupported, "Harvester birth requires captured room rules.",
                                     Array.Empty<CombatEvent>(), Array.Empty<CombatUnit>(), Array.Empty<RoomCombatModel.QueuedCharacterTrigger>(),
