@@ -731,6 +731,7 @@ param(
     [switch] $OriginalOpeningForsakenTrial,
     [switch] $CardBackedFeeding,
     [switch] $ForcedFeeding,
+    [switch] $OriginalSourceBackedFeeding,
     [switch] $ShroudSpikeFeeding,
     [switch] $OriginalOpeningDeckSpawnRelic,
     [switch] $OriginalMonsterSpellTargeting,
@@ -1278,6 +1279,16 @@ if ($OriginalHealingCleanse) { $BranchCardMasks = $true; $PhysicalSpawnPoints = 
 if ($OriginalOnKill) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalOnKillGeneration) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMorselEaten) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalSourceBackedFeeding) {
+    $feedingArguments = @('OriginalSourceBackedFeeding', 'NativeWorker', 'NativeBuildRoot', 'TimeoutSeconds',
+        'GameSpeed', 'ShowWindow', 'BinaryCapture', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction')
+    if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $feedingArguments }).Count) {
+        throw 'Original source-backed feeding requires a separate binary capture.'
+    }
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = 'units-spells-and-junk'
+}
 if ($OriginalUnitBuffs) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalKillCopy) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalKillResource) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
@@ -2538,6 +2549,7 @@ if ($OriginalHealingCleanse) { $environment['MT2_PROBE_MODIFIERS'] = 'original-h
 if ($OriginalOnKill) { $environment['MT2_PROBE_MODIFIERS'] = 'original-on-kill' }
 if ($OriginalOnKillGeneration) { $environment['MT2_PROBE_MODIFIERS'] = 'original-on-kill-generation' }
 if ($OriginalMorselEaten) { $environment['MT2_PROBE_MODIFIERS'] = 'original-morsel-eaten' }
+if ($OriginalSourceBackedFeeding) { $environment['MT2_PROBE_MODIFIERS'] = 'original-source-backed-feeding' }
 if ($OriginalUnitBuffs) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-buffs' }
 if ($OriginalKillCopy) { $environment['MT2_PROBE_MODIFIERS'] = 'original-kill-copy' }
 if ($OriginalFriendlyStatuses) { $environment['MT2_PROBE_MODIFIERS'] = 'original-friendly-statuses' }
@@ -3430,6 +3442,16 @@ if ($OriginalThikDeckChange) {
         ThikTier=$OriginalThikTier; ThikId=$soulId; Trace=$capturePath }
     if ($OriginalThikTier -eq 3) { $summary['ThikT3Id'] = $soulId }
     [pscustomobject]$summary | ConvertTo-Json
+    return
+}
+if ($OriginalSourceBackedFeeding) {
+    $feedingPath = Join-Path $profile 'source-backed-feeding.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $feedingPath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-SOURCE-BACKED-FEEDING PASS' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original source-backed feeding capture failed. Inspect $unityLog"
+    }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true; Trace=$feedingPath } | ConvertTo-Json
     return
 }
 if ($TrueFinalBossBirth) {

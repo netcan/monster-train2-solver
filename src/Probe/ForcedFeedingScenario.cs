@@ -74,7 +74,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
             {
-                if (Enabled && !observing && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
+                if ((Enabled || OriginalSourceBackedFeeding.Prepared) && !observing && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
                     __result = Observe(__result, cardEffectState, cardEffectParams);
             }
         }

@@ -928,6 +928,15 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalAffordableNonPlayableScenario.Completed) Finish(true, "Original affordable nonplayable component captured.");
                 return;
             }
+            if (fullBattle && OriginalSourceBackedFeeding.Enabled)
+            {
+                if (!OriginalSourceBackedFeeding.Prepared) OriginalSourceBackedFeeding.Prepare(managers);
+                else if (OriginalSourceBackedFeeding.Observe(managers, log))
+                {
+                    Finish(true, "Original source-backed feeding captured.");
+                    return;
+                }
+            }
             if (fullBattle && OriginalSpurnedScenario.FullBattle)
                 OriginalSpurnedScenario.ObserveFullBattle(save, log);
             if (fullBattle && OriginalSpurnedScenario.Component)
@@ -3850,6 +3859,7 @@ namespace MonsterTrain2Poju.Probe
                 else if (DamageThresholdDrawBattleScenario.Enabled) pendingPlay = DamageThresholdDrawBattleScenario.Choose(decision);
                 if (OriginalDeathwishAttackScenario.Enabled) pendingPlay = OriginalDeathwishAttackScenario.Choose(decision);
                 if (OriginalOpeningMorselsScenario.FoodCardsMode) pendingPlay = OriginalOpeningMorselsScenario.Choose(decision);
+                if (OriginalSourceBackedFeeding.Enabled) pendingPlay = OriginalSourceBackedFeeding.Choose(decision);
                 if (OriginalMoonPhaseStatusRelicScenario.Enabled) pendingPlay = OriginalMoonPhaseStatusRelicScenario.Choose(decision);
                 if (ConditionalNoPlayerUnitScenario.Enabled) pendingPlay = ConditionalNoPlayerUnitScenario.Choose(decision);
                 if (SelfAttackStatusScenario.Enabled) pendingPlay = SelfAttackStatusScenario.Choose(decision);
@@ -4095,6 +4105,7 @@ namespace MonsterTrain2Poju.Probe
                 (modifierScenario == "damage-per-hp-ability" && !damagePerHpAbilityInputPrepared) ||
                 (modifierScenario == "dragon-hoard" && DragonHoardScenario.IsScenarioAction(action)) ||
                 OriginalOpeningMorselsScenario.FoodCardsMode ||
+                OriginalSourceBackedFeeding.Enabled ||
                 (OriginalCarriageJackScenario.Enabled && OriginalCarriageJackScenario.IsScenarioAction(action)) ||
                 (OriginalTwoChargesOnCardConsumedScenario.Enabled && OriginalTwoChargesOnCardConsumedScenario.IsScenarioAction(action)) ||
                 (OriginalFirstRoomAttachmentScenario.Enabled && OriginalFirstRoomAttachmentScenario.IsScenarioAction(action)) ||
