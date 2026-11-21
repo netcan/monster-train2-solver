@@ -206,6 +206,11 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             if (screen is RewardScreen reward) { Click(reward.GetCollectButton(), "collect-reward"); return; }
+            if (screen is DragonsHoardScreen hoard && save.GetGameSequence() == SaveData.GameSequence.BattlePostCombatRewards)
+            {
+                Click(hoard.GetCancelButton(), "save-dragons-hoard", new { amount = save.GetDragonsHoardAmount() });
+                return;
+            }
             if (screen is MerchantScreen merchant)
             {
                 var goods = Field<List<MerchantGoodUIBase>>(merchant, "goodUIs");
