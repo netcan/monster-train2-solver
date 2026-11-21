@@ -119,6 +119,7 @@ param(
     [ValidateSet('', 'Inner', 'Outer')][string] $AngelDuoDeath = '',
     [switch] $OuterBossPyre,
     [string] $RollingInput = '',
+    [switch] $ResumeRollingAdvice,
     [string] $UnsupportedBranchInput = '',
     [string] $InputProfile = '',
     [string] $PrimaryClan = '',
@@ -1149,6 +1150,10 @@ if ($UnsupportedBranchInput) {
     $RollingAdvice = $true; $PlayerAdvisor = $true
 }
 if ($RollingInput -and -not $RollingAdvice) { throw 'RollingInput requires RollingAdvice.' }
+if ($ResumeRollingAdvice -and (-not $RollingInput -or -not $PlayerAdvisor -or -not $InputProfile -or
+    -not $BinaryCapture -or $UnsupportedBranchInput)) {
+    throw 'ResumeRollingAdvice requires a native InputProfile, binary capture, and a RollingInput for the player advisor.'
+}
 if (($PlannerWholeBattle -or $PlannerSearchWorkers -gt 1) -and ($DotNetPlanner -or -not ($PlayerAdvisor -or $Advisor))) {
     throw 'Whole-battle/parallel search requires an in-process player or development advisor.'
 }
@@ -2210,6 +2215,7 @@ $environment = @{
     MT2_PROBE_ROOM_MOON_ENEMY = $(if ($RoomMoonEnemyMovement) { '1' } else { '0' })
     MT2_PROBE_ROLLING_ADVICE = $(if ($RollingAdvice) { '1' } else { '0' })
     MT2_PROBE_ROLLING_INPUT = $(if ($RollingInput) { (Resolve-Path -LiteralPath $RollingInput).Path } else { '' })
+    MT2_PROBE_RESUME_ROLLING_ADVICE = $(if ($ResumeRollingAdvice) { '1' } else { '0' })
     MT2_PROBE_UNSUPPORTED_BRANCH = $UnsupportedBranchInput
     MT2_PROBE_PREVIEW_ATTACK_TRACE = $(if ($PreviewAttackTrace) { '1' } else { '0' })
     MT2_PROBE_BOSS_ACTION_TARGETS = $(if ($BossActionTargets) { '1' } else { '0' })
@@ -3736,7 +3742,19 @@ if ($AdvisorPresentation -and -not $RollingInput) {
         -WriterThreadId $trace.PlayerAdvisor.Overlay.DiagnosticHistory.WriterThreadId
     Write-Output "PLAYER-PRESENTATION-PASS retainedInputs=$($presentation.RetainedInputs) pendingFrames=$($presentation.PendingFrames) reusedPublications=$($presentation.ReusedPublications) scrolledPublications=$($presentation.ScrolledPublications) resets=$($presentation.Resets) budgetChanges=$($presentation.BudgetChanges) collapsedTurnResets=$($presentation.CollapsedTurnResets)"
 }
-if ($PlayerAdvisor -and $RollingInput) {
+if ($ResumeRollingAdvice) {
+    $resume = $trace.RollingPrefixResume
+    $decisions = @($trace.RollingDecisions)
+    if ($null -eq $resume -or -not $resume.Resumed -or $resume.PrefixInputs -lt 1 -or
+        $resume.PrefixInputs -ge $decisions.Count -or $resume.FirstFreshGeneration -le $resume.ResumeGeneration -or
+        $resume.SourceSHA256 -ine (Get-FileHash -LiteralPath $RollingInput -Algorithm SHA256).Hash -or
+        @($decisions | Select-Object -First $resume.PrefixInputs | Where-Object { $_.Mode -cne 'prefix-replay' -or $_.Nodes -ne 0 }).Count -ne 0 -or
+        $decisions[$resume.PrefixInputs].Mode -cne 'rolling' -or $trace.PlayerAdvisor.Overlay.PurityFailures -ne 0 -or
+        $trace.PlayerAdvisor.Overlay.Failures -ne 0) {
+        throw 'The verified rolling prefix did not hand off to a fresh player recommendation.'
+    }
+    Write-Output "PLAYER-PREFIX-RESUME PASS: inputs=$($resume.PrefixInputs) stalePredictions=$($resume.StalePredictions) generation=$($resume.FirstFreshGeneration)"
+} elseif ($PlayerAdvisor -and $RollingInput) {
     $frozen = $trace.PlayerAdvisor.FrozenObservation
     $overlay = $trace.PlayerAdvisor.Overlay
     if ($null -eq $frozen -or -not $frozen.Paused -or -not $frozen.FinalAdviceAbsent -or

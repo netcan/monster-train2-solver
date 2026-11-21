@@ -221,6 +221,25 @@ namespace MonsterTrain2Poju.Probe
             log!.LogInfo("PLAYER-ADVISOR-FROZEN-OBSERVATION pausedBackground=true; native observation remains active");
         }
 
+        internal static long ResumeAfterFrozenPrefix()
+        {
+            Require(frozenObservation && Field<bool>("paused") && CurrentIsNull() &&
+                Get<long>("Searches") == frozenSearches && Get<int>("Published") == 0,
+                "player advice changed during the verified native prefix");
+            long generation = GetGeneration();
+            Click("暂停建议");
+            Require(!Field<bool>("paused") && CurrentIsNull(), "resuming the native prefix retained earlier advice");
+            log!.LogInfo("PLAYER-ADVISOR-PREFIX-RESUMED previousGeneration=" + generation);
+            return generation;
+        }
+
+        internal static bool ReadyAfterFrozenPrefix(long previousGeneration)
+        {
+            if (!Ready()) return false;
+            Require(GetGeneration() > previousGeneration, "resumed player advice did not publish a fresh generation");
+            return true;
+        }
+
         internal static PlayCardAction? NativeAction(PlayCardAction? action)
         {
             Require(expectedMixChoices.Count == 0, "previous input left unconsumed native draft choices");

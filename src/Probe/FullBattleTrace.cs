@@ -2017,6 +2017,7 @@ namespace MonsterTrain2Poju.Probe
                 BattleDistance = AllGameManagers.Instance!.GetSaveManager().GetCurrentDistance(),
 #if DEVELOPMENT_PROBE
                 NativeRunInput = nativeRunInput,
+                RollingPrefixResume = RollingAdviceScenario.PrefixResumeEvidence,
                 EquipmentOwnerRecoveries = EquipmentOwnerRecoveries.ToArray(),
 #endif
                 Advisor = BattleAdvisorOverlay.Active?.Evidence,
