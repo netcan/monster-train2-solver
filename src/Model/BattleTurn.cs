@@ -519,7 +519,8 @@ namespace MonsterTrain2Poju.Model
                         stream.Name == "Spawning" ? spawn.Rng : stream.State)).ToArray();
                     var boundary = new BattleTurnState(WithTrain(spawn, train, turn, spawn.Rng), train.Context!.QueryFrame?.Energy ?? 0,
                         source.EnergyPerTurn, source.DrawPerTurn, train.Context.QueryFrame?.ForgePoints ?? source.ForgePoints,
-                        source.DragonsHoard, moon, streams, otherPiles, source.ExternalInteractions, outputPlayRules,
+                        train.Context.QueryFrame?.DragonsHoard ?? source.DragonsHoard, moon, streams, otherPiles,
+                        source.ExternalInteractions, outputPlayRules,
                         source.BattlePreviewEnabled, source.UiRngIsolated, source.CanonicalDecisionReferences,
                         source.CanonicalPhysicalReferences, train.Context.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom,
                         source.MoonPhaseTrackingActive);
@@ -557,7 +558,8 @@ namespace MonsterTrain2Poju.Model
                         stream.Name == "Battle" ? train.Context!.BattleRng : stream.Name == "CardDraw" ? train.Context!.Cards.Rng :
                         stream.Name == "Spawning" ? spawn.Rng : stream.State)).ToArray();
                     var boundary = new BattleTurnState(spawn, train.Context!.QueryFrame?.Energy ?? 0, source.EnergyPerTurn,
-                        source.DrawPerTurn, train.Context.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard,
+                        source.DrawPerTurn, train.Context.QueryFrame?.ForgePoints ?? source.ForgePoints,
+                        train.Context.QueryFrame?.DragonsHoard ?? source.DragonsHoard,
                         moon, streams, otherPiles, source.ExternalInteractions, outputPlayRules, source.BattlePreviewEnabled,
                         source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
                         train.Context.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom, source.MoonPhaseTrackingActive);
@@ -812,7 +814,8 @@ namespace MonsterTrain2Poju.Model
                 }
                 return new BattleTurnResult(new BattleTurnState(spawn, energy, source.EnergyPerTurn,
                     Math.Max(0, displayedDraw + UnitRoomResourceModel.Amount(spawn.Train, UnitRoomResourceModel.Draw)),
-                    finalContext.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard, phase, streams, piles,
+                    finalContext.QueryFrame?.ForgePoints ?? source.ForgePoints,
+                    finalContext.QueryFrame?.DragonsHoard ?? source.DragonsHoard, phase, streams, piles,
                     AfterActionInteractions(source, finalContext), outputPlayRules,
                     source.BattlePreviewEnabled, source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
                     selectedRoom, finalContext.QueryFrame?.MoonPhaseTrackingActive ?? source.MoonPhaseTrackingActive), outcome);
@@ -825,7 +828,8 @@ namespace MonsterTrain2Poju.Model
                     stream.Name == "BossActions" ? outerBossRng.Value : stream.Name == "Battle" ? train.Context!.BattleRng :
                     stream.Name == "CardDraw" ? train.Context!.Cards.Rng : stream.Name == "Spawning" ? spawn.Rng : stream.State)).ToArray();
                 var boundary = new BattleTurnState(spawn, train.Context!.QueryFrame?.Energy ?? 0, source.EnergyPerTurn,
-                    source.DrawPerTurn, train.Context.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard,
+                    source.DrawPerTurn, train.Context.QueryFrame?.ForgePoints ?? source.ForgePoints,
+                    train.Context.QueryFrame?.DragonsHoard ?? source.DragonsHoard,
                     moonPhase, streams, otherPiles, source.ExternalInteractions, outputPlayRules, source.BattlePreviewEnabled,
                     source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
                     train.Context.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom, source.MoonPhaseTrackingActive);
@@ -850,7 +854,8 @@ namespace MonsterTrain2Poju.Model
                     stream.Name == "BossActions" ? outerBossRng.Value : stream.Name == "Battle" ? train.Context!.BattleRng :
                     stream.Name == "CardDraw" ? train.Context!.Cards.Rng : stream.Name == "Spawning" ? spawn.Rng : stream.State)).ToArray();
                 var boundary = new BattleTurnState(spawn, train.Context!.QueryFrame?.Energy ?? 0, source.EnergyPerTurn,
-                    source.DrawPerTurn, train.Context.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard,
+                    source.DrawPerTurn, train.Context.QueryFrame?.ForgePoints ?? source.ForgePoints,
+                    train.Context.QueryFrame?.DragonsHoard ?? source.DragonsHoard,
                     moonPhase, streams, otherPiles, source.ExternalInteractions, outputPlayRules, source.BattlePreviewEnabled,
                     source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
                     train.Context.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom, source.MoonPhaseTrackingActive);
