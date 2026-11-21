@@ -739,7 +739,7 @@ param(
     [switch] $OriginalAffordableNonPlayable,
     [switch] $OriginalSpurned,
     [switch] $OriginalSpurnedBattle,
-    [ValidateRange(2, 3)][int] $OriginalSpurnedChallenge = 2,
+    [ValidateRange(1, 3)][int] $OriginalSpurnedChallenge = 2,
     [switch] $OriginalSpurnedRetainPiles,
     [switch] $OriginalRageOnBurnoutStackLoss,
     [switch] $OriginalPyreRevenge,
@@ -1463,7 +1463,7 @@ if ($OriginalAffordableNonPlayable) {
     $PhysicalSpawnPoints = $true
     $Policy = 'units-and-junk'
 }
-if ($OriginalSpurned -and (-not $BinaryCapture -or -not $InputProfile -or $BattleDistance -ne 3 -or $PlayerAdvisor -or $Planner)) {
+if ($OriginalSpurned -and (-not $BinaryCapture -or -not $InputProfile -or $BattleDistance -ne 3 -or $PlayerAdvisor -or $Planner -or $OriginalSpurnedChallenge -eq 3)) {
     throw 'OriginalSpurned requires an isolated Ring 4 BattleIntro checkpoint and binary capture.'
 }
 if ($OriginalSpurnedBattle) {
@@ -1476,8 +1476,8 @@ if ($OriginalSpurnedBattle) {
     $OuterBossBirth = $true
     $BranchCardMasks = $true
     $Policy = 'units-spells-and-junk'
-} elseif ($PSBoundParameters.ContainsKey('OriginalSpurnedChallenge')) {
-    throw 'OriginalSpurnedChallenge requires OriginalSpurnedBattle.'
+} elseif (-not $OriginalSpurned -and $PSBoundParameters.ContainsKey('OriginalSpurnedChallenge')) {
+    throw 'OriginalSpurnedChallenge requires OriginalSpurned or OriginalSpurnedBattle.'
 }
 if ($OriginalSpurnedRetainPiles -and (-not $OriginalSpurnedBattle -or $OriginalSpurnedChallenge -ne 3)) {
     throw 'OriginalSpurnedRetainPiles requires OriginalSpurnedBattle with OriginalSpurnedChallenge 3.'
@@ -2748,11 +2748,19 @@ if ($OriginalPriorityRelicBattle) {
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
 if ($OriginalAffordableNonPlayable) { $environment['MT2_PROBE_MODIFIERS'] = 'original-affordable-nonplayable' }
-if ($OriginalSpurned) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spurned'; $environment['MT2_PROBE_PHYSICAL_SPAWNPOINTS'] = '1' }
+if ($OriginalSpurned) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-spurned'
+    $environment['MT2_PROBE_PHYSICAL_SPAWNPOINTS'] = '1'
+    $environment['MT2_PROBE_SPURNED_CHALLENGE'] = [string]$OriginalSpurnedChallenge
+}
 if ($OriginalSpurnedBattle) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-spurned-battle'
     $environment['MT2_PROBE_SPURNED_CHALLENGE'] = [string]$OriginalSpurnedChallenge
     $environment['MT2_PROBE_SPURNED_RETAIN_PILES'] = $(if ($OriginalSpurnedRetainPiles) { '1' } else { '0' })
+    if ($OriginalSpurnedChallenge -eq 1) {
+        $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+        $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+    }
 }
 if ($OriginalRageOnBurnoutStackLoss) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rage-on-burnout-stack-loss' }
 if ($RankThreeRoomSlayExecution) { $environment['MT2_PROBE_MODIFIERS'] = 'rank-three-room-slay-execution' }
@@ -3185,6 +3193,45 @@ if ($EnchantmentCombatOnly) {
         ModelAcceptance='Pending independent focused checker'; Trace=$componentPath } | ConvertTo-Json
     return
 }
+if ($OriginalSpurned -and $OriginalSpurnedChallenge -eq 1) {
+    $capturePath = Join-Path $profile 'spurned-health-threshold.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Spurned component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Original Spurned threshold capture failed; inspect $unityLog" }
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $document = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
+    try {
+        $capture = $document.RootElement.ToObjectGraph()
+        if ($capture.Schema -ne 1 -or $capture.Boundary -cne 'NativeOriginalSpurnedHealthThreshold' -or
+            $capture.GameVersion -cne '2.3.1' -or $capture.GameModuleMvid -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+            $capture.Scenario -cne 'SoulSavior_R4_BossBattle_EstrangedChild_1' -or $capture.BossKey -cne 'Boss_SoulSavior_R4_Spurned_DualismAt50' -or
+            -not $capture.TestScenario -or ($capture.Samples.Health -join ',') -cne '601,600,599') {
+            throw 'Expected three original Spurned threshold samples in its installed TestScenario.'
+        }
+        foreach ($sample in $capture.Samples) {
+            $roomStatus = $sample.Applications[0]
+            $threshold = $sample.Applications[1]
+            $beforeMalaise = [int]($roomStatus.TargetsBefore[0].Statuses | Where-Object Id -CEQ 'malaise').Stacks
+            $afterMalaise = [int]($roomStatus.TargetsAfter[0].Statuses | Where-Object Id -CEQ 'malaise').Stacks
+            $bossMalaise = @($threshold.Actual.StatusRegistry | Where-Object Id -CEQ 'malaise')
+            $duality = @($threshold.Actual.Statuses | Where-Object Id -CEQ 'duality')
+            if (-not $sample.TestReturned -or $sample.Maximum -ne 1200 -or $sample.Before.Health -ne $sample.Health -or
+                ($sample.Applications.Effect -join ',') -cne 'CardEffectAddStatusEffect,CardEffectAddStatusEffectDependingOnHealthPercent' -or
+                @($roomStatus.TargetsBefore).Count -ne 1 -or $afterMalaise - $beforeMalaise -ne 2 -or
+                $bossMalaise.Count -ne 1 -or $bossMalaise[0].Stacks -ne 0 -or
+                ($sample.RngBefore.Battle -join ',') -cne ($sample.RngAfterTest.Battle -join ',') -or
+                ($sample.RngBefore.BattleTest -join ',') -ceq ($sample.RngAfterTest.BattleTest -join ',') -or
+                ($threshold.RngBefore.Battle -join ',') -cne ($threshold.RngAfter.Battle -join ',') -or
+                ($threshold.RngBefore.BattleTest -join ',') -cne ($threshold.RngAfter.BattleTest -join ',') -or
+                ($sample.Health -le 600 -and ($duality.Count -ne 1 -or $duality[0].Stacks -ne 1)) -or
+                ($sample.Health -gt 600 -and $duality.Count -ne 0)) {
+                throw "Unexpected native branch at $($sample.Health) HP. Inspect $capturePath"
+            }
+        }
+    } finally { $document.Dispose() }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true; TestScenario=$true; Samples=3; Trace=$capturePath } | ConvertTo-Json
+    return
+}
 if ($OriginalSpurned) {
     $capturePath = Join-Path $profile 'spurned-attack.mt2f'
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or
@@ -3422,13 +3469,20 @@ $inspectionTimer.Stop()
 Write-Output "FULL-BATTLE-INSPECTION elapsedSeconds=$($inspectionTimer.Elapsed.TotalSeconds.ToString('F3', [Globalization.CultureInfo]::InvariantCulture))"
 if ($OriginalSpurnedBattle) {
     $spurned = $trace.OriginalSpurnedBattle
-    $spurnedBoss = if ($OriginalSpurnedChallenge -eq 3) { 'Boss_SoulSavior_R4_Spurned_WitherbloomOnAction' } else { 'Boss_SoulSavior_R4_Spurned_ArmorPerDebuff' }
+    $spurnedBoss = switch ($OriginalSpurnedChallenge) {
+        1 { 'Boss_SoulSavior_R4_Spurned_DualismAt50' }
+        2 { 'Boss_SoulSavior_R4_Spurned_ArmorPerDebuff' }
+        3 { 'Boss_SoulSavior_R4_Spurned_WitherbloomOnAction' }
+    }
     if ($trace.ModifierScenario -cne 'original-spurned-battle' -or $trace.GameVersion -cne '2.3.1' -or
         $trace.GameModuleMvid -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
         $spurned.Scenario -cne "SoulSavior_R4_BossBattle_EstrangedChild_$OriginalSpurnedChallenge" -or
         $spurned.BossKey -cne $spurnedBoss -or -not $spurned.TestScenario -or
         @($trace.Actions).Count -eq 0 -or @($trace.Turns).Count -eq 0 -or -not $trace.TerminalEffectsSettled) {
         throw "Original Spurned battle did not complete ordinary inputs and terminal capture. Inspect $tracePath and $unityLog"
+    }
+    if ($OriginalSpurnedChallenge -eq 1 -and (-not $spurned.IsolatePreviewRng -or -not $spurned.IsolateUiRng)) {
+        throw "Original Spurned health-threshold battle lacks preview and UI RNG isolation. Inspect $tracePath and $unityLog"
     }
     if ($OriginalSpurnedRetainPiles) {
         $endTurns = @($trace.Turns | ForEach-Object { $_.Before.Spawn.Turn })

@@ -7,9 +7,11 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class UnitTriggerActionProbe
     {
+        internal const string HealthThresholdStatusEffect = "CardEffectAddStatusEffectDependingOnHealthPercent";
         private static bool StatusEffect(string type) =>
             type is "CardEffectAddStatusEffect" or "CardEffectMultiplyStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or
-                FriendlyDamageStatusModel.NativeEffect or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth";
+                FriendlyDamageStatusModel.NativeEffect or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or
+                "CardEffectAddStatusEffectBasedOnHealth" or HealthThresholdStatusEffect;
         private static bool DamageEffect(string type) =>
             type is "CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits" or OwnerDamageReactionModel.NativeEffect;
         private static bool HealthEffect(string type) => type is "CardEffectAdjustMaxHealth" or "CardEffectBuffMaxHealth";
@@ -19,6 +21,8 @@ namespace MonsterTrain2Poju.Probe
 
         internal static CardActionEffect? Capture(CardEffectState state, List<string>? interactions = null)
         {
+            if (state.GetCardEffect() is CardEffectAddStatusEffectDependingOnHealthPercent)
+                return Describe(state.GetSourceCardEffectData(), state.GetParamInt(), null);
             if (state.GetCardEffect().GetType().Name is "CardEffectGainDevotionPoints" or "CardEffectAddStatusEffectPerDevotionLevel" or "CardEffectAddStatusEffectPerOtherEffect")
                 return BattleActionProbe.DescribeTriggerEffect(state.GetSourceCardEffectData(), interactions ?? new List<string>());
             if (state.GetCardEffect() is CardEffectFloorRearrange && state.GetSourceCardEffectData().GetTargetMode() == TargetMode.LastAttackedCharacter)
@@ -102,13 +106,16 @@ namespace MonsterTrain2Poju.Probe
             effect.GetParamStatusEffects().Select(status => BattleActionProbe.Status(status.statusId, status.count)).ToArray());
 
         internal static TriggeredStatusScaling? Scaling(CardEffectState effect) => effect.GetCardEffect().GetType().Name == DevotionStatusModel.NativeEffect ? null :
+            effect.GetCardEffect() is CardEffectAddStatusEffectDependingOnHealthPercent ?
+            new TriggeredStatusScaling(healthChoicePercent: effect.GetParamInt()) :
             effect.GetCardEffect() is CardEffectAddStatusEffectBasedOnHealth ?
             new TriggeredStatusScaling(healthChoicePercent: effect.GetParamInt(), healthChoiceAbove: effect.GetParamBool()) : effect.GetCardEffect() is CardEffectAddStatusEffect ?
             new TriggeredStatusScaling(effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null,
                 effect.GetUseHealthMissingStackMultiplier(), effect.GetUseMagicPowerMultiplier(), effect.GetParamBool2(),
                 effect.GetParamSubtype().IsNone ? "" : effect.GetParamSubtype().Key) : null;
         // Preserve the subclass's inherited metadata in birth templates as in live units.
-        internal static TriggeredStatusScaling? Scaling(CardEffectData effect) => effect.GetEffectStateName() == "CardEffectAddStatusEffectBasedOnHealth" ?
+        internal static TriggeredStatusScaling? Scaling(CardEffectData effect) => effect.GetEffectStateName() == HealthThresholdStatusEffect ?
+            new TriggeredStatusScaling(healthChoicePercent: effect.GetParamInt()) : effect.GetEffectStateName() == "CardEffectAddStatusEffectBasedOnHealth" ?
             new TriggeredStatusScaling(healthChoicePercent: effect.GetParamInt(), healthChoiceAbove: effect.GetParamBool()) :
             StatusEffect(effect.GetEffectStateName()) || effect.GetEffectStateName() == TriggeredStatusModel.OtherStatusEffect ?
             new TriggeredStatusScaling(effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null,

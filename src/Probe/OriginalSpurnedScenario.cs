@@ -17,11 +17,14 @@ namespace MonsterTrain2Poju.Probe
         internal const string FullBattleName = "original-spurned-battle";
         private const string ScenarioKey = "SoulSavior_R4_BossBattle_EstrangedChild_2";
         private const string BossKey = "Boss_SoulSavior_R4_Spurned_ArmorPerDebuff";
+        private const string ThresholdScenarioKey = "SoulSavior_R4_BossBattle_EstrangedChild_1";
+        private const string ThresholdBossKey = "Boss_SoulSavior_R4_Spurned_DualismAt50";
         private const string WitherbloomScenarioKey = "SoulSavior_R4_BossBattle_EstrangedChild_3";
         private const string WitherbloomBossKey = "Boss_SoulSavior_R4_Spurned_WitherbloomOnAction";
         private const string DefenderId = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
         private const int RetainPilesEndTurnOnlyFrom = 4;
         internal static bool Component => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool ThresholdComponent => Component && Environment.GetEnvironmentVariable("MT2_PROBE_SPURNED_CHALLENGE") == "1";
         internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == FullBattleName;
         internal static bool Enabled => Component || FullBattle;
         private static bool RetainPiles => FullBattle && Environment.GetEnvironmentVariable("MT2_PROBE_SPURNED_CHALLENGE") == "3" &&
@@ -58,11 +61,12 @@ namespace MonsterTrain2Poju.Probe
         {
             if (started || Completed) return true;
             SaveManager save = managers.GetSaveManager();
-            if (!save.InTestScenario || save.GetCurrentScenarioData()?.name != ScenarioKey)
+            var (scenarioKey, bossKey) = RequestedBattle();
+            if (!save.InTestScenario || save.GetCurrentScenarioData()?.name != scenarioKey)
                 throw new InvalidOperationException("Original native debug scenario did not load.");
             var boss = managers.GetHeroManager().GetOuterTrainBossCharacter();
             if (boss == null || boss.GetCurrentRoomIndex() < 0) return false;
-            if (boss.GetSourceCharacterData().GetAssetKey() != BossKey)
+            if (boss.GetSourceCharacterData().GetAssetKey() != bossKey)
                 throw new InvalidOperationException("Native debug scenario loaded another Spurned variant.");
             var rooms = managers.GetRoomManager();
             var room = boss.GetCurrentRoom();
@@ -87,7 +91,7 @@ namespace MonsterTrain2Poju.Probe
                 return true;
             }
             started = true;
-            save.StartCoroutine(Capture(managers, boss, target, log));
+            save.StartCoroutine(ThresholdComponent ? CaptureThreshold(managers, boss, target, log) : Capture(managers, boss, target, log));
             return true;
         }
 
@@ -104,20 +108,123 @@ namespace MonsterTrain2Poju.Probe
             string[] companions = characters.Where(character => character.IsCompanionBoss())
                 .Select(character => character.GetAssetKey()).OrderBy(key => key, StringComparer.Ordinal).ToArray();
             FullBattleEvidence = new { Scenario = scenario.name, BossKey = boss, CompanionKeys = companions, TestScenario = save.InTestScenario,
-                EndTurnOnlyFromTurn = RetainPiles ? RetainPilesEndTurnOnlyFrom : (int?)null };
+                EndTurnOnlyFromTurn = RetainPiles ? RetainPilesEndTurnOnlyFrom : (int?)null,
+                IsolatePreviewRng = PreviewRngIsolation.Enabled, IsolateUiRng = UiRngIsolation.Enabled };
             log.LogInfo("ORIGINAL-SPURNED-BATTLE loaded " + scenario.name + " boss=" + boss +
                 " companions=[" + string.Join(",", companions) + "] testScenario=" + save.InTestScenario);
         }
 
         private static (string Scenario, string Boss) RequestedBattle()
         {
-            if (Component) return (ScenarioKey, BossKey);
             return Environment.GetEnvironmentVariable("MT2_PROBE_SPURNED_CHALLENGE") switch
             {
                 null or "2" => (ScenarioKey, BossKey),
+                "1" => (ThresholdScenarioKey, ThresholdBossKey),
                 "3" => (WitherbloomScenarioKey, WitherbloomBossKey),
                 _ => throw new InvalidOperationException("Unknown original Spurned challenge.")
             };
+        }
+
+        private sealed class ThresholdApplication
+        {
+            public string Effect { get; set; } = "";
+            public CombatUnit Before { get; set; } = null!;
+            public CombatUnit Actual { get; set; } = null!;
+            public CombatUnit[] TargetsBefore { get; set; } = Array.Empty<CombatUnit>();
+            public CombatUnit[] TargetsAfter { get; set; } = Array.Empty<CombatUnit>();
+            public object RngBefore { get; set; } = null!;
+            public object RngAfter { get; set; } = null!;
+        }
+
+        private static CharacterState? thresholdBoss;
+        private static IReadOnlyList<CardEffectState>? thresholdEffects;
+        private static List<ThresholdApplication>? thresholdApplications;
+
+        private static object Rng() => new
+        {
+            Battle = RngCalibration.Words(RandomManager.GetState(RngId.Battle)),
+            BattleTest = RngCalibration.Words(RandomManager.GetState(RngId.BattleTest))
+        };
+
+        private static IEnumerator CaptureThreshold(AllGameManagers managers, CharacterState boss, CharacterState target, ManualLogSource log)
+        {
+            SaveManager save = managers.GetSaveManager();
+            CombatManager combat = managers.GetCombatManager();
+            FullBattleTrace trace = FullBattleTrace.Active!;
+            var kind = CharacterTriggerData.Trigger.OnTurnBegin;
+            var trigger = boss.GetTriggers().Single(candidate => candidate.GetTrigger() == kind);
+            var effects = trigger.GetEffectStates();
+            if (effects.Count != 2 || effects[0].GetCardEffect().GetType() != typeof(CardEffectAddStatusEffect) ||
+                effects[1].GetCardEffect() is not CardEffectAddStatusEffectDependingOnHealthPercent threshold ||
+                effects[1].GetTargetMode() != TargetMode.Self || effects[1].GetParamInt() != 50 || boss.GetMaxHP() != 1200)
+                throw new InvalidOperationException("Expected the original Spurned turn-begin and 50-percent definitions.");
+            CombatTrigger definition = trace.CaptureUnit(boss).Triggers.Single(candidate => candidate.Kind == kind.ToString());
+            var rows = new List<object>();
+            foreach (int health in new[] { 601, 600, 599 })
+            {
+                if (boss.HasStatusEffect("duality")) boss.RemoveStatusEffect("duality", -1);
+                if (target.HasStatusEffect("malaise")) target.RemoveStatusEffect("malaise", -1);
+                boss.SetHealth(health, 1200);
+                yield return combat.RunTriggerQueue();
+                CombatUnit before = trace.CaptureUnit(boss);
+                object rngBefore = Rng();
+                var parameters = new CardEffectParams { selfTarget = boss, targets = new List<CharacterState> { boss } };
+                bool testReturned = threshold.TestEffect(effects[1], parameters, managers.GetCoreManagers());
+                object rngAfterTest = Rng();
+                CombatUnit afterTest = trace.CaptureUnit(boss);
+                var applications = new List<ThresholdApplication>();
+                thresholdBoss = boss;
+                thresholdEffects = effects;
+                thresholdApplications = applications;
+                try { yield return combat.QueueAndRunTrigger(boss, kind, exclusiveTrigger: trigger); }
+                finally { thresholdBoss = null; thresholdEffects = null; thresholdApplications = null; }
+                object rngAfterApply = Rng();
+                if (applications.Count != 2 || applications[1].Effect != UnitTriggerActionProbe.HealthThresholdStatusEffect)
+                    throw new InvalidOperationException("The original Spurned turn-begin callback did not dispatch both effects in order.");
+                ThresholdApplication applied = applications[1];
+                rows.Add(new { Health = health, Maximum = 1200, Before = before, TestReturned = testReturned,
+                    AfterTest = afterTest, AfterThreshold = applied.Actual, Actual = trace.CaptureUnit(boss),
+                    RngBefore = rngBefore, RngAfterTest = rngAfterTest, RngAfterThreshold = applied.RngAfter,
+                    RngAfterApply = rngAfterApply, Applications = applications });
+            }
+            using var archive = NativeFixtureCapture.Capture(new { Schema = 1, Boundary = "NativeOriginalSpurnedHealthThreshold",
+                GameVersion = UnityEngine.Application.version, GameModuleMvid = typeof(CardState).Module.ModuleVersionId,
+                Scenario = ThresholdScenarioKey, BossKey = ThresholdBossKey, TestScenario = save.InTestScenario,
+                Trigger = definition, Samples = rows });
+            using var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "spurned-health-threshold.mt2f"));
+            archive.Write(output);
+            Completed = true;
+            log.LogInfo("ORIGINAL-SPURNED-THRESHOLD-NATIVE sampled 601, 600 and 599 HP");
+        }
+
+        [HarmonyPatch]
+        private static class ThresholdApplicationPatch
+        {
+            private static IEnumerable<System.Reflection.MethodBase> TargetMethods()
+            {
+                yield return AccessTools.DeclaredMethod(typeof(CardEffectAddStatusEffect), nameof(CardEffectAddStatusEffect.ApplyEffect));
+                yield return AccessTools.DeclaredMethod(typeof(CardEffectAddStatusEffectDependingOnHealthPercent), nameof(CardEffectAddStatusEffectDependingOnHealthPercent.ApplyEffect));
+            }
+
+            private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
+            {
+                if (thresholdBoss != null && thresholdEffects?.Contains(cardEffectState) == true)
+                    __result = Observe(__result, cardEffectState, cardEffectParams.targets.ToArray(), thresholdBoss, thresholdApplications!);
+            }
+
+            private static IEnumerator Observe(IEnumerator native, CardEffectState state, IReadOnlyList<CharacterState> targets,
+                CharacterState boss, List<ThresholdApplication> applications)
+            {
+                FullBattleTrace trace = FullBattleTrace.Active!;
+                var row = new ThresholdApplication { Effect = state.GetSourceCardEffectData().GetEffectStateName(), Before = trace.CaptureUnit(boss),
+                    TargetsBefore = targets.Select(target => trace.CaptureUnit(target)).ToArray(), RngBefore = Rng() };
+                applications.Add(row);
+                try { while (native.MoveNext()) yield return native.Current; }
+                finally { (native as IDisposable)?.Dispose(); }
+                row.RngAfter = Rng();
+                row.Actual = trace.CaptureUnit(boss);
+                row.TargetsAfter = targets.Select(target => trace.CaptureUnit(target)).ToArray();
+            }
         }
 
         private static bool Play(CardManager cards, int index, SpawnPoint point)
