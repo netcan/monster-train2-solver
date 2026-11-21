@@ -49,6 +49,11 @@ PunishedChamp1 的旧记录来自六条已升级路线。本次另录原版基�
 分支、全部录制候选及串并行返回计划一致。归档为
 `tests/compatibility/game-2.3.1/mechanics/priority-card-batch/punished-champion-base.mt2f`。
 
+The Condemned 的原版惩戒用例验证了受护甲减免前的伤害乘以 4，随后命中最前敌军。
+当前目录比较只在出生伤害记录为零且结构化动作完全匹配时接受新增的两个字段。
+新版优先组 52 张全部取得原版定义吻合的出牌证据。此时图鉴 601 张可出牌中，67 张有
+定义吻合证据，5 张仅记录出牌身份，529 张尚无合格出牌。
+
 2026-11-15 在 `40bd1378` 模型上重扫本机 2.3.1、build 26650011：
 724 个唯一原版定义，614 张图鉴卡。图鉴卡没有投影异常，仍有显式
 `ExternalInteractions` 保护的只有 `ZealotsHalo`

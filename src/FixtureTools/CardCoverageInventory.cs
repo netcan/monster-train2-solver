@@ -1,7 +1,9 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using MonsterTrain2Poju.Capture;
 using MonsterTrain2Poju.Fixtures;
+using MonsterTrain2Poju.Model;
 
 internal static class CardCoverageInventory
 {
@@ -877,7 +879,8 @@ internal static class CardCoverageInventory
     // card definitions. Missing null properties are equivalent across capture schemas.
     // Other differences require a specific capture default or a verified projection.
     private static bool Equivalent(FixtureValue left, FixtureValue right, bool ruleRoot = false,
-        bool legacyMask = false, bool cardRule = false, string path = "$", bool currentBuild = false)
+        bool legacyMask = false, bool cardRule = false, string path = "$", bool currentBuild = false,
+        bool condemnedPunishProjection = false)
     {
         if (left.ValueKind != right.ValueKind) return false;
         if (left.ValueKind == FixtureKind.Object)
@@ -888,6 +891,10 @@ internal static class CardCoverageInventory
                 !(ruleRoot && property.Name is "ForgeEligible" or "UnplayedNegativeOrder");
             var a = left.EnumerateObject().Where(Include).ToDictionary(property => property.Name, property => property.Value, StringComparer.Ordinal);
             var b = right.EnumerateObject().Where(Include).ToDictionary(property => property.Name, property => property.Value, StringComparer.Ordinal);
+            if (currentBuild && cardRule && ruleRoot && path == "$")
+                condemnedPunishProjection = MatchesCondemnedPunishProjection(left, right);
+            if (condemnedPunishProjection && path == "$.SpawnUnit") b.Remove("DamageHistory");
+            if (condemnedPunishProjection && path == "$.SpawnUnit.Triggers[0].Effects[0]") b.Remove("Action");
             if (currentBuild && cardRule && path.StartsWith("$.Effects[", StringComparison.Ordinal) &&
                 path.EndsWith("].Filters", StringComparison.Ordinal) && Text(left, "Health") == "Both" && Text(right, "Health") == "Both")
             {
@@ -949,7 +956,7 @@ internal static class CardCoverageInventory
             }
             return a.Count == b.Count && a.All(pair => b.TryGetValue(pair.Key, out FixtureValue other) &&
                 Equivalent(pair.Value, other, legacyMask: legacyMask, cardRule: cardRule, path: path + "." + pair.Key,
-                    currentBuild: currentBuild));
+                    currentBuild: currentBuild, condemnedPunishProjection: condemnedPunishProjection));
         }
         if (left.ValueKind == FixtureKind.Array)
         {
@@ -957,12 +964,48 @@ internal static class CardCoverageInventory
             FixtureValue[] a = left.EnumerateArray().ToArray(), b = right.EnumerateArray().ToArray();
             for (int index = 0; index < a.Length; index++)
                 if (!Equivalent(a[index], b[index], legacyMask: legacyMask, cardRule: cardRule, path: path + "[" + index + "]",
-                    currentBuild: currentBuild)) return false;
+                    currentBuild: currentBuild, condemnedPunishProjection: condemnedPunishProjection)) return false;
             return true;
         }
         if (left.ValueKind == FixtureKind.Number) return left.GetDouble() == right.GetDouble();
         return left.ContentEquals(right);
     }
+
+    private static bool MatchesCondemnedPunishProjection(FixtureValue catalog, FixtureValue battle)
+    {
+        const string cardId = "5b16e14e-69e0-4500-985c-c3d62ef2d900";
+        if (Text(catalog, "DataId") != cardId || Text(battle, "DataId") != cardId ||
+            Text(catalog, "AssetKey") != "TheCondemned" || Text(battle, "AssetKey") != "TheCondemned" ||
+            !catalog.TryGetProperty("SpawnUnit", out FixtureValue catalogUnit) || Text(catalogUnit, "AssetKey") != "MonsterUndying" ||
+            !battle.TryGetProperty("SpawnUnit", out FixtureValue battleUnit) || Text(battleUnit, "AssetKey") != "MonsterUndying")
+            return false;
+
+        if (Array(catalogUnit, "Triggers") is not [var catalogTrigger] || Text(catalogTrigger, "Kind") != "OnPunish" ||
+            Array(battleUnit, "Triggers") is not [var battleTrigger] || Text(battleTrigger, "Kind") != "OnPunish" ||
+            Array(catalogTrigger, "Effects") is not [var catalogEffect] || !IsCondemnedPunishEffect(catalogEffect) ||
+            Array(battleTrigger, "Effects") is not [var battleEffect] || !IsCondemnedPunishEffect(battleEffect) ||
+            (catalogEffect.TryGetProperty("Action", out FixtureValue catalogAction) && catalogAction.ValueKind != FixtureKind.Null) ||
+            !battleEffect.TryGetProperty("Action", out FixtureValue battleAction) ||
+            (catalogUnit.TryGetProperty("DamageHistory", out FixtureValue catalogHistory) && catalogHistory.ValueKind != FixtureKind.Null) ||
+            !battleUnit.TryGetProperty("DamageHistory", out FixtureValue battleHistory))
+            return false;
+
+        // The frozen catalog kept the native effect parameters. The native battle
+        // capture adds a structured damage action and an empty damage ledger at spawn.
+        using var projection = NativeFixtureCapture.Capture(new
+        {
+            Action = new CardActionEffect("Damage", "FrontInRoom", 4, true, false, [],
+                tests: new CardEffectTests(true, false, false, false, devotionRequirement: 0, devotionRequirementMax: 0),
+                filters: new CardTargetFilters("Both", [], [], false, "", [], selfHealthFilter: true)),
+            DamageHistory = new UnitDamageHistory()
+        });
+        return projection.RootElement.GetProperty("Action").ContentEquals(battleAction) &&
+            projection.RootElement.GetProperty("DamageHistory").ContentEquals(battleHistory);
+    }
+
+    private static bool IsCondemnedPunishEffect(FixtureValue effect) =>
+        Text(effect, "Type") == OwnerDamageReactionModel.NativeEffect &&
+        effect.TryGetProperty("Value", out FixtureValue value) && value.ValueKind == FixtureKind.Number && value.GetDouble() == 4;
 
     private static bool IsEmptyArray(Dictionary<string, FixtureValue> fields, string name) =>
         fields.TryGetValue(name, out FixtureValue value) && value.ValueKind == FixtureKind.Array && value.GetArrayLength() == 0;
