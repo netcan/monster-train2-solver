@@ -231,6 +231,12 @@ Cael 零盟约试炼的攻击与生命、吸血变体分别通过 26 次出牌�
 加入两场归档后，批量复放通过 166 场，150 场连续、16 场分段，共 2,303 次出牌或技能
 及 1,001 次结束回合，零失败。报告为 `results/recorded-chain-triage-20261122-042812-67ad8f8d/report.tsv`。
 
+契约 10 第四环的原版对照确认，Shardtail 部署后同层小鬼费用 1→0，另一层和非小鬼对照
+保持原费用。实际打出小鬼支付 0 余烬，支付前后战斗随机流吻合。
+后续实战在第 15 个输入发现 HotHead 技能触发 Avarice 时遗漏 3 金币。匹配激活单位和原版
+技能缓存卡后，`--observed-successors-only` 回放已采集的 15 个输入与四个列车阶段均通过。
+两份对照归档分别位于 `mechanics/shardtail-imp-cost/` 和 `mechanics/avarice-unit-skill/`。
+
 2.3.1 的进食组件对照使用两次原版结算。隔离实例用原版接口发放测试用牌，再通过出牌
 与 EndTurn 触发结算。两次进食均将 Morsel Miner 的来源牌移入 Eaten，Primordium
 存活并减少一层 Eatmany。普通进食在房间结算前保留空位，Feast 结算后填补空位。
