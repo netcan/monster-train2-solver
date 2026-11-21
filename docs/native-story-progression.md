@@ -27,6 +27,11 @@
 归档为 `unlocked-covenant0-ring1.mt2f` 与 `unlocked-covenant0-ring1-frozen.mt2f`，
 续接档位于 `.probe-runs/campaign-ring2-20261122-055103-b991b69c`。
 
+第 2 环同样以 50 点薪火生命获胜。独立原版进程复放了 15 次出牌或技能、5 次结束回合，
+完整状态和随机流一致。原版第 3 环战前档已记录两场胜利，且首场泰坦试炼已开启。
+归档为 `unlocked-covenant0-ring2.mt2f` 与 `unlocked-covenant0-ring2-frozen.mt2f`，
+续接档位于 `.probe-runs/campaign-ring3-20261122-055559-21b0e6fb`。
+
 2026-10-28重新检查第25组第七战入口的累计档案，额外薪火之心仍为0/9，
 剧情索引0、真终局未解锁。当前值为Pact0/7、Life326/475、Malicka0/1、
 Wyngh109/225、Fhyra3605/20000、Aquath460/12000、Bogworm169/3200、
