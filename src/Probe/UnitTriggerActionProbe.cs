@@ -107,8 +107,10 @@ namespace MonsterTrain2Poju.Probe
             new TriggeredStatusScaling(effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null,
                 effect.GetUseHealthMissingStackMultiplier(), effect.GetUseMagicPowerMultiplier(), effect.GetParamBool2(),
                 effect.GetParamSubtype().IsNone ? "" : effect.GetParamSubtype().Key) : null;
+        // Preserve the subclass's inherited metadata in birth templates as in live units.
         internal static TriggeredStatusScaling? Scaling(CardEffectData effect) => effect.GetEffectStateName() == "CardEffectAddStatusEffectBasedOnHealth" ?
-            new TriggeredStatusScaling(healthChoicePercent: effect.GetParamInt(), healthChoiceAbove: effect.GetParamBool()) : StatusEffect(effect.GetEffectStateName()) ?
+            new TriggeredStatusScaling(healthChoicePercent: effect.GetParamInt(), healthChoiceAbove: effect.GetParamBool()) :
+            StatusEffect(effect.GetEffectStateName()) || effect.GetEffectStateName() == TriggeredStatusModel.OtherStatusEffect ?
             new TriggeredStatusScaling(effect.GetUseStatusEffectStackMultiplier() ? effect.GetStatusEffectStackMultiplier() : null,
                 effect.GetUseHealthMissingStackMultiplier(), effect.GetUseMagicPowerMultiplier(), effect.GetParamBool2(),
                 effect.GetParamSubtype().IsNone ? "" : effect.GetParamSubtype().Key) : null;
