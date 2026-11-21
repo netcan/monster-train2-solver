@@ -9,16 +9,16 @@
 | 待办分类 | 类数 | 含目录引用 | 含类型声明 |
 | --- | ---: | ---: | ---: |
 | known-gap | 1 | 1 | 1 |
-| inspect-no-code-link | 62 | 62 | 62 |
+| inspect-no-code-link | 61 | 61 | 61 |
 | inspect-inherited-code | 13 | 13 | 13 |
 | inspect-projection-normalization | 59 | 59 | 59 |
 | inspect-guard-links | 49 | 49 | 49 |
 | review-existing-code | 233 | 233 | 233 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 286 | 0 | 0 |
-| scoped-review-recorded | 24 | 24 | 24 |
+| scoped-review-recorded | 25 | 25 | 25 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 27 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 28 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -35,6 +35,7 @@
 | CardEffectDamage | shared-path | Native Damage normalizes to the shared Damage action; current PunishedSpike battle exercises repeated damage, armor, target death and full successors. Existing target/scaling/callback guards remain; not an audit of every contextual branch. |
 | CardEffectDamageByPercentRemainingHealth | shared-path | Original Beeziebub OnCast targets the Pyre, floors ten percent of actual remaining HP, and supplies no card damage attribution or trait scaling. Three isolated wins prove HP 80 to 72 and exact search successors. Randomized ranges, round-up and non-Pyre targets remain guarded. |
 | CardTraitDrawOnPlay | shared-path | Three unchanged original soul upgrades attached through native SoulHelper. Played discard draws 3/3/5 and the two higher tiers install the captured next-draw upgrade on actual cards. Full wins, exact successors, sixteen branches, frontiers and equal serial/parallel search and replay pass. Other carriers and mixed discard traits remain outside this evidence. |
+| CardTraitScalingRewardGold | shared-path | Three unchanged Goldie soul upgrades attached using native SoulHelper. Actual original Vent pays three Ember; its zero-base OnCast reward remains unchanged, while played discard grants 30/60/90 gold from captured paid-cost statistics. Next-turn Retain and complete native wins, full successors, sixteen branches, all recorded frontiers and serial/parallel plans pass. Other carriers and compound signed affordability remain outside this evidence. |
 | RelicEffectAddRelicStartOfRun | input-only | Sealed native class implements StartOfRun ApplyEffect, which adds the configured relic through SaveManager. Battle input captures the resulting relic roster. No combat callback override in this class; start-of-run campaign handling and carried-owner validation remain separate. |
 | RelicEffectAddUnitUpgradePerPile | shared-path | Shared ID-independent birth callback captures initialized pile/threshold/team/subtype/upgrade, snapshots visible count once, preserves repeated direct API calls with empty upgradeId and existing queue policy. Four original definitions/52 configurations/3744 native parent-coroutine upgrade requests with controlled counts; children are not executed in this matrix. Nine unmodified native pile queries; unchanged deck-size mutator full win, three births with individual applied records, 16 branches/frontiers/serial-parallel root search. Five model placement/Covenant/condition/threshold/identity controls. Soul attachment lifecycle, complex upgrade callback combinations and other owner combinations remain outside this integration; other spawn-status scaling is separate. |
 | RelicEffectAdditionalDrawDuringRelentless | shared-path | Shared initialized mutable cache refreshes at start/before draw, tests both teams physical status membership without alive filtering, excludes Pyre and preserves false Test/no notification/no signal. Two original sources/10 configurations/640 native callbacks with controlled status queries and real independent MutableRules integer queries, including float precision and Int32 endpoints. Original T2/T3 full native wins; positive/reset cache, combined occupied draw, T3 tenth play draws two through existing consumer; full successors/16 branches/frontiers/serial-parallel root search. Raw actor/case/death boundaries are source/model controls; production BattleTurn now dispatches the modeled before-draw callbacks in owner/effect order; the focused legacy resource API retains its guard; complex lifecycle, outer-boss anchors, mixed Covenants and full hover remain outside certification. |
@@ -64,7 +65,6 @@
 | RelicEffectCardDuplicator | inspect-no-code-link | 5 | 5 | 无直接链接 |
 | RelicEffectGetCardCopiesOnDeck | inspect-no-code-link | 5 | 5 | 无直接链接 |
 | RelicEffectUpgradeCardOnPurchasingUpgrade | inspect-no-code-link | 4 | 4 | 无直接链接 |
-| CardTraitScalingRewardGold | inspect-no-code-link | 3 | 3 | 无直接链接 |
 | RelicEffectAddAlliedChampionToDeckAndRandomUpgradeItAtLightforge | inspect-no-code-link | 3 | 3 | 无直接链接 |
 | RelicEffectAddPyreAttackAndHealthPerCardInDeck | inspect-no-code-link | 3 | 3 | 无直接链接 |
 | RelicEffectBuffPyreForBossKill | inspect-no-code-link | 3 | 3 | 无直接链接 |
@@ -76,15 +76,16 @@
 | RelicEffectChangeGoldReward | inspect-no-code-link | 2 | 2 | 无直接链接 |
 | RelicEffectModifyCardDraftRarity | inspect-no-code-link | 2 | 2 | 无直接链接 |
 | RelicEffectModifyDraftSkip | inspect-no-code-link | 2 | 2 | 无直接链接 |
+| RelicEffectModifyDragonsHoardCap | inspect-no-code-link | 2 | 2 | 无直接链接 |
 
 ## 可重建输入
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `d11bb23e25ba4c12dc3f0d8b3ea146aebf1a5798a8390eb3a0acfd131629498a`。
-- Model: PDB 校验过的项目源码集合 `c8d34ebcb2fa63a880f2e7ab42036e8c45397c5cc5668fa63640444f735d1eb3`。
-- Probe: PDB 校验过的项目源码集合 `a3a86cd9e49b275a8d5820c30ba5a3242027c4c777f06e6b7092960c0e0979f3`。
-- ModelChecks: PDB 校验过的项目源码集合 `103d350f26caf8dc9ff2fd8f018b0474153b671d0294a6283a465b71289a330d`。
+- 人工审查索引 SHA-256: `42cc08a2de9df7561983134e96271538873c30bf5c91387be9be46777a27e5e0`。
+- Model: PDB 校验过的项目源码集合 `daf538544aa602dd282e84c5367660c0774bb6e96af609377053e1625deadbea`。
+- Probe: PDB 校验过的项目源码集合 `3a8272ac374e95fea8755d2ba3b77506e1b72013c5096da754291c14f4cb9100`。
+- ModelChecks: PDB 校验过的项目源码集合 `ce22acfacb1b2e89f708adc97a3a18729bc2ec2e3db54aca5e6bc6f15a8553b9`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 

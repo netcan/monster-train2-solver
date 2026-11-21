@@ -15,6 +15,11 @@ if (args.Length == 2 && args[0] == "--pyre-capacity-carryover-only")
     OpeningCapacityChecks.Carryover(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--goldie-only")
+{
+    GoldieChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--beeziebub-only")
 {
     BeeziebubChecks.Native(args[1]);

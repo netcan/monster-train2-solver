@@ -3144,8 +3144,15 @@ namespace MonsterTrain2Poju.Model
             if (effect.Type == "CraftSpike") return true;
             if (effect.Type == "CopyLastTurn") return !preview && !bossDead && count > 0;
             if (effect.Type == "FeederRules") return room?.Deployment == false;
-            if (effect.Type == "RewardGold") return context != null && (pyreAlive ?? context.EnergyState?.PyreAlive) == true &&
-                (effect.Value >= 0 || effect.GoldCostRequired == false || context.Gold >= unchecked(-effect.Value));
+            if (effect.Type == "RewardGold")
+            {
+                if (context == null || (pyreAlive ?? context.EnergyState?.PyreAlive) != true) return false;
+                CardInstanceState? card = context.FindCard(sourceCardId);
+                var additions = CardPlayedGoldModel.Amount(context, card);
+                if (!additions.Supported) return false;
+                int total = unchecked(effect.Value + additions.Value);
+                return total >= 0 || effect.GoldCostRequired == false || context.Gold >= unchecked(-total);
+            }
             if (effect.Type == "AdjustDragonsHoard") return (pyreAlive ?? context?.EnergyState?.PyreAlive) == true;
             if (effect.Type == "RewardGoldPerDragonHoard") return effect.Value > 0;
             if (effect.Type == "AdjustCapacity") return !preview && !bossDead && RoomCapacityModel.Test(room, effect);

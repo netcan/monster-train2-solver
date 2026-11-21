@@ -694,6 +694,7 @@ param(
     [ValidateSet('Gravity', 'RaceYaThere')][string] $OriginalTurnEndBump,
     [ValidateSet('Threshold30', 'Threshold15')][string] $OriginalSmallDeckDamage,
     [ValidateRange(1, 3)][int] $OriginalBeeziebubTier,
+    [ValidateRange(1, 3)][int] $OriginalGoldieTier,
     [switch] $OriginalBurnoutDamageRelic,
     [switch] $OriginalHealDamageRelic,
     [switch] $OriginalKillAttackRelic,
@@ -1504,6 +1505,18 @@ if ($OriginalCardPlayDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoin
 if ($OriginalConsumeDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalEatenDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalMoreCapacityRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
+if ($OriginalGoldieTier) {
+    if ($PlayerAdvisor -or $Planner -or $Advisor -or $DotNetPlanner -or $InputProfile -or $BattleDistance -ne 0 -or
+        $OriginalRandomRoomCapacityMutator -or $OriginalPyreCapacityCarryover -or $OriginalMagicPowerPerGold -or $OriginalShowtimeTier -or
+        $OriginalTurnEndBump -or $OriginalSmallDeckDamage -or $OriginalBeeziebubTier) {
+        throw 'Original Goldie calibration requires a fresh isolated first battle with fixed controls.'
+    }
+    $PhysicalSpawnPoints = $true
+    $BranchCardMasks = $true
+    $SettleCardAnimations = $true
+    $SettleDeathDissolves = $true
+    $Policy = 'units-spells-and-junk'
+}
 if ($OriginalBeeziebubTier) {
     if ($PlayerAdvisor -or $Planner -or $Advisor -or $DotNetPlanner -or $InputProfile -or $BattleDistance -ne 0 -or
         $OriginalRandomRoomCapacityMutator -or $OriginalPyreCapacityCarryover -or $OriginalMagicPowerPerGold -or $OriginalShowtimeTier -or
@@ -2622,6 +2635,12 @@ if ($OriginalCardPlayDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'origi
 if ($OriginalConsumeDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-consume-damage' }
 if ($OriginalEatenDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-eaten-damage' }
 if ($OriginalMoreCapacityRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-more-capacity' }
+if ($OriginalGoldieTier) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-goldie'
+    $environment['MT2_PROBE_GOLDIE_TIER'] = $OriginalGoldieTier.ToString()
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
 if ($OriginalBeeziebubTier) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-beeziebub'
     $environment['MT2_PROBE_BEEZIEBUB_TIER'] = $OriginalBeeziebubTier.ToString()
@@ -5157,6 +5176,29 @@ if ($OriginalRandomRoomCapacityMutator) {
         throw 'Random room capacity lacks its unchanged mutator, natural opening application, deployment capacity witness or exact battle successors.'
     }
     Write-Output "ORIGINAL-RANDOM-ROOM-CAPACITY PASS: floor $($witness.ReducedFloor) $($witness.OriginalMaximum) -> $($witness.Maximum), a rejected unit deployed on floor $($witness.AlternateFloor), and no later-turn application."
+}
+if ($OriginalGoldieTier) {
+    $definition = $trace.OriginalGoldieDefinition
+    $witness = $trace.OriginalGoldieWitness
+    $callbacks = @($trace.OriginalGoldieCallbacks)
+    $controls = @($trace.Actions | Where-Object ScenarioAction)
+    $rewards = @($callbacks | Where-Object { $_.Kind -eq 'PlayedDiscard' -and $_.WasPlayed })
+    $onCast = @($callbacks | Where-Object Kind -eq 'OnCastReward')
+    $expectedGold = 30 * $OriginalGoldieTier
+    if (-not $trace.OriginalGoldiePrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or
+        $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+        $definition.Tier -ne $OriginalGoldieTier -or $controls.Count -ne 4 -or $controls[3].Action.CardInstanceId -ne $witness.VentId -or
+        -not $witness.FirstNormalDecision.InHand -or $witness.FirstNormalDecision.Energy -ne 3 -or
+        -not $witness.RetainReturn.InHand -or $witness.RetainReturn.Turn -ne 2 -or
+        $rewards.Count -ne 1 -or $rewards[0].Before.UnmodifiedPlayedCost -ne 3 -or
+        ($rewards[0].After.Gold - $rewards[0].Before.Gold) -ne $expectedGold -or
+        $onCast.Count -ne 1 -or $onCast[0].After.Gold -ne $onCast[0].Before.Gold -or
+        @($callbacks | Where-Object { -not $_.Completed }).Count -ne 0 -or
+        ($definition | ConvertTo-Json -Compress -Depth 8) -cne
+        ($trace.OriginalGoldieDefinitionAfter | ConvertTo-Json -Compress -Depth 8)) {
+        throw 'Goldie lacks its unchanged original soul, three-Ember native payout, next-turn Retain or exact battle successors.'
+    }
+    Write-Output "ORIGINAL-GOLDIE PASS: tier $OriginalGoldieTier paid $($rewards[0].Before.UnmodifiedPlayedCost) Ember, collected $expectedGold gold, and returned Vent next turn."
 }
 if ($OriginalBeeziebubTier) {
     $definition = $trace.OriginalBeeziebubDefinition

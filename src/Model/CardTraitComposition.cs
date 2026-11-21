@@ -22,6 +22,8 @@ namespace MonsterTrain2Poju.Model
         public bool ShouldSerializeCopyOnPlayUpgrade() => CopyOnPlayUpgrade != null;
         public NextDrawUpgradeRule? DrawOnPlayUpgrade { get; }
         public bool ShouldSerializeDrawOnPlayUpgrade() => DrawOnPlayUpgrade != null;
+        public CardStatisticQuery? PlayedGoldQuery { get; }
+        public bool ShouldSerializePlayedGoldQuery() => PlayedGoldQuery != null;
         public int StackMode { get; }
         public bool TemporaryReplacement { get; }
         public IReadOnlyList<string> ParameterUpgradeCastEffects { get; }
@@ -32,7 +34,7 @@ namespace MonsterTrain2Poju.Model
             bool removable, int stackMode, bool temporaryReplacement = false, IReadOnlyList<string>? parameterUpgradeCastEffects = null,
             bool? definitionRemovable = null, float? magicPowerScale = null, CardStatisticQuery? feedingQuery = null,
             string? handCostTargetType = null, CardMoonUpgradeState? moonPhaseUpgradeState = null, bool? graftSevered = null,
-            bool? holdoverPending = null, CardUpgradeModifier? copyOnPlayUpgrade = null, NextDrawUpgradeRule? drawOnPlayUpgrade = null)
+            bool? holdoverPending = null, CardUpgradeModifier? copyOnPlayUpgrade = null, NextDrawUpgradeRule? drawOnPlayUpgrade = null, CardStatisticQuery? playedGoldQuery = null)
         {
             RuntimeType = runtimeType; DeclaredName = declaredName; DefinitionParamInt = definitionParamInt; ParamInt = paramInt;
             Removable = removable; StackMode = stackMode; TemporaryReplacement = temporaryReplacement;
@@ -45,6 +47,7 @@ namespace MonsterTrain2Poju.Model
             HoldoverPending = holdoverPending;
             CopyOnPlayUpgrade = copyOnPlayUpgrade;
             DrawOnPlayUpgrade = drawOnPlayUpgrade;
+            PlayedGoldQuery = playedGoldQuery;
             ParameterUpgradeCastEffects = Array.AsReadOnly((parameterUpgradeCastEffects ?? Array.Empty<string>()).ToArray());
         }
         internal CardTraitValue Retyped(CardTraitReplacement replacement, bool temporary) =>
@@ -53,20 +56,21 @@ namespace MonsterTrain2Poju.Model
                 feedingQuery: FeedingQuery, handCostTargetType: HandCostTargetType, graftSevered: replacement.NewRuntimeType == CardGraftedEquipmentModel.Trait ? false : (bool?)null,
                 holdoverPending: replacement.NewRuntimeType == CardRetainModel.Trait ? false : (bool?)null,
                 copyOnPlayUpgrade: CopyOnPlayUpgrade,
-                drawOnPlayUpgrade: replacement.NewRuntimeType == CardPlayedDrawModel.Trait ? DrawOnPlayUpgrade : null);
+                drawOnPlayUpgrade: replacement.NewRuntimeType == CardPlayedDrawModel.Trait ? DrawOnPlayUpgrade : null,
+                playedGoldQuery: replacement.NewRuntimeType == CardPlayedGoldModel.Trait ? PlayedGoldQuery : null);
         internal static CardTraitValue Dummy() => new CardTraitValue("CardTraitDummy", null, 0, 0, false, 0);
         internal CardTraitValue WithMoonUpgrade(CardMoonUpgradeState state) => new CardTraitValue(RuntimeType, DeclaredName,
             DefinitionParamInt, ParamInt, Removable, StackMode, TemporaryReplacement, ParameterUpgradeCastEffects,
-            DefinitionRemovable, MagicPowerScale, FeedingQuery, HandCostTargetType, state, GraftSevered, HoldoverPending, CopyOnPlayUpgrade, DrawOnPlayUpgrade);
+            DefinitionRemovable, MagicPowerScale, FeedingQuery, HandCostTargetType, state, GraftSevered, HoldoverPending, CopyOnPlayUpgrade, DrawOnPlayUpgrade, PlayedGoldQuery);
         internal CardTraitValue WithGraftSevered(bool severed) => new CardTraitValue(RuntimeType, DeclaredName,
             DefinitionParamInt, ParamInt, Removable, StackMode, TemporaryReplacement, ParameterUpgradeCastEffects,
-            DefinitionRemovable, MagicPowerScale, FeedingQuery, HandCostTargetType, MoonPhaseUpgradeState, severed, HoldoverPending, CopyOnPlayUpgrade, DrawOnPlayUpgrade);
+            DefinitionRemovable, MagicPowerScale, FeedingQuery, HandCostTargetType, MoonPhaseUpgradeState, severed, HoldoverPending, CopyOnPlayUpgrade, DrawOnPlayUpgrade, PlayedGoldQuery);
         internal CardTraitValue WithHoldover(bool pending) => new CardTraitValue(RuntimeType, DeclaredName,
             DefinitionParamInt, ParamInt, Removable, StackMode, TemporaryReplacement, ParameterUpgradeCastEffects,
-            DefinitionRemovable, MagicPowerScale, FeedingQuery, HandCostTargetType, MoonPhaseUpgradeState, GraftSevered, pending, CopyOnPlayUpgrade, DrawOnPlayUpgrade);
+            DefinitionRemovable, MagicPowerScale, FeedingQuery, HandCostTargetType, MoonPhaseUpgradeState, GraftSevered, pending, CopyOnPlayUpgrade, DrawOnPlayUpgrade, PlayedGoldQuery);
         internal CardTraitValue WithParamInt(int value) => new CardTraitValue(RuntimeType, DeclaredName,
             DefinitionParamInt, value, Removable, StackMode, TemporaryReplacement, ParameterUpgradeCastEffects,
-            DefinitionRemovable, MagicPowerScale, FeedingQuery, HandCostTargetType, MoonPhaseUpgradeState, GraftSevered, HoldoverPending, CopyOnPlayUpgrade, DrawOnPlayUpgrade);
+            DefinitionRemovable, MagicPowerScale, FeedingQuery, HandCostTargetType, MoonPhaseUpgradeState, GraftSevered, HoldoverPending, CopyOnPlayUpgrade, DrawOnPlayUpgrade, PlayedGoldQuery);
     }
 
     public sealed class CardTraitReplacement
@@ -138,7 +142,7 @@ namespace MonsterTrain2Poju.Model
                     trait.DefinitionParamInt, trait.Removable, trait.StackMode, false, trait.ParameterUpgradeCastEffects,
                     feedingQuery: trait.FeedingQuery, handCostTargetType: trait.HandCostTargetType,
                     holdoverPending: trait.RuntimeType == CardRetainModel.Trait ? false : (bool?)null,
-                    copyOnPlayUpgrade: trait.CopyOnPlayUpgrade, drawOnPlayUpgrade: trait.DrawOnPlayUpgrade);
+                    copyOnPlayUpgrade: trait.CopyOnPlayUpgrade, drawOnPlayUpgrade: trait.DrawOnPlayUpgrade, playedGoldQuery: trait.PlayedGoldQuery);
                 combined.Add(added); present.Add(added.RuntimeType);
             }
             if (present.Contains("CardTraitExhaustState") && present.Contains("CardTraitSelfPurge"))

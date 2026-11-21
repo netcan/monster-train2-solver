@@ -15,7 +15,18 @@ namespace MonsterTrain2Poju.Probe
             handCostTargetType: data.GetTraitStateName() == "CardTraitIncreaseCostOfCardsInHand" ? data.GetParamCardType().ToString() : null,
             graftSevered: data.GetTraitStateName() == CardGraftedEquipmentModel.Trait ? false : (bool?)null,
             holdoverPending: data.GetTraitStateName() == CardRetainModel.Trait ? false : (bool?)null,
-            copyOnPlayUpgrade: CopyUpgrade(data), drawOnPlayUpgrade: DrawUpgrade(data));
+            copyOnPlayUpgrade: CopyUpgrade(data), drawOnPlayUpgrade: DrawUpgrade(data), playedGoldQuery: GoldQuery(data));
+        private static CardStatisticQuery? GoldQuery(CardTraitData data)
+        {
+            if (data.GetTraitStateName() != CardPlayedGoldModel.Trait) return null;
+            var trait = new CardTraitScalingRewardGold(); trait.Setup(data, CardState.None);
+            return GoldQuery(trait);
+        }
+        private static CardStatisticQuery GoldQuery(CardTraitState trait)
+        {
+            var data = trait.StatValueData;
+            return DamageScalingProbe.Query(data, 0, false, currentCostSourceIsSpellOverride: false);
+        }
         private static NextDrawUpgradeRule? DrawUpgrade(CardTraitData data)
         {
             if (data.GetTraitStateName() != CardPlayedDrawModel.Trait || data.GetCardUpgradeDataParam() is not CardUpgradeData upgrade) return null;
@@ -61,7 +72,8 @@ namespace MonsterTrain2Poju.Probe
                     ? MoonPhaseCardUpgradeCalibration.State(trait) : null,
                 graftSevered: trait is CardTraitGraftedEquipment graft ? graft.Severed : (bool?)null,
                 holdoverPending: trait is CardTraitRetain ? (bool?)AccessTools.Field(typeof(CardTraitRetain), "retained").GetValue(trait) : null,
-                copyOnPlayUpgrade: data == null ? null : CopyUpgrade(data), drawOnPlayUpgrade: data == null ? null : DrawUpgrade(data));
+                copyOnPlayUpgrade: data == null ? null : CopyUpgrade(data), drawOnPlayUpgrade: data == null ? null : DrawUpgrade(data),
+                playedGoldQuery: trait is CardTraitScalingRewardGold ? GoldQuery(trait) : null);
         }
         internal static List<CardTraitState> Bases(CardState card) => (List<CardTraitState>)AccessTools.Field(typeof(CardState), "traits").GetValue(card);
         internal static List<CardTraitState> Combined(CardState card) => (List<CardTraitState>)AccessTools.Field(typeof(CardState), "combinedTraits").GetValue(card);

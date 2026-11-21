@@ -1174,6 +1174,13 @@ namespace MonsterTrain2Poju.Model
                     CardScaledEnergyResult gained = CardScaledEnergyModel.Discarded(context, energyCard, wasPlayed: true);
                     if (!gained.Supported) return Unsupported(gained.UnsupportedReason!);
                     context = gained.Context!;
+                    if (CardPlayedGoldModel.Present(energyCard))
+                    {
+                        var payout = CardPlayedGoldModel.Discarded(CardSpellModel.WithContext(train, context), energyCard);
+                        if (!payout.Supported) return Unsupported(payout.UnsupportedReason!);
+                        train = payout.State!;
+                        context = train.Context!;
+                    }
                     if (CardDiscardDrawModel.Present(energyCard) || CardPlayedDrawModel.Present(energyCard))
                     {
                         // Earlier discard traits have already removed the played card before

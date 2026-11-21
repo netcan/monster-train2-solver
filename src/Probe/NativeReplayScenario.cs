@@ -652,6 +652,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalSmallDeckDamageScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalBeeziebubScenario.Enabled)
                         OriginalBeeziebubScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalGoldieScenario.Enabled)
+                        OriginalGoldieScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && PyreResourceRefreshScenario.Enabled && !PyreResourceRefreshScenario.Prepared)
                         PyreResourceRefreshScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && SpawnStatusRelicScenario.OriginalCombatRelics && !SpawnStatusRelicScenario.OriginalCombatRelicsAcquired)
@@ -2605,6 +2607,12 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return;
             }
+            if (fullBattle && OriginalGoldieScenario.Enabled && !OriginalGoldieScenario.Prepared)
+            {
+                numericModifiersPrepared = true;
+                OriginalGoldieScenario.Prepare(managers, log);
+                return;
+            }
             if (fullBattle && OriginalBeeziebubScenario.Enabled && !OriginalBeeziebubScenario.Prepared)
             {
                 numericModifiersPrepared = true;
@@ -3345,6 +3353,10 @@ namespace MonsterTrain2Poju.Probe
                 {
                     pendingPlay = SpawnStatusScalingScenario.Choose(decision);
                 }
+                else if (OriginalGoldieScenario.Enabled)
+                {
+                    pendingPlay = OriginalGoldieScenario.Choose(decision);
+                }
                 else if (OriginalBeeziebubScenario.Enabled)
                 {
                     pendingPlay = OriginalBeeziebubScenario.Choose(decision);
@@ -3949,6 +3961,7 @@ namespace MonsterTrain2Poju.Probe
                 (OriginalCardPlayDamageScenario.Enabled && OriginalCardPlayDamageScenario.IsScenarioAction(action)) ||
                 (OriginalConsumeDamageScenario.Enabled && OriginalConsumeDamageScenario.IsScenarioAction(action)) ||
                 (OriginalEatenDamageScenario.Enabled && OriginalEatenDamageScenario.IsScenarioAction(action)) ||
+                (OriginalGoldieScenario.Enabled && OriginalGoldieScenario.IsScenarioAction(action)) ||
                 (OriginalBeeziebubScenario.Enabled && OriginalBeeziebubScenario.IsScenarioAction(action)) ||
                 (OriginalSmallDeckDamageScenario.Enabled && OriginalSmallDeckDamageScenario.IsScenarioAction(action)) ||
                 (OriginalTurnEndBumpScenario.Enabled && OriginalTurnEndBumpScenario.IsScenarioAction(action)) ||
