@@ -32,6 +32,36 @@ internal static class SpurnedChecks
         Console.WriteLine("NATIVE-SPURNED-MALAISE PASS: exact native stack, HP, maximum HP, and attack accumulator changes.");
 
         Witherbloom(root);
+        Attack(root);
+    }
+
+    private static void Attack(FixtureValue root)
+    {
+        Require(root.GetProperty("Attacks").GetInt32() == 1 && root.GetProperty("PhaseBefore").GetString() == "Casting" &&
+            root.GetProperty("PhaseAtAttack").GetString() == "Casting", "Expected the native, already active Spurned attack.");
+        CombatUnit actor = Boss(root, "BeforeAttack");
+        CombatTrigger trigger = actor.Triggers.Single(item => item.Kind == "OnAttacking");
+        Require(TriggeredStatusModel.MatchesSpurnedAttack(actor, trigger), "The original Spurned attack payload changed.");
+        TrainCombatState train = root.GetProperty("BeforeAttack").GetProperty("Train").Deserialize<TrainCombatState>()!;
+        RoomCombatState captured = train.Rooms.Single(item => item.Units.Any(unit => unit.Id == actor.Id));
+        Require(captured.ExternalInteractions.SequenceEqual(["Outer train boss"]), "Expected an already present exterior boss.");
+        // Native RunUnitTurn is a narrower operation than the room's outer-boss scheduler.
+        var room = new RoomCombatState(captured.RoomIndex, captured.Deployment, captured.Units, [], train.Context,
+            captured.Preview, captured.ActiveCompanionBossIds);
+        RoomCombatResult attack = RoomCombatModel.ApplyUnitTurn(room, actor.Id);
+        Require(attack.Supported, attack.UnsupportedReason ?? "Modeled Spurned attack failed.");
+        foreach (string role in new[] { "Boss", "Target" })
+        {
+            CombatUnit native = root.GetProperty("AfterAttack").GetProperty(role).Deserialize<CombatUnit>()!;
+            CombatUnit modeled = attack.State!.Units.Single(unit => unit.Id == native.Id);
+            string? difference = ModelJson.Difference(JsonSerializer.Serialize(modeled), JsonSerializer.Serialize(native));
+            Require(difference == null, $"Modeled Spurned attack changed native {role} state at {difference}.");
+        }
+        TrainCombatState nativeTrain = root.GetProperty("AfterAttack").GetProperty("Train").Deserialize<TrainCombatState>()!;
+        Require(Equals(attack.State!.Context!.BattleRng, nativeTrain.Context!.BattleRng) &&
+            Equals(nativeTrain.Context.BattleRng, train.Context!.BattleRng),
+            "The deterministic native status count must not advance Battle RNG.");
+        Console.WriteLine("NATIVE-SPURNED-ATTACK PASS: ordinary attack and both ordered count-based applications.");
     }
 
     private static void Witherbloom(FixtureValue root)

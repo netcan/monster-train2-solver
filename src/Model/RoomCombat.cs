@@ -1598,6 +1598,12 @@ namespace MonsterTrain2Poju.Model
                             if (devotionStatusError != null) return devotionStatusError;
                             continue;
                         }
+                        if (effect.Type == TriggeredStatusModel.OtherStatusEffect)
+                        {
+                            if (state.Context == null || !TriggeredStatusModel.MatchesSpurnedAttack(unit, trigger))
+                                return "Status-per-other triggers require the captured ordered Spurned attack payload.";
+                            continue;
+                        }
                         if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectPyreDamageIfNoPlayerUnits" && effect.Type != "CardEffectAddStatusEffect" &&
                             effect.Type is not ("CardEffectAddStatsFromSelf" or "CardEffectRemoveEquipment" or "CardEffectAdjustDragonsHoardPerStatusEffect" or "CardEffectFeederRules" or "CardEffectSynergizeStatusEffects") &&
                             effect.Type is not ("CardEffectMultiplyStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or FriendlyDamageStatusModel.NativeEffect or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth"))
@@ -6124,8 +6130,14 @@ namespace MonsterTrain2Poju.Model
                     }
                     return true;
                 }
-                if (action.Type is "AddStatus" or DevotionStatusModel.Effect)
+                if (action.Type is "AddStatus" or DevotionStatusModel.Effect or TriggeredStatusModel.OtherStatusAction)
                 {
+                    if (action.Type == TriggeredStatusModel.OtherStatusAction && targets.UnitIds.Any(id =>
+                        units.Any(unit => unit.Source.Id == id && unit.RoomIndex != actor.RoomIndex)))
+                    {
+                        unsupportedReason = "Status-per-other attack target is outside the actor's room.";
+                        return false;
+                    }
                     EnchantmentWorld? physicalWorld = context?.Enchantments;
                     int? damageActorId = effect.Type == FriendlyDamageStatusModel.NativeEffect ? overrideTarget?.Source.Id : null;
                     var roster = damageActorId.HasValue ? targets.UnitIds.Concat(new[] { damageActorId.Value }).Distinct().ToArray() : targets.UnitIds;

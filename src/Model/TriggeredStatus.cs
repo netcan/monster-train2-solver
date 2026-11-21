@@ -21,11 +21,36 @@ namespace MonsterTrain2Poju.Model
 
     internal static class TriggeredStatusModel
     {
+        internal const string OtherStatusEffect = "CardEffectAddStatusEffectPerOtherEffect";
+        internal const string OtherStatusAction = "AddStatusPerOtherEffect";
+        internal const string OriginalSpurned = "Boss_SoulSavior_R4_Spurned_ArmorPerDebuff";
+
+        internal static bool MatchesSpurnedAttack(CombatUnit actor, CombatTrigger trigger) =>
+            actor.AssetKey == OriginalSpurned && trigger.Kind == "OnAttacking" && trigger.Effects.Count == 2 &&
+            MatchesOtherStatus(trigger.Effects[0], "LastAttackedCharacter", RoomCombatModel.Witherbloom, 1) &&
+            MatchesOtherStatus(trigger.Effects[1], "Self", "armor", 3);
+
+        private static bool MatchesOtherStatus(CombatEffect effect, string target, string output, int multiplier) =>
+            effect.Type == OtherStatusEffect && effect.StatusScaling is { ActorStatus: null, MissingHealth: false,
+                MagicPower: false, IgnoreDualism: false, Subtype.Length: 0, HealthChoicePercent: null, HealthChoiceAbove: false } &&
+            effect.Action is CardActionEffect action && action.Type == OtherStatusAction && action.Target == target &&
+            action.AllowEnemy && action.AllowPlayer && action.CountStatusOnlyOnTargets && action.Value == multiplier &&
+            action.Range == null && action.Statuses.Count == 2 && action.Statuses[0].Id == output &&
+            action.Statuses[1].Id == StatusAttackDamageModel.Malaise && action.Statuses.All(status => status.Stacks == 1) &&
+            action.Tests is { ShouldTest: true, FailToCast: false, CancelSubsequent: false, StrictTargets: false,
+                CanPlayAfterBossDead: true, MustHaveValidTargets: false, DevotionRequirement: 0, DevotionRequirementMax: 0 } &&
+            action.Filters is { Health: "Both", SelfHealthFilter: true, IgnoreBosses: false, Subtype.Length: 0, RequiredStatuses.Count: 0,
+                ExcludedStatuses.Count: 0, ExcludedSubtypes.Count: 0 };
+
         internal static string? Validate(CombatEffect effect)
         {
             CardActionEffect action = effect.Action!;
             if (action.Statuses.Count == 0) return "Triggered status requires a nonempty status pool.";
             if (action.Statuses.Any(status => !RoomCombatModel.KnowsStatus(status.Id))) return "Unmodeled triggered status definition.";
+            if (effect.Type == OtherStatusEffect &&
+                !MatchesOtherStatus(effect, "LastAttackedCharacter", RoomCombatModel.Witherbloom, 1) &&
+                !MatchesOtherStatus(effect, "Self", "armor", 3))
+                return "Unmodeled status-per-other triggered payload.";
             if (effect.Type == DevotionStatusModel.NativeEffect &&
                 (action.Type != DevotionStatusModel.Effect || action.Target != "Self" || action.Statuses.Count != 1 ||
                 action.Value != 0 || action.Range != null || action.DevotionLevelsPerGrant == null || effect.StatusScaling != null))
@@ -108,9 +133,10 @@ namespace MonsterTrain2Poju.Model
             bool perFriendlyDamage = effect.Type == FriendlyDamageStatusModel.NativeEffect;
             bool perSelfAttack = effect.Type == "CardEffectAddStatusEffectPerSelfAttack";
             bool perLastAttack = effect.Type == "CardEffectAddStatusEffectPerLastAttackDamage";
+            bool perOther = effect.Type == OtherStatusEffect;
             if (perLastAttack && source.Context.Statistics == null)
                 return Unsupported("Last-attack status scaling requires captured battle statistics.");
-            if (source.Preview && source.Context.IsolatedBattlePreview != true &&
+            if (!perOther && source.Preview && source.Context.IsolatedBattlePreview != true &&
                 (!perSelfAttack && !perLastAttack && !perFriendlyDamage && (action.Range != null || action.Value != 0 && action.Value < 100) ||
                     action.Statuses.Count > 1 || CardTargetModel.IsRandom(action.Target)))
                 return Unsupported("Randomized status previews require the explicit isolated preview RNG protocol.");
@@ -122,7 +148,13 @@ namespace MonsterTrain2Poju.Model
                 if (grants < 1) return new RoomCombatResult(source, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
                 status = status.WithStacks(unchecked(status.Stacks * grants));
             }
-            if (action.Statuses.Count > 1)
+            if (perOther)
+            {
+                if (targetIds.Count != 1) return Unsupported("Status-per-other attack needs its one captured target.");
+                status = StatusScalingModel.CountOtherStatus(action,
+                    source.Units.Where(unit => unit.Health > 0 && unit.Id == targetIds[0]));
+            }
+            else if (action.Statuses.Count > 1)
             {
                 RngDraw choice = context.BattleRng.Range(0, action.Statuses.Count);
                 context = context.WithBattleRng(choice.State); status = action.Statuses[choice.Value];
@@ -185,7 +217,7 @@ namespace MonsterTrain2Poju.Model
                 scaling?.IgnoreDualism != true && actor.Status("duality")?.Stacks > 0;
             if (duality && status.Id != "armor" && status.DisplayCategory == null)
                 return Unsupported("Triggered Duality requires the captured status display category.");
-            int chance = perSelfAttack || perLastAttack || perFriendlyDamage ? 0 : action.Value;
+            int chance = perSelfAttack || perLastAttack || perFriendlyDamage || perOther ? 0 : action.Value;
             if (!perSelfAttack && !perLastAttack && !perFriendlyDamage && action.Range != null)
             {
                 RngDraw draw = action.Range.Sample(context.BattleRng); context = context.WithBattleRng(draw.State); chance = draw.Value;
@@ -221,7 +253,7 @@ namespace MonsterTrain2Poju.Model
                     incoming = status.WithStacks(delta);
                 }
                 RoomCombatResult added = StatusApplicationModel.ApplyRetained(state, id, incoming, sourceCardId ?? actor.SpawnerCardId,
-                    overrideImmunity: action.Target == "Pyre", fromEffectType: multiply ? "CardEffectMultiplyStatusEffect" : null,
+                    overrideImmunity: action.Target == "Pyre", fromEffectType: multiply || perOther ? effect.Type : null,
                     doubleForDuality: duality && AffectedByDuality(incoming));
                 if (!added.Supported) return added;
                 callbacks.AddRange(added.PendingCallbacks);

@@ -1050,18 +1050,11 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "AddStatusPerOtherEffect")
                 {
-                    CombatStatus counted = effect.Statuses[1];
                     IEnumerable<CombatUnit> countedUnits = effect.CountStatusOnlyOnTargets
                         ? state.Rooms.SelectMany(room => room.Units).Where(unit => targets.UnitIds.Contains(unit.Id))
                         : state.Rooms.Single(room => room.RoomIndex == collectionRoom).Units;
-                    int stackCount = 0;
-                    unchecked
-                    {
-                        foreach (CombatUnit unit in countedUnits) stackCount += unit.Status(counted.Id)?.Stacks ?? 0;
-                        stackCount *= effect.Value;
-                    }
                     effect = new CardActionEffect("AddStatus", effect.Target, 0, effect.AllowEnemy, effect.AllowPlayer,
-                        new[] { effect.Statuses[0].WithStacks(stackCount) }, effect.Upgrade, effect.Lifetime, effect.Tests,
+                        new[] { StatusScalingModel.CountOtherStatus(effect, countedUnits) }, effect.Upgrade, effect.Lifetime, effect.Tests,
                         effect.Range, effect.Filters, effect.Generation, effect.OnlyIfNoEnemies, effect.CooldownParameter,
                         effect.AbilityChange, effect.CopyHeroStats, effect.ScaleUpgrade, effect.DoNotFullyRemove,
                         effect.TargetSubtype, effect.TypedDraw, effect.NextDrawUpgrade, effect.RequiredGold,

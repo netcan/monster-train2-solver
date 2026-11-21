@@ -37,6 +37,14 @@ namespace MonsterTrain2Poju.Model
 
     public static class StatusScalingModel
     {
+        internal static CombatStatus CountOtherStatus(CardActionEffect effect, IEnumerable<CombatUnit> units)
+        {
+            string countedId = effect.Statuses[1].Id;
+            int total = 0;
+            foreach (CombatUnit unit in units) total = unchecked(total + (unit.Status(countedId)?.Stacks ?? 0));
+            return effect.Statuses[0].WithStacks(unchecked(total * effect.Value));
+        }
+
         // Each trait receives the running incoming amount, not the target's existing stack count.
         public static StatusScalingResult Apply(CombatContext? context, int sourceCardId, CombatTeam targetTeam,
             string statusId, int stacks)
