@@ -28,6 +28,19 @@ namespace MonsterTrain2Poju.Probe
             (currentCost.HasValue ? " · 当前 " + currentCost + " 费" : "") +
             (sourceRoom >= 0 ? "\n来源：当前第 " + (sourceRoom + 1) + " 层的 " + unit : "");
 
+        internal static string Choices(PlayCardAction action, Func<int, string> cardName, Func<string, string> summonName)
+        {
+            var cardChoices = action.RecursionSelections.Where(choice => choice.CardInstanceIds.Count != 0).Select(choice =>
+                (choice.EffectIndex, Label: "选择 " + string.Join("、", choice.CardInstanceIds.Select(cardName))));
+            var summonChoices = action.SummonSelections.Select(choice =>
+                (choice.EffectIndex, Label: "选择 " + summonName(choice.CardDataId)));
+            var draftChoices = action.MixSelections.OrderBy(choice => choice.EffectIndex).ThenBy(choice => choice.MixNumber)
+                .Select((choice, index) => (choice.EffectIndex,
+                    Label: "第 " + (index + 1) + " 次备选中选第 " + (choice.ChoiceIndex + 1) + " 项"));
+            return string.Concat(cardChoices.Concat(summonChoices).Concat(draftChoices)
+                .OrderBy(choice => choice.EffectIndex).Select(choice => " · " + choice.Label));
+        }
+
         internal static string EndTurn(BattleSearchStep step) => "结束回合" +
             (step.RelentlessDecisions?.Count > 0 ? "；" + string.Join("；", step.RelentlessDecisions.Select(choice =>
                 "第 " + (choice.RoomIndex + 1) + " 层第 " + choice.CompletedRounds + " 轮" + (choice.Continue ? "继续" : "放弃"))) : "");

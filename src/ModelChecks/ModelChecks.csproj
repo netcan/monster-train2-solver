@@ -12,6 +12,7 @@
     <Compile Include="../NativeCasePlans/*.cs" Link="NativeCasePlans/%(Filename)%(Extension)" />
     <Compile Include="..\Probe\NativeFixtureCapture.cs" Link="NativeFixtureCapture.cs" />
     <Compile Include="..\Probe\AdviceDiagnosticJournal.cs" Link="Advisor/AdviceDiagnosticJournal.cs" />
+    <Compile Include="..\Probe\AdvisorForecastPresentation.cs" Link="Advisor/AdvisorForecastPresentation.cs" />
     <Reference Include="Newtonsoft.Json" HintPath="$(GameDir)\MonsterTrain2_Data\Managed\Newtonsoft.Json.dll" />
   </ItemGroup>
 </Project>

@@ -40,6 +40,6 @@ namespace MonsterTrain2Poju.Probe
                 title + (stats.Count == 0 ? "" : "（" + string.Join("，", stats) + "）");
         }
 
-        private static string Plain(string value) => Regex.Replace(value, "<[^>]*>", "").Replace('\n', ' ').Replace('\r', ' ').Trim();
+        internal static string Plain(string value) => Regex.Replace(value, "<[^>]*>", "").Replace('\n', ' ').Replace('\r', ' ').Trim();
     }
 }

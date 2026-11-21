@@ -675,6 +675,10 @@ namespace MonsterTrain2Poju.Probe
                         managers.GetRelicManager(), room < 0 ? null : managers.GetRoomManager().GetRoom(room));
                     return descriptions[id] = AdvisorCardPresentation.Describe(known, tentative ? int.MinValue : index, cost);
                 }
+                return descriptions[id] = ProjectedCardName(id);
+            }
+            string ProjectedCardName(int id)
+            {
                 CardInstanceState? rootCard = advice.Root.Spawn.Train.Context?.FindCard(id);
                 CardInstanceState? forecastCard = plan.State.Spawn.Train.Context?.FindCard(id);
                 string? dataId = rootCard?.DataId ?? forecastCard?.DataId;
@@ -682,6 +686,8 @@ namespace MonsterTrain2Poju.Probe
                     AllGameManagers.Instance.GetSaveManager().GetAllGameData().FindCardData(dataId)?.GetName() ?? "卡牌 #" + id;
                 return rootCard == null && forecastCard != null ? AdvisorCardPresentation.Predicted(name) : name;
             }
+            string CardChoiceName(int id) => cards.TryGetValue(id, out CardState known)
+                ? AdvisorCardPresentation.Plain(known.GetTitle()) : ProjectedCardName(id);
             string UnitName(int id) => units.TryGetValue(id, out CharacterState known) ? known.GetName() : "单位 #" + id;
             void AppendStep(BattleSearchStep step)
             {
@@ -703,8 +709,8 @@ namespace MonsterTrain2Poju.Probe
                 text.Append(showFullPlan ? " → 第 " : "\n第 ").Append(action.RoomIndex + 1).Append(" 层");
                 if (action.PlayerPosition >= 0) text.Append(" · 部署位 ").Append(action.PlayerPosition + 1);
                 if (action.TargetSpawnPointIndex >= 0) text.Append(" · 目标部署位 ").Append(action.TargetSpawnPointIndex + 1);
-                foreach (var selection in action.SummonSelections)
-                    text.Append(" · 选择 ").Append(managers.GetSaveManager().GetAllGameData().FindCardData(selection.CardDataId)?.GetName() ?? selection.CardDataId);
+                text.Append(AdvisorForecastPresentation.Choices(action, CardChoiceName, id =>
+                    managers.GetSaveManager().GetAllGameData().FindCardData(id)?.GetName() ?? id));
                 if (action.ActivatorRoomIndex.HasValue) text.Append(" · 来源：第 ").Append(action.ActivatorRoomIndex.Value + 1).Append(" 层房间技能");
                 if (action.TargetUnitId > 0)
                 {
