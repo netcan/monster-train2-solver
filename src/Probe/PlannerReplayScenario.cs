@@ -46,7 +46,7 @@ namespace MonsterTrain2Poju.Probe
             public string? Difference { get; set; }
         }
         internal static List<Record> Records { get; } = new List<Record>();
-        private static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER") == "1";
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER") == "1";
         private static int cursor;
         private static bool waiting;
         private static ManualLogSource? logger;
@@ -71,9 +71,11 @@ namespace MonsterTrain2Poju.Probe
                 !advisor.ReadyFor(state);
         }
 
-        internal static bool TryChoose(BattleTurnState state, ManualLogSource log, out PlayCardAction? action)
+        internal static bool TryChoose(BattleTurnState state, ManualLogSource log, out PlayCardAction? action,
+            out IReadOnlyList<RelentlessDecision>? choices)
         {
             action = null;
+            choices = null;
             if (!Enabled) return false;
 #if DEVELOPMENT_PROBE
             if (PlayerAdvisorProbe.Enabled) state = PlayerAdvisorProbe.Capture();
@@ -93,6 +95,7 @@ namespace MonsterTrain2Poju.Probe
             Step step = record.Steps[cursor++];
             waiting = true;
             action = step.Action;
+            choices = step.RelentlessDecisions;
 #if DEVELOPMENT_PROBE
             if (PlayerAdvisorProbe.Enabled) action = PlayerAdvisorProbe.NativeAction(action);
 #endif
@@ -177,10 +180,11 @@ namespace MonsterTrain2Poju.Probe
             RoomOutcome outcome = RoomOutcome.Exchanged;
             foreach (Step step in record.Steps)
             {
-                RequireNativeRelentlessExecution(step.RelentlessDecisions);
+                if (step.IsEndTurn != (step.Action == null) || !step.IsEndTurn && step.RelentlessDecisions?.Count > 0)
+                    throw new InvalidOperationException("Invalid frozen planner action or Relentless choices.");
                 if (step.IsEndTurn)
                 {
-                    BattleTurnResult ended = BattleTurnModel.EndTurn(current);
+                    BattleTurnResult ended = BattleTurnModel.EndTurn(current, step.RelentlessDecisions);
                     if (!ended.Supported) throw new InvalidOperationException(ended.UnsupportedReason);
                     current = ended.State!; outcome = ended.Outcome;
                 }
@@ -210,11 +214,9 @@ namespace MonsterTrain2Poju.Probe
             log.LogInfo("PLANNER-READY mode=" + record.Mode + " turn=" + root.Spawn.Turn + " steps=" + record.Steps.Count +
                 " nodes=" + record.Nodes + " duplicates=" + record.Duplicates);
         }
-        internal static void RequireNativeRelentlessExecution(IReadOnlyList<RelentlessDecision>? choices)
-        {
-            if (choices?.Count > 0)
-                throw new InvalidOperationException("This native replay driver cannot execute explicit Relentless choices.");
-        }
+        internal static bool SameChoices(IReadOnlyList<RelentlessDecision>? first, IReadOnlyList<RelentlessDecision>? second) =>
+            (first ?? Array.Empty<RelentlessDecision>()).Select(choice => (choice.RoomIndex, choice.CompletedRounds, choice.Continue))
+                .SequenceEqual((second ?? Array.Empty<RelentlessDecision>()).Select(choice => (choice.RoomIndex, choice.CompletedRounds, choice.Continue)));
         internal static RelentlessDecision[]? ReadChoices(FixtureValue value) =>
             value.TryGetProperty("RelentlessDecisions", out FixtureValue choices) && choices.ValueKind != FixtureKind.Null
                 ? Read<RelentlessDecision[]>(choices) : null;

@@ -121,7 +121,11 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (records.Any(record => record.Actual == null)) throw new InvalidOperationException("Previous EndTurn is still pending.");
                 BattleTurnState before = Capture();
-                var choices = RelentlessBattleScenario.Plan(before);
+                var choices =
+#if DEVELOPMENT_PROBE
+                    ReplayRelentlessChoices.Armed ? ReplayRelentlessChoices.Planned :
+#endif
+                    RelentlessBattleScenario.Plan(before);
                 var record = new Record { Index = records.Count, Before = before, RelentlessDecisions = choices,
 #if DEVELOPMENT_PROBE
                     TerminalUiStatisticsStart = CardStatisticRefreshTraceProbe.Sequence(trace),
@@ -137,6 +141,13 @@ namespace MonsterTrain2Poju.Probe
             if (record == null) return;
             try
             {
+#if DEVELOPMENT_PROBE
+                if (ReplayRelentlessChoices.Armed)
+                {
+                    record.RelentlessDecisions = ReplayRelentlessChoices.Complete();
+                    UnsupportedBranchObservation.RecordRelentlessChoices(record.RelentlessDecisions);
+                }
+#endif
                 record.Actual = Capture(); record.ActualOutcome = outcome;
 #if DEVELOPMENT_PROBE
                 record.TerminalUiStatisticsRefresh = CardStatisticRefreshTraceProbe.Between(trace, record.TerminalUiStatisticsStart,

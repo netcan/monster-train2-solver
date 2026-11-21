@@ -97,9 +97,14 @@ internal static class NativeBranchObservationChecks
             if (revalidateHistoricalCapture != null) before = revalidateHistoricalCapture(before);
             string immutable = JsonSerializer.Serialize(before, ModelJson.Options);
             PlayCardAction? action = step.GetProperty("Action").Deserialize<PlayCardAction>();
+            var choices = RecordedBattleChecks.Decisions(step) ?? Array.Empty<RelentlessDecision>();
+            var observedChoices = RecordedBattleChecks.Decisions(row) ?? Array.Empty<RelentlessDecision>();
+            Require(choices.Select(choice => (choice.RoomIndex, choice.CompletedRounds, choice.Continue)).SequenceEqual(
+                observedChoices.Select(choice => (choice.RoomIndex, choice.CompletedRounds, choice.Continue))),
+                "Native Relentless choices differ at " + index);
             BattleTurnState predicted;
             RoomOutcome outcome;
-            try { predicted = BattlePlannerChecks.Replay(before, [new BattleSearchStep(action, end)], out outcome); }
+            try { predicted = BattlePlannerChecks.Replay(before, [new BattleSearchStep(action, end, choices)], out outcome); }
             catch (InvalidOperationException error) { throw new InvalidOperationException("Native replay failed at " + index + ": " + error.Message, error); }
             bool terminal = boundary && boundaryOutcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
             string predictedKey = CaptureKey(predicted, terminal), actualKey = CaptureKey(actual, terminal);

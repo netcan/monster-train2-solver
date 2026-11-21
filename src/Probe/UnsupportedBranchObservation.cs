@@ -40,6 +40,11 @@ namespace MonsterTrain2Poju.Probe
         private static string? nativeSelectionRejection;
         private static bool waiting;
         private static int readyFrame = -1;
+        internal static void RecordRelentlessChoices(IReadOnlyList<RelentlessDecision>? choices)
+        {
+            if (waiting && rows.Count > 0 && rows.Last().IsEndTurn)
+                rows.Last().RelentlessDecisions = choices;
+        }
         internal static bool AwaitingSettlement()
         {
             if (!waiting) return false;
@@ -88,9 +93,6 @@ namespace MonsterTrain2Poju.Probe
             NativeBranchIdentity.RequireModule(request, typeof(CardState).Module.ModuleVersionId);
             prefix = request.GetProperty("Prefix").EnumerateArray().ToArray();
             Require(prefix.Length <= 256, "Unsupported branch prefix exceeds the input bound.");
-            foreach (FixtureValue step in prefix)
-                PlannerReplayScenario.RequireNativeRelentlessExecution(PlannerReplayScenario.ReadChoices(step));
-            PlannerReplayScenario.RequireNativeRelentlessExecution(PlannerReplayScenario.ReadChoices(request));
             expected = Read<BattleTurnState>(request.GetProperty("Root"));
             Require(expected.Spawn.Turn == 0, "Branch observation must start at native deployment.");
         }
@@ -248,7 +250,8 @@ namespace MonsterTrain2Poju.Probe
             if (enabled) roomAttachmentMovement.Add(new { Phase = "After", Room = room.GetRoomIndex(), State = CaptureRoomAttachments() });
         }
 
-        internal static PlayCardAction? Choose(BattleTurnState root, ManualLogSource log)
+        internal static PlayCardAction? Choose(BattleTurnState root, ManualLogSource log,
+            out IReadOnlyList<RelentlessDecision>? choices)
         {
             Initialize();
             Require(!waiting && !Completed, "Branch observation consumed an unsettled input.");
@@ -280,14 +283,15 @@ namespace MonsterTrain2Poju.Probe
             FixtureValue value = boundary ? request : prefix[rows.Count];
             PlayCardAction? action = Read<PlayCardAction?>(value.GetProperty("Action"));
             bool end = value.TryGetProperty("IsEndTurn", out FixtureValue endValue) && endValue.GetBoolean();
-            Require(end == (action == null), "Invalid branch input.");
+            choices = PlannerReplayScenario.ReadChoices(value);
+            Require(end == (action == null) && (end || choices?.Count is not > 0), "Invalid branch input.");
             if (boundary) CorruptRestrictedStateCalibration.Capture(action);
             BattleTurnState? predicted;
             string? reason;
             RoomOutcome outcome;
             if (end)
             {
-                BattleTurnResult result = BattleTurnModel.EndTurn(root);
+                BattleTurnResult result = BattleTurnModel.EndTurn(root, choices);
                 predicted = result.State; reason = result.UnsupportedReason; outcome = result.Outcome;
             }
             else
@@ -388,6 +392,8 @@ namespace MonsterTrain2Poju.Probe
             public BattleTurnState Before { get; set; } = null!;
             public PlayCardAction? Action { get; set; }
             public bool IsEndTurn { get; set; }
+            public IReadOnlyList<RelentlessDecision>? RelentlessDecisions { get; set; }
+            public bool ShouldSerializeRelentlessDecisions() => RelentlessDecisions?.Count > 0;
             public bool Boundary { get; set; }
             public string[] TargetDeathOnceCallbacks { get; set; } = Array.Empty<string>();
             public BattleTurnState? Expected { get; set; }

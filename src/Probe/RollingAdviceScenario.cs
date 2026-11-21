@@ -101,15 +101,17 @@ namespace MonsterTrain2Poju.Probe
             return !Replay && !BattleAdvisorOverlay.Active!.ReadyFor(root);
         }
 
-        internal static bool TryChoose(BattleTurnState root, ManualLogSource log, out PlayCardAction? action)
+        internal static bool TryChoose(BattleTurnState root, ManualLogSource log, out PlayCardAction? action,
+            out IReadOnlyList<RelentlessDecision>? choices)
         {
             action = null;
+            choices = null;
             if (!Enabled) return false;
 #if DEVELOPMENT_PROBE
             if (PlayerAdvisorProbe.Enabled) root = PlayerAdvisorProbe.Capture();
             if (UnsupportedBranchObservation.Enabled)
             {
-                action = UnsupportedBranchObservation.Choose(root, log);
+                action = UnsupportedBranchObservation.Choose(root, log, out choices);
                 return true;
             }
 #endif
@@ -123,8 +125,9 @@ namespace MonsterTrain2Poju.Probe
                     var rows = document.RootElement.GetProperty("RollingDecisions").EnumerateArray().ToArray();
                     foreach (FixtureValue row in rows)
                     {
-                        PlannerReplayScenario.RequireNativeRelentlessExecution(PlannerReplayScenario.ReadChoices(row));
-                        PlannerReplayScenario.RequireNativeRelentlessExecution(PlannerReplayScenario.ReadChoices(row.GetProperty("PlanSteps")[0]));
+                        if (!PlannerReplayScenario.SameChoices(PlannerReplayScenario.ReadChoices(row),
+                            PlannerReplayScenario.ReadChoices(row.GetProperty("PlanSteps")[0])))
+                            throw new InvalidOperationException("Frozen Relentless choices differ from the first forecast step.");
                     }
                     frozen = rows;
                 }
@@ -155,7 +158,6 @@ namespace MonsterTrain2Poju.Probe
                 }
                 BattlePlanResult plan = advice.Plan;
                 PlannerReplayScenario.Step[] steps = plan.Steps.Select(PlannerReplayScenario.Step.From).ToArray();
-                PlannerReplayScenario.RequireNativeRelentlessExecution(steps[0].RelentlessDecisions);
                 if (Records.Count > 0 && timing.Generation <= Records.Last().Generation)
                     throw new InvalidOperationException("Rolling action did not consume a new publication.");
                 decision = new Decision { Root = root, Action = steps[0].Action, IsEndTurn = steps[0].IsEndTurn,
@@ -168,7 +170,7 @@ namespace MonsterTrain2Poju.Probe
                     Generation = timing.Generation, Timing = timing };
                 if (decision.IsEndTurn)
                 {
-                    BattleTurnResult next = BattleTurnModel.EndTurn(root);
+                    BattleTurnResult next = BattleTurnModel.EndTurn(root, decision.RelentlessDecisions);
                     if (!next.Supported) throw new InvalidOperationException(next.UnsupportedReason);
                     decision.Expected = next.State!; decision.Outcome = next.Outcome;
                 }
@@ -179,6 +181,9 @@ namespace MonsterTrain2Poju.Probe
                     decision.Expected = next.State!; decision.Outcome = next.Outcome;
                 }
             }
+            if (!decision.IsEndTurn && decision.RelentlessDecisions?.Count > 0)
+                throw new InvalidOperationException("Frozen Relentless choices require EndTurn.");
+            choices = decision.RelentlessDecisions;
             Records.Add(decision); waiting = true; action = decision.Action;
 #if DEVELOPMENT_PROBE
             if (PlayerAdvisorProbe.Enabled) action = PlayerAdvisorProbe.NativeAction(action);

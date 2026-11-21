@@ -14,7 +14,12 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => Name is "relentless-battle-abandon" or "relentless-battle-continue";
         internal static bool Abandon => Name == "relentless-battle-abandon";
         internal static bool Prepared { get; private set; }
-        internal static IReadOnlyList<RelentlessDecision>? CurrentPlan { get; private set; }
+        private static IReadOnlyList<RelentlessDecision>? controlledPlan;
+        internal static IReadOnlyList<RelentlessDecision>? CurrentPlan =>
+#if DEVELOPMENT_PROBE
+            ReplayRelentlessChoices.Armed ? ReplayRelentlessChoices.Planned :
+#endif
+            controlledPlan;
         private static int cardId, currentRoom;
         private static readonly Dictionary<int, int> rounds = new Dictionary<int, int>();
         private static readonly List<object> dialogs = new List<object>();
@@ -52,15 +57,22 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static PlayCardAction? Choose(BattleTurnState state)
         {
-            if (observedTurn != state.Spawn.Turn)
-            {
-                observedTurn = state.Spawn.Turn;
-                roomStates.Add(new { Turn = observedTurn, Enabled = Enumerable.Range(0, Managers.GetRoomManager().GetNumRooms())
-                    .Select(index => Managers.GetRoomManager().GetRoom(index).IsRoomEnabled()).ToArray() });
-            }
+            ObserveTurn(state.Spawn.Turn);
             return state.Spawn.Turn == 0 && state.Spawn.Train.Context!.Cards.Hand.Any(card => card.InstanceId == cardId)
                 ? new PlayCardAction(cardId, 0, playerPosition: 0) : null;
         }
+        internal static void ObserveTurn(int nativeTurn)
+        {
+            if (observedTurn != nativeTurn)
+            {
+                observedTurn = nativeTurn;
+                roomStates.Add(new { Turn = observedTurn, Enabled = Enumerable.Range(0, Managers.GetRoomManager().GetNumRooms())
+                    .Select(index => Managers.GetRoomManager().GetRoom(index).IsRoomEnabled()).ToArray() });
+            }
+        }
+        internal static (int Room, int Rounds) CurrentExchange() => (currentRoom, rounds[currentRoom]);
+        internal static void RecordDialog(int turn, RelentlessDecision choice) => dialogs.Add(new
+        { Turn = turn, choice.RoomIndex, choice.CompletedRounds, choice.Continue });
         internal static bool IsScenarioAction(PlayCardAction action) => action.CardInstanceId == cardId;
         internal static IReadOnlyList<RelentlessDecision>? Plan(BattleTurnState before)
         {
@@ -69,24 +81,35 @@ namespace MonsterTrain2Poju.Probe
             for (int count = 0; count < 64; count++)
             {
                 BattleTurnResult result = BattleTurnModel.EndTurn(before, plan);
-                if (result.Supported) { CurrentPlan = Array.AsReadOnly(plan.ToArray()); return CurrentPlan; }
+                if (result.Supported) { controlledPlan = Array.AsReadOnly(plan.ToArray()); return controlledPlan; }
                 if (result.RelentlessChoice == null) throw new InvalidOperationException("Controlled Relentless turn: " + result.UnsupportedReason);
                 plan.Add(result.RelentlessChoice.Choose(!Abandon));
             }
             throw new InvalidOperationException("Controlled Relentless plan exceeded 64 dialogs.");
         }
+        private static bool TrackCombat => Enabled
+#if DEVELOPMENT_PROBE
+            || ReplayRelentlessChoices.Armed
+#endif
+            ;
+        private static bool InstallTracking => Enabled
+#if DEVELOPMENT_PROBE
+            || ReplayRelentlessChoices.Enabled
+#endif
+            ;
         [HarmonyPatch(typeof(CombatManager), nameof(CombatManager.DoRoomCombat))]
         private static class RoomPatch
         {
-            private static bool Prepare() => Enabled;
-            private static void Prefix(RoomState room) { if (!Managers.GetSaveManager().PreviewMode) rounds[room.GetRoomIndex()] = 0; }
+            private static bool Prepare() => InstallTracking;
+            private static void Prefix(RoomState room)
+            { if (TrackCombat && !Managers.GetSaveManager().PreviewMode) rounds[room.GetRoomIndex()] = 0; }
         }
         [HarmonyPatch(typeof(CombatManager), "DoUnitCombat")]
         private static class ExchangePatch
         {
-            private static bool Prepare() => Enabled;
+            private static bool Prepare() => InstallTracking;
             private static void Prefix(RoomState room)
-            { if (!Managers.GetSaveManager().PreviewMode) { currentRoom = room.GetRoomIndex(); rounds[currentRoom] = rounds.TryGetValue(currentRoom, out int count) ? count + 1 : 1; } }
+            { if (TrackCombat && !Managers.GetSaveManager().PreviewMode) { currentRoom = room.GetRoomIndex(); rounds[currentRoom] = rounds.TryGetValue(currentRoom, out int count) ? count + 1 : 1; } }
         }
         [HarmonyPatch(typeof(ScreenManager), "WaitForDialog")]
         private static class DialogPatch
@@ -94,11 +117,14 @@ namespace MonsterTrain2Poju.Probe
             private static bool Prepare() => Enabled;
             private static bool Prefix(Dialog.Data data, ref IEnumerator __result)
             {
+#if DEVELOPMENT_PROBE
+                if (ReplayRelentlessChoices.Armed) return true;
+#endif
                 if (Managers.GetSaveManager().PreviewMode || data.content != "Combat_Relentless_Description".Localize()) return true;
                 int count = rounds[currentRoom];
                 RelentlessDecision choice = CurrentPlan?.SingleOrDefault(item => item.RoomIndex == currentRoom && item.CompletedRounds == count) ??
                     throw new InvalidOperationException("Unplanned controlled Relentless dialog.");
-                dialogs.Add(new { Turn = Managers.GetCombatManager().GetTurnCount(), RoomIndex = currentRoom, CompletedRounds = count, Continue = choice.Continue });
+                RecordDialog(Managers.GetCombatManager().GetTurnCount(), choice);
                 if (choice.Continue) data.callback2.Invoke(); else data.callback1.Invoke();
                 __result = Empty(); return false;
             }

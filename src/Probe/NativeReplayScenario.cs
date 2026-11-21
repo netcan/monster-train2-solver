@@ -710,6 +710,7 @@ namespace MonsterTrain2Poju.Probe
             if (stage != Stage.Replaying && stage != Stage.Restarting && screen.GetTopScreen() == ScreenName.Dialog)
             {
                 DialogScreen? dialog = screen.GetScreen(ScreenName.Dialog) as DialogScreen;
+                if (dialog != null && ReplayRelentlessChoices.TryHandle(dialog, log)) return;
                 if (dialog?.GetButton1() != null)
                 {
                     ReplayManager.TryClickButton(dialog.GetButton1());
@@ -3314,6 +3315,7 @@ namespace MonsterTrain2Poju.Probe
             if (PlannerReplayScenario.WaitingForWorker || RollingAdviceScenario.WaitingForWorker) return;
             if (RollingAdviceScenario.Enabled)
             {
+                if (RelentlessBattleScenario.Prepared) RelentlessBattleScenario.ObserveTurn(combat.GetTurnCount());
                 BattleTurnState root = FullBattleTrace.Active!.CaptureDecision();
                 if (RollingAdviceScenario.AwaitingAdvice(root)) return;
 #if DEVELOPMENT_PROBE
@@ -3325,8 +3327,8 @@ namespace MonsterTrain2Poju.Probe
                     return;
                 }
 #endif
-                RollingAdviceScenario.TryChoose(root, log, out pendingPlay);
-                if (pendingPlay == null) AdvanceTurn(combat);
+                RollingAdviceScenario.TryChoose(root, log, out pendingPlay, out var choices);
+                if (pendingPlay == null) AdvanceTurn(combat, replayEndTurn: true, choices);
                 else if (managers.GetRoomManager().GetSelectedRoom() != pendingPlay.RoomIndex)
                 {
                     save.StartCoroutine(managers.GetRoomManager().GetRoomUI().SetSelectedRoom(pendingPlay.RoomIndex));
@@ -3901,7 +3903,7 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = ChosenIncantSpellScenario.Choose(decision) ?? pendingPlay;
                 if (AngelDuoIncantScenario.Enabled)
                     pendingPlay = AngelDuoIncantScenario.Choose(decision) ?? pendingPlay;
-                if (PlannerReplayScenario.TryChoose(decision, log, out PlayCardAction? planned))
+                if (PlannerReplayScenario.TryChoose(decision, log, out PlayCardAction? planned, out var choices))
                 {
                     pendingPlay = planned;
                     // A frozen window consumes its original publication. After
@@ -3909,6 +3911,11 @@ namespace MonsterTrain2Poju.Probe
                     // are unused; retain the player's read-only native observer.
                     if (PlayerAdvisorProbe.Enabled && (PlannerReplayScenario.Records[0].Mode == "replay" ||
                         PlannerReplayScenario.Records[0].Actual.Count > 0)) PlayerAdvisorProbe.PauseForFrozenPlan();
+                    if (pendingPlay == null)
+                    {
+                        AdvanceTurn(combat, replayEndTurn: true, choices);
+                        return;
+                    }
                 }
                 if (pendingPlay != null)
                 {
@@ -4224,11 +4231,13 @@ namespace MonsterTrain2Poju.Probe
                 summonScenario == "generation-relic-card-status-upgrades" ? 180f : 30f);
         }
 
-        private void AdvanceTurn(CombatManager combat)
+        private void AdvanceTurn(CombatManager combat, bool replayEndTurn = false,
+            IReadOnlyList<RelentlessDecision>? choices = null)
         {
             if (fullBattle && TrueFinalBossLethalScenario.Prepare()) return;
             if (fullBattle && TrueFinalBossRelentlessScenario.Prepare()) return;
             if (fullBattle && TrueFinalBossDormantScenario.Prepare()) return;
+            if (replayEndTurn) ReplayRelentlessChoices.Arm(combat.GetTurnCount(), choices);
             if (fullBattle) FullBattleTrace.Active?.BeginEndTurn();
             expectedTurn = combat.GetTurnCount() - initialTurn + 1;
             endTurn.Invoke(null, null);
