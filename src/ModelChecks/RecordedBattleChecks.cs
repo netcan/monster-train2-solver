@@ -72,7 +72,11 @@ internal static class RecordedBattleChecks
         choices.ValueKind != FixtureKind.Null ? choices.Deserialize<RelentlessDecision[]>() : null;
     internal static void Compare(BattleTurnState predicted, BattleTurnState actual, bool terminal, string label)
     {
-        string? difference = ModelJson.Difference(BattleTurnChecks.Comparable(predicted, terminal), BattleTurnChecks.Comparable(actual, terminal));
+        string predictedState = BattleTurnChecks.Comparable(predicted, terminal);
+        string actualState = BattleTurnChecks.Comparable(actual, terminal);
+        if (string.Equals(predictedState, actualState, StringComparison.Ordinal)) return;
+
+        string? difference = ModelJson.Difference(predictedState, actualState);
         Require(difference == null, label + ": " + difference);
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
