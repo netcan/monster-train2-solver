@@ -52,7 +52,7 @@ internal static class CardCoverageInventory
     private sealed record TurnWitness(string DataId, string Archive, int TurnIndex, int SourceCardId, string Effect, string Observation);
     private sealed record LegalityWitness(string DataId, string Archive, int QueryIndex, int CardId, int RoomIndex, string Error, bool CanDiscard);
 
-    internal static void RunCurrent(string workspace, bool check)
+    internal static void RunCurrent(string workspace, bool check, bool damageAudit = false)
     {
         workspace = Path.GetFullPath(workspace);
         string directory = Game231FixtureCatalog.DirectoryFor(workspace);
@@ -105,10 +105,16 @@ internal static class CardCoverageInventory
             }
         }
 
+        Card[] eligible = cards.Where(card => card.Logbook && !IntrinsicallyUnplayable(card)).ToArray();
+        if (damageAudit)
+        {
+            WriteDamageAudit(eligible, indexed);
+            return;
+        }
+
         var report = new StringBuilder();
         Row(report, "GameVersion", "GameModuleMvid", "DataId", "AssetKey", "Role", "EligibleLogbookPlay", "Evidence", "MatchedPlays",
             "OtherPlays", "WitnessArchive", "WitnessActionIndex");
-        Card[] eligible = cards.Where(card => card.Logbook && !IntrinsicallyUnplayable(card)).ToArray();
         var eligibleIds = eligible.Select(card => card.Id).ToHashSet(StringComparer.Ordinal);
         foreach (Card card in cards.OrderBy(card => card.Id, StringComparer.Ordinal))
         {
@@ -128,6 +134,38 @@ internal static class CardCoverageInventory
         Console.WriteLine($"CARD-EVIDENCE {CurrentVersion} {(check ? "CHECK" : "WRITE")} PASS archived={registrations.Count} settledBattles={indexed} wins={wins} stageBattles={stage} excludedBattles={excluded} acceptedActions={actions} excludedActions={excludedActions} unresolvedIdentities={unresolved} outsideCatalog={outsideCatalog}");
         Console.WriteLine($"logbook={cards.Count(card => card.Logbook)} eligible={eligible.Length} definitionMatched={matched} identityObservedOnly={identityOnly} noRecordedPlay={eligible.Length - matched - identityOnly} missingDefinitionMatch={eligible.Length - matched} report={output}");
         Console.WriteLine($"priority={priority.Total} definitionMatched={priority.Matched} identityObservedOnly={priority.Identity} noRecordedPlay={priority.Total - priority.Matched - priority.Identity} report={priorityOutput}");
+    }
+
+    private static void WriteDamageAudit(Card[] eligible, int settledBattles)
+    {
+        var effects = eligible.SelectMany(card => Array(card.Definition, "Effects")
+            .Select((definition, index) => (Card: card, Definition: definition, Index: index)))
+            .Where(effect => Text(effect.Definition, "Type") == "CardEffectDamage")
+            .OrderBy(effect => effect.Card.Name, StringComparer.Ordinal).ThenBy(effect => effect.Card.Id, StringComparer.Ordinal)
+            .GroupBy(effect => MechanismInventory.ConfigurationHash(effect.Definition), StringComparer.Ordinal)
+            .OrderBy(group => group.Key, StringComparer.Ordinal).ToArray();
+
+        var report = new StringBuilder();
+        Row(report, "GameVersion", "NativeType", "DefinitionSha256", "GroupOwners", "DataId", "AssetKey", "DefinitionEffectIndex",
+            "NativeTarget", "NativeTeam", "OriginalDefinitionMatchedPlays", "OwnerPlayArchive", "OwnerPlayActionIndex");
+        foreach (var group in effects)
+        {
+            string owners = group.Select(effect => effect.Card.Id).Distinct(StringComparer.Ordinal).Count().ToString(CultureInfo.InvariantCulture);
+            foreach (var effect in group)
+            {
+                Card card = effect.Card;
+                // The coordinate is an accepted play of the original card. An
+                // individual damage callback needs its own native observation.
+                var (archive, action) = card.DirectPlays > 0 ? card.FirstPlayWitness() : ("", "");
+                Row(report, CurrentVersion, "CardEffectDamage", group.Key, owners, card.Id, card.Name,
+                    effect.Index.ToString(CultureInfo.InvariantCulture), Text(effect.Definition, "Target"), Text(effect.Definition, "Team"),
+                    card.DirectPlays.ToString(CultureInfo.InvariantCulture), archive, action);
+            }
+        }
+        int ownerCount = effects.SelectMany(group => group).Select(effect => effect.Card.Id).Distinct(StringComparer.Ordinal).Count();
+        int witnessedGroups = effects.Count(group => group.Any(effect => effect.Card.DirectPlays > 0));
+        Console.Error.WriteLine($"CARD-DAMAGE-AUDIT {CurrentVersion}: settledBattles={settledBattles} owners={ownerCount} capturedParameterGroups={effects.Length} groupsWithOriginalOwnerPlay={witnessedGroups}");
+        Console.Write(report.ToString());
     }
 
     private static (StringBuilder Report, int Total, int Matched, int Identity) BuildPriorityReport(string directory,

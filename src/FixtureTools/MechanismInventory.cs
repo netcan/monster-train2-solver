@@ -184,7 +184,7 @@ internal static class MechanismInventory
         void Record(Mechanism item, FixtureValue value, string owner, string location, ReferenceKind kind)
         {
             item.Owners.Add(owner);
-            string configuration = Hash(Encoding.UTF8.GetBytes(Canonical(value)));
+            string configuration = ConfigurationHash(value);
             item.Configurations.Add(configuration);
             item.Locations.Add(location);
             if (!item.References.TryGetValue(kind, out var owners)) item.References.Add(kind, owners = new(StringComparer.Ordinal));
@@ -251,6 +251,7 @@ internal static class MechanismInventory
     private static string First(FixtureValue value, params string[] names) => names.Select(name => Text(value, name)).FirstOrDefault(text => text.Length != 0)
         ?? throw new InvalidDataException("Missing native inventory owner identity.");
     private static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+    internal static string ConfigurationHash(FixtureValue value) => Hash(Encoding.UTF8.GetBytes(Canonical(value)));
     private static string Canonical(FixtureValue value) => value.ValueKind switch
     {
         FixtureKind.Object => "{" + string.Concat(value.EnumerateObject().OrderBy(property => property.Name, StringComparer.Ordinal)
