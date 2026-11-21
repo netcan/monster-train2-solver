@@ -12,13 +12,13 @@
 | inspect-no-code-link | 56 | 56 | 56 |
 | inspect-inherited-code | 10 | 10 | 10 |
 | inspect-projection-normalization | 59 | 59 | 59 |
-| inspect-guard-links | 49 | 49 | 49 |
+| inspect-guard-links | 48 | 48 | 48 |
 | review-existing-code | 237 | 237 | 237 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 286 | 0 | 0 |
-| scoped-review-recorded | 29 | 29 | 29 |
+| scoped-review-recorded | 30 | 30 | 30 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 32 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 33 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -39,6 +39,7 @@
 | CardTraitScalingRewardGold | shared-path | Three unchanged Goldie soul upgrades attached using native SoulHelper. Actual original Vent pays three Ember; its zero-base OnCast reward remains unchanged, while played discard grants 30/60/90 gold from captured paid-cost statistics. Next-turn Retain and complete native wins, full successors, sixteen branches, all recorded frontiers and serial/parallel plans pass. Other carriers and compound signed affordability remain outside this evidence. |
 | RelicEffectAddPyreAttackAndHealthPerCardInDeck | shared-path | All three original Thik tiers confirm exact deck-change successors, sixteen branches, complete recorded frontiers, and equal serial and parallel search and plan replay. Permanent addition and removal affect Pyre health by three, four, or five and attack by zero, zero, or two. Temporary purge supplies a zero delta. The T3 component also checks acquisition, raw saved HP carryover, and live health caps. Mixed relic combinations remain unwitnessed. |
 | RelicEffectAddRelicStartOfRun | input-only | Sealed native class implements StartOfRun ApplyEffect, which adds the configured relic through SaveManager. Battle input captures the resulting relic roster. No combat callback override in this class; start-of-run campaign handling and carried-owner validation remain separate. |
+| RelicEffectAddTrainRoomAttachmentOnStartOfCombat | shared-path | Original Echoes Inferno mutator installs three ordered cardless attachments, one per battle floor. All three GUIDs and both-team permissions recorded, with fifteen native pre-combat callbacks and an actual 50 damage hit on an enemy on floor zero. Complete native win, 40 room and exchange stages, 12 train phases, 16 immutable branches, recorded frontiers and serial/parallel plan replay. Additional positive damage targets and other mixed opening owners await native witnesses. |
 | RelicEffectAddUnitUpgradePerPile | shared-path | Shared ID-independent birth callback captures initialized pile/threshold/team/subtype/upgrade, snapshots visible count once, preserves repeated direct API calls with empty upgradeId and existing queue policy. Four original definitions/52 configurations/3744 native parent-coroutine upgrade requests with controlled counts; children are not executed in this matrix. Nine unmodified native pile queries; unchanged deck-size mutator full win, three births with individual applied records, 16 branches/frontiers/serial-parallel root search. Five model placement/Covenant/condition/threshold/identity controls. Soul attachment lifecycle, complex upgrade callback combinations and other owner combinations remain outside this integration; other spawn-status scaling is separate. |
 | RelicEffectAdditionalDrawDuringRelentless | shared-path | Shared initialized mutable cache refreshes at start/before draw, tests both teams physical status membership without alive filtering, excludes Pyre and preserves false Test/no notification/no signal. Two original sources/10 configurations/640 native callbacks with controlled status queries and real independent MutableRules integer queries, including float precision and Int32 endpoints. Original T2/T3 full native wins; positive/reset cache, combined occupied draw, T3 tenth play draws two through existing consumer; full successors/16 branches/frontiers/serial-parallel root search. Raw actor/case/death boundaries are source/model controls; production BattleTurn now dispatches the modeled before-draw callbacks in owner/effect order; the focused legacy resource API retains its guard; complex lifecycle, outer-boss anchors, mixed Covenants and full hover remain outside certification. |
 | RelicEffectAdditionalDrawForEnemyOccupiedFloors | shared-path | Shared installed mutable draw value retains stale queries, per-room EndTurn/after-draw Test refresh and MonsterTurn-only enemy birth/killed callbacks with distinct manager gates. Three original sources/2304 detached native callbacks with controlled floor/team/phase queries and intercepted signal requests; same immutable successors and 16 parallel numeric checks. Physical dead references retained until removal; first PostCombat Despawn filter, silenced and duplicate source controls. Unchanged original WarborneT1 native win, actual kill cache1->0, full successors/16 branches/frontiers/serial-parallel root search. Higher-tier Relentless/draw-on-play companions, actual MonsterTurn enemy birth, outer-boss anchors, complex competition, mixed Covenants and full hover are not certified. |
@@ -86,10 +87,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `cfa641d261d5defcaf7cb960146dec6011d35ec0a862ecdc94435c065dc77cfb`。
-- Model: PDB 校验过的项目源码集合 `f4eb434f253cf3a6fed4a12dc7905d6730728ddd535d9c8b91c74da39bdf4dea`。
-- Probe: PDB 校验过的项目源码集合 `9a66e7eed6304691a8dfb66af1bc3d7ee1c0781bd57752fe5ac30ab2a185cfde`。
-- ModelChecks: PDB 校验过的项目源码集合 `9f24d1d5c265308bac51e1311b63b632ced81687cef45f36e1e1bf22a522a393`。
+- 人工审查索引 SHA-256: `659ac4d6f1e2bf75c768c5971094efe11f518a4b8bbca85ad21212b932a60df9`。
+- Model: PDB 校验过的项目源码集合 `c42279a3995d84272c03b5d8c7dc56349495787b56dc947a6c7bce9a66b2cabe`。
+- Probe: PDB 校验过的项目源码集合 `dcf14a8e338d9f3d030ff0115dfb75a98b6a85b7b91e706f840ce66090f8d710`。
+- ModelChecks: PDB 校验过的项目源码集合 `afe6afa42529a6687ed68755b884313d59c12dfb45ab4fd5418be96290e4b882`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
