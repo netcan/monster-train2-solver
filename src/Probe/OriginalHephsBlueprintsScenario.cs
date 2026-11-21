@@ -1,8 +1,11 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using BepInEx.Logging;
 using HarmonyLib;
+using MonsterTrain2Poju.Capture;
 using MonsterTrain2Poju.Model;
 using Newtonsoft.Json;
 
@@ -16,8 +19,11 @@ namespace MonsterTrain2Poju.Probe
         internal const int ForgePoints = 3;
         private const string Effect = "RelicEffectModifyForgeUpgrade";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool EquipmentPoolControls => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_HEPHS_POOL_CONTROLS") == "1";
         internal static bool Acquired { get; private set; }
         internal static bool Prepared { get; private set; }
+        internal static bool EquipmentPoolControlsCompleted { get; private set; }
+        internal static string? EquipmentPoolControlsError { get; private set; }
         internal static DefinitionEvidence? Definition { get; private set; }
         private static int scenarioCardInstanceId;
         private static int scenarioEquipmentInstanceId;
@@ -174,6 +180,106 @@ namespace MonsterTrain2Poju.Probe
             }
             ScenarioActionIds.Add(action.CardInstanceId);
             return action;
+        }
+
+        internal static IEnumerator RunEquipmentPoolControls(AllGameManagers managers)
+        {
+            var stack = new Stack<IEnumerator>();
+            stack.Push(CaptureEquipmentPoolControls(managers));
+            try
+            {
+                while (stack.Count > 0)
+                {
+                    IEnumerator current = stack.Peek();
+                    bool advanced;
+                    try { advanced = current.MoveNext(); }
+                    catch (Exception error) { EquipmentPoolControlsError = error.ToString(); yield break; }
+                    if (!advanced)
+                    {
+                        (stack.Pop() as IDisposable)?.Dispose();
+                        continue;
+                    }
+                    if (current.Current is IEnumerator nested) stack.Push(nested);
+                    else yield return current.Current;
+                }
+                EquipmentPoolControlsCompleted = true;
+            }
+            finally
+            {
+                while (stack.Count > 0) (stack.Pop() as IDisposable)?.Dispose();
+            }
+        }
+
+        private static IEnumerator CaptureEquipmentPoolControls(AllGameManagers managers)
+        {
+            if (!EquipmentPoolControls || !Acquired || Prepared || managers.GetCombatManager()!.GetTurnCount() != 0)
+                throw new InvalidOperationException("Expected the original HephsBlueprints owner before deployment actions.");
+
+            SaveManager save = managers.GetSaveManager();
+            AllGameData data = save.GetAllGameData();
+            CardManager cards = managers.GetCardManager()!;
+            RelicManager relics = managers.GetRelicManager();
+            FullBattleTrace trace = FullBattleTrace.Active!;
+            CollectableRelicData owner = data.GetAllCollectableRelicData().Single(item => item.GetID() == DataId);
+            CardUpgradeMaskData mask = DefinitionUpgrade(owner).GetFilters().Single();
+            var originals = new[]
+            {
+                ("SpitefulShackles", "a1375ed2-179f-4ede-9233-b88b604836ac", true, true),
+                ("ZealotsHalo", "cbfec4a4-00fe-406e-b52a-e35e6456ba7d", true, true),
+                ("Sineater", "ad143b21-be42-43a5-84bb-780ab697f7c1", true, true),
+                ("Soulsmelter", "bee94cde-06f4-4bee-b616-8d1116fbb803", true, true),
+                ("TrainStewardSpear", "38e70e6a-20f3-4e36-8d31-c5110be07f87", false, true),
+                ("PenitentsDeathsuit", "2d27a710-347c-482f-981d-d311a4f241ce", false, false)
+            };
+            var results = new List<object>();
+
+            save.SetForgeToggleActive(true);
+            Set(managers.GetPlayerManager(), "isForgeTrackingActive", true);
+            foreach (var (assetKey, cardId, expectedFilter, spendForge) in originals)
+            {
+                CardData definition = data.FindCardData(cardId);
+                if (definition == null || definition.GetAssetKey() != assetKey)
+                    throw new InvalidOperationException("Missing original forge-control card " + assetKey);
+                CardState card = cards.AddNewCard(definition, CardPile.HandPile, false, false, animate: false)
+                    ?? throw new InvalidOperationException("Could not add original forge-control card " + assetKey);
+                int instanceId = trace.CardId(card);
+                bool definitionMatches = mask.FilterCard(definition, relics);
+                bool ownedMatches = mask.FilterCard(card, relics);
+                if (definitionMatches != expectedFilter || ownedMatches != expectedFilter)
+                    throw new InvalidOperationException("Original HephsBlueprints pool membership differs for " + assetKey);
+
+                trace.InvalidateCardRules();
+                save.SetForgePoints(ForgePoints);
+                BattleTurnState decision = trace.CaptureDecision();
+                CombatContext context = decision.Spawn.Train.Context!;
+                CardInstanceState before = context.FindCard(instanceId)!;
+                CardPlayRule rule = decision.PlayRules!.Cards.Single(item => item.DataId == cardId);
+                if (before.MaskDescriptor == null || decision.PlayRules.ForgeUpgrade == null)
+                    throw new InvalidOperationException("Original forge control requires native branch mask capture.");
+                if (spendForge)
+                {
+                    if (rule.ForgeEligible != true) throw new InvalidOperationException("Original card is not eligible for default forge: " + assetKey);
+                    yield return CardForgeHelper.ApplyForgePointsUpgradeToCard(card, null,
+                        CardUpgradeLifetime.TemporaryUntilEndOfBattle, managers.GetCoreManagers());
+                }
+                CardInstanceState actual = CardModifierProbe.Capture(new[] { card }, trace.CardId).Single();
+                results.Add(new { AssetKey = assetKey, DataId = cardId, DefinitionMatches = definitionMatches, OwnedMatches = ownedMatches,
+                    SpentForge = spendForge, Before = before, Actual = actual, Rule = rule, Context = context,
+                    Forge = decision.PlayRules.ForgeUpgrade, ForgePointsAfter = save.GetForgePoints() });
+            }
+
+            using var document = NativeFixtureCapture.Capture(new
+            {
+                Schema = 1,
+                Boundary = "NativeOriginalHephsEquipmentPool",
+                GameVersion = UnityEngine.Application.version,
+                GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
+                Definition,
+                Cases = results
+            });
+            using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                "hephs-blueprints-equipment-pool.mt2f"));
+            document.Write(stream);
         }
 
         internal static bool IsScenarioAction(PlayCardAction action) => Enabled && ScenarioActionIds.Contains(action.CardInstanceId);

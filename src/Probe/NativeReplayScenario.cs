@@ -1266,8 +1266,18 @@ namespace MonsterTrain2Poju.Probe
             }
             if (fullBattle && !numericModifiersPrepared && OriginalHephsBlueprintsScenario.Enabled)
             {
-                OriginalHephsBlueprintsScenario.Prepare(managers, log);
                 numericModifiersPrepared = true;
+                if (OriginalHephsBlueprintsScenario.EquipmentPoolControls)
+                    save.StartCoroutine(OriginalHephsBlueprintsScenario.RunEquipmentPoolControls(managers));
+                else OriginalHephsBlueprintsScenario.Prepare(managers, log);
+            }
+            if (fullBattle && OriginalHephsBlueprintsScenario.EquipmentPoolControls)
+            {
+                if (OriginalHephsBlueprintsScenario.EquipmentPoolControlsError is string failure)
+                    throw new InvalidOperationException(failure);
+                if (OriginalHephsBlueprintsScenario.EquipmentPoolControlsCompleted)
+                    Finish(true, "Original HephsBlueprints equipment-pool component captured.");
+                return;
             }
             if (fullBattle && !numericModifiersPrepared && OriginalRageOnBurnoutStackLossScenario.Enabled)
             {

@@ -68,6 +68,11 @@ internal static class OriginalHephsBlueprintsChecks
 
     internal static void Native(FixtureValue root)
     {
+        if (root.TryGetProperty("Boundary", out FixtureValue boundary) && boundary.GetString() == "NativeOriginalHephsEquipmentPool")
+        {
+            NativeEquipmentPool(root);
+            return;
+        }
         Require(root.GetProperty("Schema").GetInt32() == 200 &&
             root.GetProperty("ModifierScenario").GetString() == "original-hephs-blueprints" &&
             root.GetProperty("OriginalHephsBlueprintsPrepared").GetBoolean() &&
@@ -156,6 +161,70 @@ internal static class OriginalHephsBlueprintsChecks
             "The shared forge model did not reproduce HephsBlueprints scaling and the installed equipment upgrade.");
         BattleActionChecks.Native(root);
         Console.WriteLine("NATIVE-HEPHS-BLUEPRINTS PASS: Equipment-only monster control, eligible three-point equipment, scaled original upgrade installed on host, matching model action.");
+    }
+
+    private static void NativeEquipmentPool(FixtureValue root)
+    {
+        const string module = "bf93f060-beda-46b1-b808-95ebf1e9a99d";
+        const string upgradeId = "93b48141-d2d1-4f36-8681-ac8394985a86";
+        FixtureValue definition = root.GetProperty("Definition");
+        Require(root.GetProperty("Schema").GetInt32() == 1 && root.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            root.GetProperty("GameModuleMvid").GetString() == module &&
+            definition.GetProperty("OwnerId").GetString() == RelicId && definition.GetProperty("AssetKey").GetString() == RelicKey &&
+            definition.GetProperty("Effect").GetString() == Effect && definition.GetProperty("UpgradeId").GetString() == upgradeId &&
+            definition.GetProperty("AttackDamage").GetInt32() == 2 && definition.GetProperty("FilterCount").GetInt32() == 1,
+            "Missing current original HephsBlueprints definition.");
+        var controls = new[]
+        {
+            ("SpitefulShackles", "a1375ed2-179f-4ede-9233-b88b604836ac", true, true),
+            ("ZealotsHalo", "cbfec4a4-00fe-406e-b52a-e35e6456ba7d", true, true),
+            ("Sineater", "ad143b21-be42-43a5-84bb-780ab697f7c1", true, true),
+            ("Soulsmelter", "bee94cde-06f4-4bee-b616-8d1116fbb803", true, true),
+            ("TrainStewardSpear", "38e70e6a-20f3-4e36-8d31-c5110be07f87", false, true),
+            ("PenitentsDeathsuit", "2d27a710-347c-482f-981d-d311a4f241ce", false, false)
+        };
+        FixtureValue[] rows = root.GetProperty("Cases").EnumerateArray().ToArray();
+        Require(rows.Length == controls.Length, "Missing current HephsBlueprints pool controls.");
+        foreach (var (row, (assetKey, dataId, expectedFilter, spendForge)) in rows.Zip(controls))
+        {
+            CardInstanceState card = row.GetProperty("Before").Deserialize<CardInstanceState>()!;
+            CardInstanceState actual = row.GetProperty("Actual").Deserialize<CardInstanceState>()!;
+            CombatContext context = row.GetProperty("Context").Deserialize<CombatContext>()!;
+            CardPlayRule rule = row.GetProperty("Rule").Deserialize<CardPlayRule>()!;
+            ForgeUpgradeDefinition forge = row.GetProperty("Forge").Deserialize<ForgeUpgradeDefinition>()!;
+            ForgeUpgradeModifier modifier = forge.RelicUpgrades.Single(item => item.RelicDataId == RelicId);
+            CardUpgradeMaskRule mask = modifier.Filters.Single();
+            Require(row.GetProperty("AssetKey").GetString() == assetKey && row.GetProperty("DataId").GetString() == dataId &&
+                rule.AssetKey == assetKey && rule.DataId == dataId && card.DataId == dataId && actual.DataId == dataId &&
+                actual.InstanceId == card.InstanceId && Serialize(context.FindCard(card.InstanceId)) == Serialize(card) &&
+                context.QueryFrame?.ForgePoints == ForgePoints && context.QueryFrame.ForgeTrackingActive == true && context.QueryFrame.ForgeToggleActive == true &&
+                modifier.Upgrade.DataId == upgradeId && mask.AssetKey == "OnlyEquipmentNoEnemyTargetted" && mask.CardType == "Equipment" &&
+                CardUpgradeMaskModel.FilterCard(mask, CardBranchMaskModel.Resolve(card)) == expectedFilter &&
+                row.GetProperty("DefinitionMatches").GetBoolean() == expectedFilter && row.GetProperty("OwnedMatches").GetBoolean() == expectedFilter &&
+                row.GetProperty("SpentForge").GetBoolean() == spendForge && Serialize(card.Permanent) == Serialize(actual.Permanent),
+                "Current native/model forge filter, definition or input differs for " + assetKey);
+            if (!spendForge)
+            {
+                Require(row.GetProperty("ForgePointsAfter").GetInt32() == ForgePoints && Serialize(card) == Serialize(actual),
+                    "Filter-only control changed the original card or Forge points.");
+                continue;
+            }
+
+            string before = Serialize(context);
+            var rules = new BattlePlayRules([], [rule], forgeUpgrade: forge);
+            ForgeUpgradeModelResult predicted = ForgeUpgradeModel.BeforeDirectCardPlay(context, rules, rule, card, ForgePoints);
+            CardInstanceState? predictedCard = predicted.Context?.FindCard(card.InstanceId);
+            Require(predicted.Supported && predictedCard != null && Serialize(context) == before &&
+                predicted.Context!.QueryFrame!.ForgePoints == 0 && row.GetProperty("ForgePointsAfter").GetInt32() == 0 &&
+                actual.LastForgedAmount == ForgePoints && predictedCard.LastForgedAmount == actual.LastForgedAmount &&
+                Serialize(predictedCard.Temporary.Upgrades) == Serialize(actual.Temporary.Upgrades),
+                "Native Forge spend or modeled card upgrades differ for " + assetKey + ": " + predicted.UnsupportedReason);
+            CardUpgradeModifier? bonus = actual.Temporary.Upgrades.SingleOrDefault(item => item.DataId == upgradeId);
+            Require(actual.Temporary.Upgrades.Any(item => item.DataId == forge.DefaultUpgrade!.DataId) &&
+                (expectedFilter ? bonus?.Stats.Damage == 6 && bonus.Statuses.Single(item => item.Id == "armor").Stacks == 6 : bonus == null),
+                "Wrong default or HephsBlueprints upgrade on " + assetKey);
+        }
+        Console.WriteLine("NATIVE-HEPHS-BLUEPRINTS-POOL PASS: three newly eligible original equipment cards, existing equipment, monster and excluded equipment controls, five matching native Forge transitions.");
     }
 
     private static CombatContext Context(CardInstanceState card, CombatRelicState owner, UnityRng rng) =>

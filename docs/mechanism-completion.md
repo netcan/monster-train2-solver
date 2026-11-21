@@ -83,6 +83,12 @@ EndTurn、60 个房间阶段、14 个列车阶段、录制候选及串并行计�
 2.2.1 的同阵营转移回归也通过。归档位于
 `tests/compatibility/game-2.3.1/mechanics/decay-death-hero-targets/`。
 
+2.3.1 的 HephsBlueprints 原版装备池加入 Spiteful Shackles、Zealot's Halo 和 Sineater。
+三件新增项和旧版对照 Soulsmelter 花费 3 锻造点，取得通用升级及遗物额外的 6 点伤害和
+6 层护甲。TrainStewardSpear 仅取得通用升级，PenitentsDeathsuit 的原版定义和拥有实例
+均被遗物筛选排除。六项原生组件对照均通过，旧版整局仍通过。
+归档位于 `tests/compatibility/game-2.3.1/mechanics/hephs-blueprints-equipment-pool/`。
+
 ## 工作单位
 
 2026-11-20 接入[回合前原生顺序分派](before-draw-order.md)：十二种已有 BeforeDraw

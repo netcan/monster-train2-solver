@@ -731,6 +731,7 @@ param(
     [switch] $OriginalCardDrawOnHeal,
     [switch] $OriginalBrokenRailRelic,
     [switch] $OriginalHephsBlueprints,
+    [switch] $OriginalHephsEquipmentPool,
     [switch] $OriginalRageOnBurnoutStackLoss,
     [switch] $OriginalPyreRevenge,
     [switch] $OriginalExtractForEmberAndEchos,
@@ -1428,7 +1429,10 @@ if ($OriginalCopyFirstSpellPlayed -or $OriginalCopyFirstConsumePlayed -or $Origi
 if ($OriginalFunguyDeckScaling) { $PhysicalSpawnPoints = $true; $Policy = 'no-cards' }
 if ($OriginalCardDrawOnHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalBrokenRailRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
-if ($OriginalHephsBlueprints) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalHephsBlueprints -or $OriginalHephsEquipmentPool) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalHephsEquipmentPool -and ($OriginalHephsBlueprints -or $InputProfile -or -not $BinaryCapture)) {
+    throw 'OriginalHephsEquipmentPool requires a fresh battle and binary capture.'
+}
 if ($OriginalRageOnBurnoutStackLoss) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPyreRevenge) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalExtractForEmberAndEchos) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
@@ -2655,6 +2659,10 @@ if ($OriginalFunguyDeckScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'origina
 if ($OriginalCardDrawOnHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-heal' }
 if ($OriginalBrokenRailRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-broken-rail' }
 if ($OriginalHephsBlueprints) { $environment['MT2_PROBE_MODIFIERS'] = 'original-hephs-blueprints' }
+if ($OriginalHephsEquipmentPool) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-hephs-blueprints'
+    $environment['MT2_PROBE_HEPHS_POOL_CONTROLS'] = '1'
+}
 if ($OriginalRageOnBurnoutStackLoss) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rage-on-burnout-stack-loss' }
 if ($RankThreeRoomSlayExecution) { $environment['MT2_PROBE_MODIFIERS'] = 'rank-three-room-slay-execution' }
 if ($OriginalPyreRevenge) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-revenge' }
@@ -3078,6 +3086,24 @@ if ($EnchantmentCombatOnly) {
     } finally { $componentDocument.Dispose() }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
         ModelAcceptance='Pending independent focused checker'; Trace=$componentPath } | ConvertTo-Json
+    return
+}
+if ($OriginalHephsEquipmentPool) {
+    $capturePath = Join-Path $profile 'hephs-blueprints-equipment-pool.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original HephsBlueprints equipment-pool component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Original HephsBlueprints equipment-pool capture failed; inspect $unityLog" }
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $captureDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
+    try {
+        $capture = $captureDocument.RootElement
+        if ($capture.GetProperty('Boundary').GetString() -cne 'NativeOriginalHephsEquipmentPool' -or
+            $capture.GetProperty('GameVersion').GetString() -cne '2.3.1' -or
+            $capture.GetProperty('GameModuleMvid').GetString() -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+            $capture.GetProperty('Cases').GetArrayLength() -ne 6) { throw 'Incomplete original HephsBlueprints equipment-pool capture.' }
+    } finally { $captureDocument.Dispose() }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        Cases=6; Trace=$capturePath } | ConvertTo-Json
     return
 }
 if ($OriginalThikDeckChange) {
