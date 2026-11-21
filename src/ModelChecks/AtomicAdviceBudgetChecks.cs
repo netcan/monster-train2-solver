@@ -55,8 +55,9 @@ internal static class AtomicAdviceBudgetChecks
         Require(cancelled.Cancelled && cancelled.ExpandedNodes == 1 && cancelled.TurnsCompleted == 0 &&
             !cancelled.CompletedHorizon && !cancelled.UsedShorterHorizon, "Atomic fallback ignored cancellation.");
         Reject(cancelled);
+        CheckBeam(fixture.GetProperty("DeploymentRoot").Deserialize<BattleTurnState>()!, keys);
         Require(JsonSerializer.Serialize(root, ModelJson.Options) == immutable, "Atomic budget fallback mutated its native root.");
-        Console.WriteLine("ATOMIC-ADVICE-BUDGET PASS: exact native zero-turn failure, completed first-turn fallback, independent full-state/RNG replay, hard node cap, strict horizon and cancellation controls.");
+        Console.WriteLine("ATOMIC-ADVICE-BUDGET PASS: native first-turn fallback, soft deadline during beam scoring, full-state/RNG replay, hard node cap, strict horizon and cancellation.");
 
         void Reject(BattlePlanResult plan)
         {
@@ -64,6 +65,48 @@ internal static class AtomicAdviceBudgetChecks
             try { BattleAdviceSession.Verify(root, plan); }
             catch (InvalidOperationException) { rejected = true; }
             Require(rejected, "Invalid atomic budget forecast reached advice publication.");
+        }
+    }
+
+    private static void CheckBeam(BattleTurnState root, BattleStateKeys keys)
+    {
+        var expected = BattleActionModel.EnumerateActions(root).SupportedCandidates
+            .Select(candidate => keys.Key(candidate.Result.State!)).ToArray();
+        Require(expected.Length > 1, "The native beam root must have multiple legal inputs.");
+        var options = new BattlePlannerOptions(32, 2, 2, maxSteps: 1);
+        var expired = RunAfterFirstBeamCandidate(cancel: false);
+        var cancelled = RunAfterFirstBeamCandidate(cancel: true);
+        Require(expired.Plan.TimedOut && !expired.Plan.Cancelled && expired.Plan.BeamExpandedNodes == 1 &&
+            expired.Scored.SequenceEqual(expected), "The soft deadline dropped already-simulated beam candidates.");
+        Require(cancelled.Plan.Cancelled && !cancelled.Plan.TimedOut && cancelled.Plan.BeamExpandedNodes == 1 &&
+            cancelled.Scored.SequenceEqual(expected.Take(1)), "Beam scoring continued after cancellation.");
+        Require(expired.Plan.ExpandedNodes == cancelled.Plan.ExpandedNodes &&
+            expired.Plan.SearchMetrics.SimulatedCandidates == cancelled.Plan.SearchMetrics.SimulatedCandidates &&
+            expired.Plan.SearchMetrics.SimulatedEndTurns == cancelled.Plan.SearchMetrics.SimulatedEndTurns,
+            "Draining already-simulated candidates started more transitions after the soft deadline.");
+
+        (BattlePlanResult Plan, List<string> Scored) RunAfterFirstBeamCandidate(bool cancel)
+        {
+            using var source = new CancellationTokenSource();
+            bool beam = false;
+            bool expired = false;
+            var scored = new List<string>();
+            BattlePlanResult plan = BattlePlanner.PlanCore(root, state =>
+            {
+                // The first state key requested by PlanCore admits its beam root.
+                beam = true;
+                return keys.Key(state);
+            }, options, (state, outcome) =>
+            {
+                if (beam)
+                {
+                    scored.Add(keys.Key(state));
+                    if (cancel) source.Cancel();
+                    else expired = true;
+                }
+                return BattlePlanner.Evaluate(state, outcome);
+            }, source.Token, optimizeTransitions: true, timeLimitReached: () => expired);
+            return (plan, scored);
         }
     }
 

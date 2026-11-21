@@ -154,12 +154,13 @@ namespace MonsterTrain2Poju.Model
         internal static BattlePlanResult PlanCore(BattleTurnState source, Func<BattleTurnState, string> stateKey,
             BattlePlannerOptions? options, Func<BattleTurnState, RoomOutcome, double>? evaluate,
             CancellationToken cancellationToken, bool optimizeTransitions, BattleEarlyStop? earlyStop = null,
-            bool cacheTrainValidation = true)
+            bool cacheTrainValidation = true, Func<bool>? timeLimitReached = null)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (stateKey == null) throw new ArgumentNullException(nameof(stateKey));
             options ??= new BattlePlannerOptions();
             var watch = Stopwatch.StartNew();
+            timeLimitReached ??= () => watch.Elapsed >= options.TimeLimit;
             if (options.StopAtBestPyreHealth && evaluate == null) earlyStop ??= BattleEarlyStop.Create(source, cancellationToken);
             else earlyStop = null;
             evaluate ??= Evaluate;
@@ -179,7 +180,7 @@ namespace MonsterTrain2Poju.Model
             bool Stop()
             {
                 cancelled |= cancellationToken.IsCancellationRequested;
-                timedOut |= watch.Elapsed >= options.TimeLimit;
+                timedOut |= timeLimitReached();
                 nodeLimit |= nodes >= options.MaxNodes;
                 return cancelled || timedOut || nodeLimit || earlyStop?.Reached == true;
             }
@@ -224,7 +225,7 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<BattleEndTurnCandidate> EndTurns(BattleTurnState state)
             {
                 BattleEndTurnFrontier ends = BattleEndTurnModel.Enumerate(state, Math.Max(0, options.MaxNodes - nodes),
-                    () => cancellationToken.IsCancellationRequested || watch.Elapsed >= options.TimeLimit || earlyStop?.Reached == true,
+                    () => cancellationToken.IsCancellationRequested || timeLimitReached() || earlyStop?.Reached == true,
                     choices => workspace.EndTurn(state, choices));
                 nodes += ends.ChoiceNodes; nodeLimit |= ends.ReachedNodeLimit;
                 foreach (UnsupportedActionAttempt attempt in ends.UnsupportedAttempts) Unsupported(attempt);
@@ -470,7 +471,10 @@ namespace MonsterTrain2Poju.Model
                         var children = new List<Node>();
                         foreach (SupportedActionCandidate candidate in actions.SupportedCandidates)
                         {
-                            if (watch.Elapsed >= options.TimeLimit || cancellationToken.IsCancellationRequested || earlyStop?.Reached == true) break;
+                            // The enumeration already owns these simulated successors.
+                            // A soft deadline stops new transitions, but their scores
+                            // can still affect the best complete forecast.
+                            if (cancellationToken.IsCancellationRequested || earlyStop?.Reached == true) break;
                             Node child = Child(node, candidate.Result.State!, candidate.Result.Outcome, new BattleSearchStep(candidate.Action, false));
                             children.Add(child); Add(child);
                         }
@@ -479,7 +483,7 @@ namespace MonsterTrain2Poju.Model
                         foreach (Node child in children.OrderBy(child => child.Score).ThenBy(child => child.PositionCost).Take(2)) Rollout(child);
                     }
                     else actionLimit = true;
-                    if (watch.Elapsed >= options.TimeLimit || cancellationToken.IsCancellationRequested || earlyStop?.Reached == true) break;
+                    if (timeLimitReached() || cancellationToken.IsCancellationRequested || earlyStop?.Reached == true) break;
                     foreach (BattleEndTurnCandidate end in EndTurns(node.State))
                         Add(Child(node, end.Result.State!, end.Result.Outcome, end.Step));
                 }
@@ -499,7 +503,7 @@ namespace MonsterTrain2Poju.Model
             }
             // Cancellation/time can occur inside one atomic model expansion.
             cancelled |= cancellationToken.IsCancellationRequested;
-            timedOut |= watch.Elapsed >= options.TimeLimit;
+            timedOut |= timeLimitReached();
             bool shorter = options.AllowShorterHorizon && completedPrefix != null && !cancelled &&
                 (timedOut || nodeLimit || stepLimit) && (best == null || options.SearchToBattleEnd &&
                     best.Outcome is RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate);
