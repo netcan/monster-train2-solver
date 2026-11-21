@@ -121,48 +121,137 @@ internal static class FleshweaverChecks
         Console.WriteLine($"FLESHWEAVER-{suffix.ToUpperInvariant()}-TRIAL-SUBSTITUTION PASS: original source/replacement GUIDs, captured template, native birth and wrong-owner controls.");
     }
 
-    internal static void SpikeTrialBattle(string path)
+    internal static void SpikeTrialBattle(string path) => TrialBattle(path, "Spikes");
+
+    internal static void TrialBattle(string path, string variant, bool requireCorruptionTransfer = false)
     {
+        string suffix = Variant(variant);
+        if (requireCorruptionTransfer && suffix != "Corruption")
+            throw new ArgumentException("A Corruption transfer is specific to the Corruption Trial.");
+        string scenario = suffix == "Spike" ? SpikeTrialScenario : "Level3ImmortalMass_" + suffix;
+        string asset = "Boss_Level3_Fleshweaver_" + suffix;
+        string replacement = "Boss_Level3_MiniFleshweaver_" + suffix + "_TitanTrial";
+        string sourceId = suffix switch
+        {
+            "Spike" => TriggeredSummonModel.FleshweaverSpikeMiniId,
+            "Corruption" => TriggeredSummonModel.FleshweaverCorruptionMiniId,
+            "MoreMass" => TriggeredSummonModel.FleshweaverMoreMassMiniId,
+            _ => throw new ArgumentException("Unknown original Fleshweaver trial.")
+        };
         using var fixture = ModelJson.ReadFixture(path);
         FixtureValue root = fixture.RootElement;
         FixtureValue input = root.GetProperty("NativeRunInput");
         FixtureValue route = root.GetProperty("OriginalOuterBossRoute");
-        Require(input.GetProperty("Scenario").GetString() == SpikeTrialScenario &&
+        Require(input.GetProperty("Scenario").GetString() == scenario &&
             input.GetProperty("Distance").GetInt32() == 2 && input.GetProperty("AscensionLevel").GetInt32() == 0 &&
             input.GetProperty("BattlesWon").GetInt32() == 2 && !input.GetProperty("WasDevCheatUsed").GetBoolean() &&
-            route.GetProperty("Boss").GetString() == TriggeredSummonModel.FleshweaverSpike &&
-            route.GetProperty("SelectedScenario").GetString() == SpikeTrialScenario &&
+            route.GetProperty("Boss").GetString() == asset &&
+            route.GetProperty("SelectedScenario").GetString() == scenario &&
             route.GetProperty("ScenarioAssetsUnchanged").GetBoolean() &&
             route.GetProperty("RngBefore").ContentEquals(route.GetProperty("RngAfter")) &&
             root.GetProperty("OriginalOuterBossTrialIntro").GetProperty("EnabledAfter").GetBoolean(),
             "Expected the original Ring 3 Trial selected from the progressed native checkpoint.");
-        int births = 0;
+        var births = new HashSet<int>();
         foreach (FixtureValue row in root.GetProperty("Actions").EnumerateArray())
         {
             BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
             BattleTurnState after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
-            CombatUnit[] previous = before.Spawn.Train.Rooms.SelectMany(room => room.Units).ToArray();
-            CombatUnit[] current = after.Spawn.Train.Rooms.SelectMany(room => room.Units).ToArray();
-            foreach (CombatUnit mini in current.Where(unit => unit.AssetKey == TriggeredSummonModel.FleshweaverSpikeTrialMini &&
+            Observe(before.Spawn.Train.Rooms.SelectMany(room => room.Units).ToArray(),
+                after.Spawn.Train.Rooms.SelectMany(room => room.Units).ToArray(), before.Spawn.Train.Context!, "Action");
+        }
+        // A full replacement can first be exposed in exchange even if it is gone
+        // by the next player decision. Keep Spike's existing action witness.
+        if (suffix != "Spike")
+            foreach (FixtureValue row in root.GetProperty("Stages").EnumerateArray().Where(stage =>
+                stage.GetProperty("Kind").GetString() == "Exchange"))
+            {
+                RoomCombatState before = row.GetProperty("Before").Deserialize<RoomCombatState>()!;
+                RoomCombatState after = row.GetProperty("Actual").Deserialize<RoomCombatState>()!;
+                Observe(before.Units, after.Units, before.Context!, "Exchange");
+            }
+        Require(births.Count > 0, "The native trial must contain a successful substituted summon.");
+        HashSet<int> transfers = suffix == "Corruption" ? CorruptionDeathTransfers(root, replacement) : [];
+        var removals = suffix == "Corruption"
+            ? root.GetProperty("StageRemovals").EnumerateArray().Where(row => row.GetProperty("Started").GetBoolean())
+                .SelectMany(row => row.GetProperty("ActiveStages").EnumerateArray().Select(stage => (stage.GetInt32(),
+                    row.GetProperty("EligibleUnitIds").Deserialize<int[]>()!))).ToLookup(row => row.Item1, row => row.Item2)
+            : null;
+        SolverStageChecks.Native(path, requireVictory: false, observeExchange: removals == null ? null : ObserveCorruptionExchange);
+        Require(!requireCorruptionTransfer || transfers.Count > 0,
+            "Expected native Corruption mini OnDeath to add two stacks to its last attacking unit.");
+        Console.WriteLine($"FLESHWEAVER-{suffix.ToUpperInvariant()}-TRIAL-BATTLE PASS: {births.Count} substituted births, {transfers.Count} native Corruption death transfers.");
+
+        void Observe(IReadOnlyList<CombatUnit> previous, IReadOnlyList<CombatUnit> current, CombatContext context, string boundary)
+        {
+            foreach (CombatUnit mini in current.Where(unit => unit.AssetKey == replacement && !births.Contains(unit.Id) &&
                 previous.All(old => old.Id != unit.Id)))
             {
-                CombatUnit boss = previous.Single(unit => unit.AssetKey == TriggeredSummonModel.FleshweaverSpike);
-                CombatUnit nextBoss = current.Single(unit => unit.Id == boss.Id);
-                Trigger(boss, "Spike");
-                Require(boss.Triggers.Single(trigger => trigger.Kind == "OnHit").Effects[0].Summon!.CharacterId ==
-                    TriggeredSummonModel.FleshweaverSpikeMiniId &&
-                    before.Spawn.Train.Context!.SummonCatalog!.Units.Any(unit =>
-                        unit.CharacterId == TriggeredSummonModel.FleshweaverSpikeMiniId &&
-                        unit.HeroDefinition?.Unit.AssetKey == TriggeredSummonModel.FleshweaverSpikeTrialMini) &&
+                CombatUnit? boss = previous.SingleOrDefault(unit => unit.AssetKey == asset);
+                CombatUnit? nextBoss = current.SingleOrDefault(unit => unit.Id == boss?.Id);
+                if (boss == null || nextBoss == null) continue;
+                Trigger(boss, suffix);
+                Require(boss.Triggers.Single(trigger => trigger.Kind == "OnHit").Effects[0].Summon!.CharacterId == sourceId &&
+                    context.SummonCatalog!.Units.Any(unit => unit.CharacterId == sourceId &&
+                        unit.ExternalInteractions.Count == 0 && unit.HeroDefinition?.Unit.AssetKey == replacement) &&
                     boss.AttackFromMass() > nextBoss.AttackFromMass() &&
-                    mini.Status("spikes")?.Stacks == 2 && mini.BumpRules?.OuterBoss == false && !mini.EndsBattleOnDeath,
-                    "The original hit must retain the source GUID, create the trial mini and consume Mass.");
-                births++;
+                    (suffix != "Spike" || mini.Status("spikes")?.Stacks == 2) &&
+                    mini is { Team: CombatTeam.Enemy, SpawnerCardId: 0, IsBoss: false, BumpRules.OuterBoss: false, EndsBattleOnDeath: false },
+                    "The original hit must retain the source GUID, create the trial mini and consume Mass at " + boundary + ".");
+                births.Add(mini.Id);
             }
         }
-        Require(births > 0, "The native trial must contain a successful substituted summon.");
-        SolverStageChecks.Native(path, requireVictory: false);
-        Console.WriteLine($"FLESHWEAVER-SPIKE-TRIAL-BATTLE PASS: {births} substituted births after native card actions.");
+
+        void ObserveCorruptionExchange(FixtureValue stage, RoomCombatResult replay)
+        {
+            CombatEvent[] statusEvents = replay.Events.Where(entry => entry.Kind == "TriggeredStatus:corruption").ToArray();
+            if (statusEvents.Length == 0) return;
+            RoomCombatState before = stage.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            RoomCombatState actual = stage.GetProperty("Actual").Deserialize<RoomCombatState>()!;
+            HashSet<int> nativeRemoved = removals![stage.GetProperty("Index").GetInt32()].SelectMany(ids => ids).ToHashSet();
+            foreach (CombatEvent applied in statusEvents)
+            {
+                CombatUnit? mini = before.Units.SingleOrDefault(unit => unit.Id == applied.Actor && unit.AssetKey == replacement);
+                if (mini == null || !nativeRemoved.Contains(mini.Id)) continue;
+                CombatUnit? oldTarget = before.Units.SingleOrDefault(unit => unit.Id == applied.Target);
+                CombatUnit? target = actual.Units.SingleOrDefault(unit => unit.Id == applied.Target);
+                if (oldTarget is not { Team: CombatTeam.Player } || target == null) continue;
+                Require(mini.Triggers.Single(trigger => trigger.Kind == "OnDeath").Effects is [{
+                    Type: "CardEffectAddStatusEffect", Action: { Target: "LastAttackerCharacter",
+                        Statuses: [{ Id: "corruption", Stacks: 2 }] } }] &&
+                    replay.Events.Any(entry => entry.Kind == "Death" && entry.Actor == target.Id && entry.Target == mini.Id) &&
+                    actual.Units.All(unit => unit.Id != mini.Id) && applied.Amount == 2 &&
+                    (target.Status("corruption")?.Stacks ?? 0) - (oldTarget.Status("corruption")?.Stacks ?? 0) == 2,
+                    "Native Corruption mini removal or its independently replayed transfer differs.");
+                transfers.Add(mini.Id);
+            }
+        }
+    }
+
+    private static HashSet<int> CorruptionDeathTransfers(FixtureValue root, string replacement)
+    {
+        var transferred = new HashSet<int>();
+        foreach (FixtureValue row in root.GetProperty("TriggeredStatuses").EnumerateArray()
+            .Where(value => value.GetProperty("Kind").GetString() == "OnDeath"))
+        {
+            int actorId = row.GetProperty("ActorId").GetInt32();
+            CombatUnit[] before = row.GetProperty("BeforeUnits").Deserialize<CombatUnit[]>()!;
+            CombatUnit actor = before.Single(unit => unit.Id == actorId);
+            if (actor.AssetKey != replacement) continue;
+            CombatEffect effect = row.GetProperty("Effect").Deserialize<CombatEffect>()!;
+            Require(row.GetProperty("Completed").GetBoolean() && actor.Health <= 0 &&
+                effect is { Type: "CardEffectAddStatusEffect", Action: { Target: "LastAttackerCharacter",
+                    Statuses: [{ Id: "corruption", Stacks: 2 }] } }, "The native replacement death callback changed.");
+            int[] targets = row.GetProperty("Targets").Deserialize<int[]>()!;
+            if (targets.Length == 0) continue;
+            int targetId = targets.Single();
+            CombatUnit oldTarget = before.Single(unit => unit.Id == targetId);
+            CombatUnit target = row.GetProperty("ActualUnits").Deserialize<CombatUnit[]>()!.Single(unit => unit.Id == targetId);
+            int delta = (target.Status("corruption")?.Stacks ?? 0) - (oldTarget.Status("corruption")?.Stacks ?? 0);
+            Require(actor.LastAttackerId == targetId && oldTarget.Team == CombatTeam.Player,
+                "Corruption mini death selected a target other than its last attacking player unit.");
+            if (delta == 2) transferred.Add(actorId);
+        }
+        return transferred;
     }
 
     internal static string Variant(string variant) => variant switch

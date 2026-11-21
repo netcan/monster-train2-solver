@@ -4,7 +4,8 @@ using MonsterTrain2Poju.Model;
 
 internal static class SolverStageChecks
 {
-    internal static void Native(string path, bool requireVictory = true, string? expectedCase = null)
+    internal static void Native(string path, bool requireVictory = true, string? expectedCase = null,
+        Action<FixtureValue, RoomCombatResult>? observeExchange = null)
     {
         using var document = ModelJson.ReadFixture(path); var root = document.RootElement;
         void Require(bool condition, string message) => TrueFinalBossChecks.Require(condition, message);
@@ -15,7 +16,7 @@ internal static class SolverStageChecks
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
             Require(root.GetProperty(key).GetInt32() == 0, "Nonzero native " + key);
         if (expectedCase != null) RequireCase(root, expectedCase);
-        RoomCombatChecks.NativeRoomOnly(path);
+        RoomCombatChecks.NativeRoomOnly(path, observeExchange);
         TrainCombatChecks.Native(root);
         RecordedBattleChecks.Native(root);
         var (source, _, matched, _) = BattleSearchChecks.RecordedFrontiers(root, requireZeroUnsupported: true);

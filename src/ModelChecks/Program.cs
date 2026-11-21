@@ -3814,6 +3814,13 @@ if (args.Length == 2 && args[0] == "--native-fleshweaver-spike-trial-battle")
     return;
 }
 
+if (args.Length is 3 or 4 && args[0] == "--native-fleshweaver-trial-battle" &&
+    (args.Length == 3 || args[3] == "--require-corruption-transfer"))
+{
+    FleshweaverChecks.TrialBattle(args[1], args[2], requireCorruptionTransfer: args.Length == 4);
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--player-arkion-push-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

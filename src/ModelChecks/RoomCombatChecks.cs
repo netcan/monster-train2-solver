@@ -4,7 +4,8 @@ using MonsterTrain2Poju.Model;
 
 internal static class RoomCombatChecks
 {
-    internal static void NativeRoomOnly(string path) => CheckNativeFixture(path, roomOnly: true);
+    internal static void NativeRoomOnly(string path, Action<FixtureValue, RoomCombatResult>? observeExchange = null) =>
+        CheckNativeFixture(path, roomOnly: true, observeExchange: observeExchange);
     internal static void NativeObservedRooms(string path) => CheckNativeFixture(path, roomOnly: true, requireTerminal: false);
 
     internal static void Run(string[] fixtures)
@@ -218,7 +219,8 @@ internal static class RoomCombatChecks
     private static void Require(bool condition, string error)
     { if (!condition) throw new InvalidOperationException(error); }
 
-    private static void CheckNativeFixture(string path, bool roomOnly = false, bool requireTerminal = true)
+    private static void CheckNativeFixture(string path, bool roomOnly = false, bool requireTerminal = true,
+        Action<FixtureValue, RoomCombatResult>? observeExchange = null)
     {
         using FixtureDocument document = ModelJson.ReadFixture(path);
         FixtureValue fixture = document.RootElement;
@@ -243,7 +245,8 @@ internal static class RoomCombatChecks
                 ? targetsValue.EnumerateArray().Select(target => (target.GetProperty("RoomIndex").GetInt32(),
                     target.GetProperty("Unit").Deserialize<CombatUnit>()!)).ToArray()
                 : Array.Empty<(int, CombatUnit)>();
-            RoomCombatResult result = stage.GetProperty("Kind").GetString() == "Exchange"
+            bool exchange = stage.GetProperty("Kind").GetString() == "Exchange";
+            RoomCombatResult result = exchange
                 ? RoomCombatModel.Exchange(state, externalTargets: externalTargets,
                     pendingPhysicalDeathIds: stage.TryGetProperty("PendingPhysicalDeaths", out FixtureValue deaths)
                         ? deaths.Deserialize<int[]>() : null) : RoomCombatModel.Resolve(state,
@@ -289,6 +292,7 @@ internal static class RoomCombatChecks
                 Require(contextDifference == null, "Native room context difference at stage " +
                     stage.GetProperty("Index").GetInt32() + ": " + contextDifference);
             }
+            if (exchange) observeExchange?.Invoke(stage, result);
             matched++;
         }
         Require(matched > 0, "No native stages were verified; unsupported=" + unsupported +
