@@ -12,38 +12,61 @@ internal static class SpurnedChecks
         using var fixture = ModelJson.ReadFixture(path);
         FixtureValue root = fixture.RootElement;
         FixtureValue identity = root.GetProperty("OriginalSpurnedBattle");
+        string bossKey = identity.GetProperty("Scenario").GetString() switch
+        {
+            Scenario => BossKey,
+            "SoulSavior_R4_BossBattle_EstrangedChild_3" => TriggeredStatusModel.OriginalSpurnedWitherbloom,
+            _ => throw new InvalidOperationException("Expected an original supported Spurned battle.")
+        };
+        bool witherbloom = bossKey == TriggeredStatusModel.OriginalSpurnedWitherbloom;
         Require(root.GetProperty("ModifierScenario").GetString() == "original-spurned-battle" &&
-            identity.GetProperty("Scenario").GetString() == Scenario && identity.GetProperty("BossKey").GetString() == BossKey &&
+            identity.GetProperty("BossKey").GetString() == bossKey &&
             identity.GetProperty("TestScenario").GetBoolean(), "Expected the controlled original Spurned battle.");
+        if (witherbloom)
+            Require(identity.GetProperty("CompanionKeys").GetArrayLength() == 0,
+                "Expected the original Witherbloom scenario with no companion boss.");
 
+        bool MatchesBoss(CombatUnit unit) => unit.AssetKey == bossKey &&
+            unit.Triggers.Any(trigger => TriggeredStatusModel.MatchesSpurnedAttack(unit, trigger)) &&
+            (!witherbloom || unit.Triggers.Any(TriggeredStatusModel.MatchesSpurnedWitherbloomTurnBegin));
         FixtureValue[] turns = root.GetProperty("Turns").EnumerateArray().ToArray();
         Require(turns.Length >= 2, "The original Spurned battle must capture its opening and later turns.");
         BattleTurnState opening = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
         OuterBossSpawnDefinition? queued = opening.Spawn.QueuedOuterBoss;
-        Require(opening.Spawn.OuterBoss == null && queued is { Boss: { AssetKey: BossKey, Phase: "Casting", Room: -1, UnitId: 0 } } &&
-            queued.Actor.Unit.Triggers.Any(trigger => TriggeredStatusModel.MatchesSpurnedAttack(queued.Actor.Unit, trigger)),
-            "The opening must contain the original queued boss and both strictly projected attack effects.");
+        Require(opening.Spawn.OuterBoss == null && queued is { Boss: { Phase: "Casting", Room: -1, UnitId: 0 } } &&
+            queued.Boss.AssetKey == bossKey && MatchesBoss(queued.Actor.Unit),
+            "The opening must contain the original queued boss and its complete trigger definitions.");
 
         BattleTurnState[] actual = turns.Select(turn => turn.GetProperty("Actual").Deserialize<BattleTurnState>()!).ToArray();
         OuterBossProgress? first = actual[0].Spawn.OuterBoss;
-        Require(first is { AssetKey: BossKey, Phase: "Casting", Room: >= 0, UnitId: > 0 } &&
+        Require(first is { Phase: "Casting", Room: >= 0, UnitId: > 0 } && first.AssetKey == bossKey &&
             actual[0].Spawn.Train.Rooms.Single(room => room.RoomIndex == first.Room)
-                .Units.Any(unit => unit.Id == first.UnitId && unit.Triggers.Any(trigger => TriggeredStatusModel.MatchesSpurnedAttack(unit, trigger))),
+                .Units.Any(unit => unit.Id == first.UnitId && MatchesBoss(unit)),
             "The original boss must enter a physical floor in Casting with its complete native projection.");
         OuterBossProgress?[] phases = actual.Select(turn => turn.Spawn.OuterBoss).ToArray();
         Require(phases.Zip(phases.Skip(1)).Any(pair => pair.First?.Phase == "Casting" && pair.Second?.Phase == "Relentless" &&
-                pair.First.UnitId == pair.Second.UnitId && pair.Second.AssetKey == BossKey),
+                pair.First.UnitId == pair.Second.UnitId && pair.Second.AssetKey == bossKey),
             "The original installed boss must naturally advance from Casting to Relentless.");
         int pyreRoom = opening.PlayRules!.Rooms.Single(room => room.IsPyre).RoomIndex;
-        Require(phases.Any(phase => phase is { AssetKey: BossKey, Phase: "Relentless" } &&
+        Require(phases.Any(phase => phase?.Phase == "Relentless" && phase.AssetKey == bossKey &&
             phase.UnitId == first!.UnitId && phase.Room == pyreRoom), "The captured Relentless boss never reached the Pyre.");
-        Require(actual.SelectMany(turn => turn.Spawn.Train.Rooms).SelectMany(room => room.Units)
+        RoomCombatState[] rooms = actual.SelectMany(turn => turn.Spawn.Train.Rooms).ToArray();
+        Require(rooms.SelectMany(room => room.Units)
             .Any(unit => unit.Team == CombatTeam.Player && unit.Status(StatusAttackDamageModel.Malaise)?.Stacks > 0 &&
                 unit.Status(RoomCombatModel.Witherbloom)?.Stacks > 0),
             "No original complete-turn successor contains an affected player unit with both statuses.");
+        if (witherbloom)
+        {
+            Require(rooms.Any(room => room.Units.Any(unit => unit.Id == first!.UnitId && unit.Status(RoomCombatModel.Witherbloom)?.Stacks > 0) &&
+                room.Units.Any(unit => unit.Team == CombatTeam.Player && unit.Status(RoomCombatModel.Witherbloom)?.Stacks > 0)),
+                "No original complete-turn successor contains Witherbloom on both Spurned and a player unit on its floor.");
+            Require(rooms.SelectMany(room => room.Units).Any(unit => unit.Id == first!.UnitId &&
+                unit.BumpRules is { OuterBoss: true, OuterBossRelentlessPhase: true } && unit.Triggers.Count == 0),
+                "The original Relentless snapshot must show both Casting triggers removed.");
+        }
 
         SolverStageChecks.Native(path, requireVictory: false);
-        Console.WriteLine("NATIVE-SPURNED-BATTLE PASS: queued original boss, placed Casting, ordinary status combat, Relentless and Pyre arrival.");
+        Console.WriteLine($"NATIVE-SPURNED-BATTLE PASS: {bossKey}, queued and placed Casting, ordinary status combat, Relentless and Pyre arrival.");
     }
 
     internal static void Native(FixtureValue root)

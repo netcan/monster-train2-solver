@@ -1235,6 +1235,16 @@ namespace MonsterTrain2Poju.Model
                 if (!state.Deployment && unit.Status("valor") != null &&
                     state.Context?.StatusRules.FirstOrDefault(rule => rule.Id == "armor") == null)
                     return "Valor requires the armor status definition.";
+                if (unit.AssetKey == TriggeredStatusModel.OriginalSpurnedWitherbloom)
+                {
+                    CombatTrigger[] original = unit.Triggers.Where(trigger =>
+                        string.IsNullOrEmpty(trigger.Origin?.UpgradeId) && trigger.Origin?.IsFromEquipment != true).ToArray();
+                    bool nativeRoster = unit.BumpRules is { OuterBoss: true, OuterBossRelentlessPhase: true }
+                        ? original.Length == 0
+                        : original.Length == 2 && TriggeredStatusModel.MatchesSpurnedWitherbloomTurnBegin(original[0]) &&
+                            TriggeredStatusModel.MatchesSpurnedAttack(unit, original[1]);
+                    if (!nativeRoster) return "Spurned Witherbloom requires its original triggers for the captured boss phase.";
+                }
                 foreach (CombatTrigger trigger in unit.Triggers)
                 {
                     if (trigger.ActivationCondition != null && !(halfHealthLifecycle && HalfHealthDeathwishModel.IsTrigger(trigger)))

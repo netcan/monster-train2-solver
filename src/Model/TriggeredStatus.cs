@@ -24,23 +24,50 @@ namespace MonsterTrain2Poju.Model
         internal const string OtherStatusEffect = "CardEffectAddStatusEffectPerOtherEffect";
         internal const string OtherStatusAction = "AddStatusPerOtherEffect";
         internal const string OriginalSpurned = "Boss_SoulSavior_R4_Spurned_ArmorPerDebuff";
+        internal const string OriginalSpurnedWitherbloom = "Boss_SoulSavior_R4_Spurned_WitherbloomOnAction";
 
-        internal static bool MatchesSpurnedAttack(CombatUnit actor, CombatTrigger trigger) =>
-            actor.AssetKey == OriginalSpurned && trigger.Kind == "OnAttacking" && trigger.Effects.Count == 2 &&
-            MatchesOtherStatus(trigger.Effects[0], "LastAttackedCharacter", RoomCombatModel.Witherbloom, 1) &&
-            MatchesOtherStatus(trigger.Effects[1], "Self", "armor", 3);
+        internal static bool MatchesSpurnedAttack(CombatUnit actor, CombatTrigger trigger)
+        {
+            if (trigger.Kind != "OnAttacking" || trigger.Effects.Count == 0 ||
+                !MatchesOtherStatus(trigger.Effects[0], "LastAttackedCharacter", RoomCombatModel.Witherbloom, 1))
+                return false;
+            return actor.AssetKey switch
+            {
+                OriginalSpurned => trigger.Effects.Count == 2 && MatchesOtherStatus(trigger.Effects[1], "Self", "armor", 3),
+                OriginalSpurnedWitherbloom => trigger.Effects.Count == 1 && trigger.RemoveOnRelentlessChange,
+                _ => false
+            };
+        }
+
+        internal static bool MatchesSpurnedWitherbloomTurnBegin(CombatTrigger trigger) =>
+            trigger.Kind == "OnTurnBegin" && !trigger.Once && !trigger.IgnoreSilence && trigger.RemoveOnRelentlessChange &&
+            trigger.Effects.Count == 2 &&
+            MatchesFixedRoomStatus(trigger.Effects[0], StatusAttackDamageModel.Malaise, 2, bothTeams: false) &&
+            MatchesFixedRoomStatus(trigger.Effects[1], RoomCombatModel.Witherbloom, 1, bothTeams: true);
+
+        private static bool MatchesFixedRoomStatus(CombatEffect effect, string statusId, int stacks, bool bothTeams) =>
+            effect.Type == "CardEffectAddStatusEffect" && NoStatusScaling(effect.StatusScaling) &&
+            effect.Action is { Type: "AddStatus", Target: "Room", Value: 0, AllowPlayer: true, Range: null, Statuses.Count: 1 } action &&
+            action.AllowEnemy == bothTeams && action.Statuses[0].Id == statusId && action.Statuses[0].Stacks == stacks &&
+            action.Tests is { StrictTargets: false, DevotionRequirement: 0, DevotionRequirementMax: 0 } &&
+            HasNoTargetFilters(action.Filters);
 
         private static bool MatchesOtherStatus(CombatEffect effect, string target, string output, int multiplier) =>
-            effect.Type == OtherStatusEffect && effect.StatusScaling is { ActorStatus: null, MissingHealth: false,
-                MagicPower: false, IgnoreDualism: false, Subtype.Length: 0, HealthChoicePercent: null, HealthChoiceAbove: false } &&
+            effect.Type == OtherStatusEffect && NoStatusScaling(effect.StatusScaling) &&
             effect.Action is CardActionEffect action && action.Type == OtherStatusAction && action.Target == target &&
             action.AllowEnemy && action.AllowPlayer && action.CountStatusOnlyOnTargets && action.Value == multiplier &&
             action.Range == null && action.Statuses.Count == 2 && action.Statuses[0].Id == output &&
             action.Statuses[1].Id == StatusAttackDamageModel.Malaise && action.Statuses.All(status => status.Stacks == 1) &&
             action.Tests is { ShouldTest: true, FailToCast: false, CancelSubsequent: false, StrictTargets: false,
                 CanPlayAfterBossDead: true, MustHaveValidTargets: false, DevotionRequirement: 0, DevotionRequirementMax: 0 } &&
-            action.Filters is { Health: "Both", SelfHealthFilter: true, IgnoreBosses: false, Subtype.Length: 0, RequiredStatuses.Count: 0,
-                ExcludedStatuses.Count: 0, ExcludedSubtypes.Count: 0 };
+            HasNoTargetFilters(action.Filters);
+
+        private static bool NoStatusScaling(TriggeredStatusScaling? scaling) => scaling is { ActorStatus: null,
+            MissingHealth: false, MagicPower: false, IgnoreDualism: false, Subtype.Length: 0, HealthChoicePercent: null, HealthChoiceAbove: false };
+
+        private static bool HasNoTargetFilters(CardTargetFilters? filters) => filters is { Health: "Both",
+            SelfHealthFilter: true, IgnoreBosses: false, Subtype.Length: 0, RequiredStatuses.Count: 0,
+            ExcludedStatuses.Count: 0, ExcludedSubtypes.Count: 0 };
 
         internal static string? Validate(CombatEffect effect)
         {
