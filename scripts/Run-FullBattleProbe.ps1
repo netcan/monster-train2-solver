@@ -1144,12 +1144,14 @@ if ($OuterBossBirth -and -not $OuterBossTurns) { throw '-OuterBossBirth requires
 if ($OuterBossPyre -and -not $OuterBossTurns) { throw '-OuterBossPyre requires -OuterBossTurns.' }
 if ($ContinueToNextRing) {
     $allowed = @('ContinueToNextRing', 'InputProfile', 'BattleDistance', 'Policy', 'Seed', 'PlayerAdvisor', 'RollingAdvice',
+        'RollingInput', 'ResumeRollingAdvice',
         'PlannerWholeBattle', 'PlannerTacticalSeed', 'PlannerHorizon', 'PlannerMaxSteps', 'PlannerSearchWorkers',
         'PlannerDeploymentRoom', 'PlannerTimeLimitMs', 'OuterBossTurns', 'OuterBossBirth', 'OuterBossPyre',
         'PhysicalSpawnPoints', 'BranchCardMasks', 'SettleDeathDissolves', 'SettleCardAnimations', 'BinaryCapture',
         'GameSpeed', 'ShowWindow', 'TimeoutSeconds', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction')
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count -or
-        -not ($InputProfile -and $PlayerAdvisor -and $RollingAdvice -and $BinaryCapture)) {
+        -not ($InputProfile -and $PlayerAdvisor -and $RollingAdvice -and $BinaryCapture) -or
+        ($RollingInput -and -not $ResumeRollingAdvice)) {
         throw 'ContinueToNextRing requires live PlayerAdvisor and RollingAdvice, binary capture and a native InputProfile without scenario controls.'
     }
 }
