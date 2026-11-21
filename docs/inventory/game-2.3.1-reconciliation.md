@@ -9,11 +9,11 @@
 | 待办分类 | 类数 | 含目录引用 | 含类型声明 |
 | --- | ---: | ---: | ---: |
 | known-gap | 1 | 1 | 1 |
-| inspect-no-code-link | 57 | 57 | 57 |
-| inspect-inherited-code | 12 | 12 | 12 |
+| inspect-no-code-link | 56 | 56 | 56 |
+| inspect-inherited-code | 10 | 10 | 10 |
 | inspect-projection-normalization | 59 | 59 | 59 |
 | inspect-guard-links | 49 | 49 | 49 |
-| review-existing-code | 234 | 234 | 234 |
+| review-existing-code | 237 | 237 | 237 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 286 | 0 | 0 |
 | scoped-review-recorded | 29 | 29 | 29 |
@@ -30,8 +30,8 @@
 
 | 原生类 | 结论 | 边界 |
 | --- | --- | --- |
-| CardEffectAddStatusEffectNextMonster | known-gap | Native Apply queues AddSpawningStatusEffect for a later monster; the model has no pending-spawn status action. All five pinned catalog references are requiredCardEffects mask conditions, with zero captured type declarations. Resolve a real execution entry before prioritizing queue capture, consumption timing and search state. The latent implementation gap remains; parent AddStatus links do not implement it, and reference-only does not prove the class unused. |
-| CardTraitJuice4 | known-gap | Shared 2/3/4 multiplier and ID-independent simple status-spell contract now have five original upgrades, 180 native callback pairs, nine original soul-upgrade casts and complete native loss/16 branches/frontiers/root search. Mollis OnCast armor/poison use the existing dispatcher. Source OnCardBeingUpgraded and next-draw manager dispatch now have five original definitions, 540 relation controls/repeats and 300 ordered pairs; six native two-card draws verify deep copies, filtered shared originals and callback short circuit, with complete successors/16 branches/frontiers/root search. Parameter-upgrade cast effects and other mixed ordered scaling remain guarded; other consumers are not certified. No class-wide lifecycle completion. |
+| CardEffectAddStatusEffectNextMonster | known-gap | Native Apply queues AddSpawningStatusEffect. CreateMonsterState applies and clears it before authored starting statuses, and EndTurn clears pending values. The five catalog references are requiredCardEffects filters. Of 37008 installed managed method bodies, the only external type reference registers a tooltip getter. Serialized effect type names can instantiate the class dynamically. An original definition or observed call is still needed to establish an execution entry; no pending-spawn model adapter is verified for this effect. |
+| CardTraitJuice4 | known-gap | Shared 2/3/4 multiplier has five original upgrades, 180 native callback pairs and nine original casts. Source OnCardBeingUpgraded and next-draw dispatch have 540 relationship cases with repeats and 300 ordered pairs; six two-card draws verify deep copies, shared originals and short circuit. Original SoulHelper attachment of Mollis T3 to Cycle of Life records its sole modified trait and preserves +10 unit health before +32 Spikes and +12 OnCast Armor. The native win passed the complete chain, 16 branches, candidate frontiers and serial/parallel search. Trait parameter cast effects and other mixed ordered scaling remain guarded. |
 | CardEffectDamage | shared-path | Native Damage normalizes to the shared Damage action; current PunishedSpike battle exercises repeated damage, armor, target death and full successors. Existing target/scaling/callback guards remain; not an audit of every contextual branch. |
 | CardEffectDamageByPercentRemainingHealth | shared-path | Original Beeziebub OnCast targets the Pyre, floors ten percent of actual remaining HP, and supplies no card damage attribution or trait scaling. Three isolated wins prove HP 80 to 72 and exact search successors. Randomized ranges, round-up and non-Pyre targets remain guarded. |
 | CardEffectDamageFloorByFloor | shared-path | Original current Heavenfall installs its native full-moon 80 enemy floor sweep and executes through the shared OnCast and floor-damage pipeline. The current win verifies both moon phases, full successors, sixteen branches, recorded frontiers and serial/parallel plan replay. The older native Moon archive still passes with its tower damage payload. This battle's positive damage targets occupy one floor. |
@@ -86,10 +86,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `827a9aa99a8f9904f0147e3650c70c993dd3758b7d8fd9c29530cf46a4764d31`。
-- Model: PDB 校验过的项目源码集合 `b438918af0c54fa59d13e83751b56f4f1e8fb9d6ad58725326c2e55c1a3b57bb`。
-- Probe: PDB 校验过的项目源码集合 `d457e18c4e0b841cfe776076a713c638b3757a202f70c79d8a07ffcc9a40712d`。
-- ModelChecks: PDB 校验过的项目源码集合 `f9d81a5c5106115e3d0f13401e5b1e11caa1f926d9627e6fc6b4d801fb287ea1`。
+- 人工审查索引 SHA-256: `cfa641d261d5defcaf7cb960146dec6011d35ec0a862ecdc94435c065dc77cfb`。
+- Model: PDB 校验过的项目源码集合 `f4eb434f253cf3a6fed4a12dc7905d6730728ddd535d9c8b91c74da39bdf4dea`。
+- Probe: PDB 校验过的项目源码集合 `9a66e7eed6304691a8dfb66af1bc3d7ee1c0781bd57752fe5ac30ab2a185cfde`。
+- ModelChecks: PDB 校验过的项目源码集合 `9f24d1d5c265308bac51e1311b63b632ced81687cef45f36e1e1bf22a522a393`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
