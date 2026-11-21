@@ -37,6 +37,90 @@ internal static class FleshweaverChecks
         Console.WriteLine("FLESHWEAVER-SPIKE-TRIAL-SUBSTITUTION PASS: native trial owner, exact source/replacement, Spikes2 and settled Rooted removal.");
     }
 
+    internal static void TrialSubstitution(FixtureValue fixture, FixtureValue placement, string variant)
+    {
+        string suffix = Variant(variant);
+        var identity = suffix switch
+        {
+            "Corruption" => ("52dc060c-bd51-4b7b-865a-6d70f9806e53", TriggeredSummonModel.FleshweaverCorruptionMiniId,
+                "c05429e3-c6de-49fc-870c-6124fcc87076", 5),
+            "MoreMass" => ("28c0e907-d882-4052-93f4-0a07d88496af", TriggeredSummonModel.FleshweaverMoreMassMiniId,
+                "4159e8ac-faec-4dae-a55f-dde1320b7c5b", 7),
+            _ => throw new ArgumentException("Expected Corruption or Mass trial evidence.")
+        };
+        (string ownerId, string sourceId, string replacementId, int stat) = identity;
+        const string mvid = "bf93f060-beda-46b1-b808-95ebf1e9a99d";
+        string scenario = "Level3ImmortalMass_" + suffix;
+        string source = "Boss_Level3_MiniFleshweaver_" + suffix;
+        string replacement = source + "_TitanTrial";
+        FixtureValue intro = fixture.GetProperty("Intro");
+        Require(fixture.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            fixture.GetProperty("GameModuleMvid").GetString() == mvid &&
+            fixture.GetProperty("Boundary").GetString() == "NativeOriginalEarlyTitanTrialSubstitution" &&
+            fixture.GetProperty("Scenario").GetString() == scenario &&
+            fixture.GetProperty("OwnerId").GetString() == ownerId &&
+            fixture.GetProperty("OwnerKey").GetString() == "Enemy_Boss_Level3_ImmortalMass_" + suffix + "_TitanTrial" &&
+            fixture.GetProperty("Source").GetString() == source && fixture.GetProperty("SourceId").GetString() == sourceId &&
+            fixture.GetProperty("Replacement").GetString() == replacement && fixture.GetProperty("ReplacementId").GetString() == replacementId &&
+            fixture.GetProperty("Mappings").EnumerateArray().Count(entry =>
+                entry.GetProperty("Source").GetString() == source && entry.GetProperty("Replacement").GetString() == replacement) == 1 &&
+            fixture.GetProperty("TitanTrial").GetBoolean() && !fixture.GetProperty("OuterBoss").GetBoolean() &&
+            intro.GetProperty("EnabledAfter").GetBoolean() && intro.GetProperty("UiAfter").GetBoolean() &&
+            intro.GetProperty("ChangedRngIds").EnumerateArray().All(stream => stream.GetString() == "NonDeterministic"),
+            "Expected the native Trial input, exact active owner, source and resolved replacement.");
+
+        CombatUnit mini = fixture.GetProperty("Unit").Deserialize<CombatUnit>()!;
+        Require(mini is { Id: > 0, Team: CombatTeam.Enemy, Size: 1, SpawnerCardId: 0, EndsBattleOnDeath: false,
+            IsBoss: false, BumpRules.OuterBoss: false, Statuses.Count: 0 } && mini.AssetKey == replacement &&
+            mini.BaseAttack == stat && mini.Attack == stat && mini.Health == stat && mini.MaxHealth == stat &&
+            mini.RegisteredStatus("rooted")?.Stacks == 0 &&
+            mini.AbilityRules is { AuthoredStartingStatuses: [{ Id: "rooted", Stacks: 1 }] } &&
+            mini.Triggers.FirstOrDefault() is { Kind: "OnSpawn", HasTriggered: true } &&
+            mini.Triggers.Count == (suffix == "Corruption" ? 2 : 1),
+            "The native birth must have the replacement's stats, settled Rooted and original callbacks.");
+
+        Require(placement.GetProperty("GameModuleMvid").GetString() == mvid &&
+            placement.GetProperty("Errors").GetArrayLength() == 0, "Expected the paired native placement sidecar.");
+        FixtureValue nativePlacement = placement.GetProperty("Births").EnumerateArray().Single();
+        Require(nativePlacement.GetProperty("NativeReturned").GetBoolean(), "The original outer boss placement failed.");
+        BattleTurnState placed = nativePlacement.GetProperty("Actual").GetProperty("Battle").Deserialize<BattleTurnState>()!;
+        RoomCombatState room = placed.Spawn.Train.Rooms.Single(candidate =>
+            candidate.RoomIndex == fixture.GetProperty("Room").GetInt32());
+        CombatUnit boss = room.Units.Single(unit => unit.AssetKey == "Boss_Level3_Fleshweaver_" + suffix);
+        Trigger(boss, suffix);
+        TriggeredSummonRule summon = boss.Triggers.Single(trigger => trigger.Kind == "OnHit").Effects[0].Summon!;
+        CombatContext context = placed.Spawn.Train.Context!;
+        TriggeredSummonCatalog catalog = context.SummonCatalog!;
+        SummonUnitDefinition projected = catalog.Units.Single(unit => unit.CharacterId == sourceId);
+        Require(summon.CharacterId == sourceId && projected.HeroDefinition?.Unit.AssetKey == mini.AssetKey &&
+            projected.HeroDefinition.Unit.Triggers.Select(trigger => trigger.Kind).SequenceEqual(mini.Triggers.Select(trigger => trigger.Kind)),
+            "The authored hit must retain the source GUID and capture the native replacement template.");
+
+        // Older captures contain the resolved native template with the adapter's original refusal attached.
+        const string oldRefusal = "Uncalibrated native hero creation substitution";
+        RoomCombatState Scope(CombatContext input) => new(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions,
+            input, room.Preview, room.ActiveCompanionBossIds);
+        if (projected.ExternalInteractions.Count != 0)
+        {
+            Require(projected.ExternalInteractions.SequenceEqual(new[] { oldRefusal }) &&
+                TriggeredSummonModel.Validate(Scope(context), summon, boss, "OnHit") ==
+                    "Unmodeled triggered summon definition: " + oldRefusal, "The older native template must retain its exact projection refusal.");
+            EnemyDefinition old = projected.HeroDefinition;
+            var resolvedHero = new EnemyDefinition(old.Unit, old.Ascends, old.Loops,
+                old.ExternalInteractions.Where(error => error != oldRefusal).ToArray(), old.CompanionBoss, old.BirthStats);
+            var resolved = new SummonUnitDefinition(projected.CharacterId, projected.Unit, projected.Fallback,
+                Array.Empty<string>(), resolvedHero);
+            context = context.WithSummonCatalog(new TriggeredSummonCatalog(
+                catalog.Units.Select(unit => unit == projected ? resolved : unit).ToArray(), catalog.Cards, catalog.Rooms));
+        }
+        Require(TriggeredSummonModel.Validate(Scope(context), summon, boss, "OnHit") == null &&
+            TriggeredSummonModel.Validate(Scope(context), summon, boss, "OnSpawn") != null &&
+            TriggeredSummonModel.Validate(Scope(context.WithRelics(context.Relics!.Where(owner => owner.DataId != ownerId).ToArray())),
+                summon, boss, "OnHit") != null,
+            "The exact replacement must be accepted only for the matching native holder and hit.");
+        Console.WriteLine($"FLESHWEAVER-{suffix.ToUpperInvariant()}-TRIAL-SUBSTITUTION PASS: original source/replacement GUIDs, captured template, native birth and wrong-owner controls.");
+    }
+
     internal static void SpikeTrialBattle(string path)
     {
         using var fixture = ModelJson.ReadFixture(path);

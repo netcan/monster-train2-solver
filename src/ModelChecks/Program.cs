@@ -3800,6 +3800,14 @@ if (args.Length == 2 && args[0] == "--native-fleshweaver-spike-trial")
     return;
 }
 
+if (args.Length == 4 && args[0] == "--native-fleshweaver-trial-substitution")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var placement = ModelJson.ReadFixture(args[2]);
+    FleshweaverChecks.TrialSubstitution(fixture.RootElement, placement.RootElement, args[3]);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--native-fleshweaver-spike-trial-battle")
 {
     FleshweaverChecks.SpikeTrialBattle(args[1]);

@@ -67,35 +67,62 @@ namespace MonsterTrain2Poju.Model
         internal const string FleshweaverSpikeTrialMini = "Boss_Level3_MiniFleshweaver_Spike_TitanTrial";
         internal const string FleshweaverSpikeTrialOwnerId = "c4abfdc2-a89c-43cf-9e35-59f6ea3b39f7";
         internal const string FleshweaverSpikeTrialOwnerKey = "Enemy_Boss_Level3_ImmortalMass_Spike_TitanTrial";
+        internal const string FleshweaverCorruptionMiniId = "ebe69a47-be18-4515-b19c-8cf4da8624ed";
+        internal const string FleshweaverMoreMassMiniId = "c32f2387-4812-46c3-9749-14205bb22025";
 
-        private static bool KnownFleshweaverSpikeTrial(RoomCombatState state, CombatUnit? actor, string? triggerKind,
+        private static bool KnownFleshweaverTrial(RoomCombatState state, CombatUnit? actor, string? triggerKind,
             TriggeredSummonRule rule, SummonUnitDefinition mini)
         {
-            if (actor is not { AssetKey: FleshweaverSpike, BumpRules.OuterBoss: true } ||
-                triggerKind != "OnHit" || rule.CharacterId != FleshweaverSpikeMiniId ||
-                mini.CharacterId != FleshweaverSpikeMiniId || mini.Unit.AssetKey != FleshweaverSpikeTrialMini ||
+            if (actor is not { BumpRules.OuterBoss: true } || triggerKind != "OnHit" ||
+                mini.CharacterId != rule.CharacterId ||
                 rule.Tests is not { ShouldTest: true, FailToCast: false, CancelSubsequent: false, StrictTargets: false,
                     DevotionRequirement: 0, DevotionRequirementMax: 0 })
                 return false;
-            CombatRelicState[] owners = state.Context!.Relics?.Where(owner => owner.DataId == FleshweaverSpikeTrialOwnerId).ToArray() ??
+            var variant = rule.CharacterId switch
+            {
+                FleshweaverSpikeMiniId => ("Spike", FleshweaverSpikeTrialOwnerId, 2, 5, 3, 9),
+                FleshweaverCorruptionMiniId => ("Corruption", "52dc060c-bd51-4b7b-865a-6d70f9806e53", 1, 4, 5, 5),
+                FleshweaverMoreMassMiniId => ("MoreMass", "28c0e907-d882-4052-93f4-0a07d88496af", 3, 5, 7, 7),
+                _ => (string.Empty, string.Empty, 0, 0, 0, 0)
+            };
+            (string suffix, string ownerId, int massIndex, int effectCount, int attack, int health) = variant;
+            string replacement = "Boss_Level3_MiniFleshweaver_" + suffix + "_TitanTrial";
+            if (suffix.Length == 0 || actor.AssetKey != "Boss_Level3_Fleshweaver_" + suffix || mini.Unit.AssetKey != replacement)
+                return false;
+            const string substitution = "RelicEffectOnSpawnHeroSubstitution";
+            CombatRelicState[] owners = state.Context!.Relics?.Where(owner => owner.EffectTypes.Contains(substitution)).ToArray() ??
                 Array.Empty<CombatRelicState>();
-            if (owners.Length != 1 || owners[0] is not { AssetKey: FleshweaverSpikeTrialOwnerKey, IsCovenant: false,
+            if (owners.Length != 1 || owners[0] is not { DataId: var capturedOwnerId, IsCovenant: false,
                     DisallowedInPlacementPhase: false, SpawnStatuses: [
-                        { EffectIndex: 2, TargetPlayer: true, TargetEnemy: true, RequiredSubtype: "SubtypesData_BossAll",
+                        { EffectIndex: var capturedMassIndex, TargetPlayer: true, TargetEnemy: true, RequiredSubtype: "SubtypesData_BossAll",
                             SubtypeIsNone: false, SubtypeIsPyre: false, Conditions.Count: 0,
                             Statuses: [{ Id: "mass", Stacks: 4, ParamInt: 2 }] }] } owner ||
-                !owner.EffectTypes.SequenceEqual(new[] { "RelicEffectOnSpawnHeroSubstitution", "RelicEffectNull",
-                    "RelicEffectAddStatusEffectOnSpawn", "RelicEffectNull", "RelicEffectNull" }))
+                capturedOwnerId != ownerId || owner.AssetKey != "Enemy_Boss_Level3_ImmortalMass_" + suffix + "_TitanTrial" ||
+                capturedMassIndex != massIndex || owner.EffectTypes.Count != effectCount ||
+                !owner.EffectTypes.Select((effect, index) => effect == (index == 0 ? substitution :
+                    index == massIndex ? "RelicEffectAddStatusEffectOnSpawn" : "RelicEffectNull")).All(matches => matches))
                 return false;
-            return mini.HeroDefinition is { Ascends: true, Loops: false, CompanionBoss: false, BirthStats: null,
-                ExternalInteractions.Count: 0,
-                Unit: { Id: 0, AssetKey: FleshweaverSpikeTrialMini, Team: CombatTeam.Enemy, BaseAttack: 3, Attack: 3,
-                    Health: 9, MaxHealth: 9, CanAttack: true, IsBoss: false, EndsBattleOnDeath: false, SpawnerCardId: 0,
-                    Size: 1, Subtypes.Count: 0, Ability: null, Modifiers.Upgrades.Count: 0,
-                    Statuses: [{ Id: "rooted", Stacks: 1 }, { Id: "spikes", Stacks: 2, ParamInt: 1 }],
-                    Triggers: [{ Kind: "OnSpawn", IgnoreSilence: true, Once: false, RemoveOnRelentlessChange: false,
-                        Effects: [{ Type: "CardEffectFloorRearrange", Action: {
-                            Type: "FloorRearrange", Target: "Self", Value: 0, Range: null } }] }] } };
+            if (mini.HeroDefinition is not { Ascends: true, Loops: false, CompanionBoss: false, BirthStats: null,
+                    ExternalInteractions.Count: 0, Unit: { Id: 0, Team: CombatTeam.Enemy, CanAttack: true, IsBoss: false,
+                        EndsBattleOnDeath: false, SpawnerCardId: 0, Size: 1, Subtypes.Count: 0, Ability: null,
+                        Modifiers.Upgrades.Count: 0 } unit } || unit.AssetKey != replacement ||
+                unit.Attack != attack || unit.BaseAttack != attack || unit.Health != health || unit.MaxHealth != health ||
+                unit.Triggers.FirstOrDefault() is not { Kind: "OnSpawn", IgnoreSilence: true, Once: false, RemoveOnRelentlessChange: false,
+                    Effects: [{ Type: "CardEffectFloorRearrange", Action: {
+                        Type: "FloorRearrange", Target: "Self", Value: 0, Range: null } }] })
+                return false;
+            return suffix switch
+            {
+                "Spike" => unit.Triggers.Count == 1 &&
+                    unit.Statuses is [{ Id: "rooted", Stacks: 1 }, { Id: "spikes", Stacks: 2, ParamInt: 1 }],
+                "MoreMass" => unit.Triggers.Count == 1 && unit.Statuses is [{ Id: "rooted", Stacks: 1 }],
+                "Corruption" => unit.Statuses is [{ Id: "rooted", Stacks: 1 }] && unit.Triggers is [_, {
+                    Kind: "OnDeath", IgnoreSilence: false, Once: false, RemoveOnRelentlessChange: false,
+                    Effects: [{ Type: "CardEffectAddStatusEffect", Action: {
+                        Type: "AddStatus", Target: "LastAttackerCharacter", Value: 0, AllowEnemy: false, AllowPlayer: true,
+                        Range: null, Statuses: [{ Id: "corruption", Stacks: 2, ParamInt: 1 }] } }] }],
+                _ => false
+            };
         }
 
         private static bool KnownAthaneRock(SummonUnitDefinition unit) =>
@@ -134,7 +161,7 @@ namespace MonsterTrain2Poju.Model
                     unit.HeroDefinition.Unit.IsBoss == true || unit.HeroDefinition.Unit.EndsBattleOnDeath ||
                     !athane && unit.HeroDefinition.Unit.AssetKey is not ("Boss_Level3_MiniFleshweaver_MoreMass" or
                         "Boss_Level3_MiniFleshweaver_Corruption" or "Boss_Level3_MiniFleshweaver_Spike") &&
-                    !KnownFleshweaverSpikeTrial(state, actor, triggerKind, rule, unit)))
+                    !KnownFleshweaverTrial(state, actor, triggerKind, rule, unit)))
                     return "Triggered enemy birth requires its calibrated original Fleshweaver mini definition.";
                 if (rule.EnemyHero)
                 {
