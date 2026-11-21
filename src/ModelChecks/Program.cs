@@ -15,6 +15,11 @@ if (args.Length == 2 && args[0] == "--pyre-capacity-carryover-only")
     OpeningCapacityChecks.Carryover(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--thik-deck-change-only")
+{
+    ThikDeckChangeChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--elle-only")
 {
     ElleChecks.Native(args[1]);

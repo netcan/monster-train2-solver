@@ -666,6 +666,7 @@ param(
     [switch] $OriginalGarfieldBoxRandomCard,
     [switch] $OriginalPartFactory,
     [switch] $OriginalPerkeoRelic,
+    [switch] $OriginalThikDeckChange,
     [switch] $OriginalCorruptedAngelsRelic,
     [ValidateSet('cost-first', 'cost-last')]
     [string] $CorruptedAngelsCostOrder,
@@ -1745,6 +1746,17 @@ if ($EnchantmentCombatOnly) {
     $EnchantmentCombat = $true
     $Policy = 'steward-once'
 }
+if ($OriginalThikDeckChange) {
+    $componentArguments = @('OriginalThikDeckChange', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'SkipBuild',
+        'ShowWindow', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'InformationAction', 'ProgressAction',
+        'ErrorVariable', 'WarningVariable', 'InformationVariable', 'OutVariable', 'OutBuffer', 'PipelineVariable')
+    if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $componentArguments }).Count) {
+        throw 'OriginalThikDeckChange requires an isolated first-battle run without other scenarios.'
+    }
+    $BinaryCapture = $true
+    $SettleCardAnimations = $true
+    $Policy = 'no-cards'
+}
 if ($PersistentEnchantmentRevivals) { $PersistentEnchantmentDeaths = $true }
 if ($PersistentEnchantmentDeaths) { $PersistentEnchantments = $true }
 if ($PersistentEnchantmentRandomPools) { $PersistentEnchantments = $true }
@@ -1867,6 +1879,20 @@ $nativeBuildWorkspace = if ($NativeBuildRoot) { (Resolve-Path -LiteralPath $Nati
 $gameRoot = Join-Path $workspace $(if ($NativeWorker -gt 1) { ".sandbox-game-worker$NativeWorker" } else { '.sandbox-game' })
 if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll') -PathType Leaf)) {
     throw "Native worker $NativeWorker is not initialized; run scripts/Initialize-NativeWorker.ps1 -Worker $NativeWorker first."
+}
+if ($OriginalThikDeckChange) {
+    $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
+    $nativeDllStream = [IO.File]::OpenRead($nativeDll)
+    try {
+        $nativePe = [System.Reflection.PortableExecutable.PEReader]::new($nativeDllStream)
+        try {
+            $nativeMetadata = [System.Reflection.Metadata.PEReaderExtensions]::GetMetadataReader($nativePe)
+            $nativeModule = $nativeMetadata.GetGuid($nativeMetadata.GetModuleDefinition().Mvid)
+        } finally { $nativePe.Dispose() }
+    } finally { $nativeDllStream.Dispose() }
+    if ($nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw "Original Thik capture requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
+    }
 }
 $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
 $profile = Join-Path $workspace ('.probe-runs\full-battle-' + $Policy + '-' + $runId)
@@ -2721,6 +2747,7 @@ if ($ForcedFeeding) { $environment['MT2_PROBE_FORCED_FEEDING'] = '1' }
 if ($ShroudSpikeFeeding) { $environment['MT2_PROBE_SHROUD_SPIKE'] = '1' }
 if ($OriginalOpeningDeckSpawnRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-deck-spawn' }
 if ($OriginalPerkeoRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-perkeo' }
+if ($OriginalThikDeckChange) { $environment['MT2_PROBE_MODIFIERS'] = 'original-thik-deck-change' }
 if ($OriginalCorruptedAngelsRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-corrupted-angels' }
 if ($CorruptedAngelsCostOrder) { $environment['MT2_PROBE_ANGELS_COST_ORDER'] = $CorruptedAngelsCostOrder }
 if ($OriginalUnitPhaseUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-unit-phase-upgrade-relics' }
@@ -3003,6 +3030,23 @@ if ($EnchantmentCombatOnly) {
     } finally { $componentDocument.Dispose() }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
         ModelAcceptance='Pending independent focused checker'; Trace=$componentPath } | ConvertTo-Json
+    return
+}
+if ($OriginalThikDeckChange) {
+    $capturePath = Join-Path $profile 'original-thik-deck-change.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Thik deck-change component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Original Thik deck-change capture failed; inspect $unityLog" }
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $captureDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
+    try {
+        $capture = $captureDocument.RootElement
+        if ($capture.GetProperty('Boundary').GetString() -cne 'NativeOriginalThikDeckChange' -or
+            $capture.GetProperty('SettledPlays').GetArrayLength() -ne 2) { throw 'Incomplete original Thik deck-change capture.' }
+        $soulId = $capture.GetProperty('Definition').GetProperty('Id').GetString()
+    } finally { $captureDocument.Dispose() }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        ThikT3Id=$soulId; Trace=$capturePath } | ConvertTo-Json
     return
 }
 if ($TrueFinalBossBirth) {

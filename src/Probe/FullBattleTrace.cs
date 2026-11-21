@@ -960,6 +960,27 @@ namespace MonsterTrain2Poju.Probe
             // the entire capture and could still include an unfinished wrapper.
         }
 
+        internal void WriteThikDeckChange()
+        {
+            string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "original-thik-deck-change.mt2f");
+            using var document = NativeFixtureCapture.Capture(new
+            {
+                Schema = 1,
+                Boundary = "NativeOriginalThikDeckChange",
+                GameVersion = Application.version,
+                GameModuleMvid = typeof(RelicState).Assembly.ManifestModule.ModuleVersionId,
+                OriginalThikDeckChangeScenario.Definition,
+                OriginalThikDeckChangeScenario.AcquisitionBefore,
+                OriginalThikDeckChangeScenario.AcquisitionAfter,
+                OriginalThikDeckChangeScenario.PreparedState,
+                OriginalThikDeckChangeScenario.Cards,
+                OriginalThikDeckChangeScenario.Callbacks,
+                OriginalThikDeckChangeScenario.SettledPlays,
+            });
+            using var stream = File.Create(path);
+            document.Write(stream);
+        }
+
         internal string Write()
         {
             BossActionTargetProbe.Write(this, log);

@@ -555,6 +555,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalOpeningDrawScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPerkeoScenario.Enabled && !OriginalPerkeoScenario.Acquired)
                         OriginalPerkeoScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalThikDeckChangeScenario.Enabled && !OriginalThikDeckChangeScenario.Acquired)
+                        OriginalThikDeckChangeScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCorruptedAngelsScenario.Enabled && !OriginalCorruptedAngelsScenario.Acquired)
                         OriginalCorruptedAngelsScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPartFactoryScenario.Enabled && !OriginalPartFactoryScenario.Acquired)
@@ -860,6 +862,25 @@ namespace MonsterTrain2Poju.Probe
             }
             if (stage != Stage.Battle || !Ready(managers, save, combat, cards))
             {
+                return;
+            }
+            if (fullBattle && OriginalThikDeckChangeScenario.Enabled)
+            {
+                if (!OriginalThikDeckChangeScenario.Prepared)
+                    OriginalThikDeckChangeScenario.Prepare(managers, log);
+                else if (managers.GetRoomManager().GetSelectedRoom() != OriginalThikDeckChangeScenario.RoomIndex)
+                {
+                    if (Time.realtimeSinceStartup - lastRoomSelectionRetry >= .25f)
+                    {
+                        lastRoomSelectionRetry = Time.realtimeSinceStartup;
+                        save.StartCoroutine(managers.GetRoomManager().GetRoomUI().SetSelectedRoom(OriginalThikDeckChangeScenario.RoomIndex));
+                    }
+                }
+                else if (OriginalThikDeckChangeScenario.PlayNext(managers, log))
+                {
+                    FullBattleTrace.Active!.WriteThikDeckChange();
+                    Finish(true, "Original Thik deck-change component captured.");
+                }
                 return;
             }
             if (PlayerAdvisorProbe.Enabled && !PlayerAdvisorProbe.CaptureInitialized) return;
