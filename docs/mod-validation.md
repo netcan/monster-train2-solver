@@ -6,6 +6,17 @@ installed player payload. The installation evidence below predates the game
 update and does not establish 2.3.1 player compatibility. See
 [the current migration evidence](game-2.3.1.md).
 
+On 2026-11-21 the current Windows build completed a rolling player-advisor battle in an isolated
+2.3.1 instance (seed 424242, one search worker, 1,000 ms per recommendation). The production
+advisor published 27 recommendations. The driver sent 18 card plays and seven EndTurn inputs
+through the game, won with 76 Pyre health, and matched all 25 native successors. Overlay
+acceptance covered pending advice, history, and scrolling. Offline checks independently passed
+the recorded plans, 16 branches, legal candidates, and serial/parallel replay.
+The test used an isolated player profile. The installed Steam payload still has the earlier
+acceptance record below, and manual gesture timing in the Steam session remains unverified.
+The 54,804-byte binary and hash are registered under
+`tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/`.
+
 Last documented Windows installation: 0.2.438, installed 2026-10-30 after an isolated
 native player battle and focused continuation checks. The three installed DLL
 hashes match the tested build; the prior 0.2.437 payload is retained at
