@@ -1,10 +1,29 @@
 #requires -Version 7.4
+[CmdletBinding(DefaultParameterSetName = 'Legacy')]
 param(
-    [Parameter(Mandatory)][string]$Catalog,
-    [string]$OutputPath
+    [Parameter(Mandatory, Position = 0, ParameterSetName = 'Legacy')][string]$Catalog,
+    [Parameter(Position = 1)][string]$OutputPath,
+    [Parameter(Mandatory, ParameterSetName = 'Current')][switch]$Current,
+    [Parameter(ParameterSetName = 'Current')][switch]$Check,
+    [Parameter(ParameterSetName = 'Current')][switch]$SkipBuild
 )
 $ErrorActionPreference = 'Stop'
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+if ($Current) {
+    if (-not $SkipBuild) {
+        dotnet build (Join-Path $workspace 'src/FixtureTools/FixtureTools.csproj') -c Release --no-restore -p:WarningLevel=0
+        if ($LASTEXITCODE -ne 0) { throw 'FixtureTools build failed.' }
+    }
+    if (-not $OutputPath) { $OutputPath = Join-Path $workspace 'results/relic-observations-2.3.1.tsv' }
+    $inventoryArguments = @(
+        (Join-Path $workspace 'src/FixtureTools/bin/Release/net8.0/FixtureTools.dll'),
+        'relic-inventory-current', $workspace, $OutputPath
+    )
+    if ($Check) { $inventoryArguments += '--check' }
+    dotnet @inventoryArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Current relic observation inventory failed.' }
+    return
+}
 Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
 $accepted = @{}
 $evidenceKind = 'accepted-native-battle'

@@ -41,6 +41,15 @@ ModelChecks 调用，`BattleSearchModel`、实际出牌与回合切换没有调�
 扫描报告保留这 14 处断点，专项回归从各自的场景准备完成点验证。
 原始结果在 `results/recorded-chain-triage-current-20261121/report.tsv`。
 
+2026-11-21 抽牌后召唤提交上的扫描覆盖 111 场，97 场连续通过，14 场分段通过，
+耗时 68.966 秒。报告在 `results/recorded-chain-triage-20261121-145753-02292ccb/report.tsv`。
+
+`scripts/Get-RelicCoverageInventory.ps1 -Current` 按 SHA-256 校验目录和已登记战斗。
+111 场的 3,288 个出牌／回合前后快照中，2.3.1 的 236 件收藏遗物有 22 件在场且
+与目录的有序效果列表一致，214 件暂无在场记录。报告列出归档和快照位置，证据范围
+限于在场与效果列表。个别效果是否触发、触发参数和后继仍由机制检查验证。
+输出为 `results/relic-observations-2.3.1.tsv`，可用 `-Current -Check -SkipBuild` 复核。
+
 ## 工作单位
 
 2026-11-20 接入[回合前原生顺序分派](before-draw-order.md)：十二种已有 BeforeDraw
