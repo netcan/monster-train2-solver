@@ -17,6 +17,8 @@ namespace MonsterTrain2Poju.Probe
         internal const string FullBattleName = "original-spurned-battle";
         private const string ScenarioKey = "SoulSavior_R4_BossBattle_EstrangedChild_2";
         private const string BossKey = "Boss_SoulSavior_R4_Spurned_ArmorPerDebuff";
+        private const string WitherbloomScenarioKey = "SoulSavior_R4_BossBattle_EstrangedChild_3";
+        private const string WitherbloomBossKey = "Boss_SoulSavior_R4_Spurned_WitherbloomOnAction";
         private const string DefenderId = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
         internal static bool Component => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == FullBattleName;
@@ -38,13 +40,14 @@ namespace MonsterTrain2Poju.Probe
 
         internal static void Request(SaveManager save, ManualLogSource log)
         {
+            var (scenarioKey, bossKey) = RequestedBattle();
             if (requested || typeof(CardState).Module.ModuleVersionId != new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d") ||
-                save.GetAllGameData().FindScenarioDataByName(ScenarioKey) is not ScenarioData scenario ||
-                scenario.GetOuterTrainBoss(false)?.GetAssetKey() != BossKey)
+                save.GetAllGameData().FindScenarioDataByName(scenarioKey) is not ScenarioData scenario ||
+                scenario.GetOuterTrainBoss(false)?.GetAssetKey() != bossKey)
                 throw new InvalidOperationException("Expected the installed original Soul Savior R4 Spurned scenario.");
             requested = true;
-            AccessTools.Method(typeof(CheatManager), "Command_StartBattle", new[] { typeof(string) }).Invoke(null, new object[] { ScenarioKey });
-            log.LogInfo("ORIGINAL-SPURNED-REQUEST installed scenario " + ScenarioKey);
+            AccessTools.Method(typeof(CheatManager), "Command_StartBattle", new[] { typeof(string) }).Invoke(null, new object[] { scenarioKey });
+            log.LogInfo("ORIGINAL-SPURNED-REQUEST installed scenario " + scenarioKey);
         }
 
         internal static bool Tick(AllGameManagers managers, ManualLogSource log)
@@ -87,12 +90,29 @@ namespace MonsterTrain2Poju.Probe
         internal static void ObserveFullBattle(SaveManager save, ManualLogSource log)
         {
             if (FullBattleEvidence != null) return;
+            var (scenarioKey, bossKey) = RequestedBattle();
             ScenarioData scenario = save.GetCurrentScenarioData();
             string boss = scenario.GetOuterTrainBoss(false)?.GetAssetKey() ?? "";
-            if (!requested || !save.InTestScenario || scenario.name != ScenarioKey || boss != BossKey)
+            if (!requested || !save.InTestScenario || scenario.name != scenarioKey || boss != bossKey)
                 throw new InvalidOperationException("Expected the installed Spurned battle to enter its original TestScenario.");
-            FullBattleEvidence = new { Scenario = scenario.name, BossKey = boss, TestScenario = save.InTestScenario };
-            log.LogInfo("ORIGINAL-SPURNED-BATTLE loaded " + scenario.name + " boss=" + boss + " testScenario=" + save.InTestScenario);
+            var characters = new HashSet<CharacterData>();
+            scenario.GetSpawnPattern().CollectReferencedCharacters(characters);
+            string[] companions = characters.Where(character => character.IsCompanionBoss())
+                .Select(character => character.GetAssetKey()).OrderBy(key => key, StringComparer.Ordinal).ToArray();
+            FullBattleEvidence = new { Scenario = scenario.name, BossKey = boss, CompanionKeys = companions, TestScenario = save.InTestScenario };
+            log.LogInfo("ORIGINAL-SPURNED-BATTLE loaded " + scenario.name + " boss=" + boss +
+                " companions=[" + string.Join(",", companions) + "] testScenario=" + save.InTestScenario);
+        }
+
+        private static (string Scenario, string Boss) RequestedBattle()
+        {
+            if (Component) return (ScenarioKey, BossKey);
+            return Environment.GetEnvironmentVariable("MT2_PROBE_SPURNED_CHALLENGE") switch
+            {
+                null or "2" => (ScenarioKey, BossKey),
+                "3" => (WitherbloomScenarioKey, WitherbloomBossKey),
+                _ => throw new InvalidOperationException("Unknown original Spurned challenge.")
+            };
         }
 
         private static bool Play(CardManager cards, int index, SpawnPoint point)
