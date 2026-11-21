@@ -12,6 +12,7 @@ param(
     [switch] $CompleteDefeat,
     [string[]] $ExcludeUpgradeTrait = @(),
     [switch] $SkipMerchantPurchases,
+    [ValidateSet('Left', 'Right')] [string] $MapBranch = '',
     [ValidateSet('First', 'Last')] [string] $StoryChoiceOrder = 'First',
     [ValidateRange(0, 2)] [int] $DraftChoiceRank = 0,
     [ValidateRange(0, 2)] [int] $DeploymentRoom = 2,
@@ -155,6 +156,7 @@ $inputMetagameHash = (Get-FileHash -LiteralPath (Join-Path $source 'metagameSave
     PrimaryClan = $PrimaryClan; SecondaryClan = $SecondaryClan; StartingCovenantLevel = $StartingCovenantLevel;
     ExplicitStartingCovenant = $explicitStartingCovenant;
     SkipMerchantPurchases = [bool]$SkipMerchantPurchases;
+    MapBranch = $MapBranch;
     StoryChoiceOrder = $StoryChoiceOrder;
     DraftChoiceRank = $DraftChoiceRank;
     DeploymentRoom = $DeploymentRoom;
@@ -212,6 +214,7 @@ $settings = @{
     MT2_PROBE_CAMPAIGN_STORY_ONLY = $(if ($StoryProgressionOnly) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_EXCLUDED_UPGRADE_TRAITS = ($ExcludeUpgradeTrait -join ';')
     MT2_PROBE_CAMPAIGN_SKIP_MERCHANT_PURCHASES = $(if ($SkipMerchantPurchases) { '1' } else { '0' })
+    MT2_PROBE_CAMPAIGN_MAP_BRANCH = $MapBranch
     MT2_PROBE_CAMPAIGN_STORY_CHOICE_ORDER = $StoryChoiceOrder
     MT2_PROBE_CAMPAIGN_DRAFT_CHOICE_RANK = $DraftChoiceRank.ToString()
     MT2_PROBE_CAMPAIGN_DEPLOYMENT_ROOM = [string]$DeploymentRoom
@@ -281,6 +284,14 @@ $inputUnchanged = (Get-FileHash -LiteralPath (Join-Path $source 'saves/save-sing
     (Get-FileHash -LiteralPath (Join-Path $source 'metagameSave.json')).Hash -ceq $inputMetagameHash
 $passed = $process.ExitCode -eq 0 -and $audit.Count -gt 0 -and $audit[-1].kind -eq 'complete' -and $unchanged -and $inputUnchanged -and $replayPassed
 $runOutcome = @($audit | Where-Object kind -EQ 'run-outcome')
+if ($MapBranch -and $passed) {
+    $distance = $StopBeforeRing - 1
+    $expectedBranch = if ($MapBranch -eq 'Left') { 0 } else { 1 }
+    $choice = @($audit | Where-Object { $_.kind -eq 'branch' -and $_.data.distance -eq $distance })
+    $save = Get-Content -LiteralPath $savePath -Raw | ConvertFrom-Json
+    $passed = $choice.Count -eq 1 -and $choice[0].data.branch -eq $expectedBranch -and
+        $save.runState.distance -eq $distance -and $save.runState.nodes[$distance].chosenBranch -eq $expectedBranch
+}
 if ($explicitStartingCovenant -and $passed) {
     $covenant = @($audit | Where-Object kind -EQ 'starting-covenant')
     $startingSavePath = if ($runOutcome.Count) { Join-Path $profile 'completed-save-singlePlayer.json' } else { $savePath }

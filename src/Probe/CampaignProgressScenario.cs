@@ -22,6 +22,7 @@ namespace MonsterTrain2Poju.Probe
         private readonly ManualLogSource log;
         private readonly string auditPath;
         private readonly int stopRing;
+        private readonly MapScreen.BranchSelection? requestedMapBranch;
         private readonly int seed;
         private readonly int? requestedStartingCovenant;
         private float nextAction, lastProgress, heartbeat, quitAt;
@@ -54,6 +55,12 @@ namespace MonsterTrain2Poju.Probe
             this.log = log; active = this;
             completeDefeat = afterBattle && !battleWon && Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_COMPLETE_DEFEAT") == "1";
             stopRing = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_STOP_RING") ?? "5");
+            requestedMapBranch = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_MAP_BRANCH")?.ToLowerInvariant() switch
+            {
+                "left" => MapScreen.BranchSelection.LeftBranch,
+                "right" => MapScreen.BranchSelection.RightBranch,
+                _ => null
+            };
             seed = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_SEED") ?? "424242");
             string? covenant = Environment.GetEnvironmentVariable("MT2_PROBE_STARTING_COVENANT_LEVEL");
             requestedStartingCovenant = afterBattle || covenant == null ? (int?)null : int.Parse(covenant);
@@ -325,7 +332,8 @@ namespace MonsterTrain2Poju.Probe
                 {
                     int distance = save.GetCurrentDistance();
                     var branches = new[] { MapScreen.BranchSelection.LeftBranch, MapScreen.BranchSelection.RightBranch };
-                    var branch = branches.OrderByDescending(b => MapSection.GetMapNodeDataForBranch(distance, b, save)
+                    var branch = (distance + 1 == stopRing ? requestedMapBranch : null) ??
+                        branches.OrderByDescending(b => MapSection.GetMapNodeDataForBranch(distance, b, save)
                         .Sum(x => NodeValue(x.data))).First();
                     map.ChooseBranch(branch); Record("branch", new { distance, branch }); return;
                 }
