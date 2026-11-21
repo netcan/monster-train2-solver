@@ -315,6 +315,9 @@ namespace MonsterTrain2Poju.Model
                     // SoulHelper applies this marker's upgrade while attaching the soul.
                     // The battle model reads the resulting card modifiers.
                     if (effect == "RelicEffectCardUpgrade") continue;
+                    // The random deck-upgrade effect only runs at run start or
+                    // soul acquisition. Native card modifiers already include the results.
+                    if (effect == "RelicEffectCardUpgradeRandomCardsInDeck") continue;
                     // IRelicEffectModifyTrialGoldRewards is consumed only by
                     // SaveManager.GetAdjustedGoldAmount for trial rewards.
                     // Acquired gold and permanent upgrades are already captured;

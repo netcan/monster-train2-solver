@@ -695,6 +695,7 @@ param(
     [ValidateSet('Threshold30', 'Threshold15')][string] $OriginalSmallDeckDamage,
     [ValidateRange(1, 3)][int] $OriginalBeeziebubTier,
     [ValidateRange(1, 3)][int] $OriginalGoldieTier,
+    [ValidateRange(1, 3)][int] $OriginalElleTier,
     [switch] $OriginalBurnoutDamageRelic,
     [switch] $OriginalHealDamageRelic,
     [switch] $OriginalKillAttackRelic,
@@ -1505,6 +1506,18 @@ if ($OriginalCardPlayDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoin
 if ($OriginalConsumeDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalEatenDamageRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
 if ($OriginalMoreCapacityRelic) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-and-junk' }
+if ($OriginalElleTier) {
+    if ($PlayerAdvisor -or $Planner -or $Advisor -or $DotNetPlanner -or $InputProfile -or $BattleDistance -ne 0 -or
+        $OriginalRandomRoomCapacityMutator -or $OriginalPyreCapacityCarryover -or $OriginalMagicPowerPerGold -or $OriginalShowtimeTier -or
+        $OriginalTurnEndBump -or $OriginalSmallDeckDamage -or $OriginalBeeziebubTier -or $OriginalGoldieTier) {
+        throw 'Original Elle calibration requires a fresh isolated first battle with fixed controls.'
+    }
+    $PhysicalSpawnPoints = $true
+    $BranchCardMasks = $true
+    $SettleCardAnimations = $true
+    $SettleDeathDissolves = $true
+    $Policy = 'units-spells-and-junk'
+}
 if ($OriginalGoldieTier) {
     if ($PlayerAdvisor -or $Planner -or $Advisor -or $DotNetPlanner -or $InputProfile -or $BattleDistance -ne 0 -or
         $OriginalRandomRoomCapacityMutator -or $OriginalPyreCapacityCarryover -or $OriginalMagicPowerPerGold -or $OriginalShowtimeTier -or
@@ -2635,6 +2648,12 @@ if ($OriginalCardPlayDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'origi
 if ($OriginalConsumeDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-consume-damage' }
 if ($OriginalEatenDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-eaten-damage' }
 if ($OriginalMoreCapacityRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-more-capacity' }
+if ($OriginalElleTier) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-elle'
+    $environment['MT2_PROBE_ELLE_TIER'] = $OriginalElleTier.ToString()
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
 if ($OriginalGoldieTier) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-goldie'
     $environment['MT2_PROBE_GOLDIE_TIER'] = $OriginalGoldieTier.ToString()
@@ -5176,6 +5195,23 @@ if ($OriginalRandomRoomCapacityMutator) {
         throw 'Random room capacity lacks its unchanged mutator, natural opening application, deployment capacity witness or exact battle successors.'
     }
     Write-Output "ORIGINAL-RANDOM-ROOM-CAPACITY PASS: floor $($witness.ReducedFloor) $($witness.OriginalMaximum) -> $($witness.Maximum), a rejected unit deployed on floor $($witness.AlternateFloor), and no later-turn application."
+}
+if ($OriginalElleTier) {
+    $definition = $trace.OriginalElleDefinition
+    $acquisition = $trace.OriginalElleAcquisition
+    $witness = $trace.OriginalElleWitness
+    $controls = @($trace.Actions | Where-Object ScenarioAction)
+    if (-not $trace.OriginalEllePrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or
+        $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
+        $definition.Tier -ne $OriginalElleTier -or @($acquisition.UpgradedIds).Count -ne ($OriginalElleTier + 1) -or
+        $witness.CarrierId -notin $acquisition.UpgradedIds -or $controls.Count -ne 4 -or
+        $controls[3].Action.CardInstanceId -ne $witness.CarrierId -or
+        ($acquisition.After | ConvertTo-Json -Compress -Depth 8) -cne ($acquisition.AfterReattach | ConvertTo-Json -Compress -Depth 8) -or
+        ($definition | ConvertTo-Json -Compress -Depth 8) -cne
+        ($trace.OriginalElleDefinitionAfter | ConvertTo-Json -Compress -Depth 8)) {
+        throw 'Elle lacks the expected permanent original upgrades, native carrier play or exact battle successors.'
+    }
+    Write-Output "ORIGINAL-ELLE PASS: tier $OriginalElleTier upgraded $(@($acquisition.UpgradedIds).Count) owned cards, preserved Rewards RNG on reattach, and played an upgraded Torch."
 }
 if ($OriginalGoldieTier) {
     $definition = $trace.OriginalGoldieDefinition

@@ -23,8 +23,22 @@ namespace MonsterTrain2Poju.Probe
             if (card != null)
             {
                 int index = card.GetEffectStates().IndexOf(effect);
-                if (index < 0) throw new NotSupportedException("Bonus draw from a card trigger.");
-                return BonusDrawState.CardKey(trace.CardId(card), index);
+                int cardId = trace.CardId(card);
+                if (index >= 0) return BonusDrawState.CardKey(cardId, index);
+                // With no upgrade callback, native OnCast only adjusts the draw
+                // modifier. This trace key never enters the model's listener state.
+                if (effect.GetParamCardUpgradeData() == null)
+                {
+                    var triggers = card.GetTriggers();
+                    for (int triggerIndex = 0; triggerIndex < triggers.Count; triggerIndex++)
+                    {
+                        var candidate = triggers[triggerIndex];
+                        if (candidate.GetTrigger() != CardTriggerType.OnCast) continue;
+                        int actionIndex = candidate.GetCardEffectParams().IndexOf(effect);
+                        if (actionIndex >= 0) return $"card:{cardId}:cast:{triggerIndex}:{actionIndex}";
+                    }
+                }
+                throw new NotSupportedException("Unsupported bonus draw from a card trigger.");
             }
             CharacterState? actor = parameters?.selfTarget;
             CharacterTriggerState? trigger = parameters?.sourceCharacterTriggerState;
