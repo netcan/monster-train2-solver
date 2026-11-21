@@ -94,3 +94,13 @@ EndTurn。`-Archive` 可指定清单内的相对路径。报告保留首处分�
 EndTurn，累计约 103 秒。新增分段为满月法强，核对六处场景插牌前后的原版状态。
 报告为 `results/current-replay-ac9a6716/report.tsv`。衰亡新版目标归档随后登记，已通过
 完整链、分支、合法候选和串并行计划的独立验证。
+
+串行搜索节点预算修正后，固定八场全部通过，共 190 次出牌及 52 次 EndTurn，
+用时 649.217 秒。报告为 `results/solver-stage-20261121-175043-123014a3/report.tsv`。
+Fleshweaver 出生 Mass 修正后，批量复放 127 场，112 场连续、15 场分段，零失败。
+报告为 `results/current-mass-replay.tsv`。
+
+用 2.3.1 载入 2.2.1 原版第三环战前存档，隔离顾问在两线程、单次搜索三秒的配置下
+完成 24 次出牌和 9 次 EndTurn，以 80 点薪火生命获胜。进程正常退出，四项采集计数为零。
+同一归档另通过 33 次滚动建议与预测复放、完整链及 16 条独立分支。
+归档为 `tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/migrated-ring3.mt2f`。
