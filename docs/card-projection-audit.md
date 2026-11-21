@@ -44,6 +44,11 @@ Initiate Sermon 的旧战斗投影省略了自目标生命筛选标记，两边�
 这批已有战斗证据使优先组达到 50 张定义吻合。Punished Spike 的六次原版出牌通过，
 另十五次修改过特性的测试场景仍只有身份记录。
 
+PunishedChamp1 的旧记录来自六条已升级路线。本次另录原版基础召唤，临时冻结仅用于
+固定手牌。四次出牌、五次 EndTurn、41 个房间阶段、九个列车阶段通过，完整链的 16 条
+分支、全部录制候选及串并行返回计划一致。归档为
+`tests/compatibility/game-2.3.1/mechanics/priority-card-batch/punished-champion-base.mt2f`。
+
 2026-11-15 在 `40bd1378` 模型上重扫本机 2.3.1、build 26650011：
 724 个唯一原版定义，614 张图鉴卡。图鉴卡没有投影异常，仍有显式
 `ExternalInteractions` 保护的只有 `ZealotsHalo`
