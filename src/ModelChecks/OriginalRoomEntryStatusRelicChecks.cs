@@ -20,8 +20,12 @@ internal static class OriginalRoomEntryStatusRelicChecks
         Require(eligible || !required, "Fixture lacks the original room-entry status relic battle.");
         if (!eligible) return;
 
-        Require(root.GetProperty("Schema").GetInt32() == 132 &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
+        string? version = root.GetProperty("GameVersion").GetString();
+        string? module = root.GetProperty("GameModuleMvid").GetString();
+        bool acceptedBuild = (version, module) is
+            ("2.2.1", "8fb07b96-f4db-4d2b-884d-c00536d6ccf4") or
+            (Game231FixtureCatalog.Version, Game231FixtureCatalog.Module);
+        Require(root.GetProperty("Schema").GetInt32() == 132 && acceptedBuild &&
             root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" &&
             root.GetProperty("TerminalEffectsSettled").GetBoolean() &&

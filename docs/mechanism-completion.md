@@ -50,6 +50,12 @@ ModelChecks 调用，`BattleSearchModel`、实际出牌与回合切换没有调�
 限于在场与效果列表。个别效果是否触发、触发参数和后继仍由机制检查验证。
 输出为 `results/relic-observations-2.3.1.tsv`，可用 `-Current -Check -SkipBuild` 复核。
 
+2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
+`PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
+敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
+16 条分支、合法候选及串并行计划全部通过。两版专用原生检查都通过，归档在
+`tests/compatibility/game-2.3.1/mechanics/room-entry-status-relics/`。
+
 ## 工作单位
 
 2026-11-20 接入[回合前原生顺序分派](before-draw-order.md)：十二种已有 BeforeDraw
