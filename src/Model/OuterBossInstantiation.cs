@@ -55,13 +55,19 @@ namespace MonsterTrain2Poju.Model
             EnemyDefinition actor = definition.Actor; OuterBossProgress boss = definition.Boss;
             bool duo = OuterBossDefinitions.IsAngelDuo(actor.Unit.AssetKey);
             int moon = train.Context?.QueryFrame?.MoonPhase ?? 0;
-            bool calibratedMoon = battle.MoonPhaseTrackingActive == true &&
+            bool siphonTrialNewMoon = moon == 1 && battle.MoonPhase == "New" &&
+                actor.Unit is { AssetKey: "Boss_Level3_Arkion_SiphonRage", MoonPhaseMask: 4,
+                    BaseAttack: 7, Attack: 7, Health: 425, MaxHealth: 425 } &&
+                train.Context?.Relics?.Any(relic => relic is { DataId: "1ee2320c-75e1-4d28-93c6-24c160bab659",
+                    AssetKey: "Enemy_Boss_Level3SiphonRage_TitanTrial" } && RelicCharacterTriggerModel.Validate(relic) == null) == true;
+            bool fullMoon = moon == 2 &&
                 (actor.Unit.AssetKey is "Boss_Level3_Fleshweaver_Corruption" or "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth" or
                     "Boss_Level3_Arkion_SiphonRage" or "Boss_Level6_Cael_DamageShield" || CalibratedLifestealMoon(actor.Unit) || CalibratedPushMoon(actor.Unit) ||
                     actor.Unit is { AssetKey: "Boss_Level6_AngelDuo_Entropic_Variant3_HarvestHealth", BaseAttack: 11, Attack: 11,
                         Health: 1250, MaxHealth: 1250 } ||
                     actor.Unit is { AssetKey: "Boss_Level8_Fragile", BaseAttack: 30, Attack: 30, Health: 3000, MaxHealth: 3000 } ||
-                    actor.Unit is { AssetKey: "Boss_Level3_Fleshweaver_MoreMass", BaseAttack: 6, Attack: 22, Health: 600, MaxHealth: 600 }) && moon == 2 &&
+                    actor.Unit is { AssetKey: "Boss_Level3_Fleshweaver_MoreMass", BaseAttack: 6, Attack: 22, Health: 600, MaxHealth: 600 });
+            bool calibratedMoon = battle.MoonPhaseTrackingActive == true && (siphonTrialNewMoon || fullMoon) &&
                 !actor.Unit.Triggers.Any(trigger => trigger.Kind is "OnMoonLit" or "OnMoonlitLost" or
                     "OnMoonShade" or "OnMoonshadeLost" or "OnMoonPhaseShift");
             if (actor.ExternalInteractions.Count > 0) return Fail(string.Join("; ", actor.ExternalInteractions));
