@@ -235,11 +235,13 @@ namespace MonsterTrain2Poju.Probe
                     }
                     trace.Write();
                     bool passed = trace.CaptureFailures == 0 && trace.Pending == 0 && trace.Mismatches == 0 && trace.Unsupported == 0;
-                    if (passed && Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_AFTER_REPLAY") == "1")
+                    bool campaignReplay = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_AFTER_REPLAY") == "1";
+                    bool campaignRolling = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_AFTER_ROLLING") == "1";
+                    if (passed && (campaignReplay || (campaignRolling && trace.NativeWon == true)))
                     {
-                        bool defeat = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_COMPLETE_DEFEAT") == "1";
+                        bool defeat = campaignReplay && Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_COMPLETE_DEFEAT") == "1";
                         if (trace.NativeWon != !defeat) { Finish(false, "Campaign continuation differs from the declared native outcome."); return; }
-                        log.LogInfo("DEPTH-PASS Full native replay; continuing native campaign transitions; won=" + trace.NativeWon);
+                        log.LogInfo("DEPTH-PASS Full native battle; continuing native campaign transitions; won=" + trace.NativeWon);
                         ProbePlugin.ContinueCampaignAfterBattle(trace.NativeWon.Value);
                     }
                     else Finish(passed, "Full native battle finished; won=" + trace.NativeWon + "; unsupported stages=" + trace.Unsupported);

@@ -56,14 +56,15 @@ namespace MonsterTrain2Poju.Probe
             stopRing = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_STOP_RING") ?? "5");
             seed = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_SEED") ?? "424242");
             string? covenant = Environment.GetEnvironmentVariable("MT2_PROBE_STARTING_COVENANT_LEVEL");
-            requestedStartingCovenant = covenant == null ? (int?)null : int.Parse(covenant);
+            requestedStartingCovenant = afterBattle || covenant == null ? (int?)null : int.Parse(covenant);
             auditPath = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "campaign-audit.jsonl");
             lastProgress = Time.realtimeSinceStartup;
             Record("start", new { seed, stopRing, resume = Environment.GetEnvironmentVariable("MT2_PROBE_RESUME_RUN") == "1" });
             if (afterBattle)
             {
                 started = true;
-                Record("battle-replay-complete", new { decisions = RollingAdviceScenario.Records.Count,
+                bool rolling = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_AFTER_ROLLING") == "1";
+                Record(rolling ? "battle-live-complete" : "battle-replay-complete", new { decisions = RollingAdviceScenario.Records.Count,
                     archive = "full-battle.mt2f", searchNodes = RollingAdviceScenario.Records.Sum(x => x.Nodes) });
                 Record("battle-outcome", new { won = battleWon, distance = AllGameManagers.Instance.GetSaveManager().GetCurrentDistance(),
                     pyre = AllGameManagers.Instance.GetPlayerManager().GetTowerHP() });

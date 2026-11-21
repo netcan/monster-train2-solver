@@ -16,6 +16,7 @@ param(
     [switch] $AdvisorFloorBrowse,
     [switch] $AdvisorPresentation,
     [switch] $RollingAdvice,
+    [switch] $ContinueToNextRing,
     [switch] $PreviewAttackTrace,
     [switch] $HoldoverCalibration,
     [switch] $HoldoverVariants,
@@ -1141,6 +1142,17 @@ if ($TrueFinalBossBirth) {
 }
 if ($OuterBossBirth -and -not $OuterBossTurns) { throw '-OuterBossBirth requires -OuterBossTurns.' }
 if ($OuterBossPyre -and -not $OuterBossTurns) { throw '-OuterBossPyre requires -OuterBossTurns.' }
+if ($ContinueToNextRing) {
+    $allowed = @('ContinueToNextRing', 'InputProfile', 'BattleDistance', 'Policy', 'Seed', 'PlayerAdvisor', 'RollingAdvice',
+        'PlannerWholeBattle', 'PlannerTacticalSeed', 'PlannerHorizon', 'PlannerMaxSteps', 'PlannerSearchWorkers',
+        'PlannerDeploymentRoom', 'PlannerTimeLimitMs', 'OuterBossTurns', 'OuterBossBirth', 'OuterBossPyre',
+        'PhysicalSpawnPoints', 'BranchCardMasks', 'SettleDeathDissolves', 'SettleCardAnimations', 'BinaryCapture',
+        'GameSpeed', 'ShowWindow', 'TimeoutSeconds', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction')
+    if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count -or
+        -not ($InputProfile -and $PlayerAdvisor -and $RollingAdvice -and $BinaryCapture)) {
+        throw 'ContinueToNextRing requires live PlayerAdvisor and RollingAdvice, binary capture and a native InputProfile without scenario controls.'
+    }
+}
 if ($UnsupportedBranchInput) {
     $allowed = @('UnsupportedBranchInput', 'InputProfile', 'BattleDistance', 'OuterBossTurns', 'OuterBossBirth', 'PhysicalSpawnPoints',
         'BranchCardMasks', 'SettleDeathDissolves', 'SettleCardAnimations', 'GameSpeed', 'TimeoutSeconds', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction')
@@ -2157,6 +2169,17 @@ if ($InputProfile) {
     if ($checkpointData.gameSequence -ne 6 -or $checkpointData.runState.distance -ne $BattleDistance) {
         throw 'InputProfile must be a native BattleIntro checkpoint at BattleDistance.'
     }
+    if ($ContinueToNextRing) {
+        $inputBattles = @($checkpointData.completedBattles)
+        if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
+            $checkpointData.wasDevCheatUsed -ne $false -or $checkpointData.runState.numBattlesCompleted -ne $BattleDistance -or
+            $inputBattles.Count -ne $BattleDistance -or @($inputBattles | Where-Object bossHPRemaining -NE 0).Count) {
+            throw 'ContinueToNextRing requires a standard native campaign checkpoint with each prior battle won.'
+        }
+        $inputMeta = Join-Path $checkpoint 'metagameSave.json'
+        $inputSaveHash = (Get-FileHash -LiteralPath $checkpointSave -Algorithm SHA256).Hash
+        $inputMetaHash = (Get-FileHash -LiteralPath $inputMeta -Algorithm SHA256).Hash
+    }
     if ($OriginalCaelTrialCovenant -eq 2 -and ([int]$checkpointData.startingConditions.ascensionLevel -ne 2 -or
         $checkpointData.runState.numBattlesCompleted -ne 5 -or $checkpointData.wasDevCheatUsed)) {
         throw 'The Cael shield birth diagnostic requires an original rank-two BattleIntro checkpoint after five wins.'
@@ -2214,6 +2237,7 @@ $environment = @{
     MT2_PROBE_ROOM_MOON_MOVEMENT = $(if ($RoomMoonMovement) { '1' } else { '0' })
     MT2_PROBE_ROOM_MOON_ENEMY = $(if ($RoomMoonEnemyMovement) { '1' } else { '0' })
     MT2_PROBE_ROLLING_ADVICE = $(if ($RollingAdvice) { '1' } else { '0' })
+    MT2_PROBE_CAMPAIGN_AFTER_ROLLING = $(if ($ContinueToNextRing) { '1' } else { '0' })
     MT2_PROBE_ROLLING_INPUT = $(if ($RollingInput) { (Resolve-Path -LiteralPath $RollingInput).Path } else { '' })
     MT2_PROBE_RESUME_ROLLING_ADVICE = $(if ($ResumeRollingAdvice) { '1' } else { '0' })
     MT2_PROBE_UNSUPPORTED_BRANCH = $UnsupportedBranchInput
@@ -2390,6 +2414,10 @@ $environment = @{
     MT2_PROBE_DAMAGE_REACTION_FINAL_DEATH = $(if ($DamageReactionFinalDeathOnly) { '1' } else { '0' })
     MT2_PROBE_ENCHANTMENT_WORLD = $(if ($EnchantmentWorld) { '1' } else { '0' })
     MT2_PROBE_TRIGGER_REPEATS = $(if ($TriggerRepeats) { '1' } else { '0' })
+}
+if ($ContinueToNextRing) {
+    $environment.MT2_PROBE_CAMPAIGN_AFTER_REPLAY = '0'
+    $environment.MT2_PROBE_CAMPAIGN_STOP_RING = [string]($BattleDistance + 2)
 }
 if ($EquipmentBuff) { $environment['MT2_PROBE_MODIFIERS'] = 'equipment-buff' }
 if ($ForgePointsEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'forge-points' }
@@ -3789,6 +3817,58 @@ if ($DamageOverflow -and ($trace.ModifierScenario -ne 'damage-overflow' -or
 }
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
+$nextInputProfile = $null
+if ($ContinueToNextRing) {
+    if ((Get-FileHash -LiteralPath $checkpointSave -Algorithm SHA256).Hash -cne $inputSaveHash -or
+        (Get-FileHash -LiteralPath $inputMeta -Algorithm SHA256).Hash -cne $inputMetaHash) {
+        throw 'The original campaign input changed during the live advisor run.'
+    }
+    if ($null -eq $trace.NativeWon -or -not $terminalSettled -or $trace.CaptureFailures -ne 0 -or
+        $trace.Pending -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0) {
+        throw "The live advisor battle must settle with all four capture counters zero before campaign continuation. Inspect $unityLog"
+    }
+    $nextRing = $BattleDistance + 2
+    $expectedProfile = "$profile-before-ring$nextRing"
+    $auditPath = Join-Path $profile 'campaign-audit.jsonl'
+    if ($trace.NativeWon) {
+        if (-not (Test-Path -LiteralPath $auditPath)) { throw "The victory did not reach the native campaign handoff. Inspect $unityLog" }
+        $audit = @(Get-Content -LiteralPath $auditPath | ForEach-Object { $_ | ConvertFrom-Json })
+        $live = @($audit | Where-Object kind -EQ 'battle-live-complete')
+        $outcomes = @($audit | Where-Object kind -EQ 'battle-outcome')
+        $checkpoints = @($audit | Where-Object kind -EQ 'checkpoint')
+        if ($process.ExitCode -ne 0 -or $audit[-1].kind -ne 'complete' -or
+            $live.Count -ne 1 -or $live[0].data.decisions -ne @($trace.RollingDecisions).Count -or
+            $live[0].data.archive -cne 'full-battle.mt2f' -or
+            $outcomes.Count -ne 1 -or $outcomes[0].data.won -ne $true -or $outcomes[0].data.distance -ne $BattleDistance -or
+            $checkpoints.Count -ne 1 -or $checkpoints[0].data.ring -ne $nextRing -or
+            $checkpoints[0].data.profile -ine $expectedProfile) {
+            throw "Original campaign did not reach the verified BattleIntro for ring $nextRing. Inspect $auditPath"
+        }
+        $nextSave = Join-Path $expectedProfile 'saves/save-singlePlayer.json'
+        $nextData = Get-Content -LiteralPath $nextSave -Raw | ConvertFrom-Json
+        $nextBattles = @($nextData.completedBattles)
+        if ((Get-FileHash -LiteralPath $nextSave -Algorithm SHA256).Hash -ine $checkpoints[0].data.sha256 -or
+            $nextData.gameSequence -ne 6 -or $nextData.runState.distance -ne ($BattleDistance + 1) -or
+            $nextData.runState.numBattlesCompleted -ne ($BattleDistance + 1) -or $nextData.wasDevCheatUsed -ne $false -or
+            $nextData.id -cne $checkpointData.id -or $nextData.startingConditions.seed -ne $checkpointData.startingConditions.seed -or
+            $nextData.startingConditions.ascensionLevel -ne $checkpointData.startingConditions.ascensionLevel -or
+            $nextBattles.Count -ne ($BattleDistance + 1) -or $nextBattles[-1].battleIndex -ne $BattleDistance -or
+            $nextBattles[-1].bossHPRemaining -ne 0 -or
+            $nextBattles[-1].titanTrial -ne $checkpointData.runState.nodes[$BattleDistance].titanTrialEnabled) {
+            throw "The native checkpoint did not preserve the run identity and the newly completed battle. Inspect $nextSave"
+        }
+        for ($index = 0; $index -lt $BattleDistance; $index++) {
+            if (($nextBattles[$index] | ConvertTo-Json -Depth 10 -Compress) -cne ($inputBattles[$index] | ConvertTo-Json -Depth 10 -Compress)) {
+                throw "The native checkpoint changed prior battle $index. Inspect $nextSave"
+            }
+        }
+        $nextInputProfile = $expectedProfile
+        Write-Output "CAMPAIGN-NEXT-PASS ring=$nextRing profile=$nextInputProfile"
+    } else {
+        if ((Test-Path -LiteralPath $auditPath) -or (Test-Path -LiteralPath $expectedProfile)) { throw 'A defeated battle unexpectedly entered campaign continuation.' }
+        Write-Output 'CAMPAIGN-NEXT-SKIPPED native defeat'
+    }
+}
 if ($EquipmentBuff -and ($trace.ModifierScenario -ne 'equipment-buff' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'EQUIPMENT-PREPARED .*buff=True' -Quiet))) {
     throw 'Equipment buff scenario setup did not run.'
@@ -8747,6 +8827,7 @@ $result = [pscustomobject]@{
     ExitCode = $process.ExitCode
     NativePassed = $nativePassed
     NativeWon = $trace.NativeWon
+    NextInputProfile = $nextInputProfile
     CaptureFailures = $trace.CaptureFailures
     Mismatches = $trace.Mismatches
     Unsupported = $trace.Unsupported
@@ -9294,6 +9375,7 @@ if ($null -eq $trace.NativeWon -or $process.ExitCode -ne 0 -or -not $nativePasse
     Unsupported = $trace.Unsupported
     Pending = $trace.Pending
     NativeWon = $trace.NativeWon
+    NextInputProfile = $nextInputProfile
     NativeSeconds = $nativeTimer.Elapsed.TotalSeconds
     TraceSha256 = (Get-FileHash -LiteralPath $tracePath -Algorithm SHA256).Hash.ToLowerInvariant()
 } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $profile 'native-accepted-summary.json') -Encoding utf8
