@@ -9,6 +9,17 @@ internal static class RollingAdviceChecks
     private static BattleTurnState State(FixtureValue value) => value.Deserialize<BattleTurnState>()!;
     private static bool Terminal(RoomOutcome outcome) => outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
     private static string Key(BattleTurnState state, bool terminal = false) => BattleTurnChecks.Comparable(state, terminal);
+    private static BattleSearchStep ReadStep(FixtureValue row)
+    {
+        bool end = row.GetProperty("IsEndTurn").GetBoolean();
+        return new BattleSearchStep(end ? null : row.GetProperty("Action").Deserialize<PlayCardAction>(),
+            end, RecordedBattleChecks.Decisions(row));
+    }
+    private static bool SameRelentlessChoices(FixtureValue left, FixtureValue right) =>
+        (RecordedBattleChecks.Decisions(left) ?? []).Select(Choice).SequenceEqual(
+            (RecordedBattleChecks.Decisions(right) ?? []).Select(Choice));
+    private static (int Room, int Rounds, bool Continue) Choice(RelentlessDecision choice) =>
+        (choice.RoomIndex, choice.CompletedRounds, choice.Continue);
     // Partial failure archives remain useful native observations. This deliberately
     // checks actual successors only; it does not accept their old plans or counters.
     internal static void ObservedSuccessors(FixtureValue fixture)
@@ -22,9 +33,7 @@ internal static class RollingAdviceChecks
             FixtureValue record = records[index];
             BattleTurnState root = State(record.GetProperty("Root"));
             Require(previous == null || Key(previous) == Key(root), "Observed native chain differs at " + index);
-            bool end = record.GetProperty("IsEndTurn").GetBoolean();
-            PlayCardAction? action = end ? null : record.GetProperty("Action").Deserialize<PlayCardAction>();
-            BattleTurnState next = BattlePlannerChecks.Replay(root, [new BattleSearchStep(action, end)], out RoomOutcome outcome);
+            BattleTurnState next = BattlePlannerChecks.Replay(root, [ReadStep(record)], out RoomOutcome outcome);
             previous = State(record.GetProperty("Actual"));
             string predictedKey = Key(next, Terminal(outcome)), actualKey = Key(previous, Terminal(outcome));
             Require(predictedKey == actualKey,
@@ -62,8 +71,7 @@ internal static class RollingAdviceChecks
             Require(record.GetProperty("Difference").ValueKind == FixtureKind.Null, "Rolling native mismatch.");
             bool end = record.GetProperty("IsEndTurn").GetBoolean();
             Require(end == (record.GetProperty("Action").ValueKind == FixtureKind.Null), "Invalid rolling input.");
-            PlayCardAction? action = end ? null : record.GetProperty("Action").Deserialize<PlayCardAction>()!;
-            BattleTurnState next = BattlePlannerChecks.Replay(root, new[] { new BattleSearchStep(action, end) }, out outcome);
+            BattleTurnState next = BattlePlannerChecks.Replay(root, [ReadStep(record)], out outcome);
             Require(outcome == record.GetProperty("Outcome").Deserialize<RoomOutcome>() &&
                 Key(next, Terminal(outcome)) == Key(State(record.GetProperty("Expected")), Terminal(outcome)) &&
                 Key(next, Terminal(outcome)) == Key(State(record.GetProperty("Actual")), Terminal(outcome)), "Rolling native successor differs.");
@@ -71,10 +79,9 @@ internal static class RollingAdviceChecks
 
             FixtureValue[] plan = record.GetProperty("PlanSteps").EnumerateArray().ToArray();
             Require(plan.Length > 0 && plan[0].GetProperty("IsEndTurn").GetBoolean() == end &&
-                plan[0].GetProperty("Action").ContentEquals(record.GetProperty("Action")), "Driver did not execute the latest plan's first step.");
-            BattleSearchStep[] steps = plan.Select(step => new BattleSearchStep(
-                step.GetProperty("Action").ValueKind == FixtureKind.Null ? null : step.GetProperty("Action").Deserialize<PlayCardAction>(),
-                step.GetProperty("IsEndTurn").GetBoolean())).ToArray();
+                plan[0].GetProperty("Action").ContentEquals(record.GetProperty("Action")) &&
+                SameRelentlessChoices(plan[0], record), "Driver did not execute the latest plan's first step.");
+            BattleSearchStep[] steps = plan.Select(ReadStep).ToArray();
             BattleTurnState planned = BattlePlannerChecks.Replay(root, steps, out RoomOutcome plannedOutcome);
             if (record.TryGetProperty("UsedShorterHorizon", out FixtureValue shorter) && shorter.GetBoolean())
                 Require(!Terminal(plannedOutcome) && steps.Last().IsEndTurn &&
@@ -129,7 +136,8 @@ internal static class RollingAdviceChecks
         {
             Require(first[index].GetProperty("Mode").GetString() == (sourceFrozen ? "replay" : "rolling") && second[index].GetProperty("Mode").GetString() == "replay" &&
                 first[index].GetProperty("Action").ContentEquals(second[index].GetProperty("Action")) &&
-                first[index].GetProperty("IsEndTurn").ContentEquals(second[index].GetProperty("IsEndTurn")), "Fresh rolling replay changed an input.");
+                first[index].GetProperty("IsEndTurn").ContentEquals(second[index].GetProperty("IsEndTurn")) &&
+                SameRelentlessChoices(first[index], second[index]), "Fresh rolling replay changed an input.");
             bool terminal = index == first.Length - 1;
             foreach (string field in new[] { "Root", "Expected", "Actual" })
                 Require(Key(State(first[index].GetProperty(field)), terminal) == Key(State(second[index].GetProperty(field)), terminal),
@@ -180,7 +188,7 @@ internal static class RollingAdviceChecks
                 FixtureValue action = baselineActions[actionIndex++];
                 Follow(action, new BattleSearchStep(action.GetProperty("Action").Deserialize<PlayCardAction>(), false));
             }
-            Follow(turn, new BattleSearchStep(null, true));
+            Follow(turn, new BattleSearchStep(null, true, RecordedBattleChecks.Decisions(turn)));
         }
         Require(actionIndex == baselineActions.Length && Terminal(policyOutcome), "Fixed policy did not finish all recorded inputs.");
         FixtureValue baselineTerminal = baselineTurns.Last().GetProperty("Actual");

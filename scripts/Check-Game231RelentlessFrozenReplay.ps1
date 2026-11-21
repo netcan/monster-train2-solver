@@ -84,6 +84,9 @@ foreach ($entry in $manifest) {
         }
     }
     finally { $capture.Dispose() }
+    $calibration = 'relentless-battle-' + [IO.Path]::GetFileNameWithoutExtension($entry.path)
+    dotnet (Join-Path $bin 'ModelChecks.dll') --rolling-advice-only $path $calibration
+    if ($LASTEXITCODE) { throw "Rolling forecast replay failed for $($entry.path)." }
 }
 
 dotnet (Join-Path $bin 'ModelChecks.dll') --relentless-battle-pair-only (Join-Path $directory 'abandon.mt2f') (Join-Path $directory 'continue.mt2f')
