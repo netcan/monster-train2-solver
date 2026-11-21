@@ -38,3 +38,10 @@ enchanters remained active, and the preview copy left the primary target cache
 unchanged. The recorded successor and RNG match the corrected model. The
 registered component is
 `tests/compatibility/game-2.3.1/mechanics/troop-aura-enchantment/native-branch.mt2f`.
+
+The same checkpoint exposed another legal play when Starter Fire Starter
+killed a Titanskin source while a three-Horde Fun Guy entered the troop aura.
+The native branch recorded 17 preparatory inputs and showed the pending source
+retirement and three temporary health additions, from 12 to 21 HP. All 18
+inputs, the settled successor and the RNG streams match the corrected model.
+The registered component is `pending-source-death.mt2f` in the same directory.

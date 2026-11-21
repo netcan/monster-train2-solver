@@ -287,7 +287,12 @@ namespace MonsterTrain2Poju.Model
                     Health: 25, MaxHealth: 25, Size: 2, Modifiers.Upgrades.Count: 0 } ||
                     unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 24,
                     Health: 35, MaxHealth: 35, Size: 2, Modifiers.Upgrades: [
-                        { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" }, { DataId: "", AssetKey: "" }] }) && rule.Targets.Contains(unit.Id) &&
+                        { DataId: "eecb44d8-f417-4815-8438-3e4618231102", AssetKey: "LavaArmor" }, { DataId: "", AssetKey: "" }] } ||
+                    unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 24,
+                    Health: 35, MaxHealth: 35, Size: 1, Modifiers.Upgrades: [
+                        { DataId: "4f70b7b7-b507-4931-9b14-e13dcd6cd59f", AssetKey: "ExilesDiadem_Upgrade", Stats.Health: 10, Stats.Size: -2 },
+                        { DataId: "", AssetKey: "" }] } && source.Train.Context!.CardRegistry?.Any(card =>
+                            card.DataId == "217d467c-77c2-481d-b78f-57aaf3dcd4a6" && card.EquippedUnitId == unit.Id) == true) && rule.Targets.Contains(unit.Id) &&
                     source.Train.Context!.FindCard(unit.SpawnerCardId)?.DataId == "6d2053e9-1a6a-4862-b348-76a92a92ea83");
             bool OriginalLiveLavaCompanion() => source.Train.Context != null && room.Units.Any(unit =>
                 unit is { AssetKey: "MonsterSycophant", Team: CombatTeam.Player, BaseAttack: 20 or 24,
