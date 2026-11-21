@@ -914,11 +914,11 @@ namespace MonsterTrain2Poju.Probe
                 bool captured = OriginalOuterBossRoute.CaptureEarlyTrialBirth(managers, log);
                 if (captured && !OriginalOuterBossRoute.EarlyTrialFullBattle)
                 {
-                    Finish(true, "Original Ring 3 Titan Trial substitution captured.");
+                    Finish(true, "Original Titan Trial substitution captured.");
                     return;
                 }
                 if (!captured && combat.GetTurnCount() >= 5)
-                    throw new InvalidOperationException("No matching original Ring 3 Titan Trial substitution was created by turn five.");
+                    throw new InvalidOperationException("No matching original Titan Trial substitution was created by turn five.");
             }
 #endif
             if (fullBattle && OriginalAffordableNonPlayableScenario.Enabled)

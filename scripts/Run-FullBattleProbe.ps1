@@ -971,16 +971,18 @@ $earlyTrialVariant = switch ($OriginalEarlyOuterBossVariant) {
     'FleshweaverCorruption' { @{ Scenario='Level3ImmortalMass_Corruption'; Owner='Enemy_Boss_Level3_ImmortalMass_Corruption_TitanTrial'; OwnerId='52dc060c-bd51-4b7b-865a-6d70f9806e53'; Source='Boss_Level3_MiniFleshweaver_Corruption' } }
     'FleshweaverMass' { @{ Scenario='Level3ImmortalMass_MoreMass'; Owner='Enemy_Boss_Level3_ImmortalMass_MoreMass_TitanTrial'; OwnerId='28c0e907-d882-4052-93f4-0a07d88496af'; Source='Boss_Level3_MiniFleshweaver_MoreMass' } }
     'FleshweaverSpikes' { @{ Scenario='Level3ImmortalMass_Spikes'; Owner='Enemy_Boss_Level3_ImmortalMass_Spike_TitanTrial'; OwnerId='c4abfdc2-a89c-43cf-9e35-59f6ea3b39f7'; Source='Boss_Level3_MiniFleshweaver_Spike' } }
+    'CaelDamageShield' { @{ Scenario='Level6BattleEaterDamageShield'; Owner='Enemy_SpawnHeroEaterFeedDamageShield_TitanTrial'; OwnerId='12f05d0b-df25-4cad-b7f3-9c52eac46e04' } }
 }
 $earlyTrialSubstitution = $OriginalOuterBossTrial -and $null -ne $earlyTrialVariant
-if ($OriginalEarlyOuterBossTrialBattle -and -not $earlyTrialSubstitution) {
+$caelShieldTrialDiagnostic = $earlyTrialSubstitution -and $OriginalEarlyOuterBossVariant -ceq 'CaelDamageShield'
+if ($OriginalEarlyOuterBossTrialBattle -and (-not $earlyTrialSubstitution -or $caelShieldTrialDiagnostic)) {
     throw 'OriginalEarlyOuterBossTrialBattle requires an original Ring 3 Fleshweaver Titan Trial variant.'
 }
 if ($OriginalOuterBossTrial -and -not $OriginalOuterBossVariant -and -not $earlyTrialSubstitution) {
-    throw 'OriginalOuterBossTrial requires an explicit original Ring 8 variant or a Ring 3 Fleshweaver substitution component.'
+    throw 'OriginalOuterBossTrial requires an explicit original outer-boss trial variant.'
 }
 if ($earlyTrialSubstitution -and (-not $BinaryCapture -or $Policy -ne 'units-spells-and-junk' -or $PlayerAdvisor -or $Advisor -or $Planner -or $RollingInput -or $RollingAdvice)) {
-    throw 'The original Ring 3 Titan Trial substitution component requires binary capture and the isolated units-spells-and-junk policy.'
+    throw 'The original Titan Trial substitution component requires binary capture and the isolated units-spells-and-junk policy.'
 }
 if ($earlyTrialSubstitution) { $BranchCardMasks = $true }
 if ($TrueFinalBossMaximumSacrificeRetainMax -and -not $TrueFinalBossMaximumSacrifice) { throw 'Retained maximum-health sacrifice requires an explicit original boss target.' }
@@ -3220,7 +3222,7 @@ if ($earlyTrialSubstitution) {
     $birthPath = Join-Path $profile 'outer-boss-birth-calibration.mt2f'
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or -not (Test-Path -LiteralPath $birthPath) -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-EARLY-TRIAL-BIRTH matched' -Quiet) -or
-        (Get-OriginalSignature) -cne $originalBefore) { throw "Original Ring 3 Titan Trial substitution capture failed. Inspect $unityLog" }
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Original Titan Trial substitution capture failed. Inspect $unityLog" }
     Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
     $document = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
     try {
@@ -3229,16 +3231,25 @@ if ($earlyTrialSubstitution) {
         if ($capture.Schema -ne 1 -or $capture.Boundary -cne 'NativeOriginalEarlyTitanTrialSubstitution' -or
             $capture.GameVersion -cne '2.3.1' -or $capture.GameModuleMvid -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
             $capture.Scenario -cne $earlyTrialVariant.Scenario -or $capture.OwnerKey -cne $earlyTrialVariant.Owner -or $capture.OwnerId -cne $earlyTrialVariant.OwnerId -or
-            $matchingMappings.Count -ne 1 -or $capture.OuterBoss -or $capture.Source -cne $earlyTrialVariant.Source -or
-            $capture.Replacement -cne ($earlyTrialVariant.Source + '_TitanTrial') -or $capture.Projection.Key -cne $capture.Replacement -or
+            $matchingMappings.Count -ne 1 -or $capture.Projection.Key -cne $capture.Replacement -or
             -not [guid]::TryParse($capture.SourceId, [ref]([guid]::Empty)) -or -not [guid]::TryParse($capture.ReplacementId, [ref]([guid]::Empty)) -or
-            $capture.SourceId -ceq $capture.ReplacementId -or $capture.Turn -lt 1 -or
+            $capture.SourceId -ceq $capture.ReplacementId -or
             $capture.Replacement -cne $capture.Unit.AssetKey -or -not $capture.TitanTrial -or -not $capture.Intro.EnabledAfter) {
-            throw 'Expected the original Ring 3 trial owner, source and installed replacement on a created boss.'
+            throw 'Expected the original trial owner, source and installed replacement on a created boss.'
+        }
+        if ($caelShieldTrialDiagnostic) {
+            if ($capture.AscensionLevel -ne 0 -or -not $capture.OuterBoss -or
+                $capture.SourceId -cne '168b33b6-361b-4691-bc64-aa58c66eb5db' -or $capture.ReplacementId -cne '3794c878-797d-4e81-8f0b-644869661970' -or
+                $matchingMappings[0].SourceId -cne $capture.SourceId -or $matchingMappings[0].ReplacementId -cne $capture.ReplacementId) {
+                throw 'Expected the original rank-zero Cael Trial and an exact authored mapping.'
+            }
+        } elseif ($capture.OuterBoss -or $capture.Source -cne $earlyTrialVariant.Source -or
+            $capture.Replacement -cne ($earlyTrialVariant.Source + '_TitanTrial') -or $capture.Turn -lt 1) {
+            throw 'Expected the original Fleshweaver trial mini after deployment.'
         }
     } finally { $document.Dispose() }
     if (-not $OriginalEarlyOuterBossTrialBattle) {
-        if ($capture.BranchCardMasksEnabled -ne $true -or $capture.Mismatches -ne 0) {
+        if ($capture.BranchCardMasksEnabled -ne $true -or (-not $caelShieldTrialDiagnostic -and $capture.Mismatches -ne 0)) {
             throw "Original Ring 3 Titan Trial substitution component has missing card state or mismatches. Inspect $capturePath and $unityLog"
         }
         [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true; Source=$capture.Source;

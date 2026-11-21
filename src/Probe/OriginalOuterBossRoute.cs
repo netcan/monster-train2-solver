@@ -20,6 +20,8 @@ namespace MonsterTrain2Poju.Probe
             EarlyTrialVariant() != null;
         internal static bool EarlyTrialFullBattle => EarlyTrialSubstitution &&
             Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_EARLY_TRIAL_FULL_BATTLE") == "1";
+        internal static bool CaelShieldTrialDiagnostic => EarlyTrialSubstitution &&
+            Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_EARLY_OUTER_BOSS") == "CaelDamageShield";
         private static (string Scenario, string Owner, string OwnerId, string Source, string Replacement)? EarlyTrialVariant() =>
             Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_EARLY_OUTER_BOSS") switch
             {
@@ -30,6 +32,8 @@ namespace MonsterTrain2Poju.Probe
                 "FleshweaverSpikes" => (OuterBossSubstitutionProbe.FleshweaverSpikesTrialScenario, OuterBossSubstitutionProbe.FleshweaverSpikesTrialOwner,
                     OuterBossSubstitutionProbe.FleshweaverSpikesTrialOwnerId, OuterBossSubstitutionProbe.FleshweaverSpikesMini,
                     OuterBossSubstitutionProbe.FleshweaverSpikesTrialMini),
+                "CaelDamageShield" => ("Level6BattleEaterDamageShield", "Enemy_SpawnHeroEaterFeedDamageShield_TitanTrial",
+                    "12f05d0b-df25-4cad-b7f3-9c52eac46e04", "Boss_Level6_Cael_DamageShield", "Boss_Level6_Cael_DamageShield_TitanTrial"),
                 _ => null
             };
         private static RelicData? earlyTrialOwner;
@@ -177,8 +181,9 @@ namespace MonsterTrain2Poju.Probe
             {
                 var trial = EarlyTrialVariant()!.Value;
                 RelicData sin = selected.GetTitanTrialSin();
-                if (selected.name != trial.Scenario || sin == null || sin.name != trial.Owner || sin.GetID() != trial.OwnerId)
-                    throw new InvalidOperationException("Expected the installed Ring 3 Fleshweaver Titan Trial owner.");
+                if (selected.name != trial.Scenario || sin == null || sin.name != trial.Owner || sin.GetID() != trial.OwnerId ||
+                    CaelShieldTrialDiagnostic && save.GetAscensionLevel() != 0)
+                    throw new InvalidOperationException("Expected the installed original Titan Trial owner and checkpoint.");
                 var substitutions = sin.GetEffects().Single(effect => effect.GetEffectClassName() == "RelicEffectOnSpawnHeroSubstitution")
                     .GetParamCharacterSubstitution();
                 if (substitutions == null || substitutions.Entries.Count == 0)
@@ -220,7 +225,7 @@ namespace MonsterTrain2Poju.Probe
                 TrialIntroControl == null || save.InTestScenario || !save.IsTitanTrialEnabled() || save.GetCurrentScenarioData().name != trial.Scenario ||
                 source.GetAssetKey() != trial.Source || replacement.GetAssetKey() != trial.Replacement ||
                 !earlyTrialEntries.Any(entry => entry.UnitBefore.GetID() == source.GetID() && entry.UnitAfter == replacement))
-                throw new InvalidOperationException("The installed Ring 3 trial did not create an authored substitution.");
+                throw new InvalidOperationException("The installed trial did not create an authored substitution.");
             var active = managers.GetRelicManager().GetRelicEffects(new List<RelicEffectOnSpawnHeroSubstitution>());
             if (active.Count != 1 || active[0].SourceRelicData != earlyTrialOwner ||
                 !active[0].TryGetSubstitution(source, out CharacterData selected) || selected != replacement)
@@ -232,11 +237,13 @@ namespace MonsterTrain2Poju.Probe
             using var archive = NativeFixtureCapture.Capture(new { Schema = 1, Boundary = "NativeOriginalEarlyTitanTrialSubstitution",
                 GameVersion = UnityEngine.Application.version, GameModuleMvid = typeof(CardState).Module.ModuleVersionId,
                 Scenario = save.GetCurrentScenarioData().name, OwnerId = earlyTrialOwner.GetID(), OwnerKey = earlyTrialOwner.name,
+                AscensionLevel = save.GetAscensionLevel(), OwnerEffects = earlyTrialOwner.GetEffects().Select(effect => effect.GetEffectClassName()).ToArray(),
                 Source = source.GetAssetKey(), SourceId = source.GetID(), Replacement = replacement.GetAssetKey(), ReplacementId = replacement.GetID(),
                 OuterBoss = unit.IsOuterTrainBoss(), Turn = managers.GetCombatManager().GetTurnCount(), Room = unit.GetCurrentRoomIndex(),
                 Projection = new { Key = projected.Unit.AssetKey, projected.ExternalInteractions }, trace.Unsupported, trace.Mismatches,
                 BranchCardMasksEnabled = CardBranchMaskProbe.Enabled,
-                Mappings = earlyTrialEntries.Select(entry => new { Source = entry.UnitBefore.GetAssetKey(), Replacement = entry.UnitAfter.GetAssetKey() }).ToArray(),
+                Mappings = earlyTrialEntries.Select(entry => new { Source = entry.UnitBefore.GetAssetKey(), SourceId = entry.UnitBefore.GetID(),
+                    Replacement = entry.UnitAfter.GetAssetKey(), ReplacementId = entry.UnitAfter.GetID() }).ToArray(),
                 Unit = trace.CaptureUnit(unit), Intro = TrialIntroControl, TitanTrial = save.IsTitanTrialEnabled() });
             using var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "early-titan-trial-substitution.mt2f"));
             archive.Write(output);
