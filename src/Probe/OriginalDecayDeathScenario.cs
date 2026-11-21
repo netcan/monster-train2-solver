@@ -15,6 +15,8 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Acquired { get; private set; }
         internal static bool Prepared { get; private set; }
+        internal static bool UsesHeroTargets { get; private set; }
+        internal static bool HeroTargetControlsCompleted { get; private set; }
         internal static readonly List<TestRecord> Tests = new List<TestRecord>();
         internal static readonly List<ApplicationRecord> Applications = new List<ApplicationRecord>();
         private static bool observing, controls;
@@ -45,12 +47,20 @@ namespace MonsterTrain2Poju.Probe
             public string? Difference { get; set; }
             public string? UnsupportedReason { get; set; }
         }
-        private static bool Active => Prepared && !observing && !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
+        private static bool Active => Prepared && (!UsesHeroTargets || !HeroTargetControlsCompleted) &&
+            !observing && !AllGameManagers.Instance!.GetSaveManager().PreviewMode;
         internal static void AcquireBeforeBattle(AllGameManagers managers, ManualLogSource log)
         {
             SaveManager save = managers.GetSaveManager(); AllGameData data = save.GetAllGameData();
             if (Acquired || save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle)
                 throw new InvalidOperationException("Expected fresh pre-battle Decay-death acquisition.");
+            RelicData original = data.GetAllCollectableRelicData().Single(item => item.GetID() == RelicDecayDeathModel.DataId);
+            UsesHeroTargets = original.GetEffects().Single().GetParamCardEffectData().Single().GetParamInt() == 12;
+            if (UsesHeroTargets)
+            {
+                AcquireOriginal();
+                return;
+            }
             CardData template = save.GetDeckState().Select(item => data.FindCardData(item.GetCardDataID()))
                 .First(item => item.GetSpawnCharacterData()?.name.StartsWith("TrainSteward", StringComparison.Ordinal) == true);
             foreach (CharacterData definition in data.GetAllCharacterData()) Set(definition, "attackDamage", 0);
@@ -79,17 +89,93 @@ namespace MonsterTrain2Poju.Probe
                 ((List<CardData>)AccessTools.Field(typeof(AllGameData), "cardDatas").GetValue(data)).Add(card);
                 save.AddCardToDeck(card, applyExistingRelicModifiers: false, showAnimation: false, notifyDeckCount: false);
             }
-            save.AddRelic(data.GetAllCollectableRelicData().Single(item => item.GetID() == RelicDecayDeathModel.DataId));
-            string? error = RelicModel.Validate(RelicProbe.Capture(managers));
-            if (error != null) throw new InvalidOperationException(error);
-            Acquired = true; log.LogInfo("ORIGINAL-DECAY-DEATH-ACQUIRED unchanged all-team lethal Decay OnHit, friendly even distribution, source status retained.");
+            AcquireOriginal();
+
+            void AcquireOriginal()
+            {
+                save.AddRelic(original);
+                string? error = RelicModel.Validate(RelicProbe.Capture(managers));
+                if (error != null) throw new InvalidOperationException(error);
+                Acquired = true;
+                log.LogInfo("ORIGINAL-DECAY-DEATH-ACQUIRED target=" + (UsesHeroTargets ? "Heroes" : "SourceTeam"));
+            }
         }
         internal static void PrepareDeployment(AllGameManagers managers)
         {
             if (Prepared || !Acquired || managers.GetCombatManager()!.GetTurnCount() != 0) throw new InvalidOperationException("Expected Decay-death deployment.");
             CardManager cards = managers.GetCardManager()!;
-            foreach (CardState card in cards.GetAllCards(new List<CardState>())) if (!cards.GetHand().Contains(card)) cards.DrawSpecificCard(card);
+            if (!UsesHeroTargets)
+                foreach (CardState card in cards.GetAllCards(new List<CardState>())) if (!cards.GetHand().Contains(card)) cards.DrawSpecificCard(card);
             Prepared = true; FullBattleTrace.Active!.InvalidateCardRules(); Set(managers.GetCombatManager(), "combatStateChanged", true);
+        }
+
+        internal static IEnumerator RunHeroTargetControls(AllGameManagers managers)
+        {
+            if (!UsesHeroTargets || !Prepared || HeroTargetControlsCompleted)
+                throw new InvalidOperationException("Expected prepared current Decay-death controls.");
+            var rooms = managers.GetRoomManager();
+            var heroes = managers.GetHeroManager();
+            var monsters = managers.GetMonsterManager();
+            var combat = managers.GetCombatManager();
+            var data = managers.GetSaveManager().GetAllGameData();
+            const string stewardId = "38e70e6a-20f3-4e36-8d31-c5110be07f87";
+            CharacterData steward = data.FindCardData(stewardId).GetSpawnCharacterData();
+            CharacterData hero = data.GetAllCharacterData().Single(item => item.GetAssetKey() == "HeavyT1_Basic");
+            if (Enumerable.Range(0, 3).Any(floor => InRoom(floor, Team.Type.Heroes | Team.Type.Monsters).Count != 0))
+                throw new InvalidOperationException("Expected empty train floors before original Decay-death controls.");
+
+            yield return heroes.SpawnHeroInRoom(hero, 0, null!);
+            yield return heroes.SpawnHeroInRoom(hero, 0, null!);
+            yield return heroes.SpawnHeroInRoom(hero, 0, null!);
+            var initialHeroes = InRoom(0, Team.Type.Heroes);
+            if (initialHeroes.Count != 3) throw new InvalidOperationException("Expected three original heroes on the source floor.");
+            initialHeroes[2].AddStatusEffect("untouchable", 1);
+            initialHeroes[1].AddStatusEffect("decay", 2);
+            yield return heroes.SpawnHeroInRoom(hero, 1, null!);
+
+            CharacterState? playerSource = null;
+            yield return monsters.CreateMonsterState(steward, null!, 0, unit => playerSource = unit,
+                SpawnMode.SelectedSlot, rooms.GetRoom(0).GetMonsterPoint(0), isCardless: true);
+            yield return monsters.CreateMonsterState(steward, null!, 0, _ => { },
+                SpawnMode.SelectedSlot, rooms.GetRoom(0).GetMonsterPoint(2), isCardless: true);
+            yield return DamageSource(playerSource!);
+
+            yield return heroes.SpawnHeroInRoom(hero, 0, null!);
+            CharacterState heroSource = InRoom(0, Team.Type.Heroes).Single(unit => !initialHeroes.Contains(unit));
+            yield return DamageSource(heroSource);
+
+            CharacterState? alone = null;
+            yield return monsters.CreateMonsterState(steward, null!, 2, unit => alone = unit,
+                SpawnMode.SelectedSlot, rooms.GetRoom(2).GetMonsterPoint(0), isCardless: true);
+            yield return DamageSource(alone!);
+
+            // Remove surviving controls before taking the first recorded decision.
+            var remaining = Enumerable.Range(0, 3).SelectMany(floor => InRoom(floor, Team.Type.Heroes | Team.Type.Monsters)).ToList();
+            foreach (CharacterState unit in remaining) unit.SetHealth(0, unit.GetMaxHP());
+            yield return combat.RemoveDeadCharacters(remaining, ignoreTriggers: true);
+            if (Enumerable.Range(0, 3).Any(floor => InRoom(floor, Team.Type.Heroes | Team.Type.Monsters).Count != 0))
+                throw new InvalidOperationException("Original Decay-death controls did not clear the train floors.");
+            HeroTargetControlsCompleted = true;
+
+            List<CharacterState> InRoom(int floor, Team.Type team)
+            {
+                var actors = new List<CharacterState>();
+                rooms.GetRoom(floor).AddCharactersToList(actors, team);
+                return actors;
+            }
+
+            IEnumerator DamageSource(CharacterState source)
+            {
+                source.SetHealth(3, source.GetMaxHP());
+                source.AddStatusEffect("decay", 5);
+                source.AddStatusEffect("regen", 2);
+                source.AddStatusEffect("spell weakness", 4);
+                var damage = new CombatManager.ApplyDamageToTargetParameters { damageType = Damage.Type.Decay, finalEffectInSequence = true };
+                yield return combat.ApplyDamageToTarget(1, source, damage);
+                yield return combat.ApplyDamageToTarget(5, source, damage);
+                if (!source.IsDead) throw new InvalidOperationException("Original Decay-death control source survived native damage.");
+                yield return combat.RemoveDeadCharacters();
+            }
         }
         [HarmonyPatch(typeof(RelicEffectAddEffectOnUnitDeath), nameof(RelicEffectAddEffectOnUnitDeath.TestCharacterTriggerEffect))]
         private static class TestPatch

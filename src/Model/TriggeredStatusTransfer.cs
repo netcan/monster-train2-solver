@@ -8,14 +8,20 @@ namespace MonsterTrain2Poju.Model
     {
         internal const string EffectType = "CardEffectTransferAllStatusEffectsFromUnit";
         private const string FromEffectType = EffectType;
+        private const int EvenlyDistributedAcrossFriendlyTeam = 11;
         private const int EvenlyDistributedAcrossHeroTeam = 12;
+
+        internal static bool IsDecayTransfer(CardActionEffect? action) =>
+            action != null && action.StatusTransfer is { AllowedStatusTypes: "DebuffsOnly", SkipRemove: true } transfer &&
+            (action.Value == EvenlyDistributedAcrossFriendlyTeam && transfer.TargetMode == "EvenlyDistributedAcrossFriendlyTeam" ||
+                action.Value == EvenlyDistributedAcrossHeroTeam && transfer.TargetMode == "EvenlyDistributedAcrossHeroTeam") &&
+            action.Statuses.Count == 1 && action.Statuses[0].Id == "decay";
 
         internal static string? Validate(CardActionEffect? action)
         {
             bool pyregel = action?.Value == EvenlyDistributedAcrossHeroTeam && action.StatusTransfer?.TargetMode == "EvenlyDistributedAcrossHeroTeam" &&
                 action.StatusTransfer.AllowedStatusTypes == "BuffsAndDebuffs" && !action.StatusTransfer.SkipRemove && action.Statuses.Count == 1 && action.Statuses[0].Id == "pyregel";
-            bool decay = action?.Value == 11 && action.StatusTransfer?.TargetMode == "EvenlyDistributedAcrossFriendlyTeam" &&
-                action.StatusTransfer.AllowedStatusTypes == "DebuffsOnly" && action.StatusTransfer.SkipRemove && action.Statuses.Count == 1 && action.Statuses[0].Id == "decay";
+            bool decay = IsDecayTransfer(action);
             bool copyBuffs = action?.Value == 8 && action.StatusTransfer?.TargetMode == "CopyToEachUnitOnFriendlyTeam" &&
                 action.StatusTransfer.AllowedStatusTypes == "BuffsOnly" && !action.StatusTransfer.SkipRemove && action.Statuses.Count == 0 &&
                 action.AllowEnemy == false && action.AllowPlayer == true;

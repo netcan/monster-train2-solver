@@ -39,7 +39,7 @@ namespace MonsterTrain2Poju.Model
                 rule.EffectIndex == 0 && rule.ParamInt == 8 && rule.ParamInt2 == 0 && rule.Amount == 0 &&
                 rule.CanApplyInPreviewMode && rule.Conditions.Count == 0 && rule.RequiredMutatorId == null &&
                 rule.DeathEffect?.Team == "255" && rule.DeathEffect.Subtype == "SubtypesData_None" &&
-                rule.DeathEffect.Action.Value == 11 && rule.DeathEffect.Action.Statuses.Count == 1 && rule.DeathEffect.Action.Statuses[0].Id == "decay" &&
+                TriggeredStatusTransferModel.IsDecayTransfer(rule.DeathEffect.Action) &&
                 TriggeredStatusTransferModel.Validate(rule.DeathEffect.Action) == null
                 ? null : "Missing or changed original Decay-death transfer definition.";
         }

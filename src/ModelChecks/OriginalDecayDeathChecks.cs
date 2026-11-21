@@ -4,26 +4,32 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalDecayDeathChecks
 {
-    private static CardActionEffect Action() => new("TransferAllStatusesFromUnit", "Self", 11, true, true,
+    private static CardActionEffect Action(int targetMode, string? target = null) => new("TransferAllStatusesFromUnit", "Self", targetMode, true, true,
         [new("decay", 0, stackable: true, hidden: false, displayCategory: "Negative")],
-        statusTransfer: new("EvenlyDistributedAcrossFriendlyTeam", "DebuffsOnly", "SourceRoomOnly", false, true, 0));
-    private static CombatRelicState Owner() => new(RelicDecayDeathModel.DataId, RelicDecayDeathModel.AssetKey,
+        statusTransfer: new(target ?? (targetMode == 12 ? "EvenlyDistributedAcrossHeroTeam" : "EvenlyDistributedAcrossFriendlyTeam"),
+            "DebuffsOnly", "SourceRoomOnly", false, true, 0));
+    private static CombatRelicState Owner(int targetMode) => new(RelicDecayDeathModel.DataId, RelicDecayDeathModel.AssetKey,
         [RelicDecayDeathModel.Effect], isCovenant: false, disallowedInPlacementPhase: false,
         resourceEffects: [new(0, RelicDecayDeathModel.Effect, 8, 0, 0, true,
-            deathEffect: new("255", "SubtypesData_None", Action()))]);
+            deathEffect: new("255", "SubtypesData_None", Action(targetMode)))]);
     internal static void Run()
     {
         UnityRng rng = UnityRng.Seed(31);
-        CombatContext context = new(new([], [], [], rng, 0, []), rng, 0, 1, 10, relics: [Owner()]);
-        Require(RelicModel.Validate(context.Relics) == null, "Original Decay-death definition rejected.");
+        Require(TriggeredStatusTransferModel.Validate(Action(11, "EvenlyDistributedAcrossHeroTeam")) != null &&
+            TriggeredStatusTransferModel.Validate(Action(12, "EvenlyDistributedAcrossFriendlyTeam")) != null,
+            "Mismatched Decay transfer parameter and target mode accepted.");
+        foreach (int targetMode in new[] { 11, 12 })
         foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
         {
+            CombatContext context = new(new([], [], [], rng, 0, []), rng, 0, 1, 10, relics: [Owner(targetMode)]);
+            Require(RelicModel.Validate(context.Relics) == null, "Original Decay-death definition rejected.");
             CombatUnit Unit(int id, CombatTeam unitTeam, int hp, params CombatStatus[] statuses) =>
                 new(id, "carrier", unitTeam, 0, hp, 100, false, false, false, statuses, statusRegistry: statuses);
             CombatUnit source = Unit(1, team, 0, new("decay", 5), new("regen", 2), new("spell weakness", 4));
-            CombatUnit a = Unit(2, team, 100), b = Unit(3, team, 100, new CombatStatus("decay", 2));
-            CombatUnit dead = Unit(4, team, 0), untouchable = Unit(5, team, 100, new CombatStatus("untouchable", 1));
-            CombatUnit opposite = Unit(6, team == CombatTeam.Player ? CombatTeam.Enemy : CombatTeam.Player, 100);
+            CombatTeam targetTeam = targetMode == 12 ? CombatTeam.Enemy : team;
+            CombatUnit a = Unit(2, targetTeam, 100), b = Unit(3, targetTeam, 100, new CombatStatus("decay", 2));
+            CombatUnit dead = Unit(4, targetTeam, 0), untouchable = Unit(5, targetTeam, 100, new CombatStatus("untouchable", 1));
+            CombatUnit opposite = Unit(6, targetTeam == CombatTeam.Player ? CombatTeam.Enemy : CombatTeam.Player, 100);
             RoomCombatState room = new(0, false, [source, a, b, dead, untouchable, opposite], [], context);
             string parent = JsonSerializer.Serialize(room, ModelJson.Options);
             void Replay()
@@ -55,12 +61,15 @@ internal static class OriginalDecayDeathChecks
         }
         Require(RelicModel.Validate([new(RelicDecayDeathModel.DataId, RelicDecayDeathModel.AssetKey,
             [RelicDecayDeathModel.Effect])]) != null, "Missing exact native payload accepted.");
-        Console.WriteLine("DECAY-DEATH-PURE PASS: both teams, ceil distribution, source retention, reverse callbacks, status/target/death gates, no recipients, retained dead actor, absent owner and 16 immutable branches.");
+        Console.WriteLine("DECAY-DEATH-PURE PASS: source-team and hero-team transfers, both source teams, ceil distribution, source retention, reverse callbacks, status/target/death gates, no recipients, retained dead actor, absent owner and 16 immutable branches.");
     }
     internal static void Native(FixtureValue root)
     {
-        Require(root.GetProperty("Schema").GetInt32() == 242 && root.GetProperty("OriginalDecayDeathPrepared").GetBoolean() &&
-            root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Incomplete Decay-death witness.");
+        bool heroControls = root.TryGetProperty("OriginalDecayDeathHeroTargetControlsCompleted", out var completed) && completed.GetBoolean();
+        Require(root.GetProperty("Schema").GetInt32() == 242 && root.GetProperty("OriginalDecayDeathPrepared").GetBoolean(),
+            "Incomplete Decay-death witness.");
+        if (!heroControls)
+            Require(root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Incomplete Decay-death battle.");
         foreach (string field in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending", "OriginalDecayDeathCaptureFailures",
             "OriginalDecayDeathMismatches", "OriginalDecayDeathUnsupported", "OriginalDecayDeathPending" })
             Require(root.GetProperty(field).GetInt32() == 0, "Nonzero " + field);
@@ -80,11 +89,15 @@ internal static class OriginalDecayDeathChecks
         Require(eligible >= 2 && ineligible > 0 && nullActor && wrongTrigger && wrongDamage && living, "Missing native Test controls.");
         var applications = root.GetProperty("RelicDecayDeathApplications").EnumerateArray().ToArray();
         var teams = new HashSet<CombatTeam>(); bool rounded = false, untouchable = false, unrelatedStatus = false, noRecipients = false;
+        bool unaffectedMonster = false, unaffectedOtherFloorHero = false;
         foreach (FixtureValue row in applications)
         {
             TrainCombatState before = row.GetProperty("Before").Deserialize<TrainCombatState>()!, actual = row.GetProperty("Actual").Deserialize<TrainCombatState>()!;
             CombatUnit actor = row.GetProperty("Actor").Deserialize<CombatUnit>()!, afterActor = row.GetProperty("ActorAfter").Deserialize<CombatUnit>()!;
             int floor = row.GetProperty("RoomIndex").GetInt32(); RoomCombatState room = before.Rooms.Single(item => item.RoomIndex == floor);
+            RoomCombatState actualRoom = actual.Rooms.Single(item => item.RoomIndex == floor);
+            RelicResourceEffect definition = before.Context!.Relics!.Single(owner => owner.DataId == RelicDecayDeathModel.DataId).ResourceEffects!.Single();
+            Require(definition.DeathEffect?.Action.Value == (heroControls ? 12 : 11), "Wrong Decay-death transfer mode for the witness.");
             string parent = JsonSerializer.Serialize(before, ModelJson.Options);
             void Replay()
             {
@@ -97,20 +110,35 @@ internal static class OriginalDecayDeathChecks
             Require(JsonSerializer.Serialize(before, ModelJson.Options) == parent, "Native replay mutated parent.");
             Require(row.GetProperty("Completed").GetBoolean() && row.GetProperty("Notifications").Deserialize<string[]>()!.SequenceEqual(["Triggered"]), "Missing completion or exactly one native notification.");
             Require(actor.Health <= 0 && (actor.Status("decay")?.Stacks ?? 0) == (afterActor.Status("decay")?.Stacks ?? 0), "Transfer removed source stacks.");
-            CombatUnit[] targets = room.Units.Where(unit => unit.Team == actor.Team && unit.Health > 0 && unit.Status("untouchable")?.Stacks is not > 0 &&
+            CombatTeam targetTeam = heroControls ? CombatTeam.Enemy : actor.Team;
+            CombatUnit[] targets = room.Units.Where(unit => unit.Team == targetTeam && unit.Health > 0 && unit.Status("untouchable")?.Stacks is not > 0 &&
                 unit.DeathState?.IsDestroyed != true && unit.DeathState?.IsDespawned != true).ToArray();
             int stacks = actor.Status("decay")?.Stacks ?? 0;
             if (stacks > 0 && targets.Length > 0) teams.Add(actor.Team);
             rounded |= stacks == 5 && targets.Length == 2 && targets.All(unit =>
-                actual.Rooms.Single(item => item.RoomIndex == floor).Units.Single(other => other.Id == unit.Id).Status("decay")?.Stacks == (unit.Status("decay")?.Stacks ?? 0) + 3);
-            untouchable |= room.Units.Any(unit => unit.Team == actor.Team && unit.Health > 0 && unit.Status("untouchable")?.Stacks > 0);
+                actualRoom.Units.Single(other => other.Id == unit.Id).Status("decay")?.Stacks == (unit.Status("decay")?.Stacks ?? 0) + 3);
+            untouchable |= room.Units.Any(unit => unit.Team == targetTeam && unit.Health > 0 && unit.Status("untouchable")?.Stacks > 0 &&
+                actualRoom.Units.Single(other => other.Id == unit.Id).Status("decay")?.Stacks == unit.Status("decay")?.Stacks);
             unrelatedStatus |= actor.Status("spell weakness")?.Stacks == 4 && actor.Status("regen")?.Stacks > 0;
             noRecipients |= stacks > 0 && targets.Length == 0;
+            if (heroControls && actor.Team == CombatTeam.Player && targets.Length > 0)
+            {
+                unaffectedMonster |= room.Units.Any(unit => unit.Id != actor.Id && unit.Team == CombatTeam.Player && unit.Health > 0 &&
+                    actualRoom.Units.Single(other => other.Id == unit.Id).Status("decay")?.Stacks == unit.Status("decay")?.Stacks);
+                unaffectedOtherFloorHero |= before.Rooms.Where(item => item.RoomIndex != floor).Any(otherRoom => otherRoom.Units.Any(unit =>
+                    unit.Team == CombatTeam.Enemy && unit.Health > 0 && actual.Rooms.Single(item => item.RoomIndex == otherRoom.RoomIndex)
+                        .Units.Single(other => other.Id == unit.Id).Status("decay")?.Stacks == unit.Status("decay")?.Stacks));
+            }
         }
         Require(teams.Count == 2 && rounded && untouchable && unrelatedStatus && noRecipients,
             $"Missing native evidence: teams={teams.Count}, ceil={rounded}, untouchable={untouchable}, unrelated-status={unrelatedStatus}, no-recipients={noRecipients}.");
-        var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
-        Require(actions.Length == 6 && actions.All(row => !row.GetProperty("ScenarioAction").GetBoolean()), "Expected six ordinary independently selected plays.");
+        if (heroControls)
+            Require(unaffectedMonster && unaffectedOtherFloorHero, "Missing unchanged original Monster and off-floor Hero controls.");
+        else
+        {
+            var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
+            Require(actions.Length == 6 && actions.All(row => !row.GetProperty("ScenarioAction").GetBoolean()), "Expected six ordinary independently selected plays.");
+        }
         Console.WriteLine($"ORIGINAL-DECAY-DEATH-NATIVE PASS: {tests.Length} exact Test calls, {applications.Length} full transfers, both teams, ceil(5/2)=3, source retention, unrelated status/untouchable/other-room controls, no-recipient witness={noRecipients} and 16 immutable branches.");
     }
     private static void Equal<T>(T a, T b, string label)

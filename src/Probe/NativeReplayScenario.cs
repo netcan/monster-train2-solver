@@ -2614,7 +2614,11 @@ namespace MonsterTrain2Poju.Probe
             {
                 numericModifiersPrepared = true;
                 OriginalDecayDeathScenario.PrepareDeployment(managers);
+                if (OriginalDecayDeathScenario.UsesHeroTargets)
+                    save.StartCoroutine(OriginalDecayDeathScenario.RunHeroTargetControls(managers));
             }
+            if (fullBattle && OriginalDecayDeathScenario.Enabled && OriginalDecayDeathScenario.UsesHeroTargets &&
+                !OriginalDecayDeathScenario.HeroTargetControlsCompleted) return;
             if (fullBattle && OriginalBoneDogScenario.Enabled && !OriginalBoneDogScenario.Prepared)
             {
                 numericModifiersPrepared = true;
@@ -3792,7 +3796,7 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = OriginalSpawnRetreatScenario.Choose(decision);
                 if (OriginalGrosMichelScenario.Enabled)
                     pendingPlay = RelicEndCombatModel.ChooseGrosMichelPlay(decision);
-                if (OriginalDecayDeathScenario.Enabled)
+                if (OriginalDecayDeathScenario.Enabled && !OriginalDecayDeathScenario.UsesHeroTargets)
                     pendingPlay = RelicDecayDeathModel.ChoosePlay(decision);
                 if (OriginalBoneDogScenario.Enabled)
                     pendingPlay = OriginalBoneDogScenario.Choose(decision);

@@ -76,6 +76,13 @@ EndTurn、60 个房间阶段、14 个列车阶段、录制候选及串并行计�
 连续性差异。旧版专用检查通过。归档位于
 `tests/compatibility/game-2.3.1/mechanics/moon-phase-hand-upgrade/`。
 
+2.3.1 的衰亡死亡遗物会把层数分给同层可选敌军。原版验证涵盖双方死亡、跨层、不可选、
+无接收者及原单位保留层数。5 层分给两名敌军时每名获得 3 层。完成 108 次原生触发
+判定和三次结算对照，布置用单位在首个录制决策前清除。胜局的五次出牌、七次 EndTurn、
+61 个房间阶段、14 个列车阶段以及 16 条分支、合法候选和串并行计划都通过。
+2.2.1 的同阵营转移回归也通过。归档位于
+`tests/compatibility/game-2.3.1/mechanics/decay-death-hero-targets/`。
+
 ## 工作单位
 
 2026-11-20 接入[回合前原生顺序分派](before-draw-order.md)：十二种已有 BeforeDraw

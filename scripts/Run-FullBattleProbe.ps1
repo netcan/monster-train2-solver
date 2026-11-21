@@ -5139,12 +5139,17 @@ if ($OriginalOpeningMorselsRelic -and ($trace.Schema -ne 243 -or -not $trace.Ori
     @($trace.NativeMorselFeeding | Where-Object { $_.ExpectedEaten -gt 0 }).Count -eq 0)) {
     throw 'Original opening Morsels native evidence is incomplete or divergent.'
 }
-if ($OriginalDecayDeathRelic -and ($trace.Schema -ne 242 -or -not $trace.OriginalDecayDeathPrepared -or
-    $trace.ModifierScenario -ne 'original-decay-death' -or -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
-    $trace.OriginalDecayDeathCaptureFailures -ne 0 -or $trace.OriginalDecayDeathMismatches -ne 0 -or
-    $trace.OriginalDecayDeathUnsupported -ne 0 -or $trace.OriginalDecayDeathPending -ne 0 -or
-    @($trace.RelicDecayDeathApplications).Count -lt 2 -or @($trace.Actions).Count -ne 6)) {
-    throw 'Original Decay-death native evidence is incomplete or divergent.'
+if ($OriginalDecayDeathRelic) {
+    $decayCurrent = $trace.GameModuleMvid -eq 'bf93f060-beda-46b1-b808-95ebf1e9a99d'
+    $decayEvidencePresent = if ($decayCurrent) { $trace.OriginalDecayDeathHeroTargetControlsCompleted -and
+        @($trace.RelicDecayDeathApplications).Count -ge 3 -and @($trace.Actions).Count -gt 0 }
+        else { @($trace.RelicDecayDeathApplications).Count -ge 2 -and @($trace.Actions).Count -eq 6 }
+    if ($trace.Schema -ne 242 -or -not $trace.OriginalDecayDeathPrepared -or
+        $trace.ModifierScenario -ne 'original-decay-death' -or -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
+        $trace.OriginalDecayDeathCaptureFailures -ne 0 -or $trace.OriginalDecayDeathMismatches -ne 0 -or
+        $trace.OriginalDecayDeathUnsupported -ne 0 -or $trace.OriginalDecayDeathPending -ne 0 -or -not $decayEvidencePresent) {
+        throw 'Original Decay-death native evidence is incomplete or divergent.'
+    }
 }
 if ($OriginalBoneDogRelic -and ($trace.Schema -ne 241 -or -not $trace.OriginalBoneDogPrepared -or
     $trace.ModifierScenario -ne 'original-bone-dog' -or -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or

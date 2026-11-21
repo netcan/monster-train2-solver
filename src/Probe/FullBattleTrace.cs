@@ -1705,6 +1705,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalOpeningMorselsUnsupported = OriginalOpeningMorselsScenario.Applications.Count(row => row.UnsupportedReason != null) + OriginalOpeningMorselsScenario.Foods.Count(row => row.UnsupportedReason != null),
                 OriginalOpeningMorselsPending = OriginalOpeningMorselsScenario.Tests.Count(row => row.Actual == null) + OriginalOpeningMorselsScenario.Applications.Count(row => !row.Completed || row.Actual == null) + OriginalOpeningMorselsScenario.Foods.Count(row => !row.Completed || row.Actual == null),
                 OriginalDecayDeathPrepared = OriginalDecayDeathScenario.Prepared,
+                OriginalDecayDeathHeroTargetControlsCompleted = OriginalDecayDeathScenario.HeroTargetControlsCompleted,
                 RelicDecayDeathTests = OriginalDecayDeathScenario.Tests,
                 RelicDecayDeathApplications = OriginalDecayDeathScenario.Applications,
                 OriginalDecayDeathCaptureFailures = OriginalDecayDeathScenario.Tests.Count(row => row.Error != null) + OriginalDecayDeathScenario.Applications.Count(row => row.Error != null),
