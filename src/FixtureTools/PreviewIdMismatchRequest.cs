@@ -60,6 +60,7 @@ internal static class PreviewIdMismatchRequest
             "Original protected target no longer reproduces its rejection.");
         using var refreshed = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
             SourceArchive = Path.GetFileName(input), SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+            SourceGameModuleMvid = NativeBranchIdentity.RequestModule(request),
             Root = root, Prefix = prefix, FailedRoot = current, Action = boundaryAction, IsEndTurn = boundaryEnd, Reason = reason,
             NativeValidationRequired = true });
         using var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write);
@@ -106,6 +107,7 @@ internal static class PreviewIdMismatchRequest
             keys.Key(failed.GetProperty("Actual").Deserialize<BattleTurnState>()!), "Final input does not contain a model mismatch.");
         using var request = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
             SourceArchive = Path.GetFileName(input), SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+            SourceGameModuleMvid = NativeBranchIdentity.SourceModule(fixture),
             Root = root, Prefix = prefix, FailedRoot = current, Action = failed.GetProperty("Action").Deserialize<PlayCardAction>(),
             IsEndTurn = failed.GetProperty("IsEndTurn").GetBoolean(), Reason = "Native partial prefix successor mismatch observation.", NativeValidationRequired = true });
         using var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write);
@@ -155,6 +157,7 @@ internal static class PreviewIdMismatchRequest
             "Missing historical identity mismatch.");
         using var request = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
             SourceArchive = Path.GetFileName(input), SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+            SourceGameModuleMvid = NativeBranchIdentity.SourceModule(fixture),
             Root = root, Prefix = prefix, FailedRoot = failed, Action = (PlayCardAction?)null,
             IsEndTurn = true, Reason = reason, NativeValidationRequired = true });
         using var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write);
@@ -211,6 +214,7 @@ internal static class PreviewIdMismatchRequest
             BattleActionModel.PlayCard(current, boundaryAction).Reason == reason), "Original target no longer reproduces its exact boundary.");
         using var refreshed = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
             SourceArchive = Path.GetFileName(input), SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+            SourceGameModuleMvid = NativeBranchIdentity.RequestModule(request),
             Root = root, Prefix = prefix, FailedRoot = current, Action = boundaryAction, IsEndTurn = boundaryEnd, Reason = reason,
             NativeValidationRequired = true });
         using var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write);

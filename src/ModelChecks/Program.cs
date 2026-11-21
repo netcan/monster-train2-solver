@@ -175,6 +175,20 @@ if (args.Length is 2 or 3 && args[0] == "--solver-stage-case-only")
     SolverStageChecks.Native(args[1], expectedCase: args.Length == 3 ? args[2] : null);
     return;
 }
+if (args.Length == 3 && args[0] == "--native-branch-module-only")
+{
+    NativeBranchObservationChecks.CheckModuleIdentity(args[1], args[2]);
+    return;
+}
+if (args.Length == 3 && args[0] == "--native-branch-replay-only")
+{
+    using var archive = ModelJson.ReadFixture(args[1]);
+    var branch = archive.RootElement;
+    var rows = NativeBranchObservationChecks.Replay(branch, branch.GetProperty("Request").GetProperty("Reason").GetString()!,
+        expectedGameModule: Guid.ParseExact(args[2], "D"));
+    Console.WriteLine($"NATIVE-BRANCH-REPLAY PASS module={args[2]} inputs={rows.Length}");
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--room-health-mechanism-batch-only")
 {
     RoomHealthMechanismChecks.Native(args[1], args.Length == 3 ? args[2] : null);

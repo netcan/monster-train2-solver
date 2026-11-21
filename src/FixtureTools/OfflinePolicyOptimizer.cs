@@ -107,6 +107,7 @@ internal static partial class OfflineBattleSearch
             using var failure = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
                 SourceArchive = Path.GetFileName(input),
                 SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+                SourceGameModuleMvid = NativeBranchIdentity.SourceModule(document.RootElement),
                 Root = root, Prefix = failedPrefix, FailedRoot = failedRoot, Action = action, IsEndTurn = action == null,
                 Reason = reason, NativeValidationRequired = true });
             using var stream = new FileStream(unsupportedOutput, FileMode.CreateNew, FileAccess.Write);

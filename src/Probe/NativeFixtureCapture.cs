@@ -51,6 +51,7 @@ namespace MonsterTrain2Poju.Capture
             {
                 if (depth > 128) throw new InvalidOperationException("Native fixture nesting exceeds the archive limit.");
                 if (value == null) return nullNode;
+                if (value is FixtureValue fixture) return Builder.Import(fixture);
                 if (value is string text) return String(text);
                 if (value is bool flag) return flag ? trueNode : falseNode;
                 // Reflection providers already box these scalars. Avoid contract

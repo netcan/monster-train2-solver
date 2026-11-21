@@ -63,6 +63,7 @@ internal static class AthaneSummonChecks
         Require(outcome == RoomOutcome.Exchanged && current.Spawn.Turn == 6, "Fresh projection cannot replay the unchanged input prefix.");
         using var document = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
             SourceArchive = Path.GetFileName(deploymentPath), SourceSHA256 = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(deploymentPath))).ToLowerInvariant(),
+            SourceGameModuleMvid = NativeBranchIdentity.SourceModule(deployment.RootElement),
             Root = root, Prefix = prefix, FailedRoot = current, Action = (PlayCardAction?)null, IsEndTurn = true,
             Reason, NativeValidationRequired = true });
         using var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write);

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using MonsterTrain2Poju.Capture;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 
@@ -6,22 +7,75 @@ internal static class NativeBranchObservationChecks
 {
     internal static string Key(BattleTurnState state, bool terminal = false) => BattleTurnChecks.Comparable(state, terminal);
 
+    internal static void CheckModuleIdentity(string historicalPath, string currentPath)
+    {
+        using var historical = ModelJson.ReadFixture(historicalPath);
+        using var current = ModelJson.ReadFixture(currentPath);
+        Guid historicalModule = NativeBranchIdentity.ObservationModule(historical.RootElement);
+        Guid currentModule = NativeBranchIdentity.SourceModule(current.RootElement);
+        FixtureValue historicalRequest = historical.RootElement.GetProperty("Request");
+        Require(historicalModule == NativeBranchIdentity.HistoricalModule &&
+            !historicalRequest.TryGetProperty("SourceGameModuleMvid", out _) &&
+            currentModule == new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d"), "Expected original archive modules.");
+
+        FixtureValue first = current.RootElement.GetProperty("RollingDecisions")[0];
+        FixtureValue root = first.GetProperty("Root"), action = first.GetProperty("Action");
+        bool isEndTurn = first.GetProperty("IsEndTurn").GetBoolean();
+        const string reason = "Offline replay of the first recorded native advisor decision.";
+        using var currentRequest = NativeFixtureCapture.Capture(new { Schema = 1,
+            EvidenceKind = "ModelUnsupportedBranch", SourceGameModuleMvid = currentModule,
+            Root = root, Prefix = Array.Empty<object>(), FailedRoot = root,
+            Action = action, IsEndTurn = isEndTurn, Reason = reason });
+        NativeBranchIdentity.RequireModule(currentRequest.RootElement, currentModule);
+        Reject(() => NativeBranchIdentity.RequireModule(historicalRequest, currentModule), "the native module");
+        Reject(() => NativeBranchIdentity.RequireModule(currentRequest.RootElement, historicalModule), "the native module");
+
+        // Replay the actual successor and advisor projection from the existing
+        // current-module trace through the branch checker in memory.
+        using var currentObservation = NativeFixtureCapture.Capture(new { Schema = 1,
+            EvidenceKind = "NativeUnsupportedBranchObservation", NativeCompleted = true,
+            GameModuleMvid = currentModule, Request = currentRequest.RootElement,
+            Rows = new[] { new { Before = root, Action = action, IsEndTurn = isEndTurn, Boundary = true,
+                Expected = first.GetProperty("Expected"), Actual = first.GetProperty("Actual"), Outcome = first.GetProperty("Outcome"),
+                UnsupportedReason = (string?)null } }, PlayerAdvisor = current.RootElement.GetProperty("PlayerAdvisor") });
+        Require(currentObservation.RootElement.GetProperty("Request").ContentEquals(currentRequest.RootElement) &&
+            NativeBranchIdentity.ObservationModule(currentObservation.RootElement) == currentModule, "Current observation lost its request pin.");
+        Require(Replay(currentObservation.RootElement, reason, expectedGameModule: currentModule).Length == 1,
+            "Current native successor did not replay.");
+        Reject(() => Replay(currentObservation.RootElement, reason, expectedGameModule: historicalModule), "verifier version");
+        Reject(() => Pair(historical.RootElement, currentObservation.RootElement), "changed its game module");
+
+        using var unpinnedCurrent = NativeFixtureCapture.Capture(new { Schema = 1,
+            EvidenceKind = "NativeUnsupportedBranchObservation", NativeCompleted = true,
+            GameModuleMvid = currentModule, Request = historicalRequest });
+        Require(unpinnedCurrent.RootElement.GetProperty("Request").ContentEquals(historicalRequest), "Historical request changed during capture.");
+        Reject(() => NativeBranchIdentity.ObservationModule(unpinnedCurrent.RootElement), "the native module");
+        Console.WriteLine("NATIVE-BRANCH-MODULE PASS historical=2.2.1 current=2.3.1 replayInputs=1 matchedRequest=exact wrongModule=rejected mixedPair=rejected");
+    }
+
+    private static void Reject(Action attempt, string message)
+    {
+        try { attempt(); }
+        catch (Exception error) when ((error is InvalidDataException or InvalidOperationException) &&
+            error.Message.Contains(message, StringComparison.OrdinalIgnoreCase)) { return; }
+        throw new InvalidOperationException("Expected native branch module failure: " + message);
+    }
+
     internal static FixtureValue[] Replay(FixtureValue fixture, string reason,
         Action<BattleTurnState, BattleTurnState>? historicalBoundaryMismatch = null,
         RoomOutcome boundaryOutcome = RoomOutcome.Exchanged, string? historicalUnsupportedReason = null,
         RoomOutcome? historicalBoundaryOutcome = null,
         Func<BattleTurnState, BattleTurnState>? revalidateHistoricalCapture = null,
         Func<string, string>? normalizeComparison = null,
-        Func<BattleTurnState, BattleTurnState, bool>? matchesRequestCapture = null)
+        Func<BattleTurnState, BattleTurnState, bool>? matchesRequestCapture = null,
+        Guid? expectedGameModule = null)
     {
         string CaptureKey(BattleTurnState state, bool terminal = false) => normalizeComparison?.Invoke(Key(state, terminal)) ?? Key(state, terminal);
         Require(!historicalBoundaryOutcome.HasValue || historicalBoundaryMismatch != null,
             "A changed historical boundary outcome requires an explicit mismatch witness.");
-        Require(fixture.GetProperty("Schema").GetInt32() == 1 &&
-            fixture.GetProperty("EvidenceKind").GetString() == "NativeUnsupportedBranchObservation" &&
-            fixture.GetProperty("NativeCompleted").GetBoolean() &&
-            fixture.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4",
-            "Missing original native observation.");
+        Guid module = NativeBranchIdentity.ObservationModule(fixture);
+        Require(module == (expectedGameModule ?? NativeBranchIdentity.HistoricalModule),
+            "Native branch game module differs from the verifier version.");
         FixtureValue request = fixture.GetProperty("Request");
         Require(request.GetProperty("Reason").GetString() == reason, "Wrong native rejection boundary.");
         FixtureValue[] prefix = request.GetProperty("Prefix").EnumerateArray().ToArray();
@@ -89,6 +143,8 @@ internal static class NativeBranchObservationChecks
     {
         string CaptureKey(BattleTurnState state, bool terminal = false) => normalizeComparison?.Invoke(Key(state, terminal)) ?? Key(state, terminal);
         Require(!originalPredictionMatched || originalPredictionPresent, "A matching original prediction must be present.");
+        Require(NativeBranchIdentity.ObservationModule(source) == NativeBranchIdentity.ObservationModule(replay),
+            "Independent process changed its game module.");
         Require(source.GetProperty("Request").ContentEquals(replay.GetProperty("Request")), "Independent process changed its request.");
         FixtureValue[] first = source.GetProperty("Rows").EnumerateArray().ToArray();
         FixtureValue[] second = replay.GetProperty("Rows").EnumerateArray().ToArray();

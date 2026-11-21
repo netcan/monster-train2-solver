@@ -45,6 +45,7 @@ internal static class RollingActionMismatchRequest
         Require(predicted.Supported && keys.Key(predicted.State!) != keys.Key(actual), "Mismatch no longer reproduced.");
         using var request = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
             SourceArchive = Path.GetFileName(input), SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+            SourceGameModuleMvid = NativeBranchIdentity.SourceModule(source.RootElement),
             Root = root, Prefix = prefix, FailedRoot = current, Action = (PlayCardAction?)null, IsEndTurn = true,
             Reason = "Native rolling turn successor mismatch observation.", NativeValidationRequired = true });
         using var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write);
@@ -95,6 +96,7 @@ internal static class RollingActionMismatchRequest
         const string reason = "Native rolling action successor mismatch observation.";
         using var request = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
             SourceArchive = Path.GetFileName(input), SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+            SourceGameModuleMvid = NativeBranchIdentity.SourceModule(source.RootElement),
             Root = root, Prefix = prefix, FailedRoot = current, Action = boundary, IsEndTurn = false, Reason = reason,
             NativeValidationRequired = true });
         using var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write);

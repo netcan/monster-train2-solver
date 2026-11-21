@@ -69,6 +69,7 @@ internal static partial class OfflineBattleSearch
                     using var boundary = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
                         SourceArchive = Path.GetFileName(nativeInput),
                         SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(nativeInput))).ToLowerInvariant(),
+                        SourceGameModuleMvid = NativeBranchIdentity.SourceModule(native.RootElement),
                         RootPlanArchive = Path.GetFileName(prediction),
                         RootPlanSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(prediction))).ToLowerInvariant(),
                         Root = root, Prefix = steps, FailedRoot = current, Action = (PlayCardAction?)null, IsEndTurn = true,

@@ -1925,7 +1925,7 @@ $gameRoot = Join-Path $workspace $(if ($NativeWorker -gt 1) { ".sandbox-game-wor
 if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll') -PathType Leaf)) {
     throw "Native worker $NativeWorker is not initialized; run scripts/Initialize-NativeWorker.ps1 -Worker $NativeWorker first."
 }
-if ($OriginalThikDeckChange -or $OriginalThikBattle) {
+if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -1935,7 +1935,7 @@ if ($OriginalThikDeckChange -or $OriginalThikBattle) {
             $nativeModule = $nativeMetadata.GetGuid($nativeMetadata.GetModuleDefinition().Mvid)
         } finally { $nativePe.Dispose() }
     } finally { $nativeDllStream.Dispose() }
-    if ($nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+    if (($OriginalThikDeckChange -or $OriginalThikBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original Thik capture requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
 }
@@ -1990,6 +1990,14 @@ if (-not $SkipBuild) {
 }
 if ($DotNetPlanner -and -not (Test-Path -LiteralPath (Join-Path $workspace 'src/FixtureTools/bin/Release/net8.0/FixtureTools.dll'))) {
     throw 'External planner is not built; build FixtureTools or omit -SkipBuild.'
+}
+if ($UnsupportedBranchInput) {
+    Add-Type -Path (Join-Path $nativeBuildWorkspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $branchRequestDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($UnsupportedBranchInput)
+    try {
+        $branchRequest = $branchRequestDocument.RootElement
+        [MonsterTrain2Poju.Fixtures.NativeBranchIdentity]::RequireModule($branchRequest, $nativeModule)
+    } finally { $branchRequestDocument.Dispose() }
 }
 if ($PlayerAdvisor) {
     # The player payload owns the loaded shared assemblies. Reject stale outputs
@@ -3262,8 +3270,16 @@ if ($UnsupportedBranchInput) {
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath) -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'UNSUPPORTED-BRANCH-NATIVE PASS' -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore) { throw "Native candidate observation failed; inspect $unityLog" }
+    $branchDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($componentPath)
+    try {
+        $branchResult = $branchDocument.RootElement
+        if ([MonsterTrain2Poju.Fixtures.NativeBranchIdentity]::ObservationModule($branchResult) -ne $nativeModule -or
+            -not $branchResult.GetProperty('Request').ContentEquals($branchRequest)) {
+            throw "Native candidate observation changed its input request or module; inspect $unityLog"
+        }
+    } finally { $branchDocument.Dispose() }
     [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; OriginalFilesUnchanged = $true;
-        ModelAcceptance = 'Pending independent focused checker'; Trace = $componentPath } | ConvertTo-Json
+        GameModuleMvid = $nativeModule; ModelAcceptance = 'Pending independent focused checker'; Trace = $componentPath } | ConvertTo-Json
     return
 }
 $tracePath = Join-Path $profile $(if ($BinaryCapture) { 'full-battle.mt2f' } else { 'full-battle.json' })

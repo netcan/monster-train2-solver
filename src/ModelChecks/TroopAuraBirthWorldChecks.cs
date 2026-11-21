@@ -58,7 +58,8 @@ internal static class TroopAuraBirthWorldChecks
                 {
                     Require(ended.UnsupportedReason == Reason && prefix.Count == 5 && current.Spawn.Turn == 0, "Wrong troop birth-world boundary: " + ended.UnsupportedReason);
                     using var document = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
-                        SourceArchive = Path.GetFileName(sourcePath), Root = root, Prefix = prefix, FailedRoot = current,
+                        SourceArchive = Path.GetFileName(sourcePath), SourceGameModuleMvid = NativeBranchIdentity.SourceModule(source.RootElement),
+                        Root = root, Prefix = prefix, FailedRoot = current,
                         Action = (PlayCardAction?)null, IsEndTurn = true, Reason, NativeValidationRequired = true });
                     using var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write);
                     document.Write(stream);

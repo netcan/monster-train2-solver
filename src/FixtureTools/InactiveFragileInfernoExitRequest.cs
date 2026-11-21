@@ -52,6 +52,7 @@ internal static class InactiveFragileInfernoExitRequest
         using var request = MonsterTrain2Poju.Capture.NativeFixtureCapture.Capture(new {
             Schema = 1, EvidenceKind = "ModelUnsupportedBranch", SourceArchive = Path.GetFileName(input),
             SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+            SourceGameModuleMvid = NativeBranchIdentity.SourceModule(source.RootElement),
             Root = root, Prefix = prefix, FailedRoot = failedRoot, Action = (PlayCardAction?)null,
             IsEndTurn = true, Reason = newMoonEntry ? "Native inactive Fragile Inferno entry new-moon mask differs on the eighth turn." :
                 entry ? "Native inactive Fragile Inferno entry moon mask differs on the seventh turn." :

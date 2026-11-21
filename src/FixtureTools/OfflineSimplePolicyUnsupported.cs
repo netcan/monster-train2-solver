@@ -42,6 +42,7 @@ internal static partial class OfflineBattleSearch
                     "Failure boundary did not reproduce independently.");
                 using var document = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
                     SourceArchive = Path.GetFileName(input), SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
+                    SourceGameModuleMvid = NativeBranchIdentity.SourceModule(source.RootElement),
                     Root = root, Prefix = prefix, FailedRoot = current, Action = action, IsEndTurn = end, Reason = reason,
                     NativeValidationRequired = true });
                 using var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write);

@@ -81,6 +81,7 @@ internal static class PyregelJuiceChecks
                 Require(immutable == NativeBranchObservationChecks.Key(root), "Cast request mutated its deployment root.");
                 using var document = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelUnsupportedBranch",
                     SourceArchive = Path.GetFileName(sourcePath), SourceSHA256 = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(sourcePath))).ToLowerInvariant(),
+                    SourceGameModuleMvid = NativeBranchIdentity.SourceModule(source.RootElement),
                     Root = root, Prefix = prefix, FailedRoot = current, Action = cast.Action, IsEndTurn = false,
                     Reason = reason ?? CastReason, NativeValidationRequired = true });
                 using var stream = new FileStream(output, FileMode.CreateNew, FileAccess.Write);

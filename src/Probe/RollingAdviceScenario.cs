@@ -66,6 +66,7 @@ namespace MonsterTrain2Poju.Probe
             using (var document = NativeFixtureCapture.Capture(new
             {
                 Schema = 1, EvidenceKind = "NativeDeploymentObservation", Root = root,
+                GameModuleMvid = typeof(CardState).Module.ModuleVersionId,
                 PlayerAdvisor = PlayerAdvisorProbe.Evidence
             }))
             using (var stream = new FileStream(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,

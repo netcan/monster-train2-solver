@@ -85,8 +85,7 @@ namespace MonsterTrain2Poju.Probe
             if (prefix != null) return;
             using var document = FixtureDocument.Read(Environment.GetEnvironmentVariable("MT2_PROBE_UNSUPPORTED_BRANCH")!);
             request = document.RootElement;
-            Require(request.GetProperty("Schema").GetInt32() == 1 &&
-                request.GetProperty("EvidenceKind").GetString() == "ModelUnsupportedBranch", "Expected a rejected model branch.");
+            NativeBranchIdentity.RequireModule(request, typeof(CardState).Module.ModuleVersionId);
             prefix = request.GetProperty("Prefix").EnumerateArray().ToArray();
             Require(prefix.Length <= 256, "Unsupported branch prefix exceeds the input bound.");
             expected = Read<BattleTurnState>(request.GetProperty("Root"));
@@ -111,7 +110,7 @@ namespace MonsterTrain2Poju.Probe
                     using var partial = NativeFixtureCapture.Capture(new { Schema = 1,
                         EvidenceKind = "NativeIncompleteBranchObservation", NativeCompleted = false,
                         GameModuleMvid = typeof(CardState).Module.ModuleVersionId.ToString(),
-                        Request = Read<JObject>(request), Rows = rows });
+                        Request = request, Rows = rows });
                     using var partialStream = new FileStream(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
                         "unsupported-branch-partial.mt2f"), FileMode.CreateNew, FileAccess.Write);
                     partial.Write(partialStream);
@@ -144,7 +143,7 @@ namespace MonsterTrain2Poju.Probe
             }
             using var document = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "NativeUnsupportedBranchObservation",
                 GameModuleMvid = typeof(CardState).Module.ModuleVersionId.ToString(),
-                Request = Read<JObject>(request), NativeCompleted = true, Rows = rows,
+                Request = request, NativeCompleted = true, Rows = rows,
                 NativeSelectionRejection = nativeSelectionRejection,
                 PlayerAdvisor = PlayerAdvisorProbe.Evidence,
                 EquipmentOwnerRecoveries = FullBattleTrace.Active!.EquipmentOwnerRecoveries.ToArray(),
