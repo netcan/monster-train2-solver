@@ -63,6 +63,12 @@ Torch 自动获得留存，打出时在弃牌堆标记待返回，下回合回�
 原版遗物与突变器参数在采样前后保持一致。归档位于
 `tests/compatibility/game-2.3.1/mechanics/holdover-grant/`。
 
+2.3.1 的 `CopyConsumedCard` 在手牌已满时停止复制。满手打出原版 Space Prism 后只补入
+一张，抽牌堆保持原顺序，随后打出复制牌仍受每场一次的限制。零空位的模型检查也验证
+不分配新卡编号、不消耗触发次数。旧版两张复制样本通过。新版胜局中 23 次出牌、7 次
+EndTurn、60 个房间阶段、14 个列车阶段、录制候选及串并行计划通过。归档位于
+`tests/compatibility/game-2.3.1/mechanics/copy-consumed-card/`。
+
 ## 工作单位
 
 2026-11-20 接入[回合前原生顺序分派](before-draw-order.md)：十二种已有 BeforeDraw

@@ -8,6 +8,7 @@ internal static class OriginalCopyConsumedCardChecks
     private const string SpellId = "copy-consumed-witness";
     private const string ControlSpellId = "copy-consumed-control";
     private const string WitnessSpellId = "03b20d75-b919-4f87-96e1-4d35cd556520";
+    private const string SpacePrismId = "45ace521-7551-4473-a4d7-2cf7ecc9fa44";
     private const string Effect = RelicModel.CopyCardOnCardPlay;
     private const string ConsumeTrait = "CardTraitExhaustState";
 
@@ -36,10 +37,10 @@ internal static class OriginalCopyConsumedCardChecks
             new CardPlayRule(SpellId, SpellId, 0, "Spell", "Discard", null, [], cardType: "Spell", isAnyAbility: false),
             new CardPlayRule(ControlSpellId, ControlSpellId, 0, "Spell", "Discard", null, [], cardType: "Spell", isAnyAbility: false)
         ]);
-        CombatContext Context(CardInstanceState[] instances) => new(
+        CombatContext Context(CardInstanceState[] instances, int maxHandSize = 5, CombatRelicState? owner = null) => new(
             new CardCycleState(instances.Select(card => new CardToken(card.InstanceId, card.DataId)).ToArray(), [], [],
-                UnityRng.Seed(912), 0, []), UnityRng.Seed(717), 0, 3, 5,
-            cardInstances: instances, cardRegistry: instances, relics: [relic]);
+                UnityRng.Seed(912), 0, []), UnityRng.Seed(717), 0, 3, maxHandSize,
+            cardInstances: instances, cardRegistry: instances, relics: [owner ?? relic]);
 
         CombatContext before = Context([source, control]);
         RelicCardPlayMagicPowerResult positive = RelicCardPlayMagicPowerModel.Apply(before, source.InstanceId, definitions, currentTurn: 1);
@@ -67,7 +68,26 @@ internal static class OriginalCopyConsumedCardChecks
             second.Context.Relics![0].CopyCardOnCardPlayModifiers![0].Conditions[0].Triggered &&
             second.Context.Relics[0].CopyCardOnCardPlayModifiers![0].Conditions[0].DurationTriggerCount == 1,
             "CopyConsumedCard did not retain its once-per-battle gate after a turn boundary.");
-        Console.WriteLine("ORIGINAL-COPY-CONSUMED-CARD-CHECKS PASS: Any card type, Consume gate, two copies and once-per-battle boundary.");
+        CombatRelicState noOverflow = relic.WithCopyCardOnCardPlayModifiers([
+            new RelicCopyCardOnCardPlayModifier(0, 2, "Invalid", false, false, [ConsumeTrait], null, [condition],
+                disallowOverflowToDrawPile: true)]);
+        Require(RelicModel.Validate([noOverflow]) == null, "The 2.3.1 CopyConsumedCard overflow setting was rejected.");
+        CombatContext full = Context([source, control], maxHandSize: 2, owner: noOverflow);
+        RelicCardPlayMagicPowerResult skipped = RelicCardPlayMagicPowerModel.Apply(full, source.InstanceId, definitions, currentTurn: 1);
+        Require(skipped.Supported && skipped.Dispatches.Count == 0 && skipped.Context.NextCardId == full.NextCardId &&
+            skipped.Context.Cards.Draw.Count == 0 &&
+            !skipped.Context.Relics![0].CopyCardOnCardPlayModifiers![0].Conditions[0].Triggered,
+            "A full hand must leave the serial allocation and once-per-battle condition untouched.");
+
+        CombatContext oneFree = Context([source, control], maxHandSize: 3, owner: noOverflow);
+        RelicCardPlayMagicPowerResult partial = RelicCardPlayMagicPowerModel.Apply(oneFree, source.InstanceId, definitions, currentTurn: 1);
+        var partialRule = partial.Context.Relics![0].CopyCardOnCardPlayModifiers![0];
+        Require(partial.Supported && partial.Dispatches.Single().ChangedCards.Count == 1 &&
+            partial.Context.Cards.Hand.Count == 3 && partial.Context.Cards.Draw.Count == 0 &&
+            partial.Context.NextCardId == oneFree.NextCardId + 1 && partialRule.DisallowOverflowToDrawPile &&
+            partialRule.Conditions[0].DurationTriggerCount == 1,
+            "A single free hand slot must take exactly one copy and commit the once-per-battle condition.");
+        Console.WriteLine("ORIGINAL-COPY-CONSUMED-CARD-CHECKS PASS: Consume gate, one and two copies, zero-copy full hand, and once-per-battle boundary.");
     }
 
     internal static void Native(FixtureValue root)
@@ -93,9 +113,14 @@ internal static class OriginalCopyConsumedCardChecks
         CardInstanceState played = before.FindCard(playedId)!;
         CombatRelicState owner = before.Relics!.Single(relic => relic.DataId == RelicCopyCardOnCardPlayModel.CopyConsumedId);
         RelicCopyCardOnCardPlayModifier rule = owner.CopyCardOnCardPlayModifiers!.Single();
-        Require(played.DataId == WitnessSpellId && played.MaskDescriptor?.Definition.CardType == "Spell" &&
+        bool currentBuild = Text(root, "GameVersion") == Game231FixtureCatalog.Version;
+        Require(currentBuild ? Text(root, "GameModuleMvid") == Game231FixtureCatalog.Module && rule.DisallowOverflowToDrawPile :
+            Text(root, "GameModuleMvid") == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" && !rule.DisallowOverflowToDrawPile,
+            "CopyConsumedCard overflow flag or native version differs.");
+        string witnessSpell = currentBuild ? SpacePrismId : WitnessSpellId;
+        Require(played.DataId == witnessSpell && played.MaskDescriptor?.Definition.CardType == "Spell" &&
             played.MaskDescriptor.BaseTraits.Any(trait => trait.RuntimeType == ConsumeTrait) && played.CanBeCopied == true &&
-            firstBefore.PlayRules!.Cards.Single(card => card.DataId == WitnessSpellId).IsAnyAbility == false,
+            firstBefore.PlayRules!.Cards.Single(card => card.DataId == witnessSpell).IsAnyAbility == false,
             "The native Consume Spell carrier or direct-play definition differs.");
         Require(owner.AssetKey == RelicCopyCardOnCardPlayModel.CopyConsumedKey && owner.EffectTypes.SequenceEqual([Effect]) &&
             rule.Count == 2 && rule.CardType == "Invalid" && !rule.PermanentCopy && !rule.ExcludeChampions &&
@@ -108,13 +133,17 @@ internal static class OriginalCopyConsumedCardChecks
 
         RelicConditionState afterFirst = actual.Relics!.Single(relic => relic.DataId == owner.DataId)
             .CopyCardOnCardPlayModifiers!.Single().Conditions.Single();
-        CardInstanceState[] copies = actual.CardInstances!.Where(card => card.DataId == WitnessSpellId && card.InstanceId != playedId).ToArray();
-        Require(afterFirst.Triggered && afterFirst.DurationTriggerCount == 1 && copies.Length == 2 &&
+        int expectedCopies = currentBuild ? 1 : 2;
+        CardInstanceState[] copies = actual.CardInstances!.Where(card => card.DataId == witnessSpell && card.InstanceId != playedId).ToArray();
+        Require(!currentBuild || before.Cards.Hand.Count == before.MaxHandSize && actual.Cards.Hand.Count == actual.MaxHandSize &&
+            actual.Cards.Draw.Select(card => card.InstanceId).SequenceEqual(before.Cards.Draw.Select(card => card.InstanceId)),
+            "The current native witness must hit the full-hand boundary with no draw-pile overflow.");
+        Require(afterFirst.Triggered && afterFirst.DurationTriggerCount == 1 && copies.Length == expectedCopies &&
             copies.All(copy => actual.Cards.Hand.Any(card => card.InstanceId == copy.InstanceId) &&
                 copy.Permanent.Upgrades.Count == 0 && copy.Temporary.Upgrades.Count == 0) &&
             copies.All(copy => actual.Statistics?.DeckCards?.Contains(copy.InstanceId) != true) &&
             firstEntry.GetProperty("Difference").ValueKind == FixtureKind.Null,
-            "The first Consume Spell did not produce exactly two non-permanent hand copies and record its trigger.");
+            "The first Consume Spell did not produce the expected non-permanent hand copies and record its trigger.");
 
         FixtureValue secondEntry = scenarioActions[1];
         BattleTurnState secondBefore = secondEntry.GetProperty("Before").Deserialize<BattleTurnState>()!;
@@ -127,10 +156,12 @@ internal static class OriginalCopyConsumedCardChecks
         Require(copies.Any(copy => copy.InstanceId == copiedId) && secondBefore.Spawn.Turn == firstBefore.Spawn.Turn &&
             beforeSecond.Triggered && beforeSecond.DurationTriggerCount == 1 && afterSecond.Triggered &&
             afterSecond.DurationTriggerCount == 1 && secondEntry.GetProperty("Difference").ValueKind == FixtureKind.Null &&
-            secondActual.Spawn.Train.Context!.CardInstances!.Count(card => card.DataId == WitnessSpellId) == 3,
+            secondActual.Spawn.Train.Context!.CardInstances!.Count(card => card.DataId == witnessSpell) == expectedCopies + 1,
             "Playing one generated Consume copy retriggered the once-per-battle relic or diverged from native state.");
-        Console.WriteLine("ORIGINAL-COPY-CONSUMED-CARD NATIVE PASS: Consume gate, two non-permanent copies and same-battle duplicate gate.");
+        Console.WriteLine($"ORIGINAL-COPY-CONSUMED-CARD NATIVE PASS: Consume gate, {expectedCopies} non-permanent hand copies and same-battle duplicate gate.");
     }
+
+    private static string? Text(FixtureValue row, string key) => row.GetProperty(key).GetString();
 
     private static void Require(bool condition, string message)
     { if (!condition) throw new InvalidOperationException(message); }

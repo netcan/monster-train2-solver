@@ -11,6 +11,8 @@ namespace MonsterTrain2Poju.Model
         public string CardType { get; }
         public bool PermanentCopy { get; }
         public bool ExcludeChampions { get; }
+        public bool DisallowOverflowToDrawPile { get; }
+        public bool ShouldSerializeDisallowOverflowToDrawPile() => DisallowOverflowToDrawPile;
         public IReadOnlyList<string> RequiredTraits { get; }
         public CardUpgradeModifier? Upgrade { get; }
         public int ConditionCount { get; }
@@ -18,13 +20,14 @@ namespace MonsterTrain2Poju.Model
 
         public RelicCopyCardOnCardPlayModifier(int effectIndex, int count, string cardType, bool permanentCopy,
             bool excludeChampions, IReadOnlyList<string>? requiredTraits, CardUpgradeModifier? upgrade,
-            IReadOnlyList<RelicConditionState>? conditions = null, int conditionCount = 0)
+            IReadOnlyList<RelicConditionState>? conditions = null, int conditionCount = 0, bool disallowOverflowToDrawPile = false)
         {
             EffectIndex = effectIndex;
             Count = count;
             CardType = cardType;
             PermanentCopy = permanentCopy;
             ExcludeChampions = excludeChampions;
+            DisallowOverflowToDrawPile = disallowOverflowToDrawPile;
             RequiredTraits = Array.AsReadOnly((requiredTraits ?? Array.Empty<string>()).ToArray());
             Upgrade = upgrade;
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
@@ -33,7 +36,7 @@ namespace MonsterTrain2Poju.Model
 
         internal RelicCopyCardOnCardPlayModifier WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
             new RelicCopyCardOnCardPlayModifier(EffectIndex, Count, CardType, PermanentCopy, ExcludeChampions,
-                RequiredTraits, Upgrade, conditions);
+                RequiredTraits, Upgrade, conditions, disallowOverflowToDrawPile: DisallowOverflowToDrawPile);
     }
 
     internal sealed class RelicCopyCardOnCardPlayResult
@@ -100,7 +103,7 @@ namespace MonsterTrain2Poju.Model
             int expectedComparator = copyConsumed ? 6 : mothersRemnant3 ? 3 : 2;
             bool expectedPermanent = copyFirstConsume || mothersRemnant3;
             if (effect.Count != expectedCount || effect.CardType != expectedCardType || effect.PermanentCopy != expectedPermanent ||
-                effect.ExcludeChampions != mothersRemnant3 ||
+                effect.ExcludeChampions != mothersRemnant3 || effect.DisallowOverflowToDrawPile && !copyConsumed ||
                 !effect.RequiredTraits.SequenceEqual(expectedTraits) || effect.ConditionCount != 1 || conditions.Length != 1 ||
                 conditions[0].Query.Duration != expectedDuration || !conditions[0].TrackTriggerCount ||
                 conditions[0].Comparator != expectedComparator || conditions[0].Value != 1 || conditions[0].AllowMultiple ||
@@ -169,6 +172,8 @@ namespace MonsterTrain2Poju.Model
             bool handHasSpace = source.Cards.Hand.Count < source.MaxHandSize;
             bool copyHasEphemeralUpgrade = effect.Upgrade?.Lifecycle?.AddedTraits.Any(trait =>
                 trait.RuntimeType == "CardTraitEphemeral") == true;
+            if (!handHasSpace && !copyHasEphemeralUpgrade && effect.DisallowOverflowToDrawPile)
+                return new RelicCopyCardOnCardPlayResult(source);
             string destination = handHasSpace ? "HandPile" : copyHasEphemeralUpgrade ? "DiscardPile" : "DeckPile";
             var generation = new CardGenerationRule(destination, effect.Count,
                 new[] { creation }, copyModifiers: true, upgrade: effect.Upgrade, deterministicPoolSelection: true,

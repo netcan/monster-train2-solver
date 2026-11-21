@@ -36,6 +36,8 @@ namespace MonsterTrain2Poju.Probe
         private const string SecretIngredientId = "f4cf7469-4d84-40e9-94f6-6b743973f2ad";
         private const string BlastInfusionId = "3cf25a9b-daa1-42cd-8174-eb0f59cd590f";
         private const string CopyWitnessSpellId = "03b20d75-b919-4f87-96e1-4d35cd556520";
+        private const string SpacePrismId = "45ace521-7551-4473-a4d7-2cf7ecc9fa44";
+        private const string TorchId = "f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b";
         private const string CopyWitnessUpgradeId = "80a5edf4-6dc8-41a7-ab4e-9d0e914e0848";
         private static ManualLogSource? logger;
         private static int sourceId;
@@ -45,6 +47,7 @@ namespace MonsterTrain2Poju.Probe
         private static bool copySourcePreludeMarked;
         private static bool copyControlPreludeMarked;
         private static int consumeCopyId;
+        private static bool copyConsumedStopsAtFullHand;
         private static int drafts;
         private static int firstOpeningChoice;
         private static int secondOpeningChoice;
@@ -106,6 +109,7 @@ namespace MonsterTrain2Poju.Probe
                 !validMothersRemnant3 || !validMonsterSpellTargeting || !validMixRelic ||
                 save.GetCollectedRelics().Any(item => item.GetRelicDataID() == id))
                 throw new InvalidOperationException("Original scenario relic definition or acquisition changed.");
+            copyConsumedStopsAtFullHand = CopyConsumedCardMode && effect.GetParamBool3();
             save.AddRelic(relic);
             Acquired = true;
             if (MonsterSpellTargetingMode)
@@ -174,6 +178,7 @@ namespace MonsterTrain2Poju.Probe
             AllGameData gameData = managers.GetSaveManager().GetAllGameData();
             CardData definition = SecretIngredientMode
                 ? gameData.FindCardData(SecretIngredientId) ?? throw new InvalidOperationException("Secret Ingredient is missing from original card data.")
+                : copyConsumedStopsAtFullHand ? gameData.FindCardData(SpacePrismId) ?? throw new InvalidOperationException("Missing original Space Prism.")
                 : MonsterSpellTargetingMode ? AddMonsterSpellWitness(gameData) : CopyFirstSpellMode || CopyConsumeMode || MothersRemnant3Mode ? AddCopyWitnessSpell(gameData, CopyConsumeMode, MothersRemnant3Mode) : gameData.FindCardData(MixologyId) ??
                     throw new InvalidOperationException("Mix fixture requires original Mixology.");
             CardEffectData[] definitionEffects = definition.GetEffects().ToArray();
@@ -189,6 +194,19 @@ namespace MonsterTrain2Poju.Probe
             if (added == null || !(MonsterSpellTargetingMode ? cards.GetDrawPile() : cards.GetHand()).Contains(added))
                 throw new InvalidOperationException("Mix fixture could not place its scenario card in the requested pile.");
             sourceId = FullBattleTrace.Active!.CardId(added);
+            if (copyConsumedStopsAtFullHand)
+            {
+                if (definition.name != "SpacePrism" || definition.GetCost() != 0 || definitionEffects.Length != 1 ||
+                    definitionEffects[0].GetEffectStateName() != "CardEffectAdjustRoomCapacity" ||
+                    !definition.GetTraits().Any(trait => trait.GetTraitStateName() == "CardTraitExhaustState"))
+                    throw new InvalidOperationException("Original Space Prism is no longer the expected Consume witness.");
+                CardData torch = gameData.FindCardData(TorchId) ?? throw new InvalidOperationException("Missing original Torch hand control.");
+                int missing = cards.GetMaxHandSize() - cards.GetNumCardsInHand();
+                for (int index = 0; index < missing; index++)
+                    if (cards.AddNewCard(torch, CardPile.HandPile, false, false, animate: false) == null)
+                        throw new InvalidOperationException("Could not fill the original hand for CopyConsumedCard.");
+                if (cards.GetBelowHandSize()) throw new InvalidOperationException("CopyConsumedCard control did not fill the hand.");
+            }
             if (MothersRemnant3Mode)
             {
                 CardState control = cards.AddNewCard(definition, CardPile.HandPile, false, false, animate: false);
@@ -226,7 +244,8 @@ namespace MonsterTrain2Poju.Probe
                 : CopyFirstConsumeMode
                 ? "ORIGINAL-COPY-FIRST-CONSUME-PREPARED unchanged relic, Consume Spell witness card=" + sourceId
                 : CopyConsumedCardMode
-                ? "ORIGINAL-COPY-CONSUMED-CARD-PREPARED unchanged relic, two-copy Consume Spell witness card=" + sourceId
+                ? "ORIGINAL-COPY-CONSUMED-CARD-PREPARED unchanged relic, Consume Spell witness card=" + sourceId +
+                    " stopAtFullHand=" + copyConsumedStopsAtFullHand
                 : UncontrolledGroupMode
                 ? "ORIGINAL-UNCONTROLLED-GROUP-PREPARED unchanged relic, high-health 30-attack carrier and original Mixology card=" + sourceId +
                     " carrier=" + uncontrolledCarrierCardId
@@ -399,7 +418,8 @@ namespace MonsterTrain2Poju.Probe
                 if (consumeCopyId == 0)
                 {
                     CombatContext context = state.Spawn.Train.Context!;
-                    CardInstanceState? copy = context.CardInstances?.FirstOrDefault(card => card.DataId == CopyWitnessSpellId &&
+                    string witnessId = copyConsumedStopsAtFullHand ? SpacePrismId : CopyWitnessSpellId;
+                    CardInstanceState? copy = context.CardInstances?.FirstOrDefault(card => card.DataId == witnessId &&
                         card.InstanceId != sourceId && context.Cards.Hand.Any(item => item.InstanceId == card.InstanceId));
                     if (copy != null)
                     {

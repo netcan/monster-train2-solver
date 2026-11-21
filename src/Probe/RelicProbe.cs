@@ -319,7 +319,7 @@ namespace MonsterTrain2Poju.Probe
                         return new RelicCopyCardOnCardPlayModifier(item.Index, data.GetParamInt(),
                             data.GetParamCardType().ToString(), data.GetParamBool(), data.GetParamBool2(),
                             data.GetTraits().Select(trait => trait.GetTraitStateName()).ToArray(), upgrade,
-                            RelicCardModifierProbe.Conditions(item.Effect));
+                            RelicCardModifierProbe.Conditions(item.Effect), disallowOverflowToDrawPile: data.GetParamBool3());
                     }).ToArray();
                 var monsterSpellTargeting = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect.GetType().Name == RelicMonsterSpellTargetingModel.Effect)
