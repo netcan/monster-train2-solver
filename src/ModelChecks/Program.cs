@@ -7730,6 +7730,12 @@ if (args.Length == 2 && args[0] == "--native-spurned")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--native-spurned-battle")
+{
+    SpurnedChecks.FullBattle(args[1]);
+    return;
+}
+
 if (args.Length == 1 && args[0] == "--titan-skin-pure")
 {
     TitanSkinChecks.Run();

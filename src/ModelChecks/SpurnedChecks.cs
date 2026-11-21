@@ -4,13 +4,55 @@ using System.Text.Json;
 
 internal static class SpurnedChecks
 {
+    private const string Scenario = "SoulSavior_R4_BossBattle_EstrangedChild_2";
+    private const string BossKey = TriggeredStatusModel.OriginalSpurned;
+
+    internal static void FullBattle(string path)
+    {
+        using var fixture = ModelJson.ReadFixture(path);
+        FixtureValue root = fixture.RootElement;
+        FixtureValue identity = root.GetProperty("OriginalSpurnedBattle");
+        Require(root.GetProperty("ModifierScenario").GetString() == "original-spurned-battle" &&
+            identity.GetProperty("Scenario").GetString() == Scenario && identity.GetProperty("BossKey").GetString() == BossKey &&
+            identity.GetProperty("TestScenario").GetBoolean(), "Expected the controlled original Spurned battle.");
+
+        FixtureValue[] turns = root.GetProperty("Turns").EnumerateArray().ToArray();
+        Require(turns.Length >= 2, "The original Spurned battle must capture its opening and later turns.");
+        BattleTurnState opening = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        OuterBossSpawnDefinition? queued = opening.Spawn.QueuedOuterBoss;
+        Require(opening.Spawn.OuterBoss == null && queued is { Boss: { AssetKey: BossKey, Phase: "Casting", Room: -1, UnitId: 0 } } &&
+            queued.Actor.Unit.Triggers.Any(trigger => TriggeredStatusModel.MatchesSpurnedAttack(queued.Actor.Unit, trigger)),
+            "The opening must contain the original queued boss and both strictly projected attack effects.");
+
+        BattleTurnState[] actual = turns.Select(turn => turn.GetProperty("Actual").Deserialize<BattleTurnState>()!).ToArray();
+        OuterBossProgress? first = actual[0].Spawn.OuterBoss;
+        Require(first is { AssetKey: BossKey, Phase: "Casting", Room: >= 0, UnitId: > 0 } &&
+            actual[0].Spawn.Train.Rooms.Single(room => room.RoomIndex == first.Room)
+                .Units.Any(unit => unit.Id == first.UnitId && unit.Triggers.Any(trigger => TriggeredStatusModel.MatchesSpurnedAttack(unit, trigger))),
+            "The original boss must enter a physical floor in Casting with its complete native projection.");
+        OuterBossProgress?[] phases = actual.Select(turn => turn.Spawn.OuterBoss).ToArray();
+        Require(phases.Zip(phases.Skip(1)).Any(pair => pair.First?.Phase == "Casting" && pair.Second?.Phase == "Relentless" &&
+                pair.First.UnitId == pair.Second.UnitId && pair.Second.AssetKey == BossKey),
+            "The original installed boss must naturally advance from Casting to Relentless.");
+        int pyreRoom = opening.PlayRules!.Rooms.Single(room => room.IsPyre).RoomIndex;
+        Require(phases.Any(phase => phase is { AssetKey: BossKey, Phase: "Relentless" } &&
+            phase.UnitId == first!.UnitId && phase.Room == pyreRoom), "The captured Relentless boss never reached the Pyre.");
+        Require(actual.SelectMany(turn => turn.Spawn.Train.Rooms).SelectMany(room => room.Units)
+            .Any(unit => unit.Team == CombatTeam.Player && unit.Status(StatusAttackDamageModel.Malaise)?.Stacks > 0 &&
+                unit.Status(RoomCombatModel.Witherbloom)?.Stacks > 0),
+            "No original complete-turn successor contains an affected player unit with both statuses.");
+
+        SolverStageChecks.Native(path, requireVictory: false);
+        Console.WriteLine("NATIVE-SPURNED-BATTLE PASS: queued original boss, placed Casting, ordinary status combat, Relentless and Pyre arrival.");
+    }
+
     internal static void Native(FixtureValue root)
     {
         Require(root.GetProperty("GameVersion").GetString() == "2.3.1" &&
             root.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
             root.GetProperty("Boundary").GetString() == "NativeOriginalSpurnedAttack" &&
-            root.GetProperty("Scenario").GetString() == "SoulSavior_R4_BossBattle_EstrangedChild_2" &&
-            root.GetProperty("BossKey").GetString() == "Boss_SoulSavior_R4_Spurned_ArmorPerDebuff" &&
+            root.GetProperty("Scenario").GetString() == Scenario &&
+            root.GetProperty("BossKey").GetString() == BossKey &&
             root.GetProperty("TestScenario").GetBoolean(), "Expected a controlled native Spurned witness.");
 
         CombatUnit before = Boss(root, "BeforeMalaise");
