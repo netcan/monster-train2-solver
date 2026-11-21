@@ -40,8 +40,14 @@ internal static class Game231RecordedChainTriage
 
         int passed = 0, segmentPassed = 0, failed = 0, skipped = 0;
         IEnumerable<Game231FixtureRegistration> archives = catalog.Values.Where(archive => selected.Count == 0 || selected.Contains(archive.Path));
-        ArchiveResult Replay(Game231FixtureRegistration archive) =>
-            ReplayArchive(directory, archive, checkCardFrontiers, checkEndTurnFrontiers);
+        ArchiveResult Replay(Game231FixtureRegistration archive)
+        {
+            ArchiveResult result = ReplayArchive(directory, archive, checkCardFrontiers, checkEndTurnFrontiers);
+            // Keep the TSV ordered while surfacing failures from completed workers immediately.
+            if (result.Status == "FAIL")
+                Console.WriteLine($"RECORDED-CHAIN-TRIAGE FAIL {archive.Path} {result.Detail}");
+            return result;
+        }
         IEnumerable<ArchiveResult> results = workers == 1
             ? archives.Select(Replay)
             : archives.AsParallel().AsOrdered().WithDegreeOfParallelism(workers)
@@ -53,10 +59,7 @@ internal static class Game231RecordedChainTriage
                 case "SKIP": skipped++; continue;
                 case "PASS": passed++; break;
                 case "SEGMENT-PASS": segmentPassed++; break;
-                default:
-                    failed++;
-                    Console.WriteLine($"RECORDED-CHAIN-TRIAGE FAIL {result.Archive.Path} {result.Detail}");
-                    break;
+                default: failed++; break;
             }
             Game231FixtureRegistration archive = result.Archive;
             WriteRow(writer, archive.Path, result.Status, result.Plays?.ToString(CultureInfo.InvariantCulture) ?? "",
