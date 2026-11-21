@@ -2369,6 +2369,13 @@ if (args.Length is 2 or 3 && args[0] == "--third-troop-fightclub-mixed-only")
     ThirdTroopFightClubMixedChecks.Native(fixture.RootElement, replay?.RootElement);
     return;
 }
+if (args.Length == 3 && args[0] == "--third-troop-meat-shield-preview-only")
+{
+    using var wrackingPain = ModelJson.ReadFixture(args[1]);
+    using var fightClub = ModelJson.ReadFixture(args[2]);
+    ThirdTroopMeatShieldPreviewChecks.Native(wrackingPain.RootElement, fightClub.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--third-troop-original-mixed-combat-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
