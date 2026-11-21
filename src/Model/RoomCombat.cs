@@ -512,9 +512,21 @@ namespace MonsterTrain2Poju.Model
             "heal multiplier", "heal immunity", "cooldown", "unit_ability", "unit_ability_available", "horde", "cardless", "undying", "ephemeral", "purify", "mageblade", "titanskin", "titanite", "duality", "conduit",
             "newmoon", "fullmoon", "stygian_blessing", "scorch", "trample", "spell shield", "unstable", "hatch", "avarice", "inedible", "eatmany", "steelguard",
             "fixedattack", "armorattack", "equalizer", "inert", "spark", "captured_soul", "restricted", "unit_grafted_equipment", "mass", "zeal", "tenacious", "chained", "pain", "spite",
-            StatusAttackDamageModel.Malaise
+            StatusAttackDamageModel.Malaise, Witherbloom
         };
+        internal const string Witherbloom = "witherbloom";
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
+
+        private static bool MatchesWitherbloom(CombatStatus status) =>
+            status.ParamInt == 1 && status.Stackable == true && status.Hidden == false && status.DisplayCategory == "Negative" &&
+            status.Propagatable == true && status.ExcludeHeroPropagation == false && status.ExcludeMonsterPropagation == true &&
+            status.TriggerVfxEnemy == true && status.TriggerVfxPlayer == true &&
+            !status.RemoveWhenTriggered && !status.RemoveStackAtEnd && !status.RemoveAllAtEnd && !status.RemoveAfterPostCombat &&
+            !status.PreventRemovalDuringRelentless && status.SkipDuringDeployment && !status.RemoveDuringDeployment &&
+            !status.RemoveWhenTriggeredAfterCardPlayed && !status.RemoveAtEndOfTurnIfTriggered && !status.MarkedForRemovalAfterCardPlayed;
+
+        internal static RoomCombatResult ApplyWitherbloomTick(RoomCombatState state, int unitId) =>
+            new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false).WitherbloomTick(unitId);
 
         public static RoomCombatResult Exchange(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
             bool updateSelectedRoom = true, IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
@@ -1178,6 +1190,8 @@ namespace MonsterTrain2Poju.Model
                 if (unit.RegisteredStatus(StatusAttackDamageModel.Malaise) is CombatStatus malaise &&
                     StatusAttackDamageModel.ValidateMalaise(unit, malaise, state.Context) is string malaiseError)
                     return malaiseError;
+                if (unit.RegisteredStatus(Witherbloom) is CombatStatus witherbloom && !MatchesWitherbloom(witherbloom))
+                    return "Witherbloom requires the captured native post-combat status definition.";
                 if (unit.Ability?.CardCreation != null && unit.Ability.DataId != unit.Ability.CardCreation.DataId)
                     return "Unit ability and cached card creation definitions differ.";
                 if (unit.Ability?.Definition != null && (unit.Ability.DataId != unit.Ability.Definition.DataId || !unit.Ability.Definition.IsUnitAbility) ||
@@ -2099,6 +2113,7 @@ namespace MonsterTrain2Poju.Model
                     RemoveHatch();
                     if (unsupportedReason != null) return Finish(RoomOutcome.Unsupported);
                     PostCombat();
+                    if (unsupportedReason != null) return Finish(RoomOutcome.Unsupported);
                     if (CombatPreviewStopped()) return Finish(RoomOutcome.Exchanged);
                     if (battleWon) return Finish(RoomOutcome.BattleWon);
                     if (!source.Preview && units.Any(unit => unit.Source.IsPyre && !unit.Alive))
@@ -4049,6 +4064,7 @@ namespace MonsterTrain2Poju.Model
                             Trigger(unit, status.Id, 1);
                             Damage(null, unit, amount, status.Id == "decay" ? "Decay" : status.Id == "corruption" ? "Corruption" : "Poison");
                         }
+                        else if (status.Id == Witherbloom) WitherbloomDamage(unit, status);
                         else if (status.Id == "unstable" && !unit.Has("blastresistant") &&
                             unit.Count("unstable") >= unit.Health && !unit.Has("untouchable"))
                         {
@@ -4060,11 +4076,62 @@ namespace MonsterTrain2Poju.Model
                         // A lethal boss/Pyre status tick stops the native preview
                         // before the next unit's post-combat callbacks. Those
                         // callbacks would otherwise overwrite shared card caches.
-                        if (battleWon || CombatPreviewStopped()) return;
+                        if (unsupportedReason != null || battleWon || CombatPreviewStopped()) return;
                     }
                     if (unit.Alive && unit.Has("ephemeral") && Active(unit.Statuses["ephemeral"]))
                         TriggerEphemeral(unit);
                     if (unsupportedReason != null) return;
+                }
+            }
+
+            internal RoomCombatResult WitherbloomTick(int unitId)
+            {
+                WorkingUnit? unit = units.FirstOrDefault(actor => actor.Source.Id == unitId);
+                if (unit == null) unsupportedReason = "Missing Witherbloom tick actor.";
+                else if (unit.Alive && unit.Statuses.TryGetValue(Witherbloom, out CombatStatus? status) && Active(status))
+                    WitherbloomDamage(unit, status);
+                return Finish(unsupportedReason != null ? RoomOutcome.Unsupported : battleWon ? RoomOutcome.BattleWon :
+                    units.Any(actor => actor.Source.IsPyre && !actor.Alive) ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
+            }
+
+            private void WitherbloomDamage(WorkingUnit owner, CombatStatus status)
+            {
+                BattleSpawnPoints? points = context?.SpawnPoints;
+                SpawnPointGroupState? players = points?.SelectedGroup(owner.RoomIndex, CombatTeam.Player);
+                SpawnPointGroupState? enemies = points?.SelectedGroup(owner.RoomIndex, CombatTeam.Enemy);
+                if (!MatchesWitherbloom(status) || players == null || enemies == null)
+                {
+                    unsupportedReason = "Witherbloom requires its native rule and captured physical room occupancies.";
+                    return;
+                }
+                // Both fronts meet in the middle of the physical room. A dead
+                // unit with Undying still occupies a neighbor slot until revival.
+                var ordered = new List<WorkingUnit>();
+                foreach (int id in players.Occupants.Reverse().Concat(enemies.Occupants).Where(id => id > 0))
+                {
+                    WorkingUnit? member = units.FirstOrDefault(unit => unit.Source.Id == id);
+                    if (member == null)
+                    {
+                        unsupportedReason = "Witherbloom requires the actor at each occupied point.";
+                        return;
+                    }
+                    if (!member.Destroyed && (member.Alive || member.Count("undying") > 0)) ordered.Add(member);
+                }
+                int index = ordered.IndexOf(owner);
+                if (index < 0) return;
+                var targets = new List<WorkingUnit> { owner };
+                if (index > 0) targets.Add(ordered[index - 1]);
+                if (index + 1 < ordered.Count) targets.Add(ordered[index + 1]);
+                foreach (WorkingUnit target in targets)
+                {
+                    if (!owner.Alive || unsupportedReason != null || CombatPreviewStopped()) return;
+                    if (!target.Alive) continue;
+                    StatusScalingResult modifier = RelicStatusMagnitudeModel.GetModifier(context, Witherbloom,
+                        owner.Source.Team == CombatTeam.Player ? 2 : 1);
+                    if (!modifier.Supported) { unsupportedReason = modifier.UnsupportedReason; return; }
+                    context = modifier.Context;
+                    int amount = unchecked((status.ParamInt + modifier.Stacks) * status.Stacks);
+                    Damage(null, target, amount, "Poison");
                 }
             }
 

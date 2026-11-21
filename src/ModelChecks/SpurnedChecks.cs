@@ -30,6 +30,38 @@ internal static class SpurnedChecks
         Require(clear.Supported, clear.UnsupportedReason ?? "Malaise removal failed.");
         CompareMalaise(clear.State!.Units.Single(), removed);
         Console.WriteLine("NATIVE-SPURNED-MALAISE PASS: exact native stack, HP, maximum HP, and attack accumulator changes.");
+
+        Witherbloom(root);
+    }
+
+    private static void Witherbloom(FixtureValue root)
+    {
+        Require(root.GetProperty("TickFired").GetBoolean() && root.GetProperty("TickStage").GetString() == "OnPostCombatPoison",
+            "Expected a native Witherbloom tick at the post-combat poison stage.");
+        FixtureValue rule = root.GetProperty("WitherbloomRule");
+        Require(rule.GetProperty("ParamInt").GetInt32() == 1 && rule.GetProperty("Stage").GetString() == "OnPostCombatPoison" &&
+            rule.GetProperty("AdditionalStages").GetArrayLength() == 0 && !rule.GetProperty("RemoveOnTrigger").GetBoolean() &&
+            !rule.GetProperty("RemoveStackAtEnd").GetBoolean() && !rule.GetProperty("RemoveAllAtEnd").GetBoolean(),
+            "The recorded Witherbloom rule has a different magnitude, dispatch stage or decay.");
+        FixtureValue before = root.GetProperty("AfterAttack");
+        CombatUnit owner = before.GetProperty("Target").Deserialize<CombatUnit>()!;
+        TrainCombatState train = before.GetProperty("Train").Deserialize<TrainCombatState>()!;
+        RoomCombatState room = train.Rooms.Single(item => item.Units.Any(unit => unit.Id == owner.Id)).WithContext(train.Context);
+        FixtureValue[] hits = root.GetProperty("TickDamage").EnumerateArray().ToArray();
+        CombatUnit[] native = hits.Select(hit => hit.GetProperty("After").Deserialize<CombatUnit>()!).ToArray();
+        Require(native.Length == 2 && native[0].Id == owner.Id && native[1].Id == Boss(root, "AfterAttack").Id &&
+            hits.All(hit => hit.GetProperty("Amount").GetInt32() == 2), "Expected the native owner and adjacent boss in order.");
+        RoomCombatResult tick = RoomCombatModel.ApplyWitherbloomTick(room, owner.Id);
+        Require(tick.Supported, tick.UnsupportedReason ?? "Witherbloom tick failed.");
+        Require(tick.Events.Where(item => item.Kind == "Poison").Select(item => item.Target).SequenceEqual(native.Select(unit => unit.Id)),
+            "Modeled Witherbloom recipient order differs from native damage.");
+        foreach (CombatUnit target in native)
+        {
+            CombatUnit modeled = tick.State!.Units.Single(unit => unit.Id == target.Id);
+            string? difference = ModelJson.Difference(JsonSerializer.Serialize(modeled), JsonSerializer.Serialize(target));
+            Require(difference == null, $"Modeled Witherbloom victim {target.Id} differs from native at {difference}.");
+        }
+        Console.WriteLine("NATIVE-SPURNED-WITHERBLOOM PASS: exact owner and adjacent boss poison results, physical recipient order and persistent status.");
     }
 
     private static CombatUnit Boss(FixtureValue root, string stage) =>
