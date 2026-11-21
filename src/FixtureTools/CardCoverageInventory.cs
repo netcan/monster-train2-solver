@@ -888,6 +888,14 @@ internal static class CardCoverageInventory
                 !(ruleRoot && property.Name is "ForgeEligible" or "UnplayedNegativeOrder");
             var a = left.EnumerateObject().Where(Include).ToDictionary(property => property.Name, property => property.Value, StringComparer.Ordinal);
             var b = right.EnumerateObject().Where(Include).ToDictionary(property => property.Name, property => property.Value, StringComparer.Ordinal);
+            if (currentBuild && cardRule && path.StartsWith("$.Effects[", StringComparison.Ordinal) &&
+                path.EndsWith("].Filters", StringComparison.Ordinal) && Text(left, "Health") == "Both" && Text(right, "Health") == "Both")
+            {
+                // The native self-target capability cannot restrict a filter accepting both health states.
+                const string selfHealth = "SelfHealthFilter";
+                if (!b.ContainsKey(selfHealth) && a.TryGetValue(selfHealth, out FixtureValue captured) &&
+                    captured.ValueKind == FixtureKind.True) a.Remove(selfHealth);
+            }
             if (currentBuild && cardRule && ruleRoot && IsEmptyArray(a, "OnCastEffects") && IsEmptyArray(b, "OnCastEffects"))
             {
                 // With zero effects CardTriggerGroupModel accepts both encodings.
