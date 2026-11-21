@@ -732,6 +732,7 @@ param(
     [switch] $OriginalBrokenRailRelic,
     [switch] $OriginalHephsBlueprints,
     [switch] $OriginalHephsEquipmentPool,
+    [switch] $OriginalChangedTempUpgradeRelics,
     [switch] $OriginalRageOnBurnoutStackLoss,
     [switch] $OriginalPyreRevenge,
     [switch] $OriginalExtractForEmberAndEchos,
@@ -1432,6 +1433,10 @@ if ($OriginalBrokenRailRelic) { $BranchCardMasks = $true; $Policy = 'units-spell
 if ($OriginalHephsBlueprints -or $OriginalHephsEquipmentPool) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalHephsEquipmentPool -and ($OriginalHephsBlueprints -or $InputProfile -or -not $BinaryCapture)) {
     throw 'OriginalHephsEquipmentPool requires a fresh battle and binary capture.'
+}
+if ($OriginalChangedTempUpgradeRelics) {
+    if (-not $BinaryCapture) { throw 'OriginalChangedTempUpgradeRelics requires binary capture.' }
+    $BranchCardMasks = $true
 }
 if ($OriginalRageOnBurnoutStackLoss) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalPyreRevenge) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -2663,6 +2668,7 @@ if ($OriginalHephsEquipmentPool) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-hephs-blueprints'
     $environment['MT2_PROBE_HEPHS_POOL_CONTROLS'] = '1'
 }
+if ($OriginalChangedTempUpgradeRelics) { $environment['MT2_PROBE_MODIFIERS'] = 'original-changed-temp-upgrade-relics' }
 if ($OriginalRageOnBurnoutStackLoss) { $environment['MT2_PROBE_MODIFIERS'] = 'original-rage-on-burnout-stack-loss' }
 if ($RankThreeRoomSlayExecution) { $environment['MT2_PROBE_MODIFIERS'] = 'rank-three-room-slay-execution' }
 if ($OriginalPyreRevenge) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-revenge' }
@@ -3086,6 +3092,25 @@ if ($EnchantmentCombatOnly) {
     } finally { $componentDocument.Dispose() }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
         ModelAcceptance='Pending independent focused checker'; Trace=$componentPath } | ConvertTo-Json
+    return
+}
+if ($OriginalChangedTempUpgradeRelics) {
+    $capturePath = Join-Path $profile 'changed-temp-upgrade-relics.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original changed temporary-upgrade relics component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Original changed temporary-upgrade relics capture failed; inspect $unityLog" }
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $captureDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
+    try {
+        $capture = $captureDocument.RootElement
+        if ($capture.GetProperty('Schema').GetInt32() -ne 1 -or
+            $capture.GetProperty('Boundary').GetString() -cne 'DeploymentOriginalCardModifierComparison' -or
+            $capture.GetProperty('GameVersion').GetString() -cne '2.3.1' -or
+            $capture.GetProperty('GameModuleMvid').GetString() -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+            $capture.GetProperty('Cases').GetArrayLength() -ne 9) { throw 'Incomplete original changed temporary-upgrade relics capture.' }
+    } finally { $captureDocument.Dispose() }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        Cases=9; Trace=$capturePath } | ConvertTo-Json
     return
 }
 if ($OriginalHephsEquipmentPool) {

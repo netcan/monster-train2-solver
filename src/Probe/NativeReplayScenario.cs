@@ -874,6 +874,15 @@ namespace MonsterTrain2Poju.Probe
             {
                 return;
             }
+            if (fullBattle && OriginalChangedTempUpgradeRelicsScenario.Enabled)
+            {
+                OriginalChangedTempUpgradeRelicsScenario.Run(managers, log);
+                if (OriginalChangedTempUpgradeRelicsScenario.Error is string error)
+                    throw new InvalidOperationException(error);
+                if (OriginalChangedTempUpgradeRelicsScenario.Completed)
+                    Finish(true, "Original changed temporary-upgrade relics component captured.");
+                return;
+            }
             if (fullBattle && OriginalAfterDrawSpawnScenario.Enabled && !OriginalAfterDrawSpawnScenario.Prepared)
             {
                 OriginalAfterDrawSpawnScenario.Prepare(managers, log);

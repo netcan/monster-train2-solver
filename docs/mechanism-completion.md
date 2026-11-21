@@ -97,6 +97,11 @@ EndTurn、60 个房间阶段、14 个列车阶段、录制候选及串并行计�
 九个列车阶段通过。SuperUltra 的胜局正常退出，旧版归档也通过。
 归档位于 `tests/compatibility/game-2.3.1/mechanics/expensive-card-permafrost/`。
 
+同一轮隔离采样对照四件变更遗物。九项原生调用验证新版旗帜排除池、两张新增起始牌、
+X 费筛选和 Endless 状态。五项安装升级，其中三项的升级被原版复制筛选排除。模型的
+有序筛选和卡牌后继与实测一致。归档位于
+`tests/compatibility/game-2.3.1/mechanics/changed-temp-upgrade-relics/`。
+
 ## 工作单位
 
 2026-11-20 接入[回合前原生顺序分派](before-draw-order.md)：十二种已有 BeforeDraw

@@ -7793,6 +7793,12 @@ if (args.Length == 1 && args[0] == "--original-extra-feed-trigger-model-only")
     OriginalExtraFeedTriggerChecks.Run();
     return;
 }
+if (args.Length == 2 && args[0] == "--original-changed-temp-upgrade-relics-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalChangedTempUpgradeRelicsChecks.Native(document.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-hephs-blueprints-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);
