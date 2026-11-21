@@ -4,13 +4,17 @@ using MonsterTrain2Poju.Fixtures;
 
 internal static class RelicCoverageInventory
 {
-    private const string CatalogPath = "2.3.1/relic-catalog.mt2f";
-    private const string CatalogHash = "86ff34d5ffc0c70b443c0adfb9a59b9a042bf96d761779e86df9f9850faaed2d";
+    private const string PreviousVersion = "2.2.1";
+    private const string PreviousModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
+    private const string PreviousCatalogHash = "bdca7705ebd9d42e7d4d48370ba829e99133adfc047e82b7203736abb0394fd2";
+    private const string CurrentCatalogHash = "86ff34d5ffc0c70b443c0adfb9a59b9a042bf96d761779e86df9f9850faaed2d";
 
     private sealed record Witness(string Archive, string Snapshot, int OwnerIndex);
+    private sealed record DefinitionChange(Relic Current, Relic? Previous, IReadOnlyList<string> Fields);
 
     private sealed class Relic(FixtureValue definition)
     {
+        internal readonly FixtureValue Definition = definition;
         internal readonly string Id = Text(definition, "Id");
         internal readonly string AssetKey = Text(definition, "AssetKey");
         internal readonly bool PlacementExcluded = definition.GetProperty("DisallowedInPlacementPhase").GetBoolean();
@@ -19,6 +23,9 @@ internal static class RelicCoverageInventory
         internal int MatchedBattles;
         internal Witness? IdentityWitness;
         internal Witness? RosterWitness;
+        internal Witness? BestWitness => RosterWitness ?? IdentityWitness;
+        internal string Observation => MatchedBattles > 0 ? "ordered-roster-match" :
+            ObservedBattles > 0 ? "identity-observed" : "no-active-observation";
 
         internal bool MatchesRoster(FixtureValue owner) => Text(owner, "AssetKey") == AssetKey &&
             owner.TryGetProperty("IsCovenant", out FixtureValue covenant) && covenant.ValueKind == FixtureKind.False &&
@@ -31,25 +38,14 @@ internal static class RelicCoverageInventory
     {
         string directory = Game231FixtureCatalog.DirectoryFor(workspace);
         var registrations = Game231FixtureCatalog.Load(directory);
-        if (!registrations.TryGetValue(CatalogPath, out Game231FixtureRegistration? catalog) || catalog.Sha256 != CatalogHash)
-            throw new InvalidDataException("Current relic catalog manifest differs from the pinned mechanism inventory source.");
-        using var document = FixtureDocument.Read(catalog.Verify(directory));
-        FixtureValue root = document.RootElement;
-        if (root.GetProperty("Schema").GetInt32() != 9 || Text(root, "GameVersion") != Game231FixtureCatalog.Version ||
-            Text(root, "GameModuleMvid") != Game231FixtureCatalog.Module ||
-            !root.GetProperty("FrameBefore").ContentEquals(root.GetProperty("FrameAfter")) ||
-            !root.GetProperty("RngBefore").ContentEquals(root.GetProperty("RngAfter")))
-            throw new InvalidDataException("Current relic catalog version, frame or RNG differs.");
-        var relics = root.GetProperty("Relics").EnumerateArray()
-            .Where(value => Text(value, "Collection") == "collectableRelicDatas")
-            .Select(value => new Relic(value)).ToDictionary(relic => relic.Id, StringComparer.Ordinal);
-        if (relics.Count != 236 || relics.Values.Any(relic => !Guid.TryParse(relic.Id, out _) ||
-            string.IsNullOrEmpty(relic.AssetKey) || relic.EffectTypes.Length == 0 || relic.EffectTypes.Any(string.IsNullOrEmpty)))
-            throw new InvalidDataException("Expected 236 unique original collectible relic definitions.");
+        var previous = ReadCatalog(directory, registrations, PreviousVersion, PreviousModule, PreviousCatalogHash, 224);
+        var relics = ReadCatalog(directory, registrations, Game231FixtureCatalog.Version, Game231FixtureCatalog.Module, CurrentCatalogHash, 236);
+        List<DefinitionChange> changes = CompareCatalogs(previous, relics);
 
         int battles = 0, stage = 0, snapshots = 0;
         foreach (Game231FixtureRegistration archive in registrations.Values)
         {
+            if (archive.Path == CatalogPath(PreviousVersion) || archive.Path == CatalogPath(Game231FixtureCatalog.Version)) continue;
             using var fixture = FixtureDocument.Read(archive.Verify(directory));
             FixtureValue battle = fixture.RootElement;
             if (Game231FixtureCatalog.Classify(archive, battle) != Game231FixtureKind.SettledBattle) continue;
@@ -97,28 +93,129 @@ internal static class RelicCoverageInventory
             "WitnessArchive", "WitnessSnapshot", "WitnessOwnerIndex");
         foreach (Relic relic in relics.Values.OrderBy(relic => relic.Id, StringComparer.Ordinal))
         {
-            Witness? witness = relic.RosterWitness ?? relic.IdentityWitness;
-            string observation = relic.MatchedBattles > 0 ? "ordered-roster-match" : relic.ObservedBattles > 0 ? "identity-observed" : "no-active-observation";
-            Row(report, Game231FixtureCatalog.Version, Game231FixtureCatalog.Module, relic.Id, relic.AssetKey, observation,
-                relic.ObservedBattles.ToString(CultureInfo.InvariantCulture), relic.MatchedBattles.ToString(CultureInfo.InvariantCulture),
-                witness?.Archive ?? "", witness?.Snapshot ?? "", witness?.OwnerIndex.ToString(CultureInfo.InvariantCulture) ?? "");
+            Row(report, [Game231FixtureCatalog.Version, Game231FixtureCatalog.Module, relic.Id, relic.AssetKey, .. ObservationCells(relic)]);
+        }
+        var priorityReport = new StringBuilder();
+        Row(priorityReport, "PreviousGameVersion", "CurrentGameVersion", "DataId", "AssetKey", "PreviousAssetKey",
+            "DefinitionChange", "ChangedFields", "PreviousEffectTypes", "CurrentEffectTypes", "CurrentRosterObservation",
+            "CurrentObservedBattles", "CurrentRosterMatchedBattles", "CurrentWitnessArchive", "CurrentWitnessSnapshot", "CurrentWitnessOwnerIndex");
+        foreach (DefinitionChange change in changes)
+        {
+            Relic relic = change.Current;
+            Relic? prior = change.Previous;
+            Row(priorityReport, [PreviousVersion, Game231FixtureCatalog.Version, relic.Id, relic.AssetKey, prior?.AssetKey ?? "",
+                prior == null ? "added" : "changed", string.Join(",", change.Fields), string.Join(",", prior?.EffectTypes ?? []),
+                string.Join(",", relic.EffectTypes), .. ObservationCells(relic)]);
         }
         output = Path.GetFullPath(output);
+        string priorityOutput = Path.Combine(Path.GetFullPath(workspace), "results", "relic-priority-version-delta-" + Game231FixtureCatalog.Version + ".tsv");
+        if (string.Equals(output, priorityOutput, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Relic observations and version differences require distinct output paths.", nameof(output));
+        WriteReport(output, report, check);
+        WriteReport(priorityOutput, priorityReport, check);
+        int rosterMatches = relics.Values.Count(relic => relic.MatchedBattles > 0);
+        int identityOnly = relics.Values.Count(relic => relic.ObservedBattles > 0 && relic.MatchedBattles == 0);
+        Console.WriteLine($"RELIC-OBSERVATION {Game231FixtureCatalog.Version} {(check ? "CHECK" : "WRITE")} PASS registered={registrations.Count} settledBattles={battles} stageBattles={stage} decisionSnapshots={snapshots}");
+        Console.WriteLine($"collectible={relics.Count} orderedRosterMatch={rosterMatches} identityObservedOnly={identityOnly} noActiveObservation={relics.Count - rosterMatches - identityOnly} report={output}");
+        int added = changes.Count(change => change.Previous == null);
+        int priorityMatches = changes.Count(change => change.Current.MatchedBattles > 0);
+        int priorityIdentityOnly = changes.Count(change => change.Current.ObservedBattles > 0 && change.Current.MatchedBattles == 0);
+        Console.WriteLine($"priority={changes.Count} added={added} changed={changes.Count - added} orderedRosterMatch={priorityMatches} identityObservedOnly={priorityIdentityOnly} noActiveObservation={changes.Count - priorityMatches - priorityIdentityOnly} report={priorityOutput}");
+    }
+
+    private static string CatalogPath(string version) => version + "/relic-catalog.mt2f";
+
+    private static Dictionary<string, Relic> ReadCatalog(string directory,
+        IReadOnlyDictionary<string, Game231FixtureRegistration> registrations, string version, string module, string hash, int count)
+    {
+        if (!registrations.TryGetValue(CatalogPath(version), out Game231FixtureRegistration? catalog) || catalog.Sha256 != hash)
+            throw new InvalidDataException("Relic comparison catalog manifest changed for " + version);
+        using var document = FixtureDocument.Read(catalog.Verify(directory));
+        FixtureValue root = document.RootElement;
+        if (root.GetProperty("Schema").GetInt32() != 9 || Text(root, "GameVersion") != version ||
+            Text(root, "GameModuleMvid") != module ||
+            !root.GetProperty("FrameBefore").ContentEquals(root.GetProperty("FrameAfter")) ||
+            !root.GetProperty("RngBefore").ContentEquals(root.GetProperty("RngAfter")))
+            throw new InvalidDataException("Relic catalog version, frame or RNG differs for " + version);
+        var relics = root.GetProperty("Relics").EnumerateArray()
+            .Where(value => Text(value, "Collection") == "collectableRelicDatas")
+            .Select(value => new Relic(value)).ToDictionary(relic => relic.Id, StringComparer.Ordinal);
+        if (relics.Count != count || relics.Values.Any(relic => !Guid.TryParse(relic.Id, out _) ||
+            string.IsNullOrEmpty(relic.AssetKey) || relic.EffectTypes.Length == 0 || relic.EffectTypes.Any(string.IsNullOrEmpty)))
+            throw new InvalidDataException($"Expected {count} unique original collectible relic definitions for {version}.");
+        return relics;
+    }
+
+    private static List<DefinitionChange> CompareCatalogs(Dictionary<string, Relic> previous, Dictionary<string, Relic> current)
+    {
+        if (previous.Keys.Any(id => !current.ContainsKey(id)))
+            throw new InvalidDataException("A pinned older collectible relic ID is missing from the current catalog.");
+        var changes = new List<DefinitionChange>();
+        foreach (Relic relic in current.Values.OrderBy(relic => relic.AssetKey, StringComparer.Ordinal).ThenBy(relic => relic.Id, StringComparer.Ordinal))
+        {
+            if (!previous.TryGetValue(relic.Id, out Relic? prior))
+            {
+                changes.Add(new DefinitionChange(relic, null, []));
+                continue;
+            }
+            var paths = new List<string>();
+            CollectChangedFields(prior.Definition, relic.Definition, "", paths);
+            if (paths.Count > 0) changes.Add(new DefinitionChange(relic, prior, paths));
+        }
+        if (changes.Count(change => change.Previous == null) != 12 || changes.Count(change => change.Previous != null) != 13)
+            throw new InvalidDataException("Expected 12 additions and 13 changed collectible relic definitions between the pinned releases.");
+        return changes;
+    }
+
+    private static void CollectChangedFields(FixtureValue before, FixtureValue after, string path, List<string> differences)
+    {
+        if (before.ContentEquals(after)) return;
+        if (before.ValueKind == FixtureKind.Object && after.ValueKind == FixtureKind.Object)
+        {
+            var oldFields = before.EnumerateObject().ToDictionary(field => field.Name, field => field.Value, StringComparer.Ordinal);
+            var newFields = after.EnumerateObject().ToDictionary(field => field.Name, field => field.Value, StringComparer.Ordinal);
+            foreach (string field in oldFields.Keys.Union(newFields.Keys, StringComparer.Ordinal).Order(StringComparer.Ordinal))
+            {
+                string fieldPath = path.Length == 0 ? field : path + "." + field;
+                if (oldFields.TryGetValue(field, out FixtureValue oldValue) && newFields.TryGetValue(field, out FixtureValue newValue))
+                    CollectChangedFields(oldValue, newValue, fieldPath, differences);
+                else
+                    differences.Add(fieldPath);
+            }
+        }
+        else if (before.ValueKind == FixtureKind.Array && after.ValueKind == FixtureKind.Array)
+        {
+            var oldItems = before.EnumerateArray().ToArray();
+            var newItems = after.EnumerateArray().ToArray();
+            if (oldItems.Length != newItems.Length) differences.Add(path + ".Length");
+            for (int index = 0; index < Math.Min(oldItems.Length, newItems.Length); index++)
+                CollectChangedFields(oldItems[index], newItems[index], path + "[" + index.ToString(CultureInfo.InvariantCulture) + "]", differences);
+        }
+        else
+            differences.Add(path);
+    }
+
+    private static string[] ObservationCells(Relic relic)
+    {
+        Witness? witness = relic.BestWitness;
+        return [relic.Observation, relic.ObservedBattles.ToString(CultureInfo.InvariantCulture),
+            relic.MatchedBattles.ToString(CultureInfo.InvariantCulture), witness?.Archive ?? "", witness?.Snapshot ?? "",
+            witness?.OwnerIndex.ToString(CultureInfo.InvariantCulture) ?? ""];
+    }
+
+    private static void WriteReport(string output, StringBuilder report, bool check)
+    {
         string content = report.ToString();
         if (check)
         {
             if (!File.Exists(output) || File.ReadAllText(output) != content)
-                throw new InvalidDataException("Current relic observations are missing or stale: " + output);
+                throw new InvalidDataException("Current relic report is missing or stale: " + output);
         }
         else
         {
             Directory.CreateDirectory(Path.GetDirectoryName(output)!);
             File.WriteAllText(output, content, new UTF8Encoding(false));
         }
-        int rosterMatches = relics.Values.Count(relic => relic.MatchedBattles > 0);
-        int identityOnly = relics.Values.Count(relic => relic.ObservedBattles > 0 && relic.MatchedBattles == 0);
-        Console.WriteLine($"RELIC-OBSERVATION {Game231FixtureCatalog.Version} {(check ? "CHECK" : "WRITE")} PASS registered={registrations.Count} settledBattles={battles} stageBattles={stage} decisionSnapshots={snapshots}");
-        Console.WriteLine($"collectible={relics.Count} orderedRosterMatch={rosterMatches} identityObservedOnly={identityOnly} noActiveObservation={relics.Count - rosterMatches - identityOnly} report={output}");
     }
 
     private static string Text(FixtureValue value, string name) =>

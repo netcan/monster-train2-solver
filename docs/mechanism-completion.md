@@ -49,6 +49,8 @@ ModelChecks 调用，`BattleSearchModel`、实际出牌与回合切换没有调�
 与目录的有序效果列表一致，214 件暂无在场记录。报告列出归档和快照位置，证据范围
 限于在场与效果列表。个别效果是否触发、触发参数和后继仍由机制检查验证。
 输出为 `results/relic-observations-2.3.1.tsv`，可用 `-Current -Check -SkipBuild` 复核。
+同一命令还生成 `results/relic-priority-version-delta-2.3.1.tsv`，对照两份原版目录的
+12 件新增和 13 件变化，并附当前战斗的在场证据。目录中的字段差异可直接定位复测范围。
 
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
