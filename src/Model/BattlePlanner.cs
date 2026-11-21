@@ -509,7 +509,8 @@ namespace MonsterTrain2Poju.Model
                     best.Outcome is RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate);
             Node selected = shorter ? completedPrefix! : best ?? fallback;
             return new BattlePlanResult(selected.State, selected.Outcome, selected.Steps, selected.Score, selected.Turns,
-                nodes, duplicates, pruned, watch.Elapsed, timedOut, cancelled, nodeLimit, actionLimit, best != null && !shorter, unsupported, policyBaselineScore,
+                nodes, duplicates, pruned, watch.Elapsed, timedOut, cancelled, nodeLimit, actionLimit, best != null && !shorter,
+                unsupported, shorter ? null : policyBaselineScore,
                 maxTurns, shorter, options.SearchToBattleEnd, stepLimit, options.MaxSteps, searchMetrics: workspace.Metrics,
                 stoppedEarly: earlyStop?.Reached == true, pyreHealthUpperBound: earlyStop?.PyreHealthUpperBound,
                 beamExpandedNodes: beamNodes);
