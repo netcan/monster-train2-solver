@@ -966,7 +966,8 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && OriginalStatusMagnitudeWitness.Enabled)
             {
                 if (OriginalStatusMagnitudeWitness.Tick(managers, log)) AdvanceTurn(combat!, record: false);
-                if (OriginalStatusMagnitudeWitness.Completed) Finish(true, "Original status magnitude witness captured.");
+                if (OriginalStatusMagnitudeWitness.Completed) Finish(true, OriginalStatusMagnitudeWitness.DirectRoomSpells
+                    ? "Original room status spells captured." : "Original status magnitude witness captured.");
                 return;
             }
 #endif

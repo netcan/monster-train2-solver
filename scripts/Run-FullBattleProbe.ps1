@@ -635,6 +635,7 @@ param(
     [switch] $OriginalMagnitudeRelicBatch,
     [switch] $OriginalStatusMagnitudeWitness,
     [switch] $OriginalStatusMagnitudeMoonWitness,
+    [switch] $OriginalRoomStatusSpells,
     [switch] $OriginalLifecycleRelicBatch,
     [switch] $OriginalDecayRelicBatch,
     [switch] $OriginalResourceRelicBatch,
@@ -1532,10 +1533,11 @@ if ($AllUnitsMultistrikeMutator) { $BattleRelicUpgrades = $true; $BranchCardMask
 if ($OriginalStingRelicBatch -or $OriginalDeployableRelic) { $BattleRelicUpgrades = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStatusRelicBatch -or $OriginalStatusRelicBatchBurnout) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMagnitudeRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
-if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness) {
-    $allowed = @('OriginalStatusMagnitudeWitness', 'OriginalStatusMagnitudeMoonWitness', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
+if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells) {
+    $allowed = @('OriginalStatusMagnitudeWitness', 'OriginalStatusMagnitudeMoonWitness', 'OriginalRoomStatusSpells', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
         'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
-    if (!$BinaryCapture -or ($OriginalStatusMagnitudeWitness -and $OriginalStatusMagnitudeMoonWitness) -or
+    $modes = @($OriginalStatusMagnitudeWitness, $OriginalStatusMagnitudeMoonWitness, $OriginalRoomStatusSpells) | Where-Object { $_ }
+    if (!$BinaryCapture -or @($modes).Count -ne 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
         throw 'Original status magnitude witness requires a separate first-battle binary capture.'
     }
@@ -2886,8 +2888,10 @@ if ($TitanSkinCombat) { $environment['MT2_PROBE_MODIFIERS'] = 'titan-skin-combat
 if ($OriginalStatusRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-relic-batch' }
 if ($OriginalStatusRelicBatchBurnout) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-relic-batch-burnout' }
 if ($OriginalMagnitudeRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-magnitude-relic-batch' }
-if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness) {
-    $environment['MT2_PROBE_MODIFIERS'] = $(if ($OriginalStatusMagnitudeMoonWitness) {
+if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells) {
+    $environment['MT2_PROBE_MODIFIERS'] = $(if ($OriginalRoomStatusSpells) {
+        'original-room-status-spells'
+    } elseif ($OriginalStatusMagnitudeMoonWitness) {
         'original-status-magnitude-moon-witness'
     } else { 'original-status-magnitude-witness' })
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
@@ -3568,6 +3572,15 @@ if ($OriginalAffordableNonPlayable) {
         -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original affordable nonplayable component captured' -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore) { throw "Original affordable nonplayable capture failed; inspect $unityLog" }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true; Trace=$capturePath } | ConvertTo-Json
+    return
+}
+if ($OriginalRoomStatusSpells) {
+    $capturePath = Join-Path $profile 'room-status-spells.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original room status spells captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Original room status spells capture failed; inspect $unityLog" }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        Trace=$capturePath } | ConvertTo-Json
     return
 }
 if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness) {

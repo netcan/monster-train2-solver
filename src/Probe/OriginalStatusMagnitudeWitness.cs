@@ -13,7 +13,9 @@ namespace MonsterTrain2Poju.Probe
     {
         internal const string Name = "original-status-magnitude-witness";
         internal const string MoonName = "original-status-magnitude-moon-witness";
+        internal const string RoomSpellsName = "original-room-status-spells";
         private const string Module = "bf93f060-beda-46b1-b808-95ebf1e9a99d";
+        private const string StewardId = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
         private static readonly (string Id, string Key, string Status)[] Owners =
         {
             ("622860d3-b2ca-45b0-991a-b7745e1dcd5c", "DoubleMagebladeDamage", "mageblade"),
@@ -21,9 +23,19 @@ namespace MonsterTrain2Poju.Probe
             ("b9bddf11-acaa-40fb-bc40-eee83e478424", "IncreaseRageDamage", "buff"),
             ("1fd244de-7d7b-4345-974b-4e5bf287a3df", "AwokenRegen", "regen")
         };
-        private static readonly (string Id, string Key, int Cost)[] Cards =
+        private static readonly (string Id, string Key, int Cost, string Status, int Stacks, int Chance)[] RoomSpells =
         {
-            ("d14a50f3-728d-43e1-87f0-ef1b013f6678", "TrainStewardShield", 1),
+            ("479ceb1b-fc8c-420f-8fa0-17683cee4511", "LavaFlow", 0, "pyregel", 4, 100),
+            ("47df0371-7bd9-4bc2-b8e1-de61cc0060c7", "Gooeyflask", 1, "debuff", 2, 0),
+            ("75ce1442-757b-4e9f-826d-8325f3dc7d9e", "EchoSnare", 1, "corrupt_poison", 5, 0),
+            ("768a53f0-2743-4298-82c3-8541cbecf935", "JarOfFrost", 0, "poison", 8, 0),
+            ("9ea70171-8afd-4cd1-997e-8a7bb789c766", "MagicJuice", 0, "spell weakness", 2, 0)
+        };
+        private static readonly (string Id, string Key, int Cost)[] Cards = DirectRoomSpells
+            ? new[] { (StewardId, "TrainStewardShield", 1) }.Concat(RoomSpells.Select(spell => (spell.Id, spell.Key, spell.Cost))).ToArray()
+            : new[]
+        {
+            (StewardId, "TrainStewardShield", 1),
             Moon ? ("2b7a187f-da0b-4c34-b8c5-b18755911b43", "SeleneAcolyte", 2)
                 : ("63eba1e1-3118-44a3-8906-c8bfbe559667", "LunaCovenChamp2", 0),
             ("2ed78ce2-13c3-4e82-963f-99c9ea12d0f0", "RageSerum", 0),
@@ -37,8 +49,10 @@ namespace MonsterTrain2Poju.Probe
         private static PlayCardAction? action;
         private static BattleTurnState? exchange;
 
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or MoonName;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or MoonName or RoomSpellsName;
         internal static bool Moon => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == MoonName;
+        internal static bool DirectRoomSpells => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == RoomSpellsName;
+        private static int DeploymentCount => DirectRoomSpells ? 1 : 2;
         internal static bool Acquired => definitions != null;
         internal static bool ObservingExchange { get; private set; }
         internal static bool Completed { get; private set; }
@@ -52,7 +66,7 @@ namespace MonsterTrain2Poju.Probe
                 save.GetMutators().Count != 0 || save.GetCovenants().Count != 0)
                 throw new InvalidOperationException("The original magnitude witness requires a fresh, unmodified 2.3.1 Ring 1.");
             AllGameData data = save.GetAllGameData();
-            var originalOwners = Owners.Select(expected =>
+            var originalOwners = (DirectRoomSpells ? Owners.Take(0) : Owners).Select(expected =>
             {
                 var relic = data.GetAllCollectableRelicData().Single(item => item.GetID() == expected.Id);
                 var effect = relic.GetEffects().Single();
@@ -65,11 +79,22 @@ namespace MonsterTrain2Poju.Probe
                     throw new InvalidOperationException("Original status magnitude owner changed: " + expected.Key);
                 return relic;
             }).ToArray();
-            definitions = Cards.Select(expected =>
+            definitions = Cards.Select((expected, index) =>
             {
                 CardData card = data.FindCardData(expected.Id);
                 if (card == null || card.name != expected.Key || card.GetCost() != expected.Cost)
-                    throw new InvalidOperationException("Original status magnitude carrier changed: " + expected.Key);
+                    throw new InvalidOperationException("Original status witness card changed: " + expected.Key);
+                if (DirectRoomSpells && index >= DeploymentCount)
+                {
+                    var spell = RoomSpells[index - DeploymentCount];
+                    var effect = card.GetEffects().Single();
+                    var status = effect.GetParamStatusEffects().Single();
+                    if (card.GetCardType() != CardType.Spell || card.GetTraits().Single().GetTraitStateName() != nameof(CardTraitExhaustState) ||
+                        effect.GetEffectStateName() != nameof(CardEffectAddStatusEffect) || effect.GetTargetMode() != TargetMode.Room ||
+                        effect.GetTargetTeamType() != Team.Type.Heroes || effect.GetParamInt() != spell.Chance ||
+                        status.statusId != spell.Status || status.count != spell.Stacks)
+                        throw new InvalidOperationException("Original room status spell changed: " + spell.Key);
+                }
                 return card;
             }).ToArray();
             foreach (var owner in originalOwners) save.AddRelic(owner);
@@ -95,7 +120,7 @@ namespace MonsterTrain2Poju.Probe
             if (before != null)
             {
                 var after = trace.CaptureDecision();
-                CardState played = hand![combat.IsPlacementPhase ? index : index - 2];
+                CardState played = hand![combat.IsPlacementPhase ? index : index - DeploymentCount];
                 if (cards.GetHand().Contains(played) || before.Energy - after.Energy != Cards[index].Cost)
                     throw new InvalidOperationException("Original magnitude play did not settle: " + Cards[index].Key);
                 Plays.Add(new { Card = Cards[index].Key, Action = action, Before = before, After = after });
@@ -110,20 +135,20 @@ namespace MonsterTrain2Poju.Probe
                 if (after.Spawn.Turn != 2) throw new InvalidOperationException("Original magnitude first exchange did not settle.");
                 using var document = NativeFixtureCapture.Capture(new
                 {
-                    Schema = 1, Boundary = Moon ? "OriginalMoonStatusMagnitudeWitness" : "OriginalStatusMagnitudeWitness",
+                    Schema = 1, Boundary = DirectRoomSpells ? "OriginalRoomStatusSpells" : Moon ? "OriginalMoonStatusMagnitudeWitness" : "OriginalStatusMagnitudeWitness",
                     GameVersion = UnityEngine.Application.version,
                     GameModuleMvid = typeof(CardState).Module.ModuleVersionId, Plays, Exchange = new { Before = exchange, After = after },
                     Queries = RelicStatusMagnitudeProbe.Queries
                 });
-                string filename = Moon ? "status-magnitude-moon.mt2f" : "status-magnitude.mt2f";
+                string filename = DirectRoomSpells ? "room-status-spells.mt2f" : Moon ? "status-magnitude-moon.mt2f" : "status-magnitude.mt2f";
                 using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, filename));
                 document.Write(stream);
                 Completed = true;
-                log.LogInfo("ORIGINAL-STATUS-MAGNITUDE captured five unchanged original card plays and first native combat.");
+                log.LogInfo("ORIGINAL-STATUS-WITNESS captured " + Plays.Count + " unchanged original card plays and first native combat.");
                 return false;
             }
 
-            if (combat.IsPlacementPhase && index == 2) return true;
+            if (combat.IsPlacementPhase && index == DeploymentCount) return true;
             if (index == Cards.Length)
             {
                 exchange = trace.CaptureDecision();
@@ -134,9 +159,9 @@ namespace MonsterTrain2Poju.Probe
             bool deploying = combat.IsPlacementPhase;
             if (!deploying && combat.GetTurnCount() != 1)
                 throw new InvalidOperationException("Expected original spells during the first normal turn.");
-            if (hand == null || !deploying && hand.Length == 2)
+            if (hand == null || !deploying && hand.Length == DeploymentCount)
             {
-                hand = (deploying ? definitions.Take(2) : definitions.Skip(2)).Select(definition =>
+                hand = (deploying ? definitions.Take(DeploymentCount) : definitions.Skip(DeploymentCount)).Select(definition =>
                     cards.GetHand().FirstOrDefault(card => card.GetCardDataID() == definition.GetID()) ??
                     cards.AddNewCard(definition, CardPile.HandPile, false, false, animate: false) ??
                     throw new InvalidOperationException("Original magnitude card could not reach hand: " + definition.name)).ToArray();
@@ -144,13 +169,16 @@ namespace MonsterTrain2Poju.Probe
             }
 
             var room = rooms.GetRoom(0);
-            CardState next = hand[deploying ? index : index - 2];
+            CardState next = hand[deploying ? index : index - DeploymentCount];
             var allies = new List<CharacterState>();
             room.AddCharactersToList(allies, Team.Type.Monsters);
-            string targetKey = index == 2 ? definitions[1].GetSpawnCharacterData().GetAssetKey() : "TrainStewardBig";
-            CharacterState? target = deploying ? null : allies.Single(unit => unit.IsAlive &&
-                unit.GetSourceCharacterData().GetAssetKey() == targetKey);
-            SpawnPoint point = target?.GetSpawnPoint() ?? room.GetFirstEmptyMonsterPoint();
+            CharacterState? target = null;
+            if (!deploying && !DirectRoomSpells)
+            {
+                string targetKey = index == DeploymentCount ? definitions[1].GetSpawnCharacterData().GetAssetKey() : "TrainStewardBig";
+                target = allies.Single(unit => unit.IsAlive && unit.GetSourceCharacterData().GetAssetKey() == targetKey);
+            }
+            SpawnPoint? point = deploying ? room.GetFirstEmptyMonsterPoint() : target?.GetSpawnPoint();
             before = trace.CaptureDecision();
             action = new PlayCardAction(trace.CardId(next), 0, deploying ? allies.Count : -1,
                 targetUnitId: target == null ? 0 : trace.UnitId(target));
