@@ -355,6 +355,11 @@ Assembly Room 复制前排单位并把复制体下移，Echo Bloom 让底层腐�
 采样同时记录物理站位和移动前月相。
 [`assembly-and-corruption.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-room-abilities/assembly-and-corruption.mt2f)
 
+原版法术和单位升级计数遗物在 2.3.1 中各使用实际取得的定义。整战记录 44 次修饰回调和
+26 次原版筛选，覆盖 0、1、2 个可见升级、重置、重复及逐件对照。
+23 次出牌、7 次结束回合及候选检查通过。
+[`battle.mt2f`](../tests/compatibility/game-2.3.1/mechanics/original-upgrade-count-relics/battle.mt2f)
+
 腐化遗物批次观察到原版为楼层敌军增加两层 Corrupt Poison。部署结束后的两张零费测试牌
 单独核对，其余状态和随机流逐项比较。19 次出牌、6 次结束回合及候选检查分段通过。
 [`battle.mt2f`](../tests/compatibility/game-2.3.1/mechanics/corruption-relic-trigger/battle.mt2f)
