@@ -194,6 +194,11 @@ Engulfed in Smoke 在另一场结算。各场从部署连续复放至胜利，�
 累计 203 场整战、224/601 张卡牌及 60/236 件遗物已有原版匹配见证。
 [`spawn-statuses.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/spawn-statuses.mt2f)
 
+Chicot 在 2.3.1 原版首战补录了首领出生时获得 3 层 Muted。专项复放比较了 12 个出生阶段
+与 32 条独立分支，完整胜局的 18 次出牌、6 次结束回合和两类候选检查也通过。
+原生采集用 `-OriginalChicotRelic -BranchCardMasks -BinaryCapture`，包含 Devote 候选所需的手牌特性。
+[`boss-mute-chicot.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/boss-mute-chicot.mt2f)
+
 受控法术批次录到伤害、治疗、过量治疗和未来抽牌。Dark Deal 定向检查从录制动作找到
 原版卡牌与目标，核对两版相同的 Rage、伤害和随机流。两版均通过专项检查，该 2.3.1
 胜局另通过 10 次出牌、5 次结束回合、16 条分支和候选检查。
