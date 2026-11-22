@@ -19,7 +19,7 @@ internal static class OriginalTriggerRelicBatchChecks
         ("DragonsGainStrikeAddPyregel", "1fdf2fde-a5e7-4eae-86eb-d432145c4621", "OnAttacking", Dragon, false, "LastAttackedCharacter", ["pyregel"], [5]),
         ("WhelpStrikeAddPyregel_DH", "588825ab-8517-48db-8447-31b48e931aaa", "OnAttacking", Whelp, false, "LastAttackedCharacter", ["pyregel"], [3])
     ];
-    internal static IReadOnlyDictionary<string, int>? Native(FixtureValue root, bool required = false)
+    internal static IReadOnlyDictionary<string, int>? Native(FixtureValue root, bool required = false, bool? expectedShifts = null)
     {
         bool eligible = root.TryGetProperty("ModifierScenario", out var scenario) && scenario.GetString() == "original-trigger-relic-batch";
         Require(eligible || !required, "Fixture lacks the original added-trigger relic batch.");
@@ -27,8 +27,7 @@ internal static class OriginalTriggerRelicBatchChecks
         int schema = root.GetProperty("Schema").GetInt32();
         bool deathCapture = schema == 103;
         string? module = root.GetProperty("GameModuleMvid").GetString();
-        bool currentPhysical = module == Game231FixtureCatalog.Module &&
-            root.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version && schema == 106;
+        bool currentPhysical = IsCurrentPhysical(root);
         Require(module == LegacyModule || currentPhysical, "Unverified native trigger relic build or capture shape.");
         Require(schema is 103 or 106 && root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" &&
@@ -137,31 +136,38 @@ internal static class OriginalTriggerRelicBatchChecks
             }
         }
         Console.WriteLine("ORIGINAL-TRIGGER-RELIC-WITNESSES " + string.Join(", ", witnesses.Select(item => item.Key + "=" + item.Value)));
-        // The current physical capture exercises enemy equipment and Angel death.
-        // The legacy physical capture exercises Shift and the Whelp's strike.
-        string[] absentWitnesses = deathCapture || currentPhysical
+        bool hasShifts = shifts > 0;
+        Require(!expectedShifts.HasValue || expectedShifts.Value == hasShifts,
+            "Original trigger relic battle has the wrong movement route.");
+        bool requiresDeathWitness = deathCapture || (currentPhysical && !hasShifts);
+        string[] absentWitnesses = requiresDeathWitness
             ? ["AngelsSpawnWithShiftyValor", "WhelpStrikeAddPyregel_DH"]
             : ["RageOnHymnistDeath"];
-        bool hasExpectedActions = currentPhysical
-            ? enemyEquipment > 0 && shifts == 0
-            : deathCapture || (enemyEquipment > 0 && shifts > 0);
+        bool hasExpectedActions = deathCapture || (enemyEquipment > 0 && (currentPhysical || hasShifts));
         Require(equipmentPlays > 0 && woundedHeals > 0 && hasExpectedActions &&
             witnesses.Where(item => !absentWitnesses.Contains(item.Key)).All(item => item.Value > 0),
             "Some original relics lack a positive effect beyond trigger metadata.");
         if (currentPhysical) RecordedBattleChecks.Native(root);
-        string scope = currentPhysical ? "2.3.1 physical death and equipment" : deathCapture ? "stationary death" : "physical Shift";
+        string scope = currentPhysical && !hasShifts ? "2.3.1 physical death and equipment" : deathCapture ? "stationary death" : "physical Shift";
         Console.WriteLine($"NATIVE-ORIGINAL-TRIGGER-RELICS PASS: ten unchanged originals installed, {Artifacts.Length - absentWitnesses.Length} required effect witnesses ({scope}), {births} complete births, {enemyAngels} enemy Angels, {admitted} admitted/{excluded} excluded counts, {equipmentPlays} equips/{enemyEquipment} enemy equips/{woundedHeals} wounded heals, {shifts} shifts; per-relic effect ablations and 32 immutable installation branches.");
         return witnesses;
     }
     internal static void Combined(FixtureValue deaths, FixtureValue shifts)
     {
-        Require(deaths.GetProperty("Schema").GetInt32() == 103 && shifts.GetProperty("Schema").GetInt32() == 106 &&
-            deaths.GetProperty("GameModuleMvid").GetString() == LegacyModule && shifts.GetProperty("GameModuleMvid").GetString() == LegacyModule,
-            "Combined acceptance requires both legacy stationary and physical native archives.");
-        var a = Native(deaths, required: true)!; var b = Native(shifts, required: true)!;
+        bool currentPair = IsCurrentPhysical(deaths) && IsCurrentPhysical(shifts);
+        bool legacyPair = deaths.GetProperty("Schema").GetInt32() == 103 && shifts.GetProperty("Schema").GetInt32() == 106 &&
+            deaths.GetProperty("GameModuleMvid").GetString() == LegacyModule && shifts.GetProperty("GameModuleMvid").GetString() == LegacyModule;
+        Require(currentPair || legacyPair, "Combined acceptance requires complementary native archives from one verified build.");
+        var a = Native(deaths, required: true, expectedShifts: currentPair ? false : null)!;
+        var b = Native(shifts, required: true, expectedShifts: currentPair ? true : null)!;
         Require(Artifacts.All(item => a[item.Key] > 0 || b[item.Key] > 0), "The two native archives do not cover every original relic effect.");
         Console.WriteLine("NATIVE-ORIGINAL-TRIGGER-RELICS-COMBINED PASS: all ten unchanged originals have actual effect witnesses across two complete native battles.");
     }
+    private static bool IsCurrentPhysical(FixtureValue root) =>
+        root.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+        root.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+        root.GetProperty("Schema").GetInt32() == 106;
+
     private static void CheckDefinitions(IReadOnlyList<CombatRelicState> relics, Dictionary<string, CombatTrigger> definitions)
     {
         foreach (var item in Artifacts)
