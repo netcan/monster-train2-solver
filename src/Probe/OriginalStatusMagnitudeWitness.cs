@@ -164,6 +164,7 @@ namespace MonsterTrain2Poju.Probe
                             effects[0].GetTargetMode() == TargetMode.DropTargetCharacter && effect.GetTargetMode() == TargetMode.LastTargetedCharacters,
                         nameof(CardEffectFloorRearrange) => index == 1 && effects[0].GetTargetMode() == TargetMode.DropTargetCharacter &&
                             effect.GetTargetMode() == TargetMode.LastTargetedCharacters && effect.GetParamInt() is 0 or 1,
+                        nameof(CardEffectAddTempCardUpgradeToUnits) => index == 0 && IsOriginalCycleOfLife(card, rule),
                         _ => false
                     }).Any(supported => !supported))
                     throw new InvalidOperationException("Original opening spell is outside the admitted direct effects: " + card.name);
@@ -174,6 +175,18 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("The configured opening spells exceed the stock three Ember.");
             return spells;
         }
+
+        private static bool IsOriginalCycleOfLife(CardData card, CardPlayRule rule) =>
+            card.GetID() == "175a7730-7a1c-4da1-97b8-d799e7570396" && card.name == "CycleOfLife" &&
+            card.GetCost() == 3 && card.GetTraits().Count == 0 &&
+            rule.Effects is
+            [
+                { Type: "UnitUpgrade", Target: "DropTargetCharacter", AllowPlayer: true, AllowEnemy: true,
+                    Lifetime: "TemporaryUntilEndOfBattle", Upgrade: { DataId: "3c86d5f0-79a5-4984-8611-c79a871425c4",
+                        AssetKey: "AwokenCycleOfLife", Stats: { Health: 10, Damage: 0 }, Statuses.Count: 0, ExternalInteractions.Count: 0 } },
+                { Type: "AddStatus", Target: "LastTargetedCharacters", AllowPlayer: true, AllowEnemy: true,
+                    Statuses: [{ Id: "spikes", Stacks: 8 }] }
+            ];
 
         internal static void PrepareContinuous(AllGameManagers managers, ManualLogSource log)
         {
@@ -238,7 +251,7 @@ namespace MonsterTrain2Poju.Probe
             CombatTeam team = effect.Type switch
             {
                 "Damage" => CombatTeam.Enemy,
-                "Heal" => CombatTeam.Player,
+                "Heal" or "UnitUpgrade" => CombatTeam.Player,
                 "AddStatus" when !effect.AllowPlayer => CombatTeam.Enemy,
                 "AddStatus" when !effect.AllowEnemy => CombatTeam.Player,
                 // Armor protects its recipient even when the native definition allows either team.
@@ -277,6 +290,9 @@ namespace MonsterTrain2Poju.Probe
                     "Damage" => result == null || result.Health < unit.Health ||
                         new[] { "armor", "damage shield", "spell shield" }.Any(status => Stacks(result, status) < Stacks(unit, status)),
                     "Heal" => result != null && result.Health > unit.Health,
+                    "UnitUpgrade" => result != null && effect.Upgrade != null &&
+                        result.Health - unit.Health == effect.Upgrade.Stats.Health &&
+                        result.MaxHealth - unit.MaxHealth == effect.Upgrade.Stats.Health,
                     "AddStatus" => result != null && effect.Statuses.Any(status => Stacks(result, status.Id) > Stacks(unit, status.Id)),
                     _ => false
                 };
