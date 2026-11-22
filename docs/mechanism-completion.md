@@ -275,6 +275,10 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 16 条分支和候选检查通过。
 [`incant-and-hit.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-reactive-units/incant-and-hit.mt2f)
 
+单位增益批次核对八张原版卡牌的升级与状态变化、Burnout 筛选、同层与相邻层目标、
+四条 Consume 路径。12 次出牌、5 次结束回合、16 条分支和候选检查通过。
+[`buffs-and-consume.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-unit-buffs/buffs-and-consume.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
