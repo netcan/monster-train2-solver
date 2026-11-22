@@ -135,6 +135,11 @@ Bloodthirsty Blade、Eclipse Chamber 和 Zone of Silence。第 6 环战前档为
 胜后存档，此时地图分支还没选。之后同一进程完成左路原版购买和下一战入口，
 复制件保存在 `.probe-runs/campaign-ring6-20261122-133531-4f888e78-before-map-ring6`。
 
+从该地图前档另选 Hexcalation 与 KillRandomUnit，再购买同一 Endless 强化，
+同样通过原版战役检查。新原版部署快照在
+`.probe-runs/full-battle-units-spells-and-junk-20261122-133838-1c3a71e4/player-deployment.mt2f`。
+两种部署的 70 步与 68 步离线复放均判负，签名状态及随机流验证通过。
+
 第 5 环的首次整场对照从 10 点薪火生命开始，原版判负且四项采集计数为零。另一条部署路线验证了
 StealthWaxers 的出生条件与月相手牌更新可同时生效。两次部署与结束回合的后继在原版完全一致，
 归档为 `mechanics/stealth-waxers-moon-refresh/native-branch.mt2f`。

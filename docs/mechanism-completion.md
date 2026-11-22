@@ -59,6 +59,12 @@ ModelChecks 调用，`BattleSearchModel`、实际出牌与回合切换没有调�
 卡牌明细为 `results/card-evidence-2.3.1.tsv`，按 `Get-CardCoverageInventory.ps1 -Current`
 重建。遗物明细仍由上面的遗物盘点生成。
 
+复核同一批 183 场后，卡牌定义匹配修正为 145/601，另有 14 张留下出牌身份、442 张
+暂无出牌记录。原版出生目录省略了两个未触发的生命周期字段，整战记录显式写入
+`false`。仅归一这对默认值，两个字段任一个为 `true` 的反例仍拒绝匹配。
+同一份 Cael 原版试炼复放核对了 26 次出牌、6 次回合结束和 16 条独立分支。
+这项盘点修正复用了原有战斗数据。
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
