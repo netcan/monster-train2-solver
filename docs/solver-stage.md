@@ -390,3 +390,8 @@ Cael 零盟约试炼的攻击与生命、吸血变体分别通过 26 次出牌�
 128 节点串并行计划与复放一致，搜索达到节点与回合预算。归档为
 `tests/compatibility/game-2.3.1/mechanics/priority-relic-battle/battle.mt2f`，
 录制入口为 `Run-FullBattleProbe.ps1 -OriginalPriorityRelicBattle -BinaryCapture`。
+
+2026-11-22 的 2.3.1 整场复放验收通过 183 场，167 场连续通过，16 场分段通过。
+合计 2,741 次出牌或技能、1,132 次 EndTurn，零失败，另有 100 份证据档跳过整场检查。
+报告为 `results/recorded-chain-triage-20261122-121026-5a641be0/report.tsv`。
+第 6 环试炼另对 53 个录制局面枚举了 961 个出牌或技能候选和 53 个结束回合，零未支持、零截断。
