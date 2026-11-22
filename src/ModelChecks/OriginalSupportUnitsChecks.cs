@@ -1073,9 +1073,11 @@ internal static class OriginalSupportUnitsChecks
                 "Kinhost Carapace", "KinhostCarapace", "MonsterKinhostCarapace", 2, 10, 10, 3, 2,
                 "b1d96383-909d-4df1-8942-297454910820");
             ScalingUnitUpgradeTrait[] abilityScaling = template.Ability!.CardCreation!.UnitUpgradeScalingTraits!.ToArray();
+            bool currentBuild = root.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+                root.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module;
             bool MatchesCorruptionScaling(ScalingUnitUpgradeTrait trait, string stat) => trait.Stat == stat &&
                 trait.AmountPerStat == 2 && trait.Restriction == 0 && trait.Query.Type == "CorruptionInTargetRoom" &&
-                trait.Query.Duration == "ThisTurn" && trait.Query.CurrentCostCardModifiersOnly &&
+                trait.Query.Duration == "ThisTurn" && trait.Query.CurrentCostCardModifiersOnly == !currentBuild &&
                 trait.Query.CurrentCostSourceIsSpell;
             Require(abilityScaling.Length == 2 && abilityScaling.Count(trait => MatchesCorruptionScaling(trait, "Damage")) == 1 &&
                 abilityScaling.Count(trait => MatchesCorruptionScaling(trait, "Health")) == 1,
