@@ -4084,8 +4084,8 @@ namespace MonsterTrain2Poju.Model
                         Heal(unit, amount, "Regen");
                     }
                     // Stealth shares the native post-combat poison stage and is consumed even without an opponent.
-                    foreach (CombatStatus status in unit.RegisteredStatuses().OrderBy(status => status.Id == "unstable" ? 4 :
-                        status.Id == "corruption" ? 2 : 0).ToArray())
+                    foreach (CombatStatus status in unit.RegisteredStatuses()
+                        .OrderBy(status => StatusTriggerOrderModel.TriggerOrder(status.Id)).ToArray())
                     {
                         if (!unit.Alive || !unit.Has(status.Id) || !Active(status)) continue;
                         if (status.Id is "poison" or "decay" or "corruption")
@@ -4102,6 +4102,7 @@ namespace MonsterTrain2Poju.Model
                             Trigger(unit, status.Id, 1);
                             Damage(null, unit, amount, status.Id == "decay" ? "Decay" : status.Id == "corruption" ? "Corruption" : "Poison");
                         }
+                        else if (status.Id == "ephemeral") TriggerEphemeral(unit);
                         else if (status.Id == Witherbloom) WitherbloomDamage(unit, status);
                         else if (status.Id == "unstable" && !unit.Has("blastresistant") &&
                             unit.Count("unstable") >= unit.Health && !unit.Has("untouchable"))
@@ -4116,9 +4117,6 @@ namespace MonsterTrain2Poju.Model
                         // callbacks would otherwise overwrite shared card caches.
                         if (unsupportedReason != null || battleWon || CombatPreviewStopped()) return;
                     }
-                    if (unit.Alive && unit.Has("ephemeral") && Active(unit.Statuses["ephemeral"]))
-                        TriggerEphemeral(unit);
-                    if (unsupportedReason != null) return;
                 }
             }
 
