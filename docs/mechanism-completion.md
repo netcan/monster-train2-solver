@@ -243,6 +243,10 @@ ExtraSpellCastTrigger、ExtraSpawnTrigger 和 ExtraDeathTrigger 在同一原版�
 21 次出牌、7 次结束回合和两类候选检查通过。
 [`incant-relics-combined.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/incant-relics-combined.mt2f)
 
+2ChargesOnCardConsumed 的原版对照核对有效消耗牌使选中楼层增加 1 点充能，其他楼层保持原值。
+普通牌对照与消耗牌实际入堆均匹配。5 次出牌、7 次结束回合及两类候选检查通过。
+[`two-charges-on-consume.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/two-charges-on-consume.mt2f)
+
 两个 2.3.1 原版移动遗物场景复用移动前月相掩码采集。升降层伤害场景实测敌军上移和下移
 各受 3 点伤害。Pyregel 场景实测敌军上移获得 2 层 Pyregel，并核对下移、友军和移动受阻对照。
 每份录像通过 22 个移动边界及 42 次出牌检查，脚本布置结束后另核对 20 次出牌、5 次结束回合和
