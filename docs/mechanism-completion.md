@@ -254,6 +254,10 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 5 余烬，同回合首次装备提供 1 余烬。22 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
 [`death-and-first-equipment.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-relics/death-and-first-equipment.mt2f)
 
+两个原版出牌抽牌遗物记录六次出牌阈值触发和一次 Snack 触发。Snack 使用专门构造的测试对照牌。
+23 次出牌、7 次结束回合、16 条独立分支和候选检查通过。
+[`played-card-and-snack-draw.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-relics/played-card-and-snack-draw.mt2f)
+
 三件原版 Conduit 遗物分别覆盖每回合首次出生、装备和击杀。采样保留物理位置，并核对 14 次出生、
 11 次击杀和两次装备的逐件移除对照。21 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
 [`birth-equipment-and-slay.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-conduit-relics/birth-equipment-and-slay.mt2f)
