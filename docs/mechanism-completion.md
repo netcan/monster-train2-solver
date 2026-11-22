@@ -323,6 +323,10 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 两版专项均核对获得遗物、部署调用和上限。21 次出牌、7 次结束回合及两类候选通过。
 [`deployment-hoard.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-relics/deployment-hoard.mt2f)
 
+原版 OneEmberFirstTurn_DH 在首个正式回合额外获得 2 余烬。两版均通过部署、取得遗物和移除遗物对照，
+核对 23 次出牌、7 次结束回合及两类候选。
+[`first-turn-energy.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-relics/first-turn-energy.mt2f)
+
 两件原版 Sting 遗物对照 53 次卡牌修饰回调，三次付费施放均获得合计 +30 伤害与穿甲。
 19 次出牌、6 次结束回合、32 条修饰器分支和候选检查通过。
 [`sting-with-original-relics.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/sting-with-original-relics.mt2f)
