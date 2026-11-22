@@ -4095,6 +4095,7 @@ namespace MonsterTrain2Poju.Model
                         if (!unit.Alive || !unit.Has(status.Id) || !Active(status)) continue;
                         if (status.Id is "poison" or "decay" or "corruption")
                         {
+                            string? placementSuppressor = null;
                             if (source.Deployment && status.RemoveWhenTriggered && !status.RemoveDuringDeployment)
                             {
                                 RelicStatusDecayResult removal = RelicStatusDecayModel.GetShouldRemove(context, true,
@@ -4102,10 +4103,12 @@ namespace MonsterTrain2Poju.Model
                                 if (!removal.Supported) { unsupportedReason = removal.UnsupportedReason; return; }
                                 context = removal.Context;
                                 if (removal.ShouldRemove) continue;
+                                placementSuppressor = removal.SuppressingRelicId;
                             }
                             int amount = StatusMagnitude(unit, status.Id);
-                            Trigger(unit, status.Id, 1);
-                            Damage(null, unit, amount, status.Id == "decay" ? "Decay" : status.Id == "corruption" ? "Corruption" : "Poison");
+                            string? suppressor = Trigger(unit, status.Id, 1);
+                            Damage(null, unit, amount, status.Id == "decay" ? "Decay" : status.Id == "corruption" ? "Corruption" : "Poison",
+                                relicSourced: status.Id == "poison" && (placementSuppressor != null || suppressor != null));
                         }
                         else if (status.Id == "ephemeral") TriggerEphemeral(unit);
                         else if (status.Id == Witherbloom) WitherbloomDamage(unit, status);
@@ -6439,7 +6442,7 @@ namespace MonsterTrain2Poju.Model
                 context = next;
             }
 
-            private void Trigger(WorkingUnit unit, string id, int count)
+            private string? Trigger(WorkingUnit unit, string id, int count)
             {
                 if (unit.Statuses.TryGetValue(id, out CombatStatus? status) &&
                     (status.RemoveWhenTriggered || status.RemoveWhenTriggeredAfterCardPlayed || status.RemoveAtEndOfTurnIfTriggered) &&
@@ -6447,7 +6450,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     RelicStatusDecayResult removal = RelicStatusDecayModel.GetShouldRemove(context, true, id,
                         unit.Source.Team == CombatTeam.Player ? 2 : 1, source.Preview);
-                    if (!removal.Supported) { unsupportedReason = removal.UnsupportedReason; return; }
+                    if (!removal.Supported) { unsupportedReason = removal.UnsupportedReason; return null; }
                     if (removal.ShouldRemove)
                     {
                         if (status.RemoveWhenTriggeredAfterCardPlayed)
@@ -6460,7 +6463,9 @@ namespace MonsterTrain2Poju.Model
                             RemoveStatus(unit, id, count);
                         }
                     }
+                    return removal.SuppressingRelicId;
                 }
+                return null;
             }
 
             private void QueueCallback(QueuedCharacterTrigger callback)
