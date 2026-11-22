@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using MonsterTrain2Poju.Capture;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
@@ -111,7 +112,11 @@ internal static class CardCoverageInventory
             WriteDamageAudit(eligible, indexed);
             return;
         }
-        if (check) CheckBirthLifecycleEvidence(byId);
+        if (check)
+        {
+            CheckBirthLifecycleEvidence(byId);
+            CheckStaticTriggerEvidence(byId);
+        }
 
         var report = new StringBuilder();
         Row(report, "GameVersion", "GameModuleMvid", "DataId", "AssetKey", "Role", "EligibleLogbookPlay", "Evidence", "MatchedPlays",
@@ -162,6 +167,36 @@ internal static class CardCoverageInventory
                 HasFinishedDying = false, IsBeingRemoved = false, IsDespawned = despawned, IsDestroyed = destroyed } } });
             Require(!Equivalent(catalog.RootElement, observed.RootElement, ruleRoot: true, cardRule: true, currentBuild: true),
                 "A despawned or destroyed unit cannot match a live birth definition.");
+        }
+    }
+
+    private static void CheckStaticTriggerEvidence(IReadOnlyDictionary<string, Card> byId)
+    {
+        const string arkion = "mechanics/player-advisor-rolling/migrated-covenant10-arkion-pyre-frozen.mt2f";
+        const string ringFour = "mechanics/player-advisor-rolling/migrated-covenant10-ring4-defeat-frozen.mt2f";
+        (string Id, string Archive, int Action)[] witnesses =
+        [
+            ("276fdd51-4bb8-4810-9bbf-cb663522b70f", arkion, 1), // BrandedWarrior
+            ("ee2a1d34-f1de-43ac-a06b-f3a414c93363", arkion, 2), // HotHead
+            ("c8b428ac-a1e9-4e52-96e0-5eed522195a2", arkion, 5), // Railbeater
+            ("d76be2d0-f851-4d43-bdc0-7c7a7779724f", arkion, 23), // StarterImp
+            ("dcfdf8cc-0b0b-41e2-97a2-383fe303e617", ringFour, 3), // AlchemicalAssistant
+            ("08001aa4-2e9d-42da-9ba7-ff4b0fd5ce80", ringFour, 15), // BoilerRoom
+        ];
+        foreach (var witness in witnesses)
+        {
+            Card card = byId[witness.Id];
+            Require(card.Evidence.TryGetValue(witness.Archive, out Plays? plays) && plays.Direct.Contains(witness.Action),
+                $"Static trigger rule does not match the original {card.Name} definition at action {witness.Action}.");
+        }
+
+        using var catalog = NativeFixtureCapture.Capture(new { SpawnUnit = new { Triggers = new[] { new { FireCount = 1 } } } });
+        foreach (var (admission, count) in new (object, int)[] { (true, 1), ("unknown", 1), (false, 2) })
+        {
+            using var observed = NativeFixtureCapture.Capture(new { SpawnUnit = new { Triggers = new[] {
+                new { NoCountModifiersAllowed = admission, FireCount = count } } } });
+            Require(!Equivalent(catalog.RootElement, observed.RootElement, ruleRoot: true, cardRule: true, currentBuild: true),
+                "Changed trigger count or admission cannot match a static trigger definition.");
         }
     }
 
@@ -1013,6 +1048,15 @@ internal static class CardCoverageInventory
                 // The original birth template emits both lifecycle flags as false when capture enables them.
                 b.Remove("IsDespawned");
                 b.Remove("IsDestroyed");
+            }
+            if (currentBuild && cardRule && !a.ContainsKey("NoCountModifiersAllowed") &&
+                b.TryGetValue("NoCountModifiersAllowed", out var countAdmission) && countAdmission.ValueKind == FixtureKind.False &&
+                Regex.IsMatch(path, @"^\$(?:\.SpawnUnit\.Triggers\[[0-9]+\]|\.Effects\[[0-9]+\]\.RoomAttachment\.CharacterUpgrades\[[0-9]+\]\.TriggerUpgrades\[[0-9]+\])$",
+                    RegexOptions.CultureInvariant))
+            {
+                // Both static templates use EnemySpawningProbe.TriggerDefinition,
+                // which emits false when native trigger-count capture is enabled.
+                b.Remove("NoCountModifiersAllowed");
             }
             if (cardRule && path.Contains(".MaskDescriptor.KillTriggers[", StringComparison.Ordinal) &&
                 path.EndsWith(".SpawnFallbackUnit", StringComparison.Ordinal) && Text(left, "AssetKey") == "MonsterFunguy" &&
