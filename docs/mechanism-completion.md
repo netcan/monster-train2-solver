@@ -262,6 +262,11 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 25 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
 [`opening-and-full-health-draw.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-relics/opening-and-full-health-draw.mt2f)
 
+三件原版 Pyre 抽牌遗物各使每回合补牌增加 1 张。三件同持时连续六回合各抽 8 张，
+逐件移除的对照均为 7 张。另核对五次资源与金币刷新、六个 Pyre 战斗阶段和胜利后规则列表的刷新。
+1 次出牌、7 次结束回合及两类候选检查通过。
+[`pyre-heart-draw-and-resources.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-relics/pyre-heart-draw-and-resources.mt2f)
+
 两件原版 Sting 遗物对照 53 次卡牌修饰回调，三次付费施放均获得合计 +30 伤害与穿甲。
 19 次出牌、6 次结束回合、32 条修饰器分支和候选检查通过。
 [`sting-with-original-relics.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/sting-with-original-relics.mt2f)
