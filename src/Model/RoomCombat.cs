@@ -3760,6 +3760,7 @@ namespace MonsterTrain2Poju.Model
                         isSacrifice: target.Source.DeathState.IsSacrifice,
                         statisticsListenerOnce: target.Source.DeathState.StatisticsListenerOnce.HasValue ? false : (bool?)null)));
                 if (!UpdateEnchantments(target.Source.Id)) return;
+                bool wonDuringDeathTrigger = false;
                 if (enqueueCharacterTrigger != null) enqueueCharacterTrigger(new QueuedCharacterTrigger(target.RoomIndex, target.Freeze(),
                     returnSpawnerAfterQueue: deferReturn || returnSpawnerAfterQueue, deferUntilRemoval: deferRemoval, harvestAfterDeath: !target.Despawned && !immediateHarvest,
                     completePhysicalRemovalAfterQueue: deferRemoval && context?.SpawnPoints != null, removalLifecycle: true,
@@ -3769,7 +3770,9 @@ namespace MonsterTrain2Poju.Model
                     if (deferRemoval) deferredDamageDeaths.Add((target, deferReturn, false, waitForRevival));
                     else
                     {
+                        bool wonBeforeDeathTrigger = battleWon;
                         FireTriggers(target, "OnDeath");
+                        wonDuringDeathTrigger = !wonBeforeDeathTrigger && battleWon;
                         if (target.Source.DeathState != null) target.Apply(target.Freeze().WithDeathState(new UnitDeathState(true, true, false,
                             isSacrifice: target.Source.DeathState.IsSacrifice, statisticsListenerOnce: target.Source.DeathState.StatisticsListenerOnce)));
                         PhysicalHarvest(target);
@@ -3785,7 +3788,8 @@ namespace MonsterTrain2Poju.Model
                 {
                     target.Removed = true;
                     if (doNotFullyRemove) target.Destroyed = true;
-                    else RemovePhysicalPoint(target);
+                    // A win in this callback stops room combat before the enclosing death clears its point.
+                    else if (!stopAfterBossRemoval || !wonDuringDeathTrigger) RemovePhysicalPoint(target);
                     if (!(stopAfterBossRemoval && terminalBossRemoval) && UpdateEnchantments() &&
                         !runningTriggerQueue && enqueueCharacterTrigger == null) DrainLocalTriggerQueue();
                 }
