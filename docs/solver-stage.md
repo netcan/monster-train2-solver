@@ -455,3 +455,7 @@ Cael 零盟约试炼的攻击与生命、吸血变体分别通过 26 次出牌�
 开局进一步减少约 8% 分配量，后期减少约 10% 至 12%。18 次对照的动作、评分、完整状态和随机流
 一致。首战面板、第 6 环右路以及 Colonel 与远层光环三场的两类候选均通过。
 离线基准为 `results/ring6-context-scalar/fixed-budget-allocators.log`。
+
+同一构建定向补查了第 5 环的三条原版战役路线，以及第 6 环第 10 回合败局。共核对
+183 个实机录制局面、3,683 个出牌或技能候选及 183 个结束回合后继，未支持和截断均为零。
+[`第 6 环第 10 回合败局`](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring6-turn10-defeat.mt2f)
