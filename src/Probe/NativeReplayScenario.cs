@@ -963,6 +963,13 @@ namespace MonsterTrain2Poju.Probe
                 Finish(true, "Original effect owners captured.");
                 return;
             }
+            if (fullBattle && OriginalMetallurgyScenario.GrowRoomObservation && OriginalMetallurgyScenario.Prepared &&
+                combat!.GetTurnCount() > 0)
+            {
+                OriginalMetallurgyScenario.CaptureGrowRoomSmelt(managers);
+                Finish(true, "Original GrowRoom smelt queries captured.");
+                return;
+            }
             if (fullBattle && OriginalOuterBossRoute.EarlyTrialSubstitution)
             {
                 bool captured = OriginalOuterBossRoute.CaptureEarlyTrialBirth(managers, log);

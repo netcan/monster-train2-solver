@@ -233,6 +233,7 @@ param(
     [switch] $OriginalSpawningPods,
     [switch] $OriginalMindsOfTheirOwn,
     [switch] $OriginalMetallurgy,
+    [switch] $OriginalGrowRoomSmeltObservation,
     [switch] $OriginalFertileGround,
     [switch] $OriginalCoverOfNight,
     [switch] $OriginalWaxenSpike,
@@ -1318,6 +1319,14 @@ if ($OriginalAcceleratedIncubation) { $BranchCardMasks = $true; $Policy = 'units
 if ($OriginalEagerConscript) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSpawningPods) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMindsOfTheirOwn) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalGrowRoomSmeltObservation) {
+    $allowed = @('OriginalGrowRoomSmeltObservation', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild', 'BinaryCapture',
+        'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
+        throw 'OriginalGrowRoomSmeltObservation requires the isolated binary scenario.'
+    }
+    $OriginalMetallurgy = $true
+}
 if ($OriginalMetallurgy) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFertileGround) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCoverOfNight) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
@@ -2702,6 +2711,7 @@ if ($OriginalEagerConscript) { $environment['MT2_PROBE_MODIFIERS'] = 'original-e
 if ($OriginalSpawningPods) { $environment['MT2_PROBE_MODIFIERS'] = 'original-spawning-pods' }
 if ($OriginalMindsOfTheirOwn) { $environment['MT2_PROBE_MODIFIERS'] = 'original-minds-of-their-own' }
 if ($OriginalMetallurgy) { $environment['MT2_PROBE_MODIFIERS'] = 'original-metallurgy' }
+if ($OriginalGrowRoomSmeltObservation) { $environment['MT2_PROBE_ORIGINAL_GROW_ROOM_SMELT_OBSERVATION'] = '1' }
 if ($OriginalFertileGround) { $environment['MT2_PROBE_MODIFIERS'] = 'original-fertile-ground' }
 if ($OriginalCoverOfNight) { $environment['MT2_PROBE_MODIFIERS'] = 'original-cover-of-night' }
 if ($OriginalWaxenSpike) { $environment['MT2_PROBE_MODIFIERS'] = 'original-waxen-spike' }
@@ -3709,6 +3719,34 @@ if ($OriginalMollisShelterObservation) {
     } finally { $document.Dispose() }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
         Cases=2; Trace=$capturePath } | ConvertTo-Json
+    return
+}
+if ($OriginalGrowRoomSmeltObservation) {
+    $capturePath = Join-Path $profile 'grow-room-smelt-costs.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original GrowRoom smelt observation failed. Inspect $unityLog"
+    }
+    Add-Type -Path (Join-Path $nativeBuildWorkspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $observation = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
+    try {
+        $root = $observation.RootElement
+        if ($root.GetProperty('Boundary').GetString() -cne 'NativeOriginalGrowRoomSmeltCosts' -or
+            $root.GetProperty('GameVersion').GetString() -cne '2.3.1' -or
+            $root.GetProperty('GameModuleMvid').GetString() -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+            $root.GetProperty('Turn').GetInt32() -ne 1 -or
+            -not $root.GetProperty('DecisionUnchanged').GetBoolean() -or
+            $root.GetProperty('FrameBefore').GetInt32() -ne $root.GetProperty('FrameAfter').GetInt32() -or
+            -not $root.GetProperty('RngBefore').ContentEquals($root.GetProperty('RngAfter'))) {
+            throw 'GrowRoom smelt observation has the wrong original scope or changed live state.'
+        }
+        $rows = @($root.GetProperty('Rows').EnumerateArray() | ForEach-Object { $_.ToObjectGraph() })
+        $domain = @($rows | ForEach-Object { "$($_.Room)/$($_.Input)" }) -join ','
+        if ($domain -cne '0/0,0/1,0/2,1/0,1/1,1/2') { throw 'Incomplete native GrowRoom smelt queries.' }
+        Write-Output "ORIGINAL-GROW-ROOM-SMELT PASS $(@($rows | ForEach-Object { "$($_.Room)/$($_.Input)=$($_.Forge)/$($_.Ember)" }) -join ',')"
+    } finally { $observation.Dispose() }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        Trace=$capturePath; SHA256=(Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash } | ConvertTo-Json
     return
 }
 if ($OriginalOpeningPassiveRelics) {
