@@ -5102,6 +5102,8 @@ namespace MonsterTrain2Poju.Model
                     units.Select(item => item.Freeze()).ToArray());
                 if (!born.Supported) { unsupportedReason = born.Result.UnsupportedReason; return false; }
                 MergeSummon(born.Result);
+                // A settled post-combat birth also centers surviving enemies after the exchange.
+                if (!source.Preview && !SummonPhysical("Compact", team: CombatTeam.Enemy)) return false;
                 foreach (var callback in callbacks) QueueCallback(callback);
                 return true;
             }

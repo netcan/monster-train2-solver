@@ -630,6 +630,11 @@ Lunar Priestess 在战后生成四张 Dusk，第一张使原版开启月相追�
 26 次出牌、7 次结束回合及两类候选通过。
 [原版战后生成与月相录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/opening-lunar-priestess.mt2f)
 
+装入两种升级单位模板和一张法术的原版 Jack-in-the-Box 实际放出两名单位并跳过法术。
+首个战后出生完成时，原版把前排空槽后的敌人前移。中间房间阶段、5 次出牌、5 次结束回合、
+16 条独立分支和两类候选均匹配，旧版有内容和空盒对照也通过。
+[原版盒子战后出生录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/jack-in-the-box-populated.mt2f)
+
 原版 First of Kin 和 Sacrificial Resurrection 的同场对照核对两张手牌被消耗、单位增攻及
 Draff 出生，Morel Mistress 提供排除对照。7 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`exhausted-first-of-kin.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/exhausted-first-of-kin.mt2f)
