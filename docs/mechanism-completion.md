@@ -270,6 +270,11 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 8 次出牌、5 次结束回合、39 项专项对照、16 条分支和候选检查通过。
 [`feeding-and-abilities.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-morsels/feeding-and-abilities.mt2f)
 
+反应型单位批次核对 Reap、OnHit 和多次 Incant 的实际原版结算。2.3.1 的 Runebound Guardian
+出生带 20 点护甲，自身和 Healing Totem 的 Incant 每次共加 5。24 次出牌、5 次结束回合、
+16 条分支和候选检查通过。
+[`incant-and-hit.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-reactive-units/incant-and-hit.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
