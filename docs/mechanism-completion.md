@@ -462,8 +462,12 @@ Rage Room 实机核对房间触发器、楼层与队伍范围，以及友军获�
 
 房间批次记录九张指定原版牌，实际施放与结束回合逐项复放。Electricity Chamber 的出生尖刺
 通过原版专项核对。13 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
-房间依次替换后，Reanimation Lab 和 Imprisoned Zephyr 的完整正向对照另行采样。
+房间依次替换后，Imprisoned Zephyr 的完整正向对照另行采样。
 [`spawn-triggers-and-range.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-room-abilities/spawn-triggers-and-range.mt2f)
+
+Reanimation Lab 的独立对照实放原版 Dreg 并核对出生升级。6 次出牌、5 次结束回合、16 条独立分支
+和两类候选检查通过。
+[`reanimation-birth.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-room-abilities/reanimation-birth.mt2f)
 
 原版法术和单位升级计数遗物在 2.3.1 中各使用实际取得的定义。整战记录 44 次修饰回调和
 26 次原版筛选，覆盖 0、1、2 个可见升级、重置、重复及逐件对照。
