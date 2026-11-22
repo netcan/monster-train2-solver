@@ -86,6 +86,8 @@
 胜局归档为 `unlocked-covenant0-ring5-roster-victory.mt2f`。同一进程完成战后领取和地图选择，保存了
 第 6 环泰坦试炼战前档 `.probe-runs/full-battle-units-spells-and-junk-20261122-101943-8826725e-before-ring6`。
 该档记录前五战全胜，主存档 SHA256 为 `3407bd18b9bbbcccdea847b70312a3a5a43c79d9170eab5043c378aa37430a11`。
+经过治疗点后，第 6 环试炼开场为 28 点薪火生命。顾问首回合遇到敌方攻击增益校验。
+独立原版进程已完成同一开场的结束回合，归档为 `mechanics/angel-duo-trial-entry/native-branch.mt2f`。
 
 第 5 环的首次整场对照从 10 点薪火生命开始，原版判负且四项采集计数为零。另一条部署路线验证了
 StealthWaxers 的出生条件与月相手牌更新可同时生效。两次部署与结束回合的后继在原版完全一致，
