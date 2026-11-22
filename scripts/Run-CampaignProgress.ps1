@@ -15,6 +15,7 @@ param(
     [ValidateSet('Left', 'Right')] [string] $MapBranch = '',
     [ValidateSet('First', 'Last')] [string] $StoryChoiceOrder = 'First',
     [ValidateRange(0, 2)] [int] $DraftChoiceRank = 0,
+    [string] $DraftRelic = '',
     [ValidateRange(0, 2)] [int] $DeploymentRoom = 2,
     [switch] $OuterBossTurns,
     [switch] $OuterBossBirth,
@@ -25,6 +26,7 @@ param(
     [switch] $SkipBuild
 )
 $ErrorActionPreference = 'Stop'
+$DraftRelic = $DraftRelic.Trim()
 $explicitStartingCovenant = $PSBoundParameters.ContainsKey('StartingCovenantLevel')
 if ($CompleteDefeat -and (-not $BattleReplay -or -not $InputProfile)) {
     throw 'CompleteDefeat requires a settled native BattleReplay and its original InputProfile.'
@@ -159,6 +161,7 @@ $inputMetagameHash = (Get-FileHash -LiteralPath (Join-Path $source 'metagameSave
     MapBranch = $MapBranch;
     StoryChoiceOrder = $StoryChoiceOrder;
     DraftChoiceRank = $DraftChoiceRank;
+    DraftRelic = $DraftRelic;
     DeploymentRoom = $DeploymentRoom;
     OuterBossTurns = [bool]$OuterBossTurns; OuterBossBirth = [bool]$OuterBossBirth;
     StoryProgressionOnly = [bool]$StoryProgressionOnly;
@@ -217,6 +220,7 @@ $settings = @{
     MT2_PROBE_CAMPAIGN_MAP_BRANCH = $MapBranch
     MT2_PROBE_CAMPAIGN_STORY_CHOICE_ORDER = $StoryChoiceOrder
     MT2_PROBE_CAMPAIGN_DRAFT_CHOICE_RANK = $DraftChoiceRank.ToString()
+    MT2_PROBE_CAMPAIGN_DRAFT_RELIC = $DraftRelic
     MT2_PROBE_CAMPAIGN_DEPLOYMENT_ROOM = [string]$DeploymentRoom
     MT2_PROBE_BRANCH_CARD_MASKS = '1'; MT2_PROBE_PHYSICAL_SPAWNPOINTS = '1'; MT2_PROBE_GAME_SPEED = 'Instant'
     MT2_PROBE_OUTER_BOSS_TURNS = $(if ($OuterBossTurns) { '1' } else { '0' })
@@ -284,6 +288,14 @@ $inputUnchanged = (Get-FileHash -LiteralPath (Join-Path $source 'saves/save-sing
     (Get-FileHash -LiteralPath (Join-Path $source 'metagameSave.json')).Hash -ceq $inputMetagameHash
 $passed = $process.ExitCode -eq 0 -and $audit.Count -gt 0 -and $audit[-1].kind -eq 'complete' -and $unchanged -and $inputUnchanged -and $replayPassed
 $runOutcome = @($audit | Where-Object kind -EQ 'run-outcome')
+if ($DraftRelic -and $passed) {
+    $selection = @($audit | Where-Object { $_.kind -eq 'draft' -and $_.data.requestedRelic -ceq $DraftRelic })
+    $grant = @($audit | Where-Object kind -EQ 'draft-relic-granted')
+    $passed = $selection.Count -eq 1 -and $grant.Count -eq 1 -and $grant[0].data.requested -ceq $DraftRelic -and
+        $grant[0].index -gt $selection[0].index -and $grant[0].data.id -ceq $selection[0].data.selected.id -and
+        ($selection[0].data.selected.relic -ceq $DraftRelic -or $selection[0].data.selected.id -ieq $DraftRelic) -and
+        @($selection[0].data.offers | Where-Object id -CEQ $grant[0].data.id).Count -eq 1
+}
 if ($MapBranch -and $passed) {
     $distance = $StopBeforeRing - 1
     $expectedBranch = if ($MapBranch -eq 'Left') { 0 } else { 1 }

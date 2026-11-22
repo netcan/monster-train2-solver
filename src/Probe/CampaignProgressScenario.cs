@@ -23,11 +23,14 @@ namespace MonsterTrain2Poju.Probe
         private readonly string auditPath;
         private readonly int stopRing;
         private readonly MapScreen.BranchSelection? requestedMapBranch;
+        private readonly string? requestedDraftRelic;
         private readonly int seed;
         private readonly int? requestedStartingCovenant;
         private float nextAction, lastProgress, heartbeat, quitAt;
         private bool started, setup, menuRequested, checkpointSaving;
         private bool startingCovenantObserved;
+        private string? selectedDraftRelicId;
+        private bool draftRelicGranted;
         private int? selectingRoom;
         private float roomSelectionRequestedAt;
         private int roomSelectionRetries;
@@ -61,6 +64,7 @@ namespace MonsterTrain2Poju.Probe
                 "right" => MapScreen.BranchSelection.RightBranch,
                 _ => null
             };
+            requestedDraftRelic = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_DRAFT_RELIC");
             seed = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_SEED") ?? "424242");
             string? covenant = Environment.GetEnvironmentVariable("MT2_PROBE_STARTING_COVENANT_LEVEL");
             requestedStartingCovenant = afterBattle || covenant == null ? (int?)null : int.Parse(covenant);
@@ -101,6 +105,12 @@ namespace MonsterTrain2Poju.Probe
             SaveManager? save = m?.GetSaveManager();
             ScreenManager? screens = m?.GetScreenManager();
             if (save == null || screens == null) return;
+            if (!draftRelicGranted && selectedDraftRelicId != null && save.GetCollectedRelics()
+                .Any(relic => relic.GetRelicDataID() == selectedDraftRelicId))
+            {
+                draftRelicGranted = true;
+                Record("draft-relic-granted", new { requested = requestedDraftRelic, id = selectedDraftRelicId });
+            }
             if (Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_STORY_ONLY") == "1")
             {
                 if (save.UserState != SaveManager.SaveManagerUserState.UserLoaded || LoadingScreen.IsWorking()) return;
@@ -215,6 +225,21 @@ namespace MonsterTrain2Poju.Probe
                     .OrderByDescending(x => x is CardUI card ? CardValue(card.GetCardState()) : 0).ToList();
                 int rank = int.TryParse(Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_DRAFT_CHOICE_RANK"), out int configuredRank)
                     ? Math.Max(0, Math.Min(configuredRank, 2)) : 0;
+                if (!string.IsNullOrEmpty(requestedDraftRelic) && selectedDraftRelicId == null)
+                {
+                    RelicInfoUI? exact = ranked.OfType<RelicInfoUI>().SingleOrDefault(item => item.relicData != null &&
+                        (string.Equals(item.relicData.name, requestedDraftRelic, StringComparison.Ordinal) ||
+                         string.Equals(item.relicData.GetID(), requestedDraftRelic, StringComparison.OrdinalIgnoreCase)));
+                    if (exact != null)
+                    {
+                        string id = exact.relicData.GetID();
+                        if (Click(exact.SelectableUI as GameUISelectableButton, "draft", new {
+                            offers = offers.Select(DescribeDraft).ToList(), selected = DescribeDraft(exact),
+                            rank = ranked.IndexOf(exact), requestedRelic = requestedDraftRelic }))
+                            selectedDraftRelicId = id;
+                        return;
+                    }
+                }
                 IDraftableUI? choice = ranked.Count == 0 ? null : ranked[Math.Min(rank, ranked.Count - 1)];
                 if (choice != null) Click(choice.SelectableUI as GameUISelectableButton, "draft", new {
                     offers = offers.Select(DescribeDraft).ToList(), selected = DescribeDraft(choice), rank });
@@ -623,6 +648,11 @@ namespace MonsterTrain2Poju.Probe
             node is RewardNodeData reward ? 100 + reward.GetRewards().Sum(x => x is ChampionUpgradeRewardData ? 100 : 0) : 10;
         private void Finish(bool success, string message)
         {
+            if (success && !string.IsNullOrEmpty(requestedDraftRelic) && !draftRelicGranted)
+            {
+                success = false;
+                message = "Native campaign did not obtain the requested draft relic " + requestedDraftRelic + ".";
+            }
             Record(success ? "complete" : "failure", new { message });
             log.LogInfo((success ? "CAMPAIGN-PASS " : "CAMPAIGN-FAIL ") + message);
             quitCode = success ? 0 : 1;
