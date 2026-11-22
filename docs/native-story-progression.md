@@ -59,7 +59,9 @@ StealthWaxers 的出生条件与月相手牌更新可同时生效。两次部署
 左右两条路线均已对账至原版终局，均判负。右路记录 10 个输入，左路记录 26 个输入。
 整战归档为 `unlocked-covenant0-ring5-right-defeat.mt2f` 和 `unlocked-covenant0-ring5-left-defeat.mt2f`。
 左路红冠部署的原版观察记录了 27 个实际可选装备、选中的 Glass Cannon、装备归属与战斗随机流推进。
-归档为 `mechanics/red-crown-equipment-observation/native-branch.mt2f`。该分支仍待顾问支持与逐步比对。
+原始观察和修复后复测分别归档为 `mechanics/red-crown-equipment-observation/native-branch.mt2f` 与
+`native-supported-branch.mt2f`。直接部署已与原版对齐完整后继、挂载顺序、新装备出牌规则与随机流，
+并接入 2.3.1 兼容检查。结束回合期间触发同类出生仍待原版验证。
 左路另选 Follower 和另一组奖励后，原版对账通过 34 个输入，终局仍判负，首领余 798/900 生命。
 该局归档为 `unlocked-covenant0-ring5-follower-defeat.mt2f`。
 
