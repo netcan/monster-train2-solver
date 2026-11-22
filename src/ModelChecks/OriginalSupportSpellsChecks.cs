@@ -689,6 +689,21 @@ internal static class OriginalSupportSpellsChecks
                     .SelectMany(room => room.Units).Any(unit => unit.Id == actor.Id && unit.Health > 0 && unit.Status("hatch")?.Stacks > 0 &&
                         unit.SacrificeCardId == unit.SpawnerCardId && unit.DeathState?.IsSacrifice == false),
                 "Hatching needs positive original-parent exhaustion, exact cardless children and the preview's shared sacrifice-card reference.");
+            if (root.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+                children[0].Ability is { HasAbility: true } ability)
+            {
+                FixtureValue[] turns = root.GetProperty("Turns").EnumerateArray().ToArray();
+                FixtureValue deployment = turns[0].GetProperty("Before");
+                FixtureValue hatched = turns.Select(turn => turn.GetProperty("Actual")).First(state =>
+                    state.GetProperty("Spawn").GetProperty("Train").GetProperty("Rooms").EnumerateArray()
+                        .SelectMany(room => room.GetProperty("Units").EnumerateArray())
+                        .Any(unit => unit.GetProperty("Id").GetInt32() == children[0].Id));
+                FixtureValue AbilityRule(FixtureValue state) => state.GetProperty("PlayRules").GetProperty("Cards").EnumerateArray()
+                    .Single(card => card.GetProperty("DataId").GetString() == ability.DataId);
+                Require(children.All(unit => unit.Ability?.DataId == ability.DataId) &&
+                    AbilityRule(deployment).ContentEquals(AbilityRule(hatched)),
+                    "The native hatch skill must have its complete play rule from deployment.");
+            }
         }
         RecordedBattleChecks.Native(root);
         if (originals.Contains("3b603b7f-300c-4022-9fc2-275448446e58"))

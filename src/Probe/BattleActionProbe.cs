@@ -179,6 +179,19 @@ namespace MonsterTrain2Poju.Probe
                     .Concat(rule.Equipment?.Upgrades.Select(upgrade => upgrade.AbilityUpgrade?.Definition?.DataId) ?? Array.Empty<string?>())
                     .Where(child => !string.IsNullOrEmpty(child)).Cast<string>()) pending.Enqueue(child);
                 foreach (CombatUnit unit in spawned.Where(unit => unit.Ability?.HasAbility == true)) pending.Enqueue(unit.Ability!.DataId);
+                if (spawn.Train.Context?.SummonCatalog is TriggeredSummonCatalog summonCatalog)
+                {
+                    // The original OnHatched callback points to a captured child before it becomes live.
+                    var hatchIds = spawned.SelectMany(unit => unit.Triggers)
+                        .Where(trigger => trigger.Kind == "OnHatched").SelectMany(trigger => trigger.Effects)
+                        .Select(effect => effect.Summon).OfType<TriggeredSummonRule>()
+                        .Where(summon => !summon.EnemyHero)
+                        .SelectMany(summon => new[] { summon.CharacterId, summon.AdditionalCharacterId }.Concat(summon.Pool))
+                        .Where(characterId => characterId.Length > 0).ToHashSet(StringComparer.Ordinal);
+                    foreach (SummonUnitDefinition child in summonCatalog.Units)
+                        if (hatchIds.Contains(child.CharacterId) && child.Unit.Ability is { HasAbility: true } hatchAbility)
+                            pending.Enqueue(hatchAbility.DataId);
+                }
             }
             CardUpgradeModifier? Upgrade(CardUpgradeData? data)
             {
