@@ -449,6 +449,10 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 专项核对单位抽牌、法术排除、升级队列及消耗。6 次出牌、5 次结束回合和两类候选通过。
 [`prism-retrieval.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/prism-retrieval.mt2f)
 
+原版 Awoken’s Rail Spike 核对 X=3、0、10，抽到的牌费用 −1，X 额外 +1，并核对禁抽及下一回合重置。
+11 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
+[`awoken-rail-spike.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/awoken-rail-spike.mt2f)
+
 原版 The Great Decay 为三个牌堆中的法术添加升级。专项验证费用折扣、Consume、
 X 加成和单位筛选。6 次出牌、5 次结束回合、16 条独立分支与两类候选通过。
 [`great-decay.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/great-decay.mt2f)
