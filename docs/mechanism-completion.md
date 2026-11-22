@@ -371,6 +371,10 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 7 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`returned-soul.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/returned-soul.mt2f)
 
+三张原版 Scourge 对照均实际支付 1 余烬，无目标结算后自行移除。
+23 次出牌、7 次结束回合、16 条独立分支及两类候选通过。
+[`null-target-scourges.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/null-target-scourges.mt2f)
+
 七张原版法术与房间牌同场记录 Funguy 的出生与 Horde 增长、Morsel 生成及炼化选牌。
 11 次出牌、5 次结束回合、16 条独立分支和两类候选检查通过。
 [`horde-growth-and-feeding.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/horde-growth-and-feeding.mt2f)
