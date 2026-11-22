@@ -73,8 +73,14 @@ namespace MonsterTrain2Poju.Probe
             {
                 CardToken? card = hand.FirstOrDefault(instance => instance.DataId == dataId);
                 if (card == null) continue;
-                return BattleActionModel.ChooseUnitAndJunkPlay(decision, instance => instance.InstanceId == card.InstanceId) ??
-                    throw new InvalidOperationException("The original unit has no supported deployment action: " + dataId);
+                PlayCardAction? action = BattleActionModel.ChooseUnitAndJunkPlay(decision, instance => instance.InstanceId == card.InstanceId);
+                if (action != null) return action;
+
+                BattleActionEnumeration frontier = BattleActionModel.EnumerateActions(decision, card.InstanceId, includeAbilities: false);
+                string reasons = string.Join(" | ", frontier.UnsupportedAttempts.Select(attempt => attempt.Reason).Distinct());
+                throw new InvalidOperationException("The original unit has no supported deployment action: " + dataId +
+                    " (energy=" + decision.Energy + ", frontier=" + frontier.SupportedCandidates.Count +
+                    (reasons.Length == 0 ? ")" : ", unsupported=" + reasons + ")"));
             }
             return null;
         }
