@@ -303,6 +303,10 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 14 次出牌、6 次结束回合、16 条分支和候选检查通过。
 [`standby-and-severing.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-grafted-equipment/standby-and-severing.mt2f)
 
+房间法强批次使用 Cosmic Bolt、Duality 与 RIP 的原版定义，核对 0 和 5 点房间法强、
+伤害与治疗倍率、费用及楼层目标。8 次出牌、5 次结束回合、16 条分支和候选检查通过。
+[`room-spell-power.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-strong-magic/room-spell-power.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
