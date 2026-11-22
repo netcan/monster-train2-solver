@@ -8014,6 +8014,12 @@ if (args.Length == 2 && args[0] == "--original-changed-temp-upgrade-relics-only"
     OriginalChangedTempUpgradeRelicsChecks.Native(document.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-opening-passive-relics-only")
+{
+    using var document = MonsterTrain2Poju.Fixtures.FixtureDocument.Read(args[1]);
+    OriginalOpeningPassiveRelicsChecks.Native(document.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-hephs-blueprints-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);
