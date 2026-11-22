@@ -141,9 +141,11 @@ namespace MonsterTrain2Poju.Model
         internal BattleStatistics WithOwnedCards(IEnumerable<int> cards)
         {
             if (StoredCards == null) return this;
-            int[] owned = cards.Distinct().ToArray();
-            int[] tracked = StoredCards.Concat(owned).Distinct().ToArray();
-            return Copy(tracked: tracked);
+            var tracked = new HashSet<int>(StoredCards);
+            tracked.UnionWith(cards);
+            // The constructor keeps tracked IDs unique and sorted. Reuse the
+            // immutable statistics when a context clone keeps that membership.
+            return tracked.SetEquals(TrackedCards) ? this : Copy(tracked: tracked.ToArray());
         }
         public BattleStatistics RefreshOwnedCards(IEnumerable<int> cards)
         {
