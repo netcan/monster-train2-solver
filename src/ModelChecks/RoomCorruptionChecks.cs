@@ -411,7 +411,7 @@ internal static class RoomCorruptionChecks
         FixtureValue[] oldHand = oldCards.GetProperty("Hand").EnumerateArray().ToArray();
         FixtureValue[] newHand = newCards.GetProperty("Hand").EnumerateArray().ToArray();
         Require(oldHand.Length == 5 && newHand.Length == oldHand.Length + 2 &&
-            SameCards(newHand.Take(2), [(next + 1, EchoesId), (next, UnearthedId)]) &&
+            RecordedBattleChecks.SameCards(newHand.Take(2), [(next + 1, EchoesId), (next, UnearthedId)]) &&
             oldHand.Zip(newHand.Skip(2)).All(pair => pair.First.ContentEquals(pair.Second)),
             "Expected the two configured corruption relic test spells prepended in native hand order.");
 
@@ -421,7 +421,7 @@ internal static class RoomCorruptionChecks
             FixtureValue[] previous = oldContext.GetProperty(field).EnumerateArray().ToArray();
             FixtureValue[] prepared = newContext.GetProperty(field).EnumerateArray().ToArray();
             FixtureValue[] appended = prepared.Skip(previous.Length).ToArray();
-            Require(SameCards(appended, [(next, UnearthedId), (next + 1, EchoesId)]) &&
+            Require(RecordedBattleChecks.SameCards(appended, [(next, UnearthedId), (next + 1, EchoesId)]) &&
                 previous.Zip(prepared).All(pair => pair.First.ContentEquals(pair.Second)) &&
                 appended.All(card => card.GetProperty("RawCostOverride").GetInt32() == 0 &&
                     card.GetProperty("MaskDescriptor").GetProperty("BaseCost").GetInt32() == 0) &&
@@ -450,18 +450,9 @@ internal static class RoomCorruptionChecks
         RecordedBattleChecks.ReplayOnce(fixture, firstTurn: 1);
     }
 
-    private static void SameFields(FixtureValue before, FixtureValue after, params string[] exceptions)
-    {
-        var previous = before.EnumerateObject().Where(field => !exceptions.Contains(field.Name)).ToArray();
-        var current = after.EnumerateObject().Where(field => !exceptions.Contains(field.Name)).ToArray();
-        Require(previous.Length == current.Length && previous.Zip(current).All(pair =>
-            pair.First.Name == pair.Second.Name && pair.First.Value.ContentEquals(pair.Second.Value)),
+    private static void SameFields(FixtureValue before, FixtureValue after, params string[] exceptions) =>
+        Require(RecordedBattleChecks.SameFields(before, after, exceptions),
             "Native corruption relic hand setup changed unrelated state.");
-    }
-
-    private static bool SameCards(IEnumerable<FixtureValue> values, (int, string)[] expected) =>
-        values.Select(card => (card.GetProperty("InstanceId").GetInt32(), card.GetProperty("DataId").GetString()))
-            .SequenceEqual(expected.Select(card => (card.Item1, (string?)card.Item2)));
 
     internal static void NativeRelicTrigger(FixtureValue fixture)
     {

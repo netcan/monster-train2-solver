@@ -68,6 +68,11 @@ internal static class NativeBattleRegistration
                 RoomCorruptionChecks.ReplayRelicSetup(battle, mismatch.Message);
                 continuity = "verified-setup-segments";
             }
+            catch (InvalidOperationException mismatch) when (archiveKey == OriginalUnitRelicBatchChecks.BattleArchive)
+            {
+                OriginalUnitRelicBatchChecks.ReplayPreparedTurns(battle, mismatch.Message);
+                continuity = "verified-setup-segments";
+            }
             if (cardFrontiers && plays > 0)
                 BattleSearchChecks.RecordedFrontiers(battle, requireZeroUnsupported: true, report: false);
             if (endTurnFrontiers)

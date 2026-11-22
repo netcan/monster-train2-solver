@@ -4,6 +4,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalUnitRelicBatchChecks
 {
+    internal const string BattleArchive = "mechanics/controlled-unit-relic-batch/battle.mt2f";
     private const string Demon = "SubtypesData_Demon_fcebd195-f262-4d7a-ac9f-01ffa2007a12";
     private const string Snack = "SubtypesData_Snack";
     private static readonly (string Key, string Id, string? Upgrade, string? Subtype)[] Artifacts =
@@ -13,6 +14,102 @@ internal static class OriginalUnitRelicBatchChecks
         ("MorselsGetDamageShield", "d1daea7e-3346-47df-a756-c839b044e5f3", "cd9f3315-56f6-4400-bef7-a77c16ed8c83", Snack),
         ("ValorTransferOnAngelDeath", "8c493cd7-8048-4598-bdd5-6cc2801cd842", null, null)
     ];
+
+    internal static void ReplayPreparedTurns(FixtureValue fixture, string mismatch)
+    {
+        const string soulsmelter = "bee94cde-06f4-4bee-b616-8d1116fbb803";
+        const string justCause = "c8b39244-83c1-4eb3-b474-8898226d4280";
+        const int equipment = 22, bump = 23;
+        Require(fixture.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            fixture.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            fixture.GetProperty("Schema").GetInt32() == 103 &&
+            fixture.GetProperty("ModifierScenario").GetString() == "original-unit-relic-batch" &&
+            mismatch == "before play 3 in turn 1: $.Context.Cards.Hand.Count: 5 != 7",
+            "Unexpected native unit relic hand setup boundary.");
+
+        FixtureValue[] turns = fixture.GetProperty("Turns").EnumerateArray().ToArray();
+        FixtureValue[] plays = fixture.GetProperty("Actions").EnumerateArray().ToArray();
+        Require(turns.Select(RecordedBattleChecks.DecisionTurn).SequenceEqual(Enumerable.Range(0, 5)) &&
+            plays.Length == 19 && plays.Take(2).All(play => RecordedBattleChecks.DecisionTurn(play) == 0) &&
+            RecordedBattleChecks.DecisionTurn(plays[2]) == 1 && plays[2].GetProperty("Index").GetInt32() == 2 &&
+            plays.Skip(2).All(play => RecordedBattleChecks.DecisionTurn(play) >= 1) &&
+            plays.Where(play => play.GetProperty("ScenarioAction").GetBoolean())
+                .Select(play => play.GetProperty("Index").GetInt32()).SequenceEqual([0, 1]) &&
+            plays[2].GetProperty("Action").GetProperty("CardInstanceId").GetInt32() == equipment,
+            "Expected the recorded setup before the first turn 1 action uses the equipment carrier.");
+
+        // The development recorder prepends the two native carriers after deployment resolves.
+        FixtureValue before = turns[0].GetProperty("Actual"), after = plays[2].GetProperty("Before");
+        void SameFields(FixtureValue previous, FixtureValue current, params string[] exceptions) =>
+            Require(RecordedBattleChecks.SameFields(previous, current, exceptions),
+                "Native unit relic hand setup changed unrelated state.");
+        SameFields(before, after, "Spawn", "PlayRules");
+        FixtureValue oldSpawn = before.GetProperty("Spawn"), newSpawn = after.GetProperty("Spawn");
+        SameFields(oldSpawn, newSpawn, "Train");
+        FixtureValue oldTrain = oldSpawn.GetProperty("Train"), newTrain = newSpawn.GetProperty("Train");
+        SameFields(oldTrain, newTrain, "Context", "Rooms");
+        FixtureValue oldContext = oldTrain.GetProperty("Context"), newContext = newTrain.GetProperty("Context");
+        FixtureValue[] oldRooms = oldTrain.GetProperty("Rooms").EnumerateArray().ToArray();
+        FixtureValue[] newRooms = newTrain.GetProperty("Rooms").EnumerateArray().ToArray();
+        Require(oldRooms.Length == newRooms.Length, "Native unit relic hand setup changed train rooms.");
+        foreach (var (oldRoom, newRoom) in oldRooms.Zip(newRooms))
+        {
+            SameFields(oldRoom, newRoom, "Context");
+            Require(oldRoom.GetProperty("Context").ContentEquals(oldContext) &&
+                newRoom.GetProperty("Context").ContentEquals(newContext), "Native room and train contexts disagree.");
+        }
+        SameFields(oldContext, newContext, "Cards", "NextCardId", "Statistics", "CardInstances", "CardRegistry");
+        Require(oldContext.GetProperty("NextCardId").GetInt32() == equipment &&
+            newContext.GetProperty("NextCardId").GetInt32() == bump + 1, "Unexpected native carrier ID allocation.");
+        FixtureValue oldCards = oldContext.GetProperty("Cards"), newCards = newContext.GetProperty("Cards");
+        SameFields(oldCards, newCards, "Hand");
+        FixtureValue[] oldHand = oldCards.GetProperty("Hand").EnumerateArray().ToArray();
+        FixtureValue[] newHand = newCards.GetProperty("Hand").EnumerateArray().ToArray();
+        Require(oldHand.Length == 5 && newHand.Length == oldHand.Length + 2 &&
+            RecordedBattleChecks.SameCards(newHand.Take(2), [(bump, justCause), (equipment, soulsmelter)]) &&
+            newHand.Take(2).All(card => card.EnumerateObject().Count() == 2) &&
+            oldHand.Zip(newHand.Skip(2)).All(pair => pair.First.ContentEquals(pair.Second)),
+            "Native unit relic hand setup must prepend only JustCause and Soulsmelter.");
+
+        FixtureValue[]? added = null;
+        foreach (string field in new[] { "CardInstances", "CardRegistry" })
+        {
+            FixtureValue[] previous = oldContext.GetProperty(field).EnumerateArray().ToArray();
+            FixtureValue[] prepared = newContext.GetProperty(field).EnumerateArray().ToArray();
+            FixtureValue[] appended = prepared.Skip(previous.Length).ToArray();
+            Require(RecordedBattleChecks.SameCards(appended, [(equipment, soulsmelter), (bump, justCause)]) &&
+                previous.Zip(prepared).All(pair => pair.First.ContentEquals(pair.Second)) &&
+                appended.All(card => card.GetProperty("RawCostOverride").ValueKind == FixtureKind.Null &&
+                    card.GetProperty("MaskDescriptor").GetProperty("BaseCost").GetInt32() == 0) &&
+                (added == null || added.Zip(appended).All(pair => pair.First.ContentEquals(pair.Second))),
+                "Native unit relic hand setup changed card ownership or registry.");
+            added = appended;
+        }
+        FixtureValue oldStats = oldContext.GetProperty("Statistics"), newStats = newContext.GetProperty("Statistics");
+        SameFields(oldStats, newStats, "TrackedCards");
+        Require(newStats.GetProperty("TrackedCards").Deserialize<int[]>()!.SequenceEqual(
+            oldStats.GetProperty("TrackedCards").Deserialize<int[]>()!.Concat([equipment, bump])),
+            "Native unit relic hand setup changed tracked cards beyond the two carriers.");
+
+        FixtureValue oldRules = before.GetProperty("PlayRules"), newRules = after.GetProperty("PlayRules");
+        SameFields(oldRules, newRules, "Cards");
+        FixtureValue[] previousRules = oldRules.GetProperty("Cards").EnumerateArray().ToArray();
+        var preparedRules = newRules.GetProperty("Cards").EnumerateArray().ToLookup(rule =>
+            rule.GetProperty("DataId").GetString() == soulsmelter);
+        Require(previousRules.Length == preparedRules[false].Count() &&
+            previousRules.Zip(preparedRules[false]).All(pair => pair.First.ContentEquals(pair.Second)) &&
+            previousRules.Any(rule => rule.GetProperty("DataId").GetString() == justCause) &&
+            preparedRules[true].Count() == 1, "Native unit relic hand setup changed unrelated play rules.");
+        FixtureValue equipmentRule = preparedRules[true].Single();
+        Require(equipmentRule.GetProperty("AssetKey").GetString() == "Soulsmelter" &&
+            equipmentRule.GetProperty("CardType").GetString() == "Equipment" &&
+            equipmentRule.GetProperty("Cost").GetInt32() == 0 &&
+            equipmentRule.GetProperty("Effects").EnumerateArray().Single().GetProperty("Type").GetString() == "AttachEquipment",
+            "Unexpected native Soulsmelter carrier rule.");
+
+        RecordedBattleChecks.ReplayOnce(fixture, lastTurn: 0);
+        RecordedBattleChecks.ReplayOnce(fixture, firstTurn: 1);
+    }
 
     internal static void Native(FixtureValue root, bool required = false)
     {

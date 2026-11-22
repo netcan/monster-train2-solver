@@ -14,6 +14,18 @@ internal static class RecordedBattleChecks
     internal static void ReplayOnce(FixtureValue root, int firstTurn = 0, int lastTurn = int.MaxValue) =>
         Replay(root, firstTurn, null, branches: 0, lastTurn: lastTurn);
 
+    internal static bool SameFields(FixtureValue before, FixtureValue after, params string[] exceptions)
+    {
+        var previous = before.EnumerateObject().Where(field => !exceptions.Contains(field.Name)).ToArray();
+        var current = after.EnumerateObject().Where(field => !exceptions.Contains(field.Name)).ToArray();
+        return previous.Length == current.Length && previous.Zip(current).All(pair =>
+            pair.First.Name == pair.Second.Name && pair.First.Value.ContentEquals(pair.Second.Value));
+    }
+
+    internal static bool SameCards(IEnumerable<FixtureValue> values, (int, string)[] expected) =>
+        values.Select(card => (card.GetProperty("InstanceId").GetInt32(), card.GetProperty("DataId").GetString()))
+            .SequenceEqual(expected.Select(card => (card.Item1, (string?)card.Item2)));
+
     private static (int Plays, int EndTurns) Replay(FixtureValue root, int firstTurn, Action<BattleTurnState>? completed,
         int branches, int lastTurn = int.MaxValue)
     {
