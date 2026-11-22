@@ -8602,10 +8602,10 @@ if (args.Length == 2 && args[0] == "--original-room-status-spells-only")
     OriginalRoomStatusSpellsChecks.Check(document.RootElement);
     return;
 }
-if (args.Length == 2 && args[0] == "--original-status-magnitude-witness-only")
+if (args.Length == 2 && args[0] is "--original-status-magnitude-witness-only" or "--original-moon-status-magnitude-witness-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);
-    OriginalStatusMagnitudeWitnessChecks.Check(document.RootElement);
+    OriginalStatusMagnitudeWitnessChecks.Check(document.RootElement, moon: args[0] == "--original-moon-status-magnitude-witness-only");
     return;
 }
 if (args.Length == 2 && args[0] == "--original-magnitude-relics-only")

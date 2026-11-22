@@ -1,3 +1,4 @@
+using System.Text.Json;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 
@@ -11,19 +12,19 @@ internal static class OriginalStatusMagnitudeWitnessChecks
         ("AwokenRegen", "1fd244de-7d7b-4345-974b-4e5bf287a3df", "regen")
     ];
 
-    internal static void Check(FixtureValue root)
+    internal static void Check(FixtureValue root, bool moon = false)
     {
         Require(root.GetProperty("Schema").GetInt32() == 1 &&
-            root.GetProperty("Boundary").GetString() == "OriginalStatusMagnitudeWitness" &&
+            root.GetProperty("Boundary").GetString() == (moon ? "OriginalMoonStatusMagnitudeWitness" : "OriginalStatusMagnitudeWitness") &&
             root.GetProperty("GameVersion").GetString() == "2.3.1" &&
             root.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d",
             "Original magnitude component source differs.");
 
         var rows = root.GetProperty("Plays").EnumerateArray().ToArray();
         Require(rows.Select(row => row.GetProperty("Card").GetString()).SequenceEqual(
-            new[] { "TrainStewardShield", "LunaCovenChamp2", "RageSerum", "Sharpen", "StarterHeal" }),
+            new[] { "TrainStewardShield", moon ? "SeleneAcolyte" : "LunaCovenChamp2", "RageSerum", "Sharpen", "StarterHeal" }),
             "Original magnitude carrier plays are missing or unordered.");
-        int[] costs = [1, 0, 0, 2, 1];
+        int[] costs = [1, moon ? 2 : 0, 0, 2, 1];
         using var keys = new BattleStateKeys();
         for (int i = 0; i < rows.Length; i++)
         {
@@ -31,10 +32,11 @@ internal static class OriginalStatusMagnitudeWitnessChecks
             var after = State(rows[i], "After");
             var action = rows[i].GetProperty("Action").Deserialize<PlayCardAction>()!;
             var projected = BattleActionModel.PlayCard(before, action);
-            Require(before.MoonPhaseTrackingActive == false && after.MoonPhaseTrackingActive == false &&
+            Require(before.MoonPhaseTrackingActive == moon && after.MoonPhaseTrackingActive == moon &&
                 action.RoomIndex == 0 && before.Energy - after.Energy == costs[i] && projected.Supported &&
                 keys.Key(projected.State!) == keys.Key(after),
-                "Original magnitude carrier successor differs for " + rows[i].GetProperty("Card").GetString() + ": " + projected.Reason);
+                "Original magnitude carrier successor differs for " + rows[i].GetProperty("Card").GetString() + ": " +
+                (projected.Reason ?? Difference(projected.State, after)));
         }
 
         FixtureValue exchange = root.GetProperty("Exchange");
@@ -42,14 +44,15 @@ internal static class OriginalStatusMagnitudeWitnessChecks
         var finish = State(exchange, "After");
         var combat = BattleTurnModel.EndTurn(start);
         Require(start.Spawn.Turn == 1 && finish.Spawn.Turn == 2 && combat.Supported && keys.Key(combat.State!) == keys.Key(finish),
-            "Original magnitude exchange successor differs: " + combat.UnsupportedReason);
+            "Original magnitude exchange successor differs: " + (combat.UnsupportedReason ?? Difference(combat.State, finish)));
         var context = start.Spawn.Train.Context!;
         var allies = start.Spawn.Train.Rooms[0].Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
-        var mageblade = allies.Single(unit => unit.AssetKey == "MonsterChampionLunaCoven2");
+        var mageblade = allies.Single(unit => unit.AssetKey == (moon ? "MonsterSeleneAcolyte" : "MonsterChampionLunaCoven2"));
         var steward = allies.Single(unit => unit.AssetKey == "TrainStewardBig");
         Require(Stacks(mageblade, "mageblade") == 2 && Stacks(mageblade, "buff") == 5 &&
             Stacks(steward, "spikes") == 6 && Stacks(steward, "regen") == 2,
             "Original live carriers lack their starting or paid status stacks.");
+        if (moon) CheckMoon(rows, start, finish, mageblade);
 
         var nativeQueries = root.GetProperty("Queries").EnumerateArray().ToArray();
         foreach (var owner in Owners)
@@ -77,8 +80,47 @@ internal static class OriginalStatusMagnitudeWitnessChecks
                     "Original magnitude query and owner ablation differ: " + owner.Key);
             }
         }
-        Console.WriteLine("STATUS-MAGNITUDE PASS: four original owners, positive native queries, five legal plays and one complete exchange.");
+        Console.WriteLine("STATUS-MAGNITUDE PASS: four original owners, positive native queries, five legal plays and one complete exchange. Moon=" + moon);
     }
+
+    private static void CheckMoon(FixtureValue[] rows, BattleTurnState start, BattleTurnState finish, CombatUnit selene)
+    {
+        var deployment = State(rows[1], "After");
+        var deployed = deployment.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == selene.Id);
+        var shifted = finish.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == selene.Id);
+        Require(deployment.MoonPhase == "New" && deployed.MoonPhaseMask == 5 && Stacks(deployed, "newmoon") == 1 &&
+            deployed.Status("sweep") == null && start.MoonPhase == "Full" && selene.MoonPhaseMask == 6 &&
+            Stacks(selene, "fullmoon") == 1 && Stacks(selene, "sweep") == 1 && selene.Status("newmoon") == null &&
+            finish.MoonPhase == "New" && shifted.MoonPhaseMask == 5 && Stacks(shifted, "newmoon") == 1 &&
+            shifted.Status("sweep") == null && shifted.Status("fullmoon") == null &&
+            selene.Modifiers?.MagebladeDamagePerMagicPower == 4 && shifted.Modifiers?.MagebladeDamagePerMagicPower == 4,
+            "Native Selene masks, temporary sweep and retained Mageblade coefficient differ.");
+
+        var train = start.Spawn.Train;
+        var advance = new CardActionEffect("AdvanceMoonPhase", "Room", 1, false, false, []);
+        var owner = train.Context!.Relics!.Single(relic => relic.AssetKey == "DoubleMagebladeDamage");
+        foreach (string control in new[] { "Amount", "Marker", "Team", "EffectIndex", "ExtraEffect", "Placement" })
+        {
+            var node = JsonSerializer.SerializeToNode(owner, ModelJson.Options)!;
+            var rule = node["StatusMagnitudes"]![0]!;
+            switch (control)
+            {
+                case "Amount": rule["Modifier"] = 2; break;
+                case "Marker": rule["StatusId"] = "newmoon"; break;
+                case "Team": rule["SourceTeam"] = 1; break;
+                case "EffectIndex": rule["EffectIndex"] = 1; break;
+                case "ExtraEffect": node["EffectTypes"]!.AsArray().Add(RelicModel.Null); break;
+                case "Placement": node["DisallowedInPlacementPhase"] = true; break;
+            }
+            var changed = node.Deserialize<CombatRelicState>(ModelJson.Options)!;
+            var context = train.Context!.WithRelics(train.Context.Relics!.Select(item => ReferenceEquals(item, owner) ? changed : item).ToArray());
+            var rejected = MoonPhaseTransitionModel.Apply(CardSpellModel.WithContext(train, context), advance, playerActionOnly: false);
+            Require(!rejected.Supported, "Unwitnessed Moon magnitude rule bypassed its guard: " + control);
+        }
+    }
+
+    private static string? Difference(BattleTurnState? predicted, BattleTurnState actual) => predicted == null ? null :
+        ModelJson.Difference(JsonSerializer.Serialize(predicted, ModelJson.Options), JsonSerializer.Serialize(actual, ModelJson.Options));
 
     private static BattleTurnState State(FixtureValue row, string key) => row.GetProperty(key).Deserialize<BattleTurnState>()!;
     private static int Stacks(CombatUnit unit, string status) => unit.Statuses.Single(item => item.Id == status).Stacks;
