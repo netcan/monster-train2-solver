@@ -19,8 +19,10 @@ internal static class OriginalDecayRelicBatchChecks
             scenario.GetString() == "original-decay-relic-batch";
         Require(eligible || !required, "Fixture lacks the original decay relic batch.");
         if (!eligible) return null;
-        Require(root.GetProperty("Schema").GetInt32() == 116 && root.GetProperty("GameVersion").GetString() == "2.2.1" &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4",
+        var build = (root.GetProperty("GameVersion").GetString(), root.GetProperty("GameModuleMvid").GetString());
+        bool supportedBuild = build is ("2.2.1", "8fb07b96-f4db-4d2b-884d-c00536d6ccf4") or
+            ("2.3.1", "bf93f060-beda-46b1-b808-95ebf1e9a99d");
+        Require(root.GetProperty("Schema").GetInt32() == 116 && supportedBuild,
             "Native decay relic schema or game build changed.");
         Require(root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" &&
