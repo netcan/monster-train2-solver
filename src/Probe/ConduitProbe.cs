@@ -20,7 +20,8 @@ namespace MonsterTrain2Poju.Probe
 #endif
             ConduitMovementCalibration.Enabled || EclipseChamberScenario.EnemyConduit || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "original-conduit-relics" || OriginalMooncycleFaeScenario.Enabled ||
             PlanetariumScenario.Enabled || OriginalStrongMagicCardsScenario.Enabled || OriginalScaledMoonPhaseScenario.Enabled || OriginalMoonCardUpgradesScenario.Lunacy ||
-            OriginalSupportSpellsScenario.Enabled && (OriginalSupportSpellsScenario.IsolatedIds == null || !BattleSpawnPointProbe.Enabled) ||
+            OriginalSupportSpellsScenario.Enabled && (OriginalSupportSpellsScenario.IsolatedIds == null ||
+                !BattleSpawnPointProbe.Enabled || OriginalSupportSpellsScenario.CapturesConduit) ||
             OriginalXLunaSpikeScenario.Enabled || OriginalMoonRitualScenario.Prepared ||
             OriginalSupportUnitsScenario.IsolatedUnitOnly && Environment.GetEnvironmentVariable("MT2_PROBE_ISOLATED_CONDUIT") == "1";
         private static object? Modifier(CharacterState character)

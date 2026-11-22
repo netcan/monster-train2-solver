@@ -33,6 +33,7 @@ namespace MonsterTrain2Poju.Probe
 #endif
         internal static bool CapturesTriggeredSummons { get; private set; }
         internal static bool CapturesBump { get; private set; }
+        internal static bool CapturesConduit { get; private set; }
         internal const string Name = "original-support-spells";
         internal const string IsolatedPrefix = "original-isolated-spells:";
         internal static string[]? IsolatedIds => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is string scenario &&
@@ -321,6 +322,8 @@ namespace MonsterTrain2Poju.Probe
                         " target=" + effect.GetTargetMode() + " subtype=" + effect.GetParamSubtype().Key +
                         " status=" + effect.GetUseStatusEffectStackMultiplier() + " health=" + effect.GetUseHealthMissingStackMultiplier() +
                         " magic=" + effect.GetUseMagicPowerMultiplier());
+            CapturesConduit = spellIds.SelectMany(id => all.FindCardData(id)!.GetEffects())
+                .Any(effect => effect.GetParamStatusEffects().Any(status => status.statusId == "conduit"));
             CapturesTriggeredSummons = spellIds.Any(id => all.FindCardData(id)!.GetSpawnCharacterData()?.GetTriggers()
                 .Any(trigger => trigger.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectSpawnMonster")) == true) ||
                 spellIds.Contains("e1a39d88-4a77-4399-98b2-0b81f44fe6a8") || spellIds.Contains("6d6c72ab-890b-4275-bb52-2544befbc12b") || spellIds.Contains("9d18f2c2-1141-494d-943c-6ea6e13ff509");
