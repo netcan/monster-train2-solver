@@ -194,6 +194,9 @@ namespace MonsterTrain2Poju.Model
         public static CardGenerationResult Apply(CombatContext source, CardGenerationRule rule, int sourceCardId = 0)
             => Apply(source, rule, sourceCardId, false);
 
+        internal static CardGenerationResult ApplyLastTurnCopy(CombatContext source, CardGenerationRule rule, int sourceCardId)
+            => Apply(source, rule, sourceCardId, false, restoreCopiedPermanentCastEffects: true);
+
         internal static CardGenerationResult ApplyCachedCopy(CombatContext source, CardCreationRule creation, CardInstanceState copying)
             => Apply(source, new CardGenerationRule("HandPile", 1, new[] { creation },
                 copyModifiers: true, deterministicPoolSelection: true), 0, false, copying);
@@ -215,7 +218,7 @@ namespace MonsterTrain2Poju.Model
             => Apply(source, rule, 0, true);
 
         private static CardGenerationResult Apply(CombatContext source, CardGenerationRule rule, int sourceCardId,
-            bool allowDeferredGraftedSpawnCard, CardInstanceState? cachedCopy = null)
+            bool allowDeferredGraftedSpawnCard, CardInstanceState? cachedCopy = null, bool restoreCopiedPermanentCastEffects = false)
         {
             if (rule.OnlyUnequippedTargets.HasValue) return Unsupported("Per-target generation requires captured target units.");
             if (rule.IgnoreIfEphemeral == true && source.FindCard(sourceCardId) is CardInstanceState parent &&
@@ -376,7 +379,17 @@ namespace MonsterTrain2Poju.Model
                             ignored.Add(upgrade.DataId);
                     if (cachedCopy == null)
                         foreach (CardUpgradeModifier upgrade in copying.Permanent.Upgrades.Where(upgrade => upgrade.ExcludeFromClones)) ignored.Add(upgrade.DataId);
+                    int permanentCount = permanent.Upgrades.Count;
                     permanent = Copy(permanent, copying.Permanent, ignored, forAddCardPipeline: true);
+                    if (restoreCopiedPermanentCastEffects && candidate.MaskDescriptor is { } descriptor)
+                    {
+                        var castEffects = permanent.Upgrades.Skip(permanentCount)
+                            .SelectMany(upgrade => upgrade.Lifecycle?.Triggers ?? Array.Empty<CardLifecycleTrigger>())
+                            .Where(trigger => trigger.Type == "OnCast").SelectMany(trigger => trigger.Effects).ToArray();
+                        if (castEffects.Length > 0)
+                            candidate = candidate.WithMaskDescriptor(descriptor.WithAuthoredCastEffects(
+                                descriptor.AuthoredCastEffects.Concat(castEffects).ToArray()));
+                    }
                     if (!rule.IgnoreTemporaryModifiers)
                     {
                         if (cachedCopy == null)
