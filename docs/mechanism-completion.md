@@ -148,6 +148,12 @@ Frostbite，整局 21 次出牌、7 次结束回合、16 条分支和候选检�
 累计 194 场整战，180/601 张收藏卡已有匹配的原版结算。
 [`flash-freeze-and-ice-spear.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-spells/flash-freeze-and-ice-spear.mt2f)
 
+`Run-FullBattleProbe.ps1 -OriginalOpeningUnitIds <一至四个有序 GUID>` 已在同一
+原版胜局记录 Welder Helper、Steelworker、Follower 和 Votivary。四张留在
+原有部署手牌之外，并由原版按合法楼层部署。22 次出牌、6 次结束回合、四项
+采集计数、16 条分支及候选检查通过。累计 195 场整战和 184/601 张已匹配收藏卡。
+[`armor-multistrike-endless.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-units/armor-multistrike-endless.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
