@@ -24,7 +24,9 @@ namespace MonsterTrain2Poju.Probe
         // so enabling tracking does not change the shape of unrelated state.
         internal static bool CaptureMasks => Enabled ||
 #if DEVELOPMENT_PROBE
-            UiRngIsolation.CaelShieldTrialTestQueries ||
+            UiRngIsolation.CaelShieldTrialTestQueries || OriginalReactiveUnitsScenario.Enabled ||
+            (OriginalTriggerRelicBatchScenario.Enabled && !OriginalTriggerRelicBatchScenario.FusedPyreshardOnly &&
+                !OriginalTriggerRelicBatchScenario.Stationary) ||
 #endif
             Environment.GetEnvironmentVariable("MT2_PROBE_TURN_END_BUMP") != null;
 
