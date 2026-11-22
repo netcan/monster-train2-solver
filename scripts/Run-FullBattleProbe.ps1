@@ -1146,7 +1146,7 @@ if ($OuterBossBirth -and -not $OuterBossTurns) { throw '-OuterBossBirth requires
 if ($OuterBossPyre -and -not $OuterBossTurns) { throw '-OuterBossPyre requires -OuterBossTurns.' }
 if ($ContinueToNextRing) {
     $allowed = @('ContinueToNextRing', 'InputProfile', 'BattleDistance', 'Policy', 'Seed', 'PlayerAdvisor', 'RollingAdvice',
-        'RollingInput', 'ResumeRollingAdvice',
+        'RollingInput', 'ResumeRollingAdvice', 'PreserveRollingPrefixOnTimeout',
         'PlannerWholeBattle', 'PlannerTacticalSeed', 'PlannerHorizon', 'PlannerMaxSteps', 'PlannerSearchWorkers',
         'PlannerDeploymentRoom', 'PlannerTimeLimitMs', 'OuterBossTurns', 'OuterBossBirth', 'OuterBossPyre',
         'PhysicalSpawnPoints', 'BranchCardMasks', 'SettleDeathDissolves', 'SettleCardAnimations', 'BinaryCapture',
@@ -3639,7 +3639,7 @@ if ($BinaryCapture) {
         $prefix = [MonsterTrain2Poju.Fixtures.FixtureValue]::new()
         if ($archive.RootElement.TryGetProperty('RollingTimeoutPrefix', [ref]$prefix) -and $prefix.ValueKind -eq 'Number') {
             $count = $prefix.GetInt32()
-            if (-not $PreserveRollingPrefixOnTimeout -or $process.ExitCode -eq 0 -or $count -lt 1 -or
+            if (-not $PreserveRollingPrefixOnTimeout -or $count -lt 1 -or
                 $archive.RootElement.GetProperty('NativeWon').ValueKind -ne 'Null' -or
                 $archive.RootElement.GetProperty('RollingDecisions').GetArrayLength() -ne $count -or
                 (Get-OriginalSignature) -cne $originalBefore) {
