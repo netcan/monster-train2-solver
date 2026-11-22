@@ -128,6 +128,7 @@ namespace MonsterTrain2Poju.Model
         private static bool IndependentRelic(CombatRelicState relic)
         {
             if (relic.IsCovenant != false) return false;
+            if (RelicStatusStackModel.IsCalibratedBurnoutLossRelic(relic)) return true;
             // The original Hoard reward observes Pyre damage and settles after
             // combat. It has no moon change or CardUpdated callback.
             if (relic.DataId == "26c9bc93-f5a6-439d-8239-14c22cbeb02e" &&

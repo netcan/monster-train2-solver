@@ -33,6 +33,17 @@ namespace MonsterTrain2Poju.Model
         private static readonly string[] RemovedStatusExclusions =
         { "CardEffectTransferAllStatusEffects", "CardEffectMultiplyStatusEffect", "CardEffectTransferAllStatusEffectsFromUnit" };
 
+        // The observed callback responds only to Burnout removal. Moon status changes
+        // and hand trait refreshes leave it idle.
+        internal static bool IsCalibratedBurnoutLossRelic(CombatRelicState relic) =>
+            relic.DataId == "85667d60-8053-4204-8c02-ba101dab7945" && relic.AssetKey == "RageOnBurnoutStackLoss" &&
+            relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false &&
+            relic.EffectTypes.SequenceEqual(new[] { RelicModel.AddStatusOnOtherStatusRemoved }) &&
+            (relic.StatusMagnitudes?.Count ?? 0) == 0 && relic.StatusStackAdditions?.Count == 1 &&
+            relic.StatusStackAdditions[0] is { EffectIndex: 0, SourceTeam: "Monsters", StatusId: "buff",
+                TriggerStatusId: "ephemeral", AdditionalStacks: 3, AddCondition: 0, Conditions.Count: 0,
+                AddedStatusDefinition: { Id: "buff", Stacks: 3, ParamInt: 2 } } && Validate(relic) == null;
+
         internal static string? Validate(CombatRelicState relic)
         {
             int[] indices = relic.EffectTypes.Select((type, index) => new { type, index })

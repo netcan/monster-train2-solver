@@ -4709,6 +4709,13 @@ if (args.Length is 2 or 3 && args[0] == "--moon-burnout-relic-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--moon-burnout-hand-refresh-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    MoonBurnoutRelicChecks.NativeHandRefresh(fixture.RootElement);
+    return;
+}
+
 if (args.Length is 2 or 3 && args[0] == "--triple-juice-consume-cleanse-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

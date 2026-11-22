@@ -5,6 +5,47 @@ using MonsterTrain2Poju.Model;
 internal static class MoonBurnoutRelicChecks
 {
     internal const string Reason = "Moon-phase status application with relic modifiers is not modeled.";
+    internal const string HandRefreshReason = "Uncalibrated moon hand-refresh relic: RageOnBurnoutStackLoss.";
+
+    internal static void NativeHandRefresh(FixtureValue fixture)
+    {
+        var rows = NativeBranchObservationChecks.Replay(fixture, HandRefreshReason,
+            expectedGameModule: new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d"));
+        var boundary = rows[^1];
+        var before = boundary.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var actual = boundary.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        var context = actual.Spawn.Train.Context!;
+        var original = before.Spawn.Train.Context!;
+        var drawn = context.Cards.Hand.Where(token => original.Cards.Hand.All(old => old.InstanceId != token.InstanceId))
+            .Select(token => context.FindCard(token.InstanceId)!).Single(CardMoonUpgradeModel.Present);
+        var owner = context.Relics!.Single(relic => relic.AssetKey == "RageOnBurnoutStackLoss");
+        Require(rows.Length == 13 && boundary.GetProperty("IsEndTurn").GetBoolean() && before.Spawn.Turn == 2 &&
+            actual.Spawn.Turn == 3 && original.QueryFrame?.MoonPhase == 1 && context.QueryFrame?.MoonPhase == 2 &&
+            RelicStatusStackModel.IsCalibratedBurnoutLossRelic(owner) && drawn.MaskDescriptor!.BaseTraits.Count(trait =>
+                trait.MoonPhaseUpgradeState is { Active: true, Cached: true }) == 1 &&
+            original.FindCard(drawn.InstanceId)!.MaskDescriptor!.BaseTraits.All(trait =>
+                trait.MoonPhaseUpgradeState is { Active: false, Cached: false }),
+            "Expected the same Burnout-loss owner and a newly drawn spell with a native full-Moon upgrade.");
+
+        foreach (string control in new[] { "DataId", "EffectTypes", "TriggerStatusId", "AdditionalStacks", "DisallowedInPlacementPhase" })
+        {
+            var node = JsonSerializer.SerializeToNode(owner, ModelJson.Options)!;
+            switch (control)
+            {
+                case "DataId": node[control] = "unknown-owner"; break;
+                case "EffectTypes": node[control]!.AsArray().Add(RelicModel.AddStatusOnApplied); break;
+                case "TriggerStatusId": node["StatusStackAdditions"]![0]![control] = "newmoon"; break;
+                case "AdditionalStacks": node["StatusStackAdditions"]![0]![control] = 4; break;
+                case "DisallowedInPlacementPhase": node[control] = true; break;
+            }
+            var changed = node.Deserialize<CombatRelicState>(ModelJson.Options)!;
+            var rejected = context.WithRelics(context.Relics!.Select(relic => ReferenceEquals(relic, owner) ? changed : relic).ToArray());
+            CardMoonUpgradeModel.RefreshHand(rejected, out string? error, [drawn.InstanceId]);
+            Require(error == HandRefreshReason, "Changed Burnout-loss owner passed Moon hand refresh: " + control);
+        }
+        Console.WriteLine("MOON-BURNOUT-HAND-REFRESH PASS: 13 original inputs, full successor/RNG, native drawn-card upgrade and five owner guards.");
+    }
+
     internal static void Native(FixtureValue source, FixtureValue? replay = null)
     {
         var rows = NativeBranchObservationChecks.Replay(source, Reason, revalidateHistoricalCapture: Recapture);
