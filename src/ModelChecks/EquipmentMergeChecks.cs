@@ -18,7 +18,7 @@ internal static class EquipmentMergeChecks
                 return plays.FirstOrDefault(play => play.CardInstanceId == spells[index] && play.RoomIndex == 0 &&
                     play.RecursionSelections.Single().CardInstanceIds.SequenceEqual(selected));
             }
-        return plays.FirstOrDefault(play => context.FindCard(play.CardInstanceId)!.DataId == OutputId && play.RoomIndex == 0 &&
+        return plays.FirstOrDefault(play => play.RoomIndex == 0 && context.FindCard(play.CardInstanceId)?.DataId == OutputId &&
             source.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == play.TargetUnitId && unit.EquipmentCards?.Count == 0));
     }
     internal static void Native(FixtureValue root)
