@@ -180,6 +180,11 @@ if (args.Length == 2 && args[0] == "--original-mollis-cycle-only")
     JuiceMechanismChecks.MollisCycleOfLife(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-mollis-shelter-only")
+{
+    JuiceMechanismChecks.MollisShelter(args[1]);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--solver-stage-case-only")
 {
     SolverStageChecks.Native(args[1], expectedCase: args.Length == 3 ? args[2] : null);

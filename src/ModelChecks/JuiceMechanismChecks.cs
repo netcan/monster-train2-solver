@@ -163,4 +163,74 @@ internal static class JuiceMechanismChecks
         SolverStageChecks.Native(path, requireVictory: false);
         Console.WriteLine("ORIGINAL-MOLLIS-CYCLE-OF-LIFE PASS: native soul attachment, +10 HP, +32 Spikes, +12 Armor, complete replay and search.");
     }
+
+    internal static void MollisShelter(string path)
+    {
+        using var document = ModelJson.ReadFixture(path);
+        FixtureValue capture = document.RootElement;
+        FixtureValue definition = capture.GetProperty("Definition");
+        Require(capture.GetProperty("Schema").GetInt32() == 1 &&
+            capture.GetProperty("Boundary").GetString() == "OriginalMollisShelterCasts" &&
+            capture.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            capture.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
+            capture.GetProperty("Corruption").GetInt32() == 3 && definition.ContentEquals(capture.GetProperty("DefinitionAfter")) &&
+            definition.GetProperty("Soul").GetString() == "MollisT3" && definition.GetProperty("Filters").GetArrayLength() == 2 &&
+            definition.GetProperty("Card").GetProperty("AssetKey").GetString() == "Shelter",
+            "Missing original unchanged Shelter and Mollis definitions.");
+        var definitionId = definition.GetProperty("Card").GetProperty("DataId").GetString();
+        var installed = capture.GetProperty("InstalledUpgrade").Deserialize<CardLifecycleUpgrade>()!;
+        Require(installed.AvoidClobbering && installed.TraitsModified.SequenceEqual(new[] { CardJuiceModel.QuadrupleTrait }),
+            "Missing the native Mollis trait installation.");
+        FixtureValue[] cases = capture.GetProperty("Cases").EnumerateArray().ToArray();
+        Require(cases.Length == 2, "Expected native standalone Shelter and Mollis casts.");
+        using var keys = new BattleStateKeys();
+        string? previousAfter = null;
+        for (int index = 0; index < cases.Length; index++)
+        {
+            FixtureValue sample = cases[index];
+            bool withMollis = index == 1;
+            var before = sample.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            var after = sample.GetProperty("After").Deserialize<BattleTurnState>()!;
+            string parent = keys.Key(before);
+            Require(previousAfter == null || parent == previousAfter, "A setup operation interrupted the two native casts.");
+            int cardId = sample.GetProperty("CardId").GetInt32();
+            CardInstanceState card = before.Spawn.Train.Context!.FindCard(cardId)!;
+            int room = before.SelectedRoom;
+            Require(sample.GetProperty("WithMollis").GetBoolean() == withMollis && card.DataId == definitionId &&
+                card.Permanent.Upgrades.Any(upgrade => upgrade.DataId == installed.Values.DataId) == withMollis &&
+                after.Energy == before.Energy - 1 && before.Spawn.Train.Context.RoomCapacities!
+                    .Single(capacity => capacity.RoomIndex == room).Corruption == 3,
+                "Native cast ownership, payment or Corruption differs.");
+
+            string[] runtimeTypes = sample.GetProperty("Traits").Deserialize<CardTraitCompositionState>()!
+                .CombinedTraits!.Select(trait => trait.RuntimeType).ToArray();
+            Require(runtimeTypes.SequenceEqual(CardExhaustModel.RefreshTraits(card).CombinedTraits!.Select(trait => trait.RuntimeType)) &&
+                runtimeTypes.SequenceEqual(withMollis
+                    ? new[] { "CardTraitScalingAddStatusEffect", "CardTraitExhaustState", CardJuiceModel.QuadrupleTrait, "CardTraitFreeze" }
+                    : new[] { "CardTraitScalingAddStatusEffect", "CardTraitExhaustState", "CardTraitFreeze" }),
+                "Native scaling, exhaust and Juice callback order differs.");
+            int Armor(BattleTurnState state) => state.Spawn.Train.Rooms.Single(floor => floor.RoomIndex == room)
+                .Units.Single(unit => unit.Team == CombatTeam.Player).Status("armor")?.Stacks ?? 0;
+            Require(Armor(after) - Armor(before) == (withMollis ? 60 : 6), "Native armor gain differs.");
+            var action = BattleActionModel.PlayCard(before, new PlayCardAction(cardId, room));
+            Require(action.Supported && action.Outcome == RoomOutcome.Exchanged, action.Reason ?? "Shelter did not complete a paid action.");
+            previousAfter = keys.Key(after);
+            if (keys.Key(action.State!) != previousAfter)
+                throw new InvalidOperationException("Original Shelter full successor differs: " + ModelJson.Difference(
+                    JsonSerializer.Serialize(action.State, ModelJson.Options), JsonSerializer.Serialize(after, ModelJson.Options)));
+            Require(keys.Key(before) == parent, "The Shelter prediction changed its native parent.");
+
+            if (withMollis)
+            {
+                var changed = JsonSerializer.SerializeToNode(card, ModelJson.Options)!;
+                var baseTraits = changed["MaskDescriptor"]!["BaseTraits"]!.AsArray();
+                var originalFirst = baseTraits[0]!.DeepClone();
+                baseTraits[0] = baseTraits[2]!.DeepClone();
+                baseTraits[2] = originalFirst;
+                Require(CardJuiceModel.Validate(changed.Deserialize<CardInstanceState>(ModelJson.Options)!) != null,
+                    "An unobserved Juice-before-scaling order escaped the guard.");
+            }
+        }
+        Console.WriteLine("ORIGINAL-MOLLIS-SHELTER PASS: +6 and +60 armor, ordered native traits, both paid successors and RNG.");
+    }
 }

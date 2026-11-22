@@ -60,16 +60,18 @@ namespace MonsterTrain2Poju.Model
             bool upgradeThenStatus = mainEffects.Count == 2 &&
                 mainEffects[0] == "CardEffectAddTempCardUpgradeToUnits" &&
                 mainEffects[1] == "CardEffectAddStatusEffect";
+            bool orderedStatus = OrderedCorruptionStatus(card, traits);
             if (descriptor.Definition.DataId != card.DataId || descriptor.Definition.CardType != "Spell" ||
                 descriptor.Definition.XCost || descriptor.Definition.IsSpawner || descriptor.Definition.HasSpawnData ||
                 descriptor.Definition.AuthoredGraft || descriptor.PermanentGraft || descriptor.GraftedEquipment != null ||
                 descriptor.AuthoredCastEffects.Any(effect => !KnownEffect(effect)) ||
                 descriptor.PermanentReplacements.Count != 0 ||
-                descriptor.SourceTraits is not { Count: 0 } || descriptor.KillTriggers?.Count is > 0 ||
+                (!orderedStatus && descriptor.SourceTraits is not { Count: 0 }) || descriptor.KillTriggers?.Count is > 0 ||
                 descriptor.SpareTriggers?.Count is > 0 || mainEffects.Count == 0 ||
                 !upgradeThenStatus && mainEffects.Any(effect => !KnownEffect(effect)) ||
                 card.Permanent.Upgrades.Count != 1 || !SimpleUpgrade(card.Permanent.Upgrades[0]) ||
-                card.Temporary.Upgrades.Any(upgrade => !SimpleStatusPayload(upgrade)) || card.StatusScalingTraits?.Count is > 0 ||
+                card.Temporary.Upgrades.Any(upgrade => !SimpleStatusPayload(upgrade)) ||
+                (!orderedStatus && card.StatusScalingTraits?.Count is > 0) ||
                 card.DamageScalingTraits?.Count is > 0 || card.UnitUpgradeScalingTraits?.Count is > 0 ||
                 card.TrainHealScalingTraits?.Count is > 0 || card.CapacityScalingTraits?.Count is > 0 ||
                 card.ForgeCountScalingTraits?.Count is > 0) return false;
@@ -77,8 +79,36 @@ namespace MonsterTrain2Poju.Model
             var added = card.Permanent.Upgrades[0].Lifecycle!.AddedTraits[0];
             return juice.Length == 1 && juice[0].RuntimeType == added.RuntimeType &&
                 juice[0].DeclaredName == added.DeclaredName && Ordinary(juice[0], added.DefinitionParamInt) &&
-                traits.CombinedTraits.All(trait => IsTrait(trait.RuntimeType) ||
-                    trait.RuntimeType == "CardTraitFreeze" && trait.DeclaredName == trait.RuntimeType && Ordinary(trait, 0));
+                (orderedStatus || traits.CombinedTraits.All(trait => IsTrait(trait.RuntimeType) ||
+                    trait.RuntimeType == "CardTraitFreeze" && trait.DeclaredName == trait.RuntimeType && Ordinary(trait, 0)));
+        }
+
+        private static bool OrderedCorruptionStatus(CardInstanceState card, CardTraitCompositionState traits)
+        {
+            const string scalingTrait = "CardTraitScalingAddStatusEffect";
+            const string exhaustTrait = "CardTraitExhaustState";
+            var descriptor = card.MaskDescriptor!;
+            if (descriptor.Definition.MainEffectNames.Count != 1 || descriptor.Definition.MainEffectNames[0] != "CardEffectAddStatusEffect" ||
+                descriptor.AuthoredCastEffects.Any(effect => effect != "CardEffectAddStatusEffect") ||
+                descriptor.SourceTraits is not { Count: 2 } source || source[1].Type != exhaustTrait ||
+                source[0] is not { Type: scalingTrait, Int2: 0, Bool: false, Scaling: true,
+                    TrackedValue: "CorruptionInTargetRoom", EntryDuration: "ThisTurn", StatusEffectIds.Count: 1 } ||
+                card.StatusScalingTraits is not { Count: 1 } scaling ||
+                scaling[0] is not { Query: { Type: "CorruptionInTargetRoom", Duration: "ThisTurn", VariableCost: false },
+                    Filter: 0, OnlyWhenSourceZero: false } ||
+                scaling[0].StacksPerStat != source[0].Int || !scaling[0].StatusIds.SequenceEqual(source[0].StatusEffectIds!) ||
+                !scaling[0].StatusIds.All(RoomCombatModel.KnowsStatus) ||
+                traits.CombinedTraits is not { Count: 3 or 4 } combined)
+                return false;
+            // StatusScalingModel applies the captured scaling before Juice.
+            // Only admit this composition when the native trait order agrees.
+            return Match(combined[0], scalingTrait, source[0].Int) && Match(combined[1], exhaustTrait, 0) &&
+                Match(combined[2], QuadrupleTrait, 0) &&
+                (combined.Count == 3 || Match(combined[3], "CardTraitFreeze", 0));
+
+            bool Match(CardTraitValue trait, string type, int parameter) =>
+                trait.RuntimeType == type && trait.DeclaredName == type && Ordinary(trait, parameter) &&
+                trait.ParameterUpgradeCastEffects.Count == 0;
         }
         private static bool SimpleStatusPayload(CardUpgradeModifier upgrade) =>
             upgrade.Stats.Damage == 0 && upgrade.Stats.Health == 0 && upgrade.Stats.Cost == 0 && upgrade.Stats.Heal == 0 &&
