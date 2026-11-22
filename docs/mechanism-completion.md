@@ -343,6 +343,10 @@ Pyreblooded 的后续实机对照在同层记录友军 10 层、两名敌军各 
 16 条独立分支和候选检查通过。专项也复放零层、缺少楼层快照和跨楼层的对照。
 [`pyreblooded-room-pyregel.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/pyreblooded-room-pyregel.mt2f)
 
+另一场部署八张原版单位。Plague Doctor 实际触发攻击前回调，Wickless Baron 从死亡触发获得
+临时攻血，四个结算快照的攻击为 15、25、25、35。12 次出牌、5 次结束回合、16 条独立分支及候选检查通过。
+[`pre-attack-and-death-growth.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/pre-attack-and-death-growth.mt2f)
+
 部署被动遗物批次保留六件原版遗物取得顺序与八组牌的原版结算、回调返回值和统计。
 升级 Torch 只收到升级数量效果的 +3 伤害，两个种族效果分别命中 Royal Whelp 与 Greed Dragon。
 录制时仅观察攻击回调的出入参，绕开会改变 Mono 种族判定结果的筛选插桩。离线用
