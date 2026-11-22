@@ -624,6 +624,7 @@ param(
     [switch] $OriginalEndlessReturn,
     [switch] $OriginalTriggerRelicBatch,
     [switch] $OriginalTriggerRelicBatchStationary,
+    [switch] $OriginalTriggerRelicBatchStationaryReserve,
     [switch] $OriginalFusedPyreshard,
     [switch] $CovenantCharacterFilter,
     [ValidateSet('Covenant00_FTUE', 'Covenant01_StrongerEnemiesMoreCards')]
@@ -1926,9 +1927,17 @@ if ($LethalMaximumBattle) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $tr
 if ($OriginalDeathwishAttack) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStealthSlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalUnitUpgradeTriggerRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalTriggerRelicBatchStationaryReserve) {
+    $allowed = @('OriginalTriggerRelicBatchStationaryReserve', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot',
+        'SkipBuild', 'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
+        throw 'OriginalTriggerRelicBatchStationaryReserve requires the isolated binary trigger relic scenario.'
+    }
+    $OriginalTriggerRelicBatchStationary = $true
+}
 if ($OriginalTriggerRelicBatch -or $OriginalTriggerRelicBatchStationary -or $OriginalFusedPyreshard -or $OriginalLifecycleRelicBatch) {
     $BranchCardMasks = $true
-    if (-not $OriginalTriggerRelicBatchStationary) {
+    if (-not $OriginalTriggerRelicBatchStationary -or $OriginalTriggerRelicBatchStationaryReserve) {
         $PhysicalSpawnPoints = $true; $SettleDeathDissolves = $true; $SettleCardAnimations = $true
     }
     $Policy = 'units-spells-and-junk'
@@ -2943,6 +2952,7 @@ if ($OriginalEndlessReturn) { $environment['MT2_PROBE_MODIFIERS'] = 'original-en
 if ($OriginalTriggerRelicBatch -or $OriginalTriggerRelicBatchStationary -or $OriginalFusedPyreshard) {
     $environment['MT2_PROBE_MODIFIERS'] = if ($OriginalFusedPyreshard) { 'original-fused-pyreshard' } else { 'original-trigger-relic-batch' }
     $environment['MT2_PROBE_ORIGINAL_TRIGGER_RELIC_BATCH_STATIONARY'] = $(if ($OriginalTriggerRelicBatchStationary) { '1' } else { '0' })
+    if ($OriginalTriggerRelicBatchStationaryReserve) { $environment['MT2_PROBE_ORIGINAL_TRIGGER_RELIC_BATCH_STATIONARY_RESERVE'] = '1' }
 }
 if ($CovenantCharacterFilter) { $environment['MT2_PROBE_MODIFIERS'] = 'covenant-character-filter' }
 if ($TitanSkinCombat) { $environment['MT2_PROBE_MODIFIERS'] = 'titan-skin-combat' }
@@ -3974,6 +3984,24 @@ if ($BinaryCapture) {
 }
 $inspectionTimer.Stop()
 Write-Output "FULL-BATTLE-INSPECTION elapsedSeconds=$($inspectionTimer.Elapsed.TotalSeconds.ToString('F3', [Globalization.CultureInfo]::InvariantCulture))"
+if ($OriginalTriggerRelicBatchStationaryReserve) {
+    $equipment = @(foreach ($row in $trace.Actions) {
+        if ($row.Before.Spawn.Turn -eq 0 -or $row.Action.CardInstanceId -le 0 -or $row.Action.TargetUnitId -le 0) { continue }
+        $card = $row.Before.Spawn.Train.Context.CardInstances | Where-Object InstanceId -eq $row.Action.CardInstanceId
+        $rule = $row.Before.PlayRules.Cards | Where-Object DataId -eq $card.DataId
+        if ($null -eq $rule.Equipment -or 'CardTraitFreeze' -cnotin $card.MaskDescriptor.TemporaryTraits.RuntimeType) { continue }
+        $room = $row.Before.Spawn.Train.Rooms | Where-Object RoomIndex -eq $row.Action.RoomIndex
+        $actor = $room.Units | Where-Object Id -eq $row.Action.TargetUnitId
+        $afterRoom = $row.Actual.Spawn.Train.Rooms | Where-Object RoomIndex -eq $row.Action.RoomIndex
+        $after = $afterRoom.Units | Where-Object Id -eq $row.Action.TargetUnitId
+        if ($actor.Team -eq 0 -and -not $actor.IsBoss -and $null -ne $actor.MoonPhaseMask -and
+            'SubtypesData_Angel' -cin $actor.Subtypes -and $row.Action.CardInstanceId -in $after.EquipmentCards) { $row }
+    })
+    if ($trace.ModifierScenario -cne 'original-trigger-relic-batch' -or $trace.Schema -ne 106 -or $equipment.Count -ne 1) {
+        throw "Expected one native stationary enemy Angel equipment witness with a captured Moon mask. Inspect $tracePath"
+    }
+    Write-Output "ORIGINAL-TRIGGER-RELIC-STATIONARY-ENEMY-EQUIP PASS card=$($equipment[0].Action.CardInstanceId) target=$($equipment[0].Action.TargetUnitId)"
+}
 if ($OriginalSpurnedBattle) {
     $spurned = $trace.OriginalSpurnedBattle
     $spurnedBoss = switch ($OriginalSpurnedChallenge) {

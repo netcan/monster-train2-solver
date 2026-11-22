@@ -28,7 +28,7 @@ namespace MonsterTrain2Poju.Probe
             OriginalHealingCleanseScenario.Enabled || OriginalMovementSpellsScenario.Enabled ||
             OriginalRearrangeSpellsScenario.Enabled ||
             (OriginalTriggerRelicBatchScenario.Enabled && !OriginalTriggerRelicBatchScenario.FusedPyreshardOnly &&
-                !OriginalTriggerRelicBatchScenario.Stationary) ||
+                (!OriginalTriggerRelicBatchScenario.Stationary || OriginalTriggerRelicBatchScenario.StationaryReserve)) ||
 #endif
             Environment.GetEnvironmentVariable("MT2_PROBE_TURN_END_BUMP") != null;
 

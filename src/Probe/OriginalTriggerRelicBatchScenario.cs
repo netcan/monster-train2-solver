@@ -18,9 +18,16 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or FusedPyreshardName;
         internal static bool FusedPyreshardOnly => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == FusedPyreshardName;
         internal static bool Stationary => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_TRIGGER_RELIC_BATCH_STATIONARY") == "1";
+        internal static bool StationaryReserve =>
+#if DEVELOPMENT_PROBE
+            Stationary && Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_TRIGGER_RELIC_BATCH_STATIONARY_RESERVE") == "1";
+#else
+            false;
+#endif
         internal static bool Prepared { get; private set; }
         internal static bool CaptureReady { get; private set; }
         private static string angelCardId = "", whelpCardId = "", woundCardId = "", gearCardId = "", shiftCardId = "";
+        private static int reservedGearId;
         internal static readonly (string Key, string Id)[] Artifacts =
         {
             ("EquippedUnitsGainArmor", "9af0364b-8e05-45d9-be46-7b7dd1e721e7"),
@@ -37,6 +44,8 @@ namespace MonsterTrain2Poju.Probe
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             if (Prepared) return;
+            if (StationaryReserve && typeof(RelicState).Assembly.ManifestModule.ModuleVersionId != new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d"))
+                throw new InvalidOperationException("The stationary equipment witness requires the pinned native 2.3.1 module.");
             SaveManager save = managers.GetSaveManager(); CardManager cards = managers.GetCardManager()!;
             AllGameData data = save.GetAllGameData();
             CardState[] owned = cards.GetAllCards(new List<CardState>()).ToArray();
@@ -97,7 +106,16 @@ namespace MonsterTrain2Poju.Probe
             foreach (CardData card in handCards)
                 cards.AddNewCard(card, CardPile.HandPile, false, false, animate: false);
             CardState laterGear = cards.AddNewCard(gear, CardPile.HandPile, false, false, animate: false);
-            cards.MoveCardFromHandToTopOfDeck(laterGear);
+            if (StationaryReserve)
+            {
+                if (laterGear == null || !cards.GetHand().Contains(laterGear))
+                    throw new InvalidOperationException("Could not reserve the new equipment in the native deployment hand.");
+                var freeze = new CardTraitData();
+                freeze.Setup("CardTraitFreeze");
+                laterGear.AddTemporaryTrait(freeze, managers.GetCoreManagers());
+                reservedGearId = FullBattleTrace.Active!.CardId(laterGear);
+            }
+            else cards.MoveCardFromHandToTopOfDeck(laterGear);
 
             foreach (var entry in Artifacts)
             {
@@ -195,6 +213,7 @@ namespace MonsterTrain2Poju.Probe
                     source.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.TargetUnitId).EquipmentCards?.Count ?? 0)
                     .ThenBy(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.TargetUnitId).Team == CombatTeam.Player ? 0 : 1)
                     .FirstOrDefault(action => source.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == action.TargetUnitId &&
+                        (card.InstanceId != reservedGearId || (source.Spawn.Turn > 0 && unit.Team == CombatTeam.Enemy)) &&
                         unit.Subtypes.Contains(Angel) && unit.IsBoss != true && (unit.Team == CombatTeam.Player ||
                             unit.Triggers.Any(trigger => trigger.Kind == "OnEquipmentAdded" && trigger.Effects.Any(effect => effect.Action?.Statuses.Any(status => status.Id == "valor") == true)))));
                 if (equip != null) return equip;
@@ -207,7 +226,8 @@ namespace MonsterTrain2Poju.Probe
                 if (shift != null) return shift;
             }
             // Friendly damage is restricted to the wound/death steps above.
-            return plays.FirstOrDefault(action => context.FindCard(action.CardInstanceId)?.DataId != woundCardId &&
+            return plays.FirstOrDefault(action => (reservedGearId == 0 || action.CardInstanceId != reservedGearId) &&
+                context.FindCard(action.CardInstanceId)?.DataId != woundCardId &&
                 (!Stationary || context.FindCard(action.CardInstanceId)?.DataId != shiftCardId));
         }
         private static void AddSubtype(CharacterData unit, string key)
