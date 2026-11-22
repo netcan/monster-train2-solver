@@ -72,7 +72,7 @@
 修正短命副本的消耗结算后，原版复放前 15 步，顾问续接后完成全部 36 步。四项采集计数为零，
 原版判负，首领剩 681/900 生命。整战归档为 `unlocked-covenant0-ring5-healing-route-defeat.mt2f`。
 另一种部署的 41 个输入在独立原版进程中完成。最后一步由 Lunar Echo 复制带原版先天升级的 RapidRaise，
-完整原版后继归档为 `mechanics/intrinsic-last-turn-copy/native-branch.mt2f`，该结算的顾问验证待完成。
+完整原版后继归档为 `mechanics/intrinsic-last-turn-copy/native-branch.mt2f`。修正后 41 个输入的完整状态与随机流均通过复放。
 
 第 5 环的首次整场对照从 10 点薪火生命开始，原版判负且四项采集计数为零。另一条部署路线验证了
 StealthWaxers 的出生条件与月相手牌更新可同时生效。两次部署与结束回合的后继在原版完全一致，
