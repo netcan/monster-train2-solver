@@ -251,11 +251,12 @@ PropagateOnStatusEffectApplied 的原版专项核对恰好 3 层的触发、超�
 18 次出牌、6 次结束回合及两类候选检查通过。
 [`propagate-on-status-effect.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/propagate-on-status-effect.mt2f)
 
-CooldownOnDamage_DH 的原版对照核对冷却从 3 降到 2，以及空法术不触发。在无技能目标上，
-原版对没有冷却状态或仅剩 1 层冷却的目标都留下零层登记。两局共 48 次出牌、14 次结束回合及两类候选通过。
-带技能目标的冷却归零与可用回调仍需原版对照。
+CooldownOnDamage_DH 的原版对照核对冷却从 3 降到 2，以及空法术不触发。没有冷却状态或仅剩 1 层冷却的
+无技能目标都会留下零层登记。原版 Spikedriver Factory 受击时也从 1 层降为 0，技能可用标记保持 0。
+三局共 71 次出牌或技能、20 次结束回合及两类候选通过。
 [`cooldown-on-damage.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/cooldown-on-damage.mt2f) ·
-[`cooldown-on-damage-no-prior-status.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/cooldown-on-damage-no-prior-status.mt2f)
+[`cooldown-on-damage-no-prior-status.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/cooldown-on-damage-no-prior-status.mt2f) ·
+[`cooldown-on-damage-ability-zero.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/cooldown-on-damage-ability-zero.mt2f)
 
 ExtraFeedTrigger 的原版查询确认友军 OnFeed 次数为 2，OnDeath 次数保持 1。
 61 个战斗阶段、5 次出牌、7 次结束回合与两类候选通过。实际普通进食也已录到两次 OnFeed，

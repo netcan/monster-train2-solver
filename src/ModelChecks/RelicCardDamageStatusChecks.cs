@@ -35,15 +35,16 @@ internal static class RelicCardDamageStatusChecks
         var lowCooldownTrain = new TrainCombatState(
             [new RoomCombatState(0, true, [Unit(4, CombatTeam.Player, cooldown: 1, hasAbility: true)], [], context)], [], 6, context);
         TrainCombatResult lowCooldown = RelicCardDamageStatusModel.ApplyOne(lowCooldownTrain, 0, [4], 0, 0);
-        Require(!lowCooldown.Supported && lowCooldown.State == null &&
-            lowCooldown.UnsupportedReason!.Contains("ability-ready callbacks", StringComparison.Ordinal),
-            "Cooldown reaching zero must remain rejected until ability-ready callbacks are calibrated.");
+        Require(lowCooldown.Supported, "A damage relic may reduce the final stack on a unit with an ability.");
+        CombatUnit cooled = UnitIn(lowCooldown.State!, 4);
+        Require(cooled.RegisteredStatus("cooldown")?.Stacks == 0 && cooled.Status("unit_ability_available") == null,
+            "Adding a negative cooldown stack must preserve the native zero entry and readiness state.");
 
         var malformed = new CombatRelicState("other-owner", RelicCardDamageStatusModel.AssetKey,
             [RelicCardDamageStatusModel.Effect]);
         Require(RelicModel.Validate([malformed]) != null,
             "An unrelated relic owner must not inherit CooldownOnDamage behavior.");
-        Console.WriteLine("COOLDOWN-ON-DAMAGE-CHECKS PASS: friendly Monster only, duplicate hit deduplication, enemy/Pyre exclusion, empty event, cooldown-zero rejection and exact owner guard.");
+        Console.WriteLine("COOLDOWN-ON-DAMAGE-CHECKS PASS: friendly Monster only, duplicate hit deduplication, enemy/Pyre exclusion, empty event, zero stack and exact owner guard.");
     }
 
     internal static void Native(FixtureValue root)
@@ -104,9 +105,12 @@ internal static class RelicCardDamageStatusChecks
         Console.WriteLine("COOLDOWN-ON-DAMAGE-NATIVE PASS: exact original payload, friendly Spell damage 3->2, empty-Spell control, callback and full-battle differential.");
     }
 
-    private static CombatUnit Unit(int id, CombatTeam team, bool isPyre = false, int cooldown = 3, bool hasAbility = false) => new(id,
-        isPyre ? "Pyre" : "CooldownWitness", team, 0, 30, 30, false, isPyre, false,
-        [new CombatStatus("cooldown", cooldown)], [], ability: hasAbility ? new UnitAbilityState("cooldown-control", cooldown, 0) : null);
+    private static CombatUnit Unit(int id, CombatTeam team, bool isPyre = false, int cooldown = 3, bool hasAbility = false)
+    {
+        CombatStatus[] statuses = [new CombatStatus("cooldown", cooldown)];
+        return new CombatUnit(id, isPyre ? "Pyre" : "CooldownWitness", team, 0, 30, 30, false, isPyre, false,
+            statuses, [], statusRegistry: statuses, ability: hasAbility ? new UnitAbilityState("cooldown-control", cooldown, 0) : null);
+    }
 
     private static CombatUnit UnitIn(TrainCombatState state, int id) =>
         state.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == id);
