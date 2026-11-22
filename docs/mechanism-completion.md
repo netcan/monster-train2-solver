@@ -70,6 +70,15 @@ ModelChecks 调用，`BattleSearchModel`、实际出牌与回合切换没有调�
 会拒绝匹配。另六张已有出牌证据通过，当前为 151/601 张定义匹配、8 张已记录出牌
 身份、442 张暂无出牌记录。Arkion 原版胜局的 45 个输入通过独立复放。
 
+四件状态强化遗物共用一次约 33 秒的原版采样，覆盖 Rage、Spikes、Regen 和 Mageblade。
+五次原版出牌、第一次战斗结算的完整后继与随机流逐项吻合。四件均有原版战斗回调，
+逐个从查询输入移除时，对应加成归零。该短测从月相追踪关闭的原版局面开始，已登记为
+[`status-magnitude/native-exchange.mt2f`](../tests/compatibility/game-2.3.1/mechanics/status-magnitude/native-exchange.mt2f)。
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-status-magnitude-witness-only tests/compatibility/game-2.3.1/mechanics/status-magnitude/native-exchange.mt2f
+```
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
