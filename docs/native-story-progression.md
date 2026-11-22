@@ -75,6 +75,8 @@
 完整原版后继归档为 `mechanics/intrinsic-last-turn-copy/native-branch.mt2f`。修正后 41 个输入的完整状态与随机流均通过复放。
 另一条布阵的 Gravity 移动验证了局部月相回调。43 个原版输入的完整状态与随机流通过复放，
 归档为 `mechanics/gravity-moon-movement/native-branch.mt2f`。
+同一战前档的另一条部署路线走了 47 个原版输入。末步复制带满月升级的 Gravity，副本保留一份该升级和一次移动效果。
+原版后继归档为 `mechanics/last-turn-copy-existing-moon-upgrade/native-branch.mt2f`。
 原版商店的对照路线购买了薪火治疗升级，用在 Gravity，RapidRaise 保持未升级。第 5 环仍从 41 点生命开始，
 战前档为 `.probe-runs/campaign-ring5-20261122-100542-b71c8670-before-ring5`，主存档 SHA256 为
 `30870b841f2870edfa995fc902b2b9712282ed6bf68c8538c0f803f950c27f21`。第 23 步的 Gravity 副本
