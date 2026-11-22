@@ -108,6 +108,13 @@ Energy Siphon、Immortality Potion、Forevermore Serum 和 Spike Potion 在首�
 匹配，6 张有出牌身份记录，432 张暂无出牌记录。
 [`targeted-status-spells/battle.mt2f`](../tests/compatibility/game-2.3.1/mechanics/targeted-status-spells/battle.mt2f)
 
+`Run-FullBattleProbe.ps1 -OriginalOpeningSpellIds <五个有序 GUID>` 复用同一原版牌堆
+准备和战斗执行流程。第一组配置的五张牌在同一场战斗完成首回合施放，约 87 秒
+后原版获胜。24 次出牌、7 次结束回合、16 条分支及录制根的候选检查通过。
+累计 186 场整战，卡牌定义匹配为 168/601，另有 6 张有出牌身份记录、
+427 张暂无出牌记录。
+[`configured-opening-spells/battle.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-spells/battle.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
