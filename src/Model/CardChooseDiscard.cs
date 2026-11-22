@@ -105,8 +105,7 @@ namespace MonsterTrain2Poju.Model
             CombatContext context = source;
             if (effect.Value == 2)
             {
-                if (context.Enchantments != null || context.RoomCapacities?.FirstOrDefault(room =>
-                    room.RoomIndex == roomIndex)?.Attachments?.Count > 0)
+                if (HasUncalibratedRoomSmelt(context, roomIndex))
                     return Unsupported("Room smelt modifiers require native room-state calibration.");
                 int forge = 0;
                 int ember = 0;
@@ -154,8 +153,7 @@ namespace MonsterTrain2Poju.Model
                 CardUpgradeMaskCard card = CardBranchMaskModel.Resolve(instance);
                 int bonus = RefineBonus(instance, card, out string? refineError);
                 if (refineError != null) return Unsupported(refineError);
-                if (context.Enchantments != null || context.RoomCapacities?.FirstOrDefault(room =>
-                    room.RoomIndex == roomIndex)?.Attachments?.Count > 0)
+                if (HasUncalibratedRoomSmelt(context, roomIndex))
                     return Unsupported("Room smelt modifiers require native room-state calibration.");
                 int amount = unchecked((instance.RawCostOverride ?? instance.MaskDescriptor.BaseCost) + bonus);
                 if (amount < 0) return Unsupported("Negative smelt cost requires native calibration.");
@@ -179,6 +177,23 @@ namespace MonsterTrain2Poju.Model
                 effectCounterType: null);
             return removed.Supported ? new CardChooseDiscardResult(removed.Context, removed.OtherPiles) :
                 Unsupported(removed.UnsupportedReason!);
+        }
+
+        private static bool HasUncalibratedRoomSmelt(CombatContext context, int roomIndex)
+        {
+            if (context.Enchantments != null) return true;
+            var attachments = context.RoomCapacities?.FirstOrDefault(room => room.RoomIndex == roomIndex)?.Attachments;
+            if (attachments == null || attachments.Count == 0) return false;
+            // The original room projection only emits this post-combat payload
+            // for one authored modifier. Native Forge and Ember queries ignore it.
+            return attachments.Count != 1 || attachments[0] is not
+            {
+                AttachmentType: 0, CapacityDelta: 0, SpellCostDelta: 0, EnergyPerTurnDelta: 0,
+                MoonPhase: null, PreCombat: null, PostCombat: { DisallowedInDeployment: true } postCombat,
+                StatusStackBonuses: null or { Count: 0 }, SpawnCopySubtype: null, SpellUpgrade: null,
+                DeathEffect: null, Ability: null, CorruptionModifier: null, Echo: null,
+                EnemyEntry: null or { Count: 0 }
+            } || RoomPostCombatModel.Validate(postCombat) != null;
         }
 
         private static int RefineBonus(CardInstanceState instance, CardUpgradeMaskCard card, out string? error)

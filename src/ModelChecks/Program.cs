@@ -8734,6 +8734,13 @@ if (args.Length == 2 && args[0] == "--choose-discard-only")
     ChooseDiscardChecks.Native(choiceDocument.RootElement);
     return;
 }
+if (args.Length == 3 && args[0] == "--grow-room-smelt-only")
+{
+    using var query = ModelJson.ReadFixture(args[1]);
+    using var battle = ModelJson.ReadFixture(args[2]);
+    GrowRoomSmeltChecks.Native(query.RootElement, battle.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-smelt-ember-only")
 {
     using var smeltDocument = ModelJson.ReadFixture(args[1]);
