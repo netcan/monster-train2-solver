@@ -52,7 +52,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 string? witnessPhase = null;
 #if DEVELOPMENT_PROBE
-                if (OriginalStatusMagnitudeWitness.Enabled && !OriginalStatusMagnitudeWitness.DirectRoomSpells && OriginalStatusMagnitudeWitness.Acquired)
+                if (OriginalStatusMagnitudeWitness.Enabled && !OriginalStatusMagnitudeWitness.SpellCohort && OriginalStatusMagnitudeWitness.Acquired)
                     witnessPhase = OriginalStatusMagnitudeWitness.ObservingExchange ? "exchange" : "decision";
 #endif
                 if ((witnessPhase == null && !OriginalMagnitudeRelicBatchScenario.Prepared && !MagebladeScenario.CaptureMagnitudeQueries) ||

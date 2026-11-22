@@ -14,6 +14,7 @@ namespace MonsterTrain2Poju.Probe
         internal const string Name = "original-status-magnitude-witness";
         internal const string MoonName = "original-status-magnitude-moon-witness";
         internal const string RoomSpellsName = "original-room-status-spells";
+        internal const string TargetedSpellsName = "original-targeted-status-spells";
         private const string Module = "bf93f060-beda-46b1-b808-95ebf1e9a99d";
         private const string StewardId = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
         private static readonly (string Id, string Key, string Status)[] Owners =
@@ -31,7 +32,16 @@ namespace MonsterTrain2Poju.Probe
             ("768a53f0-2743-4298-82c3-8541cbecf935", "JarOfFrost", 0, "poison", 8, 0),
             ("9ea70171-8afd-4fab-ad54-7ff5c8b478b8", "MagicJuice", 0, "spell weakness", 2, 0)
         };
-        private static readonly (string Id, string Key, int Cost)[] Cards = DirectRoomSpells
+        private static readonly (string Id, string Key, int Cost)[] TargetedCards =
+        {
+            (StewardId, "TrainStewardShield", 1),
+            ("4ca4ed47-9867-4004-acf0-171c3282751f", "PerilsOfProduction", 0),
+            ("a7207665-b6d1-4cd1-997e-8a7bb789c766", "EnergySiphon", 0),
+            ("141494fe-0ac3-41ad-b1e6-05aeafe060f6", "ImmortalityPotion", 1),
+            ("806fd915-b85c-4d0b-8490-fca08c2e0c0d", "ForevermoreSerum", 1),
+            ("ec0980cf-9f88-4d38-9704-b89042f2f625", "SpikePotion", 1)
+        };
+        private static readonly (string Id, string Key, int Cost)[] Cards = TargetedSpells ? TargetedCards : DirectRoomSpells
             ? new[] { (StewardId, "TrainStewardShield", 1) }.Concat(RoomSpells.Select(spell => (spell.Id, spell.Key, spell.Cost))).ToArray()
             : new[]
         {
@@ -51,12 +61,14 @@ namespace MonsterTrain2Poju.Probe
         private static int[]? continuousCardIds;
         private static BattleTurnState? deploymentEndTurn;
 
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or MoonName or RoomSpellsName;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or MoonName or RoomSpellsName or TargetedSpellsName;
         internal static bool Moon => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == MoonName;
         internal static bool DirectRoomSpells => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == RoomSpellsName;
-        internal static bool Continuous => DirectRoomSpells && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_STATUS_FULL_BATTLE") == "1";
+        internal static bool TargetedSpells => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == TargetedSpellsName;
+        internal static bool SpellCohort => DirectRoomSpells || TargetedSpells;
+        internal static bool Continuous => TargetedSpells || DirectRoomSpells && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_STATUS_FULL_BATTLE") == "1";
         internal static bool ContinuousPrepared => continuousCardIds != null;
-        private static int DeploymentCount => DirectRoomSpells ? 1 : 2;
+        private static int DeploymentCount => SpellCohort ? 1 : 2;
         internal static bool Acquired => definitions != null;
         internal static bool ObservingExchange { get; private set; }
         internal static bool Completed { get; private set; }
@@ -70,7 +82,7 @@ namespace MonsterTrain2Poju.Probe
                 save.GetMutators().Count != 0 || save.GetCovenants().Count != 0)
                 throw new InvalidOperationException("The original magnitude witness requires a fresh, unmodified 2.3.1 Ring 1.");
             AllGameData data = save.GetAllGameData();
-            var originalOwners = (DirectRoomSpells ? Owners.Take(0) : Owners).Select(expected =>
+            var originalOwners = (SpellCohort ? Owners.Take(0) : Owners).Select(expected =>
             {
                 var relic = data.GetAllCollectableRelicData().Single(item => item.GetID() == expected.Id);
                 var effect = relic.GetEffects().Single();
@@ -99,6 +111,13 @@ namespace MonsterTrain2Poju.Probe
                         status.statusId != spell.Status || status.count != spell.Stacks)
                         throw new InvalidOperationException("Original room status spell changed: " + spell.Key);
                 }
+                if (TargetedSpells && index >= DeploymentCount)
+                {
+                    CardEffectData effect = card.GetEffects().First();
+                    if (card.GetCardType() != CardType.Spell || effect.GetTargetMode() != TargetMode.DropTargetCharacter ||
+                        effect.GetEffectStateName() != nameof(CardEffectAddStatusEffect))
+                        throw new InvalidOperationException("Original targeted status spell changed: " + expected.Key);
+                }
                 return card;
             }).ToArray();
             foreach (var owner in originalOwners) save.AddRelic(owner);
@@ -126,24 +145,33 @@ namespace MonsterTrain2Poju.Probe
             // Stage the normal draw of five spells while preserving the stock draw order and native RNG stream.
             for (int index = 0; index < opening.Length; index++) draw[permutation[index]] = opening[index];
             continuousCardIds = controlled.Select(FullBattleTrace.Active!.CardId).ToArray();
-            log.LogInfo("ORIGINAL-ROOM-STATUS staged five original spells in draw before recording deployment.");
+            log.LogInfo("ORIGINAL-STATUS staged five original spells in draw before recording deployment.");
         }
 
         internal static PlayCardAction? ChooseContinuous(BattleTurnState state, PlayCardAction? fallback)
         {
             CombatContext context = state.Spawn.Train.Context!;
             if (state.Spawn.Turn == 0 && fallback == null && context.Cards.Hand.Count > 0)
-                throw new InvalidOperationException("Original room status deployment must play the stock opening hand before shuffle.");
+                throw new InvalidOperationException("Original status deployment must play the stock opening hand before shuffle.");
             if (state.Spawn.Turn != 1) return fallback;
 
             foreach (int id in continuousCardIds!)
             {
                 if (context.Statistics!.Value(id, "TimesPlayed", "ThisBattle") != 0) continue;
-                if (!context.Cards.Hand.Any(card => card.InstanceId == id))
-                    throw new InvalidOperationException("Original opening shuffle did not draw all five room status spells.");
-                var action = new PlayCardAction(id, 0);
+                CardToken? card = context.Cards.Hand.FirstOrDefault(item => item.InstanceId == id);
+                if (card == null) throw new InvalidOperationException("Original opening shuffle did not draw all five status spells.");
+                int targetId = 0;
+                if (TargetedSpells)
+                {
+                    CardActionEffect effect = state.PlayRules!.Cards.Single(rule => rule.DataId == card.DataId).Effects[0];
+                    bool hostile = effect.Statuses[0].Id == "spell weakness";
+                    var targets = state.Spawn.Train.Rooms[0].Units.Where(unit => unit.Health > 0 &&
+                        (hostile ? effect.AllowEnemy && unit.Team == CombatTeam.Enemy : effect.AllowPlayer && unit.Team == CombatTeam.Player));
+                    targetId = (hostile ? targets.OrderByDescending(unit => unit.Attack) : targets).First().Id;
+                }
+                var action = new PlayCardAction(id, 0, targetUnitId: targetId);
                 BattleActionResult result = BattleActionModel.PlayCard(state, action);
-                if (!result.Supported) throw new InvalidOperationException("Original room status spell could not be played: " + result.Reason);
+                if (!result.Supported) throw new InvalidOperationException("Original status spell could not be played: " + result.Reason);
                 return action;
             }
             return fallback;

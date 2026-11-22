@@ -637,6 +637,7 @@ param(
     [switch] $OriginalStatusMagnitudeMoonWitness,
     [switch] $OriginalRoomStatusSpells,
     [switch] $OriginalRoomStatusSpellsFullBattle,
+    [switch] $OriginalTargetedStatusSpells,
     [switch] $OriginalLifecycleRelicBatch,
     [switch] $OriginalDecayRelicBatch,
     [switch] $OriginalResourceRelicBatch,
@@ -1537,10 +1538,10 @@ if ($OriginalMagnitudeRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-s
 if ($OriginalRoomStatusSpellsFullBattle -and -not $OriginalRoomStatusSpells) {
     throw 'OriginalRoomStatusSpellsFullBattle requires OriginalRoomStatusSpells.'
 }
-if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells) {
-    $allowed = @('OriginalStatusMagnitudeWitness', 'OriginalStatusMagnitudeMoonWitness', 'OriginalRoomStatusSpells', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
+if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells -or $OriginalTargetedStatusSpells) {
+    $allowed = @('OriginalStatusMagnitudeWitness', 'OriginalStatusMagnitudeMoonWitness', 'OriginalRoomStatusSpells', 'OriginalTargetedStatusSpells', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
         'OriginalRoomStatusSpellsFullBattle', 'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
-    $modes = @($OriginalStatusMagnitudeWitness, $OriginalStatusMagnitudeMoonWitness, $OriginalRoomStatusSpells) | Where-Object { $_ }
+    $modes = @($OriginalStatusMagnitudeWitness, $OriginalStatusMagnitudeMoonWitness, $OriginalRoomStatusSpells, $OriginalTargetedStatusSpells) | Where-Object { $_ }
     if (!$BinaryCapture -or @($modes).Count -ne 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
         throw 'Original status magnitude witness requires a separate first-battle binary capture.'
@@ -2892,8 +2893,10 @@ if ($TitanSkinCombat) { $environment['MT2_PROBE_MODIFIERS'] = 'titan-skin-combat
 if ($OriginalStatusRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-relic-batch' }
 if ($OriginalStatusRelicBatchBurnout) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-relic-batch-burnout' }
 if ($OriginalMagnitudeRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-magnitude-relic-batch' }
-if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells) {
-    $environment['MT2_PROBE_MODIFIERS'] = $(if ($OriginalRoomStatusSpells) {
+if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells -or $OriginalTargetedStatusSpells) {
+    $environment['MT2_PROBE_MODIFIERS'] = $(if ($OriginalTargetedStatusSpells) {
+        'original-targeted-status-spells'
+    } elseif ($OriginalRoomStatusSpells) {
         'original-room-status-spells'
     } elseif ($OriginalStatusMagnitudeMoonWitness) {
         'original-status-magnitude-moon-witness'
@@ -4032,17 +4035,25 @@ if ($DamageOverflow -and ($trace.ModifierScenario -ne 'damage-overflow' -or
 }
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
-if ($OriginalRoomStatusSpellsFullBattle) {
+if ($OriginalRoomStatusSpellsFullBattle -or $OriginalTargetedStatusSpells) {
     $opening = @($trace.Actions | Where-Object { $_.Before.Spawn.Turn -eq 1 } | ForEach-Object {
         $action = $_.Action
         $_.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $action.CardInstanceId | ForEach-Object DataId
     })
-    $expected = @('479ceb1b-fc8c-420f-8fa0-17683cee4511', '47df0371-7bd9-4bc2-b8e1-de61cc0060c7',
-        '75ce1442-757b-4e9f-826d-8325f3dc7d9e', '768a53f0-2743-4298-82c3-8541cbecf935',
-        '9ea70171-8afd-4fab-ad54-7ff5c8b478b8')
-    if ($trace.ModifierScenario -cne 'original-room-status-spells' -or
+    if ($OriginalTargetedStatusSpells) {
+        $expectedModifier = 'original-targeted-status-spells'
+        $expected = @('4ca4ed47-9867-4004-acf0-171c3282751f', 'a7207665-b6d1-4cd1-997e-8a7bb789c766',
+            '141494fe-0ac3-41ad-b1e6-05aeafe060f6', '806fd915-b85c-4d0b-8490-fca08c2e0c0d',
+            'ec0980cf-9f88-4d38-9704-b89042f2f625')
+    } else {
+        $expectedModifier = 'original-room-status-spells'
+        $expected = @('479ceb1b-fc8c-420f-8fa0-17683cee4511', '47df0371-7bd9-4bc2-b8e1-de61cc0060c7',
+            '75ce1442-757b-4e9f-826d-8325f3dc7d9e', '768a53f0-2743-4298-82c3-8541cbecf935',
+            '9ea70171-8afd-4fab-ad54-7ff5c8b478b8')
+    }
+    if ($trace.ModifierScenario -cne $expectedModifier -or
         ($opening -join ',') -cne ($expected -join ',') -or @($trace.Turns | Where-Object { $_.Before.Spawn.Turn -eq 0 }).Count -ne 1) {
-        throw "Original room status battle must record deployment and all five first-turn spells. Inspect $unityLog"
+        throw "Original status battle must record deployment and all five first-turn spells. Inspect $unityLog"
     }
 }
 $nextInputProfile = $null
