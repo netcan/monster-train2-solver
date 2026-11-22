@@ -463,6 +463,11 @@ Deathmetal Hymnist 的连击绑定及 Weldling 战后护甲。9 次出牌、5 �
 10 次出牌、5 次结束回合、16 条独立分支以及两类候选均匹配。随后原版 Funguy 的 Horde 实测达到 16 层。
 [`colony-and-enchanter.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/colony-and-enchanter.mt2f)
 
+Bog Chrysalis 和 Bogdeep Cocoon 的同场对照实测孵出两只 Bog Fly。顾问从原版出生配置
+提前取得 Flight 技能定义，孵出的两只单位都可在候选里使用跨层飞行。6 次出牌、5 次结束回合、
+16 条独立分支及两类候选通过。跨层飞行用这场的实机状态离线复放，原版实放由已有飞行专项验证。
+[`bog-hatching-and-flight.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/bog-hatching-and-flight.mt2f)
+
 Pyreblooded 的后续实机对照在同层记录友军 10 层、两名敌军各 4 层 Pyregel。原版技能
 消耗 0 余烬并进入 3 层冷却，自身攻击由 5 提升至 23。8 次出牌或技能、5 次结束回合、
 16 条独立分支和候选检查通过。专项也复放零层、缺少楼层快照和跨楼层的对照。
