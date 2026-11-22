@@ -316,6 +316,15 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 护甲或尖刺，并保留敌军、其他楼层和输入缺失对照。14 次出牌、5 次结束回合和候选检查通过。
 [`armor-and-spikes.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-room-status-damage/armor-and-spikes.mt2f)
 
+三场腐化触发胜局分别验证 Carver 临时增加 3 点攻击和护甲、Glugsider 回复生命、
+Keeper 同时给自己和 Train Steward 增加升级。共 61 次出牌、18 次结束回合，
+专项和候选检查均通过。三场归档位于 `mechanics/controlled-original-corruption-triggers/`。
+
+镜厅组件记录的付费接枝出生和复制体各有独立装备。复制体的来源卡保留本体装备引用，
+实际绑定使用独立的装备实例。专项核对物理槽位、随机流和原版结算状态下的结束回合。
+该复制分支的出牌前预测仍会拒绝。
+[`observation.mt2f`](../tests/compatibility/game-2.3.1/mechanics/hall-grafted-birth/observation.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
