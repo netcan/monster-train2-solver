@@ -108,9 +108,9 @@ internal static class Game231RecordedChainTriage
                     RoomCorruptionChecks.ReplayRelicSetup(battle, rawMismatch);
                     detail = "Verified deployment and turn 1 through terminal around the two recorded native test spell insertions.";
                 }
-                else if (archive.Path == OriginalUnitRelicBatchChecks.BattleArchive)
+                else if (OriginalUnitRelicBatchChecks.IsPreparedBattleArchive(archive.Path))
                 {
-                    OriginalUnitRelicBatchChecks.ReplayPreparedTurns(battle, rawMismatch);
+                    OriginalUnitRelicBatchChecks.ReplayPreparedTurns(archive.Path, battle, rawMismatch);
                     detail = "Verified deployment and turn 1 through terminal around the recorded Soulsmelter and JustCause hand setup.";
                 }
                 else if (archive.Path == "mechanics/moon-phase-hand-upgrade/battle.mt2f")

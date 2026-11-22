@@ -5,6 +5,7 @@ using MonsterTrain2Poju.Model;
 internal static class OriginalUnitRelicBatchChecks
 {
     internal const string BattleArchive = "mechanics/controlled-unit-relic-batch/battle.mt2f";
+    internal const string MoonMaskBattleArchive = "mechanics/controlled-unit-relic-batch/moon-masks.mt2f";
     private const string Demon = "SubtypesData_Demon_fcebd195-f262-4d7a-ac9f-01ffa2007a12";
     private const string Snack = "SubtypesData_Snack";
     private static readonly (string Key, string Id, string? Upgrade, string? Subtype)[] Artifacts =
@@ -15,31 +16,40 @@ internal static class OriginalUnitRelicBatchChecks
         ("ValorTransferOnAngelDeath", "8c493cd7-8048-4598-bdd5-6cc2801cd842", null, null)
     ];
 
-    internal static void ReplayPreparedTurns(FixtureValue fixture, string mismatch)
+    internal static bool IsPreparedBattleArchive(string path) => path is BattleArchive or MoonMaskBattleArchive;
+
+    internal static void ReplayPreparedTurns(string path, FixtureValue fixture, string mismatch)
     {
         const string soulsmelter = "bee94cde-06f4-4bee-b616-8d1116fbb803";
         const string justCause = "c8b39244-83c1-4eb3-b474-8898226d4280";
         const int equipment = 22, bump = 23;
+        (int deploymentPlays, int totalPlays, int totalTurns) = path switch
+        {
+            BattleArchive => (2, 19, 5),
+            MoonMaskBattleArchive => (4, 40, 7),
+            _ => throw new InvalidDataException("Unexpected native unit relic battle path.")
+        };
         Require(fixture.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
             fixture.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
             fixture.GetProperty("Schema").GetInt32() == 103 &&
             fixture.GetProperty("ModifierScenario").GetString() == "original-unit-relic-batch" &&
-            mismatch == "before play 3 in turn 1: $.Context.Cards.Hand.Count: 5 != 7",
+            mismatch == $"before play {deploymentPlays + 1} in turn 1: $.Context.Cards.Hand.Count: 5 != 7",
             "Unexpected native unit relic hand setup boundary.");
 
         FixtureValue[] turns = fixture.GetProperty("Turns").EnumerateArray().ToArray();
         FixtureValue[] plays = fixture.GetProperty("Actions").EnumerateArray().ToArray();
-        Require(turns.Select(RecordedBattleChecks.DecisionTurn).SequenceEqual(Enumerable.Range(0, 5)) &&
-            plays.Length == 19 && plays.Take(2).All(play => RecordedBattleChecks.DecisionTurn(play) == 0) &&
-            RecordedBattleChecks.DecisionTurn(plays[2]) == 1 && plays[2].GetProperty("Index").GetInt32() == 2 &&
-            plays.Skip(2).All(play => RecordedBattleChecks.DecisionTurn(play) >= 1) &&
+        Require(turns.Select(RecordedBattleChecks.DecisionTurn).SequenceEqual(Enumerable.Range(0, totalTurns)) &&
+            plays.Length == totalPlays && plays.Take(deploymentPlays).All(play => RecordedBattleChecks.DecisionTurn(play) == 0) &&
+            RecordedBattleChecks.DecisionTurn(plays[deploymentPlays]) == 1 &&
+            plays[deploymentPlays].GetProperty("Index").GetInt32() == deploymentPlays &&
+            plays.Skip(deploymentPlays).All(play => RecordedBattleChecks.DecisionTurn(play) >= 1) &&
             plays.Where(play => play.GetProperty("ScenarioAction").GetBoolean())
-                .Select(play => play.GetProperty("Index").GetInt32()).SequenceEqual([0, 1]) &&
-            plays[2].GetProperty("Action").GetProperty("CardInstanceId").GetInt32() == equipment,
+                .Select(play => play.GetProperty("Index").GetInt32()).SequenceEqual(Enumerable.Range(0, deploymentPlays)) &&
+            plays[deploymentPlays].GetProperty("Action").GetProperty("CardInstanceId").GetInt32() == equipment,
             "Expected the recorded setup before the first turn 1 action uses the equipment carrier.");
 
         // The development recorder prepends the two native carriers after deployment resolves.
-        FixtureValue before = turns[0].GetProperty("Actual"), after = plays[2].GetProperty("Before");
+        FixtureValue before = turns[0].GetProperty("Actual"), after = plays[deploymentPlays].GetProperty("Before");
         void SameFields(FixtureValue previous, FixtureValue current, params string[] exceptions) =>
             Require(RecordedBattleChecks.SameFields(previous, current, exceptions),
                 "Native unit relic hand setup changed unrelated state.");
@@ -111,7 +121,7 @@ internal static class OriginalUnitRelicBatchChecks
         RecordedBattleChecks.ReplayOnce(fixture, firstTurn: 1);
     }
 
-    internal static void Native(FixtureValue root, bool required = false)
+    internal static void Native(FixtureValue root, bool required = false, bool requireCombatWitnesses = false)
     {
         bool eligible = root.TryGetProperty("ModifierScenario", out var scenario) && scenario.GetString() == "original-unit-relic-batch";
         Require(eligible || !required, "Fixture is missing the original unit relic batch.");
@@ -280,9 +290,9 @@ internal static class OriginalUnitRelicBatchChecks
         }
         Require(sacrifices > 0 && damagingSacrifices > 0 && repeatedAttacks > 0,
             $"Missing native combat positives: sacrifice={sacrifices}/{damagingSacrifices} damaging, multistrike={repeatedAttacks}.");
-        if (legacyBuild)
+        if (legacyBuild || requireCombatWitnesses)
             Require(playerShifts > 0 && enemyShifts > 0 && shieldBlocks > 0,
-                $"Missing legacy native combat positives: playerShift={playerShifts}, enemyShift={enemyShifts}, shieldBlocks={shieldBlocks}.");
+                $"Missing required native combat positives: playerShift={playerShifts}, enemyShift={enemyShifts}, shieldBlocks={shieldBlocks}.");
         Console.WriteLine($"NATIVE-ORIGINAL-UNIT-RELICS-CHECKS PASS: {build.Item1}, {rows.Length} manager calls, {paidSnacks}/{cardlessSnacks} paid/cardless Morsel shield births, " +
             $"{queries} Shift queries/four gates, {sacrifices}/{damagingSacrifices} sacrifices/damaging, {repeatedAttacks} multistrikes and 32 branches.");
         Console.WriteLine($"NATIVE-ORIGINAL-UNIT-RELICS-COMBAT-WITNESSES playerShift={playerShifts} enemyShift={enemyShifts} shieldBlocks={shieldBlocks} (zero means unobserved).");

@@ -68,11 +68,13 @@ internal static class NativeBattleRegistration
                 RoomCorruptionChecks.ReplayRelicSetup(battle, mismatch.Message);
                 continuity = "verified-setup-segments";
             }
-            catch (InvalidOperationException mismatch) when (archiveKey == OriginalUnitRelicBatchChecks.BattleArchive)
+            catch (InvalidOperationException mismatch) when (OriginalUnitRelicBatchChecks.IsPreparedBattleArchive(archiveKey))
             {
-                OriginalUnitRelicBatchChecks.ReplayPreparedTurns(battle, mismatch.Message);
+                OriginalUnitRelicBatchChecks.ReplayPreparedTurns(archiveKey, battle, mismatch.Message);
                 continuity = "verified-setup-segments";
             }
+            if (archiveKey == OriginalUnitRelicBatchChecks.MoonMaskBattleArchive)
+                OriginalUnitRelicBatchChecks.Native(battle, required: true, requireCombatWitnesses: true);
             if (cardFrontiers && plays > 0)
                 BattleSearchChecks.RecordedFrontiers(battle, requireZeroUnsupported: true, report: false);
             if (endTurnFrontiers)
