@@ -319,6 +319,10 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 1 次出牌、7 次结束回合及两类候选检查通过。
 [`pyre-heart-draw-and-resources.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-relics/pyre-heart-draw-and-resources.mt2f)
 
+原版 ModifyDragonsHoardBattleStart 在部署阶段令龙之宝藏增加 1，分别刷新原版卡牌与单位资源。
+两版专项均核对获得遗物、部署调用和上限。21 次出牌、7 次结束回合及两类候选通过。
+[`deployment-hoard.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-relics/deployment-hoard.mt2f)
+
 两件原版 Sting 遗物对照 53 次卡牌修饰回调，三次付费施放均获得合计 +30 伤害与穿甲。
 19 次出牌、6 次结束回合、32 条修饰器分支和候选检查通过。
 [`sting-with-original-relics.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/sting-with-original-relics.mt2f)
