@@ -52,12 +52,11 @@ internal static class RecordedBattleChecks
                 while (actionIndex < actions.Length && DecisionTurn(actions[actionIndex]) <= number)
                     Play(actionIndex++);
                 string label = $"EndTurn {number}";
-                state = BeforeInput(state, turn, "before " + label);
+                state = RecordedBoundary(state, turn.GetProperty("Before"), terminal: false, "before " + label);
                 BattleTurnResult next = BattleTurnModel.EndTurn(state, Decisions(turn));
                 Require(next.Supported, label + ": " + (next.UnsupportedReason ?? "Unsupported."));
                 Require(next.Outcome == turn.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(), label + ": Outcome differs.");
-                state = next.State!;
-                Compare(state, turn.GetProperty("Actual").Deserialize<BattleTurnState>()!, Terminal(next.Outcome), "after " + label);
+                state = RecordedBoundary(next.State!, turn.GetProperty("Actual"), Terminal(next.Outcome), "after " + label);
             }
             while (actionIndex < actions.Length) Play(actionIndex++);
             completed?.Invoke(state);
@@ -65,12 +64,11 @@ internal static class RecordedBattleChecks
             {
                 FixtureValue row = actions[index];
                 string label = $"play {index + 1} in turn {state.Spawn.Turn}";
-                state = BeforeInput(state, row, "before " + label);
+                state = RecordedBoundary(state, row.GetProperty("Before"), terminal: false, "before " + label);
                 BattleActionResult next = BattleActionModel.PlayCard(state, row.GetProperty("Action").Deserialize<PlayCardAction>()!);
                 Require(next.Supported, label + ": " + (next.Reason ?? "Unsupported."));
                 Require(next.Outcome == row.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(), label + ": Outcome differs.");
-                state = next.State!;
-                Compare(state, row.GetProperty("Actual").Deserialize<BattleTurnState>()!, Terminal(next.Outcome), "after " + label);
+                state = RecordedBoundary(next.State!, row.GetProperty("Actual"), Terminal(next.Outcome), "after " + label);
             }
         }
         Replay();
@@ -82,21 +80,17 @@ internal static class RecordedBattleChecks
     private static bool Terminal(RoomOutcome outcome) => outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
     internal static RelentlessDecision[]? Decisions(FixtureValue row) => row.TryGetProperty("RelentlessDecisions", out var choices) &&
         choices.ValueKind != FixtureKind.Null ? choices.Deserialize<RelentlessDecision[]>() : null;
-    private static BattleTurnState BeforeInput(BattleTurnState state, FixtureValue row, string label)
+    internal static BattleTurnState RecordedBoundary(BattleTurnState state, FixtureValue snapshot, bool terminal, string label)
     {
-        BattleTurnState actual = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
-        string? difference = Difference(state, actual, terminal: false);
+        BattleTurnState actual = snapshot.Deserialize<BattleTurnState>()!;
+        string? difference = Difference(state, actual, terminal);
         if (difference == null) return state;
 
-        // Raw action capture can start after the game focuses the destination.
-        // Replay this observed focus from the running model state before comparing.
-        if (state.Spawn.Train.Context?.QueryFrame?.SelectedRoomIndex is int previous &&
-            actual.Spawn.Train.Context?.QueryFrame?.SelectedRoomIndex is int room && previous != room)
-        {
-            BattleTurnResult focus = BattleTurnModel.SelectRoom(state, room, refreshPreview: false);
-            if (focus.Supported && Difference(focus.State!, actual, terminal: false) == null)
-                return focus.State!;
-        }
+        // The game can focus another floor before the input or between settlement
+        // and capture. Reproduce the observed focus from the modeled state.
+        if (!terminal && BattleTurnModel.ReplayObservedFocus(state, actual) is BattleTurnState focused &&
+            Difference(focused, actual, terminal: false) == null)
+            return focused;
         throw new InvalidOperationException(label + ": " + difference);
     }
 

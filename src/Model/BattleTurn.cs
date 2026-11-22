@@ -174,6 +174,14 @@ namespace MonsterTrain2Poju.Model
                 RoomOutcome.Exchanged);
         }
 
+        internal static BattleTurnState? ReplayObservedFocus(BattleTurnState source, BattleTurnState observed)
+        {
+            if (source.Spawn.Train.Context?.QueryFrame?.SelectedRoomIndex is not int previous ||
+                observed.Spawn.Train.Context?.QueryFrame?.SelectedRoomIndex is not int room || previous == room)
+                return null;
+            return SelectRoom(source, room, refreshPreview: false).State;
+        }
+
         // One quiet player decision point through EndTurn to the next decision or terminal battle.
         public static BattleTurnResult EndTurn(BattleTurnState source, IReadOnlyList<RelentlessDecision>? relentlessDecisions = null)
         {

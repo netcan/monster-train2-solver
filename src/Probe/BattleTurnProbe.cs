@@ -156,8 +156,8 @@ namespace MonsterTrain2Poju.Probe
                 if (record.Predicted.Supported)
                 {
                     bool terminal = outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
-                    JToken predicted = Comparable(record.Predicted.State!, terminal);
                     JToken actual = Comparable(record.Actual, terminal);
+                    JToken predicted = ComparableAtRecordedBoundary(record.Predicted.State!, record.Actual, actual, terminal);
                     record.Difference = record.Predicted.Outcome != outcome ? "EndTurn outcome differs" :
                         JToken.DeepEquals(predicted, actual)
                             ? null : "Decision state, resources, card piles or gameplay RNG differ";
@@ -170,6 +170,19 @@ namespace MonsterTrain2Poju.Probe
             }
             catch (Exception error) { trace.CaptureFailure(error); }
         }
+        internal static JToken ComparableAtRecordedBoundary(BattleTurnState prediction, BattleTurnState observation,
+            JToken actual, bool terminal)
+        {
+            JToken predicted = Comparable(prediction, terminal);
+            if (!terminal && !JToken.DeepEquals(predicted, actual) &&
+                BattleTurnModel.ReplayObservedFocus(prediction, observation) is BattleTurnState focused)
+            {
+                JToken comparableFocus = Comparable(focused);
+                if (JToken.DeepEquals(comparableFocus, actual)) return comparableFocus;
+            }
+            return predicted;
+        }
+
         internal static JToken Comparable(BattleTurnState state, bool terminal = false)
         {
             CombatContext? context = ComparableContext(state.Spawn.Train.Context);

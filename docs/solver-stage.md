@@ -469,3 +469,11 @@ Cael 零盟约试炼的攻击与生命、吸血变体分别通过 26 次出牌�
 镜厅接枝及弃牌前随机流的单机制检查也通过。离线对照在
 `results/card-validation-cache/fixed-budget.log`，四场报告在
 `results/recorded-chain-triage-20261123-020425-2789eb8a/report.tsv`。
+
+319 场归档的阶段复放中，299 场连续通过，19 场按已验证的准备边界分段通过，另有
+118 份组件或诊断档按清单跳过。第 5 环左路红冠暴露一处结算后自动切层。原版
+Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时导魔。候选检查和连续复放
+现在从模型后继复放该录制切层，并比较同一完整状态。红冠和第 6 环左路定向复验通过，
+合计 81 次出牌或技能、20 次结束回合和两类录制候选检查。
+阶段报告为 `results/recorded-chain-triage-20261123-022849-68aee405/report.tsv`，
+修正后的定向报告为 `results/recorded-chain-triage-20261123-023432-15ea7113/report.tsv`。

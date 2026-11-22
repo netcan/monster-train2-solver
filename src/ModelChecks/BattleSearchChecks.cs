@@ -107,7 +107,7 @@ internal static class BattleSearchChecks
             var native = FindEndTurn(frontier, RecordedBattleChecks.Decisions(entry) ?? []);
             Require(native?.State != null && native.Outcome == entry.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(),
                 label + " does not contain the recorded native outcome for the recorded choices.");
-            RecordedBattleChecks.Compare(native!.State!, entry.GetProperty("Actual").Deserialize<BattleTurnState>()!,
+            RecordedBattleChecks.RecordedBoundary(native!.State!, entry.GetProperty("Actual"),
                 native.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated, label);
         }
     }
@@ -140,13 +140,11 @@ internal static class BattleSearchChecks
                     ", target=" + nativeAction.TargetUnitId + ", recursion=" + nativeAction.RecursionSelections.Count +
                     ", replay=" + replay.Rejection + " (" + replay.Reason + ").");
             }
-            BattleTurnState nativeActual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
             bool terminal = nativeCandidate!.Result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
-            string predicted = BattleTurnChecks.Comparable(nativeCandidate.Result.State!, terminal);
-            string captured = BattleTurnChecks.Comparable(nativeActual, terminal);
-            Require(nativeCandidate.Result.Outcome == (RoomOutcome)entry.GetProperty("ActualOutcome").GetInt32() && predicted == captured,
-                "Cached search successor for recorded native action " + index + " differs from the captured result: " +
-                (predicted == captured ? "outcome" : ModelJson.Difference(predicted, captured)));
+            string label = "Cached search successor for recorded native action " + index;
+            Require(nativeCandidate.Result.Outcome == (RoomOutcome)entry.GetProperty("ActualOutcome").GetInt32(),
+                label + " has a different native outcome.");
+            RecordedBattleChecks.RecordedBoundary(nativeCandidate.Result.State!, entry.GetProperty("Actual"), terminal, label);
             if (index == 0)
             {
                 root = before;

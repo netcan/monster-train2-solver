@@ -942,8 +942,8 @@ namespace MonsterTrain2Poju.Probe
                 if (record.Predicted.Supported)
                 {
                     bool terminal = record.Predicted.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
-                    JToken predicted = BattleTurnProbe.Comparable(record.Predicted.State!, terminal);
                     JToken actual = BattleTurnProbe.Comparable(record.Actual, terminal);
+                    JToken predicted = BattleTurnProbe.ComparableAtRecordedBoundary(record.Predicted.State!, record.Actual, actual, terminal);
                     record.Difference = record.Predicted.Outcome != record.ActualOutcome ? "Card play terminal outcome differs" :
                         JToken.DeepEquals(predicted, actual) ? null : "Card play decision state differs";
                     if (record.Difference != null && record.Predicted.Outcome == record.ActualOutcome &&
