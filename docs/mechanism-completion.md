@@ -610,6 +610,10 @@ Bog Chrysalis 和 Bogdeep Cocoon 的同场对照实测孵出两只 Bog Fly。顾
 23 次出牌或技能、6 次结束回合和两类候选通过。三单位组合塞满了 Bog Fly 的目的楼层，Flight 仍用独立场景核对。
 [同场技能录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/opening-ability-activations.mt2f)
 
+Alloyed Construct、Crucible Collector 和 Crucible Warden 在一次原版对局中完成付费出生。
+归档保留三者的 OnFeed 定义，6 次出牌、5 次结束回合及两类候选通过。实际进食另有专项场景。
+[进食单位出生录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/feeding-carrier-births.mt2f)
+
 原版 First of Kin 和 Sacrificial Resurrection 的同场对照核对两张手牌被消耗、单位增攻及
 Draff 出生，Morel Mistress 提供排除对照。7 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`exhausted-first-of-kin.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/exhausted-first-of-kin.mt2f)
