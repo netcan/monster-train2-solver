@@ -291,6 +291,10 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 合法性查询、选中楼层、扣除与回填顺序。7 次出牌、5 次结束回合及候选检查通过。
 [`paid-corruption.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-corrupt-restricted/paid-corruption.mt2f)
 
+另一场受控装备批次在三个原版宿主上验证九件原版装备的实际付费与挂载。13 次出牌、
+5 次结束回合、16 条分支与候选检查通过。
+[`phase-and-combat-effects.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-equipment/phase-and-combat-effects.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
@@ -534,6 +538,10 @@ TSV 的 `RunnerOption` 和 `DataIds` 可用于开局批录。清单按效果与�
 复用旧场景时，`dotnet run --project src/FixtureTools -c Release -- card-legacy-recapture-worklist .`
 按连续战斗中可补录的卡牌数排列 2.2.1 归档。清单给出原采集模式、归档哈希与实际出牌位置。
 这些旧档用于挑选批次，2.3.1 的覆盖统计由该版本实机结果更新。
+
+新原版胜局可用 `scripts/Register-Game231NativeBattle.ps1` 登记到现有机制目录。
+该入口校验隔离运行摘要和归档哈希，完成单场复放后再发布归档与清单。按需启用
+`-CheckCardFrontiers` 与 `-CheckEndTurnFrontiers`。
 
 优先实现可复用的机制场景生成器：从目录挑原版代表定义，按源码分支构造
 最小正例、控制例、复位及边界状态，在一次隔离原生进程中批量采样，再按完整
