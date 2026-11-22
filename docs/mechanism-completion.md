@@ -225,6 +225,12 @@ Steelguard 格挡、Undying 回场和 Burnout 到期。整场 21 次出牌、5 �
 待结算死亡与站位整理。实际出牌对照使用原版首战默认种子，目标吃到伤害后存活。
 [`counters-and-horde.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-scaled-damage/counters-and-horde.mt2f)
 
+同一场隔离对照打出十二张指定原版牌。Masterwork 令锻造点增加 8，Boilerplate 将其用完，
+Excavation Eruption 和 Ice Tornado 分别命中三次，Pyreclasm 对存活目标造成 150 点伤害。
+Disassemble 消灭 Dregs Tomb、获得 5 锻造点，并观测到两名单位出生。
+16 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
+[`fixed-damage-and-forge.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-scaled-damage/fixed-damage-and-forge.mt2f)
+
 两场 2.3.1 胜局共同覆盖十件原版触发遗物。第一场观察 Hymnist 死亡后的 Rage，
 第二场补采月相掩码并实际执行十次换层，观察 Angel 换层与 Whelp 攻击。两场共
 58 次出牌或技能、12 次结束回合，各通过 16 条独立分支。第二场另通过候选检查。
