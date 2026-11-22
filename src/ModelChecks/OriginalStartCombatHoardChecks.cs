@@ -9,10 +9,11 @@ internal static class OriginalStartCombatHoardChecks
     internal static void Native(FixtureValue root)
     {
         Run();
+        bool pinnedBuild = (root.GetProperty("GameVersion").GetString(), root.GetProperty("GameModuleMvid").GetString()) is
+            ("2.2.1", "8fb07b96-f4db-4d2b-884d-c00536d6ccf4") or (Game231FixtureCatalog.Version, Game231FixtureCatalog.Module);
         Require(root.GetProperty("Schema").GetInt32() == 201 &&
             root.GetProperty("ModifierScenario").GetString() == "original-start-combat-hoard-relic" &&
-            root.GetProperty("GameVersion").GetString() == "2.2.1" &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
+            pinnedBuild &&
             root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
             new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }
                 .All(name => root.GetProperty(name).GetInt32() == 0), "Start-combat Hoard battle failed acceptance.");
