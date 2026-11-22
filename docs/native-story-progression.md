@@ -55,6 +55,9 @@
 实际支付 1 点能量并失去原始 `ephemeral` 和 `OnHit`，结算后记录仍有 `newmoon` 和 `OnKill`。
 单步原版后继归档为 `mechanics/purified-card-deployment/native-branch.mt2f`，现已通过完整状态与随机流复放。
 离线同时验证部署前后可结束回合，以及未验证的特殊效果仍受保护。
+左路整战复试通过前 13 个输入。第 14 步原版技能把上一回合打出的 Gravity 复制到手牌，并保留其永久升级。
+顾问预测少了这项升级，整场验收在该处停止。原版结算归档为
+`mechanics/last-turn-copy-permanent-upgrade/native-partial.mt2f`。
 
 第 5 环的首次整场对照从 10 点薪火生命开始，原版判负且四项采集计数为零。另一条部署路线验证了
 StealthWaxers 的出生条件与月相手牌更新可同时生效。两次部署与结束回合的后继在原版完全一致，
