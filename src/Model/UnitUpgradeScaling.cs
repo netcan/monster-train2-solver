@@ -24,7 +24,8 @@ namespace MonsterTrain2Poju.Model
 
     public static class UnitUpgradeScalingModel
     {
-        public static UnitUpgradeScalingResult Apply(CombatContext? context, int sourceCardId, CardUpgradeModifier upgrade, string? triggerKind = null)
+        public static UnitUpgradeScalingResult Apply(CombatContext? context, int sourceCardId, CardUpgradeModifier upgrade,
+            string? triggerKind = null, RoomCombatState? selectedRoom = null)
         {
             if (sourceCardId <= 0) return new UnitUpgradeScalingResult(context, upgrade);
             CardInstanceState? owner = context?.FindCard(sourceCardId);
@@ -35,21 +36,21 @@ namespace MonsterTrain2Poju.Model
             }
             foreach (ScalingUnitUpgradeTrait trait in owner.UnitUpgradeScalingTraits ?? Array.Empty<ScalingUnitUpgradeTrait>())
             {
-                UnitUpgradeScalingResult scaled = ApplyTrait(context, trait, sourceCardId, upgrade, triggerKind);
+                UnitUpgradeScalingResult scaled = ApplyTrait(context, trait, sourceCardId, upgrade, triggerKind, selectedRoom);
                 if (!scaled.Supported) return scaled;
                 context = scaled.Context; upgrade = scaled.Upgrade!;
             }
             return new UnitUpgradeScalingResult(context, upgrade);
         }
         public static UnitUpgradeScalingResult ApplyTrait(CombatContext? context, ScalingUnitUpgradeTrait trait, int ownerCardId,
-            CardUpgradeModifier upgrade, string? triggerKind = null)
+            CardUpgradeModifier upgrade, string? triggerKind = null, RoomCombatState? selectedRoom = null)
         {
             // Native restriction 1 allows an ordinary cast (no trigger), as well as OnSpawn.
             if (trait.Restriction == 1 && triggerKind != null && triggerKind != "OnSpawn" || upgrade.MagicPowerTraitScalingOnly)
                 return new UnitUpgradeScalingResult(context, upgrade);
             if (context == null) return Unsupported("Unit-upgrade scaling requires shared combat context.");
             if (trait.Stat != "Damage" && trait.Stat != "Health") return Unsupported("Unknown unit-upgrade scaling stat.");
-            StatisticQueryResult query = StatisticQueryModel.Evaluate(context, trait.Query, ownerCardId);
+            StatisticQueryResult query = StatisticQueryModel.Evaluate(context, trait.Query, ownerCardId, selectedRoom: selectedRoom);
             if (!query.Supported) return Unsupported(query.UnsupportedReason!);
             int bonus = unchecked(trait.AmountPerStat * query.Value);
             return new UnitUpgradeScalingResult(query.Context, upgrade.WithScaledStats(

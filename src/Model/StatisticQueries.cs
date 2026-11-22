@@ -269,10 +269,12 @@ namespace MonsterTrain2Poju.Model
                         return Unsupported("Room-status queries require the captured native status filter.");
                     if (frame?.SelectedRoomIndex == null || selectedRoom == null || selectedRoom.RoomIndex != frame.SelectedRoomIndex)
                         return Unsupported("Room-status queries require live units from the current selected room.");
-                    if (query.TargetTeam != "None" && query.TargetTeam != "Heroes" && query.TargetTeam != "Monsters" && query.TargetTeam != "Heroes, Monsters")
+                    // Native team 255 includes both flag bits, as on Pyreblooded's ability.
+                    bool both = query.TargetTeam is "Heroes, Monsters" or "255";
+                    if (!both && query.TargetTeam is not ("None" or "Heroes" or "Monsters"))
                         return Unsupported("Unmodeled room-status query team.");
-                    bool heroes = query.TargetTeam == "Heroes" || query.TargetTeam == "Heroes, Monsters";
-                    bool monsters = query.TargetTeam == "Monsters" || query.TargetTeam == "Heroes, Monsters";
+                    bool heroes = both || query.TargetTeam == "Heroes";
+                    bool monsters = both || query.TargetTeam == "Monsters";
                     return Finish(Sum(selectedRoom.Units.Where(unit => unit.Health > 0 &&
                         (unit.Team == CombatTeam.Enemy ? heroes : monsters)).SelectMany(unit => query.StatusIds.Select(id => Math.Max(0, unit.Status(id)?.Stacks ?? 0)))));
                 case "CapacityOfTargetRoom":

@@ -169,7 +169,7 @@ namespace MonsterTrain2Poju.Model
             if (!remove && !directApi && target.Modifiers.IsClone && upgrade.ExcludeFromClones) return Match(source);
             if (!remove && !directApi)
             {
-                UnitUpgradeScalingResult scaled = UnitUpgradeScalingModel.Apply(source.Context, sourceCardId, upgrade, triggerKind);
+                UnitUpgradeScalingResult scaled = UnitUpgradeScalingModel.Apply(source.Context, sourceCardId, upgrade, triggerKind, source);
                 if (!scaled.Supported) return Unsupported(scaled.UnsupportedReason!);
                 upgrade = scaled.Upgrade!;
                 source = new RoomCombatState(source.RoomIndex, source.Deployment, source.Units,
