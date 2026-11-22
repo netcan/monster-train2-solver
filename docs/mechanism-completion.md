@@ -278,6 +278,10 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 两版专项、15 次出牌、5 次结束回合和两类候选检查均通过。
 [`spikes-attack-scaling.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/spikes-attack-scaling.mt2f)
 
+原版 FirstRoomCardOnAllFloors 在首张房间附卡结算时复制到各楼层。专项核对普通牌、
+每场一次条件、累计计数以及第二张附卡的筛选。7 次出牌、7 次结束回合和两类候选通过。
+[`first-room-attachment.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/first-room-attachment.mt2f)
+
 三件原版单位资源遗物通过 585 条回调上下文核对。两次友军死亡各提供 5 金币，墓碑死亡提供
 5 余烬，同回合首次装备提供 1 余烬。22 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
 [`death-and-first-equipment.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-relics/death-and-first-equipment.mt2f)
