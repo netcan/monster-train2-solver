@@ -29,7 +29,7 @@ namespace MonsterTrain2Poju.Probe
             ("47df0371-7bd9-4bc2-b8e1-de61cc0060c7", "Gooeyflask", 1, "debuff", 2, 0),
             ("75ce1442-757b-4e9f-826d-8325f3dc7d9e", "EchoSnare", 1, "corrupt_poison", 5, 0),
             ("768a53f0-2743-4298-82c3-8541cbecf935", "JarOfFrost", 0, "poison", 8, 0),
-            ("9ea70171-8afd-4cd1-997e-8a7bb789c766", "MagicJuice", 0, "spell weakness", 2, 0)
+            ("9ea70171-8afd-4fab-ad54-7ff5c8b478b8", "MagicJuice", 0, "spell weakness", 2, 0)
         };
         private static readonly (string Id, string Key, int Cost)[] Cards = DirectRoomSpells
             ? new[] { (StewardId, "TrainStewardShield", 1) }.Concat(RoomSpells.Select(spell => (spell.Id, spell.Key, spell.Cost))).ToArray()

@@ -10,7 +10,7 @@ internal static class OriginalRoomStatusSpellsChecks
         ("Gooeyflask", "47df0371-7bd9-4bc2-b8e1-de61cc0060c7", 1, "debuff", 2, 0),
         ("EchoSnare", "75ce1442-757b-4e9f-826d-8325f3dc7d9e", 1, "corrupt_poison", 5, 0),
         ("JarOfFrost", "768a53f0-2743-4298-82c3-8541cbecf935", 0, "poison", 8, 0),
-        ("MagicJuice", "9ea70171-8afd-4cd1-997e-8a7bb789c766", 0, "spell weakness", 2, 0)
+        ("MagicJuice", "9ea70171-8afd-4fab-ad54-7ff5c8b478b8", 0, "spell weakness", 2, 0)
     ];
 
     internal static void Check(FixtureValue root)
