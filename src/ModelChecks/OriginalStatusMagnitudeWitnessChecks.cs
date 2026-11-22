@@ -21,9 +21,9 @@ internal static class OriginalStatusMagnitudeWitnessChecks
 
         var rows = root.GetProperty("Plays").EnumerateArray().ToArray();
         Require(rows.Select(row => row.GetProperty("Card").GetString()).SequenceEqual(
-            new[] { "TrainStewardShield", "SeleneAcolyte", "RageSerum", "Sharpen", "StarterHeal" }),
+            new[] { "TrainStewardShield", "LunaCovenChamp2", "RageSerum", "Sharpen", "StarterHeal" }),
             "Original magnitude carrier plays are missing or unordered.");
-        int[] costs = [1, 2, 0, 2, 1];
+        int[] costs = [1, 0, 0, 2, 1];
         using var keys = new BattleStateKeys();
         for (int i = 0; i < rows.Length; i++)
         {
@@ -31,7 +31,8 @@ internal static class OriginalStatusMagnitudeWitnessChecks
             var after = State(rows[i], "After");
             var action = rows[i].GetProperty("Action").Deserialize<PlayCardAction>()!;
             var projected = BattleActionModel.PlayCard(before, action);
-            Require(action.RoomIndex == 0 && before.Energy - after.Energy == costs[i] && projected.Supported &&
+            Require(before.MoonPhaseTrackingActive == false && after.MoonPhaseTrackingActive == false &&
+                action.RoomIndex == 0 && before.Energy - after.Energy == costs[i] && projected.Supported &&
                 keys.Key(projected.State!) == keys.Key(after),
                 "Original magnitude carrier successor differs for " + rows[i].GetProperty("Card").GetString() + ": " + projected.Reason);
         }
@@ -44,9 +45,9 @@ internal static class OriginalStatusMagnitudeWitnessChecks
             "Original magnitude exchange successor differs: " + combat.UnsupportedReason);
         var context = start.Spawn.Train.Context!;
         var allies = start.Spawn.Train.Rooms[0].Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
-        var selene = allies.Single(unit => unit.AssetKey == "MonsterSeleneAcolyte");
+        var mageblade = allies.Single(unit => unit.AssetKey == "MonsterChampionLunaCoven2");
         var steward = allies.Single(unit => unit.AssetKey == "TrainStewardBig");
-        Require(Stacks(selene, "mageblade") == 2 && Stacks(selene, "buff") == 5 &&
+        Require(Stacks(mageblade, "mageblade") == 2 && Stacks(mageblade, "buff") == 5 &&
             Stacks(steward, "spikes") == 6 && Stacks(steward, "regen") == 2,
             "Original live carriers lack their starting or paid status stacks.");
 

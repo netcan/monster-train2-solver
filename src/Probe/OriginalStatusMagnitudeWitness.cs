@@ -23,7 +23,7 @@ namespace MonsterTrain2Poju.Probe
         private static readonly (string Id, string Key, int Cost)[] Cards =
         {
             ("d14a50f3-728d-43e1-87f0-ef1b013f6678", "TrainStewardShield", 1),
-            ("2b7a187f-da0b-4c34-b8c5-b18755911b43", "SeleneAcolyte", 2),
+            ("63eba1e1-3118-44a3-8906-c8bfbe559667", "LunaCovenChamp2", 0),
             ("2ed78ce2-13c3-4e82-963f-99c9ea12d0f0", "RageSerum", 0),
             ("2ff4ef73-00f4-4bd5-b868-607320188980", "Sharpen", 2),
             ("d81f1f43-f20e-4459-9fc4-19e5836a876f", "StarterHeal", 1)
@@ -79,6 +79,8 @@ namespace MonsterTrain2Poju.Probe
             var rooms = managers.GetRoomManager();
             var cards = managers.GetCardManager();
             if (definitions == null) throw new InvalidOperationException("Original magnitude relics were not acquired.");
+            if (managers.GetPlayerManager().GetHasMoonPhaseCardEffect())
+                throw new InvalidOperationException("Original magnitude witness requires the native neutral combat phase.");
             if (rooms.GetSelectedRoom() != 0)
             {
                 managers.GetSaveManager().StartCoroutine(rooms.GetRoomUI().SetSelectedRoom(0));
@@ -140,7 +142,7 @@ namespace MonsterTrain2Poju.Probe
             var allies = new List<CharacterState>();
             room.AddCharactersToList(allies, Team.Type.Monsters);
             CharacterState? target = deploying ? null : allies.Single(unit => unit.IsAlive &&
-                unit.GetSourceCharacterData().GetAssetKey() == (index == 2 ? "MonsterSeleneAcolyte" : "TrainStewardBig"));
+                unit.GetSourceCharacterData().GetAssetKey() == (index == 2 ? "MonsterChampionLunaCoven2" : "TrainStewardBig"));
             SpawnPoint point = target?.GetSpawnPoint() ?? room.GetFirstEmptyMonsterPoint();
             before = trace.CaptureDecision();
             action = new PlayCardAction(trace.CardId(next), 0, deploying ? allies.Count : -1,
