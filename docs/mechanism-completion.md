@@ -663,6 +663,10 @@ Minds of Their Own 命令装备单位击杀前排后，原版将余下敌人前�
 两类候选均无未支持项。128 状态预算内的串并行搜索返回相同结果，三步计划复放一致。
 [原版 Kinhost Vessel 孵化录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/kinhost-vessel-hatch.mt2f)
 
+Monstrosity 和 Splitter 同场完成付费出生。Monstrosity 在四个观察点均因本层单位死亡取得临时增益。
+Splitter 的两个死亡召唤定义已捕获，当场保持未触发。6 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
+[原版本层死亡与召唤定义录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/room-death-carriers.mt2f)
+
 原版 First of Kin 和 Sacrificial Resurrection 的同场对照核对两张手牌被消耗、单位增攻及
 Draff 出生，Morel Mistress 提供排除对照。7 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`exhausted-first-of-kin.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/exhausted-first-of-kin.mt2f)
