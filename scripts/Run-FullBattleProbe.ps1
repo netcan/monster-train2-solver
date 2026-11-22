@@ -3985,7 +3985,7 @@ if ($BinaryCapture) {
 $inspectionTimer.Stop()
 Write-Output "FULL-BATTLE-INSPECTION elapsedSeconds=$($inspectionTimer.Elapsed.TotalSeconds.ToString('F3', [Globalization.CultureInfo]::InvariantCulture))"
 if ($OriginalTriggerRelicBatchStationaryReserve) {
-    $equipment = @(foreach ($row in $trace.Actions) {
+    $stationaryReserveWitnesses = @(foreach ($row in $trace.Actions) {
         if ($row.Before.Spawn.Turn -eq 0 -or $row.Action.CardInstanceId -le 0 -or $row.Action.TargetUnitId -le 0) { continue }
         $card = $row.Before.Spawn.Train.Context.CardInstances | Where-Object InstanceId -eq $row.Action.CardInstanceId
         $rule = $row.Before.PlayRules.Cards | Where-Object DataId -eq $card.DataId
@@ -3997,10 +3997,11 @@ if ($OriginalTriggerRelicBatchStationaryReserve) {
         if ($actor.Team -eq 0 -and -not $actor.IsBoss -and $null -ne $actor.MoonPhaseMask -and
             'SubtypesData_Angel' -cin $actor.Subtypes -and $row.Action.CardInstanceId -in $after.EquipmentCards) { $row }
     })
-    if ($trace.ModifierScenario -cne 'original-trigger-relic-batch' -or $trace.Schema -ne 106 -or $equipment.Count -ne 1) {
+    if ($trace.ModifierScenario -cne 'original-trigger-relic-batch' -or $trace.Schema -ne 106 -or $stationaryReserveWitnesses.Count -ne 1) {
         throw "Expected one native stationary enemy Angel equipment witness with a captured Moon mask. Inspect $tracePath"
     }
-    Write-Output "ORIGINAL-TRIGGER-RELIC-STATIONARY-ENEMY-EQUIP PASS card=$($equipment[0].Action.CardInstanceId) target=$($equipment[0].Action.TargetUnitId)"
+    $witnessAction = $stationaryReserveWitnesses[0].Action
+    Write-Output "ORIGINAL-TRIGGER-RELIC-STATIONARY-ENEMY-EQUIP PASS card=$($witnessAction.CardInstanceId) target=$($witnessAction.TargetUnitId)"
 }
 if ($OriginalSpurnedBattle) {
     $spurned = $trace.OriginalSpurnedBattle
