@@ -8602,6 +8602,13 @@ if (args.Length == 2 && args[0] == "--original-room-status-spells-only")
     OriginalRoomStatusSpellsChecks.Check(document.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-moon-status-magnitude-deployment-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalStatusMagnitudeDeploymentChecks.Check(document.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] is "--original-status-magnitude-witness-only" or "--original-moon-status-magnitude-witness-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);
