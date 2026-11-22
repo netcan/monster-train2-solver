@@ -34,10 +34,9 @@ internal static class RollingAdviceChecks
             BattleTurnState root = State(record.GetProperty("Root"));
             Require(previous == null || Key(previous) == Key(root), "Observed native chain differs at " + index);
             BattleTurnState next = BattlePlannerChecks.Replay(root, [ReadStep(record)], out RoomOutcome outcome);
-            previous = State(record.GetProperty("Actual"));
-            string predictedKey = Key(next, Terminal(outcome)), actualKey = Key(previous, Terminal(outcome));
-            Require(predictedKey == actualKey,
-                "Observed native successor differs at " + index + ": " + ModelJson.Difference(predictedKey, actualKey));
+            FixtureValue actual = record.GetProperty("Actual");
+            RecordedBattleChecks.RecordedBoundary(next, actual, Terminal(outcome), "Observed native successor " + index);
+            previous = State(actual);
         }
         Console.WriteLine($"OBSERVED-SUCCESSORS PASS: {records.Length} actual native inputs; original plan acceptance remains separate.");
     }
@@ -94,8 +93,10 @@ internal static class RollingAdviceChecks
             Require(end == (record.GetProperty("Action").ValueKind == FixtureKind.Null), "Invalid rolling input.");
             BattleTurnState next = BattlePlannerChecks.Replay(root, [ReadStep(record)], out outcome);
             Require(outcome == record.GetProperty("Outcome").Deserialize<RoomOutcome>() &&
-                Key(next, Terminal(outcome)) == Key(State(record.GetProperty("Expected")), Terminal(outcome)) &&
-                Key(next, Terminal(outcome)) == Key(State(record.GetProperty("Actual")), Terminal(outcome)), "Rolling native successor differs.");
+                Key(next, Terminal(outcome)) == Key(State(record.GetProperty("Expected")), Terminal(outcome)),
+                "Rolling expected successor differs at " + index);
+            FixtureValue actual = record.GetProperty("Actual");
+            RecordedBattleChecks.RecordedBoundary(next, actual, Terminal(outcome), "Rolling native successor " + index);
             if (end) turns++; else cards++;
 
             FixtureValue[] plan = record.GetProperty("PlanSteps").EnumerateArray().ToArray();
@@ -135,7 +136,7 @@ internal static class RollingAdviceChecks
             }
             else Require((prefix || record.GetProperty("Mode").GetString() == "replay") && record.GetProperty("Nodes").GetInt32() == 0,
                 "Frozen rolling replay searched again.");
-            previous = State(record.GetProperty("Actual"));
+            previous = State(actual);
         }
         Require(Terminal(outcome) && fixture.GetProperty("NativeWon").GetBoolean() == (outcome == RoomOutcome.BattleWon),
             "Rolling sequence did not cover the whole native battle.");

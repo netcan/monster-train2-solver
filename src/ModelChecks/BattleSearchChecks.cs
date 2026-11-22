@@ -77,7 +77,7 @@ internal static class BattleSearchChecks
             }
             Require(predicted != null && outcome == record.GetProperty("Outcome").Deserialize<RoomOutcome>(),
                 $"Recorded rolling input {index} differs from the available model successor.");
-            RecordedBattleChecks.Compare(predicted!, record.GetProperty("Actual").Deserialize<BattleTurnState>()!,
+            RecordedBattleChecks.RecordedBoundary(predicted!, record.GetProperty("Actual"),
                 outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate, $"Rolling decision {index}");
         }
         Console.WriteLine($"NATIVE-ROLLING-FRONTIER decisions={end - first} actions={actions} endTurns={turns} unsupported={unsupported} truncated={limited}");
