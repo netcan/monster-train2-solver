@@ -236,6 +236,11 @@ Steelguard 格挡、Undying 回场和 Burnout 到期。整场 21 次出牌、5 �
 19 次出牌、5 次结束回合、16 条分支和候选检查通过。
 [`healing-cleanse-and-descent.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-healing-cleanse/healing-cleanse-and-descent.mt2f)
 
+五件原版生命周期遗物在同一场胜局均有可归因的效果。26 次出牌或技能、5 次结束回合、
+35 个战斗阶段和 1 次自然 Undying 复活通过原版比对，新档另通过候选检查。复活前的
+采集保留房间已有的首领关联。房间专项同步实测的选楼索引，再比较完整状态。
+[`native-ability-and-revival.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-lifecycle-relics/native-ability-and-revival.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
