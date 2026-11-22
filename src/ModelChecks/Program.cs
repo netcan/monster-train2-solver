@@ -5720,6 +5720,12 @@ if (args.Length == 2 && args[0] == "--original-grafted-equipment-only")
     OriginalGraftedEquipmentChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-hall-grafted-birth-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    HallGraftedBirthChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-self-attack-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
