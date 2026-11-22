@@ -1545,10 +1545,10 @@ if ($WithOriginalStatusMagnitudeRelics -and -not $OriginalTargetedStatusSpells) 
 }
 if ($PSBoundParameters.ContainsKey('OriginalOpeningSpellIds')) {
     $OriginalOpeningSpellIds = @($OriginalOpeningSpellIds | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim().ToLowerInvariant() })
-    if ($OriginalOpeningSpellIds.Count -ne 5 -or
+    if ($OriginalOpeningSpellIds.Count -lt 1 -or $OriginalOpeningSpellIds.Count -gt 5 -or
         @($OriginalOpeningSpellIds | Where-Object { $_ -notmatch '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' }).Count -ne 0 -or
-        @($OriginalOpeningSpellIds | Select-Object -Unique).Count -ne 5) {
-        throw 'OriginalOpeningSpellIds requires exactly five distinct native card UUIDs.'
+        @($OriginalOpeningSpellIds | Select-Object -Unique).Count -ne $OriginalOpeningSpellIds.Count) {
+        throw 'OriginalOpeningSpellIds requires one to five distinct native card UUIDs.'
     }
 }
 if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells -or $OriginalTargetedStatusSpells -or $OriginalOpeningSpellIds.Count) {
@@ -4059,6 +4059,9 @@ if ($OriginalRoomStatusSpellsFullBattle -or $OriginalTargetedStatusSpells -or $O
     if ($OriginalOpeningSpellIds.Count) {
         $expected = $OriginalOpeningSpellIds
         $expectedModifier = 'original-opening-spells:' + ($expected -join ',')
+        if ($expected.Count -lt 5) {
+            $opening = @($opening | Select-Object -First $expected.Count)
+        }
         if ($trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -ne 'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
             throw "The original opening spell battle requires the pinned 2.3.1 module. Inspect $unityLog"
         }
@@ -4075,7 +4078,7 @@ if ($OriginalRoomStatusSpellsFullBattle -or $OriginalTargetedStatusSpells -or $O
     }
     if ($trace.ModifierScenario -cne $expectedModifier -or
         ($opening -join ',') -cne ($expected -join ',') -or @($trace.Turns | Where-Object { $_.Before.Spawn.Turn -eq 0 }).Count -ne 1) {
-        throw "Original status battle must record deployment and all five first-turn spells. Inspect $unityLog"
+        throw "Original spell battle must record deployment and all configured first-turn spells in order. Inspect $unityLog"
     }
 }
 if ($WithOriginalStatusMagnitudeRelics) {

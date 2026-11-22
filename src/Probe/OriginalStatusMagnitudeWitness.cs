@@ -136,9 +136,9 @@ namespace MonsterTrain2Poju.Probe
         private static CardData[] ConfiguredDefinitions(AllGameData data)
         {
             string[] ids = Modifier.Substring(OpeningSpellsPrefix.Length).Split(',');
-            if (ids.Length != 5 || ids.Any(id => !Guid.TryParseExact(id, "D", out Guid parsed) || parsed.ToString() != id) ||
+            if (ids.Length is < 1 or > 5 || ids.Any(id => !Guid.TryParseExact(id, "D", out Guid parsed) || parsed.ToString() != id) ||
                 ids.Distinct(StringComparer.Ordinal).Count() != ids.Length)
-                throw new InvalidOperationException("An original opening needs five distinct native card IDs.");
+                throw new InvalidOperationException("An original opening needs one to five distinct native card IDs.");
 
             CardData[] spells = ids.Select(id =>
             {
@@ -171,7 +171,7 @@ namespace MonsterTrain2Poju.Probe
                 return card;
             }).ToArray();
             if (spells.Sum(card => card.GetCost()) > 3)
-                throw new InvalidOperationException("The five original opening spells exceed the stock three Ember.");
+                throw new InvalidOperationException("The configured opening spells exceed the stock three Ember.");
             return spells;
         }
 
@@ -188,16 +188,17 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("Original spell failed to enter draw pile: " + definition.name)).ToArray();
             List<CardState> draw = cards.GetDrawPile();
             CardState[] stock = draw.Where(card => !controlled.Contains(card)).ToArray();
-            CardState[] opening = stock.Concat(controlled).ToArray();
-            if (opening.Length != draw.Count) throw new InvalidOperationException("Original spell deck preparation lost an instance.");
-
             uint[] words = RngCalibration.Words(RandomManager.GetState(RngId.CardDraw));
             var rng = new UnityRng(words[0], words[1], words[2], words[3]);
+            // Shorter openings fill their unused slots from the ordinary stock-only shuffle.
+            IReadOnlyList<CardState> openingStock = ConfiguredOpening && controlled.Length < 5 ? rng.Shuffle(stock).Items : stock;
+            CardState[] opening = openingStock.Concat(controlled).ToArray();
+            if (opening.Length != draw.Count) throw new InvalidOperationException("Original spell deck preparation lost an instance.");
             var permutation = rng.Shuffle(Enumerable.Range(0, draw.Count).ToArray()).Items;
-            // Stage the normal draw of five spells while preserving the stock draw order and native RNG stream.
+            // Stage the controlled draws by inverting the upcoming native shuffle, leaving its RNG input untouched.
             for (int index = 0; index < opening.Length; index++) draw[permutation[index]] = opening[index];
             continuousCardIds = controlled.Select(FullBattleTrace.Active!.CardId).ToArray();
-            log.LogInfo("ORIGINAL-STATUS staged five original spells in draw before recording deployment.");
+            log.LogInfo($"ORIGINAL-STATUS staged {controlled.Length} original spells in draw before recording deployment.");
         }
 
         internal static PlayCardAction? ChooseContinuous(BattleTurnState state, PlayCardAction? fallback)
@@ -211,7 +212,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (context.Statistics!.Value(id, "TimesPlayed", "ThisBattle") != 0) continue;
                 CardToken? card = context.Cards.Hand.FirstOrDefault(item => item.InstanceId == id);
-                if (card == null) throw new InvalidOperationException("Original opening shuffle did not draw all five status spells.");
+                if (card == null) throw new InvalidOperationException("Original opening shuffle did not draw all configured spells.");
                 if (ConfiguredOpening) return ChooseConfiguredOpening(state, card);
                 int targetId = 0;
                 if (TargetedSpells)
