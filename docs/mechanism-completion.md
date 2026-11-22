@@ -183,6 +183,11 @@ Engulfed in Smoke 在另一场结算。各场从部署连续复放至胜利，�
 [`checkpoint-squad-leader-and-assistant.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-units/checkpoint-squad-leader-and-assistant.mt2f)
 [`checkpoint-engulfed-in-smoke.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-spells/checkpoint-engulfed-in-smoke.mt2f)
 
+原版支持法术批次复用首战前档与既有测试对照，录到治疗、过量治疗、余烬和抽牌、
+腐化护甲、Hoard 火车治疗及正值与零值 X 费用容量。27 次出牌、5 次结束回合、
+16 条分支和候选检查通过，为 2.3.1 增加 12 张卡牌的定义匹配记录。
+[`resources-healing-and-capacity.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/resources-healing-and-capacity.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
