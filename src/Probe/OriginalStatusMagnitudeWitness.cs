@@ -15,6 +15,7 @@ namespace MonsterTrain2Poju.Probe
         internal const string MoonName = "original-status-magnitude-moon-witness";
         internal const string RoomSpellsName = "original-room-status-spells";
         internal const string TargetedSpellsName = "original-targeted-status-spells";
+        private const string OpeningSpellsPrefix = "original-opening-spells:";
         private const string Module = "bf93f060-beda-46b1-b808-95ebf1e9a99d";
         private const string StewardId = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
         private static readonly (string Id, string Key, string Status)[] Owners =
@@ -61,12 +62,14 @@ namespace MonsterTrain2Poju.Probe
         private static int[]? continuousCardIds;
         private static BattleTurnState? deploymentEndTurn;
 
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or MoonName or RoomSpellsName or TargetedSpellsName;
+        private static readonly string Modifier = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "";
+        private static bool ConfiguredOpening => Modifier.StartsWith(OpeningSpellsPrefix, StringComparison.Ordinal);
+        internal static bool Enabled => Modifier is Name or MoonName or RoomSpellsName or TargetedSpellsName || ConfiguredOpening;
         internal static bool Moon => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == MoonName;
         internal static bool DirectRoomSpells => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == RoomSpellsName;
         internal static bool TargetedSpells => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == TargetedSpellsName;
-        internal static bool SpellCohort => DirectRoomSpells || TargetedSpells;
-        internal static bool Continuous => TargetedSpells || DirectRoomSpells && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_STATUS_FULL_BATTLE") == "1";
+        internal static bool SpellCohort => DirectRoomSpells || TargetedSpells || ConfiguredOpening;
+        internal static bool Continuous => ConfiguredOpening || TargetedSpells || DirectRoomSpells && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_STATUS_FULL_BATTLE") == "1";
         internal static bool ContinuousPrepared => continuousCardIds != null;
         private static int DeploymentCount => SpellCohort ? 1 : 2;
         internal static bool Acquired => definitions != null;
@@ -82,6 +85,11 @@ namespace MonsterTrain2Poju.Probe
                 save.GetMutators().Count != 0 || save.GetCovenants().Count != 0)
                 throw new InvalidOperationException("The original magnitude witness requires a fresh, unmodified 2.3.1 Ring 1.");
             AllGameData data = save.GetAllGameData();
+            if (ConfiguredOpening)
+            {
+                definitions = ConfiguredDefinitions(data);
+                return;
+            }
             var originalOwners = (SpellCohort ? Owners.Take(0) : Owners).Select(expected =>
             {
                 var relic = data.GetAllCollectableRelicData().Single(item => item.GetID() == expected.Id);
@@ -123,6 +131,48 @@ namespace MonsterTrain2Poju.Probe
             foreach (var owner in originalOwners) save.AddRelic(owner);
         }
 
+        private static CardData[] ConfiguredDefinitions(AllGameData data)
+        {
+            string[] ids = Modifier.Substring(OpeningSpellsPrefix.Length).Split(',');
+            if (ids.Length != 5 || ids.Any(id => !Guid.TryParseExact(id, "D", out Guid parsed) || parsed.ToString() != id) ||
+                ids.Distinct(StringComparer.Ordinal).Count() != ids.Length)
+                throw new InvalidOperationException("An original opening needs five distinct native card IDs.");
+
+            CardData[] spells = ids.Select(id =>
+            {
+                CardData? card = data.FindCardData(id);
+                if (card == null || card.GetID() != id || card.GetCardType() != CardType.Spell ||
+                    !card.ShouldAppearInLogbook() || card.IsArchived || card.IsUnitAbility() || card.IsRoomAbility() ||
+                    card.GetCostType() != CardData.CostType.Default || card.GetCost() < 0 || card.GetCardTriggers().Any() ||
+                    card.GetTraits().Any(trait => trait.GetTraitStateName() is not (nameof(CardTraitExhaustState) or nameof(CardTraitPermafrost))))
+                    throw new InvalidOperationException("Original opening requires a fixed-cost logbook spell: " + id);
+
+                CardPlayRule rule = BattleActionProbe.Definition(card);
+                CardEffectData[] effects = card.GetEffects().ToArray();
+                if (rule.Effect != "Spell" || rule.ExternalInteractions.Count != 0 || rule.Effects.Count != effects.Length ||
+                    effects.Length is < 1 or > 2 ||
+                    effects[0].GetTargetMode() is not (TargetMode.DropTargetCharacter or TargetMode.Room or TargetMode.FrontInRoom) ||
+                    effects.Any(effect => effect.GetUseIntRange()) ||
+                    rule.Effects.Any(effect => effect.Type == "AddStatus" &&
+                        (effect.Statuses.Count == 0 || effect.Statuses.All(status => status.Stacks <= 0) || effect.Value is not (0 or 100))) ||
+                    effects.Select((effect, index) => effect.GetEffectStateName() switch
+                    {
+                        nameof(CardEffectDamage) or nameof(CardEffectHeal) or nameof(CardEffectAddStatusEffect) => index == 0 ||
+                            effect.GetTargetMode() == effects[0].GetTargetMode() ||
+                            effects[0].GetTargetMode() == TargetMode.DropTargetCharacter && effect.GetTargetMode() == TargetMode.LastTargetedCharacters,
+                        nameof(CardEffectFloorRearrange) => index == 1 && effects[0].GetTargetMode() == TargetMode.DropTargetCharacter &&
+                            effect.GetTargetMode() == TargetMode.LastTargetedCharacters && effect.GetParamInt() is 0 or 1,
+                        _ => false
+                    }).Any(supported => !supported))
+                    throw new InvalidOperationException("Original opening spell is outside the admitted direct effects: " + card.name);
+
+                return card;
+            }).ToArray();
+            if (spells.Sum(card => card.GetCost()) > 3)
+                throw new InvalidOperationException("The five original opening spells exceed the stock three Ember.");
+            return spells;
+        }
+
         internal static void PrepareContinuous(AllGameManagers managers, ManualLogSource log)
         {
             var cards = managers.GetCardManager();
@@ -131,7 +181,7 @@ namespace MonsterTrain2Poju.Probe
                 cards.GetDiscardPile().Count != 0 || managers.GetPlayerManager().GetHasMoonPhaseCardEffect())
                 throw new InvalidOperationException("Expected original room-status deployment before recording any inputs.");
 
-            var controlled = definitions.Skip(DeploymentCount).Select(definition =>
+            var controlled = definitions.Skip(ConfiguredOpening ? 0 : DeploymentCount).Select(definition =>
                 cards.AddNewCard(definition, CardPile.DeckPileTop, false, false, animate: false) ??
                 throw new InvalidOperationException("Original spell failed to enter draw pile: " + definition.name)).ToArray();
             List<CardState> draw = cards.GetDrawPile();
@@ -160,6 +210,7 @@ namespace MonsterTrain2Poju.Probe
                 if (context.Statistics!.Value(id, "TimesPlayed", "ThisBattle") != 0) continue;
                 CardToken? card = context.Cards.Hand.FirstOrDefault(item => item.InstanceId == id);
                 if (card == null) throw new InvalidOperationException("Original opening shuffle did not draw all five status spells.");
+                if (ConfiguredOpening) return ChooseConfiguredOpening(state, card);
                 int targetId = 0;
                 if (TargetedSpells)
                 {
@@ -176,6 +227,55 @@ namespace MonsterTrain2Poju.Probe
             }
             return fallback;
         }
+
+        private static PlayCardAction ChooseConfiguredOpening(BattleTurnState state, CardToken card)
+        {
+            CardPlayRule rule = state.PlayRules!.Cards.Single(candidate => candidate.DataId == card.DataId);
+            CardActionEffect effect = rule.Effects[0];
+            CombatTeam team = effect.Type switch
+            {
+                "Damage" => CombatTeam.Enemy,
+                "Heal" => CombatTeam.Player,
+                "AddStatus" when !effect.AllowPlayer => CombatTeam.Enemy,
+                "AddStatus" when !effect.AllowEnemy => CombatTeam.Player,
+                "AddStatus" => StatusEffectManager.Instance.GetStatusEffectDataById(effect.Statuses.First().Id)?.GetDisplayCategory() switch
+                {
+                    StatusEffectData.DisplayCategory.Positive => CombatTeam.Player,
+                    StatusEffectData.DisplayCategory.Negative => CombatTeam.Enemy,
+                    _ => throw new InvalidOperationException("Original opening status has no unambiguous team: " + rule.AssetKey)
+                },
+                _ => throw new InvalidOperationException("Original opening spell lost its admitted effect: " + rule.AssetKey)
+            };
+            BattleActionEnumeration actions = BattleActionModel.EnumerateActions(state, card.InstanceId, includeAbilities: false);
+            return actions.SupportedCandidates
+                .Where(candidate => HasOpeningEffect(state, candidate, effect, team))
+                .OrderBy(candidate => candidate.Action.RoomIndex)
+                .Select(candidate => candidate.Action)
+                .FirstOrDefault() ?? throw new InvalidOperationException("No supported effective original opening play for " + rule.AssetKey +
+                    ": " + string.Join(", ", actions.UnsupportedAttempts.Select(attempt => attempt.Reason).Distinct()));
+        }
+
+        private static bool HasOpeningEffect(BattleTurnState before, SupportedActionCandidate candidate, CardActionEffect effect, CombatTeam team)
+        {
+            PlayCardAction action = candidate.Action;
+            var resultingUnits = candidate.Result.State!.Spawn.Train.Rooms.SelectMany(room => room.Units).ToDictionary(unit => unit.Id);
+            var targets = before.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex).Units
+                .Where(unit => !unit.IsPyre && unit.Health > 0 && unit.Team == team && (action.TargetUnitId == 0 || action.TargetUnitId == unit.Id));
+            return targets.Any(unit =>
+            {
+                resultingUnits.TryGetValue(unit.Id, out CombatUnit? result);
+                return effect.Type switch
+                {
+                    "Damage" => result == null || result.Health < unit.Health ||
+                        new[] { "armor", "damage shield", "spell shield" }.Any(status => Stacks(result, status) < Stacks(unit, status)),
+                    "Heal" => result != null && result.Health > unit.Health,
+                    "AddStatus" => result != null && effect.Statuses.Any(status => Stacks(result, status.Id) > Stacks(unit, status.Id)),
+                    _ => false
+                };
+            });
+        }
+
+        private static int Stacks(CombatUnit unit, string status) => unit.Statuses.Where(item => item.Id == status).Sum(item => item.Stacks);
 
         internal static bool Tick(AllGameManagers managers, ManualLogSource log)
         {

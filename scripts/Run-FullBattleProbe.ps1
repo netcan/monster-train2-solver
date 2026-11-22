@@ -638,6 +638,7 @@ param(
     [switch] $OriginalRoomStatusSpells,
     [switch] $OriginalRoomStatusSpellsFullBattle,
     [switch] $OriginalTargetedStatusSpells,
+    [string[]] $OriginalOpeningSpellIds = @(),
     [switch] $OriginalLifecycleRelicBatch,
     [switch] $OriginalDecayRelicBatch,
     [switch] $OriginalResourceRelicBatch,
@@ -1538,10 +1539,18 @@ if ($OriginalMagnitudeRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-s
 if ($OriginalRoomStatusSpellsFullBattle -and -not $OriginalRoomStatusSpells) {
     throw 'OriginalRoomStatusSpellsFullBattle requires OriginalRoomStatusSpells.'
 }
-if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells -or $OriginalTargetedStatusSpells) {
-    $allowed = @('OriginalStatusMagnitudeWitness', 'OriginalStatusMagnitudeMoonWitness', 'OriginalRoomStatusSpells', 'OriginalTargetedStatusSpells', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
+if ($PSBoundParameters.ContainsKey('OriginalOpeningSpellIds')) {
+    $OriginalOpeningSpellIds = @($OriginalOpeningSpellIds | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim().ToLowerInvariant() })
+    if ($OriginalOpeningSpellIds.Count -ne 5 -or
+        @($OriginalOpeningSpellIds | Where-Object { $_ -notmatch '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' }).Count -ne 0 -or
+        @($OriginalOpeningSpellIds | Select-Object -Unique).Count -ne 5) {
+        throw 'OriginalOpeningSpellIds requires exactly five distinct native card UUIDs.'
+    }
+}
+if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells -or $OriginalTargetedStatusSpells -or $OriginalOpeningSpellIds.Count) {
+    $allowed = @('OriginalStatusMagnitudeWitness', 'OriginalStatusMagnitudeMoonWitness', 'OriginalRoomStatusSpells', 'OriginalTargetedStatusSpells', 'OriginalOpeningSpellIds', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
         'OriginalRoomStatusSpellsFullBattle', 'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
-    $modes = @($OriginalStatusMagnitudeWitness, $OriginalStatusMagnitudeMoonWitness, $OriginalRoomStatusSpells, $OriginalTargetedStatusSpells) | Where-Object { $_ }
+    $modes = @($OriginalStatusMagnitudeWitness, $OriginalStatusMagnitudeMoonWitness, $OriginalRoomStatusSpells, $OriginalTargetedStatusSpells, ($OriginalOpeningSpellIds.Count -gt 0)) | Where-Object { $_ }
     if (!$BinaryCapture -or @($modes).Count -ne 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
         throw 'Original status magnitude witness requires a separate first-battle binary capture.'
@@ -2893,8 +2902,10 @@ if ($TitanSkinCombat) { $environment['MT2_PROBE_MODIFIERS'] = 'titan-skin-combat
 if ($OriginalStatusRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-relic-batch' }
 if ($OriginalStatusRelicBatchBurnout) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-relic-batch-burnout' }
 if ($OriginalMagnitudeRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-magnitude-relic-batch' }
-if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells -or $OriginalTargetedStatusSpells) {
-    $environment['MT2_PROBE_MODIFIERS'] = $(if ($OriginalTargetedStatusSpells) {
+if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells -or $OriginalTargetedStatusSpells -or $OriginalOpeningSpellIds.Count) {
+    $environment['MT2_PROBE_MODIFIERS'] = $(if ($OriginalOpeningSpellIds.Count) {
+        'original-opening-spells:' + ($OriginalOpeningSpellIds -join ',')
+    } elseif ($OriginalTargetedStatusSpells) {
         'original-targeted-status-spells'
     } elseif ($OriginalRoomStatusSpells) {
         'original-room-status-spells'
@@ -4035,12 +4046,18 @@ if ($DamageOverflow -and ($trace.ModifierScenario -ne 'damage-overflow' -or
 }
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
-if ($OriginalRoomStatusSpellsFullBattle -or $OriginalTargetedStatusSpells) {
+if ($OriginalRoomStatusSpellsFullBattle -or $OriginalTargetedStatusSpells -or $OriginalOpeningSpellIds.Count) {
     $opening = @($trace.Actions | Where-Object { $_.Before.Spawn.Turn -eq 1 } | ForEach-Object {
         $action = $_.Action
         $_.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $action.CardInstanceId | ForEach-Object DataId
     })
-    if ($OriginalTargetedStatusSpells) {
+    if ($OriginalOpeningSpellIds.Count) {
+        $expected = $OriginalOpeningSpellIds
+        $expectedModifier = 'original-opening-spells:' + ($expected -join ',')
+        if ($trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -ne 'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+            throw "The original opening spell battle requires the pinned 2.3.1 module. Inspect $unityLog"
+        }
+    } elseif ($OriginalTargetedStatusSpells) {
         $expectedModifier = 'original-targeted-status-spells'
         $expected = @('4ca4ed47-9867-4004-acf0-171c3282751f', 'a7207665-b6d1-4cd1-997e-8a7bb789c766',
             '141494fe-0ac3-41ad-b1e6-05aeafe060f6', '806fd915-b85c-4d0b-8490-fca08c2e0c0d',
