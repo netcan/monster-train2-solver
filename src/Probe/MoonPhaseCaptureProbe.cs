@@ -28,7 +28,7 @@ namespace MonsterTrain2Poju.Probe
             UiRngIsolation.CaelShieldTrialTestQueries || OriginalReactiveUnitsScenario.Enabled ||
             OriginalHealingCleanseScenario.Enabled || OriginalMovementSpellsScenario.Enabled ||
             OriginalRearrangeSpellsScenario.Enabled || BumpScenario.RelicScenario ||
-            (OriginalTriggerRelicBatchScenario.Enabled && !OriginalTriggerRelicBatchScenario.FusedPyreshardOnly &&
+            (OriginalTriggerRelicBatchScenario.Enabled &&
                 (!OriginalTriggerRelicBatchScenario.Stationary || OriginalTriggerRelicBatchScenario.StationaryReserve)) ||
 #endif
             Environment.GetEnvironmentVariable("MT2_PROBE_TURN_END_BUMP") != null;
