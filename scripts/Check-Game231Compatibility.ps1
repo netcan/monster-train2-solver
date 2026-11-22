@@ -121,4 +121,6 @@ dotnet $checker --native-equipment-selection-only (Join-Path $directory 'mechani
 if ($LASTEXITCODE) { throw 'Native equipment observation failed.' }
 dotnet $checker --native-red-crown-equipment (Join-Path $directory 'mechanics/red-crown-equipment-observation/native-supported-branch.mt2f')
 if ($LASTEXITCODE) { throw 'Native equipment branch did not replay.' }
+dotnet $checker --native-branch-replay-only (Join-Path $directory 'mechanics/purified-card-deployment/native-branch.mt2f') $currentVersion.Mvid
+if ($LASTEXITCODE) { throw 'Native purified deployment did not replay.' }
 Write-Output 'GAME-231-COMPATIBILITY PASS: eight binary capture hashes, versioned catalogs, both seven-turn continuous model chains and 16 immutable parallel branches each. New/changed content is not accepted by this smoke check.'

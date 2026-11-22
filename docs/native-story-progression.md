@@ -53,7 +53,8 @@
 `ac7ccb8605560cbada505fcc8096101103fb6763f83b3a3018363a8665127cb4`。左路第 4 环战斗待验收。
 顾问在开场手牌中遇到 `Purified card` 保护。隔离原版从同一存档部署已净化的 `LadyOfTheReformed`，
 实际支付 1 点能量并失去原始 `ephemeral` 和 `OnHit`，结算后记录仍有 `newmoon` 和 `OnKill`。
-单步原版后继归档为 `mechanics/purified-card-deployment/native-branch.mt2f`，顾问预测待验收。
+单步原版后继归档为 `mechanics/purified-card-deployment/native-branch.mt2f`，现已通过完整状态与随机流复放。
+离线同时验证部署前后可结束回合，以及未验证的特殊效果仍受保护。
 
 第 5 环的首次整场对照从 10 点薪火生命开始，原版判负且四项采集计数为零。另一条部署路线验证了
 StealthWaxers 的出生条件与月相手牌更新可同时生效。两次部署与结束回合的后继在原版完全一致，
