@@ -457,6 +457,10 @@ X 加成和单位筛选。6 次出牌、5 次结束回合、16 条独立分支�
 4 次出牌、5 次结束回合、16 条独立分支及两类候选通过。
 [`unearth-treasure.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/unearth-treasure.mt2f)
 
+原版 Broken Memories 零费将选中的耗尽法术放回抽牌堆，本牌进入耗尽堆，耗尽单位提供过滤对照。
+7 次出牌、5 次结束回合、16 条独立分支及两类候选通过。
+[`broken-memories.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/broken-memories.mt2f)
+
 敌方状态批次核对十一张原版卡牌，包括单体、整层及整塔目标、Pyregel 与 Rage 的翻倍、
 保证触发的随机流和腐化消耗。18 次出牌、5 次结束回合和候选检查通过。
 [`hostile-status-order.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-hostile-statuses/hostile-status-order.mt2f)
