@@ -4,18 +4,32 @@ using MonsterTrain2Poju.Model;
 
 internal static class AttackBuffDamageTargetChecks
 {
+    private const string DarkDealId = "6a6c4a72-3e32-4995-8070-68d9240de0d5";
+
     internal static void Native(FixtureValue fixture)
     {
-        var row = fixture.GetProperty("Actions").EnumerateArray().ElementAt(4);
-        var before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var (row, before, action) = fixture.GetProperty("Actions").EnumerateArray()
+            .Select(row => (Row: row, Before: row.GetProperty("Before").Deserialize<BattleTurnState>()!,
+                Action: row.GetProperty("Action").Deserialize<PlayCardAction>()!))
+            .Single(play => play.Before.Spawn.Train.Context!.FindCard(play.Action.CardInstanceId)?.DataId == DarkDealId);
         var actual = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
-        var action = row.GetProperty("Action").Deserialize<PlayCardAction>()!;
-        var card = before.Spawn.Train.Context!.FindCard(5)!;
-        var a = before.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == 2);
-        var b = actual.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == 2);
-        Require(card.DataId == "6a6c4a72-3e32-4995-8070-68d9240de0d5" && action is { CardInstanceId: 5, TargetUnitId: 2 } &&
-            b.Attack == a.Attack + 14 && b.Health == a.Health - 5,
-            "Missing unchanged native Dark Deal, Rage7 and damage5 on its ally.");
+        var rule = before.PlayRules!.Cards.Single(card => card.DataId == DarkDealId);
+        Require(rule.Effects is [
+            { Type: "AddStatus", Target: "DropTargetCharacter", AllowPlayer: true, AllowEnemy: true, Value: 100,
+                Statuses: [{ Id: "buff", Stacks: 7, ParamInt: 2 }] },
+            { Type: "Damage", Target: "LastTargetedCharacters", AllowPlayer: true, AllowEnemy: true, Value: 5, Range: null }],
+            "Missing unchanged native Dark Deal definition with ordered Rage and damage.");
+        CombatStatus rage = rule.Effects[0].Statuses[0];
+        int damage = rule.Effects[1].Value;
+        int cardId = action.CardInstanceId;
+        var a = before.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex)
+            .Units.Single(unit => unit.Id == action.TargetUnitId);
+        var b = actual.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex)
+            .Units.Single(unit => unit.Id == action.TargetUnitId);
+        Require(a is { Team: CombatTeam.Player, IsPyre: false } &&
+            (b.Status(rage.Id)?.Stacks ?? 0) - (a.Status(rage.Id)?.Stacks ?? 0) == rage.Stacks &&
+            b.Attack == a.Attack + rage.Stacks * rage.ParamInt && b.Health == a.Health - damage,
+            "Dark Deal did not grant its original Rage and deal its original damage to the recorded ally.");
         var recorded = BattleActionModel.PlayCard(before, action);
         Require(recorded.Supported && NativeBranchObservationChecks.Key(recorded.State!) == NativeBranchObservationChecks.Key(actual),
             "Recorded Dark Deal full native successor/RNG differs.");
@@ -26,26 +40,26 @@ internal static class AttackBuffDamageTargetChecks
             BattleTurnState current = before;
             SupportedActionCandidate? choice = null;
             int prefix = 0;
-            while (prefix < 16 && (choice = Choose(current, tactical)) != null && choice.Action.CardInstanceId != 5)
+            while (prefix < 16 && (choice = Choose(current, tactical)) != null && choice.Action.CardInstanceId != cardId)
             {
                 current = choice.Result.State!;
                 prefix++;
             }
             Console.WriteLine($"ATTACK-BUFF-DAMAGE-CHOICE tactical={tactical} prefix={prefix} card={choice?.Action.CardInstanceId} target={choice?.Action.TargetUnitId}");
             var target = current.Spawn.Train.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == choice?.Action.TargetUnitId);
-            Require(choice?.Action.CardInstanceId == 5 && target is { Team: CombatTeam.Player, IsPyre: false } &&
+            Require(choice?.Action.CardInstanceId == cardId && target is { Team: CombatTeam.Player, IsPyre: false } &&
                 choice.Result.State!.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == target.Id && unit.Health > 0 && unit.Attack > target.Attack),
                 "A positive Rage spell with a damage cost still buffs an enemy or kills its ally.");
             var direct = BattleActionModel.PlayCard(current, choice.Action);
             Require(direct.Supported && keys.Key(direct.State!) == keys.Key(choice.Result.State!) &&
-                BattleActionModel.EnumerateActions(current, 5, includeAbilities: false).SupportedCandidates.Any(candidate =>
+                BattleActionModel.EnumerateActions(current, cardId, includeAbilities: false).SupportedCandidates.Any(candidate =>
                     current.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == candidate.Action.TargetUnitId && unit.Team == CombatTeam.Enemy)),
                 "Buff-damage seed pruned its legal enemy branch or changed its complete successor/RNG.");
             string immutable = keys.Key(current);
             Parallel.For(0, 4, _ => Require(Choose(current, tactical)?.Action.TargetUnitId == target.Id, "Parallel buff-damage target differs."));
             Require(keys.Key(current) == immutable && keys.Key(before) == parent, "Buff-damage policy mutated its native parent.");
         }
-        Console.WriteLine("ATTACK-BUFF-DAMAGE-TARGET PASS: unchanged native Rage7/damage5 full successor/RNG; both seeds choose a surviving strengthened ally after legal model prefixes, legal enemy branches retained and eight immutable choices.");
+        Console.WriteLine($"ATTACK-BUFF-DAMAGE-TARGET PASS: unchanged native Rage{rage.Stacks}/damage{damage} full successor/RNG. Both seeds choose a surviving strengthened ally after legal model prefixes, retain legal enemy branches, and repeat eight immutable choices.");
         LethalControls();
     }
 
