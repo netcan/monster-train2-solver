@@ -209,6 +209,11 @@ EggHatchRemoval 的 2.3.1 受控胜局保留原版遗物定义，用两名配置
 7 次结束回合以及两类候选检查通过。
 [`contingency-plans.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/contingency-plans.mt2f)
 
+PurgeToExhaust 的 2.3.1 胜局核对 23 次原版管理器调用和六组过滤对照。转换后的法术
+实放进入耗尽堆，并保留原版耗尽状态。22 次出牌、7 次结束回合以及两类候选通过。
+新版和旧版专项均通过，同一管理器检查器也通过新版 Permafrost 的定向复验。
+[`purge-to-exhaust.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/purge-to-exhaust.mt2f)
+
 受控法术批次录到伤害、治疗、过量治疗和未来抽牌。Dark Deal 定向检查从录制动作找到
 原版卡牌与目标，核对两版相同的 Rage、伤害和随机流。两版均通过专项检查，该 2.3.1
 胜局另通过 10 次出牌、5 次结束回合、16 条分支和候选检查。
