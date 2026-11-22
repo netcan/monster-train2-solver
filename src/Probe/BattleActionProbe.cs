@@ -137,17 +137,20 @@ namespace MonsterTrain2Poju.Probe
             }
             RoomManager rooms = managers.GetRoomManager()!;
             IReadOnlyList<RoomPlayRule> roomRules = CaptureRoomRules();
-            bool hasMix = definitions.Any(id => save.GetAllGameData().FindCardData(id)?.GetEffects().Any(effect =>
-                effect.GetEffectStateName() is "CardEffectMix" or "CardEffectMixRandom") == true);
-            ElixirCatalog? elixirs = hasMix ? ElixirCatalogProbe.Capture(AllGameManagers.Instance!) : null;
+            ElixirCatalog? elixirs = null;
             var reachable = new Dictionary<string, CardPlayRule>(StringComparer.Ordinal);
             var pending = new Queue<string>(definitions);
-            if (elixirs != null)
-                foreach (ElixirRecipe recipe in elixirs.Recipes) pending.Enqueue(recipe.Creation.DataId);
             while (pending.Count > 0)
             {
                 string id = pending.Dequeue(); if (reachable.ContainsKey(id)) continue;
                 CardData data = save.GetAllGameData().FindCardData(id)!;
+                // Equipment and spawned units can make a Mix ability reachable before it is active.
+                if (elixirs == null && data.GetEffects().Any(effect =>
+                    effect.GetEffectStateName() is "CardEffectMix" or "CardEffectMixRandom"))
+                {
+                    elixirs = ElixirCatalogProbe.Capture(managers);
+                    foreach (ElixirRecipe recipe in elixirs.Recipes) pending.Enqueue(recipe.Creation.DataId);
+                }
                 bool? forgeEligible = nativeCardsByDataId.TryGetValue(id, out CardState? nativeCard)
                     ? CardForgeHelper.IsCardOfInterest(nativeCard, managers.GetCoreManagers()) : CardGenerationProbe.ForgeEligibility(data);
                 CardPlayRule rule = Definition(data, unplayedOrder, forgeEligible); reachable.Add(id, rule);
