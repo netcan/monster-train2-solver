@@ -231,6 +231,11 @@ Steelguard 格挡、Undying 回场和 Burnout 到期。整场 21 次出牌、5 �
 [`equipment-and-death.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-trigger-relics/equipment-and-death.mt2f)
 [`movement-and-strike.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-trigger-relics/movement-and-strike.mt2f)
 
+补采的装备及死亡路线保留原版月相和第三件装备的冻结状态。第 1 回合实际装备一名敌方 Angel，
+同场观察四次 Hymnist 死亡触发。23 次出牌、5 次结束回合、16 条独立分支和候选检查通过，
+与移动路线合并仍覆盖十件遗物的正向效果。
+[`equipment-and-death-with-moon.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-trigger-relics/equipment-and-death-with-moon.mt2f)
+
 补采月相掩码后，Restoring Retreat 在原版先回复 10 点生命，再将该单位移到底层。
 同一场受控胜局还核对两队 Witchweave、治疗与净化、毒层集中及翻倍、移除装备与加攻。
 19 次出牌、5 次结束回合、16 条分支和候选检查通过。
