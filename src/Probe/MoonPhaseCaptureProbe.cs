@@ -12,6 +12,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => AdvisorRuntime.PlayerSession || RoomMoonCallbackCalibration.Enabled ||
 #if DEVELOPMENT_PROBE
             RankThreeRoomSlayScenario.Enabled || OriginalRoomHealthAttackScenario.Enabled || OriginalStatusMagnitudeWitness.Moon ||
+            OriginalOpeningUnitsScenario.Enabled ||
 #endif
             // The isolation probe and live advisor compile separate copies of
             // AdvisorRuntime. A resumed campaign has no clan override, so the
@@ -26,7 +27,7 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
             UiRngIsolation.CaelShieldTrialTestQueries || OriginalReactiveUnitsScenario.Enabled ||
             OriginalHealingCleanseScenario.Enabled || OriginalMovementSpellsScenario.Enabled ||
-            OriginalRearrangeSpellsScenario.Enabled || BumpScenario.RelicScenario || OriginalOpeningUnitsScenario.ActivateAbilities ||
+            OriginalRearrangeSpellsScenario.Enabled || BumpScenario.RelicScenario ||
             (OriginalTriggerRelicBatchScenario.Enabled && !OriginalTriggerRelicBatchScenario.FusedPyreshardOnly &&
                 (!OriginalTriggerRelicBatchScenario.Stationary || OriginalTriggerRelicBatchScenario.StationaryReserve)) ||
 #endif

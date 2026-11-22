@@ -626,6 +626,10 @@ Bounty Stalker 与 Makeshift Golem 在同场完成原版付费部署。Bounty St
 Makeshift Golem 留场至终局清理。23 次出牌、7 次结束回合及两类候选通过。
 [原版部署及死亡录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/opening-death-callback-units.mt2f)
 
+Lunar Priestess 在战后生成四张 Dusk，第一张使原版开启月相追踪。开局单位探针复用原版月相采集和现有校验入口，覆盖追踪中途开启的连续后继。
+26 次出牌、7 次结束回合及两类候选通过。
+[原版战后生成与月相录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/opening-lunar-priestess.mt2f)
+
 原版 First of Kin 和 Sacrificial Resurrection 的同场对照核对两张手牌被消耗、单位增攻及
 Draff 出生，Morel Mistress 提供排除对照。7 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`exhausted-first-of-kin.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/exhausted-first-of-kin.mt2f)
