@@ -439,6 +439,10 @@ Ember Forge 与 Wildwood Custodian 使用原版单位定义完成首战对照。
 这一场技能所在层的 Pyregel 为零。
 [`birth-resources-and-recovery.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/birth-resources-and-recovery.mt2f)
 
+五张原版单位同场核对 Sporelauncher 的同层衰亡、Death Eater 的灵魂、Apex Imp 的护甲和怒气、
+Deathmetal Hymnist 的连击绑定及 Weldling 战后护甲。9 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
+[`decay-souls-and-armor.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/decay-souls-and-armor.mt2f)
+
 Pyreblooded 的后续实机对照在同层记录友军 10 层、两名敌军各 4 层 Pyregel。原版技能
 消耗 0 余烬并进入 3 层冷却，自身攻击由 5 提升至 23。8 次出牌或技能、5 次结束回合、
 16 条独立分支和候选检查通过。专项也复放零层、缺少楼层快照和跨楼层的对照。
