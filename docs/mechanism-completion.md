@@ -334,6 +334,10 @@ Ember Forge 与 Wildwood Custodian 使用原版单位定义完成首战对照。
 `ModelChecks --original-opening-passive-relics-only <archive>` 重放该组件。
 [`card-modifiers.mt2f`](../tests/compatibility/game-2.3.1/mechanics/opening-passive-relics/card-modifiers.mt2f)
 
+另一场首战打出 11 张原版法术，覆盖抽牌、余烬、友军伤害、治疗和攻血互换。
+15 次出牌、5 次结束回合、完整状态与随机流、16 条独立分支和候选检查通过。
+[`resources-and-friendly-fire.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/resources-and-friendly-fire.mt2f)
+
 腐化遗物批次观察到原版为楼层敌军增加两层 Corrupt Poison。部署结束后的两张零费测试牌
 单独核对，其余状态和随机流逐项比较。19 次出牌、6 次结束回合及候选检查分段通过。
 [`battle.mt2f`](../tests/compatibility/game-2.3.1/mechanics/corruption-relic-trigger/battle.mt2f)
