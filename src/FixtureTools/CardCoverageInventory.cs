@@ -53,7 +53,7 @@ internal static class CardCoverageInventory
     private sealed record TurnWitness(string DataId, string Archive, int TurnIndex, int SourceCardId, string Effect, string Observation);
     private sealed record LegalityWitness(string DataId, string Archive, int QueryIndex, int CardId, int RoomIndex, string Error, bool CanDiscard);
 
-    internal static void RunCurrent(string workspace, bool check, bool damageAudit = false)
+    internal static void RunCurrent(string workspace, bool check, bool damageAudit = false, bool openingWorklist = false)
     {
         workspace = Path.GetFullPath(workspace);
         string directory = Game231FixtureCatalog.DirectoryFor(workspace);
@@ -110,6 +110,11 @@ internal static class CardCoverageInventory
         if (damageAudit)
         {
             WriteDamageAudit(eligible, indexed);
+            return;
+        }
+        if (openingWorklist)
+        {
+            WriteOpeningWorklist(eligible, indexed);
             return;
         }
         if (check)
@@ -225,6 +230,160 @@ internal static class CardCoverageInventory
             Require(!Equivalent(catalog.RootElement, observed.RootElement, cardRule: true, currentBuild: true,
                 path: "$.Effects[0].SpawnFallbackUnit"), "A removed unit cannot match a live fallback birth definition.");
         }
+    }
+
+    private const int OpeningUnitEmber = 2;
+
+    private sealed record OpeningCandidate(Card Card, string Runner, string Mechanism, string Traits, string Target,
+        int Cost, int UnitSize)
+    {
+        internal bool IsUnit => UnitSize > 0;
+        internal int EmberBudget => IsUnit ? OpeningUnitEmber : 3;
+        internal int MaxCards => IsUnit ? 4 : 5;
+    }
+
+    private static void WriteOpeningWorklist(Card[] eligible, int settledBattles)
+    {
+        Card[] missing = eligible.Where(card => card.DirectPlays == 0).ToArray();
+        OpeningCandidate[] candidates = missing.Select(OpeningCaptureCandidate).OfType<OpeningCandidate>().ToArray();
+        var report = new StringBuilder();
+        Row(report, "GameVersion", "RunnerOption", "CardType", "Mechanism", "Traits", "TargetContext", "Ember", "UnitSizes",
+            "AssetKeys", "DataIds", "IdentityOnly");
+        foreach (var group in candidates.GroupBy(candidate => (candidate.Runner, candidate.Mechanism, candidate.Traits, candidate.Target))
+            .OrderBy(group => group.Key.Runner, StringComparer.Ordinal).ThenBy(group => group.Key.Mechanism, StringComparer.Ordinal)
+            .ThenBy(group => group.Key.Traits, StringComparer.Ordinal).ThenBy(group => group.Key.Target, StringComparer.Ordinal))
+        {
+            var cohort = new List<OpeningCandidate>();
+            int ember = 0;
+            foreach (OpeningCandidate candidate in group.OrderBy(item => item.Cost).ThenBy(item => item.Card.Name, StringComparer.Ordinal)
+                .ThenBy(item => item.Card.Id, StringComparer.Ordinal))
+            {
+                if (cohort.Count == candidate.MaxCards || ember + candidate.Cost > candidate.EmberBudget ||
+                    candidate.IsUnit && !FitsOpeningUnitPlacement(cohort.Select(item => item.UnitSize).Append(candidate.UnitSize)))
+                {
+                    WriteCohort();
+                    cohort.Clear();
+                    ember = 0;
+                }
+                cohort.Add(candidate);
+                ember += candidate.Cost;
+            }
+            WriteCohort();
+
+            void WriteCohort()
+            {
+                Row(report, CurrentVersion, group.Key.Runner, cohort[0].Card.Type, group.Key.Mechanism, group.Key.Traits, group.Key.Target,
+                    ember.ToString(CultureInfo.InvariantCulture),
+                    cohort[0].IsUnit ? string.Join(',', cohort.Select(candidate => candidate.UnitSize.ToString(CultureInfo.InvariantCulture))) : "",
+                    string.Join(',', cohort.Select(candidate => candidate.Card.Name)), string.Join(',', cohort.Select(candidate => candidate.Card.Id)),
+                    cohort.Count(candidate => candidate.Card.OtherPlays > 0).ToString(CultureInfo.InvariantCulture));
+            }
+        }
+        // Leave every remaining ID available for targeted runners with different admission rules.
+        var followUp = missing.Except(candidates.Select(candidate => candidate.Card)).GroupBy(card => (
+            card.Type,
+            Mechanism: string.Join('+', Array(card.Definition, "Effects").Select(effect => Text(effect, "Type"))),
+            Traits: string.Join(',', Array(card.Definition, "Traits").Select(trait => Text(trait, "Type")))));
+        foreach (var group in followUp.OrderBy(group => group.Key.Type, StringComparer.Ordinal)
+            .ThenBy(group => group.Key.Mechanism, StringComparer.Ordinal).ThenBy(group => group.Key.Traits, StringComparer.Ordinal))
+        {
+            Card[] cards = group.OrderBy(card => card.Name, StringComparer.Ordinal).ThenBy(card => card.Id, StringComparer.Ordinal).ToArray();
+            Row(report, CurrentVersion, "", group.Key.Type, group.Key.Mechanism, group.Key.Traits, "", "", "",
+                string.Join(',', cards.Select(card => card.Name)), string.Join(',', cards.Select(card => card.Id)),
+                cards.Count(card => card.OtherPlays > 0).ToString(CultureInfo.InvariantCulture));
+        }
+        Console.Error.WriteLine($"CARD-OPENING-WORKLIST {CurrentVersion} settledBattles={settledBattles} missingDefinitionMatch={missing.Length} " +
+            $"spellCandidates={candidates.Count(candidate => !candidate.IsUnit)} unitCandidates={candidates.Count(candidate => candidate.IsUnit)} " +
+            $"targetedFollowUp={missing.Length - candidates.Length}. The opening probe verifies native admission, target effects and placement in battle.");
+        Console.Write(report.ToString());
+    }
+
+    private static bool FitsOpeningUnitPlacement(IEnumerable<int> unitSizes)
+    {
+        // Stock deployment leaves floors 0, 1 and 2 with 0, 2 and 5 spaces.
+        // BattleActionModel.ChoosePlay takes the first supported floor in that order on turn zero.
+        int[] available = [0, 2, 5];
+        foreach (int size in unitSizes)
+        {
+            int room = System.Array.FindIndex(available, capacity => capacity >= size);
+            if (room < 0) return false;
+            available[room] -= size;
+        }
+        return true;
+    }
+
+    private static OpeningCandidate? OpeningCaptureCandidate(Card card)
+    {
+        FixtureValue definition = card.Definition;
+        FixtureValue rule = definition.GetProperty("Rule");
+        if (rule.ValueKind != FixtureKind.Object || Text(definition, "ProjectionError") != "" ||
+            Flag(definition, "Archived") || Flag(definition, "IsUnitAbility") || Flag(definition, "IsRoomAbility") ||
+            Array(definition, "Triggers").Length != 0 || Text(rule, "CostType") != "Default" ||
+            Array(rule, "ExternalInteractions").Length != 0)
+            return null;
+
+        int cost = rule.GetProperty("Cost").GetInt32();
+        FixtureValue[] traits = Array(definition, "Traits");
+        FixtureValue[] effects = Array(definition, "Effects");
+        if (card.Type == "Monster")
+        {
+            // The registered stock deployment spends two of its four Ember.
+            if (cost is < 0 or > OpeningUnitEmber || !Flag(definition, "CountsTowardsMastery") || traits.Length != 0 ||
+                Text(rule, "Effect") != "SpawnMonster" || rule.GetProperty("Summon").ValueKind != FixtureKind.Null ||
+                effects is not [var effect] || Text(effect, "Type") != "CardEffectSpawnMonster" || Text(effect, "Target") != "Room")
+                return null;
+            FixtureValue spawn = rule.GetProperty("SpawnUnit");
+            if (spawn.ValueKind != FixtureKind.Object || spawn.GetProperty("Modifiers").ValueKind != FixtureKind.Object ||
+                spawn.GetProperty("Modifiers").GetProperty("IsChampion").ValueKind != FixtureKind.False)
+                return null;
+            int size = spawn.GetProperty("Size").GetInt32();
+            if (size <= 0 || !FitsOpeningUnitPlacement([size])) return null;
+            var triggers = Array(spawn, "Triggers").Select(trigger => Text(trigger, "Kind")).Distinct().Order(StringComparer.Ordinal);
+            string mechanism = string.Join('+', triggers.Prepend("SpawnMonster"));
+            return new OpeningCandidate(card, "-OriginalOpeningUnitIds", mechanism, "", "stock deployment capacity 0/2/5", cost, size);
+        }
+
+        FixtureValue[] projected = Array(rule, "Effects");
+        if (card.Type != "Spell" || cost is < 0 or > 3 || Text(rule, "Effect") != "Spell" ||
+            traits.Any(trait => Text(trait, "Type") is not ("CardTraitExhaustState" or "CardTraitPermafrost") ||
+                !CalibratedSourceTrait(trait, card.Id)) || effects.Length is < 1 or > 2 || projected.Length != effects.Length ||
+            effects.Any(effect => Flag(effect, "UseRange")))
+            return null;
+
+        string target = Text(effects[0], "Target");
+        if (target is not ("DropTargetCharacter" or "Room" or "FrontInRoom")) return null;
+        for (int index = 0; index < effects.Length; index++)
+        {
+            FixtureValue effect = effects[index];
+            string type = Text(effect, "Type");
+            string effectTarget = Text(effect, "Target");
+            bool followsTarget = effectTarget == target || target == "DropTargetCharacter" && effectTarget == "LastTargetedCharacters";
+            if (type is "CardEffectDamage" or "CardEffectHeal" or "CardEffectAddStatusEffect")
+            {
+                if (!followsTarget || type == "CardEffectAddStatusEffect" &&
+                    (projected[index].GetProperty("Value").GetInt32() is not (0 or 100) ||
+                    !Array(projected[index], "Statuses").Any(status => status.GetProperty("Stacks").GetInt32() > 0)))
+                    return null;
+            }
+            else if (type != "CardEffectFloorRearrange" || index != 1 || target != "DropTargetCharacter" ||
+                effectTarget != "LastTargetedCharacters" || effect.GetProperty("Int").GetInt32() is not (0 or 1))
+                return null;
+        }
+
+        FixtureValue first = projected[0];
+        string targetContext = Text(first, "Type") switch
+        {
+            "Damage" when Flag(first, "AllowEnemy") => "enemy that takes damage",
+            "Heal" when Flag(first, "AllowPlayer") => "wounded ally",
+            "AddStatus" when !Flag(first, "AllowPlayer") => "enemy that gains status",
+            "AddStatus" when !Flag(first, "AllowEnemy") => "ally that gains status",
+            "AddStatus" when Array(first, "Statuses").Any(status => Text(status, "Id") == "armor" ||
+                Text(status, "DisplayCategory") is "Positive" or "Negative") => "target that gains status",
+            _ => "",
+        };
+        if (targetContext.Length == 0) return null;
+        return new OpeningCandidate(card, "-OriginalOpeningSpellIds", string.Join('+', projected.Select(effect => Text(effect, "Type"))),
+            string.Join(',', traits.Select(trait => Text(trait, "Type"))), target + " / " + targetContext, cost, 0);
     }
 
     private static void WriteDamageAudit(Card[] eligible, int settledBattles)
