@@ -270,6 +270,12 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 首次抽牌后四个房间各获得 2 层，顶层当前腐化为 3。21 次出牌、7 次结束回合和候选检查通过。
 [`corruption-and-capacity.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/corruption-and-capacity.mt2f)
 
+原版单位遗物批次核对 41 次修饰回调、3 次正常出牌和 3 次无牌出生的零食护盾、
+6 次牺牲及 35 次恶魔连击。首回合录制驱动加入两张对照牌，分段回放核对两张牌及手牌顺序，
+随机流保持一致。19 次出牌、5 次结束回合及结束回合候选通过。实战位移和护盾挡伤尚待对照，
+部署时两个移动候选缺前序月相快照。
+[`单位遗物归档`](../tests/compatibility/game-2.3.1/mechanics/controlled-unit-relic-batch/battle.mt2f)
+
 两件原版衰减遗物验证友方怒气保留、敌方怒气衰减和双方霜寒保留。霜寒回调携带遗物来源时，
 模型沿用该来源登记伤害归属。2.3.1 的 42 个房间阶段、23 次出牌、5 次结束回合与两类候选均匹配，
 2.2.1 专项也通过。
