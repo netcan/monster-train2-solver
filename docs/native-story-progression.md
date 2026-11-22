@@ -50,7 +50,7 @@
 同一第 3 环试炼胜局可在原版选左路续接。隔离实例完整复放 42 步并执行 55 个战役事件，
 经过治疗点、遗物商店和原版剧情事件，第 4 环战前薪火生命为 61，已验收胜局所用右路战前为 46。
 左路战前档为 `.probe-runs/campaign-ring4-20261122-080904-9ece3bef`，主存档 SHA256 为
-`ac7ccb8605560cbada505fcc8096101103fb6763f83b3a3018363a8665127cb4`。左路第 4 环战斗待验收。
+`ac7ccb8605560cbada505fcc8096101103fb6763f83b3a3018363a8665127cb4`。
 顾问在开场手牌中遇到 `Purified card` 保护。隔离原版从同一存档部署已净化的 `LadyOfTheReformed`，
 实际支付 1 点能量并失去原始 `ephemeral` 和 `OnHit`，结算后记录仍有 `newmoon` 和 `OnKill`。
 单步原版后继归档为 `mechanics/purified-card-deployment/native-branch.mt2f`，现已通过完整状态与随机流复放。
@@ -61,6 +61,11 @@
 复制后已复用手牌月相更新，第 14 步在独立的原版进程中完整匹配，顾问继续推进至第 31 步。
 第 31 步结束回合的原版承伤累计为 153，预测为 156。前 30 个输入已匹配。该分支的原版结算归档为
 `mechanics/relentless-monster-damage/native-partial.mt2f`。
+修正原版燃命和腐化的结算顺序后，隔离实机复放前 31 步并由顾问接续余下 2 步，
+以 41 点薪火生命赢下第 4 环。33 个输入逐步对齐，四项采集计数为零。
+胜局归档为 `unlocked-covenant0-ring4-healing-route-victory.mt2f`。同一进程继续执行原版战役结算并保存
+第 5 环战前档 `.probe-runs/full-battle-units-spells-and-junk-20261122-090359-6cf37987-before-ring5`，
+主存档 SHA256 为 `3d5b46defe3abd0306cdd13f7db89b944b1310c731fb5b9a55f74747ef5fb108`。
 
 第 5 环的首次整场对照从 10 点薪火生命开始，原版判负且四项采集计数为零。另一条部署路线验证了
 StealthWaxers 的出生条件与月相手牌更新可同时生效。两次部署与结束回合的后继在原版完全一致，
