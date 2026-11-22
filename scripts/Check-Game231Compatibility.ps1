@@ -111,8 +111,12 @@ try {
     foreach ($document in $documents) { $document.Dispose() }
 }
 
+$checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'
 foreach ($version in $versions) {
-    dotnet (Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll') --recorded-chain-diagnose (Join-Path $directory "$($version.Version)/full-battle.mt2f")
+    dotnet $checker --recorded-chain-diagnose (Join-Path $directory "$($version.Version)/full-battle.mt2f")
     if ($LASTEXITCODE) { throw "Independent model chain failed: $($version.Version)" }
 }
+$currentVersion = $versions | Where-Object Version -eq '2.3.1'
+dotnet $checker --native-equipment-selection-only (Join-Path $directory 'mechanics/red-crown-equipment-observation/native-branch.mt2f') $currentVersion.Mvid
+if ($LASTEXITCODE) { throw 'Native equipment observation failed.' }
 Write-Output 'GAME-231-COMPATIBILITY PASS: eight binary capture hashes, versioned catalogs, both seven-turn continuous model chains and 16 immutable parallel branches each. New/changed content is not accepted by this smoke check.'

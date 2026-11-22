@@ -190,6 +190,11 @@ if (args.Length == 3 && args[0] == "--native-branch-module-only")
     NativeBranchObservationChecks.CheckModuleIdentity(args[1], args[2]);
     return;
 }
+if (args.Length == 3 && args[0] == "--native-equipment-selection-only")
+{
+    NativeBranchObservationChecks.CheckEquipmentSelection(args[1], Guid.ParseExact(args[2], "D"));
+    return;
+}
 if (args.Length == 3 && args[0] == "--native-branch-replay-only")
 {
     using var archive = ModelJson.ReadFixture(args[1]);

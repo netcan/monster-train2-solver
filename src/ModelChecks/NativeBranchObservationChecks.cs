@@ -7,6 +7,69 @@ internal static class NativeBranchObservationChecks
 {
     internal static string Key(BattleTurnState state, bool terminal = false) => BattleTurnChecks.Comparable(state, terminal);
 
+    internal static void CheckEquipmentSelection(string path, Guid expectedGameModule)
+    {
+        using var archive = ModelJson.ReadFixture(path);
+        FixtureValue fixture = archive.RootElement;
+        Require(fixture.GetProperty("EvidenceKind").GetString() == "NativeUnsupportedBranchObservation" &&
+            fixture.GetProperty("NativeCompleted").GetBoolean() &&
+            NativeBranchIdentity.ObservationModule(fixture) == expectedGameModule,
+            "Expected a completed native branch observation from the requested game module.");
+
+        FixtureValue row = fixture.GetProperty("Rows").EnumerateArray().Last();
+        FixtureValue request = fixture.GetProperty("Request");
+        Require(row.GetProperty("Boundary").GetBoolean() && !row.GetProperty("IsEndTurn").GetBoolean() &&
+            row.GetProperty("Action").ContentEquals(request.GetProperty("Action")),
+            "The observed selection is not the requested deployment.");
+        var action = row.GetProperty("Action").Deserialize<PlayCardAction>()!;
+        var before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var actual = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        FixtureValue equipment = fixture.GetProperty("RedCrownEquipment");
+        var orderedPool = equipment.GetProperty("OrderedCardDataIds").EnumerateArray()
+            .Select(item => Guid.ParseExact(item.GetString()!, "D")).ToArray();
+        Guid selected = Guid.ParseExact(equipment.GetProperty("SelectedCardDataId").GetString()!, "D");
+        Require(orderedPool.Length > 0 && !orderedPool.Contains(Guid.Empty), "Missing native equipment choices.");
+
+        UnityRng battleBefore = before.RngStreams.Single(stream => stream.Name == "Battle").State;
+        UnityRng battleAfter = actual.RngStreams.Single(stream => stream.Name == "Battle").State;
+        Require(ReadRng(equipment.GetProperty("RngBefore")).Equals(battleBefore) &&
+            ReadRng(equipment.GetProperty("RngAfter")).Equals(battleAfter),
+            "The selection RNG disagrees with the full native snapshots.");
+        RngDraw draw = battleBefore.Range(0, orderedPool.Length);
+        Require(orderedPool[draw.Value] == selected && draw.State.Equals(battleAfter),
+            "The ordered native pool and RNG do not reproduce the observed selection.");
+        Require(before.RngStreams.Where(stream => stream.Name != "Battle").Select(stream => (stream.Name, stream.Seed, stream.State))
+            .SequenceEqual(actual.RngStreams.Where(stream => stream.Name != "Battle").Select(stream => (stream.Name, stream.Seed, stream.State))),
+            "Deployment changed another native RNG stream.");
+
+        int equipmentId = equipment.GetProperty("CardId").GetInt32();
+        int hostId = equipment.GetProperty("HostUnitId").GetInt32();
+        CombatUnit host = actual.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == hostId);
+        Require(host.SpawnerCardId == action.CardInstanceId && host.EquipmentCards?.Contains(equipmentId) == true &&
+            before.Spawn.Train.Context?.NextCardId == equipmentId && actual.Spawn.Train.Context?.NextCardId == equipmentId + 1,
+            "The selected equipment was not allocated to the deployed host.");
+        CardPileState standby = actual.OtherPiles.Single(pile => pile.Name == "Standby");
+        int[] standbyOrder = standby.Cards.Select(card => card.InstanceId).ToArray();
+        Require(Guid.ParseExact(standby.Cards.Single(card => card.InstanceId == equipmentId).DataId, "D") == selected &&
+            standby.EquipmentConditions?.Any(condition => condition.CardId == equipmentId &&
+                condition.HostUnitId == hostId && !condition.ReturnToHand) == true &&
+            Array.IndexOf(standbyOrder, action.CardInstanceId) > Array.IndexOf(standbyOrder, equipmentId),
+            "The equipment is missing its native standby card, binding, or placement order.");
+        FixtureValue overlay = fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay");
+        Require(overlay.GetProperty("Captures").GetInt32() > 0 && overlay.GetProperty("PurityFailures").GetInt32() == 0 &&
+            overlay.GetProperty("Failures").GetInt32() == 0 && !overlay.GetProperty("InTestScenario").GetBoolean(),
+            "Native player projection was not pure/original.");
+
+        Console.WriteLine($"NATIVE-EQUIPMENT-SELECTION PASS module={expectedGameModule} pool={orderedPool.Length} index={draw.Value} card={equipmentId} host={hostId}");
+
+        static UnityRng ReadRng(FixtureValue value)
+        {
+            uint[] words = value.EnumerateArray().Select(word => word.GetUInt32()).ToArray();
+            Require(words.Length == 4, "Malformed native RNG state.");
+            return new UnityRng(words[0], words[1], words[2], words[3]);
+        }
+    }
+
     internal static void CheckModuleIdentity(string historicalPath, string currentPath)
     {
         using var historical = ModelJson.ReadFixture(historicalPath);
