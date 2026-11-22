@@ -342,6 +342,10 @@ Shadesplitter 单独保留底层低生命敌军，确认原版击杀后从加权
 5 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
 [`shadesplitter-morsel.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/shadesplitter-morsel.mt2f)
 
+Stasis Crystal 实际附着后触发一次成长。移除技能后仍保留楼层和其他生成单位对照。
+6 次出牌或技能、5 次结束回合、16 条独立分支和候选检查通过。
+[`stasis-crystal-removal.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-equipment/stasis-crystal-removal.mt2f)
+
 腐化遗物批次观察到原版为楼层敌军增加两层 Corrupt Poison。部署结束后的两张零费测试牌
 单独核对，其余状态和随机流逐项比较。19 次出牌、6 次结束回合及候选检查分段通过。
 [`battle.mt2f`](../tests/compatibility/game-2.3.1/mechanics/corruption-relic-trigger/battle.mt2f)
