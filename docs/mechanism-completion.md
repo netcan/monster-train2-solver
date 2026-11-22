@@ -474,6 +474,10 @@ Reanimation Lab 的独立对照实放原版 Dreg 并核对出生升级。6 次�
 和两类候选检查通过。
 [`reanimation-birth.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-room-abilities/reanimation-birth.mt2f)
 
+Ice and Pyre 的独立对照在顶层命中前排敌军并造成 90 点伤害，在空 Pyre 层正常付费。
+三个原版卡牌实例各检查四层的手牌和出牌范围。3 次出牌、7 次结束回合、16 条独立分支和两类候选通过。
+[`limited-range-damage.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-room-abilities/limited-range-damage.mt2f)
+
 原版法术和单位升级计数遗物在 2.3.1 中各使用实际取得的定义。整战记录 44 次修饰回调和
 26 次原版筛选，覆盖 0、1、2 个可见升级、重置、重复及逐件对照。
 23 次出牌、7 次结束回合及候选检查通过。
