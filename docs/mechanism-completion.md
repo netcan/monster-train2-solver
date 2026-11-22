@@ -234,6 +234,10 @@ MoreCapacity 在原版第三回合把中层容量从 5 提到 7，发出一次�
 七个大小为 1 的单位成功部署，第八个被拒绝。8 次出牌、5 次结束回合与两类候选检查通过。
 [`more-capacity.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/more-capacity.mt2f)
 
+第三张法术加法强与首张 Consume 法术抽牌在同一原版对局中验证。两版专项均匹配五次阈值触发、
+一次实际抽牌、15 个非 Consume 对照和 65 次法术数值变化。2.3.1 的 26 次出牌、6 次结束回合与两类候选检查通过。
+[`spell-play-thresholds.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/spell-play-thresholds.mt2f)
+
 两个 2.3.1 原版移动遗物场景复用移动前月相掩码采集。升降层伤害场景实测敌军上移和下移
 各受 3 点伤害。Pyregel 场景实测敌军上移获得 2 层 Pyregel，并核对下移、友军和移动受阻对照。
 每份录像通过 22 个移动边界及 42 次出牌检查，脚本布置结束后另核对 20 次出牌、5 次结束回合和

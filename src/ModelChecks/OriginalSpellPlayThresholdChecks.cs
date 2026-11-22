@@ -7,9 +7,10 @@ internal static class OriginalSpellPlayThresholdChecks
     private const string DrawId = "4fbb0cca-26cd-4510-af02-66694c7edfd3";
     internal static void Native(FixtureValue root)
     {
+        var fingerprint = (root.GetProperty("GameVersion").GetString(), root.GetProperty("GameModuleMvid").GetString());
         Require(root.GetProperty("ModifierScenario").GetString() == "original-spell-play-threshold-relics" &&
-            root.GetProperty("GameVersion").GetString() == "2.2.1" &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
+            fingerprint is ("2.2.1", "8fb07b96-f4db-4d2b-884d-c00536d6ccf4") or
+                ("2.3.1", "bf93f060-beda-46b1-b808-95ebf1e9a99d") &&
             root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
             new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.All(name => root.GetProperty(name).GetInt32() == 0),
             "Spell threshold battle failed acceptance.");
