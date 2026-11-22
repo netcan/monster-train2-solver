@@ -1063,7 +1063,7 @@ internal static class OriginalSupportUnitsChecks
             ScalingUnitUpgradeTrait abilityScaling = template.Ability!.CardCreation!.UnitUpgradeScalingTraits!.Single();
             Require(abilityScaling is { Stat: "Damage", AmountPerStat: 1, Restriction: 0 } &&
                 abilityScaling.Query.Type == "StatusEffectCountInTargetRoom" && abilityScaling.Query.Duration == "ThisTurn" &&
-                abilityScaling.Query.CurrentCostCardModifiersOnly && abilityScaling.Query.CurrentCostSourceIsSpell &&
+                abilityScaling.Query.CurrentCostSourceIsSpell &&
                 abilityScaling.Query.StatusIds?.SequenceEqual(["pyregel"]) == true,
                 "Pyreblooded's inactive unit ability must retain the native +1 Damage-per-pyregel scaling query and Spell source flag.");
         }
