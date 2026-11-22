@@ -567,6 +567,8 @@ param(
     [switch] $PreviewReferences,
     [switch] $RelicCatalog,
     [switch] $CardCatalog,
+    [ValidatePattern('^[A-Za-z_][A-Za-z0-9_.]{0,127}$')]
+    [string] $EffectOwnerType,
     [switch] $SummonChoiceCalibration,
     [switch] $RoomHealthMechanismBatch,
     [switch] $JuiceMechanismBatch,
@@ -840,6 +842,16 @@ param(
 $ErrorActionPreference = 'Stop'
 if ($NativeBuildRoot -and -not $SkipBuild) {
     throw 'NativeBuildRoot requires prebuilt native binaries with SkipBuild.'
+}
+if ($EffectOwnerType) {
+    $effectOwnerArguments = @('EffectOwnerType', 'Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+        'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction',
+        'InformationAction', 'ProgressAction', 'ErrorVariable', 'WarningVariable', 'InformationVariable',
+        'OutVariable', 'OutBuffer', 'PipelineVariable')
+    if ($Policy -ne 'no-cards' -or -not $BinaryCapture -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $effectOwnerArguments }).Count -gt 0) {
+        throw 'EffectOwnerType uses the no-cards definition profile and binary capture.'
+    }
 }
 if ($ProfileCapture -and -not $PlayerAdvisor) { throw 'ProfileCapture requires the separately loaded PlayerAdvisor.' }
 if ($AdvisorFloorBrowse -and (-not $PlayerAdvisor -or -not $RollingAdvice)) {
@@ -2348,6 +2360,7 @@ $environment = @{
     MT2_PROBE_ENCHANTER_REMOVAL_TRACE = $(if ($TraceEnchanterRemoval) { '1' } else { '0' })
     MT2_PROBE_PREVIEW_REFERENCES = $(if ($PreviewReferences) { '1' } else { '0' })
     MT2_PROBE_RELIC_CATALOG = $(if ($RelicCatalog) { '1' } else { '0' })
+    MT2_PROBE_EFFECT_OWNER_TYPE = $EffectOwnerType
     MT2_PROBE_CARD_CATALOG = $(if ($CardCatalog) { '1' } else { '0' })
     MT2_PROBE_SUMMON_CHOICE_CALIBRATION = $(if ($SummonChoiceCalibration) { '1' } else { '0' })
     MT2_PROBE_ROOM_HEALTH_MECHANISM_BATCH = $(if ($RoomHealthMechanismBatch) { '1' } else { '0' })
@@ -6603,6 +6616,29 @@ if ($SummonChoiceCalibration) {
         }
         Write-Output 'NATIVE-SUMMON-CHOICE-OFFERS PASS: 11232 native comparisons; unchanged decision/RNG/frame, explicit platform input controls; offer stage only.'
     } finally { $summonChoiceDocument.Dispose() }
+}
+if ($EffectOwnerType) {
+    Add-Type -Path (Join-Path $nativeBuildWorkspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $effectOwnersDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'effect-owners.mt2f'))
+    try {
+        $effectOwnersRoot = $effectOwnersDocument.RootElement
+        $count = $effectOwnersRoot.GetProperty('MatchCount').GetInt32()
+        $rows = $effectOwnersRoot.GetProperty('Matches').GetArrayLength()
+        $definitionCounts = $effectOwnersRoot.GetProperty('Definitions')
+        if ($effectOwnersRoot.GetProperty('Schema').GetInt32() -ne 1 -or
+            $effectOwnersRoot.GetProperty('Scope').GetString() -cne 'AllGameDataEffectLists' -or
+            $effectOwnersRoot.GetProperty('EffectType').GetString() -cne $EffectOwnerType -or
+            $effectOwnersRoot.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
+            -not $effectOwnersRoot.GetProperty('DecisionUnchanged').GetBoolean() -or
+            $effectOwnersRoot.GetProperty('FrameBefore').GetInt32() -ne $effectOwnersRoot.GetProperty('FrameAfter').GetInt32() -or
+            -not $effectOwnersRoot.GetProperty('RngBefore').ContentEquals($effectOwnersRoot.GetProperty('RngAfter')) -or
+            @('Cards', 'Characters', 'Upgrades', 'Relics').Where({ $definitionCounts.GetProperty($_).GetInt32() -le 0 }).Count -gt 0 -or
+            $count -lt 0 -or $rows -ne [Math]::Min(128, $count) -or
+            $effectOwnersRoot.GetProperty('MatchesTruncated').GetBoolean() -ne ($rows -lt $count)) {
+            throw 'Effect owner query scope, counts or native invariants differ.'
+        }
+        Write-Output "NATIVE-EFFECT-OWNERS PASS: type=$EffectOwnerType matches=$count rows=$rows"
+    } finally { $effectOwnersDocument.Dispose() }
 }
 if ($CardCatalog) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')

@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using HarmonyLib;
@@ -12,16 +13,21 @@ namespace MonsterTrain2Poju.Probe
     // Definitions only: no relic is acquired, initialized or fired by this capture.
     internal static class RelicCatalogProbe
     {
+        internal static IEnumerable<(string Collection, RelicData Data)> OriginalOwners(AllGameData gameData)
+        {
+            string[] collections = { "collectableRelicDatas", "sinsDatas", "covenantDatas", "mutatorDatas",
+                "pyreArtifactDatas", "endlessMutatorDatas", "enhancerDatas", "soulDatas" };
+            return collections.SelectMany(collection => ((IEnumerable)Field(gameData, collection)).Cast<RelicData>()
+                .Select(data => (collection, data)));
+        }
+
         internal static void Capture(AllGameManagers managers)
         {
             if (Environment.GetEnvironmentVariable("MT2_PROBE_RELIC_CATALOG") != "1") return;
             JObject before = RngStates();
             int frame = UnityEngine.Time.frameCount;
             AllGameData gameData = managers.GetSaveManager().GetAllGameData();
-            string[] collections = { "collectableRelicDatas", "sinsDatas", "covenantDatas", "mutatorDatas",
-                "pyreArtifactDatas", "endlessMutatorDatas", "enhancerDatas", "soulDatas" };
-            var relics = collections.SelectMany(collection => ((IEnumerable)Field(gameData, collection)).Cast<RelicData>()
-                .Select(data => new { Collection = collection, Data = data })).Select(entry => new
+            var relics = OriginalOwners(gameData).Select(entry => new
             {
                 entry.Collection, Id = entry.Data.GetID(), AssetKey = entry.Data.name, DisallowedInPlacementPhase = entry.Data.DisallowInDeploymentPhase,
                 Effects = entry.Data.GetEffects().Select(effect => new
