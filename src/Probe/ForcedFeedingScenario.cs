@@ -44,8 +44,8 @@ namespace MonsterTrain2Poju.Probe
         internal static PlayCardAction? Choose(BattleTurnState source)
         {
             var plays = BattleActionModel.EnumerateSupportedPlays(source);
-            bool Feast(PlayCardAction play) => source.PlayRules!.Cards.Single(rule =>
-                rule.DataId == source.Spawn.Train.Context!.FindCard(play.CardInstanceId)!.DataId).AssetKey == "Feast";
+            CardInstanceState? Card(PlayCardAction play) => source.Spawn.Train.Context!.FindCard(play.CardInstanceId);
+            bool Feast(PlayCardAction play) => Card(play)?.DataId == "236215da-c1dd-40b7-8793-27ce327a7e78";
             if (!source.Spawn.Train.Rooms[0].Deployment)
             {
                 if (!controlPlayed)
@@ -56,7 +56,7 @@ namespace MonsterTrain2Poju.Probe
                 if (ScalingMode)
                 {
                     PlayCardAction? spike = plays.FirstOrDefault(play => play.RoomIndex == 0 && play.TargetUnitId > 0 &&
-                        source.Spawn.Train.Context!.FindCard(play.CardInstanceId)!.DataId == "fecc00fd-70ef-473e-bfa1-35c221540d43" &&
+                        Card(play)?.DataId == "fecc00fd-70ef-473e-bfa1-35c221540d43" &&
                         source.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0).Units.Any(unit => unit.Id == play.TargetUnitId && RoomCombatModel.IsFood(unit)));
                     if (spike != null) return spike;
                 }
@@ -65,8 +65,8 @@ namespace MonsterTrain2Poju.Probe
                         unit.Team == CombatTeam.Player && RoomCombatModel.IsFood(unit)));
                 if (positive != null) return positive;
             }
-            return plays.FirstOrDefault(play => play.RoomIndex == 0 &&
-                source.PlayRules!.Cards.Single(rule => rule.DataId == source.Spawn.Train.Context!.FindCard(play.CardInstanceId)!.DataId).SpawnUnit is CombatUnit unit &&
+            return plays.FirstOrDefault(play => play.RoomIndex == 0 && Card(play) is CardInstanceState card &&
+                source.PlayRules!.Cards.Single(rule => rule.DataId == card.DataId).SpawnUnit is CombatUnit unit &&
                 (!RoomCombatModel.IsFood(unit) || play.PlayerPosition > 0));
         }
         [HarmonyPatch(typeof(CardEffectFeederRules), nameof(CardEffectFeederRules.ApplyEffect))]
