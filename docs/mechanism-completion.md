@@ -274,6 +274,10 @@ Grow Room 与空房间的锻造点、余烬原版查询在输入 0、1、2 时�
 查询前后房间、手牌与随机流一致。同层 Metallurgy 候选在原始整战快照上通过复放。
 [`grow-room-smelt-costs.mt2f`](../tests/compatibility/game-2.3.1/mechanics/grow-room-smelt/grow-room-smelt-costs.mt2f)
 
+原版 Metallurgy 在装有 Grow Room 的底层实际施放，按指定选择消耗一张零费 Morsel。
+7 次出牌、5 次结束回合、16 条独立分支和两类候选检查通过。
+[`grow-room-metallurgy.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-room-abilities/grow-room-metallurgy.mt2f)
+
 八牌补采记录 Mass Production 复制原版 Morsel Miner，随后 Metallurgy 按指定选择消耗复制品。
 12 次出牌、5 次结束回合、16 条独立分支和两类候选检查通过。
 [`native-horde-and-hand-choices.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/native-horde-and-hand-choices.mt2f)
