@@ -41,9 +41,11 @@ namespace MonsterTrain2Poju.Probe
                 .Any(RequiresActorWorld);
         }
 
-        internal static bool RequiresActorWorld(CharacterData character) => character.GetTriggers().Any(trigger =>
-            trigger.GetEffects().Any(effect => effect.GetEffectStateName() is "CardEffectEnchant" or "CardEffectEnchantCardUpgrade" ||
-                effect.GetTargetMode() is TargetMode.Tower or TargetMode.FrontInAllRooms));
+        internal static bool RequiresActorWorld(CharacterData character) => character.GetTriggers().Any(RequiresActorWorld);
+
+        internal static bool RequiresActorWorld(CharacterTriggerData trigger) => trigger.GetEffects().Any(effect =>
+            effect.GetEffectStateName() is "CardEffectEnchant" or "CardEffectEnchantCardUpgrade" ||
+            effect.GetTargetMode() is TargetMode.Tower or TargetMode.FrontInAllRooms);
 
         private EnemySpawnState CaptureState(bool canonicalReferences, bool includeOuterBossForBump,
             bool ignoreOuterBossSpawnInteraction)

@@ -122,7 +122,7 @@ namespace MonsterTrain2Poju.Probe
                 // exists in a card pile or on the train. Include upgraded abilities
                 // without creating their cached CardState as an observation side effect.
                 var managers = AllGameManagers.Instance!;
-                if (RelicResourceProbe.RequiresPhysicalWorld(managers)) return playerEnchantmentWorld = true;
+                if (RelicResourceProbe.RequiresActorWorld(managers)) return playerEnchantmentWorld = true;
                 var cards = managers.GetCardManager()!.GetAllCards(new List<CardState>());
                 if (cards.Any(card => card.GetCardStateModifiers().GetCardUpgrades()
                     .Concat(card.GetTemporaryCardStateModifiers().GetCardUpgrades()).Any(upgrade =>

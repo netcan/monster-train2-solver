@@ -66,9 +66,17 @@ namespace MonsterTrain2Poju.Probe
         }
 
         internal static bool RequiresPhysicalWorld(AllGameManagers managers) => Current(managers)
-            .Any(owner => owner.GetEffects().Any(effect => effect is RelicEffectAdditionalDrawForEnemyOccupiedFloors || effect is RelicEffectAdditionalDrawDuringRelentless ||
-                effect is RelicEffectBumpOnTurnEnd || effect is RelicEffectAddPyreAttackAndHealthPerCardInDeck ||
-                effect is RelicEffectSpawnMonsterOnTurnStart));
+            .Any(owner => owner.GetEffects().Any(RequiresPhysicalWorld));
+
+        internal static bool RequiresActorWorld(AllGameManagers managers) => Current(managers)
+            .Any(owner => owner.GetEffects().Any(effect => RequiresPhysicalWorld(effect) ||
+                effect is RelicEffectAddTrigger &&
+                AccessTools.Field(typeof(RelicEffectAddTrigger), "triggerDataList").GetValue(effect) is List<CharacterTriggerData> triggers &&
+                triggers.Any(EnemySpawningProbe.RequiresActorWorld)));
+
+        private static bool RequiresPhysicalWorld(IRelicEffect effect) => effect is RelicEffectAdditionalDrawForEnemyOccupiedFloors ||
+            effect is RelicEffectAdditionalDrawDuringRelentless || effect is RelicEffectBumpOnTurnEnd ||
+            effect is RelicEffectAddPyreAttackAndHealthPerCardInDeck || effect is RelicEffectSpawnMonsterOnTurnStart;
 
         internal static int? ReadLastKnownDeckCount(RelicEffectAddPyreAttackAndHealthPerCardInDeck effect) =>
             (int?)AccessTools.Field(typeof(RelicEffectAddPyreAttackAndHealthPerCardInDeck), "_lastKnownCardCount").GetValue(effect);

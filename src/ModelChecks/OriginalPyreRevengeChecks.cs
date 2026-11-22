@@ -102,13 +102,16 @@ internal static class OriginalPyreRevengeChecks
             "Native Pyre Revenge OnHit effect payload changed.");
         string parent = Serialize(before);
         RoomCombatResult install = RelicCharacterTriggerModel.Apply(before, pyreId, rule);
-        Require(install.Supported && ModelJson.Difference(Serialize(install.State), Serialize(actualInstall)) == null &&
+        string? installationDifference = install.Supported
+            ? ModelJson.Difference(Serialize(EnchantmentWorldModel.Sync(install.State!)), Serialize(actualInstall))
+            : install.UnsupportedReason;
+        Require(install.Supported && installationDifference == null &&
             pyreBefore.IsPyre && pyreAfter.Triggers.Count(trigger => trigger.Kind == "OnHit" &&
                 trigger.Origin?.UpgradeId == "" && trigger.Effects.SingleOrDefault()?.Action?.Statuses.Any(status =>
                     status.Id == "pyregel" && status.Stacks == 2) == true) ==
                 pyreBefore.Triggers.Count(trigger => trigger.Kind == "OnHit" && trigger.Effects.SingleOrDefault()?.Action?.Statuses.Any(status =>
                     status.Id == "pyregel" && status.Stacks == 2) == true) + 1 && Serialize(before) == parent,
-            install.UnsupportedReason ?? "Native Pyre trigger installation differs from the independent model.");
+            "Native Pyre trigger installation differs from the independent model. " + installationDifference);
 
         int fired = 0;
         foreach (FixtureValue record in fixture.GetProperty("TriggeredStatuses").EnumerateArray())
@@ -133,16 +136,25 @@ internal static class OriginalPyreRevengeChecks
                 string.Join(",", targets) + " vs " + string.Join(",", towerTargets.UnitIds));
             var scope = new RoomCombatState(roomBefore.RoomIndex, roomBefore.Deployment,
                 roomBefore.Units.Concat(retained.Where(unit => roomBefore.Units.All(live => live.Id != unit.Id))).ToArray(),
-                roomBefore.ExternalInteractions, roomBefore.Context);
+                roomBefore.ExternalInteractions, roomBefore.Context, roomBefore.Preview, roomBefore.ActiveCompanionBossIds);
             RoomCombatResult result = TriggeredStatusModel.Apply(scope, pyreId, effect, targets,
                 record.GetProperty("SourceCardId").GetInt32());
-            string? difference = result.Supported ? ModelJson.Difference(Serialize(result.State!.Context), Serialize(actual.Context)) : result.UnsupportedReason;
+            Require(result.Supported, result.UnsupportedReason ?? "Unsupported Pyre Revenge status application.");
+            // The effect scope borrows remote targets. Publish their updated state in their original rooms.
+            var localIds = roomBefore.Units.Select(unit => unit.Id).ToHashSet();
+            RoomCombatState updated = result.State!;
+            RoomCombatState local = new RoomCombatState(roomBefore.RoomIndex, roomBefore.Deployment,
+                updated.Units.Where(unit => localIds.Contains(unit.Id)).ToArray(), roomBefore.ExternalInteractions,
+                updated.Context!.WithEnchantments(roomBefore.Context!.Enchantments), roomBefore.Preview, roomBefore.ActiveCompanionBossIds);
+            CombatContext predictedContext = EnchantmentWorldModel.Sync(local,
+                externalUnits: updated.Units.Where(unit => !localIds.Contains(unit.Id)).ToArray()).Context!;
+            string? difference = ModelJson.Difference(Serialize(predictedContext), Serialize(actual.Context));
             foreach (CombatUnit unit in actualUnits)
             {
                 difference ??= ModelJson.Difference(Serialize(result.State!.Units.Single(item => item.Id == unit.Id)), Serialize(unit));
                 if (difference != null) break;
             }
-            Require(result.Supported && difference == null,
+            Require(difference == null,
                 "Pyre Revenge native status callback differs at sequence " + record.GetProperty("Sequence").GetInt32() + ": " + difference);
             foreach (int targetId in targets)
             {
