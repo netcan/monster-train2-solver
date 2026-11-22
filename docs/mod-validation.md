@@ -17,6 +17,14 @@ acceptance record below, and manual gesture timing in the Steam session remains 
 The 54,804-byte binary and hash are registered under
 `tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/`.
 
+On 2026-11-23 the current Windows advisor won an isolated 2.3.1 battle with 73 Pyre health.
+Two search workers, a three-turn horizon, and a 1,000 ms soft budget were configured. The
+driver executed 19 card plays and seven EndTurns from the advisor. The 26 native successors
+and published continuations replayed exactly. Their 449 card or skill candidates and 26
+EndTurn successors passed with zero unsupported or truncated branches.
+The driver exercised the panel in an isolated profile. Manual Steam interaction remains pending.
+[Recorded battle](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-two-workers-rolling-win.mt2f)
+
 Last documented Windows installation: 0.2.438, installed 2026-10-30 after an isolated
 native player battle and focused continuation checks. The three installed DLL
 hashes match the tested build; the prior 0.2.437 payload is retained at
