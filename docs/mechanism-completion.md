@@ -224,6 +224,12 @@ CopyFirstConsumePlayed 的 2.3.1 录像确认首张消耗法术产生一张永�
 23 次出牌、7 次结束回合与两类候选检查通过。
 [`copy-first-consume.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/copy-first-consume.mt2f)
 
+Corrupted Angels Artifact 与 RandomCardCostOnDraw 在两种获取顺序下均有原版实机录像。每种顺序匹配 53 条回调、
+17 次自然触发与三层嵌套抽牌。成功的嵌套抽牌分别观察到 12 与 17 条弃牌时清除的费用修饰。
+两局共 66 次出牌、10 次结束回合及两类候选检查通过。
+[`corrupted-angels-cost-first.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/corrupted-angels-cost-first.mt2f) ·
+[`corrupted-angels-cost-last.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/corrupted-angels-cost-last.mt2f)
+
 两个 2.3.1 原版移动遗物场景复用移动前月相掩码采集。升降层伤害场景实测敌军上移和下移
 各受 3 点伤害。Pyregel 场景实测敌军上移获得 2 层 Pyregel，并核对下移、友军和移动受阻对照。
 每份录像通过 22 个移动边界及 42 次出牌检查，脚本布置结束后另核对 20 次出牌、5 次结束回合和
