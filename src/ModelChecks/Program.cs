@@ -5887,6 +5887,12 @@ if (args.Length == 2 && args[0] == "--original-support-spells-only")
     OriginalSupportSpellsChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--zephyr-coroutine-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    ZephyrCoroutineChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-rearrange-spells-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
