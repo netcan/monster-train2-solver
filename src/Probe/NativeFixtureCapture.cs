@@ -90,13 +90,13 @@ namespace MonsterTrain2Poju.Capture
                 if (value is JToken token) node = Token(token, depth);
                 else if (contract is JsonArrayContract && value is IEnumerable sequence)
                 {
-                    var children = new List<int>();
+                    var children = new List<int>(value is ICollection sequenceItems ? sequenceItems.Count : 0);
                     foreach (object? child in sequence) children.Add(Add(child, depth + 1));
                     node = Builder.Add(FixtureKind.Array, children: children.ToArray());
                 }
                 else if (contract is JsonDictionaryContract dictionary)
                 {
-                    var children = new List<int>();
+                    var children = new List<int>(value is IDictionary entries ? entries.Count * 2 : 0);
                     foreach (object entry in (IEnumerable)value)
                     {
                         object? key, child;
@@ -116,8 +116,9 @@ namespace MonsterTrain2Poju.Capture
                 }
                 else if (contract is JsonObjectContract properties)
                 {
-                    var children = new List<int>();
-                    foreach (PropertyPlan property in Plan(properties))
+                    PropertyPlan[] plan = Plan(properties);
+                    var children = new List<int>(plan.Length * 2);
+                    foreach (PropertyPlan property in plan)
                     {
                         if (property.ShouldSerialize?.Invoke(value) == false || property.IsSpecified?.Invoke(value) == false) continue;
                         children.Add(property.Key);
