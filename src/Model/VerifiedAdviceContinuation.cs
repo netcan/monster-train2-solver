@@ -72,7 +72,7 @@ namespace MonsterTrain2Poju.Model
         // Do not let recorded view callbacks replace that stronger proof, but
         // reject any observed intermediate state outside the verified suffix.
         internal VerifiedAdviceContinuation? MatchObserved(BattleTurnState state,
-            IReadOnlyList<SelectionAdviceReuse.Observation> observations, bool exactFinalState)
+            IReadOnlyList<SelectionAdviceReuse.Observation> observations, string? requiredFullKey)
         {
             using var keys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
             VerifiedAdviceContinuation? matched = this;
@@ -83,11 +83,10 @@ namespace MonsterTrain2Poju.Model
                 if (matched == null) return null;
             }
             matched = matched.MatchKey(keys.Key(state));
-            if (matched == null || !exactFinalState) return matched;
+            if (matched == null || requiredFullKey == null) return matched;
             // Otherwise use selection replay to update the full final snapshot
             // when even the unused preview allocator differs after browsing.
-            using var fullKeys = new BattleStateKeys();
-            return matched.fullRoots[matched.offset] == fullKeys.Key(state) ? matched : null;
+            return matched.fullRoots[matched.offset] == requiredFullKey ? matched : null;
         }
 
         private VerifiedAdviceContinuation? MatchKey(string key)
