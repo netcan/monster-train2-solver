@@ -24,8 +24,9 @@ internal static class OriginalStatusRelicBatchChecks
         bool eligible = scenario == "original-status-relic-batch" || burnoutScenario;
         Require(eligible || !required, "Fixture lacks the original status-stack relic batch.");
         if (!eligible) return null;
-        Require(root.GetProperty("Schema").GetInt32() == (burnoutScenario ? 142 : 136) &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4",
+        var build = (root.GetProperty("GameVersion").GetString(), root.GetProperty("GameModuleMvid").GetString());
+        Require(root.GetProperty("Schema").GetInt32() == (burnoutScenario ? 142 : 136) && build is
+            ("2.2.1", "8fb07b96-f4db-4d2b-884d-c00536d6ccf4") or (Game231FixtureCatalog.Version, Game231FixtureCatalog.Module),
             "Native status-stack relic schema or build changed.");
         Require(root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" &&
