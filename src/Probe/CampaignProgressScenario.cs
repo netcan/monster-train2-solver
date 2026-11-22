@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using BepInEx.Logging;
 using HarmonyLib;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ShinyShoe;
 using ShinyShoe.Loading;
 using UnityEngine;
@@ -22,6 +23,7 @@ namespace MonsterTrain2Poju.Probe
         private readonly ManualLogSource log;
         private readonly string auditPath;
         private readonly int stopRing;
+        private readonly bool captureBeforeMap;
         private readonly MapScreen.BranchSelection? requestedMapBranch;
         private readonly string? requestedDraftRelic;
         private readonly string? requestedMerchantUpgrade;
@@ -30,6 +32,7 @@ namespace MonsterTrain2Poju.Probe
         private float nextAction, lastProgress, heartbeat, quitAt;
         private bool started, setup, menuRequested, checkpointSaving;
         private bool startingCovenantObserved;
+        private bool beforeMapCaptured;
         private string? selectedDraftRelicId;
         private bool draftRelicGranted;
         private int? selectingRoom;
@@ -61,6 +64,7 @@ namespace MonsterTrain2Poju.Probe
             this.log = log; active = this;
             completeDefeat = afterBattle && !battleWon && Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_COMPLETE_DEFEAT") == "1";
             stopRing = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_STOP_RING") ?? "5");
+            captureBeforeMap = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_CAPTURE_BEFORE_MAP") == "1";
             requestedMapBranch = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_MAP_BRANCH")?.ToLowerInvariant() switch
             {
                 "left" => MapScreen.BranchSelection.LeftBranch,
@@ -171,6 +175,12 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             if (LoadingScreen.IsWorking()) return;
+            if (captureBeforeMap && !beforeMapCaptured && save.GetCurrentDistance() + 1 == stopRing &&
+                save.GetGameSequence() == SaveData.GameSequence.BattlePostCombatRewards)
+            {
+                if (!TryCaptureBeforeMap(save)) return;
+                beforeMapCaptured = true;
+            }
             ConfirmPreferredMerchantUpgrade(save);
             string state = screens.GetTopScreen() + ":" + save.GetGameSequence() + ":" + save.GetCurrentDistance();
             if (state != lastScreen)
@@ -424,6 +434,8 @@ namespace MonsterTrain2Poju.Probe
             if (screen is BattleIntroScreen intro)
             {
                 int ring = save.GetCurrentDistance() + 1;
+                if (ring >= stopRing && captureBeforeMap && !beforeMapCaptured)
+                    throw new InvalidOperationException("The campaign reached the target ring without its native pre-map checkpoint.");
                 if (ring >= stopRing && !preferredMerchantInstalled && !string.IsNullOrEmpty(requestedMerchantUpgrade))
                 { Finish(true, "Native campaign checkpoint reached."); return; }
                 if (requestedStartingCovenant is int requested && !startingCovenantObserved)
@@ -646,22 +658,67 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
         }
-        private void SaveCheckpoint(int ring)
+        private bool TryCaptureBeforeMap(SaveManager save)
         {
             string root = Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!;
-            string destination = root + "-before-ring" + ring;
+            int distance = save.GetCurrentDistance();
+            RunState runState = save.GetRunState();
+            if (SaveManager.WasDevCheatUsed || runState.GetChosenBranchAtDistance(distance) != -1 ||
+                save.GetNumBattlesWon() != distance || runState.GetNumBranchesAtDistance(distance) < 2)
+                throw new InvalidOperationException("The target ring has no unchosen native post-victory map branch.");
+
+            byte[] bytes;
+            JObject disk;
+            try
+            {
+                // The game writes this save at BattleComplete. Wait for that
+                // existing write and keep the same bytes that passed validation.
+                bytes = File.ReadAllBytes(Path.Combine(root, "saves", "save-singlePlayer.json"));
+                using var reader = new StreamReader(new MemoryStream(bytes));
+                disk = JObject.Parse(reader.ReadToEnd());
+            }
+            catch (IOException) { return false; }
+            catch (JsonReaderException) { return false; }
+            if (disk.Value<int?>("gameSequence") != (int)SaveData.GameSequence.BattlePostCombatRewards ||
+                disk["runState"] is not JObject run || run.Value<int?>("distance") != distance ||
+                run.Value<int?>("numBattlesCompleted") != distance || run["nodes"] is not JArray nodes || nodes.Count <= distance ||
+                nodes[distance].Value<int?>("chosenBranch") != -1 || disk.Value<bool?>("wasDevCheatUsed") != false ||
+                disk["completedBattles"] is not JArray battles || battles.Count != distance)
+                return false;
+
+            string destination = root + "-before-map-ring" + stopRing;
+            string hash = CopyCheckpointProfile(root, destination, bytes);
+            Record("before-map-checkpoint", new { ring = stopRing, distance, profile = destination, sha256 = hash,
+                sequence = (int)SaveData.GameSequence.BattlePostCombatRewards, battles = distance, chosenBranch = -1 });
+            File.Copy(auditPath, Path.Combine(destination, "campaign-audit.jsonl"));
+            return true;
+        }
+
+        private static string CopyCheckpointProfile(string root, string destination, byte[]? primarySave = null)
+        {
             if (Directory.Exists(destination)) throw new IOException("Checkpoint already exists: " + destination);
             Directory.CreateDirectory(destination);
             Directory.CreateDirectory(Path.Combine(destination, "saves"));
             foreach (string file in Directory.GetFiles(Path.Combine(root, "saves")))
-                File.Copy(file, Path.Combine(destination, "saves", Path.GetFileName(file)));
+            {
+                string name = Path.GetFileName(file);
+                if (primarySave == null || name != "save-singlePlayer.json")
+                    File.Copy(file, Path.Combine(destination, "saves", name));
+            }
             foreach (string name in new[] { "metagameSave.json", "preferences.json", "preferences-local.json", "campaign-input.json", "campaign-parent-audit.jsonl" })
                 if (File.Exists(Path.Combine(root, name))) File.Copy(Path.Combine(root, name), Path.Combine(destination, name));
+            string savePath = Path.Combine(destination, "saves", "save-singlePlayer.json");
+            if (primarySave != null) File.WriteAllBytes(savePath, primarySave);
+            using (SHA256 sha = SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(File.ReadAllBytes(savePath))).Replace("-", "");
+        }
+
+        private void SaveCheckpoint(int ring)
+        {
+            string root = Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!;
+            string destination = root + "-before-ring" + ring;
+            string hash = CopyCheckpointProfile(root, destination);
             if (Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_AFTER_REPLAY") == "1")
                 File.Copy(Path.Combine(root, "full-battle.mt2f"), Path.Combine(destination, "campaign-battle-replay.mt2f"));
-            byte[] bytes = File.ReadAllBytes(Path.Combine(destination, "saves", "save-singlePlayer.json"));
-            string hash;
-            using (SHA256 sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "");
             // Read the native pool as well as its stored index: different run
             // definitions need not use the same index for the same final boss.
             SaveManager save = AllGameManagers.Instance.GetSaveManager();

@@ -13,6 +13,7 @@ param(
     [string[]] $ExcludeUpgradeTrait = @(),
     [switch] $SkipMerchantPurchases,
     [string] $PreferMerchantUpgrade = '',
+    [switch] $CaptureBeforeMap,
     [ValidateSet('Left', 'Right')] [string] $MapBranch = '',
     [ValidateSet('First', 'Last')] [string] $StoryChoiceOrder = 'First',
     [ValidateRange(0, 2)] [int] $DraftChoiceRank = 0,
@@ -31,6 +32,9 @@ $DraftRelic = $DraftRelic.Trim()
 $PreferMerchantUpgrade = $PreferMerchantUpgrade.Trim()
 if ($PreferMerchantUpgrade -and ($SkipMerchantPurchases -or $StoryProgressionOnly)) {
     throw 'PreferMerchantUpgrade requires campaign merchant purchases.'
+}
+if ($CaptureBeforeMap -and ($StopBeforeRing -lt 2 -or $StoryProgressionOnly -or $CompleteDefeat)) {
+    throw 'CaptureBeforeMap requires campaign progression after a battle victory.'
 }
 $explicitStartingCovenant = $PSBoundParameters.ContainsKey('StartingCovenantLevel')
 if ($CompleteDefeat -and (-not $BattleReplay -or -not $InputProfile)) {
@@ -164,6 +168,7 @@ $inputMetagameHash = (Get-FileHash -LiteralPath (Join-Path $source 'metagameSave
     ExplicitStartingCovenant = $explicitStartingCovenant;
     SkipMerchantPurchases = [bool]$SkipMerchantPurchases;
     PreferMerchantUpgrade = $PreferMerchantUpgrade;
+    CaptureBeforeMap = [bool]$CaptureBeforeMap;
     MapBranch = $MapBranch;
     StoryChoiceOrder = $StoryChoiceOrder;
     DraftChoiceRank = $DraftChoiceRank;
@@ -224,6 +229,7 @@ $settings = @{
     MT2_PROBE_CAMPAIGN_EXCLUDED_UPGRADE_TRAITS = ($ExcludeUpgradeTrait -join ';')
     MT2_PROBE_CAMPAIGN_SKIP_MERCHANT_PURCHASES = $(if ($SkipMerchantPurchases) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_PREFER_MERCHANT_UPGRADE = $PreferMerchantUpgrade
+    MT2_PROBE_CAMPAIGN_CAPTURE_BEFORE_MAP = $(if ($CaptureBeforeMap) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_MAP_BRANCH = $MapBranch
     MT2_PROBE_CAMPAIGN_STORY_CHOICE_ORDER = $StoryChoiceOrder
     MT2_PROBE_CAMPAIGN_DRAFT_CHOICE_RANK = $DraftChoiceRank.ToString()
@@ -322,6 +328,25 @@ if ($PreferMerchantUpgrade -and $passed) {
             ($purchase.data.asset -ceq $PreferMerchantUpgrade -or $purchase.data.offer -ieq $PreferMerchantUpgrade)
     }
 }
+$beforeMapProfile = $null
+if ($CaptureBeforeMap -and $passed) {
+    $distance = $StopBeforeRing - 1
+    $expectedProfile = $profile + "-before-map-ring$StopBeforeRing"
+    $saved = @($audit | Where-Object kind -EQ 'before-map-checkpoint')
+    $choices = @($audit | Where-Object { $_.kind -eq 'branch' -and $_.data.distance -eq $distance })
+    $snapshotPath = Join-Path $expectedProfile 'saves/save-singlePlayer.json'
+    $passed = $saved.Count -eq 1 -and $choices.Count -ge 1 -and $saved[0].index -lt $choices[0].index -and
+        $saved[0].data.profile -ceq $expectedProfile -and $saved[0].data.ring -eq $StopBeforeRing -and
+        (Test-Path -LiteralPath $snapshotPath -PathType Leaf)
+    if ($passed) {
+        $snapshot = Get-Content -LiteralPath $snapshotPath -Raw | ConvertFrom-Json
+        $passed = (Get-FileHash -LiteralPath $snapshotPath).Hash -ceq $saved[0].data.sha256 -and
+            $snapshot.gameSequence -eq 2 -and $snapshot.runState.distance -eq $distance -and
+            $snapshot.runState.nodes[$distance].chosenBranch -eq -1 -and $snapshot.runState.numBattlesCompleted -eq $distance -and
+            @($snapshot.completedBattles).Count -eq $distance -and -not $snapshot.wasDevCheatUsed
+        if ($passed) { $beforeMapProfile = $expectedProfile }
+    }
+}
 if ($MapBranch -and $passed) {
     $distance = $StopBeforeRing - 1
     $expectedBranch = if ($MapBranch -eq 'Left') { 0 } else { 1 }
@@ -359,6 +384,7 @@ if ($CompleteDefeat) {
     $passed = $passed -and $defeatSettled
 }
 $summary = [pscustomobject]@{ Profile = $profile; NativePassed = $passed; ExitCode = $process.ExitCode;
+    BeforeMapProfile = $beforeMapProfile;
     CompleteDefeat = [bool]$CompleteDefeat;
     StoryProgressionOnly = [bool]$StoryProgressionOnly;
     NewRunFromProfile = [bool]$NewRunFromProfile; InputProfileUnchanged = $inputUnchanged;
