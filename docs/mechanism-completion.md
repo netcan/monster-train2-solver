@@ -383,6 +383,12 @@ Assembly Room 复制前排单位并把复制体下移，Echo Bloom 让底层腐�
 8 次出牌或技能、6 次结束回合、两次房间技能、三次冷却变动、16 条独立分支和候选检查通过。
 [`movement-and-daze.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-room-abilities/movement-and-daze.mt2f)
 
+同层替换路线依次装入四张原版房间牌。Spell Sanctum 将后续药剂实际费用从 1 降至 0，
+药剂登记下回合额外抽 3 张。Hellfurnace 在两次施放中各提高 3 层状态，Hall of Mirrors
+复制一次 Dreg。Engine Upgrade 装入后友方容量由 3 增至 4，接下来三个回合各额外获得 1 点余烬。
+12 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
+[`ordered-room-replacements.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-room-abilities/ordered-room-replacements.mt2f)
+
 原版法术和单位升级计数遗物在 2.3.1 中各使用实际取得的定义。整战记录 44 次修饰回调和
 26 次原版筛选，覆盖 0、1、2 个可见升级、重置、重复及逐件对照。
 23 次出牌、7 次结束回合及候选检查通过。
