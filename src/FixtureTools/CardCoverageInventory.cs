@@ -6,7 +6,7 @@ using MonsterTrain2Poju.Capture;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 
-internal static class CardCoverageInventory
+internal static partial class CardCoverageInventory
 {
     private const string GameModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
     private const string CatalogHash = "c9ea090d631034900d459f456e0027b8aa6863bb2f57e6de31fba6e6a4027723";
@@ -53,7 +53,8 @@ internal static class CardCoverageInventory
     private sealed record TurnWitness(string DataId, string Archive, int TurnIndex, int SourceCardId, string Effect, string Observation);
     private sealed record LegalityWitness(string DataId, string Archive, int QueryIndex, int CardId, int RoomIndex, string Error, bool CanDiscard);
 
-    internal static void RunCurrent(string workspace, bool check, bool damageAudit = false, bool openingWorklist = false)
+    internal static void RunCurrent(string workspace, bool check, bool damageAudit = false, bool openingWorklist = false,
+        bool legacyRecaptureWorklist = false)
     {
         workspace = Path.GetFullPath(workspace);
         string directory = Game231FixtureCatalog.DirectoryFor(workspace);
@@ -115,6 +116,11 @@ internal static class CardCoverageInventory
         if (openingWorklist)
         {
             WriteOpeningWorklist(eligible, indexed);
+            return;
+        }
+        if (legacyRecaptureWorklist)
+        {
+            WriteLegacyRecaptureWorklist(workspace, eligible, indexed);
             return;
         }
         if (check)
