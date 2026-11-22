@@ -12,6 +12,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalStatusMagnitudeWitness
     {
         internal const string Name = "original-status-magnitude-witness";
+        internal const string MoonName = "original-status-magnitude-moon-witness";
         private const string Module = "bf93f060-beda-46b1-b808-95ebf1e9a99d";
         private static readonly (string Id, string Key, string Status)[] Owners =
         {
@@ -23,7 +24,8 @@ namespace MonsterTrain2Poju.Probe
         private static readonly (string Id, string Key, int Cost)[] Cards =
         {
             ("d14a50f3-728d-43e1-87f0-ef1b013f6678", "TrainStewardShield", 1),
-            ("63eba1e1-3118-44a3-8906-c8bfbe559667", "LunaCovenChamp2", 0),
+            Moon ? ("2b7a187f-da0b-4c34-b8c5-b18755911b43", "SeleneAcolyte", 2)
+                : ("63eba1e1-3118-44a3-8906-c8bfbe559667", "LunaCovenChamp2", 0),
             ("2ed78ce2-13c3-4e82-963f-99c9ea12d0f0", "RageSerum", 0),
             ("2ff4ef73-00f4-4bd5-b868-607320188980", "Sharpen", 2),
             ("d81f1f43-f20e-4459-9fc4-19e5836a876f", "StarterHeal", 1)
@@ -35,7 +37,8 @@ namespace MonsterTrain2Poju.Probe
         private static PlayCardAction? action;
         private static BattleTurnState? exchange;
 
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or MoonName;
+        internal static bool Moon => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == MoonName;
         internal static bool Acquired => definitions != null;
         internal static bool ObservingExchange { get; private set; }
         internal static bool Completed { get; private set; }
@@ -79,8 +82,8 @@ namespace MonsterTrain2Poju.Probe
             var rooms = managers.GetRoomManager();
             var cards = managers.GetCardManager();
             if (definitions == null) throw new InvalidOperationException("Original magnitude relics were not acquired.");
-            if (managers.GetPlayerManager().GetHasMoonPhaseCardEffect())
-                throw new InvalidOperationException("Original magnitude witness requires the native neutral combat phase.");
+            if ((!Moon || hand != null) && managers.GetPlayerManager().GetHasMoonPhaseCardEffect() != Moon)
+                throw new InvalidOperationException("Original magnitude witness has unexpected native moon tracking.");
             // Card controls need floor zero. The exchange successor keeps native camera focus.
             if (exchange == null && rooms.GetSelectedRoom() != 0)
             {
@@ -107,11 +110,13 @@ namespace MonsterTrain2Poju.Probe
                 if (after.Spawn.Turn != 2) throw new InvalidOperationException("Original magnitude first exchange did not settle.");
                 using var document = NativeFixtureCapture.Capture(new
                 {
-                    Schema = 1, Boundary = "OriginalStatusMagnitudeWitness", GameVersion = UnityEngine.Application.version,
+                    Schema = 1, Boundary = Moon ? "OriginalMoonStatusMagnitudeWitness" : "OriginalStatusMagnitudeWitness",
+                    GameVersion = UnityEngine.Application.version,
                     GameModuleMvid = typeof(CardState).Module.ModuleVersionId, Plays, Exchange = new { Before = exchange, After = after },
                     Queries = RelicStatusMagnitudeProbe.Queries
                 });
-                using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "status-magnitude.mt2f"));
+                string filename = Moon ? "status-magnitude-moon.mt2f" : "status-magnitude.mt2f";
+                using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, filename));
                 document.Write(stream);
                 Completed = true;
                 log.LogInfo("ORIGINAL-STATUS-MAGNITUDE captured five unchanged original card plays and first native combat.");
@@ -142,8 +147,9 @@ namespace MonsterTrain2Poju.Probe
             CardState next = hand[deploying ? index : index - 2];
             var allies = new List<CharacterState>();
             room.AddCharactersToList(allies, Team.Type.Monsters);
+            string targetKey = index == 2 ? definitions[1].GetSpawnCharacterData().GetAssetKey() : "TrainStewardBig";
             CharacterState? target = deploying ? null : allies.Single(unit => unit.IsAlive &&
-                unit.GetSourceCharacterData().GetAssetKey() == (index == 2 ? "MonsterChampionLunaCoven2" : "TrainStewardBig"));
+                unit.GetSourceCharacterData().GetAssetKey() == targetKey);
             SpawnPoint point = target?.GetSpawnPoint() ?? room.GetFirstEmptyMonsterPoint();
             before = trace.CaptureDecision();
             action = new PlayCardAction(trace.CardId(next), 0, deploying ? allies.Count : -1,

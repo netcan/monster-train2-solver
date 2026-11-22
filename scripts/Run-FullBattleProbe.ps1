@@ -634,6 +634,7 @@ param(
     [switch] $OriginalStatusRelicBatchBurnout,
     [switch] $OriginalMagnitudeRelicBatch,
     [switch] $OriginalStatusMagnitudeWitness,
+    [switch] $OriginalStatusMagnitudeMoonWitness,
     [switch] $OriginalLifecycleRelicBatch,
     [switch] $OriginalDecayRelicBatch,
     [switch] $OriginalResourceRelicBatch,
@@ -1531,10 +1532,11 @@ if ($AllUnitsMultistrikeMutator) { $BattleRelicUpgrades = $true; $BranchCardMask
 if ($OriginalStingRelicBatch -or $OriginalDeployableRelic) { $BattleRelicUpgrades = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStatusRelicBatch -or $OriginalStatusRelicBatchBurnout) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMagnitudeRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
-if ($OriginalStatusMagnitudeWitness) {
-    $allowed = @('OriginalStatusMagnitudeWitness', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
+if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness) {
+    $allowed = @('OriginalStatusMagnitudeWitness', 'OriginalStatusMagnitudeMoonWitness', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
         'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
-    if (!$BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
+    if (!$BinaryCapture -or ($OriginalStatusMagnitudeWitness -and $OriginalStatusMagnitudeMoonWitness) -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
         throw 'Original status magnitude witness requires a separate first-battle binary capture.'
     }
     $PhysicalSpawnPoints = $true
@@ -2884,8 +2886,10 @@ if ($TitanSkinCombat) { $environment['MT2_PROBE_MODIFIERS'] = 'titan-skin-combat
 if ($OriginalStatusRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-relic-batch' }
 if ($OriginalStatusRelicBatchBurnout) { $environment['MT2_PROBE_MODIFIERS'] = 'original-status-relic-batch-burnout' }
 if ($OriginalMagnitudeRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-magnitude-relic-batch' }
-if ($OriginalStatusMagnitudeWitness) {
-    $environment['MT2_PROBE_MODIFIERS'] = 'original-status-magnitude-witness'
+if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness) {
+    $environment['MT2_PROBE_MODIFIERS'] = $(if ($OriginalStatusMagnitudeMoonWitness) {
+        'original-status-magnitude-moon-witness'
+    } else { 'original-status-magnitude-witness' })
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
@@ -3566,13 +3570,14 @@ if ($OriginalAffordableNonPlayable) {
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true; Trace=$capturePath } | ConvertTo-Json
     return
 }
-if ($OriginalStatusMagnitudeWitness) {
-    $capturePath = Join-Path $profile 'status-magnitude.mt2f'
+if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness) {
+    $filename = if ($OriginalStatusMagnitudeMoonWitness) { 'status-magnitude-moon.mt2f' } else { 'status-magnitude.mt2f' }
+    $capturePath = Join-Path $profile $filename
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original status magnitude witness captured' -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore) { throw "Original status magnitude witness failed; inspect $unityLog" }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
-        Trace=$capturePath } | ConvertTo-Json
+        MoonPhaseWitness=[bool]$OriginalStatusMagnitudeMoonWitness; Trace=$capturePath } | ConvertTo-Json
     return
 }
 if ($OriginalMollisShelterObservation) {
