@@ -271,6 +271,11 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 同层组合仍需实机对照。
 [`horde-growth-and-feeding.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/horde-growth-and-feeding.mt2f)
 
+另一组原版法术与房间牌覆盖 X 费回能、护甲、单位技能替换和战后治疗。原版 GainXEnergy 支付
+11 余烬并返还 22。13 次出牌、5 次结束回合、16 条独立分支和候选检查通过。Enchanted Chamber
+的伤害、治疗、Attuned 和跨层清理使用独立对照。
+[`x-ember-armor-and-abilities.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/x-ember-armor-and-abilities.mt2f)
+
 三件原版 Conduit 遗物分别覆盖每回合首次出生、装备和击杀。采样保留物理位置，并核对 14 次出生、
 11 次击杀和两次装备的逐件移除对照。21 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
 [`birth-equipment-and-slay.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-conduit-relics/birth-equipment-and-slay.mt2f)
