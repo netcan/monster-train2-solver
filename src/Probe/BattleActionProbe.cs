@@ -838,7 +838,8 @@ namespace MonsterTrain2Poju.Probe
                 nextTriggerId: source.NextTriggerId, ability: source.Ability, statusDictionary: source.StatusDictionary,
                 abilityRules: source.AbilityRules, hordeDefinition: source.HordeDefinition, isSpawning: source.IsSpawning,
                 sacrificeCardId: source.SacrificeCardId, deathState: source.DeathState,
-                bumpRules: OriginalReactiveUnitsScenario.Enabled ? null : source.BumpRules, lastFeederId: source.LastFeederId, moonPhaseMask: source.MoonPhaseMask, damageHistory: source.DamageHistory);
+                bumpRules: OriginalReactiveUnitsScenario.Enabled && !BattleSpawnPointProbe.Enabled ? null : source.BumpRules,
+                lastFeederId: source.LastFeederId, moonPhaseMask: source.MoonPhaseMask, damageHistory: source.DamageHistory);
         }
 
         internal static CardPlayRule BirthDefinition(CardData data, CharacterData monster, bool sourceAbsent = false)
