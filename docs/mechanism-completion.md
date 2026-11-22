@@ -521,6 +521,10 @@ Draff 出生，Morel Mistress 提供排除对照。7 次出牌、5 次结束回�
 5 次出牌、5 次结束回合、16 条独立分支及两类候选通过。
 [`molded.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/molded.mt2f)
 
+原版 Hallowed Halls 牺牲同层友军，并从预置耗尽堆重建六名升级单位。专项核对 Standby、
+站位和容量。5 次出牌、6 次结束回合及两类候选通过。
+[`hallowed-halls.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/hallowed-halls.mt2f)
+
 Pyreblooded 的后续实机对照在同层记录友军 10 层、两名敌军各 4 层 Pyregel。原版技能
 消耗 0 余烬并进入 3 层冷却，自身攻击由 5 提升至 23。8 次出牌或技能、5 次结束回合、
 16 条独立分支和候选检查通过。专项也复放零层、缺少楼层快照和跨楼层的对照。
