@@ -117,6 +117,14 @@ Bloodthirsty Blade、Eclipse Chamber 和 Zone of Silence。第 6 环战前档为
 54 与 34 步，均在模型中判负。底层策略终态两首领剩 808 和 1237 血，顶层策略剩 1076
 和 1100 血。原版证据覆盖战前路线和部署快照，两条终局属于离线推演。
 
+2026-11-23 将底层优先路线在原版战斗复放。第 5 回合把 Zone of Silence 装到中层，
+普通敌人受到沉默，同层首领保持原状态。下一次结束回合有敌人升层离开该房间，
+原版触发解除沉默并重置月相。模型补齐回调后，原版的 46 次出牌或技能与 8 次结束回合，
+包括完整状态、随机流和败局结算，均与修订后的冻结路线一致。结束回合候选也通过检查。
+额外出牌候选中，Eclipse Chamber 的月相刷新仍在专项验证。
+[`unlocked-covenant0-ring6-right-zone-defeat.mt2f`](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/unlocked-covenant0-ring6-right-zone-defeat.mt2f)
+
+
 左路另将原版商店的 `UnitUpgradeEndless` 放在第一优先级。第一次点击后商店停留，
 修正后只在同一报价仍可买且尚未扣钱时重试。原版确认 `AddEndless` 的牌组数量由
 0 增至 1，并建立了第 6 环战前档 `.probe-runs/campaign-ring6-20261122-131858-3114693d-before-ring6`。
