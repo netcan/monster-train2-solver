@@ -580,6 +580,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalThikDeckChangeScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalMollisCycleOfLifeScenario.Enabled)
                         OriginalMollisCycleOfLifeScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalMollisShelterObservation.Enabled)
+                        OriginalMollisShelterObservation.AcquireBeforeBattle(managers!);
                     if (fullBattle && OriginalAfterDrawSpawnScenario.Enabled && !OriginalAfterDrawSpawnScenario.Acquired)
                         OriginalAfterDrawSpawnScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalHoldoverGrantScenario.Enabled && !OriginalHoldoverGrantScenario.Acquired)
@@ -727,6 +729,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalThikDeckChangeScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalMollisCycleOfLifeScenario.Enabled)
                         OriginalMollisCycleOfLifeScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalMollisShelterObservation.Enabled)
+                        OriginalMollisShelterObservation.AcquireBeforeBattle(managers!);
                     if (fullBattle && OriginalAfterDrawSpawnScenario.Enabled && !OriginalAfterDrawSpawnScenario.Acquired)
                         OriginalAfterDrawSpawnScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalHoldoverGrantScenario.Enabled && !OriginalHoldoverGrantScenario.Acquired)
@@ -928,6 +932,12 @@ namespace MonsterTrain2Poju.Probe
                 }
                 if (!captured && combat.GetTurnCount() >= 5)
                     throw new InvalidOperationException("No matching original Titan Trial substitution was created by turn five.");
+            }
+            if (fullBattle && OriginalMollisShelterObservation.Enabled)
+            {
+                if (OriginalMollisShelterObservation.Tick(managers, log)) AdvanceTurn(combat!, record: false);
+                if (OriginalMollisShelterObservation.Completed) Finish(true, "Original Mollis Shelter casts captured.");
+                return;
             }
 #endif
             if (fullBattle && OriginalAffordableNonPlayableScenario.Enabled)
@@ -4316,13 +4326,13 @@ namespace MonsterTrain2Poju.Probe
         }
 
         private void AdvanceTurn(CombatManager combat, bool replayEndTurn = false,
-            IReadOnlyList<RelentlessDecision>? choices = null)
+            IReadOnlyList<RelentlessDecision>? choices = null, bool record = true)
         {
             if (fullBattle && TrueFinalBossLethalScenario.Prepare()) return;
             if (fullBattle && TrueFinalBossRelentlessScenario.Prepare()) return;
             if (fullBattle && TrueFinalBossDormantScenario.Prepare()) return;
             if (replayEndTurn) ReplayRelentlessChoices.Arm(combat.GetTurnCount(), choices);
-            if (fullBattle) FullBattleTrace.Active?.BeginEndTurn();
+            if (fullBattle && record) FullBattleTrace.Active?.BeginEndTurn();
             expectedTurn = combat.GetTurnCount() - initialTurn + 1;
             endTurn.Invoke(null, null);
             Enter(Stage.WaitingTurn, 90f);

@@ -715,6 +715,7 @@ param(
     [ValidateRange(1, 3)][int] $OriginalBeeziebubTier,
     [ValidateRange(1, 3)][int] $OriginalGoldieTier,
     [switch] $OriginalMollisCycleOfLife,
+    [switch] $OriginalMollisShelterObservation,
     [ValidateRange(1, 3)][int] $OriginalElleTier,
     [switch] $OriginalBurnoutDamageRelic,
     [switch] $OriginalHealDamageRelic,
@@ -1689,6 +1690,18 @@ if ($OriginalMollisCycleOfLife) {
     if ($PlayerAdvisor -or $Planner -or $Advisor -or $DotNetPlanner -or $BattleDistance -ne 0 -or
         $OriginalBeeziebubTier -or $OriginalGoldieTier -or $OriginalElleTier -or $OriginalJuiceUpgrades) {
         throw 'Original Mollis requires an isolated first battle with its own native Soul assignment.'
+    }
+    $PhysicalSpawnPoints = $true
+    $BranchCardMasks = $true
+    $SettleCardAnimations = $true
+    $SettleDeathDissolves = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($OriginalMollisShelterObservation) {
+    $allowed = @('OriginalMollisShelterObservation', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
+        'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    if (!$BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
+        throw 'Original Mollis Shelter requires a separate first-battle binary observation.'
     }
     $PhysicalSpawnPoints = $true
     $BranchCardMasks = $true
@@ -2965,6 +2978,11 @@ if ($OriginalMollisCycleOfLife) {
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
+if ($OriginalMollisShelterObservation) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-mollis-shelter-observation'
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
 if ($OriginalBeeziebubTier) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-beeziebub'
     $environment['MT2_PROBE_BEEZIEBUB_TIER'] = $OriginalBeeziebubTier.ToString()
@@ -3453,6 +3471,30 @@ if ($OriginalAffordableNonPlayable) {
         -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original affordable nonplayable component captured' -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore) { throw "Original affordable nonplayable capture failed; inspect $unityLog" }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true; Trace=$capturePath } | ConvertTo-Json
+    return
+}
+if ($OriginalMollisShelterObservation) {
+    $capturePath = Join-Path $profile 'mollis-shelter.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Mollis Shelter casts captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Original Mollis Shelter observation failed; inspect $unityLog" }
+    Add-Type -Path (Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $document = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
+    try {
+        $capture = $document.RootElement
+        $cases = @($capture.GetProperty('Cases').EnumerateArray())
+        if ($capture.GetProperty('Schema').GetInt32() -ne 1 -or
+            $capture.GetProperty('Boundary').GetString() -cne 'OriginalMollisShelterCasts' -or
+            $capture.GetProperty('GameVersion').GetString() -cne '2.3.1' -or
+            $capture.GetProperty('GameModuleMvid').GetString() -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+            $capture.GetProperty('Corruption').GetInt32() -ne 3 -or $cases.Count -ne 2 -or
+            $cases[0].GetProperty('WithMollis').GetBoolean() -or !$cases[1].GetProperty('WithMollis').GetBoolean() -or
+            !$capture.GetProperty('Definition').ContentEquals($capture.GetProperty('DefinitionAfter'))) {
+            throw 'Incomplete original Shelter control and Mollis T3 observations.'
+        }
+    } finally { $document.Dispose() }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        Cases=2; Trace=$capturePath } | ConvertTo-Json
     return
 }
 if ($OriginalChangedTempUpgradeRelics) {

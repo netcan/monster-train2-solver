@@ -65,16 +65,24 @@ namespace MonsterTrain2Poju.Probe
                 effects[1].GetParamStatusEffects().Single() is not { statusId: "spikes", count: 8 })
                 throw new InvalidOperationException("The original Mollis or Cycle of Life definition differs.");
             var originalCard = save.AddCardToDeck(cycleData, applyExistingRelicModifiers: false, showAnimation: false, notifyDeckCount: false);
-            if (mollisUpgrade.GetFilters().Count != 2 || !mollisUpgrade.GetFilters().All(mask => mask.FilterCard(originalCard, managers.GetRelicManager())))
-                throw new InvalidOperationException("Cycle of Life failed Mollis's original eligibility filters.");
-            save.AddSelectedSoul(mollis);
-            var soul = save.GetSelectedSouls().Single(owner => owner.GetRelicDataID() == SoulId);
-            SoulHelper.AttachSoulEffectToCard(soul, originalCard, save);
-            var installed = originalCard.GetCardStateModifiers().GetCardUpgrades().Single(item => item.GetCardUpgradeDataId() == MollisUpgradeId);
-            InstalledUpgrade = CardUpgradeLifecycleProbe.Definition(installed);
+            InstalledUpgrade = AttachSoul(managers, mollis, originalCard);
             Definition = Describe();
             cycle = originalCard;
             log.LogInfo("ORIGINAL-MOLLIS-CYCLE-ACQUIRED traitsModified=[" + string.Join(",", InstalledUpgrade.TraitsModified) + "]");
+        }
+
+        internal static CardLifecycleUpgrade AttachSoul(AllGameManagers managers, SoulData definition, CardState card)
+        {
+            SaveManager save = managers.GetSaveManager();
+            CardUpgradeData upgrade = definition.GetSoulCardUpgrade();
+            var filters = upgrade.GetFilters();
+            if (filters.Count != 2 || !filters.All(mask => mask.FilterCard(card, managers.GetRelicManager())))
+                throw new InvalidOperationException("The card failed Mollis's original eligibility filters.");
+            save.AddSelectedSoul(definition);
+            var soul = save.GetSelectedSouls().Single(owner => owner.GetRelicDataID() == definition.GetID());
+            SoulHelper.AttachSoulEffectToCard(soul, card, save);
+            return CardUpgradeLifecycleProbe.Definition(card.GetCardStateModifiers().GetCardUpgrades()
+                .Single(item => item.GetCardUpgradeDataId() == upgrade.GetID()));
         }
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
