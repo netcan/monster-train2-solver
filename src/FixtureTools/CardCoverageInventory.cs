@@ -116,6 +116,7 @@ internal static class CardCoverageInventory
         {
             CheckBirthLifecycleEvidence(byId);
             CheckStaticTriggerEvidence(byId);
+            CheckFallbackBirthEvidence(byId);
         }
 
         var report = new StringBuilder();
@@ -197,6 +198,32 @@ internal static class CardCoverageInventory
                 new { NoCountModifiersAllowed = admission, FireCount = count } } } });
             Require(!Equivalent(catalog.RootElement, observed.RootElement, ruleRoot: true, cardRule: true, currentBuild: true),
                 "Changed trigger count or admission cannot match a static trigger definition.");
+        }
+    }
+
+    private static void CheckFallbackBirthEvidence(IReadOnlyDictionary<string, Card> byId)
+    {
+        const string archive = "mechanics/player-advisor-rolling/migrated-ring8-judges-scales-alternate-frozen.mt2f";
+        (string Id, int Action)[] witnesses =
+        [
+            ("0c8ff108-478c-4c1c-9c49-f6a297b4e0d8", 7), // EagerConscript
+            ("c052c567-1e3c-4f36-a6cd-89b0648b9475", 14), // GreenRecruit
+        ];
+        foreach (var witness in witnesses)
+        {
+            Card card = byId[witness.Id];
+            Require(card.Evidence.TryGetValue(archive, out Plays? plays) && plays.Direct.Contains(witness.Action),
+                $"Fallback birth rule does not match the original {card.Name} definition at action {witness.Action}.");
+        }
+
+        using var catalog = NativeFixtureCapture.Capture(new { AssetKey = "MonsterFunguy", DeathState = new {
+            HasFinishedDying = false, IsBeingRemoved = false } });
+        foreach (var (despawned, destroyed) in new[] { (true, false), (false, true) })
+        {
+            using var observed = NativeFixtureCapture.Capture(new { AssetKey = "MonsterFunguy", DeathState = new {
+                HasFinishedDying = false, IsBeingRemoved = false, IsDespawned = despawned, IsDestroyed = destroyed } });
+            Require(!Equivalent(catalog.RootElement, observed.RootElement, cardRule: true, currentBuild: true,
+                path: "$.Effects[0].SpawnFallbackUnit"), "A removed unit cannot match a live fallback birth definition.");
         }
     }
 
@@ -982,7 +1009,7 @@ internal static class CardCoverageInventory
     // Other differences require a specific capture default or a verified projection.
     private static bool Equivalent(FixtureValue left, FixtureValue right, bool ruleRoot = false,
         bool legacyMask = false, bool cardRule = false, string path = "$", bool currentBuild = false,
-        bool condemnedPunishProjection = false)
+        bool condemnedPunishProjection = false, string? fallbackTemplatePath = null)
     {
         if (left.ValueKind != right.ValueKind) return false;
         if (left.ValueKind == FixtureKind.Object)
@@ -993,6 +1020,12 @@ internal static class CardCoverageInventory
                 !(ruleRoot && property.Name is "ForgeEligible" or "UnplayedNegativeOrder");
             var a = left.EnumerateObject().Where(Include).ToDictionary(property => property.Name, property => property.Value, StringComparer.Ordinal);
             var b = right.EnumerateObject().Where(Include).ToDictionary(property => property.Name, property => property.Value, StringComparer.Ordinal);
+            // Direct and OnDeath SpawnOrStatus effects project the same native Funguy template.
+            if (currentBuild && cardRule && (path is "$.Effects[0].SpawnFallbackUnit" or
+                "$.SpawnUnit.Triggers[0].Effects[0].Action.SpawnFallbackUnit") &&
+                Text(left, "AssetKey") == "MonsterFunguy" && Text(right, "AssetKey") == "MonsterFunguy")
+                fallbackTemplatePath = path;
+            string birthTemplatePath = fallbackTemplatePath ?? "$.SpawnUnit";
             if (currentBuild && cardRule && ruleRoot && path == "$")
                 condemnedPunishProjection = MatchesCondemnedPunishProjection(left, right);
             if (condemnedPunishProjection && path == "$.SpawnUnit") b.Remove("DamageHistory");
@@ -1022,7 +1055,7 @@ internal static class CardCoverageInventory
                     !b.ContainsKey("StatusAttackModifiers"))
                     a.Remove("StatusAttackModifiers");
             }
-            if (currentBuild && path == "$.SpawnUnit.AbilityRules")
+            if (currentBuild && path == birthTemplatePath + ".AbilityRules")
             {
                 // The pinned native module supplies this global capability via
                 // CharacterState, independently of a card's unit definition.
@@ -1030,7 +1063,7 @@ internal static class CardCoverageInventory
                 if (!a.ContainsKey(key) && b.TryGetValue(key, out FixtureValue captured) && captured.ValueKind == FixtureKind.True)
                     b.Remove(key);
             }
-            if (currentBuild && path == "$.SpawnUnit")
+            if (currentBuild && path == birthTemplatePath)
             {
                 if (!a.ContainsKey("BumpRules") && b.TryGetValue("BumpRules", out FixtureValue physicalDefaults) &&
                     IsOrdinaryBumpDefault(physicalDefaults)) b.Remove("BumpRules");
@@ -1038,7 +1071,7 @@ internal static class CardCoverageInventory
                 if (!a.ContainsKey("MoonPhaseMask") && b.TryGetValue("MoonPhaseMask", out FixtureValue moonPhase) &&
                     moonPhase.ValueKind == FixtureKind.Number && moonPhase.GetInt32() == 4) b.Remove("MoonPhaseMask");
             }
-            if (currentBuild && cardRule && path == "$.SpawnUnit.DeathState" &&
+            if (currentBuild && cardRule && path == birthTemplatePath + ".DeathState" &&
                 !a.ContainsKey("IsDespawned") && !a.ContainsKey("IsDestroyed") &&
                 a.TryGetValue("HasFinishedDying", out var catalogDying) && catalogDying.ValueKind == FixtureKind.False &&
                 a.TryGetValue("IsBeingRemoved", out var catalogRemoving) && catalogRemoving.ValueKind == FixtureKind.False &&
@@ -1078,7 +1111,8 @@ internal static class CardCoverageInventory
             }
             return a.Count == b.Count && a.All(pair => b.TryGetValue(pair.Key, out FixtureValue other) &&
                 Equivalent(pair.Value, other, legacyMask: legacyMask, cardRule: cardRule, path: path + "." + pair.Key,
-                    currentBuild: currentBuild, condemnedPunishProjection: condemnedPunishProjection));
+                    currentBuild: currentBuild, condemnedPunishProjection: condemnedPunishProjection,
+                    fallbackTemplatePath: fallbackTemplatePath));
         }
         if (left.ValueKind == FixtureKind.Array)
         {
@@ -1086,7 +1120,8 @@ internal static class CardCoverageInventory
             FixtureValue[] a = left.EnumerateArray().ToArray(), b = right.EnumerateArray().ToArray();
             for (int index = 0; index < a.Length; index++)
                 if (!Equivalent(a[index], b[index], legacyMask: legacyMask, cardRule: cardRule, path: path + "[" + index + "]",
-                    currentBuild: currentBuild, condemnedPunishProjection: condemnedPunishProjection)) return false;
+                    currentBuild: currentBuild, condemnedPunishProjection: condemnedPunishProjection,
+                    fallbackTemplatePath: fallbackTemplatePath)) return false;
             return true;
         }
         if (left.ValueKind == FixtureKind.Number) return left.GetDouble() == right.GetDouble();
