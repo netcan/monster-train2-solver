@@ -167,6 +167,11 @@ Entombed Explosive、Overworked Assistant、Wickless Tycoon 和 Spikedriver Spid
 192/601 张已匹配收藏卡。
 [`rally-and-ember.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-units/rally-and-ember.mt2f)
 
+从已保存的原版首战入口恢复，八张生成型法术在同一场受控原版胜局结算。探针在部署前
+放置测试锚点与余烬控制，给待测实例临时加 Freeze，保留原版卡牌定义。整场 12 次出牌、
+5 次结束回合、16 条独立分支与候选检查通过。累计 198 场整战和 200/601 张已匹配收藏卡。
+[`generated-battle-cards.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/generated-battle-cards.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
