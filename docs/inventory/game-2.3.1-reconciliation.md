@@ -10,15 +10,15 @@
 | --- | ---: | ---: | ---: |
 | known-gap | 1 | 1 | 1 |
 | inspect-no-code-link | 56 | 56 | 56 |
-| inspect-inherited-code | 10 | 10 | 10 |
-| inspect-projection-normalization | 59 | 59 | 59 |
-| inspect-guard-links | 48 | 48 | 48 |
-| review-existing-code | 237 | 237 | 237 |
+| inspect-inherited-code | 8 | 8 | 8 |
+| inspect-projection-normalization | 56 | 56 | 56 |
+| inspect-guard-links | 46 | 46 | 46 |
+| review-existing-code | 240 | 240 | 240 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 286 | 0 | 0 |
-| scoped-review-recorded | 30 | 30 | 30 |
+| scoped-review-recorded | 34 | 34 | 34 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 33 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 37 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -30,8 +30,8 @@
 
 | 原生类 | 结论 | 边界 |
 | --- | --- | --- |
-| CardEffectAddStatusEffectNextMonster | known-gap | Native Apply queues AddSpawningStatusEffect. CreateMonsterState applies and clears it before authored starting statuses, and EndTurn clears pending values. The five catalog references are requiredCardEffects filters. Of 37008 installed managed method bodies, the only external type reference registers a tooltip getter. Serialized effect type names can instantiate the class dynamically. An original definition or observed call is still needed to establish an execution entry; no pending-spawn model adapter is verified for this effect. |
-| CardTraitJuice4 | known-gap | Shared 2/3/4 multiplier has five original upgrades, 180 native callback pairs and nine original casts. Source OnCardBeingUpgraded and next-draw dispatch have 540 relationship cases with repeats and 300 ordered pairs; six two-card draws verify deep copies, shared originals and short circuit. Original SoulHelper attachment of Mollis T3 to Cycle of Life records its sole modified trait and preserves +10 unit health before +32 Spikes and +12 OnCast Armor. The native win passed the complete chain, 16 branches, candidate frontiers and serial/parallel search. Trait parameter cast effects and other mixed ordered scaling remain guarded. |
+| CardEffectAddStatusEffectNextMonster | known-gap | Native Apply queues AddSpawningStatusEffect. CreateMonsterState applies and clears it before authored starting statuses, and EndTurn clears pending values. The five catalog references are requiredCardEffects filters. The pinned 2.3.1 owner query scanned effect lists on 724 cards, 406 characters, 920 upgrades and 676 relic collection entries. It found zero authored effect entries in this scope. The equipment grant control found one original OnSpawn upgrade entry. Dynamic construction and runtime execution remain unverified. |
+| CardTraitJuice4 | known-gap | Shared 2/3/4 multiplier has five original upgrades, 180 native callback pairs and nine original casts. Source OnCardBeingUpgraded and next-draw dispatch have 540 relationship cases with repeats and 300 ordered pairs; six two-card draws verify deep copies, shared originals and short circuit. Original SoulHelper attachment of Mollis T3 to Cycle of Life records its sole modified trait and preserves +10 unit health before +32 Spikes and +12 OnCast Armor. The native win passed the complete chain, 16 branches, candidate frontiers and serial/parallel search. Two original paid Shelter casts at three Corruption add 6 and 60 Armor, with captured corruption scaling preceding Juice4 and the OnCast Armor addition. Both full successors and RNG match. The five original Juice upgrade payloads have no trait parameter cast effect; unsupported ordered shapes remain guarded. |
 | CardEffectDamage | shared-path | Native Damage normalizes to the shared Damage action; current PunishedSpike battle exercises repeated damage, armor, target death and full successors. Existing target/scaling/callback guards remain; not an audit of every contextual branch. |
 | CardEffectDamageByPercentRemainingHealth | shared-path | Original Beeziebub OnCast targets the Pyre, floors ten percent of actual remaining HP, and supplies no card damage attribution or trait scaling. Three isolated wins prove HP 80 to 72 and exact search successors. Randomized ranges, round-up and non-Pyre targets remain guarded. |
 | CardEffectDamageFloorByFloor | shared-path | Original current Heavenfall installs its native full-moon 80 enemy floor sweep and executes through the shared OnCast and floor-damage pipeline. The current win verifies both moon phases, full successors, sixteen branches, recorded frontiers and serial/parallel plan replay. The older native Moon archive still passes with its tower damage payload. This battle's positive damage targets occupy one floor. |
@@ -59,10 +59,14 @@
 | RelicEffectModifyMagicPowerPerGold | shared-path | Original Echoes mutator observes exact permanent-deck membership and effect-owned card identity. Native 100 gold yields +1 damage/heal. Original Smelted Treasure pays 50 during the turn while +1 stays installed. Next ordered BeforeDraw refresh yields +0. Same-definition generated card excluded. Full native win, exact successors, sixteen immutable branches, recorded frontiers and serial/parallel search agree. Mixed mutators and other permanent-deck replacement paths remain outside this evidence. |
 | RelicEffectModifyRandomRoomCapacity | input-only | Original mutator is captured after native deployment draw settles the turn-zero capacity callback. A native win proves one selected floor 5 to 2, one Battle RNG advance, later false Tests, exact capacity-based rejection and alternate-floor placement. Complete successors, 16 branches, frontiers and serial/parallel plans agree. The solver consumes settled room capacities, and pending opening mutations are rejected. Campaign carryover and other random-capacity owners remain separate. |
 | RelicEffectModifyRandomRoomCapacityAfterBattle | input-only | Capture settled native capacities after the opening callback. Original Bogwurm is naturally selected and the unchanged catalog Life artifact is attached in an isolated control. Capacity bonuses +2/0/+1 and the Life static -1 enter actual deployment legality, with an oversized legal summon and unchanged-floor denial. Original wins, exact successors, 16 branches, frontiers and serial/parallel plans pass. Campaign reward mutation remains native. |
+| RelicEffectModifyStatusMagnitude | shared-path | Four unchanged collectible owners for Rage, Spikes, Regen and Mageblade each returned a positive native combat query. Five original plays and the first exchange matched complete successors and RNG. Removing each owner from its query input removed only its contribution. Separate neutral and active moon native witnesses match five plays and the first ordinary exchange each. The active case preserves Selene phase masks and Sweep cleanup. The active deployment EndTurn and raw ascent also match. The raw combat snapshot differs only by the phase enum and its room mirrors. Other status modifier payloads remain open. |
 | RelicEffectMultiplyAttackLate | shared-path | Shared parameter-driven late multiplier preserves manager order, champion filtering, captured native Pyre exemption and raw snapshots. Pinned one original owner; 640 native queries, 80 products, 640 actual attacks plus 7728 percentage query/birth pairs with nonneutral late. Unchanged half-attack plus double-enemy-health native win; full successors, 16 branches/frontiers and serial/parallel root search. Actual status callback interactions, all other owner combinations and mixed Covenants are not fully certified. |
 | RelicEffectScaleStatusApplicationsOnSpawn | shared-path | Shared initialized birth rule preserves actual enemy-only/inverted required-mutator gate, original-definition positive starting additions, ordered exact-type runtime trigger scaling and immutable source/target metadata; enchant capture reads runtime parameters. Four original sources/54 configurations/2592 native callbacks in detached objects; starting AddStatus requests intercepted, not applied there. Unchanged original endless RunDistance4 owner acquired before Pyre setup, authored enemy status/trigger and defender controls; native full win/four zero, 16 branches/frontiers/serial-parallel root search. Other source companions, complex status callback competition, mixed Covenants, scaled enchant gameplay lifecycle and complete hover query remain outside certification. |
 | RelicEffectShowtime | shared-path | Three unchanged original souls apply their hidden floor attachment once before deployment. Settled capacities 5 to 8/8/10 admit a size-six pair and route the original front-only upgrade after room combat. Two/two/four positive repetitions, rear unit unaffected, and full-capacity no-op agree across full native wins, exact successors, 16 branches, frontiers and serial/parallel plans. Native RNG selects the opening room. Other floor seeds and mixed room attachments remain outside this evidence. |
 | RelicEffectSpawnMonsterOnTurnStart | shared-path | Both original mutators use the ordered after-draw callback. The current native wins record five Follower births and fifteen Morsel births, including the settled deployment callbacks, physical groups and Battle RNG. Exact successors, sixteen branches, all recorded frontiers and equal serial and parallel search and plan replay pass. Full or disabled floor retries and mixed birth callbacks still need native stress evidence. |
+| RoomStateAddEffectPostCombatModifier | shared-path | The original Showtime T3 room records four front-only attack and maximum-health upgrades on floor one, with rear controls. The showtime/tier3.mt2f archive passes the complete successor and stage checks with --showtime-only. Other post-combat payloads have individual calibration. |
+| RoomStateAddEffectPreCombatModifier | shared-path | Unchanged Echoes Inferno installs the original Inferno Room on all three battle floors. The installed-inferno-rooms/battle.mt2f archive records an exact 50-damage enemy hit on floor zero and passes --installed-inferno-rooms-only. Other target and owner payloads require their own evidence. |
+| RoomStateSpawnUnitOnUnitSpawnModifier | shared-path | The original Hall of Mirrors copies a paid Twisted Assistant with one unmodified graft. The hall-grafted-birth/predicted-birth.mt2f archive passes --native-hall-grafted-birth-only for ordered callbacks, distinct graft ownership, physical slots, Battle and Draw RNG, and EndTurn at the observed root. Triggered or generated births have separate call sites. |
 ## 第一批需核对的代码入口
 
 | 原生类 | 队列 | 声明引用 | 全部引用 | 模型／探针示例 |
@@ -87,10 +91,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `659ac4d6f1e2bf75c768c5971094efe11f518a4b8bbca85ad21212b932a60df9`。
-- Model: PDB 校验过的项目源码集合 `c42279a3995d84272c03b5d8c7dc56349495787b56dc947a6c7bce9a66b2cabe`。
-- Probe: PDB 校验过的项目源码集合 `dcf14a8e338d9f3d030ff0115dfb75a98b6a85b7b91e706f840ce66090f8d710`。
-- ModelChecks: PDB 校验过的项目源码集合 `afe6afa42529a6687ed68755b884313d59c12dfb45ab4fd5418be96290e4b882`。
+- 人工审查索引 SHA-256: `fea821cd661fee50a763966c96c7e24f49029b5d3cbc7d943c3d691d195e78eb`。
+- Model: PDB 校验过的项目源码集合 `ee11de51bf2234c61a35a3b42fb4d907a24e1838f03ec0ab2111ec6bc0105392`。
+- Probe: PDB 校验过的项目源码集合 `0efce837ae7cd3513f2241764eab72faad72d858d410b8f6e10a1bd3dee829ef`。
+- ModelChecks: PDB 校验过的项目源码集合 `7f1b9b204dce52401baa8f71a6f0abfae0e35dbaeed85ee6b397721fe52693a7`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
