@@ -44,7 +44,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "bump";
         private static bool DamageRelicScenario => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_FLOOR_TRANSITION_DAMAGE") == "1";
         private static bool PyregelRelicScenario => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_PYREGEL_ON_ASCEND") == "1";
-        private static bool RelicScenario => DamageRelicScenario || PyregelRelicScenario;
+        internal static bool RelicScenario => DamageRelicScenario || PyregelRelicScenario;
         internal static bool DamageRelicAcquired { get; private set; }
         internal static bool PyregelRelicAcquired { get; private set; }
         internal static bool RelicAcquired => DamageRelicAcquired || PyregelRelicAcquired;

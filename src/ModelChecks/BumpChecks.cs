@@ -152,7 +152,7 @@ internal static class BumpChecks
             equipmentCards: original.EquipmentCards, nextTriggerId: original.NextTriggerId, ability: original.Ability,
             statusDictionary: original.StatusDictionary, abilityRules: original.AbilityRules, hordeDefinition: original.HordeDefinition,
             isSpawning: original.IsSpawning, sacrificeCardId: original.SacrificeCardId, deathState: original.DeathState,
-            bumpRules: new(false, true, false));
+            bumpRules: new(false, true, false), moonPhaseMask: original.MoonPhaseMask);
         RoomCombatState[] rooms = source.Rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment,
             room.Units.Select(unit => unit.Id == id ? companion : unit).ToArray(), room.ExternalInteractions, source.Context, room.Preview)).ToArray();
         EnemyMovement[] movement = source.Movement.Select(rule => rule.UnitId == id
@@ -177,7 +177,7 @@ internal static class BumpChecks
             equipmentCards: original.EquipmentCards, nextTriggerId: original.NextTriggerId, ability: original.Ability,
             statusDictionary: original.StatusDictionary, abilityRules: original.AbilityRules, hordeDefinition: original.HordeDefinition,
             isSpawning: original.IsSpawning, sacrificeCardId: original.SacrificeCardId, deathState: original.DeathState,
-            bumpRules: new UnitBumpRules(false, false, true));
+            bumpRules: new UnitBumpRules(false, false, true), moonPhaseMask: original.MoonPhaseMask);
         BattleSpawnPoints beforePoints = source.Context!.SpawnPoints!;
         SpawnPointReference oldPoint = beforePoints.Units.Single(unit => unit.UnitId == id).Current!;
         int oldRoom = oldPoint.RoomIndex;
