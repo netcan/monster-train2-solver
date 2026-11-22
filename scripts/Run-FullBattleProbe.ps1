@@ -1151,9 +1151,8 @@ if ($ContinueToNextRing) {
         'PhysicalSpawnPoints', 'BranchCardMasks', 'SettleDeathDissolves', 'SettleCardAnimations', 'BinaryCapture',
         'GameSpeed', 'ShowWindow', 'TimeoutSeconds', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction')
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count -or
-        -not ($InputProfile -and $PlayerAdvisor -and $RollingAdvice -and $BinaryCapture) -or
-        ($RollingInput -and -not $ResumeRollingAdvice)) {
-        throw 'ContinueToNextRing requires live PlayerAdvisor and RollingAdvice, binary capture and a native InputProfile without scenario controls.'
+        -not ($InputProfile -and $PlayerAdvisor -and $RollingAdvice -and $BinaryCapture)) {
+        throw 'ContinueToNextRing requires PlayerAdvisor and RollingAdvice, binary capture and a native InputProfile without scenario controls.'
     }
 }
 if ($ObserveRedCrownEquipment -and -not $UnsupportedBranchInput) { throw 'ObserveRedCrownEquipment requires an original branch request.' }
@@ -3839,11 +3838,11 @@ $nextInputProfile = $null
 if ($ContinueToNextRing) {
     if ((Get-FileHash -LiteralPath $checkpointSave -Algorithm SHA256).Hash -cne $inputSaveHash -or
         (Get-FileHash -LiteralPath $inputMeta -Algorithm SHA256).Hash -cne $inputMetaHash) {
-        throw 'The original campaign input changed during the live advisor run.'
+        throw 'The original campaign input changed during the advisor run.'
     }
     if ($null -eq $trace.NativeWon -or -not $terminalSettled -or $trace.CaptureFailures -ne 0 -or
         $trace.Pending -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0) {
-        throw "The live advisor battle must settle with all four capture counters zero before campaign continuation. Inspect $unityLog"
+        throw "The advisor battle must settle with all four capture counters zero before campaign continuation. Inspect $unityLog"
     }
     $nextRing = $BattleDistance + 2
     $expectedProfile = "$profile-before-ring$nextRing"
