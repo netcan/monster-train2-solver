@@ -509,6 +509,10 @@ Bog Chrysalis 和 Bogdeep Cocoon 的同场对照实测孵出两只 Bog Fly。顾
 16 条独立分支及两类候选通过。跨层飞行用这场的实机状态离线复放，原版实放由已有飞行专项验证。
 [`bog-hatching-and-flight.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/bog-hatching-and-flight.mt2f)
 
+原版 First of Kin 和 Sacrificial Resurrection 的同场对照核对两张手牌被消耗、单位增攻及
+Draff 出生，Morel Mistress 提供排除对照。7 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
+[`exhausted-first-of-kin.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/exhausted-first-of-kin.mt2f)
+
 Pyreblooded 的后续实机对照在同层记录友军 10 层、两名敌军各 4 层 Pyregel。原版技能
 消耗 0 余烬并进入 3 层冷却，自身攻击由 5 提升至 23。8 次出牌或技能、5 次结束回合、
 16 条独立分支和候选检查通过。专项也复放零层、缺少楼层快照和跨楼层的对照。
