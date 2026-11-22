@@ -338,6 +338,10 @@ Ember Forge 与 Wildwood Custodian 使用原版单位定义完成首战对照。
 15 次出牌、5 次结束回合、完整状态与随机流、16 条独立分支和候选检查通过。
 [`resources-and-friendly-fire.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/resources-and-friendly-fire.mt2f)
 
+Shadesplitter 单独保留底层低生命敌军，确认原版击杀后从加权池生成一张 Morsel 并推进战斗随机流。
+5 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
+[`shadesplitter-morsel.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/shadesplitter-morsel.mt2f)
+
 腐化遗物批次观察到原版为楼层敌军增加两层 Corrupt Poison。部署结束后的两张零费测试牌
 单独核对，其余状态和随机流逐项比较。19 次出牌、6 次结束回合及候选检查分段通过。
 [`battle.mt2f`](../tests/compatibility/game-2.3.1/mechanics/corruption-relic-trigger/battle.mt2f)
