@@ -58,7 +58,8 @@ namespace MonsterTrain2Poju.Probe
                 if (upgraded)
                 {
                     CardUpgradeData original = all.GetAllCardUpgradeData().OrderBy(item => item.GetID(), StringComparer.Ordinal)
-                        .First(item => item.GetUpgradeIcon() != null && !item.GetHideUpgradeIconOnCard() && item.GetBonusDamage() > 0 &&
+                        .First(item => item.GetUpgradeIcon() != null && !item.GetHideUpgradeIconOnCard() && !item.GetIsRegionRunUpgrade() &&
+                            item.GetBonusDamage() > 0 &&
                             item.GetTraitDataUpgrades().Count == 0 && item.GetRemoveTraitUpgrades().Count == 0 &&
                             item.GetFilters().All(filter => filter.FilterCard(card, relics)));
                     var upgrade = new CardUpgradeState();
@@ -79,8 +80,20 @@ namespace MonsterTrain2Poju.Probe
                 foreach (var (owner, effect, returned) in expected)
                 {
                     var dispatch = record.Dispatches.Single(item => record.Relics[item.RelicIndex].DataId == OwnerIds[owner] && item.EffectIndex == effect);
-                    if (dispatch.Returned != returned || owner == 1 && dispatch.UpgradeAdded != returned)
+                    if (dispatch.Returned != returned)
                         throw new InvalidOperationException("Unexpected native modifier callback for " + name + "/" + Owners[owner].Key);
+                    if (owner == 1)
+                    {
+                        // An upgraded Monster still returns true from ApplyCardStateModifiers.
+                        var discounts = record.Actual.Temporary.Upgrades.Where(item => item.DataId == NoUpgrade).ToArray();
+                        bool validDiscount = upgraded ? discounts.Length == 0 :
+                            discounts is [{ Unique: true, Stats: { Cost: -1, XCost: 1 }, MaskMetadata: { HasIcon: false } }];
+                        bool originalSlot = record.Before.Permanent.Upgrades.Any(item => item.DataId == upgradeId &&
+                            item.MaskMetadata is { HasIcon: true, HideIcon: false, RegionRun: false });
+                        if (!validDiscount || dispatch.UpgradeAdded != !upgraded || originalSlot != upgraded ||
+                            record.Before.Temporary.Upgrades.Any(item => item.DataId == NoUpgrade))
+                            throw new InvalidOperationException("Unexpected native no-upgrade discount for " + name + " (upgraded=" + upgraded + ").");
+                    }
                 }
                 cases.Add(new { AssetKey = name, OriginalUpgradeId = upgradeId, Witness = record });
             }
@@ -88,7 +101,7 @@ namespace MonsterTrain2Poju.Probe
             Check("SelfPurgeBlight", "21038774-c0a4-413c-ab7e-27e458228e5f", false, (0, 0, true), (0, 1, false));
             Check("ScourgeT1", "62cc5532-5fa0-4e66-9fec-85be573af359", false, (0, 0, false), (0, 1, true));
             Check("TrainStewardShield", "d14a50f3-728d-43e1-87f0-ef1b013f6678", false, (1, 0, true), (5, 0, true), (5, 1, true));
-            Check("TrainStewardShield", "d14a50f3-728d-43e1-87f0-ef1b013f6678", true, (1, 0, false), (4, 0, true), (4, 1, true));
+            Check("TrainStewardShield", "d14a50f3-728d-43e1-87f0-ef1b013f6678", true, (1, 0, true), (4, 0, true), (4, 1, true));
             Check("RoyalWhelp", "198fb647-d5fc-4fb4-912c-cb8e64789412", false, (2, 0, true), (2, 1, false));
             Check("GreedDragon", "0060b286-4716-49e0-9714-3fd7811b9f72", false, (2, 0, false), (2, 1, true));
             Check("StarterTorch", "f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b", true, (3, 0, true));
