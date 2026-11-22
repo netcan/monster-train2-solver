@@ -39,9 +39,13 @@ namespace MonsterTrain2Poju.Model
             CardCycleState cards = source.Cards;
             CombatContext context = source.WithCards(new CardCycleState(cards.Hand, cards.Draw, cards.Discard, draw.State,
                 cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw, cards.NextDrawUpgrades, cards.NextUpgradeReferenceId, cards.DeckDrawDisabledThisTurn));
-            return CardGenerationModel.Apply(context, new CardGenerationRule("HandPile", 1, new[] { creation },
+            CardGenerationResult copy = CardGenerationModel.Apply(context, new CardGenerationRule("HandPile", 1, new[] { creation },
                 copyModifiers: true, upgrade: effect.Upgrade, deterministicPoolSelection: true, requireCopyableSource: true,
                 permanent: false, optionalUpgradeFilters: effect.UpgradeFilters), chosen.InstanceId);
+            if (!copy.Supported || copy.AddedCards.Count == 0) return copy;
+            CombatContext refreshed = CardMoonUpgradeModel.RefreshHand(copy.Context!, out error,
+                copy.AddedCards.Select(card => card.InstanceId).ToArray());
+            return error == null ? new(refreshed, copy.AddedCards) : new(null, Array.Empty<CardToken>(), error);
         }
     }
 }
