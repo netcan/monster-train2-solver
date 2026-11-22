@@ -37,7 +37,7 @@ namespace MonsterTrain2Poju.Model
             bool handSpace = context.Cards.Hand.Count < context.MaxHandSize;
             if (!handSpace && !rule.OverflowToDraw) return new(source);
             if (target.EquipmentCards == null || target.EquipmentCards.Count > 0 || target.Ability?.HasAbility == true ||
-                context.SpawnPoints != null || context.Enchantments?.EnchanterIds.Count > 0 || target.Status("horde")?.Stacks > 0)
+                context.Enchantments?.EnchanterIds.Count > 0 || target.Status("horde")?.Stacks > 0)
                 return Fail("Recall with equipment, ability cleanup, physical points, enchantments or Horde requires native calibration.");
             if (context.Relics?.Any(relic => relic.EffectTypes.Any(effect => effect.Contains("PostDiscard", StringComparison.Ordinal) ||
                 effect.Contains("MonsterCardReturned", StringComparison.Ordinal) ||
@@ -45,6 +45,21 @@ namespace MonsterTrain2Poju.Model
                 return Fail("Recall relic return/discard callbacks require native calibration.");
             CardInstanceState? card = context.FindCard(token.InstanceId);
             if (card == null || target.DeathState == null) return Fail("Recall requires complete spawner and unit lifecycle state.");
+            BattleSpawnPoints? points = context.SpawnPoints;
+            if (points != null)
+            {
+                SpawnPointReference? point = points.Units.FirstOrDefault(unit => unit.UnitId == targetId)?.Current;
+                if (!handSpace || target.Team != CombatTeam.Player || target.Health <= 0 || target.Statuses.Count > 0 ||
+                    point == null || point.RoomIndex != room.RoomIndex || point.Team != target.Team ||
+                    point.PreviewCopyId.HasValue || point.OuterBossAnchor || context.Enchantments != null ||
+                    context.RoomCapacities?.Any(floor => floor.RoomIndex == room.RoomIndex && floor.Attachments?.Count > 0) == true)
+                    return Fail("Physical recall with nonstandard unit, room, or hand state requires native calibration.");
+                var removed = BattleSpawnPointModel.Apply(points, room, "Remove", target.Team, targetId);
+                if (!removed.Supported) return Fail(removed.Error!);
+                var compacted = BattleSpawnPointModel.Apply(removed.State!, room, "Compact", target.Team);
+                if (!compacted.Supported) return Fail(compacted.Error!);
+                context = context.WithSpawnPoints(compacted.State!);
+            }
             if (!rule.KeepTemporaryUpgrades)
             {
                 if (card.MaskDescriptor?.TemporaryTraits.Count > 0)
@@ -61,8 +76,10 @@ namespace MonsterTrain2Poju.Model
                     ? CardPileModel.Remove(pile, token.InstanceId) : pile).ToArray());
             CombatUnit retained = target.WithDeathState(target.DeathState.WithLifecycle(true, true));
             var rooms = source.Rooms.Select(item => new RoomCombatState(item.RoomIndex, item.Deployment,
-                item.Units.Where(unit => unit.Id != targetId).ToArray(), item.ExternalInteractions, context,
-                item.Preview, item.ActiveCompanionBossIds)).ToArray();
+                item.RoomIndex == room.RoomIndex
+                    ? BattleSpawnPointModel.Order(context.SpawnPoints, item.RoomIndex, item.Units.Where(unit => unit.Id != targetId).ToArray())
+                    : item.Units,
+                item.ExternalInteractions, context, item.Preview, item.ActiveCompanionBossIds)).ToArray();
             return new(new TrainCombatState(rooms, source.Movement.Where(move => move.UnitId != targetId).ToArray(),
                 source.EnemySlotsPerRoom, context), retained);
         }
