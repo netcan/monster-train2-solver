@@ -638,6 +638,7 @@ param(
     [switch] $OriginalRoomStatusSpells,
     [switch] $OriginalRoomStatusSpellsFullBattle,
     [switch] $OriginalTargetedStatusSpells,
+    [switch] $WithOriginalStatusMagnitudeRelics,
     [string[]] $OriginalOpeningSpellIds = @(),
     [switch] $OriginalLifecycleRelicBatch,
     [switch] $OriginalDecayRelicBatch,
@@ -1539,6 +1540,9 @@ if ($OriginalMagnitudeRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-s
 if ($OriginalRoomStatusSpellsFullBattle -and -not $OriginalRoomStatusSpells) {
     throw 'OriginalRoomStatusSpellsFullBattle requires OriginalRoomStatusSpells.'
 }
+if ($WithOriginalStatusMagnitudeRelics -and -not $OriginalTargetedStatusSpells) {
+    throw 'WithOriginalStatusMagnitudeRelics requires OriginalTargetedStatusSpells.'
+}
 if ($PSBoundParameters.ContainsKey('OriginalOpeningSpellIds')) {
     $OriginalOpeningSpellIds = @($OriginalOpeningSpellIds | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim().ToLowerInvariant() })
     if ($OriginalOpeningSpellIds.Count -ne 5 -or
@@ -1549,7 +1553,7 @@ if ($PSBoundParameters.ContainsKey('OriginalOpeningSpellIds')) {
 }
 if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells -or $OriginalTargetedStatusSpells -or $OriginalOpeningSpellIds.Count) {
     $allowed = @('OriginalStatusMagnitudeWitness', 'OriginalStatusMagnitudeMoonWitness', 'OriginalRoomStatusSpells', 'OriginalTargetedStatusSpells', 'OriginalOpeningSpellIds', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
-        'OriginalRoomStatusSpellsFullBattle', 'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+        'OriginalRoomStatusSpellsFullBattle', 'WithOriginalStatusMagnitudeRelics', 'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     $modes = @($OriginalStatusMagnitudeWitness, $OriginalStatusMagnitudeMoonWitness, $OriginalRoomStatusSpells, $OriginalTargetedStatusSpells, ($OriginalOpeningSpellIds.Count -gt 0)) | Where-Object { $_ }
     if (!$BinaryCapture -or @($modes).Count -ne 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
@@ -2913,6 +2917,7 @@ if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or 
         'original-status-magnitude-moon-witness'
     } else { 'original-status-magnitude-witness' })
     if ($OriginalRoomStatusSpellsFullBattle) { $environment['MT2_PROBE_ROOM_STATUS_FULL_BATTLE'] = '1' }
+    if ($WithOriginalStatusMagnitudeRelics) { $environment['MT2_PROBE_TARGETED_STATUS_WITH_MAGNITUDE_RELICS'] = '1' }
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
@@ -4072,6 +4077,48 @@ if ($OriginalRoomStatusSpellsFullBattle -or $OriginalTargetedStatusSpells -or $O
         ($opening -join ',') -cne ($expected -join ',') -or @($trace.Turns | Where-Object { $_.Before.Spawn.Turn -eq 0 }).Count -ne 1) {
         throw "Original status battle must record deployment and all five first-turn spells. Inspect $unityLog"
     }
+}
+if ($WithOriginalStatusMagnitudeRelics) {
+    $owners = [ordered]@{
+        DoubleMagebladeDamage = '622860d3-b2ca-45b0-991a-b7745e1dcd5c'
+        StrongerSpikes = 'aa94ad34-ee09-464e-89ff-2a2c2867c097'
+        IncreaseRageDamage = 'b9bddf11-acaa-40fb-bc40-eee83e478424'
+        AwokenRegen = '1fd244de-7d7b-4345-974b-4e5bf287a3df'
+    }
+    $roots = @($trace.Actions[0].Before, $trace.Turns[-1].Before)
+    foreach ($root in $roots) {
+        $relics = @($root.Spawn.Train.Context.Relics | Where-Object { $_.DataId -cin $owners.Values })
+        if (($relics.DataId -join ',') -cne ($owners.Values -join ',') -or
+            ($relics.AssetKey -join ',') -cne ($owners.Keys -join ',') -or
+            @($relics | Where-Object { ($_.EffectTypes -join ',') -cne 'RelicEffectModifyStatusMagnitude' }).Count) {
+            throw "The original status magnitude roster differs. Inspect $unityLog"
+        }
+    }
+    $positiveStatuses = [ordered]@{
+        '4ca4ed47-9867-4004-acf0-171c3282751f' = @{ Id = 'buff'; Stacks = 3 }
+        'ec0980cf-9f88-4d38-9704-b89042f2f625' = @{ Id = 'spikes'; Stacks = 10 }
+    }
+    foreach ($card in $positiveStatuses.GetEnumerator()) {
+        $play = @($trace.Actions | Where-Object {
+            $action = $_.Action
+            $_.Before.Spawn.Turn -eq 1 -and @($_.Before.Spawn.Train.Context.Cards.Hand |
+                Where-Object { $_.InstanceId -eq $action.CardInstanceId -and $_.DataId -ceq $card.Key }).Count -eq 1
+        })
+        if ($play.Count -ne 1) { throw "Expected one positive original magnitude cast $($card.Key). Inspect $unityLog" }
+        $targetId = $play[0].Action.TargetUnitId
+        $beforeTarget = @($play[0].Before.Spawn.Train.Rooms.Units | Where-Object Id -EQ $targetId)
+        $actualTarget = @($play[0].Actual.Spawn.Train.Rooms.Units | Where-Object Id -EQ $targetId)
+        $beforeStatus = @($beforeTarget.Statuses | Where-Object Id -CEQ $card.Value.Id)
+        $actualStatus = @($actualTarget.Statuses | Where-Object Id -CEQ $card.Value.Id)
+        $beforeStacks = if ($beforeStatus.Count) { $beforeStatus[0].Stacks } else { 0 }
+        $nativeQueries = @($trace.RelicStatusMagnitudeQueries | Where-Object { $_.StatusId -ceq $card.Value.Id -and
+            $_.NativeTeam -eq 2 -and $_.Actual -eq 1 -and -not $_.Matrix -and -not $_.Preview })
+        if ($beforeTarget.Count -ne 1 -or $actualTarget.Count -ne 1 -or $actualStatus.Count -ne 1 -or
+            $beforeStatus.Count -gt 1 -or ($actualStatus[0].Stacks - $beforeStacks) -ne $card.Value.Stacks -or $nativeQueries.Count -eq 0) {
+            throw "Missing the positive original $($card.Value.Id) state or magnitude query. Inspect $unityLog"
+        }
+    }
+    Write-Output 'ORIGINAL-STATUS-MAGNITUDE-BATTLE: four ordered original relics and positive native Rage and Spikes.'
 }
 $nextInputProfile = $null
 if ($ContinueToNextRing) {

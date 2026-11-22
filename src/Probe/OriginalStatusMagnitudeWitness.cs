@@ -69,6 +69,8 @@ namespace MonsterTrain2Poju.Probe
         internal static bool DirectRoomSpells => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == RoomSpellsName;
         internal static bool TargetedSpells => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == TargetedSpellsName;
         internal static bool SpellCohort => DirectRoomSpells || TargetedSpells || ConfiguredOpening;
+        internal static bool UsesMagnitudeRelics => Enabled && (!SpellCohort || TargetedSpells &&
+            Environment.GetEnvironmentVariable("MT2_PROBE_TARGETED_STATUS_WITH_MAGNITUDE_RELICS") == "1");
         internal static bool Continuous => ConfiguredOpening || TargetedSpells || DirectRoomSpells && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_STATUS_FULL_BATTLE") == "1";
         internal static bool ContinuousPrepared => continuousCardIds != null;
         private static int DeploymentCount => SpellCohort ? 1 : 2;
@@ -90,7 +92,7 @@ namespace MonsterTrain2Poju.Probe
                 definitions = ConfiguredDefinitions(data);
                 return;
             }
-            var originalOwners = (SpellCohort ? Owners.Take(0) : Owners).Select(expected =>
+            var originalOwners = (UsesMagnitudeRelics ? Owners : Owners.Take(0)).Select(expected =>
             {
                 var relic = data.GetAllCollectableRelicData().Single(item => item.GetID() == expected.Id);
                 var effect = relic.GetEffects().Single();
