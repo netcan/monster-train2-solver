@@ -510,6 +510,11 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 `--original-card-draw-potion-only` 核对这条机制及 16 条独立分支。3 次出牌、5 次结束回合和两类候选检查通过。
 [`card-draw-potion.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/card-draw-potion.mt2f)
 
+带 Consume 和 CopyOnPlay 升级的原版法术完成击杀时，原版先生成手牌副本，再结清原牌的待命条目。
+原牌累计两次消耗统计，第二次结算也计入副本的 AnyExhausted。2.3.1 的 3 次出牌、4 次结束回合、
+16 条独立分支与两类候选检查通过，两份 2.2.1 归档也通过同一专项复放。
+[`terminal-copy-consume.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/terminal-copy-consume.mt2f)
+
 原版 The Great Decay 为三个牌堆中的法术添加升级。专项验证费用折扣、Consume、
 X 加成和单位筛选。6 次出牌、5 次结束回合、16 条独立分支与两类候选通过。
 [`great-decay.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/great-decay.mt2f)

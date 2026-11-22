@@ -1322,6 +1322,8 @@ namespace MonsterTrain2Poju.Model
                     context, room.Preview, room.ActiveCompanionBossIds);
             }).ToArray();
             context = UnitStandbyModel.ReturnReady(context);
+            // A terminal cast can still settle the standby entry created by its discard callback.
+            if (terminal && consumedOnPlay) context = CardExhaustModel.ReturnReady(context, card.InstanceId);
             piles = context.OtherPiles?.ToArray() ?? piles;
             rooms = rooms.Select(room => new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, room.ExternalInteractions,
                 context, room.Preview, room.ActiveCompanionBossIds)).ToArray();
