@@ -194,6 +194,11 @@ Engulfed in Smoke 在另一场结算。各场从部署连续复放至胜利，�
 累计 203 场整战、224/601 张卡牌及 60/236 件遗物已有原版匹配见证。
 [`spawn-statuses.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/spawn-statuses.mt2f)
 
+受控法术批次录到伤害、治疗、过量治疗和未来抽牌。Dark Deal 定向检查从录制动作找到
+原版卡牌与目标，核对两版相同的 Rage、伤害和随机流。两版均通过专项检查，该 2.3.1
+胜局另通过 10 次出牌、5 次结束回合、16 条分支和候选检查。
+[`damage-healing-and-draw.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/damage-healing-and-draw.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
