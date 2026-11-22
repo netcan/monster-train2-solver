@@ -30,8 +30,9 @@ internal static class OriginalResourceRelicBatchChecks
         Require(eligible || !required, "Fixture lacks the original resource relic batch.");
         if (!eligible) return null;
         bool compareRoomEnabled = BattleTurnChecks.ShouldCompareRoomEnabled(root);
-        Require(root.GetProperty("Schema").GetInt32() == 117 && root.GetProperty("GameVersion").GetString() == "2.2.1" &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4",
+        var build = (root.GetProperty("GameVersion").GetString(), root.GetProperty("GameModuleMvid").GetString());
+        Require(root.GetProperty("Schema").GetInt32() == 117 && build is
+            ("2.2.1", "8fb07b96-f4db-4d2b-884d-c00536d6ccf4") or (Game231FixtureCatalog.Version, Game231FixtureCatalog.Module),
             "Native resource relic schema or game build changed.");
         Require(root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
             root.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" &&
