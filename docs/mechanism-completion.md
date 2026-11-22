@@ -188,6 +188,12 @@ Engulfed in Smoke 在另一场结算。各场从部署连续复放至胜利，�
 16 条分支和候选检查通过，为 2.3.1 增加 12 张卡牌的定义匹配记录。
 [`resources-healing-and-capacity.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/resources-healing-and-capacity.mt2f)
 
+`-OriginalOpeningRelicIds` 在同一原版首战按指定顺序取得六件遗物。五件分别为五次友军
+出生补上 Rage、Lifesteal、Burst、Armor、Avarice，另一件为七次敌军出生补上 Frostbite。
+出生点前后的状态增量、遗物顺序、18 次出牌、6 次结束回合、分支和候选检查通过。
+累计 203 场整战、224/601 张卡牌及 60/236 件遗物已有原版匹配见证。
+[`spawn-statuses.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/spawn-statuses.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
