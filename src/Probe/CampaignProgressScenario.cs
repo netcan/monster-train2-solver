@@ -24,6 +24,7 @@ namespace MonsterTrain2Poju.Probe
         private readonly int stopRing;
         private readonly MapScreen.BranchSelection? requestedMapBranch;
         private readonly string? requestedDraftRelic;
+        private readonly string? requestedMerchantUpgrade;
         private readonly int seed;
         private readonly int? requestedStartingCovenant;
         private float nextAction, lastProgress, heartbeat, quitAt;
@@ -49,6 +50,8 @@ namespace MonsterTrain2Poju.Probe
         private readonly HashSet<string> unselectableMerchantOffers = new HashSet<string>();
         private readonly HashSet<string> unselectableStoryChoices = new HashSet<string>();
         private string? pendingMerchantOffer;
+        private (string Offer, string Asset, int Distance, Dictionary<string, int> Before)? pendingPreferredMerchant;
+        private bool preferredMerchantInstalled;
         private string? pendingStoryChoice;
         private DeckScreen? enteringDeck;
         private float deckReadyAt;
@@ -65,6 +68,7 @@ namespace MonsterTrain2Poju.Probe
                 _ => null
             };
             requestedDraftRelic = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_DRAFT_RELIC");
+            requestedMerchantUpgrade = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_PREFER_MERCHANT_UPGRADE");
             seed = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_SEED") ?? "424242");
             string? covenant = Environment.GetEnvironmentVariable("MT2_PROBE_STARTING_COVENANT_LEVEL");
             requestedStartingCovenant = afterBattle || covenant == null ? (int?)null : int.Parse(covenant);
@@ -167,6 +171,7 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             if (LoadingScreen.IsWorking()) return;
+            ConfirmPreferredMerchantUpgrade(save);
             string state = screens.GetTopScreen() + ":" + save.GetGameSequence() + ":" + save.GetCurrentDistance();
             if (state != lastScreen)
             {
@@ -263,16 +268,40 @@ namespace MonsterTrain2Poju.Probe
                         asset = RewardAsset(x.GoodState.RewardData), rewardType = x.GoodState.RewardData.GetType().Name,
                         cost = x.GoodState.GetCost(Field<MerchantData>(x, "merchantData")),
                         x.Affordable, x.Purchasable, x.Claimed, x.GoodState.Unlocked }).ToList() });
-                MerchantGoodUIBase? buy = skipPurchases ? null : goods.Where(x => x.gameObject.activeInHierarchy && x.GoodState != null &&
-                    x.Affordable && x.Purchasable && !x.Claimed && x.GoodState.Unlocked &&
+                if (pendingPreferredMerchant.HasValue)
+                {
+                    if (pendingMerchantOffer == null)
+                        throw new InvalidOperationException("The confirmed merchant choice did not add an authored upgrade to the deck.");
+                    return;
+                }
+                var available = visible.Where(x => x.Affordable && x.Purchasable && !x.Claimed && x.GoodState.Unlocked &&
                     !unselectableMerchantOffers.Contains(save.GetCurrentDistance() + ":" + x.GoodState.RewardData.GetReplayDataID()) &&
-                    x is MerchantGoodDetailsUI && AcceptUpgrade(x)).FirstOrDefault();
+                    x is MerchantGoodDetailsUI);
+                MerchantGoodUIBase? preferred = skipPurchases || preferredMerchantInstalled || string.IsNullOrEmpty(requestedMerchantUpgrade) ? null :
+                    available.FirstOrDefault(x => x.GoodState.RewardData is EnhancerRewardData enhancer &&
+                        (string.Equals(RewardAsset(enhancer), requestedMerchantUpgrade, StringComparison.Ordinal) ||
+                         string.Equals(enhancer.GetRelicData().GetID(), requestedMerchantUpgrade, StringComparison.OrdinalIgnoreCase)) && AcceptUpgrade(x));
+                MerchantGoodUIBase? buy = skipPurchases ? null : preferred ?? available.FirstOrDefault(AcceptUpgrade);
                 if (buy != null)
                 {
+                    var boughtReward = buy.GoodState.RewardData;
+                    string offer = boughtReward.GetReplayDataID();
+                    Dictionary<string, int>? before = preferred == null ? null : ((EnhancerRewardData)boughtReward).GetRelicData().GetEffects()
+                        .Select(effect => effect.GetParamCardUpgradeData()?.GetID()).OfType<string>()
+                        .Where(id => id.Length > 0).Distinct(StringComparer.Ordinal).ToDictionary(id => id, id => CountDeckUpgrade(save, id));
+                    if (before?.Count == 0) throw new InvalidOperationException("The preferred merchant enhancer has no authored card upgrade IDs: " + RewardAsset(boughtReward));
                     if (Click(buy.SelectableUI as GameUISelectableButton, "buy", new {
-                        gold = save.GetGold(), reward = buy.GoodState.RewardData.GetReplayDataID(),
-                        rewardType = buy.GoodState.RewardData.GetType().Name }))
-                        pendingMerchantOffer = save.GetCurrentDistance() + ":" + buy.GoodState.RewardData.GetReplayDataID();
+                        gold = save.GetGold(), reward = offer, rewardType = boughtReward.GetType().Name }))
+                    {
+                        int distance = save.GetCurrentDistance();
+                        pendingMerchantOffer = distance + ":" + offer;
+                        if (before != null)
+                        {
+                            string asset = RewardAsset(boughtReward);
+                            pendingPreferredMerchant = (offer, asset, distance, before);
+                            Record("preferred-merchant-upgrade-selected", new { requested = requestedMerchantUpgrade, offer, asset, distance, before });
+                        }
+                    }
                 }
                 else Click(merchant.GetCloseButton(), "leave-merchant");
                 return;
@@ -315,6 +344,7 @@ namespace MonsterTrain2Poju.Probe
                         unselectableMerchantOffers.Add(pendingMerchantOffer);
                         Record("decline-unselectable-upgrade", new { offer = pendingMerchantOffer });
                         pendingMerchantOffer = null;
+                        pendingPreferredMerchant = null;
                     }
                 }
                 return;
@@ -386,6 +416,8 @@ namespace MonsterTrain2Poju.Probe
             if (screen is BattleIntroScreen intro)
             {
                 int ring = save.GetCurrentDistance() + 1;
+                if (ring >= stopRing && !preferredMerchantInstalled && !string.IsNullOrEmpty(requestedMerchantUpgrade))
+                { Finish(true, "Native campaign checkpoint reached."); return; }
                 if (requestedStartingCovenant is int requested && !startingCovenantObserved)
                 {
                     int actual = save.GetStartingConditions().AscensionLevel;
@@ -588,6 +620,24 @@ namespace MonsterTrain2Poju.Probe
                 Record("decline-upgrade", new { reward = reward.GetReplayDataID(), traits });
             return false;
         }
+
+        private static int CountDeckUpgrade(SaveManager save, string id) => save.GetDeckState()
+            .Sum(card => card.GetCardStateModifiers().GetCardUpgrades().Count(upgrade => upgrade.GetCardUpgradeDataId() == id));
+
+        private void ConfirmPreferredMerchantUpgrade(SaveManager save)
+        {
+            if (pendingPreferredMerchant is not { } pending) return;
+            foreach (var entry in pending.Before)
+            {
+                int after = CountDeckUpgrade(save, entry.Key);
+                if (after <= entry.Value) continue;
+                preferredMerchantInstalled = true;
+                pendingPreferredMerchant = null;
+                Record("preferred-merchant-upgrade-confirmed", new { requested = requestedMerchantUpgrade, offer = pending.Offer,
+                    asset = pending.Asset, distance = pending.Distance, upgrade = entry.Key, countBefore = entry.Value, countAfter = after });
+                return;
+            }
+        }
         private void SaveCheckpoint(int ring)
         {
             string root = Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!;
@@ -648,6 +698,11 @@ namespace MonsterTrain2Poju.Probe
             node is RewardNodeData reward ? 100 + reward.GetRewards().Sum(x => x is ChampionUpgradeRewardData ? 100 : 0) : 10;
         private void Finish(bool success, string message)
         {
+            if (success && !string.IsNullOrEmpty(requestedMerchantUpgrade) && !preferredMerchantInstalled)
+            {
+                success = false;
+                message = "Native campaign did not install the preferred merchant upgrade " + requestedMerchantUpgrade + ".";
+            }
             if (success && !string.IsNullOrEmpty(requestedDraftRelic) && !draftRelicGranted)
             {
                 success = false;

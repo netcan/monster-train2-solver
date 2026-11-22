@@ -12,6 +12,7 @@ param(
     [switch] $CompleteDefeat,
     [string[]] $ExcludeUpgradeTrait = @(),
     [switch] $SkipMerchantPurchases,
+    [string] $PreferMerchantUpgrade = '',
     [ValidateSet('Left', 'Right')] [string] $MapBranch = '',
     [ValidateSet('First', 'Last')] [string] $StoryChoiceOrder = 'First',
     [ValidateRange(0, 2)] [int] $DraftChoiceRank = 0,
@@ -27,6 +28,10 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $DraftRelic = $DraftRelic.Trim()
+$PreferMerchantUpgrade = $PreferMerchantUpgrade.Trim()
+if ($PreferMerchantUpgrade -and ($SkipMerchantPurchases -or $StoryProgressionOnly)) {
+    throw 'PreferMerchantUpgrade requires campaign merchant purchases.'
+}
 $explicitStartingCovenant = $PSBoundParameters.ContainsKey('StartingCovenantLevel')
 if ($CompleteDefeat -and (-not $BattleReplay -or -not $InputProfile)) {
     throw 'CompleteDefeat requires a settled native BattleReplay and its original InputProfile.'
@@ -158,6 +163,7 @@ $inputMetagameHash = (Get-FileHash -LiteralPath (Join-Path $source 'metagameSave
     PrimaryClan = $PrimaryClan; SecondaryClan = $SecondaryClan; StartingCovenantLevel = $StartingCovenantLevel;
     ExplicitStartingCovenant = $explicitStartingCovenant;
     SkipMerchantPurchases = [bool]$SkipMerchantPurchases;
+    PreferMerchantUpgrade = $PreferMerchantUpgrade;
     MapBranch = $MapBranch;
     StoryChoiceOrder = $StoryChoiceOrder;
     DraftChoiceRank = $DraftChoiceRank;
@@ -217,6 +223,7 @@ $settings = @{
     MT2_PROBE_CAMPAIGN_STORY_ONLY = $(if ($StoryProgressionOnly) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_EXCLUDED_UPGRADE_TRAITS = ($ExcludeUpgradeTrait -join ';')
     MT2_PROBE_CAMPAIGN_SKIP_MERCHANT_PURCHASES = $(if ($SkipMerchantPurchases) { '1' } else { '0' })
+    MT2_PROBE_CAMPAIGN_PREFER_MERCHANT_UPGRADE = $PreferMerchantUpgrade
     MT2_PROBE_CAMPAIGN_MAP_BRANCH = $MapBranch
     MT2_PROBE_CAMPAIGN_STORY_CHOICE_ORDER = $StoryChoiceOrder
     MT2_PROBE_CAMPAIGN_DRAFT_CHOICE_RANK = $DraftChoiceRank.ToString()
@@ -295,6 +302,25 @@ if ($DraftRelic -and $passed) {
         $grant[0].index -gt $selection[0].index -and $grant[0].data.id -ceq $selection[0].data.selected.id -and
         ($selection[0].data.selected.relic -ceq $DraftRelic -or $selection[0].data.selected.id -ieq $DraftRelic) -and
         @($selection[0].data.offers | Where-Object id -CEQ $grant[0].data.id).Count -eq 1
+}
+if ($PreferMerchantUpgrade -and $passed) {
+    $confirmed = @($audit | Where-Object kind -EQ 'preferred-merchant-upgrade-confirmed')
+    $passed = $confirmed.Count -eq 1 -and $confirmed[0].data.requested -ceq $PreferMerchantUpgrade -and
+        $confirmed[0].data.countAfter -gt $confirmed[0].data.countBefore
+    if ($passed) {
+        $purchase = $confirmed[0]
+        $selected = @($audit | Where-Object { $_.kind -eq 'preferred-merchant-upgrade-selected' -and
+            $_.index -lt $purchase.index -and $_.data.requested -ceq $PreferMerchantUpgrade -and
+            $_.data.offer -ceq $purchase.data.offer -and $_.data.asset -ceq $purchase.data.asset -and
+            $_.data.distance -eq $purchase.data.distance })
+        $offer = @($audit | Where-Object { $_.kind -eq 'merchant-offers' -and $_.index -lt $purchase.index } |
+            ForEach-Object { $_.data.offers } |
+            Where-Object { $_.reward -ceq $purchase.data.offer -and $_.asset -ceq $purchase.data.asset -and $_.rewardType -ceq 'EnhancerRewardData' })
+        $picked = $selected | Select-Object -Last 1
+        $before = if ($picked) { $picked.data.before.PSObject.Properties[$purchase.data.upgrade] }
+        $passed = $offer.Count -gt 0 -and $null -ne $before -and $before.Value -eq $purchase.data.countBefore -and
+            ($purchase.data.asset -ceq $PreferMerchantUpgrade -or $purchase.data.offer -ieq $PreferMerchantUpgrade)
+    }
 }
 if ($MapBranch -and $passed) {
     $distance = $StopBeforeRing - 1
