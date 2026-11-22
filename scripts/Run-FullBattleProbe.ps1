@@ -4091,7 +4091,9 @@ if ($OriginalOpeningUnitIds.Count) {
         $born = @($room.Units | Where-Object {
             $_.SpawnerCardId -eq $play.Action.CardInstanceId -and $_.AssetKey -ceq $rule.SpawnUnit.AssetKey -and $_.Team -eq 1
         })
-        if ($rule.Effect -cne 'SpawnMonster' -or $born.Count -ne 1 -or $play.Before.Energy -lt $play.Actual.Energy) {
+        # A native deployment can grant Ember after its fixed cost is paid.
+        if ($rule.Effect -cne 'SpawnMonster' -or $born.Count -ne 1 -or $play.Before.Energy -lt $rule.Cost -or
+            !$play.Predicted.Supported -or $play.Actual.Energy -ne $play.Predicted.State.Energy) {
             throw "The requested original unit must spawn from its played card in the selected room. Inspect $unityLog"
         }
         $card.DataId
