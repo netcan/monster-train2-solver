@@ -4,6 +4,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalTriggerRelicBatchChecks
 {
+    private const string LegacyModule = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4";
     private const string Angel = "SubtypesData_Angel", Dragon = "SubtypesData_Dragon", Whelp = "SubtypesData_Whelp";
     private static readonly (string Key, string Id, string Kind, string? Subtype, bool Enemy, string Target, string[] Statuses, int[] Stacks)[] Artifacts =
     [
@@ -25,7 +26,10 @@ internal static class OriginalTriggerRelicBatchChecks
         if (!eligible) return null;
         int schema = root.GetProperty("Schema").GetInt32();
         bool deathCapture = schema == 103;
-        Require(root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4", "Native build changed.");
+        string? module = root.GetProperty("GameModuleMvid").GetString();
+        bool currentPhysical = module == Game231FixtureCatalog.Module &&
+            root.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version && schema == 106;
+        Require(module == LegacyModule || currentPhysical, "Unverified native trigger relic build or capture shape.");
         Require(schema is 103 or 106 && root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" &&
             root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Native trigger relic battle is incomplete.");
@@ -92,16 +96,21 @@ internal static class OriginalTriggerRelicBatchChecks
             // same complete battle projection used by all recorded card actions.
             Require(ModelJson.Difference(BattleTurnChecks.Comparable(result.State!), BattleTurnChecks.Comparable(actual)) == null,
                 "Complete native trigger relic action differs.");
-            var card = before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!;
-            var playRule = before.PlayRules!.Cards.Single(rule => rule.DataId == card.DataId);
-            CombatUnit? actor = before.Spawn.Train.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == action.TargetUnitId);
-            if (playRule.Equipment != null)
+            if (currentPhysical && action.Operation == DevoteModel.Operation)
+                Require(action.CardInstanceId == 0, "Native Devote has a card instance.");
+            else
             {
-                equipmentPlays++; if (actor?.Team == CombatTeam.Enemy) enemyEquipment++;
-                if (actor?.Team == CombatTeam.Player && actor.Health < actor.MaxHealth &&
-                    actual.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == actor.Id).Health == actor.MaxHealth) woundedHeals++;
+                var card = before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!;
+                var playRule = before.PlayRules!.Cards.Single(rule => rule.DataId == card.DataId);
+                CombatUnit? actor = before.Spawn.Train.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == action.TargetUnitId);
+                if (playRule.Equipment != null)
+                {
+                    equipmentPlays++; if (actor?.Team == CombatTeam.Enemy) enemyEquipment++;
+                    if (actor?.Team == CombatTeam.Player && actor.Health < actor.MaxHealth &&
+                        actual.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == actor.Id).Health == actor.MaxHealth) woundedHeals++;
+                }
+                if (playRule.Effects.Any(effect => effect.Type == "Bump")) shifts++;
             }
-            if (playRule.Effects.Any(effect => effect.Type == "Bump")) shifts++;
             foreach (var item in Artifacts)
             {
                 if (!before.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Triggers.Any(trigger => Matches(trigger, definitions[item.Key])))) continue;
@@ -128,22 +137,27 @@ internal static class OriginalTriggerRelicBatchChecks
             }
         }
         Console.WriteLine("ORIGINAL-TRIGGER-RELIC-WITNESSES " + string.Join(", ", witnesses.Select(item => item.Key + "=" + item.Value)));
-        // The earlier stationary battle has the natural Angel death witness;
-        // the later physical battle covers Shift and enemy equipment. Require
-        // each archive's observed scope, and validate their union separately.
-        string[] absentWitnesses = deathCapture
+        // The current physical capture exercises enemy equipment and Angel death.
+        // The legacy physical capture exercises Shift and the Whelp's strike.
+        string[] absentWitnesses = deathCapture || currentPhysical
             ? ["AngelsSpawnWithShiftyValor", "WhelpStrikeAddPyregel_DH"]
             : ["RageOnHymnistDeath"];
-        Require(equipmentPlays > 0 && woundedHeals > 0 && (deathCapture || enemyEquipment > 0 && shifts > 0) &&
+        bool hasExpectedActions = currentPhysical
+            ? enemyEquipment > 0 && shifts == 0
+            : deathCapture || (enemyEquipment > 0 && shifts > 0);
+        Require(equipmentPlays > 0 && woundedHeals > 0 && hasExpectedActions &&
             witnesses.Where(item => !absentWitnesses.Contains(item.Key)).All(item => item.Value > 0),
             "Some original relics lack a positive effect beyond trigger metadata.");
-        Console.WriteLine($"NATIVE-ORIGINAL-TRIGGER-RELICS PASS: ten unchanged originals installed, {Artifacts.Length - absentWitnesses.Length} required effect witnesses ({(deathCapture ? "stationary death" : "physical Shift")}), {births} complete births, {enemyAngels} enemy Angels, {admitted} admitted/{excluded} excluded counts, {equipmentPlays} equips/{enemyEquipment} enemy equips/{woundedHeals} wounded heals, {shifts} shifts; per-relic effect ablations and 32 immutable installation branches.");
+        if (currentPhysical) RecordedBattleChecks.Native(root);
+        string scope = currentPhysical ? "2.3.1 physical death and equipment" : deathCapture ? "stationary death" : "physical Shift";
+        Console.WriteLine($"NATIVE-ORIGINAL-TRIGGER-RELICS PASS: ten unchanged originals installed, {Artifacts.Length - absentWitnesses.Length} required effect witnesses ({scope}), {births} complete births, {enemyAngels} enemy Angels, {admitted} admitted/{excluded} excluded counts, {equipmentPlays} equips/{enemyEquipment} enemy equips/{woundedHeals} wounded heals, {shifts} shifts; per-relic effect ablations and 32 immutable installation branches.");
         return witnesses;
     }
     internal static void Combined(FixtureValue deaths, FixtureValue shifts)
     {
-        Require(deaths.GetProperty("Schema").GetInt32() == 103 && shifts.GetProperty("Schema").GetInt32() == 106,
-            "Combined acceptance requires both stationary and physical native archives.");
+        Require(deaths.GetProperty("Schema").GetInt32() == 103 && shifts.GetProperty("Schema").GetInt32() == 106 &&
+            deaths.GetProperty("GameModuleMvid").GetString() == LegacyModule && shifts.GetProperty("GameModuleMvid").GetString() == LegacyModule,
+            "Combined acceptance requires both legacy stationary and physical native archives.");
         var a = Native(deaths, required: true)!; var b = Native(shifts, required: true)!;
         Require(Artifacts.All(item => a[item.Key] > 0 || b[item.Key] > 0), "The two native archives do not cover every original relic effect.");
         Console.WriteLine("NATIVE-ORIGINAL-TRIGGER-RELICS-COMBINED PASS: all ten unchanged originals have actual effect witnesses across two complete native battles.");
