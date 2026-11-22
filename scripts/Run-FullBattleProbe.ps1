@@ -644,6 +644,7 @@ param(
     [string[]] $OriginalOpeningUnitIds = @(),
     [string[]] $OriginalOpeningRelicIds = @(),
     [switch] $OriginalOpeningPhaseRelics,
+    [switch] $OriginalOpeningPassiveRelics,
     [switch] $OriginalLifecycleRelicBatch,
     [switch] $OriginalDecayRelicBatch,
     [switch] $OriginalResourceRelicBatch,
@@ -1579,11 +1580,11 @@ if ($PSBoundParameters.ContainsKey('OriginalOpeningRelicIds')) {
         throw 'OriginalOpeningRelicIds requires distinct native collectible relic UUIDs.'
     }
 }
-if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells -or $OriginalTargetedStatusSpells -or $OriginalOpeningSpellIds.Count -or $OriginalOpeningUnitIds.Count -or $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics) {
-    $allowed = @('OriginalStatusMagnitudeWitness', 'OriginalStatusMagnitudeMoonWitness', 'OriginalRoomStatusSpells', 'OriginalTargetedStatusSpells', 'OriginalOpeningSpellIds', 'OriginalOpeningUnitIds', 'OriginalOpeningRelicIds', 'OriginalOpeningPhaseRelics', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
+if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells -or $OriginalTargetedStatusSpells -or $OriginalOpeningSpellIds.Count -or $OriginalOpeningUnitIds.Count -or $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningPassiveRelics) {
+    $allowed = @('OriginalStatusMagnitudeWitness', 'OriginalStatusMagnitudeMoonWitness', 'OriginalRoomStatusSpells', 'OriginalTargetedStatusSpells', 'OriginalOpeningSpellIds', 'OriginalOpeningUnitIds', 'OriginalOpeningRelicIds', 'OriginalOpeningPhaseRelics', 'OriginalOpeningPassiveRelics', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
         'OriginalRoomStatusSpellsFullBattle', 'WithOriginalStatusMagnitudeRelics', 'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if ($OriginalOpeningSpellIds.Count -or $OriginalOpeningUnitIds.Count) { $allowed += 'InputProfile' }
-    $modes = @($OriginalStatusMagnitudeWitness, $OriginalStatusMagnitudeMoonWitness, $OriginalRoomStatusSpells, $OriginalTargetedStatusSpells, ($OriginalOpeningSpellIds.Count -gt 0), ($OriginalOpeningUnitIds.Count -gt 0), ($OriginalOpeningRelicIds.Count -gt 0), $OriginalOpeningPhaseRelics) | Where-Object { $_ }
+    $modes = @($OriginalStatusMagnitudeWitness, $OriginalStatusMagnitudeMoonWitness, $OriginalRoomStatusSpells, $OriginalTargetedStatusSpells, ($OriginalOpeningSpellIds.Count -gt 0), ($OriginalOpeningUnitIds.Count -gt 0), ($OriginalOpeningRelicIds.Count -gt 0), $OriginalOpeningPhaseRelics, $OriginalOpeningPassiveRelics) | Where-Object { $_ }
     if (!$BinaryCapture -or @($modes).Count -ne 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
         throw 'Original opening and status witness modes require separate first-battle binary captures.'
@@ -2171,7 +2172,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll'
     throw "Native worker $NativeWorker is not initialized; run scripts/Initialize-NativeWorker.ps1 -Worker $NativeWorker first."
 }
 if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or
-    $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalHallGraftedBirth) {
+    $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -2184,7 +2185,7 @@ if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput 
     if (($OriginalThikDeckChange -or $OriginalThikBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original Thik capture requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
-    if (($OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+    if (($OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningPassiveRelics) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original opening relics require the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
     if ($OriginalHallGraftedBirth -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
@@ -2975,6 +2976,11 @@ if ($OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics) {
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
+if ($OriginalOpeningPassiveRelics) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-passive-relics'
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
 if ($OriginalLifecycleRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-lifecycle-relic-batch' }
 if ($OriginalDecayRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-decay-relic-batch' }
 if ($OriginalResourceRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-resource-relic-batch' }
@@ -3693,6 +3699,26 @@ if ($OriginalMollisShelterObservation) {
     } finally { $document.Dispose() }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
         Cases=2; Trace=$capturePath } | ConvertTo-Json
+    return
+}
+if ($OriginalOpeningPassiveRelics) {
+    $capturePath = Join-Path $profile 'opening-passive-relics.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original opening passive relics component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Original opening passive relics capture failed; inspect $unityLog" }
+    Add-Type -Path (Join-Path $nativeBuildWorkspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $document = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
+    try {
+        $capture = $document.RootElement
+        if ($capture.GetProperty('Schema').GetInt32() -ne 1 -or
+            $capture.GetProperty('Boundary').GetString() -cne 'DeploymentOriginalPassiveRelicComparison' -or
+            $capture.GetProperty('GameVersion').GetString() -cne '2.3.1' -or
+            $capture.GetProperty('GameModuleMvid').GetString() -ne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+            $capture.GetProperty('OwnerIds').GetArrayLength() -ne 6 -or
+            $capture.GetProperty('Cases').GetArrayLength() -ne 8) { throw 'Incomplete original opening passive relics capture.' }
+    } finally { $document.Dispose() }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        Owners=6; Cases=8; Trace=$capturePath } | ConvertTo-Json
     return
 }
 if ($OriginalChangedTempUpgradeRelics) {

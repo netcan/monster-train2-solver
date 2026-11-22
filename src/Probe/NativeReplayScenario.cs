@@ -1000,6 +1000,12 @@ namespace MonsterTrain2Poju.Probe
                 OriginalOpeningUnitsScenario.Prepare(managers, log);
                 return;
             }
+            if (fullBattle && OriginalOpeningPassiveRelicsScenario.Enabled)
+            {
+                OriginalOpeningPassiveRelicsScenario.Run(managers, log);
+                Finish(true, "Original opening passive relics component captured.");
+                return;
+            }
 #endif
             if (fullBattle && OriginalAffordableNonPlayableScenario.Enabled)
             {

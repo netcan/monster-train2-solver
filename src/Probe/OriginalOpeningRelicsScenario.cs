@@ -18,9 +18,10 @@ namespace MonsterTrain2Poju.Probe
             (OriginalStartRoomAttachmentScenario.Floor3RelicId, OriginalStartRoomAttachmentScenario.Floor3UpgradeId)
         };
         private static bool Phase => Modifier == PhaseName;
-        internal static bool Enabled => Phase || Modifier.StartsWith(Prefix, StringComparison.Ordinal);
+        private static bool Passive => OriginalOpeningPassiveRelicsScenario.Enabled;
+        internal static bool Enabled => Passive || Phase || Modifier.StartsWith(Prefix, StringComparison.Ordinal);
         internal static bool Acquired { get; private set; }
-        internal static bool CaptureSpawnStatuses => Acquired && !Phase;
+        internal static bool CaptureSpawnStatuses => Acquired && !Phase && !Passive;
         internal static bool CaptureAfterDraw(string ownerId) => Acquired && Phase && DrawIds.Contains(ownerId);
 
         internal static void AcquireBeforeBattle(AllGameManagers managers, ManualLogSource log)
@@ -32,7 +33,8 @@ namespace MonsterTrain2Poju.Probe
                 save.GetCurrentDistance() != 0 || save.GetMutators().Count != 0 || save.GetCovenants().Count != 0)
                 throw new InvalidOperationException("Original opening relics require a fresh 2.3.1 Ring 1 before combat.");
 
-            string[] ids = Phase ? RoomOwners.Select(owner => owner.Id).Concat(DrawIds).ToArray() :
+            string[] ids = Passive ? OriginalOpeningPassiveRelicsScenario.OwnerIds :
+                Phase ? RoomOwners.Select(owner => owner.Id).Concat(DrawIds).ToArray() :
                 Modifier.Substring(Prefix.Length).Split(',');
             if (ids.Any(id => !Guid.TryParseExact(id, "D", out Guid parsed) || parsed.ToString() != id) ||
                 ids.Distinct(StringComparer.Ordinal).Count() != ids.Length)
@@ -43,6 +45,12 @@ namespace MonsterTrain2Poju.Probe
             var definitions = ids.Select(id =>
             {
                 var relic = data.Single(item => item.GetID() == id);
+                if (Passive)
+                {
+                    if (owned.Contains(id) || !OriginalOpeningPassiveRelicsScenario.MatchesOriginal(relic))
+                        throw new InvalidOperationException("Unexpected original opening passive relic: " + relic.name);
+                    return (Relic: relic, StatusId: string.Empty);
+                }
                 var effect = relic.GetEffects().Single();
                 if (Phase)
                 {
@@ -61,7 +69,7 @@ namespace MonsterTrain2Poju.Probe
                     throw new InvalidOperationException("Expected an original unconditional spawn-status relic: " + relic.name);
                 return (Relic: relic, StatusId: status.statusId);
             }).ToArray();
-            if (!Phase && definitions.Select(item => item.StatusId).Distinct(StringComparer.Ordinal).Count() != definitions.Length)
+            if (!Phase && !Passive && definitions.Select(item => item.StatusId).Distinct(StringComparer.Ordinal).Count() != definitions.Length)
                 throw new InvalidOperationException("Each opening relic needs a distinct status for its native callback witness.");
 
             foreach (var item in definitions) save.AddRelic(item.Relic);

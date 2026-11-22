@@ -10,12 +10,18 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class RelicCardModifierProbe
     {
+        private static bool OpeningPassiveCapture =>
+#if DEVELOPMENT_PROBE
+            OriginalOpeningPassiveRelicsScenario.CaptureReady;
+#else
+            false;
+#endif
         internal static bool Enabled => OriginalGrosMichelScenario.Enabled || OriginalBalatroEventCavendishScenario.Enabled || OriginalRelicCountAttackScenario.Enabled || OriginalHealingPowerScenario.Enabled || Environment.GetEnvironmentVariable("MT2_PROBE_BATTLE_RELIC_UPGRADES") == "1" ||
             OriginalRelicBatchScenario.Enabled || OriginalCardAttackRelicScenario.Enabled || OriginalCardTypeCostScenario.Enabled || OriginalUpgradeCountRelicsScenario.Enabled ||
-            OriginalPurgeToExhaustScenario.Enabled || OriginalNoUpgradeCardCostScenario.Enabled || OriginalExpensiveCardUpgradeScenario.Enabled || OriginalWolosBloodletterScenario.Enabled;
+            OriginalPurgeToExhaustScenario.Enabled || OriginalNoUpgradeCardCostScenario.Enabled || OriginalExpensiveCardUpgradeScenario.Enabled || OriginalWolosBloodletterScenario.Enabled || OpeningPassiveCapture;
         internal static bool CaptureReady => OriginalGrosMichelScenario.CaptureReady || OriginalRelicCountAttackScenario.CaptureReady || OriginalHealingPowerScenario.CaptureReady || RelicCardModifierScenario.CaptureReady || OriginalRelicBatchScenario.CaptureReady ||
             MagebladeScenario.CaptureReady || OriginalCardAttackRelicScenario.CaptureReady || OriginalBalatroEventCavendishScenario.CaptureReady || OriginalCardTypeCostScenario.CaptureReady || OriginalUpgradeCountRelicsScenario.CaptureReady ||
-            OriginalPurgeToExhaustScenario.CaptureReady || OriginalNoUpgradeCardCostScenario.CaptureReady || OriginalExpensiveCardUpgradeScenario.Prepared || OriginalWolosBloodletterScenario.Prepared;
+            OriginalPurgeToExhaustScenario.CaptureReady || OriginalNoUpgradeCardCostScenario.CaptureReady || OriginalExpensiveCardUpgradeScenario.Prepared || OriginalWolosBloodletterScenario.Prepared || OpeningPassiveCapture;
         internal static readonly List<Record> Records = new List<Record>();
         private static readonly List<Record> active = new List<Record>();
         internal sealed class Record
