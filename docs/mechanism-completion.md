@@ -258,6 +258,10 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 11 次击杀和两次装备的逐件移除对照。21 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
 [`birth-equipment-and-slay.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-conduit-relics/birth-equipment-and-slay.mt2f)
 
+两个原版单位升级遗物分别记录一次死亡触发的 +10 攻击、五次月相 +20 和四次移除。
+实际 21 次出牌、5 次结束回合，候选检查和 16 条独立分支通过。
+[`death-and-moon-upgrades.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-phase-relics/death-and-moon-upgrades.mt2f)
+
 补采月相掩码后，Restoring Retreat 在原版先回复 10 点生命，再将该单位移到底层。
 同一场受控胜局还核对两队 Witchweave、治疗与净化、毒层集中及翻倍、移除装备与加攻。
 19 次出牌、5 次结束回合、16 条分支和候选检查通过。
