@@ -612,6 +612,10 @@ namespace MonsterTrain2Poju.Probe
                         OriginalPriorityRelicBattleScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalStatusMagnitudeWitness.Enabled)
                         OriginalStatusMagnitudeWitness.AcquireBeforeBattle(managers!);
+#if DEVELOPMENT_PROBE
+                    if (fullBattle && OriginalOpeningRelicsScenario.Enabled)
+                        OriginalOpeningRelicsScenario.AcquireBeforeBattle(managers!, log);
+#endif
                     if (fullBattle && OriginalRageOnBurnoutStackLossScenario.Enabled && !OriginalRageOnBurnoutStackLossScenario.Acquired)
                         OriginalRageOnBurnoutStackLossScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPyreRevengeScenario.Enabled && !OriginalPyreRevengeScenario.Acquired)
@@ -736,6 +740,10 @@ namespace MonsterTrain2Poju.Probe
                         OriginalMollisShelterObservation.AcquireBeforeBattle(managers!);
                     if (fullBattle && OriginalStatusMagnitudeWitness.Enabled)
                         OriginalStatusMagnitudeWitness.AcquireBeforeBattle(managers!);
+#if DEVELOPMENT_PROBE
+                    if (fullBattle && OriginalOpeningRelicsScenario.Enabled)
+                        OriginalOpeningRelicsScenario.AcquireBeforeBattle(managers!, log);
+#endif
                     if (fullBattle && OriginalAfterDrawSpawnScenario.Enabled && !OriginalAfterDrawSpawnScenario.Acquired)
                         OriginalAfterDrawSpawnScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalHoldoverGrantScenario.Enabled && !OriginalHoldoverGrantScenario.Acquired)
