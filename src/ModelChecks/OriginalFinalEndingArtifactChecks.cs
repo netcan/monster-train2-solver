@@ -9,10 +9,12 @@ internal static class OriginalFinalEndingArtifactChecks
 
     internal static void Native(FixtureValue root)
     {
+        var build = (root.GetProperty("GameVersion").GetString(), root.GetProperty("GameModuleMvid").GetString());
+        bool supportedBuild = build is ("2.2.1", "8fb07b96-f4db-4d2b-884d-c00536d6ccf4") or
+            (Game231FixtureCatalog.Version, Game231FixtureCatalog.Module);
         Require(root.GetProperty("Schema").GetInt32() == 193 &&
             root.GetProperty("ModifierScenario").GetString() == "original-final-ending-artifact" &&
-            root.GetProperty("GameVersion").GetString() == "2.2.1" &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
+            supportedBuild &&
             root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
             root.GetProperty("OriginalFinalEndingArtifactPrepared").GetBoolean() &&
             new[] { "CaptureFailures", "Unsupported", "Pending" }.All(name => root.GetProperty(name).GetInt32() == 0),
@@ -166,7 +168,7 @@ internal static class OriginalFinalEndingArtifactChecks
         Require(callbacks >= 2 && generated > 0 && gated > 0 &&
             fullHandControls == generated && championHandControls == generated && filteredPoolControls == generated &&
             emptyPoolControls == generated && definitions.Count == 1 &&
-            externalUpgradeCandidates == 8 &&
+            externalUpgradeCandidates == (build.Item1 == Game231FixtureCatalog.Version ? 7 : 8) &&
             root.GetProperty("Mismatches").GetInt32() == 0,
             "Missing positive, gated, duplicate-deck exclusion, synthetic hand controls, or stable pool witnesses.");
         BattleActionChecks.Native(root);
