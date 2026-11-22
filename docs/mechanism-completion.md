@@ -143,6 +143,11 @@ Cycle of Life 的原版动作给友军增加 10 点当前和最大生命，再�
 均与原版结算定义匹配，423 张仍无出牌记录。
 [`spike-of-the-banished.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-spells/spike-of-the-banished.mt2f)
 
+Flash Freeze 与 Ice Spear 在同一原版胜局补齐。首回合验证直接伤害、护甲与
+Frostbite，整局 21 次出牌、7 次结束回合、16 条分支和候选检查均通过。
+累计 194 场整战，180/601 张收藏卡已有匹配的原版结算。
+[`flash-freeze-and-ice-spear.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-spells/flash-freeze-and-ice-spear.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
