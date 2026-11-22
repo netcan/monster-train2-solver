@@ -3686,7 +3686,9 @@ namespace MonsterTrain2Poju.Probe
                     bool playerPlan = PlayerAdvisorProbe.Enabled && decision.Spawn.Turn >=
                         int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_PLANNER_TURN") ?? "2") &&
                         (PlannerReplayScenario.Records.Count == 0 || !PlannerReplayScenario.Records[0].Completed);
-                    pendingPlay = playerPlan ? null : modifierScenario == OriginalStingRelicBatchScenario.Name
+                    // These fixed probes select their own next action below, including ending the turn.
+                    bool fixedUnitPolicy = modifierScenario is OriginalSupportUnitsScenario.Name or OriginalBaseChampionsScenario.Name;
+                    pendingPlay = playerPlan || fixedUnitPolicy ? null : modifierScenario == OriginalStingRelicBatchScenario.Name
                         ? OriginalStingRelicBatchScenario.Choose(decision)
                         : Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "units-spells-and-junk"
                             ? BattleActionModel.ChooseUnitSpellAndJunkPlay(decision) : BattleActionModel.ChooseUnitAndJunkPlay(decision);
