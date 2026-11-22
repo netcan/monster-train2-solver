@@ -4,6 +4,7 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalSupportSpellsChecks
 {
+    private const string EmberedInferyId = "a736e605-a4f4-4cc1-8eba-63cb0cf3515e";
     private static readonly string[] Originals = ["8ccdb317-e3e3-47b1-95c0-662ffe3fb7c6", "2ff4ef73-00f4-4bd5-b868-607320188980", "acc303db-30ea-4ff1-8e46-97344210cb6b",
         "6534ff5b-d036-4b2f-ac21-70ee4d68700e", "24e4729c-f256-4524-84c8-99564affb42c", "f25d8b79-056a-4db3-940d-c6cfc540bc4d",
         "4ca4ed47-9867-4004-acf0-171c3282751f", "ac110052-0000-4000-8000-000000000008", "297c2618-1a10-4367-8b7c-d068a6c5b3f4",
@@ -218,10 +219,12 @@ internal static class OriginalSupportSpellsChecks
                 continue;
             }
             bool recast = returnedRecast && i == ids.Length - 1;
+            bool emberedInfery = card.DataId == EmberedInferyId;
             Require(card.DataId == originals[recast ? 0 : i - 4] && rule.CardType is "Spell" or "Equipment" or "Monster" or "Junk" or "TrainRoomAttachment" && rule.ExternalInteractions.Count == 0 &&
                 after.Spawn.Train.Context!.Statistics!.Value(ids[i], "TimesPlayed", "ThisBattle") == (recast ? 2 : 1) &&
-                (before.Energy >= after.Energy || rule.Effects.Any(effect => effect.Type == "GainEnergy")),
+                (before.Energy >= after.Energy || rule.Effects.Any(effect => effect.Type == "GainEnergy") || emberedInfery),
                 "Original spell identity, projection or positive native play differs: " + rule.AssetKey);
+            if (emberedInfery) CheckEmberedInfery(before, after, action, rule);
             CardGenerationRule[] generators = rule.Effects.Where(effect => effect.Type == "Generate").Select(effect => effect.Generation!).ToArray();
             if (originals.Contains("f892b119-fa6a-4f69-9369-10e29bcfd96e"))
             {
@@ -728,6 +731,22 @@ internal static class OriginalSupportSpellsChecks
         OriginalInfusionChecks.Native(root, originals);
         if (originals.Contains("7018bb02-2ec2-4b4f-95d0-7bafce95d97d")) CrucibleStewardChecks.Native(root);
         Console.WriteLine($"ORIGINAL-ISOLATED-SPELLS PASS: {originals.Length} unchanged originals, independent control identities and full immutable chains.");
+    }
+    private static void CheckEmberedInfery(BattleTurnState before, BattleTurnState after, PlayCardAction action, CardPlayRule rule)
+    {
+        CombatTrigger? spawnTrigger = rule.SpawnUnit?.Triggers.SingleOrDefault();
+        CombatUnit? spawned = after.Spawn.Train.Rooms[action.RoomIndex].Units.SingleOrDefault(unit => unit.SpawnerCardId == action.CardInstanceId);
+        Require(rule is { AssetKey: "EmberedInfery", CardType: "Monster", Effect: "SpawnMonster", CostType: "Default", Cost: 1,
+                Effects.Count: 0, OnCastEffects.Count: 0, SpawnUnit.AssetKey: "MonsterEmberedInfery" } &&
+            spawnTrigger is { Kind: "OnSpawn", HasTriggered: false, FireCount: 1,
+                Origin: { UpgradeId: "", EquipmentCardId: 0, IsFromEquipment: false, OnlyIfEquipped: false },
+                Effects: [{ Type: "CardEffectGainEnergy", Value: 4,
+                    Action: { Type: "GainEnergy", Target: "Self", Value: 4, AllowPlayer: false, AllowEnemy: false, Range: null } }] } &&
+            spawned is { AssetKey: "MonsterEmberedInfery", Team: CombatTeam.Player, Triggers: [var fired] } &&
+            spawned.Id == before.Spawn.NextUnitId && Json(fired) == Json(spawnTrigger.Fired(spawnTrigger.Effects)) &&
+            after.Spawn.Train.Context!.FindCard(action.CardInstanceId)?.LastPlayedCost == rule.Cost &&
+            before.Energy >= rule.Cost && after.Energy == before.Energy - rule.Cost + spawnTrigger.Effects[0].Value,
+            "Original Embered Infery must spend one Ember and gain four from its summoned unit's native OnSpawn callback.");
     }
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
