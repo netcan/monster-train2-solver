@@ -4052,7 +4052,8 @@ if ($DamageOverflow -and ($trace.ModifierScenario -ne 'damage-overflow' -or
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
 if ($OriginalRoomStatusSpellsFullBattle -or $OriginalTargetedStatusSpells -or $OriginalOpeningSpellIds.Count) {
-    $opening = @($trace.Actions | Where-Object { $_.Before.Spawn.Turn -eq 1 } | ForEach-Object {
+    $openingActions = @($trace.Actions | Where-Object { $_.Before.Spawn.Turn -eq 1 })
+    $opening = @($openingActions | ForEach-Object {
         $action = $_.Action
         $_.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $action.CardInstanceId | ForEach-Object DataId
     })
@@ -4079,6 +4080,23 @@ if ($OriginalRoomStatusSpellsFullBattle -or $OriginalTargetedStatusSpells -or $O
     if ($trace.ModifierScenario -cne $expectedModifier -or
         ($opening -join ',') -cne ($expected -join ',') -or @($trace.Turns | Where-Object { $_.Before.Spawn.Turn -eq 0 }).Count -ne 1) {
         throw "Original spell battle must record deployment and all configured first-turn spells in order. Inspect $unityLog"
+    }
+    if ($OriginalOpeningSpellIds.Count -eq 1 -and $expected[0] -ceq 'ab3c2bfa-0ad4-4be0-a050-293f4866bd65') {
+        $spikePlay = $openingActions[0]
+        $targetId = $spikePlay.Action.TargetUnitId
+        $targetBefore = @($spikePlay.Before.Spawn.Train.Rooms.Units | Where-Object Id -EQ $targetId)
+        $targetAfter = @($spikePlay.Actual.Spawn.Train.Rooms.Units | Where-Object Id -EQ $targetId)
+        $spent = [int]$spikePlay.Before.Energy - [int]$spikePlay.Actual.Energy
+        $spike = $spikePlay.Actual.Spawn.Train.Context.CardRegistry | Where-Object InstanceId -EQ $spikePlay.Action.CardInstanceId
+        if ($spent -le 0 -or $spikePlay.Actual.Energy -ne 0 -or $spike.LastPlayedCost -ne $spent -or
+            $targetBefore.Count -ne 1 -or $targetAfter.Count -ne 1 -or $targetBefore[0].Team -ne 1) {
+            throw "The original Spike must consume positive Ember on the selected ally. Inspect $unityLog"
+        }
+        $valorBefore = ($targetBefore[0].Statuses | Where-Object { $_.Id -ceq 'valor' } | ForEach-Object { $_.Stacks } | Measure-Object -Sum).Sum
+        $valorAfter = ($targetAfter[0].Statuses | Where-Object { $_.Id -ceq 'valor' } | ForEach-Object { $_.Stacks } | Measure-Object -Sum).Sum
+        if (([int]$valorAfter - [int]$valorBefore) -ne 4 * $spent) {
+            throw "The original Spike must grant four Valor per Ember to the selected ally. Inspect $unityLog"
+        }
     }
 }
 if ($WithOriginalStatusMagnitudeRelics) {

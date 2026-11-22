@@ -145,7 +145,16 @@ namespace MonsterTrain2Poju.Probe
                 CardData? card = data.FindCardData(id);
                 if (card == null || card.GetID() != id || card.GetCardType() != CardType.Spell ||
                     !card.ShouldAppearInLogbook() || card.IsArchived || card.IsUnitAbility() || card.IsRoomAbility() ||
-                    card.GetCostType() != CardData.CostType.Default || card.GetCost() < 0 || card.GetCardTriggers().Any() ||
+                    card.GetCardTriggers().Any())
+                    throw new InvalidOperationException("Original opening requires a native logbook spell: " + id);
+
+                if (id == OriginalXBanishedSpikeScenario.CardDataId)
+                {
+                    if (ids.Length != 1 || !IsOriginalBanishedSpike(card))
+                        throw new InvalidOperationException("Spike of the Banished requires its unchanged original definition and a single-card opening.");
+                    return card;
+                }
+                if (card.GetCostType() != CardData.CostType.Default || card.GetCost() < 0 ||
                     card.GetTraits().Any(trait => trait.GetTraitStateName() is not (nameof(CardTraitExhaustState) or nameof(CardTraitPermafrost))))
                     throw new InvalidOperationException("Original opening requires a fixed-cost logbook spell: " + id);
 
@@ -174,6 +183,26 @@ namespace MonsterTrain2Poju.Probe
             if (spells.Sum(card => card.GetCost()) > 3)
                 throw new InvalidOperationException("The configured opening spells exceed the stock three Ember.");
             return spells;
+        }
+
+        private static bool IsOriginalBanishedSpike(CardData card)
+        {
+            if (card.name != "SpikeOfTheBanished" || card.GetCost() != 0 ||
+                card.GetCostType() != CardData.CostType.ConsumeRemainingEnergy ||
+                card.GetEffects() is not [{ } nativeEffect] ||
+                nativeEffect.GetEffectStateName() != nameof(CardEffectAddStatusEffect) || nativeEffect.GetUseIntRange())
+                return false;
+
+            CardPlayRule rule = BattleActionProbe.Definition(card);
+            return rule.Effect == "Spell" && rule.ExternalInteractions.Count == 0 &&
+                rule.Effects is [{ Type: "AddStatus", Target: "DropTargetCharacter", Value: 0, AllowPlayer: true, AllowEnemy: true,
+                    Statuses: [{ Id: "valor", Stacks: 0, ParamInt: 1 }] }] &&
+                card.GetTraits().Select(CardSourceTraitProbe.Capture).ToArray() is
+                [
+                    { Type: nameof(CardTraitScalingAddStatusEffect), Int: 4, Int2: 0, Int3: 0, Bool: false, Str: "",
+                        Float: 1, Scaling: true, TrackedValue: "PlayedCost", EntryDuration: "ThisBattle", StatusEffectIds: ["valor"] },
+                    { Type: nameof(CardTraitExhaustState) }
+                ];
         }
 
         private static bool IsOriginalCycleOfLife(CardData card, CardPlayRule rule) =>
@@ -247,6 +276,8 @@ namespace MonsterTrain2Poju.Probe
         private static PlayCardAction ChooseConfiguredOpening(BattleTurnState state, CardToken card)
         {
             CardPlayRule rule = state.PlayRules!.Cards.Single(candidate => candidate.DataId == card.DataId);
+            if (card.DataId == OriginalXBanishedSpikeScenario.CardDataId && state.Energy <= 0)
+                throw new InvalidOperationException("The original Spike of the Banished opening requires positive paid X.");
             CardActionEffect effect = rule.Effects[0];
             CombatTeam team = effect.Type switch
             {
