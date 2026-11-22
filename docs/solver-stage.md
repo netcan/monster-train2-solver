@@ -424,3 +424,8 @@ Cael 零盟约试炼的攻击与生命、吸血变体分别通过 26 次出牌�
 第 5 环左路红冠补采记录 22 次出牌、9 次结束回合。旧录像仍提供原来的实际输入与结算证据。
 [装备与死亡补采](../tests/compatibility/game-2.3.1/mechanics/controlled-original-trigger-relics/equipment-and-death-with-moon.mt2f)
 [第 5 环红冠复放](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/unlocked-covenant0-ring5-left-red-crown.mt2f)
+
+达到 270 场归档后执行阶段复放，253 场连续通过，17 场分段通过，零失败。
+共复放 4,248 次出牌或技能、1,617 次结束回合，跳过 113 份组件或诊断档。
+四个工作线程耗时约 137 秒。新增出牌和结束回合候选按受影响场次定向检查。
+报告为 `results/recorded-chain-triage-20261122-220339-7dcc4c41/report.tsv`。
