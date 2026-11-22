@@ -104,6 +104,19 @@
 第 6 环仍从 28 点薪火开始，战前档为 `.probe-runs/campaign-ring6-20261122-112923-5374f92c-before-ring6`，
 主存档 SHA256 为 `3c53ce0916845594cf2a856342eae9b33c4670fee6008bfdb7e8adc0e7c13b12`。
 
+原版复放同一第 5 环的 50 步胜局后走右路，删两张牌、领取金币，在原版商店买到
+Bloodthirsty Blade、Eclipse Chamber 和 Zone of Silence。第 6 环战前档为
+`.probe-runs/campaign-ring6-20261122-125402-900b5069-before-ring6`，主存档 SHA256 为
+`fade21b8c7c61ed1c1c618e06c3c298e3e4634d8e893f5f85aca06bf03b453c6`。
+用 `Run-FullBattleProbe.ps1 -CapturePlayerDeploymentOnly` 从该战前档在约 26 秒内录得原版
+第 0 回合。顾问纯捕获一次，零搜索、零建议发布、零战斗输入。
+快照在 [ring6-right-zone.mt2f](../tests/compatibility/game-2.3.1/mechanics/player-deployment-only/ring6-right-zone.mt2f)。
+
+从该快照离线筛查，三条同策略对照在前四个普通回合均未抽到沉默房，底层设定的薪火维持
+9 点，两个首领分别剩 759 和 1237 血。继续用底层和顶层部署优先策略，各自独立复放了
+54 与 34 步，均在模型中判负。底层策略终态两首领剩 808 和 1237 血，顶层策略剩 1076
+和 1100 血。原版证据覆盖战前路线和部署快照，两条终局属于离线推演。
+
 第 5 环的首次整场对照从 10 点薪火生命开始，原版判负且四项采集计数为零。另一条部署路线验证了
 StealthWaxers 的出生条件与月相手牌更新可同时生效。两次部署与结束回合的后继在原版完全一致，
 归档为 `mechanics/stealth-waxers-moon-refresh/native-branch.mt2f`。
