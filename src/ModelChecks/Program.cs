@@ -4632,6 +4632,12 @@ if (args.Length == 1 && args[0] == "--tactical-target-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--enemy-spell-reaction-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    TargetedDamageChecks.EnemySpellReaction(document.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--targeted-damage-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

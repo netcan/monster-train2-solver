@@ -13,13 +13,17 @@ namespace MonsterTrain2Poju.Model
 
         internal TargetedDamagePolicy(BattleTurnState source) { this.source = source; }
 
+        internal static bool IsPlainTargetedDamage(CardPlayRule rule) =>
+            rule.CardType == "Spell" && rule.IsAnyAbility != true && rule.OnCastEffects.Count == 0 &&
+            rule.Effects.Count(effect => effect.Type == "Damage") == 1 &&
+            rule.Effects.All(effect => effect.Target is "DropTargetCharacter" or "LastTargetedCharacters" &&
+                (effect.Type == "Damage" && effect.AllowEnemy && !effect.AllowPlayer && effect.Value > 0 && effect.Range == null ||
+                 effect.Type == "Heal" && effect.AllowPlayer && !effect.AllowEnemy));
+
+
         internal double? TargetValue(PlayCardAction action, CardPlayRule rule, CombatUnit target)
         {
-            if (target.Team != CombatTeam.Enemy || target.Health <= 0 || rule.CardType != "Spell" || rule.IsAnyAbility == true ||
-                rule.OnCastEffects.Count != 0 || rule.Effects.Count(effect => effect.Type == "Damage") != 1 ||
-                rule.Effects.Any(effect => effect.Target is not ("DropTargetCharacter" or "LastTargetedCharacters") ||
-                    !(effect.Type == "Damage" && effect.AllowEnemy && !effect.AllowPlayer && effect.Value > 0 && effect.Range == null ||
-                      effect.Type == "Heal" && effect.AllowPlayer && !effect.AllowEnemy))) return null;
+            if (target.Team != CombatTeam.Enemy || target.Health <= 0 || !IsPlainTargetedDamage(rule)) return null;
             // Keep cheap pings in their existing finishing/shield-breaking
             // role even when the currently focused room adds magic power.
             // Reserve a card for larger targets only when its authored or

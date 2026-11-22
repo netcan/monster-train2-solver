@@ -97,8 +97,9 @@ namespace MonsterTrain2Poju.Model
                 // legal sacrifice/Incant branches in the full enumerator, but
                 // let this seed defer rather than buff an enemy or hurt an ally.
                 SupportedActionCandidate? shieldBreakingFallback = null;
-                foreach (PlayCardAction action in Inputs(choice.token, rule).Where(action => Rank(action, rule) > UnwantedTargetRank)
-                    .OrderByDescending(action => Rank(action, rule)).ThenBy(action => action.TargetUnitId))
+                var ordered = Inputs(choice.token, rule).Where(action => Rank(action, rule) > UnwantedTargetRank)
+                    .OrderByDescending(action => Rank(action, rule)).ThenBy(action => action.TargetUnitId);
+                foreach (PlayCardAction action in ordered)
                 {
                     BattleActionResult result = Play(source, action);
                     if (result.Supported)
@@ -111,7 +112,7 @@ namespace MonsterTrain2Poju.Model
                         // the original legal shield-breaking cast as a fallback.
                         if (OnlyBreaksShield(source, action, rule, result.State!))
                         { shieldBreakingFallback ??= candidate; continue; }
-                        return candidate;
+                        return AccountForEnemySpellReaction(candidate, rule, ordered);
                     }
                     if (result.Rejection == ActionRejection.Unsupported)
                         omitted.Add(new UnsupportedActionAttempt(action, result.Reason ?? "Unsupported tactical-seed action."));
@@ -143,6 +144,52 @@ namespace MonsterTrain2Poju.Model
             }
 
             BattleActionResult Play(BattleTurnState state, PlayCardAction action) => workspace?.Play(state, action) ?? BattleActionModel.PlayCard(state, action);
+
+            SupportedActionCandidate AccountForEnemySpellReaction(SupportedActionCandidate initial, CardPlayRule rule,
+                IEnumerable<PlayCardAction> ordered)
+            {
+                if (initial.Result.Outcome != RoomOutcome.Exchanged || !TargetedDamagePolicy.IsPlainTargetedDamage(rule) ||
+                    !EnemyReacts(initial.Action.RoomIndex))
+                    return initial;
+
+                BattleTurnState resolved = initial.Result.State!;
+                var oldEnemies = source.Spawn.Train.Rooms.Where(room => room.RoomIndex != initial.Action.RoomIndex)
+                    .SelectMany(room => room.Units).Where(unit => unit.Team == CombatTeam.Enemy && unit.Health > 0)
+                    .ToDictionary(unit => unit.Id, unit => unit.Health);
+                if (!resolved.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Any(unit => oldEnemies.TryGetValue(unit.Id, out int health) && unit.Health > health))
+                    return initial;
+
+                // Probe one ranked target per other floor only when the
+                // first supported cast actually healed a remote enemy.
+                SupportedActionCandidate best = initial;
+                double score = BattlePlanner.Evaluate(resolved, initial.Result.Outcome);
+                double position = BattlePlanner.PositionCost(resolved, initial.Result.Outcome);
+                foreach (PlayCardAction alternate in ordered.Where(action => action.RoomIndex != initial.Action.RoomIndex && !EnemyReacts(action.RoomIndex))
+                    .GroupBy(action => action.RoomIndex).Select(group => group.First()).Take(3))
+                {
+                    BattleActionResult next = Play(source, alternate);
+                    if (!next.Supported)
+                    {
+                        if (next.Rejection == ActionRejection.Unsupported)
+                            omitted.Add(new UnsupportedActionAttempt(alternate, next.Reason ?? "Unsupported tactical-seed action."));
+                        continue;
+                    }
+                    double nextScore = BattlePlanner.Evaluate(next.State!, next.Outcome);
+                    double nextPosition = BattlePlanner.PositionCost(next.State!, next.Outcome);
+                    if (nextScore < score || nextScore == score && nextPosition < position)
+                    {
+                        best = new SupportedActionCandidate(alternate, next);
+                        score = nextScore;
+                        position = nextPosition;
+                    }
+                }
+                return best;
+
+                bool EnemyReacts(int roomIndex) => source.Spawn.Train.Rooms.Single(room => room.RoomIndex == roomIndex).Units
+                    .Any(unit => unit.Team == CombatTeam.Enemy && unit.Health > 0 &&
+                        unit.Triggers.Any(trigger => trigger.Kind == "CardSpellPlayed"));
+            }
 
             bool EmptyGoldReward(SupportedActionCandidate candidate)
             {

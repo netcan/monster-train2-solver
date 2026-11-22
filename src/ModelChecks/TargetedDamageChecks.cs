@@ -6,6 +6,39 @@ internal static class TargetedDamageChecks
 {
     internal const string Reason = "Native damage seed must preserve useful upgraded spell damage and visible weakness.";
 
+    internal static void EnemySpellReaction(FixtureValue fixture)
+    {
+        var rows = fixture.GetProperty("RollingDecisions");
+        var before = rows[20].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        var after = rows[20].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        var original = rows[20].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        Require(original is { CardInstanceId: 23, RoomIndex: 0, TargetUnitId: 17 } &&
+            Health(before, 9) == 748 && Health(after, 9) == 798 && before.Spawn.Turn == 3,
+            "Missing native cross-floor enemy healing after the recorded cast.");
+
+        using var keys = new BattleStateKeys();
+        string parent = keys.Key(before);
+        var chosen = BattleTacticalPolicy.Choose(before, out _, 0);
+        Require(chosen?.Action is { CardInstanceId: 23, RoomIndex: 2, TargetUnitId: 9 } &&
+            Health(chosen.Result.State!, 9) == 727 &&
+            Key(BattleActionModel.PlayCard(before, original).State!) == Key(after),
+            "Cross-floor enemy healing should favor the productive same-card target and preserve native replay.");
+
+        var options = new BattlePlannerOptions(24, 3, 8, 12, TimeSpan.FromSeconds(20), 0,
+            allowShorterHorizon: true, searchToBattleEnd: true, stopAtBestPyreHealth: true);
+        var plan = BattlePlanner.Plan(before, keys.Key, options);
+        Require(plan.Steps.FirstOrDefault()?.Action is { CardInstanceId: 23, RoomIndex: 2, TargetUnitId: 9 } &&
+            keys.Key(before) == parent, "Default planner lost the alternative or changed its native root.");
+
+        var complex = rows[41].GetProperty("Root").Deserialize<BattleTurnState>()!;
+        Require(BattleTacticalPolicy.Choose(complex, out _, 0)?.Action is { CardInstanceId: 19, RoomIndex: 1, TargetUnitId: 31 },
+            "A spell with movement should retain its existing ordering.");
+        Console.WriteLine("ENEMY-SPELL-REACTION PASS: native remote healing, ordinary planner selects a different floor, and the movement control retains its target.");
+
+        static int Health(BattleTurnState state, int id) => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+            .Single(unit => unit.Id == id).Health;
+    }
+
     internal static void Native(FixtureValue fixture)
     {
         var row = fixture.GetProperty("RollingDecisions").EnumerateArray().ElementAt(24);
