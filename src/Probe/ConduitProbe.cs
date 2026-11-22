@@ -15,6 +15,9 @@ namespace MonsterTrain2Poju.Probe
         // player Conduit capture during acceptance without changing session state.
         internal static bool Enabled => AdvisorRuntime.PlayerSession ||
             Environment.GetEnvironmentVariable("MT2_PROBE_PLAYER_ADVISOR") == "1" ||
+#if DEVELOPMENT_PROBE
+            OriginalOpeningUnitsScenario.Enabled ||
+#endif
             ConduitMovementCalibration.Enabled || EclipseChamberScenario.EnemyConduit || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "original-conduit-relics" || OriginalMooncycleFaeScenario.Enabled ||
             PlanetariumScenario.Enabled || OriginalStrongMagicCardsScenario.Enabled || OriginalScaledMoonPhaseScenario.Enabled || OriginalMoonCardUpgradesScenario.Lunacy ||
             OriginalSupportSpellsScenario.Enabled && (OriginalSupportSpellsScenario.IsolatedIds == null || !BattleSpawnPointProbe.Enabled) ||
