@@ -273,7 +273,7 @@ namespace MonsterTrain2Poju.Model
                     if (matched == null && candidate != null && !exhaustedTurn && !SelectionAdviceReuse.SameBattle(candidate.Root, root))
                         matched = SelectionAdviceReuse.MatchAfterObservations(candidate, observations, root, token);
                     bool reusedSelection = matched == null && candidate != null && !exhaustedTurn && SelectionAdviceReuse.TryRebase(candidate, root,
-                        retainPlans, token, out plan, out proof);
+                        retainPlans, token, out plan, out proof, verifiedRootKey: key);
                     verification.Stop();
                     TimeSpan reuseCheckElapsed = verification.Elapsed;
                     if (reusedSelection)

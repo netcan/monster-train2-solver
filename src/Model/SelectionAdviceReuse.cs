@@ -48,14 +48,17 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static bool TryRebase(BattleAdvice advice, BattleTurnState root, bool retainPlans,
-            CancellationToken token, out BattlePlanResult plan, out VerifiedAdviceContinuation? proof)
+            CancellationToken token, out BattlePlanResult plan, out VerifiedAdviceContinuation? proof,
+            string? verifiedRootKey = null)
         {
             plan = advice.Plan; proof = null;
-            using var selectionKeys = new BattleStateKeys();
-            string key = selectionKeys.Key(root);
+            // The session verifies the captured root key and publishes the
+            // candidate with its verified key. Other callers hash both roots here.
+            using var selectionKeys = verifiedRootKey == null ? new BattleStateKeys() : null;
+            string key = verifiedRootKey ?? selectionKeys!.Key(root);
             if (advice.SelectionCache.TryGetValue(key, out Result? cached))
             { plan = Reused(cached.Plan, cached.Plan.State); proof = cached.Proof; return true; }
-            string originalKey = selectionKeys.Key(advice.Root);
+            string originalKey = selectionKeys == null ? advice.RootKey : selectionKeys.Key(advice.Root);
             advice.SelectionCache[originalKey] = new Result(advice.Plan, advice.Continuation);
             if (key == originalKey)
             { plan = Reused(advice.Plan, advice.Plan.State); proof = advice.Continuation; return true; }
