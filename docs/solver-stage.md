@@ -450,3 +450,8 @@ Cael 零盟约试炼的攻击与生命、吸血变体分别通过 26 次出牌�
 原版以 76 点薪火生命获胜。面板的楼层浏览、候选保留、手牌变化、重置及预算切换均通过。
 独立复放逐项核对 28 步，出牌及结束回合候选也通过。
 [`current-ring1-presentation-after-allocation.mt2f`](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring1-presentation-after-allocation.mt2f)
+
+随后将八条高频的状态更新改为复用已冻结的卡牌集合。相对上一版分配优化，固定 32 节点下，
+开局进一步减少约 8% 分配量，后期减少约 10% 至 12%。18 次对照的动作、评分、完整状态和随机流
+一致。首战面板、第 6 环右路以及 Colonel 与远层光环三场的两类候选均通过。
+离线基准为 `results/ring6-context-scalar/fixed-budget-allocators.log`。
