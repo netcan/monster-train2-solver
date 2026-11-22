@@ -513,6 +513,10 @@ Bog Chrysalis 和 Bogdeep Cocoon 的同场对照实测孵出两只 Bog Fly。顾
 Draff 出生，Morel Mistress 提供排除对照。7 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`exhausted-first-of-kin.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/exhausted-first-of-kin.mt2f)
 
+原版 Molded 付 1 余烬选回耗尽单位，赋予 +5 攻击、+5 生命及 Ephemeral，并验证耗尽法术被排除。
+5 次出牌、5 次结束回合、16 条独立分支及两类候选通过。
+[`molded.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/molded.mt2f)
+
 Pyreblooded 的后续实机对照在同层记录友军 10 层、两名敌军各 4 层 Pyregel。原版技能
 消耗 0 余烬并进入 3 层冷却，自身攻击由 5 提升至 23。8 次出牌或技能、5 次结束回合、
 16 条独立分支和候选检查通过。专项也复放零层、缺少楼层快照和跨楼层的对照。
