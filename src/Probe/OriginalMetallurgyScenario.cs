@@ -32,6 +32,60 @@ namespace MonsterTrain2Poju.Probe
             Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_GROW_ROOM_SMELT_OBSERVATION") == "1";
 #endif
 
+#if DEVELOPMENT_PROBE
+        private static (CardState Source, int RecipientId, ManualLogSource Log)? isolatedChoice;
+        private static bool selectingIsolated;
+        private static bool choseIsolated;
+
+        internal static void ArmIsolatedChoice(CardState source, PlayCardAction action, ManualLogSource log)
+        {
+            if (source.GetCardDataID() != CardId || OriginalSupportSpellsScenario.IsolatedIds?.Contains(CardId) != true)
+                return;
+            if (isolatedChoice.HasValue || action.RecursionSelections is not [{ EffectIndex: 1, CardInstanceIds: [var recipient] }] ||
+                recipient == action.CardInstanceId || source.GetEffectStates() is not [_, { } effect] ||
+                effect.GetCardEffect() is not CardEffectChooseDiscard)
+                throw new InvalidOperationException("Isolated Metallurgy requires its original consume effect and one recorded recipient.");
+            isolatedChoice = (source, recipient, log);
+            choseIsolated = false;
+        }
+
+        internal static void CompleteIsolatedChoice()
+        {
+            if (isolatedChoice is not { } choice) return;
+            CombatContext context = FullBattleTrace.Active!.CaptureContext();
+            if (!choseIsolated || context.Cards.Hand.Any(card => card.InstanceId == choice.RecipientId) ||
+                context.OtherPiles?.Single(pile => pile.Name == "Exhausted").Cards.Any(card => card.InstanceId == choice.RecipientId) != true)
+                throw new InvalidOperationException("Isolated Metallurgy did not consume its recorded hand selection.");
+            isolatedChoice = null;
+        }
+
+        [HarmonyPatch(typeof(CardEffectChooseDiscard), nameof(CardEffectChooseDiscard.ApplyEffect))]
+        private static class IsolatedChoicePatch
+        {
+            private static void Postfix(CardEffectState cardEffectState, ref IEnumerator __result)
+            {
+                if (isolatedChoice is { } choice && ReferenceEquals(cardEffectState.GetParentCardState(), choice.Source) &&
+                    AllGameManagers.Instance!.GetSaveManager().PreviewMode == false)
+                    __result = SelectWithinOriginalEffect(__result);
+            }
+        }
+
+        private static IEnumerator SelectWithinOriginalEffect(IEnumerator native)
+        {
+            selectingIsolated = true;
+            try { while (native.MoveNext()) yield return native.Current; }
+            finally { selectingIsolated = false; }
+        }
+
+        private static IEnumerator SelectIsolated(CardManager cards, HandSelectionUI.Params parameters, int recipient, ManualLogSource log)
+        {
+            CardState selected = EligibleHandCard(cards, parameters, recipient);
+            choseIsolated = true;
+            log.LogInfo("ORIGINAL-METALLURGY-ISOLATED-CHOICE consumed=" + recipient);
+            yield return parameters.cardChosenCallback(selected, cards);
+        }
+#endif
+
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
@@ -200,6 +254,16 @@ namespace MonsterTrain2Poju.Probe
             [HarmonyPrefix]
             private static bool Prefix(CardManager __instance, HandSelectionUI.Params parameters, ref IEnumerator __result)
             {
+#if DEVELOPMENT_PROBE
+                if (selectingIsolated && isolatedChoice is { } choice)
+                {
+                    if (choseIsolated || parameters.selectionHandState != CardUI.CardUIState.HandDiscardCard ||
+                        parameters.descriptionKey != "ScreenDeck_Select_CardEffectChooseConsume" || parameters.overrideActionKey != "ScreenDeck_Consume_Action")
+                        throw new InvalidOperationException("Unexpected native hand selection while recording Metallurgy.");
+                    __result = SelectIsolated(__instance, parameters, choice.RecipientId, choice.Log);
+                    return false;
+                }
+#endif
                 if (!Enabled || chosenOnce || sourceId <= 0 || selectedId <= 0) return true;
                 __result = Select(__instance, parameters);
                 return false;
@@ -208,12 +272,18 @@ namespace MonsterTrain2Poju.Probe
 
         private static IEnumerator Select(CardManager cards, HandSelectionUI.Params parameters)
         {
-            CardState selected = cards.GetHand().Single(card => FullBattleTrace.Active!.CardId(card) == selectedId);
-            if (parameters.filterCallback(selected))
-                throw new InvalidOperationException("The original Metallurgy selection policy was rejected by its native filter.");
+            CardState selected = EligibleHandCard(cards, parameters, selectedId);
             chosenOnce = true;
             logger!.LogInfo("ORIGINAL-METALLURGY-AUTOSELECT kept=" + selectedId + " cost=" + selected.GetCostWithoutAnyModifications());
             yield return parameters.cardChosenCallback(selected, cards);
+        }
+
+        private static CardState EligibleHandCard(CardManager cards, HandSelectionUI.Params parameters, int recipient)
+        {
+            CardState selected = cards.GetHand().Single(card => FullBattleTrace.Active!.CardId(card) == recipient);
+            if (parameters.filterCallback(selected))
+                throw new InvalidOperationException("The original Metallurgy selection policy was rejected by its native filter.");
+            return selected;
         }
 
         private static void Set(object target, string field, object value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);

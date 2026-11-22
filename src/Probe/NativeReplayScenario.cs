@@ -919,6 +919,7 @@ namespace MonsterTrain2Poju.Probe
                     PreviewSchedulingProbe.Observe("PlayReady");
 #if DEVELOPMENT_PROBE
                     CardDuplicateScenario.CompleteIsolatedChoice();
+                    OriginalMetallurgyScenario.CompleteIsolatedChoice();
 #endif
                     if (fullBattle) FullBattleTrace.Active?.CompleteCardPlay();
 #if DEVELOPMENT_PROBE
@@ -4391,6 +4392,7 @@ namespace MonsterTrain2Poju.Probe
             int selectedAfterCapture = managers.GetRoomManager()!.GetSelectedRoom();
 #if DEVELOPMENT_PROBE
             CardDuplicateScenario.ArmIsolatedChoice(cards.GetHand()[index], action);
+            OriginalMetallurgyScenario.ArmIsolatedChoice(cards.GetHand()[index], action, log);
 #endif
             if (!cards.PlayCard(index, drop, ref error))
             {
