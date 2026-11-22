@@ -1,6 +1,7 @@
 #if DEVELOPMENT_PROBE
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using BepInEx.Logging;
 using MonsterTrain2Poju.Model;
@@ -62,6 +63,21 @@ namespace MonsterTrain2Poju.Probe
                 stock.Any(card => !cards.GetHand().Contains(card)))
                 throw new InvalidOperationException("Original deployment hand lost a stock card.");
 
+            string? roomCorruption = Environment.GetEnvironmentVariable("MT2_PROBE_OPENING_UNIT_CORRUPTION");
+            if (roomCorruption != null)
+            {
+                int amount = int.Parse(roomCorruption, CultureInfo.InvariantCulture);
+                RoomManager rooms = managers.GetRoomManager()!;
+                for (int index = 0; index < 3; index++)
+                {
+                    RoomState room = rooms.GetRoom(index);
+                    var setup = room.AdjustCorruption(combat, managers.GetRelicManager(), amount, amount,
+                        skipTriggersAndNotifications: true);
+                    while (setup.MoveNext()) { }
+                    if (room.GetCurrentCorruption() != amount)
+                        throw new InvalidOperationException("The native opening corruption control did not settle in room " + index);
+                }
+            }
             Prepared = true;
             log.LogInfo("ORIGINAL-OPENING-UNITS prepared " + definitions.Length + " original units before deployment capture.");
         }
@@ -72,16 +88,24 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (!ActivateAbilities || activatedUnits.Count == cardIds.Length) return fallback;
                 var context = decision.Spawn.Train.Context!;
-                var pendingActors = decision.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                var pendingActors = decision.Spawn.Train.Rooms.SelectMany(room => room.Units
                     .Where(unit => unit.Ability?.HasAbility == true)
-                    .Select(unit => (Unit: unit, Card: context.FindCard(unit.SpawnerCardId)))
+                    .Select(unit => (Unit: unit, Room: room.RoomIndex, Card: context.FindCard(unit.SpawnerCardId))))
                     .Where(actor => actor.Card != null && cardIds.Contains(actor.Card.DataId) && !activatedUnits.Contains(actor.Card.DataId))
-                    .ToDictionary(actor => actor.Unit.Id, actor => actor.Card!.DataId);
+                    .ToDictionary(actor => actor.Unit.Id, actor => (actor.Room, actor.Card!.DataId));
                 if (pendingActors.Count == 0) return fallback;
-                PlayCardAction? activation = BattleActionModel.EnumerateSupportedPlays(decision)
-                    .FirstOrDefault(play => pendingActors.ContainsKey(play.ActivatorUnitId));
+                var activations = BattleActionModel.EnumerateSupportedPlays(decision)
+                    .Where(play => pendingActors.ContainsKey(play.ActivatorUnitId)).ToArray();
+                PlayCardAction? activation = activations.FirstOrDefault();
                 if (activation == null) return fallback;
-                activatedUnits.Add(pendingActors[activation.ActivatorUnitId]);
+                var owner = pendingActors[activation.ActivatorUnitId];
+                if (activation.TargetSpawnPointIndex >= 0)
+                {
+                    int activator = activation.ActivatorUnitId;
+                    activation = activations.FirstOrDefault(play => play.ActivatorUnitId == activator && play.RoomIndex != owner.Room &&
+                        decision.Spawn.Train.Rooms.Any(room => room.RoomIndex == play.RoomIndex && room.Units.All(unit => !unit.IsPyre))) ?? activation;
+                }
+                activatedUnits.Add(owner.DataId);
                 return activation;
             }
 

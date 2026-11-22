@@ -607,12 +607,20 @@ Bog Chrysalis 和 Bogdeep Cocoon 的同场对照实测孵出两只 Bog Fly。顾
 
 `-UseOpeningUnitAbilities` 可在开局部署后同场录制多个原版技能。Animus of Speed 的指令攻击击杀前排后，
 两名敌人随原版房间回调前移，即使启用了预览随机数隔离。Spikedriver Factory 也在同场完成尖刺制作选择。
-23 次出牌或技能、6 次结束回合和两类候选通过。三单位组合塞满了 Bog Fly 的目的楼层，Flight 仍用独立场景核对。
+23 次出牌或技能、6 次结束回合和两类候选通过。三单位组合中，Bog Fly 的出发楼层没有腐化，Flight 仍用独立场景核对。
 [同场技能录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/opening-ability-activations.mt2f)
+
+Flight 专项用 `-OpeningUnitRoomCorruption 4` 通过原版管理器设置开局腐化，并采集实际月相掩码。
+Bog Fly 从中层飞到底层，中层腐化从 4 降至 3。17 次出牌或技能、5 次结束回合和两类候选通过。
+[Flight 原版施放录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/opening-bog-flight-activation.mt2f)
 
 Alloyed Construct、Crucible Collector 和 Crucible Warden 在一次原版对局中完成付费出生。
 归档保留三者的 OnFeed 定义，6 次出牌、5 次结束回合及两类候选通过。实际进食另有专项场景。
 [进食单位出生录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/feeding-carrier-births.mt2f)
+
+同场使用 Hidden Passage 将原版 Death’s Dancer 从底层移到中层。Shift 结算后攻击从 7 增至 11。
+该场另录到 Divine Dancer 的付费出生。7 次出牌、5 次结束回合及两类候选通过。
+[舞者实机移动录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/dancer-shift-and-birth.mt2f)
 
 原版 First of Kin 和 Sacrificial Resurrection 的同场对照核对两张手牌被消耗、单位增攻及
 Draff 出生，Morel Mistress 提供排除对照。7 次出牌、5 次结束回合、16 条独立分支和两类候选通过。

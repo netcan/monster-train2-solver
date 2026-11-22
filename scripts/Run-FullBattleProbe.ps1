@@ -645,6 +645,7 @@ param(
     [string[]] $OriginalOpeningSpellIds = @(),
     [string[]] $OriginalOpeningUnitIds = @(),
     [switch] $UseOpeningUnitAbilities,
+    [ValidateRange(0, 99)] [int] $OpeningUnitRoomCorruption = 0,
     [string[]] $OriginalOpeningRelicIds = @(),
     [switch] $OriginalOpeningPhaseRelics,
     [switch] $OriginalOpeningPassiveRelics,
@@ -1587,6 +1588,9 @@ if ($PSBoundParameters.ContainsKey('OriginalOpeningUnitIds')) {
 if ($UseOpeningUnitAbilities -and !$OriginalOpeningUnitIds.Count) {
     throw 'UseOpeningUnitAbilities requires OriginalOpeningUnitIds.'
 }
+if ($OpeningUnitRoomCorruption -and !$UseOpeningUnitAbilities) {
+    throw 'OpeningUnitRoomCorruption requires UseOpeningUnitAbilities.'
+}
 if ($PSBoundParameters.ContainsKey('OriginalOpeningRelicIds')) {
     $OriginalOpeningRelicIds = @($OriginalOpeningRelicIds | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim().ToLowerInvariant() })
     if (!$OriginalOpeningRelicIds.Count -or @($OriginalOpeningRelicIds | Where-Object { $_ -notmatch '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' }).Count -ne 0 -or
@@ -1598,7 +1602,7 @@ if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or 
     $allowed = @('OriginalStatusMagnitudeWitness', 'OriginalStatusMagnitudeMoonWitness', 'OriginalRoomStatusSpells', 'OriginalTargetedStatusSpells', 'OriginalOpeningSpellIds', 'OriginalOpeningUnitIds', 'OriginalOpeningRelicIds', 'OriginalOpeningPhaseRelics', 'OriginalOpeningPassiveRelics', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
         'OriginalRoomStatusSpellsFullBattle', 'WithOriginalStatusMagnitudeRelics', 'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if ($OriginalOpeningSpellIds.Count -or $OriginalOpeningUnitIds.Count) { $allowed += 'InputProfile' }
-    if ($OriginalOpeningUnitIds.Count) { $allowed += 'UseOpeningUnitAbilities' }
+    if ($OriginalOpeningUnitIds.Count) { $allowed += 'UseOpeningUnitAbilities', 'OpeningUnitRoomCorruption' }
     $modes = @($OriginalStatusMagnitudeWitness, $OriginalStatusMagnitudeMoonWitness, $OriginalRoomStatusSpells, $OriginalTargetedStatusSpells, ($OriginalOpeningSpellIds.Count -gt 0), ($OriginalOpeningUnitIds.Count -gt 0), ($OriginalOpeningRelicIds.Count -gt 0), $OriginalOpeningPhaseRelics, $OriginalOpeningPassiveRelics) | Where-Object { $_ }
     if (!$BinaryCapture -or @($modes).Count -ne 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
@@ -2992,6 +2996,7 @@ if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or 
 if ($OriginalOpeningUnitIds.Count) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-units:' + ($OriginalOpeningUnitIds -join ',')
     if ($UseOpeningUnitAbilities) { $environment['MT2_PROBE_OPENING_UNIT_ABILITIES'] = '1' }
+    if ($OpeningUnitRoomCorruption) { $environment['MT2_PROBE_OPENING_UNIT_CORRUPTION'] = $OpeningUnitRoomCorruption.ToString([Globalization.CultureInfo]::InvariantCulture) }
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
