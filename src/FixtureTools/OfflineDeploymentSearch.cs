@@ -10,7 +10,8 @@ internal static partial class OfflineBattleSearch
     // single move to improve a complete route. Never export a truncated rollout.
     internal static void DeploymentGrid(string input, string prediction, string output, int milliseconds, int maxCandidates,
         int? firstRoom = null, bool spread = false, int startSample = 0, bool improveWinningRoute = false,
-        string? unsupportedReasonFilter = null, bool spreadOrder = false, bool strengthRollout = false, bool mixedPlacements = false)
+        string? unsupportedReasonFilter = null, bool spreadOrder = false, bool strengthRollout = false, bool mixedPlacements = false,
+        bool varyOpeningRoster = false)
     {
         Require(milliseconds is >= 100 and <= 600000 && maxCandidates is >= 1 and <= 4096,
             "Expected100..600000ms and1..4096 deployment candidates.");
@@ -18,6 +19,7 @@ internal static partial class OfflineBattleSearch
         Require(startSample is >= 0 and <= 1000000 && (spread || startSample == 0), "Expected a spread sample offset in0..1000000.");
         Require(!spreadOrder || spread, "Deployment order sampling requires spread sampling.");
         Require(!mixedPlacements || spreadOrder, "Mixed placement sampling requires order spread sampling.");
+        Require(!varyOpeningRoster || mixedPlacements, "Opening roster sampling requires mixed placement sampling.");
         Require(unsupportedReasonFilter == null || !string.IsNullOrWhiteSpace(unsupportedReasonFilter), "Expected a nonempty unsupported reason filter.");
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         string unsupportedOutput = output + ".unsupported.mt2f";
@@ -37,9 +39,9 @@ internal static partial class OfflineBattleSearch
             "Deployment baseline changed the original native root.");
         var route = fixture.GetProperty("RollingDecisions").EnumerateArray().Select(ReadStep).ToArray();
         var opening = route.TakeWhile(step => !step.IsEndTurn).ToArray();
-        bool UnitPlay(Step step) => step.Action is { ActivatorUnitId: 0 } action &&
-            root.PlayRules!.Cards.FirstOrDefault(rule => rule.DataId == root.Spawn.Train.Context!.CardInstances!
-                .FirstOrDefault(card => card.InstanceId == action.CardInstanceId)?.DataId)?.SpawnUnit != null;
+        bool UnitCard(int id) => root.PlayRules!.Cards.FirstOrDefault(rule => rule.DataId == root.Spawn.Train.Context!.CardInstances!
+            .FirstOrDefault(card => card.InstanceId == id)?.DataId)?.SpawnUnit != null;
+        bool UnitPlay(Step step) => step.Action is { ActivatorUnitId: 0 } action && UnitCard(action.CardInstanceId);
         var deployment = opening.TakeWhile(UnitPlay).ToArray();
         var closing = opening.Skip(deployment.Length).ToArray();
         Require(deployment.Length is >= 1 and <= 32 && closing.Length <= 32 && closing.All(step =>
@@ -139,7 +141,9 @@ internal static partial class OfflineBattleSearch
             while (!Terminal(outcome) && steps.Count < 256 && !Expired())
             {
                 SupportedActionCandidate? choice = null;
-                if (played < 18)
+                // Settle the chosen turn-zero roster before the later policy can
+                // spend the energy left by an omitted or cheaper unit.
+                if (played < 18 && (!varyOpeningRoster || current.Spawn.Turn != 0))
                 {
                     IReadOnlyList<UnsupportedActionAttempt> omitted;
                     choice = strengthRollout ? BattleHeuristicPolicy.Choose(current, out omitted, floor) :
@@ -170,6 +174,24 @@ internal static partial class OfflineBattleSearch
         }
         if (spread)
         {
+            int[] baselineCards = deployment.Select(step => step.Action!.CardInstanceId).ToArray();
+            var rosters = new List<int[]> { baselineCards };
+            if (varyOpeningRoster)
+            {
+                int[] otherUnits = root.Spawn.Train.Context!.Cards.Hand.Select(card => card.InstanceId)
+                    .Where(id => !baselineCards.Contains(id) && UnitCard(id)).ToArray();
+                // Try each unused unit first against the last recorded slot.
+                for (int index = baselineCards.Length - 1; index >= 0; index--)
+                {
+                    foreach (int id in otherUnits)
+                    {
+                        int[] replaced = baselineCards.ToArray();
+                        replaced[index] = id;
+                        rosters.Add(replaced);
+                    }
+                    rosters.Add(baselineCards.Where((_, slot) => slot != index).ToArray());
+                }
+            }
             // A depth-first stream leaves the early units fixed for many
             // expensive rollouts. Walk legal choices with a deterministic
             // mixed-radix index instead.137 is coprime to every possible
@@ -179,15 +201,16 @@ internal static partial class OfflineBattleSearch
             {
                 samples++;
                 int code = sample * (spreadOrder ? 397 : 137);
-                var sampleDeployment = deployment;
+                int rosterIndex = sample % rosters.Count;
+                int[] sampleDeployment = rosters[rosterIndex];
                 if (spreadOrder)
                 {
-                    // Factoradic sampling visits every ordering of up to six
-                    // distinct units before repeating; room choices use a
-                    // separate deterministic stream.
-                    int orderCode = sample * 137;
-                    var remaining = deployment.ToList();
-                    sampleDeployment = new Step[deployment.Length];
+                    // Advance the order independently on each visit to this
+                    // roster, rather than skipping by the roster count.
+                    int orderSample = varyOpeningRoster ? rosterIndex + sample / rosters.Count : sample;
+                    int orderCode = orderSample * 137;
+                    var remaining = sampleDeployment.ToList();
+                    sampleDeployment = new int[remaining.Count];
                     for (int i = 0; i < sampleDeployment.Length; i++)
                     {
                         int choice = orderCode % remaining.Count;
@@ -203,7 +226,7 @@ internal static partial class OfflineBattleSearch
                 for (int index = 0; index < sampleDeployment.Length && !Stop(); index++)
                 {
                     parents.Add((state, keys.Key(state)));
-                    var legal = BattleActionModel.EnumerateActions(state, sampleDeployment[index].Action!.CardInstanceId, includeAbilities: false);
+                    var legal = BattleActionModel.EnumerateActions(state, sampleDeployment[index], includeAbilities: false);
                     foreach (var rejected in legal.UnsupportedAttempts) Rejected(rejected.Reason, rejected.Action, state, placement);
                     var choices = legal.SupportedCandidates.Where(choice => choice.Result.Outcome == RoomOutcome.Exchanged &&
                             (index != 0 || firstRoom == null || choice.Action.RoomIndex == firstRoom))
@@ -214,7 +237,7 @@ internal static partial class OfflineBattleSearch
                     placement.Add(new Step { Action = chosen.Action });
                     state = chosen.Result.State!;
                 }
-                if (placement.Count == deployment.Length && !Stop())
+                if (placement.Count == sampleDeployment.Length && !Stop())
                 {
                     if (sample - startSample < 6) Console.WriteLine($"DEPLOYMENT-SPREAD sample={sample} placements=" +
                         JsonSerializer.Serialize(placement.Select(step => step.Action)));
