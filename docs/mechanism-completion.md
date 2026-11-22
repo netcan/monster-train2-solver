@@ -172,6 +172,11 @@ Entombed Explosive、Overworked Assistant、Wickless Tycoon 和 Spikedriver Spid
 5 次结束回合、16 条独立分支与候选检查通过。累计 198 场整战和 200/601 张已匹配收藏卡。
 [`generated-battle-cards.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/generated-battle-cards.mt2f)
 
+九件原版装备在另一场受控首战依次付费装到三层测试单位。同一可达定义遍历采集 Potion Kit
+能力的四个原版 Mix 配方，装备前后的配方目录一致。原版胜局的 13 次出牌、5 次结束回合、
+16 条分支和候选检查通过。累计 199 场整战和 209/601 张已匹配收藏卡。
+[`native-equipment-and-mix-pool.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-equipment/native-equipment-and-mix-pool.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
