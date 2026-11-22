@@ -273,6 +273,13 @@ namespace MonsterTrain2Poju.Probe
             }
             try
             {
+                if (fullBattle && RollingAdviceScenario.Enabled && FullBattleTrace.Active is { } pendingTrace &&
+                    RollingAdviceScenario.SettledTimeoutPrefix() is { Length: > 0 } prefix)
+                {
+                    string archive = pendingTrace.Write(prefix);
+                    Finish(false, "Rolling deadline preserved " + prefix.Length + " settled inputs in " + archive);
+                    return;
+                }
                 Step();
             }
             catch (Exception ex)

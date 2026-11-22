@@ -15,12 +15,16 @@ $cases = @(
     @{ Name = 'nonzero-terminal-exit'; Marker = 'BATTLE-TERMINAL won=True pyre=80'; Delay = 1600; Grace = $true; Timeout = $false; Code = 7 },
     @{ Name = 'unterminated'; Marker = 'ready'; Delay = 10000; Grace = $false; Timeout = $true; Code = 0 },
     @{ Name = 'terminal-stuck'; Marker = 'BATTLE-TERMINAL won=True pyre=80'; Delay = 10000; Grace = $true; Timeout = $true; Code = 0 },
-    @{ Name = 'isolated-reject'; Marker = 'ORIGINAL-ISOLATED-UNIT-REJECT'; Delay = 10000; Grace = $false; Timeout = $false; Code = 0 }
+    @{ Name = 'isolated-reject'; Marker = 'ORIGINAL-ISOLATED-UNIT-REJECT'; Delay = 10000; Grace = $false; Timeout = $false; Code = 0 },
+    @{ Name = 'rolling-cooperates'; Marker = 'ready'; Delay = 10000; Grace = $false; Timeout = $false; Code = 7; Soft = $true; Cooperates = $true },
+    @{ Name = 'rolling-stuck'; Marker = 'ready'; Delay = 10000; Grace = $false; Timeout = $true; Code = 0; Soft = $true }
 )
 foreach ($case in $cases) {
     $log = Join-Path $profile ($case.Name + '.log')
     $arguments = @('-NoProfile', '-File', ('"' + $child + '"'), '-Log', ('"' + $log + '"'),
         '-Marker', ('"' + $case.Marker + '"'), '-DelayMilliseconds', $case.Delay, '-Code', $case.Code)
+    $signal = if ($case.Soft) { $log + '.request' } else { '' }
+    if ($case.Cooperates) { $arguments += @('-SaveOnSignal', ('"' + $signal + '"')) }
     $process = Start-Process -FilePath $pwsh -ArgumentList $arguments -WindowStyle Hidden -PassThru
     $timer = [Diagnostics.Stopwatch]::StartNew()
     try {
@@ -32,15 +36,23 @@ foreach ($case in $cases) {
         $timer.Restart()
         $events = [Collections.Generic.List[string]]::new()
         $errorText = $null
+        $timeout = if ($case.Soft) { 2 } else { 1 }
         try {
             Wait-NativeBattleExit -Process $process -Timer $timer -UnityLog $log -Profile $profile `
-                -TimeoutSeconds 1 -TerminalExitGraceSeconds 1 -PollMilliseconds 20 `
+                -TimeoutSeconds $timeout -TerminalExitGraceSeconds 1 -PollMilliseconds 20 `
+                -SoftTimeoutSignalPath $signal -SoftTimeoutLeadSeconds 1 `
                 -FailFastOnIsolatedUnitReject:($case.Name -eq 'isolated-reject') | ForEach-Object { $events.Add($_) }
         } catch { $errorText = $_.Exception.Message }
         $timer.Stop()
-        if (-not $process.HasExited -or $events.Count -ne [int]$case.Grace) { throw "Unexpected exit/grace count: $($case.Name)" }
+        if (-not $process.HasExited -or $events.Count -ne ([int]$case.Grace + [int]$case.Soft)) { throw "Unexpected exit/deadline count: $($case.Name)" }
+        if ($case.Soft -and ($events[0] -notlike 'FULL-BATTLE-SOFT-TIMEOUT seconds=1*' -or
+            (Get-Content -LiteralPath $signal -Raw) -cne 'preserve-settled-rolling-prefix')) {
+            throw "Missing rolling timeout signal: $($case.Name)"
+        }
+        if ($case.Cooperates -and ((Get-Content -LiteralPath ($log + '.saved') -Raw) -cne 'preserved' -or
+            $timer.Elapsed.TotalSeconds -ge $timeout)) { throw 'Cooperative request was not preserved before the hard deadline.' }
         if ($case.Timeout) {
-            $deadline = 1 + [int]$case.Grace
+            $deadline = $timeout + [int]$case.Grace
             if ($errorText -notlike "Full battle timed out after $deadline seconds*" -or
                 $timer.Elapsed.TotalSeconds -gt $deadline + 1) { throw "Timeout did not remain bounded: $($case.Name)" }
         } elseif ($case.Name -eq 'isolated-reject') {

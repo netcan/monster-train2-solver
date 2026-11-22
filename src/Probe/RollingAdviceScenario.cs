@@ -15,6 +15,7 @@ namespace MonsterTrain2Poju.Probe
     // Each native action consumes just the first step of the newest publication.
     internal static class RollingAdviceScenario
     {
+        private const int DecisionLimit = 256;
         internal sealed class Decision
         {
             public string Mode { get; set; } = "rolling";
@@ -55,6 +56,11 @@ namespace MonsterTrain2Poju.Probe
 #endif
             BattleAdvisorOverlay.Active?.IsPlanning == true;
         internal static List<Decision> Records { get; } = new List<Decision>();
+        private static readonly string? timeoutSignalPath = Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_TIMEOUT_SIGNAL");
+        internal static Decision[]? SettledTimeoutPrefix() =>
+            string.IsNullOrEmpty(timeoutSignalPath) || !File.Exists(timeoutSignalPath) ? null :
+            Records.Take(DecisionLimit - 1)
+                .TakeWhile(row => row.Actual != null && row.Difference == null && row.Outcome == RoomOutcome.Exchanged).ToArray();
         private static FixtureValue[]? frozen;
         private static bool waiting;
         private static bool terminalObserved;
@@ -128,7 +134,7 @@ namespace MonsterTrain2Poju.Probe
         {
             if (NativeBranchIdentity.SourceModule(archive) != nativeModule ||
                 archive.GetProperty("PlayerAdvisor").GetProperty("Assembly").GetString() != "MonsterTrain2Poju.Advisor" ||
-                rows.Length is < 1 or >= 256)
+                rows.Length is < 1 or >= DecisionLimit)
                 throw new InvalidOperationException("Resume requires a bounded native player prefix from the installed game module.");
             staleCount = 0;
             var inputs = new Decision[rows.Length];
@@ -252,7 +258,7 @@ namespace MonsterTrain2Poju.Probe
                 return true;
             }
 #endif
-            if (Records.Count >= 256) throw new InvalidOperationException("Rolling advice exceeded the battle decision limit.");
+            if (Records.Count >= DecisionLimit) throw new InvalidOperationException("Rolling advice exceeded the battle decision limit.");
             Decision decision;
             if (Replay)
             {

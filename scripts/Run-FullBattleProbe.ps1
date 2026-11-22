@@ -121,6 +121,7 @@ param(
     [switch] $OuterBossPyre,
     [string] $RollingInput = '',
     [switch] $ResumeRollingAdvice,
+    [switch] $PreserveRollingPrefixOnTimeout,
     [string] $UnsupportedBranchInput = '',
     [switch] $ObserveRedCrownEquipment,
     [string] $InputProfile = '',
@@ -1165,6 +1166,9 @@ if ($UnsupportedBranchInput) {
     $RollingAdvice = $true; $PlayerAdvisor = $true
 }
 if ($RollingInput -and -not $RollingAdvice) { throw 'RollingInput requires RollingAdvice.' }
+if ($PreserveRollingPrefixOnTimeout -and (-not $PlayerAdvisor -or -not $RollingAdvice -or -not $BinaryCapture -or $UnsupportedBranchInput)) {
+    throw 'PreserveRollingPrefixOnTimeout requires binary PlayerAdvisor rolling advice.'
+}
 if ($ResumeRollingAdvice -and (-not $RollingInput -or -not $PlayerAdvisor -or -not $InputProfile -or
     -not $BinaryCapture -or $UnsupportedBranchInput)) {
     throw 'ResumeRollingAdvice requires a native InputProfile, binary capture, and a RollingInput for the player advisor.'
@@ -2082,6 +2086,7 @@ if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput)
 }
 $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
 $profile = Join-Path $workspace ('.probe-runs\full-battle-' + $Policy + '-' + $runId)
+$rollingTimeoutSignal = if ($PreserveRollingPrefixOnTimeout) { Join-Path $profile 'rolling-timeout-request' } else { '' }
 $originalLogRoot = Join-Path ([Environment]::GetFolderPath('UserProfile')) 'AppData\LocalLow\Shiny Shoe\MonsterTrain2'
 
 function Get-OriginalSignature {
@@ -2327,6 +2332,7 @@ $environment = @{
     MT2_PROBE_PLANNER_TIME_LIMIT_MS = "$PlannerTimeLimitMs"
     MT2_PROBE_PLANNER_INPUT = $(if ($PlannerInput) { (Resolve-Path -LiteralPath $PlannerInput).Path } else { '' })
     MT2_PROBE_DATA_DIR = $profile
+    MT2_PROBE_ROLLING_TIMEOUT_SIGNAL = $rollingTimeoutSignal
     MT2_PROBE_SCENARIO = 'native-replay'
     MT2_PROBE_FULL_BATTLE = '1'
     MT2_PROBE_FULL_BATTLE_POLICY = $Policy
@@ -3132,7 +3138,8 @@ $process = Start-Process -FilePath (Join-Path $gameRoot 'MonsterTrain2.exe') `
 Write-Output "FULL-BATTLE-RUN pid=$($process.Id) worker=$NativeWorker policy=$Policy profile=$profile"
 . (Join-Path $PSScriptRoot 'NativeBattleProcess.ps1')
 Wait-NativeBattleExit -Process $process -Timer $nativeTimer -UnityLog $unityLog -Profile $profile `
-    -TimeoutSeconds $TimeoutSeconds -FailFastOnIsolatedUnitReject:$FailFastOnIsolatedUnitReject
+    -TimeoutSeconds $TimeoutSeconds -SoftTimeoutSignalPath $rollingTimeoutSignal `
+    -FailFastOnIsolatedUnitReject:$FailFastOnIsolatedUnitReject
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
 if ($RoomHealthCardHover) {
@@ -3629,6 +3636,17 @@ if ($BinaryCapture) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
     $archive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($tracePath)
     try {
+        $prefix = [MonsterTrain2Poju.Fixtures.FixtureValue]::new()
+        if ($archive.RootElement.TryGetProperty('RollingTimeoutPrefix', [ref]$prefix) -and $prefix.ValueKind -eq 'Number') {
+            $count = $prefix.GetInt32()
+            if (-not $PreserveRollingPrefixOnTimeout -or $process.ExitCode -eq 0 -or $count -lt 1 -or
+                $archive.RootElement.GetProperty('NativeWon').ValueKind -ne 'Null' -or
+                $archive.RootElement.GetProperty('RollingDecisions').GetArrayLength() -ne $count -or
+                (Get-OriginalSignature) -cne $originalBefore) {
+                throw "Invalid incomplete rolling capture. Inspect $tracePath and $unityLog"
+            }
+            throw "Rolling battle timed out with $count settled inputs preserved for -ResumeRollingAdvice. Trace: $tracePath"
+        }
         $trace = $archive.RootElement.ToObjectGraph()
         if ($OriginalSpurnedRetainPiles) {
             $referencePath = Join-Path $workspace 'tests/compatibility/game-2.3.1/mechanics/spurned/witherbloom-battle.mt2f'

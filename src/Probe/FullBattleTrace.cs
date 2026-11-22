@@ -997,7 +997,7 @@ namespace MonsterTrain2Poju.Probe
         }
 #endif
 
-        internal string Write()
+        internal string Write(IReadOnlyList<RollingAdviceScenario.Decision>? timeoutPrefix = null)
         {
             BossActionTargetProbe.Write(this, log);
             BossActionControllerProbe.Write(this, log);
@@ -2018,7 +2018,8 @@ namespace MonsterTrain2Poju.Probe
                 FriendlyTriggerDamageRules = OriginalEatenDamageScenario.Enabled || OriginalBurnoutDamageScenario.Enabled
                     ? RelicEatenDamageProbe.RuleEvidence : null,
                 PlannerRuns = PlannerReplayScenario.Records,
-                RollingDecisions = RollingAdviceScenario.Records,
+                RollingDecisions = timeoutPrefix ?? RollingAdviceScenario.Records,
+                RollingTimeoutPrefix = timeoutPrefix?.Count,
                 BattleDistance = AllGameManagers.Instance!.GetSaveManager().GetCurrentDistance(),
 #if DEVELOPMENT_PROBE
                 NativeRunInput = nativeRunInput,
@@ -2258,7 +2259,7 @@ namespace MonsterTrain2Poju.Probe
             timer.Stop();
             log.LogInfo("BATTLE-EXPORT elapsedSeconds=" + timer.Elapsed.TotalSeconds.ToString("F3", System.Globalization.CultureInfo.InvariantCulture) +
                 " bytes=" + new FileInfo(path).Length + " pending=" + Pending);
-            if (Environment.GetEnvironmentVariable("MT2_PROBE_CAPTURE_JSON") == "1")
+            if (timeoutPrefix == null && Environment.GetEnvironmentVariable("MT2_PROBE_CAPTURE_JSON") == "1")
             {
                 var jsonTimer = System.Diagnostics.Stopwatch.StartNew();
                 string jsonPath = Path.ChangeExtension(path, ".json");
