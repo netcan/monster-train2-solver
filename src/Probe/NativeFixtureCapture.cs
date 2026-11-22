@@ -32,6 +32,8 @@ namespace MonsterTrain2Poju.Capture
             private readonly Dictionary<string, int> strings = new Dictionary<string, int>(StringComparer.Ordinal);
             private readonly Dictionary<long, int> integers = new Dictionary<long, int>();
             private readonly Dictionary<ulong, int> largeUnsigned = new Dictionary<ulong, int>();
+            private readonly Dictionary<int, int> singles = new Dictionary<int, int>();
+            private readonly Dictionary<long, int> doubles = new Dictionary<long, int>();
             private readonly Dictionary<JsonObjectContract, PropertyPlan[]> objectPlans = new Dictionary<JsonObjectContract, PropertyPlan[]>();
             private readonly int nullNode, trueNode, falseNode;
 
@@ -65,6 +67,8 @@ namespace MonsterTrain2Poju.Capture
                 if (value is ushort unsigned16) return Integer(unsigned16);
                 if (value is byte unsigned8) return Integer(unsigned8);
                 if (value is sbyte signed8) return Integer(signed8);
+                if (value is float single) return Floating(singles, BitConverter.SingleToInt32Bits(single), value);
+                if (value is double number) return Floating(doubles, BitConverter.DoubleToInt64Bits(number), value);
                 if (instances.TryGetValue(value, out int found))
                 {
                     if (found < 0) throw new InvalidOperationException("Cyclic native capture graph: " + value.GetType().FullName);
@@ -171,6 +175,15 @@ namespace MonsterTrain2Poju.Capture
                 if (largeUnsigned.TryGetValue(value, out int found)) return found;
                 int node = Builder.Add(FixtureKind.Number, value.ToString(CultureInfo.InvariantCulture));
                 largeUnsigned.Add(value, node); return node;
+            }
+
+            private int Floating<TKey>(Dictionary<TKey, int> numbers, TKey bits, object value) where TKey : notnull
+            {
+                if (numbers.TryGetValue(bits, out int found)) return found;
+                // Keep each type's Json.NET spelling, including signed zero.
+                int node = Scalar(value);
+                numbers.Add(bits, node);
+                return node;
             }
 
             private int Scalar(object value)
