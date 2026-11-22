@@ -561,6 +561,10 @@ Draff 出生，Morel Mistress 提供排除对照。7 次出牌、5 次结束回�
 2 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`starter-reform.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/starter-reform.mt2f)
 
+四张原版单位同场核对出生模板与 Conduit 来源，涵盖 Magic Power Acolyte 和 Moonguard 的月相增益。
+8 次出牌、5 次结束回合、16 条独立分支及两类候选通过。
+[`conduit-and-moonguard.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/conduit-and-moonguard.mt2f)
+
 原版 Hallowed Halls 牺牲同层友军，并从预置耗尽堆重建六名升级单位。专项核对 Standby、
 站位和容量。5 次出牌、6 次结束回合及两类候选通过。
 [`hallowed-halls.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/hallowed-halls.mt2f)
