@@ -503,6 +503,11 @@ Ice and Pyre 的独立对照在顶层命中前排敌军并造成 90 点伤害，
 该复制分支的出牌前预测仍会拒绝。
 [`observation.mt2f`](../tests/compatibility/game-2.3.1/mechanics/hall-grafted-birth/observation.mt2f)
 
+原版回调补采记录了先复制来源卡、再创建复制单位、最后复制并绑定接枝装备的顺序。
+两件装备的对象引用各自独立，复制单位的来源卡仍指向本体接枝。同场核对了物理槽位、
+原版随机流及归档结算状态上的结束回合。
+[`callback-order.mt2f`](../tests/compatibility/game-2.3.1/mechanics/hall-grafted-birth/callback-order.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
