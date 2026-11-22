@@ -622,6 +622,10 @@ Alloyed Construct、Crucible Collector 和 Crucible Warden 在一次原版对局
 该场另录到 Divine Dancer 的付费出生。7 次出牌、5 次结束回合及两类候选通过。
 [舞者实机移动录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/dancer-shift-and-birth.mt2f)
 
+Bounty Stalker 与 Makeshift Golem 在同场完成原版付费部署。Bounty Stalker 首次死亡时，原版在对应牌上添加 +10 攻击升级。
+Makeshift Golem 留场至终局清理。23 次出牌、7 次结束回合及两类候选通过。
+[原版部署及死亡录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/opening-death-callback-units.mt2f)
+
 原版 First of Kin 和 Sacrificial Resurrection 的同场对照核对两张手牌被消耗、单位增攻及
 Draff 出生，Morel Mistress 提供排除对照。7 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`exhausted-first-of-kin.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/exhausted-first-of-kin.mt2f)
