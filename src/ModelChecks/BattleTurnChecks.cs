@@ -319,7 +319,7 @@ internal static class BattleTurnChecks
     {
         if (context?.QueryFrame is StatisticQueryFrame frame &&
             (frame.SelectedRoomIndex.HasValue || frame.MoonPhaseTrackingActive.HasValue))
-            context = context.WithQueryFrame(new StatisticQueryFrame(frame.Energy, frame.RunningCombat, frame.Turn,
+                context = context.WithSnapshotQueryFrame(new StatisticQueryFrame(frame.Energy, frame.RunningCombat, frame.Turn,
                 frame.ForgePoints, frame.DragonsHoard, frame.MoonPhase, frame.PyreResurrectionCount, frame.ActiveBattle,
                 forgeTrackingActive: frame.ForgeTrackingActive, forgeToggleActive: frame.ForgeToggleActive,
                 grosMichelCombatRoundCount: frame.GrosMichelCombatRoundCount,

@@ -168,10 +168,13 @@ namespace MonsterTrain2Poju.Model
             Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead,
             NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, state, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState, ConduitRetained, LifeLinks);
         internal CombatContext WithQueryFrame(StatisticQueryFrame? frame)
+            => ConduitModel.Select(WithSnapshotQueryFrame(frame), QueryFrame?.SelectedRoomIndex, frame?.SelectedRoomIndex);
+        internal CombatContext WithSnapshotQueryFrame(StatisticQueryFrame? frame)
         {
+            // Project snapshot metadata without executing a room selection callback.
             var copy = Copy();
             copy.QueryFrame = frame;
-            return ConduitModel.Select(copy, QueryFrame?.SelectedRoomIndex, frame?.SelectedRoomIndex);
+            return copy;
         }
         internal CombatContext WithMagicPower(IReadOnlyList<RoomMagicPower> power) => new CombatContext(Cards, BattleRng,
             Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead,

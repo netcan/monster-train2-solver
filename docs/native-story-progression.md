@@ -151,6 +151,17 @@ Eclipse Chamber 的出牌候选在原版底层实放，24 步前缀与第 25 步
 `.probe-runs/full-battle-units-spells-and-junk-20261122-133838-1c3a71e4/player-deployment.mt2f`。
 两种部署的 70 步与 68 步离线复放均判负，签名状态及随机流验证通过。
 
+2026-11-23 使用同一原版战前档复放 70 步底层优先路线。第 5 回合，带有商店 Endless
+强化的 Lady of the Reformed 阵亡，来源卡进入抽牌堆。下一回合抽回同一实例，再次部署后
+获得新的单位 ID。第 10 回合结束后原版判负。59 次出牌或技能、11 次结束回合的完整状态、
+随机流和结算均匹配，四项采集计数均为零。70 个录制局面通过 1,445 个出牌或技能候选及
+70 个结束回合后继检查，未支持和截断均为零。
+[`第 6 环左路 Hexcalation 和 Endless`](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/unlocked-covenant0-ring6-left-hex-endless-defeat.mt2f)
+
+这份录档发现连续检查在去除楼层选择字段时误触发了导魔回调，抹掉 Witchweave 已记录的
++9 临时伤害。同一检查现在单独投影查询字段，保留实际导魔数据。录制输入明确切层且前后
+完整状态需要该回调时，连续复放从上一模型后继执行现有切层逻辑，并重新比较完整录制状态。
+
 第 5 环的首次整场对照从 10 点薪火生命开始，原版判负且四项采集计数为零。另一条部署路线验证了
 StealthWaxers 的出生条件与月相手牌更新可同时生效。两次部署与结束回合的后继在原版完全一致，
 归档为 `mechanics/stealth-waxers-moon-refresh/native-branch.mt2f`。

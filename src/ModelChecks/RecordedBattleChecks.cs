@@ -52,7 +52,7 @@ internal static class RecordedBattleChecks
                 while (actionIndex < actions.Length && DecisionTurn(actions[actionIndex]) <= number)
                     Play(actionIndex++);
                 string label = $"EndTurn {number}";
-                Compare(state, turn.GetProperty("Before").Deserialize<BattleTurnState>()!, false, "before " + label);
+                state = BeforeInput(state, turn, "before " + label);
                 BattleTurnResult next = BattleTurnModel.EndTurn(state, Decisions(turn));
                 Require(next.Supported, label + ": " + (next.UnsupportedReason ?? "Unsupported."));
                 Require(next.Outcome == turn.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(), label + ": Outcome differs.");
@@ -65,7 +65,7 @@ internal static class RecordedBattleChecks
             {
                 FixtureValue row = actions[index];
                 string label = $"play {index + 1} in turn {state.Spawn.Turn}";
-                Compare(state, row.GetProperty("Before").Deserialize<BattleTurnState>()!, false, "before " + label);
+                state = BeforeInput(state, row, "before " + label);
                 BattleActionResult next = BattleActionModel.PlayCard(state, row.GetProperty("Action").Deserialize<PlayCardAction>()!);
                 Require(next.Supported, label + ": " + (next.Reason ?? "Unsupported."));
                 Require(next.Outcome == row.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(), label + ": Outcome differs.");
@@ -82,14 +82,36 @@ internal static class RecordedBattleChecks
     private static bool Terminal(RoomOutcome outcome) => outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
     internal static RelentlessDecision[]? Decisions(FixtureValue row) => row.TryGetProperty("RelentlessDecisions", out var choices) &&
         choices.ValueKind != FixtureKind.Null ? choices.Deserialize<RelentlessDecision[]>() : null;
+    private static BattleTurnState BeforeInput(BattleTurnState state, FixtureValue row, string label)
+    {
+        BattleTurnState actual = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        string? difference = Difference(state, actual, terminal: false);
+        if (difference == null) return state;
+
+        // Raw action capture can start after the game focuses the destination.
+        // Replay this observed focus from the running model state before comparing.
+        if (state.Spawn.Train.Context?.QueryFrame?.SelectedRoomIndex is int previous &&
+            actual.Spawn.Train.Context?.QueryFrame?.SelectedRoomIndex is int room && previous != room)
+        {
+            BattleTurnResult focus = BattleTurnModel.SelectRoom(state, room, refreshPreview: false);
+            if (focus.Supported && Difference(focus.State!, actual, terminal: false) == null)
+                return focus.State!;
+        }
+        throw new InvalidOperationException(label + ": " + difference);
+    }
+
     internal static void Compare(BattleTurnState predicted, BattleTurnState actual, bool terminal, string label)
+    {
+        string? difference = Difference(predicted, actual, terminal);
+        Require(difference == null, label + ": " + difference);
+    }
+
+    private static string? Difference(BattleTurnState predicted, BattleTurnState actual, bool terminal)
     {
         string predictedState = BattleTurnChecks.Comparable(predicted, terminal);
         string actualState = BattleTurnChecks.Comparable(actual, terminal);
-        if (string.Equals(predictedState, actualState, StringComparison.Ordinal)) return;
-
-        string? difference = ModelJson.Difference(predictedState, actualState);
-        Require(difference == null, label + ": " + difference);
+        return string.Equals(predictedState, actualState, StringComparison.Ordinal) ? null :
+            ModelJson.Difference(predictedState, actualState);
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

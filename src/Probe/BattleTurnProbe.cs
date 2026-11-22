@@ -198,7 +198,7 @@ namespace MonsterTrain2Poju.Probe
             if (context?.QueryFrame is StatisticQueryFrame frame &&
                 (frame.SelectedRoomIndex.HasValue || frame.MoonPhaseTrackingActive.HasValue ||
                     frame.ForgeTrackingActive.HasValue || frame.ForgeToggleActive.HasValue))
-                context = context.WithQueryFrame(new StatisticQueryFrame(frame.Energy, frame.RunningCombat, frame.Turn,
+                context = context.WithSnapshotQueryFrame(new StatisticQueryFrame(frame.Energy, frame.RunningCombat, frame.Turn,
                     frame.ForgePoints, frame.DragonsHoard, frame.MoonPhase, frame.PyreResurrectionCount, frame.ActiveBattle,
                     forgeTrackingActive: frame.ForgeTrackingActive, forgeToggleActive: frame.ForgeToggleActive,
                     grosMichelCombatRoundCount: frame.GrosMichelCombatRoundCount, forcedRelentless: frame.ForcedRelentless, devotion: frame.Devotion,
