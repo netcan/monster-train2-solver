@@ -394,6 +394,10 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 13 次出牌、5 次结束回合、六条 Consume 路径、独立分支和候选检查通过。
 [`hoard-forge-and-consume.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/hoard-forge-and-consume.mt2f)
 
+原版 Feast 和 Shroud Spike 对照核对三次正向喂食、一次空层对照、目标存活和末次进食，
+其中包括一次六倍效果和一次零费用结算。6 次出牌、5 次结束回合、16 条独立分支及两类候选通过。
+[`shroud-spike-feeding.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/shroud-spike-feeding.mt2f)
+
 敌方状态批次核对十一张原版卡牌，包括单体、整层及整塔目标、Pyregel 与 Rage 的翻倍、
 保证触发的随机流和腐化消耗。18 次出牌、5 次结束回合和候选检查通过。
 [`hostile-status-order.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-hostile-statuses/hostile-status-order.mt2f)
