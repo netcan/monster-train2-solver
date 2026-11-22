@@ -75,7 +75,7 @@ namespace MonsterTrain2Poju.Model
             bool placement = false, bool preview = false, TrainCombatState? trainState = null,
             CardPlayRule? playedCardRule = null, IReadOnlyList<int>? lastTargets = null,
             CombatTeam? originalTargetTeam = null, IReadOnlyList<int>? lastDamagedUnitIds = null,
-            int? originalRoomCorruption = null)
+            int? originalRoomCorruption = null, bool afterTerminalClear = false)
         {
             bool hasMagicPower = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.ModifyCardMagicPowerOnCardPlayed)) == true;
             bool hasCheaperSpellUpgrade = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.AddTempUpgradeToHandCardsIfCheaper)) == true;
@@ -101,7 +101,16 @@ namespace MonsterTrain2Poju.Model
                 return Fail(source, "Native card-play relic effects require the current owned-card list.");
             if ((hasMagicPower || hasCheaperSpellUpgrade || hasCardCopy || hasCorruptRestrictedCardPlay || hasGoldOnExhaust || hasCorruption) &&
                 !source.CardInstances!.Any(card => card.InstanceId == playedCardId))
-                return Fail(source, "Native card-play relic effects require the played card in the owned-card list.");
+            {
+                // ClearCards removes ownership before the first-spell copy callback uses the resolving card.
+                bool usesRetainedSource = afterTerminalClear && hasCardCopy && !hasMagicPower && !hasCheaperSpellUpgrade &&
+                    !hasCorruptRestrictedCardPlay && !hasGoldOnExhaust && !hasCorruption &&
+                    source.CardRegistry?.Any(card => card.InstanceId == playedCardId) == true &&
+                    source.Relics!.Where(relic => relic.EffectTypes.Contains(RelicModel.CopyCardOnCardPlay))
+                        .All(RelicCopyCardOnCardPlayModel.IsFirstSpellOwner);
+                if (!usesRetainedSource)
+                    return Fail(source, "Native card-play relic effects require the played card in the owned-card list.");
+            }
 
             CombatContext context = source;
             var dispatches = new List<RelicCardPlayMagicPowerDispatch>();

@@ -1018,6 +1018,7 @@ namespace MonsterTrain2Poju.Model
                 terminal = outcome == RoomOutcome.BattleWon || outcome == RoomOutcome.PlayerDefeated;
             }
             IReadOnlyList<RoomCapacityState>? capacitiesBeforeRelics = context.RoomCapacities;
+            bool afterTerminalClear = outcome == RoomOutcome.BattleWon && context.KillCamActivated == true;
             RelicCardPlayMagicPowerResult cardPlayMagicPower = RelicCardPlayMagicPowerModel.Apply(
                 context, card.InstanceId, source.PlayRules, source.Spawn.Turn,
                 context.QueryFrame?.SelectedRoomIndex ?? action.RoomIndex, placement: source.Spawn.Turn == 0,
@@ -1026,9 +1027,16 @@ namespace MonsterTrain2Poju.Model
                 lastTargets: lastMainTargets ?? Array.Empty<int>(), originalTargetTeam: originalTargetTeam,
                 lastDamagedUnitIds: lastDamagedUnitIds.ToArray(),
                 originalRoomCorruption: source.Spawn.Train.Context?.RoomCapacities?
-                    .FirstOrDefault(room => room.RoomIndex == action.RoomIndex)?.Corruption);
+                    .FirstOrDefault(room => room.RoomIndex == action.RoomIndex)?.Corruption,
+                afterTerminalClear: afterTerminalClear);
             if (!cardPlayMagicPower.Supported) return Unsupported(cardPlayMagicPower.UnsupportedReason!);
             context = cardPlayMagicPower.Context;
+            int[] terminalCopyIds = afterTerminalClear ? cardPlayMagicPower.Dispatches.Where(dispatch =>
+            {
+                CombatRelicState owner = context.Relics![dispatch.RelicIndex];
+                return RelicCopyCardOnCardPlayModel.IsFirstSpellOwner(owner) &&
+                    owner.EffectTypes[dispatch.EffectIndex] == RelicModel.CopyCardOnCardPlay;
+            }).SelectMany(dispatch => dispatch.ChangedCards).ToArray() : Array.Empty<int>();
             train = cardPlayMagicPower.TrainState ?? CardSpellModel.WithContext(train, context);
             if (cardPlayMagicPower.Outcome != RoomOutcome.Exchanged) outcome = cardPlayMagicPower.Outcome;
             RoomAttachmentUnitSyncResult replicatedCharacters = RoomAttachmentUnitModel.Synchronize(train,
@@ -1222,7 +1230,7 @@ namespace MonsterTrain2Poju.Model
             bool copyOnDiscard = !skipNaturalDiscard && discardInstance != null && CardCopyOnPlayModel.Present(discardInstance);
             bool reverseCopyBeforeConsume = copyOnDiscard && CardCopyOnPlayModel.ReverseCopyBeforeConsume(discardInstance!);
             BattleStatistics? statistics = context.Statistics;
-            if (terminal) statistics = statistics?.RefreshOwnedCards(new[] { card.InstanceId });
+            if (terminal) statistics = statistics?.RefreshOwnedCards(new[] { card.InstanceId }.Concat(terminalCopyIds));
             if (!skipNaturalDiscard) statistics = statistics?.Increment(card.InstanceId, "TimesDiscarded");
             statistics = statistics?.WithPlayedCost(card.InstanceId, null);
             if (!skipNaturalDiscard && !terminal && rule.Destination == "Exhausted") statistics = statistics?.Increment(card.InstanceId, "TimesExhausted");
@@ -1237,13 +1245,27 @@ namespace MonsterTrain2Poju.Model
                 statistics = changed.Statistics;
             }
             context = context.AfterCardEffects();
+            IReadOnlyList<CardInstanceState>? resolvedInstances;
+            if (terminal)
+            {
+                resolvedInstances = context.CardInstances;
+                if (playingInstance != null)
+                {
+                    CardInstanceState resolving = context.FindCard(card.InstanceId) ?? playingInstance;
+                    if (!skipNaturalDiscard) resolving = resolving.OnDiscard(true, nativePlayedCost, suppressConsume);
+                    resolvedInstances = terminalCopyIds.Length == 0 ? new[] { resolving } : new[] { resolving }
+                        .Concat(context.CardInstances!.Where(instance => terminalCopyIds.Contains(instance.InstanceId))).ToArray();
+                }
+            }
+            else
+            {
+                resolvedInstances = context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId && !skipNaturalDiscard
+                    ? instance.OnDiscard(true, nativePlayedCost, suppressConsume) : instance).ToArray();
+            }
             context = new CombatContext(new CardCycleState(hand, context.Cards.Draw, discard, context.Cards.Rng,
                 context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId, context.Cards.DeckDrawDisabledThisTurn), context.BattleRng,
                 context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, statistics,
-                terminal ? playingInstance == null ? context.CardInstances : new[] { skipNaturalDiscard
-                    ? context.FindCard(card.InstanceId) ?? playingInstance : (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, nativePlayedCost, suppressConsume) } :
-                context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
-                    ? skipNaturalDiscard ? instance : instance.OnDiscard(true, nativePlayedCost, suppressConsume) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
+                resolvedInstances, context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
                 context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts, context.Resources, context.MixState, context.ConduitRetained, context.LifeLinks);
             if (!skipNaturalDiscard) context = ConduitModel.Discarded(context, card.InstanceId);
             if (summonedEndless && !terminal && !consumedOnPlay)

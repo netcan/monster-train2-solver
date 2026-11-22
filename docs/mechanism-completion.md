@@ -214,6 +214,12 @@ PurgeToExhaust 的 2.3.1 胜局核对 23 次原版管理器调用和六组过滤
 新版和旧版专项均通过，同一管理器检查器也通过新版 Permafrost 的定向复验。
 [`purge-to-exhaust.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/purge-to-exhaust.mt2f)
 
+CopyFirstSpellPlayed 的两份 2.3.1 胜局分别覆盖同回合限制和法术直接击杀。致命施法触发终局清理后，
+原版回调仍从登记表找到原牌，生成一张带 Ephemeral 的手牌。原牌随后进入弃牌堆，终局同时保留这两张牌。
+两局共 46 次出牌和 13 次结束回合，完整状态、随机数与两类候选检查通过。
+[`copy-first-spell.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/copy-first-spell.mt2f) ·
+[`copy-first-spell-terminal.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/copy-first-spell-terminal.mt2f)
+
 两个 2.3.1 原版移动遗物场景复用移动前月相掩码采集。升降层伤害场景实测敌军上移和下移
 各受 3 点伤害。Pyregel 场景实测敌军上移获得 2 层 Pyregel，并核对下移、友军和移动受阻对照。
 每份录像通过 22 个移动边界及 42 次出牌检查，脚本布置结束后另核对 20 次出牌、5 次结束回合和

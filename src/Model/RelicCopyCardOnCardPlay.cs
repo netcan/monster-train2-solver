@@ -68,6 +68,9 @@ namespace MonsterTrain2Poju.Model
         internal const string MothersRemnant3Key = "MothersRemnant3Relic";
         private const string EphemeralUpgradeId = "80a5edf4-6dc8-41a7-ab4e-9d0e914e0848";
 
+        internal static bool IsFirstSpellOwner(CombatRelicState relic) =>
+            relic.DataId == RelicId && relic.AssetKey == RelicKey;
+
         internal static string? Validate(CombatRelicState relic)
         {
             int[] indices = relic.EffectTypes.Select((type, index) => (type, index))
