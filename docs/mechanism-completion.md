@@ -417,6 +417,10 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 32 次升级调度、满手和空池。23 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`typed-draw-and-consume.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/typed-draw-and-consume.mt2f)
 
+原版 Prism Retrieval 的 X=3、0、10 实测攻击分别增加 15、0、50，费用分别降低 3、0、10。
+专项核对单位抽牌、法术排除、升级队列及消耗。6 次出牌、5 次结束回合和两类候选通过。
+[`prism-retrieval.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/prism-retrieval.mt2f)
+
 敌方状态批次核对十一张原版卡牌，包括单体、整层及整塔目标、Pyregel 与 Rage 的翻倍、
 保证触发的随机流和腐化消耗。18 次出牌、5 次结束回合和候选检查通过。
 [`hostile-status-order.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-hostile-statuses/hostile-status-order.mt2f)
