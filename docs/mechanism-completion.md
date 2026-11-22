@@ -500,6 +500,10 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 11 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`awoken-rail-spike.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/awoken-rail-spike.mt2f)
 
+原版 Card Draw Potion 支付 1 余烬并进入消耗牌堆。下回合原版抽 8 张牌，额外抽牌修正随后归零。
+`--original-card-draw-potion-only` 核对这条机制及 16 条独立分支。3 次出牌、5 次结束回合和两类候选检查通过。
+[`card-draw-potion.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/card-draw-potion.mt2f)
+
 原版 The Great Decay 为三个牌堆中的法术添加升级。专项验证费用折扣、Consume、
 X 加成和单位筛选。6 次出牌、5 次结束回合、16 条独立分支与两类候选通过。
 [`great-decay.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/great-decay.mt2f)
