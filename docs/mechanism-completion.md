@@ -276,6 +276,10 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 部署时两个移动候选缺前序月相快照。
 [`单位遗物归档`](../tests/compatibility/game-2.3.1/mechanics/controlled-unit-relic-batch/battle.mt2f)
 
+同种子补采从部署阶段记录月相。实机执行 7 次友军 Shift、1 次敌军 Shift 和 1 次护盾挡伤。
+同一两张对照牌的布置按分段检查。40 次出牌、7 次结束回合及两类候选均通过。
+[`单位遗物月相补采`](../tests/compatibility/game-2.3.1/mechanics/controlled-unit-relic-batch/moon-masks.mt2f)
+
 两件原版衰减遗物验证友方怒气保留、敌方怒气衰减和双方霜寒保留。霜寒回调携带遗物来源时，
 模型沿用该来源登记伤害归属。2.3.1 的 42 个房间阶段、23 次出牌、5 次结束回合与两类候选均匹配，
 2.2.1 专项也通过。
