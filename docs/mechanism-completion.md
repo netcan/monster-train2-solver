@@ -115,6 +115,16 @@ Energy Siphon、Immortality Potion、Forevermore Serum 和 Spike Potion 在首�
 427 张暂无出牌记录。
 [`configured-opening-spells/battle.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-spells/battle.mt2f)
 
+第二组配置新增三张牌的原版出牌见证，并验证了此前只有身份记录的 Immortal Trade
+和 Liquid Courage。18 次出牌、6 次结束回合、16 条分支和候选检查通过。
+[`ally-enemy-status-and-movement.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-spells/ally-enemy-status-and-movement.mt2f)
+
+四件状态强化遗物也在单体状态牌整战中同时在场。约 66 秒后原版获胜，15 次出牌、
+5 次结束回合、16 条分支及候选检查通过。原版记录正向 Rage 和 Spikes 回调，
+四件遗物效果表与原版目录都一致。当前累计 188 场整战，卡牌结算定义匹配
+173/601，另有 4 张出牌身份记录和 424 张暂无出牌记录。遗物整战在场证据为 54/236。
+[`status-magnitude/battle.mt2f`](../tests/compatibility/game-2.3.1/mechanics/status-magnitude/battle.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
