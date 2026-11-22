@@ -498,7 +498,8 @@ namespace MonsterTrain2Poju.Model
             if (context.CardInstances != null)
             {
                 if (playingInstance == null) return Unsupported("Missing card instance modifiers.");
-                rule = CardModifierModel.Resolve(rule, playingInstance);
+                rule = CardModifierModel.Resolve(rule, playingInstance, out CombatUnit? purifiedTemplate);
+                if (purifiedTemplate != null) originalRule = originalRule!.WithSpawn(purifiedTemplate);
             }
             var choiceEffects = rule.Effects.Concat(rule.OnCastEffects).ToArray();
             if (action.SummonSelections.Any(selection => selection.EffectIndex < 0 || selection.EffectIndex >= choiceEffects.Length ||

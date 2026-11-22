@@ -456,7 +456,8 @@ namespace MonsterTrain2Poju.Model
                 counter.Value < 0 || counter.Type != "CardEffectDiscardHand") ||
                 instance.EffectCounters.Select(counter => counter.EffectIndex).Distinct().Count() != instance.EffectCounters.Count))
                 return "Invalid or unmodeled card effect counters.";
-            var interactions = instance.ExternalInteractions.Where(interaction => interaction != NonPlayableCostInteraction)
+            var interactions = instance.ExternalInteractions.Where(interaction => interaction != NonPlayableCostInteraction &&
+                (interaction != PurifiedCardSpawnModel.Interaction || !PurifiedCardSpawnModel.SupportsMask(instance)))
                 .Concat(instance.Permanent.ExternalInteractions)
                 .Concat(instance.Temporary.ExternalInteractions)
                 .Concat(InstanceUpgradeInteractions(instance, CardShardtailImpCostModel.PermanentSource(instance))).ToList();
@@ -487,11 +488,18 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static CardPlayRule Resolve(CardPlayRule rule, CardInstanceState instance)
+            => Resolve(rule, instance, out _);
+
+        internal static CardPlayRule Resolve(CardPlayRule rule, CardInstanceState instance, out CombatUnit? purifiedTemplate)
         {
             if (instance.Permanent.MergedEquipment != null) rule = instance.Permanent.MergedEquipment.Resolve(rule);
+            purifiedTemplate = PurifiedCardSpawnModel.Project(rule, instance);
+            bool purifiedSpawn = purifiedTemplate != null;
+            if (purifiedTemplate != null) rule = rule.WithSpawn(purifiedTemplate);
             CardUpgradeModifier? roomCostSource = rule.SpawnUnit?.AssetKey == CardShardtailImpCostModel.UnitKey
                 ? CardShardtailImpCostModel.PermanentSource(instance) : null;
-            var interactions = rule.ExternalInteractions.Concat(instance.ExternalInteractions.Where(interaction => interaction != NonPlayableCostInteraction))
+            var interactions = rule.ExternalInteractions.Concat(instance.ExternalInteractions.Where(interaction => interaction != NonPlayableCostInteraction &&
+                (interaction != PurifiedCardSpawnModel.Interaction || !purifiedSpawn)))
                 .Concat(instance.Permanent.ExternalInteractions).Concat(instance.Temporary.ExternalInteractions)
                 .Concat(InstanceUpgradeInteractions(instance, roomCostSource)).ToList();
             string? exhaustError = CardExhaustModel.Validate(instance);
