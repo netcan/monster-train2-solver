@@ -126,9 +126,12 @@ namespace MonsterTrain2Poju.Model
                 !runtime.TemporaryReplacement;
         }
 
-        internal static bool SupportedIntrinsicSpike(CardInstanceState card)
+        internal static bool SupportedIntrinsicSpike(CardInstanceState card) =>
+            card.MaskDescriptor is { } descriptor && SupportedWurmkinSpikeSource(descriptor) && SupportedIntrinsicUpgrade(card);
+
+        internal static bool SupportedIntrinsicUpgrade(CardInstanceState card)
         {
-            if (card.MaskDescriptor is not { } descriptor || !SupportedWurmkinSpikeSource(descriptor)) return false;
+            if (card.MaskDescriptor is not { } descriptor) return false;
             bool Ordinary(CardTraitValue trait) => trait.RuntimeType == "CardTraitIntrinsicState" && trait.DeclaredName == trait.RuntimeType &&
                 trait.ParamInt == 0 && trait.DefinitionParamInt == 0 && trait.StackMode == 0 && trait.Removable &&
                 trait.DefinitionRemovable == true && !trait.TemporaryReplacement;

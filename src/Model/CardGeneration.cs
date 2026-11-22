@@ -518,7 +518,7 @@ namespace MonsterTrain2Poju.Model
             bool Neutral(CardTraitValue trait) => (NeutralType(trait.RuntimeType) || trait.RuntimeType == CardCopyOnPlayModel.Trait &&
                 CardCopyOnPlayModel.Validate(card) == null || trait.RuntimeType == "CardTraitPermafrost" &&
                 CardCopyOnPlayModel.SupportedPermafrost(card) || trait.RuntimeType == "CardTraitIntrinsicState" &&
-                CardCopyOnPlayModel.SupportedIntrinsicSpike(card)) && trait.DeclaredName == trait.RuntimeType;
+                CardCopyOnPlayModel.SupportedIntrinsicUpgrade(card)) && trait.DeclaredName == trait.RuntimeType;
             if (card.MaskDescriptor.TemporaryTraits.Any(trait => !Neutral(trait)) ||
                 card.MaskDescriptor.PermanentReplacements.Any(rule => !NeutralType(rule.OldName) || !NeutralType(rule.NewRuntimeType)) ||
                 card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade =>
