@@ -236,6 +236,11 @@ Imp Provisation 献祭 Welder Helper 并补 1 余烬，Impressive 献祭 Embered
 Moonbeam 以 X=5 付费，随后清除最后一名敌军。13 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`sacrifice-and-x-hits.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-scaled-damage/sacrifice-and-x-hits.mt2f)
 
+原版 X 费状态批次核对 Spike of the Legion 与 Prismal Dust 的 X=4 和 X=0，
+并核对 Spike of the Hellhorned 的 X=4、目标楼层、双效果及消耗去向。
+10 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
+[`x-cost-status.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-room-status-damage/x-cost-status.mt2f)
+
 2.3.1 目录中 83 张卡牌的主伤害效果可按原版参数归为 64 组。已有 278 场通过整战登记后，
 每组至少有一张定义匹配的原版牌实际打出。`FixtureTools card-damage-audit` 输出参数哈希、
 出牌归档和动作索引。各效果的命中、失败和无目标条件由对应专项核对。
