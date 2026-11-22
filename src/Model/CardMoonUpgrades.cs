@@ -309,13 +309,21 @@ namespace MonsterTrain2Poju.Model
                 var modified = new List<string>();
                 if (active)
                 {
-                    if (permanent.Any(item => item.DataId == upgrade.DataId)) return Reject("Duplicate moon upgrades require reference-identity calibration.");
-                    foreach (CardTraitValue added in upgrade.Lifecycle!.AddedTraits)
-                        if (!CardExhaustModel.RefreshTraits(card).CombinedTraits!.Any(item => item.RuntimeType == added.RuntimeType))
-                        { bases.Add(added); modified.Add(added.RuntimeType); }
-                    CardLifecycleUpgrade lifecycle = WithModified(upgrade.Lifecycle, modified);
-                    upgrade = upgrade.WithLifecycle(lifecycle); permanent.Add(upgrade);
-                    castEffects.AddRange(lifecycle.Triggers.Where(trigger => trigger.Type == "OnCast").SelectMany(trigger => trigger.Effects));
+                    CardUpgradeModifier? installed = permanent.FirstOrDefault(item => item.DataId == upgrade.DataId);
+                    if (installed != null)
+                    {
+                        if (permanent.Count(item => item.DataId == upgrade.DataId) != 1 || !MatchesInstalledMoonCast(installed, upgrade, castEffects))
+                            return Reject("Duplicate moon upgrades require reference-identity calibration.");
+                    }
+                    else
+                    {
+                        foreach (CardTraitValue added in upgrade.Lifecycle!.AddedTraits)
+                            if (!CardExhaustModel.RefreshTraits(card).CombinedTraits!.Any(item => item.RuntimeType == added.RuntimeType))
+                            { bases.Add(added); modified.Add(added.RuntimeType); }
+                        CardLifecycleUpgrade lifecycle = WithModified(upgrade.Lifecycle, modified);
+                        upgrade = upgrade.WithLifecycle(lifecycle); permanent.Add(upgrade);
+                        castEffects.AddRange(lifecycle.Triggers.Where(trigger => trigger.Type == "OnCast").SelectMany(trigger => trigger.Effects));
+                    }
                 }
                 else
                 {
@@ -338,6 +346,20 @@ namespace MonsterTrain2Poju.Model
             }
             return new CardMoonUpgradeResult(card);
         }
+
+        // A card copy can already carry this upgrade before its Moon trait first
+        // refreshes. Native membership uses the definition ID and keeps the existing cast.
+        private static bool MatchesInstalledMoonCast(CardUpgradeModifier installed, CardUpgradeModifier cached,
+            IReadOnlyList<string> castEffects)
+        {
+            if (string.IsNullOrEmpty(cached.DataId) || cached.Lifecycle is not
+                { AddedTraits.Count: 0, TraitsModified.Count: 0, Triggers: [{ Type: "OnCast", Effects: [var effect] }] } ||
+                castEffects.Count(item => item == effect) != 1)
+                return false;
+            using var keys = new BattleStateKeys();
+            return keys.SnapshotKey(installed) == keys.SnapshotKey(cached);
+        }
+
         private static CardLifecycleUpgrade WithModified(CardLifecycleUpgrade source, IReadOnlyList<string> modified) => new CardLifecycleUpgrade(
             source.Values, source.AssetKey, source.Unique, source.RemoveOnDiscard, source.AddedTraits, source.RemovedRuntimeTypes,
             source.AvoidClobbering, modified, source.ReplacedAssets, source.Triggers, source.OriginalDamage, source.OriginalHeal, source.InstanceId);

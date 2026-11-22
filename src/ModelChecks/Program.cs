@@ -5654,6 +5654,13 @@ if (args.Length == 2 && args[0] == "--original-moon-card-upgrades-only")
     OriginalMoonCardUpgradesChecks.Native(moonCardBattleDocument.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--moon-copied-upgrade-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    MoonCardUpgradeChecks.NativeCopiedUpgrade(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--moon-card-upgrade-only")
 {
     using var moonUpgradeDocument = ModelJson.ReadFixture(args[1]);

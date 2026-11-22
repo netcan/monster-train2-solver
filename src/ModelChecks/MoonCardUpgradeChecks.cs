@@ -4,6 +4,51 @@ using MonsterTrain2Poju.Model;
 
 internal static class MoonCardUpgradeChecks
 {
+    internal static void NativeCopiedUpgrade(FixtureValue fixture)
+    {
+        const string reason = "Duplicate moon upgrades require reference-identity calibration.";
+        var rows = NativeBranchObservationChecks.Replay(fixture, reason,
+            expectedGameModule: new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d"));
+        var boundary = rows[^1];
+        var before = boundary.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var after = boundary.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        var input = before.Spawn.Train.Context!;
+        var output = after.Spawn.Train.Context!;
+        var source = input.FindCard(23)!;
+        var copied = output.FindCard(input.NextCardId)!;
+        var active = copied.MaskDescriptor!.BaseTraits.Single(trait => trait.MoonPhaseUpgradeState?.Active == true);
+        Require(rows.Length == 47 && before.Spawn.Turn == 8 && after.Spawn.Turn == 8 && input.QueryFrame?.MoonPhase == 2 &&
+            boundary.GetProperty("Action").Deserialize<PlayCardAction>() is { CardInstanceId: 29, ActivatorUnitId: 7 } &&
+            copied.DataId == source.DataId && output.Cards.Hand.Any(token => token.InstanceId == copied.InstanceId) &&
+            copied.Permanent.Upgrades is [var installed] && installed.AssetKey == "GravityAscend_Upgrade" &&
+            copied.MaskDescriptor.AuthoredCastEffects.SequenceEqual(new[] { "CardEffectBump" }) &&
+            active.MoonPhaseUpgradeState is { Active: true, Cached: true } state && Json(state.Upgrade) == Json(installed) &&
+            Json(source) == Json(output.FindCard(source.InstanceId)),
+            "The original ability must copy one installed full-Moon upgrade, activate its cache and preserve the source.");
+
+        var descriptor = copied.MaskDescriptor;
+        var coldTraits = descriptor.BaseTraits.Select(trait => ReferenceEquals(trait, active)
+            ? trait.WithMoonUpgrade(new CardMoonUpgradeState(false, false, active.MoonPhaseUpgradeState!.Upgrade)) : trait).ToArray();
+        var cold = copied.WithMaskDescriptor(descriptor.WithBaseTraits(coldTraits));
+        Require(Json(CardMoonUpgradeModel.Update(cold, 2).Card) == Json(copied), "Adopting the installed native upgrade changed the copied card.");
+        foreach (string control in new[] { "SecondEntry", "DifferentPayload", "MissingCast", "SecondCast" })
+        {
+            var node = JsonSerializer.SerializeToNode(cold, ModelJson.Options)!;
+            var upgrades = node["Permanent"]!["Upgrades"]!.AsArray();
+            var mask = node["MaskDescriptor"]!["AuthoredCastEffects"]!.AsArray();
+            switch (control)
+            {
+                case "SecondEntry": upgrades.Add(upgrades[0]!.DeepClone()); break;
+                case "DifferentPayload": upgrades[0]!["Lifecycle"]!["Triggers"]![0]!["Actions"]![0]!["Value"] = -1; break;
+                case "MissingCast": mask.Clear(); break;
+                case "SecondCast": mask.Add("CardEffectBump"); break;
+            }
+            var rejected = CardMoonUpgradeModel.Update(node.Deserialize<CardInstanceState>(ModelJson.Options)!, 2);
+            Require(!rejected.Supported && rejected.UnsupportedReason == reason, "Unverified Moon upgrade passed the duplicate guard: " + control);
+        }
+        Console.WriteLine("MOON-COPIED-UPGRADE PASS: 47 original inputs, full successor/RNG, one permanent upgrade and one cast, four duplicate guards.");
+    }
+
     internal static void Native(FixtureValue root)
     {
         Require(root.GetProperty("DecisionUnchanged").GetBoolean() &&
