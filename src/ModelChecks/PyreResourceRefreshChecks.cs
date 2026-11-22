@@ -30,9 +30,14 @@ internal static class PyreResourceRefreshChecks
         Require(eligible || !required, "Fixture lacks the Pyre resource refresh scene.");
         if (!eligible) return null;
         bool compareRoomEnabled = BattleTurnChecks.ShouldCompareRoomEnabled(root);
-        Require(root.GetProperty("Schema").GetInt32() == 118 && root.GetProperty("GameVersion").GetString() == "2.2.1" &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4",
+        string? version = root.GetProperty("GameVersion").GetString();
+        string? module = root.GetProperty("GameModuleMvid").GetString();
+        bool pinnedBuild = (version, module) is ("2.2.1", "8fb07b96-f4db-4d2b-884d-c00536d6ccf4") or
+            (Game231FixtureCatalog.Version, Game231FixtureCatalog.Module);
+        Require(root.GetProperty("Schema").GetInt32() == 118 && pinnedBuild,
             "Native Pyre refresh schema or game build changed.");
+        // The current native terminal capture prunes inactive play definitions after StopCombatLoop.
+        bool useTerminalProjection = version == Game231FixtureCatalog.Version;
         Require(root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
             root.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" &&
             root.GetProperty("Policy").GetString() == "units-spells-and-junk", "Native Pyre refresh battle is incomplete.");
@@ -114,8 +119,9 @@ internal static class PyreResourceRefreshChecks
             BattleTurnResult result = BattleTurnModel.EndTurn(before);
             Require(result.Supported && result.Outcome == (RoomOutcome)row.GetProperty("ActualOutcome").GetInt32(),
                 "Pyre refresh EndTurn unsupported or outcome differs: " + result.UnsupportedReason);
-            Equal(BattleTurnChecks.Comparable(result.State!, compareRoomEnabled: compareRoomEnabled),
-                BattleTurnChecks.Comparable(actual, compareRoomEnabled: compareRoomEnabled), "complete native Pyre refresh EndTurn");
+            bool terminalTurn = useTerminalProjection && result.Outcome == RoomOutcome.BattleWon;
+            Equal(BattleTurnChecks.Comparable(result.State!, terminalTurn, compareRoomEnabled),
+                BattleTurnChecks.Comparable(actual, terminalTurn, compareRoomEnabled), "complete native Pyre refresh EndTurn");
             Require(Serialize(before) == parent, "Pyre refresh EndTurn mutated its source.");
         }
         int pyreCombats = CheckStages(stages, Witness);
@@ -126,11 +132,11 @@ internal static class PyreResourceRefreshChecks
             CardCycleChecks.Native(root); BattleActionChecks.Native(root); BattleTurnChecks.Native(root);
             if (!compareRoomEnabled)
                 Console.WriteLine("LEGACY-PYRE-RESOURCE-POLICY-LIMITATION: stale room Enabled snapshots are excluded; complete root and mid-battle policies remain checked.");
-            ReplayBranches(first, actions, turns, terminal, compareRoomEnabled, "root");
+            ReplayBranches(first, actions, turns, terminal, compareRoomEnabled, useTerminalProjection, "root");
             BattleTurnState mid = actions[0].GetProperty("Actual").Deserialize<BattleTurnState>()!;
             ReplayBranches(mid, actions.Skip(1).ToArray(), turns.Where(row =>
                 row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() >= mid.Spawn.Turn).ToArray(),
-                terminal, compareRoomEnabled, "mid");
+                terminal, compareRoomEnabled, useTerminalProjection, "mid");
         }
         var witnesses = Artifacts.ToDictionary(owner => owner.Key, owner => proofs.Where(proof => proof.Key.Id == owner.Id).Sum(proof => proof.Value));
         Console.WriteLine("PYRE-RESOURCE-REFRESH-WITNESSES " + string.Join(", ", witnesses.Select(row => row.Key + "=" + row.Value)));
@@ -459,15 +465,15 @@ internal static class PyreResourceRefreshChecks
             source.HordeDefinition, source.IsSpawning, source.SacrificeCardId, source.DeathState, source.BumpRules);
     }
     private static void ReplayBranches(BattleTurnState source, FixtureValue[] actions, FixtureValue[] turns,
-        BattleTurnState terminal, bool compareRoomEnabled, string label)
+        BattleTurnState terminal, bool compareRoomEnabled, bool useTerminalProjection, string label)
     {
-        string parent = Serialize(source), expected = BattleTurnChecks.Comparable(terminal, compareRoomEnabled: compareRoomEnabled);
+        string parent = Serialize(source), expected = BattleTurnChecks.Comparable(terminal, useTerminalProjection, compareRoomEnabled);
         void Run()
         {
             BattleSimulationResult result = BattleSimulator.Resolve(source, Choose);
             Require(result.Supported && result.Outcome == RoomOutcome.BattleWon && result.Actions.Count == actions.Length && result.Turns.Count == turns.Length,
                 "Independent Pyre refresh " + label + " policy differs from native counts/outcome: " + result.UnsupportedReason);
-            Equal(expected, BattleTurnChecks.Comparable(result.State!, compareRoomEnabled: compareRoomEnabled),
+            Equal(expected, BattleTurnChecks.Comparable(result.State!, useTerminalProjection, compareRoomEnabled),
                 "independent Pyre refresh " + label + " terminal");
             for (int index = 0; index < actions.Length; index++)
             {
@@ -479,9 +485,10 @@ internal static class PyreResourceRefreshChecks
             for (int index = 0; index < turns.Length; index++)
             {
                 Require(result.Turns[index].Outcome == (RoomOutcome)turns[index].GetProperty("ActualOutcome").GetInt32(), label + " native EndTurn outcome differs.");
-                Equal(BattleTurnChecks.Comparable(result.Turns[index].State!, compareRoomEnabled: compareRoomEnabled),
+                bool terminalTurn = useTerminalProjection && result.Turns[index].Outcome == RoomOutcome.BattleWon;
+                Equal(BattleTurnChecks.Comparable(result.Turns[index].State!, terminalTurn, compareRoomEnabled),
                     BattleTurnChecks.Comparable(turns[index].GetProperty("Actual").Deserialize<BattleTurnState>()!,
-                        compareRoomEnabled: compareRoomEnabled), label + " native EndTurn state");
+                        terminalTurn, compareRoomEnabled), label + " native EndTurn state");
             }
         }
         Run(); Parallel.For(0, 16, _ => Run());
