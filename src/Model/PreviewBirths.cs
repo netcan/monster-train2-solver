@@ -442,8 +442,11 @@ namespace MonsterTrain2Poju.Model
             // Preserve observed births and all enemy births. Check the allocator
             // first so ordinary preview refreshes do not scan units or cards.
             if (context.Enchantments?.AutomaticLifecycle != true || preview.NextUnitId is not int nextId ||
-                nextId <= firstUnitId || world == null || preview.CardRegistry == null ||
-                world.EnchanterIds.Count != 0 && !fragileObserver &&
+                nextId <= firstUnitId || world == null || preview.CardRegistry == null)
+                return preview;
+            bool colonelFallback = nextId - firstUnitId == 1 && preview.NextCardId == firstCardId &&
+                OriginalColonelHymnistPreviewBirth(source, preview, firstUnitId, observedBirths);
+            if (world.EnchanterIds.Count != 0 && !fragileObserver && !colonelFallback &&
                     !TroopAuraModel.OnlyTitanskinSources(world.Rooms, world.RetainedUnits, world.EnchanterIds) && !OriginalRetiredHasteRecruit())
                 return preview;
             bool enemyOnlyObservers = world.EnchanterIds.Count != 0;
@@ -472,7 +475,7 @@ namespace MonsterTrain2Poju.Model
                 // same unowned Fun Guy lifetime as Green Recruit. Its temporary
                 // preview character is destroyed before decision identity capture.
                 bool championFallback = source.Rooms.SelectMany(room => room.Units).Any(unit => IsOriginalChampionEnemyDeath(unit, context));
-                if (!(roomFallback || recruitFallback || championFallback) || births.Length != nextId - firstUnitId || births.Any(unit =>
+                if (!(roomFallback || recruitFallback || championFallback || colonelFallback) || births.Length != nextId - firstUnitId || births.Any(unit =>
                     unit.Id >= nextId || unit.Team != CombatTeam.Player || unit.AssetKey != "MonsterFunguy" || unit.SpawnerCardId != 0)) return preview;
             }
             else if (context.SummonCatalog == null || nextId - firstUnitId != newCards.Length) return preview;
@@ -481,7 +484,8 @@ namespace MonsterTrain2Poju.Model
                     unit.Triggers.SelectMany(trigger => trigger.Effects).Any(effect => effect.Enchantment != null) &&
                     // The calibrated Titanskin sources only observe enemies;
                     // their presence does not retain an unowned player birth.
-                    !(enemyOnlyObservers && unit.Team == CombatTeam.Enemy && world.EnchanterIds.Contains(unit.Id)))) return preview;
+                    !(enemyOnlyObservers && unit.Team == CombatTeam.Enemy && world.EnchanterIds.Contains(unit.Id)) &&
+                    !(colonelFallback && world.EnchanterIds.Contains(unit.Id)))) return preview;
             var spawnerIds = (context.SummonCatalog?.Units ?? Array.Empty<SummonUnitDefinition>()).Where(unit => unit.Unit.Team == CombatTeam.Player && unit.Fallback != null)
                 .Select(unit => unit.Fallback!.DataId).ToHashSet();
             foreach (CombatUnit actor in source.Rooms.SelectMany(room => room.Units).Where(unit =>
@@ -500,6 +504,55 @@ namespace MonsterTrain2Poju.Model
             if (preview.SpawnPoints is BattleSpawnPoints points)
                 preview = preview.WithSpawnPoints(points.WithState(points.Groups, points.Units.Where(unit => unit.UnitId < firstUnitId).ToArray()));
             return preview;
+        }
+
+        private static bool OriginalColonelHymnistPreviewBirth(TrainCombatState source, CombatContext preview,
+            int birthId, IReadOnlyCollection<CombatUnit> observedBirths)
+        {
+            CombatContext context = source.Context!;
+            EnchantmentWorld world = preview.Enchantments!;
+            if (context.SummonCatalog != null || context.Enchantments!.EnchanterIds is not [int ownerId] ||
+                world.EnchanterIds is not [int previewOwnerId] || previewOwnerId != ownerId ||
+                world.TemporaryPreviewUnitIds?.Contains(birthId) == true ||
+                world.RetainedUnits.Any(actor => actor.Unit.Id == birthId && !actor.Preview) ||
+                !observedBirths.Any(unit => unit.Id == birthId && unit is
+                    { AssetKey: "MonsterFunguy", Team: CombatTeam.Player, SpawnerCardId: 0 } && unit.Status("horde")?.Stacks == 4) ||
+                preview.SpawnPoints is not BattleSpawnPoints points ||
+                points.Units.SingleOrDefault(point => point.UnitId == birthId) is not { SpawnedInPreview: true } birthPoint ||
+                birthPoint.Current is { PreviewCopyId: null } || birthPoint.LastKnown is { PreviewCopyId: null } ||
+                points.Groups.Any(group => group.PreviewCopyId == null && group.Occupants.Contains(birthId))) return false;
+
+            RoomCombatState? ownerRoom = source.Rooms.SingleOrDefault(room => room.Units.Any(unit => unit.Id == ownerId));
+            CombatUnit? owner = ownerRoom?.Units.Single(unit => unit.Id == ownerId);
+            if (owner is not { AssetKey: "MonsterHymnist", Team: CombatTeam.Player, Health: > 0,
+                Triggers: [{ Kind: "AfterSpawnEnchant", Effects: [{ Type: "CardEffectEnchant", Enchantment: {
+                    Bound: true, HasParentCard: false, Upgrade: null, StatusPool: [{ Id: "multistrike", Stacks: 1 }],
+                    Targeting: { Type: "AddStatus", Target: "Room", AllowPlayer: true, AllowEnemy: false, Range: null },
+                    State.PreviewRequiresSync: false } }] }] } ||
+                context.FindCard(owner.SpawnerCardId)?.DataId != "ad512bf3-32dc-4685-998e-28e2b96dc458") return false;
+
+            RoomCombatState? colonelRoom = source.Rooms.SingleOrDefault(room => room.Units.Any(unit =>
+                unit.Id == birthId - 1 && unit is { AssetKey: "MonsterClusterColonel", Team: CombatTeam.Player, Health: > 0,
+                    Triggers: [{ Kind: "PostCombat", SkipDuringDeployment: true, Effects: [{
+                        Type: "CardEffectSpawnMonsterOrAddStatusEffect", Value: 4, Action: {
+                            Type: "SpawnOrStatus", Target: "Room", AllowPlayer: true, AllowEnemy: false,
+                            Range: null, Filters.Subtype: "SubtypesData_Horde", Statuses: [{ Id: "horde", Stacks: 4 }],
+                            SpawnFallbackUnit: { AssetKey: "MonsterFunguy", Team: CombatTeam.Player, SpawnerCardId: 0 } } }] }] } &&
+                context.FindCard(unit.SpawnerCardId)?.DataId == "fd91d3d4-5282-417d-bf9b-0504f4592b97"));
+            if (colonelRoom == null || colonelRoom.RoomIndex == ownerRoom!.RoomIndex ||
+                birthPoint.Current is { } current && current.RoomIndex != colonelRoom.RoomIndex ||
+                birthPoint.LastKnown is { } lastKnown && lastKnown.RoomIndex != colonelRoom.RoomIndex) return false;
+
+            // Combat preview removes cardless player objects before identity capture.
+            // The original Hymnist only observes its own room, so its maps cannot retain this birth.
+            return world.Rooms.SelectMany(room => room.Units).Concat(world.RetainedUnits.Select(actor => actor.Unit))
+                .Append(owner).Where(unit => unit.Id != birthId).All(unit =>
+                    unit.LastAttackerId != birthId && unit.LastFeederId != birthId &&
+                    unit.Modifiers?.TroopAura?.Targets.Contains(birthId) != true &&
+                    unit.Triggers.SelectMany(trigger => trigger.Effects).All(effect =>
+                        effect.Summon?.FirstSpawnedUnitId != birthId && (effect.Enchantment == null || unit.Id == ownerId &&
+                            effect.Enchantment.State.PrimaryTargets.Concat(effect.Enchantment.State.PreviewTargets)
+                                .All(target => ownerRoom.Units.Any(ally => ally.Id == target.UnitId)))));
         }
 
         internal static CombatUnit InitialPrimary(CardPlayRule definition, CardInstanceState? card, int unitId,
