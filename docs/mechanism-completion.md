@@ -95,6 +95,12 @@ Jar of Frost 和 Magic Juice 合计支付 2 点余烬，分别在同房两名原
 用 `ModelChecks --original-room-status-spells-only` 可在离线复查这份短测。
 [`room-status-spells/native-exchange.mt2f`](../tests/compatibility/game-2.3.1/mechanics/room-status-spells/native-exchange.mt2f)
 
+整战录制将五张原版牌放入首个决策前的牌堆，保留原版洗牌、抽牌和结算。
+首回合完成五次施放后接回普通策略，约 86 秒后原版获胜，四项采集计数均为零。
+独立复放通过 23 次出牌、7 次结束回合和 16 条分支，录制根的出牌与结束回合
+候选检查也通过。纳入该整战后累计 184 场，卡牌定义匹配为 158/601。
+[`room-status-spells/battle.mt2f`](../tests/compatibility/game-2.3.1/mechanics/room-status-spells/battle.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
