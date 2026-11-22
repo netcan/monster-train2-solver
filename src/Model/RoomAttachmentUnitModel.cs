@@ -210,7 +210,8 @@ namespace MonsterTrain2Poju.Model
                         return Fail("Leaving a room attachment requires its captured character upgrades.");
                     foreach (CardUpgradeModifier upgrade in removed.CharacterUpgrades)
                     {
-                        if (!ApplyUpgrade(ref currentRoom, currentUnit.Id, removed, upgrade, remove: true, out string? error))
+                        if (!ApplyUpgrade(ref currentRoom, currentUnit.Id, removed, upgrade, remove: true, out string? error,
+                            movementExit: true))
                             return Fail(error!);
                     }
                     if (state.Context?.QueryFrame is { MoonPhaseTrackingActive: false, MoonPhase: 1 or 2 } inactive &&
@@ -532,7 +533,8 @@ namespace MonsterTrain2Poju.Model
         }
 
         private static bool ApplyUpgrade(ref RoomCombatState state, int unitId,
-            RoomCapacityAttachmentState attachment, CardUpgradeModifier upgrade, bool remove, out string? error)
+            RoomCapacityAttachmentState attachment, CardUpgradeModifier upgrade, bool remove, out string? error,
+            bool movementExit = false)
         {
             error = null;
             if (upgrade.TriggerUpgrades?.Count > 0)
@@ -553,6 +555,16 @@ namespace MonsterTrain2Poju.Model
                     upgrade.DataId);
                 if (!applied.Supported || applied.State == null)
                 { error = applied.UnsupportedReason ?? "Room attachment stat synchronization failed."; return false; }
+                // Ascension drains the original Zone's status removal callbacks at the destination.
+                if (movementExit && attachment is { DataId: "56468ba5-86b6-49be-ba30-02baf7ffd6dd", IgnoreBosses: true } &&
+                    upgrade is { DataId: "5c47b876-dad4-4b81-9169-bfcb8ab62ca6", Statuses: [{ Id: "silenced", Stacks: 1 }] } &&
+                    applied.PendingCallbacks.Any(callback => callback.Kind == "OnSilenceLost" &&
+                        (callback.Unit.Status("fullmoon") != null || callback.Unit.Status("newmoon") != null)))
+                {
+                    applied = RoomCombatModel.DrainCharacterCallbacks(applied.State, applied.PendingCallbacks);
+                    if (!applied.Supported || applied.State == null)
+                    { error = applied.UnsupportedReason ?? "Room exit silence callback failed."; return false; }
+                }
                 state = applied.State;
                 return true;
             }
