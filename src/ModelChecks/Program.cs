@@ -8596,6 +8596,12 @@ if (args.Length == 1 && args[0] == "--relic-status-stacks-pure")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--original-status-magnitude-witness-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalStatusMagnitudeWitnessChecks.Check(document.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-magnitude-relics-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

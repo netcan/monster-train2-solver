@@ -610,6 +610,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalHephsBlueprintsScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPriorityRelicBattleScenario.Enabled && !OriginalPriorityRelicBattleScenario.Acquired)
                         OriginalPriorityRelicBattleScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalStatusMagnitudeWitness.Enabled)
+                        OriginalStatusMagnitudeWitness.AcquireBeforeBattle(managers!);
                     if (fullBattle && OriginalRageOnBurnoutStackLossScenario.Enabled && !OriginalRageOnBurnoutStackLossScenario.Acquired)
                         OriginalRageOnBurnoutStackLossScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPyreRevengeScenario.Enabled && !OriginalPyreRevengeScenario.Acquired)
@@ -732,6 +734,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalMollisCycleOfLifeScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalMollisShelterObservation.Enabled)
                         OriginalMollisShelterObservation.AcquireBeforeBattle(managers!);
+                    if (fullBattle && OriginalStatusMagnitudeWitness.Enabled)
+                        OriginalStatusMagnitudeWitness.AcquireBeforeBattle(managers!);
                     if (fullBattle && OriginalAfterDrawSpawnScenario.Enabled && !OriginalAfterDrawSpawnScenario.Acquired)
                         OriginalAfterDrawSpawnScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalHoldoverGrantScenario.Enabled && !OriginalHoldoverGrantScenario.Acquired)
@@ -957,6 +961,12 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (OriginalMollisShelterObservation.Tick(managers, log)) AdvanceTurn(combat!, record: false);
                 if (OriginalMollisShelterObservation.Completed) Finish(true, "Original Mollis Shelter casts captured.");
+                return;
+            }
+            if (fullBattle && OriginalStatusMagnitudeWitness.Enabled)
+            {
+                if (OriginalStatusMagnitudeWitness.Tick(managers, log)) AdvanceTurn(combat!, record: false);
+                if (OriginalStatusMagnitudeWitness.Completed) Finish(true, "Original status magnitude witness captured.");
                 return;
             }
 #endif

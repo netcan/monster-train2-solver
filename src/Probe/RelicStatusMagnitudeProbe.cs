@@ -17,6 +17,8 @@ namespace MonsterTrain2Poju.Probe
             public int Actual { get; set; }
             public bool Matrix { get; set; }
             public bool Preview { get; set; }
+            public string? WitnessPhase { get; set; }
+            public bool ShouldSerializeWitnessPhase() => WitnessPhase != null;
             public CombatRelicState[] Relics { get; set; } = null!;
             public CombatContext? Context { get; set; }
         }
@@ -48,7 +50,12 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(RelicManager __instance, string statusId, Team.Type characterTeam, int __result)
             {
-                if ((!OriginalMagnitudeRelicBatchScenario.Prepared && !MagebladeScenario.CaptureMagnitudeQueries) ||
+                string? witnessPhase = null;
+#if DEVELOPMENT_PROBE
+                if (OriginalStatusMagnitudeWitness.Enabled && OriginalStatusMagnitudeWitness.Acquired)
+                    witnessPhase = OriginalStatusMagnitudeWitness.ObservingExchange ? "exchange" : "decision";
+#endif
+                if ((witnessPhase == null && !OriginalMagnitudeRelicBatchScenario.Prepared && !MagebladeScenario.CaptureMagnitudeQueries) ||
                     capturing || FullBattleTrace.Active == null) return;
                 capturing = true;
                 try
@@ -67,12 +74,12 @@ namespace MonsterTrain2Poju.Probe
                             .Any(effect => RelicCardModifierProbe.Conditions(effect).Length != 0);
                     }
                     CombatContext? context = conditionalRules.Value ? FullBattleTrace.Active.CaptureContext() : null;
-                    string key = statusId + "/" + (int)characterTeam + "/" + __result + "/" + matrix + "/" + preview +
+                    string key = statusId + "/" + (int)characterTeam + "/" + __result + "/" + matrix + "/" + preview + "/" + witnessPhase +
                         (context == null ? "" : "/" + JsonConvert.SerializeObject(context));
                     if (!seen.Add(key)) return;
                     CombatRelicState[] relics = context?.Relics?.ToArray() ?? RelicProbe.Capture(managers);
                     Queries.Add(new Query { StatusId = statusId, CharacterTeam = characterTeam.ToString(), NativeTeam = (int)characterTeam,
-                        Actual = __result, Matrix = matrix, Preview = preview, Relics = relics,
+                        Actual = __result, Matrix = matrix, Preview = preview, WitnessPhase = witnessPhase, Relics = relics,
                         Context = context });
                 }
                 catch (Exception error) { FullBattleTrace.Active.CaptureFailure(error); }
