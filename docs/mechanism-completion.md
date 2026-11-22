@@ -639,6 +639,10 @@ Astrologer 与 Nightingale 在同一场完成付费部署。原版在存活单�
 23 次出牌、7 次结束回合及两类候选通过。
 [原版月相单位对局](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/opening-moon-callback-units.mt2f)
 
+Reforming Ooze 和 Hulking Mass 同场验证付费出生、Undying 和 40 Armor，以及两条未触发的 OnReanimated 定义。
+5 次出牌、5 次结束回合、16 条独立分支及两类候选通过。
+[原版复生单位出生录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/reanimation-carrier-births.mt2f)
+
 原版 First of Kin 和 Sacrificial Resurrection 的同场对照核对两张手牌被消耗、单位增攻及
 Draff 出生，Morel Mistress 提供排除对照。7 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`exhausted-first-of-kin.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/exhausted-first-of-kin.mt2f)
