@@ -125,6 +125,23 @@ namespace MonsterTrain2Poju.Model
     }
     internal static class BattleSpawnPointModel
     {
+        internal static BattleSpawnPointResult CenterAfterActionRemovals(TrainCombatState before, TrainCombatState after)
+        {
+            BattleSpawnPoints points = after.Context!.SpawnPoints!;
+            foreach (RoomCombatState oldRoom in before.Rooms)
+            {
+                RoomCombatState room = after.Rooms.Single(item => item.RoomIndex == oldRoom.RoomIndex);
+                if (room.Preview || !oldRoom.Units.Any(unit => room.Units.All(living => living.Id != unit.Id))) continue;
+                foreach (CombatTeam team in new[] { CombatTeam.Enemy, CombatTeam.Player })
+                {
+                    BattleSpawnPointResult centered = Apply(points, room, "Compact", team);
+                    if (!centered.Supported) return centered;
+                    points = centered.State!;
+                }
+            }
+            return new BattleSpawnPointResult(points);
+        }
+
         internal static string? Validate(BattleSpawnPoints source, int? nextUnitId)
         {
             if (!nextUnitId.HasValue || source.Units.Any(unit => unit.UnitId <= 0 || unit.UnitId >= nextUnitId.Value) ||

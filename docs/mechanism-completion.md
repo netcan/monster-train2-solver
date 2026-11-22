@@ -655,6 +655,10 @@ Crucible Steward 与 Conductor Steward 同场完成付费出生。对局保留�
 Conductor Steward 的临时增益在四个观察点均未触发。5 次出牌、5 次结束回合、16 条独立分支及两类候选通过。
 [原版乘务员出生录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/card-trigger-stewards.mt2f)
 
+Minds of Their Own 命令装备单位击杀前排后，原版将余下敌人前移。普通出牌和技能共用补位处理，
+同场还核对了 Pyreshot 的薪火攻击。7 次出牌、5 次结束回合、16 条独立分支及两类候选通过，旧版两种法术和技能补位专项均通过。
+[原版指令攻击录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/spell-commanded-attack-centering.mt2f)
+
 原版 First of Kin 和 Sacrificial Resurrection 的同场对照核对两张手牌被消耗、单位增攻及
 Draff 出生，Morel Mistress 提供排除对照。7 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`exhausted-first-of-kin.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/exhausted-first-of-kin.mt2f)

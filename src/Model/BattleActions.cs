@@ -1347,6 +1347,15 @@ namespace MonsterTrain2Poju.Model
             MoonPhaseTransitionResult moonReset = GeneratedMoonTrackingModel.CompletePlayerReset(source.Spawn.Train, train);
             if (!moonReset.Supported) return Unsupported(moonReset.UnsupportedReason!);
             train = moonReset.State!; context = train.Context!;
+            if (source.CanonicalPhysicalReferences && context.SpawnPoints != null &&
+                rule.Effects.Any(effect => effect.Type == "AttackWithUnit"))
+            {
+                // The native room refresh centers the survivors of a commanded attack before preview.
+                BattleSpawnPointResult centered = BattleSpawnPointModel.CenterAfterActionRemovals(source.Spawn.Train, train);
+                if (!centered.Supported) return Unsupported(centered.Error!);
+                context = context.WithSpawnPoints(centered.State!);
+                train = CardSpellModel.WithContext(train, context);
+            }
             if (source.BattlePreviewEnabled && !terminal)
             {
                 TrainCombatResult preview = BattlePreviewModel.Refresh(train, outputPlayRules);
