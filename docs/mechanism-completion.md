@@ -601,6 +601,10 @@ Bog Chrysalis 和 Bogdeep Cocoon 的同场对照实测孵出两只 Bog Fly。顾
 分别部署到中层和顶层，23 次出牌、7 次结束回合的连续后继及两类录制候选均通过。
 [原版攻击触发单位](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/opening-attacking-status-units.mt2f)
 
+同一入口批录 Bog Fly、Animus of Speed 和 Spikedriver Factory 的付费部署。三名原版单位均捕获独立技能 ID，
+部署结算时的技能冷却均为 2。24 次出牌、7 次结束回合及两类候选通过。各自技能施放另做专项验证。
+[原版技能单位开局录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/opening-shared-ability-carriers.mt2f)
+
 原版 First of Kin 和 Sacrificial Resurrection 的同场对照核对两张手牌被消耗、单位增攻及
 Draff 出生，Morel Mistress 提供排除对照。7 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`exhausted-first-of-kin.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/exhausted-first-of-kin.mt2f)
