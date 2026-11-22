@@ -250,6 +250,11 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 首次抽牌后四个房间各获得 2 层，顶层当前腐化为 3。21 次出牌、7 次结束回合和候选检查通过。
 [`corruption-and-capacity.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/corruption-and-capacity.mt2f)
 
+两件原版衰减遗物验证友方怒气保留、敌方怒气衰减和双方霜寒保留。霜寒回调携带遗物来源时，
+模型沿用该来源登记伤害归属。2.3.1 的 42 个房间阶段、23 次出牌、5 次结束回合与两类候选均匹配，
+2.2.1 专项也通过。
+[`decay-and-preserved-rage.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/decay-and-preserved-rage.mt2f)
+
 三件原版单位资源遗物通过 585 条回调上下文核对。两次友军死亡各提供 5 金币，墓碑死亡提供
 5 余烬，同回合首次装备提供 1 余烬。22 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
 [`death-and-first-equipment.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-relics/death-and-first-equipment.mt2f)
