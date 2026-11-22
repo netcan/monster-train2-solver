@@ -236,6 +236,11 @@ Steelguard 格挡、Undying 回场和 Burnout 到期。整场 21 次出牌、5 �
 与移动路线合并仍覆盖十件遗物的正向效果。
 [`equipment-and-death-with-moon.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-trigger-relics/equipment-and-death-with-moon.mt2f)
 
+原版 DantesCandelabra 和 PressurizedBoiler 在薪火出生时分别加 2 层 Titan Skin 与 4 层 Burst。
+FirstUnitGainDamageShield 在三个回合触发，另有两次同回合后续出生跳过的对照。18 次出牌、
+6 次结束回合、32 条出生分支和候选检查通过。
+[`pyre-and-first-unit-births.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/pyre-and-first-unit-births.mt2f)
+
 补采月相掩码后，Restoring Retreat 在原版先回复 10 点生命，再将该单位移到底层。
 同一场受控胜局还核对两队 Witchweave、治疗与净化、毒层集中及翻倍、移除装备与加攻。
 19 次出牌、5 次结束回合、16 条分支和候选检查通过。
