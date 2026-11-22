@@ -225,6 +225,12 @@ Steelguard 格挡、Undying 回场和 Burnout 到期。整场 21 次出牌、5 �
 待结算死亡与站位整理。实际出牌对照使用原版首战默认种子，目标吃到伤害后存活。
 [`counters-and-horde.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-scaled-damage/counters-and-horde.mt2f)
 
+两场 2.3.1 胜局共同覆盖十件原版触发遗物。第一场观察 Hymnist 死亡后的 Rage，
+第二场补采月相掩码并实际执行十次换层，观察 Angel 换层与 Whelp 攻击。两场共
+58 次出牌或技能、12 次结束回合，各通过 16 条独立分支。第二场另通过候选检查。
+[`equipment-and-death.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-trigger-relics/equipment-and-death.mt2f)
+[`movement-and-strike.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-trigger-relics/movement-and-strike.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
