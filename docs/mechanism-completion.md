@@ -261,6 +261,10 @@ ExtraFeedTrigger 的原版查询确认友军 OnFeed 次数为 2，OnDeath 次数
 61 个战斗阶段、5 次出牌、7 次结束回合与两类候选通过。实际进食时的重复回调仍需原版录像。
 [`extra-feed-trigger.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/extra-feed-trigger.mt2f)
 
+Mother’s Remnant III 在原版满手时把首次合格出牌的永久副本加入牌组，同回合再次出牌受次数限制。
+34 次出牌、7 次结束回合与两类候选检查通过。
+[`mothers-remnant3.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/mothers-remnant3.mt2f)
+
 两个 2.3.1 原版移动遗物场景复用移动前月相掩码采集。升降层伤害场景实测敌军上移和下移
 各受 3 点伤害。Pyregel 场景实测敌军上移获得 2 层 Pyregel，并核对下移、友军和移动受阻对照。
 每份录像通过 22 个移动边界及 42 次出牌检查，脚本布置结束后另核对 20 次出牌、5 次结束回合和
