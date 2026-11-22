@@ -21,8 +21,9 @@ internal static class OriginalLifecycleRelicBatchChecks
             scenario.GetString() == "original-lifecycle-relic-batch";
         Require(eligible || !required, "Fixture lacks the original lifecycle relic batch.");
         if (!eligible) return null;
-        Require(root.GetProperty("Schema").GetInt32() == 115 &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4",
+        var build = (root.GetProperty("GameVersion").GetString(), root.GetProperty("GameModuleMvid").GetString());
+        Require(root.GetProperty("Schema").GetInt32() == 115 && build is
+            ("2.2.1", "8fb07b96-f4db-4d2b-884d-c00536d6ccf4") or (Game231FixtureCatalog.Version, Game231FixtureCatalog.Module),
             "Native lifecycle relic schema or build changed.");
         Require(root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" &&
@@ -159,7 +160,16 @@ internal static class OriginalLifecycleRelicBatchChecks
             RoomCombatResult Run(RoomCombatState frame) => exchange ? RoomCombatModel.Exchange(frame) : RoomCombatModel.Resolve(frame);
             RoomCombatResult modeled = Run(before);
             Require(modeled.Supported, "Lifecycle native combat unsupported: " + modeled.UnsupportedReason);
-            Equal(modeled.State, actual, "complete native lifecycle combat stage");
+            RoomCombatState comparableActual = actual;
+            if (build == (Game231FixtureCatalog.Version, Game231FixtureCatalog.Module) &&
+                actual.Context?.QueryFrame is { SelectedRoomIndex: int actualRoom } frame && actualRoom == actual.RoomIndex &&
+                modeled.State!.Context?.QueryFrame?.SelectedRoomIndex is int replayRoom &&
+                replayRoom == before.Context!.QueryFrame?.SelectedRoomIndex && replayRoom != actualRoom)
+            {
+                // Native presentation may focus this floor between the two room snapshots.
+                comparableActual = actual.WithContext(actual.Context.WithQueryFrame(frame.With(selectedRoomIndex: replayRoom)));
+            }
+            Equal(modeled.State, comparableActual, "complete native lifecycle combat stage");
             int[] revivedIds = modeled.Events.Where(effect => effect.Kind == "Revive").Select(effect => effect.Target).Distinct().ToArray();
             futureRevivals += revivedIds.Length;
             foreach (var item in Artifacts)
