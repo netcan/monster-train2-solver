@@ -23,6 +23,13 @@ internal static class OriginalReactiveUnitsChecks
     {
         Require(root.GetProperty("OriginalReactiveUnitsPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing completed original reactive unit witness.");
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }) Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
+        var (guardianHealth, guardianStartingArmor, guardianIncantArmor) =
+            (root.GetProperty("GameVersion").GetString(), root.GetProperty("GameModuleMvid").GetString()) switch
+            {
+                ("2.2.1", "8fb07b96-f4db-4d2b-884d-c00536d6ccf4") => (25, 0, 3),
+                ("2.3.1", "bf93f060-beda-46b1-b808-95ebf1e9a99d") => (20, 20, 4),
+                _ => throw new InvalidOperationException("Original reactive unit witness requires a verified game version and native module.")
+            };
         int[] ids = root.GetProperty("OriginalReactiveUnitsIds").Deserialize<int[]>()!;
         var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
         Require(ids.Length == 24 && actions.Length == 24, "Missing ten original unit births or positive trigger controls.");
@@ -36,6 +43,18 @@ internal static class OriginalReactiveUnitsChecks
             Require(before.Spawn.Train.Context!.FindCard(ids[i])!.DataId == rule.DataId && rule.ExternalInteractions.Count == 0 && before.Energy - after.Energy == rule.Cost &&
                 unit.AssetKey == template.AssetKey && unit.BaseAttack == template.BaseAttack && unit.Health == template.Health && unit.MaxHealth == template.MaxHealth && unit.Size == template.Size,
                 "Original reactive unit definition, paid cost or birth stats differ.");
+            if (i == 14)
+                Require(template.Health == guardianHealth && template.MaxHealth == guardianHealth &&
+                    Stacks(template, "armor") == guardianStartingArmor && Stacks(unit, "armor") == guardianStartingArmor &&
+                    template.Triggers is [{ Kind: "CardSpellPlayed", Effects:
+                        [{ Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Self", Value: 100,
+                            AllowPlayer: false, AllowEnemy: false, Statuses: [{ Id: "armor", Stacks: var armor }] } }] }] &&
+                    armor == guardianIncantArmor, "Runebound Guardian must preserve its original health, starting Armor and self Incant for this module.");
+            if (i == 15)
+                Require(template.Triggers is [{ Kind: "CardSpellPlayed", Effects:
+                    [{ Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Room", Value: 100,
+                        AllowPlayer: true, AllowEnemy: false, Statuses: [{ Id: "armor", Stacks: 1 }] } }] }],
+                    "Healing Totem must preserve its original friendly room Armor Incant.");
         }
         for (int i = 16; i < 24; i++)
         {
@@ -68,7 +87,8 @@ internal static class OriginalReactiveUnitsChecks
                     before.Spawn.Train.Rooms[1].Units.Where(unit => unit.Team == CombatTeam.Enemy).All(unit =>
                         Stacks(after.Spawn.Train.Rooms[1].Units.Single(changed => changed.Id == unit.Id), "pyregel") - Stacks(unit, "pyregel") == 1), "Magma Cultist needs positive Pyregel on native enemies.");
                 Require(before.Spawn.Train.Rooms[1].Units.Where(unit => unit.Team == CombatTeam.Player).All(unit =>
-                    Stacks(after.Spawn.Train.Rooms[1].Units.Single(changed => changed.Id == unit.Id), "armor") - Stacks(unit, "armor") == (unit.SpawnerCardId == ids[14] ? 4 : 1)),
+                    Stacks(after.Spawn.Train.Rooms[1].Units.Single(changed => changed.Id == unit.Id), "armor") - Stacks(unit, "armor") ==
+                    (unit.SpawnerCardId == ids[14] ? guardianIncantArmor + 1 : 1)),
                     "Runebound Guardian and Healing Totem must add exact self/room armor per Incant.");
                 Require(Json(before.Spawn.Train.Rooms[0].Units) == Json(after.Spawn.Train.Rooms[0].Units), "Incant leaked into the neighboring floor.");
             }
