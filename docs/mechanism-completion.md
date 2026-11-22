@@ -445,6 +445,10 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 X 加成和单位筛选。6 次出牌、5 次结束回合、16 条独立分支与两类候选通过。
 [`great-decay.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/great-decay.mt2f)
 
+原版 Unearth Treasure 核对耗尽堆的 5 张和 10 张门槛，以及随机返回 2 张和 1 张法术时的顺序与随机流。
+4 次出牌、5 次结束回合、16 条独立分支及两类候选通过。
+[`unearth-treasure.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/unearth-treasure.mt2f)
+
 敌方状态批次核对十一张原版卡牌，包括单体、整层及整塔目标、Pyregel 与 Rage 的翻倍、
 保证触发的随机流和腐化消耗。18 次出牌、5 次结束回合和候选检查通过。
 [`hostile-status-order.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-hostile-statuses/hostile-status-order.mt2f)
