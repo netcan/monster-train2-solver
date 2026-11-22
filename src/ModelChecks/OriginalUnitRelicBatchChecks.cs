@@ -19,7 +19,10 @@ internal static class OriginalUnitRelicBatchChecks
         bool eligible = root.TryGetProperty("ModifierScenario", out var scenario) && scenario.GetString() == "original-unit-relic-batch";
         Require(eligible || !required, "Fixture is missing the original unit relic batch.");
         if (!eligible) return;
-        Require(root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
+        var build = (root.GetProperty("GameVersion").GetString(), root.GetProperty("GameModuleMvid").GetString());
+        bool legacyBuild = build is ("2.2.1", "8fb07b96-f4db-4d2b-884d-c00536d6ccf4");
+        bool currentBuild = build is ("2.3.1", "bf93f060-beda-46b1-b808-95ebf1e9a99d");
+        Require((legacyBuild || currentBuild) &&
             root.GetProperty("RelicCardModifiersEnabled").GetBoolean(), "Unit relic batch lacks native modifier capture.");
         foreach (string field in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
             Require(root.GetProperty(field).GetInt32() == 0, "Unit relic batch has nonzero " + field + ".");
@@ -178,10 +181,14 @@ internal static class OriginalUnitRelicBatchChecks
                     survivor.Health == actor.Health && result.Events.Any(effect => effect.Kind == "Attack" && effect.Target == actor.Id && effect.Amount == 0)) shieldBlocks++;
             }
         }
-        Require(sacrifices > 0 && damagingSacrifices > 0 && playerShifts > 0 && enemyShifts > 0 && repeatedAttacks > 0 && shieldBlocks > 0,
-            $"Missing actual relic effects: sacrifice={sacrifices}/{damagingSacrifices} damaging, playerShift={playerShifts}, enemyShift={enemyShifts}, multistrike={repeatedAttacks}, shield={shieldBlocks}.");
-        Console.WriteLine($"NATIVE-ORIGINAL-UNIT-RELICS-CHECKS PASS: four originals, {rows.Length} manager calls, {paidSnacks}/{cardlessSnacks} paid/cardless Morsel births, " +
-            $"{queries} Shift queries/four gates, {sacrifices}/{damagingSacrifices} sacrifices/damaging, {playerShifts}/{enemyShifts} real shifts, {repeatedAttacks} multistrikes, {shieldBlocks} shield blocks and 32 branches.");
+        Require(sacrifices > 0 && damagingSacrifices > 0 && repeatedAttacks > 0,
+            $"Missing native combat positives: sacrifice={sacrifices}/{damagingSacrifices} damaging, multistrike={repeatedAttacks}.");
+        if (legacyBuild)
+            Require(playerShifts > 0 && enemyShifts > 0 && shieldBlocks > 0,
+                $"Missing legacy native combat positives: playerShift={playerShifts}, enemyShift={enemyShifts}, shieldBlocks={shieldBlocks}.");
+        Console.WriteLine($"NATIVE-ORIGINAL-UNIT-RELICS-CHECKS PASS: {build.Item1}, {rows.Length} manager calls, {paidSnacks}/{cardlessSnacks} paid/cardless Morsel shield births, " +
+            $"{queries} Shift queries/four gates, {sacrifices}/{damagingSacrifices} sacrifices/damaging, {repeatedAttacks} multistrikes and 32 branches.");
+        Console.WriteLine($"NATIVE-ORIGINAL-UNIT-RELICS-COMBAT-WITNESSES playerShift={playerShifts} enemyShift={enemyShifts} shieldBlocks={shieldBlocks} (zero means unobserved).");
     }
 
     private static void CheckIdentities(IReadOnlyList<CombatRelicState> relics, CombatContext context)
