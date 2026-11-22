@@ -279,6 +279,10 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 四条 Consume 路径。12 次出牌、5 次结束回合、16 条分支和候选检查通过。
 [`buffs-and-consume.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-unit-buffs/buffs-and-consume.mt2f)
 
+资源法术批次核对 Hoard 上限与薪火费用、扣资源前的伤害调整、Forge 和 X 费用的正值与零值。
+13 次出牌、5 次结束回合、六条 Consume 路径、独立分支和候选检查通过。
+[`hoard-forge-and-consume.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/hoard-forge-and-consume.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
