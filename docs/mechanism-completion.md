@@ -154,6 +154,13 @@ Frostbite，整局 21 次出牌、7 次结束回合、16 条分支和候选检�
 采集计数、16 条分支及候选检查通过。累计 195 场整战和 184/601 张已匹配收藏卡。
 [`armor-multistrike-endless.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-units/armor-multistrike-endless.mt2f)
 
+Entombed Explosive、Overworked Assistant、Wickless Tycoon 和 Spikedriver Spider
+在第二场原版胜局完成部署。首领击杀 Entombed Explosive 后，其死亡触发反杀首领。
+模型在这个同步触发结束战斗时保留死亡单位的站位占用，与原版终局一致。新录制的
+22 次出牌、6 次结束回合、四项采集计数、16 条分支与候选检查均通过。累计 196 场
+整战和 188/601 张已匹配收藏卡。
+[`death-damage-and-harvest.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-units/death-damage-and-harvest.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
