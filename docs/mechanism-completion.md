@@ -153,6 +153,14 @@ Warborne 三个原版来源／2,304 条原生回调及同量不可变后继、16
 七个固定反例、四个声明正例和混合角色检查。该调整不增加支持率、不删除
 源码已知的潜在缺口，也不据目录缺失认定原生类未使用。
 
+2026-11-22 在隔离原版为效果类补做直接使用位置查询。遍历 724 个卡牌、406 个角色、
+920 个升级和 676 条遗物集合条目的已配置效果列表。`CardEffectAddStatusEffectNextMonster`
+在这个范围内零命中。正对照 `CardEffectGrantEquipmentFromPool` 找到 Red Crown 升级的
+`OnSpawn` 效果。两次查询均在部署后首次可操作状态完成，决策、帧号及所有随机流均一致。
+已登记 [两份原版归档](../tests/compatibility/game-2.3.1/mechanics/effect-owner-query/manifest.tsv)。
+可用 `Run-FullBattleProbe.ps1 -EffectOwnerType <类名> -Policy no-cards -BinaryCapture`
+复查，并可加载原版战前档。动态构造和晚期调用仍需要战斗记录来确认。
+
 2026-11-15 新增[出生状态层数缩放](spawn-status-scaling-mechanism.md)：
 四个原版来源、54 组配置、2,592 次原生出生回调通过，约 0.343 秒；区分按
 原始定义追加与运行时触发器重复缩放，并修正附魔采集丢失运行时参数的问题。
