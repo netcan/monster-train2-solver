@@ -389,6 +389,10 @@ Assembly Room 复制前排单位并把复制体下移，Echo Bloom 让底层腐�
 12 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
 [`ordered-room-replacements.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-room-abilities/ordered-room-replacements.mt2f)
 
+Rage Room 实机核对房间触发器、楼层与队伍范围，以及友军获得 Rage 的正例。
+5 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
+[`rage-room.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-room-abilities/rage-room.mt2f)
+
 原版法术和单位升级计数遗物在 2.3.1 中各使用实际取得的定义。整战记录 44 次修饰回调和
 26 次原版筛选，覆盖 0、1、2 个可见升级、重置、重复及逐件对照。
 23 次出牌、7 次结束回合及候选检查通过。
