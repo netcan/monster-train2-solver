@@ -8704,6 +8704,11 @@ if (args.Length >= 3 && args[0] == "--game231-recorded-chain-triage")
     Game231RecordedChainTriage.Run(args[1], args[2], args[3..]);
     return;
 }
+if (args.Length >= 4 && args[0] == "--register-game231-native-battle")
+{
+    NativeBattleRegistration.Run(args[1], args[2], args[3], args[4..]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--recorded-chain-diagnose")
 {
     using var chainDocument = ModelJson.ReadFixture(args[1]);
