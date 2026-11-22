@@ -261,6 +261,10 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 2.2.1 专项也通过。
 [`decay-and-preserved-rage.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/decay-and-preserved-rage.mt2f)
 
+原版 CheaperBlightScourge 的两次指定出牌均以零余烬结算，同时核对十次费用修饰回调和
+生成 Junk 的费用。24 次出牌、6 次结束回合和两类候选检查通过。
+[`blight-and-junk-cost.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/blight-and-junk-cost.mt2f)
+
 三件原版单位资源遗物通过 585 条回调上下文核对。两次友军死亡各提供 5 金币，墓碑死亡提供
 5 余烬，同回合首次装备提供 1 余烬。22 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
 [`death-and-first-equipment.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-relics/death-and-first-equipment.mt2f)
