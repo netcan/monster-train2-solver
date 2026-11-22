@@ -448,7 +448,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalChanceForSpellWeaknessScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalChanceToCleanseScenario.Enabled && !OriginalChanceToCleanseScenario.Acquired)
                         OriginalChanceToCleanseScenario.AcquireBeforeBattle(managers!, log);
-                    if (fullBattle && OriginalExtraFeedTriggerScenario.Enabled && !OriginalExtraFeedTriggerScenario.Acquired)
+                    if (fullBattle && (OriginalExtraFeedTriggerScenario.Enabled || OriginalSourceBackedFeeding.WithExtraFeedTrigger) &&
+                        !OriginalExtraFeedTriggerScenario.Acquired)
                         OriginalExtraFeedTriggerScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalSummonWithAvariceScenario.Enabled && !OriginalSummonWithAvariceScenario.Acquired)
                         OriginalSummonWithAvariceScenario.AcquireBeforeBattle(managers!, log);
