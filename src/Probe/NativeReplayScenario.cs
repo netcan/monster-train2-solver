@@ -4332,7 +4332,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 CharacterState actor = FullBattleTrace.Active!.KnownUnits.Single(unit => FullBattleTrace.Active.UnitId(unit) == action.ActivatorUnitId);
                 OriginalUnitAbilityScenario.ObserveEligibility(actor);
-                OriginalUnitAbilityScenario.Expect(action);
+                OriginalUnitAbilityScenario.Expect(action, actor.GetUnitAbility()?.GetID());
                 if (OriginalSummonChoiceScenario.Enabled) OriginalSummonChoiceScenario.Expect(action);
                 FullBattleTrace.Active.BeginCardPlay(action, scenarioAction: scenarioPrelude);
                 if (action.TargetUnitId > 0)

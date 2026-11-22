@@ -1,5 +1,6 @@
 #if DEVELOPMENT_PROBE
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Logging;
 using MonsterTrain2Poju.Model;
@@ -10,9 +11,12 @@ namespace MonsterTrain2Poju.Probe
     {
         private const string Prefix = "original-opening-units:";
         private static readonly string Modifier = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "";
+        private static readonly HashSet<string> activatedUnits = new HashSet<string>(StringComparer.Ordinal);
         private static string[] cardIds = Array.Empty<string>();
 
         internal static bool Enabled => Modifier.StartsWith(Prefix, StringComparison.Ordinal);
+        internal static bool ActivateAbilities => Enabled &&
+            Environment.GetEnvironmentVariable("MT2_PROBE_OPENING_UNIT_ABILITIES") == "1";
         internal static bool Prepared { get; private set; }
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
@@ -45,6 +49,8 @@ namespace MonsterTrain2Poju.Probe
                     effects[0].GetTargetMode() != TargetMode.Room || rule.Effect != "SpawnMonster" ||
                     rule.Summon != null || rule.SpawnUnit?.Modifiers?.IsChampion != false || rule.ExternalInteractions.Count != 0)
                     throw new InvalidOperationException("Expected a single ordinary original unit spawn: " + id);
+                if (ActivateAbilities && rule.SpawnUnit?.Ability?.HasAbility != true)
+                    throw new InvalidOperationException("Expected an original unit with a native ability: " + id);
                 return card;
             }).ToArray();
 
@@ -62,7 +68,22 @@ namespace MonsterTrain2Poju.Probe
 
         internal static PlayCardAction? Choose(BattleTurnState decision, PlayCardAction? fallback)
         {
-            if (decision.Spawn.Turn != 0) return fallback;
+            if (decision.Spawn.Turn != 0)
+            {
+                if (!ActivateAbilities || activatedUnits.Count == cardIds.Length) return fallback;
+                var context = decision.Spawn.Train.Context!;
+                var pendingActors = decision.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Where(unit => unit.Ability?.HasAbility == true)
+                    .Select(unit => (Unit: unit, Card: context.FindCard(unit.SpawnerCardId)))
+                    .Where(actor => actor.Card != null && cardIds.Contains(actor.Card.DataId) && !activatedUnits.Contains(actor.Card.DataId))
+                    .ToDictionary(actor => actor.Unit.Id, actor => actor.Card!.DataId);
+                if (pendingActors.Count == 0) return fallback;
+                PlayCardAction? activation = BattleActionModel.EnumerateSupportedPlays(decision)
+                    .FirstOrDefault(play => pendingActors.ContainsKey(play.ActivatorUnitId));
+                if (activation == null) return fallback;
+                activatedUnits.Add(pendingActors[activation.ActivatorUnitId]);
+                return activation;
+            }
 
             var hand = decision.Spawn.Train.Context!.Cards.Hand;
             if (hand.Any(card => !cardIds.Contains(card.DataId)))

@@ -9,6 +9,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalUnitAbilityScenario
     {
         private const string PyrebloodedAbilityId = "7eb9fd9a-0d9b-4509-80b9-991de5f217c0";
+        private const string CraftSpikeAbilityId = "798142fe-fdf3-4f4f-8af7-dbc5dbc333c6";
         private const string PyrebloodedId = "e962f77b-d5bc-441b-be79-8cb3207d8a42";
         internal const string PyrecaskId = "28875721-10df-4427-b9ef-4d237e89608e";
         private const string LavaFlowId = "479ceb1b-fc8c-420f-8fa0-17683cee4511";
@@ -87,7 +88,7 @@ namespace MonsterTrain2Poju.Probe
                 int[] food = state.Spawn.Train.Rooms[0].Units.Where(unit => unit.Triggers.Any(trigger => trigger.Kind == "OnEaten")).Select(unit => unit.Id).ToArray();
                 if (food.Length > 0) actions = actions.Where(action => food.Contains(action.TargetUnitId));
             }
-            if (AbilityId == "798142fe-fdf3-4f4f-8af7-dbc5dbc333c6")
+            if (AbilityId == CraftSpikeAbilityId)
                 actions = actions.Where(action => action.MixSelections.Single().ChoiceIndex == (Environment.GetEnvironmentVariable("MT2_PROBE_SPIKE_CHOICE") == "1" ? 1 : 0));
             return actions.FirstOrDefault();
         }
@@ -108,31 +109,38 @@ namespace MonsterTrain2Poju.Probe
             public int Choice { get; set; }
         }
         internal static readonly List<DraftEvidence> Drafts = new List<DraftEvidence>();
-        private static int craftChoice;
-        internal static void Expect(PlayCardAction action)
+        private static int? craftChoice;
+        internal static void Expect(PlayCardAction action, string? definitionId)
         {
-            if (AbilityId == "798142fe-fdf3-4f4f-8af7-dbc5dbc333c6") craftChoice = action.MixSelections.Single().ChoiceIndex;
+            if (definitionId != CraftSpikeAbilityId) return;
+#if DEVELOPMENT_PROBE
+            if (AbilityId != CraftSpikeAbilityId && !OriginalOpeningUnitsScenario.ActivateAbilities) return;
+#else
+            if (AbilityId != CraftSpikeAbilityId) return;
+#endif
+            craftChoice = action.MixSelections.Single().ChoiceIndex;
         }
         [HarmonyPatch(typeof(ElixirDraftScreen), nameof(ElixirDraftScreen.SetupForNewElixir))]
         private static class CraftDraftPatch
         {
             private static void Postfix(ElixirDraftScreen __instance, ElixirDraftScreen.DraftType draftType)
             {
-                if (AbilityId == "798142fe-fdf3-4f4f-8af7-dbc5dbc333c6" && draftType == ElixirDraftScreen.DraftType.CraftedSpike)
-                    __instance.StartCoroutine(SelectCraft(__instance));
+                if (draftType != ElixirDraftScreen.DraftType.CraftedSpike || craftChoice is not int choice) return;
+                craftChoice = null;
+                __instance.StartCoroutine(SelectCraft(__instance, choice));
             }
         }
-        private static System.Collections.IEnumerator SelectCraft(ElixirDraftScreen screen)
+        private static System.Collections.IEnumerator SelectCraft(ElixirDraftScreen screen, int choice)
         {
             yield return null;
             var items = (System.Collections.IList)AccessTools.Field(typeof(ElixirDraftScreen), "draftItems").GetValue(screen);
             CardUI[] offers = items.Cast<CardUI>().ToArray();
             if (offers.Length != 2) throw new InvalidOperationException("Original spike skill requires two native draft offers.");
             Drafts.Add(new DraftEvidence { Cards = offers.Select(card => card.GetCardState().GetCardDataID()).ToArray(),
-                Upgrades = offers.Select(card => card.GetCardUpgrade()?.GetID() ?? "").ToArray(), Choice = craftChoice });
+                Upgrades = offers.Select(card => card.GetCardUpgrade()?.GetID() ?? "").ToArray(), Choice = choice });
             // Record definition identities only: observing transient UI cards must
             // not allocate owned-card IDs in the battle trace.
-            AccessTools.Method(typeof(ElixirDraftScreen), "ApplyDraft").Invoke(screen, new object[] { offers[craftChoice] });
+            AccessTools.Method(typeof(ElixirDraftScreen), "ApplyDraft").Invoke(screen, new object[] { offers[choice] });
         }
         private static readonly HashSet<string> keys = new HashSet<string>();
         internal static void ObserveEligibility(CharacterState actor)
