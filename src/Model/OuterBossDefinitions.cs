@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 
 namespace MonsterTrain2Poju.Model
@@ -29,6 +30,54 @@ namespace MonsterTrain2Poju.Model
         public static bool IsAngelDuoScenario(string? assetKey) => assetKey is
             "Level6AngelDuo_LoopAttackResolveHealth" or "Level6AngelDuo_RallyAttackIncantHealth" or
             "Level6AngelDuo_RevengeAttackHarvestHealth";
+
+        internal static bool CalibratedAngelDuoTrialGrowth(CombatUnit unit, CombatContext? context,
+            string triggerKind, CombatEffect effect)
+        {
+            bool incant = unit.AssetKey == "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth" && triggerKind == "CardSpellPlayed";
+            bool slay = unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack" && triggerKind == "OnKill";
+            if ((!incant && !slay) || unit.Team != CombatTeam.Enemy || unit.SpawnerCardId != 0 ||
+                AngelDuoTrialGrowthRules(context) is not { } additions)
+                return false;
+
+            int index = incant ? 0 : 1;
+            if (additions[index] is not {
+                SourcePlayer: false, SourceEnemy: true, SubtypeIsNone: true, SubtypeIsPyre: false,
+                NoCountModifiersAllowed: false, CharacterAssetKeys: [var character], Conditions.Count: 0,
+                ExternalInteractions.Count: 0, Triggers: [{
+                    Once: false, IgnoreSilence: false, SkipDuringDeployment: false, TriggerAtThreshold: 0,
+                    Effects: [var authored]
+                } trigger]
+            } || additions[index].EffectIndex != index || character != unit.AssetKey || trigger.Kind != triggerKind)
+                return false;
+
+            string type = incant ? "CardEffectBuffMaxHealth" : "CardEffectBuffDamage";
+            string actionType = incant ? "BuffHealth" : "BuffAttack";
+            string subtype = incant ? "SubtypesData_SavageAngel" : "SubtypesData_EntropicAngel";
+            string lifetime = incant ? "TemporaryUntilEndOfBattle" : "";
+            int value = incant ? 50 : 5;
+            bool Matches(CombatEffect candidate) => candidate.Type == type && candidate.Value == value &&
+                candidate.Action is {
+                    Target: "Tower", Range: null, AllowEnemy: true, AllowPlayer: true, UseCardTraits: false,
+                    Filters: { Health: "Both", RequiredStatuses.Count: 0, ExcludedStatuses.Count: 0,
+                        IgnoreBosses: false, ExcludedSubtypes.Count: 0 } filters
+                } action && action.Type == actionType && action.Value == value && action.Lifetime == lifetime && filters.Subtype == subtype;
+            return Matches(authored) && Matches(effect);
+        }
+
+        internal static bool CalibratedAngelDuoTrialFullMoon(CombatUnit unit, CombatContext? context) =>
+            unit is { AssetKey: "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth", MoonPhaseMask: 4,
+                BaseAttack: 11, Attack: 11, Health: 1250, MaxHealth: 1250 } &&
+            AngelDuoTrialGrowthRules(context) is [{ Triggers: [{ Effects: [var incant] }] }, _] &&
+            CalibratedAngelDuoTrialGrowth(unit, context, "CardSpellPlayed", incant);
+
+        private static IReadOnlyList<RelicCharacterTriggers>? AngelDuoTrialGrowthRules(CombatContext? context) =>
+            context?.Relics?.Where(relic => relic.DataId == "6dd04165-0c8d-42b3-9215-405e39952466").ToArray() is [{
+                AssetKey: "Enemy_Boss_Level6_AngelDuo_SlayAttackIncantHealth_TitanTrial",
+                IsCovenant: false, DisallowedInPlacementPhase: false,
+                EffectTypes: ["RelicEffectAddTrigger", "RelicEffectAddTrigger"], TriggerAdditions: { Count: 2 } additions }]
+                ? additions : null;
+
         public static bool IsCael(string assetKey) => assetKey is "Boss_Level6_Cael_AtkHP" or
             "Boss_Level6_Cael_DamageShield" or "Boss_Level6_Cael_Lifesteal";
         public static bool IsCaelTrial(string assetKey) => assetKey is CaelShieldTrial or CaelAtkHpTrial or CaelLifestealTrial;

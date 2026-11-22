@@ -1568,9 +1568,10 @@ namespace MonsterTrain2Poju.Model
                         {
                             // Native enemy Harvest/Incant has no source card traits.
                             // Keep other target modes and parent-card scaling guarded.
-                            bool duoSlay = unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack" && trigger.Kind == "OnKill" &&
+                            bool duoSlay = (unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant2_SlayAttack" && trigger.Kind == "OnKill" &&
                                 effect.Value == 3 && effect.Action is { Target: "Tower", AllowPlayer: true, AllowEnemy: true } &&
-                                effect.Action.Filters?.Subtype == "SubtypesData_EntropicAngel";
+                                effect.Action.Filters?.Subtype == "SubtypesData_EntropicAngel") ||
+                                OuterBossDefinitions.CalibratedAngelDuoTrialGrowth(unit, state.Context, trigger.Kind, effect);
                             bool duoLoop = unit.AssetKey == "Boss_Level6_AngelDuo_Savage_Variant1_LoopAttack" && trigger.Kind == "OnTrainRoomLoop" &&
                                 effect.Value == 8 && effect.Action is { Target: "Tower", AllowPlayer: true, AllowEnemy: true } &&
                                 effect.Action.Filters?.Subtype == "SubtypesData_EntropicAngel";
@@ -6240,11 +6241,12 @@ namespace MonsterTrain2Poju.Model
                 {
                     string? healthError = TriggeredHealthModel.Validate(effect);
                     if (healthError != null) { unsupportedReason = healthError; return false; }
-                    bool duoHealth = (actor.Source.AssetKey == "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth" && amount == 30 ||
+                    bool duoHealth = ((actor.Source.AssetKey == "Boss_Level6_AngelDuo_Entropic_Variant2_IncantHealth" && amount == 30 ||
                         actor.Source.AssetKey == "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth" && amount == 60 ||
                         actor.Source.AssetKey == "Boss_Level6_AngelDuo_Entropic_Variant3_HarvestHealth" && amount == 50) &&
                         action.Type == "BuffHealth" && action.Target == "Tower" &&
-                        action.Lifetime == "TemporaryUntilEndOfBattle" && action.Filters?.Subtype == "SubtypesData_SavageAngel";
+                        action.Lifetime == "TemporaryUntilEndOfBattle" && action.Filters?.Subtype == "SubtypesData_SavageAngel") ||
+                        OuterBossDefinitions.CalibratedAngelDuoTrialGrowth(actor.Source, context, triggerKind, effect);
                     if (targets.UnitIds.Any(id => units.All(unit => unit.Source.Id != id) ||
                         !duoHealth && units.Single(unit => unit.Source.Id == id).RoomIndex != source.RoomIndex))
                     { unsupportedReason = "Cross-floor triggered maximum-health mutation requires native calibration."; return false; }
