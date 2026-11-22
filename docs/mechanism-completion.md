@@ -312,6 +312,10 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 6 次结束回合、16 条分支与候选检查通过。
 [`room-attachments-and-post-draw.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/room-attachments-and-post-draw.mt2f)
 
+房间状态伤害批次核对 Battering Ram 与 Bramble Lash 的零值和正值，原版累加同层友军的
+护甲或尖刺，并保留敌军、其他楼层和输入缺失对照。14 次出牌、5 次结束回合和候选检查通过。
+[`armor-and-spikes.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-room-status-damage/armor-and-spikes.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
