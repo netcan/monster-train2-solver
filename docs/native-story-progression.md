@@ -79,6 +79,13 @@
 战前档为 `.probe-runs/campaign-ring5-20261122-100542-b71c8670-before-ring5`，主存档 SHA256 为
 `30870b841f2870edfa995fc902b2b9712282ed6bf68c8538c0f803f950c27f21`。第 23 步的 Gravity 副本
 首次在结算效果列表偏离，原版后继归档为 `mechanics/last-turn-copy-pyre-healing/native-partial.mt2f`。
+修正永久升级的复制投影后，原版前 23 步的完整状态与随机流通过复放。
+
+从原 41 点薪火生命战前档出发，调整开局部署人数、顺序和站位后，第 5 环以 9 点薪火获胜。
+离线方案的 50 个输入在隔离原版进程逐步复放，终局、完整状态、随机流及四项失败计数都通过独立比对。
+胜局归档为 `unlocked-covenant0-ring5-roster-victory.mt2f`。同一进程完成战后领取和地图选择，保存了
+第 6 环泰坦试炼战前档 `.probe-runs/full-battle-units-spells-and-junk-20261122-101943-8826725e-before-ring6`。
+该档记录前五战全胜，主存档 SHA256 为 `3407bd18b9bbbcccdea847b70312a3a5a43c79d9170eab5043c378aa37430a11`。
 
 第 5 环的首次整场对照从 10 点薪火生命开始，原版判负且四项采集计数为零。另一条部署路线验证了
 StealthWaxers 的出生条件与月相手牌更新可同时生效。两次部署与结束回合的后继在原版完全一致，
