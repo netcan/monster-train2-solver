@@ -241,6 +241,11 @@ namespace MonsterTrain2Poju.Probe
                 "Heal" => CombatTeam.Player,
                 "AddStatus" when !effect.AllowPlayer => CombatTeam.Enemy,
                 "AddStatus" when !effect.AllowEnemy => CombatTeam.Player,
+                // Armor protects its recipient even when the native definition allows either team.
+                "AddStatus" when effect.Target == "DropTargetCharacter" &&
+                    effect.Statuses.Count == 1 && effect.Statuses[0].Id == "armor" &&
+                    StatusEffectManager.Instance.GetStatusEffectDataById("armor")?.GetStatusEffectStateName() == nameof(StatusEffectArmorState)
+                    => CombatTeam.Player,
                 "AddStatus" => StatusEffectManager.Instance.GetStatusEffectDataById(effect.Statuses.First().Id)?.GetDisplayCategory() switch
                 {
                     StatusEffectData.DisplayCategory.Positive => CombatTeam.Player,
