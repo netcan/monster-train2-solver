@@ -81,7 +81,8 @@ namespace MonsterTrain2Poju.Probe
             if (definitions == null) throw new InvalidOperationException("Original magnitude relics were not acquired.");
             if (managers.GetPlayerManager().GetHasMoonPhaseCardEffect())
                 throw new InvalidOperationException("Original magnitude witness requires the native neutral combat phase.");
-            if (rooms.GetSelectedRoom() != 0)
+            // Card controls need floor zero. The exchange successor keeps native camera focus.
+            if (exchange == null && rooms.GetSelectedRoom() != 0)
             {
                 managers.GetSaveManager().StartCoroutine(rooms.GetRoomUI().SetSelectedRoom(0));
                 return false;
