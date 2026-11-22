@@ -276,8 +276,12 @@ namespace MonsterTrain2Poju.Probe
             { if (__state != null) __state.Returned = __result; }
         }
         [HarmonyPatch(typeof(RelicEffectModifyCardAttack), nameof(RelicEffectModifyCardAttack.ApplyCardStateModifiers))]
-        private static class AttackEffectPatch
+        private static class AttackEffectFilterPatch
         {
+#if DEVELOPMENT_PROBE
+            // Even an identity transpiler alters the native subtype path on this Mono build.
+            private static bool Prepare() => !OriginalOpeningPassiveRelicsScenario.Enabled;
+#endif
             // Instrument this call site separately from AddTempUpgrade: Mono
             // shares generic FilterCard bodies with definition-only callers.
             private static IEnumerable<HarmonyLib.CodeInstruction> Transpiler(IEnumerable<HarmonyLib.CodeInstruction> instructions)
@@ -296,6 +300,11 @@ namespace MonsterTrain2Poju.Probe
                 }
                 if (replaced != 1) throw new InvalidOperationException("Unexpected native attack relic filter call site.");
             }
+        }
+
+        [HarmonyPatch(typeof(RelicEffectModifyCardAttack), nameof(RelicEffectModifyCardAttack.ApplyCardStateModifiers))]
+        private static class AttackEffectPatch
+        {
             private static void Prefix(RelicEffectModifyCardAttack __instance, out Dispatch? __state)
             {
                 __state = null; if (active.Count == 0) return;
