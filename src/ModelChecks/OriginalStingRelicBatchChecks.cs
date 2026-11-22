@@ -28,7 +28,10 @@ internal static class OriginalStingRelicBatchChecks
     {
         if (!root.TryGetProperty("ModifierScenario", out var scenario) || scenario.GetString() != "original-sting-relics")
         { Require(!required, "Fixture lacks original Sting relic combat coverage."); return; }
-        Require(root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
+        var build = (root.GetProperty("GameVersion").GetString(), root.GetProperty("GameModuleMvid").GetString());
+        bool supportedBuild = build is ("2.2.1", "8fb07b96-f4db-4d2b-884d-c00536d6ccf4") or
+            ("2.3.1", "bf93f060-beda-46b1-b808-95ebf1e9a99d");
+        Require(supportedBuild &&
             root.GetProperty("RelicCardModifiersEnabled").GetBoolean(), "Original Sting relic capture is incomplete or from another game build.");
         foreach (string field in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
             Require(root.GetProperty(field).GetInt32() == 0, "Original Sting relic battle has nonzero " + field + ".");
