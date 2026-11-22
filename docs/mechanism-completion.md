@@ -364,6 +364,11 @@ Mitosis Cap 在战斗结束时永久复制宿主来源卡。原版回调与牌�
 击杀后获得 Undying。原版 17 件装备、26 次出牌或技能、5 次结束回合、16 条独立分支和候选检查通过。
 [`attack-and-host-death.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-equipment/attack-and-host-death.mt2f)
 
+Loamcoat 实战核对先添加再生、后调整层数的战后顺序。Void Arms 组合用 Scrap for Parts
+使宿主死亡并确认来源牌永久移除。两场共 11 次出牌、11 次结束回合，各 16 条独立分支及候选检查通过。
+[`loamcoat-regeneration.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-equipment/loamcoat-regeneration.mt2f)
+[`void-arms-host-purge.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-equipment/void-arms-host-purge.mt2f)
+
 Assembly Room 复制前排单位并把复制体下移，Echo Bloom 让底层腐化从 1 增至 5。
 记录三次房间技能、六次冷却变动、9 次出牌或技能、5 次结束回合，16 条独立分支和候选检查通过。
 采样同时记录物理站位和移动前月相。
