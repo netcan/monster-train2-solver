@@ -254,6 +254,10 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 5 余烬，同回合首次装备提供 1 余烬。22 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
 [`death-and-first-equipment.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-relics/death-and-first-equipment.mt2f)
 
+三件原版 Conduit 遗物分别覆盖每回合首次出生、装备和击杀。采样保留物理位置，并核对 14 次出生、
+11 次击杀和两次装备的逐件移除对照。21 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
+[`birth-equipment-and-slay.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-conduit-relics/birth-equipment-and-slay.mt2f)
+
 补采月相掩码后，Restoring Retreat 在原版先回复 10 点生命，再将该单位移到底层。
 同一场受控胜局还核对两队 Witchweave、治疗与净化、毒层集中及翻倍、移除装备与加攻。
 19 次出牌、5 次结束回合、16 条分支和候选检查通过。
