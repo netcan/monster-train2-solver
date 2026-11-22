@@ -324,6 +324,10 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 Keeper 同时给自己和 Train Steward 增加升级。共 61 次出牌、18 次结束回合，
 专项和候选检查均通过。三场归档位于 `mechanics/controlled-original-corruption-triggers/`。
 
+腐化遗物批次观察到原版为楼层敌军增加两层 Corrupt Poison。部署结束后的两张零费测试牌
+单独核对，其余状态和随机流逐项比较。19 次出牌、6 次结束回合及候选检查分段通过。
+[`battle.mt2f`](../tests/compatibility/game-2.3.1/mechanics/corruption-relic-trigger/battle.mt2f)
+
 镜厅组件记录的付费接枝出生和复制体各有独立装备。复制体的来源卡保留本体装备引用，
 实际绑定使用独立的装备实例。专项核对物理槽位、随机流和原版结算状态下的结束回合。
 该复制分支的出牌前预测仍会拒绝。
