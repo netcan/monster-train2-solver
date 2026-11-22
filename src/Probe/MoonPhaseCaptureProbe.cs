@@ -25,7 +25,8 @@ namespace MonsterTrain2Poju.Probe
         internal static bool CaptureMasks => Enabled ||
 #if DEVELOPMENT_PROBE
             UiRngIsolation.CaelShieldTrialTestQueries || OriginalReactiveUnitsScenario.Enabled ||
-            OriginalHealingCleanseScenario.Enabled ||
+            OriginalHealingCleanseScenario.Enabled || OriginalMovementSpellsScenario.Enabled ||
+            OriginalRearrangeSpellsScenario.Enabled ||
             (OriginalTriggerRelicBatchScenario.Enabled && !OriginalTriggerRelicBatchScenario.FusedPyreshardOnly &&
                 !OriginalTriggerRelicBatchScenario.Stationary) ||
 #endif
