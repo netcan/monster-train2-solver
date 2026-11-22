@@ -845,7 +845,7 @@ if ($NativeBuildRoot -and -not $SkipBuild) {
     throw 'NativeBuildRoot requires prebuilt native binaries with SkipBuild.'
 }
 if ($EffectOwnerType) {
-    $effectOwnerArguments = @('EffectOwnerType', 'Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+    $effectOwnerArguments = @('EffectOwnerType', 'Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'InputProfile', 'BattleDistance',
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction',
         'InformationAction', 'ProgressAction', 'ErrorVariable', 'WarningVariable', 'InformationVariable',
         'OutVariable', 'OutBuffer', 'PipelineVariable')
@@ -2095,7 +2095,7 @@ $gameRoot = Join-Path $workspace $(if ($NativeWorker -gt 1) { ".sandbox-game-wor
 if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll') -PathType Leaf)) {
     throw "Native worker $NativeWorker is not initialized; run scripts/Initialize-NativeWorker.ps1 -Worker $NativeWorker first."
 }
-if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput) {
+if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -3173,6 +3173,36 @@ Wait-NativeBattleExit -Process $process -Timer $nativeTimer -UnityLog $unityLog 
     -FailFastOnIsolatedUnitReject:$FailFastOnIsolatedUnitReject
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
+if ($EffectOwnerType) {
+    $capturePath = Join-Path $profile 'effect-owners.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original effect owners captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original effect owner query failed; inspect $unityLog"
+    }
+    Add-Type -Path (Join-Path $nativeBuildWorkspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    $effectOwnersDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
+    try {
+        $effectOwnersRoot = $effectOwnersDocument.RootElement
+        $count = $effectOwnersRoot.GetProperty('MatchCount').GetInt32()
+        $rows = $effectOwnersRoot.GetProperty('Matches').GetArrayLength()
+        $definitionCounts = $effectOwnersRoot.GetProperty('Definitions')
+        if ($effectOwnersRoot.GetProperty('Schema').GetInt32() -ne 1 -or
+            $effectOwnersRoot.GetProperty('Scope').GetString() -cne 'AllGameDataEffectLists' -or
+            $effectOwnersRoot.GetProperty('EffectType').GetString() -cne $EffectOwnerType -or
+            [Guid]$effectOwnersRoot.GetProperty('GameModuleMvid').GetString() -ne $nativeModule -or
+            -not $effectOwnersRoot.GetProperty('DecisionUnchanged').GetBoolean() -or
+            $effectOwnersRoot.GetProperty('FrameBefore').GetInt32() -ne $effectOwnersRoot.GetProperty('FrameAfter').GetInt32() -or
+            -not $effectOwnersRoot.GetProperty('RngBefore').ContentEquals($effectOwnersRoot.GetProperty('RngAfter')) -or
+            @('Cards', 'Characters', 'Upgrades', 'Relics').Where({ $definitionCounts.GetProperty($_).GetInt32() -le 0 }).Count -gt 0 -or
+            $count -lt 0 -or $rows -ne [Math]::Min(128, $count) -or
+            $effectOwnersRoot.GetProperty('MatchesTruncated').GetBoolean() -ne ($rows -lt $count)) {
+            throw 'Effect owner query scope, counts or native invariants differ.'
+        }
+        Write-Output "NATIVE-EFFECT-OWNERS PASS: type=$EffectOwnerType matches=$count rows=$rows trace=$capturePath"
+    } finally { $effectOwnersDocument.Dispose() }
+    return
+}
 if ($RoomHealthCardHover) {
     $capturePath = Join-Path $profile 'room-health-card-hover.mt2f'
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or
@@ -6658,29 +6688,6 @@ if ($SummonChoiceCalibration) {
         }
         Write-Output 'NATIVE-SUMMON-CHOICE-OFFERS PASS: 11232 native comparisons; unchanged decision/RNG/frame, explicit platform input controls; offer stage only.'
     } finally { $summonChoiceDocument.Dispose() }
-}
-if ($EffectOwnerType) {
-    Add-Type -Path (Join-Path $nativeBuildWorkspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
-    $effectOwnersDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Join-Path $profile 'effect-owners.mt2f'))
-    try {
-        $effectOwnersRoot = $effectOwnersDocument.RootElement
-        $count = $effectOwnersRoot.GetProperty('MatchCount').GetInt32()
-        $rows = $effectOwnersRoot.GetProperty('Matches').GetArrayLength()
-        $definitionCounts = $effectOwnersRoot.GetProperty('Definitions')
-        if ($effectOwnersRoot.GetProperty('Schema').GetInt32() -ne 1 -or
-            $effectOwnersRoot.GetProperty('Scope').GetString() -cne 'AllGameDataEffectLists' -or
-            $effectOwnersRoot.GetProperty('EffectType').GetString() -cne $EffectOwnerType -or
-            $effectOwnersRoot.GetProperty('GameModuleMvid').GetString() -ne $trace.GameModuleMvid -or
-            -not $effectOwnersRoot.GetProperty('DecisionUnchanged').GetBoolean() -or
-            $effectOwnersRoot.GetProperty('FrameBefore').GetInt32() -ne $effectOwnersRoot.GetProperty('FrameAfter').GetInt32() -or
-            -not $effectOwnersRoot.GetProperty('RngBefore').ContentEquals($effectOwnersRoot.GetProperty('RngAfter')) -or
-            @('Cards', 'Characters', 'Upgrades', 'Relics').Where({ $definitionCounts.GetProperty($_).GetInt32() -le 0 }).Count -gt 0 -or
-            $count -lt 0 -or $rows -ne [Math]::Min(128, $count) -or
-            $effectOwnersRoot.GetProperty('MatchesTruncated').GetBoolean() -ne ($rows -lt $count)) {
-            throw 'Effect owner query scope, counts or native invariants differ.'
-        }
-        Write-Output "NATIVE-EFFECT-OWNERS PASS: type=$EffectOwnerType matches=$count rows=$rows"
-    } finally { $effectOwnersDocument.Dispose() }
 }
 if ($CardCatalog) {
     Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')

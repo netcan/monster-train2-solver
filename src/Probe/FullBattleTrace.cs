@@ -249,9 +249,6 @@ namespace MonsterTrain2Poju.Probe
 #endif
             if (!calibrated)
             {
-#if DEVELOPMENT_PROBE
-                EffectOwnerProbe.Capture(this, managers);
-#endif
                 CardCatalogProbe.Capture(this, managers);
 #if DEVELOPMENT_PROBE
                 RoomHealthMechanismBatch.Capture(this, managers);

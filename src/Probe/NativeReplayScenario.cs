@@ -922,6 +922,12 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && EffectOwnerProbe.Enabled)
+            {
+                EffectOwnerProbe.Capture(FullBattleTrace.Active!, managers);
+                Finish(true, "Original effect owners captured.");
+                return;
+            }
             if (fullBattle && OriginalOuterBossRoute.EarlyTrialSubstitution)
             {
                 bool captured = OriginalOuterBossRoute.CaptureEarlyTrialBirth(managers, log);

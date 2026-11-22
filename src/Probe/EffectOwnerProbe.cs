@@ -12,10 +12,12 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class EffectOwnerProbe
     {
+        private static string? RequestedType => Environment.GetEnvironmentVariable("MT2_PROBE_EFFECT_OWNER_TYPE");
+        internal static bool Enabled => !string.IsNullOrEmpty(RequestedType);
+
         internal static void Capture(FullBattleTrace trace, AllGameManagers managers)
         {
-            string? effectType = Environment.GetEnvironmentVariable("MT2_PROBE_EFFECT_OWNER_TYPE");
-            if (string.IsNullOrEmpty(effectType)) return;
+            string effectType = RequestedType ?? throw new InvalidOperationException("Missing effect owner query type.");
             if (TypeNameCache.GetType(effectType) is not Type implementation || !typeof(ICardEffect).IsAssignableFrom(implementation))
                 throw new InvalidOperationException("Expected an installed card effect type: " + effectType);
 
