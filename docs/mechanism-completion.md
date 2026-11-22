@@ -108,7 +108,7 @@ Energy Siphon、Immortality Potion、Forevermore Serum 和 Spike Potion 在首�
 匹配，6 张有出牌身份记录，432 张暂无出牌记录。
 [`targeted-status-spells/battle.mt2f`](../tests/compatibility/game-2.3.1/mechanics/targeted-status-spells/battle.mt2f)
 
-`Run-FullBattleProbe.ps1 -OriginalOpeningSpellIds <五个有序 GUID>` 复用同一原版牌堆
+`Run-FullBattleProbe.ps1 -OriginalOpeningSpellIds <一至五个有序 GUID>` 复用同一原版牌堆
 准备和战斗执行流程。第一组配置的五张牌在同一场战斗完成首回合施放，约 87 秒
 后原版获胜。24 次出牌、7 次结束回合、16 条分支及录制根的候选检查通过。
 累计 186 场整战，卡牌定义匹配为 168/601，另有 6 张有出牌身份记录、
@@ -124,6 +124,13 @@ Energy Siphon、Immortality Potion、Forevermore Serum 和 Spike Potion 在首�
 四件遗物效果表与原版目录都一致。当前累计 188 场整战，卡牌结算定义匹配
 173/601，另有 4 张出牌身份记录和 424 张暂无出牌记录。遗物整战在场证据为 54/236。
 [`status-magnitude/battle.mt2f`](../tests/compatibility/game-2.3.1/mechanics/status-magnitude/battle.mt2f)
+
+不满五张的配置保留原始牌库补齐首回合手牌。Wildwood Tome 与 Twin Shards，
+以及 March of Shields 与 Twin Shards 的短牌组均完成原版胜局。两份归档合计
+39 次出牌、14 次结束回合，完整复放和候选检查均通过。March of Shields 可选择
+任一阵营，实测选中友方单位并施加护甲。累计 190 场整战，结算定义匹配为
+175/601，另有 3 张出牌身份记录和 423 张暂无出牌记录。
+[`configured-opening-spells/manifest.tsv`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-spells/manifest.tsv)
 
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
