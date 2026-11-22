@@ -246,6 +246,10 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 14 次出牌、5 次结束回合、32 条出生分支和候选检查通过。
 [`hymnist-team-spawn-and-duplicates.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/hymnist-team-spawn-and-duplicates.mt2f)
 
+三件原版开局腐化遗物按实际回调顺序生效，四个房间的腐化上限由 4 升至 5，顶层永久腐化为 1。
+首次抽牌后四个房间各获得 2 层，顶层当前腐化为 3。21 次出牌、7 次结束回合和候选检查通过。
+[`corruption-and-capacity.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/corruption-and-capacity.mt2f)
+
 补采月相掩码后，Restoring Retreat 在原版先回复 10 点生命，再将该单位移到底层。
 同一场受控胜局还核对两队 Witchweave、治疗与净化、毒层集中及翻倍、移除装备与加攻。
 19 次出牌、5 次结束回合、16 条分支和候选检查通过。
