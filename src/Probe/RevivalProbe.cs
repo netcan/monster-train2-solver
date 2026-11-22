@@ -72,7 +72,7 @@ namespace MonsterTrain2Poju.Probe
             var characters = new List<CharacterState>();
             room.AddCharactersToList(characters, Team.Type.Heroes, allowDead: true); room.AddCharactersToList(characters, Team.Type.Monsters, allowDead: true);
             return new RoomCombatState(state.RoomIndex, state.Deployment, characters.Where(unit => unit == actor || unit.IsAlive && !unit.IsDestroyed)
-                .Select(unit => trace.CaptureUnit(unit)).ToArray(), state.ExternalInteractions, state.Context, state.Preview);
+                .Select(unit => trace.CaptureUnit(unit)).ToArray(), state.ExternalInteractions, state.Context, state.Preview, state.ActiveCompanionBossIds);
         }
         [HarmonyPatch(typeof(CharacterState), nameof(CharacterState.ReviveFromUndyingStatus))]
         private static class RevivePatch
