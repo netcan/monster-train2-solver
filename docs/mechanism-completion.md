@@ -137,6 +137,12 @@ Cycle of Life 的原版动作给友军增加 10 点当前和最大生命，再�
 两场各有 16 次出牌、6 次结束回合，完整复放、16 条分支和录制根候选检查通过。
 累计 192 场整战，结算定义匹配 177/601，另有 1 张出牌身份记录和 423 张暂无出牌记录。
 
+原版 Spike of the Banished 的 X 费用和 Valor 增量已补齐。实机用正数余烬支付，
+每点余烬增加 4 层 Valor。胜局的 19 次出牌、7 次结束回合、16 条分支与录制根
+候选检查通过。累计 193 场整战，当前已有出牌记录的 178 张符合统计条件的收藏卡
+均与原版结算定义匹配，423 张仍无出牌记录。
+[`spike-of-the-banished.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-spells/spike-of-the-banished.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
