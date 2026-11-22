@@ -101,6 +101,13 @@ Jar of Frost 和 Magic Juice 合计支付 2 点余烬，分别在同房两名原
 候选检查也通过。纳入该整战后累计 184 场，卡牌定义匹配为 158/601。
 [`room-status-spells/battle.mt2f`](../tests/compatibility/game-2.3.1/mechanics/room-status-spells/battle.mt2f)
 
+第二组用同一原版牌堆准备方式录制了五张单体状态牌。Perils of Production、
+Energy Siphon、Immortality Potion、Forevermore Serum 和 Spike Potion 在首回合
+依次施放。约 71 秒后原版获胜。18 次出牌、6 次结束回合、16 条分支及录制根的
+候选检查通过。累计 185 场整战，符合统计条件的 601 张收藏卡中，163 张的结算定义
+匹配，6 张有出牌身份记录，432 张暂无出牌记录。
+[`targeted-status-spells/battle.mt2f`](../tests/compatibility/game-2.3.1/mechanics/targeted-status-spells/battle.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
