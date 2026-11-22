@@ -62,7 +62,7 @@ namespace MonsterTrain2Poju.Model
                 return new MoonPhaseTransitionResult(null, "Moon refresh requires captured tracking state.");
             if (source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Health > 0 && !unit.MoonPhaseMask.HasValue))
                 return new MoonPhaseTransitionResult(null, "Room phase refresh requires captured character understanding masks.");
-            string? callbackError = ValidateCallbacks(source);
+            string? callbackError = ValidateCallbacks(source, includePhaseShift: false);
             if (callbackError != null) return new MoonPhaseTransitionResult(null, callbackError);
             var understood = new TrainCombatState(source.Rooms.Select(room => room.WithUnits(room.Units.Select(unit =>
                 unit.Health <= 0 ? unit : unit.WithMoonPhaseMask(Effective(context, room.RoomIndex, context.QueryFrame.MoonPhase.Value))).ToArray())).ToArray(),

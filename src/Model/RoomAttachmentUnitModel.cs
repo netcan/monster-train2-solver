@@ -158,7 +158,7 @@ namespace MonsterTrain2Poju.Model
             {
                 if (source.Rooms.Any(room => room.Preview))
                     return Fail("Room attachment moon callback previews require separate native calibration.");
-                string? error = RoomMoonPhaseModel.ValidateCallbacks(source);
+                string? error = RoomMoonPhaseModel.ValidateCallbacks(source, includePhaseShift: false);
                 if (error != null) return Fail(error);
                 MoonPhaseTransitionResult callbacks = RoomMoonPhaseModel.ApplyUnderstanding(source, synchronized, phaseShift: false);
                 return new RoomAttachmentUnitSyncResult(callbacks.State, callbacks.UnsupportedReason);
