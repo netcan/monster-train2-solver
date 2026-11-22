@@ -445,3 +445,8 @@ Cael 零盟约试炼的攻击与生命、吸血变体分别通过 26 次出牌�
 18 次运行中，同配置的动作、评分、随机流和结算状态逐项一致。原版右路与召回归档的完整回放、
 出牌及结束回合候选也已定向通过。游戏内耗时尚待测量。
 离线基准为 `results/ring6-owned-statistics/fixed-budget.log`。
+
+同日用更新后的顾问运行一场 2.3.1 隔离首战。21 次出牌、7 次结束回合、30 次建议发布，
+原版以 76 点薪火生命获胜。面板的楼层浏览、候选保留、手牌变化、重置及预算切换均通过。
+独立复放逐项核对 28 步，出牌及结束回合候选也通过。
+[`current-ring1-presentation-after-allocation.mt2f`](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring1-presentation-after-allocation.mt2f)
