@@ -569,6 +569,11 @@ Draff 出生，Morel Mistress 提供排除对照。7 次出牌、5 次结束回�
 8 次出牌、5 次结束回合、16 条独立分支及两类候选通过。
 [`conduit-and-moonguard.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/conduit-and-moonguard.mt2f)
 
+原版 Magnetic Relay 召回普通无装备单位时，实机清空该单位的物理槽位，来源卡回到手牌。
+Transcend Imp 随后按原有顺序重放召唤历史，被召回的单位可重新部署。7 次出牌、5 次结束回合、
+16 条独立分支和两类候选通过。
+[`transcend-imp-physical-recall.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/transcend-imp-physical-recall.mt2f)
+
 原版 Hallowed Halls 牺牲同层友军，并从预置耗尽堆重建六名升级单位。专项核对 Standby、
 站位和容量。5 次出牌、6 次结束回合及两类候选通过。
 [`hallowed-halls.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/hallowed-halls.mt2f)
