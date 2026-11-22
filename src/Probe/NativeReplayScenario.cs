@@ -918,6 +918,15 @@ namespace MonsterTrain2Poju.Probe
                 {
                     PreviewSchedulingProbe.Observe("PlayReady");
                     if (fullBattle) FullBattleTrace.Active?.CompleteCardPlay();
+#if DEVELOPMENT_PROBE
+                    if (fullBattle && OriginalSupportSpellsScenario.ObserveHallGraftedBirth &&
+                        FullBattleTrace.Active?.WriteHallGraftedBirth() == true)
+                    {
+                        log.LogInfo("ORIGINAL-HALL-GRAFTED-BIRTH PASS observed original paid play and settled native result.");
+                        Finish(true, "Hall grafted birth component captured.");
+                        return;
+                    }
+#endif
                     RoomCapacityAttachmentScenario.CompleteCardPlay(managers);
                     OriginalCarriageJackScenario.CompleteCardPlay(managers);
                     OriginalTwoChargesOnCardConsumedScenario.CompleteCardPlay(managers);

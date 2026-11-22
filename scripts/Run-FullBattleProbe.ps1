@@ -255,6 +255,7 @@ param(
     [switch] $OriginalConsumedUpgrade,
     [switch] $OriginalStatusCompositions,
     [switch] $OriginalGraftedEquipment,
+    [switch] $OriginalHallGraftedBirth,
     [switch] $OriginalSelfAttack,
     [switch] $OriginalHealingCleanse,
     [switch] $OriginalOnKill,
@@ -1397,6 +1398,15 @@ if ($OriginalIsolatedEquipmentIds.Count -gt 0) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk'
 }
 if ($OriginalSupportSpells) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalHallGraftedBirth) {
+    $allowed = @('OriginalHallGraftedBirth', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
+        'GameSpeed', 'TimeoutSeconds', 'InputProfile', 'Verbose', 'Debug', 'ErrorAction')
+    if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
+        throw 'OriginalHallGraftedBirth requires the isolated binary first-battle observation.'
+    }
+    $OriginalIsolatedSpellIds = @('83734ffd-cbaa-47f1-9809-cc4c4dac568d', '3a8240bd-8b96-4d6e-b2d1-49ff8b5d8022')
+    $PhysicalSpawnPoints = $true
+}
 if ($OriginalIsolatedSpellIds.Count -gt 0) {
     $OriginalIsolatedSpellIds = @($OriginalIsolatedSpellIds | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim().ToLowerInvariant() } | Where-Object { $_ })
     if ($OriginalIsolatedSpellIds.Count -eq 0 -or $OriginalIsolatedSpellIds.Count -gt 30 -or
@@ -2160,7 +2170,8 @@ $gameRoot = Join-Path $workspace $(if ($NativeWorker -gt 1) { ".sandbox-game-wor
 if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll') -PathType Leaf)) {
     throw "Native worker $NativeWorker is not initialized; run scripts/Initialize-NativeWorker.ps1 -Worker $NativeWorker first."
 }
-if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics) {
+if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or
+    $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalHallGraftedBirth) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -2175,6 +2186,9 @@ if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput 
     }
     if (($OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original opening relics require the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
+    }
+    if ($OriginalHallGraftedBirth -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw "Original grafted birth observation requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
 }
 $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
@@ -2726,6 +2740,7 @@ if ($OriginalStatusUnits) { $environment['MT2_PROBE_MODIFIERS'] = 'original-stat
 if ($OriginalEquipmentCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-equipment-cards' }
 if ($OriginalIsolatedEquipmentIds.Count -gt 0) { $environment['MT2_PROBE_MODIFIERS'] = 'original-isolated-equipment:' + ($OriginalIsolatedEquipmentIds -join ',') }
 if ($OriginalSupportSpells) { $environment['MT2_PROBE_MODIFIERS'] = 'original-support-spells' }
+if ($OriginalHallGraftedBirth) { $environment['MT2_PROBE_ORIGINAL_HALL_GRAFTED_BIRTH'] = '1' }
 if ($OriginalIsolatedSpellIds.Count -gt 0) { $environment['MT2_PROBE_MODIFIERS'] = 'original-isolated-spells:' + ($OriginalIsolatedSpellIds -join ',') }
 if ($OriginalIsolatedSpellUpgrades.Count -gt 0) {
     if ($OriginalIsolatedSpellIds.Count -eq 0) { throw 'Isolated spell upgrades require an isolated spell batch.' }
@@ -3746,6 +3761,28 @@ if ($OriginalSourceBackedFeeding) {
         throw "Original source-backed feeding capture failed. Inspect $unityLog"
     }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true; Trace=$feedingPath } | ConvertTo-Json
+    return
+}
+if ($OriginalHallGraftedBirth) {
+    $componentPath = Join-Path $profile 'hall-grafted-birth.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-HALL-GRAFTED-BIRTH PASS' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original Hall grafted birth observation failed. Inspect $unityLog"
+    }
+    Add-Type -Path (Join-Path $nativeBuildWorkspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $component = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($componentPath)
+    try {
+        $result = $component.RootElement
+        if ($result.GetProperty('Boundary').GetString() -cne 'NativeOriginalHallGraftedBirth' -or
+            [Guid]$result.GetProperty('GameModuleMvid').GetString() -ne $nativeModule -or
+            $result.GetProperty('GameVersion').GetString() -cne '2.3.1' -or
+            $result.GetProperty('CaptureFailures').GetInt32() -ne 0 -or $result.GetProperty('Pending').GetInt32() -ne 0) {
+            throw 'Original Hall grafted birth observation identity or native capture is incomplete.'
+        }
+    } finally { $component.Dispose() }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        Trace=$componentPath; SHA256=(Get-FileHash -LiteralPath $componentPath -Algorithm SHA256).Hash } | ConvertTo-Json
     return
 }
 if ($TrueFinalBossBirth) {

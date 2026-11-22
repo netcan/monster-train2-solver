@@ -978,6 +978,40 @@ namespace MonsterTrain2Poju.Probe
         }
 
 #if DEVELOPMENT_PROBE
+        internal bool WriteHallGraftedBirth()
+        {
+            BattleActionProbe.Record? birth = actions.Records.LastOrDefault();
+            if (birth?.Before.Spawn.Train.Context?.FindCard(birth.Action.CardInstanceId)?.DataId != OriginalSupportSpellsScenario.AssistantId)
+                return false;
+
+            if (actions.Records.Count < 2) throw new InvalidOperationException("Missing the original Hall play.");
+            BattleActionProbe.Record hall = actions.Records[actions.Records.Count - 2];
+            if (birth.Actual == null || hall.Actual == null || CaptureFailures != 0 || Pending != 0 ||
+                birth.Action.RoomIndex != hall.Action.RoomIndex ||
+                hall.Before.Spawn.Train.Context?.FindCard(hall.Action.CardInstanceId)?.DataId != OriginalSupportSpellsScenario.HallId)
+                throw new InvalidOperationException("Expected two settled original plays on the same floor.");
+
+            int room = birth.Action.RoomIndex;
+            CombatUnit[] before = birth.Before.Spawn.Train.Rooms.Single(item => item.RoomIndex == room).Units.ToArray();
+            CombatUnit[] born = birth.Actual.Spawn.Train.Rooms.Single(item => item.RoomIndex == room).Units
+                .Where(actor => before.All(prior => prior.Id != actor.Id)).ToArray();
+            if (born.Count(actor => actor.SpawnerCardId == birth.Action.CardInstanceId && actor.Modifiers?.IsClone == false) != 1)
+                throw new InvalidOperationException("Native play did not deploy the paid original Assistant.");
+
+            using var document = NativeFixtureCapture.Capture(new
+            {
+                Schema = 1,
+                Boundary = "NativeOriginalHallGraftedBirth",
+                GameVersion = Application.version,
+                GameModuleMvid = typeof(RelicState).Assembly.ManifestModule.ModuleVersionId,
+                CaptureFailures, Pending, Hall = hall, Birth = birth, NewUnits = born,
+                Equipment = EquipmentProbe.Records.Where(record => born.Any(actor => actor.Id == record.UnitId)).ToArray()
+            });
+            using var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "hall-grafted-birth.mt2f"));
+            document.Write(output);
+            return true;
+        }
+
         internal void WriteThikDeckChange()
         {
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "original-thik-deck-change.mt2f");

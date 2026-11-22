@@ -9,6 +9,28 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class OriginalSupportSpellsScenario
     {
+#if DEVELOPMENT_PROBE
+        internal const string HallId = "83734ffd-cbaa-47f1-9809-cc4c4dac568d";
+        internal const string AssistantId = "3a8240bd-8b96-4d6e-b2d1-49ff8b5d8022";
+        private const string AssistantGraftId = "0a928329-666c-4ce6-a1c3-413977e37e46";
+        internal static bool ObserveHallGraftedBirth => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_HALL_GRAFTED_BIRTH") == "1";
+
+        private static PlayCardAction ChooseHallGraftedBirth(BattleTurnState source, int[] ids, int index)
+        {
+            const int room = 0;
+            if (source.Spawn.Turn != 1 || ids.Length != 6 || index is not (4 or 5))
+                throw new InvalidOperationException("Expected the first ordinary turn for the two original plays.");
+            CombatContext context = source.Spawn.Train.Context!;
+            if (index == 4) return new PlayCardAction(ids[index], room);
+            IReadOnlyList<int>? occupants = context.SpawnPoints?.Groups.Single(group =>
+                group.RoomIndex == room && group.Team == CombatTeam.Player && group.PreviewCopyId == null).Occupants;
+            if (context.RoomCapacities?.Single(item => item.RoomIndex == room).Attachments?.Any(attachment =>
+                    attachment.DataId == HallId && attachment.SpawnCopySubtype == "") != true ||
+                occupants == null || occupants.Count(id => id == 0) < 2)
+                throw new InvalidOperationException("Expected the original Hall and two open player positions on the chosen floor.");
+            return new PlayCardAction(ids[index], room, playerPosition: Enumerable.Range(0, occupants.Count).First(position => occupants[position] == 0));
+        }
+#endif
         internal static bool CapturesTriggeredSummons { get; private set; }
         internal static bool CapturesBump { get; private set; }
         internal const string Name = "original-support-spells";
@@ -83,6 +105,10 @@ namespace MonsterTrain2Poju.Probe
                      action.ActivatorRoomIndex == 1 && source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                         .Any(unit => unit.Id == action.TargetUnitId && unit.SpawnerCardId == ids[0])));
             if (index < 0 || index >= 3 && source.Spawn.Turn < 1) return null;
+#if DEVELOPMENT_PROBE
+            if (ObserveHallGraftedBirth && index >= 4)
+                return ChooseHallGraftedBirth(source, ids, index);
+#endif
             if (IsolatedIds?.FirstOrDefault() == "93759003-bb97-44e4-9ef6-472c55bee2d9" && index >= 4 &&
                 source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "6bc6afc8-a113-4f03-b090-d4436f41d822" && source.Spawn.Turn < 2)
                 return null; // Observe Rage callbacks before replacing their originating attachment.
@@ -270,6 +296,20 @@ namespace MonsterTrain2Poju.Probe
                 save.Cheat_SetTowerHP(save.GetMaxTowerHP() - 10);
             if (spellIds.Length == 0 || spellIds.Length > 30 || spellIds.Any(id => all.FindCardData(id)?.GetCardType() is not (CardType.Spell or CardType.Equipment or CardType.Monster or CardType.Junk or CardType.TrainRoomAttachment)))
                 throw new InvalidOperationException("Isolated spell IDs must name one to thirty native playable card definitions.");
+#if DEVELOPMENT_PROBE
+            if (ObserveHallGraftedBirth)
+            {
+                CardData hall = all.FindCardData(HallId)!;
+                CardData assistant = all.FindCardData(AssistantId)!;
+                if (typeof(RelicState).Assembly.ManifestModule.ModuleVersionId != new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d") ||
+                    !spellIds.SequenceEqual(new[] { HallId, AssistantId }) ||
+                    !hall.GetEffects().Select(effect => effect.GetEffectStateName()).SequenceEqual(new[] { "CardEffectAttachTrainRoomAttachment" }) ||
+                    !assistant.GetEffects().Select(effect => effect.GetEffectStateName()).SequenceEqual(new[] { "CardEffectSpawnMonster" }) ||
+                    assistant.GetSpawnCharacterData()?.GetGraftedEquipment()?.GetID() != AssistantGraftId ||
+                    hall.GetCost() != 2 || assistant.GetCost() != 1)
+                    throw new InvalidOperationException("Expected the original Hall and equipment-bearing Assistant.");
+            }
+#endif
             foreach (string id in spellIds)
                 foreach (CardEffectData effect in all.FindCardData(id)!.GetEffects())
                     log.LogInfo("ORIGINAL-ISOLATED-EFFECT id=" + id + " type=" + effect.GetEffectStateName() +
