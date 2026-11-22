@@ -49,6 +49,10 @@ ModelChecks 调用，`BattleSearchModel`、实际出牌与回合切换没有调�
 与目录的有序效果列表一致，214 件暂无在场记录。报告列出归档和快照位置，证据范围
 限于在场与效果列表。个别效果是否触发、触发参数和后继仍由机制检查验证。
 输出为 `results/relic-observations-2.3.1.tsv`，可用 `-Current -Check -SkipBuild` 复核。
+
+加 `-Worklist` 可同时生成 `results/relic-effect-worklist-2.3.1.tsv`。清单按原版效果类型顺序
+归并待验证遗物，优先附上相同顺序的在场录像，否则给出共享效果类型及其归档、快照和遗物位置。
+这些位置用于复用测试布置，待测遗物自己的参数和触发仍需原版对照。
 同一命令还生成 `results/relic-priority-version-delta-2.3.1.tsv`，对照两份原版目录的
 12 件新增和 13 件变化，并附当前战斗的在场证据。目录中的字段差异可直接定位复测范围。
 

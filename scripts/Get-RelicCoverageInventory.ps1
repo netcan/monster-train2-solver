@@ -5,6 +5,7 @@ param(
     [Parameter(Position = 1)][string]$OutputPath,
     [Parameter(Mandatory, ParameterSetName = 'Current')][switch]$Current,
     [Parameter(ParameterSetName = 'Current')][switch]$Check,
+    [Parameter(ParameterSetName = 'Current')][switch]$Worklist,
     [Parameter(ParameterSetName = 'Current')][switch]$SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -20,6 +21,7 @@ if ($Current) {
         'relic-inventory-current', $workspace, $OutputPath
     )
     if ($Check) { $inventoryArguments += '--check' }
+    if ($Worklist) { $inventoryArguments += '--worklist' }
     dotnet @inventoryArguments
     if ($LASTEXITCODE -ne 0) { throw 'Current relic observation inventory failed.' }
     return

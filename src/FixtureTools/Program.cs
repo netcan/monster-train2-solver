@@ -279,9 +279,10 @@ else if (args.Length == 2 && args[0] == "card-legacy-recapture-worklist")
 {
     CardCoverageInventory.RunCurrent(args[1], check: false, legacyRecaptureWorklist: true);
 }
-else if (args.Length is 3 or 4 && args[0] == "relic-inventory-current" && (args.Length == 3 || args[3] == "--check"))
+else if (args.Length is >= 3 and <= 5 && args[0] == "relic-inventory-current" &&
+    args.Skip(3).All(arg => arg is "--check" or "--worklist") && args.Skip(3).Distinct().Count() == args.Length - 3)
 {
-    RelicCoverageInventory.RunCurrent(args[1], args[2], args.Length == 4);
+    RelicCoverageInventory.RunCurrent(args[1], args[2], args.Contains("--check"), args.Contains("--worklist"));
 }
 else if (args.Length == 4 && args[0] == "bundle-native")
 {
@@ -366,6 +367,7 @@ else
     Console.Error.WriteLine("Native/model reconciliation: mechanism-reconciliation <workspace> <Assembly-CSharp.dll> [--check]; compiled code/PDB links and scoped reviews, not runtime coverage.");
     Console.Error.WriteLine("Card damage audit: card-damage-audit <workspace>; TSV of original definitions and accepted owner plays on stdout. Check-Game231PunishedSpike.ps1 verifies the observed Punished Spike applications independently.");
     Console.Error.WriteLine("Opening worklist: card-opening-worklist <workspace>; TSV of original card cohorts. RunnerOption identifies opening candidates. Empty RunnerOption rows retain remaining IDs for targeted capture.");
+    Console.Error.WriteLine("Relic inventory: relic-inventory-current <workspace> <output.tsv> [--check] [--worklist]; group remaining owners by ordered native effect types.");
     Console.Error.WriteLine("Legacy recapture worklist: card-legacy-recapture-worklist <workspace>; TSV ranking continuous archived 2.2.1 battles by original card plays needing a fresh 2.3.1 witness.");
     Console.Error.WriteLine("Strength rollout investigation: deployment-order-strength uses order-spread arguments and guards with the existing strength policy for later decisions; model prediction only.");
     Console.Error.WriteLine("Mixed placement investigation: deployment-order-mixed-strength uses independently mixed deterministic placement choices and strength rollout; resume with the same mode and nextSample; model prediction only.");

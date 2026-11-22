@@ -19,6 +19,7 @@ internal static class RelicCoverageInventory
         internal readonly string AssetKey = Text(definition, "AssetKey");
         internal readonly bool PlacementExcluded = definition.GetProperty("DisallowedInPlacementPhase").GetBoolean();
         internal readonly string[] EffectTypes = definition.GetProperty("Effects").EnumerateArray().Select(effect => Text(effect, "RuntimeType")).ToArray();
+        internal string EffectSequence => string.Join(",", EffectTypes);
         internal int ObservedBattles;
         internal int MatchedBattles;
         internal Witness? IdentityWitness;
@@ -34,7 +35,7 @@ internal static class RelicCoverageInventory
             Array(owner, "EffectTypes").Select(value => value.GetString()).SequenceEqual(EffectTypes, StringComparer.Ordinal);
     }
 
-    internal static void RunCurrent(string workspace, string output, bool check)
+    internal static void RunCurrent(string workspace, string output, bool check, bool includeWorklist = false)
     {
         string directory = Game231FixtureCatalog.DirectoryFor(workspace);
         var registrations = Game231FixtureCatalog.Load(directory);
@@ -108,11 +109,16 @@ internal static class RelicCoverageInventory
                 string.Join(",", relic.EffectTypes), .. ObservationCells(relic)]);
         }
         output = Path.GetFullPath(output);
-        string priorityOutput = Path.Combine(Path.GetFullPath(workspace), "results", "relic-priority-version-delta-" + Game231FixtureCatalog.Version + ".tsv");
+        string results = Path.Combine(Path.GetFullPath(workspace), "results");
+        string priorityOutput = Path.Combine(results, "relic-priority-version-delta-" + Game231FixtureCatalog.Version + ".tsv");
+        string worklistOutput = Path.Combine(results, "relic-effect-worklist-" + Game231FixtureCatalog.Version + ".tsv");
         if (string.Equals(output, priorityOutput, StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("Relic observations and version differences require distinct output paths.", nameof(output));
+        if (includeWorklist && string.Equals(output, worklistOutput, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Relic observations and the effect worklist require distinct output paths.", nameof(output));
         WriteReport(output, report, check);
         WriteReport(priorityOutput, priorityReport, check);
+        if (includeWorklist) WriteEffectWorklist(relics.Values, worklistOutput, check);
         int rosterMatches = relics.Values.Count(relic => relic.MatchedBattles > 0);
         int identityOnly = relics.Values.Count(relic => relic.ObservedBattles > 0 && relic.MatchedBattles == 0);
         Console.WriteLine($"RELIC-OBSERVATION {Game231FixtureCatalog.Version} {(check ? "CHECK" : "WRITE")} PASS registered={registrations.Count} settledBattles={battles} stageBattles={stage} decisionSnapshots={snapshots}");
@@ -121,6 +127,46 @@ internal static class RelicCoverageInventory
         int priorityMatches = changes.Count(change => change.Current.MatchedBattles > 0);
         int priorityIdentityOnly = changes.Count(change => change.Current.ObservedBattles > 0 && change.Current.MatchedBattles == 0);
         Console.WriteLine($"priority={changes.Count} added={added} changed={changes.Count - added} orderedRosterMatch={priorityMatches} identityObservedOnly={priorityIdentityOnly} noActiveObservation={changes.Count - priorityMatches - priorityIdentityOnly} report={priorityOutput}");
+    }
+
+    private static void WriteEffectWorklist(IEnumerable<Relic> relics, string output, bool check)
+    {
+        Relic[] observed = relics.Where(relic => relic.RosterWitness != null).ToArray();
+        var groups = relics.Where(relic => relic.RosterWitness == null)
+            .GroupBy(relic => relic.EffectSequence, StringComparer.Ordinal).Select(group => new
+        {
+            Effects = group.Key,
+            Gaps = group.OrderBy(relic => relic.AssetKey, StringComparer.Ordinal).ThenBy(relic => relic.Id, StringComparer.Ordinal).ToArray(),
+            Reference = observed.Select(relic => new
+            {
+                Relic = relic,
+                ExactOrder = relic.EffectSequence == group.Key,
+                SharedTypes = group.First().EffectTypes.Intersect(relic.EffectTypes, StringComparer.Ordinal).ToArray()
+            }).Where(peer => peer.SharedTypes.Length > 0).OrderByDescending(peer => peer.ExactOrder)
+                .ThenByDescending(peer => peer.SharedTypes.Length).ThenByDescending(peer => peer.Relic.MatchedBattles)
+                .ThenBy(peer => peer.Relic.Id, StringComparer.Ordinal).FirstOrDefault()
+        })
+            .OrderByDescending(group => group.Reference != null).ThenByDescending(group => group.Gaps.Length)
+            .ThenBy(group => group.Effects, StringComparer.Ordinal).ToArray();
+
+        var report = new StringBuilder();
+        Row(report, "GameVersion", "GameModuleMvid", "OrderedEffectTypes", "MissingRosterCount", "MissingRosterDataIds",
+            "MissingRosterAssetKeys", "ReferenceMatch", "SharedEffectTypes", "ReferenceDataId", "ReferenceAssetKey", "ReferenceArchive", "ReferenceSnapshot", "ReferenceOwnerIndex");
+        foreach (var group in groups)
+        {
+            var reference = group.Reference;
+            Witness? witness = reference?.Relic.RosterWitness;
+            string match = reference == null ? "" : reference.ExactOrder ? "ordered-effect-types" : "shared-effect-types";
+            Row(report, Game231FixtureCatalog.Version, Game231FixtureCatalog.Module, group.Effects,
+                group.Gaps.Length.ToString(CultureInfo.InvariantCulture), string.Join(",", group.Gaps.Select(relic => relic.Id)),
+                string.Join(",", group.Gaps.Select(relic => relic.AssetKey)), match, string.Join(",", reference?.SharedTypes ?? []),
+                reference?.Relic.Id ?? "", reference?.Relic.AssetKey ?? "",
+                witness?.Archive ?? "", witness?.Snapshot ?? "", witness?.OwnerIndex.ToString(CultureInfo.InvariantCulture) ?? "");
+        }
+
+        WriteReport(output, report, check);
+        Console.WriteLine($"RELIC-EFFECT-WORKLIST {Game231FixtureCatalog.Version} {(check ? "CHECK" : "WRITE")} PASS groups={groups.Length} " +
+            $"withRosterReference={groups.Count(group => group.Reference != null)} missingRoster={groups.Sum(group => group.Gaps.Length)} report={output}");
     }
 
     private static string CatalogPath(string version) => version + "/relic-catalog.mt2f";
