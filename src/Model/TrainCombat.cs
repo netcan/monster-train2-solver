@@ -846,10 +846,26 @@ namespace MonsterTrain2Poju.Model
                 {
                     bool lastPhysicalDeath = queued.CompletePhysicalRemovalAfterQueue && !queue.Any(item => item.Kind == "OnDeath" &&
                         item.Unit.Team == queued.Unit.Team && item.Unit.Id > queued.Unit.Id);
+                    RoomCombatState settlement = WithContext(rooms[roomPosition], context);
+                    if (lastPhysicalDeath && !settlement.Preview && context?.SpawnPoints is BattleSpawnPoints points)
+                    {
+                        // Centering visits both teams while the other team's queued
+                        // casualties can still occupy their native physical points.
+                        var occupied = points.Groups.Where(group => group.RoomIndex == queued.RoomIndex && !group.PreviewCopyId.HasValue)
+                            .SelectMany(group => group.Occupants).ToHashSet();
+                        CombatUnit[] pendingOccupants = queue.Where(item => item.Kind == "OnDeath" && item.DeferUntilRemoval &&
+                                item.CompletePhysicalRemovalAfterQueue && item.RoomIndex == queued.RoomIndex &&
+                                item.Unit.Id != queued.Unit.Id && item.Unit.Health == 0 &&
+                                item.Unit.DeathState?.IsDestroyed != true && occupied.Contains(item.Unit.Id))
+                            .Select(item => item.Unit).GroupBy(unit => unit.Id).Select(group => group.Last())
+                            .Where(unit => !settlement.Units.Any(existing => existing.Id == unit.Id)).ToArray();
+                        if (pendingOccupants.Length > 0)
+                            settlement = settlement.WithUnits(settlement.Units.Concat(pendingOccupants).ToArray());
+                    }
                     returned = lastPhysicalDeath
-                        ? RoomCombatModel.SettleQueuedSpawnerAndCenter(WithContext(rooms[roomPosition], context), queued.Unit,
+                        ? RoomCombatModel.SettleQueuedSpawnerAndCenter(settlement, queued.Unit,
                             refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement))
-                        : RoomCombatModel.SettleQueuedSpawner(WithContext(rooms[roomPosition], context), queued.Unit,
+                        : RoomCombatModel.SettleQueuedSpawner(settlement, queued.Unit,
                         refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
                 }
                 if (!returned.Supported) { error = returned.UnsupportedReason; return false; }
