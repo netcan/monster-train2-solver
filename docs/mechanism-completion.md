@@ -258,6 +258,10 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 23 次出牌、7 次结束回合、16 条独立分支和候选检查通过。
 [`played-card-and-snack-draw.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-relics/played-card-and-snack-draw.mt2f)
 
+两件原版回合抽牌遗物验证一次开局补牌与十三次满血判定，涵盖受伤、零血、满血、预演及移除遗物对照。
+25 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
+[`opening-and-full-health-draw.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-relics/opening-and-full-health-draw.mt2f)
+
 两件原版 Sting 遗物对照 53 次卡牌修饰回调，三次付费施放均获得合计 +30 伤害与穿甲。
 19 次出牌、6 次结束回合、32 条修饰器分支和候选检查通过。
 [`sting-with-original-relics.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/sting-with-original-relics.mt2f)
