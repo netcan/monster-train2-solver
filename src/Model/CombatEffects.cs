@@ -18,12 +18,12 @@ namespace MonsterTrain2Poju.Model
     public sealed class CombatContext
     {
         public CardCycleState Cards { get; }
-        public UnityRng BattleRng { get; }
-        public int Gold { get; }
-        public int NextCardId { get; }
+        public UnityRng BattleRng { get; private set; }
+        public int Gold { get; private set; }
+        public int NextCardId { get; private set; }
         public int MaxHandSize { get; }
         public IReadOnlyList<CombatStatus> StatusRules { get; }
-        public BattleStatistics? Statistics { get; }
+        public BattleStatistics? Statistics { get; private set; }
         public IReadOnlyList<CardInstanceState>? CardInstances { get; }
         // Identity store for observed cards, including references retained after ClearCards.
         // Membership here does not make a card owned or playable.
@@ -32,7 +32,7 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<CardUpgradeModifier>? NextAddedTemporaryUpgrades { get; }
         // Shared with room/effect resolution; null identifies legacy captures without this state.
         public IReadOnlyList<CardPileState>? OtherPiles { get; }
-        public StatisticQueryFrame? QueryFrame { get; }
+        public StatisticQueryFrame? QueryFrame { get; private set; }
         // Native kill-camera activation gates clearing once, including nested terminal deaths.
         // Null preserves captures made before this state was observed.
         public bool? KillCamActivated { get; }
@@ -44,10 +44,10 @@ namespace MonsterTrain2Poju.Model
         public int? LastAbilityActivatorUnitId { get; }
         public int? LastSpawnedUnitId { get; }
         // Shared by card/character effects; null preserves legacy captures.
-        public int? NextUnitId { get; }
-        public BattleSpawnPoints? SpawnPoints { get; }
+        public int? NextUnitId { get; private set; }
+        public BattleSpawnPoints? SpawnPoints { get; private set; }
         public TriggeredSummonCatalog? SummonCatalog { get; }
-        public EnchantmentWorld? Enchantments { get; }
+        public EnchantmentWorld? Enchantments { get; private set; }
         public IReadOnlyList<string>? PurifyBlockedTriggers { get; }
         public IReadOnlyList<CombatRelicState>? Relics { get; }
         public TriggerCountState? TriggerCounts { get; }
@@ -122,26 +122,38 @@ namespace MonsterTrain2Poju.Model
             NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState,
             RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId,
             NextUnitId, SpawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, resources, MixState, ConduitRetained, LifeLinks);
-        internal CombatContext WithEnchantments(EnchantmentWorld? world) => new CombatContext(Cards, BattleRng, Gold, NextCardId,
-            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades,
-            OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache,
-            LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog, world, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState, ConduitRetained, LifeLinks);
-        internal CombatContext WithNextCardId(int nextCardId) => new CombatContext(Cards, BattleRng, Gold, nextCardId,
-            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades,
-            OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache,
-            LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState, ConduitRetained, LifeLinks);
+        // The public constructor already owns and canonicalizes these collections.
+        // Each fork changes a single field before publishing the copy.
+        private CombatContext Copy() => (CombatContext)MemberwiseClone();
+
+        internal CombatContext WithEnchantments(EnchantmentWorld? world)
+        {
+            var copy = Copy();
+            copy.Enchantments = world;
+            return copy;
+        }
+        internal CombatContext WithNextCardId(int nextCardId)
+        {
+            var copy = Copy();
+            copy.NextCardId = nextCardId;
+            return copy;
+        }
         internal CombatContext WithSummonCatalog(TriggeredSummonCatalog catalog) => new CombatContext(Cards, BattleRng, Gold, NextCardId,
             MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades,
             OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache,
             LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, catalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState, ConduitRetained, LifeLinks);
-        internal CombatContext WithNextUnitId(int nextUnitId) => new CombatContext(Cards, BattleRng, Gold, NextCardId,
-            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades,
-            OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache,
-            LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, nextUnitId, SpawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState, ConduitRetained, LifeLinks);
-        internal CombatContext WithSpawnPoints(BattleSpawnPoints spawnPoints) => ConduitModel.Physical(this, new CombatContext(Cards, BattleRng, Gold, NextCardId,
-            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades,
-            OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache,
-            LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, spawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState, ConduitRetained, LifeLinks));
+        internal CombatContext WithNextUnitId(int nextUnitId)
+        {
+            var copy = Copy();
+            copy.NextUnitId = nextUnitId;
+            return copy;
+        }
+        internal CombatContext WithSpawnPoints(BattleSpawnPoints spawnPoints)
+        {
+            var copy = Copy();
+            copy.SpawnPoints = spawnPoints;
+            return ConduitModel.Physical(this, copy);
+        }
         internal CombatContext WithLastSpawned(int? unitId) => new CombatContext(Cards, BattleRng, Gold, NextCardId,
             MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades,
             OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache,
@@ -155,17 +167,23 @@ namespace MonsterTrain2Poju.Model
         internal CombatContext WithEnergyState(BattleEnergyState state) => new CombatContext(Cards, BattleRng,
             Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead,
             NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, state, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState, ConduitRetained, LifeLinks);
-        internal CombatContext WithQueryFrame(StatisticQueryFrame? frame) => ConduitModel.Select(new CombatContext(Cards, BattleRng,
-            Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead,
-            NextAddedTemporaryUpgrades, OtherPiles, frame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState, ConduitRetained, LifeLinks),
-            QueryFrame?.SelectedRoomIndex, frame?.SelectedRoomIndex);
+        internal CombatContext WithQueryFrame(StatisticQueryFrame? frame)
+        {
+            var copy = Copy();
+            copy.QueryFrame = frame;
+            return ConduitModel.Select(copy, QueryFrame?.SelectedRoomIndex, frame?.SelectedRoomIndex);
+        }
         internal CombatContext WithMagicPower(IReadOnlyList<RoomMagicPower> power) => new CombatContext(Cards, BattleRng,
             Gold, NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead,
             NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, power, IsolatedBattlePreview, EnergyState,
             RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId,
             NextUnitId, SpawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState, ConduitRetained, LifeLinks);
-        internal CombatContext WithStatistics(BattleStatistics? statistics) => new CombatContext(Cards, BattleRng,
-            Gold, NextCardId, MaxHandSize, StatusRules, statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState, ConduitRetained, LifeLinks);
+        internal CombatContext WithStatistics(BattleStatistics? statistics)
+        {
+            var copy = Copy();
+            copy.Statistics = CardInstances == null ? statistics : statistics?.WithOwnedCards(CardInstances.Select(card => card.InstanceId));
+            return copy;
+        }
         internal CombatContext WithCardInstances(IReadOnlyList<CardInstanceState>? instances) => new CombatContext(Cards, BattleRng,
             Gold, NextCardId, MaxHandSize, StatusRules, Statistics, instances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState, ConduitRetained, LifeLinks);
         internal CombatContext WithCardRegistry(IReadOnlyList<CardInstanceState>? registry) => new CombatContext(Cards, BattleRng,
@@ -183,8 +201,12 @@ namespace MonsterTrain2Poju.Model
         internal CombatContext WithBossesDead() => new CombatContext(Cards, BattleRng, Gold, NextCardId,
             MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead.HasValue ? true : (bool?)null, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState, ConduitRetained, LifeLinks);
         internal BattleStatistics? LiveStatistics => CardInstances?.Count == 0 ? Statistics?.RefreshDeckAfterCardTerminal() : Statistics;
-        internal CombatContext WithBattleRng(UnityRng rng) => new CombatContext(Cards, rng, Gold, NextCardId,
-            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState, ConduitRetained, LifeLinks);
+        internal CombatContext WithBattleRng(UnityRng rng)
+        {
+            var copy = Copy();
+            copy.BattleRng = rng;
+            return copy;
+        }
         internal CombatContext WithCards(CardCycleState cards) => new CombatContext(cards, BattleRng, Gold, NextCardId,
             MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState, ConduitRetained, LifeLinks);
         internal CombatContext WithOtherPiles(IReadOnlyList<CardPileState> piles) => OtherPiles == null ? this : new CombatContext(Cards, BattleRng,
@@ -193,11 +215,12 @@ namespace MonsterTrain2Poju.Model
             (Cards.NextDrawUpgrades == null || Cards.NextDrawUpgrades.Count == 0) ? this : new CombatContext(NextDrawUpgradeModel.Clear(Cards), BattleRng, Gold,
             NextCardId, MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead,
             NextAddedTemporaryUpgrades == null ? null : Array.Empty<CardUpgradeModifier>(), OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache, LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog, Enchantments, PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState, ConduitRetained, LifeLinks);
-        internal CombatContext WithGold(int gold) => new CombatContext(Cards, BattleRng, gold, NextCardId,
-            MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead, NextAddedTemporaryUpgrades,
-            OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview, EnergyState, RoomCapacities, AbilityCardCache,
-            LastAbilityActivatorUnitId, PermanentlyDisabledAbilities, LastSpawnedUnitId, NextUnitId, SpawnPoints, SummonCatalog, Enchantments,
-            PurifyBlockedTriggers, Relics, TriggerCounts, Resources, MixState, ConduitRetained, LifeLinks);
+        internal CombatContext WithGold(int gold)
+        {
+            var copy = Copy();
+            copy.Gold = gold;
+            return copy;
+        }
         internal CombatContext WithMixState(MixRuntimeState mixState) => new CombatContext(Cards, BattleRng, Gold, NextCardId,
             MaxHandSize, StatusRules, Statistics, CardInstances, CardRegistry, AllScenarioBossesDead,
             NextAddedTemporaryUpgrades, OtherPiles, QueryFrame, KillCamActivated, MagicPower, IsolatedBattlePreview,
