@@ -177,6 +177,12 @@ Entombed Explosive、Overworked Assistant、Wickless Tycoon 和 Spikedriver Spid
 16 条分支和候选检查通过。累计 199 场整战和 209/601 张已匹配收藏卡。
 [`native-equipment-and-mix-pool.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-equipment/native-equipment-and-mix-pool.mt2f)
 
+按已有的原版首战前档恢复，Squad Leader 和 Twisted Assistant 完成原版部署，
+Engulfed in Smoke 在另一场结算。各场从部署连续复放至胜利，分别为 19 次出牌与
+6 次结束回合、17 次出牌与 6 次结束回合，两场的分支和候选检查均通过。
+[`checkpoint-squad-leader-and-assistant.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-units/checkpoint-squad-leader-and-assistant.mt2f)
+[`checkpoint-engulfed-in-smoke.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-spells/checkpoint-engulfed-in-smoke.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
@@ -415,6 +421,7 @@ dotnet run --project src/FixtureTools -c Release -- card-opening-worklist .
 TSV 的 `RunnerOption` 和 `DataIds` 可用于开局批录。清单按效果与目标分组，
 根据原版开局的剩余余烬及楼层容量安排出牌顺序。`RunnerOption` 为空的行保留待定向
 采集的卡牌。每组仍由实机确认可出牌、效果结算和后续状态。
+配置卡组时可加 `-InputProfile`，复用实验目录下原版首战前的隔离存档并直接进入战斗。
 
 优先实现可复用的机制场景生成器：从目录挑原版代表定义，按源码分支构造
 最小正例、控制例、复位及边界状态，在一次隔离原生进程中批量采样，再按完整
