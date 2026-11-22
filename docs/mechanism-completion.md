@@ -251,6 +251,12 @@ PropagateOnStatusEffectApplied 的原版专项核对恰好 3 层的触发、超�
 18 次出牌、6 次结束回合及两类候选检查通过。
 [`propagate-on-status-effect.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/propagate-on-status-effect.mt2f)
 
+CooldownOnDamage_DH 的原版对照核对冷却从 3 降到 2，以及空法术不触发。在无技能目标上，
+原版对没有冷却状态或仅剩 1 层冷却的目标都留下零层登记。两局共 48 次出牌、14 次结束回合及两类候选通过。
+带技能目标的冷却归零与可用回调仍需原版对照。
+[`cooldown-on-damage.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/cooldown-on-damage.mt2f) ·
+[`cooldown-on-damage-no-prior-status.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/cooldown-on-damage-no-prior-status.mt2f)
+
 两个 2.3.1 原版移动遗物场景复用移动前月相掩码采集。升降层伤害场景实测敌军上移和下移
 各受 3 点伤害。Pyregel 场景实测敌军上移获得 2 层 Pyregel，并核对下移、友军和移动受阻对照。
 每份录像通过 22 个移动边界及 42 次出牌检查，脚本布置结束后另核对 20 次出牌、5 次结束回合和

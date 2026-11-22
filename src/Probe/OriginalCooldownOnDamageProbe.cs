@@ -127,6 +127,8 @@ namespace MonsterTrain2Poju.Probe
                 CardPlayedRelicEffectParams relicEffectParams, ref IEnumerator __result)
             {
                 if (!OriginalCooldownOnDamageScenario.Enabled || !OriginalCooldownOnDamageScenario.Prepared) return;
+                // This witness follows the configured carrier. Other cards are checked by the full play trace.
+                if (relicEffectParams?.cardState?.GetCardDataID() != OriginalCooldownOnDamageScenario.DamageCardId) return;
                 try { __result = Wrap(__result, Begin(__instance, relicEffectParams)); }
                 catch (System.Exception error) { FullBattleTrace.Active?.CaptureFailure(error); }
             }

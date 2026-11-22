@@ -33,7 +33,7 @@ internal static class RelicCardDamageStatusChecks
             "No damaged characters must leave the battle state unchanged.");
 
         var lowCooldownTrain = new TrainCombatState(
-            [new RoomCombatState(0, true, [Unit(4, CombatTeam.Player, cooldown: 1)], [], context)], [], 6, context);
+            [new RoomCombatState(0, true, [Unit(4, CombatTeam.Player, cooldown: 1, hasAbility: true)], [], context)], [], 6, context);
         TrainCombatResult lowCooldown = RelicCardDamageStatusModel.ApplyOne(lowCooldownTrain, 0, [4], 0, 0);
         Require(!lowCooldown.Supported && lowCooldown.State == null &&
             lowCooldown.UnsupportedReason!.Contains("ability-ready callbacks", StringComparison.Ordinal),
@@ -104,9 +104,9 @@ internal static class RelicCardDamageStatusChecks
         Console.WriteLine("COOLDOWN-ON-DAMAGE-NATIVE PASS: exact original payload, friendly Spell damage 3->2, empty-Spell control, callback and full-battle differential.");
     }
 
-    private static CombatUnit Unit(int id, CombatTeam team, bool isPyre = false, int cooldown = 3) => new(id,
+    private static CombatUnit Unit(int id, CombatTeam team, bool isPyre = false, int cooldown = 3, bool hasAbility = false) => new(id,
         isPyre ? "Pyre" : "CooldownWitness", team, 0, 30, 30, false, isPyre, false,
-        [new CombatStatus("cooldown", cooldown)], []);
+        [new CombatStatus("cooldown", cooldown)], [], ability: hasAbility ? new UnitAbilityState("cooldown-control", cooldown, 0) : null);
 
     private static CombatUnit UnitIn(TrainCombatState state, int id) =>
         state.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == id);

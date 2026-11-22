@@ -40,7 +40,8 @@ namespace MonsterTrain2Poju.Model
                 RoomCombatState room = current.Rooms.Single(item => item.RoomIndex == roomIndex);
                 CombatUnit? target = room.Units.FirstOrDefault(unit => unit.Id == targetId);
                 if (target?.Team != CombatTeam.Player || target.IsPyre == true) continue;
-                if ((target.Status("cooldown")?.Stacks ?? 0) <= 1)
+                // The native callback can record zero on a target without an ability.
+                if ((target.Status("cooldown")?.Stacks ?? 0) <= 1 && target.Ability?.HasAbility == true)
                     return Fail("Cooldown reaching zero and ability-ready callbacks are not calibrated.");
                 CombatStatus? cooldown = current.Context!.StatusRules.SingleOrDefault(status => status.Id == "cooldown");
                 if (cooldown == null) return Fail("Damage-triggered cooldown requires its native status definition.");
