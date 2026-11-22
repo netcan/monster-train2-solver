@@ -50,7 +50,7 @@ namespace MonsterTrain2Poju.Probe
         private readonly HashSet<string> unselectableMerchantOffers = new HashSet<string>();
         private readonly HashSet<string> unselectableStoryChoices = new HashSet<string>();
         private string? pendingMerchantOffer;
-        private (string Offer, string Asset, int Distance, Dictionary<string, int> Before)? pendingPreferredMerchant;
+        private (string Offer, string Asset, int Distance, int Gold, Dictionary<string, int> Before)? pendingPreferredMerchant;
         private bool preferredMerchantInstalled;
         private string? pendingStoryChoice;
         private DeckScreen? enteringDeck;
@@ -86,12 +86,12 @@ namespace MonsterTrain2Poju.Probe
             }
         }
 
-        private void Record(string kind, object data)
+        private void Record(string kind, object data, bool progress = true)
         {
             string json = JsonConvert.SerializeObject(new { index = eventIndex++, kind, data });
             File.AppendAllText(auditPath, json + Environment.NewLine);
             log.LogInfo("CAMPAIGN " + json);
-            lastProgress = Time.realtimeSinceStartup;
+            if (progress) lastProgress = Time.realtimeSinceStartup;
         }
 
         internal void Tick()
@@ -268,15 +268,22 @@ namespace MonsterTrain2Poju.Probe
                         asset = RewardAsset(x.GoodState.RewardData), rewardType = x.GoodState.RewardData.GetType().Name,
                         cost = x.GoodState.GetCost(Field<MerchantData>(x, "merchantData")),
                         x.Affordable, x.Purchasable, x.Claimed, x.GoodState.Unlocked }).ToList() });
-                if (pendingPreferredMerchant.HasValue)
-                {
-                    if (pendingMerchantOffer == null)
-                        throw new InvalidOperationException("The confirmed merchant choice did not add an authored upgrade to the deck.");
-                    return;
-                }
                 var available = visible.Where(x => x.Affordable && x.Purchasable && !x.Claimed && x.GoodState.Unlocked &&
                     !unselectableMerchantOffers.Contains(save.GetCurrentDistance() + ":" + x.GoodState.RewardData.GetReplayDataID()) &&
                     x is MerchantGoodDetailsUI);
+                if (pendingPreferredMerchant is { } pending)
+                {
+                    // Some merchant clicks are accepted before the native UI opens the purchase.
+                    // Keep the original deck baseline and retry only an uncharged, still-visible offer.
+                    if (pendingMerchantOffer != null && pending.Distance == save.GetCurrentDistance() && pending.Gold == save.GetGold())
+                    {
+                        MerchantGoodUIBase? retry = available.FirstOrDefault(good => good.GoodState.RewardData is EnhancerRewardData enhancer &&
+                            enhancer.GetReplayDataID() == pending.Offer && RewardAsset(enhancer) == pending.Asset);
+                        if (retry != null) Click(retry.SelectableUI as GameUISelectableButton, "preferred-merchant-upgrade-retry",
+                            new { offer = pending.Offer, gold = pending.Gold }, progress: false);
+                    }
+                    return;
+                }
                 MerchantGoodUIBase? preferred = skipPurchases || preferredMerchantInstalled || string.IsNullOrEmpty(requestedMerchantUpgrade) ? null :
                     available.FirstOrDefault(x => x.GoodState.RewardData is EnhancerRewardData enhancer &&
                         (string.Equals(RewardAsset(enhancer), requestedMerchantUpgrade, StringComparison.Ordinal) ||
@@ -290,15 +297,16 @@ namespace MonsterTrain2Poju.Probe
                         .Select(effect => effect.GetParamCardUpgradeData()?.GetID()).OfType<string>()
                         .Where(id => id.Length > 0).Distinct(StringComparer.Ordinal).ToDictionary(id => id, id => CountDeckUpgrade(save, id));
                     if (before?.Count == 0) throw new InvalidOperationException("The preferred merchant enhancer has no authored card upgrade IDs: " + RewardAsset(boughtReward));
+                    int gold = save.GetGold();
                     if (Click(buy.SelectableUI as GameUISelectableButton, "buy", new {
-                        gold = save.GetGold(), reward = offer, rewardType = boughtReward.GetType().Name }))
+                        gold, reward = offer, rewardType = boughtReward.GetType().Name }))
                     {
                         int distance = save.GetCurrentDistance();
                         pendingMerchantOffer = distance + ":" + offer;
                         if (before != null)
                         {
                             string asset = RewardAsset(boughtReward);
-                            pendingPreferredMerchant = (offer, asset, distance, before);
+                            pendingPreferredMerchant = (offer, asset, distance, gold, before);
                             Record("preferred-merchant-upgrade-selected", new { requested = requestedMerchantUpgrade, offer, asset, distance, before });
                         }
                     }
@@ -596,10 +604,10 @@ namespace MonsterTrain2Poju.Probe
             save.StartCoroutine(rooms.GetRoomUI().SetSelectedRoom(room));
         }
 
-        private bool Click(GameUISelectableButton? button, string kind, object? data = null)
+        private bool Click(GameUISelectableButton? button, string kind, object? data = null, bool progress = true)
         {
             if (button == null || !button.gameObject.activeInHierarchy || !button.CanBeActivated() || !ReplayManager.TryClickButton(button)) return false;
-            Record(kind, data ?? new { }); return true;
+            Record(kind, data ?? new { }, progress); return true;
         }
         private bool AcceptUpgrade(MerchantGoodUIBase good)
         {
