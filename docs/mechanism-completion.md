@@ -659,6 +659,10 @@ Minds of Their Own 命令装备单位击杀前排后，原版将余下敌人前�
 同场还核对了 Pyreshot 的薪火攻击。7 次出牌、5 次结束回合、16 条独立分支及两类候选通过，旧版两种法术和技能补位专项均通过。
 [原版指令攻击录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/spell-commanded-attack-centering.mt2f)
 
+原版 Kinhost Vessel 单独录到一次自然孵化。22 次出牌、7 次结束回合和 57 个房间阶段通过，
+两类候选均无未支持项。128 状态预算内的串并行搜索返回相同结果，三步计划复放一致。
+[原版 Kinhost Vessel 孵化录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/kinhost-vessel-hatch.mt2f)
+
 原版 First of Kin 和 Sacrificial Resurrection 的同场对照核对两张手牌被消耗、单位增攻及
 Draff 出生，Morel Mistress 提供排除对照。7 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`exhausted-first-of-kin.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/exhausted-first-of-kin.mt2f)
