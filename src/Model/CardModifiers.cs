@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace MonsterTrain2Poju.Model
 {
@@ -414,6 +415,17 @@ namespace MonsterTrain2Poju.Model
     public static class CardModifierModel
     {
         internal const string NonPlayableCostInteraction = "Nonplayable card cost type";
+
+        // Each room asks about the same immutable card instances. Keep only
+        // the card-local answer here; the caller still handles room-specific guards.
+        private static readonly ConditionalWeakTable<CardInstanceState, CardValidation> validations = new();
+
+        private sealed class CardValidation
+        {
+            internal readonly string? UnsupportedReason;
+            internal CardValidation(string? unsupportedReason) { UnsupportedReason = unsupportedReason; }
+        }
+
         public static IEnumerable<string> UpgradeInteractions(CardUpgradeModifier upgrade) =>
             (upgrade.Lifecycle?.ReplacedAssets.Count > 0
                 ? upgrade.ExternalInteractions.Where(interaction => interaction != "Upgrade replacements")
@@ -430,7 +442,10 @@ namespace MonsterTrain2Poju.Model
                 trigger.Effects.Count != trigger.Actions.Count ? new[] { "Card upgrade trigger effects are not fully captured" } :
                 trigger.ExternalInteractions));
 
-        internal static string? UnsupportedReason(CardInstanceState instance)
+        internal static string? UnsupportedReason(CardInstanceState instance) =>
+            validations.GetValue(instance, static card => new CardValidation(ValidateCard(card))).UnsupportedReason;
+
+        private static string? ValidateCard(CardInstanceState instance)
         {
             string? juiceError = CardJuiceModel.Validate(instance);
             if (juiceError != null) return juiceError;
