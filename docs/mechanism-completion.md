@@ -330,8 +330,13 @@ Ember Forge 与 Wildwood Custodian 使用原版单位定义完成首战对照。
 
 十单位批次覆盖原版出生、锻造、回合余烬、弃牌回收与单位技能候选。14 次出牌、5 次结束回合、
 16 条独立分支和候选检查通过。Pyreblooded 技能候选使用当前楼层的实机单位状态，
-这一场技能所在层的 Pyregel 为零，双方带层数的正向实机对照仍需独立采样。
+这一场技能所在层的 Pyregel 为零。
 [`birth-resources-and-recovery.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/birth-resources-and-recovery.mt2f)
+
+Pyreblooded 的后续实机对照在同层记录友军 10 层、两名敌军各 4 层 Pyregel。原版技能
+消耗 0 余烬并进入 3 层冷却，自身攻击由 5 提升至 23。8 次出牌或技能、5 次结束回合、
+16 条独立分支和候选检查通过。专项也复放零层、缺少楼层快照和跨楼层的对照。
+[`pyreblooded-room-pyregel.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/pyreblooded-room-pyregel.mt2f)
 
 部署被动遗物批次保留六件原版遗物取得顺序与八组牌的原版结算、回调返回值和统计。
 升级 Torch 只收到升级数量效果的 +3 伤害，两个种族效果分别命中 Royal Whelp 与 Greed Dragon。
