@@ -343,6 +343,10 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 2 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`offering-token.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/offering-token.mt2f)
 
+原版 Starter Frostbite Discard 零费对敌方前排施加 8 层霜寒，并从合格手牌中随机弃一张。
+2 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
+[`starter-frostbite-discard.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/starter-frostbite-discard.mt2f)
+
 七张原版法术与房间牌同场记录 Funguy 的出生与 Horde 增长、Morsel 生成及炼化选牌。
 11 次出牌、5 次结束回合、16 条独立分支和两类候选检查通过。
 [`horde-growth-and-feeding.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/horde-growth-and-feeding.mt2f)
