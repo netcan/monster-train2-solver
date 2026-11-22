@@ -158,13 +158,12 @@ namespace MonsterTrain2Poju.Model
                 train = after.State!; if (Terminal(after.Outcome)) outcome = after.Outcome;
             }
             if (source.CanonicalPhysicalReferences && train.Context?.SpawnPoints != null &&
-                train.Context.IsolatedBattlePreview != true &&
                 effects.Any(effect => effect.Type is "AttackWithUnit" or "AttackTargetsWithSelfUnit"))
             {
                 // The native RoomUI death callback retains control of room
                 // visuals for an ability and centers both teams. Stable player
-                // decisions observe that callback after the commanded attack;
-                // raw effect/preview frames retain their separate slot timing.
+                // decisions observe that callback even when preview RNG is isolated.
+                // Preview rooms retain their separate slot timing.
                 foreach (RoomCombatState before in source.Spawn.Train.Rooms)
                 {
                     RoomCombatState room = train.Rooms.Single(item => item.RoomIndex == before.RoomIndex);
