@@ -26,6 +26,32 @@ namespace MonsterTrain2Poju.Probe
         internal static readonly List<Test> Tests = new List<Test>();
         internal static readonly List<Record> Records = new List<Record>();
         private static Record? current;
+#if DEVELOPMENT_PROBE
+        private static (CardState Source, int RecipientId)? isolatedChoice;
+        private static Record? isolatedRecord;
+
+        internal static void ArmIsolatedChoice(CardState source, PlayCardAction action)
+        {
+            if (source.GetCardDataID() != DataId || OriginalSupportSpellsScenario.IsolatedIds?.Contains(DataId) != true)
+                return;
+            if (isolatedChoice.HasValue || action.RecursionSelections is not [{ EffectIndex: 0, CardInstanceIds: [var recipient] }] ||
+                recipient == action.CardInstanceId || source.GetEffectStates() is not [{ } effect] ||
+                effect.GetCardEffect() is not CardEffectDuplicateCardInHand)
+                throw new InvalidOperationException("Isolated Mass Production requires its original hand duplication and one recorded recipient.");
+            isolatedChoice = (source, recipient);
+        }
+
+        internal static void CompleteIsolatedChoice()
+        {
+            if (isolatedChoice is not { } choice) return;
+            if (isolatedRecord is not { Completed: true } row || row.SelectedId != choice.RecipientId ||
+                row.Before.Cards.Hand.FirstOrDefault(card => card.InstanceId == choice.RecipientId) is not CardToken selected ||
+                row.After?.Cards.Hand.Any(card => card.InstanceId == row.Before.NextCardId && card.DataId == selected.DataId) != true)
+                throw new InvalidOperationException("Isolated Mass Production did not complete its original hand choice and copy.");
+            isolatedRecord = null;
+            isolatedChoice = null;
+        }
+#endif
         internal sealed class Test
         {
             public int SourceId { get; set; }
@@ -112,15 +138,22 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(CardEffectState cardEffectState, ref IEnumerator __result)
             {
-                if (Enabled && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
-                    __result = Observe(__result, cardEffectState);
+                if (FullBattleTrace.Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
+                if (Enabled) __result = Observe(__result, cardEffectState);
+#if DEVELOPMENT_PROBE
+                else if (isolatedChoice is { } choice && ReferenceEquals(cardEffectState.GetParentCardState(), choice.Source))
+                    __result = Observe(__result, cardEffectState, isolated: true);
+#endif
             }
         }
-        private static IEnumerator Observe(IEnumerator native, CardEffectState state)
+        private static IEnumerator Observe(IEnumerator native, CardEffectState state, bool isolated = false)
         {
             FullBattleTrace trace = FullBattleTrace.Active!;
             var row = new Record { SourceId = trace.CardId(state.GetParentCardState()), Before = trace.CaptureContext(),
                 Effect = BattleActionProbe.DescribeTriggerEffect(state.GetSourceCardEffectData(), new List<string>()) };
+#if DEVELOPMENT_PROBE
+            if (isolated) isolatedRecord = row;
+#endif
             Records.Add(row); current = row;
             try { while (native.MoveNext()) yield return native.Current; }
             finally { current = null; }
@@ -135,15 +168,26 @@ namespace MonsterTrain2Poju.Probe
         {
             private static bool Prefix(CardManager __instance, HandSelectionUI.Params parameters, ref IEnumerator __result)
             {
-                if (!Enabled || current == null) return true;
-                __result = Select(__instance, parameters, current); return false;
+                if (current == null) return true;
+#if DEVELOPMENT_PROBE
+                if (ReferenceEquals(current, isolatedRecord) && isolatedChoice is { } choice)
+                {
+                    if (current.SelectedId != 0 || parameters.selectionHandState != CardUI.CardUIState.HandDuplicateCard)
+                        throw new InvalidOperationException("Unexpected native hand selection while recording Mass Production.");
+                    __result = Select(__instance, parameters, current, choice.RecipientId);
+                    return false;
+                }
+#endif
+                if (!Enabled) return true;
+                __result = Select(__instance, parameters, current, RecipientCardId);
+                return false;
             }
         }
-        private static IEnumerator Select(CardManager cards, HandSelectionUI.Params parameters, Record row)
+        private static IEnumerator Select(CardManager cards, HandSelectionUI.Params parameters, Record row, int recipientId)
         {
-            CardState card = cards.GetHand().Single(item => FullBattleTrace.Active!.CardId(item) == RecipientCardId);
+            CardState card = cards.GetHand().Single(item => FullBattleTrace.Active!.CardId(item) == recipientId);
             if (parameters.filterCallback(card)) throw new InvalidOperationException("Original duplication rejected its selected card.");
-            row.SelectedId = RecipientCardId;
+            row.SelectedId = recipientId;
             yield return parameters.cardChosenCallback(card, cards);
         }
         private static void Set(object target, string field, object value) =>

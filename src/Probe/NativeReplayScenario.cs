@@ -917,6 +917,9 @@ namespace MonsterTrain2Poju.Probe
                 if (Ready(managers, save, combat, cards))
                 {
                     PreviewSchedulingProbe.Observe("PlayReady");
+#if DEVELOPMENT_PROBE
+                    CardDuplicateScenario.CompleteIsolatedChoice();
+#endif
                     if (fullBattle) FullBattleTrace.Active?.CompleteCardPlay();
 #if DEVELOPMENT_PROBE
                     if (fullBattle && OriginalSupportSpellsScenario.ObserveHallGraftedBirth &&
@@ -4386,6 +4389,9 @@ namespace MonsterTrain2Poju.Probe
             int selectedAfterTest = managers.GetRoomManager()!.GetSelectedRoom();
             FullBattleTrace.Active!.BeginCardPlay(action, scenarioAction: scenarioPrelude);
             int selectedAfterCapture = managers.GetRoomManager()!.GetSelectedRoom();
+#if DEVELOPMENT_PROBE
+            CardDuplicateScenario.ArmIsolatedChoice(cards.GetHand()[index], action);
+#endif
             if (!cards.PlayCard(index, drop, ref error))
             {
                 CardState rejected = cards.GetHand()[index];
