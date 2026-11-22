@@ -66,6 +66,9 @@
 胜局归档为 `unlocked-covenant0-ring4-healing-route-victory.mt2f`。同一进程继续执行原版战役结算并保存
 第 5 环战前档 `.probe-runs/full-battle-units-spells-and-junk-20261122-090359-6cf37987-before-ring5`，
 主存档 SHA256 为 `3d5b46defe3abd0306cdd13f7db89b944b1310c731fb5b9a55f74747ef5fb108`。
+从 41 点薪火生命开始的第 5 环已匹配前 14 个原版输入。第 15 步使用上一回合的 Witchweave 副本，
+原版结算与预测在牌堆和消耗计数上首次出现差异。原版后继记录为
+`mechanics/copied-card-consume-routing/native-partial.mt2f`。
 
 第 5 环的首次整场对照从 10 点薪火生命开始，原版判负且四项采集计数为零。另一条部署路线验证了
 StealthWaxers 的出生条件与月相手牌更新可同时生效。两次部署与结束回合的后继在原版完全一致，
