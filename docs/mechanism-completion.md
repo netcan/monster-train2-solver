@@ -83,9 +83,11 @@ dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-status-magn
 
 改用会开启月相的原版 Selene 后，四件遗物的加成在同一场战斗仍生效。重新采集
 并严格复放五次出牌和一次普通结束回合，完整后继及随机流一致。Selene 的月相
-掩码为 `5→6→5`，Sweep 随满月获得和移除。部署结束的列车状态检查另有一次差异，
-该阶段仍在定位。已通过的普通回合证据见
+掩码为 `5→6→5`，Sweep 随满月获得和移除。部署结束的完整状态和随机流也通过，
+且上移阶段逐项一致。战斗中途记录仅在阶段字段及其四个房间副本看到 `Combat` 与
+`MonsterTurnQueueClear` 的采样差异。普通回合和部署分开核对。
 [`native-moon-verified.mt2f`](../tests/compatibility/game-2.3.1/mechanics/status-magnitude/native-moon-verified.mt2f)。
+[`native-moon-deployment.mt2f`](../tests/compatibility/game-2.3.1/mechanics/status-magnitude/native-moon-deployment.mt2f)
 
 五张原版房间状态牌共用一次约 37 秒的原版采样。Lava Flow、Gooey Flask、Echo Snare、
 Jar of Frost 和 Magic Juice 合计支付 2 点余烬，分别在同房两名原版敌人身上触发正向
