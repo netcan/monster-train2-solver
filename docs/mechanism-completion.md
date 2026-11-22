@@ -271,6 +271,10 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 同层组合仍需实机对照。
 [`horde-growth-and-feeding.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/horde-growth-and-feeding.mt2f)
 
+八牌补采记录 Mass Production 复制原版 Morsel Miner，随后 Metallurgy 按指定选择消耗复制品。
+12 次出牌、5 次结束回合、16 条独立分支和两类候选检查通过。
+[`native-horde-and-hand-choices.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/native-horde-and-hand-choices.mt2f)
+
 另一组原版法术与房间牌覆盖 X 费回能、护甲、单位技能替换和战后治疗。原版 GainXEnergy 支付
 11 余烬并返还 22。13 次出牌、5 次结束回合、16 条独立分支和候选检查通过。Enchanted Chamber
 的伤害、治疗、Attuned 和跨层清理使用独立对照。
