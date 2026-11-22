@@ -302,6 +302,10 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 16 条独立分支和两类候选通过。
 [`solo-unit-upgrades.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/solo-unit-upgrades.mt2f)
 
+原版回合开始传播遗物实测四次全楼层回调、16 次状态层数增加 1，以及 21 次排除。
+空层、双方单位、薪火及随机流均有对照。2 次出牌、5 次结束回合及两类候选通过。
+[`start-turn-propagation.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/start-turn-propagation.mt2f)
+
 三件原版单位资源遗物通过 585 条回调上下文核对。两次友军死亡各提供 5 金币，墓碑死亡提供
 5 余烬，同回合首次装备提供 1 余烬。22 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
 [`death-and-first-equipment.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-relics/death-and-first-equipment.mt2f)
