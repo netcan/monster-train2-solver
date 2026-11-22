@@ -48,11 +48,14 @@ namespace MonsterTrain2Poju.Probe
         private static BattleTurnState? before;
         private static PlayCardAction? action;
         private static BattleTurnState? exchange;
+        private static int[]? continuousCardIds;
         private static BattleTurnState? deploymentEndTurn;
 
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or MoonName or RoomSpellsName;
         internal static bool Moon => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == MoonName;
         internal static bool DirectRoomSpells => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == RoomSpellsName;
+        internal static bool Continuous => DirectRoomSpells && Environment.GetEnvironmentVariable("MT2_PROBE_ROOM_STATUS_FULL_BATTLE") == "1";
+        internal static bool ContinuousPrepared => continuousCardIds != null;
         private static int DeploymentCount => DirectRoomSpells ? 1 : 2;
         internal static bool Acquired => definitions != null;
         internal static bool ObservingExchange { get; private set; }
@@ -99,6 +102,51 @@ namespace MonsterTrain2Poju.Probe
                 return card;
             }).ToArray();
             foreach (var owner in originalOwners) save.AddRelic(owner);
+        }
+
+        internal static void PrepareContinuous(AllGameManagers managers, ManualLogSource log)
+        {
+            var cards = managers.GetCardManager();
+            var combat = managers.GetCombatManager();
+            if (!Continuous || definitions == null || !combat.IsPlacementPhase || combat.GetTurnCount() != 0 ||
+                cards.GetDiscardPile().Count != 0 || managers.GetPlayerManager().GetHasMoonPhaseCardEffect())
+                throw new InvalidOperationException("Expected original room-status deployment before recording any inputs.");
+
+            var controlled = definitions.Skip(DeploymentCount).Select(definition =>
+                cards.AddNewCard(definition, CardPile.DeckPileTop, false, false, animate: false) ??
+                throw new InvalidOperationException("Original spell failed to enter draw pile: " + definition.name)).ToArray();
+            List<CardState> draw = cards.GetDrawPile();
+            CardState[] stock = draw.Where(card => !controlled.Contains(card)).ToArray();
+            CardState[] opening = stock.Concat(controlled).ToArray();
+            if (opening.Length != draw.Count) throw new InvalidOperationException("Original spell deck preparation lost an instance.");
+
+            uint[] words = RngCalibration.Words(RandomManager.GetState(RngId.CardDraw));
+            var rng = new UnityRng(words[0], words[1], words[2], words[3]);
+            var permutation = rng.Shuffle(Enumerable.Range(0, draw.Count).ToArray()).Items;
+            // Stage the normal draw of five spells while preserving the stock draw order and native RNG stream.
+            for (int index = 0; index < opening.Length; index++) draw[permutation[index]] = opening[index];
+            continuousCardIds = controlled.Select(FullBattleTrace.Active!.CardId).ToArray();
+            log.LogInfo("ORIGINAL-ROOM-STATUS staged five original spells in draw before recording deployment.");
+        }
+
+        internal static PlayCardAction? ChooseContinuous(BattleTurnState state, PlayCardAction? fallback)
+        {
+            CombatContext context = state.Spawn.Train.Context!;
+            if (state.Spawn.Turn == 0 && fallback == null && context.Cards.Hand.Count > 0)
+                throw new InvalidOperationException("Original room status deployment must play the stock opening hand before shuffle.");
+            if (state.Spawn.Turn != 1) return fallback;
+
+            foreach (int id in continuousCardIds!)
+            {
+                if (context.Statistics!.Value(id, "TimesPlayed", "ThisBattle") != 0) continue;
+                if (!context.Cards.Hand.Any(card => card.InstanceId == id))
+                    throw new InvalidOperationException("Original opening shuffle did not draw all five room status spells.");
+                var action = new PlayCardAction(id, 0);
+                BattleActionResult result = BattleActionModel.PlayCard(state, action);
+                if (!result.Supported) throw new InvalidOperationException("Original room status spell could not be played: " + result.Reason);
+                return action;
+            }
+            return fallback;
         }
 
         internal static bool Tick(AllGameManagers managers, ManualLogSource log)

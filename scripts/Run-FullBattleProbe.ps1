@@ -636,6 +636,7 @@ param(
     [switch] $OriginalStatusMagnitudeWitness,
     [switch] $OriginalStatusMagnitudeMoonWitness,
     [switch] $OriginalRoomStatusSpells,
+    [switch] $OriginalRoomStatusSpellsFullBattle,
     [switch] $OriginalLifecycleRelicBatch,
     [switch] $OriginalDecayRelicBatch,
     [switch] $OriginalResourceRelicBatch,
@@ -1533,9 +1534,12 @@ if ($AllUnitsMultistrikeMutator) { $BattleRelicUpgrades = $true; $BranchCardMask
 if ($OriginalStingRelicBatch -or $OriginalDeployableRelic) { $BattleRelicUpgrades = $true; $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalStatusRelicBatch -or $OriginalStatusRelicBatchBurnout) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMagnitudeRelicBatch) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalRoomStatusSpellsFullBattle -and -not $OriginalRoomStatusSpells) {
+    throw 'OriginalRoomStatusSpellsFullBattle requires OriginalRoomStatusSpells.'
+}
 if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells) {
     $allowed = @('OriginalStatusMagnitudeWitness', 'OriginalStatusMagnitudeMoonWitness', 'OriginalRoomStatusSpells', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
-        'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+        'OriginalRoomStatusSpellsFullBattle', 'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     $modes = @($OriginalStatusMagnitudeWitness, $OriginalStatusMagnitudeMoonWitness, $OriginalRoomStatusSpells) | Where-Object { $_ }
     if (!$BinaryCapture -or @($modes).Count -ne 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
@@ -2894,6 +2898,7 @@ if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or 
     } elseif ($OriginalStatusMagnitudeMoonWitness) {
         'original-status-magnitude-moon-witness'
     } else { 'original-status-magnitude-witness' })
+    if ($OriginalRoomStatusSpellsFullBattle) { $environment['MT2_PROBE_ROOM_STATUS_FULL_BATTLE'] = '1' }
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
@@ -3574,7 +3579,7 @@ if ($OriginalAffordableNonPlayable) {
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true; Trace=$capturePath } | ConvertTo-Json
     return
 }
-if ($OriginalRoomStatusSpells) {
+if ($OriginalRoomStatusSpells -and -not $OriginalRoomStatusSpellsFullBattle) {
     $capturePath = Join-Path $profile 'room-status-spells.mt2f'
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath) -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original room status spells captured' -Quiet) -or
@@ -4027,6 +4032,19 @@ if ($DamageOverflow -and ($trace.ModifierScenario -ne 'damage-overflow' -or
 }
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
+if ($OriginalRoomStatusSpellsFullBattle) {
+    $opening = @($trace.Actions | Where-Object { $_.Before.Spawn.Turn -eq 1 } | ForEach-Object {
+        $action = $_.Action
+        $_.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $action.CardInstanceId | ForEach-Object DataId
+    })
+    $expected = @('479ceb1b-fc8c-420f-8fa0-17683cee4511', '47df0371-7bd9-4bc2-b8e1-de61cc0060c7',
+        '75ce1442-757b-4e9f-826d-8325f3dc7d9e', '768a53f0-2743-4298-82c3-8541cbecf935',
+        '9ea70171-8afd-4fab-ad54-7ff5c8b478b8')
+    if ($trace.ModifierScenario -cne 'original-room-status-spells' -or
+        ($opening -join ',') -cne ($expected -join ',') -or @($trace.Turns | Where-Object { $_.Before.Spawn.Turn -eq 0 }).Count -ne 1) {
+        throw "Original room status battle must record deployment and all five first-turn spells. Inspect $unityLog"
+    }
+}
 $nextInputProfile = $null
 if ($ContinueToNextRing) {
     if ((Get-FileHash -LiteralPath $checkpointSave -Algorithm SHA256).Hash -cne $inputSaveHash -or

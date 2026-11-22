@@ -965,10 +965,18 @@ namespace MonsterTrain2Poju.Probe
             }
             if (fullBattle && OriginalStatusMagnitudeWitness.Enabled)
             {
-                if (OriginalStatusMagnitudeWitness.Tick(managers, log)) AdvanceTurn(combat!, record: false);
-                if (OriginalStatusMagnitudeWitness.Completed) Finish(true, OriginalStatusMagnitudeWitness.DirectRoomSpells
-                    ? "Original room status spells captured." : "Original status magnitude witness captured.");
-                return;
+                if (!OriginalStatusMagnitudeWitness.Continuous)
+                {
+                    if (OriginalStatusMagnitudeWitness.Tick(managers, log)) AdvanceTurn(combat!, record: false);
+                    if (OriginalStatusMagnitudeWitness.Completed) Finish(true, OriginalStatusMagnitudeWitness.DirectRoomSpells
+                        ? "Original room status spells captured." : "Original status magnitude witness captured.");
+                    return;
+                }
+                if (!OriginalStatusMagnitudeWitness.ContinuousPrepared)
+                {
+                    OriginalStatusMagnitudeWitness.PrepareContinuous(managers, log);
+                    return;
+                }
             }
 #endif
             if (fullBattle && OriginalAffordableNonPlayableScenario.Enabled)
@@ -3672,6 +3680,10 @@ namespace MonsterTrain2Poju.Probe
                 }
                 if (OriginalBigDamageScenario.Enabled)
                     pendingPlay = OriginalBigDamageScenario.Choose(decision, pendingPlay, log);
+#if DEVELOPMENT_PROBE
+                if (OriginalStatusMagnitudeWitness.Continuous)
+                    pendingPlay = OriginalStatusMagnitudeWitness.ChooseContinuous(decision, pendingPlay);
+#endif
                 if (OriginalAcceleratedIncubationScenario.Enabled)
                     pendingPlay = OriginalAcceleratedIncubationScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalTomeOfContractsScenario.Enabled)
