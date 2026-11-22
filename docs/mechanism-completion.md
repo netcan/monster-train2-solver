@@ -408,6 +408,11 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 其中包括一次六倍效果和一次零费用结算。6 次出牌、5 次结束回合、16 条独立分支及两类候选通过。
 [`shroud-spike-feeding.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/shroud-spike-feeding.mt2f)
 
+原版 Channelsong 与 Gifts for a Guard 同场核对按类型抽牌、升级调度和拒绝条件。
+两张法术及一张原来没有 Consume 的受益牌均实际打出并进入消耗堆。专项核对 57 次抽牌调用、
+32 次升级调度、满手和空池。23 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
+[`typed-draw-and-consume.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/typed-draw-and-consume.mt2f)
+
 敌方状态批次核对十一张原版卡牌，包括单体、整层及整塔目标、Pyregel 与 Rage 的翻倍、
 保证触发的随机流和腐化消耗。18 次出牌、5 次结束回合和候选检查通过。
 [`hostile-status-order.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-hostile-statuses/hostile-status-order.mt2f)
