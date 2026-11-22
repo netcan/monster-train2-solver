@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using BepInEx.Logging;
 using MonsterTrain2Poju.Capture;
+using MonsterTrain2Poju.Model;
+using Newtonsoft.Json.Linq;
 
 namespace MonsterTrain2Poju.Probe
 {
@@ -16,16 +18,18 @@ namespace MonsterTrain2Poju.Probe
         private const string NoUpgrade = nameof(RelicEffectModifyCardCostIfNoUpgrades);
         private const string Attack = nameof(RelicEffectModifyCardAttack);
         private const string Health = nameof(RelicEffectModifyCardHealth);
+        private const string WhelpOwnerId = "72706202-526e-4377-9745-7df40a26ba7d";
+        private const string TorchId = "f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b";
         private static readonly (string Key, string Id, string[] Effects)[] Owners =
         {
             ("CheaperBlightScourge", "a19cac7c-b2e0-42bd-bc1e-d180e17a1c15", new[] { TypeCost, TypeCost }),
             ("ReduceCostUnitIfNoUpgrade", "f03c7664-0485-4bcf-8bb9-f76321e090c3", new[] { NoUpgrade }),
-            ("WhelpDragonAttack_DH", "72706202-526e-4377-9745-7df40a26ba7d", new[] { Attack, Attack }),
+            ("WhelpDragonAttack_DH", WhelpOwnerId, new[] { Attack, Attack }),
             ("GiveSpellStatsForUpgrades_DH", "4200307a-616d-4cbb-a54e-527c5dc0f492", new[] { Attack }),
             ("GiveUnitStatsForUpgrades_DH", "fc1f6104-b3c1-4714-ac0f-9c76a6fb1a77", new[] { Health, Attack }),
             ("MoreOrLessArtifactsRelic", "79122f7a-6895-443a-830c-2db23027776c", new[] { Attack, Attack })
         };
-        internal static string[] OwnerIds { get; } = Owners.Select(owner => owner.Id).ToArray();
+        internal static string[] OwnerIds { get; } = Owners.Select(owner => owner.Id).Where(id => id != WhelpOwnerId).ToArray();
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool CaptureReady { get; private set; }
 
@@ -47,8 +51,10 @@ namespace MonsterTrain2Poju.Probe
             RelicManager relics = managers.GetRelicManager();
             FullBattleTrace trace = FullBattleTrace.Active!;
             var cases = new List<object>();
+            var subtypeCases = new List<object>();
+            string[] expectedOwners = OwnerIds;
 
-            void Check(string name, string id, bool upgraded, params (int Owner, int Effect, bool Returned)[] expected)
+            (string? UpgradeId, RelicCardModifierProbe.Record Witness) Observe(string name, string id, bool upgraded)
             {
                 CardData definition = all.FindCardData(id);
                 if (definition == null || definition.GetAssetKey() != name)
@@ -73,19 +79,27 @@ namespace MonsterTrain2Poju.Probe
                 try { relics.ApplyCardStateModifiers(card); }
                 finally { CaptureReady = false; }
                 var record = RelicCardModifierProbe.Records.Skip(index).Single();
-                if (trace.CaptureFailures != 0 || record.Difference != null || record.Actual == null || record.ContextAfter == null ||
-                    !record.Relics.Where(owner => OwnerIds.Contains(owner.DataId)).Select(owner => owner.DataId).SequenceEqual(OwnerIds))
+                if (trace.CaptureFailures != 0 || record.Actual == null || record.ContextAfter == null ||
+                    !record.Relics.Where(owner => Owners.Any(item => item.Id == owner.DataId)).Select(owner => owner.DataId).SequenceEqual(expectedOwners))
+                    throw new InvalidOperationException("Incomplete native passive relic observation for " + name);
+                return (upgradeId, record);
+            }
+
+            string? Check(List<object> output, string name, string id, bool upgraded, params (int Owner, int Effect, bool Returned)[] expected)
+            {
+                var (upgradeId, record) = Observe(name, id, upgraded);
+                if (record.Difference != null)
                     throw new InvalidOperationException("Original passive relic modifiers differ for " + name + ": " + record.Difference);
 
                 foreach (var (owner, effect, returned) in expected)
                 {
-                    var dispatch = record.Dispatches.Single(item => record.Relics[item.RelicIndex].DataId == OwnerIds[owner] && item.EffectIndex == effect);
+                    var dispatch = record.Dispatches.Single(item => record.Relics[item.RelicIndex].DataId == Owners[owner].Id && item.EffectIndex == effect);
                     if (dispatch.Returned != returned)
                         throw new InvalidOperationException("Unexpected native modifier callback for " + name + "/" + Owners[owner].Key);
                     if (owner == 1)
                     {
                         // An upgraded Monster still returns true from ApplyCardStateModifiers.
-                        var discounts = record.Actual.Temporary.Upgrades.Where(item => item.DataId == NoUpgrade).ToArray();
+                        var discounts = record.Actual!.Temporary.Upgrades.Where(item => item.DataId == NoUpgrade).ToArray();
                         bool validDiscount = upgraded ? discounts.Length == 0 :
                             discounts is [{ Unique: true, Stats: { Cost: -1, XCost: 1 }, MaskMetadata: { HasIcon: false } }];
                         bool originalSlot = record.Before.Permanent.Upgrades.Any(item => item.DataId == upgradeId &&
@@ -95,26 +109,45 @@ namespace MonsterTrain2Poju.Probe
                             throw new InvalidOperationException("Unexpected native no-upgrade discount for " + name + " (upgraded=" + upgraded + ").");
                     }
                 }
-                cases.Add(new { AssetKey = name, OriginalUpgradeId = upgradeId, Witness = record });
+                output.Add(new { AssetKey = name, OriginalUpgradeId = upgradeId, Witness = record });
+                return upgradeId;
             }
 
-            Check("SelfPurgeBlight", "21038774-c0a4-413c-ab7e-27e458228e5f", false, (0, 0, true), (0, 1, false));
-            Check("ScourgeT1", "62cc5532-5fa0-4e66-9fec-85be573af359", false, (0, 0, false), (0, 1, true));
-            Check("TrainStewardShield", "d14a50f3-728d-43e1-87f0-ef1b013f6678", false, (1, 0, true), (5, 0, true), (5, 1, true));
-            Check("TrainStewardShield", "d14a50f3-728d-43e1-87f0-ef1b013f6678", true, (1, 0, true), (4, 0, true), (4, 1, true));
-            Check("RoyalWhelp", "198fb647-d5fc-4fb4-912c-cb8e64789412", false, (2, 0, true), (2, 1, false));
-            Check("GreedDragon", "0060b286-4716-49e0-9714-3fd7811b9f72", false, (2, 0, false), (2, 1, true));
-            Check("StarterTorch", "f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b", true, (3, 0, true));
-            Check("DevilishDetails", "10f64bfb-81cd-4b7c-bf46-6fc1fa832008", true, (3, 0, false));
+            Check(cases, "SelfPurgeBlight", "21038774-c0a4-413c-ab7e-27e458228e5f", false, (0, 0, true), (0, 1, false));
+            Check(cases, "ScourgeT1", "62cc5532-5fa0-4e66-9fec-85be573af359", false, (0, 0, false), (0, 1, true));
+            Check(cases, "TrainStewardShield", "d14a50f3-728d-43e1-87f0-ef1b013f6678", false, (1, 0, true), (5, 0, true), (5, 1, true));
+            Check(cases, "TrainStewardShield", "d14a50f3-728d-43e1-87f0-ef1b013f6678", true, (1, 0, true), (4, 0, true), (4, 1, true));
+            string? initialTorchUpgradeId = Check(cases, "StarterTorch", TorchId, true, (3, 0, true));
+            Check(cases, "DevilishDetails", "10f64bfb-81cd-4b7c-bf46-6fc1fa832008", true, (3, 0, false));
+
+            CollectableRelicData whelpOwner = all.GetAllCollectableRelicData().Single(item => item.GetID() == WhelpOwnerId);
+            if (!MatchesOriginal(whelpOwner) || save.GetCollectedRelics().Any(item => item.GetRelicDataID() == WhelpOwnerId))
+                throw new InvalidOperationException("Unexpected original Whelp/Dragon relic before subtype observations.");
+            save.AddRelic(whelpOwner);
+            expectedOwners = OwnerIds.Append(WhelpOwnerId).ToArray();
+            Check(subtypeCases, "RoyalWhelp", "198fb647-d5fc-4fb4-912c-cb8e64789412", false, (2, 0, true), (2, 1, false));
+            Check(subtypeCases, "GreedDragon", "0060b286-4716-49e0-9714-3fd7811b9f72", false, (2, 0, false), (2, 1, true));
+
+            var (torchUpgradeId, torch) = Observe("StarterTorch", TorchId, upgraded: true);
+            var predicted = RelicCardModifierModel.Apply(torch.Before, torch.Relics, torch.ResetTemporary, torch.ContextBefore);
+            if (torchUpgradeId != initialTorchUpgradeId || !predicted.Supported || predicted.Card == null)
+                throw new InvalidOperationException("Unable to compare the native StarterTorch cross-card observation.");
+            string? crossCardDifference = UnitPlayModelProbe.FirstDifference(JToken.FromObject(predicted.Card), JToken.FromObject(torch.Actual!), "$.Card");
+            if (crossCardDifference != "$.Card.Temporary.Offsets.Damage")
+                throw new InvalidOperationException("Unexpected StarterTorch cross-card result: " + (crossCardDifference ?? "matched"));
 
             using var document = NativeFixtureCapture.Capture(new
             {
-                Schema = 1, Boundary, GameVersion = UnityEngine.Application.version,
-                GameModuleMvid = typeof(CardState).Module.ModuleVersionId, OwnerIds, Cases = cases
+                Schema = 2, Boundary, GameVersion = UnityEngine.Application.version,
+                GameModuleMvid = typeof(CardState).Module.ModuleVersionId, OwnerIds, Cases = cases, SubtypeOwnerId = WhelpOwnerId,
+                SubtypeCases = subtypeCases, UnsupportedCrossCard = new
+                {
+                    AssetKey = "StarterTorch", OriginalUpgradeId = torchUpgradeId, Witness = torch, PredictedCard = predicted.Card, Difference = crossCardDifference
+                }
             });
             using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "opening-passive-relics.mt2f"));
             document.Write(stream);
-            log.LogInfo("ORIGINAL-OPENING-PASSIVE-RELICS six ordered owners, eight native card modifier observations.");
+            log.LogInfo("ORIGINAL-OPENING-PASSIVE-RELICS five ordered owners, two exact Whelp/Dragon subtype witnesses; unsupported StarterTorch cross-card difference " + crossCardDifference);
         }
     }
 }

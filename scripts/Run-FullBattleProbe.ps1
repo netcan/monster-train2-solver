@@ -3710,15 +3710,20 @@ if ($OriginalOpeningPassiveRelics) {
     $document = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
     try {
         $capture = $document.RootElement
-        if ($capture.GetProperty('Schema').GetInt32() -ne 1 -or
+        if ($capture.GetProperty('Schema').GetInt32() -ne 2 -or
             $capture.GetProperty('Boundary').GetString() -cne 'DeploymentOriginalPassiveRelicComparison' -or
             $capture.GetProperty('GameVersion').GetString() -cne '2.3.1' -or
             $capture.GetProperty('GameModuleMvid').GetString() -ne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
-            $capture.GetProperty('OwnerIds').GetArrayLength() -ne 6 -or
-            $capture.GetProperty('Cases').GetArrayLength() -ne 8) { throw 'Incomplete original opening passive relics capture.' }
+            $capture.GetProperty('OwnerIds').GetArrayLength() -ne 5 -or
+            $capture.GetProperty('Cases').GetArrayLength() -ne 6 -or
+            $capture.GetProperty('SubtypeOwnerId').GetString() -cne '72706202-526e-4377-9745-7df40a26ba7d' -or
+            $capture.GetProperty('SubtypeCases').GetArrayLength() -ne 2 -or
+            $capture.GetProperty('UnsupportedCrossCard').GetProperty('Difference').GetString() -cne '$.Card.Temporary.Offsets.Damage') {
+            throw 'Incomplete original opening passive relics capture.'
+        }
     } finally { $document.Dispose() }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
-        Owners=6; Cases=8; Trace=$capturePath } | ConvertTo-Json
+        Owners=5; Cases=6; SubtypeCases=2; UnsupportedCrossCard='StarterTorch'; Trace=$capturePath } | ConvertTo-Json
     return
 }
 if ($OriginalChangedTempUpgradeRelics) {
