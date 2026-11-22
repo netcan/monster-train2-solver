@@ -236,6 +236,10 @@ Imp Provisation 献祭 Welder Helper 并补 1 余烬，Impressive 献祭 Embered
 Moonbeam 以 X=5 付费，随后清除最后一名敌军。13 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`sacrifice-and-x-hits.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-scaled-damage/sacrifice-and-x-hits.mt2f)
 
+2.3.1 目录中 83 张卡牌的主伤害效果可按原版参数归为 64 组。已有 278 场通过整战登记后，
+每组至少有一张定义匹配的原版牌实际打出。`FixtureTools card-damage-audit` 输出参数哈希、
+出牌归档和动作索引。各效果的命中、失败和无目标条件由对应专项核对。
+
 两场 2.3.1 胜局共同覆盖十件原版触发遗物。第一场观察 Hymnist 死亡后的 Rage，
 第二场补采月相掩码并实际执行十次换层，观察 Angel 换层与 Whelp 攻击。两场共
 58 次出牌或技能、12 次结束回合，各通过 16 条独立分支。第二场另通过候选检查。
