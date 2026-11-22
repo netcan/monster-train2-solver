@@ -816,7 +816,8 @@ namespace MonsterTrain2Poju.Model
                     {
                         var copyFrame = new TrainCombatState(train.Rooms.Select(room => room.RoomIndex == target.RoomIndex ? spawnTriggers.State! :
                             room.WithContext(spawnTriggers.State!.Context)).ToArray(), train.Movement, train.EnemySlotsPerRoom, spawnTriggers.State!.Context);
-                        UnitCloneResult copiedBirth = RoomSpawnCopyModel.PaidBirth(copyFrame, spawned.Id, source.PlayRules.UnitCopyCatalog);
+                        UnitCloneResult copiedBirth = RoomSpawnCopyModel.PaidBirth(copyFrame, spawned.Id,
+                            source.PlayRules.UnitCopyCatalog, paidGraftSource: true);
                         if (!copiedBirth.Supported) return Unsupported(copiedBirth.UnsupportedReason!);
                         train = copiedBirth.State!;
                         spawnTriggers = new RoomCombatResult(train.Rooms.Single(room => room.RoomIndex == target.RoomIndex),

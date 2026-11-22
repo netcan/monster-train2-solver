@@ -137,10 +137,12 @@ namespace MonsterTrain2Poju.Model
             SpawnPointReference? location, bool cardless, UnitCloneRule? rule)
             => ApplyCore(source, sourceId, roomIndex, spawnMode, location, cardless, rule, null);
         internal static UnitCloneResult ApplyWithPending(TrainCombatState source, int sourceId, int roomIndex,
-            SpawnPointReference? location, UnitCloneRule? rule, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> prior)
-            => ApplyCore(source, sourceId, roomIndex, "SelectedSlot", location, true, rule, prior);
+            SpawnPointReference? location, UnitCloneRule? rule, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger> prior,
+            bool allowHallGraft = false)
+            => ApplyCore(source, sourceId, roomIndex, "SelectedSlot", location, true, rule, prior, allowHallGraft);
         private static UnitCloneResult ApplyCore(TrainCombatState source, int sourceId, int roomIndex, string spawnMode,
-            SpawnPointReference? location, bool cardless, UnitCloneRule? rule, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? prior)
+            SpawnPointReference? location, bool cardless, UnitCloneRule? rule, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>? prior,
+            bool allowHallGraft = false)
         {
             TrainCombatState state = source; var events = new List<CombatEvent>();
             var boundaries = new List<UnitCloneBoundary>(); var pending = (prior ?? Array.Empty<RoomCombatModel.QueuedCharacterTrigger>()).ToList();
@@ -172,6 +174,17 @@ namespace MonsterTrain2Poju.Model
                 position = old.Index + 1;
             }
             else if (spawnMode == "SelectedSlot" && location != null) position = location.Index;
+            UnitGraftRule? hallGraft = allowHallGraft && old != null && position == old.Index + 1 &&
+                state.Context.SpawnPoints.FirstEmpty(roomIndex, CombatTeam.Player) >= 0
+                ? SupportedHallGraft(destination, original, rule) : null;
+            int reservedGraftId = 0;
+            if (hallGraft != null)
+            {
+                // The settled trace sees the owned graft before the detached spawner.
+                // Reserve that ID while creating the spawner and unit in native order.
+                reservedGraftId = state.Context.NextCardId;
+                state = CardSpellModel.WithContext(state, state.Context.WithNextCardId(reservedGraftId + 1));
+            }
             // Excluded status contributions are collected before CopyCardState refreshes
             // descriptors, and before the clone's excluded upgrades are removed.
             var excluded = new Dictionary<string, int>();
@@ -184,7 +197,8 @@ namespace MonsterTrain2Poju.Model
             if (original.SpawnerCardId != 0)
             {
                 if (rule.SourceCreation == null) return Fail("Missing source card creation rules.");
-                CardGenerationResult copied = CardGenerationModel.CloneDetached(state.Context, rule.SourceCreation, original.SpawnerCardId);
+                CardGenerationResult copied = CardGenerationModel.CloneDetached(state.Context, rule.SourceCreation,
+                    original.SpawnerCardId, keepGraftAlias: hallGraft != null);
                 if (!copied.Supported) return Fail(copied.UnsupportedReason!);
                 state = CardSpellModel.WithContext(state, copied.Context!); spawnerCardId = copied.AddedCards.Single().InstanceId;
                 Mark("source-card-copied");
@@ -195,14 +209,14 @@ namespace MonsterTrain2Poju.Model
             Mark("before-birth");
             int empty = state.Context!.SpawnPoints!.FirstEmpty(roomIndex, CombatTeam.Player);
             if (empty < 0) { Mark("after-birth"); return Result(); }
-            if (rule.GraftedBirth) return Fail("Clone birth with grafted equipment requires its native birth transition.");
+            if (rule.GraftedBirth && hallGraft == null) return Fail("Clone birth with grafted equipment requires its native birth transition.");
             if (spawnMode == "FrontSlot") position = empty;
             if (spawnMode == "BackSlot") position = Enumerable.Range(0, group.GroupCount).Last(index => group.Occupants[index] == 0);
             if (position < 0) position = empty;
             destination = state.Rooms.Single(room => room.RoomIndex == roomIndex);
             UnitBirthResult born = UnitBirthModel.SpawnClone(destination, rule.Birth, spawnerCardId, position, cardless,
                 state.Context.StatusRules.SingleOrDefault(status => status.Id == "cardless")?.WithStacks(1), spawnMode == "SelectedSlot",
-                prior == null ? null : DrainBirthQueue);
+                prior == null ? null : DrainBirthQueue, restoreHallGraft: hallGraft != null);
             if (!born.Supported) return Fail(born.Result.UnsupportedReason!);
             unitId = born.UnitId; if (!Accept(born.Result)) return Fail(born.Result.UnsupportedReason!);
             if (original.SpawnerCardId > 0 && state.Context?.QueryFrame?.SelectedRoomIndex != null)
@@ -213,6 +227,16 @@ namespace MonsterTrain2Poju.Model
             original = Get(sourceId);
             if (original == null) return Fail("Clone birth removed its retained source.");
             var targetEquipmentStatuses = new List<string>();
+            if (hallGraft != null)
+            {
+                CardGenerationResult created = CardGenerationModel.CreateDetached(state.Context!, hallGraft.Card, reservedGraftId);
+                if (!created.Supported) return Fail(created.UnsupportedReason!);
+                CardInstanceState graft = created.Context!.FindCard(reservedGraftId)!;
+                RoomCombatResult attached = UnitGraftModel.Attach(FindRoom(unitId)!.WithContext(created.Context),
+                    unitId, graft, hallGraft);
+                if (!Accept(attached)) return Fail(attached.UnsupportedReason!);
+                targetEquipmentStatuses.AddRange(hallGraft.Equipment.Upgrades.SelectMany(upgrade => upgrade.Statuses).Select(status => status.Id));
+            }
             foreach (int equipmentId in original.EquipmentCards ?? Array.Empty<int>())
             {
                 UnitCloneGearRule? equipment = rule.Gear.SingleOrDefault(gear => gear.CardId == equipmentId);
@@ -283,6 +307,34 @@ namespace MonsterTrain2Poju.Model
             }
             UnitCloneResult Result() => new UnitCloneResult(state, unitId, outcome, null, events, boundaries, pending, dispatched);
             UnitCloneResult Fail(string reason) => new UnitCloneResult(null, unitId, RoomOutcome.Unsupported, reason, events, boundaries, pending);
+        }
+
+        private static UnitGraftRule? SupportedHallGraft(RoomCombatState destination, CombatUnit original, UnitCloneRule rule)
+        {
+            CombatContext? context = destination.Context;
+            if (destination.Deployment || context is not { Enchantments: null, LifeLinks: null } ||
+                context.NextCardId is <= 0 or >= int.MaxValue - 1 ||
+                context.Relics?.Any(relic => relic.EffectTypes.Any(effect => effect != "RelicEffectNull")) == true ||
+                original is not { AssetKey: "MonsterTwistedAssistant", Modifiers.IsClone: false, EquipmentCards.Count: 1 } ||
+                !rule.GraftedBirth || rule.Gear.Count != 1 || rule.Ability != null ||
+                rule.Birth.SpawnUnit is not { Triggers.Count: 0, Modifiers.Graft: UnitGraftRule graft } ||
+                context.FindCard(original.SpawnerCardId) is not
+                    { DataId: "3a8240bd-8b96-4d6e-b2d1-49ff8b5d8022", MaskDescriptor: { PermanentGraft: true, Purified: false } } spawner ||
+                spawner.GraftedEquipmentCardId != original.EquipmentCards[0] ||
+                rule.Gear[0].CardId != original.EquipmentCards[0] || !rule.Gear[0].Grafted ||
+                context.FindCard(original.EquipmentCards[0]) is not CardInstanceState equipment ||
+                equipment.DataId != graft.Card.DataId || equipment.EquippedUnitId != original.Id ||
+                CardGraftedEquipmentModel.Validate(equipment) != null ||
+                equipment.MaskDescriptor?.BaseTraits.SingleOrDefault()?.GraftSevered != false ||
+                !Unmodified(equipment.Permanent) || !Unmodified(equipment.Temporary) ||
+                destination.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind is "OnSpawn" or "OnUnscaledSpawn" or
+                    "OnSpawnNotFromCard" or "OnSpawnLate" or "AfterSpawnEnchant" or "CardMonsterPlayed")))
+                return null;
+            return graft;
+
+            static bool Unmodified(CardModifiers modifiers) => modifiers is { Upgrades.Count: 0, PersistentHealth: 0,
+                ExternalInteractions.Count: 0, BoxedCards: null, MergedEquipment: null,
+                Offsets: { Damage: 0, Health: 0, Cost: 0, Heal: 0, Size: 0, XCost: 0, EquipmentLimit: 0, UpgradeSlotCount: 0 } };
         }
 
         public static UnitCloneResult Drain(UnitCloneResult input, bool deferPhysicalRemoval = false)

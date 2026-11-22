@@ -29,7 +29,8 @@ namespace MonsterTrain2Poju.Model
             return PaidBirth(source, unitId, null);
         }
 
-        internal static UnitCloneResult PaidBirth(TrainCombatState source, int unitId, UnitCopyCatalog? catalog)
+        internal static UnitCloneResult PaidBirth(TrainCombatState source, int unitId, UnitCopyCatalog? catalog,
+            bool paidGraftSource = false)
         {
             RoomCombatState? room = source.Rooms.SingleOrDefault(room => room.Units.Any(unit => unit.Id == unitId));
             CombatUnit? born = room?.Units.Single(unit => unit.Id == unitId);
@@ -46,6 +47,8 @@ namespace MonsterTrain2Poju.Model
                     Array.Empty<(int OwnerId, string Subtype)>()).ToArray();
             var result = new UnitCloneResult(source, 0, RoomOutcome.Exchanged, null, Array.Empty<CombatEvent>(),
                 Array.Empty<UnitCloneBoundary>(), Array.Empty<RoomCombatModel.QueuedCharacterTrigger>());
+            bool allowHallGraft = paidGraftSource && OriginalMirrorsOnly(room) &&
+                source.Context.RoomCapacities!.Single(capacity => capacity.RoomIndex == room.RoomIndex).Attachments!.Count == 1;
             foreach (var modifier in modifiers)
             {
                 string subtype = modifier.Subtype;
@@ -53,7 +56,7 @@ namespace MonsterTrain2Poju.Model
                     unit.Id == modifier.OwnerId && unit.Health > 0 && unit.DeathState?.IsDestroyed != true)) continue;
                 if (subtype.Length > 0 && !born.Subtypes.Contains(subtype) && source.Context.Relics?.Any(relic =>
                     relic.EffectTypes.Contains("RelicEffectMonstersAreAllSubtypes")) != true) continue;
-                UnitCloneResult copied = CopyOnce(result.State!, unitId, catalog);
+                UnitCloneResult copied = CopyOnce(result.State!, unitId, catalog, allowHallGraft);
                 if (!copied.Supported) return copied;
                 result = new UnitCloneResult(copied.State, copied.UnitId, copied.Outcome == RoomOutcome.Exchanged ? result.Outcome : copied.Outcome,
                     null, result.Events.Concat(copied.Events).ToArray(), result.Boundaries.Concat(copied.Boundaries).ToArray(),
@@ -61,13 +64,13 @@ namespace MonsterTrain2Poju.Model
             }
             return result;
         }
-        private static UnitCloneResult CopyOnce(TrainCombatState source, int unitId, UnitCopyCatalog? catalog)
+        private static UnitCloneResult CopyOnce(TrainCombatState source, int unitId, UnitCopyCatalog? catalog, bool allowHallGraft)
         {
             RoomCombatState room = source.Rooms.Single(room => room.Units.Any(unit => unit.Id == unitId));
             CombatUnit born = room.Units.Single(unit => unit.Id == unitId);
             SpawnPointReference? point = source.Context!.SpawnPoints?.Units.Single(unit => unit.UnitId == unitId).Current;
             UnitCloneResult cloned = UnitCloneModel.ApplyWithPending(source, unitId, room.RoomIndex, point,
-                catalog?.Resolve(source.Context, born), Array.Empty<RoomCombatModel.QueuedCharacterTrigger>());
+                catalog?.Resolve(source.Context, born), Array.Empty<RoomCombatModel.QueuedCharacterTrigger>(), allowHallGraft);
             if (!cloned.Supported || cloned.UnitId == 0) return cloned;
             var pending = cloned.PendingCallbacks.Concat(room.Units.Where(unit => unit.Id != unitId).Select(unit =>
                 new RoomCombatModel.QueuedCharacterTrigger(room.RoomIndex, unit, "CardMonsterPlayed"))).ToArray();

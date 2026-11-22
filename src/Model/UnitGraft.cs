@@ -46,6 +46,13 @@ namespace MonsterTrain2Poju.Model
             if (card.MaskDescriptor!.BaseTraits.Concat(card.MaskDescriptor.TemporaryTraits).Any(trait => trait.GraftSevered == true))
                 return new RoomCombatResult(source, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
             if (card.EquippedUnitId > 0) return Fail("Duplicated graft equipment requires independent native calibration.");
+            return Attach(source.WithContext(context), unitId, card, rule);
+        }
+
+        internal static RoomCombatResult Attach(RoomCombatState source, int unitId, CardInstanceState card, UnitGraftRule rule)
+        {
+            CombatContext context = source.Context!;
+            int id = card.InstanceId;
             if (context.CardInstances!.All(value => value.InstanceId != id))
                 context = context.WithCardInstances(context.CardInstances.Concat(new[] { card }).ToArray());
             var definition = new CardPlayRule(card.DataId, rule.Card.DataId, 0, "Equipment", "Standby", null,

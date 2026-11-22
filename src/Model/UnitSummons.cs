@@ -73,8 +73,10 @@ namespace MonsterTrain2Poju.Model
                 cardStatus: cardStatus);
         internal static UnitBirthResult SpawnClone(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
             int position, bool isCardless, CombatStatus? cardlessStatus, bool selectedSlot,
-            Func<RoomCombatState, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>, RoomCombatResult>? drainBirthQueue = null)
-            => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, null, null, selectedSlot, true, drainBirthQueue);
+            Func<RoomCombatState, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>, RoomCombatResult>? drainBirthQueue = null,
+            bool restoreHallGraft = false)
+            => SpawnCore(source, definition, spawnerCardId, position, isCardless, cardlessStatus, null, null, selectedSlot, true, drainBirthQueue,
+                restoreHallGraft: restoreHallGraft);
         internal static UnitBirthResult SpawnQueued(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
             int position, bool isCardless, CombatStatus cardlessStatus, Action<RoomCombatModel.QueuedCharacterTrigger> enqueue,
             IReadOnlyList<CombatUnit> positionActors, bool selectedSlot = true)
@@ -87,13 +89,13 @@ namespace MonsterTrain2Poju.Model
             int position, bool isCardless, CombatStatus? cardlessStatus, Action<RoomCombatModel.QueuedCharacterTrigger>? enqueue,
             IReadOnlyList<CombatUnit>? positionActors, bool selectedSlot, bool isClone = false,
             Func<RoomCombatState, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>, RoomCombatResult>? drainBirthQueue = null,
-            SpawnStatusApplication? cardStatus = null, bool compactBirth = true)
+            SpawnStatusApplication? cardStatus = null, bool compactBirth = true, bool restoreHallGraft = false)
         {
             CombatContext? context = source.Context;
             CombatUnit? raw = definition.SpawnUnit;
             if (raw != null && RoomCombatModel.IsFood(raw) && source.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "OnFoodSpawn")))
                 return Unsupported("Nested food births with food-spawn listeners require native creation-depth calibration.");
-            if (raw?.Modifiers?.Graft != null)
+            if (raw?.Modifiers?.Graft != null && !restoreHallGraft)
                 return Unsupported("Generated, triggered, or cloned graft births require their native equipment identity transition.");
             bool copyHordeBirth = !isClone && isCardless && spawnerCardId == 0 &&
                 cardStatus is { Status.Id: "horde", Status.Stacks: > 0 } &&

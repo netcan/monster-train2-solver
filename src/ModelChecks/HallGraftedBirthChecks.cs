@@ -117,14 +117,47 @@ internal static class HallGraftedBirthChecks
         if (schema == 2) VerifyCloneCallbacks(root);
 
         string parent = Json(before), observed = Json(actual);
-        BattleActionResult rejected = BattleActionModel.PlayCard(before, deploy);
-        Require(rejected.Reason == Unsupported && !rejected.Supported && Json(before) == parent &&
-            birth.GetProperty("Predicted").GetProperty("Reason").GetString() == Unsupported,
-            "Pre-play clone prediction must retain its graft identity guard.");
+        FixtureValue recordedPrediction = birth.GetProperty("Predicted");
+        bool recordedSupported = recordedPrediction.GetProperty("Supported").GetBoolean();
+        if (schema == 1 || !recordedSupported)
+            Require(!recordedSupported && recordedPrediction.GetProperty("Reason").GetString() == Unsupported,
+                "The historical observer must retain its rejected graft copy prediction.");
+        if (schema == 2)
+        {
+            string expected = BattleTurnChecks.Comparable(actual);
+            if (recordedSupported)
+                Require(birth.GetProperty("Difference").ValueKind == FixtureKind.Null &&
+                    BattleTurnChecks.Comparable(recordedPrediction.GetProperty("State").Deserialize<BattleTurnState>()!) == expected,
+                    "The fresh native archive did not match its in-game prediction.");
+            UnitCopyCatalog catalog = before.PlayRules!.UnitCopyCatalog!;
+            foreach (CardInstanceState source in new[] { priorRegistry.Single(card => card.InstanceId == paid.SpawnerCardId),
+                priorRegistry.Single(card => card.InstanceId == paidGear) })
+                Require(!CardGenerationModel.CloneDetached(prior,
+                    catalog.Cards.Single(card => card.DataId == source.DataId), source.InstanceId).Supported,
+                    "Ordinary detached copying must still reject both grafted roles.");
+            CardPlayRule assistant = before.PlayRules.Cards.Single(card => card.DataId == AssistantId);
+            const string guardedBirth = "Generated, triggered, or cloned graft births require their native equipment identity transition.";
+            Require(UnitBirthModel.Spawn(beforeRoom, assistant, deploy.CardInstanceId, deploy.PlayerPosition, false)
+                .Result.UnsupportedReason == guardedBirth, "Ordinary generated graft births must still reject.");
+            Require(UnitBirthModel.SpawnQueued(beforeRoom, assistant, deploy.CardInstanceId, deploy.PlayerPosition,
+                false, prior.StatusRules.Single(status => status.Id == "cardless"), _ => { }, beforeRoom.Units)
+                .Result.UnsupportedReason == guardedBirth, "Queued graft births must still reject.");
+            void Replay()
+            {
+                BattleActionResult played = BattleActionModel.PlayCard(before, deploy);
+                Require(played.Supported && played.State != null, "Paid Hall graft clone unsupported: " + played.Reason);
+                string? difference = ModelJson.Difference(Json(played.State!), observed);
+                Require(played.Outcome == RoomOutcome.Exchanged && difference == null,
+                    "Paid Hall graft clone differs from native state: " + difference);
+            }
+            Replay();
+            Parallel.For(0, 8, _ => Replay());
+            Require(Json(before) == parent, "Paid Hall graft clone mutated the parent state.");
+        }
         BattleTurnResult continued = BattleTurnModel.EndTurn(actual);
         Require(continued.Supported && continued.State != null && Json(actual) == observed,
             "The advisor could not consume the unchanged observed successor: " + continued.UnsupportedReason);
-        Console.WriteLine("NATIVE-HALL-GRAFTED-BIRTH PASS: original paid and cloned units, distinct native graft ownership, source alias, physical slots, unchanged Battle/Draw RNG, preserved prediction guard and observed-root EndTurn.");
+        Console.WriteLine("NATIVE-HALL-GRAFTED-BIRTH PASS: original paid and cloned units, distinct native graft ownership, source alias, physical slots, unchanged Battle/Draw RNG and observed-root EndTurn.");
     }
 
     private static void VerifyCloneCallbacks(FixtureValue root)

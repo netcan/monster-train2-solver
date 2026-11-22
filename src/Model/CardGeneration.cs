@@ -123,13 +123,18 @@ namespace MonsterTrain2Poju.Model
     {
         // A fallback spawner uses CardState.Setup without AddCardImpl ownership or callbacks.
         public static CardGenerationResult CreateDetached(CombatContext source, CardCreationRule creation)
+            => CreateDetached(source, creation, source.NextCardId);
+
+        // A card whose projected ID was reserved before its native counterpart was created.
+        internal static CardGenerationResult CreateDetached(CombatContext source, CardCreationRule creation, int cardId)
         {
             string? descriptorError = CardBranchMaskModel.ValidateCreation(source, creation);
             if (descriptorError != null) return Unsupported(descriptorError);
             if (source.CardRegistry == null || source.CardInstances == null || source.NextCardId <= 0 ||
-                source.NextCardId == int.MaxValue || source.CardRegistry.Any(card => card.InstanceId >= source.NextCardId))
+                cardId <= 0 || cardId > source.NextCardId || cardId == int.MaxValue ||
+                source.CardRegistry.Any(card => card.InstanceId >= source.NextCardId || card.InstanceId == cardId))
                 return Unsupported("Fresh detached card creation requires a complete identity registry.");
-            var card = new CardInstanceState(source.NextCardId, creation.DataId, creation.StartingModifiers,
+            var card = new CardInstanceState(cardId, creation.DataId, creation.StartingModifiers,
                 CardModifiers.Empty(), 0, 0, 0, creation.ExternalInteractions, creation.EffectCounters,
                 creation.DamageScalingTraits, creation.StatusScalingTraits, creation.UnitUpgradeScalingTraits,
                 creation.CapacityScalingTraits, creation.EquippedUnitId,
@@ -141,12 +146,15 @@ namespace MonsterTrain2Poju.Model
             string? error = CardModifierModel.UnsupportedReason(card);
             if (error != null) return Unsupported(error);
             return new CardGenerationResult(source.WithCardRegistry(source.CardRegistry.Concat(new[] { card }).ToArray())
-                .WithNextCardId(source.NextCardId + 1), new[] { new CardToken(card.InstanceId, card.DataId) });
+                .WithNextCardId(Math.Max(source.NextCardId, cardId + 1)), new[] { new CardToken(card.InstanceId, card.DataId) });
         }
 
         // CopyCardState creates a source reference without AddCardImpl ownership,
         // RNG selection, statistic tracking or one-shot generation upgrades.
         public static CardGenerationResult CloneDetached(CombatContext source, CardCreationRule creation, int sourceCardId)
+            => CloneDetached(source, creation, sourceCardId, false);
+
+        internal static CardGenerationResult CloneDetached(CombatContext source, CardCreationRule creation, int sourceCardId, bool keepGraftAlias)
         {
             string? descriptorError = CardBranchMaskModel.ValidateCreation(source, creation);
             if (descriptorError != null) return Unsupported(descriptorError);
@@ -156,7 +164,8 @@ namespace MonsterTrain2Poju.Model
             if (source.NextCardId <= 0 || source.NextCardId == int.MaxValue || source.CardRegistry.Any(card => card.InstanceId >= source.NextCardId))
                 return Unsupported("Invalid detached card identity allocation.");
             if (copying.DataId != creation.DataId) return Unsupported("Detached clone definition differs from its source.");
-            if (copying.GraftedEquipmentCardId.HasValue) return Unsupported("Grafted source-card cloning requires its independent graft identity transition.");
+            if (copying.GraftedEquipmentCardId.HasValue && !keepGraftAlias)
+                return Unsupported("Grafted source-card cloning requires its independent graft identity transition.");
             if (CardGraftedEquipmentModel.Present(copying)) return Unsupported("Grafted equipment cloning requires native private-state calibration.");
             if (copying.Permanent.MergedEquipment != null) return Unsupported("Merged equipment cloning requires separate native calibration.");
             string? error = CardModifierModel.UnsupportedReason(copying);
@@ -181,6 +190,8 @@ namespace MonsterTrain2Poju.Model
             }
             clone = CopyTraitReplacements(clone, copying);
             clone = CardMagicPowerModel.Refresh(clone.WithModifiers(permanent, temporary));
+            if (keepGraftAlias && copying.GraftedEquipmentCardId is int originalGraftId)
+                clone = clone.WithGraftedEquipment(originalGraftId);
             error = CardModifierModel.UnsupportedReason(clone);
             if (error != null) return Unsupported(error);
             // CardStateModifiers.CopyUpgrades dirties the source modifier cache.
