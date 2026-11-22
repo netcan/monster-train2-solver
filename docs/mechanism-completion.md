@@ -199,6 +199,11 @@ Engulfed in Smoke 在另一场结算。各场从部署连续复放至胜利，�
 胜局另通过 10 次出牌、5 次结束回合、16 条分支和候选检查。
 [`damage-healing-and-draw.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/damage-healing-and-draw.mt2f)
 
+状态单位批次用同一场原版胜局复核 11 张单位的付费出生、初始属性与状态，并录到
+Steelguard 格挡、Undying 回场和 Burnout 到期。整场 21 次出牌、5 次结束回合、
+16 条分支与候选检查通过。
+[`birth-and-combat-statuses.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-status-units/birth-and-combat-statuses.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
