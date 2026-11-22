@@ -81,3 +81,12 @@ Local evidence is `.probe-runs/live-advice-ui-debug/{active,smoke}.json` and
 and earlier Conduit fix remain active until exit. The running process has not
 loaded the new DLLs. Installed0.2.12 loads normally on the next launch; exact
 payload hashes and the previous-version backup are in [mod-validation.md](mod-validation.md).
+
+## Original 2.3.1 first-battle presentation check
+
+The isolated 2.3.1 player build published 30 advice updates and completed the
+first battle in 123.35 seconds. The native controls exercised pause and resume,
+floor browsing, four budget changes and seven forecast scopes. Replay verified
+21 card plays and 7 EndTurns across 28 rolling decisions. The four capture
+counters were zero and both recorded candidate checks passed.
+[First-battle presentation archive](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/first-battle-presentation.mt2f)
