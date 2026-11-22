@@ -26,8 +26,10 @@ internal static class OriginalFloorCapacityRelicChecks
             scenario.GetString() == "original-floor-capacity-relics";
         Require(eligible || !required, "Fixture lacks the original floor capacity relic batch.");
         if (!eligible) return null;
-        Require(root.GetProperty("Schema").GetInt32() == 119 && root.GetProperty("GameVersion").GetString() == "2.2.1" &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4",
+        var build = (root.GetProperty("GameVersion").GetString(), root.GetProperty("GameModuleMvid").GetString());
+        bool current = build == (Game231FixtureCatalog.Version, Game231FixtureCatalog.Module);
+        Require(root.GetProperty("Schema").GetInt32() == 119 && build is
+            ("2.2.1", "8fb07b96-f4db-4d2b-884d-c00536d6ccf4") or (Game231FixtureCatalog.Version, Game231FixtureCatalog.Module),
             "Native floor capacity schema or original game build changed.");
         Require(root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
             root.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" &&
@@ -98,7 +100,9 @@ internal static class OriginalFloorCapacityRelicChecks
             BattleTurnResult result = BattleTurnModel.EndTurn(before);
             Require(result.Supported && result.Outcome == (RoomOutcome)row.GetProperty("ActualOutcome").GetInt32(),
                 "Original capacity EndTurn unsupported or outcome differs: " + result.UnsupportedReason);
-            Equal(BattleTurnChecks.Comparable(result.State!), BattleTurnChecks.Comparable(actual), "complete native capacity EndTurn");
+            bool terminalTurn = current && result.Outcome == RoomOutcome.BattleWon;
+            Equal(BattleTurnChecks.Comparable(result.State!, terminalTurn), BattleTurnChecks.Comparable(actual, terminalTurn),
+                "complete native capacity EndTurn");
             Require(Serialize(before) == parent, "Original capacity EndTurn mutated its source.");
         }
         int pyreCombats = CheckCombat(stages, Witness);
@@ -108,12 +112,12 @@ internal static class OriginalFloorCapacityRelicChecks
         if (replayBattle)
         {
             CardCycleChecks.Native(root); BattleTurnChecks.Native(root); BattleActionChecks.Native(root);
-            ReplayBranches(first, actions, turns, terminal, "root");
+            ReplayBranches(first, actions, turns, terminal, "root", current);
             int midIndex = Array.FindIndex(actions, row => row.GetProperty("Actual").GetProperty("Spawn").GetProperty("Turn").GetInt32() > 0);
             Require(midIndex >= 0, "Original floor capacity battle lacks a genuine mid-battle policy action.");
             BattleTurnState mid = actions[midIndex].GetProperty("Actual").Deserialize<BattleTurnState>()!;
             ReplayBranches(mid, actions.Skip(midIndex + 1).ToArray(), turns.Where(row =>
-                row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() >= mid.Spawn.Turn).ToArray(), terminal, "mid");
+                row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() >= mid.Spawn.Turn).ToArray(), terminal, "mid", current);
         }
         var witnesses = Artifacts.ToDictionary(owner => owner.Key, owner => proofs.Where(proof => proof.Key.Id == owner.Id).Sum(proof => proof.Value));
         Console.WriteLine("ORIGINAL-FLOOR-CAPACITY-WITNESSES " + string.Join(", ", witnesses.Select(row => row.Key + "=" + row.Value)));
@@ -613,15 +617,16 @@ internal static class OriginalFloorCapacityRelicChecks
     }
     private static string Cycle(CardCycleState state) => Serialize(new
         { state.Hand, state.Draw, state.Discard, state.Rng, state.DrawModifier, state.BonusDraw, state.NextDrawUpgrades, state.NextUpgradeReferenceId });
-    private static void ReplayBranches(BattleTurnState source, FixtureValue[] actions, FixtureValue[] turns, BattleTurnState terminal, string label)
+    private static void ReplayBranches(BattleTurnState source, FixtureValue[] actions, FixtureValue[] turns, BattleTurnState terminal,
+        string label, bool useTerminalProjection)
     {
-        string parent = Serialize(source), expected = BattleTurnChecks.Comparable(terminal);
+        string parent = Serialize(source), expected = BattleTurnChecks.Comparable(terminal, useTerminalProjection);
         void Run()
         {
             BattleSimulationResult result = BattleSimulator.Resolve(source, Choose);
             Require(result.Supported && result.Outcome == RoomOutcome.BattleWon && result.Actions.Count == actions.Length && result.Turns.Count == turns.Length,
                 "Independent capacity " + label + " policy differs from native action/turn counts: " + result.UnsupportedReason);
-            Equal(expected, BattleTurnChecks.Comparable(result.State!), "independent capacity " + label + " terminal");
+            Equal(expected, BattleTurnChecks.Comparable(result.State!, useTerminalProjection), "independent capacity " + label + " terminal");
             for (int index = 0; index < actions.Length; index++)
             {
                 Equal(result.Actions[index].Action, actions[index].GetProperty("Action").Deserialize<PlayCardAction>()!, label + " native capacity policy action");
@@ -630,7 +635,10 @@ internal static class OriginalFloorCapacityRelicChecks
             for (int index = 0; index < turns.Length; index++)
             {
                 Require(result.Turns[index].Outcome == (RoomOutcome)turns[index].GetProperty("ActualOutcome").GetInt32(), label + " native capacity turn outcome differs.");
-                Equal(BattleTurnChecks.Comparable(result.Turns[index].State!), BattleTurnChecks.Comparable(turns[index].GetProperty("Actual").Deserialize<BattleTurnState>()!), label + " native capacity turn decision");
+                bool terminalTurn = useTerminalProjection && result.Turns[index].Outcome == RoomOutcome.BattleWon;
+                Equal(BattleTurnChecks.Comparable(result.Turns[index].State!, terminalTurn),
+                    BattleTurnChecks.Comparable(turns[index].GetProperty("Actual").Deserialize<BattleTurnState>()!, terminalTurn),
+                    label + " native capacity turn decision");
             }
         }
         Run(); Parallel.For(0, 16, _ => Run());
