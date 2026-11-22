@@ -517,13 +517,17 @@ Ice and Pyre 的独立对照在顶层命中前排敌军并造成 90 点伤害，
 
 镜厅组件记录的付费接枝出生和复制体各有独立装备。复制体的来源卡保留本体装备引用，
 实际绑定使用独立的装备实例。专项核对物理槽位、随机流和原版结算状态下的结束回合。
-该复制分支的出牌前预测仍会拒绝。
 [`observation.mt2f`](../tests/compatibility/game-2.3.1/mechanics/hall-grafted-birth/observation.mt2f)
 
 原版回调补采记录了先复制来源卡、再创建复制单位、最后复制并绑定接枝装备的顺序。
 两件装备的对象引用各自独立，复制单位的来源卡仍指向本体接枝。同场核对了物理槽位、
 原版随机流及归档结算状态上的结束回合。
 [`callback-order.mt2f`](../tests/compatibility/game-2.3.1/mechanics/hall-grafted-birth/callback-order.mt2f)
+
+新版镜厅采样中，付费登场的原版 Twisted Assistant 携带一件未改动接枝装备，
+出牌预测与完整原版结算状态逐项一致。串行和八条并行分支核对随机流、父状态和接枝引用。
+普通镜厅、房间替换及五种原版接枝装备的生命周期专项也通过。生成或触发召唤仍需要各自的出生证据。
+[`predicted-birth.mt2f`](../tests/compatibility/game-2.3.1/mechanics/hall-grafted-birth/predicted-birth.mt2f)
 
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
