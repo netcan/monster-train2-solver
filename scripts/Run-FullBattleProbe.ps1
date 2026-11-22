@@ -12,6 +12,7 @@ param(
     [switch] $DotNetPlanner,
     [switch] $Advisor,
     [switch] $PlayerAdvisor,
+    [switch] $CapturePlayerDeploymentOnly,
     [switch] $ProfileCapture,
     [switch] $AdvisorFloorBrowse,
     [switch] $AdvisorPresentation,
@@ -931,6 +932,16 @@ if ($ConduitMovement) {
     $allowed = @('ConduitMovement', 'ConduitEnemyMovement', 'NativeWorker', 'GameSpeed', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'ConduitMovement is an isolated component calibration; do not combine battle scenarios.' }
     $Policy = 'no-cards'; $PhysicalSpawnPoints = $true; $BranchCardMasks = $true
+}
+if ($CapturePlayerDeploymentOnly) {
+    $allowed = @('CapturePlayerDeploymentOnly', 'PlayerAdvisor', 'RollingAdvice', 'InputProfile', 'BattleDistance',
+        'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild', 'GameSpeed', 'TimeoutSeconds',
+        'SettleCardAnimations', 'SettleDeathDissolves', 'Verbose', 'Debug', 'ErrorAction')
+    if (!$InputProfile -or !$BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
+        throw 'CapturePlayerDeploymentOnly requires a native InputProfile and binary capture without scenario controls.'
+    }
+    $PlayerAdvisor = $true
+    $RollingAdvice = $true
 }
 if ($PlayerAdvisor) {
     if ($Advisor -or $DotNetPlanner) {
@@ -2095,7 +2106,7 @@ $gameRoot = Join-Path $workspace $(if ($NativeWorker -gt 1) { ".sandbox-game-wor
 if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll') -PathType Leaf)) {
     throw "Native worker $NativeWorker is not initialized; run scripts/Initialize-NativeWorker.ps1 -Worker $NativeWorker first."
 }
-if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType) {
+if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -2114,8 +2125,8 @@ $profile = Join-Path $workspace ('.probe-runs\full-battle-' + $Policy + '-' + $r
 $rollingTimeoutSignal = if ($PreserveRollingPrefixOnTimeout) { Join-Path $profile 'rolling-timeout-request' } else { '' }
 $originalLogRoot = Join-Path ([Environment]::GetFolderPath('UserProfile')) 'AppData\LocalLow\Shiny Shoe\MonsterTrain2'
 
-function Get-OriginalSignature {
-    $parts = Get-ChildItem -LiteralPath $originalLogRoot -File -Force -Recurse |
+function Get-OriginalSignature([string] $Root = $originalLogRoot) {
+    $parts = Get-ChildItem -LiteralPath $Root -File -Force -Recurse |
         Where-Object { $_.Extension -ne '.log' } |
         Sort-Object FullName | ForEach-Object {
             $_.FullName + ':' + $_.LastWriteTimeUtc.Ticks + ':' +
@@ -2206,6 +2217,7 @@ if ($InputProfile) {
     if ($checkpointData.gameSequence -ne 6 -or $checkpointData.runState.distance -ne $BattleDistance) {
         throw 'InputProfile must be a native BattleIntro checkpoint at BattleDistance.'
     }
+    if ($CapturePlayerDeploymentOnly) { $deploymentInputSignature = Get-OriginalSignature $checkpoint }
     if ($ContinueToNextRing) {
         $inputBattles = @($checkpointData.completedBattles)
         if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
@@ -2334,6 +2346,7 @@ $environment = @{
     MT2_PROBE_PLANNER = $(if ($Planner) { '1' } else { '0' })
     MT2_PROBE_ADVISOR = $(if ($Advisor) { '1' } else { '0' })
     MT2_PROBE_PLAYER_ADVISOR = $(if ($PlayerAdvisor) { '1' } else { '0' })
+    MT2_PROBE_PLAYER_DEPLOYMENT_ONLY = $(if ($CapturePlayerDeploymentOnly) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_FLOOR_BROWSE = $(if ($AdvisorFloorBrowse) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_PRESENTATION = $(if ($AdvisorPresentation) { '1' } else { '0' })
     MT2_ADVISOR_SCREENSHOT = $(if ($Advisor) { '1' } else { '0' })
@@ -3173,6 +3186,38 @@ Wait-NativeBattleExit -Process $process -Timer $nativeTimer -UnityLog $unityLog 
     -FailFastOnIsolatedUnitReject:$FailFastOnIsolatedUnitReject
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
+if ($CapturePlayerDeploymentOnly) {
+    $capturePath = Join-Path $profile 'player-deployment.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -SimpleMatch 'DEPTH-PASS Player deployment captured without battle inputs.' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore -or
+        (Get-OriginalSignature $checkpoint) -cne $deploymentInputSignature) {
+        throw "Player deployment capture failed or original files changed. Inspect $unityLog"
+    }
+    Add-Type -Path (Join-Path $nativeBuildWorkspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $document = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
+    try {
+        $capture = $document.RootElement
+        $player = $capture.GetProperty('PlayerAdvisor')
+        $overlay = $player.GetProperty('Overlay')
+        $frozen = $player.GetProperty('FrozenObservation')
+        if ($capture.GetProperty('Schema').GetInt32() -ne 1 -or
+            $capture.GetProperty('EvidenceKind').GetString() -cne 'NativeDeploymentObservation' -or
+            [Guid]$capture.GetProperty('GameModuleMvid').GetString() -ne $nativeModule -or
+            $capture.GetProperty('Root').GetProperty('Spawn').GetProperty('Turn').GetInt32() -ne 0 -or
+            $player.GetProperty('Assembly').GetString() -cne 'MonsterTrain2Poju.Advisor' -or
+            !$frozen.GetProperty('Paused').GetBoolean() -or !$frozen.GetProperty('FinalAdviceAbsent').GetBoolean() -or
+            $overlay.GetProperty('Captures').GetInt32() -ne 1 -or $overlay.GetProperty('PurityFailures').GetInt32() -ne 0 -or
+            $overlay.GetProperty('Failures').GetInt32() -ne 0 -or $overlay.GetProperty('Searches').GetInt64() -ne 0 -or
+            $overlay.GetProperty('Published').GetInt32() -ne 0) {
+            throw 'Expected one pure turn-zero observation from the paused player advisor.'
+        }
+    } finally { $document.Dispose() }
+    [pscustomobject]@{ Profile=$profile; NativeDeploymentCaptured=$true; InputProfileUnchanged=$true;
+        OriginalFilesUnchanged=$true; Trace=$capturePath; SHA256=(Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash } |
+        ConvertTo-Json
+    return
+}
 if ($EffectOwnerType) {
     $capturePath = Join-Path $profile 'effect-owners.mt2f'
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or

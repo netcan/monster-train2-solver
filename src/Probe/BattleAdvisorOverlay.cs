@@ -237,7 +237,7 @@ namespace MonsterTrain2Poju.Probe
                 return label;
             }
             Button("重新计算", 18, () => { paused = false; pauseLabel.text = "暂停建议"; Invalidate(); });
-            pauseLabel = Button(paused ? "恢复建议" : "暂停建议", 164, () => { paused = !paused; Invalidate(); pauseLabel.text = paused ? "恢复建议" : "暂停建议"; });
+            pauseLabel = Button(paused ? "恢复建议" : "暂停建议", 164, TogglePause);
             planLabel = Button("完整方案", 310, () => SetFullPlan(!showFullPlan));
             if (playerSession)
             {
@@ -411,16 +411,7 @@ namespace MonsterTrain2Poju.Probe
                 else ShowMessage(paused || HiddenPause ? "建议已暂停。" : inBattle ? "等待当前操作完成…" : "进入战斗后自动计算建议。");
                 return;
             }
-            if (ManualSession)
-            {
-                SaveManager save = managers.GetSaveManager();
-                int distance = save.GetCurrentDistance();
-                if (manualBattleKey == null || manualBattleDistance != distance || FullBattleTrace.Active?.NativeWon != null)
-                {
-                    new FullBattleTrace(log); manualBattleDistance = distance;
-                    manualBattleKey = save.GetShareCode() + ":" + distance; Invalidate();
-                }
-            }
+            if (ManualSession) InitializeManualBattleCapture(managers.GetSaveManager());
             var currentObservation = new AdvisorObservation(managers);
             if (observed && !observation.Equals(currentObservation) && !selectionPending)
             {
@@ -566,6 +557,31 @@ namespace MonsterTrain2Poju.Probe
                     "正在计算新方案…\n你可以继续操作，建议会随局面更新。" : "正在核对局面…");
             }
             else SetPending(!ReferenceEquals(displayed, session.Current) || captureNeeded || selectionPending || preparation != null);
+        }
+
+        private void TogglePause()
+        {
+            paused = !paused;
+            Invalidate();
+            if (pauseLabel != null) pauseLabel.text = paused ? "恢复建议" : "暂停建议";
+        }
+
+        private void InitializeManualBattleCapture(SaveManager save)
+        {
+            int distance = save.GetCurrentDistance();
+            if (manualBattleKey != null && manualBattleDistance == distance && FullBattleTrace.Active?.NativeWon == null) return;
+            new FullBattleTrace(log);
+            manualBattleDistance = distance;
+            manualBattleKey = save.GetShareCode() + ":" + distance;
+            Invalidate();
+        }
+
+        private BattleTurnState CapturePausedDeployment(AllGameManagers managers)
+        {
+            if (!playerSession || !paused || !Ready(managers) || !managers.GetCombatManager().IsPlacementPhase)
+                throw new InvalidOperationException("Deployment observation requires a paused player advisor and settled native placement.");
+            InitializeManualBattleCapture(managers.GetSaveManager());
+            return CaptureReadOnly(managers);
         }
 
         private BattleTurnState CaptureTerminalReadOnly(AllGameManagers managers, bool won) =>

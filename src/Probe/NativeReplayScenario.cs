@@ -715,6 +715,7 @@ namespace MonsterTrain2Poju.Probe
                     (bool)fightAvailable.GetValue(intro)! && intro.GetFightButton().interactable)
                 {
 #if DEVELOPMENT_PROBE
+                    if (RollingAdviceScenario.DeploymentOnly) PlayerAdvisorProbe.PauseForFrozenPlan(beforeDeployment: true);
                     if (fullBattle && OriginalSpurnedScenario.Enabled)
                     {
                         OriginalSpurnedScenario.Request(save, log);
@@ -744,6 +745,9 @@ namespace MonsterTrain2Poju.Probe
 
             if (stage != Stage.Replaying && stage != Stage.Restarting && screen.GetTopScreen() == ScreenName.Dialog)
             {
+#if DEVELOPMENT_PROBE
+                if (RollingAdviceScenario.DeploymentOnly && stage == Stage.Battle) return;
+#endif
                 DialogScreen? dialog = screen.GetScreen(ScreenName.Dialog) as DialogScreen;
                 if (dialog != null && ReplayRelentlessChoices.TryHandle(dialog, log)) return;
                 if (dialog?.GetButton1() != null)
@@ -756,6 +760,9 @@ namespace MonsterTrain2Poju.Probe
             CardManager? cards = managers.GetCardManager();
             ReplayManager replay = managers.GetReplayManager();
             if (stage == Stage.Battle && PlayerAdvisorProbe.Enabled &&
+#if DEVELOPMENT_PROBE
+                !RollingAdviceScenario.DeploymentOnly &&
+#endif
                 RollingAdviceScenario.Enabled && combat != null && cards != null &&
                 rollingJudgesScales.Tick(managers, combat, cards, log)) return;
             if (stage == Stage.Restarting)
@@ -922,6 +929,13 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (RollingAdviceScenario.DeploymentOnly)
+            {
+                if (!PlayerAdvisorProbe.DeploymentCaptureReady) return;
+                RollingAdviceScenario.ExportPlayerDeployment();
+                Finish(true, "Player deployment captured without battle inputs.");
+                return;
+            }
             if (fullBattle && EffectOwnerProbe.Enabled)
             {
                 EffectOwnerProbe.Capture(FullBattleTrace.Active!, managers);

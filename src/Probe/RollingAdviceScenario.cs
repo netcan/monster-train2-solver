@@ -43,6 +43,9 @@ namespace MonsterTrain2Poju.Probe
             public string? Difference { get; set; }
         }
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_ADVICE") == "1";
+#if DEVELOPMENT_PROBE
+        internal static bool DeploymentOnly => Environment.GetEnvironmentVariable("MT2_PROBE_PLAYER_DEPLOYMENT_ONLY") == "1";
+#endif
         private static bool Replay => (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_INPUT"))
 #if DEVELOPMENT_PROBE
             && !resumed) || UnsupportedBranchObservation.Enabled
@@ -185,11 +188,11 @@ namespace MonsterTrain2Poju.Probe
             return inputs;
         }
 
-        private static void ExportPlayerDeployment(bool frozenObservation = false)
+        internal static void ExportPlayerDeployment(bool frozenObservation = false)
         {
             if (Replay && !frozenObservation || deploymentExportAttempted || Records.Count != 0) return;
             deploymentExportAttempted = true;
-            BattleTurnState root = PlayerAdvisorProbe.Capture();
+            BattleTurnState root = DeploymentOnly ? PlayerAdvisorProbe.CaptureDeploymentOnly() : PlayerAdvisorProbe.Capture();
             if (root.Spawn.Turn != 0) return;
             // This is an observation, not a completed or accepted native battle.
             // Keep the actual player's identity space for later frozen inputs.

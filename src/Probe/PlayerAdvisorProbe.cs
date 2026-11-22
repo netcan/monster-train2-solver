@@ -210,15 +210,34 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static BattleTurnState Terminal => terminal ?? throw new InvalidOperationException("Player terminal capture is missing.");
 
-        internal static void PauseForFrozenPlan()
+        internal static void PauseForFrozenPlan(bool beforeDeployment = false)
         {
             if (frozenObservation) return;
             Resolve();
-            if (!Field<bool>("paused")) Click("暂停建议");
+            if (!Field<bool>("paused"))
+            {
+                if (beforeDeployment) Call("TogglePause");
+                else Click("暂停建议");
+            }
             Require(Field<bool>("paused") && CurrentIsNull(), "frozen plan retained background advice");
             frozenObservation = true;
             frozenSearches = Get<long>("Searches");
             log!.LogInfo("PLAYER-ADVISOR-FROZEN-OBSERVATION pausedBackground=true; native observation remains active");
+        }
+
+        internal static bool DeploymentCaptureReady => Field<bool>("wasInBattle") &&
+            (bool)Call("Ready", AllGameManagers.Instance)!;
+
+        internal static BattleTurnState CaptureDeploymentOnly()
+        {
+            Require(frozenObservation && Field<bool>("paused") && CurrentIsNull() &&
+                Get<long>("Searches") == 0 && Get<int>("Published") == 0 && Get<long>("DiagnosticCardInputs") == 0,
+                "deployment observation ran advice or a battle input");
+            var root = (BattleTurnState)Call("CapturePausedDeployment", AllGameManagers.Instance)!;
+            Require(CaptureInitialized && root.Spawn.Turn == 0 &&
+                Get<int>("Captures") == 1 && Get<int>("Failures") == 0 && Get<int>("PurityFailures") == 0,
+                "deployment observation is missing one pure initial player capture");
+            return root;
         }
 
         internal static long ResumeAfterFrozenPrefix()
