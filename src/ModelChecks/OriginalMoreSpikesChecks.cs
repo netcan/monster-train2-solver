@@ -7,9 +7,10 @@ internal static class OriginalMoreSpikesChecks
     private const string Id = "a6c957cc-e9f5-49b7-a6a3-cd7e95393289";
     internal static void Native(FixtureValue root)
     {
+        bool pinnedBuild = (root.GetProperty("GameVersion").GetString(), root.GetProperty("GameModuleMvid").GetString()) is
+            ("2.2.1", "8fb07b96-f4db-4d2b-884d-c00536d6ccf4") or (Game231FixtureCatalog.Version, Game231FixtureCatalog.Module);
         Require(root.GetProperty("ModifierScenario").GetString() == "original-more-spikes" &&
-            root.GetProperty("RelicStatusAttackSchema").GetInt32() == 1 && root.GetProperty("GameVersion").GetString() == "2.2.1" &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
+            root.GetProperty("RelicStatusAttackSchema").GetInt32() == 1 && pinnedBuild &&
             root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
             new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.All(name => root.GetProperty(name).GetInt32() == 0),
             "MoreSpikes native battle incomplete or from another build.");
