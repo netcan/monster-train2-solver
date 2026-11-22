@@ -204,6 +204,11 @@ EggHatchRemoval 的 2.3.1 受控胜局保留原版遗物定义，用两名配置
 独立分支、18 次出牌、6 次结束回合及两类候选复放通过。
 [`egg-hatch-removal.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/egg-hatch-removal.mt2f)
 
+2.3.1 受控首战用一名配置了 Monstrosity 子类型的原版单位验证 Contingency Plans。
+该单位出场增加 7 层 Spikes，另七个原版敌军出生均维持原层数。完整胜局的 1 次出牌、
+7 次结束回合以及两类候选检查通过。
+[`contingency-plans.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/contingency-plans.mt2f)
+
 受控法术批次录到伤害、治疗、过量治疗和未来抽牌。Dark Deal 定向检查从录制动作找到
 原版卡牌与目标，核对两版相同的 Rage、伤害和随机流。两版均通过专项检查，该 2.3.1
 胜局另通过 10 次出牌、5 次结束回合、16 条分支和候选检查。
