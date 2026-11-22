@@ -150,6 +150,9 @@ StealthWaxers 的出生条件与月相手牌更新可同时生效。两次部署
 原始观察和修复后复测分别归档为 `mechanics/red-crown-equipment-observation/native-branch.mt2f` 与
 `native-supported-branch.mt2f`。直接部署已与原版对齐完整后继、挂载顺序、新装备出牌规则与随机流，
 并接入 2.3.1 兼容检查。结束回合期间触发同类出生仍待原版验证。
+同一左路存档的整场补采确认红冠部署与装备挂载。装备中间帧的房间选择刷新将新装备登记到统计缓存，
+原版调用栈与缓存前后值均保留。冻结复放通过 22 次出牌、9 次结束回合和全部录制候选，
+原版结果为败局。[整战归档](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/unlocked-covenant0-ring5-left-red-crown.mt2f)
 左路另选 Follower 和另一组奖励后，原版对账通过 34 个输入，终局仍判负，首领余 798/900 生命。
 该局归档为 `unlocked-covenant0-ring5-follower-defeat.mt2f`。
 
