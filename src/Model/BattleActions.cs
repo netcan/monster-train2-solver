@@ -1092,18 +1092,19 @@ namespace MonsterTrain2Poju.Model
                     discardInstance = unfrozen;
                 }
             }
-            bool skipNaturalDiscard = discardInstance?.MaskDescriptor != null &&
-                CardBranchMaskModel.Resolve(discardInstance).Traits.Any(trait =>
-                    trait is "CardTraitInfusion" or "CardTraitPersistent");
-            bool consumedOnPlay = !skipNaturalDiscard && consumeSuppression != RelicSuppressExhaustModel.Trait && discardInstance != null && CardExhaustModel.ShouldExhaustOnPlayedDiscard(discardInstance);
-            bool ephemeralEquipment = !skipNaturalDiscard && rule.Effect == "Equipment" && rule.Destination == "Standby" &&
-                discardInstance?.MaskDescriptor != null &&
-                CardBranchMaskModel.Resolve(discardInstance).Traits.Contains("CardTraitEphemeral", StringComparer.Ordinal);
+            var discardTraits = discardInstance?.MaskDescriptor == null ? null : CardBranchMaskModel.Resolve(discardInstance).Traits;
+            bool skipNaturalDiscard = discardTraits?.Any(trait => trait is "CardTraitInfusion" or "CardTraitPersistent") == true;
+            bool ephemeral = discardTraits?.Contains("CardTraitEphemeral", StringComparer.Ordinal) == true;
+            // The 2.3.1 discard callback skips Consume entirely for Ephemeral cards.
+            bool suppressConsume = consumeSuppression == RelicSuppressExhaustModel.Trait ||
+                (context.Statistics?.MonsterDamage != null && rule.Destination == "Purged" && ephemeral);
+            bool consumedOnPlay = !skipNaturalDiscard && !suppressConsume && discardInstance != null &&
+                CardExhaustModel.ShouldExhaustOnPlayedDiscard(discardInstance);
+            bool ephemeralEquipment = !skipNaturalDiscard && rule.Effect == "Equipment" && rule.Destination == "Standby" && ephemeral;
             if (ephemeralEquipment && (consumedOnPlay ||
-                CardBranchMaskModel.Resolve(discardInstance!).Traits.Contains("CardTraitSelfPurge", StringComparer.Ordinal)))
+                discardTraits!.Contains("CardTraitSelfPurge", StringComparer.Ordinal)))
                 return Unsupported("Ephemeral equipment with Consume or SelfPurge requires native callback-order calibration.");
-            bool ephemeralPurgeCallbacks = !skipNaturalDiscard && (rule.Destination == "Purged" || ephemeralEquipment) && discardInstance?.MaskDescriptor != null &&
-                CardBranchMaskModel.Resolve(discardInstance).Traits.Contains("CardTraitEphemeral", StringComparer.Ordinal);
+            bool ephemeralPurgeCallbacks = !skipNaturalDiscard && (rule.Destination == "Purged" || ephemeralEquipment) && ephemeral;
             bool ephemeralBeforeConsume = consumedOnPlay && ephemeralPurgeCallbacks &&
                 CardExhaustModel.EphemeralDiscardPrecedesConsume(discardInstance!);
             if (ephemeralBeforeConsume && train.Rooms.SelectMany(room => room.Units)
@@ -1135,7 +1136,7 @@ namespace MonsterTrain2Poju.Model
                     if (ephemeralPurgeCallbacks && !ephemeralEquipment)
                     {
                         added = CardPileModel.Add(added, card);
-                        if (CardBranchMaskModel.Resolve(discardInstance!).Traits.Contains("CardTraitSelfPurge", StringComparer.Ordinal))
+                        if (discardTraits!.Contains("CardTraitSelfPurge", StringComparer.Ordinal))
                             added = CardPileModel.Add(added, card);
                     }
                     return added;
@@ -1239,9 +1240,9 @@ namespace MonsterTrain2Poju.Model
                 context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw, context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId, context.Cards.DeckDrawDisabledThisTurn), context.BattleRng,
                 context.Gold, context.NextCardId, context.MaxHandSize, context.StatusRules, statistics,
                 terminal ? playingInstance == null ? context.CardInstances : new[] { skipNaturalDiscard
-                    ? context.FindCard(card.InstanceId) ?? playingInstance : (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, nativePlayedCost, consumeSuppression == RelicSuppressExhaustModel.Trait) } :
+                    ? context.FindCard(card.InstanceId) ?? playingInstance : (context.FindCard(card.InstanceId) ?? playingInstance).OnDiscard(true, nativePlayedCost, suppressConsume) } :
                 context.CardInstances?.Select(instance => instance.InstanceId == card.InstanceId
-                    ? skipNaturalDiscard ? instance : instance.OnDiscard(true, nativePlayedCost, consumeSuppression == RelicSuppressExhaustModel.Trait) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
+                    ? skipNaturalDiscard ? instance : instance.OnDiscard(true, nativePlayedCost, suppressConsume) : instance).ToArray(), context.CardRegistry, context.AllScenarioBossesDead, context.NextAddedTemporaryUpgrades,
                 context.OtherPiles == null ? null : piles, context.QueryFrame?.With(runningCombat: !terminal), context.KillCamActivated, context.MagicPower, context.IsolatedBattlePreview, context.EnergyState, context.RoomCapacities, context.AbilityCardCache, context.LastAbilityActivatorUnitId, context.PermanentlyDisabledAbilities, context.LastSpawnedUnitId, context.NextUnitId, context.SpawnPoints, context.SummonCatalog, context.Enchantments, context.PurifyBlockedTriggers, context.Relics, context.TriggerCounts, context.Resources, context.MixState, context.ConduitRetained, context.LifeLinks);
             if (!skipNaturalDiscard) context = ConduitModel.Discarded(context, card.InstanceId);
             if (summonedEndless && !terminal && !consumedOnPlay)
