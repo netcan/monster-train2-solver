@@ -188,8 +188,12 @@ namespace MonsterTrain2Poju.Probe
             if (catalog != null) return catalog;
             AllGameManagers managers = AllGameManagers.Instance!;
             AllGameData all = managers.GetSaveManager().GetAllGameData();
-            var sources = managers.GetCardManager()!.GetAllCards(new List<CardState>())
-                .Select(card => all.FindCardData(card.GetCardDataID())!).ToList();
+            var nativeCards = managers.GetCardManager()!.GetAllCards(new List<CardState>());
+            var sources = nativeCards.Select(card => all.FindCardData(card.GetCardDataID())!).ToList();
+            var equipmentGrants = nativeCards.SelectMany(card => card.GetCardStateModifiers().GetCardUpgrades()
+                    .Concat(card.GetTemporaryCardStateModifiers().GetCardUpgrades()))
+                .SelectMany(upgrade => upgrade.GetTriggerUpgrades()).SelectMany(trigger => trigger.GetEffects())
+                .Where(effect => effect.GetEffectStateName() == EquipmentPoolGrantModel.NativeEffect).Distinct().ToArray();
             // The catalog also carries equipment definitions. Native Hydra's
             // OnEquipmentAdded consumes its equipment without summoning a unit;
             // ordinary player captures must retain that catalog as well.
@@ -197,9 +201,12 @@ namespace MonsterTrain2Poju.Probe
             // capture hook also observes temporary births, so retain an explicit
             // catalog even when no ordinary triggered summon is present.
             bool roomDeathBirths = FullBattleTrace.Active is FullBattleTrace trace && RoomDeathEffectProbe.RequiresBirthWorld(trace);
-            if (!Enabled && !HasPlayerBirths && !roomDeathBirths && !sources.Any(card => card.GetSpawnCharacterData()?.GetTriggers()
+            if (!Enabled && !HasPlayerBirths && !roomDeathBirths && equipmentGrants.Length == 0 && !sources.Any(card => card.GetSpawnCharacterData()?.GetTriggers()
                 .SelectMany(trigger => trigger.GetEffects())
                 .Any(effect => effect.GetEffectStateName() == "CardEffectRemoveEquipment") == true)) return null;
+            CardData[] grantedCards = equipmentGrants.SelectMany(CardGenerationProbe.EquipmentGrantPool).ToArray();
+            var grantedIds = grantedCards.Select(card => card.GetID()).ToHashSet(StringComparer.Ordinal);
+            sources.AddRange(grantedCards);
             // Collect referenced units before building values. Capturing their triggers may
             // discover further references, without nesting a definition inside itself.
             var units = new List<SummonUnitDefinition>();
@@ -241,9 +248,16 @@ namespace MonsterTrain2Poju.Probe
                     room.IsRoomSummonBlocked(managers.GetRelicManager()), room.GetIsPyreRoom(), room.GetCapacityInfo(Team.Type.Heroes).max);
             }).ToArray();
             catalog = new TriggeredSummonCatalog(units, sources.GroupBy(card => card.GetID()).Select(group => group.First())
-                .Select(card => new SummonCardDefinition(CardGenerationProbe.Creation(card), card.GetSpawnCharacterData()?.GetID() ?? "",
-                    card.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectAttachEquipment")
-                        ? BattleActionProbe.Definition(card).Equipment : null)).ToArray(), rooms);
+                .Select(card =>
+                {
+                    CardPlayRule? grantedRule = grantedIds.Contains(card.GetID()) ?
+                        BattleActionProbe.Definition(card, forgeEligible: CardGenerationProbe.ForgeEligibility(card)) : null;
+                    EquipmentDefinition? equipment = grantedRule?.Equipment;
+                    if (grantedRule == null && card.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectAttachEquipment"))
+                        equipment = BattleActionProbe.Definition(card).Equipment;
+                    return new SummonCardDefinition(CardGenerationProbe.Creation(card),
+                        card.GetSpawnCharacterData()?.GetID() ?? "", equipment, grantedRule);
+                }).ToArray(), rooms);
             return catalog;
         }
         private static IEnumerator Observe(IEnumerator native, CardEffectState effect, CardEffectParams parameters)

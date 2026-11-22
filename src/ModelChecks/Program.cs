@@ -204,6 +204,12 @@ if (args.Length == 3 && args[0] == "--native-branch-replay-only")
     Console.WriteLine($"NATIVE-BRANCH-REPLAY PASS module={args[2]} inputs={rows.Length}");
     return;
 }
+if (args.Length == 2 && args[0] == "--native-red-crown-equipment")
+{
+    using var archive = ModelJson.ReadFixture(args[1]);
+    RedCrownEquipmentChecks.Native(archive.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--room-health-mechanism-batch-only")
 {
     RoomHealthMechanismChecks.Native(args[1], args.Length == 3 ? args[2] : null);

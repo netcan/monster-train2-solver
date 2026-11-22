@@ -19,6 +19,13 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectRemoveStatusEffectPerCorrupt" or "CardEffectSacrifice" or "CardEffectForceHatchCheck";
         private static bool StatsFromSelf(string type) => type == "CardEffectAddStatsFromSelf";
 
+        internal static CardActionEffect EquipmentGrant(CardEffectData effect) => new CardActionEffect(
+            EquipmentPoolGrantModel.NativeEffect, effect.GetTargetMode().ToString(), 0,
+            effect.GetTargetTeamType().HasFlag(Team.Type.Heroes), effect.GetTargetTeamType().HasFlag(Team.Type.Monsters),
+            Array.Empty<CombatStatus>(), tests: new CardEffectTests(effect.GetShouldTest(),
+                effect.GetShouldFailToCastIfTestFails(), effect.GetShouldCancelSubsequentEffectsIfTestFails(), false, true,
+                devotionRequirement: DevotionProbe.Requirement(effect), devotionRequirementMax: DevotionProbe.Requirement(effect, true)));
+
         internal static CardActionEffect? Capture(CardEffectState state, List<string>? interactions = null)
         {
             if (state.GetCardEffect() is CardEffectAddStatusEffectDependingOnHealthPercent)

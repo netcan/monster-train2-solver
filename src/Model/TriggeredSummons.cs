@@ -46,8 +46,11 @@ namespace MonsterTrain2Poju.Model
         public CardCreationRule Creation { get; }
         public string SpawnCharacterId { get; }
         public EquipmentDefinition? Equipment { get; }
-        public SummonCardDefinition(CardCreationRule creation, string spawnCharacterId, EquipmentDefinition? equipment = null)
-        { Creation = creation; SpawnCharacterId = spawnCharacterId; Equipment = equipment; }
+        public CardPlayRule? GeneratedEquipmentRule { get; }
+        public bool ShouldSerializeGeneratedEquipmentRule() => GeneratedEquipmentRule != null;
+        public SummonCardDefinition(CardCreationRule creation, string spawnCharacterId, EquipmentDefinition? equipment = null,
+            CardPlayRule? generatedEquipmentRule = null)
+        { Creation = creation; SpawnCharacterId = spawnCharacterId; Equipment = equipment; GeneratedEquipmentRule = generatedEquipmentRule; }
     }
     public sealed class TriggeredSummonCatalog
     {

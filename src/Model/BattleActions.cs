@@ -315,6 +315,17 @@ namespace MonsterTrain2Poju.Model
             UnitCopyCatalog? unitCopyCatalog = null, ElixirCatalog? elixirs = null, ForgeUpgradeDefinition? forgeUpgrade = null, bool? devoteEnabled = null)
         { Rooms = Array.AsReadOnly(rooms.ToArray()); Cards = Array.AsReadOnly(cards.ToArray()); StatusRules = Array.AsReadOnly((statusRules ?? Array.Empty<CombatStatus>()).ToArray()); UnitCopyCatalog = unitCopyCatalog; Elixirs = elixirs; ForgeUpgrade = forgeUpgrade; DevoteEnabled = devoteEnabled; }
         internal BattlePlayRules WithRooms(IReadOnlyList<RoomPlayRule> rooms) => new(rooms, Cards, StatusRules, UnitCopyCatalog, Elixirs, ForgeUpgrade, DevoteEnabled);
+        internal BattlePlayRules WithGeneratedEquipment(CombatContext context)
+        {
+            if (context.SummonCatalog?.Cards.Any(card => card.GeneratedEquipmentRule != null) != true) return this;
+            var missing = context.CardInstances?.Select(card => card.DataId).Distinct(StringComparer.Ordinal)
+                .Where(id => Cards.All(rule => rule.DataId != id)).ToHashSet(StringComparer.Ordinal);
+            if (missing == null || missing.Count == 0) return this;
+            CardPlayRule[] generated = context.SummonCatalog.Cards.Where(card =>
+                card.GeneratedEquipmentRule != null && missing.Contains(card.Creation.DataId)).Select(card => card.GeneratedEquipmentRule!).ToArray();
+            return generated.Length == 0 ? this : new BattlePlayRules(Rooms, Cards.Concat(generated)
+                .OrderBy(rule => rule.DataId, StringComparer.Ordinal).ToArray(), StatusRules, UnitCopyCatalog, Elixirs, ForgeUpgrade, DevoteEnabled);
+        }
         internal BattlePlayRules WithForgeEligibility(bool? eligible) => new(Rooms,
             Cards.Select(card => card.WithForgeEligibility(eligible)).ToArray(), StatusRules, UnitCopyCatalog, Elixirs, ForgeUpgrade, DevoteEnabled);
         internal BattlePlayRules WithCapacities(IReadOnlyList<RoomCapacityState> capacities) => WithRooms(Rooms.Select(room =>
@@ -1326,6 +1337,7 @@ namespace MonsterTrain2Poju.Model
                 queuedTrueFinalBoss: spawn.QueuedTrueFinalBoss, trueFinalBoss: spawn.TrueFinalBoss);
             spawn = ForcedRelentlessModel.Synchronize(spawn);
             if (context.RoomCapacities != null) outputPlayRules = outputPlayRules.WithCapacities(context.RoomCapacities);
+            outputPlayRules = outputPlayRules.WithGeneratedEquipment(context);
             int displayedDraw = source.DrawPerTurn - UnitRoomResourceModel.Amount(source.Spawn.Train, UnitRoomResourceModel.Draw);
             if (RelicOccupiedFloorDrawModel.Has(train.Context))
             {

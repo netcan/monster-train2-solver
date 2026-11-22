@@ -779,6 +779,7 @@ namespace MonsterTrain2Poju.Model
                 // including PreCombat capacity changes and terminal transitions.
                 if (finalContext.RoomCapacities != null)
                     outputPlayRules = outputPlayRules?.WithCapacities(finalContext.RoomCapacities);
+                outputPlayRules = outputPlayRules?.WithGeneratedEquipment(finalContext);
                 BattleRngStream[] streams = source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                     stream.Name == "Battle" ? finalContext.BattleRng : stream.Name == "CardDraw" ? finalContext.Cards.Rng :
                     stream.Name == "Spawning" ? spawn.Rng : stream.Name == "BossActions" && outerBossRng.HasValue ? outerBossRng.Value : stream.State)).ToArray();

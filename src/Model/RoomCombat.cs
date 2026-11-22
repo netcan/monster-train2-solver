@@ -1220,7 +1220,7 @@ namespace MonsterTrain2Poju.Model
                     unit.StatusRegistry.Any(status => status.Stacks < 0 || status.Stacks > 9999)))
                     return "Invalid retained status dictionary on unit " + unit.Id;
                 foreach (CombatStatus status in unit.Statuses)
-                    if (!KnownStatuses.Contains(status.Id) && !(status.Id == "pyrebane" &&
+                    if (!KnownStatuses.Contains(status.Id) && !EquipmentPoolGrantModel.CosmeticStatus(status) && !(status.Id == "pyrebane" &&
                         OuterBossDefinitions.IsAngelDuoInner(unit.AssetKey) && unit.Status("lifelink") == null) && !(linkedHealthOnly &&
                         (status.Id == "lifelink" || status.Id == "pyrebound" && unit.AssetKey == "Boss_Level9_Dominion_V2" ||
                             status.Id == "pyrebane" && unit.AssetKey == "Boss_Level9_Savagery_V2") &&
@@ -1619,6 +1619,12 @@ namespace MonsterTrain2Poju.Model
                             if (state.Context == null || unit.AssetKey != TriggeredStatusModel.OriginalSpurnedDuality ||
                                 !TriggeredStatusModel.MatchesSpurnedTurnBegin(unit, trigger))
                                 return "Health-percent status triggers require the original Spurned turn-begin payload.";
+                            continue;
+                        }
+                        if (effect.Type == EquipmentPoolGrantModel.NativeEffect)
+                        {
+                            if (!EquipmentPoolGrantModel.Captured(unit, trigger, effect, state.Context))
+                                return "Equipment grant requires its original ordered pool, self-spawn and standby state.";
                             continue;
                         }
                         if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectPyreDamageIfNoPlayerUnits" && effect.Type != "CardEffectAddStatusEffect" &&
@@ -4615,6 +4621,10 @@ namespace MonsterTrain2Poju.Model
                                 foreach (CombatUnit actor in shifted.State.Rooms.SelectMany(room => room.Units))
                                     units.FirstOrDefault(item => item.Source.Id == actor.Id)?.Apply(actor);
                             }
+                            else if (effect.Type == EquipmentPoolGrantModel.NativeEffect)
+                            {
+                                if (!GrantEquipment(unit, effect)) break;
+                            }
                             else if (effect.Action != null)
                             {
                                 if (live < 0 && effect.Action.Type == "DrawNextTurn" && retained.StateId == null)
@@ -5452,6 +5462,17 @@ namespace MonsterTrain2Poju.Model
                         bool summonValid = TriggeredSummonTest(actor, effect.Summon);
                         if (!summonValid && effect.Summon.Tests.FailToCast) return false;
                         passed |= summonValid;
+                        continue;
+                    }
+                    if (effect.Type == EquipmentPoolGrantModel.NativeEffect)
+                    {
+                        if (source.Preview || !actor.Alive) continue;
+                        if (actor.Source.EquipmentCards?.Count != 0 || actor.Source.Modifiers?.EquipmentLimit is not > 0)
+                        {
+                            unsupportedReason = "Equipment grant requires an original unequipped host with a free equipment slot.";
+                            return false;
+                        }
+                        passed = true;
                         continue;
                     }
                     CardActionEffect? action = effect.UnitUpgrade ?? effect.Action;
@@ -6361,6 +6382,32 @@ namespace MonsterTrain2Poju.Model
                 bool result = TriggeredStatusModel.Test(RetainedStatusRoom(actor, targets.UnitIds), effect, targets.UnitIds, out string? error, selected);
                 if (error != null) unsupportedReason = error;
                 return result;
+            }
+
+            private bool GrantEquipment(WorkingUnit actor, CombatEffect effect)
+            {
+                if (source.Preview || !actor.Alive) return true;
+                CombatContext sourceContext = context!;
+                CardGenerationResult generated = CardGenerationModel.Apply(sourceContext, effect.Generation!, actor.Source.SpawnerCardId);
+                if (!generated.Supported) { unsupportedReason = generated.UnsupportedReason; return false; }
+                CardToken card = generated.AddedCards.Single();
+                CardPlayRule? rule = sourceContext.SummonCatalog!.Cards
+                    .SingleOrDefault(entry => entry.Creation.DataId == card.DataId)?.GeneratedEquipmentRule;
+                if (rule?.Equipment == null || rule.DataId != card.DataId)
+                {
+                    unsupportedReason = "Selected equipment requires its captured attachment definition.";
+                    return false;
+                }
+                context = generated.Context!;
+                var rules = new BattlePlayRules(Array.Empty<RoomPlayRule>(), new[] { rule });
+                RoomCombatResult equipped = ApplyEquipment(CurrentRoom(), actor.Source.Id, card.InstanceId, rules,
+                    deferAbilityCallbacks: true, deferCallbacks: true);
+                if (!equipped.Supported) { unsupportedReason = equipped.UnsupportedReason; return false; }
+                ImportEnchantmentRoom(equipped.State!);
+                context = EquipmentModel.BindTransferred(context!, card.InstanceId, actor.Source.Id);
+                events.AddRange(equipped.Events);
+                foreach (QueuedCharacterTrigger callback in equipped.PendingCallbacks) QueueCallback(callback);
+                return true;
             }
 
             private void AddCards(WorkingUnit actor, CombatEffect effect)

@@ -81,6 +81,23 @@ namespace MonsterTrain2Poju.Probe
                 if (captured?.Type != JTokenType.Integer || (int)captured < 0 || (int)captured > 7) return false;
                 property.Value = captured.DeepClone();
             }
+            if (RedCrownEquipmentObservation.Enabled && prefix?.Length == 0 &&
+                request.GetProperty("Reason").GetString() == "Unmodeled status redcrown on LadyOfTheReformed")
+            {
+                foreach (JObject effect in value.Descendants().OfType<JObject>().Where(item =>
+                    (string?)item["Type"] == EquipmentPoolGrantModel.NativeEffect && item["Generation"]?.Type is null or JTokenType.Null &&
+                    item["Action"]?.Type is null or JTokenType.Null && item["CardPool"] is JArray { Count: 0 } &&
+                    (int?)item["Count"] == 0 && string.IsNullOrEmpty((string?)item["Destination"])).ToArray())
+                {
+                    if (actual.SelectToken(effect.Path) is not JObject captured ||
+                        (string?)captured["Type"] != EquipmentPoolGrantModel.NativeEffect) return false;
+                    foreach (string name in new[] { "Generation", "CardPool", "Destination", "Count", "Action" })
+                        effect[name] = captured[name]?.DeepClone();
+                }
+                foreach (JProperty property in value.Descendants().OfType<JProperty>()
+                    .Where(property => property.Name == "SummonCatalog" && property.Value.Type == JTokenType.Null).ToArray())
+                    property.Value = actual.SelectToken(property.Path)?.DeepClone() ?? JValue.CreateNull();
+            }
             return JToken.DeepEquals(value, actual);
         }
         private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }

@@ -14,7 +14,7 @@ namespace MonsterTrain2Poju.Probe
         private static readonly List<Selection> selections = new List<Selection>();
         [ThreadStatic] private static Selection? pending;
 
-        private static bool Enabled => UnsupportedBranchObservation.Enabled &&
+        internal static bool Enabled => UnsupportedBranchObservation.Enabled &&
             Environment.GetEnvironmentVariable("MT2_PROBE_OBSERVE_RED_CROWN_EQUIPMENT") == "1";
 
         private sealed class Selection

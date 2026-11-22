@@ -55,6 +55,17 @@ namespace MonsterTrain2Poju.Probe
             var pool = new List<CardData>(); state.GetFilteredCardListFromPool(AllGameManagers.Instance!.GetRelicManager(), ref pool);
             return Definition(state.GetSourceCardEffectData(), pool);
         }
+
+        internal static List<CardData> EquipmentGrantPool(CardEffectData effect)
+        {
+            var pool = new List<CardData>();
+            CardEffectState.GetFilteredCardListFromPool(effect.GetParamCardPool(), effect.GetParamCardFilter(),
+                AllGameManagers.Instance!.GetRelicManager(), ref pool);
+            return pool;
+        }
+
+        internal static CardGenerationRule EquipmentGrant(IReadOnlyList<CardData> pool) =>
+            new CardGenerationRule("DiscardPile", 1, pool.Select(Creation).ToArray(), permanent: false);
         private static CardGenerationRule Definition(CardEffectData data, List<CardData> pool)
         {
             var interactions = new List<string>();
