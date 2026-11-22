@@ -1563,6 +1563,7 @@ if ($PSBoundParameters.ContainsKey('OriginalOpeningUnitIds')) {
 if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells -or $OriginalTargetedStatusSpells -or $OriginalOpeningSpellIds.Count -or $OriginalOpeningUnitIds.Count) {
     $allowed = @('OriginalStatusMagnitudeWitness', 'OriginalStatusMagnitudeMoonWitness', 'OriginalRoomStatusSpells', 'OriginalTargetedStatusSpells', 'OriginalOpeningSpellIds', 'OriginalOpeningUnitIds', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
         'OriginalRoomStatusSpellsFullBattle', 'WithOriginalStatusMagnitudeRelics', 'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    if ($OriginalOpeningSpellIds.Count -or $OriginalOpeningUnitIds.Count) { $allowed += 'InputProfile' }
     $modes = @($OriginalStatusMagnitudeWitness, $OriginalStatusMagnitudeMoonWitness, $OriginalRoomStatusSpells, $OriginalTargetedStatusSpells, ($OriginalOpeningSpellIds.Count -gt 0), ($OriginalOpeningUnitIds.Count -gt 0)) | Where-Object { $_ }
     if (!$BinaryCapture -or @($modes).Count -ne 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
@@ -2260,6 +2261,11 @@ if ($InputProfile) {
     $checkpointData = Get-Content -LiteralPath $checkpointSave -Raw | ConvertFrom-Json
     if ($checkpointData.gameSequence -ne 6 -or $checkpointData.runState.distance -ne $BattleDistance) {
         throw 'InputProfile must be a native BattleIntro checkpoint at BattleDistance.'
+    }
+    if (($OriginalOpeningSpellIds.Count -or $OriginalOpeningUnitIds.Count) -and
+        ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
+         $checkpointData.wasDevCheatUsed -ne $false -or $checkpointData.runState.numBattlesCompleted -ne 0)) {
+        throw 'Original opening cohorts require a standard native first-battle checkpoint.'
     }
     if ($CapturePlayerDeploymentOnly) { $deploymentInputSignature = Get-OriginalSignature $checkpoint }
     if ($ContinueToNextRing) {
