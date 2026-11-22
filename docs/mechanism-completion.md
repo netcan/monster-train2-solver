@@ -81,6 +81,12 @@ ModelChecks 调用，`BattleSearchModel`、实际出牌与回合切换没有调�
 dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --original-status-magnitude-witness-only tests/compatibility/game-2.3.1/mechanics/status-magnitude/native-exchange.mt2f
 ```
 
+改用会开启月相的原版 Selene 后，四件遗物的加成在同一场战斗仍生效。重新采集
+并严格复放五次出牌和一次普通结束回合，完整后继及随机流一致。Selene 的月相
+掩码为 `5→6→5`，Sweep 随满月获得和移除。部署结束的列车状态检查另有一次差异，
+该阶段仍在定位。已通过的普通回合证据见
+[`native-moon-verified.mt2f`](../tests/compatibility/game-2.3.1/mechanics/status-magnitude/native-moon-verified.mt2f)。
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
