@@ -52,6 +52,13 @@ ModelChecks 调用，`BattleSearchModel`、实际出牌与回合切换没有调�
 同一命令还生成 `results/relic-priority-version-delta-2.3.1.tsv`，对照两份原版目录的
 12 件新增和 13 件变化，并附当前战斗的在场证据。目录中的字段差异可直接定位复测范围。
 
+2026-11-22 在 183 场已结算原版战斗上重生成内容证据。2,741 次出牌或技能中，
+601 张符合统计条件的收藏卡有 132 张的结算定义匹配，27 张有身份记录，442 张
+没有出牌记录。7,746 份决策快照中，236 件收藏遗物有 50 件的在场有序效果列表
+与目录匹配。版本优先清单的 52 张卡和 25 件遗物均达到各自这项证据要求。
+卡牌明细为 `results/card-evidence-2.3.1.tsv`，按 `Get-CardCoverageInventory.ps1 -Current`
+重建。遗物明细仍由上面的遗物盘点生成。
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和

@@ -88,6 +88,8 @@
 胜局归档为 `unlocked-covenant0-ring5-roster-victory.mt2f`。同一进程完成战后领取和地图选择，保存了
 第 6 环泰坦试炼战前档 `.probe-runs/full-battle-units-spells-and-junk-20261122-101943-8826725e-before-ring6`。
 该档记录前五战全胜，主存档 SHA256 为 `3407bd18b9bbbcccdea847b70312a3a5a43c79d9170eab5043c378aa37430a11`。
+该胜局的 50 个录制决策和另一条 Follower 路线的 34 个录制决策共枚举 1,568 个出牌或技能候选
+与 84 个结束回合后继，原版输入的完整后继与随机流匹配，零未支持、零截断。
 同一第 4 环胜局也已在原版奖励界面改选 `RageOnBurnoutStackLoss`，领取结果和其余流程通过原版战役验证。
 第 5 环战前档为 `.probe-runs/campaign-ring5-20261122-115007-050548a2-before-ring5`，主存档 SHA256 为
 `2e894fc3caa702ecd30f3d4c5e59dffefd244b67661028c35242fdf207df37db`。带该遗物的月相手牌刷新已有
