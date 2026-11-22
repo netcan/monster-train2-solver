@@ -533,6 +533,10 @@ Draff 出生，Morel Mistress 提供排除对照。7 次出牌、5 次结束回�
 7 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`wicked-blaze.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/wicked-blaze.mt2f)
 
+原版 Starter Reform 从耗尽堆随机取回唯一合格的单位，赋予 +5 攻击、+5 生命、费用 −99 和 Ephemeral。
+2 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
+[`starter-reform.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/starter-reform.mt2f)
+
 原版 Hallowed Halls 牺牲同层友军，并从预置耗尽堆重建六名升级单位。专项核对 Standby、
 站位和容量。5 次出牌、6 次结束回合及两类候选通过。
 [`hallowed-halls.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/hallowed-halls.mt2f)
