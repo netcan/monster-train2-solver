@@ -47,9 +47,11 @@ internal static class RelicOpeningCorruptionChecks
     private static bool RelicsUnchanged(TrainCombatState state, CombatRelicState[] owners) => JsonSerializer.Serialize(state.Context!.Relics) == JsonSerializer.Serialize(owners);
     internal static void Native(FixtureValue root)
     {
+        var build = (root.GetProperty("GameVersion").GetString(), root.GetProperty("GameModuleMvid").GetString());
+        bool supportedBuild = build is ("2.2.1", "8fb07b96-f4db-4d2b-884d-c00536d6ccf4") or
+            ("2.3.1", "bf93f060-beda-46b1-b808-95ebf1e9a99d");
         Require(root.GetProperty("ModifierScenario").GetString() == "original-opening-corruption-relics" &&
-            root.GetProperty("GameVersion").GetString() == "2.2.1" &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
+            supportedBuild &&
             root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
             new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.All(name => root.GetProperty(name).GetInt32() == 0),
             "Opening corruption battle failed acceptance.");
