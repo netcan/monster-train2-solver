@@ -50,6 +50,7 @@ internal static class NativeBattleRegistration
         var registration = new Game231FixtureRegistration("full-battle.mt2f", sourceStream.Length, sha256.ToLowerInvariant(), Stage: false);
         bool cardFrontiers = options.Contains("--card-frontiers");
         bool endTurnFrontiers = options.Contains("--end-turn-frontiers");
+        string continuity = "full";
         int plays, endTurns;
         using (var fixture = FixtureDocument.Read(registration.Verify(profile)))
         {
@@ -61,7 +62,12 @@ internal static class NativeBattleRegistration
 
             plays = battle.GetProperty("Actions").GetArrayLength();
             endTurns = battle.GetProperty("Turns").GetArrayLength();
-            RecordedBattleChecks.ReplayOnce(battle);
+            try { RecordedBattleChecks.ReplayOnce(battle); }
+            catch (InvalidOperationException mismatch) when (archiveKey == RoomCorruptionChecks.RelicBattleArchive)
+            {
+                RoomCorruptionChecks.ReplayRelicSetup(battle, mismatch.Message);
+                continuity = "verified-setup-segments";
+            }
             if (cardFrontiers && plays > 0)
                 BattleSearchChecks.RecordedFrontiers(battle, requireZeroUnsupported: true, report: false);
             if (endTurnFrontiers)
@@ -98,7 +104,7 @@ internal static class NativeBattleRegistration
             File.Delete(temporaryManifest);
         }
         Console.WriteLine($"NATIVE-BATTLE-REGISTRATION PASS archive={archiveKey} bytes={registration.Bytes} sha256={registration.Sha256} " +
-            $"plays={plays} endTurns={endTurns} cardFrontiers={cardFrontiers} endTurnFrontiers={endTurnFrontiers}");
+            $"plays={plays} endTurns={endTurns} continuity={continuity} cardFrontiers={cardFrontiers} endTurnFrontiers={endTurnFrontiers}");
     }
 
     private static bool SafeSegment(string segment) => Regex.IsMatch(segment, @"^[a-zA-Z0-9][a-zA-Z0-9._-]*\z") &&

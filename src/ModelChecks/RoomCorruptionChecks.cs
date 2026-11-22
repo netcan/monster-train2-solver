@@ -11,6 +11,7 @@ internal static class RoomCorruptionChecks
     private const string KeeperId = "1acb9146-44b9-476c-a30e-5778750710a1";
     private const string CorruptionRelicId = "f302d4a1-13ba-4907-a26d-f0d8eead6f2e";
     private const string StewardId = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
+    internal const string RelicBattleArchive = "mechanics/corruption-relic-trigger/battle.mt2f";
 
     internal static void Run()
     {
@@ -364,6 +365,103 @@ internal static class RoomCorruptionChecks
         Require(actual.Spawn.Train.Context!.QueryFrame!.SelectedRoomIndex == 1, "Corruption notification did not focus the second floor.");
         Console.WriteLine("NATIVE-TOWER-CORRUPTION PASS: two floor callbacks, notification focus and current-floor scaling, exact complete action.");
     }
+
+    internal static void ReplayRelicSetup(FixtureValue fixture, string mismatch)
+    {
+        Require(fixture.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            fixture.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            fixture.GetProperty("Schema").GetInt32() == 103 &&
+            fixture.GetProperty("ModifierScenario").GetString() == "corruption-relic-trigger" &&
+            mismatch.StartsWith("before play 2 in turn 1: ", StringComparison.Ordinal),
+            "Unexpected native corruption relic setup.");
+        FixtureValue[] turns = fixture.GetProperty("Turns").EnumerateArray().ToArray();
+        FixtureValue[] plays = fixture.GetProperty("Actions").EnumerateArray().ToArray();
+        Require(turns.Select(RecordedBattleChecks.DecisionTurn).SequenceEqual(Enumerable.Range(0, 6)) &&
+            plays.Length == 19 && RecordedBattleChecks.DecisionTurn(plays[0]) == 0 &&
+            RecordedBattleChecks.DecisionTurn(plays[1]) == 1 && RecordedBattleChecks.DecisionTurn(plays[2]) == 1 &&
+            plays.Skip(1).All(play => RecordedBattleChecks.DecisionTurn(play) >= 1) &&
+            plays.Where(play => play.GetProperty("ScenarioAction").GetBoolean())
+                .Select(play => play.GetProperty("Index").GetInt32()).SequenceEqual([1, 2]),
+            "Expected the one native hand setup between deployment and turn 1.");
+
+        FixtureValue before = turns[0].GetProperty("Actual"), after = plays[1].GetProperty("Before");
+        SameFields(before, after, "Spawn", "PlayRules");
+        FixtureValue oldSpawn = before.GetProperty("Spawn"), newSpawn = after.GetProperty("Spawn");
+        SameFields(oldSpawn, newSpawn, "Train");
+        FixtureValue oldTrain = oldSpawn.GetProperty("Train"), newTrain = newSpawn.GetProperty("Train");
+        SameFields(oldTrain, newTrain, "Context", "Rooms");
+        FixtureValue oldContext = oldTrain.GetProperty("Context"), newContext = newTrain.GetProperty("Context");
+        FixtureValue[] oldRooms = oldTrain.GetProperty("Rooms").EnumerateArray().ToArray();
+        FixtureValue[] newRooms = newTrain.GetProperty("Rooms").EnumerateArray().ToArray();
+        Require(oldRooms.Length == newRooms.Length, "Native hand setup changed train rooms.");
+        foreach (var (oldRoom, newRoom) in oldRooms.Zip(newRooms))
+        {
+            SameFields(oldRoom, newRoom, "Context");
+            Require(oldRoom.GetProperty("Context").ContentEquals(oldContext) && newRoom.GetProperty("Context").ContentEquals(newContext),
+                "Native room and train captures disagree about the test hand setup.");
+        }
+        SameFields(oldContext, newContext, "Cards", "CardInstances", "CardRegistry", "NextCardId", "Statistics");
+        FixtureValue oldCards = oldContext.GetProperty("Cards"), newCards = newContext.GetProperty("Cards");
+        SameFields(oldCards, newCards, "Hand");
+        int next = oldContext.GetProperty("NextCardId").GetInt32();
+        Require(newContext.GetProperty("NextCardId").GetInt32() == next + 2 &&
+            plays[1].GetProperty("Action").GetProperty("CardInstanceId").GetInt32() == next &&
+            plays[2].GetProperty("Action").GetProperty("CardInstanceId").GetInt32() == next + 1,
+            "Native corruption relic hand setup allocated or played unexpected cards.");
+        FixtureValue[] oldHand = oldCards.GetProperty("Hand").EnumerateArray().ToArray();
+        FixtureValue[] newHand = newCards.GetProperty("Hand").EnumerateArray().ToArray();
+        Require(oldHand.Length == 5 && newHand.Length == oldHand.Length + 2 &&
+            SameCards(newHand.Take(2), [(next + 1, EchoesId), (next, UnearthedId)]) &&
+            oldHand.Zip(newHand.Skip(2)).All(pair => pair.First.ContentEquals(pair.Second)),
+            "Expected the two configured corruption relic test spells prepended in native hand order.");
+
+        FixtureValue[]? added = null;
+        foreach (string field in new[] { "CardInstances", "CardRegistry" })
+        {
+            FixtureValue[] previous = oldContext.GetProperty(field).EnumerateArray().ToArray();
+            FixtureValue[] prepared = newContext.GetProperty(field).EnumerateArray().ToArray();
+            FixtureValue[] appended = prepared.Skip(previous.Length).ToArray();
+            Require(SameCards(appended, [(next, UnearthedId), (next + 1, EchoesId)]) &&
+                previous.Zip(prepared).All(pair => pair.First.ContentEquals(pair.Second)) &&
+                appended.All(card => card.GetProperty("RawCostOverride").GetInt32() == 0 &&
+                    card.GetProperty("MaskDescriptor").GetProperty("BaseCost").GetInt32() == 0) &&
+                (added == null || added.Zip(appended).All(pair => pair.First.ContentEquals(pair.Second))),
+                "Native test spell ownership, zero costs, or existing card states changed.");
+            added = appended;
+        }
+        FixtureValue oldStats = oldContext.GetProperty("Statistics"), newStats = newContext.GetProperty("Statistics");
+        SameFields(oldStats, newStats, "TrackedCards", "StoredCards");
+        foreach (string field in new[] { "TrackedCards", "StoredCards" })
+            Require(newStats.GetProperty(field).Deserialize<int[]>()!.SequenceEqual(
+                oldStats.GetProperty(field).Deserialize<int[]>()!.Concat([next, next + 1])),
+                "Native hand setup changed statistics other than the two registered card identities.");
+
+        FixtureValue oldRules = before.GetProperty("PlayRules"), newRules = after.GetProperty("PlayRules");
+        SameFields(oldRules, newRules, "Cards");
+        FixtureValue[] previousRules = oldRules.GetProperty("Cards").EnumerateArray().ToArray();
+        var preparedRules = newRules.GetProperty("Cards").EnumerateArray().ToLookup(rule =>
+            rule.GetProperty("DataId").GetString() is UnearthedId or EchoesId);
+        Require(preparedRules[false].Count() == previousRules.Length &&
+            previousRules.Zip(preparedRules[false]).All(pair => pair.First.ContentEquals(pair.Second)) &&
+            preparedRules[true].Select(rule => rule.GetProperty("DataId").GetString()).SequenceEqual([UnearthedId, EchoesId]),
+            "Native hand setup changed unrelated projected play rules.");
+
+        RecordedBattleChecks.ReplayOnce(fixture, lastTurn: 0);
+        RecordedBattleChecks.ReplayOnce(fixture, firstTurn: 1);
+    }
+
+    private static void SameFields(FixtureValue before, FixtureValue after, params string[] exceptions)
+    {
+        var previous = before.EnumerateObject().Where(field => !exceptions.Contains(field.Name)).ToArray();
+        var current = after.EnumerateObject().Where(field => !exceptions.Contains(field.Name)).ToArray();
+        Require(previous.Length == current.Length && previous.Zip(current).All(pair =>
+            pair.First.Name == pair.Second.Name && pair.First.Value.ContentEquals(pair.Second.Value)),
+            "Native corruption relic hand setup changed unrelated state.");
+    }
+
+    private static bool SameCards(IEnumerable<FixtureValue> values, (int, string)[] expected) =>
+        values.Select(card => (card.GetProperty("InstanceId").GetInt32(), card.GetProperty("DataId").GetString()))
+            .SequenceEqual(expected.Select(card => (card.Item1, (string?)card.Item2)));
 
     internal static void NativeRelicTrigger(FixtureValue fixture)
     {
