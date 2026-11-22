@@ -69,3 +69,14 @@ pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -OriginalJuiceUpgrades -Ju
 获胜且四项采集计数均为零。二进制归档为
 `tests/compatibility/game-2.3.1/mechanics/mollis-cycle-of-life/battle.mt2f`，
 由 `Check-Game231JuiceMechanism.ps1` 一并验证。
+
+原版 Shelter 提供腐化状态缩放的对照。通过原版资格筛选和魂魄接口附加 Mollis T3，
+在同一层三点腐化下各付费施放一次。普通 Shelter 增加 6 点护甲，附加 Mollis T3 后
+增加 60 点护甲。捕获到的特性顺序先算腐化，再应用 Juice，随后结算 OnCast 护甲。
+两次施放的完整后继与随机流均通过独立复放。倒置特性顺序仍被模型拒绝。
+原版组件约 33 秒，在两次施放结算后退出。
+[`mollis-shelter/native-casts.mt2f`](../tests/compatibility/game-2.3.1/mechanics/mollis-shelter/native-casts.mt2f)
+
+`Check-Game231JuiceMechanism.ps1 -SkipBuild -ComponentOnly` 同时复核既有倍率矩阵与
+两次 Shelter 施放。安装版录制矩阵中五个 Juice 升级均没有特性参数中的 OnCast 效果，
+其余混合缩放和参数效果仍待原版入口来验证。
