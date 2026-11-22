@@ -331,6 +331,10 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 专项还核对门槛、重置及随机流。20 次出牌、5 次结束回合和两类候选通过。
 [`deck-threshold-draw.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-relics/deck-threshold-draw.mt2f)
 
+原版 ConserveEmber 实机验证七次跨回合保留余烬，以及 21 次付费出牌和终局剩余余烬。
+7 次结束回合及两类候选均通过。
+[`conserve-ember.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-relics/conserve-ember.mt2f)
+
 两件原版 Sting 遗物对照 53 次卡牌修饰回调，三次付费施放均获得合计 +30 伤害与穿甲。
 19 次出牌、6 次结束回合、32 条修饰器分支和候选检查通过。
 [`sting-with-original-relics.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/sting-with-original-relics.mt2f)
