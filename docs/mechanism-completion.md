@@ -258,8 +258,10 @@ CooldownOnDamage_DH 的原版对照核对冷却从 3 降到 2，以及空法术�
 [`cooldown-on-damage-no-prior-status.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/cooldown-on-damage-no-prior-status.mt2f)
 
 ExtraFeedTrigger 的原版查询确认友军 OnFeed 次数为 2，OnDeath 次数保持 1。
-61 个战斗阶段、5 次出牌、7 次结束回合与两类候选通过。实际进食时的重复回调仍需原版录像。
-[`extra-feed-trigger.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/extra-feed-trigger.mt2f)
+61 个战斗阶段、5 次出牌、7 次结束回合与两类候选通过。实际普通进食也已录到两次 OnFeed，
+合金构装体的燃料从 1 增至 3，矿工只被吃掉一次，完整状态与随机数在 16 条分支上复放一致。
+[`extra-feed-trigger.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/extra-feed-trigger.mt2f) ·
+[`extra-feed-trigger-meal.mt2f`](../tests/compatibility/game-2.3.1/mechanics/original-source-backed-feeding/extra-feed-trigger-meal.mt2f)
 
 Mother’s Remnant III 在原版满手时把首次合格出牌的永久副本加入牌组，同回合再次出牌受次数限制。
 34 次出牌、7 次结束回合与两类候选检查通过。
