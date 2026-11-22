@@ -317,7 +317,9 @@ Cael 零盟约试炼的攻击与生命、吸血变体分别通过 26 次出牌�
 同一第五环 51 血胜局另由原版战役选择 Shield of Wyngh 和 Soulsmelter，经过 59 项
 奖励及地图事件到达独立的第六环战前检查点。10 秒搜索预算的首个原版测试在回合 7
 判负。35 次出牌或技能、8 次 EndTurn、16 条独立分支、滚动预测及四项采集计数通过。
-隔离证据位于 `.probe-runs/full-battle-units-spells-and-junk-20261121-212245-06b6ecdc/`。
+2026-11-23 从已有隔离录档登记，当前模型连续复放及两类候选通过。43 个录制局面共枚举
+1,074 个出牌或技能候选与 43 个结束回合后继，零未支持、零截断。
+[`current-ring6-shield-wyngh-soulsmelter-defeat.mt2f`](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring6-shield-wyngh-soulsmelter-defeat.mt2f)
 
 同一第五环胜局按原生卡牌选择领取 PunkrockReveler 和 DragonsBreath，复放 54 个固定
 输入后以 51 点薪火生命获胜并抵达第六环战前检查点。第六环沿用两线程、单次搜索 10 秒，
