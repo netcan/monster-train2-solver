@@ -324,6 +324,10 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 Keeper 同时给自己和 Train Steward 增加升级。共 61 次出牌、18 次结束回合，
 专项和候选检查均通过。三场归档位于 `mechanics/controlled-original-corruption-triggers/`。
 
+Ember Forge 与 Wildwood Custodian 使用原版单位定义完成首战对照。前者在回合结算补 2 余烬，
+后者存活时实际抽六张牌，死亡后恢复五张。5 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
+[`ember-and-draw.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/ember-and-draw.mt2f)
+
 腐化遗物批次观察到原版为楼层敌军增加两层 Corrupt Poison。部署结束后的两张零费测试牌
 单独核对，其余状态和随机流逐项比较。19 次出牌、6 次结束回合及候选检查分段通过。
 [`battle.mt2f`](../tests/compatibility/game-2.3.1/mechanics/corruption-relic-trigger/battle.mt2f)
