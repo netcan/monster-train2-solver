@@ -111,6 +111,7 @@ internal static class CardCoverageInventory
             WriteDamageAudit(eligible, indexed);
             return;
         }
+        if (check) CheckBirthLifecycleEvidence(byId);
 
         var report = new StringBuilder();
         Row(report, "GameVersion", "GameModuleMvid", "DataId", "AssetKey", "Role", "EligibleLogbookPlay", "Evidence", "MatchedPlays",
@@ -134,6 +135,34 @@ internal static class CardCoverageInventory
         Console.WriteLine($"CARD-EVIDENCE {CurrentVersion} {(check ? "CHECK" : "WRITE")} PASS archived={registrations.Count} settledBattles={indexed} wins={wins} stageBattles={stage} excludedBattles={excluded} acceptedActions={actions} excludedActions={excludedActions} unresolvedIdentities={unresolved} outsideCatalog={outsideCatalog}");
         Console.WriteLine($"logbook={cards.Count(card => card.Logbook)} eligible={eligible.Length} definitionMatched={matched} identityObservedOnly={identityOnly} noRecordedPlay={eligible.Length - matched - identityOnly} missingDefinitionMatch={eligible.Length - matched} report={output}");
         Console.WriteLine($"priority={priority.Total} definitionMatched={priority.Matched} identityObservedOnly={priority.Identity} noRecordedPlay={priority.Total - priority.Matched - priority.Identity} report={priorityOutput}");
+    }
+
+    private static void CheckBirthLifecycleEvidence(IReadOnlyDictionary<string, Card> byId)
+    {
+        const string archive = "mechanics/cael-shield-rank-two-titan-trial/battle.mt2f";
+        (string Id, int Action)[] witnesses =
+        [
+            ("a5237619-8de3-46d2-8c52-e0d22abbc008", 1), // Miser
+            ("0060b286-4716-49e0-9714-3fd7811b9f72", 2), // GreedDragon
+            ("6d2053e9-1a6a-4862-b348-76a92a92ea83", 4), // Sycophant
+            ("5fcb0af2-7bab-4998-94c9-e74a828fff01", 21), // GoldyWhelp
+            ("eef8abd9-3550-4da6-a8bd-d5f63e9d2b16", 24), // SnottyWhelp
+        ];
+        foreach (var witness in witnesses)
+        {
+            Card card = byId[witness.Id];
+            Require(card.Evidence.TryGetValue(archive, out Plays? plays) && plays.Direct.Contains(witness.Action),
+                $"Rank-two trial birth rule does not match the original {card.Name} definition at action {witness.Action}.");
+        }
+
+        using var catalog = NativeFixtureCapture.Capture(new { SpawnUnit = new { DeathState = new { HasFinishedDying = false, IsBeingRemoved = false } } });
+        foreach (var (despawned, destroyed) in new[] { (true, false), (false, true) })
+        {
+            using var observed = NativeFixtureCapture.Capture(new { SpawnUnit = new { DeathState = new {
+                HasFinishedDying = false, IsBeingRemoved = false, IsDespawned = despawned, IsDestroyed = destroyed } } });
+            Require(!Equivalent(catalog.RootElement, observed.RootElement, ruleRoot: true, cardRule: true, currentBuild: true),
+                "A despawned or destroyed unit cannot match a live birth definition.");
+        }
     }
 
     private static void WriteDamageAudit(Card[] eligible, int settledBattles)
@@ -973,6 +1002,17 @@ internal static class CardCoverageInventory
                 // EnemySpawningProbe emits native MoonPhase.None when mask capture is enabled.
                 if (!a.ContainsKey("MoonPhaseMask") && b.TryGetValue("MoonPhaseMask", out FixtureValue moonPhase) &&
                     moonPhase.ValueKind == FixtureKind.Number && moonPhase.GetInt32() == 4) b.Remove("MoonPhaseMask");
+            }
+            if (currentBuild && cardRule && path == "$.SpawnUnit.DeathState" &&
+                !a.ContainsKey("IsDespawned") && !a.ContainsKey("IsDestroyed") &&
+                a.TryGetValue("HasFinishedDying", out var catalogDying) && catalogDying.ValueKind == FixtureKind.False &&
+                a.TryGetValue("IsBeingRemoved", out var catalogRemoving) && catalogRemoving.ValueKind == FixtureKind.False &&
+                b.TryGetValue("IsDespawned", out var despawned) && despawned.ValueKind == FixtureKind.False &&
+                b.TryGetValue("IsDestroyed", out var destroyed) && destroyed.ValueKind == FixtureKind.False)
+            {
+                // The original birth template emits both lifecycle flags as false when capture enables them.
+                b.Remove("IsDespawned");
+                b.Remove("IsDestroyed");
             }
             if (cardRule && path.Contains(".MaskDescriptor.KillTriggers[", StringComparison.Ordinal) &&
                 path.EndsWith(".SpawnFallbackUnit", StringComparison.Ordinal) && Text(left, "AssetKey") == "MonsterFunguy" &&
