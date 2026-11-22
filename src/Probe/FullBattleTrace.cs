@@ -1000,11 +1000,12 @@ namespace MonsterTrain2Poju.Probe
 
             using var document = NativeFixtureCapture.Capture(new
             {
-                Schema = 1,
+                Schema = 2,
                 Boundary = "NativeOriginalHallGraftedBirth",
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(RelicState).Assembly.ManifestModule.ModuleVersionId,
                 CaptureFailures, Pending, Hall = hall, Birth = birth, NewUnits = born,
+                CloneObservations = HallGraftedBirthProbe.Clones,
                 Equipment = EquipmentProbe.Records.Where(record => born.Any(actor => actor.Id == record.UnitId)).ToArray()
             });
             using var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "hall-grafted-birth.mt2f"));

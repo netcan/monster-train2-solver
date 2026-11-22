@@ -77,7 +77,15 @@ namespace MonsterTrain2Poju.Probe
         }
         [HarmonyPatch(typeof(CharacterState), nameof(CharacterState.AddEquipment))]
         private static class AddPatch
-        { private static void Postfix(CharacterState __instance, CardState equipmentCard, bool grafted, ref IEnumerator __result) => __result = Wrap(__result, __instance, equipmentCard, false, grafted); }
+        {
+            private static void Postfix(CharacterState __instance, CardState equipmentCard, bool grafted, ref IEnumerator __result)
+            {
+#if DEVELOPMENT_PROBE
+                if (grafted) HallGraftedBirthProbe.ObserveAttachment(__instance, equipmentCard);
+#endif
+                __result = Wrap(__result, __instance, equipmentCard, false, grafted);
+            }
+        }
         [HarmonyPatch(typeof(CharacterState), nameof(CharacterState.RemoveEquipment))]
         private static class RemovePatch
         { private static void Postfix(CharacterState __instance, CardState equipmentCard, ref IEnumerator __result) => __result = Wrap(__result, __instance, equipmentCard, true); }

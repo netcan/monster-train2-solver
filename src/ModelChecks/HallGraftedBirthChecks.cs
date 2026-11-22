@@ -8,10 +8,12 @@ internal static class HallGraftedBirthChecks
     private const string AssistantId = "3a8240bd-8b96-4d6e-b2d1-49ff8b5d8022";
     private const string GraftId = "0a928329-666c-4ce6-a1c3-413977e37e46";
     private const string Unsupported = "Grafted source-card cloning requires its independent graft identity transition.";
+    private sealed record Callback(string Phase, int Card, int Result, int Graft, bool? Cardless);
 
     internal static void Native(FixtureValue root)
     {
-        Require(root.GetProperty("Schema").GetInt32() == 1 &&
+        int schema = root.GetProperty("Schema").GetInt32();
+        Require(schema is 1 or 2 &&
             root.GetProperty("Boundary").GetString() == "NativeOriginalHallGraftedBirth" &&
             root.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
             root.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
@@ -74,7 +76,7 @@ internal static class HallGraftedBirthChecks
             cloneGear == prior.NextCardId && clone.SpawnerCardId == cloneGear + 1 && settled.NextCardId == clone.SpawnerCardId + 1 &&
             prior.FindCard(paid.SpawnerCardId)?.GraftedEquipmentCardId == paidGear &&
             priorRegistry.Single(card => card.InstanceId == paidGear).EquippedUnitId == 0,
-            "Native clone must allocate an independent equipment card before its detached source card.");
+            "Projected combat IDs must distinguish the clone's detached source and the new graft.");
         foreach (CombatUnit unit in newUnits)
         {
             CardInstanceState source = settledRegistry.Single(card => card.InstanceId == unit.SpawnerCardId);
@@ -112,6 +114,8 @@ internal static class HallGraftedBirthChecks
                 "Native attachment ordering or detached-to-owned transition differs.");
         }
 
+        if (schema == 2) VerifyCloneCallbacks(root);
+
         string parent = Json(before), observed = Json(actual);
         BattleActionResult rejected = BattleActionModel.PlayCard(before, deploy);
         Require(rejected.Reason == Unsupported && !rejected.Supported && Json(before) == parent &&
@@ -121,6 +125,35 @@ internal static class HallGraftedBirthChecks
         Require(continued.Supported && continued.State != null && Json(actual) == observed,
             "The advisor could not consume the unchanged observed successor: " + continued.UnsupportedReason);
         Console.WriteLine("NATIVE-HALL-GRAFTED-BIRTH PASS: original paid and cloned units, distinct native graft ownership, source alias, physical slots, unchanged Battle/Draw RNG, preserved prediction guard and observed-root EndTurn.");
+    }
+
+    private static void VerifyCloneCallbacks(FixtureValue root)
+    {
+        FixtureValue[] observations = root.GetProperty("CloneObservations").EnumerateArray().ToArray();
+        Require(observations.Length == 1 && observations[0].GetProperty("Completed").GetBoolean(),
+            "Expected one completed original CloneMonsterState coroutine.");
+        FixtureValue observation = observations[0];
+        int paidSpawner = observation.GetProperty("PaidSpawner").GetInt32();
+        int paidGraft = observation.GetProperty("PaidGraft").GetInt32();
+        Callback[] actual = observation.GetProperty("Callbacks").Deserialize<Callback[]>()!;
+        Require(actual.Length == 6, "Expected six ordered native copy, birth and equipment records.");
+
+        int cloneSpawner = actual[1].Result;
+        int cloneGraft = actual[4].Result;
+        int[] cards = [paidSpawner, paidGraft, cloneSpawner, cloneGraft];
+        Require(cards.All(reference => reference > 0) && cards.Distinct().Count() == cards.Length,
+            "The original and clone must each have a separate spawner and graft object.");
+        Callback[] expected =
+        [
+            new("CopyCardEnter", paidSpawner, 0, paidGraft, null),
+            new("CopyCardExit", paidSpawner, cloneSpawner, paidGraft, null),
+            new("CreateMonster", cloneSpawner, 0, paidGraft, true),
+            new("CopyCardEnter", paidGraft, 0, 0, null),
+            new("CopyCardExit", paidGraft, cloneGraft, 0, null),
+            new("AddEquipment", cloneSpawner, cloneGraft, paidGraft, null)
+        ];
+        Require(actual.SequenceEqual(expected), "Native clone did not preserve the source alias and attach the separate graft in observed order.");
+        Console.WriteLine("NATIVE-HALL-GRAFT-ORDER PASS: source copy, cardless birth, graft copy, graft attachment, exact native object aliases.");
     }
 
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);
