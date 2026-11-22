@@ -640,6 +640,7 @@ param(
     [switch] $OriginalTargetedStatusSpells,
     [switch] $WithOriginalStatusMagnitudeRelics,
     [string[]] $OriginalOpeningSpellIds = @(),
+    [string[]] $OriginalOpeningUnitIds = @(),
     [switch] $OriginalLifecycleRelicBatch,
     [switch] $OriginalDecayRelicBatch,
     [switch] $OriginalResourceRelicBatch,
@@ -1551,13 +1552,21 @@ if ($PSBoundParameters.ContainsKey('OriginalOpeningSpellIds')) {
         throw 'OriginalOpeningSpellIds requires one to five distinct native card UUIDs.'
     }
 }
-if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells -or $OriginalTargetedStatusSpells -or $OriginalOpeningSpellIds.Count) {
-    $allowed = @('OriginalStatusMagnitudeWitness', 'OriginalStatusMagnitudeMoonWitness', 'OriginalRoomStatusSpells', 'OriginalTargetedStatusSpells', 'OriginalOpeningSpellIds', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
+if ($PSBoundParameters.ContainsKey('OriginalOpeningUnitIds')) {
+    $OriginalOpeningUnitIds = @($OriginalOpeningUnitIds | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim().ToLowerInvariant() })
+    if ($OriginalOpeningUnitIds.Count -lt 1 -or $OriginalOpeningUnitIds.Count -gt 4 -or
+        @($OriginalOpeningUnitIds | Where-Object { $_ -notmatch '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' }).Count -ne 0 -or
+        @($OriginalOpeningUnitIds | Select-Object -Unique).Count -ne $OriginalOpeningUnitIds.Count) {
+        throw 'OriginalOpeningUnitIds requires one to four distinct native card UUIDs.'
+    }
+}
+if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells -or $OriginalTargetedStatusSpells -or $OriginalOpeningSpellIds.Count -or $OriginalOpeningUnitIds.Count) {
+    $allowed = @('OriginalStatusMagnitudeWitness', 'OriginalStatusMagnitudeMoonWitness', 'OriginalRoomStatusSpells', 'OriginalTargetedStatusSpells', 'OriginalOpeningSpellIds', 'OriginalOpeningUnitIds', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
         'OriginalRoomStatusSpellsFullBattle', 'WithOriginalStatusMagnitudeRelics', 'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
-    $modes = @($OriginalStatusMagnitudeWitness, $OriginalStatusMagnitudeMoonWitness, $OriginalRoomStatusSpells, $OriginalTargetedStatusSpells, ($OriginalOpeningSpellIds.Count -gt 0)) | Where-Object { $_ }
+    $modes = @($OriginalStatusMagnitudeWitness, $OriginalStatusMagnitudeMoonWitness, $OriginalRoomStatusSpells, $OriginalTargetedStatusSpells, ($OriginalOpeningSpellIds.Count -gt 0), ($OriginalOpeningUnitIds.Count -gt 0)) | Where-Object { $_ }
     if (!$BinaryCapture -or @($modes).Count -ne 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
-        throw 'Original status magnitude witness requires a separate first-battle binary capture.'
+        throw 'Original opening and status witness modes require separate first-battle binary captures.'
     }
     $PhysicalSpawnPoints = $true
     $BranchCardMasks = $true
@@ -2921,6 +2930,11 @@ if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or 
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
+if ($OriginalOpeningUnitIds.Count) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-units:' + ($OriginalOpeningUnitIds -join ',')
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
 if ($OriginalLifecycleRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-lifecycle-relic-batch' }
 if ($OriginalDecayRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-decay-relic-batch' }
 if ($OriginalResourceRelicBatch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-resource-relic-batch' }
@@ -4051,6 +4065,41 @@ if ($DamageOverflow -and ($trace.ModifierScenario -ne 'damage-overflow' -or
 }
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
+if ($OriginalOpeningUnitIds.Count) {
+    $expectedModifier = 'original-opening-units:' + ($OriginalOpeningUnitIds -join ',')
+    $deployment = @($trace.Actions | Where-Object { $_.Before.Spawn.Turn -eq 0 })
+    $deploymentTurn = @($trace.Turns | Where-Object { $_.Before.Spawn.Turn -eq 0 })
+    if ($trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -ne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+        $trace.ModifierScenario -cne $expectedModifier -or !$terminalSettled -or
+        $deployment.Count -lt $OriginalOpeningUnitIds.Count -or $deploymentTurn.Count -ne 1 -or @($trace.Turns).Count -lt 2 -or
+        $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
+        throw "The original opening unit battle must capture deployment through settled terminal with four zero counters. Inspect $unityLog"
+    }
+    $openingHand = @($deployment[0].Before.Spawn.Train.Context.Cards.Hand)
+    $stock = @($openingHand | Where-Object DataId -CNotIn $OriginalOpeningUnitIds)
+    $units = @($openingHand | Where-Object DataId -CIn $OriginalOpeningUnitIds)
+    $played = @($deployment | ForEach-Object { $_.Action.CardInstanceId })
+    if (!$stock.Count -or $units.Count -ne $OriginalOpeningUnitIds.Count -or
+        (($played | Sort-Object) -join ',') -cne (($openingHand.InstanceId | Sort-Object) -join ',') -or
+        @($played | Select-Object -First $stock.Count | Where-Object { $_ -notin $stock.InstanceId }).Count) {
+        throw "Original deployment must play the complete stock hand before the requested units. Inspect $unityLog"
+    }
+    $observedUnits = @(foreach ($play in ($deployment | Select-Object -Skip $stock.Count)) {
+        $card = $units | Where-Object InstanceId -EQ $play.Action.CardInstanceId
+        $rule = $play.Before.PlayRules.Cards | Where-Object DataId -CEQ $card.DataId
+        $room = $play.Actual.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $play.Action.RoomIndex
+        $born = @($room.Units | Where-Object {
+            $_.SpawnerCardId -eq $play.Action.CardInstanceId -and $_.AssetKey -ceq $rule.SpawnUnit.AssetKey -and $_.Team -eq 1
+        })
+        if ($rule.Effect -cne 'SpawnMonster' -or $born.Count -ne 1 -or $play.Before.Energy -lt $play.Actual.Energy) {
+            throw "The requested original unit must spawn from its played card in the selected room. Inspect $unityLog"
+        }
+        $card.DataId
+    })
+    if (($observedUnits -join ',') -cne ($OriginalOpeningUnitIds -join ',')) {
+        throw "Original deployment did not spawn all requested units in order. Inspect $unityLog"
+    }
+}
 if ($OriginalRoomStatusSpellsFullBattle -or $OriginalTargetedStatusSpells -or $OriginalOpeningSpellIds.Count) {
     $openingActions = @($trace.Actions | Where-Object { $_.Before.Spawn.Turn -eq 1 })
     $opening = @($openingActions | ForEach-Object {

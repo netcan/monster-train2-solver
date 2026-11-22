@@ -978,6 +978,11 @@ namespace MonsterTrain2Poju.Probe
                     return;
                 }
             }
+            if (fullBattle && OriginalOpeningUnitsScenario.Enabled && !OriginalOpeningUnitsScenario.Prepared)
+            {
+                OriginalOpeningUnitsScenario.Prepare(managers, log);
+                return;
+            }
 #endif
             if (fullBattle && OriginalAffordableNonPlayableScenario.Enabled)
             {
@@ -3683,6 +3688,8 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                 if (OriginalStatusMagnitudeWitness.Continuous)
                     pendingPlay = OriginalStatusMagnitudeWitness.ChooseContinuous(decision, pendingPlay);
+                if (OriginalOpeningUnitsScenario.Enabled)
+                    pendingPlay = OriginalOpeningUnitsScenario.Choose(decision, pendingPlay);
 #endif
                 if (OriginalAcceleratedIncubationScenario.Enabled)
                     pendingPlay = OriginalAcceleratedIncubationScenario.Choose(decision) ?? pendingPlay;
