@@ -24,6 +24,10 @@ namespace MonsterTrain2Poju.Probe
             public BattlePlayRules Definitions { get; set; } = null!;
             public string? Difference { get; set; }
             public string? UnsupportedReason { get; set; }
+#if DEVELOPMENT_PROBE
+            public CardStatisticRefreshTraceProbe.Refresh[]? StatisticRefreshes { get; set; }
+            public bool ShouldSerializeStatisticRefreshes() => StatisticRefreshes != null;
+#endif
         }
         internal static readonly List<Record> Records = new List<Record>();
         private static IEnumerator Wrap(IEnumerator native, CharacterState host, CardState? card, bool remove, bool grafted = false)
@@ -46,8 +50,15 @@ namespace MonsterTrain2Poju.Probe
                 }
                 catch (Exception error) { trace.CaptureFailure(error); }
             }
+#if DEVELOPMENT_PROBE
+            using var statisticsRefresh = record is { QueueRunning: true, Remove: false, Grafted: false } && card != null
+                ? CardStatisticRefreshTraceProbe.ObserveEquipment(trace!, record.Before, record.UnitId, record.CardId, card) : null;
+#endif
             while (native.MoveNext()) yield return native.Current;
             if (record == null) yield break;
+#if DEVELOPMENT_PROBE
+            record.StatisticRefreshes = statisticsRefresh?.Events.ToArray();
+#endif
             try
             {
                 record.After = trace!.Capture(room!); record.Completed = true;
