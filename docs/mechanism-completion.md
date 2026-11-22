@@ -647,6 +647,10 @@ Vinemother 和 Glareminder 同场触发弃牌前回调。专项核对 Vinemother
 原版底层腐化也从 0 逐回合增至 4。5 次出牌、5 次结束回合、16 条独立分支及两类候选通过。
 [原版弃牌前单位回调录像](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/pre-discard-unit-callbacks.mt2f)
 
+两种 Feeder 与 Morselmaker 同场完成付费出生。Morselmaker 在三次战后供食中令前排锚点各增加 9 点攻击。
+两种 Feeder 自身的 OnFeed 在这场未触发。7 次出牌、5 次结束回合、16 条独立分支及两类候选通过。
+[原版供食单位批录](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/feeder-and-morselmaker-callbacks.mt2f)
+
 原版 First of Kin 和 Sacrificial Resurrection 的同场对照核对两张手牌被消耗、单位增攻及
 Draff 出生，Morel Mistress 提供排除对照。7 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`exhausted-first-of-kin.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/exhausted-first-of-kin.mt2f)
