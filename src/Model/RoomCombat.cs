@@ -2610,6 +2610,7 @@ namespace MonsterTrain2Poju.Model
                         { unsupportedReason = "Tower summon damage requires a complete-train birth callback."; return false; }
                         RoomCombatResult damaged = relicBirthEffect(result.State, unitId, birthCallbacks);
                         if (!damaged.Supported) { unsupportedReason = damaged.UnsupportedReason; return false; }
+                        RetireRemovedUnits(result.State, damaged.State!);
                         events.AddRange(damaged.Events);
                         if (damaged.Outcome != RoomOutcome.Exchanged) battleWon = damaged.Outcome == RoomOutcome.BattleWon;
                         result = new RoomCombatResult(damaged.State, damaged.Outcome, damaged.Rounds,
@@ -3529,15 +3530,22 @@ namespace MonsterTrain2Poju.Model
                 RoomCombatResult settled = settleDamageCallbacks!(checkpoint);
                 if (!settled.Supported) { unsupportedReason = settled.UnsupportedReason; return false; }
                 MergeSummon(settled);
-                foreach (WorkingUnit previous in units.Where(unit => frame.Units.Any(old => old.Id == unit.Source.Id) &&
-                    !settled.State!.Units.Any(current => current.Id == unit.Source.Id)))
-                {
-                    previous.DeathFinished = true; previous.Removed = true; previous.InRoom = false;
-                }
+                RetireRemovedUnits(frame, settled.State!);
                 // The global queue has already completed these physical deaths;
                 // do not export another removal request when this engine returns.
                 deferredDamageDeaths.RemoveAll(dead => dead.Unit.Removed);
                 return true;
+            }
+
+            private void RetireRemovedUnits(RoomCombatState before, RoomCombatState after)
+            {
+                foreach (WorkingUnit previous in units.Where(unit => before.Units.Any(old => old.Id == unit.Source.Id) &&
+                    !after.Units.Any(current => current.Id == unit.Source.Id)))
+                {
+                    previous.DeathFinished = true;
+                    previous.Removed = true;
+                    previous.InRoom = false;
+                }
             }
 
             private bool ApplyCardKillCorruption(CardActionEffect effect)
