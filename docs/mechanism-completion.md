@@ -231,6 +231,11 @@ Disassemble 消灭 Dregs Tomb、获得 5 锻造点，并观测到两名单位出
 16 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`fixed-damage-and-forge.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-scaled-damage/fixed-damage-and-forge.mt2f)
 
+九张原版牌同场核对献祭、出生和 X 费伤害。Inhale 击杀 4 生命的友军 Funguy，生成 8 生命的 Funguy。
+Imp Provisation 献祭 Welder Helper 并补 1 余烬，Impressive 献祭 Embered Infery 并击杀敌方前排。
+Moonbeam 以 X=5 付费，随后清除最后一名敌军。13 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
+[`sacrifice-and-x-hits.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-scaled-damage/sacrifice-and-x-hits.mt2f)
+
 两场 2.3.1 胜局共同覆盖十件原版触发遗物。第一场观察 Hymnist 死亡后的 Rage，
 第二场补采月相掩码并实际执行十次换层，观察 Angel 换层与 Whelp 攻击。两场共
 58 次出牌或技能、12 次结束回合，各通过 16 条独立分支。第二场另通过候选检查。
