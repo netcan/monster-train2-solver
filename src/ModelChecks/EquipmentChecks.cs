@@ -1,4 +1,5 @@
 using System.Text.Json;
+using MonsterTrain2Poju.Capture;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 
@@ -110,17 +111,35 @@ internal static class EquipmentChecks
         var before = sample.GetProperty("Before").Deserialize<RoomCombatState>()!;
         var after = sample.GetProperty("After").Deserialize<RoomCombatState>()!;
         var definitions = sample.GetProperty("Definitions").Deserialize<BattlePlayRules>()!;
+        int hostId = sample.GetProperty("UnitId").GetInt32(), cardId = sample.GetProperty("CardId").GetInt32();
+        bool remove = sample.GetProperty("Remove").GetBoolean();
+        bool queueRunning = sample.TryGetProperty("QueueRunning", out var running) && running.GetBoolean();
+        bool grafted = sample.TryGetProperty("Grafted", out var graft) && graft.GetBoolean();
         string frozen = JsonSerializer.Serialize(before, ModelJson.Options);
-        var result = RoomCombatModel.ApplyEquipment(before, sample.GetProperty("UnitId").GetInt32(), sample.GetProperty("CardId").GetInt32(),
-            definitions, sample.GetProperty("Remove").GetBoolean(),
-            sample.TryGetProperty("DeferAbilityCallbacks", out var deferred) && deferred.GetBoolean(),
-            sample.TryGetProperty("QueueRunning", out var running) && running.GetBoolean(),
-            grafted: sample.TryGetProperty("Grafted", out var grafted) && grafted.GetBoolean());
+        var result = RoomCombatModel.ApplyEquipment(before, hostId, cardId, definitions, remove,
+            sample.TryGetProperty("DeferAbilityCallbacks", out var deferred) && deferred.GetBoolean(), queueRunning, grafted: grafted);
         Require(result.Supported, "Native equipment operation unsupported: " + result.UnsupportedReason);
         string? difference = ModelJson.Difference(JsonSerializer.Serialize(result.State, ModelJson.Options), JsonSerializer.Serialize(after, ModelJson.Options));
-        Require(difference == null, "Equipment unit=" + sample.GetProperty("UnitId").GetInt32() + " card=" + sample.GetProperty("CardId").GetInt32() +
-            " remove=" + sample.GetProperty("Remove").GetBoolean() + ": " + difference);
+        bool observedRefresh = difference != null && queueRunning && !remove && !grafted &&
+            sample.TryGetProperty("StatisticRefreshes", out var refreshes) && refreshes.ValueKind == FixtureKind.Array &&
+            EquipmentStatisticRefreshComparison.Matches(before, result.State!, after, hostId, cardId, refreshes.EnumerateArray().Select(ReadRefresh).ToArray());
+        Require(difference == null || observedRefresh, "Equipment unit=" + hostId + " card=" + cardId + " remove=" + remove + ": " + difference);
         Require(JsonSerializer.Serialize(before, ModelJson.Options) == frozen, "Equipment operation mutated its parent.");
     }
+
+    private static CardStatisticRefreshSample ReadRefresh(FixtureValue value) => new()
+    {
+        Sequence = value.GetProperty("Sequence").GetInt32(),
+        Turn = value.GetProperty("Turn").GetInt32(),
+        Frame = value.GetProperty("Frame").GetInt32(),
+        Phase = value.GetProperty("Phase").GetString()!,
+        NativePreviewMode = value.GetProperty("NativePreviewMode").GetBoolean(),
+        CardId = value.GetProperty("CardId").GetInt32(),
+        CardDataId = value.GetProperty("CardDataId").GetString()!,
+        BeforeStoredCards = value.GetProperty("BeforeStoredCards").Deserialize<int[]>()!,
+        AfterStoredCards = value.GetProperty("AfterStoredCards").Deserialize<int[]>()!,
+        DeckCards = value.GetProperty("DeckCards").Deserialize<int[]>()!,
+        Caller = value.GetProperty("Caller").Deserialize<string[]>()!
+    };
     private static void Require(bool passed, string message) { if (!passed) throw new InvalidOperationException(message); }
 }

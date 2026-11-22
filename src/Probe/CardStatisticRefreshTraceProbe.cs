@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using HarmonyLib;
+using MonsterTrain2Poju.Capture;
 using MonsterTrain2Poju.Model;
 
 namespace MonsterTrain2Poju.Probe
@@ -18,19 +19,8 @@ namespace MonsterTrain2Poju.Probe
         private static readonly List<EquipmentObservation> EquipmentObservations = new List<EquipmentObservation>();
         private static CardState? updatingText;
 
-        internal sealed class Refresh
+        internal sealed class Refresh : CardStatisticRefreshSample
         {
-            public int Sequence { get; set; }
-            public int Turn { get; set; }
-            public int Frame { get; set; }
-            public string Phase { get; set; } = "";
-            public bool NativePreviewMode { get; set; }
-            public int CardId { get; set; }
-            public string CardDataId { get; set; } = "";
-            public int[] BeforeStoredCards { get; set; } = Array.Empty<int>();
-            public int[] AfterStoredCards { get; set; } = Array.Empty<int>();
-            public int[] DeckCards { get; set; } = Array.Empty<int>();
-            public string[] Caller { get; set; } = Array.Empty<string>();
             internal EquipmentObservation? Equipment { get; set; }
         }
 
@@ -48,11 +38,7 @@ namespace MonsterTrain2Poju.Probe
 
         internal static EquipmentObservation? ObserveEquipment(FullBattleTrace trace, RoomCombatState before, int hostId, int cardId, CardState card)
         {
-            CombatContext? context = before.Context;
-            if (!Enabled || context?.Statistics?.StoredCards == null || context.Statistics.StoredCards.Contains(cardId) ||
-                !context.Statistics.TrackedCards.Contains(cardId) || !context.Cards.Discard.Any(item => item.InstanceId == cardId) ||
-                before.Units.FirstOrDefault(unit => unit.Id == hostId)?.Status(EquipmentPoolGrantModel.CrownStatus) is not CombatStatus crown ||
-                !EquipmentPoolGrantModel.CosmeticStatus(crown)) return null;
+            if (!EquipmentStatisticRefreshComparison.CanObserve(before, hostId, cardId)) return null;
             var observation = new EquipmentObservation(trace, card);
             EquipmentObservations.Add(observation);
             return observation;
@@ -94,11 +80,11 @@ namespace MonsterTrain2Poju.Probe
         private static void Prefix(CardStatistics __instance, out Refresh? __state)
         {
             __state = null;
-            if (!Enabled) return;
+            if (!Enabled && EquipmentObservations.Count == 0) return;
             FullBattleTrace? trace = FullBattleTrace.Active;
-            bool terminalText = trace != null && trace.NativeWon == null && updatingText != null;
+            bool terminalText = Enabled && trace != null && trace.NativeWon == null && updatingText != null;
             EquipmentObservation? equipment = EquipmentObservations.LastOrDefault(item => ReferenceEquals(item.Trace, trace));
-            if (!terminalText && !UnsupportedBranchObservation.Enabled && equipment == null) return;
+            if (!terminalText && !(Enabled && UnsupportedBranchObservation.Enabled) && equipment == null) return;
             AllGameManagers? managers = AllGameManagers.Instance;
             var stored = (Dictionary<CardState, CardStatsEntry>)AccessTools.Field(typeof(CardStatistics), "deckStats").GetValue(__instance);
             var owned = managers?.GetCardManager()?.GetAllCards(new List<CardState>());

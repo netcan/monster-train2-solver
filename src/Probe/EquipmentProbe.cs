@@ -3,6 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
+#if DEVELOPMENT_PROBE
+using MonsterTrain2Poju.Capture;
+#endif
 using MonsterTrain2Poju.Model;
 using Newtonsoft.Json.Linq;
 
@@ -62,7 +65,12 @@ namespace MonsterTrain2Poju.Probe
             try
             {
                 record.After = trace!.Capture(room!); record.Completed = true;
-                if (predicted!.Supported && !JToken.DeepEquals(JToken.FromObject(predicted.State!), JToken.FromObject(record.After)))
+                bool differs = predicted!.Supported && !JToken.DeepEquals(JToken.FromObject(predicted.State!), JToken.FromObject(record.After));
+#if DEVELOPMENT_PROBE
+                if (differs && EquipmentStatisticRefreshComparison.Matches(record.Before, predicted.State!, record.After, record.UnitId, record.CardId, record.StatisticRefreshes))
+                    differs = false;
+#endif
+                if (differs)
                     record.Difference = "Equipment room/context differs";
             }
             catch (Exception error) { trace!.CaptureFailure(error); }
