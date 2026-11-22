@@ -303,6 +303,10 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 14 次出牌、6 次结束回合、16 条分支和候选检查通过。
 [`standby-and-severing.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-grafted-equipment/standby-and-severing.mt2f)
 
+接枝单位的单独批次记录五个原版付费出生、各自的来源牌和装备绑定，以及七次宿主死亡返还。
+9 次出牌、5 次结束回合、16 条分支和候选检查通过。
+[`paid-unit-births.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-grafted-equipment/paid-unit-births.mt2f)
+
 房间法强批次使用 Cosmic Bolt、Duality 与 RIP 的原版定义，核对 0 和 5 点房间法强、
 伤害与治疗倍率、费用及楼层目标。8 次出牌、5 次结束回合、16 条分支和候选检查通过。
 [`room-spell-power.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-strong-magic/room-spell-power.mt2f)
