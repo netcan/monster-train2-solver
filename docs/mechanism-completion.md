@@ -249,6 +249,10 @@ Steelguard 格挡、Undying 回场和 Burnout 到期。整场 21 次出牌、5 �
 19 次出牌、5 次结束回合、16 条分支及候选检查通过。
 [`position-and-movement.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-rearrange-spells/position-and-movement.mt2f)
 
+资源遗物批次复核原版八件遗物的二十项效果、48 次余烬回调及六次八张抽牌。
+42 次出牌与 7 次结束回合的原版胜局以 123 点薪火结束，专项和候选检查均通过。
+[`energy-draw-and-pyre.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-relics/energy-draw-and-pyre.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
