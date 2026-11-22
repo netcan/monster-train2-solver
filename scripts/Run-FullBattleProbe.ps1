@@ -4746,9 +4746,9 @@ if ($OriginalTinkermasterMix -or $OriginalProgressPacemakerMix) {
         if ($_.Line -match ' choices=(\S+) selected=') { $Matches[1].Split(',').Length } else { 0 }
     })
     $mixActions = @($trace.Actions | Where-Object { @($_.Action.MixSelections).Count -gt 0 })
-    $owner = if ($mixActions.Count -gt 0) {
-        @($mixActions[0].Before.Spawn.Train.Context.Relics | Where-Object DataId -EQ $expectedId)
-    } else { @() }
+    $owner = @(if ($mixActions.Count -gt 0) {
+        $mixActions[0].Before.Spawn.Train.Context.Relics | Where-Object DataId -EQ $expectedId
+    })
     $effect = if ($owner.Count -eq 1) { @($owner[0].ResourceEffects)[0] } else { $null }
     if ($trace.ModifierScenario -ne $expectedScenario -or
         -not (Select-String -LiteralPath $unityLog -Pattern "ORIGINAL-MIX-RELIC-ACQUIRED unchanged $(if ($progress) { 'ProgressPacemaker' } else { 'TinkermasterTools' })" -Quiet) -or

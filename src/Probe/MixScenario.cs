@@ -41,6 +41,8 @@ namespace MonsterTrain2Poju.Probe
         private const string CopyWitnessUpgradeId = "80a5edf4-6dc8-41a7-ab4e-9d0e914e0848";
         private static ManualLogSource? logger;
         private static int sourceId;
+        private static int repeatSourceId;
+        private static int firstMixTurn;
         private static int uncontrolledCarrierCardId;
         private static bool played;
         private static int playedOpeningElixirId;
@@ -154,6 +156,7 @@ namespace MonsterTrain2Poju.Probe
             Prepared = false;
             logger = log;
             played = false;
+            repeatSourceId = 0;
             playedOpeningElixirId = 0;
             copySourcePreludeMarked = false;
             copyControlPreludeMarked = false;
@@ -194,6 +197,14 @@ namespace MonsterTrain2Poju.Probe
             if (added == null || !(MonsterSpellTargetingMode ? cards.GetDrawPile() : cards.GetHand()).Contains(added))
                 throw new InvalidOperationException("Mix fixture could not place its scenario card in the requested pile.");
             sourceId = FullBattleTrace.Active!.CardId(added);
+            if (TinkermasterMode || ProgressMode)
+            {
+                // The first cast consumes Mixology. Draw a second original copy for the turn reset check.
+                CardState repeat = cards.AddNewCard(definition, CardPile.DeckPileTop, false, false, animate: false);
+                if (repeat == null || !cards.GetDrawPile().Contains(repeat))
+                    throw new InvalidOperationException("Mix relic fixture could not reserve its second original Mixology.");
+                repeatSourceId = FullBattleTrace.Active.CardId(repeat);
+            }
             if (copyConsumedStopsAtFullHand)
             {
                 if (definition.name != "SpacePrism" || definition.GetCost() != 0 || definitionEffects.Length != 1 ||
@@ -493,18 +504,20 @@ namespace MonsterTrain2Poju.Probe
                 }
                 return BattleActionModel.ChooseUnitSpellAndJunkPlay(state);
             }
-            if (!played)
+            int mixCardId = sourceId;
+            if (played)
+                mixCardId = state.Spawn.Turn > firstMixTurn ? repeatSourceId : 0;
+            if (mixCardId != 0 && state.Energy >= 2 &&
+                state.Spawn.Train.Context!.Cards.Hand.Any(card => card.InstanceId == mixCardId))
             {
-                CardToken? source = state.Spawn.Train.Context!.Cards.Hand.FirstOrDefault(card => card.InstanceId == sourceId);
-                if (source != null && state.Energy >= 2)
-                {
-                    played = true;
-                    var selections = new List<ElixirMixSelection> {
-                        new ElixirMixSelection(0, 0, firstOpeningChoice) };
-                    if (ProgressMode) selections.Add(new ElixirMixSelection(0, 1, 0));
-                    selections.Add(new ElixirMixSelection(1, 0, secondOpeningChoice));
-                    return new PlayCardAction(sourceId, 0, mixSelections: selections);
-                }
+                if (played) repeatSourceId = 0;
+                else firstMixTurn = state.Spawn.Turn;
+                played = true;
+                var selections = new List<ElixirMixSelection> {
+                    new ElixirMixSelection(0, 0, firstOpeningChoice) };
+                if (ProgressMode) selections.Add(new ElixirMixSelection(0, 1, 0));
+                selections.Add(new ElixirMixSelection(1, 0, secondOpeningChoice));
+                return new PlayCardAction(mixCardId, 0, mixSelections: selections);
             }
             if (playedOpeningElixirId == 0 && firstOpeningChoice == 0 && secondOpeningChoice == 1)
             {
