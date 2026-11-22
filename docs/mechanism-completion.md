@@ -204,6 +204,12 @@ Steelguard 格挡、Undying 回场和 Burnout 到期。整场 21 次出牌、5 �
 16 条分支与候选检查通过。
 [`birth-and-combat-statuses.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-status-units/birth-and-combat-statuses.mt2f)
 
+18 张原版基础冠军在同一受控首战完成原版出生检查，新增 15 张收藏卡匹配。
+固定采集顺序省去通用全手牌搜索后，同一机器与配置用时从 219.08 秒降到 81.92 秒。
+两次的 24 个出牌输入及 29 个动作结果一致，各自通过原版整战和 16 条分支检查。
+新归档另通过候选检查。累计 206 场整战和 249/601 张已匹配收藏卡。
+[`base-deployment.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-base-champions/base-deployment.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
