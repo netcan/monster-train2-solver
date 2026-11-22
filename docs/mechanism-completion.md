@@ -307,6 +307,11 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 伤害与治疗倍率、费用及楼层目标。8 次出牌、5 次结束回合、16 条分支和候选检查通过。
 [`room-spell-power.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-strong-magic/room-spell-power.mt2f)
 
+原版首战同时记录三件开战房间遗物和三件抽牌后生成遗物。三个房间附件均实际安装，
+三件生成遗物各触发五次，完整比对原版生成牌、临时 Ephemeral 与随机流。37 次出牌、
+6 次结束回合、16 条分支与候选检查通过。
+[`room-attachments-and-post-draw.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/room-attachments-and-post-draw.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
