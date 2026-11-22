@@ -346,6 +346,10 @@ Stasis Crystal 实际附着后触发一次成长。移除技能后仍保留楼�
 6 次出牌或技能、5 次结束回合、16 条独立分支和候选检查通过。
 [`stasis-crystal-removal.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-equipment/stasis-crystal-removal.mt2f)
 
+Mitosis Cap 在战斗结束时永久复制宿主来源卡。原版回调与牌组归属、牌堆和新实例标识一致。
+5 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
+[`mitosis-cap-copy.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-equipment/mitosis-cap-copy.mt2f)
+
 Assembly Room 复制前排单位并把复制体下移，Echo Bloom 让底层腐化从 1 增至 5。
 记录三次房间技能、六次冷却变动、9 次出牌或技能、5 次结束回合，16 条独立分支和候选检查通过。
 采样同时记录物理站位和移动前月相。
