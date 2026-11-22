@@ -3,6 +3,11 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalUnitAbilityChecks
 {
+    private const string PyrebloodedAbilityId = "7eb9fd9a-0d9b-4509-80b9-991de5f217c0";
+    private const string PyrebloodedId = "e962f77b-d5bc-441b-be79-8cb3207d8a42";
+    private const string PyrecaskId = "28875721-10df-4427-b9ef-4d237e89608e";
+    private const string LavaFlowId = "479ceb1b-fc8c-420f-8fa0-17683cee4511";
+
     internal static void Native(FixtureValue root)
     {
         if (!root.TryGetProperty("OriginalUnitAbilityId", out var value) || value.ValueKind != FixtureKind.String) return;
@@ -16,6 +21,12 @@ internal static class OriginalUnitAbilityChecks
             CardPlayRule rule = before.PlayRules!.Cards.Single(rule => rule.DataId == id);
             CardInstanceState card = before.Spawn.Train.Context!.CardRegistry.Single(card => card.InstanceId == action.CardInstanceId);
             Require(card.DataId == id && rule.Ability?.Kind == "Unit" && rule.ExternalInteractions.Count == 0, "Missing unchanged original unit skill.");
+            if (id == PyrebloodedAbilityId)
+            {
+                Pyreblooded(root, before, after, action, rule, card);
+                count++;
+                continue;
+            }
             if (id == "798142fe-fdf3-4f4f-8af7-dbc5dbc333c6")
             {
                 CombatContext old = before.Spawn.Train.Context!, next = after.Spawn.Train.Context!;
@@ -138,5 +149,60 @@ internal static class OriginalUnitAbilityChecks
             Require(root.GetProperty("OriginalUnitAbilityQueries").EnumerateArray().Any(query => query.GetProperty("Allowed").GetBoolean()), "Missing native corruption eligibility query.");
         Console.WriteLine("ORIGINAL-UNIT-ABILITY PASS: " + id + "; unchanged native definition and positive skill effect.");
     }
+
+    private static void Pyreblooded(FixtureValue root, BattleTurnState before, BattleTurnState after,
+        PlayCardAction action, CardPlayRule rule, CardInstanceState card)
+    {
+        int[] ids = root.GetProperty("OriginalSupportSpellsIds").Deserialize<int[]>()!;
+        FixtureValue[] rows = root.GetProperty("Actions").EnumerateArray().ToArray();
+        Require(ids.Length == 7 && rows.Length == 8 && root.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            root.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d",
+            "Pyreblooded requires the pinned original owner and ordered status controls.");
+        BattleTurnState zero = rows[5].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        PlayCardAction pyrecask = rows[5].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        PlayCardAction lavaFlow = rows[6].GetProperty("Action").Deserialize<PlayCardAction>()!;
+        RoomCombatState room = before.Spawn.Train.Rooms[0], nextRoom = after.Spawn.Train.Rooms[0];
+        CombatContext old = before.Spawn.Train.Context!, changed = after.Spawn.Train.Context!;
+        CombatUnit actor = room.Units.Single(unit => unit.Id == action.ActivatorUnitId);
+        CombatUnit next = nextRoom.Units.Single(unit => unit.Id == actor.Id);
+        CombatUnit anchor = room.Units.Single(unit => unit.SpawnerCardId == ids[0]);
+        ScalingUnitUpgradeTrait scaling = card.UnitUpgradeScalingTraits!.Single();
+        CardUpgradeModifier upgrade = rule.Effects.Single().Upgrade!;
+        int Pyregel(CombatUnit unit) => unit.Status("pyregel")?.Stacks ?? 0;
+        int heroStacks = room.Units.Where(unit => unit.Health > 0 && unit.Team == CombatTeam.Player).Sum(Pyregel);
+        CombatUnit[] enemies = room.Units.Where(unit => unit.Health > 0 && unit.Team == CombatTeam.Enemy).ToArray();
+        int bonus = heroStacks + enemies.Sum(Pyregel);
+
+        Require(pyrecask is { RoomIndex: 0 } && pyrecask.TargetUnitId == anchor.Id &&
+            old.FindCard(pyrecask.CardInstanceId)?.DataId == PyrecaskId &&
+            lavaFlow is { RoomIndex: 0, TargetUnitId: 0 } && old.FindCard(lavaFlow.CardInstanceId)?.DataId == LavaFlowId &&
+            Pyregel(anchor) == 10 && heroStacks == 10 && enemies.Length > 0 && enemies.All(unit => Pyregel(unit) == 4) &&
+            actor.AssetKey == "MonsterPyreblooded" && actor.SpawnerCardId == ids[4] &&
+            old.FindCard(actor.SpawnerCardId)?.DataId == PyrebloodedId && actor.Ability?.DataId == PyrebloodedAbilityId &&
+            action.RoomIndex == 0 && action.TargetUnitId == actor.Id && old.QueryFrame?.SelectedRoomIndex == 0 &&
+            rule is { Cost: 0, CostType: "Default", Ability.CanTargetOtherFloors: false,
+                Effects: [{ Type: "UnitUpgrade", Target: "DropTargetCharacter", Lifetime: "TemporaryUntilEndOfBattle" }] } &&
+            scaling is { Stat: "Damage", AmountPerStat: 1, Restriction: 0,
+                Query: { Type: "StatusEffectCountInTargetRoom", TargetTeam: "255", StatusIds: ["pyregel"] } } &&
+            upgrade is { AssetKey: "PyrebloodedAbility_Upgrade", Stats.Damage: 0, Stats.Health: 0 },
+            "Expected the original no-cost Pyreblooded skill with positive Pyregel on both teams in its selected room.");
+
+        CardInstanceState used = changed.FindCard(action.CardInstanceId)!;
+        Require(after.Energy == before.Energy && used.LastPlayedCost == 0 && used.PlayCount == card.PlayCount &&
+            changed.Statistics!.CardsPlayedThisTurn.Contains(action.CardInstanceId) && next.Status("cooldown")?.Stacks == 3 &&
+            next.BaseAttack == actor.BaseAttack + bonus && next.Health == actor.Health && next.MaxHealth == actor.MaxHealth &&
+            next.Modifiers!.Upgrades.Count == actor.Modifiers!.Upgrades.Count + 1 &&
+            next.Modifiers.Upgrades.Single(item => item.DataId == upgrade.DataId).Stats.Damage == bonus,
+            "The native ability must record payment, start its cooldown and upgrade the authored owner by the complete selected-room sum.");
+
+        RoomCombatState zeroRoom = zero.Spawn.Train.Rooms[0];
+        BattleActionResult zeroCast = BattleActionModel.PlayCard(zero, action);
+        Require(zeroRoom.Units.All(unit => Pyregel(unit) == 0) && zeroCast.Supported &&
+            zeroCast.State!.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == actor.Id).BaseAttack == actor.BaseAttack &&
+            !StatisticQueryModel.Evaluate(old, scaling.Query, action.CardInstanceId).Supported &&
+            !StatisticQueryModel.Evaluate(old, scaling.Query, action.CardInstanceId, selectedRoom: before.Spawn.Train.Rooms[1]).Supported,
+            "Pyreblooded must support zero stacks and reject missing or unrelated selected-room state.");
+    }
+
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

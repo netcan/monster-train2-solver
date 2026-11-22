@@ -96,7 +96,8 @@ namespace MonsterTrain2Poju.Probe
                 IsolatedIds.Contains("6a3633b6-4ecc-43b1-bb56-548f56cf1d60") &&
                 source.Spawn.Train.Context!.Statistics!.Value(ids[^1], "TimesPlayed", "ThisBattle") == 1)
                 index = ids.Length - 1; // Recast the actual returned recipient after the original choice.
-            if (index < 0 && OriginalUnitAbilityScenario.Enabled) return OriginalUnitAbilityScenario.Choose(source, ids[0]);
+            if (index < 0 && OriginalUnitAbilityScenario.Enabled)
+                return OriginalUnitAbilityScenario.Choose(source, ids[OriginalUnitAbilityScenario.UsesPyreblooded ? 4 : 0]);
             if (index < 0 && IsolatedIds?.Any(RoomAbilitiesScenarioCard) == true)
                 return BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(action => action.ActivatorRoomIndex.HasValue &&
                     (!IsolatedIds.Contains("8d65e688-d93d-4bfa-975d-8c5f046fe2db") ||
@@ -120,6 +121,10 @@ namespace MonsterTrain2Poju.Probe
             if (index >= 4 && OriginalUnitAbilityScenario.Enabled)
             {
                 candidates = candidates.Where(action => action.RoomIndex == 0);
+                if (OriginalUnitAbilityScenario.UsesPyreblooded &&
+                    source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == OriginalUnitAbilityScenario.PyrecaskId)
+                    candidates = candidates.Where(action => source.Spawn.Train.Rooms[0].Units.Any(unit => unit.Id == action.TargetUnitId &&
+                        unit.SpawnerCardId == ids[0]));
                 if (OriginalUnitAbilityScenario.AbilityId == "be65a126-831e-43c1-b987-698c37edead2" &&
                     source.Spawn.Train.Context!.FindCard(ids[index])!.DataId == "f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b")
                     candidates = candidates.Where(action => source.Spawn.Train.Rooms[0].Units.Any(unit => unit.Id == action.TargetUnitId && unit.SpawnerCardId == ids[0]));

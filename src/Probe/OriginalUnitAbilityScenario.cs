@@ -8,8 +8,17 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class OriginalUnitAbilityScenario
     {
+        private const string PyrebloodedAbilityId = "7eb9fd9a-0d9b-4509-80b9-991de5f217c0";
+        private const string PyrebloodedId = "e962f77b-d5bc-441b-be79-8cb3207d8a42";
+        internal const string PyrecaskId = "28875721-10df-4427-b9ef-4d237e89608e";
+        private const string LavaFlowId = "479ceb1b-fc8c-420f-8fa0-17683cee4511";
         internal static string? AbilityId => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_UNIT_ABILITY");
         internal static bool Enabled => !string.IsNullOrEmpty(AbilityId);
+#if DEVELOPMENT_PROBE
+        internal static bool UsesPyreblooded => AbilityId == PyrebloodedAbilityId;
+#else
+        internal static bool UsesPyreblooded => false;
+#endif
         internal static void Prepare(AllGameManagers managers, CardState[] created)
         {
             if (!Enabled) return;
@@ -19,6 +28,14 @@ namespace MonsterTrain2Poju.Probe
             foreach (CardEffectData effect in ability.GetEffects())
                 UnityEngine.Debug.Log("ORIGINAL-UNIT-ABILITY-EFFECT type=" + effect.GetEffectStateName() + " status=" + effect.GetUseStatusEffectStackMultiplier() +
                     " health=" + effect.GetUseHealthMissingStackMultiplier() + " magic=" + effect.GetUseMagicPowerMultiplier() + " subtype=" + effect.GetParamSubtype().Key);
+            if (UsesPyreblooded)
+            {
+                if (typeof(CardData).Assembly.ManifestModule.ModuleVersionId != new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d") ||
+                    !created.Skip(4).Select(card => card.GetCardDataID()).SequenceEqual(new[] { PyrebloodedId, PyrecaskId, LavaFlowId }) ||
+                    AccessTools.Field(typeof(CharacterData), "unitAbility").GetValue(created[4].GetSpawnCharacterData()) != ability)
+                    throw new InvalidOperationException("Pyreblooded requires its original owner followed by Pyrecask and Lava Flow.");
+                return;
+            }
             // Only the existing control anchor changes; original skill assets stay untouched.
             if (AbilityId == "4dbfc527-50b2-4068-aa36-9770d4444a57")
             {
@@ -47,12 +64,12 @@ namespace MonsterTrain2Poju.Probe
                 control.AddTemporaryTrait(freeze, managers.GetCoreManagers());
             }
         }
-        internal static PlayCardAction? Choose(BattleTurnState state, int anchorCardId)
+        internal static PlayCardAction? Choose(BattleTurnState state, int ownerCardId)
         {
             CombatContext context = state.Spawn.Train.Context!;
             AbilityCardCacheEntry? cache = context.AbilityCardCache?.FirstOrDefault(entry => entry.DataId == AbilityId);
             if (cache != null && context.Statistics!.CardsPlayedThisTurn.Contains(cache.InstanceId)) return null;
-            CombatUnit? actor = state.Spawn.Train.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.SpawnerCardId == anchorCardId);
+            CombatUnit? actor = state.Spawn.Train.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.SpawnerCardId == ownerCardId);
             if (AbilityId == "4dbfc527-50b2-4068-aa36-9770d4444a57") actor = state.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre);
             if (actor?.Ability?.HasAbility != true || state.Spawn.Turn == 0) return null;
             if (AbilityId == "f6fa19db-cad1-4104-91a7-48098daabe4f" && state.Spawn.Turn < 2) return null;
@@ -62,6 +79,8 @@ namespace MonsterTrain2Poju.Probe
             var actions = BattleActionModel.EnumerateSupportedPlays(state).Where(action => action.ActivatorUnitId == actor.Id);
             if (AbilityId == "c59d1814-0e0e-414c-b82f-a71cead2951f") actions = actions.Where(action => action.RoomIndex == 1);
             else actions = actions.Where(action => action.RoomIndex == (actor.IsPyre ? 3 : 0));
+            if (UsesPyreblooded)
+                actions = actions.Where(action => action.TargetUnitId == actor.Id);
             if (AbilityId == "f7126e4a-ef22-4621-b1f7-31a53e2e5870")
             {
                 actions = actions.Where(action => action.TargetUnitId != actor.Id && state.Spawn.Train.Rooms[0].Units.Any(unit => unit.Id == action.TargetUnitId && unit.Team == CombatTeam.Player));
