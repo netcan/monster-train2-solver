@@ -278,10 +278,9 @@ namespace MonsterTrain2Poju.Probe
         [HarmonyPatch(typeof(RelicEffectModifyCardAttack), nameof(RelicEffectModifyCardAttack.ApplyCardStateModifiers))]
         private static class AttackEffectFilterPatch
         {
-#if DEVELOPMENT_PROBE
-            // Even an identity transpiler alters the native subtype path on this Mono build.
-            private static bool Prepare() => !OriginalOpeningPassiveRelicsScenario.Enabled;
-#endif
+            // The upgrade-count calibration compares the mask's return value. Keep its transpiler
+            // out of general captures because Mono can change the unrelated subtype path.
+            private static bool Prepare() => OriginalUpgradeCountRelicsScenario.Enabled;
             // Instrument this call site separately from AddTempUpgrade: Mono
             // shares generic FilterCard bodies with definition-only callers.
             private static IEnumerable<HarmonyLib.CodeInstruction> Transpiler(IEnumerable<HarmonyLib.CodeInstruction> instructions)
