@@ -9,13 +9,19 @@ internal static class OriginalAfterDrawGenerationChecks
         ("AddSnackToHand", "81958958-6481-4847-afe1-cb651a041f6c"), ("AddStingToHand", "5e5d863b-514c-4026-a9b0-ffe56af2a3eb") ];
     internal static void Native(FixtureValue root)
     {
-        Require(root.GetProperty("ModifierScenario").GetString() == "original-after-draw-generation-relics" &&
-            root.GetProperty("GameVersion").GetString() == "2.2.1" &&
+        string? scenario = root.GetProperty("ModifierScenario").GetString();
+        bool openingPhase = scenario == "original-opening-phase-relics";
+        var owners = openingPhase ? Owners[..3] : Owners;
+        Require((openingPhase && root.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            root.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
+            root.GetProperty("TerminalCaptureBoundary").GetString() == "AfterStopCombatLoop" ||
+            scenario == "original-after-draw-generation-relics" && root.GetProperty("GameVersion").GetString() == "2.2.1" &&
             root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
-            root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
+            root.GetProperty("NativeWon").GetBoolean()) && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
             new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.All(name => root.GetProperty(name).GetInt32() == 0),
             "Original after-draw generation native battle failed acceptance.");
-        var definitions = new Dictionary<string, string>(); var positive = Owners.ToDictionary(owner => owner.Id, _ => 0);
+        if (openingPhase) CheckOpeningAttachments(root, owners.Select(owner => owner.Id));
+        var definitions = new Dictionary<string, string>(); var positive = owners.ToDictionary(owner => owner.Id, _ => 0);
         int count = 0, full = 0, upgraded = 0;
         foreach (var row in root.GetProperty("RelicAfterDrawGeneration").EnumerateArray())
         {
@@ -23,7 +29,7 @@ internal static class OriginalAfterDrawGenerationChecks
                 "Incomplete or deployment native generation callback.");
             var before = row.GetProperty("Before").Deserialize<CombatContext>()!;
             var actual = row.GetProperty("Actual").Deserialize<CombatContext>()!;
-            foreach (var expected in Owners)
+            foreach (var expected in owners)
             {
                 var owner = before.Relics!.Single(item => item.DataId == expected.Id);
                 var effect = owner.ResourceEffects!.Single(); var rule = effect.CardGeneration!;
@@ -88,8 +94,14 @@ internal static class OriginalAfterDrawGenerationChecks
             }
             Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "Generation mutated its parent branch."); count++;
         }
-        Require(positive.Values.All(value => value > 0) && count >= 8 && upgraded > 0 && definitions.Count == 4,
+        Require(positive.Values.All(value => value > 0) && count >= (openingPhase ? 3 : 8) && upgraded > 0 && definitions.Count == owners.Length,
             "Missing positive original generation owners or temporary upgrade witness.");
+        if (openingPhase)
+        {
+            BattleActionChecks.Native(root);
+            Console.WriteLine($"ORIGINAL-OPENING-PHASE-RELICS PASS: three native opening attachments, {count} exact generation callbacks, positive hand cards {string.Join('/', positive.Values)}, {full} native full hands and {upgraded} temporary Ephemeral upgrades.");
+            return;
+        }
         int rejectedFoodPlays = 0;
         foreach (var action in root.GetProperty("Actions").EnumerateArray())
         {
@@ -108,6 +120,33 @@ internal static class OriginalAfterDrawGenerationChecks
         Require(rejectedFoodPlays > 0, "Missing native generated-food hand for unsupported-play guard.");
         BattleActionChecks.Native(root);
         Console.WriteLine($"ORIGINAL-AFTER-DRAW-GENERATION-NATIVE PASS: four unchanged owners, {count} exact Test/Apply consumers, positive hand cards {string.Join('/', positive.Values)}, {full} native full hands and {upgraded} temporary Ephemeral upgrades; exact Battle RNG, deployment/preview/full-hand controls and independent policy replay.");
+    }
+
+    private static void CheckOpeningAttachments(FixtureValue root, IEnumerable<string> drawOwners)
+    {
+        (string OwnerId, string UpgradeId)[] expected =
+        [
+            ("2c97e1b3-d4bb-4133-9572-e582805c106f", "05e215c6-600c-4ecb-a75e-c806dd596bcf"),
+            ("b037ec04-6164-4cd8-8b9d-3bc420c29351", "35178e4a-0880-440b-a929-de29de6e88f8"),
+            ("c474dd00-3725-46d6-b074-0be7f7687cdd", "f93ac9f7-45d2-47a4-a159-a1b326bd047f")
+        ];
+        BattleTurnState deployment = root.GetProperty("Actions").EnumerateArray().First().GetProperty("Before").Deserialize<BattleTurnState>()!;
+        CombatContext context = deployment.Spawn.Train.Context!;
+        string[] order = expected.Select(item => item.OwnerId).Concat(drawOwners).ToArray();
+        Require(deployment.Spawn.Turn == 0 && context.Relics!.Where(owner => order.Contains(owner.DataId))
+            .Select(owner => owner.DataId).SequenceEqual(order), "Original opening phase deployment or relic order differs.");
+        Require(RelicStartCombatAttachmentModel.Validate(context) == null, "Original opening room attachment payload differs.");
+        var attachmentIds = new HashSet<Guid>();
+        for (int floor = 0; floor < expected.Length; floor++)
+        {
+            var owner = context.Relics!.Single(item => item.DataId == expected[floor].OwnerId);
+            var room = context.RoomCapacities!.Single(item => item.RoomIndex == floor);
+            Require(owner.IsCovenant == false && owner.DisallowedInPlacementPhase == false &&
+                owner.EffectTypes.SequenceEqual([RelicStartCombatAttachmentModel.Effect]) && RelicStartCombatAttachmentModel.Validate(owner) == null &&
+                !room.IsPyre && room.AttachmentsAddedFromCards == 0 && room.Attachments is [{ AttachmentType: 0 } attachment] &&
+                attachment.DataId == expected[floor].UpgradeId && Guid.TryParse(attachment.AttachmentId, out Guid id) &&
+                id != Guid.Empty && attachmentIds.Add(id), "Missing original cardless opening attachment on room " + floor);
+        }
     }
     private static void Equal<T>(T predicted, T actual, string name) => Require(JsonSerializer.Serialize(predicted, ModelJson.Options) == JsonSerializer.Serialize(actual, ModelJson.Options),
         "After-draw " + name + " differs: " + ModelJson.Difference(JsonSerializer.Serialize(predicted, ModelJson.Options), JsonSerializer.Serialize(actual, ModelJson.Options)));

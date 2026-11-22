@@ -28,10 +28,15 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Prefix(RelicEffectAddBattleCardToHand __instance)
             {
-                if (!OriginalAfterDrawGenerationScenario.Prepared || FullBattleTrace.Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
+                if (FullBattleTrace.Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
+                var owner = __instance.SourceRelicState;
+                bool enabled = OriginalAfterDrawGenerationScenario.Prepared;
+#if DEVELOPMENT_PROBE
+                enabled |= OriginalOpeningRelicsScenario.CaptureAfterDraw(owner.GetRelicDataID());
+#endif
+                if (!enabled) return;
                 try
                 {
-                    var owner = __instance.SourceRelicState;
                     var record = new Record { OwnerId = owner.GetRelicDataID(), EffectIndex = owner.GetEffects().ToList().IndexOf(__instance),
                         Turn = AllGameManagers.Instance!.GetCombatManager().GetTurnCount(), Before = FullBattleTrace.Active.CaptureContext() };
                     if (active.ContainsKey(__instance)) throw new InvalidOperationException("Overlapping native generation tests.");

@@ -8,9 +8,20 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalOpeningRelicsScenario
     {
         private const string Prefix = "original-opening-relics:";
+        internal const string PhaseName = "original-opening-phase-relics";
         private static readonly string Modifier = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "";
-        internal static bool Enabled => Modifier.StartsWith(Prefix, StringComparison.Ordinal);
+        private static readonly string[] DrawIds = OriginalAfterDrawGenerationScenario.Ids.Take(3).ToArray();
+        private static readonly (string Id, string UpgradeId)[] RoomOwners =
+        {
+            (OriginalStartRoomAttachmentScenario.RelicId, OriginalStartRoomAttachmentScenario.UpgradeId),
+            (OriginalStartRoomAttachmentScenario.Floor2RelicId, OriginalStartRoomAttachmentScenario.Floor2UpgradeId),
+            (OriginalStartRoomAttachmentScenario.Floor3RelicId, OriginalStartRoomAttachmentScenario.Floor3UpgradeId)
+        };
+        private static bool Phase => Modifier == PhaseName;
+        internal static bool Enabled => Phase || Modifier.StartsWith(Prefix, StringComparison.Ordinal);
         internal static bool Acquired { get; private set; }
+        internal static bool CaptureSpawnStatuses => Acquired && !Phase;
+        internal static bool CaptureAfterDraw(string ownerId) => Acquired && Phase && DrawIds.Contains(ownerId);
 
         internal static void AcquireBeforeBattle(AllGameManagers managers, ManualLogSource log)
         {
@@ -21,7 +32,8 @@ namespace MonsterTrain2Poju.Probe
                 save.GetCurrentDistance() != 0 || save.GetMutators().Count != 0 || save.GetCovenants().Count != 0)
                 throw new InvalidOperationException("Original opening relics require a fresh 2.3.1 Ring 1 before combat.");
 
-            string[] ids = Modifier.Substring(Prefix.Length).Split(',');
+            string[] ids = Phase ? RoomOwners.Select(owner => owner.Id).Concat(DrawIds).ToArray() :
+                Modifier.Substring(Prefix.Length).Split(',');
             if (ids.Any(id => !Guid.TryParseExact(id, "D", out Guid parsed) || parsed.ToString() != id) ||
                 ids.Distinct(StringComparer.Ordinal).Count() != ids.Length)
                 throw new InvalidOperationException("Expected distinct original collectible relic IDs.");
@@ -32,6 +44,12 @@ namespace MonsterTrain2Poju.Probe
             {
                 var relic = data.Single(item => item.GetID() == id);
                 var effect = relic.GetEffects().Single();
+                if (Phase)
+                {
+                    if (owned.Contains(id) || !MatchesPhaseOwner(relic, effect))
+                        throw new InvalidOperationException("Unexpected original opening phase relic: " + relic.name);
+                    return (Relic: relic, StatusId: string.Empty);
+                }
                 var status = effect.GetParamStatusEffects().Single();
                 if (owned.Contains(id) || relic.DisallowInDeploymentPhase ||
                     effect.GetEffectClassName() != nameof(RelicEffectAddStatusEffectOnSpawn) ||
@@ -43,7 +61,7 @@ namespace MonsterTrain2Poju.Probe
                     throw new InvalidOperationException("Expected an original unconditional spawn-status relic: " + relic.name);
                 return (Relic: relic, StatusId: status.statusId);
             }).ToArray();
-            if (definitions.Select(item => item.StatusId).Distinct(StringComparer.Ordinal).Count() != definitions.Length)
+            if (!Phase && definitions.Select(item => item.StatusId).Distinct(StringComparer.Ordinal).Count() != definitions.Length)
                 throw new InvalidOperationException("Each opening relic needs a distinct status for its native callback witness.");
 
             foreach (var item in definitions) save.AddRelic(item.Relic);
@@ -51,6 +69,22 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("Collected original relics differ from acquisition order.");
             Acquired = true;
             log.LogInfo("ORIGINAL-OPENING-RELICS acquired unchanged original definitions " + string.Join(",", ids));
+        }
+
+        private static bool MatchesPhaseOwner(CollectableRelicData relic, RelicEffectData effect)
+        {
+            if (effect.GetEffectConditions().Count != 0) return false;
+            int room = Array.FindIndex(RoomOwners, owner => owner.Id == relic.GetID());
+            if (room >= 0)
+                return !relic.DisallowInDeploymentPhase &&
+                    effect.GetEffectClassName() == nameof(RelicEffectAddTrainRoomAttachmentOnStartOfCombat) &&
+                    effect.GetParamInt() == room && effect.GetParamInt2() == 0 &&
+                    (int)effect.GetParamSourceTeam() == (room == 2 ? (int)Team.Type.Monsters : 255) &&
+                    effect.GetParamCardUpgradeData()?.GetID() == RoomOwners[room].UpgradeId;
+
+            return DrawIds.Contains(relic.GetID()) && relic.DisallowInDeploymentPhase &&
+                effect.GetEffectClassName() == nameof(RelicEffectAddBattleCardToHand) &&
+                effect.GetParamInt() == 1 && effect.GetParamInt2() == 0;
         }
     }
 }
