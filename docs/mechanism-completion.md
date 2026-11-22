@@ -231,6 +231,11 @@ Steelguard 格挡、Undying 回场和 Burnout 到期。整场 21 次出牌、5 �
 [`equipment-and-death.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-trigger-relics/equipment-and-death.mt2f)
 [`movement-and-strike.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-trigger-relics/movement-and-strike.mt2f)
 
+补采月相掩码后，Restoring Retreat 在原版先回复 10 点生命，再将该单位移到底层。
+同一场受控胜局还核对两队 Witchweave、治疗与净化、毒层集中及翻倍、移除装备与加攻。
+19 次出牌、5 次结束回合、16 条分支和候选检查通过。
+[`healing-cleanse-and-descent.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-healing-cleanse/healing-cleanse-and-descent.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
