@@ -241,6 +241,11 @@ FirstUnitGainDamageShield 在三个回合触发，另有两次同回合后续出
 6 次结束回合、32 条出生分支和候选检查通过。
 [`pyre-and-first-unit-births.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/pyre-and-first-unit-births.mt2f)
 
+原版 HymnistsApplyValorOnSummon 在 33 个同层友方单位状态中分别加 5 层 Valor。
+ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升级在五个普通单位生效、五个复制体跳过。
+14 次出牌、5 次结束回合、32 条出生分支和候选检查通过。
+[`hymnist-team-spawn-and-duplicates.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/hymnist-team-spawn-and-duplicates.mt2f)
+
 补采月相掩码后，Restoring Retreat 在原版先回复 10 点生命，再将该单位移到底层。
 同一场受控胜局还核对两队 Witchweave、治疗与净化、毒层集中及翻倍、移除装备与加攻。
 19 次出牌、5 次结束回合、16 条分支和候选检查通过。
