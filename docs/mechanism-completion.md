@@ -132,6 +132,11 @@ Energy Siphon、Immortality Potion、Forevermore Serum 和 Spike Potion 在首�
 175/601，另有 3 张出牌身份记录和 423 张暂无出牌记录。
 [`configured-opening-spells/manifest.tsv`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-spells/manifest.tsv)
 
+Ritual of Battle 与 Cycle of Life 各用未附加额外强化的原版定义完成一场胜局。
+Cycle of Life 的原版动作给友军增加 10 点当前和最大生命，再施加 8 层尖刺。
+两场各有 16 次出牌、6 次结束回合，完整复放、16 条分支和录制根候选检查通过。
+累计 192 场整战，结算定义匹配 177/601，另有 1 张出牌身份记录和 423 张暂无出牌记录。
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
