@@ -131,6 +131,9 @@ Bloodthirsty Blade、Eclipse Chamber 和 Zone of Silence。第 6 环战前档为
 商店强化和下一战入口。原版继续过程没有重新执行第 5 环的 50 个输入。
 源档为 `.probe-runs/native-post-ring5-before-map-20261122-132525`，保存时已记录五胜，
 主档 SHA256 为 `e907018194db2c60fed1bb6717aada6e57ab68cd3d1f778cd6890484fbe2a871`。
+`Run-CampaignProgress.ps1 -CaptureBeforeMap` 已在该档实测。它复制相同哈希的原版
+胜后存档，此时地图分支还没选。之后同一进程完成左路原版购买和下一战入口，
+复制件保存在 `.probe-runs/campaign-ring6-20261122-133531-4f888e78-before-map-ring6`。
 
 第 5 环的首次整场对照从 10 点薪火生命开始，原版判负且四项采集计数为零。另一条部署路线验证了
 StealthWaxers 的出生条件与月相手牌更新可同时生效。两次部署与结束回合的后继在原版完全一致，
