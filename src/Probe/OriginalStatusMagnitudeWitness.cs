@@ -48,6 +48,7 @@ namespace MonsterTrain2Poju.Probe
         private static BattleTurnState? before;
         private static PlayCardAction? action;
         private static BattleTurnState? exchange;
+        private static BattleTurnState? deploymentEndTurn;
 
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or MoonName or RoomSpellsName;
         internal static bool Moon => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == MoonName;
@@ -109,6 +110,11 @@ namespace MonsterTrain2Poju.Probe
             if (definitions == null) throw new InvalidOperationException("Original magnitude relics were not acquired.");
             if ((!Moon || hand != null) && managers.GetPlayerManager().GetHasMoonPhaseCardEffect() != Moon)
                 throw new InvalidOperationException("Original magnitude witness has unexpected native moon tracking.");
+            if (Moon && deploymentEndTurn != null && !combat.IsPlacementPhase)
+            {
+                CaptureDeploymentEndTurn(trace, deploymentEndTurn);
+                deploymentEndTurn = null;
+            }
             // Card controls need floor zero. The exchange successor keeps native camera focus.
             if (exchange == null && rooms.GetSelectedRoom() != 0)
             {
@@ -148,7 +154,11 @@ namespace MonsterTrain2Poju.Probe
                 return false;
             }
 
-            if (combat.IsPlacementPhase && index == DeploymentCount) return true;
+            if (combat.IsPlacementPhase && index == DeploymentCount)
+            {
+                if (Moon) deploymentEndTurn = trace.CaptureDecision();
+                return true;
+            }
             if (index == Cards.Length)
             {
                 exchange = trace.CaptureDecision();
@@ -188,6 +198,29 @@ namespace MonsterTrain2Poju.Probe
             if (!cards.PlayCard(handIndex, point, ref error))
                 throw new InvalidOperationException("Original native magnitude play was rejected: " + error);
             return false;
+        }
+
+        private static void CaptureDeploymentEndTurn(FullBattleTrace trace, BattleTurnState before)
+        {
+            // Observe the first settled native turn before the spell controls
+            // add cards to hand or select floor zero again.
+            BattleTurnState after = trace.CaptureDecision();
+            var phases = trace.TrainPhaseRecords.Where(phase => phase.Turn == before.Spawn.Turn).ToArray();
+            if (before.Spawn.Turn != 0 || after.Spawn.Turn != 1 ||
+                !phases.Select(phase => phase.Kind).SequenceEqual(new[] { "Combat", "Ascend" }) ||
+                phases.Any(phase => phase.Actual == null))
+                throw new InvalidOperationException("Original magnitude deployment did not produce complete native decision and train boundaries.");
+
+            using var document = NativeFixtureCapture.Capture(new
+            {
+                Schema = 1, Boundary = "OriginalMoonStatusMagnitudeDeployment",
+                GameVersion = UnityEngine.Application.version,
+                GameModuleMvid = typeof(CardState).Module.ModuleVersionId,
+                Deployment = new { Before = before, After = after }, TrainPhases = phases
+            });
+            using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                "status-magnitude-moon-deployment.mt2f"));
+            document.Write(stream);
         }
     }
 }

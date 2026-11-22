@@ -62,6 +62,9 @@ namespace MonsterTrain2Poju.Probe
         internal int[] ActiveStageIds() => stages.Where(stage => stage.Actual == null).Select(stage => stage.Index).ToArray();
         internal TrainCombatState CaptureTrain(bool includeOuterBossForBump = false) =>
             trainCombat.Capture(includeOuterBossForBump: includeOuterBossForBump);
+#if DEVELOPMENT_PROBE
+        internal IReadOnlyList<TrainCombatProbe.Record> TrainPhaseRecords => trainCombat.Records;
+#endif
         internal TrainCombatState CaptureEnchantmentRooms() => trainCombat.Capture(false, includeOuterBossForBump: OuterBossPhaseProbe.CaptureAnchors);
         internal void InvalidateCardRules() => actions.InvalidateRules();
         internal EnemySpawnState CaptureSpawnPhase() => spawning.CapturePhase();
