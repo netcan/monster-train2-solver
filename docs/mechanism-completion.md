@@ -287,6 +287,10 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 保证触发的随机流和腐化消耗。18 次出牌、5 次结束回合和候选检查通过。
 [`hostile-status-order.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-hostile-statuses/hostile-status-order.mt2f)
 
+腐化限制批次复核三张原版载体及其生成结算，包含十二个低于、等于及高于费用边界的
+合法性查询、选中楼层、扣除与回填顺序。7 次出牌、5 次结束回合及候选检查通过。
+[`paid-corruption.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-corrupt-restricted/paid-corruption.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
