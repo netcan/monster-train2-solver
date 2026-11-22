@@ -445,6 +445,10 @@ Assembly Room 复制前排单位并把复制体下移，Echo Bloom 让底层腐�
 12 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
 [`ordered-room-replacements.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-room-abilities/ordered-room-replacements.mt2f)
 
+Enchanted Chamber 独立对照验证 Torch 实际伤害 18、Restore 回复最高 19，以及 Attuned 提升到 75。
+跨层与房间替换移除临时附魔。10 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
+[`enchanted-chamber-replacement.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-room-abilities/enchanted-chamber-replacement.mt2f)
+
 Rage Room 实机核对房间触发器、楼层与队伍范围，以及友军获得 Rage 的正例。
 5 次出牌、5 次结束回合、16 条独立分支和候选检查通过。
 [`rage-room.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-room-abilities/rage-room.mt2f)
