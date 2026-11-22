@@ -489,3 +489,12 @@ Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时
 同一模型的技能与楼层生命光环定向搜索通过，两场的候选、串并行结果及计划独立复放一致。
 报告分别为 `results/recorded-chain-triage-20261123-061255-37443f78/report.tsv` 与
 `results/solver-stage-20261123-061101-488f05c8/report.tsv`。
+
+2.3.1 的下一次阶段复放核对 375 场，其中 356 场连续通过，19 场在已验证的准备边界分段通过。
+共匹配 5,771 次出牌或技能和 2,229 次结束回合，失败为零，119 份组件或诊断档按清单跳过。
+此阶段新增归档逐场通过出牌和结束回合候选检查。报告为
+`results/recorded-chain-triage-20261123-073523-2b5237d6/report.tsv`。
+
+隔离 2.3.1 原版中的双线程顾问在搜索中完成 7 次楼层切换，额外搜索次数为零。
+该胜局的 26 次建议输入及 449 条出牌候选和 26 条结束回合候选均通过独立复放。
+[原版录像](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-two-worker-floor-browse.mt2f)
