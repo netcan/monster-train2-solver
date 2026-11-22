@@ -30,6 +30,14 @@ namespace MonsterTrain2Poju.Model
 
     public static class RelicStatusMagnitudeModel
     {
+        // These witnessed magnitude-only rules query existing stacks without
+        // modifying the Moon markers or dispatching a status add/remove effect.
+        internal static bool SupportsMoonMarkers(CombatRelicState relic) =>
+            relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false &&
+            relic.EffectTypes is [RelicModel.ModifyStatusMagnitude] &&
+            relic.StatusMagnitudes is [{ EffectIndex: 0, SourceTeam: 2, Modifier: 1, Conditions.Count: 0,
+                StatusId: "mageblade" or "buff" or "spikes" or "regen" }] && Validate(relic) == null;
+
         internal static string? Validate(CombatRelicState relic)
         {
             int[] indices = relic.EffectTypes.Select((type, index) => new { type, index })

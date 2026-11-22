@@ -88,9 +88,9 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             if (source.Rooms.SelectMany(room => room.Units).Any(unit => !unit.IsPyre) &&
-                source.Context.Relics?.Any(relic => (relic.EffectTypes.Contains(RelicModel.AddStatusOnApplied) ||
-                    relic.StatusStackAdditions?.Count > 0 || relic.StatusMagnitudes?.Count > 0) &&
-                    !RelicStatusStackModel.IsCalibratedBurnoutLossRelic(relic)) == true)
+                source.Context.Relics?.Any(relic => ((relic.EffectTypes.Contains(RelicModel.AddStatusOnApplied) ||
+                    relic.StatusStackAdditions?.Count > 0) && !RelicStatusStackModel.IsCalibratedBurnoutLossRelic(relic)) ||
+                    (relic.StatusMagnitudes?.Count > 0 && !RelicStatusMagnitudeModel.SupportsMoonMarkers(relic))) == true)
                 return "Moon-phase status application with relic modifiers is not modeled.";
             foreach (CardInstanceState card in source.Context.CardInstances ?? Array.Empty<CardInstanceState>())
                 if (CardMoonUpgradeModel.Validate(card) is string moonError) return moonError;
