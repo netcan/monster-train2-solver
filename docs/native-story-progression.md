@@ -117,6 +117,21 @@ Bloodthirsty Blade、Eclipse Chamber 和 Zone of Silence。第 6 环战前档为
 54 与 34 步，均在模型中判负。底层策略终态两首领剩 808 和 1237 血，顶层策略剩 1076
 和 1100 血。原版证据覆盖战前路线和部署快照，两条终局属于离线推演。
 
+左路另将原版商店的 `UnitUpgradeEndless` 放在第一优先级。第一次点击后商店停留，
+修正后只在同一报价仍可买且尚未扣钱时重试。原版确认 `AddEndless` 的牌组数量由
+0 增至 1，并建立了第 6 环战前档 `.probe-runs/campaign-ring6-20261122-131858-3114693d-before-ring6`。
+这次恢复保留 28 点薪火，录得 Endless 装在 Lady of the Reformed 上。部署快照约 20 秒完成。
+[`ring6-left-endless.mt2f`](../tests/compatibility/game-2.3.1/mechanics/player-deployment-only/ring6-left-endless.mt2f)
+
+同一快照的底层、顶层离线策略分别通过 61 步和 63 步独立复放，均在第 11 回合的
+模型终态落败。底层策略击败 Savage，Entropic 剩 969 血。顶层策略两首领剩 669
+和 1102 血。离线后继及随机流通过复放。
+
+从第 5 环胜利后、原版地图尚未分岔时保存的一份存档，还直接续到同样的左路
+商店强化和下一战入口。原版继续过程没有重新执行第 5 环的 50 个输入。
+源档为 `.probe-runs/native-post-ring5-before-map-20261122-132525`，保存时已记录五胜，
+主档 SHA256 为 `e907018194db2c60fed1bb6717aada6e57ab68cd3d1f778cd6890484fbe2a871`。
+
 第 5 环的首次整场对照从 10 点薪火生命开始，原版判负且四项采集计数为零。另一条部署路线验证了
 StealthWaxers 的出生条件与月相手牌更新可同时生效。两次部署与结束回合的后继在原版完全一致，
 归档为 `mechanics/stealth-waxers-moon-refresh/native-branch.mt2f`。
