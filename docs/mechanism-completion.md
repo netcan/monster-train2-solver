@@ -1120,6 +1120,14 @@ TSV 的 `RunnerOption` 和 `DataIds` 可用于开局批录。清单按效果与�
 变化或阶段交付跑全量。整局负责验证跨回合／队列／界面整合；纯参数分支由
 批量组件对照承担，不再给每个参数各录一场完整战斗。
 
+日常可用 `-ChangedFrom` 从指定 Git 提交筛选到当前工作区新增或修改的已登记 2.3.1
+整场归档。共享逻辑修改后，用 `-Archive` 明确追加受影响的旧对照。选中零场时直接返回，
+省略两个选择参数时回放全部已登记场次。
+
+```powershell
+pwsh -NoProfile -File scripts/Check-Game231RecordedChains.ps1 -SkipBuild -ChangedFrom HEAD~1 -Archive 'mechanics/punished-skills/battle.mt2f'
+```
+
 同一搜索性质只验证一次。快速检查验证目标问题所需的最小完整前沿；更深的
 搜索压力检查独立保留在阶段层。例如碎片选择现在可单独检查：
 

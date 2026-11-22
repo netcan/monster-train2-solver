@@ -2,7 +2,9 @@
 [CmdletBinding()]
 param(
     [switch] $SkipBuild,
+    [AllowEmptyCollection()]
     [string[]] $Archive = @(),
+    [ValidateNotNullOrEmpty()] [string] $ChangedFrom,
     [ValidateRange(1, 32)] [int] $Workers = 1,
     [switch] $CheckCardFrontiers,
     [switch] $CheckEndTurnFrontiers
@@ -10,6 +12,51 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $workspace = Split-Path -Parent $PSScriptRoot
+$selecting = $PSBoundParameters.ContainsKey('Archive') -or $PSBoundParameters.ContainsKey('ChangedFrom')
+$selected = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+foreach ($path in $Archive) {
+    if ([string]::IsNullOrWhiteSpace($path)) { throw 'Archive requires a registered path.' }
+    $null = $selected.Add($path.Replace('\', '/'))
+}
+if ($PSBoundParameters.ContainsKey('ChangedFrom')) {
+    $revision = & git -C $workspace rev-parse --verify --quiet --end-of-options "$ChangedFrom^{commit}"
+    if ($LASTEXITCODE) { throw "Unknown Git commit or ref: $ChangedFrom" }
+    $relativeDirectory = 'tests/compatibility/game-2.3.1/'
+    $pattern = $relativeDirectory + '*.mt2f'
+    $changed = @(& git -C $workspace -c core.quotePath=false diff --name-only --no-renames --diff-filter=AM $revision -- $pattern)
+    if ($LASTEXITCODE) { throw "Could not compare native archives with $ChangedFrom." }
+    $untracked = @(& git -C $workspace -c core.quotePath=false ls-files --others --exclude-standard -- $pattern)
+    if ($LASTEXITCODE) { throw 'Could not list untracked native archives.' }
+    $candidates = @($changed + $untracked | Sort-Object -Unique -CaseSensitive)
+    if ($candidates.Count) {
+        $catalogAssembly = Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll'
+        if (!(Test-Path -LiteralPath $catalogAssembly -PathType Leaf) -and !$SkipBuild) {
+            dotnet build (Join-Path $workspace 'src/FixtureArchive/FixtureArchive.csproj') -c Release -f net8.0 -p:WarningLevel=0 -v:q
+            if ($LASTEXITCODE) { throw 'FixtureArchive build failed.' }
+        }
+        [void][Reflection.Assembly]::Load([IO.File]::ReadAllBytes($catalogAssembly))
+        $directory = [MonsterTrain2Poju.Fixtures.Game231FixtureCatalog]::DirectoryFor($workspace)
+        $catalog = [MonsterTrain2Poju.Fixtures.Game231FixtureCatalog]::Load($directory)
+        foreach ($candidate in $candidates) {
+            $path = $candidate.Substring($relativeDirectory.Length)
+            if (!$catalog.ContainsKey($path) -or $selected.Contains($path)) { continue }
+            $registration = $catalog[$path]
+            $document = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($registration.Verify($directory))
+            try {
+                if ([MonsterTrain2Poju.Fixtures.Game231FixtureCatalog]::Classify($registration, $document.RootElement) -eq 'SettledBattle') {
+                    $null = $selected.Add($path)
+                }
+            } finally { $document.Dispose() }
+        }
+    }
+}
+if ($selecting) {
+    Write-Output "RECORDED-CHAIN-SELECTION selected=$($selected.Count)"
+    if (!$selected.Count) { return }
+    $Archive = [string[]]@($selected)
+    [Array]::Sort($Archive, [StringComparer]::Ordinal)
+    $Archive | ForEach-Object { Write-Output "RECORDED-CHAIN-SELECTED $_" }
+}
 if (-not $SkipBuild) {
     dotnet build (Join-Path $workspace 'src/ModelChecks/ModelChecks.csproj') -c Release --no-restore -p:WarningLevel=0 -v:q
     if ($LASTEXITCODE) { throw 'ModelChecks build failed.' }
