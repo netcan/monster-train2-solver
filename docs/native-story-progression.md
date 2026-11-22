@@ -121,8 +121,11 @@ Bloodthirsty Blade、Eclipse Chamber 和 Zone of Silence。第 6 环战前档为
 普通敌人受到沉默，同层首领保持原状态。下一次结束回合有敌人升层离开该房间，
 原版触发解除沉默并重置月相。模型补齐回调后，原版的 46 次出牌或技能与 8 次结束回合，
 包括完整状态、随机流和败局结算，均与修订后的冻结路线一致。结束回合候选也通过检查。
-额外出牌候选中，Eclipse Chamber 的月相刷新仍在专项验证。
+Eclipse Chamber 的出牌候选在原版底层实放，24 步前缀与第 25 步后继状态和随机流均匹配。
+修复房间刷新校验后，在整场 54 个决策局面枚举 1,119 个出牌或技能候选与 54 个结束回合，
+未支持和截断均为零。
 [`unlocked-covenant0-ring6-right-zone-defeat.mt2f`](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/unlocked-covenant0-ring6-right-zone-defeat.mt2f)
+[`原版 Eclipse 实放分支`](../tests/compatibility/game-2.3.1/mechanics/eclipse-room-refresh/right-zone-alternate.mt2f)
 
 
 左路另将原版商店的 `UnitUpgradeEndless` 放在第一优先级。第一次点击后商店停留，
