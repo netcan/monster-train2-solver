@@ -35,7 +35,7 @@ internal static class RelicCoverageInventory
             Array(owner, "EffectTypes").Select(value => value.GetString()).SequenceEqual(EffectTypes, StringComparer.Ordinal);
     }
 
-    internal static void RunCurrent(string workspace, string output, bool check, bool includeWorklist = false)
+    internal static void RunCurrent(string workspace, string output, bool check, bool includeWorklist = false, bool includeLegacyRecaptures = false)
     {
         string directory = Game231FixtureCatalog.DirectoryFor(workspace);
         var registrations = Game231FixtureCatalog.Load(directory);
@@ -112,13 +112,17 @@ internal static class RelicCoverageInventory
         string results = Path.Combine(Path.GetFullPath(workspace), "results");
         string priorityOutput = Path.Combine(results, "relic-priority-version-delta-" + Game231FixtureCatalog.Version + ".tsv");
         string worklistOutput = Path.Combine(results, "relic-effect-worklist-" + Game231FixtureCatalog.Version + ".tsv");
+        string legacyOutput = Path.Combine(results, "relic-legacy-recapture-worklist-" + Game231FixtureCatalog.Version + ".tsv");
         if (string.Equals(output, priorityOutput, StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("Relic observations and version differences require distinct output paths.", nameof(output));
         if (includeWorklist && string.Equals(output, worklistOutput, StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("Relic observations and the effect worklist require distinct output paths.", nameof(output));
+        if (includeLegacyRecaptures && string.Equals(output, legacyOutput, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Relic observations and the legacy worklist require distinct output paths.", nameof(output));
         WriteReport(output, report, check);
         WriteReport(priorityOutput, priorityReport, check);
         if (includeWorklist) WriteEffectWorklist(relics.Values, worklistOutput, check);
+        if (includeLegacyRecaptures) WriteLegacyRecaptures(workspace, previous, relics, changes, legacyOutput, check);
         int rosterMatches = relics.Values.Count(relic => relic.MatchedBattles > 0);
         int identityOnly = relics.Values.Count(relic => relic.ObservedBattles > 0 && relic.MatchedBattles == 0);
         Console.WriteLine($"RELIC-OBSERVATION {Game231FixtureCatalog.Version} {(check ? "CHECK" : "WRITE")} PASS registered={registrations.Count} settledBattles={battles} stageBattles={stage} decisionSnapshots={snapshots}");
@@ -127,6 +131,82 @@ internal static class RelicCoverageInventory
         int priorityMatches = changes.Count(change => change.Current.MatchedBattles > 0);
         int priorityIdentityOnly = changes.Count(change => change.Current.ObservedBattles > 0 && change.Current.MatchedBattles == 0);
         Console.WriteLine($"priority={changes.Count} added={added} changed={changes.Count - added} orderedRosterMatch={priorityMatches} identityObservedOnly={priorityIdentityOnly} noActiveObservation={changes.Count - priorityMatches - priorityIdentityOnly} report={priorityOutput}");
+    }
+
+    private sealed record LegacyRosterEntry(Relic Current, Witness Witness, IReadOnlyList<string> Changes);
+    private sealed record LegacyRecapture(string Archive, string Hash, string Scenario, int Plays, int Turns, LegacyRosterEntry[] Owners);
+
+    private static void WriteLegacyRecaptures(string workspace, IReadOnlyDictionary<string, Relic> previous,
+        IReadOnlyDictionary<string, Relic> current, IReadOnlyList<DefinitionChange> changes, string output, bool check)
+    {
+        var missing = previous.Values.Where(old => current[old.Id].RosterWitness == null).ToDictionary(old => old.Id, StringComparer.Ordinal);
+        var changed = changes.Where(change => change.Previous != null).ToDictionary(change => change.Current.Id, change => change.Fields, StringComparer.Ordinal);
+        string fixtures = Path.Combine(workspace, "tests", "fixtures");
+        var catalog = new FixtureCatalog(fixtures);
+        var recaptures = new List<LegacyRecapture>();
+        foreach (string line in File.ReadLines(Path.Combine(fixtures, "manifest.tsv")).Skip(1))
+        {
+            string[] registration = line.Split('\t');
+            string path = catalog.Resolve(registration[0]);
+            using var document = FixtureDocument.Read(path);
+            FixtureValue battle = document.RootElement;
+            if (Text(battle, "GameModuleMvid") != PreviousModule || Text(battle, "GameVersion") != PreviousVersion ||
+                !battle.TryGetProperty("TerminalEffectsSettled", out FixtureValue settled) || settled.ValueKind != FixtureKind.True ||
+                !battle.TryGetProperty("NativeWon", out FixtureValue won) || won.ValueKind is not (FixtureKind.True or FixtureKind.False) ||
+                new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.Any(name =>
+                    !battle.TryGetProperty(name, out FixtureValue counter) || counter.ValueKind != FixtureKind.Number || counter.GetInt32() != 0))
+                continue;
+            var owners = new Dictionary<string, LegacyRosterEntry>(StringComparer.Ordinal);
+            FixtureValue[] actions = Array(battle, "Actions").ToArray(), turns = Array(battle, "Turns").ToArray();
+            ReadOwners(actions, "Actions");
+            ReadOwners(turns, "Turns");
+            if (owners.Count == 0 || !CardCoverageInventory.IsContinuousLegacyBattle(actions, turns, requireActions: false)) continue;
+
+            string archive = registration[7], hash = registration[5].ToLowerInvariant();
+            var verified = new Game231FixtureRegistration(archive, long.Parse(registration[4], CultureInfo.InvariantCulture), hash, Stage: false);
+            verified.Verify(fixtures);
+            recaptures.Add(new LegacyRecapture("tests/fixtures/" + archive, hash, Text(battle, "ModifierScenario"), actions.Length, turns.Length,
+                owners.Values.OrderBy(owner => owner.Current.AssetKey, StringComparer.Ordinal).ThenBy(owner => owner.Current.Id, StringComparer.Ordinal).ToArray()));
+
+            void ReadOwners(FixtureValue[] records, string sequence)
+            {
+                for (int index = 0; index < records.Length; index++)
+                foreach (string part in new[] { "Before", "Actual" })
+                {
+                    if (!records[index].TryGetProperty(part, out FixtureValue state) || state.ValueKind != FixtureKind.Object) continue;
+                    int ownerIndex = -1;
+                    foreach (FixtureValue owner in Array(state.GetProperty("Spawn").GetProperty("Train").GetProperty("Context"), "Relics"))
+                    {
+                        ownerIndex++;
+                        string id = Text(owner, "DataId");
+                        if (owners.ContainsKey(id) || !missing.TryGetValue(id, out Relic? old) || !old.MatchesRoster(owner)) continue;
+                        owners.Add(id, new LegacyRosterEntry(current[id], new Witness(registration[7], $"{sequence}[{index}].{part}", ownerIndex),
+                            changed.TryGetValue(id, out IReadOnlyList<string>? fields) ? fields : []));
+                    }
+                }
+            }
+        }
+
+        var report = new StringBuilder();
+        Row(report, "SourceVersion", "TargetVersion", "Archive", "ArchiveSHA256", "ModifierScenario",
+            "MissingOwners", "Plays", "EndTurns", "TotalInputs", "TargetAssetKeys", "DataIds", "LegacyRosterWitnesses",
+            "UnchangedDataIds", "ChangedDataIds", "ChangedCatalogFields");
+        foreach (LegacyRecapture item in recaptures.OrderByDescending(item => item.Owners.Length)
+            .ThenBy(item => item.Plays + item.Turns).ThenBy(item => item.Archive, StringComparer.Ordinal))
+        {
+            Row(report, PreviousVersion, Game231FixtureCatalog.Version, item.Archive, item.Hash, item.Scenario,
+                item.Owners.Length.ToString(CultureInfo.InvariantCulture), item.Plays.ToString(CultureInfo.InvariantCulture),
+                item.Turns.ToString(CultureInfo.InvariantCulture), (item.Plays + item.Turns).ToString(CultureInfo.InvariantCulture),
+                string.Join(",", item.Owners.Select(owner => owner.Current.AssetKey)), string.Join(",", item.Owners.Select(owner => owner.Current.Id)),
+                string.Join(",", item.Owners.Select(owner => $"{owner.Witness.Snapshot}.Relics[{owner.Witness.OwnerIndex}]")),
+                string.Join(",", item.Owners.Where(owner => owner.Changes.Count == 0).Select(owner => owner.Current.Id)),
+                string.Join(",", item.Owners.Where(owner => owner.Changes.Count > 0).Select(owner => owner.Current.Id)),
+                string.Join("|", item.Owners.Where(owner => owner.Changes.Count > 0).Select(owner => $"{owner.Current.Id}:{string.Join(",", owner.Changes)}")));
+        }
+        WriteReport(output, report, check);
+        int distinct = recaptures.SelectMany(item => item.Owners).Select(owner => owner.Current.Id).Distinct(StringComparer.Ordinal).Count();
+        Console.WriteLine($"RELIC-LEGACY-RECAPTURE-WORKLIST {Game231FixtureCatalog.Version} {(check ? "CHECK" : "WRITE")} PASS " +
+            $"continuousArchives={recaptures.Count} usefulOwners={distinct} report={output}");
     }
 
     private static void WriteEffectWorklist(IEnumerable<Relic> relics, string output, bool check)

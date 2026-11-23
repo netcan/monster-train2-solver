@@ -1100,6 +1100,10 @@ TSV 的 `RunnerOption` 和 `DataIds` 可用于开局批录。清单按效果与�
 按连续战斗中可补录的卡牌数排列 2.2.1 归档。清单给出原采集模式、归档哈希与实际出牌位置。
 这些旧档用于挑选批次，2.3.1 的覆盖统计由该版本实机结果更新。
 
+遗物可用 `scripts/Get-RelicCoverageInventory.ps1 -Current -LegacyRecaptureWorklist` 做同类筛选。
+清单按同场待补遗物数量和录制输入数排序，保留旧档哈希、实际在场位置和两版本间的定义变更。
+常规遗物盘点继续使用 `-Current`。
+
 新原版胜局可用 `scripts/Register-Game231NativeBattle.ps1` 登记到现有机制目录。
 该入口校验隔离运行摘要和归档哈希，完成单场复放后再发布归档与清单。按需启用
 `-CheckCardFrontiers` 与 `-CheckEndTurnFrontiers`。

@@ -98,9 +98,9 @@ internal static partial class CardCoverageInventory
         }
     }
 
-    private static bool IsContinuousLegacyBattle(FixtureValue[] actions, FixtureValue[] turns)
+    internal static bool IsContinuousLegacyBattle(FixtureValue[] actions, FixtureValue[] turns, bool requireActions = true)
     {
-        if (actions.Length == 0 || turns.Length == 0) return false;
+        if ((requireActions && actions.Length == 0) || turns.Length == 0) return false;
         static int DecisionTurn(FixtureValue row) => row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32();
         int actionIndex = 0;
         FixtureValue prior = default;

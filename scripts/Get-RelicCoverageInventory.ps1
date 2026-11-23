@@ -6,6 +6,7 @@ param(
     [Parameter(Mandatory, ParameterSetName = 'Current')][switch]$Current,
     [Parameter(ParameterSetName = 'Current')][switch]$Check,
     [Parameter(ParameterSetName = 'Current')][switch]$Worklist,
+    [Parameter(ParameterSetName = 'Current')][switch]$LegacyRecaptureWorklist,
     [Parameter(ParameterSetName = 'Current')][switch]$SkipBuild
 )
 $ErrorActionPreference = 'Stop'
@@ -22,6 +23,7 @@ if ($Current) {
     )
     if ($Check) { $inventoryArguments += '--check' }
     if ($Worklist) { $inventoryArguments += '--worklist' }
+    if ($LegacyRecaptureWorklist) { $inventoryArguments += '--legacy-recapture-worklist' }
     dotnet @inventoryArguments
     if ($LASTEXITCODE -ne 0) { throw 'Current relic observation inventory failed.' }
     return
