@@ -50,7 +50,7 @@ namespace MonsterTrain2Poju.Model
             RoomCombatState? floor = train.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == UnitId));
             if (floor == null) return this;
             OuterBossProgress located = WithRoom(floor.RoomIndex);
-            if (!OuterBossDefinitions.IsAngelDuo(AssetKey)) return located;
+            if (!OuterBossDefinitions.IsAngelDuo(AssetKey) && AssetKey != OuterBossDefinitions.DutifulBurst) return located;
             CombatUnit actor = floor.Units.Single(unit => unit.Id == UnitId);
             // Native GetMovementSpeed queries the current room/statuses rather
             // than retaining the speed observed before a casting move or aura.

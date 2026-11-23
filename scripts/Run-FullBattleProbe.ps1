@@ -812,7 +812,8 @@ param(
     [switch] $OriginalSpurnedBattle,
     [switch] $OriginalUnrulyWitness,
     [switch] $OriginalUnrulyBattle,
-    [ValidateSet('DuplicateEnemy', 'Scourge', 'SniperAdvance')][string] $OriginalUnrulyVariant = 'DuplicateEnemy',
+    [switch] $OriginalDutifulBurstBattle,
+    [ValidateSet('DuplicateEnemy', 'Scourge', 'SniperAdvance', 'DutifulBurst')][string] $OriginalUnrulyVariant = 'DuplicateEnemy',
     [ValidateRange(1, 3)][int] $OriginalSpurnedChallenge = 2,
     [switch] $OriginalSpurnedRetainPiles,
     [switch] $OriginalRageOnBurnoutStackLoss,
@@ -1901,13 +1902,25 @@ if ($OriginalAffordableNonPlayable) {
 if ($PSBoundParameters.ContainsKey('OriginalUnrulyVariant') -and -not $OriginalUnrulyBattle) {
     throw 'OriginalUnrulyVariant requires OriginalUnrulyBattle.'
 }
+if ($OriginalUnrulyVariant -eq 'DutifulBurst' -and -not $OriginalDutifulBurstBattle) {
+    throw 'Use -OriginalDutifulBurstBattle to observe the original Dutiful battle.'
+}
+if ($OriginalDutifulBurstBattle) {
+    if ($OriginalUnrulyBattle -or $OriginalUnrulyWitness) {
+        throw 'Choose a single Soul Savior battle or component.'
+    }
+    $OriginalUnrulyBattle = $true
+    $OriginalUnrulyVariant = 'DutifulBurst'
+}
 if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
-    $unrulyMode = if ($OriginalUnrulyBattle) { 'OriginalUnrulyBattle' } else { 'OriginalUnrulyWitness' }
+    $unrulyMode = if ($OriginalDutifulBurstBattle) { 'OriginalDutifulBurstBattle' }
+        elseif ($OriginalUnrulyBattle) { 'OriginalUnrulyBattle' } else { 'OriginalUnrulyWitness' }
+    $soulSaviorDistance = if ($OriginalDutifulBurstBattle) { 0 } else { 2 }
     $unrulyArguments = @($unrulyMode, 'InputProfile', 'BattleDistance', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'OriginalUnrulyVariant')
-    if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne 2 -or
+    if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne $soulSaviorDistance -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $unrulyArguments }).Count) {
-        throw 'Original Unruly requires an isolated native Ring 3 BattleIntro and binary capture.'
+        throw 'Original Soul Savior battle requires an isolated matching BattleIntro and binary capture.'
     }
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
@@ -4613,14 +4626,32 @@ if ($OriginalTriggerRelicBatchStationaryReserve) {
 if ($OriginalUnrulyBattle) {
     $unruly = $trace.OriginalUnrulyBattle
     $unrulyScenario = if ($OriginalUnrulyVariant -eq 'SniperAdvance') { 'SoulSavior_R3_BossBattle_StealBuffs1' }
+        elseif ($OriginalDutifulBurstBattle) { 'SoulSavior_R1_BossBattle_DutifulChild_Burst' }
         else { "SoulSavior_R3_BossBattle_$OriginalUnrulyVariant" }
-    $unrulyBoss = "Boss_SoulSavior_R3_Unruly_$OriginalUnrulyVariant"
+    $unrulyBoss = if ($OriginalDutifulBurstBattle) { 'Boss_SoulSavior_R1_Dutiful_Burst' }
+        else { "Boss_SoulSavior_R3_Unruly_$OriginalUnrulyVariant" }
     if ($trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
         $unruly.Scenario -cne $unrulyScenario -or $unruly.BossKey -cne $unrulyBoss -or
         -not $unruly.ControlledTestScenario -or -not $unruly.RailforgedInstalled -or
         @($trace.Actions).Count -eq 0 -or @($trace.Turns).Count -eq 0 -or -not $trace.TerminalEffectsSettled -or
         (Get-OriginalSignature $checkpoint) -cne $unrulyInputSignature) {
-        throw "Original Unruly battle did not settle ordinary play in the unchanged test scenario. Inspect $tracePath and $unityLog"
+        throw "Original Soul Savior battle did not settle ordinary play in the unchanged test scenario. Inspect $tracePath and $unityLog"
+    }
+    if ($OriginalDutifulBurstBattle) {
+        $gains = @($trace.TriggeredStatuses | ForEach-Object {
+            $grant = $_
+            if ($grant.Completed -and $grant.Kind -ceq 'PostCombat') {
+                foreach ($prior in $grant.BeforeUnits | Where-Object { $_.Id -in $grant.Targets }) {
+                    $after = $grant.ActualUnits | Where-Object { $_.Id -eq $prior.Id }
+                    $beforeBurst = ($prior.Statuses | Where-Object { $_.Id -ceq 'burst' } | ForEach-Object { [int]$_.Stacks } | Measure-Object -Sum).Sum
+                    $afterBurst = ($after.Statuses | Where-Object { $_.Id -ceq 'burst' } | ForEach-Object { [int]$_.Stacks } | Measure-Object -Sum).Sum
+                    if ([int]$afterBurst -eq ([int]$beforeBurst + 1)) { $prior.Id }
+                }
+            }
+        })
+        if ($gains.Count -eq 0) {
+            throw "Original Dutiful did not grant native Burst. Inspect $tracePath and $unityLog"
+        }
     }
     if ($OriginalUnrulyVariant -eq 'Scourge') {
         $scourge = '4d1f27af-3122-4a08-87e3-5ef5a14ced94'

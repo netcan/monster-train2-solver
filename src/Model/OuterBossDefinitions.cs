@@ -7,6 +7,7 @@ namespace MonsterTrain2Poju.Model
     {
         public const string UnrulyScourge = "Boss_SoulSavior_R3_Unruly_Scourge";
         public const string UnrulySniperAdvance = "Boss_SoulSavior_R3_Unruly_SniperAdvance";
+        public const string DutifulBurst = "Boss_SoulSavior_R1_Dutiful_Burst";
         internal const string UnrulyScourgeCard = "4d1f27af-3122-4a08-87e3-5ef5a14ced94";
         public const string CaelShieldTrial = "Boss_Level6_Cael_DamageShield_TitanTrial";
         public const string CaelAtkHpTrial = "Boss_Level6_Cael_AtkHP_TitanTrial";
@@ -153,7 +154,7 @@ namespace MonsterTrain2Poju.Model
             "Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" or "Boss_Level8_Corrupter" or
             "Boss_Level8_AllyBuffer_TitanTrial" or "Boss_Level8_Fragile_TitanTrial" or "Boss_Level8_Corrupter_TitanTrial" or
             TriggeredStatusModel.OriginalSpurned or TriggeredStatusModel.OriginalSpurnedWitherbloom or TriggeredStatusModel.OriginalSpurnedDuality or
-            TriggeredSummonModel.UnrulyBoss or UnrulyScourge or UnrulySniperAdvance ||
+            TriggeredSummonModel.UnrulyBoss or UnrulyScourge or UnrulySniperAdvance or DutifulBurst ||
             IsAngelDuo(assetKey) || IsCael(assetKey) || IsCaelTrial(assetKey) || IsArkionPyre(assetKey) ||
             IsArkionRage(assetKey) || IsArkionPush(assetKey) || IsFleshweaver(assetKey);
     }

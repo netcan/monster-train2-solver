@@ -19,12 +19,14 @@ namespace MonsterTrain2Poju.Probe
         {
             "Scourge" => "SoulSavior_R3_BossBattle_Scourge",
             "SniperAdvance" => "SoulSavior_R3_BossBattle_StealBuffs1",
+            "DutifulBurst" => "SoulSavior_R1_BossBattle_DutifulChild_Burst",
             _ => "SoulSavior_R3_BossBattle_DuplicateEnemy"
         };
         private static string BossKey => Variant switch
         {
             "Scourge" => OuterBossDefinitions.UnrulyScourge,
             "SniperAdvance" => OuterBossDefinitions.UnrulySniperAdvance,
+            "DutifulBurst" => OuterBossDefinitions.DutifulBurst,
             _ => TriggeredSummonModel.UnrulyBoss
         };
         private const string DecoyKey = "R3_Horde_T1_Decoy";
@@ -33,6 +35,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_UNRULY") == "battle";
         private static string? Variant => FullBattle ? Environment.GetEnvironmentVariable("MT2_PROBE_UNRULY_VARIANT") : null;
         internal static bool Scourge => Variant == "Scourge";
+        internal static bool DutifulBurst => Variant == "DutifulBurst";
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
         internal static object? FullBattleEvidence { get; private set; }
@@ -42,19 +45,20 @@ namespace MonsterTrain2Poju.Probe
         private static IReadOnlyList<CardEffectState>? effects;
         private static List<object>? events;
         private static readonly List<object> nativeAdvances = new();
+        private static readonly List<object> burstConsumptions = new();
 
         internal static void Request(SaveManager save, ManualLogSource log)
         {
             if (requested || Application.version != "2.3.1" || typeof(CardState).Module.ModuleVersionId != Module ||
                 save.PreviewMode || save.GetGameSequence() != SaveData.GameSequence.BattleIntro)
-                throw new InvalidOperationException("Expected the original 2.3.1 Ring 3 BattleIntro.");
+                throw new InvalidOperationException("Expected the original 2.3.1 Soul Savior BattleIntro.");
             if (!save.IsDlcInstalled(DLC.Railforged))
                 throw new InvalidOperationException("The native platform did not confirm the installed Railforged DLC.");
             if (save.GetAllGameData().FindScenarioDataByName(ScenarioKey) is not ScenarioData scenario ||
                 scenario.GetOuterTrainBoss(false)?.GetAssetKey() != BossKey ||
                 scenario.GetOuterTrainBoss(true)?.GetAssetKey() != BossKey ||
                 FullBattle && !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false)))
-                throw new InvalidOperationException("Expected the installed original Soul Savior Ring 3 Unruly battle.");
+                throw new InvalidOperationException("Expected the installed original Soul Savior boss battle.");
             requested = true;
             AccessTools.Method(typeof(CheatManager), "Command_StartBattle", new[] { typeof(string) }).Invoke(null, new object[] { ScenarioKey });
             log.LogInfo("ORIGINAL-UNRULY controlled TestScenario requested " + ScenarioKey);
@@ -71,9 +75,43 @@ namespace MonsterTrain2Poju.Probe
         {
             if (FullBattleEvidence != null) return;
             CheckScenario(save);
-            FullBattleEvidence = Variant == "SniperAdvance"
-                ? new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true, ControlledTestScenario = true, Advances = nativeAdvances }
-                : new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true, ControlledTestScenario = true };
+            FullBattleEvidence = Variant switch
+            {
+                "SniperAdvance" => new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true,
+                    ControlledTestScenario = true, Advances = nativeAdvances },
+                "DutifulBurst" => new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true,
+                    ControlledTestScenario = true, BurstConsumptions = burstConsumptions },
+                _ => new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true, ControlledTestScenario = true }
+            };
+        }
+
+        [HarmonyPatch(typeof(StatusEffectBurstState), "OnTriggered")]
+        private static class BurstConsumptionPatch
+        {
+            private static bool Prepare() => DutifulBurst;
+
+            private static void Postfix(StatusEffectBurstState __instance, ref IEnumerator __result)
+            {
+                CharacterState? target = __instance.GetAssociatedCharacter();
+                if (FullBattleTrace.Active == null || target == null || target.GetTeamType() != Team.Type.Heroes ||
+                    AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
+                __result = Observe(__result, target);
+            }
+
+            private static IEnumerator Observe(IEnumerator native, CharacterState actor)
+            {
+                int before = actor.GetStatusEffectStacks("burst");
+                try { while (native.MoveNext()) yield return native.Current; }
+                finally { (native as IDisposable)?.Dispose(); }
+                int after = actor.GetStatusEffectStacks("burst");
+                if (after != before - 1) yield break;
+                FullBattleTrace trace = FullBattleTrace.Active!;
+                int id = trace.UnitId(actor);
+                if (!TriggeredStatusProbe.Records.Any(row => row.Completed && row.Kind == "PostCombat" && row.Targets.Contains(id)))
+                    yield break;
+                burstConsumptions.Add(new { Turn = AllGameManagers.Instance!.GetCombatManager().GetTurnCount(),
+                    UnitId = id, Before = before, After = after });
+            }
         }
 
         [HarmonyPatch(typeof(CardEffectFloorRearrange), nameof(CardEffectFloorRearrange.ApplyEffect))]

@@ -48,7 +48,11 @@ namespace MonsterTrain2Poju.Probe
                 (data.GetAssetKey() != OuterBossDefinitions.UnrulySniperAdvance ||
                     data.GetTriggers() is [var sniper] && sniper.GetTrigger() == CharacterTriggerData.Trigger.OnAttacking &&
                     !sniper.GetTriggerOnce() && !sniper.GetHideVisualAndIgnoreSilence() &&
-                    sniper.GetEffects() is [var movement] && SniperAdvance(movement));
+                    sniper.GetEffects() is [var movement] && SniperAdvance(movement)) &&
+                (data.GetAssetKey() != OuterBossDefinitions.DutifulBurst ||
+                    data.GetTriggers() is [var burst] && burst.GetTrigger() == CharacterTriggerData.Trigger.PostCombat &&
+                    !burst.GetTriggerOnce() && !burst.GetHideVisualAndIgnoreSilence() && !burst.GetOnlyTriggerIfEquipped() &&
+                    burst.GetTriggerAtThreshold() == 0 && burst.GetEffects() is [var grant] && DutifulBurstGrant(grant));
         }
 
         internal static bool ScourgeAward(CardEffectData effect) =>
@@ -63,6 +67,12 @@ namespace MonsterTrain2Poju.Probe
             effect.GetEffectStateName() == nameof(CardEffectFloorRearrange) &&
             effect.GetTargetMode() == TargetMode.LastAttackedCharacter && effect.GetTargetTeamType() == Team.Type.Monsters &&
             effect.GetParamInt() == (int)SpawnMode.FrontSlot && !effect.GetUseIntRange();
+
+        internal static bool DutifulBurstGrant(CardEffectData effect) =>
+            effect.GetEffectStateName() == nameof(CardEffectAddStatusEffect) &&
+            effect.GetTargetMode() == TargetMode.Room && effect.GetTargetTeamType() == Team.Type.Heroes &&
+            !effect.GetUseIntRange() &&
+            effect.GetParamStatusEffects() is [var status] && status.statusId == "burst" && status.count == 1;
         internal sealed class Record
         {
             public string Phase { get; set; } = "";
