@@ -46,7 +46,9 @@ pwsh -File scripts/Run-CampaignProgress.ps1 -RegionRun -StopBeforeRing 4 -Native
 随后原版选择区域 1，保存 `SoulSavior_R2_Battle_TroopBuffFeed` 的战前状态。新存档位于 `.probe-runs/campaign-region-battle4-20261124-064646-0aee0a1e-before-ring4`，SHA-256 为 `f389ae0511b24a64043890bb57f68ad8e53be7d9bf0231882e8dfb887a125981`。
 存档记录种子 `424242`、地图距离 3、三场胜利及 `wasDevCheatUsed=false`。验收核对了输入和原版存档哈希。
 
-同一首领战检查点也完成了一条顾问逐步对照。该策略在原版结算为落败，34 次出牌或技能、
-7 次结束回合和各决策点的结束回合候选均通过对照。该归档在部署前的出牌候选缺少导能投影，
-包含导能的出牌候选正在独立验收。
-[自然首领战对照归档](../tests/compatibility/game-2.3.1/mechanics/dutiful-armor/natural-region-run-defeat.mt2f)
+同一首领战检查点通过两条顾问逐步对照。第一条原版落败记录核对了 34 次出牌或技能、
+7 次结束回合及结束回合候选。第二条沿用原版战役测试策略，薪火 32 生命获胜，
+39 次出牌或技能、7 次结束回合和两个阶段的候选检查均通过。连续回放根据原版快照
+复放楼层切换触发的预览，并比较完整后继状态、随机流与预览副本编号。
+[首领败局](../tests/compatibility/game-2.3.1/mechanics/dutiful-armor/natural-region-run-defeat.mt2f) ·
+[首领胜局](../tests/compatibility/game-2.3.1/mechanics/dutiful-armor/natural-region-run-win.mt2f)

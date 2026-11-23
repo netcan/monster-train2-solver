@@ -714,3 +714,7 @@ Infested 追加一条 Sacrificial Chamber 原版路线，定向核对 8 次出�
 Soul Savior 的 Dutiful Child 自然战役归档通过 34 次操作和 7 次结束回合的完整对照，
 并通过结束回合候选检查。整战复放累计 475 份归档，7,297 次出牌或技能和 2,828 次结束回合。
 [自然首领战对照归档](../tests/compatibility/game-2.3.1/mechanics/dutiful-armor/natural-region-run-defeat.mt2f)
+
+Dutiful Child 自然胜局通过 39 次出牌或技能、7 次结束回合及出牌和结束回合候选检查。
+整战复放累计 476 份归档，7,336 次出牌或技能和 2,835 次结束回合。
+[自然首领胜局](../tests/compatibility/game-2.3.1/mechanics/dutiful-armor/natural-region-run-win.mt2f)
