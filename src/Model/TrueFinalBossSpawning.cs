@@ -159,6 +159,10 @@ namespace MonsterTrain2Poju.Model
                 if (!allocation.Supported) return Fail(allocation.UnsupportedReason!);
                 context = allocation.Context!;
                 CombatUnit unit = source.Definitions[index].Create(allocation.UnitId);
+                // The native setup stores moon understanding even with phase statuses inactive.
+                if (battle.MoonPhaseTrackingActive == false && unit.MoonPhaseMask.HasValue &&
+                    context.QueryFrame?.MoonPhase is int moon && moon is 1 or 2)
+                    unit = unit.WithMoonPhaseMask(moon);
                 if (source.ClearBirthImmobile)
                     unit = CardSpellModel.Copy(unit, unit.Health, unit.Statuses.Where(status => status.Id != "immobile").ToArray());
                 // The definition carries authored placement anchors; the live
