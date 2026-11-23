@@ -2,49 +2,93 @@
 param(
     [string] $GameDirectory = 'F:/SteamLibrary/steamapps/common/Monster Train 2',
     [string] $PayloadDirectory = 'src/Advisor/bin/Release/netstandard2.1',
-    [ValidatePattern('^[a-zA-Z0-9-]+$')] [string] $Label = 'startup'
+    [string] $ProbeDirectory = 'src/Probe/bin/Release/netstandard2.1',
+    [ValidatePattern('^[a-zA-Z0-9-]+$')] [string] $Label = 'startup',
+    [ValidateRange(2, 4)] [int] $NativeWorker = 2
 )
 $ErrorActionPreference = 'Stop'
 $workspace = Split-Path $PSScriptRoot -Parent
 $PayloadDirectory = if ([IO.Path]::IsPathRooted($PayloadDirectory)) { $PayloadDirectory } else { Join-Path $workspace $PayloadDirectory }
-$gameRoot = Join-Path $workspace '.sandbox-game-worker2'
+$ProbeDirectory = if ([IO.Path]::IsPathRooted($ProbeDirectory)) { $ProbeDirectory } else { Join-Path $workspace $ProbeDirectory }
+$gameRoot = Join-Path $workspace ".sandbox-game-worker$NativeWorker"
 $gameExecutable = Join-Path $gameRoot 'MonsterTrain2.exe'
-if (@(Get-CimInstance Win32_Process -Filter "Name='MonsterTrain2.exe'" | Where-Object {
-    $_.ExecutablePath -and [IO.Path]::GetFullPath($_.ExecutablePath) -ieq [IO.Path]::GetFullPath($gameExecutable)
-}).Count) {
-    throw 'Isolated UI worker is already running.'
-}
-$token = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
-$profile = Join-Path $workspace ('.probe-runs/player-ui-' + $Label + '-' + $token)
-Copy-Item -LiteralPath (Join-Path $workspace '.probe-baseline') -Destination $profile -Recurse
+$nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
 $plugins = Join-Path $gameRoot 'BepInEx/plugins'
-if (@(Get-ChildItem -LiteralPath $plugins -Recurse -File -Filter 'MonsterTrain2Poju.Advisor.dll').Count) {
-    throw 'Existing player plugin in isolated UI worker.'
+if (-not (Test-Path -LiteralPath $gameExecutable -PathType Leaf) -or
+    -not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll') -PathType Leaf)) {
+    throw "Native worker $NativeWorker is not initialized. Use scripts/Initialize-NativeWorker.ps1."
 }
-$temporaryPlugin = Join-Path $plugins ('PlayerUiCheck-' + $token)
-New-Item -ItemType Directory -Path $temporaryPlugin | Out-Null
-foreach ($name in @('Probe', 'Model', 'FixtureArchive')) {
-    Copy-Item -LiteralPath (Join-Path $workspace "src/Probe/bin/Release/netstandard2.1/$name.dll") -Destination $plugins -Force
+if ($NativeWorker -eq 3) {
+    $nativePe = [System.Reflection.PortableExecutable.PEReader]::new([IO.File]::OpenRead($nativeDll))
+    try {
+        $metadata = [System.Reflection.Metadata.PEReaderExtensions]::GetMetadataReader($nativePe)
+        $module = $metadata.GetGuid($metadata.GetModuleDefinition().Mvid)
+    } finally { $nativePe.Dispose() }
+    if ($module -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw "Native worker 3 requires the pinned 2.3.1 module. Found $module."
+    }
 }
-foreach ($name in @('MonsterTrain2Poju.Advisor.dll', 'Model.dll', 'FixtureArchive.dll')) {
-    Copy-Item -LiteralPath (Join-Path $PayloadDirectory $name) -Destination $temporaryPlugin
+$sharedDlls = @('Model.dll', 'FixtureArchive.dll')
+foreach ($name in $sharedDlls) {
+    if ((Get-FileHash -LiteralPath (Join-Path $probeDirectory $name)).Hash -cne
+        (Get-FileHash -LiteralPath (Join-Path $PayloadDirectory $name)).Hash) {
+        throw "Probe and the player payload have different $name binaries."
+    }
 }
 $originalGame = [IO.Path]::GetFullPath($GameDirectory)
-Copy-Item -LiteralPath "$originalGame/BepInEx/plugins/Patty_RelicPicker_MOD.dll" -Destination $temporaryPlugin
-Copy-Item -LiteralPath "$originalGame/BepInEx/plugins/ConfigurationManager/ConfigurationManager.dll" -Destination $temporaryPlugin
+$token = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
+$runs = Join-Path $workspace '.probe-runs'
+$profile = Join-Path $runs ('player-ui-' + $Label + '-' + $token)
+$temporaryPlugin = Join-Path $plugins ('PlayerUiCheck-' + $token)
 $configPath = Join-Path $gameRoot 'BepInEx/config/netcan.monstertrain2.advisor.cfg'
-$configBackup = Join-Path $profile 'previous-player.cfg'
-$hadConfig = Test-Path -LiteralPath $configPath
-if ($hadConfig) { Copy-Item -LiteralPath $configPath -Destination $configBackup }
-Copy-Item -LiteralPath "$originalGame/BepInEx/config/netcan.monstertrain2.advisor.cfg" -Destination $configPath -Force
 $loaderConfig = Join-Path $gameRoot 'BepInEx/config/BepInEx.cfg'
-$loaderBackup = Join-Path $profile 'previous-BepInEx.cfg'
-Copy-Item -LiteralPath $loaderConfig -Destination $loaderBackup
-Copy-Item -LiteralPath "$originalGame/BepInEx/config/BepInEx.cfg" -Destination $loaderConfig -Force
+$backups = [ordered]@{}
 $environment = @{ MT2_PROBE_DATA_DIR = $profile; MT2_PROBE_SCENARIO = 'player-ui' }
 $logPath = Join-Path $profile 'unity-ui.log'
 $process = $null
+New-Item -ItemType Directory -Path $runs -Force | Out-Null
+$lease = [IO.File]::Open((Join-Path $runs "native-worker-$NativeWorker.lock"), [IO.FileMode]::OpenOrCreate,
+    [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
 try {
+    if (@(Get-CimInstance Win32_Process -Filter "Name='MonsterTrain2.exe'" | Where-Object {
+        $_.ExecutablePath -and [IO.Path]::GetFullPath($_.ExecutablePath) -ieq $gameExecutable
+    }).Count) {
+        throw "Isolated UI worker $NativeWorker is already running."
+    }
+    $probeDlls = @('Probe.dll') + $sharedDlls
+    $existing = @(Get-ChildItem -LiteralPath $plugins -Recurse -File | Where-Object {
+        $_.Name -ieq 'MonsterTrain2Poju.Advisor.dll' -or ($_.Name -in $probeDlls -and $_.DirectoryName -ine $plugins)
+    })
+    if ($existing.Count) { throw "Existing advisor or duplicate Probe dependency in isolated worker $NativeWorker." }
+
+    Copy-Item -LiteralPath (Join-Path $workspace '.probe-baseline') -Destination $profile -Recurse
+    $preferencesPath = Join-Path $profile 'preferences.json'
+    if (Test-Path -LiteralPath $preferencesPath) {
+        $preferences = Get-Content -LiteralPath $preferencesPath -Raw | ConvertFrom-Json
+        if ($null -eq $preferences.audioSettings) { throw 'Probe profile is missing audio settings.' }
+        $preferences.audioSettings.globalMuted = $true
+        $preferences | ConvertTo-Json -Depth 32 -Compress | Set-Content -LiteralPath $preferencesPath -NoNewline -Encoding utf8
+    }
+
+    # Temporarily park the worker's dev copies so the loader sees one shared payload.
+    $workerFiles = @($probeDlls | ForEach-Object { Join-Path $plugins $_ }) + @($configPath, $loaderConfig)
+    foreach ($path in $workerFiles) {
+        $backup = Join-Path $profile ('previous-' + (Split-Path $path -Leaf))
+        if (Test-Path -LiteralPath $path) {
+            Move-Item -LiteralPath $path -Destination $backup
+            $backups[$path] = $backup
+        } else { $backups[$path] = $null }
+    }
+    New-Item -ItemType Directory -Path $temporaryPlugin | Out-Null
+    Copy-Item -LiteralPath (Join-Path $probeDirectory 'Probe.dll') -Destination $temporaryPlugin
+    foreach ($name in @('MonsterTrain2Poju.Advisor.dll') + $sharedDlls) {
+        Copy-Item -LiteralPath (Join-Path $PayloadDirectory $name) -Destination $temporaryPlugin
+    }
+    Copy-Item -LiteralPath "$originalGame/BepInEx/plugins/Patty_RelicPicker_MOD.dll" -Destination $temporaryPlugin
+    Copy-Item -LiteralPath "$originalGame/BepInEx/plugins/ConfigurationManager/ConfigurationManager.dll" -Destination $temporaryPlugin
+    Copy-Item -LiteralPath "$originalGame/BepInEx/config/netcan.monstertrain2.advisor.cfg" -Destination $configPath
+    Copy-Item -LiteralPath "$originalGame/BepInEx/config/BepInEx.cfg" -Destination $loaderConfig
+
     $process = Start-Process -FilePath $gameExecutable -WorkingDirectory $gameRoot `
         -ArgumentList @('-screen-fullscreen', '0', '-screen-width', '1280', '-screen-height', '800', '-logFile', $logPath) `
         -Environment $environment -WindowStyle Hidden -PassThru
@@ -83,19 +127,27 @@ public static class PojuUiCapture {
         finally { $graphics.Dispose(); $bitmap.Dispose() }
     }
     if (-not $captured) { throw 'Could not capture the isolated player window.' }
-    [pscustomobject]@{ Passed = $true; Profile = $profile; PlayerOnlyUi = $true; Autoplay = $false; RealSaveAccess = $false } | ConvertTo-Json -Compress
 } finally {
-    if ($process -and -not $process.HasExited) {
-        [void]$process.CloseMainWindow()
-        if (-not $process.WaitForExit(8000)) { Stop-Process -Id $process.Id }
-    }
-    $resolvedTemporary = [IO.Path]::GetFullPath($temporaryPlugin)
-    $expectedParent = [IO.Path]::GetFullPath($plugins).TrimEnd('\')
-    if ((Split-Path $resolvedTemporary -Parent) -cne $expectedParent -or (Split-Path $resolvedTemporary -Leaf) -notlike 'PlayerUiCheck-*') {
-        throw 'Unexpected temporary plugin cleanup target.'
-    }
-    Remove-Item -LiteralPath $resolvedTemporary -Recurse
-    if ($hadConfig) { Copy-Item -LiteralPath $configBackup -Destination $configPath -Force }
-    else { Remove-Item -LiteralPath $configPath }
-    Copy-Item -LiteralPath $loaderBackup -Destination $loaderConfig -Force
+    try {
+        if ($process -and -not $process.HasExited) {
+            [void]$process.CloseMainWindow()
+            if (-not $process.WaitForExit(8000)) {
+                Stop-Process -Id $process.Id
+                $process.WaitForExit()
+            }
+        }
+        foreach ($path in $backups.Keys) {
+            if ($backups[$path]) { Move-Item -LiteralPath $backups[$path] -Destination $path -Force }
+            elseif (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path }
+        }
+        if (Test-Path -LiteralPath $temporaryPlugin) {
+            $resolvedTemporary = [IO.Path]::GetFullPath($temporaryPlugin)
+            $expectedParent = [IO.Path]::GetFullPath($plugins).TrimEnd('\')
+            if ((Split-Path $resolvedTemporary -Parent) -cne $expectedParent -or (Split-Path $resolvedTemporary -Leaf) -notlike 'PlayerUiCheck-*') {
+                throw 'Unexpected temporary plugin cleanup target.'
+            }
+            Remove-Item -LiteralPath $resolvedTemporary -Recurse
+        }
+    } finally { $lease.Dispose() }
 }
+[pscustomobject]@{ Passed = $true; Profile = $profile; NativeWorker = $NativeWorker; PlayerOnlyUi = $true; Autoplay = $false; RealSaveAccess = $false } | ConvertTo-Json -Compress
