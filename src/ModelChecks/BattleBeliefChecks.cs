@@ -1,4 +1,5 @@
 using System.Text.Json;
+using MonsterTrain2Poju.Capture;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 
@@ -9,8 +10,8 @@ internal static class BattleBeliefChecks
         foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
             Require(fixture.GetProperty(counter).GetInt32() == 0, "Unaccepted native belief source.");
         var turns = fixture.GetProperty("Turns").EnumerateArray().ToArray();
-        var root = turns.Select(turn => turn.GetProperty("Before").Deserialize<BattleTurnState>()!)
-            .First(state => state.Cards().Draw.Count == 2);
+        var roots = turns.Select(turn => turn.GetProperty("Before").Deserialize<BattleTurnState>()!).ToArray();
+        var root = roots.First(state => state.Cards().Draw.Count == 2);
         string parent = Json(root);
         var belief = DrawOrderBelief.Create(root, 8);
         Require(belief.ExhaustiveDistribution && belief.Worlds.Count == 2 && belief.Worlds.All(world => world.Weight == 0.5),
@@ -100,10 +101,11 @@ internal static class BattleBeliefChecks
         var limited = BattleBeliefPlanner.Plan(belief, new BattleBeliefOptions(1, 2));
         Require(limited.ReachedNodeLimit && limited.ExpandedWorlds == 1 && !limited.CertifiedFiniteHorizonOptimal,
             "Belief world expansion escaped the common node budget.");
+        ArchivedPrior(roots.First(state => state.Cards().Draw.Count >= 4));
         Nonanticipation(fixture.GetProperty("Actions")[0].GetProperty("Before").Deserialize<BattleTurnState>()!);
         Require(parent == Json(root), "Belief search mutated the native parent.");
         Console.WriteLine($"BELIEF-BATTLE PASS: two exact hidden draw orders, {plan.ExpandedWorlds} shared expansions, observable posterior branches, " +
-            "independent weighted replay, terminal/horizon guards, sampling/cutoff guards and non-anticipating unequal-probability action choice.");
+            "independent weighted replay, prior round trip, terminal/horizon guards, sampling/cutoff guards and non-anticipating unequal-probability action choice.");
 
         BattleBeliefPolicy WithProbability(Func<BattleBeliefBranch, double> probability) => new(rarePolicy.Action,
             rarePolicy.IsEndTurn, false, rarePolicy.ExpectedScore, true, rarePolicy.AllTerminal,
@@ -122,6 +124,36 @@ internal static class BattleBeliefChecks
             throw new InvalidOperationException(message);
         }
     }
+    private static void ArchivedPrior(BattleTurnState root)
+    {
+        var original = DrawOrderBelief.Create(root, 7);
+        var plan = BattleBeliefPlanner.Plan(original, new BattleBeliefOptions(64, 1, TimeSpan.FromSeconds(10)));
+        Require(original.Worlds.Count == 7 && plan.Policy.CompletedHorizon && !plan.Policy.IsLeaf,
+            "The seven-world fixture must produce a replayable input.");
+        var originalReplay = BattleBeliefReplay.Verify(original, plan.Policy, decisionHorizon: 1);
+        using var capture = NativeFixtureCapture.Capture(new { Belief = original, plan.Policy });
+        using var stream = new MemoryStream();
+        capture.Write(stream);
+        stream.Position = 0;
+        using var archive = FixtureDocument.Read(stream);
+        var prior = archive.RootElement.GetProperty("Belief");
+        var worlds = prior.GetProperty("Worlds").Deserialize<BattleBeliefWorld[]>()!;
+        var restored = BattleBelief.FromNormalizedWeights(worlds,
+            prior.GetProperty("ExhaustiveDistribution").GetBoolean(), prior.GetProperty("Uncertainty").GetString()!);
+        var replay = BattleBeliefReplay.Verify(restored, archive.RootElement.GetProperty("Policy").Deserialize<BattleBeliefPolicy>()!,
+            decisionHorizon: 1);
+        using var keys = new BattleStateKeys();
+        Require(replay.ExpectedScore == originalReplay.ExpectedScore && replay.FinalWorlds.Count == originalReplay.FinalWorlds.Count &&
+            replay.FinalWorlds.Zip(originalReplay.FinalWorlds).All(pair => pair.First.Weight == pair.Second.Weight &&
+                pair.First.Outcome == pair.Second.Outcome && keys.Key(pair.First.State) == keys.Key(pair.Second.State)),
+            "Archived prior changed a replay weight, score or full state.");
+
+        var scaled = worlds.Select(world => new BattleBeliefWorld(world.State, world.Weight * 2, world.Outcome)).ToArray();
+        try { BattleBelief.FromNormalizedWeights(scaled, restored.ExhaustiveDistribution, restored.Uncertainty); }
+        catch (ArgumentException error) when (error.ParamName == "worlds") { return; }
+        throw new InvalidOperationException("Restoring the archived prior accepted proportionally altered weights.");
+    }
+
     private static void Nonanticipation(BattleTurnState root)
     {
         var draw = root.Cards().Draw.ToArray(); Require(draw.Length > 1, "Need hidden draw order.");

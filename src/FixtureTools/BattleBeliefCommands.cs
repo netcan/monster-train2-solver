@@ -43,7 +43,9 @@ internal static class BattleBeliefCommands
         using var fixture = FixtureDocument.Read(input); var source = fixture.RootElement;
         Require(source.GetProperty("Schema").GetInt32() == 1 && source.GetProperty("ProofScope").GetString() == "FiniteCurrentDrawOrderBelief",
             "Unknown belief policy archive.");
-        var belief = source.GetProperty("Belief").Deserialize<BattleBelief>()!;
+        var prior = source.GetProperty("Belief");
+        var belief = BattleBelief.FromNormalizedWeights(prior.GetProperty("Worlds").Deserialize<BattleBeliefWorld[]>()!,
+            prior.GetProperty("ExhaustiveDistribution").GetBoolean(), prior.GetProperty("Uncertainty").GetString()!);
         var policy = source.GetProperty("Policy").Deserialize<BattleBeliefPolicy>()!;
         int horizon = source.GetProperty("Options").GetProperty("MaxDecisions").GetInt32();
         var replay = BattleBeliefReplay.Verify(belief, policy, decisionHorizon: horizon);

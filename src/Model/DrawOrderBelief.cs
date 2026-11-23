@@ -22,11 +22,31 @@ namespace MonsterTrain2Poju.Model
         public bool ExhaustiveDistribution { get; }
         public string Uncertainty { get; }
         public BattleBelief(IReadOnlyList<BattleBeliefWorld> worlds, bool exhaustiveDistribution, string uncertainty)
+            : this(worlds, exhaustiveDistribution, uncertainty, preserveWeights: false) { }
+
+        public static BattleBelief FromNormalizedWeights(IReadOnlyList<BattleBeliefWorld> worlds,
+            bool exhaustiveDistribution, string uncertainty) =>
+            new BattleBelief(worlds, exhaustiveDistribution, uncertainty, preserveWeights: true);
+
+        private BattleBelief(IReadOnlyList<BattleBeliefWorld> worlds, bool exhaustiveDistribution, string uncertainty,
+            bool preserveWeights)
         {
             if (worlds == null || worlds.Count == 0) throw new ArgumentException("A belief needs positive-weight hypotheses.", nameof(worlds));
             double total = worlds.Sum(world => world.Weight);
             if (double.IsInfinity(total)) throw new ArgumentOutOfRangeException(nameof(worlds));
-            Worlds = Array.AsReadOnly(worlds.Select(world => new BattleBeliefWorld(world.State, world.Weight / total, world.Outcome)).ToArray());
+            if (preserveWeights)
+            {
+                // Bound roundoff from summing the raw masses, dividing each weight,
+                // and summing the stored weights, with slack for both summations.
+                const double unitRoundoff = 1.1102230246251565e-16; // 2^-53 for binary64
+                double tolerance = 4 * worlds.Count * unitRoundoff;
+                if (Math.Abs(total - 1) > tolerance)
+                    throw new ArgumentException("Archived belief weights must sum to one.", nameof(worlds));
+                Worlds = Array.AsReadOnly(worlds.ToArray());
+            }
+            else
+                Worlds = Array.AsReadOnly(worlds.Select(world =>
+                    new BattleBeliefWorld(world.State, world.Weight / total, world.Outcome)).ToArray());
             ExhaustiveDistribution = exhaustiveDistribution; Uncertainty = uncertainty;
         }
     }
