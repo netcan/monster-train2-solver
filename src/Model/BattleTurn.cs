@@ -586,7 +586,7 @@ namespace MonsterTrain2Poju.Model
             }
             spawn = WithTrain(spawn, train, turn, UnityRng.Seed(unchecked(spawningStream.Seed + turn)));
             train = WithContext(train, EnergyModel.SetPhase(train.Context!, "PreCombat"), false);
-            bool firstWaveHivemind = turn == 1 && HivemindTurnUpgrade.HasOriginalFirstWavePair(train.Rooms.SelectMany(room => room.Units));
+            bool firstWaveHivemind = turn == 1 && HivemindTurnUpgrade.HasOriginalFirstWave(train.Rooms.SelectMany(room => room.Units));
             bool secondWaveHivemind = turn == 2 && HivemindTurnUpgrade.HasSecondWave(train);
             bool thirdWaveHivemind = turn == 3 && HivemindTurnUpgrade.HasThirdWave(train);
             // Native queues each team's PreCombat after spawning/rollover, before energy and draw.

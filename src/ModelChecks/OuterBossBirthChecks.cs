@@ -33,7 +33,7 @@ internal static class OuterBossBirthChecks
         Require(result.Supported, "Initial boss placement unsupported: " + result.UnsupportedReason);
         string expected = JsonSerializer.Serialize(actual, ModelJson.Options);
         if (actual.Battle.Spawn.OuterBoss == null && actual.Boss.AssetKey is
-            OuterBossDefinitions.IndulgentReduceCapacity or OuterBossDefinitions.IndulgentGorgeOnSlay)
+            OuterBossDefinitions.IndulgentReduceCapacity or OuterBossDefinitions.IndulgentGorgeOnSlay or OuterBossDefinitions.LifemotherInfested)
         {
             // These receipts record the native controller in the birth envelope while general turn capture is guarded.
             JsonNode projection = JsonNode.Parse(expected)!;
@@ -61,7 +61,7 @@ internal static class OuterBossBirthChecks
             born.AssetKey is TriggeredSummonModel.UnrulyBoss or OuterBossDefinitions.UnrulyScourge or
                 OuterBossDefinitions.UnrulySniperAdvance or OuterBossDefinitions.IndulgentTitanskin or OuterBossDefinitions.LifemotherReanimate or
                 OuterBossDefinitions.IndulgentReduceCapacity or OuterBossDefinitions.IndulgentGorgeOnSlay or
-                TriggeredStatusTransferModel.LifemotherDebuffer
+                TriggeredStatusTransferModel.LifemotherDebuffer or OuterBossDefinitions.LifemotherInfested
                 ? auras.Length == 0 :
             auras.Length == 1 && auras[0].Bound && auras[0].State.PrimaryTargets.Count == 0 && auras[0].State.CachedStatus == null;
         Require(deferredAura && born.Triggers.Where(trigger => trigger.Effects.Any(effect => effect.Enchantment != null))

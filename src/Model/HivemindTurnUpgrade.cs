@@ -12,14 +12,26 @@ namespace MonsterTrain2Poju.Model
         private const string Infested = "R2_Support_FeedInfested";
         private const string Heavy = "R2_Heavy_HealGorge";
         private const string Zealot = "R2_Attacker_Zealot_Ver2";
+        private const string HeavyT2 = "R2_Heavy_HealGorge_T2";
+        private const string DeathHorde = "RAny_Horde_T1_DeathAddsHivemind_Ver2";
         private const string FeedUpgrade = "661fb64c-20d2-484c-8c30-309931b8148c";
 
         internal static bool HasOriginalFirstWavePair(IEnumerable<CombatUnit> units)
         {
             var owners = units.Where(unit => unit.RegisteredStatus(StatusId) != null ||
                 unit.RegisteredStatus("hivemindkiller") != null).ToArray();
-            return owners.Length == 2 && owners[0].AssetKey != owners[1].AssetKey &&
+            return owners.Length == 2 && owners.Any(unit => unit.AssetKey == Hunter) && owners.Any(unit => unit.AssetKey == Infested) &&
                 owners.All(unit => unit.Status(StatusId) is CombatStatus status && IsOriginalFreshOwner(unit, status) &&
+                    unit.RegisteredStatus("hivemindkiller") == null);
+        }
+
+        internal static bool HasOriginalFirstWave(IEnumerable<CombatUnit> units)
+        {
+            CombatUnit[] owners = units.Where(unit => unit.RegisteredStatus(StatusId) != null ||
+                unit.RegisteredStatus("hivemindkiller") != null).ToArray();
+            return HasOriginalFirstWavePair(owners) || owners.Length == 3 &&
+                owners.Count(unit => unit.AssetKey == HeavyT2) == 1 && owners.Count(unit => unit.AssetKey == DeathHorde) == 2 &&
+                owners.All(unit => unit.Status(StatusId) is CombatStatus status && IsInfestedOpeningOwner(unit, status) &&
                     unit.RegisteredStatus("hivemindkiller") == null);
         }
 
@@ -27,6 +39,10 @@ namespace MonsterTrain2Poju.Model
             IsOriginalOwner(unit, status) && unit.Modifiers!.Upgrades.Count == 0;
 
         private static bool IsOriginalOwner(CombatUnit unit, CombatStatus status) =>
+            IsOriginalStatus(unit, status) && (unit.AssetKey == Hunter && unit.Triggers.Count == 0 ||
+                unit.AssetKey == Infested && unit.Triggers.Count > 0 && unit.Triggers.All(trigger => trigger.Kind == "OnEaten"));
+
+        private static bool IsOriginalStatus(CombatUnit unit, CombatStatus status) =>
             unit.Team == CombatTeam.Enemy && unit.SpawnerCardId == 0 && unit.IsBoss != true && unit.Health > 0 &&
             unit.Modifiers is { IsClone: false } &&
             status.Id == StatusId && status.Stacks == 1 && status.ParamInt == 1 &&
@@ -34,9 +50,23 @@ namespace MonsterTrain2Poju.Model
             status.Propagatable == false && !status.RemoveWhenTriggered && !status.RemoveStackAtEnd &&
             !status.RemoveAllAtEnd && !status.RemoveAfterPostCombat && !status.SkipDuringDeployment &&
             !status.RemoveDuringDeployment && !status.RemoveWhenTriggeredAfterCardPlayed &&
-            !status.RemoveAtEndOfTurnIfTriggered && !status.MarkedForRemovalAfterCardPlayed &&
-            (unit.AssetKey == Hunter && unit.Triggers.Count == 0 ||
-             unit.AssetKey == Infested && unit.Triggers.Count > 0 && unit.Triggers.All(trigger => trigger.Kind == "OnEaten"));
+            !status.RemoveAtEndOfTurnIfTriggered && !status.MarkedForRemovalAfterCardPlayed;
+
+        internal static bool IsInfestedOpeningOwner(CombatUnit unit, CombatStatus status) =>
+            IsOriginalStatus(unit, status) && unit.Modifiers!.Upgrades.Count == 0 &&
+            (unit is { AssetKey: HeavyT2, BaseAttack: 15, MaxHealth: 250, Size: 2, Triggers: [{ Kind: "OnFeed", Effects:
+                 [{ Type: "CardEffectAddStatusEffect" }, { Type: "CardEffectAddStatusEffect" }, { Type: "CardEffectHeal" }] }] } ||
+             unit is { AssetKey: DeathHorde, BaseAttack: 2, MaxHealth: 3, Size: 1, Triggers: [var death] } &&
+             IsOpeningDeathGrant(death));
+
+        private static bool IsOpeningDeathGrant(CombatTrigger trigger) =>
+            trigger is { Kind: "OnDeath", Once: false, IgnoreSilence: false, FireCount: 1, TriggerAtThreshold: 0,
+                Conditions: null, Effects: [{ Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Room",
+                    AllowEnemy: true, AllowPlayer: false, Value: 0, Range: null, Statuses: [{ Id: StatusId, Stacks: 1 }] } }] };
+
+        internal static bool HasDormantOpeningDeathGrant(CombatUnit unit, CombatTrigger trigger) =>
+            unit.AssetKey == DeathHorde && IsOpeningDeathGrant(trigger) &&
+            unit.Status(StatusId) is CombatStatus status && IsInfestedOpeningOwner(unit, status);
 
         internal static bool IsFirstCombat(RoomCombatState room) =>
             room.Context?.QueryFrame?.Turn == 1 &&
@@ -232,7 +262,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static bool MatchesRoomMarker(string marker, CombatUnit unit) =>
-            unit.Status(StatusId) is CombatStatus status && (IsOriginalOwner(unit, status) || IsFedPreviewRecipient(unit) ||
+            unit.Status(StatusId) is CombatStatus status && (IsOriginalOwner(unit, status) || IsInfestedOpeningOwner(unit, status) || IsFedPreviewRecipient(unit) ||
                 IsFedSecondPreviewRecipient(unit) ||
                 unit.AssetKey == Heavy && (NativeFedUpgrade(unit, 6, 13) || NativeFedUpgrade(unit, 9, 13) ||
                     IsThirdNewHeavy(unit)) ||
@@ -303,9 +333,8 @@ namespace MonsterTrain2Poju.Model
                 .Where(item => item.Status != null)
                 .ToArray();
             if (owners.Length == 0) return source;
-            if (owners.Length != 2 || owners[0].Room.RoomIndex != owners[1].Room.RoomIndex ||
-                owners[0].Unit.AssetKey == owners[1].Unit.AssetKey ||
-                owners.Any(item => item.Room.Preview || !IsOriginalFreshOwner(item.Unit, item.Status!)) ||
+            if (!HasOriginalFirstWave(owners.Select(item => item.Unit)) || owners.Select(item => item.Room.RoomIndex).Distinct().Count() != 1 ||
+                owners.Any(item => item.Room.Preview) ||
                 source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Status("hivemindkiller") != null))
             {
                 error = "Hivemind requires the captured first-wave native status owners.";

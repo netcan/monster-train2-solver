@@ -8,6 +8,58 @@ internal static class LifemotherInfestedChecks
     private const string Scenario = "SoulSavior_R5_BossBattle_Lifemother_Infested";
     private const string BossKey = "Boss_SoulSavior_Final_Lifemother_Infested";
     private const string Boundary = "NativeLifemotherInfestedStatusAddition";
+    private const string OpeningBoundary = "NativeLifemotherInfestedOpening";
+
+    internal static void Opening(FixtureValue component)
+    {
+        FixtureValue observation = component.GetProperty("Observation");
+        FixtureValue birth = component.GetProperty("Birth");
+        Require(component.GetProperty("Boundary").GetString() == OpeningBoundary &&
+            component.GetProperty("SourceBattleSha256").GetString() is { Length: 64 } battleHash && battleHash.All(Uri.IsHexDigit) &&
+            component.GetProperty("SourceBirthSha256").GetString() is { Length: 64 } birthHash && birthHash.All(Uri.IsHexDigit) &&
+            component.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            component.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            observation.GetProperty("Scenario").GetString() == Scenario && observation.GetProperty("BossKey").GetString() == BossKey &&
+            observation.GetProperty("ControlledTestScenario").GetBoolean() && observation.GetProperty("RailforgedInstalled").GetBoolean(),
+            "Expected the installed original Infested opening.");
+        Require(birth.GetProperty("Births")[0].GetProperty("Instantiation").GetProperty("Definition").GetProperty("Actor")
+            .GetProperty("Unit").GetProperty("AssetKey").GetString() == BossKey, "Expected the original Infested birth receipt.");
+        OuterBossBirthChecks.Native(birth, Game231FixtureCatalog.Module);
+
+        CombatContext context = component.GetProperty("FirstDrawContext").Deserialize<CombatContext>()!;
+        Require(context.QueryFrame?.Turn == 1, "Expected the native first draw.");
+        EnchantmentWorld world = context.Enchantments ?? throw new InvalidDataException("Missing native first draw world.");
+        var input = new TrainCombatState(world.Rooms, world.Movement, world.EnemySlotsPerRoom, context);
+        CombatUnit boss = input.Rooms.SelectMany(room => room.Units).Single(unit => unit.AssetKey == BossKey);
+        CombatTrigger death = boss.Triggers[0];
+        CombatTrigger altered = death.WithEffects([death.Effects[0].WithActionValue(1)]);
+        CombatUnit alteredBoss = boss.WithTriggers([altered, boss.Triggers[1]]);
+        Require(OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(boss, death, context) &&
+            !OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(alteredBoss, altered, context) &&
+            !OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(boss, death,
+                context.WithQueryFrame(context.QueryFrame!.With(turn: 2))) &&
+            TriggeredStatusModel.Validate(death.Effects[0]) != null,
+            "Expected exact dormant death payload admission only during the original opening.");
+        CombatUnit[] owners = input.Rooms.SelectMany(room => room.Units).Where(unit => unit.Status("hivemind") != null).ToArray();
+        Require(owners.Length == 3 && HivemindTurnUpgrade.HasOriginalFirstWave(owners) &&
+            !HivemindTurnUpgrade.HasOriginalFirstWave(owners.Take(2)), "Expected the exact native three-owner group.");
+        string immutable = JsonSerializer.Serialize(input, ModelJson.Options);
+        TrainCombatState? replayed = HivemindTurnUpgrade.ApplyFirstOrdinaryTurn(input, out string? error);
+        Require(replayed != null && context.BattleRng.Equals(replayed.Context!.BattleRng), "Opening +3 projection failed: " + error);
+        var nativeOwners = component.GetProperty("SettledOwners").Deserialize<CombatUnit[]>()!;
+        Require(nativeOwners.Length == owners.Length, "Expected the same three native settled wave actors.");
+        foreach (CombatUnit owner in owners)
+        {
+            CombatUnit replay = replayed!.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == owner.Id);
+            CombatUnit expected = nativeOwners.Single(unit => unit.Id == owner.Id);
+            Require(replay.Attack == owner.Attack + 3 &&
+                JsonSerializer.Serialize(replay, ModelJson.Options) == JsonSerializer.Serialize(expected, ModelJson.Options),
+                "Native first-wave Hivemind owner differs at unit " + owner.Id);
+        }
+        Require(immutable == JsonSerializer.Serialize(input, ModelJson.Options) && !OuterBossDefinitions.Supports(BossKey),
+            "Infested opening changed its input or bypassed the whole-battle guard.");
+        Console.WriteLine("NATIVE-LIFEMOTHER-INFESTED OPENING PASS: exact original birth and three native +3 Hivemind owners.");
+    }
 
     internal static void Export(string inputPath, string outputPath)
     {

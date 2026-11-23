@@ -14,6 +14,7 @@ namespace MonsterTrain2Poju.Model
         internal const string IndulgentReduceCapacity = "Boss_SoulSavior_R2_Indulgent_ReduceCapacityResolve";
         internal const string IndulgentGorgeOnSlay = "Boss_SoulSavior_R2_Indulgent_GorgeOnSlay";
         public const string LifemotherReanimate = "Boss_SoulSavior_Final_Lifemother_HealReanimate";
+        internal const string LifemotherInfested = "Boss_SoulSavior_Final_Lifemother_Infested";
         internal const string LifemotherDebuffsOwner = "Boss_Railforged_Lifemother_Debuff";
         internal const string LifemotherDebuffsOwnerId = "93efdaa9-7496-46d3-ae86-7a08223b8f94";
         internal static bool IsLifemotherDebuffsBirth(CombatUnit unit) =>
@@ -215,6 +216,31 @@ namespace MonsterTrain2Poju.Model
             replay is { Type: "CardEffectPlayUnitTrigger", Value: -1, Action: { Type: "PlayUnitTrigger", Target: "Self",
                 UnitTriggerKind: "OnFeed", Value: -1, Range: null, AllowEnemy: true, AllowPlayer: true, Statuses.Count: 0 } } &&
             rage.Action?.Value == 0 && OriginalGrant(rage, "buff");
+
+        internal static bool IsLifemotherInfestedBirth(CombatUnit unit, OuterBossProgress boss, CombatContext? context,
+            bool beforePlacement = false) =>
+            unit.MoonPhaseMask == (beforePlacement ? 6 : 4) && IsLifemotherInfestedOpeningActor(unit, context) &&
+            boss is { AssetKey: LifemotherInfested, ValidAttackPhases: -1, BaseCanAttack: true,
+                Actions: [[{ Behavior: "RandomOccupiedBossActionBehavior", TargetTeam: CombatTeam.Player, Empty: true, DestroyRoom: false }]] };
+
+        internal static bool HasDormantLifemotherInfestedDeathGrant(CombatUnit unit, CombatTrigger trigger, CombatContext? context) =>
+            context?.QueryFrame is { Turn: 1, MoonPhase: 2, MoonPhaseTrackingActive: false } &&
+            unit.MoonPhaseMask == 6 && IsLifemotherInfestedOpeningActor(unit, context) && ReferenceEquals(trigger, unit.Triggers[0]);
+
+        private static bool IsLifemotherInfestedOpeningActor(CombatUnit unit, CombatContext? context) => unit is
+            { AssetKey: LifemotherInfested, Team: CombatTeam.Enemy, BumpRules.OuterBoss: true, BaseAttack: 40,
+                Attack: 40, MaxHealth: 9000, Health: 9000, Size: 5, SpawnerCardId: 0, Statuses: [{ Id: "trample", Stacks: 1 }],
+                Triggers: [{ Kind: "OnAnyUnitDeathOnFloor", Once: false, IgnoreSilence: false, FireCount: 1,
+                    TriggerAtThreshold: 0, Conditions: null, Effects: [{ Type: "CardEffectAddStatusEffect",
+                        Action: { Type: "AddStatus", Target: "Self", Value: 0, Range: null, AllowEnemy: false,
+                            AllowPlayer: true, Statuses: [{ Id: "hivemind", Stacks: 2 }] } }] },
+                    { Kind: "OnTeamTurnBegin", Once: false, IgnoreSilence: false, FireCount: 1,
+                    TriggerAtThreshold: 0, Conditions: null, Effects: [{ Type: "CardEffectRemoveStatusEffect",
+                        Action: { Type: "RemoveStatus", Target: "Self", Value: 0, Range: null, AllowEnemy: true,
+                            AllowPlayer: true, Statuses: [{ Id: "dazed", Stacks: 5 }] } }] }] } &&
+            context?.Relics?.Count(owner => owner is { DataId: "72f9f4e3-df23-4954-99e6-9040ab573590",
+                AssetKey: "Boss_Railforged_Lifemother_Infested", IsCovenant: false,
+                EffectTypes: [RelicModel.Null, RelicModel.Null, RelicModel.Null, RelicModel.Null] }) == 1;
 
         internal static bool IsIndulgentSlayFeed(CombatUnit unit, CombatTrigger trigger) =>
             unit is { AssetKey: IndulgentGorgeOnSlay, Team: CombatTeam.Enemy, BumpRules.OuterBoss: true,

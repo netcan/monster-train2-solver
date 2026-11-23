@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--native-lifemother-infested-opening-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    LifemotherInfestedChecks.Opening(fixture.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--export-native-hivemind")
 {
     HivemindChecks.Export(args[1], args[2]);

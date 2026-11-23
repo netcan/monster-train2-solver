@@ -91,6 +91,8 @@ namespace MonsterTrain2Poju.Model
             bool trampleIndulgent = OuterBossDefinitions.IsIndulgentTrampleBirth(actor.Unit, train.Context) &&
                 boss is { ValidAttackPhases: -1, Actions: [[{ Behavior: "RandomOccupiedBossActionBehavior",
                     TargetTeam: CombatTeam.Player, Empty: true, DestroyRoom: false }]] };
+            bool infestedBirth = battle is { MoonPhase: "Full", MoonPhaseTrackingActive: false } &&
+                OuterBossDefinitions.IsLifemotherInfestedBirth(actor.Unit, boss, train.Context);
             int moon = train.Context?.QueryFrame?.MoonPhase ?? 0;
             bool siphonTrialNewMoon = moon == 1 && battle.MoonPhase == "New" &&
                 actor.Unit is { AssetKey: "Boss_Level3_Arkion_SiphonRage", MoonPhaseMask: 4,
@@ -124,7 +126,7 @@ namespace MonsterTrain2Poju.Model
                 !actor.Unit.Triggers.Any(trigger => trigger.Kind is "OnMoonLit" or "OnMoonlitLost" or
                     "OnMoonShade" or "OnMoonshadeLost" or "OnMoonPhaseShift");
             // Earlier birth captures emitted this guard before the two stock actions were calibrated.
-            IReadOnlyList<string> birthInteractions = trampleIndulgent
+            IReadOnlyList<string> birthInteractions = trampleIndulgent || infestedBirth
                 ? actor.ExternalInteractions.Where(interaction => interaction !=
                     "Outer-boss definition or action signature requires separate calibration.").ToArray()
                 : actor.ExternalInteractions;
@@ -140,10 +142,10 @@ namespace MonsterTrain2Poju.Model
                 return Fail("Outer-boss Covenant creation requires its calibrated native birth stats.");
             if (OuterBossDefinitions.IsDutiful(actor.Unit.AssetKey) && !CalibratedDutiful(actor.Unit))
                 return Fail("Dutiful birth requires the captured original actor and status trigger.");
-            if (!(OuterBossDefinitions.Supports(actor.Unit.AssetKey) || trampleIndulgent) || actor.Unit.Id != 0 || boss.UnitId != 0 ||
+            if (!(OuterBossDefinitions.Supports(actor.Unit.AssetKey) || trampleIndulgent || infestedBirth) || actor.Unit.Id != 0 || boss.UnitId != 0 ||
                 boss.AssetKey != actor.Unit.AssetKey || boss.Room != -1 || boss.Phase != "Casting" ||
                 old.OuterBoss != null || train.Context?.SpawnPoints == null || actor.Unit.BumpRules?.OuterBoss != true ||
-                (!trampleIndulgent && (lifemotherDebuffs ? !calibratedLifemotherDebuffs : indulgent ? !calibratedIndulgent :
+                (!trampleIndulgent && !infestedBirth && (lifemotherDebuffs ? !calibratedLifemotherDebuffs : indulgent ? !calibratedIndulgent :
                     duo ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("titanskin")?.Stacks != 10 :
                     OuterBossDefinitions.IsArkionPyre(actor.Unit.AssetKey)
                         ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("multistrike")?.Stacks != 1

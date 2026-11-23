@@ -397,6 +397,10 @@ Lifemother Infested 的三个同层死亡回调将首领的 Hivemind 从 0 依�
 波次进食及楼层修正器的攻击刷新仍待整战对照。
 [原版 Hivemind 加层回调](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/status-additions.mt2f)
 
+Infested 的出生和初始站位也通过。首轮抽牌后三名波次单位各获 +3 攻击，随后进入战斗的
+首领阶段与同层死亡组合仍待继续对照。
+[原版开局](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/native-opening.mt2f)
+
 Lifemother Debuffs 的原版践踏在濒死冠军和后排复仇者身上各施加 12 层 Malaise。
 死亡回调把冠军身上的 12 层转给存活复仇者，叠到 24 层。四次回调的状态和随机流均通过专项回放。
 两条原版 Torch 分支进一步核对 Malaise 与 Pyregel 的转移和清除顺序。反向顺序的样本中没有存活接收者。

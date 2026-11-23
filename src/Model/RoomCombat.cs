@@ -1267,7 +1267,8 @@ namespace MonsterTrain2Poju.Model
                 foreach (CombatStatus status in unit.Statuses)
                     if (!KnownStatuses.Contains(status.Id) && !EquipmentPoolGrantModel.CosmeticStatus(status) &&
                         !((allowFreshHivemind && status.Id == HivemindTurnUpgrade.StatusId &&
-                            HivemindTurnUpgrade.IsWaitingSecondWaveOwner(unit, status)) ||
+                            (HivemindTurnUpgrade.IsWaitingSecondWaveOwner(unit, status) ||
+                             HivemindTurnUpgrade.IsInfestedOpeningOwner(unit, status))) ||
                             (observedHivemindCombat && status.Id == HivemindTurnUpgrade.StatusId)) && !(status.Id == "pyrebane" &&
                         OuterBossDefinitions.IsAngelDuoInner(unit.AssetKey) && unit.Status("lifelink") == null) && !(linkedHealthOnly &&
                         (status.Id == "lifelink" || status.Id == "pyrebound" && unit.AssetKey == "Boss_Level9_Dominion_V2" ||
@@ -1698,7 +1699,12 @@ namespace MonsterTrain2Poju.Model
                                 return "Conditional Pyre damage requires a Pyre target.";
                             if (action.Type == "AddStatus")
                             {
-                                string? statusError = TriggeredStatusModel.Validate(effect);
+                                // The opening checks retain these death triggers for later validation at dispatch.
+                                bool dormantDeath = allowFreshHivemind && !state.Preview &&
+                                    (HivemindTurnUpgrade.HasDormantOpeningDeathGrant(unit, trigger) ||
+                                     OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(unit, trigger, state.Context));
+                                string? statusError = dormantDeath
+                                    ? null : TriggeredStatusModel.Validate(effect);
                                 if (statusError != null) return statusError;
                                 if (state.Context == null) return "Triggered status requires shared battle context.";
                             }

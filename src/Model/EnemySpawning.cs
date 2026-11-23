@@ -146,7 +146,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (selected >= wave.Candidates.Count) return Unsupported("Invalid cached spawn group.");
                 firstWaveHivemind = !includeTreasure && source.Turn == 1 && phase == 0 &&
-                    HivemindTurnUpgrade.HasOriginalFirstWavePair(wave.Candidates[selected].Units.Select(entry => entry.Unit));
+                    HivemindTurnUpgrade.HasOriginalFirstWave(wave.Candidates[selected].Units.Select(entry => entry.Unit));
                 IEnumerable<CombatUnit> present = source.Train.Rooms.SelectMany(room => room.Units);
                 secondWaveHivemind = includeTreasure &&
                     (source.Turn is 1 or 2 && phase == 1 && HivemindTurnUpgrade.HasSecondWaveCarriers(present) ||
@@ -423,7 +423,8 @@ namespace MonsterTrain2Poju.Model
                     room.Deployment, rooms[index], firstWaveHivemind || secondWaveHivemind
                         ? room.ExternalInteractions.Where(marker => !HivemindTurnUpgrade.IsKnownMarker(marker))
                             .Concat(rooms[index].Where(unit => unit.Status(HivemindTurnUpgrade.StatusId) is CombatStatus status &&
-                                HivemindTurnUpgrade.IsWaitingSecondWaveOwner(unit, status)).Select(HivemindTurnUpgrade.Marker))
+                                (HivemindTurnUpgrade.IsWaitingSecondWaveOwner(unit, status) || firstWaveHivemind &&
+                                 HivemindTurnUpgrade.IsInfestedOpeningOwner(unit, status))).Select(HivemindTurnUpgrade.Marker))
                             .Distinct().OrderBy(marker => marker, StringComparer.Ordinal).ToArray()
                         : room.ExternalInteractions, context, room.Preview,
                     room.ActiveCompanionBossIds)).ToArray();
