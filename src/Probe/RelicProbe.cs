@@ -609,6 +609,8 @@ namespace MonsterTrain2Poju.Probe
             var subtype = (SubtypeData)Field("characterSubtype");
             var interactions = new List<string>();
             var data = (List<CharacterTriggerData>?)Field("triggerDataList");
+            if (data != null && data.SelectMany(trigger => trigger.GetEffects()).Any(UnsupportedTriggeredGoldCost))
+                interactions.Add("Conditional or random gold costs in an installed character trigger");
             CombatTrigger[] triggers = (data ?? new List<CharacterTriggerData>())
                 .Select(trigger => EnemySpawningProbe.TriggerDefinition(trigger, interactions)).ToArray();
             return new RelicCharacterTriggers(index, team.HasFlag(Team.Type.Monsters), team.HasFlag(Team.Type.Heroes),
@@ -617,6 +619,11 @@ namespace MonsterTrain2Poju.Probe
                     .Where(character => character != null).Select(character => character.GetAssetKey()).ToArray(),
                 RelicCardModifierProbe.Conditions(effect), interactions);
         }
+
+        internal static bool UnsupportedTriggeredGoldCost(CardEffectData effect) =>
+            effect.GetEffectStateName() == RelicGoldLossOnHitModel.Effect && effect.GetParamInt() < 0 &&
+            (effect.GetParamBool() || effect.GetUseIntRange() || effect.GetTargetMode() != TargetMode.Room ||
+                effect.GetTargetTeamType() != Team.Type.None);
 
         private static RelicCharacterTriggers StatusAddedTrigger(IRelicEffect effect, int index)
         {

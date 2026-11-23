@@ -1865,7 +1865,8 @@ namespace MonsterTrain2Poju.Model
                             return "Unmodeled effect " + effect.Type + " on " + unit.AssetKey + " trigger " +
                                 trigger.Kind + " in room " + state.RoomIndex;
                         if (state.Context == null) return "Unit effects require shared battle context.";
-                        if (effect.Type == "CardEffectRewardGold" && effect.Value < 0)
+                        if (effect.Type == RelicGoldLossOnHitModel.Effect && effect.Value < 0 &&
+                            !RelicGoldLossOnHitModel.OwnsTrigger(state.Context, unit, trigger))
                             return "Conditional gold costs are not modeled.";
                         if (effect.Type is "CardEffectAddBattleCard" or "CardEffectAddRunCard" &&
                             (effect.Generation == null && effect.CardPool.Count == 0 || !new[] { "DeckPile", "DeckPileTop", "DeckPileRandom",
@@ -4827,9 +4828,9 @@ namespace MonsterTrain2Poju.Model
                                     if (!source.Preview) RouteSpawner(unit);
                                 }
                             }
-                            else if (effect.Type == "CardEffectRewardGold")
+                            else if (effect.Type == RelicGoldLossOnHitModel.Effect)
                             {
-                                if (source.Preview) continue;
+                                if (source.Preview || effect.Value < 0 && context?.EnergyState?.PyreAlive != true) continue;
                                 int reward = GoldRewardModel.Adjust(effect.Value, multiplier: context!.Resources?.GoldRewardMultiplier ?? 1f);
                                 if (reward != 0)
                                 {

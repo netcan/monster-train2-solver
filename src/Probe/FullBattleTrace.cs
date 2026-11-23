@@ -756,6 +756,8 @@ namespace MonsterTrain2Poju.Probe
                     {
                         value = (int)AccessTools.Field(typeof(CardEffectRewardGold), "unmodifiedGoldReward")
                             .GetValue(effect.GetCardEffect());
+                        if (value < 0 && RelicProbe.UnsupportedTriggeredGoldCost(effect.GetSourceCardEffectData()))
+                            interactions.Add("Conditional or random gold costs in a live character trigger");
                         if (AllGameManagers.Instance!.GetSaveManager().GetAdjustedGoldAmount(value, isReward: true) != GoldRewardModel.Adjust(value))
                             interactions.Add("Modified gold reward rules");
                     }

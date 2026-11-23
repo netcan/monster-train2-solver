@@ -40,6 +40,7 @@ namespace MonsterTrain2Poju.Probe
                     SupportsDeploymentSummonBlock(owner, save) ||
                     CardBranchMaskProbe.Enabled && SupportsBigMonsters(owner, save) ||
                     BattleSpawnPointProbe.Enabled && CardBranchMaskProbe.Enabled && SupportsSpellDamageMove(owner, save) ||
+                    SupportsLoseMoneyOnHit(owner, save) ||
                     owner.GetRelicDataID() == RelicPersistentMonsterHealthModel.OwnerId &&
                     owner.GetEffects() is [RelicEffectPersistMonsterHp persistentHealth] && SupportsPersistentHealth(persistentHealth) ||
                     SupportsPyreAbilityCooldown(owner, save) ||
@@ -60,6 +61,25 @@ namespace MonsterTrain2Poju.Probe
                         owner.GetRelicDataID() is RelicResourceProbe.AfterDrawMorselsId or RelicResourceProbe.AfterDrawCultLeaderId &&
                         owner.GetEffects().Count == 1 && effect is RelicEffectSpawnMonsterOnTurnStart) &&
                     ((RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect)).GetEffectConditions().Count == 0));
+        }
+
+        private static bool SupportsLoseMoneyOnHit(MutatorState owner, SaveManager save) =>
+            owner.GetRelicDataID() == RelicGoldLossOnHitModel.OwnerId &&
+            typeof(RelicEffectAddTrigger).Module.ModuleVersionId == new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d") &&
+            owner.GetEffects() is [RelicEffectAddTrigger] &&
+            save.GetAllGameData().FindMutatorData(RelicGoldLossOnHitModel.OwnerId) is MutatorData definition &&
+            ValidLoseMoneyOnHitDefinition(definition);
+
+        internal static bool ValidLoseMoneyOnHitDefinition(MutatorData definition)
+        {
+            return definition.name == RelicGoldLossOnHitModel.OwnerKey && !definition.DisallowInDeploymentPhase &&
+                definition.GetEffects() is [var effect] && effect.GetEffectClassName() == RelicModel.AddTrigger &&
+                effect.GetParamBool() && effect.GetParamSourceTeam() == Team.Type.Monsters && effect.GetParamCharacters().Count == 0 &&
+                effect.GetParamCharacterSubtype()?.IsNone == true && effect.GetEffectConditions().Count == 0 &&
+                effect.GetTriggers() is [var trigger] && trigger.GetTrigger() == CharacterTriggerData.Trigger.OnHit &&
+                !trigger.GetTriggerOnce() && trigger.GetHideVisualAndIgnoreSilence() && !trigger.GetOnlyTriggerIfEquipped() &&
+                trigger.GetEffects() is [var gold] && gold.GetEffectStateName() == RelicGoldLossOnHitModel.Effect &&
+                gold.GetParamInt() == -1 && !RelicProbe.UnsupportedTriggeredGoldCost(gold);
         }
 
         internal static bool BigMonstersActive(SaveManager save) =>

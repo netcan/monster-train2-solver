@@ -584,6 +584,7 @@ param(
     [ValidatePattern('^[A-Za-z_][A-Za-z0-9_.]{0,127}$')]
     [string] $EffectOwnerType,
     [switch] $OriginalPreventMonsterDamageWitness,
+    [switch] $OriginalLoseMoneyOnHitWitness,
     [switch] $OriginalPreventMonsterDamageBattle,
     [switch] $OriginalRandomizedWavesBattle,
     [switch] $OriginalDisabledRoomPreviewBattle,
@@ -1045,6 +1046,16 @@ if ($OriginalSpellDamageMoveWitness) {
 }
 if ($PlacementSummonBlockOnly -and -not $OriginalPlacementMutatorsWitness) {
     throw 'PlacementSummonBlockOnly requires OriginalPlacementMutatorsWitness.'
+}
+if ($OriginalLoseMoneyOnHitWitness) {
+    $witnessArguments = @('OriginalLoseMoneyOnHitWitness', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+        'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
+        throw 'Original LoseMoneyOnHit witness requires an isolated binary capture.'
+    }
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = 'units-spells-and-junk'
 }
 if ($OriginalPreventMonsterDamageWitness -or $OriginalPreventMonsterDamageBattle) {
     $witnessArguments = @('OriginalPreventMonsterDamageWitness', 'OriginalPreventMonsterDamageBattle', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
@@ -2945,6 +2956,7 @@ $environment = @{
     MT2_PROBE_RELIC_CATALOG = $(if ($RelicCatalog) { '1' } else { '0' })
     MT2_PROBE_EFFECT_OWNER_TYPE = $EffectOwnerType
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_WITNESS = $(if ($OriginalPreventMonsterDamageWitness) { '1' } else { '0' })
+    MT2_PROBE_LOSE_MONEY_ON_HIT = $(if ($OriginalLoseMoneyOnHitWitness) { '1' } else { '0' })
     MT2_PROBE_PYRE_ABILITY_COOLDOWN_WITNESS = $OriginalPyreAbilityCooldownWitness
     MT2_PROBE_ORIGINAL_PACT_DRAW = $(if ($OriginalPactDrawWitness) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_PACT_BATTLE = $(if ($OriginalPactDrawBattle) { '1' } else { '0' })
@@ -3905,6 +3917,16 @@ if ($OriginalRandomSpellTargetsWitness) {
         throw "Original random spell targeting witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-RANDOM-SPELL-TARGETS PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalLoseMoneyOnHitWitness) {
+    $capturePath = Join-Path $profile 'lose-money-on-hit.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original LoseMoneyOnHit component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original LoseMoneyOnHit witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-LOSE-MONEY-ON-HIT PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalPreventMonsterDamageWitness) {

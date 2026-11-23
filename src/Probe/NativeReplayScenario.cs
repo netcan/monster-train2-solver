@@ -515,6 +515,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalRandomSpellTargetsWitness.Acquire(save);
                     if (fullBattle && OriginalPreventMonsterDamageWitness.FullBattle && !OriginalPreventMonsterDamageWitness.Acquired)
                         OriginalPreventMonsterDamageWitness.Acquire(save);
+                    if (fullBattle && OriginalLoseMoneyOnHitWitness.Enabled && !OriginalLoseMoneyOnHitWitness.Acquired)
+                        OriginalLoseMoneyOnHitWitness.Acquire(save);
                     if (fullBattle && (OriginalPersistentMonsterHpWitness.Enabled || OriginalPersistentMonsterHpWitness.FullBattle) &&
                         !OriginalPersistentMonsterHpWitness.Acquired)
                         OriginalPersistentMonsterHpWitness.Acquire(save);
@@ -1136,6 +1138,16 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (OriginalPersistentMonsterHpWitness.Tick(FullBattleTrace.Active!, managers, log))
                     Finish(true, "Original persistent monster health component captured.");
+                return;
+            }
+            if (fullBattle && OriginalLoseMoneyOnHitWitness.Enabled)
+            {
+                OriginalLoseMoneyOnHitWitness.TryStart(FullBattleTrace.Active!, managers, log,
+                    () => AdvanceTurn(combat!, record: false));
+                if (OriginalLoseMoneyOnHitWitness.Failure != null)
+                    Finish(false, OriginalLoseMoneyOnHitWitness.Failure);
+                if (OriginalLoseMoneyOnHitWitness.Completed)
+                    Finish(true, "Original LoseMoneyOnHit component captured.");
                 return;
             }
             if (fullBattle && OriginalPreventMonsterDamageWitness.Enabled)

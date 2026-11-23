@@ -1350,6 +1350,10 @@ Fecundity 的原版升级回调会把全额减费值改为目标卡当前的实�
 Fecundity 的出牌后副本替换仍待实机核对。
 [减费专项归档](../tests/compatibility/game-2.3.1/mechanics/fecundity-cost/full-cost-reduction.mt2f)
 
+`LoseMoneyOnHit` 的原版触发器经过三次实机命中对照。每次命中扣 1 金，金币为 0 时由现有金币规则钳制。
+专项复放逐项核对伤害、金币和随机流，并检查缺少原版触发器时的拒绝路径。
+[受击扣金归档](../tests/compatibility/game-2.3.1/mechanics/lose-money-on-hit/three-physical-hits.mt2f)
+
 ## 自动化与测试成本
 
 从仓库根目录运行下列命令，按已登记的原版战斗生成待采集卡牌清单。
