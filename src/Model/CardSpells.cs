@@ -3223,9 +3223,19 @@ namespace MonsterTrain2Poju.Model
                 case "Sacrifice": return count > 0;
                 case "SacrificeOrFeed": return count > 0;
                 case "Kill": return effect.Tests?.MustHaveValidTargets != true || count > 0;
-                case "Recursion": return effect.Recursion?.SelectionMode == "RandomToRoomUntilCapacityFull" ?
-                    room != null && !room.Units.Any(unit => unit.IsPyre) : count > 0 &&
-                    (effect.Recursion?.SelectionMode is "ChooseToHand" or "ChooseToDeck" || effect.Value > 0);
+                case "Recursion":
+                    if (effect.Recursion?.SelectionMode == "RandomToRoomUntilCapacityFull")
+                        return room != null && !room.Units.Any(unit => unit.IsPyre);
+                    if (count > 0)
+                        return effect.Recursion?.SelectionMode is "ChooseToHand" or "ChooseToDeck" || effect.Value > 0;
+                    // Rapid Raise can be cast without an eligible exhausted monster.
+                    return context?.FindCard(sourceCardId)?.DataId == "5b88c130-70b3-42cc-9903-4d245b4f946f" &&
+                        effect is { Target: "Exhaust", Value: 2,
+                            Tests: { ShouldTest: true, FailToCast: false, StrictTargets: false, MustHaveValidTargets: false },
+                            Recursion: { SelectionMode: "RandomToHand", CardType: "Monster", Subtype: "", RequiresRoomInHand: false,
+                                DisallowOverflowToDrawPile: false, HasCardFilter: false, CardFilter: null, HasUpgrade: true },
+                            Upgrade: { DataId: "8e99fcbd-5415-4bc9-9133-7131b0fb33a6", AssetKey: "Raise",
+                                Stats: { Damage: 5, Health: 5, Cost: -99 } } };
                 case "AddStatus":
                 case "MultiplyStatus": return effect.Tests?.StrictTargets != true && effect.Target != "DropTargetCharacter" &&
                     (effect.Type != "AddStatus" || effect.Target != "RoomExceptDropTarget") || count > 0;
