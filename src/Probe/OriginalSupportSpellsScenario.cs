@@ -22,6 +22,8 @@ namespace MonsterTrain2Poju.Probe
         internal static bool OrdinaryExtraSpawn => HallExtraSpawn && Environment.GetEnvironmentVariable("MT2_PROBE_DOUBLE_UNITS_ORDINARY") == "1";
         internal static bool FirstShieldExtraSpawn => OrdinaryExtraSpawn &&
             Environment.GetEnvironmentVariable("MT2_PROBE_DOUBLE_UNITS_FIRST_SHIELD") == "1";
+        internal static bool ArmorExtraSpawn => OrdinaryExtraSpawn &&
+            Environment.GetEnvironmentVariable("MT2_PROBE_DOUBLE_UNITS_SPAWN_ARMOR") == "1";
         internal static bool SpawnOrStatusExtraSpawn => HallExtraSpawn &&
             Environment.GetEnvironmentVariable("MT2_PROBE_DOUBLE_UNITS_SPAWN_OR_STATUS") == "1";
         internal static object? HallExtraSpawnDefinition { get; private set; }
@@ -60,6 +62,7 @@ namespace MonsterTrain2Poju.Probe
             };
             save.AddMutator(owner);
             if (FirstShieldExtraSpawn) AcquireOriginalFirstShield(save);
+            if (ArmorExtraSpawn) AcquireOriginalSpawnArmor(save);
             hallExtraSpawnAcquired = true;
             log.LogInfo("ORIGINAL-HALL-EXTRA-SPAWN acquired DoubleUnits " + owner.GetID());
         }
@@ -86,6 +89,24 @@ namespace MonsterTrain2Poju.Probe
                 (int)ConditionField(condition, "paramInt") != 1 ||
                 (bool)ConditionField(condition, "allowMultipleTriggersPerDuration"))
                 throw new InvalidOperationException("Original first-unit Damage Shield relic definition changed.");
+            save.AddRelic(relic);
+        }
+
+        private static void AcquireOriginalSpawnArmor(SaveManager save)
+        {
+            const string id = "68ef2523-5c2e-4660-b96d-00b1c0485f54";
+            var relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == id);
+            var effect = relic.GetEffects().Single();
+            var status = effect.GetParamStatusEffects().Single();
+            if (save.GetCollectedRelics().Any(item => item.GetRelicDataID() == id) ||
+                relic.name != "SpawnWithArmor" || relic.DisallowInDeploymentPhase ||
+                effect.GetEffectClassName() != nameof(RelicEffectAddStatusEffectOnSpawn) ||
+                effect.GetParamSourceTeam() != Team.Type.Monsters || effect.GetParamCharacterSubtype()?.IsNone != true ||
+                effect.GetParamExcludeCharacterSubtypes().Length != 0 || effect.GetParamCharacters().Count != 0 ||
+                effect.GetEffectConditions().Count != 0 || effect.GetParamString() != string.Empty ||
+                effect.GetParamBool() || effect.GetParamBool2() || effect.GetParamInt2() != 0 ||
+                status.statusId != "armor" || status.count != 5)
+                throw new InvalidOperationException("Original spawn Armor relic definition changed.");
             save.AddRelic(relic);
         }
 

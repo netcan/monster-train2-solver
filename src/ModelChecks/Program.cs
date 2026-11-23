@@ -5757,10 +5757,10 @@ if (args.Length == 2 && args[0] == "--native-double-units-spawn-or-status-only")
     return;
 }
 
-if (args.Length == 2 && args[0] == "--native-double-units-first-shield-only")
+if (args.Length == 2 && args[0] is "--native-double-units-first-shield-only" or "--native-double-units-spawn-armor-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    HallGraftedBirthChecks.NativeFirstShieldExtraSpawn(fixture.RootElement);
+    HallGraftedBirthChecks.NativePaidBirthStatus(fixture.RootElement, armor: args[0] == "--native-double-units-spawn-armor-only");
     return;
 }
 if (args.Length == 2 && args[0] == "--native-double-units-triggered-only")

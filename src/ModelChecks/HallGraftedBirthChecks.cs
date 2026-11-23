@@ -366,19 +366,21 @@ internal static class HallGraftedBirthChecks
         Console.WriteLine("NATIVE-DOUBLE-UNITS-SPAWN-OR-STATUS PASS: one Funguy with 2 then 3 Horde, exact model state and RNG.");
     }
 
-    internal static void NativeFirstShieldExtraSpawn(FixtureValue root)
+    internal static void NativePaidBirthStatus(FixtureValue root, bool armor)
     {
-        const string shieldRelic = "60a2a8a3-5f7a-4a9d-b427-5f261145fa1f";
-        Require(root.GetProperty("Scope").GetString() == "NativeOriginalDoubleUnitsFirstShield" &&
+        string relicId = armor ? "68ef2523-5c2e-4660-b96d-00b1c0485f54" : "60a2a8a3-5f7a-4a9d-b427-5f261145fa1f";
+        string status = armor ? "armor" : "damage shield";
+        string expectedScope = armor ? "NativeOriginalDoubleUnitsSpawnArmor" : "NativeOriginalDoubleUnitsFirstShield";
+        Require(root.GetProperty("Scope").GetString() == expectedScope &&
             root.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
             root.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
             root.GetProperty("CaptureFailures").GetInt32() == 0 && root.GetProperty("Pending").GetInt32() == 0,
-            "Expected the original FirstUnitGainDamageShield and DoubleUnits component.");
+            "Expected the original spawn status and DoubleUnits component.");
         var plays = root.GetProperty("OrdinaryPlays").EnumerateArray().ToArray();
         var queries = root.GetProperty("ExtraSpawnCountQueries").EnumerateArray().ToArray();
         Require(plays.Length == 2 && queries.Length == 2, "Expected two consecutive original paid unit plays.");
         RecordedBattleChecks.RecordedBoundary(plays[0].GetProperty("Actual").Deserialize<BattleTurnState>()!,
-            plays[1].GetProperty("Before"), false, "Change floors between original shield plays");
+            plays[1].GetProperty("Before"), false, "Change floors between original spawn status plays");
         for (int index = 0; index < plays.Length; index++)
         {
             var row = plays[index];
@@ -388,21 +390,27 @@ internal static class HallGraftedBirthChecks
             CombatContext prior = before.Spawn.Train.Context!, actual = after.Spawn.Train.Context!;
             CombatUnit[] born = after.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex).Units
                 .Where(unit => unit.Id >= before.Spawn.NextUnitId).OrderBy(unit => unit.Id).ToArray();
-            var startCount = prior.Relics!.Single(owner => owner.DataId == shieldRelic).SpawnStatuses!.Single().Conditions.Single();
-            var endCount = actual.Relics!.Single(owner => owner.DataId == shieldRelic).SpawnStatuses!.Single().Conditions.Single();
+            var startConditions = prior.Relics!.Single(owner => owner.DataId == relicId).SpawnStatuses!.Single().Conditions;
+            var endConditions = actual.Relics!.Single(owner => owner.DataId == relicId).SpawnStatuses!.Single().Conditions;
+            bool conditionsMatch = armor ? startConditions.Count == 0 && endConditions.Count == 0 :
+                startConditions is [{ DurationTriggerCount: var triggerCount }] && triggerCount == index &&
+                endConditions is [{ Triggered: true, DurationTriggerCount: 1 }];
+            int[] expectedStatus = index == 0 ? armor ? [5, 5] : [2, 0] : armor ? [5] : [0];
             Require(before.Spawn.Turn == 1 && after.Spawn.Turn == 1 && before.Energy - after.Energy == 1 &&
                 queries[index].GetProperty("CountBefore").GetInt32() == 1 && queries[index].GetProperty("CountAfter").GetInt32() == 2 - index &&
-                born.Select(unit => unit.Status("damage shield")?.Stacks ?? 0).SequenceEqual(index == 0 ? [2, 0] : [0]) &&
+                born.Select(unit => unit.Status(status)?.Stacks ?? 0).SequenceEqual(expectedStatus) &&
                 born.Select(unit => unit.Status("cardless")?.Stacks ?? 0).SequenceEqual(index == 0 ? [0, 1] : [0]) &&
-                startCount.DurationTriggerCount == index && endCount is { Triggered: true, DurationTriggerCount: 1 } &&
-                prior.Cards.Rng.Equals(actual.Cards.Rng) && prior.BattleRng.Equals(actual.BattleRng) == (index == 1),
-                "The original first unit, Cardless sibling, shield counter or gameplay RNG differs.");
+                conditionsMatch && prior.Cards.Rng.Equals(actual.Cards.Rng) &&
+                prior.BattleRng.Equals(actual.BattleRng) == (!armor && index == 1),
+                "The original first unit, Cardless sibling, status conditions or gameplay RNG differs.");
             BattleActionResult result = BattleActionModel.PlayCard(before, action);
             Require(result.Supported && result.Outcome == row.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(),
-                result.Reason ?? "DoubleUnits with FirstUnitGainDamageShield failed to replay.");
-            RecordedBattleChecks.Compare(result.State!, after, false, "DoubleUnits and first-unit shield play " + (index + 1));
+                result.Reason ?? "DoubleUnits with the original spawn status failed to replay.");
+            RecordedBattleChecks.Compare(result.State!, after, false, "DoubleUnits and " + status + " play " + (index + 1));
         }
-        Console.WriteLine("NATIVE-DOUBLE-UNITS-FIRST-SHIELD PASS: one shielded paid unit, no sibling shield, complete state and RNG.");
+        Console.WriteLine(armor
+            ? "NATIVE-DOUBLE-UNITS-SPAWN-ARMOR PASS: three armor recipients, complete state and RNG."
+            : "NATIVE-DOUBLE-UNITS-FIRST-SHIELD PASS: one shielded paid unit, no sibling shield, complete state and RNG.");
     }
 
     private static void VerifyCloneCallbacks(FixtureValue root, int count = 1)

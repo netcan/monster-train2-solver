@@ -262,6 +262,8 @@ param(
     [switch] $OriginalDoubleUnitsOrdinary,
 
     [switch] $OriginalDoubleUnitsFirstShield,
+
+    [switch] $OriginalDoubleUnitsSpawnArmor,
     [switch] $OriginalDoubleUnitsSpawnOrStatus,
     [switch] $OriginalDoubleUnitsTriggeredSpawn,
     [switch] $OriginalSelfAttack,
@@ -1443,14 +1445,15 @@ if ($OriginalIsolatedEquipmentIds.Count -gt 0) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk'
 }
 if ($OriginalSupportSpells) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
-if ($OriginalDoubleUnitsFirstShield) { $OriginalDoubleUnitsOrdinary = $true }
+if ($OriginalDoubleUnitsFirstShield -and $OriginalDoubleUnitsSpawnArmor) { throw 'Select one original DoubleUnits relic observation.' }
+if ($OriginalDoubleUnitsFirstShield -or $OriginalDoubleUnitsSpawnArmor) { $OriginalDoubleUnitsOrdinary = $true }
 if ($OriginalDoubleUnitsOrdinary -and $OriginalDoubleUnitsSpawnOrStatus) {
     throw 'Select one original DoubleUnits observation.'
 }
 if ($OriginalDoubleUnitsOrdinary -or $OriginalDoubleUnitsSpawnOrStatus) { $OriginalHallExtraSpawn = $true }
 if ($OriginalHallExtraSpawn) { $OriginalHallGraftedBirth = $true }
 if ($OriginalHallGraftedBirth) {
-    $allowed = @('OriginalHallGraftedBirth', 'OriginalHallExtraSpawn', 'OriginalDoubleUnitsOrdinary', 'OriginalDoubleUnitsFirstShield', 'OriginalDoubleUnitsSpawnOrStatus', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
+    $allowed = @('OriginalHallGraftedBirth', 'OriginalHallExtraSpawn', 'OriginalDoubleUnitsOrdinary', 'OriginalDoubleUnitsFirstShield', 'OriginalDoubleUnitsSpawnArmor', 'OriginalDoubleUnitsSpawnOrStatus', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
         'GameSpeed', 'TimeoutSeconds', 'InputProfile', 'Verbose', 'Debug', 'ErrorAction')
     if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
         throw 'OriginalHallGraftedBirth requires the isolated binary first-battle observation.'
@@ -2877,6 +2880,7 @@ if ($OriginalHallGraftedBirth) {
     $environment['MT2_PROBE_ORIGINAL_HALL_GRAFTED_BIRTH'] = '1'
     $environment['MT2_PROBE_HALL_EXTRA_SPAWN'] = $(if ($OriginalHallExtraSpawn) { '1' } else { '0' })
     $environment['MT2_PROBE_DOUBLE_UNITS_FIRST_SHIELD'] = $(if ($OriginalDoubleUnitsFirstShield) { '1' } else { '0' })
+    $environment['MT2_PROBE_DOUBLE_UNITS_SPAWN_ARMOR'] = $(if ($OriginalDoubleUnitsSpawnArmor) { '1' } else { '0' })
     $environment['MT2_PROBE_DOUBLE_UNITS_ORDINARY'] = $(if ($OriginalDoubleUnitsOrdinary) { '1' } else { '0' })
     $environment['MT2_PROBE_DOUBLE_UNITS_SPAWN_OR_STATUS'] = $(if ($OriginalDoubleUnitsSpawnOrStatus) { '1' } else { '0' })
 }
@@ -4004,7 +4008,8 @@ if ($OriginalHallGraftedBirth) {
         $extraSpawn = $result.TryGetProperty('ExtraSpawn', [ref]$extraSpawnValue) -and $extraSpawnValue.GetBoolean()
         $scopeValue = $result
         $scope = if ($result.TryGetProperty('Scope', [ref]$scopeValue)) { $scopeValue.GetString() } else { '' }
-        $expectedScope = if ($OriginalDoubleUnitsFirstShield) { 'NativeOriginalDoubleUnitsFirstShield' }
+        $expectedScope = if ($OriginalDoubleUnitsSpawnArmor) { 'NativeOriginalDoubleUnitsSpawnArmor' }
+            elseif ($OriginalDoubleUnitsFirstShield) { 'NativeOriginalDoubleUnitsFirstShield' }
             elseif ($OriginalDoubleUnitsOrdinary) { 'NativeOriginalDoubleUnitsOrdinary' }
             elseif ($OriginalDoubleUnitsSpawnOrStatus) { 'NativeOriginalDoubleUnitsSpawnOrStatus' } else { '' }
         if ($result.GetProperty('Boundary').GetString() -cne 'NativeOriginalHallGraftedBirth' -or

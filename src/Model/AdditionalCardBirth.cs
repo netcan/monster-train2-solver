@@ -17,7 +17,7 @@ namespace MonsterTrain2Poju.Model
             if (count != 1 || context is not { Enchantments: null, LifeLinks: null } ||
                 context.Relics?.Any(relic => relic.EffectTypes.Any(effect =>
                     effect != "RelicEffectNull" && effect != RelicUnitSpawnCountModel.Effect &&
-                    (copyOnBirth || !CanApplyFirstUnitShield(relic)))) == true ||
+                    (copyOnBirth || !CanApplyLocalSpawnStatus(relic)))) == true ||
                 copyOnBirth && !RoomSpawnCopyModel.OriginalMirrorsOnly(room) ||
                 definition.SpawnUnit is not { Triggers.Count: 0 } ||
                 room.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind is "OnSpawn" or "OnUnscaledSpawn" or
@@ -59,15 +59,20 @@ namespace MonsterTrain2Poju.Model
             }
         }
 
-        private static bool CanApplyFirstUnitShield(CombatRelicState owner) =>
-            owner is { IsCovenant: false, DisallowedInPlacementPhase: false,
+        private static bool CanApplyLocalSpawnStatus(CombatRelicState owner)
+        {
+            if (owner is not { IsCovenant: false, DisallowedInPlacementPhase: false,
                 EffectTypes: [RelicModel.AddStatusOnSpawn],
                 SpawnStatuses: [{ TargetPlayer: true, TargetEnemy: false, SubtypeIsNone: true, SubtypeIsPyre: false,
                     ExcludedSubtypes.Count: 0, RestrictedRoom: null, HpPercentAsStacks: 0, SourceKind: "",
                     RequireGraft: false, ApplyToTeam: false, CharacterAssetKeys.Count: 0,
-                    EnergyGain: 0, DrawCount: 0, Statuses: [{ Id: "damage shield", Stacks: 2 }],
+                    EnergyGain: 0, DrawCount: 0, Statuses.Count: 1 } rule] })
+                return false;
+            return rule is { Statuses: [{ Id: "armor", Stacks: > 0 }], Conditions.Count: 0 } or
+                { Statuses: [{ Id: "damage shield", Stacks: 2 }],
                     Conditions: [{ TrackTriggerCount: true, Comparator: 6, Value: 1, AllowMultiple: false,
-                        Query: { Type: "SubtypeInDeck", Duration: "ThisTurn", SubtypeIsNone: true } }] }] };
+                        Query: { Type: "SubtypeInDeck", Duration: "ThisTurn", SubtypeIsNone: true } }] };
+        }
 
         private static UnitBirthResult Fail(string reason) => new UnitBirthResult(Failure(reason));
 
