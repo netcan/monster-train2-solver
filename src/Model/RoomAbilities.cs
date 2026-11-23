@@ -41,7 +41,7 @@ namespace MonsterTrain2Poju.Model
             }).ToArray());
         }
         internal static BattleActionEnumeration EnumerateActivations(BattleTurnState source,
-            Func<BattleTurnState, PlayCardAction, BattleActionResult>? play = null)
+            Func<BattleTurnState, PlayCardAction, BattleActionResult>? play = null, Func<bool>? shouldStop = null)
         {
             var actions = new List<SupportedActionCandidate>();
             var unsupported = new List<UnsupportedActionAttempt>();
@@ -60,6 +60,8 @@ namespace MonsterTrain2Poju.Model
                     ? source.Spawn.Train.Rooms.Single(state => state.RoomIndex == target.RoomIndex).Units.Where(unit => unit.Health > 0).Select(unit => unit.Id)
                     : new[] { 0 })
                 {
+                    if (shouldStop?.Invoke() == true)
+                        return new BattleActionEnumeration(actions, unsupported, interrupted: true);
                     var action = new PlayCardAction(cache.Card!.InstanceId, target.RoomIndex, targetUnitId: id, activatorRoomIndex: room.RoomIndex);
                     BattleActionResult result = play?.Invoke(source, action) ?? BattleActionModel.PlayCard(source, action);
                     if (result.Supported) actions.Add(new SupportedActionCandidate(action, result));

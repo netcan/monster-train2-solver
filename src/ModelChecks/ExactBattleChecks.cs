@@ -77,6 +77,12 @@ internal static class ExactBattleChecks
             CancellationToken.None, maxSteps: 1, maxActionsPerTurn: 1);
         Require(shortSearch.ReachedStepLimit && !shortSearch.ExhaustedEnumeratedFrontier && shortSearch.Steps.Count <= 1,
             "The terminal traversal exceeded its step limit or certified the restricted frontier.");
+        int checks = 0;
+        var timed = ExactBattleSolver.MinimizeCore(root, null, new ExactBattleOptions(64),
+            CancellationToken.None, () => ++checks > 2, maxSteps: 256, maxActionsPerTurn: 12, useAdvisorOrdering: true);
+        Require(timed.TimedOut && !timed.Cancelled && timed.ExpandedNodes == 1 && !timed.ExhaustedEnumeratedFrontier &&
+            timed.SearchMetrics.CandidateRequests <= 1 && timed.SearchMetrics.EndTurnRequests == 0 && Json(root) == parent,
+            "The terminal advisor started new transitions after its action enumeration deadline.");
         Console.WriteLine($"PARALLEL-NATIVE-ENDGAME PASS turn={root.Spawn.Turn} pyre={pyre} nodes={plan.ExpandedNodes} steps={plan.Steps.Count}");
 
         static int PyreHealth(BattleTurnState state) => state.Spawn.Train.Rooms.SelectMany(room => room.Units)

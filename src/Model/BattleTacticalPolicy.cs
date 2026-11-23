@@ -149,7 +149,8 @@ namespace MonsterTrain2Poju.Model
             {
                 if (cachedAbilities == null)
                 {
-                    cachedAbilities = workspace?.Abilities(source) ?? UnitAbilityModel.EnumerateActivations(source);
+                    cachedAbilities = workspace?.Abilities(source, shouldStop) ??
+                        UnitAbilityModel.EnumerateActivations(source, shouldStop: shouldStop);
                     omitted.AddRange(cachedAbilities.UnsupportedAttempts);
                 }
                 return cachedAbilities;

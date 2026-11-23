@@ -1467,13 +1467,16 @@ namespace MonsterTrain2Poju.Model
             if (includeAbilities)
             {
                 if (shouldStop?.Invoke() == true) return Interrupted();
-                BattleActionEnumeration abilities = workspace?.Abilities(source) ?? UnitAbilityModel.EnumerateActivations(source);
+                BattleActionEnumeration abilities = workspace?.Abilities(source, shouldStop) ??
+                    UnitAbilityModel.EnumerateActivations(source, shouldStop: shouldStop);
                 actions.AddRange(abilities.SupportedCandidates);
                 unsupported.AddRange(abilities.UnsupportedAttempts);
-                if (shouldStop?.Invoke() == true) return Interrupted();
-                BattleActionEnumeration roomAbilities = RoomAbilityModel.EnumerateActivations(source, workspace == null ? null : workspace.Play);
+                if (abilities.Interrupted || shouldStop?.Invoke() == true) return Interrupted();
+                BattleActionEnumeration roomAbilities = RoomAbilityModel.EnumerateActivations(source,
+                    workspace == null ? null : workspace.Play, shouldStop);
                 actions.AddRange(roomAbilities.SupportedCandidates);
                 unsupported.AddRange(roomAbilities.UnsupportedAttempts);
+                if (roomAbilities.Interrupted) return Interrupted();
             }
             if (!onlyCardId.HasValue && source.PlayRules.DevoteEnabled == true)
                 foreach (RoomPlayRule room in source.PlayRules.Rooms.Where(room => room.Enabled))

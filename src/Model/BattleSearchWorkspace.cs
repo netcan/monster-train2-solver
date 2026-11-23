@@ -165,11 +165,11 @@ namespace MonsterTrain2Poju.Model
             if (enabled && !result.Interrupted) For(source).Enumerations[key] = result;
             return result;
         }
-        internal BattleActionEnumeration Abilities(BattleTurnState source)
+        internal BattleActionEnumeration Abilities(BattleTurnState source, Func<bool>? shouldStop = null)
         {
             if (enabled && For(source).Abilities is BattleActionEnumeration existing) return existing;
-            var result = UnitAbilityModel.EnumerateActivations(source, Play);
-            if (enabled) For(source).Abilities = result;
+            var result = UnitAbilityModel.EnumerateActivations(source, Play, shouldStop);
+            if (enabled && !result.Interrupted) For(source).Abilities = result;
             return result;
         }
         internal SupportedActionCandidate? Choose(BattleTurnState source, out IReadOnlyList<UnsupportedActionAttempt> omitted,

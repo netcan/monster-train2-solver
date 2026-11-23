@@ -14,6 +14,14 @@ internal static class RoomAbilityChecks
             PlayCardAction action = row.GetProperty("Action").Deserialize<PlayCardAction>()!;
             if (!action.ActivatorRoomIndex.HasValue) continue;
             BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!, after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            if (casts == 0)
+            {
+                var cancelled = RoomAbilityModel.EnumerateActivations(before,
+                    (_, _) => throw new InvalidOperationException("A room ability simulated after cancellation."),
+                    shouldStop: () => true);
+                Require(cancelled.Interrupted && cancelled.SupportedCandidates.Count == 0,
+                    "The native room skill frontier did not report interruption.");
+            }
             CombatContext old = before.Spawn.Train.Context!, next = after.Spawn.Train.Context!;
             RoomCapacityAttachmentState attachment = old.RoomCapacities!.Single(room => room.RoomIndex == action.ActivatorRoomIndex).Attachments!.Single();
             RoomAbilityState ability = attachment.Ability!, actual = next.RoomCapacities!.Single(room => room.RoomIndex == action.ActivatorRoomIndex).Attachments!.Single().Ability!;

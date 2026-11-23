@@ -212,7 +212,7 @@ namespace MonsterTrain2Poju.Model
             EnumerateActivations(source).SupportedActions;
 
         internal static BattleActionEnumeration EnumerateActivations(BattleTurnState source,
-            Func<BattleTurnState, PlayCardAction, BattleActionResult>? play = null)
+            Func<BattleTurnState, PlayCardAction, BattleActionResult>? play = null, Func<bool>? shouldStop = null)
         {
             var actions = new List<SupportedActionCandidate>();
             var unsupported = new List<UnsupportedActionAttempt>();
@@ -262,6 +262,8 @@ namespace MonsterTrain2Poju.Model
                         foreach (PlayCardAction choice in abilityRule == null ? new[] { action } :
                             BattleActionModel.EnumerateRecursionChoices(source, action, abilityRule))
                         {
+                            if (shouldStop?.Invoke() == true)
+                                return new BattleActionEnumeration(actions, unsupported, interrupted: true);
                             BattleActionResult attempt = play?.Invoke(source, choice) ?? BattleActionModel.PlayCard(source, choice);
                             if (attempt.Supported) actions.Add(new SupportedActionCandidate(choice, attempt));
                             else if (attempt.Rejection == ActionRejection.Unsupported)

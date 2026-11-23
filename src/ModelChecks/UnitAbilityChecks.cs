@@ -52,6 +52,17 @@ internal static class UnitAbilityChecks
             BattleActionModel.EnumerateSupportedPlays(root).Any(play => play.ActivatorUnitId == 10) &&
             BattleActionModel.EnumerateSupportedPlays(after).All(play => play.ActivatorUnitId != 10),
             "Search enumeration accepted a cooling-down actor or omitted an available skill.");
+        BattleTurnState multiFloor = Root(otherFloors: true);
+        var workspace = new BattleSearchWorkspace();
+        BattleActionEnumeration interrupted = workspace.Abilities(multiFloor, () => workspace.Metrics.SimulatedCandidates >= 1);
+        Require(interrupted.Interrupted && workspace.Metrics.SimulatedCandidates == 1 &&
+            interrupted.SupportedActions.Count == 1 && interrupted.SupportedActions[0].RoomIndex == 0,
+            "An interrupted skill frontier did not stop after its first completed candidate.");
+        BattleActionEnumeration resumed = workspace.Abilities(multiFloor);
+        Require(!resumed.Interrupted && workspace.Metrics.SimulatedCandidates > 1 &&
+            resumed.SupportedActions.Select(play => play.RoomIndex).SequenceEqual(
+                UnitAbilityModel.EnumerateSupportedActivations(multiFloor).Select(play => play.RoomIndex)),
+            "A partial skill frontier was cached as complete or changed the resumed candidate order.");
         BattleTurnState sourceAttackRoot = Root(actorAttack: 5, sourceAttackDamage: true, damageMultiplier: 2);
         BattleActionResult sourceAttack = UnitAbilityModel.Activate(sourceAttackRoot, action);
         Require(sourceAttack.Supported, "Source-attack ability was rejected: " + sourceAttack.Reason);

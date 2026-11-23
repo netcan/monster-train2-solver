@@ -92,12 +92,10 @@ namespace MonsterTrain2Poju.Model
             bool cancelled = false, timedOut = false, limited = false;
             bool actionLimit = false, stepLimit = false, stoppedEarly = false;
             var unsupported = new List<UnsupportedActionAttempt>();
+            Func<bool>? stopActions = useAdvisorOrdering ? CheckStop : null;
             while (pending.Count > 0)
             {
-                cancelled = cancellationToken.IsCancellationRequested;
-                timedOut = deadlineReached();
-                stoppedEarly = earlyStop?.Reached == true;
-                if (cancelled || timedOut || stoppedEarly) break;
+                if (CheckStop()) break;
                 var (node, endTurnOnly) = pending.Pop();
                 if (endTurnOnly) { ExpandEndTurns(node); continue; }
                 if (ConsiderLeaf(node)) continue;
@@ -115,13 +113,14 @@ namespace MonsterTrain2Poju.Model
                 if (node.Actions >= maxActionsPerTurn) actionLimit = true;
                 else
                 {
-                    var frontier = BattleActionModel.EnumerateActions(node.State, null, true, workspace);
+                    var frontier = BattleActionModel.EnumerateActions(node.State, null, true, workspace, stopActions);
                     unsupported.AddRange(frontier.UnsupportedAttempts);
                     IEnumerable<SupportedActionCandidate> candidates = useAdvisorOrdering ? frontier.SupportedCandidates
                         .OrderByDescending(candidate => FrontlineProtection(candidate.Result.State!)) : frontier.SupportedCandidates;
                     foreach (var candidate in candidates.Reverse())
                         pending.Push((new Node(candidate.Result.State!, candidate.Result.Outcome, node,
                             new BattleSearchStep(candidate.Action, false), node.Turns), false));
+                    if (frontier.Interrupted) break;
                 }
                 if (useAdvisorOrdering && best?.Outcome == RoomOutcome.BattleWon && pending.Count > beforeActions &&
                     FrontlineProtection(pending.Peek().Node.State) > FrontlineProtection(node.State))
@@ -152,6 +151,14 @@ namespace MonsterTrain2Poju.Model
             return new ExactBattleResult(chosen.State, chosen.Outcome, Value(chosen), steps, nodes, duplicates,
                 terminals, horizons, limited, timedOut, cancelled, watch.Elapsed, unsupported, workspace.Metrics,
                 actionLimit, stepLimit, stoppedEarly);
+
+            bool CheckStop()
+            {
+                cancelled |= cancellationToken.IsCancellationRequested;
+                timedOut |= deadlineReached();
+                stoppedEarly |= earlyStop?.Reached == true;
+                return cancelled || timedOut || stoppedEarly;
+            }
 
             void ExpandEndTurns(Node node)
             {
