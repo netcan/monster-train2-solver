@@ -457,7 +457,7 @@ namespace MonsterTrain2Poju.Model
                 if (remove) temporary = new CardModifiers(temporary.Offsets,
                     temporary.Upgrades.Where(item => item.DataId != upgrade.DataId).ToArray(), temporary.PersistentHealth, temporary.ExternalInteractions);
                 else if (lifetime == "Permanent") permanent = accumulatedExistingUpgrade
-                    ? AccumulateExisting(permanent, upgrade) : Add(permanent, upgrade);
+                    ? AccumulateExisting(permanent, upgrade, permanent: true) : Add(permanent, upgrade);
                 else temporary = accumulatedExistingUpgrade ? AccumulateExisting(temporary, upgrade) : Add(temporary, upgrade);
                 var changed = card.WithModifiers(permanent, temporary);
                 CombatContext context = state.Context.WithCard(changed);
@@ -469,7 +469,7 @@ namespace MonsterTrain2Poju.Model
         internal static CardModifiers Add(CardModifiers modifiers, CardUpgradeModifier upgrade) =>
             upgrade.Unique && upgrade.DataId.Length > 0 && modifiers.Upgrades.Any(item => item.DataId == upgrade.DataId) ? modifiers :
             new CardModifiers(modifiers.Offsets, modifiers.Upgrades.Concat(new[] { upgrade }).ToArray(), modifiers.PersistentHealth, modifiers.ExternalInteractions, modifiers.BoxedCards, modifiers.MergedEquipment);
-        private static CardModifiers AccumulateExisting(CardModifiers modifiers, CardUpgradeModifier upgrade)
+        private static CardModifiers AccumulateExisting(CardModifiers modifiers, CardUpgradeModifier upgrade, bool permanent = false)
         {
             var values = modifiers.Upgrades.ToList();
             // These original growth effects append a fresh permanent record
@@ -480,7 +480,10 @@ namespace MonsterTrain2Poju.Model
                 upgrade.DataId == "995b9c12-c816-4960-9905-cd6e1a29d362" &&
                 upgrade.AssetKey == "Plus1AttackScalable" ||
                 upgrade.DataId == "4d25c6e2-e95b-4388-8b65-33fb1ab395ac" &&
-                upgrade.AssetKey == "Plus3AttackScalable";
+                upgrade.AssetKey == "Plus3AttackScalable" ||
+                permanent && (upgrade.DataId == "a97df12e-6fef-4a41-8935-5ce85c7a1a5d" &&
+                    upgrade.AssetKey == "Plus3HPScalable" || upgrade.DataId == "5a22121e-80f7-447c-85b3-1582994457ad" &&
+                    upgrade.AssetKey == "Plus2AttackScalable");
             int index = currentSpawn ? values.FindLastIndex(item => item.DataId == upgrade.DataId)
                 : values.FindIndex(item => item.DataId == upgrade.DataId);
             if (index < 0) return modifiers;
