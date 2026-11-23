@@ -11,6 +11,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalOpeningPassiveRelicsScenario
     {
         internal const string Name = "original-opening-passive-relics";
+        internal const string FullBattleName = "original-opening-passive-relics-full-battle";
         internal const string Boundary = "DeploymentOriginalPassiveRelicComparison";
         private const string TypeCost = nameof(RelicEffectModifyCardTypeCost);
         private const string NoUpgrade = nameof(RelicEffectModifyCardCostIfNoUpgrades);
@@ -26,7 +27,11 @@ namespace MonsterTrain2Poju.Probe
             ("MoreOrLessArtifactsRelic", "79122f7a-6895-443a-830c-2db23027776c", new[] { Attack, Attack })
         };
         internal static string[] OwnerIds { get; } = Owners.Select(owner => owner.Id).ToArray();
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or FullBattleName;
+        internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == FullBattleName;
+        internal static object? FullBattleOwners => FullBattle && OriginalOpeningRelicsScenario.Acquired
+            ? Owners.Select(owner => new { DataId = owner.Id, AssetKey = owner.Key, EffectTypes = owner.Effects }).ToArray()
+            : null;
         internal static bool CaptureReady { get; private set; }
 
         internal static bool MatchesOriginal(CollectableRelicData relic)

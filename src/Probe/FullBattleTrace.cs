@@ -1466,6 +1466,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalWickedFervorPrepared = OriginalWickedFervorScenario.Prepared,
                 OriginalWickedFervorIds = OriginalWickedFervorScenario.CardIds,
 #if DEVELOPMENT_PROBE
+                OriginalOpeningPassiveRelicOwners = OriginalOpeningPassiveRelicsScenario.FullBattleOwners,
                 OriginalPercentageStatsPrepared = OriginalPercentageStatsScenario.Prepared,
                 OriginalPercentageStatsDefinition = OriginalPercentageStatsScenario.Definition,
                 OriginalPercentageStatsDefinitionAfter = OriginalPercentageStatsScenario.CurrentDefinition,

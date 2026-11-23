@@ -1012,7 +1012,7 @@ namespace MonsterTrain2Poju.Probe
                 OriginalOpeningUnitsScenario.Prepare(managers, log);
                 return;
             }
-            if (fullBattle && OriginalOpeningPassiveRelicsScenario.Enabled)
+            if (fullBattle && OriginalOpeningPassiveRelicsScenario.Enabled && !OriginalOpeningPassiveRelicsScenario.FullBattle)
             {
                 OriginalOpeningPassiveRelicsScenario.Run(managers, log);
                 Finish(true, "Original opening passive relics component captured.");
