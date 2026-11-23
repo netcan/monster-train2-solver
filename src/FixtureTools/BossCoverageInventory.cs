@@ -108,19 +108,22 @@ internal static class BossCoverageInventory
                 recorded[scenario]++;
         }
         var table = new StringBuilder("\n| Original scenario | Model definition gate | Settled recordings |\n| --- | --- | ---: |\n");
-        int allowed = 0;
+        int allowed = 0, scoped = 0;
         foreach (var (scenario, boss) in bosses.OrderBy(pair => pair.Key, StringComparer.Ordinal))
         {
             bool supported = OuterBossDefinitions.Supports(boss);
             allowed += supported ? 1 : 0;
-            string gate = supported ? "allowed" : "guarded";
+            bool encounterScoped = OuterBossDefinitions.UsesEncounterScopedCasting(boss);
+            scoped += encounterScoped ? 1 : 0;
+            string gate = supported ? "allowed" : encounterScoped ? "scoped" : "guarded";
             table.AppendLine($"| {scenario} | {gate} | {recorded[scenario]} |");
         }
         int observed = recorded.Values.Count(battles => battles > 0);
-        Console.WriteLine($"SOUL-SAVIOR-INVENTORY: {bosses.Count} original scenarios/{allowed} allowed definition gates/{observed} settled recorded scenarios.");
+        Console.WriteLine($"SOUL-SAVIOR-INVENTORY: {bosses.Count} original scenarios/{allowed} general definition gates/{scoped} encounter-scoped casting definitions/{observed} settled recorded scenarios.");
         return "\n## Soul Savior\n\n" +
             $"The pinned {Game231FixtureCatalog.Version} catalog contains {bosses.Count} original encounters. " +
-            $"{allowed} model definition gates are open and {observed} encounters have settled recordings. " +
+            $"{allowed} definitions use the general model gate, {scoped} use encounter-specific casting validation, " +
+            $"and {observed} encounters have settled recordings. " +
             "The registered fixtures use original TestScenario selections and can include defeats.\n" + table;
     }
 

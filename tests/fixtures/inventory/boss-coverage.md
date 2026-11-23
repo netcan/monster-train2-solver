@@ -26,15 +26,15 @@ The TSV retains native identities, growth signatures and exact player-source arc
 
 ## Soul Savior
 
-All 15 original 2.3.1 encounters have settled recordings. The registered fixtures use original TestScenario selections and can include defeats. Twelve definitions use the general model gate. The original Indulgent Trample pair and Lifemother Infested use encounter-specific validation.
+The pinned 2.3.1 catalog contains 15 original encounters. 12 definitions use the general model gate, 3 use encounter-specific casting validation, and 15 encounters have settled recordings. The registered fixtures use original TestScenario selections and can include defeats.
 
 | Original scenario | Model definition gate | Settled recordings |
 | --- | --- | ---: |
 | SoulSavior_R1_BossBattle_DutifulChild_AscendDescend | allowed | 1 |
 | SoulSavior_R1_BossBattle_DutifulChild_Burst | allowed | 1 |
 | SoulSavior_R1_BossBattle_DutifulChild_Heal | allowed | 1 |
-| SoulSavior_R2_BossBattle_FavoredChild_1 | guarded | 1 |
-| SoulSavior_R2_BossBattle_FavoredChild_2 | guarded | 1 |
+| SoulSavior_R2_BossBattle_FavoredChild_1 | scoped | 1 |
+| SoulSavior_R2_BossBattle_FavoredChild_2 | scoped | 1 |
 | SoulSavior_R2_BossBattle_FavoredChild_3 | allowed | 1 |
 | SoulSavior_R3_BossBattle_DuplicateEnemy | allowed | 1 |
 | SoulSavior_R3_BossBattle_Scourge | allowed | 1 |
