@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace MonsterTrain2Poju.Model
@@ -157,6 +158,27 @@ namespace MonsterTrain2Poju.Model
             lifecycle.Values.DataId == upgrade.DataId && CleansePower(lifecycle.Values.Stats) && lifecycle.Values.Statuses.Count == 0 &&
             lifecycle.AddedTraits[0].RuntimeType == "CardTraitExhaustState" &&
             lifecycle.AddedTraits[0].DeclaredName == "CardTraitExhaustState" && Ordinary(lifecycle.AddedTraits[0], 0);
+        internal static bool KnownTripleCleanseCopySource(CardInstanceState card) =>
+            card.DataId == "d4366b7c-588c-49aa-b2c6-2aeb30b0e01b" && card.CanBeCopied == true &&
+            card.MaskDescriptor is { SourceTraits.Count: 0, BaseTraits.Count: 2, TemporaryTraits.Count: 0,
+                PermanentReplacements.Count: 0 } &&
+            card.Permanent.Upgrades.Count == 2 && KnownTripleUpgrade(card.Permanent.Upgrades[0]) &&
+            KnownCleanseConsume(card.Permanent.Upgrades[1]) && card.Temporary.Upgrades.Count <= 1 &&
+            card.Temporary.Upgrades.All(LazarusJuiceSpikeModel.KnownConduit) && Validate(card) == null;
+        private static bool KnownTripleCleanseCopy(CardInstanceState card, IReadOnlyList<CardTraitValue> traits) =>
+            card.DataId == "d4366b7c-588c-49aa-b2c6-2aeb30b0e01b" && card.PlayCount == 0 && card.CanBeCopied == true &&
+            card.Permanent.Upgrades.Count == 2 && card.MaskDescriptor is { BaseTraits.Count: 2, TemporaryTraits.Count: 0,
+                PermanentReplacements.Count: 0, SourceTraits.Count: 0 } &&
+            traits.Count == 3 && traits[2].RuntimeType == "CardTraitEphemeral" && card.Temporary.Upgrades.Count is 1 or 2 &&
+            RelicCopyCardOnCardPlayModel.IsFirstSpellEphemeralUpgrade(card.Temporary.Upgrades[0]) &&
+            card.Temporary.Upgrades[0].Lifecycle is
+            {
+                AddedTraits: [{ RuntimeType: "CardTraitEphemeral", DeclaredName: "CardTraitEphemeral", ParamInt: 0,
+                    DefinitionParamInt: 0, StackMode: 0, Removable: false, DefinitionRemovable: false,
+                    TemporaryReplacement: false, HasData: true }],
+                TraitsModified.Count: 0, ReplacedAssets.Count: 0, AvoidClobbering: false,
+            } &&
+            card.Temporary.Upgrades.Skip(1).All(LazarusJuiceSpikeModel.KnownConduit);
         private static bool KnownConsumedCleanseCurse(CardInstanceState card) =>
             card.Permanent.Upgrades.Count == 2 && KnownCleanseConsume(card.Permanent.Upgrades[1]) &&
             card.PlayCount == 1 && card.ExhaustState is { PlayCountModifier: 0, BaseTraits.Count: 1, UpgradeTrait: null } exhausted &&
@@ -229,6 +251,8 @@ namespace MonsterTrain2Poju.Model
                 return "Juice4 requires a captured simple status owner; ordered callbacks remain unsupported.";
             bool triple = traits.Any(trait => trait.RuntimeType == TripleTrait);
             if (triple && KnownTripleStarstruck(card, refreshed)) return null;
+            bool copiedCleanse = triple && KnownTripleCleanseCopy(card, traits);
+            if (copiedCleanse) traits = traits.Take(2).ToArray();
             if (triple && card.DataId == "d4366b7c-588c-49aa-b2c6-2aeb30b0e01b" &&
                 traits.Count is 1 or 2 && traits[0].RuntimeType == TripleTrait && traits[0].DeclaredName == TripleTrait && Ordinary(traits[0], 3) &&
                 card.Permanent.Upgrades.Count >= 1 && KnownTripleUpgrade(card.Permanent.Upgrades[0]) &&
@@ -236,7 +260,7 @@ namespace MonsterTrain2Poju.Model
                     traits.Count == 2 && traits[1].RuntimeType == "CardTraitExhaustState" &&
                     traits[1].DeclaredName == "CardTraitExhaustState" && Ordinary(traits[1], 0) &&
                     card.Permanent.Upgrades.Count == 2 && KnownCleanseConsume(card.Permanent.Upgrades[1])) &&
-                (card.Temporary.Upgrades.Count <= 1 && card.Temporary.Upgrades.All(LazarusJuiceSpikeModel.KnownConduit) ||
+                (copiedCleanse || card.Temporary.Upgrades.Count <= 1 && card.Temporary.Upgrades.All(LazarusJuiceSpikeModel.KnownConduit) ||
                     KnownConsumedCleanseCurse(card)) &&
                 card.MaskDescriptor.SourceTraits?.Count is not > 0 &&
                 card.DamageScalingTraits?.Count is not > 0 && card.StatusScalingTraits?.Count is not > 0 &&

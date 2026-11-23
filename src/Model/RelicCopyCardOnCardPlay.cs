@@ -71,6 +71,15 @@ namespace MonsterTrain2Poju.Model
         internal static bool IsFirstSpellOwner(CombatRelicState relic) =>
             relic.DataId == RelicId && relic.AssetKey == RelicKey;
 
+        internal static bool IsFirstSpellEphemeralUpgrade(CardUpgradeModifier upgrade) =>
+            upgrade.DataId == EphemeralUpgradeId && upgrade.AssetKey == "AddEphemeral" &&
+            upgrade.Stats.Damage == 0 && upgrade.Stats.Health == 0 && upgrade.Stats.Cost == 0 &&
+            upgrade.Stats.Heal == 0 && upgrade.Stats.Size == 0 && upgrade.Stats.XCost == 0 &&
+            upgrade.Stats.EquipmentLimit == 0 && upgrade.Stats.UpgradeSlotCount == 0 &&
+            upgrade.Statuses.Count == 0 && upgrade.ExternalInteractions.Count == 0 &&
+            upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == "CardTraitEphemeral") == true &&
+            upgrade.Lifecycle.RemovedRuntimeTypes.Count == 0 && upgrade.Lifecycle.Triggers.Count == 0;
+
         internal static string? Validate(CombatRelicState relic)
         {
             int[] indices = relic.EffectTypes.Select((type, index) => (type, index))
@@ -92,13 +101,7 @@ namespace MonsterTrain2Poju.Model
             RelicConditionState[] conditions = effect.Conditions.ToArray();
             string expectedDuration = copyFirstSpell || mothersRemnant3 ? "ThisTurn" : "ThisBattle";
             bool validUpgrade = copyFirstSpell
-                ? upgrade != null && upgrade.DataId == EphemeralUpgradeId && upgrade.AssetKey == "AddEphemeral" &&
-                    upgrade.Stats.Damage == 0 && upgrade.Stats.Health == 0 && upgrade.Stats.Cost == 0 &&
-                    upgrade.Stats.Heal == 0 && upgrade.Stats.Size == 0 && upgrade.Stats.XCost == 0 &&
-                    upgrade.Stats.EquipmentLimit == 0 && upgrade.Stats.UpgradeSlotCount == 0 &&
-                    upgrade.Statuses.Count == 0 && upgrade.ExternalInteractions.Count == 0 &&
-                    upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == "CardTraitEphemeral") == true &&
-                    upgrade.Lifecycle.RemovedRuntimeTypes.Count == 0 && upgrade.Lifecycle.Triggers.Count == 0
+                ? upgrade != null && IsFirstSpellEphemeralUpgrade(upgrade)
                 : upgrade == null;
             string[] expectedTraits = copyFirstConsume || copyConsumed ? ["CardTraitExhaustState"] : Array.Empty<string>();
             int expectedCount = copyConsumed ? 2 : 1;
@@ -230,6 +233,9 @@ namespace MonsterTrain2Poju.Model
             CardInstanceState played)
         {
             CardMaskDescriptor descriptor = played.MaskDescriptor ?? throw new InvalidOperationException("Missing copied card metadata.");
+            if (IsFirstSpellOwner(relic) && effect.Upgrade is { } upgrade && IsFirstSpellEphemeralUpgrade(upgrade) &&
+                CardJuiceModel.KnownTripleCleanseCopySource(played))
+                return descriptor.WithBaseTraits(Array.Empty<CardTraitValue>());
             if (relic.DataId == "0f4a9e72-cd34-4667-95f6-6a0ca69832f8" &&
                 played.DataId == "f0ff6411-5c58-4b69-b025-0f6e4a52fca7" &&
                 effect.Upgrade?.DataId == "80a5edf4-6dc8-41a7-ab4e-9d0e914e0848" &&
