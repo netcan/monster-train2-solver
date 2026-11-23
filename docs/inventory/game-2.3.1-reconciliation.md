@@ -12,13 +12,13 @@
 | inspect-no-code-link | 37 | 37 | 37 |
 | inspect-inherited-code | 8 | 8 | 8 |
 | inspect-projection-normalization | 54 | 54 | 54 |
-| inspect-guard-links | 47 | 47 | 47 |
-| review-existing-code | 229 | 229 | 229 |
+| inspect-guard-links | 45 | 45 | 45 |
+| review-existing-code | 227 | 227 | 227 |
 | resolve-reference-only | 7 | 7 | 0 |
-| resolve-entry | 286 | 0 | 0 |
-| scoped-review-recorded | 65 | 65 | 65 |
+| resolve-entry | 284 | 0 | 0 |
+| scoped-review-recorded | 71 | 69 | 69 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 68 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 74 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -33,11 +33,15 @@
 | CardEffectAddStatusEffectNextMonster | known-gap | Native Apply queues AddSpawningStatusEffect. CreateMonsterState applies and clears it before authored starting statuses, and EndTurn clears pending values. The five catalog references are requiredCardEffects filters. The pinned 2.3.1 owner query scanned effect lists on 724 cards, 406 characters, 920 upgrades and 676 relic collection entries. It found zero authored effect entries in this scope. The equipment grant control found one original OnSpawn upgrade entry. Dynamic construction and runtime execution remain unverified. |
 | CardTraitJuice4 | known-gap | Shared 2/3/4 multiplier has five original upgrades, 180 native callback pairs and nine original casts. Source OnCardBeingUpgraded and next-draw dispatch have 540 relationship cases with repeats and 300 ordered pairs; six two-card draws verify deep copies, shared originals and short circuit. Original SoulHelper attachment of Mollis T3 to Cycle of Life records its sole modified trait and preserves +10 unit health before +32 Spikes and +12 OnCast Armor. The native win passed the complete chain, 16 branches, candidate frontiers and serial/parallel search. Two original paid Shelter casts at three Corruption add 6 and 60 Armor, with captured corruption scaling preceding Juice4 and the OnCast Armor addition. Both full successors and RNG match. The five original Juice upgrade payloads have no trait parameter cast effect; unsupported ordered shapes remain guarded. |
 | CardEffectAddBattleCard | shared-path | The original Railforged Unruly Scourge payload adds the single authored Scourge card to the hand after a same-floor enemy death. Two such generations match native effects. The original whole battle matches 33 plays, seven EndTurns and both candidate frontiers. This review covers that trigger and one-card pool. |
+| CardEffectAddStatusEffectPerSelfAttack | shared-path | Original Dutiful Armor grants twelve Armor to each native target in six positive applications across three PostCombat callbacks. The settled whole battle matches 28 plays, five EndTurns, both frontiers and sixteen branches. |
+| CardEffectAdjustRoomCapacity | shared-path | The original FavoredChild_2 boss lowers player capacity in three native applications and retains enemy capacity. Six bound checks, nine TestEffect calls and two oversize occupied states match. The first post-combat pair independently proves reduction before self OnFeed. |
+| CardEffectBump | shared-path | The exact Railforged attacker OnKill and its later Armor grant match bottom and cross-floor original exchanges. The destination shifted actors, Sacrificial Chamber entry, physical slots and RNG agree. Lifemother Reanimate supplies the corresponding settled whole battle. |
 | CardEffectCopyUnits | shared-path | The pinned Railforged Unruly component rejects copying the boss when it is alone and copies the original Decoy once it exists. Ordered tests and applications, physical slots, full successors and RNG match. The recorded original Unruly battle also verifies initial birth, room selection, Relentless and terminal scheduling across 33 plays, seven EndTurns, both candidate frontiers and 16 independent branches. This review covers the original Unruly callback and scheduler. |
 | CardEffectDamage | shared-path | Native Damage normalizes to the shared Damage action; current PunishedSpike battle exercises repeated damage, armor, target death and full successors. Existing target/scaling/callback guards remain; not an audit of every contextual branch. |
 | CardEffectDamageByPercentRemainingHealth | shared-path | Original Beeziebub OnCast targets the Pyre, floors ten percent of actual remaining HP, and supplies no card damage attribution or trait scaling. Three isolated wins prove HP 80 to 72 and exact search successors. Randomized ranges, round-up and non-Pyre targets remain guarded. |
 | CardEffectDamageFloorByFloor | shared-path | Original current Heavenfall installs its native full-moon 80 enemy floor sweep and executes through the shared OnCast and floor-damage pipeline. The current win verifies both moon phases, full successors, sixteen branches, recorded frontiers and serial/parallel plan replay. The older native Moon archive still passes with its tower damage payload. This battle's positive damage targets occupy one floor. |
 | CardEffectFloorRearrange | shared-path | The original Railforged Unruly SniperAdvance OnAttacking effect moves a living rear attacked actor to the front. A lone target keeps its position and the lethal control records no applied movement callback. The original whole battle matches 34 plays, seven EndTurns and both candidate frontiers. This review covers the exact living-target payload. |
+| CardEffectPlayUnitTrigger | shared-path | The exact original FavoredChild_2 post-combat payload queues one self OnFeed after room capacity decreases and applies three Rage. The component verifies the full queue result and RNG and rejects edited capacity. Other nested replay payloads retain their existing guards. |
 | CardEffectSpawnHeroIfNoOtherHeroUnits | shared-path | The pinned Railforged Unruly component spawns one original Decoy in the next physical slot when only the boss remains. With that Decoy present, the fallback test fails and the earlier copy applies. Component successors and RNG match. The separate original Unruly battle verifies initial birth, room selection, Relentless and terminal scheduling across 33 plays, seven EndTurns, both candidate frontiers and 16 independent branches. |
 | CardTraitDrawOnPlay | shared-path | Three unchanged original soul upgrades attached through native SoulHelper. Played discard draws 3/3/5 and the two higher tiers install the captured next-draw upgrade on actual cards. Full wins, exact successors, sixteen branches, frontiers and equal serial/parallel search and replay pass. Other carriers and mixed discard traits remain outside this evidence. |
 | CardTraitScalingRewardGold | shared-path | Three unchanged Goldie soul upgrades attached using native SoulHelper. Actual original Vent pays three Ember; its zero-base OnCast reward remains unchanged, while played discard grants 30/60/90 gold from captured paid-cost statistics. Next-turn Retain and complete native wins, full successors, sixteen branches, all recorded frontiers and serial/parallel plans pass. Other carriers and compound signed affordability remain outside this evidence. |
@@ -98,6 +102,8 @@
 | RoomStateAddEffectPostCombatModifier | shared-path | The original Showtime T3 room records four front-only attack and maximum-health upgrades on floor one, with rear controls. The showtime/tier3.mt2f archive passes the complete successor and stage checks with --showtime-only. Other post-combat payloads have individual calibration. |
 | RoomStateAddEffectPreCombatModifier | shared-path | Unchanged Echoes Inferno installs the original Inferno Room on all three battle floors. The installed-inferno-rooms/battle.mt2f archive records an exact 50-damage enemy hit on floor zero and passes --installed-inferno-rooms-only. Other target and owner payloads require their own evidence. |
 | RoomStateSpawnUnitOnUnitSpawnModifier | shared-path | The original Hall of Mirrors copies a paid Twisted Assistant with one unmodified graft. The hall-grafted-birth/predicted-birth.mt2f archive passes --native-hall-grafted-birth-only for ordered callbacks, distinct graft ownership, physical slots, Battle and Draw RNG, and EndTurn at the observed root. Triggered or generated births have separate call sites. |
+| StatusEffectBurstState | shared-path | Original Dutiful Burst has three native PostCombat grants and seven native consumptions. Its settled whole battle matches 23 plays, four EndTurns, both frontiers and sixteen branches. Combined extra-attack sources retain separate guards. |
+| StatusEffectTitanskinState | shared-path | Original Indulgent Titanskin birth and two boundaries for one genuine hit match full native room state. The hit deals five health damage and three absorption with the same three stacks. Feed and whole battle still await acceptance. |
 ## 第一批需核对的代码入口
 
 | 原生类 | 队列 | 声明引用 | 全部引用 | 模型／探针示例 |
@@ -122,10 +128,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `de6fc968ccc90d4587e93438301f01849876439ba03178407f87f4f3604c0f55`。
-- Model: PDB 校验过的项目源码集合 `555be7f969a020727586a03ec98b026a84cb5005c07a99559831bef6fbac6461`。
-- Probe: PDB 校验过的项目源码集合 `8895c61231f98affb86a92f0db0e644600dca440d301599c7426964f083e8b46`。
-- ModelChecks: PDB 校验过的项目源码集合 `b69387fb529861c454444c2055b5d33014dfb760e0facab2164e8f6d16e340b2`。
+- 人工审查索引 SHA-256: `497766376b887ac495b2827beeb734cc3f779b23350e906bd7fef231055eca57`。
+- Model: PDB 校验过的项目源码集合 `cc383e44a446dca8aa3c4528286d595c5de0d9638c4be9471f521768580cde5b`。
+- Probe: PDB 校验过的项目源码集合 `2bb397b7b43874a0bfc1649bc0a5abe7bcb554b48b732ad320e711fbb4d8b07e`。
+- ModelChecks: PDB 校验过的项目源码集合 `2a5e1eb5ad4c7017cf9c7e9d8e718819472d70ad4eb0781c5e9aa52207b1a18d`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
