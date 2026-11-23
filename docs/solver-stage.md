@@ -567,3 +567,8 @@ Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时
 17 个实际后继仍通过，旧版完整建议复放在一个重复攻击触发标记上有已有差异。
 [双线程实战](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring9-two-worker-advisor.mt2f)
 · [定向报告](../results/recorded-chain-triage-20261123-131627-e746f3d0/report.tsv)
+
+第 9 环阶段验收后执行一次全量整战复放。442 场全部通过，423 场连续复放，19 场按已验证的
+准备边界分段复放。共核对 6,594 次出牌或技能与 2,620 次结束回合，共 132 份组件或诊断档
+按清单跳过。卡牌和遗物的原版记录分别保持 601/601 和 236/236。
+[阶段复放报告](../results/recorded-chain-triage-20261123-131730-28290707/report.tsv)
