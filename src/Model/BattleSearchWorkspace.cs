@@ -183,12 +183,15 @@ namespace MonsterTrain2Poju.Model
             if (enabled && !interrupted) For(source).Tactical[room] = (result, omitted);
             return result;
         }
-        internal SupportedActionCandidate? ChoosePolicy(BattleTurnState source, out IReadOnlyList<UnsupportedActionAttempt> omitted)
+        internal SupportedActionCandidate? ChoosePolicy(BattleTurnState source, out IReadOnlyList<UnsupportedActionAttempt> omitted,
+            Func<bool>? shouldStop = null)
         {
             if (enabled && For(source).Policy is var existing && existing.HasValue)
             { policies++; omitted = existing.Value.Omitted; return existing.Value.Candidate; }
-            var result = BattleActionModel.ChooseUnitSpellAndJunkCandidate(source, out omitted, this);
-            if (enabled) For(source).Policy = (result, omitted);
+            bool interrupted = false;
+            var result = BattleActionModel.ChooseUnitSpellAndJunkCandidate(source, out omitted, this,
+                shouldStop == null ? null : () => interrupted |= shouldStop());
+            if (enabled && !interrupted) For(source).Policy = (result, omitted);
             return result;
         }
     }

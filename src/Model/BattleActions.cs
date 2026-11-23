@@ -1718,22 +1718,24 @@ namespace MonsterTrain2Poju.Model
             return ChooseUnitSpellAndJunkPlay(source);
         }
         internal static SupportedActionCandidate? ChooseUnitSpellAndJunkCandidate(BattleTurnState source,
-            out IReadOnlyList<UnsupportedActionAttempt> unsupported, BattleSearchWorkspace? workspace = null)
+            out IReadOnlyList<UnsupportedActionAttempt> unsupported, BattleSearchWorkspace? workspace = null,
+            Func<bool>? shouldStop = null)
         {
             var queried = new Dictionary<int, BattleActionEnumeration>();
             IReadOnlyList<PlayCardAction> Choices(CardToken card)
             {
                 if (!queried.TryGetValue(card.InstanceId, out BattleActionEnumeration frontier))
-                    queried.Add(card.InstanceId, frontier = workspace?.Enumerate(source, card.InstanceId, false) ?? EnumerateActions(source, card.InstanceId, includeAbilities: false));
+                    queried.Add(card.InstanceId, frontier = workspace?.Enumerate(source, card.InstanceId, false, shouldStop) ??
+                        EnumerateActions(source, card.InstanceId, false, null, shouldStop));
                 return frontier.SupportedActions;
             }
-            PlayCardAction? selected = ChoosePlay(source, true, cardPlays: Choices);
+            PlayCardAction? selected = ChoosePlay(source, true, cardPlays: Choices, shouldStop: shouldStop);
             unsupported = queried.Values.SelectMany(frontier => frontier.UnsupportedAttempts).ToArray();
             return selected == null ? null : queried.Values.SelectMany(frontier => frontier.SupportedCandidates)
                 .First(candidate => ReferenceEquals(candidate.Action, selected));
         }
         private static PlayCardAction? ChoosePlay(BattleTurnState source, bool spells, Func<CardToken, bool>? includeCard = null,
-            Func<CardToken, IReadOnlyList<PlayCardAction>>? cardPlays = null)
+            Func<CardToken, IReadOnlyList<PlayCardAction>>? cardPlays = null, Func<bool>? shouldStop = null)
         {
             if (source.PlayRules == null) return null;
             IReadOnlyList<PlayCardAction>? plays = cardPlays == null ? EnumerateSupportedPlays(source) : null;
@@ -1747,6 +1749,7 @@ namespace MonsterTrain2Poju.Model
                 if (includeCard != null && !includeCard(card)) continue;
                 CardPlayRule? rule = source.PlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);
                 if (rule?.Effect != effect) continue;
+                if (shouldStop?.Invoke() == true) return null;
                 IReadOnlyList<PlayCardAction> choices = cardPlays == null ? plays! : cardPlays(card);
                 IEnumerable<int> roomOrder = Enumerable.Range(0, roomCount).Select(offset => (source.Spawn.Turn + offset) % roomCount);
                 if (effect == "Spell" && !CardSpellModel.RequiresUnitTarget(rule.Effects))

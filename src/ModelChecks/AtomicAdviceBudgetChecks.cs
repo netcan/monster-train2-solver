@@ -85,6 +85,14 @@ internal static class AtomicAdviceBudgetChecks
         Require(!complete.Interrupted && complete.SupportedCandidates.Select(candidate => keys.Key(candidate.Result.State!))
             .SequenceEqual(expected) && ReferenceEquals(complete, workspace.Enumerate(root, shouldStop: () => true)),
             "An interrupted action frontier was reused as a complete cache entry.");
+        var policyWorkspace = new BattleSearchWorkspace();
+        policyWorkspace.ChoosePolicy(root, out _, () => policyWorkspace.Metrics.CandidateRequests >= 3);
+        Require(policyWorkspace.Metrics.CandidateRequests == 3, "The fixed policy continued simulating after cutoff.");
+        var policy = policyWorkspace.ChoosePolicy(root, out _);
+        var reference = BattleActionModel.ChooseUnitSpellAndJunkCandidate(root, out _);
+        Require(policy != null && reference != null && policyWorkspace.Metrics.CachedPolicies == 0 &&
+            keys.Key(policy.Result.State!) == keys.Key(reference.Result.State!),
+            "An interrupted fixed policy prevented a complete retry.");
         var options = new BattlePlannerOptions(32, 2, 2, maxSteps: 1);
         var expired = RunAfterFirstBeamCandidate(cancel: false);
         var cancelled = RunAfterFirstBeamCandidate(cancel: true);

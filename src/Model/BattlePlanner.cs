@@ -437,7 +437,7 @@ namespace MonsterTrain2Poju.Model
                 SupportedActionCandidate? chosen = null;
                 if (policy.Actions < options.MaxActionsPerTurn)
                 {
-                    chosen = workspace.ChoosePolicy(policy.State, out IReadOnlyList<UnsupportedActionAttempt> omitted);
+                    chosen = workspace.ChoosePolicy(policy.State, out IReadOnlyList<UnsupportedActionAttempt> omitted, StopTransitions);
                     foreach (UnsupportedActionAttempt attempt in omitted) Unsupported(attempt);
                 }
                 else actionLimit = true;
@@ -449,6 +449,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 else
                 {
+                    if (StopTransitions()) break;
                     BattleEndTurnCandidate? ended = BestEndTurn(policy.State);
                     if (ended == null) break;
                     policy = Child(policy, ended.Result.State!, ended.Result.Outcome, ended.Step);
