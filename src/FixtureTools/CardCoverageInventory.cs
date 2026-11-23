@@ -16,6 +16,7 @@ internal static partial class CardCoverageInventory
     private const string CurrentCatalogHash = "6cf391b6b184667761eaf02df6cdd8fa4d8f2ac435c32d8b9f2c6e97a1302208";
     private const string PreviousReleaseCatalogHash = "ddff96f4e067175bc50c62b8954eea65da0997a23e858d085272717954c173e1";
     private const string CurrentReleaseCatalogHash = "54c7537846a3424f4ae567810bee9e01705bffcaf838cca300b4fc5ad91eb19c";
+    private const string RoomDeathFallbackTemplate = "$.Effects[0].RoomAttachment.DeathEffect.Effects[0].SpawnFallbackUnit";
     private static readonly string[] BattleCounters = ["CaptureFailures", "Mismatches", "Unsupported", "Pending"];
     private static readonly string[] PriorityDefinitionFields = ["Effects", "Traits", "Triggers", "Rule"];
     private sealed class Card(FixtureValue definition)
@@ -215,16 +216,32 @@ internal static partial class CardCoverageInventory
     private static void CheckFallbackBirthEvidence(IReadOnlyDictionary<string, Card> byId)
     {
         const string archive = "mechanics/player-advisor-rolling/migrated-ring8-judges-scales-alternate-frozen.mt2f";
-        (string Id, int Action)[] witnesses =
+        (string Id, string Archive, int Action)[] witnesses =
         [
-            ("0c8ff108-478c-4c1c-9c49-f6a297b4e0d8", 7), // EagerConscript
-            ("c052c567-1e3c-4f36-a6cd-89b0648b9475", 14), // GreenRecruit
+            ("0c8ff108-478c-4c1c-9c49-f6a297b4e0d8", archive, 7), // EagerConscript
+            ("c052c567-1e3c-4f36-a6cd-89b0648b9475", archive, 14), // GreenRecruit
+            ("e1a39d88-4a77-4399-98b2-0b81f44fe6a8", "mechanics/controlled-isolated-spells/native-replicator-and-infectory.mt2f", 7), // Infectory
         ];
         foreach (var witness in witnesses)
         {
             Card card = byId[witness.Id];
-            Require(card.Evidence.TryGetValue(archive, out Plays? plays) && plays.Direct.Contains(witness.Action),
+            Require(card.Evidence.TryGetValue(witness.Archive, out Plays? plays) && plays.Direct.Contains(witness.Action),
                 $"Fallback birth rule does not match the original {card.Name} definition at action {witness.Action}.");
+        }
+
+        using var roomCatalog = NativeFixtureCapture.Capture(new { AssetKey = "MonsterFunguy", AbilityRules = new { PreventEquipmentAbilities = false } });
+        foreach (var (replacement, loops, moonMask) in new[] { (true, false, 4), (false, false, 4), (true, true, 4), (true, false, 1) })
+        {
+            using var roomObserved = NativeFixtureCapture.Capture(new
+            {
+                AssetKey = "MonsterFunguy",
+                AbilityRules = new { PreventEquipmentAbilities = false, ReplacementSkipsCooldown = replacement },
+                BumpRules = new { Loops = loops, CompanionBoss = false, OuterBoss = false, OuterBossRelentlessPhase = false, PairedBossUnitId = 0 },
+                MoonPhaseMask = moonMask,
+            });
+            bool matches = Equivalent(roomCatalog.RootElement, roomObserved.RootElement, cardRule: true, currentBuild: true, path: RoomDeathFallbackTemplate);
+            Require(matches == (replacement && !loops && moonMask == 4),
+                $"Room death fallback birth must match only native defaults (replacement={replacement}, loops={loops}, moon={moonMask}).");
         }
 
         using var catalog = NativeFixtureCapture.Capture(new { AssetKey = "MonsterFunguy", DeathState = new {
@@ -1185,9 +1202,9 @@ internal static partial class CardCoverageInventory
                 !(ruleRoot && property.Name is "ForgeEligible" or "UnplayedNegativeOrder");
             var a = left.EnumerateObject().Where(Include).ToDictionary(property => property.Name, property => property.Value, StringComparer.Ordinal);
             var b = right.EnumerateObject().Where(Include).ToDictionary(property => property.Name, property => property.Value, StringComparer.Ordinal);
-            // Direct and OnDeath SpawnOrStatus effects project the same native Funguy template.
+            // Direct, unit OnDeath and room OnDeath SpawnOrStatus effects project the same native Funguy template.
             if (currentBuild && cardRule && (path is "$.Effects[0].SpawnFallbackUnit" or
-                "$.SpawnUnit.Triggers[0].Effects[0].Action.SpawnFallbackUnit") &&
+                "$.SpawnUnit.Triggers[0].Effects[0].Action.SpawnFallbackUnit" or RoomDeathFallbackTemplate) &&
                 Text(left, "AssetKey") == "MonsterFunguy" && Text(right, "AssetKey") == "MonsterFunguy")
                 fallbackTemplatePath = path;
             string birthTemplatePath = fallbackTemplatePath ?? "$.SpawnUnit";
