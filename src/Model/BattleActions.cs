@@ -1516,8 +1516,15 @@ namespace MonsterTrain2Poju.Model
                 CombatContext context = source.Spawn.Train.Context!;
                 if (effect.Type == "MergeEquipment")
                 {
-                    IReadOnlyList<IReadOnlyList<int>> mergeChoices = EquipmentMergeModel.Choices(context, effect.EquipmentMerge!, out string? mergeError);
-                    if (mergeError != null) yield break;
+                    string? mergeError = null;
+                    IReadOnlyList<IReadOnlyList<int>>? mergeChoices = effect.EquipmentMerge == null ? null :
+                        EquipmentMergeModel.Choices(context, effect.EquipmentMerge, out mergeError);
+                    if (mergeChoices == null || mergeError != null)
+                    {
+                        // Let the normal play validation report the missing merge metadata.
+                        foreach (PlayCardAction branch in Expand(choiceIndex + 1)) yield return branch;
+                        yield break;
+                    }
                     foreach (IReadOnlyList<int> choice in mergeChoices)
                     {
                         selections.Add(new CardRecursionSelection(effectIndex, choice));

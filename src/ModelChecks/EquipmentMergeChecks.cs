@@ -91,10 +91,16 @@ internal static class EquipmentMergeChecks
         }
         Require(index == 3, "Missing original cancellation and both source-pile merges.");
         int equipped = 0;
+        bool checkedMissingMask = false;
         foreach (FixtureValue row in root.GetProperty("Actions").EnumerateArray())
         {
             var before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
             var action = row.GetProperty("Action").Deserialize<PlayCardAction>()!;
+            if (!checkedMissingMask && action.RecursionSelections.SingleOrDefault(selection => selection.CardInstanceIds.Count == 2) is { } merge)
+            {
+                CheckMissingMaskReported(before, action, merge.CardInstanceIds[0]);
+                checkedMissingMask = true;
+            }
             if (before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!.DataId != OutputId) continue;
             var after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
             CombatUnit old = before.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.TargetUnitId);
@@ -107,8 +113,35 @@ internal static class EquipmentMergeChecks
             equipped++;
         }
         Require(equipped == 2, "Both distinct merged outputs must be equipped.");
+        Require(checkedMissingMask, "Missing an original paid merge for the frontier guard.");
         RecordedBattleChecks.Native(root);
         Console.WriteLine("FUSED-WEAPONRY PASS: original cancellation, ordered hand/discard and draw/discard merges, native same-definition Test boundary, permanent-only inheritance, both merged attachments and immutable action chains.");
+    }
+    private static void CheckMissingMaskReported(BattleTurnState source, PlayCardAction action, int inputId)
+    {
+        EnemySpawnState spawn = source.Spawn;
+        CombatContext context = spawn.Train.Context!;
+        CardInstanceState input = context.FindCard(inputId)!;
+        Require(input.MaskDescriptor != null, "The original merge input must have a captured mask.");
+        TrainCombatState train = CardSpellModel.WithContext(spawn.Train, context.WithCard(input.WithMaskDescriptor(null)));
+        EnemySpawnState changed = new(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, spawn.Rng, spawn.NextUnitId,
+            spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn, spawn.FirstTreasureRoom, spawn.Turn,
+            spawn.ExternalInteractions, spawn.CanonicalDecisionReferences, spawn.PendingDestroyedUnitIds, spawn.OuterBoss,
+            spawn.QueuedOuterBoss, spawn.QueuedTrueFinalBoss, spawn.TrueFinalBoss);
+        BattleTurnState missing = new(changed, source.Energy, source.EnergyPerTurn, source.DrawPerTurn, source.ForgePoints, source.DragonsHoard,
+            source.MoonPhase, source.RngStreams, source.OtherPiles, source.ExternalInteractions, source.PlayRules, source.BattlePreviewEnabled,
+            source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences, source.SelectedRoom, source.MoonPhaseTrackingActive);
+        CardPlayRule spell = source.PlayRules!.Cards.Single(rule => rule.DataId == context.FindCard(action.CardInstanceId)!.DataId);
+        EquipmentMergeRule merge = spell.Effects.Single(effect => effect.Type == "MergeEquipment").EquipmentMerge!;
+        EquipmentMergeModel.Choices(train.Context!, merge, out string? choiceError);
+        Require(choiceError == "Equipment merging requires captured branch masks.", "The test must exercise the missing merge mask.");
+        var unselected = new PlayCardAction(action.CardInstanceId, action.RoomIndex);
+        BattleActionResult direct = BattleActionModel.PlayCard(missing, unselected);
+        Require(direct.Rejection == ActionRejection.Unsupported && direct.Reason != null, "Direct play must reject missing card metadata.");
+        var frontier = BattleActionModel.EnumerateActions(missing, action.CardInstanceId, includeAbilities: false);
+        Require(frontier.SupportedCandidates.Count == 0 && frontier.UnsupportedAttempts.Any(attempt => attempt.Reason == direct.Reason &&
+            attempt.Action is { RecursionSelections.Count: 0 } candidate && candidate.CardInstanceId == action.CardInstanceId &&
+            candidate.RoomIndex == action.RoomIndex), "Recorded merge frontier hid the missing input mask.");
     }
     private static void Equal<T>(T predicted, T actual, string label)
     {
