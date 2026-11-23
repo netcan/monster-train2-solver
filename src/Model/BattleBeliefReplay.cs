@@ -38,7 +38,7 @@ namespace MonsterTrain2Poju.Model
                     if (node.IsLeaf) break;
                     if (node.IsEndTurn)
                     {
-                        var next = BattleTurnModel.EndTurn(state);
+                        var next = BattleTurnModel.EndTurn(state, node.RelentlessDecisions);
                         if (!next.Supported) throw new InvalidOperationException(next.UnsupportedReason);
                         state = next.State!; outcome = next.Outcome;
                     }

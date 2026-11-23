@@ -36,10 +36,19 @@ namespace MonsterTrain2Poju.Model
         public bool CompletedHorizon { get; }
         public bool AllTerminal { get; }
         public IReadOnlyList<BattleBeliefBranch> Branches { get; }
+        public IReadOnlyList<RelentlessDecision>? RelentlessDecisions { get; }
+        public bool ShouldSerializeRelentlessDecisions() => RelentlessDecisions != null;
         public BattleBeliefPolicy(PlayCardAction? action, bool isEndTurn, bool isLeaf, double expectedScore, bool completedHorizon,
-            bool allTerminal, IReadOnlyList<BattleBeliefBranch> branches)
+            bool allTerminal, IReadOnlyList<BattleBeliefBranch> branches, IReadOnlyList<RelentlessDecision>? relentlessDecisions = null)
         { Action = action; IsEndTurn = isEndTurn; IsLeaf = isLeaf; ExpectedScore = expectedScore; CompletedHorizon = completedHorizon;
-            AllTerminal = allTerminal; Branches = Array.AsReadOnly(branches.ToArray()); }
+            AllTerminal = allTerminal; Branches = Array.AsReadOnly(branches.ToArray());
+            if (relentlessDecisions?.Count > 0)
+            {
+                if (!isEndTurn || isLeaf || action != null)
+                    throw new ArgumentException("Relentless decisions require a policy EndTurn.", nameof(relentlessDecisions));
+                RelentlessDecisions = Array.AsReadOnly(relentlessDecisions.ToArray());
+            }
+        }
     }
     public sealed class BattleBeliefResult
     {
@@ -77,12 +86,17 @@ namespace MonsterTrain2Poju.Model
             return new BattleBeliefResult(policy, nodes, limited, timedOut, cancelled, belief.ExhaustiveDistribution,
                 watch.Elapsed, unsupported.OrderBy(reason => reason, StringComparer.Ordinal).ToArray());
 
-            bool Stop()
+            bool Interrupted()
             {
                 cancelled |= cancellationToken.IsCancellationRequested;
                 timedOut |= watch.Elapsed >= options.TimeLimit;
-                limited |= nodes >= options.MaxNodes;
-                return cancelled || timedOut || limited;
+                return cancelled || timedOut;
+            }
+            bool Stop()
+            {
+                bool exhausted = nodes >= options.MaxNodes;
+                limited |= exhausted;
+                return Interrupted() || exhausted;
             }
             BattleBeliefPolicy Leaf(IReadOnlyList<BattleBeliefWorld> worlds, bool complete)
             {
@@ -101,18 +115,30 @@ namespace MonsterTrain2Poju.Model
                 if (remaining == 0 || worlds.All(world => Terminal(world.Outcome))) return Leaf(worlds, true);
                 if (Stop()) return Leaf(worlds, false);
                 var frontiers = new List<Dictionary<string, Transition>>();
-                foreach (var world in worlds)
+                for (int index = 0; index < worlds.Count; index++)
                 {
                     if (Stop()) return Leaf(worlds, false);
+                    BattleBeliefWorld world = worlds[index];
                     nodes++;
-                    var frontier = BattleActionModel.EnumerateActions(world.State);
+                    var frontier = BattleActionModel.EnumerateActions(world.State, null, true, null, Interrupted);
                     foreach (var attempt in frontier.UnsupportedAttempts) unsupported.Add(attempt.Reason);
                     var candidates = new Dictionary<string, Transition>(StringComparer.Ordinal);
-                    var ended = BattleTurnModel.EndTurn(world.State);
-                    if (ended.Supported) candidates.Add("EndTurn", new Transition(null, true, ended.State!, ended.Outcome, world.Weight));
-                    else unsupported.Add(ended.UnsupportedReason ?? "Unsupported belief EndTurn.");
+                    if (Interrupted()) return Leaf(worlds, false);
+                    // Leave room for every remaining hypothesis and later policy decisions.
+                    // Infinite Continue chains must not consume the whole belief budget.
+                    int worldsLeft = worlds.Count - index;
+                    int choices = Math.Max(0, options.MaxNodes - nodes - (worldsLeft - 1)) / worldsLeft / remaining;
+                    var ends = BattleEndTurnModel.Enumerate(world.State, choices, Interrupted);
+                    nodes += ends.ChoiceNodes;
+                    limited |= ends.ReachedNodeLimit;
+                    foreach (var attempt in ends.UnsupportedAttempts) unsupported.Add(attempt.Reason);
+                    foreach (var end in ends.Candidates)
+                    {
+                        string key = end.Decisions.Count == 0 ? "EndTurn" : "EndTurn:" + actionKeys.SnapshotKey(end.Decisions);
+                        candidates.Add(key, new Transition(end.Step, end.Result.State!, end.Result.Outcome, world.Weight));
+                    }
                     foreach (var candidate in frontier.SupportedCandidates)
-                        candidates[actionKeys.SnapshotKey(candidate.Action)] = new Transition(candidate.Action, false,
+                        candidates[actionKeys.SnapshotKey(candidate.Action)] = new Transition(new BattleSearchStep(candidate.Action, false),
                             candidate.Result.State!, candidate.Result.Outcome, world.Weight);
                     frontiers.Add(candidates);
                 }
@@ -122,8 +148,7 @@ namespace MonsterTrain2Poju.Model
                 BattleBeliefPolicy? best = null; double mass = worlds.Sum(world => world.Weight);
                 foreach (string action in common)
                 {
-                    if (cancellationToken.IsCancellationRequested || watch.Elapsed >= options.TimeLimit)
-                    { cancelled |= cancellationToken.IsCancellationRequested; timedOut |= watch.Elapsed >= options.TimeLimit; break; }
+                    if (Interrupted()) break;
                     var successors = frontiers.Select(frontier => frontier[action]).ToArray();
                     var branches = new List<BattleBeliefBranch>();
                     foreach (var group in successors.GroupBy(next => observations.Key(next.State, next.Outcome)))
@@ -135,8 +160,11 @@ namespace MonsterTrain2Poju.Model
                     var value = new CompensatedSum();
                     foreach (var branch in branches) value.Add(branch.Probability * branch.Policy.ExpectedScore);
                     if (best == null || value.Value < best.ExpectedScore)
-                        best = new BattleBeliefPolicy(successors[0].Action, successors[0].EndTurn, false, value.Value, true,
-                            branches.All(branch => branch.Policy.AllTerminal), branches);
+                    {
+                        BattleSearchStep step = successors[0].Step;
+                        best = new BattleBeliefPolicy(step.Action, step.IsEndTurn, false, value.Value, true,
+                            branches.All(branch => branch.Policy.AllTerminal), branches, step.RelentlessDecisions);
+                    }
                 }
                 return best ?? Leaf(worlds, false);
             }
@@ -144,13 +172,12 @@ namespace MonsterTrain2Poju.Model
         private static bool Terminal(RoomOutcome outcome) => outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
         private sealed class Transition
         {
-            internal readonly PlayCardAction? Action;
-            internal readonly bool EndTurn;
+            internal readonly BattleSearchStep Step;
             internal readonly BattleTurnState State;
             internal readonly RoomOutcome Outcome;
             internal readonly double Weight;
-            internal Transition(PlayCardAction? action, bool endTurn, BattleTurnState state, RoomOutcome outcome, double weight)
-            { Action = action; EndTurn = endTurn; State = state; Outcome = outcome; Weight = weight; }
+            internal Transition(BattleSearchStep step, BattleTurnState state, RoomOutcome outcome, double weight)
+            { Step = step; State = state; Outcome = outcome; Weight = weight; }
         }
     }
 }

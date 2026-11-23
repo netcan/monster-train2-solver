@@ -16,6 +16,13 @@ known pile contents and resources. Differing legal action sets are diagnosed
 and prevent a completeness certificate. Node/time/cancellation budgets are
 shared across all hypothetical worlds.
 
+An EndTurn policy can carry the explicit Continue or Abandon inputs requested
+by Relentless combat. The selected input sequence must be executable in every
+indistinguishable hypothesis. The policy branches on the settled observation
+after the turn. Each explored dialog choice uses the shared node budget, and
+truncating a dialog frontier prevents a completeness certificate. The paired
+2.3.1 native captures verify both dialog routes from the same full decision.
+
 `BattleBeliefReplay.Verify` independently executes every selected input from
 each original world. It recomputes observations, posterior probabilities,
 expected values and complete final states/RNG without reusing planner caches.

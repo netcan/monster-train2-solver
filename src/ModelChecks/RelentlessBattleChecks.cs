@@ -1,4 +1,5 @@
 using System.Text.Json;
+using MonsterTrain2Poju.Capture;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 
@@ -99,6 +100,30 @@ internal static class RelentlessBattleChecks
         var exactReplay = BattlePlannerChecks.Replay(source, exact.Steps, out var exactOutcome);
         Require(Serialize(exactReplay) == Serialize(exact.State) && exactOutcome == exact.Outcome,
             "Common plan replay dropped the exact solver's dialog choices.");
+        if (!abandon)
+        {
+            var belief = new BattleBelief([new BattleBeliefWorld(source, 0.25), new BattleBeliefWorld(source, 0.75)],
+                true, "One native state with split probability mass");
+            var policy = BattleBeliefPlanner.Plan(belief, new(64, 1, TimeSpan.FromSeconds(20)), Score);
+            Require(policy.CertifiedFiniteHorizonOptimal && policy.Policy.IsEndTurn &&
+                Serialize(policy.Policy.RelentlessDecisions) == Serialize(recorded.Decisions) &&
+                policy.ExpandedWorlds == 2 + 2 * frontier.ChoiceNodes,
+                "Belief search dropped the native Continue script or miscounted dialog expansions.");
+            using var capture = NativeFixtureCapture.Capture(policy.Policy);
+            var decoded = capture.RootElement.Deserialize<BattleBeliefPolicy>()!;
+            var beliefReplay = BattleBeliefReplay.Verify(belief, decoded, Score);
+            Require(beliefReplay.FinalWorlds.Count == 2 && beliefReplay.ExpectedScore == exact.Score,
+                "The archived dialog policy changed the weighted result.");
+            foreach (var world in beliefReplay.FinalWorlds)
+                RecordedBattleChecks.Compare(world.State, native, false, "belief successor versus actual native policy");
+
+            var limitedBelief = BattleBeliefPlanner.Plan(belief, new(4, 1, TimeSpan.FromSeconds(20)), Score);
+            Require(limitedBelief.ExpandedWorlds == 4 && limitedBelief.ReachedNodeLimit && !limitedBelief.CertifiedFiniteHorizonOptimal &&
+                limitedBelief.Policy.CompletedHorizon && limitedBelief.Policy.RelentlessDecisions is { Count: 1 } limitedDecisions &&
+                !limitedDecisions[0].Continue, "A bounded common Abandon script was lost or certified as optimal.");
+            BattleBeliefReplay.Verify(belief, limitedBelief.Policy, Score);
+            Console.WriteLine("RELENTLESS-BELIEF PASS: typed native Continue and bounded shared Abandon, binary policy, budget accounting and full native replay.");
+        }
         using var keys = new BattleStateKeys();
         var plan = BattlePlanner.Plan(source, keys.Key, new(maxNodes: 128, maxTurns: 1, timeLimit: TimeSpan.FromSeconds(20)), Score);
         Require(plan.CompletedHorizon && plan.UnsupportedAttempts.Count == 0 && plan.Steps.Count == 1 &&
