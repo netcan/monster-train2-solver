@@ -433,21 +433,80 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (!ChoiceActive || (DeckScreen.Mode)AccessTools.Field(typeof(DeckScreen), "mode").GetValue(__instance) != DeckScreen.Mode.CardEffectSelection)
                     return;
+                if (Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR_DECK_CHOICE_DISPLAY") == "1" && !Field<bool>("paused"))
+                {
+                    __instance.StartCoroutine(VerifyVisibleChoice(__instance));
+                    return;
+                }
+                ConfirmChoice(__instance, verifyDisplay: false);
+            }
+
+            private static IEnumerator VerifyVisibleChoice(DeckScreen screen)
+            {
+                float deadline = Time.realtimeSinceStartup + 5;
+                var screens = AllGameManagers.Instance.GetScreenManager();
+                do
+                {
+                    // Let the production overlay's normal Update observe the
+                    // original deck UI before the driver sends confirmation.
+                    yield return null;
+                } while (ChoiceActive && Time.realtimeSinceStartup < deadline &&
+                    (!screens.GetScreenActive(ScreenName.Deck) ||
+                        !ReferenceEquals(screens.GetScreen(ScreenName.Deck), screen) || !Field<bool>("showingCardChoice")));
+                Require(ChoiceActive && screens.GetScreenActive(ScreenName.Deck) &&
+                    ReferenceEquals(screens.GetScreen(ScreenName.Deck), screen) && Field<bool>("showingCardChoice"),
+                    "native deck or production pending choice did not become visible");
+                ConfirmChoice(screen, verifyDisplay: true);
+            }
+
+            private static void ConfirmChoice(DeckScreen screen, bool verifyDisplay)
+            {
                 // CardEffectRecursion configures excludeFilteredOutCards=true;
                 // use only the original screen's eligible, captured instances.
-                IList infos = (IList)AccessTools.Field(typeof(DeckScreen), "cardInfos").GetValue(__instance);
+                var infos = (List<DeckScreen.CardInfo>)AccessTools.Field(typeof(DeckScreen), "cardInfos").GetValue(screen);
                 foreach (int id in expectedChoiceCards.ToArray())
                 for (int index = 0; index < infos.Count; index++)
                 {
-                    CardState? card = AccessTools.Field(infos[index].GetType(), "cardState").GetValue(infos[index]) as CardState;
+                    CardState? card = infos[index].cardState;
                     if (card == null || FullBattleTrace.Active!.CardId(card) != id) continue;
+                    if (verifyDisplay) AssertChoiceDisplay(screen, infos, card, index, id);
                     expectedChoiceCards.Remove(id);
-                    AccessTools.Method(typeof(DeckScreen), "AddSelectedIndex").Invoke(__instance, new object[] { index });
-                    AccessTools.Method(typeof(DeckScreen), "ConfirmSelectedCard").Invoke(__instance, null);
+                    AccessTools.Method(typeof(DeckScreen), "AddSelectedIndex").Invoke(screen, new object[] { index });
+                    AccessTools.Method(typeof(DeckScreen), "ConfirmSelectedCard").Invoke(screen, null);
                     log!.LogInfo("PLAYER-ADVISOR-CHOICE-PASS kind=deck card=" + id + " index=" + index);
                     return;
                 }
                 throw new InvalidOperationException("Published deck choice is absent from the native filtered selection screen.");
+            }
+
+            private static void AssertChoiceDisplay(DeckScreen screen, List<DeckScreen.CardInfo> infos, CardState card,
+                int index, int nativeId)
+            {
+                Require((DeckScreen.Mode)AccessTools.Field(typeof(DeckScreen), "mode").GetValue(screen) ==
+                    DeckScreen.Mode.CardEffectSelection && !card.IsCurrentlyDisabled(), "expected eligible native deck choice");
+                Type traceType = type!.Assembly.GetType("MonsterTrain2Poju.Probe.FullBattleTrace", true)!;
+                object trace = AccessTools.Property(traceType, "Active").GetValue(null)!;
+                var identity = new object[] { card, 0 };
+                var pending = Field<CardRecursionSelection?>("pendingCardChoice");
+                Require((bool)AccessTools.Method(traceType, "TryGetCardId").Invoke(trace, identity) &&
+                    pending?.CardInstanceIds.SequenceEqual(new[] { (int)identity[1] }) == true,
+                    "production pending card ID differs from the native deck choice");
+
+                string title = AdvisorCardPresentation.Plain(card.GetTitle());
+                bool duplicate = infos.Any(info => !ReferenceEquals(info.cardState, card) &&
+                    AdvisorCardPresentation.Plain(info.cardState.GetTitle()) == title);
+                int columns = (int)AccessTools.Field(typeof(DeckScreen), "columnCount").GetValue(screen);
+                Require(columns > 0, "native deck must expose a positive column count");
+                int row = index / columns + 1, column = index % columns + 1;
+                string position = "从上往下第 " + row + " 行，左起第 " + column + " 列";
+                Text body = Field<Text>("body");
+                string label = "选择 " + title;
+                Require(body.isActiveAndEnabled && (duplicate
+                    ? body.text.StartsWith(label + "（" + position + "，", StringComparison.Ordinal)
+                    : body.text == label), "unexpected production deck choice text: " + body.text);
+                log!.LogInfo("PLAYER-ADVISOR-DECK-DISPLAY-PASS kind=deck card=" + nativeId +
+                    " playerCard=" + identity[1] + " row=" + row + " column=" + column +
+                    " positionShown=" + duplicate + " text=" + body.text);
             }
         }
 

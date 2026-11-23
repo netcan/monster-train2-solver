@@ -635,3 +635,8 @@ Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时
 0.68 秒，随后分别耗时 1.18 和 1.10 秒执行重新搜索。两次都发布了经独立复放验证的 27 步新方案。
 快速连续出牌、跨回合与换楼层的复用专项均通过。原版在两次采样之间分配的预览编号只在比较这两个采样时归一化。
 [限回合复放后的原版复测](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-player-advisor-off-route-bounded.mt2f)
+
+第 8 环从同一份原版战前存档开战，先复放 33 个录制输入。恢复后的第一条建议施放 Broken Memories，
+在原版消耗堆界面显示「选择 虫裔道钉」，并用原版确认操作选中第 25 号实例。发布版顾问继续到败局结算。
+31 次出牌、7 次结束回合、完整状态、随机流和两类候选均通过独立复放。同名提示另有离线测试及手牌界面对照。
+[第 8 环原版选牌整局](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring8-visible-deck-choice.mt2f)

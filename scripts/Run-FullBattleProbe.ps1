@@ -16,6 +16,7 @@ param(
     [switch] $ProfileCapture,
     [switch] $AdvisorFloorBrowse,
     [switch] $AdvisorPresentation,
+    [switch] $AdvisorDeckChoiceDisplay,
     [switch] $AdvisorOffRoute,
     [switch] $RollingAdvice,
     [switch] $ContinueToNextRing,
@@ -893,6 +894,9 @@ if ($AdvisorFloorBrowse -and (-not $PlayerAdvisor -or -not $RollingAdvice)) {
 }
 if ($AdvisorPresentation -and (-not $PlayerAdvisor -or -not $RollingAdvice)) {
     throw 'AdvisorPresentation requires the real PlayerAdvisor and RollingAdvice driver.'
+}
+if ($AdvisorDeckChoiceDisplay -and (-not $PlayerAdvisor -or -not $RollingAdvice -or -not $BinaryCapture)) {
+    throw 'AdvisorDeckChoiceDisplay requires PlayerAdvisor, RollingAdvice and binary capture.'
 }
 if ($AdvisorOffRoute) {
     $allowed = @('AdvisorOffRoute', 'PlayerAdvisor', 'RollingAdvice', 'AdvisorPresentation', 'BinaryCapture',
@@ -2571,6 +2575,7 @@ $environment = @{
     MT2_PROBE_PLAYER_DEPLOYMENT_ONLY = $(if ($CapturePlayerDeploymentOnly) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_FLOOR_BROWSE = $(if ($AdvisorFloorBrowse) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_PRESENTATION = $(if ($AdvisorPresentation) { '1' } else { '0' })
+    MT2_PROBE_ADVISOR_DECK_CHOICE_DISPLAY = $(if ($AdvisorDeckChoiceDisplay) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_OFF_ROUTE = $(if ($AdvisorOffRoute) { '1' } else { '0' })
     MT2_ADVISOR_SCREENSHOT = $(if ($Advisor) { '1' } else { '0' })
     MT2_PROBE_SEED = "$Seed"
@@ -4365,6 +4370,9 @@ if ($AdvisorPresentation -and -not $RollingInput) {
         -MainThreadId $trace.PlayerAdvisor.Overlay.MainThreadId `
         -WriterThreadId $trace.PlayerAdvisor.Overlay.DiagnosticHistory.WriterThreadId
     Write-Output "PLAYER-PRESENTATION-PASS retainedInputs=$($presentation.RetainedInputs) pendingFrames=$($presentation.PendingFrames) reusedPublications=$($presentation.ReusedPublications) scrolledPublications=$($presentation.ScrolledPublications) resets=$($presentation.Resets) budgetChanges=$($presentation.BudgetChanges) collapsedTurnResets=$($presentation.CollapsedTurnResets)"
+}
+if ($AdvisorDeckChoiceDisplay -and -not (Select-String -LiteralPath $unityLog -SimpleMatch 'PLAYER-ADVISOR-DECK-DISPLAY-PASS' -Quiet)) {
+    throw "Missing a visible deck choice from the production advisor. Inspect $unityLog"
 }
 if ($ResumeRollingAdvice) {
     $resume = $trace.RollingPrefixResume
