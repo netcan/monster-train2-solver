@@ -180,6 +180,14 @@ namespace MonsterTrain2Poju.Model
                 rule.DataId == source.Context?.FindCard(sourceCardId)?.DataId);
             if (onCastEffectGroupSizes != null && groupedRule == null)
                 return UnsupportedTrain("Grouped OnCast requires its captured card definition.");
+            if (onUnplayedNegativeEffects && source.Context?.FindCard(sourceCardId) is { PlayedRoomUnitIds: not null } unplayed &&
+                source.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex) is RoomCombatState unplayedRoom)
+            {
+                // ApplyEffects caches the room before testing whether the player
+                // played the source card, including unplayed previews after draw.
+                source = WithContext(source, source.Context.WithCard(unplayed.WithPlayedRoomUnits(unplayedRoom.Units
+                    .Where(unit => unit.Health > 0 && unit.IsSpawning != true).Select(unit => unit.Id).ToArray())));
+            }
             if (onCastEffects && retainedDropTarget?.Id == targetId && retainedDropTarget.Health <= 0 &&
                 priorTargets?.Contains(targetId) == true && !source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == targetId) &&
                 CardMoonUpgradeModel.RetiredStarstruckTarget(source.Context?.FindCard(sourceCardId), effects))
