@@ -512,6 +512,16 @@ namespace MonsterTrain2Poju.Model
             // Initial enemies appear at the start of turn one, before that turn resets Spawning RNG.
             if (turn == 1)
             {
+                if (context.Relics?.Any(RelicModel.IsOriginalDeploymentSummonBlock) == true)
+                {
+                    if (outputPlayRules == null)
+                        return Unsupported("Missing room rules for the original deployment summon restriction.");
+                    RoomPlayRule[] blocked = outputPlayRules.Rooms.Where(RelicModel.IsDeploymentBlockedRoom).ToArray();
+                    if (blocked.Length != 2 || blocked.Any(room => !room.SummonBlocked) || blocked[0].RoomIndex == blocked[1].RoomIndex)
+                        return Unsupported("Missing captured blocked floors for the original deployment summon restriction.");
+                    outputPlayRules = outputPlayRules.WithRooms(outputPlayRules.Rooms.Select(room =>
+                        RelicModel.IsDeploymentBlockedRoom(room) ? room.WithSummonBlocked(false) : room).ToArray());
+                }
                 spawn = WithTrain(spawn, train, turn, spawn.Rng);
                 EnemySpawnResult initial = EnemySpawningModel.Spawn(spawn, false, outputPlayRules?.Rooms);
                 if (!initial.Supported) return Unsupported(initial.UnsupportedReason!);

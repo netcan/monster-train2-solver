@@ -193,6 +193,8 @@ namespace MonsterTrain2Poju.Model
             SummonBlocked, IsPyre, EnemyCapacity);
         internal RoomPlayRule WithCapacities(int playerCapacity, int enemyCapacity) => new(RoomIndex, playerCapacity,
             PlayerSlots, Enabled, SummonBlocked, IsPyre, enemyCapacity);
+        internal RoomPlayRule WithSummonBlocked(bool blocked) => new(RoomIndex, PlayerCapacity, PlayerSlots, Enabled,
+            blocked, IsPyre, EnemyCapacity);
     }
 
     // Rules copied from definitions at the root, including reachable generated card definitions.

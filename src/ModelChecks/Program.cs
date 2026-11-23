@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--native-placement-mutators-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    PlacementMutatorChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--native-unruly-post-combat-only")
 {
     if (args.Length == 3 && args[2] != "--observe-only")

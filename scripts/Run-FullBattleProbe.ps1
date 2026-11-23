@@ -586,6 +586,8 @@ param(
     [switch] $OriginalPreventMonsterDamageWitness,
     [switch] $OriginalPreventMonsterDamageBattle,
     [switch] $OriginalDisabledRoomPreviewBattle,
+    [switch] $OriginalPlacementMutatorsWitness,
+    [switch] $PlacementSummonBlockOnly,
     [ValidateSet('WithOwner', 'WithoutOwner', 'WithOwnerReuse', 'WithoutOwnerReuse')]
     [string] $OriginalPyreAbilityCooldownWitness = '',
     [switch] $OriginalPactDrawWitness,
@@ -975,6 +977,21 @@ if ($OriginalDisabledRoomPreviewBattle) {
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
     $Policy = 'units-spells-and-junk'
+}
+if ($OriginalPlacementMutatorsWitness) {
+    $witnessArguments = @('OriginalPlacementMutatorsWitness', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+        'PlacementSummonBlockOnly', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count) {
+        throw 'Original deployment floor and unit size mutators require a stock opening battle and binary capture.'
+    }
+    $Policy = 'units-spells-and-junk'
+    if ($PlacementSummonBlockOnly) {
+        $BranchCardMasks = $true
+        $PhysicalSpawnPoints = $true
+    }
+}
+if ($PlacementSummonBlockOnly -and -not $OriginalPlacementMutatorsWitness) {
+    throw 'PlacementSummonBlockOnly requires OriginalPlacementMutatorsWitness.'
 }
 if ($OriginalPreventMonsterDamageWitness -or $OriginalPreventMonsterDamageBattle) {
     $witnessArguments = @('OriginalPreventMonsterDamageWitness', 'OriginalPreventMonsterDamageBattle', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
@@ -2772,6 +2789,7 @@ $environment = @{
     MT2_PROBE_ORIGINAL_FHYRA_BATTLE = $(if ($OriginalFhyraGoldBattle) { '1' } else { '0' })
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_BATTLE = $(if ($OriginalPreventMonsterDamageBattle) { '1' } else { '0' })
     MT2_PROBE_DISABLED_ROOM_PREVIEW = $(if ($OriginalDisabledRoomPreviewBattle) { '1' } else { '0' })
+    MT2_PROBE_PLACEMENT_MUTATORS_WITNESS = $(if ($PlacementSummonBlockOnly) { 'block' } elseif ($OriginalPlacementMutatorsWitness) { '1' } else { '0' })
     MT2_PROBE_RANDOM_SPELL_TARGETS_WITNESS = $(if ($OriginalRandomSpellTargetsWitness) { '1' } else { '0' })
     MT2_PROBE_RANDOM_SPELL_TARGETS_BATTLE = $(if ($OriginalRandomSpellTargetsBattle) { '1' } else { '0' })
     MT2_PROBE_RANDOM_JUST_CAUSE_WITNESS = $(if ($OriginalRandomJustCauseWitness) { '1' } else { '0' })
@@ -3717,6 +3735,16 @@ if ($OriginalPreventMonsterDamageWitness) {
         throw "Original monster damage prevention witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-PREVENT-MONSTER-DAMAGE PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalPlacementMutatorsWitness) {
+    $capturePath = Join-Path $profile 'placement-mutators.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original deployment floor and unit size mutators captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original deployment floor and unit size witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-PLACEMENT-MUTATORS PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalEntropyDrawWitness) {

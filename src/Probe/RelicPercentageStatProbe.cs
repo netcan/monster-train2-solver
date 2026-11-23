@@ -35,6 +35,7 @@ namespace MonsterTrain2Poju.Probe
                     owner.GetEffects() is [RelicEffectPreventMonstersDamagingHeroes] ||
                     owner.GetRelicDataID() == RelicModel.DisableRoomPreviewOwnerId &&
                     owner.GetEffects() is [RelicEffectDisableRoomPreview] && !save.GetBattlePreviewEnabled() ||
+                    SupportsDeploymentSummonBlock(owner, save) ||
                     owner.GetRelicDataID() == RelicPersistentMonsterHealthModel.OwnerId &&
                     owner.GetEffects() is [RelicEffectPersistMonsterHp persistentHealth] && SupportsPersistentHealth(persistentHealth) ||
                     SupportsPyreAbilityCooldown(owner, save) ||
@@ -55,6 +56,20 @@ namespace MonsterTrain2Poju.Probe
                         owner.GetRelicDataID() is RelicResourceProbe.AfterDrawMorselsId or RelicResourceProbe.AfterDrawCultLeaderId &&
                         owner.GetEffects().Count == 1 && effect is RelicEffectSpawnMonsterOnTurnStart) &&
                     ((RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect)).GetEffectConditions().Count == 0));
+        }
+
+        private static bool SupportsDeploymentSummonBlock(RelicState owner, SaveManager save)
+        {
+            if (owner.GetRelicDataID() != RelicModel.DeploymentSummonBlockOwnerId ||
+                owner.GetEffects() is not [RelicEffectBlockRoomSummon])
+                return false;
+            MutatorData? definition = save.GetAllGameData().FindMutatorData(RelicModel.DeploymentSummonBlockOwnerId);
+            if (definition == null || definition.name != RelicModel.DeploymentSummonBlockOwnerKey ||
+                definition.DisallowInDeploymentPhase || definition.GetEffects().Count != 1)
+                return false;
+            RelicEffectData effect = definition.GetEffects()[0];
+            return effect.GetParamInt() == RelicModel.DeploymentSummonBlockMask &&
+                effect.GetParamBool() && effect.GetEffectConditions().Count == 0;
         }
 
         private static bool SupportsPersistentHealth(RelicEffectPersistMonsterHp effect)

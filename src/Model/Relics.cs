@@ -246,6 +246,18 @@ namespace MonsterTrain2Poju.Model
         internal const string DisableRoomPreview = "RelicEffectDisableRoomPreview";
         internal const string DisableRoomPreviewOwnerId = "d32fad27-7d66-4d6e-8db7-6f35bcba988c";
         internal const string DisableRoomPreviewOwnerKey = "NoCombatPreviews";
+        internal const string DeploymentSummonBlock = "RelicEffectBlockRoomSummon";
+        internal const string DeploymentSummonBlockOwnerId = "cdd8f536-acb4-4f82-a2f3-fc2a593af09b";
+        internal const string DeploymentSummonBlockOwnerKey = "Echoes_DeployOnlyToTopFloor";
+        internal const int DeploymentSummonBlockMask = 3;
+
+        internal static bool IsOriginalDeploymentSummonBlock(CombatRelicState owner) =>
+            owner.DataId == DeploymentSummonBlockOwnerId && owner.AssetKey == DeploymentSummonBlockOwnerKey &&
+            owner.IsCovenant == false && owner.DisallowedInPlacementPhase == false &&
+            owner.EffectTypes.Count == 1 && owner.EffectTypes[0] == DeploymentSummonBlock;
+
+        internal static bool IsDeploymentBlockedRoom(RoomPlayRule room) =>
+            !room.IsPyre && room.RoomIndex is 0 or 1;
         internal const string AdditionalForgePoints = "RelicEffectAdditionalForgePoints";
         internal const string ModifyForgeUpgrade = "RelicEffectModifyForgeUpgrade";
         internal const string HealOnMoonPhase = "RelicEffectHealOnMoonPhase";
@@ -376,6 +388,11 @@ namespace MonsterTrain2Poju.Model
                         if (relic.DataId == DisableRoomPreviewOwnerId && relic.AssetKey == DisableRoomPreviewOwnerKey &&
                             relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false && relic.EffectTypes.Count == 1) continue;
                         return "Missing or changed original room preview setting owner.";
+                    }
+                    if (effect == DeploymentSummonBlock)
+                    {
+                        if (IsOriginalDeploymentSummonBlock(relic)) continue;
+                        return "Missing or changed original deployment summon restriction owner.";
                     }
                     if (effect == RelicPyreAbilityCooldownModel.Effect)
                     {

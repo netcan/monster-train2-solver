@@ -472,6 +472,8 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                     if (fullBattle && OriginalDisabledRoomPreview.Enabled && !OriginalDisabledRoomPreview.Acquired)
                         OriginalDisabledRoomPreview.Acquire(save);
+                    if (fullBattle && OriginalPlacementMutatorsWitness.Enabled && !OriginalPlacementMutatorsWitness.Acquired)
+                        OriginalPlacementMutatorsWitness.Acquire(save);
                     if (fullBattle && (OriginalRandomSpellTargetsWitness.Enabled || OriginalRandomSpellTargetsWitness.FullBattle ||
                         OriginalRandomJustCauseWitness.Enabled) &&
                         !OriginalRandomSpellTargetsWitness.Acquired)
@@ -986,6 +988,17 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && OriginalPlacementMutatorsWitness.Enabled)
+            {
+                if (OriginalPlacementMutatorsWitness.CaptureDecision(managers, FullBattleTrace.Active!))
+                    Finish(true, "Original deployment floor and unit size mutators captured.");
+                else
+                {
+                    save.MarkOneTimeMessageComplete(OneTimeMessage.EndTurnWithoutPlayingChampion);
+                    AdvanceTurn(combat!, record: false);
+                }
+                return;
+            }
             if (fullBattle && OriginalEntropyDrawWitness.Enabled)
             {
                 var next = OriginalEntropyDrawWitness.Tick(FullBattleTrace.Active!, managers);

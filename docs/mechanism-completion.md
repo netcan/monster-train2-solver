@@ -328,6 +328,12 @@ Railforged 第三环 Unruly 在原版受控战后回调中依次测试复制和�
 常规战斗中的首领行动调度仍需独立验证。
 [原版战后回调](../tests/compatibility/game-2.3.1/mechanics/unruly-post-combat/native-post-combat.mt2f)
 
+原版部署限制使底层和中层在部署阶段无法召唤，进入第 1 回合后解禁。完整结束回合后继通过对照。
+同一次组合采样中，BigMonsters 使列车乘务员的占位由 3 变为 4，冠军由 2 变为 3，
+部署和普通回合的结果相同。战中生成牌与升级应用顺序仍待验证。
+[部署解禁](../tests/compatibility/game-2.3.1/mechanics/placement-mutators/placement-reopen.mt2f) ·
+[原版单位占位](../tests/compatibility/game-2.3.1/mechanics/placement-mutators/placement-size.mt2f)
+
 ExtraFeedTrigger 的原版查询确认友军 OnFeed 次数为 2，OnDeath 次数保持 1。
 61 个战斗阶段、5 次出牌、7 次结束回合与两类候选通过。实际普通进食也已录到两次 OnFeed，
 合金构装体的燃料从 1 增至 3，矿工只被吃掉一次，完整状态与随机数在 16 条分支上复放一致。
