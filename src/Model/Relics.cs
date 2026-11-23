@@ -278,6 +278,13 @@ namespace MonsterTrain2Poju.Model
                     // Native IOverrideDraftRarityRelicEffect is consulted only by
                     // reward drafts. Its acquired deck is already in battle state.
                     if (effect == "RelicEffectOverrideCardDraftRarity") continue;
+                    // These original draft and post-battle owners are consumed by
+                    // the campaign after the captured combat terminal boundary.
+                    if (relic.EffectTypes.Count == 1 && relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false &&
+                        (effect, relic.DataId, relic.AssetKey) is
+                            ("RelicEffectOverrideCardDraftClassType", "656861c9-a96d-4c99-988c-390b75e5d8d4", "AlliedClassRelic") or
+                            ("RelicEffectChangeNumCardsToApplyRandomDraftEnhancerTo", "9427e610-0c7b-4430-ab1f-c84049097168", "DrawOnCorruption") or
+                            ("RelicEffectCopyRandomCardFromDeckEndOfBattle", "8ee399d2-4ee4-409d-af95-319bcd6accc4", "MothersRemnant1Relic")) continue;
                     // Sealed IAddStartingUpgradeToCardDrafts is called only
                     // by CardDraftScreen. Acquired permanent upgrades are
                     // already captured; battle branches never draft rewards.
