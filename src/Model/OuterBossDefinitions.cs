@@ -8,8 +8,9 @@ namespace MonsterTrain2Poju.Model
         public const string UnrulyScourge = "Boss_SoulSavior_R3_Unruly_Scourge";
         public const string UnrulySniperAdvance = "Boss_SoulSavior_R3_Unruly_SniperAdvance";
         public const string DutifulBurst = "Boss_SoulSavior_R1_Dutiful_Burst";
+        public const string DutifulArmor = "Boss_SoulSavior_R1_Dutiful_Armor";
         public const string DutifulAscendDescend = "Boss_SoulSavior_R1_Dutiful_AscendDescend";
-        public static bool IsDutiful(string assetKey) => assetKey is DutifulBurst or DutifulAscendDescend;
+        public static bool IsDutiful(string assetKey) => assetKey is DutifulBurst or DutifulArmor or DutifulAscendDescend;
         internal const string UnrulyScourgeCard = "4d1f27af-3122-4a08-87e3-5ef5a14ced94";
         public const string CaelShieldTrial = "Boss_Level6_Cael_DamageShield_TitanTrial";
         public const string CaelAtkHpTrial = "Boss_Level6_Cael_AtkHP_TitanTrial";

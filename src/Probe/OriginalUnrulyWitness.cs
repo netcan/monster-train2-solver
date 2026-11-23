@@ -20,6 +20,7 @@ namespace MonsterTrain2Poju.Probe
             "Scourge" => "SoulSavior_R3_BossBattle_Scourge",
             "SniperAdvance" => "SoulSavior_R3_BossBattle_StealBuffs1",
             "DutifulBurst" => "SoulSavior_R1_BossBattle_DutifulChild_Burst",
+            "DutifulArmor" => "SoulSavior_R1_BossBattle_DutifulChild_Heal",
             "DutifulAscendDescend" => "SoulSavior_R1_BossBattle_DutifulChild_AscendDescend",
             _ => "SoulSavior_R3_BossBattle_DuplicateEnemy"
         };
@@ -28,6 +29,7 @@ namespace MonsterTrain2Poju.Probe
             "Scourge" => OuterBossDefinitions.UnrulyScourge,
             "SniperAdvance" => OuterBossDefinitions.UnrulySniperAdvance,
             "DutifulBurst" => OuterBossDefinitions.DutifulBurst,
+            "DutifulArmor" => OuterBossDefinitions.DutifulArmor,
             "DutifulAscendDescend" => OuterBossDefinitions.DutifulAscendDescend,
             _ => TriggeredSummonModel.UnrulyBoss
         };

@@ -347,6 +347,10 @@ Dutiful 的 AscendDescend 变体在两次原版移位后给同层四个敌军各
 23 次出牌、4 次结束回合、两类候选和 16 条独立分支通过。
 [原版移位整战](../tests/compatibility/game-2.3.1/mechanics/dutiful-ascend-descend/native-battle.mt2f)
 
+Dutiful 的 Armor 变体在三次原版战后回调中累计六次增加 12 护甲。采样沿用原版死亡结算等待，
+以便光环退出后再读取回合后继。整战的 28 次出牌、5 次结束回合和两类候选检查通过。
+[原版护甲整战](../tests/compatibility/game-2.3.1/mechanics/dutiful-armor/native-battle.mt2f)
+
 原版部署限制使底层和中层在部署阶段无法召唤，进入第 1 回合后解禁。完整结束回合后继通过对照。
 同一次组合采样中，BigMonsters 使列车乘务员的占位由 3 变为 4，冠军由 2 变为 3，
 部署和普通回合的结果相同。六条原版造牌记录确认先按原始占位应用突变，再应用造牌升级。

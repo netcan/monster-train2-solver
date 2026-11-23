@@ -813,7 +813,7 @@ param(
     [switch] $OriginalUnrulyWitness,
     [switch] $OriginalUnrulyBattle,
     [switch] $OriginalDutifulBurstBattle,
-    [ValidateSet('AscendDescend')][string] $OriginalDutifulVariant,
+    [ValidateSet('AscendDescend', 'Armor')][string] $OriginalDutifulVariant,
     [ValidateSet('DuplicateEnemy', 'Scourge', 'SniperAdvance')][string] $OriginalUnrulyVariant = 'DuplicateEnemy',
     [ValidateRange(1, 3)][int] $OriginalSpurnedChallenge = 2,
     [switch] $OriginalSpurnedRetainPiles,
@@ -1914,7 +1914,12 @@ if ($originalDutifulBattle) {
     }
     $OriginalUnrulyBattle = $true
     $originalSoulSaviorVariant = if ($OriginalDutifulBurstBattle) { 'DutifulBurst' }
+        elseif ($OriginalDutifulVariant -eq 'Armor') { 'DutifulArmor' }
         else { 'DutifulAscendDescend' }
+    if ($OriginalDutifulVariant -eq 'Armor') {
+        $SettleCardAnimations = $true
+        $SettleDeathDissolves = $true
+    }
 }
 if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
     $unrulyMode = if ($OriginalDutifulBurstBattle) { 'OriginalDutifulBurstBattle' }
@@ -4632,6 +4637,7 @@ if ($OriginalUnrulyBattle) {
     $unruly = $trace.OriginalUnrulyBattle
     $unrulyScenario = if ($OriginalUnrulyVariant -eq 'SniperAdvance') { 'SoulSavior_R3_BossBattle_StealBuffs1' }
         elseif ($OriginalDutifulBurstBattle) { 'SoulSavior_R1_BossBattle_DutifulChild_Burst' }
+        elseif ($OriginalDutifulVariant -eq 'Armor') { 'SoulSavior_R1_BossBattle_DutifulChild_Heal' }
         elseif ($OriginalDutifulVariant -eq 'AscendDescend') { 'SoulSavior_R1_BossBattle_DutifulChild_AscendDescend' }
         else { "SoulSavior_R3_BossBattle_$OriginalUnrulyVariant" }
     $unrulyBoss = if ($originalDutifulBattle) { 'Boss_SoulSavior_R1_Dutiful_' + $originalSoulSaviorVariant.Substring('Dutiful'.Length) }
@@ -4646,6 +4652,7 @@ if ($OriginalUnrulyBattle) {
     if ($originalDutifulBattle) {
         $status, $kind, $stacks = switch ($originalSoulSaviorVariant) {
             'DutifulBurst' { 'burst', 'PostCombat', 1 }
+            'DutifulArmor' { 'armor', 'PostCombat', 12 }
             'DutifulAscendDescend' { 'buff', 'OnShift', 3 }
         }
         $gains = @($trace.TriggeredStatuses | ForEach-Object {

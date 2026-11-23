@@ -39,6 +39,9 @@ namespace MonsterTrain2Poju.Model
                 OuterBossDefinitions.DutifulBurst => unit.BaseAttack == 16 && unit.MaxHealth == 800 &&
                     trigger.Kind == "PostCombat" && effect.Type == "CardEffectAddStatusEffect" &&
                     status is { Id: "burst", Stacks: 1 },
+                OuterBossDefinitions.DutifulArmor => unit.BaseAttack == 12 && unit.MaxHealth == 1000 &&
+                    trigger.Kind == "PostCombat" && effect.Type == "CardEffectAddStatusEffectPerSelfAttack" &&
+                    effect.Action.Value == 1 && status is { Id: "armor", Stacks: 1 },
                 OuterBossDefinitions.DutifulAscendDescend => unit.BaseAttack == 15 && unit.MaxHealth == 900 &&
                     trigger.Kind == "OnShift" && effect.Type == "CardEffectAddStatusEffect" &&
                     status is { Id: "buff", Stacks: 3 },

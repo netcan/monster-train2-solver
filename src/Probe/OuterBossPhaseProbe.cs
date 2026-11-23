@@ -77,6 +77,9 @@ namespace MonsterTrain2Poju.Probe
             {
                 OuterBossDefinitions.DutifulBurst => trigger == CharacterTriggerData.Trigger.PostCombat &&
                     effect.GetEffectStateName() == nameof(CardEffectAddStatusEffect) && status.statusId == "burst" && status.count == 1,
+                OuterBossDefinitions.DutifulArmor => trigger == CharacterTriggerData.Trigger.PostCombat &&
+                    effect.GetEffectStateName() == nameof(CardEffectAddStatusEffectPerSelfAttack) && effect.GetParamInt() == 1 &&
+                    !effect.GetParamBool2() && status.statusId == "armor" && status.count == 1,
                 OuterBossDefinitions.DutifulAscendDescend => trigger == CharacterTriggerData.Trigger.OnShift &&
                     effect.GetEffectStateName() == nameof(CardEffectAddStatusEffect) && status.statusId == "buff" && status.count == 3,
                 _ => false
