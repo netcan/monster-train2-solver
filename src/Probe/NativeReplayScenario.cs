@@ -4354,6 +4354,8 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                 if (OriginalLifemotherDebuffsWitness.Enabled && (!OriginalLifemotherDebuffsWitness.WholeBattle || decision.Spawn.Turn <= 1))
                     pendingPlay = OriginalLifemotherDebuffsWitness.Choose(decision);
+                if (OriginalUnrulyWitness.ReplaysInfestedOpening)
+                    pendingPlay = OriginalUnrulyWitness.ChooseInfestedOpening(decision);
 #endif
                 if (PlannerReplayScenario.TryChoose(decision, log, out PlayCardAction? planned, out var choices))
                 {

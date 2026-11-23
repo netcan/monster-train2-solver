@@ -26,7 +26,7 @@ The TSV retains native identities, growth signatures and exact player-source arc
 
 ## Soul Savior
 
-The pinned 2.3.1 catalog contains 15 original encounters. 12 model definition gates are open and 14 encounters have settled recordings. The registered fixtures use original TestScenario selections and can include defeats.
+All 15 original 2.3.1 encounters have settled recordings. The registered fixtures use original TestScenario selections and can include defeats. Twelve definitions use the general model gate. The original Indulgent Trample pair and Lifemother Infested use encounter-specific validation.
 
 | Original scenario | Model definition gate | Settled recordings |
 | --- | --- | ---: |
@@ -43,5 +43,5 @@ The pinned 2.3.1 catalog contains 15 original encounters. 12 model definition ga
 | SoulSavior_R4_BossBattle_EstrangedChild_2 | allowed | 1 |
 | SoulSavior_R4_BossBattle_EstrangedChild_3 | allowed | 2 |
 | SoulSavior_R5_BossBattle_Lifemother_Debuffs | allowed | 1 |
-| SoulSavior_R5_BossBattle_Lifemother_Infested | guarded | 0 |
+| SoulSavior_R5_BossBattle_Lifemother_Infested | scoped | 1 |
 | SoulSavior_R5_BossBattle_Lifemother_Reanimate | allowed | 1 |

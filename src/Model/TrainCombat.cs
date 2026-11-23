@@ -433,7 +433,11 @@ namespace MonsterTrain2Poju.Model
 
         internal static TrainCombatResult Ascend(TrainCombatState source, int? onlyUnitId, bool forceLoop)
         {
-            string? error = Validate(source, allowFirstHivemindCombat: !onlyUnitId.HasValue && !forceLoop);
+            bool ordinaryMovement = !onlyUnitId.HasValue && !forceLoop;
+            bool infestedTerminal = ordinaryMovement && HivemindTurnUpgrade.IsInfestedTerminalAscension(source);
+            bool infestedMovement = infestedTerminal || ordinaryMovement && HivemindTurnUpgrade.IsInfestedOrdinaryAscension(source);
+            string? error = Validate(source, allowFirstHivemindCombat: ordinaryMovement,
+                allowInfestedTerminalAscension: infestedMovement);
             if (error != null) return Unsupported(error);
             var rooms = source.Rooms.Select(room => room.Units.ToList()).ToArray();
             int pyre = rooms.Length - 1;
@@ -557,13 +561,13 @@ namespace MonsterTrain2Poju.Model
                 rooms = destroyed.State!.Rooms.Select(room => room.Units.ToList()).ToArray();
                 movementContext = destroyed.State.Context;
             }
-            bool publishHivemind = !onlyUnitId.HasValue && !forceLoop && HivemindTurnUpgrade.PublishesAtAscension(source);
+            bool publishHivemind = infestedMovement || ordinaryMovement && HivemindTurnUpgrade.PublishesAtAscension(source);
             RoomCombatState[] next = source.Rooms.Select((room, index) =>
             {
                 var destination = new RoomCombatState(room.RoomIndex, room.Deployment,
                     BattleSpawnPointModel.Order(movementContext?.SpawnPoints, index, rooms[index]), room.ExternalInteractions,
                     movementContext, room.Preview, room.ActiveCompanionBossIds);
-                return publishHivemind ? HivemindTurnUpgrade.PublishRoomMarkers(destination) : destination;
+                return publishHivemind ? HivemindTurnUpgrade.PublishRoomMarkers(destination, infestedMovement) : destination;
             }).ToArray();
             TrainCombatState moving = EnchantmentWorldModel.Rebase(new TrainCombatState(next, source.Movement, source.EnemySlotsPerRoom, movementContext));
             // DoAscension reserves all destinations first, then compacts physical
@@ -1008,7 +1012,7 @@ namespace MonsterTrain2Poju.Model
             outcome == RoomOutcome.PlayerDefeated || outcome == RoomOutcome.Stalemate;
 
         internal static string? Validate(TrainCombatState source, bool linkedHealthOnly = false, bool allowFreshHivemind = false,
-            bool allowFirstHivemindCombat = false)
+            bool allowFirstHivemindCombat = false, bool allowInfestedTerminalAscension = false)
         {
             string? relicError = RelicModel.Validate(source.Context);
             if (relicError != null) return relicError;
@@ -1025,7 +1029,7 @@ namespace MonsterTrain2Poju.Model
             foreach (RoomCombatState room in source.Rooms)
             {
                 string? error = RoomCombatModel.Validate(room, linkedHealthOnly: linkedHealthOnly, allowFreshHivemind: allowFreshHivemind,
-                    allowFirstHivemindCombat: allowFirstHivemindCombat);
+                    allowFirstHivemindCombat: allowFirstHivemindCombat, allowInfestedTerminalAscension: allowInfestedTerminalAscension);
                 if (error != null) return error;
             }
             return null;

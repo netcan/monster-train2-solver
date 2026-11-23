@@ -247,9 +247,12 @@ namespace MonsterTrain2Poju.Model
         private static bool IsLifemotherInfestedOpeningActor(CombatUnit unit, CombatContext? context) =>
             IsLifemotherInfestedOpeningActorShape(unit, context) && unit.Statuses is [{ Id: "trample", Stacks: 1 }];
 
-        private static bool IsLifemotherInfestedOpeningActorShape(CombatUnit unit, CombatContext? context) => unit is
-            { AssetKey: LifemotherInfested, Team: CombatTeam.Enemy, BumpRules.OuterBoss: true, BaseAttack: 40,
-                Attack: 40, MaxHealth: 9000, Health: 9000, Size: 5, SpawnerCardId: 0,
+        private static bool IsLifemotherInfestedOpeningActorShape(CombatUnit unit, CombatContext? context) =>
+            unit is { BaseAttack: 40, Attack: 40, Health: 9000 } && IsLifemotherInfestedCastingActor(unit, context);
+
+        internal static bool IsLifemotherInfestedCastingActor(CombatUnit unit, CombatContext? context) => unit is
+            { AssetKey: LifemotherInfested, Team: CombatTeam.Enemy, BumpRules.OuterBoss: true,
+                MaxHealth: 9000, Health: > 0 and <= 9000, Size: 5, SpawnerCardId: 0,
                 Triggers: [{ Kind: "OnAnyUnitDeathOnFloor", Once: false, IgnoreSilence: false, FireCount: 1,
                     TriggerAtThreshold: 0, Conditions: null, Effects: [{ Type: "CardEffectAddStatusEffect",
                         Action: { Type: "AddStatus", Target: "Self", Value: 0, Range: null, AllowEnemy: false,

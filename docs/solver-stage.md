@@ -685,3 +685,7 @@ Indulgent 减容变体追加 8 次出牌、4 次结束回合，两类候选通�
 Indulgent GorgeOnSlay 再追加 8 次出牌、4 次结束回合并通过两类候选。累计已有 471 场原版战斗
 通过，合计 7,232 次出牌或技能和 2,807 次结束回合。Soul Savior 已有 14／15 场整战证据，
 剩余 Lifemother Infested。 [GorgeOnSlay 整战](../tests/compatibility/game-2.3.1/mechanics/indulgent-gorge-on-slay/native-battle.mt2f)
+
+Lifemother Infested 追加 5 次出牌、4 次结束回合及两类候选。Soul Savior 的 15 个原版遭遇
+都有已结算整战归档。定向验收累计 472 场，合计 7,237 次出牌或技能和 2,811 次结束回合。
+[Infested 整战](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/native-battle.mt2f)

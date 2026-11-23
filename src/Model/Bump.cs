@@ -62,7 +62,11 @@ namespace MonsterTrain2Poju.Model
                         OuterBossDefinitions.IsIndulgentTrampleActor(unit, source.Context))) &&
                 (source.Context?.QueryFrame?.Turn == 2 && HivemindTurnUpgrade.HasSecondWave(source) ||
                  source.Context?.QueryFrame?.Turn == 3 && HivemindTurnUpgrade.HasThirdWave(source));
-            string? error = TrainCombatModel.Validate(source, allowFreshHivemind: observedHivemindCasting);
+            bool infestedCasting = outerBossActionMovement && targets is [var bossId] &&
+                source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id == bossId &&
+                    OuterBossDefinitions.IsLifemotherInfestedCastingActor(unit, source.Context)) &&
+                HivemindTurnUpgrade.HasInfestedDraw(source);
+            string? error = TrainCombatModel.Validate(source, allowFreshHivemind: observedHivemindCasting || infestedCasting);
             var events = new List<CombatEvent>(); var retained = new Dictionary<int, CombatUnit>();
             var dispatched = new List<RoomCombatModel.QueuedCharacterTrigger>();
             var queue = (pending ?? Array.Empty<RoomCombatModel.QueuedCharacterTrigger>()).ToList();

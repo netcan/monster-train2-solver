@@ -821,6 +821,7 @@ param(
     [switch] $IndulgentTrampleWholeBattle,
     [switch] $OriginalLifemotherReanimateBattle,
     [switch] $OriginalLifemotherInfestedObservation,
+    [switch] $LifemotherInfestedWholeBattle,
     [switch] $OriginalLifemotherDebuffs,
     [switch] $LifemotherDebuffsWholeBattle,
     [ValidateSet('DuplicateEnemy', 'Scourge', 'SniperAdvance')][string] $OriginalUnrulyVariant = 'DuplicateEnemy',
@@ -1918,6 +1919,9 @@ if ($OriginalAffordableNonPlayable) {
 if ($LifemotherDebuffsWholeBattle -and -not $OriginalLifemotherDebuffs) {
     throw 'LifemotherDebuffsWholeBattle requires OriginalLifemotherDebuffs.'
 }
+if ($LifemotherInfestedWholeBattle -and -not $OriginalLifemotherInfestedObservation) {
+    throw 'LifemotherInfestedWholeBattle requires OriginalLifemotherInfestedObservation.'
+}
 if ($IndulgentTrampleWholeBattle) { $IndulgentTrampleCasting = $true }
 if ($IndulgentTrampleCasting -and -not ($OriginalIndulgentCapacityBattle -or $OriginalIndulgentGorgeOnSlay)) {
     throw 'IndulgentTrampleCasting requires an original Indulgent variant with Trample.'
@@ -1968,6 +1972,7 @@ if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
     $unrulyArguments = @($unrulyMode, 'InputProfile', 'BattleDistance', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'OriginalUnrulyVariant')
     if ($OriginalLifemotherDebuffs) { $unrulyArguments += 'LifemotherDebuffsWholeBattle' }
+    if ($OriginalLifemotherInfestedObservation) { $unrulyArguments += 'LifemotherInfestedWholeBattle' }
     if ($lifemotherBranchObservation) { $unrulyArguments += 'UnsupportedBranchInput' }
     if ($IndulgentTrampleCasting) { $unrulyArguments += 'IndulgentTrampleCasting' }
     if ($IndulgentTrampleWholeBattle) { $unrulyArguments += 'IndulgentTrampleWholeBattle' }
@@ -3509,6 +3514,7 @@ if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
         $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
     }
     if ($LifemotherDebuffsWholeBattle) { $environment['MT2_PROBE_LIFEMOTHER_DEBUFFS_BATTLE'] = '1' }
+    if ($LifemotherInfestedWholeBattle) { $environment['MT2_PROBE_LIFEMOTHER_INFESTED_WHOLE'] = '1' }
     if ($IndulgentTrampleCasting) { $environment['MT2_PROBE_INDULGENT_TRAMPLE_CASTING'] = '1' }
 }
 if ($OriginalSpurnedBattle) {
@@ -4762,11 +4768,18 @@ if ($OriginalUnrulyBattle) {
             $nativeActor.Count -ne 1 -or $committedGrants.Count -eq 0) {
             throw "Original Lifemother Infested has incomplete controller or status-grant observations. Inspect $tracePath and $unityLog"
         }
-        [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; OriginalFilesUnchanged = $true;
-            FirstDrawBossRoom = $boss.Room; DeathGrants = $committedGrants.Count; SourceUnsupported = $trace.Unsupported;
-            SourceMismatches = $trace.Mismatches; Trace = $tracePath;
-            SHA256 = (Get-FileHash -LiteralPath $tracePath -Algorithm SHA256).Hash } | ConvertTo-Json
-        return
+        if (-not $LifemotherInfestedWholeBattle) {
+            [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; OriginalFilesUnchanged = $true;
+                FirstDrawBossRoom = $boss.Room; DeathGrants = $committedGrants.Count; SourceUnsupported = $trace.Unsupported;
+                SourceMismatches = $trace.Mismatches; Trace = $tracePath;
+                SHA256 = (Get-FileHash -LiteralPath $tracePath -Algorithm SHA256).Hash } | ConvertTo-Json
+            return
+        }
+        if ((@($trace.Actions | ForEach-Object { $_.Action.CardInstanceId }) -join ',') -cne '7,6,5,4,1' -or
+            (@($trace.Actions | ForEach-Object { $_.Action.RoomIndex }) -join ',') -cne '0,0,1,1,2' -or
+            (@($trace.Actions | ForEach-Object { $_.Before.Spawn.Turn }) -join ',') -cne '0,0,0,0,0') {
+            throw "Original Lifemother Infested did not replay the recorded deployment prefix. Inspect $tracePath and $unityLog"
+        }
     }
     if ($OriginalLifemotherReanimateBattle) {
         $postCombat = @($trace.TriggeredStatuses | Where-Object { $_.Completed -and $_.Kind -ceq 'PostCombat' })

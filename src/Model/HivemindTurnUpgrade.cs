@@ -171,6 +171,122 @@ namespace MonsterTrain2Poju.Model
         internal static bool IsObservedPyreHunterDeath(RoomCombatState room, int targetId, bool pyreAttacker) =>
             pyreAttacker && IsObservedPyreCombat(room) && room.Units.Any(unit => unit.Id == targetId && unit.AssetKey == Hunter);
 
+        internal static bool IsInfestedTerminalPyre(RoomCombatState room) =>
+            room.RoomIndex == 3 && HasInfestedTerminalFrame(room.Context) && !room.Preview &&
+            NoCapturedKiller(room) && room.Units.Count == 4 && room.Units.Any(unit => unit.IsPyre && unit.Health == 78) &&
+            HasInfestedTerminalAttackers(room.Units.Where(unit => unit.Team == CombatTeam.Enemy));
+
+        internal static bool IsInfestedTerminalAscension(TrainCombatState train) =>
+            HasInfestedTerminalFrame(train.Context) && train.Rooms.Count == 4 && train.Rooms.All(room => !room.Preview) &&
+            train.Rooms[3].Units is [{ IsPyre: true, Health: 78 }] &&
+            HasInfestedTerminalAttackers(train.Rooms[2].Units) &&
+            train.Rooms.SelectMany(room => room.Units).Where(unit => unit.RegisteredStatus(StatusId) != null)
+                .All(IsInfestedTerminalOwner) &&
+            train.Rooms.All(NoCapturedKiller);
+
+        private static bool HasInfestedTerminalFrame(CombatContext? context) =>
+            context?.QueryFrame is { RunningCombat: true, Turn: 3, MoonPhase: 2, MoonPhaseTrackingActive: false } &&
+            OuterBossDefinitions.HasLifemotherInfestedOwner(context);
+
+        private static bool HasInfestedTerminalAttackers(IEnumerable<CombatUnit> units) =>
+            units.ToArray() is [{ AssetKey: HeavyT2, Health: 250, Attack: 101 } heavy,
+                { AssetKey: DeathHorde, Health: 3, Attack: 34 } first,
+                { AssetKey: DeathHorde, Health: 3, Attack: 34 } second] &&
+            heavy.Status(StatusId)?.Stacks == 19 && IsInfestedTerminalOwner(heavy) &&
+            IsInfestedTerminalOwner(first) && IsInfestedTerminalOwner(second);
+
+        internal static bool IsInfestedTerminalOwner(CombatUnit unit)
+        {
+            if (unit.Team != CombatTeam.Enemy || unit.SpawnerCardId != 0 || unit.Health <= 0 ||
+                unit.Status(StatusId) is not { ParamInt: 1 } status || unit.RegisteredStatus("hivemindkiller") != null ||
+                unit.Modifiers is not { IsClone: false } modifiers ||
+                modifiers.Upgrades.Count(upgrade => IsAttackUpgrade(upgrade, 32)) != 1)
+                return false;
+            if (unit.AssetKey == OuterBossDefinitions.LifemotherInfested)
+                return unit is { BaseAttack: 72, MaxHealth: 9000, BumpRules.OuterBoss: true, Triggers:
+                    [{ Kind: "OnAnyUnitDeathOnFloor" }, { Kind: "OnTeamTurnBegin" }] } &&
+                    status.Stacks == 6 && modifiers.Upgrades.Count == 1;
+            if (!IsInfestedOpeningUnit(unit, 32)) return false;
+            if (unit.AssetKey == DeathHorde) return IsOriginalStatus(unit, status) && modifiers.Upgrades.Count == 1;
+            int feeds = modifiers.Upgrades.Count(IsInfestedStatusUpgrade);
+            int shieldFeeds = modifiers.Upgrades.Count(upgrade => upgrade.DataId == FeedBuffUpgrade);
+            return feeds is 1 or 2 or 3 && status.Stacks == 1 + 6 * feeds && shieldFeeds <= feeds &&
+                modifiers.Upgrades.Count == 1 + feeds + shieldFeeds;
+        }
+
+        private static int InfestedCombatTurn(CombatContext? context) =>
+            context?.QueryFrame is { Turn: >= 1 and <= 3, MoonPhaseTrackingActive: false } frame &&
+            OuterBossDefinitions.HasLifemotherInfestedOwner(context) ? frame.Turn.Value : 0;
+
+        internal static bool IsInfestedOrdinaryRoom(RoomCombatState room)
+        {
+            int turn = InfestedCombatTurn(room.Context);
+            return turn is 2 or 3 && room.RoomIndex is >= 0 and < 3 && HasInfestedCombatOwners(room.Units, turn, room.Context);
+        }
+
+        internal static bool IsInfestedOrdinaryAscension(TrainCombatState train)
+        {
+            int turn = InfestedCombatTurn(train.Context);
+            if (turn is not (1 or 2) || train.Rooms.Count != 4 || train.Rooms.Any(room => room.Preview))
+                return false;
+            CombatUnit[] units = train.Rooms.SelectMany(room => room.Units).ToArray();
+            return units.Count(unit => unit.RegisteredStatus(StatusId) != null) == (turn == 1 ? 4 : 7) &&
+                HasInfestedCombatOwners(units, turn, train.Context);
+        }
+
+        private static bool HasInfestedCombatOwners(IEnumerable<CombatUnit> units, int turn, CombatContext? context)
+        {
+            CombatUnit[] owners = units.Where(unit => unit.RegisteredStatus(StatusId) != null ||
+                unit.RegisteredStatus("hivemindkiller") != null).ToArray();
+            return owners.Length > 0 && owners.All(unit => IsInfestedCombatOwner(unit, turn, context));
+        }
+
+        internal static bool IsInfestedCombatOwner(RoomCombatState room, CombatUnit unit) =>
+            IsInfestedCombatOwner(unit, room.Context?.QueryFrame?.Turn ?? 0, room.Context);
+
+        private static bool IsInfestedCombatOwner(CombatUnit unit, int turn, CombatContext? context)
+        {
+            if (turn is < 1 or > 3 || unit.Team != CombatTeam.Enemy || unit.SpawnerCardId != 0 || unit.Health <= 0 ||
+                unit.Status(StatusId) is not { ParamInt: 1 } status || unit.RegisteredStatus("hivemindkiller") != null ||
+                unit.Modifiers is not { IsClone: false } modifiers)
+                return false;
+            int damage = turn == 1 ? 3 : turn == 2 ? 14 : 32;
+            if (unit.AssetKey == OuterBossDefinitions.LifemotherInfested)
+            {
+                int bossDamage = turn == 1 ? 0 : damage;
+                return OuterBossDefinitions.IsLifemotherInfestedCastingActor(unit, context) &&
+                    unit.BaseAttack == 40 + bossDamage &&
+                    modifiers.Upgrades is [var upgrade] && IsAttackUpgrade(upgrade, bossDamage) &&
+                    (turn == 1 && status.Stacks == 2 || turn == 2 && status.Stacks is 2 or 4 or 6 ||
+                     turn == 3 && status.Stacks == 6);
+            }
+            if (!IsInfestedOpeningUnit(unit, damage) || modifiers.Upgrades.Count(upgrade => IsAttackUpgrade(upgrade, damage)) != 1)
+                return false;
+            if (unit.AssetKey == DeathHorde) return IsOriginalStatus(unit, status) && modifiers.Upgrades.Count == 1;
+            int feeds = modifiers.Upgrades.Count(IsInfestedStatusUpgrade);
+            int shieldFeeds = modifiers.Upgrades.Count(upgrade => upgrade.DataId == FeedBuffUpgrade);
+            // The third bottom-floor Heavy receives shields before its first +6 feed.
+            return feeds <= turn && status.Stacks == 1 + 6 * feeds &&
+                (shieldFeeds <= feeds || turn == 3 && feeds == 0 && shieldFeeds == 1) &&
+                modifiers.Upgrades.Count == 1 + feeds + shieldFeeds;
+        }
+
+        internal static TrainCombatState MoveInfestedBossMarker(TrainCombatState train, CombatUnit boss)
+        {
+            string marker = Marker(boss);
+            if (!train.Rooms.Any(room => room.ExternalInteractions.Contains(marker))) return train;
+
+            var rooms = train.Rooms.Select(room =>
+            {
+                IEnumerable<string> markers = room.ExternalInteractions.Where(item => item != marker);
+                if (room.Units.Any(unit => unit.Id == boss.Id)) markers = markers.Append(marker);
+                return new RoomCombatState(room.RoomIndex, room.Deployment, room.Units,
+                    markers.OrderBy(item => item, StringComparer.Ordinal).ToArray(), room.Context, room.Preview,
+                    room.ActiveCompanionBossIds);
+            }).ToArray();
+            return EnchantmentWorldModel.Rebase(new TrainCombatState(rooms, train.Movement, train.EnemySlotsPerRoom, train.Context));
+        }
+
         private static bool NoCapturedKiller(RoomCombatState room) => room.Context?.Enchantments is EnchantmentWorld world &&
             world.Rooms.SelectMany(floor => floor.Units).Concat(world.RetainedUnits.Select(actor => actor.Unit)).All(unit =>
                 unit.RegisteredStatus("hivemindkiller") == null && unit.Modifiers?.Upgrades.Any(upgrade =>
@@ -185,10 +301,12 @@ namespace MonsterTrain2Poju.Model
             train.Rooms.SelectMany(room => room.Units).All(unit => unit.RegisteredStatus("hivemindkiller") == null &&
                 (unit.Status(StatusId) == null || MatchesRoomMarker(Marker(unit), unit)));
 
-        internal static RoomCombatState PublishRoomMarkers(RoomCombatState room)
+        internal static RoomCombatState PublishRoomMarkers(RoomCombatState room, bool infested = false)
         {
-            string[] markers = room.ExternalInteractions.Where(marker => !IsKnownMarker(marker)).Concat(
-                room.Units.Where(unit => MatchesRoomMarker(Marker(unit), unit))
+            bool InfestedMarker(string marker) => infested && marker is
+                HeavyT2 + " room modifiers" or DeathHorde + " room modifiers" or OuterBossDefinitions.LifemotherInfested + " room modifiers";
+            string[] markers = room.ExternalInteractions.Where(marker => !IsKnownMarker(marker) && !InfestedMarker(marker)).Concat(
+                room.Units.Where(unit => MatchesRoomMarker(Marker(unit), unit) || infested && IsInfestedCombatOwner(room, unit))
                     .Select(Marker)).Distinct().OrderBy(marker => marker, StringComparer.Ordinal).ToArray();
             return room.ExternalInteractions.SequenceEqual(markers) ? room :
                 new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, markers, room.Context, room.Preview,
@@ -430,7 +548,38 @@ namespace MonsterTrain2Poju.Model
         internal static string Marker(CombatUnit unit) => unit.AssetKey + " room modifiers";
 
         private static bool IsObservedInfestedFeedUpgrade(RoomCombatState room, CombatUnit unit, CardUpgradeModifier upgrade, string? kind) =>
-            kind == "OnEaten" && IsInfestedOpeningCombat(room) && IsInfestedPreviewFeedRecipient(unit) && IsInfestedStatusUpgrade(upgrade);
+            kind == "OnEaten" && IsInfestedStatusUpgrade(upgrade) &&
+            (IsInfestedOpeningCombat(room) && IsInfestedPreviewFeedRecipient(unit) ||
+             IsObservedLaterInfestedFeedRecipient(room, unit));
+
+        private static bool IsObservedLaterInfestedFeedRecipient(RoomCombatState room, CombatUnit unit)
+        {
+            if (room.Context?.QueryFrame is not { Turn: 2 or 3, MoonPhaseTrackingActive: false } frame ||
+                frame.MoonPhase != frame.Turn - 1 || !OuterBossDefinitions.HasLifemotherInfestedOwner(room.Context) ||
+                unit is not { AssetKey: HeavyT2, Team: CombatTeam.Enemy, SpawnerCardId: 0,
+                    IsBoss: false, Health: > 0, Modifiers: { IsClone: false } modifiers } ||
+                unit.RegisteredStatus("hivemindkiller") != null)
+                return false;
+            int damage = frame.Turn == 2 ? 14 : 32;
+            if (!IsInfestedOpeningUnit(unit, damage) ||
+                modifiers.Upgrades.Count(upgrade => IsAttackUpgrade(upgrade, damage)) != 1)
+                return false;
+            int earlierFeeds = room.RoomIndex;
+            return room.RoomIndex >= 0 && room.RoomIndex < frame.Turn &&
+                modifiers.Upgrades.Count(IsInfestedStatusUpgrade) == earlierFeeds &&
+                modifiers.Upgrades.All(upgrade => IsAttackUpgrade(upgrade, damage) ||
+                    IsInfestedStatusUpgrade(upgrade) || upgrade.DataId == FeedBuffUpgrade) &&
+                modifiers.Upgrades.Count(upgrade => upgrade.DataId == FeedBuffUpgrade) <= earlierFeeds + 1 &&
+                unit.Status(StatusId) is { ParamInt: 1 } status && status.Stacks == 1 + 6 * earlierFeeds;
+        }
+
+        internal static bool HasObservedLaterInfestedDeathGrant(RoomCombatState room, CombatUnit unit, CombatTrigger trigger) =>
+            room.RoomIndex == 1 && room.Context?.QueryFrame is { Turn: 2, MoonPhase: 1, MoonPhaseTrackingActive: false } &&
+            unit is { BaseAttack: 54, Attack: 54, Health: 9000, Modifiers.IsClone: false } &&
+            unit.Modifiers.Upgrades is [var upgrade] && IsAttackUpgrade(upgrade, 14) &&
+            unit.Status(StatusId) is { Stacks: 2 or 4, ParamInt: 1 } && unit.RegisteredStatus("hivemindkiller") == null &&
+            OuterBossDefinitions.IsLifemotherInfestedCastingActor(unit, room.Context) &&
+            ReferenceEquals(unit.Triggers[0], trigger);
 
         internal static bool IsObservedFeedUpgrade(RoomCombatState room, CombatUnit unit, CardUpgradeModifier upgrade, string? kind) =>
             IsObservedInfestedFeedUpgrade(room, unit, upgrade, kind) || kind == "OnEaten" && IsFeedUpgrade(upgrade) && (

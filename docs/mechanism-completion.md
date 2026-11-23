@@ -424,6 +424,11 @@ Infested 的第一个结束回合通过完整回放，核对出生、首领控�
 新增 3 名和 2 名 Hivemind 持有者，物理站位、波次缓存和随机流一致。
 [原版后两轮出生](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/later-spawns.mt2f)
 
+Infested 完成原版整战验收。录制固定五次原版部署，连续核对 4 次结束回合、33 次楼层结算、
+8 次整车结算和 16 条独立分支，两类候选全部通过。终局由 Heavy 的攻击耗尽薪火。
+[后两轮楼层结算](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/later-combat.mt2f) ·
+[原版整战](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/native-battle.mt2f)
+
 `Run-FullBattleProbe.ps1 -OriginalLifemotherInfestedObservation` 从隔离的原版 BattleIntro
 采集待出生首领、施法控制器和同层死亡回调。该录制模式复用手牌界面测试随机流隔离，以便逐字段
 对照游戏规则引发的随机消耗。首轮抽牌后首领在索引 2 的楼层，下一动作是第 0 组第 0 个动作。

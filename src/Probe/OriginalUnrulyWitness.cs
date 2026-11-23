@@ -151,6 +151,26 @@ namespace MonsterTrain2Poju.Probe
             data.GetAttackDamage() == 40 && data.GetHealth() == 9000 && data.GetSize() == 5 &&
             data.GetStartingStatusEffects() is [{ statusId: "trample", count: 1 }];
 
+        internal static bool ReplaysInfestedOpening => LifemotherInfested &&
+            Environment.GetEnvironmentVariable("MT2_PROBE_LIFEMOTHER_INFESTED_WHOLE") == "1";
+
+        private static readonly int[] InfestedDeployment = [7, 6, 5, 4, 1];
+
+        internal static PlayCardAction? ChooseInfestedOpening(BattleTurnState battle)
+        {
+            if (battle.Spawn.Turn != 0) return null;
+            var deployed = battle.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .Where(unit => unit.Team == CombatTeam.Player && unit.SpawnerCardId > 0).Select(unit => unit.SpawnerCardId).ToHashSet();
+            if (deployed.SetEquals(InfestedDeployment)) return null;
+            if (deployed.Count >= InfestedDeployment.Length || !deployed.SetEquals(InfestedDeployment.Take(deployed.Count)))
+                throw new InvalidOperationException("The recorded original Infested deployment prefix changed.");
+            int card = InfestedDeployment[deployed.Count];
+            int floor = deployed.Count / 2;
+            return BattleActionModel.EnumerateSupportedPlays(battle, card).SingleOrDefault(action =>
+                action.RoomIndex == floor && action.PlayerPosition == 0 && action.TargetUnitId == 0)
+                ?? throw new InvalidOperationException("The recorded original Infested deployment is no longer playable.");
+        }
+
         internal static void ObserveFullBattle(SaveManager save)
         {
             if (FullBattleEvidence != null) return;

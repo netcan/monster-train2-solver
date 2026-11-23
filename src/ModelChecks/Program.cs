@@ -1,5 +1,16 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--native-lifemother-infested-later-combat")
+{
+    using var component = ModelJson.ReadFixture(args[1]);
+    LifemotherInfestedChecks.FirstCombat(component.RootElement, later: true);
+    return;
+}
+if (args.Length == 3 && args[0] == "--export-native-lifemother-infested-later-combat")
+{
+    LifemotherInfestedChecks.ExportFirstCombat(args[1], args[2], later: true);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-lifemother-infested-first-combat")
 {
     using var component = ModelJson.ReadFixture(args[1]);
@@ -143,6 +154,12 @@ if (args.Length == 2 && args[0] == "--lifemother-debuffs-only")
 if (args.Length == 3 && args[0] == "--export-lifemother-infested-component")
 {
     LifemotherInfestedChecks.Export(args[1], args[2]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--native-lifemother-infested-terminal-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    LifemotherInfestedTerminalChecks.Native(fixture.RootElement);
     return;
 }
 if (args.Length == 2 && args[0] == "--native-lifemother-infested-only")
