@@ -21,6 +21,8 @@ namespace MonsterTrain2Poju.Probe
         private const string Champion = "19705414-816d-4549-bcf5-866f338a551f";
         private const string Avenger = "69fcbe85-a5b7-4a83-bf6d-21888604d99e";
         private static readonly List<Application> Applications = new();
+        private static readonly List<Application> PreviewTransfers = new();
+        internal static object MixedTransfers => PreviewTransfers.ToArray();
         internal static bool Enabled => OriginalUnrulyWitness.FullBattle &&
             Environment.GetEnvironmentVariable("MT2_PROBE_UNRULY_VARIANT") == Variant;
         internal static bool WholeBattle => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_LIFEMOTHER_DEBUFFS_BATTLE") == "1";
@@ -96,16 +98,19 @@ namespace MonsterTrain2Poju.Probe
 
             private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
             {
-                if (FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode &&
+                if (FullBattleTrace.Active == null) return;
+                bool preview = AllGameManagers.Instance!.GetSaveManager().PreviewMode;
+                if ((!preview || UnsupportedBranchObservation.ObserveLifemotherMixedTransfer) &&
                     cardEffectParams.selfTarget?.GetSourceCharacterData().GetAssetKey() == Boss &&
                     cardEffectParams.sourceCharacterTriggerState?.GetTrigger() is { } kind &&
+                    (!preview || kind == CharacterTriggerData.Trigger.OnAnyMonsterDeathOnFloor) &&
                     OuterBossPhaseProbe.LifemotherDebuffsEffect(cardEffectState.GetSourceCardEffectData(), kind))
-                    __result = Observe(__result, cardEffectState, cardEffectParams, kind);
+                    __result = Observe(__result, cardEffectState, cardEffectParams, kind, preview);
             }
         }
 
         private static IEnumerator Observe(IEnumerator native, CardEffectState effect, CardEffectParams parameters,
-            CharacterTriggerData.Trigger kind)
+            CharacterTriggerData.Trigger kind, bool preview)
         {
             FullBattleTrace trace = FullBattleTrace.Active!;
             AllGameManagers managers = AllGameManagers.Instance!;
@@ -117,7 +122,8 @@ namespace MonsterTrain2Poju.Probe
             var friendly = new List<CharacterState>();
             room.AddCharactersToList(friendly, Team.Type.Monsters);
             CharacterState[] roster = friendly.ToArray();
-            Frame Capture() => new(trace.Capture(room), trace.CaptureUnit(boss), targets.Select(unit => trace.CaptureUnit(unit)).ToArray(),
+            Frame Capture() => new(trace.Capture(room, captureContext: !preview, observe: !preview),
+                trace.CaptureUnit(boss), targets.Select(unit => trace.CaptureUnit(unit)).ToArray(),
                 roster.Select(unit => trace.CaptureUnit(unit)).ToArray(),
                 RngCalibration.Words(RandomManager.GetState(RngId.Battle)), RngCalibration.Words(RandomManager.GetState(RngId.BattleTest)));
             int sequence = trace.NextPhaseSequence();
@@ -136,7 +142,7 @@ namespace MonsterTrain2Poju.Probe
                     (receiver.Status("malaise")?.Stacks ?? 0) - delta)
                     positive = true;
             }
-            Applications.Add(new Application(sequence, managers.GetCombatManager().GetTurnCount(), kind.ToString(),
+            (preview ? PreviewTransfers : Applications).Add(new Application(sequence, managers.GetCombatManager().GetTurnCount(), kind.ToString(),
                 sourceRoom?.GetRoomIndex() ?? -1, parameters.selectedRoom, UnitTriggerActionProbe.Capture(effect)!, before, actual, positive));
         }
     }

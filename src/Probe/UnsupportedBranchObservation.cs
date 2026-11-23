@@ -19,6 +19,8 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static bool Enabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_UNSUPPORTED_BRANCH"));
         internal static bool Completed { get; private set; }
+        internal static bool UseDevelopmentCapture => Enabled && OriginalLifemotherDebuffsWitness.WholeBattle;
+        internal static bool ObserveLifemotherMixedTransfer => UseDevelopmentCapture && waiting && rows.Last().Boundary;
         private static FixtureValue request;
         private static FixtureValue[]? prefix;
         internal static bool ObserveTriggeredCorruption => prefix != null && request.GetProperty("Reason").GetString() ==
@@ -110,6 +112,18 @@ namespace MonsterTrain2Poju.Probe
             NativeBranchIdentity.RequireModule(request, typeof(CardState).Module.ModuleVersionId);
             prefix = request.GetProperty("Prefix").EnumerateArray().ToArray();
             Require(prefix.Length <= 256, "Unsupported branch prefix exceeds the input bound.");
+            if (UseDevelopmentCapture)
+            {
+                PlayCardAction? action = Read<PlayCardAction?>(request.GetProperty("Action"));
+                Require(prefix.Length == 10 && !request.GetProperty("IsEndTurn").GetBoolean() &&
+                    request.GetProperty("SourceSHA256").GetString() == "02fd04bd37210d6e3bc947b13377d97015394bd39747612b27324b183ee164e9" &&
+                    action is { CardInstanceId: 31, RoomIndex: 2, PlayerPosition: -1, ActivatorUnitId: 0, ActivatorRoomIndex: null,
+                        TargetSpawnPointIndex: -1, RecursionSelections.Count: 0, MixSelections.Count: 0 } &&
+                    (action.TargetUnitId, request.GetProperty("Reason").GetString()) is
+                        (3, "Battle preview floor 2: Lifemother death transfer requires observed Malaise-only status effects.") or
+                        (14, "Battle preview floor 2: Lifemother death transfer requires an observed ordered debuff set."),
+                    "Expected the original frozen Lifemother Torch alternative.");
+            }
             expected = Read<BattleTurnState>(request.GetProperty("Root"));
             Require(expected.Spawn.Turn == 0, "Branch observation must start at native deployment.");
         }
@@ -181,6 +195,7 @@ namespace MonsterTrain2Poju.Probe
                 TroopTargetability = TroopTargetabilityProbe.Records.ToArray(),
                 IdentityCorrespondence = identityCorrespondence,
                 TriggeredCorruption = TriggeredCorruptionProbe.Records.ToArray(),
+                LifemotherMixedTransfers = UseDevelopmentCapture ? OriginalLifemotherDebuffsWitness.MixedTransfers : null,
                 RoomPreCombatRecords = RoomPreCombatProbe.Records.ToArray(),
                 CorruptRestrictedState = CorruptRestrictedStateCalibration.Evidence,
                 BattleTestRng = BattleTestRngProbe.Records.ToArray(),
@@ -351,7 +366,7 @@ namespace MonsterTrain2Poju.Probe
             if (predicted != null) expected = predicted;
             waiting = true; readyFrame = -1;
             log.LogInfo("UNSUPPORTED-BRANCH-INPUT index=" + rows.Count + " boundary=" + boundary + " reason=" + reason);
-            return PlayerAdvisorProbe.NativeAction(action);
+            return UseDevelopmentCapture ? action : PlayerAdvisorProbe.NativeAction(action);
         }
 
         private static T Read<T>(FixtureValue value) => PlannerReplayScenario.Read<T>(value);

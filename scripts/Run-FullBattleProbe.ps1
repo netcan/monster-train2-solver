@@ -1403,9 +1403,13 @@ if ($ObserveRedCrownEquipment -and -not $UnsupportedBranchInput) { throw 'Observ
 if ($UnsupportedBranchSource -and (-not $UnsupportedBranchInput -or -not $OriginalTrueFinalBoss)) {
     throw 'UnsupportedBranchSource requires UnsupportedBranchInput and OriginalTrueFinalBoss.'
 }
+$lifemotherBranchObservation = $UnsupportedBranchInput -and $OriginalLifemotherDebuffs -and $LifemotherDebuffsWholeBattle
 if ($UnsupportedBranchInput) {
     $allowed = @('UnsupportedBranchInput', 'ObserveRedCrownEquipment', 'InputProfile', 'BattleDistance', 'OuterBossTurns', 'OuterBossBirth', 'PhysicalSpawnPoints',
         'BranchCardMasks', 'SettleDeathDissolves', 'SettleCardAnimations', 'GameSpeed', 'TimeoutSeconds', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction')
+    if ($lifemotherBranchObservation) {
+        $allowed += @('OriginalLifemotherDebuffs', 'LifemotherDebuffsWholeBattle', 'BinaryCapture')
+    }
     if ($OriginalTrueFinalBoss) {
         $allowed = @($allowed | Where-Object { $_ -notin @('InputProfile', 'OuterBossBirth', 'ObserveRedCrownEquipment') }) +
             @('OriginalTrueFinalBoss', 'UnsupportedBranchSource', 'Seed', 'BinaryCapture')
@@ -1417,7 +1421,9 @@ if ($UnsupportedBranchInput) {
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'UnsupportedBranchInput observes an original checkpoint without scenario controls.' }
     if ($RollingInput -or $Planner -or (-not $OriginalTrueFinalBoss -and -not $InputProfile)) { throw 'UnsupportedBranchInput requires an immutable native InputProfile and its own observation mode.' }
     $UnsupportedBranchInput = (Resolve-Path -LiteralPath $UnsupportedBranchInput).Path
-    $RollingAdvice = $true; $PlayerAdvisor = $true
+    if (-not $lifemotherBranchObservation) {
+        $RollingAdvice = $true; $PlayerAdvisor = $true
+    }
 }
 if ($RollingInput -and -not $RollingAdvice) { throw 'RollingInput requires RollingAdvice.' }
 if ($PreserveRollingPrefixOnTimeout -and (-not $PlayerAdvisor -or -not $RollingAdvice -or -not $BinaryCapture -or $UnsupportedBranchInput)) {
@@ -1953,6 +1959,7 @@ if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
     $unrulyArguments = @($unrulyMode, 'InputProfile', 'BattleDistance', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'OriginalUnrulyVariant')
     if ($OriginalLifemotherDebuffs) { $unrulyArguments += 'LifemotherDebuffsWholeBattle' }
+    if ($lifemotherBranchObservation) { $unrulyArguments += 'UnsupportedBranchInput' }
     if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne $soulSaviorDistance -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $unrulyArguments }).Count) {
         throw 'Original Soul Savior battle requires an isolated matching BattleIntro and binary capture.'
@@ -4183,7 +4190,7 @@ if ($earlyTrialSubstitution) {
         return
     }
 }
-if ($OriginalLifemotherDebuffs) {
+if ($OriginalLifemotherDebuffs -and -not $lifemotherBranchObservation) {
     $capturePath = Join-Path $profile 'lifemother-debuffs.mt2f'
     if ((-not $LifemotherDebuffsWholeBattle -and ($process.ExitCode -ne 0 -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Lifemother Debuffs component' -Quiet))) -or
@@ -4596,13 +4603,19 @@ if ($UnsupportedBranchInput) {
     $componentPath = Join-Path $profile 'unsupported-branch-native.mt2f'
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath) -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'UNSUPPORTED-BRANCH-NATIVE PASS' -Quiet) -or
-        (Get-OriginalSignature) -cne $originalBefore) { throw "Native candidate observation failed; inspect $unityLog" }
+        (Get-OriginalSignature) -cne $originalBefore -or
+        ($lifemotherBranchObservation -and (Get-OriginalSignature $checkpoint) -cne $unrulyInputSignature)) {
+        throw "Native candidate observation failed; inspect $unityLog"
+    }
     $branchDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($componentPath)
     try {
         $branchResult = $branchDocument.RootElement
         if ([MonsterTrain2Poju.Fixtures.NativeBranchIdentity]::ObservationModule($branchResult) -ne $nativeModule -or
             -not $branchResult.GetProperty('Request').ContentEquals($branchRequest)) {
             throw "Native candidate observation changed its input request or module; inspect $unityLog"
+        }
+        if ($lifemotherBranchObservation -and $branchResult.GetProperty('LifemotherMixedTransfers').GetArrayLength() -ne 2) {
+            throw "Native Lifemother candidate omitted the two original preview transfers; inspect $unityLog"
         }
         if ($ObserveRedCrownEquipment) {
             $redCrown = $branchResult.GetProperty('RedCrownEquipment')

@@ -3693,6 +3693,29 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             if (PlannerReplayScenario.WaitingForWorker || RollingAdviceScenario.WaitingForWorker) return;
+#if DEVELOPMENT_PROBE
+            if (UnsupportedBranchObservation.UseDevelopmentCapture)
+            {
+                if (UnsupportedBranchObservation.AwaitingSettlement()) return;
+                BattleTurnState root = FullBattleTrace.Active!.CaptureDecision();
+                UnsupportedBranchObservation.Observe(root);
+                if (UnsupportedBranchObservation.Completed)
+                {
+                    log.LogInfo("UNSUPPORTED-BRANCH-NATIVE PASS observed original Lifemother candidate.");
+                    Finish(true, "Native candidate observation captured; not a complete battle.");
+                    return;
+                }
+                pendingPlay = UnsupportedBranchObservation.Choose(root, log, out var replayChoices);
+                if (pendingPlay == null) AdvanceTurn(combat, replayEndTurn: true, replayChoices);
+                else if (managers.GetRoomManager().GetSelectedRoom() != pendingPlay.RoomIndex)
+                {
+                    save.StartCoroutine(managers.GetRoomManager().GetRoomUI().SetSelectedRoom(pendingPlay.RoomIndex));
+                    Enter(Stage.SelectingRoom, 20f);
+                }
+                else PlayPendingPolicyCard(managers, cards!);
+                return;
+            }
+#endif
             if (RollingAdviceScenario.Enabled)
             {
                 if (RelentlessBattleScenario.Prepared) RelentlessBattleScenario.ObserveTurn(combat.GetTurnCount());
@@ -4631,6 +4654,15 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("The native game rejected a modeled legal play: " + error);
             }
             int selectedAfterTest = managers.GetRoomManager()!.GetSelectedRoom();
+#if DEVELOPMENT_PROBE
+            if (UnsupportedBranchObservation.ObserveLifemotherMixedTransfer && drop != null)
+            {
+                CardState card = cards.GetHand()[index];
+                CombatManager combat = managers.GetCombatManager();
+                combat.PreviewCardPlay(true, card, room, null, drop, null, null);
+                combat.PreviewCardPlay(false, card, room, null, drop, null, null);
+            }
+#endif
             FullBattleTrace.Active!.BeginCardPlay(action, scenarioAction: scenarioPrelude);
             int selectedAfterCapture = managers.GetRoomManager()!.GetSelectedRoom();
 #if DEVELOPMENT_PROBE

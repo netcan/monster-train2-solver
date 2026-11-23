@@ -2,7 +2,11 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using MonsterTrain2Poju.Fixtures;
 
-if (args.Length == 3 && args[0] == "extract-rolling-action-mismatch")
+if (args.Length == 4 && args[0] == "extract-lifemother-mixed")
+{
+    LifemotherMixedRequest.Extract(args[1], args[2], int.Parse(args[3]));
+}
+else if (args.Length == 3 && args[0] == "extract-rolling-action-mismatch")
 {
     RollingActionMismatchRequest.Extract(args[1], args[2]);
 }
@@ -338,6 +342,7 @@ else
     Console.Error.WriteLine("Diagnostics: extract-simple-policy-unsupported <native.mt2f> <new-output.mt2f>");
     Console.Error.WriteLine("Diagnostics: extract-unsupported-branch <recorded.mt2f> <new-output.mt2f> <exact-rejection-reason>");
     Console.Error.WriteLine("Diagnostics: extract-unsupported-from <recorded.mt2f> <new-output.mt2f> <exact-rejection-reason> <first-decision-index> [card-instance-id]; retain the complete original prefix.");
+    Console.Error.WriteLine("Diagnostics: extract-lifemother-mixed <recorded.mt2f> <new-output.mt2f> <target-id:3|14>; verify the pinned native source before exporting the paid Torch alternative.");
     Console.Error.WriteLine("Diagnostics: explore-unsupported-from <recorded.mt2f> <new-output.mt2f> <exact-rejection-reason> <first-decision-index> <depth:1..8>; explore up to 2000 model states after the recorded prefix.");
     Console.Error.WriteLine("Diagnostics: observe-partial-mismatch <partial-native.mt2f> <new-request.mt2f>; validate the matched prefix and independently observe the mismatching input.");
     Console.Error.WriteLine("Diagnostics: refresh-native-prefix <old-request.mt2f> <native-observation.mt2f> <new-request.mt2f>; verify the native prefix before rebuilding the protected target.");
