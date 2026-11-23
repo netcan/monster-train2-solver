@@ -24,6 +24,7 @@ namespace MonsterTrain2Poju.Probe
             "DutifulAscendDescend" => "SoulSavior_R1_BossBattle_DutifulChild_AscendDescend",
             "IndulgentTitanskin" => "SoulSavior_R2_BossBattle_FavoredChild_3",
             "LifemotherReanimate" => "SoulSavior_R5_BossBattle_Lifemother_Reanimate",
+            OriginalLifemotherDebuffsWitness.Variant => OriginalLifemotherDebuffsWitness.Scenario,
             _ => "SoulSavior_R3_BossBattle_DuplicateEnemy"
         };
         private static string BossKey => Variant switch
@@ -35,6 +36,7 @@ namespace MonsterTrain2Poju.Probe
             "DutifulAscendDescend" => OuterBossDefinitions.DutifulAscendDescend,
             "IndulgentTitanskin" => OuterBossDefinitions.IndulgentTitanskin,
             "LifemotherReanimate" => OuterBossDefinitions.LifemotherReanimate,
+            OriginalLifemotherDebuffsWitness.Variant => OriginalLifemotherDebuffsWitness.Boss,
             _ => TriggeredSummonModel.UnrulyBoss
         };
         private const string DecoyKey = "R3_Horde_T1_Decoy";
@@ -73,7 +75,8 @@ namespace MonsterTrain2Poju.Probe
             if (save.GetAllGameData().FindScenarioDataByName(ScenarioKey) is not ScenarioData scenario ||
                 scenario.GetOuterTrainBoss(false)?.GetAssetKey() != BossKey ||
                 scenario.GetOuterTrainBoss(true)?.GetAssetKey() != BossKey ||
-                FullBattle && !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false)) ||
+                (OriginalLifemotherDebuffsWitness.Enabled ? !OriginalLifemotherDebuffsWitness.Supports(scenario) :
+                    FullBattle && !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false))) ||
                 LifemotherReanimate && (scenario.GetID() != "1199a33a-0049-4084-a2b3-752740e202ca" ||
                     !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(true))) ||
                 IndulgentTitanskin && (scenario.GetEnemyRelicData() is not [var owner] ||

@@ -202,6 +202,12 @@ namespace MonsterTrain2Poju.Probe
                 try
                 {
 #if DEVELOPMENT_PROBE
+                    if (OriginalLifemotherDebuffsWitness.Enabled)
+                    {
+                        OriginalLifemotherDebuffsWitness.Write();
+                        Finish(OriginalLifemotherDebuffsWitness.Complete, "Original Lifemother Debuffs component reached terminal.");
+                        return;
+                    }
                     if (UnsupportedBranchObservation.Enabled)
                     {
                         UnsupportedBranchObservation.Observe(PlayerAdvisorProbe.Terminal);
@@ -1219,6 +1225,12 @@ namespace MonsterTrain2Poju.Probe
                     Finish(true, "Original source-backed feeding captured.");
                     return;
                 }
+            }
+            if (fullBattle && OriginalLifemotherDebuffsWitness.Enabled && OriginalLifemotherDebuffsWitness.Complete)
+            {
+                OriginalLifemotherDebuffsWitness.Write();
+                Finish(true, "Original Lifemother Debuffs component captured.");
+                return;
             }
             if (fullBattle && OriginalUnrulyWitness.FullBattle)
                 OriginalUnrulyWitness.ObserveFullBattle(save);
@@ -4304,6 +4316,10 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = ChosenIncantSpellScenario.Choose(decision) ?? pendingPlay;
                 if (AngelDuoIncantScenario.Enabled)
                     pendingPlay = AngelDuoIncantScenario.Choose(decision) ?? pendingPlay;
+#if DEVELOPMENT_PROBE
+                if (OriginalLifemotherDebuffsWitness.Enabled)
+                    pendingPlay = OriginalLifemotherDebuffsWitness.Choose(decision);
+#endif
                 if (PlannerReplayScenario.TryChoose(decision, log, out PlayCardAction? planned, out var choices))
                 {
                     pendingPlay = planned;
