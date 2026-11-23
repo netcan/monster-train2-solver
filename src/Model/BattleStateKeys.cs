@@ -150,15 +150,17 @@ namespace MonsterTrain2Poju.Model
                     characters = next;
                 }
                 data.CopyTo(0, characters, 0, data.Length);
-                int length = Encoding.UTF8.GetByteCount(characters, 0, data.Length);
-                if (encoded == null || encoded.Length < length)
+                int capacity = Encoding.UTF8.GetMaxByteCount(data.Length);
+                if (encoded == null || encoded.Length < capacity)
                 {
-                    byte[] next = ArrayPool<byte>.Shared.Rent(length);
+                    byte[] next = ArrayPool<byte>.Shared.Rent(capacity);
                     if (encoded != null) ArrayPool<byte>.Shared.Return(encoded);
                     encoded = next;
                 }
-                Encoding.UTF8.GetBytes(characters, 0, data.Length, encoded, 0);
-                byte[] digest = hash.ComputeHash(encoded, 0, length);
+                int length = Encoding.UTF8.GetBytes(characters, 0, data.Length, encoded, 0);
+                Span<byte> digest = stackalloc byte[32];
+                if (!hash.TryComputeHash(encoded.AsSpan(0, length), digest, out int written) || written != digest.Length)
+                    throw new CryptographicException("Could not compute a SHA-256 state key.");
                 const string alphabet = "0123456789ABCDEF";
                 for (int index = 0; index < digest.Length; index++)
                 { hex[index * 2] = alphabet[digest[index] >> 4]; hex[index * 2 + 1] = alphabet[digest[index] & 15]; }

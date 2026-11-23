@@ -619,3 +619,9 @@ Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时
 以 37 点薪火结算。首次搜索耗时 3.31 秒，端到端 3.96 秒。40 个原版输入及随机流
 通过独立复放，其中 35 个来自固定前缀，随后五步来自顾问。
 [原版复放归档](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring3-endgame-three-second.mt2f)
+
+状态键编码复用 UTF-8 缓冲区，并直接写入 SHA-256 摘要。以相同第 7 环快照做七组交替离线对照，
+20 次计算新状态键的中位时间从 466.6 毫秒降至 308.8 毫秒，中位托管分配从 87.6 MB 降至
+74.2 MB。三种状态键模式均与独立编码器一致。2.3.1 Windows 原版随后执行双线程顾问的
+28 步胜局，21 次出牌、7 次结束回合及两类候选检查均通过。
+[原版归档](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-state-key-buffered-advisor.mt2f)
