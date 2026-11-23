@@ -1208,8 +1208,7 @@ namespace MonsterTrain2Poju.Model
                     HivemindTurnUpgrade.IsInfestedCombatOwner(state, unit))) &&
                 !(infestedDrawTurn > 0 && state.Units.Any(unit => HivemindTurnUpgrade.Marker(unit) == item &&
                     HivemindTurnUpgrade.IsInfestedDrawOwner(unit, infestedDrawTurn, afterRemoval: false, state.Context)))).ToArray();
-            if (interactions.Length > 0)
-                return string.Join("; ", interactions);
+            if (interactions.Length > 0) return string.Join("; ", interactions);
             foreach (CardInstanceState instance in state.Context?.CardInstances ?? Array.Empty<CardInstanceState>())
             {
                 string? unsupported = CardModifierModel.UnsupportedReason(instance);
@@ -3869,6 +3868,7 @@ namespace MonsterTrain2Poju.Model
             {
                 if (target.DeathFinished) return;
                 if (target.Source.Status(HivemindTurnUpgrade.StatusId) != null &&
+                    !HivemindTurnUpgrade.IsObservedInfestedHordeDeath(source, target.Source, sourceCardId) &&
                     !HivemindTurnUpgrade.IsObservedThirdFeedDeath(source, target.Source.Id, actor?.Source.Id) &&
                     !HivemindTurnUpgrade.IsObservedPyreHunterDeath(source, target.Source.Id, actor?.Source.IsPyre == true))
                 {
@@ -6476,7 +6476,8 @@ namespace MonsterTrain2Poju.Model
                         (source.RoomIndex == 2 &&
                             OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(actor.Source, actor.Source.Triggers[0], source.Context) ||
                          HivemindTurnUpgrade.HasObservedLaterInfestedDeathGrant(source, actor.Source, actor.Source.Triggers[0])) &&
-                        ReferenceEquals(actor.Source.Triggers[0].Effects[0], effect);
+                        ReferenceEquals(actor.Source.Triggers[0].Effects[0], effect) ||
+                        triggerKind == "OnDeath" && HivemindTurnUpgrade.IsObservedInfestedHordeGrant(source, actor.Freeze(), effect);
                     RoomCombatResult applied = TriggeredStatusModel.Apply(RetainedStatusRoom(actor, roster), actor.Source.Id,
                         effect, targets.UnitIds, isFromHiddenTrigger: hiddenTrigger, damageActorId: damageActorId,
                         observedInfestedDeathGrant: observedInfestedDeathGrant);
@@ -7059,7 +7060,7 @@ namespace MonsterTrain2Poju.Model
                     else if (!source.Preview && card.PlayedRoomUnitIds.Any(removedIds.Contains))
                         context = context!.WithCard(card.WithPlayedRoomUnits(card.PlayedRoomUnitIds.Where(id => !removedIds.Contains(id)).ToArray()));
                 }
-                RoomCombatState physical = PhysicalRoom();
+                RoomCombatState physical = HivemindTurnUpgrade.PublishInfestedHordeMarkers(PhysicalRoom());
                 if (HivemindTurnUpgrade.PublishesAtCombat(source))
                     physical = HivemindTurnUpgrade.PublishRoomMarkers(physical);
                 if (!source.Preview && source.RoomIndex == 2)

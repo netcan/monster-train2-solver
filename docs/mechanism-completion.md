@@ -431,12 +431,18 @@ Infested 完成原版整战验收。录制固定五次原版部署，连续核�
 
 另一条原版路线加入 Sacrificial Chamber。实际战斗中两次死亡回调各发放 10 金币，首领受伤后
 继续保有 Hivemind，第三回合从 6 层增至 12 层。8 次出牌、4 次结束回合、34 次楼层结算
-和结束回合候选均通过。录制决策点的出牌候选仍在补齐。
+与两类候选均通过。
 [Sacrificial Chamber 整战](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/sacrificial-chamber-battle.mt2f)
 
 另一条出牌分支在相同六步前置之后，把 Sacrificial Chamber 放到首领所在层。原版的两个首领
 触发器继续存在，房间为首领添加一个 10 金币的死亡触发，完整后继及随机流均通过检查。
 [首领层的房间放置分支](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/chamber-floor2-branch.mt2f)
+
+Fanning the Flame 和 Slam 分别击杀一名 Hivemind Horde。两场原版观测中，同层四名敌人都
+增加 1 层，原持有者保留旧攻击加成，两位新持有者登记 +0 攻击。法术额外消耗一次 Battle
+和两次 BattleTest，技能的两条随机流保持原值。两条分支均复放完整前置和后继。
+[法术分支](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/horde-fanning-branch.mt2f) ·
+[技能分支](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/horde-ability-branch.mt2f)
 
 `Run-FullBattleProbe.ps1 -OriginalLifemotherInfestedObservation` 从隔离的原版 BattleIntro
 采集待出生首领、施法控制器和同层死亡回调。该录制模式复用手牌界面测试随机流隔离，以便逐字段

@@ -702,3 +702,7 @@ Infested 追加一条 Sacrificial Chamber 原版路线，定向核对 8 次出�
 
 固定的八场求解验收全部通过。每场都核对原版整战、16 条独立分支和出牌候选，单线程与并行
 搜索给出一致的计划和回放结果。 [求解阶段报告](../results/solver-stage-20261124-051423-0278b02c/report.tsv)
+
+随后只复验两条 Infested 整战。13 次出牌、8 次结束回合和每个决策点的两类候选均匹配，
+另有两条实际执行的 Horde 击杀分支核对状态回调与随机流。
+[定向复验报告](../results/recorded-chain-triage-20261124-054415-9c58f9da/report.tsv)

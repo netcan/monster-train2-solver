@@ -14,6 +14,8 @@ namespace MonsterTrain2Poju.Model
         private const string Zealot = "R2_Attacker_Zealot_Ver2";
         private const string HeavyT2 = "R2_Heavy_HealGorge_T2";
         private const string DeathHorde = "RAny_Horde_T1_DeathAddsHivemind_Ver2";
+        private const string FanningTheFlame = "3f974014-72f2-407e-a8c1-28ba5b273cfa";
+        private const string SlamAbility = "3366ff9e-1beb-4246-a025-c448b47dacae";
         private const string FeedUpgrade = "661fb64c-20d2-484c-8c30-309931b8148c";
         private const string FeedBuffUpgrade = "25bad7b2-5fc2-4f03-b735-39b1551275de";
 
@@ -70,7 +72,9 @@ namespace MonsterTrain2Poju.Model
         internal static bool IsInfestedOpeningPreviewOwner(CombatUnit unit, CombatContext? context)
         {
             unit = RoomAttachmentUnitModel.OriginalIdentityWithoutSacrificialChamber(unit, context);
-            return unit.Status(StatusId) is CombatStatus status && IsOriginalStatus(unit, status) &&
+            return unit.Status(StatusId) is CombatStatus status &&
+                (IsOriginalStatus(unit, status) || status.Stacks == 2 && HasObservedHordeInput(context) &&
+                    IsOriginalStatus(unit, status.WithStacks(1))) &&
                 unit.Modifiers!.Upgrades is [var upgrade] && IsAttackUpgrade(upgrade, 3) &&
                 IsInfestedOpeningUnit(unit, upgrade.Stats.Damage);
         }
@@ -81,7 +85,9 @@ namespace MonsterTrain2Poju.Model
             OuterBossDefinitions.HasLifemotherInfestedOwner(room.Context) &&
             (room.Units.Count(unit => unit.AssetKey == DeathHorde && IsInfestedOpeningPreviewOwner(unit, room.Context)) == 2 &&
                 room.Units.Count(unit => IsInfestedPreviewFeedRecipient(unit, room.Context)) == 1 ||
-             room.Units is [var retained] && IsInfestedPreviewFeedRecipient(retained, room.Context));
+             room.Units is [var retained] && IsInfestedPreviewFeedRecipient(retained, room.Context) ||
+             IsInfestedHordeGrantState(room) ||
+             HasObservedHordeInput(room.Context) && room.Units is [var recipient] && IsObservedHordeRecipient(recipient, room.Context));
 
         private static bool IsInfestedStatusUpgrade(CardUpgradeModifier upgrade) =>
             upgrade is { DataId: "2ffda46d-a18b-4659-a709-0c758a688337", AssetKey: "R2_Support_FeedTitanskinUpgrade_T2",
@@ -94,13 +100,15 @@ namespace MonsterTrain2Poju.Model
             unit = RoomAttachmentUnitModel.OriginalIdentityWithoutSacrificialChamber(unit, context);
             return unit.AssetKey == HeavyT2 && unit.Status(StatusId) is { Stacks: var stacks } && IsInfestedOpeningUnit(unit, 3) &&
                 unit.Team == CombatTeam.Enemy && unit.SpawnerCardId == 0 && unit.Health > 0 && unit.IsBoss != true &&
-                unit.Modifiers is { IsClone: false } modifiers && (stacks == 1 && modifiers.Upgrades is [var opening] &&
-                    IsAttackUpgrade(opening, 3) || stacks == 7 && modifiers.Upgrades is [var active, var feeding] &&
+                unit.Modifiers is { IsClone: false } modifiers && ((stacks == 1 || stacks == 2 && HasObservedHordeInput(context)) &&
+                    modifiers.Upgrades is [var opening] && IsAttackUpgrade(opening, 3) ||
+                    (stacks == 7 || stacks == 8 && HasObservedHordeInput(context)) && modifiers.Upgrades is [var active, var feeding] &&
                     IsAttackUpgrade(active, 3) && IsInfestedStatusUpgrade(feeding));
         }
 
         internal static bool IsInfestedWaveCombatOwner(CombatUnit unit, CombatContext? context) =>
-            IsInfestedOpeningPreviewOwner(unit, context) || IsInfestedPreviewFeedRecipient(unit, context);
+            IsInfestedOpeningPreviewOwner(unit, context) || IsInfestedPreviewFeedRecipient(unit, context) ||
+            HasObservedHordeInput(context) && IsObservedHordeRecipient(unit, context);
 
         private static bool IsOpeningDeathGrant(CombatTrigger trigger) =>
             trigger is { Kind: "OnDeath", Once: false, IgnoreSilence: false, FireCount: 1, TriggerAtThreshold: 0,
@@ -110,6 +118,55 @@ namespace MonsterTrain2Poju.Model
         internal static bool HasDormantOpeningDeathGrant(CombatUnit unit, CombatTrigger trigger) =>
             unit.AssetKey == DeathHorde && IsOpeningDeathGrant(trigger) &&
             unit.Status(StatusId) is CombatStatus status && IsInfestedOpeningOwner(unit, status);
+
+        internal static bool IsObservedInfestedHordeDeath(RoomCombatState room, CombatUnit unit, int sourceCardId) =>
+            sourceCardId > 0 && !room.Preview && IsInfestedOpeningCombat(room) &&
+            room.Context?.FindCard(sourceCardId)?.DataId is FanningTheFlame or SlamAbility &&
+            unit.AssetKey == DeathHorde && IsInfestedOpeningPreviewOwner(unit, room.Context);
+
+        internal static bool IsObservedInfestedHordeGrant(RoomCombatState room, CombatUnit unit, CombatEffect effect) =>
+            IsInfestedHordeGrantFrame(room) && unit is { AssetKey: DeathHorde, Health: 0, BaseAttack: 5 } &&
+            unit.Status(StatusId)?.Stacks == 1 && unit.Triggers is [var trigger] &&
+            IsOpeningDeathGrant(trigger) && ReferenceEquals(trigger.Effects[0], effect);
+
+        private static bool IsInfestedHordeGrantFrame(RoomCombatState room) =>
+            room.RoomIndex == 0 && room.Context?.QueryFrame is { Turn: 1, MoonPhase: 2, MoonPhaseTrackingActive: false } &&
+            OuterBossDefinitions.HasLifemotherInfestedOwner(room.Context);
+
+        private static bool HasObservedHordeInput(CombatContext? context) =>
+            context?.Statistics?.HandCardsPlayedThisTurn?.Any(id => context.FindCard(id)?.DataId == FanningTheFlame) == true ||
+            context?.LastAbilityActivatorUnitId is int id && id > 0 && context.Enchantments?.Rooms
+                .Any(room => room.Units.Any(unit => unit.Id == id && unit.Ability?.DataId == SlamAbility)) == true;
+
+        private static bool IsInfestedHordeGrantState(RoomCombatState room) => HasObservedHordeInput(room.Context) &&
+            room.Units.Count(unit => unit.AssetKey == DeathHorde && IsInfestedWaveCombatOwner(unit, room.Context)) == 1 &&
+            room.Units.Count(unit => unit.AssetKey == HeavyT2 && IsInfestedWaveCombatOwner(unit, room.Context)) == 1 &&
+            room.Units.Count(unit => IsObservedHordeRecipient(unit, room.Context)) == 2;
+
+        private static bool IsObservedHordeRecipient(CombatUnit unit, CombatContext? context) =>
+            unit is { Team: CombatTeam.Enemy, AssetKey: "R2_Support_FeedInfested_T2" or "R2_Support_FeedBuffs_Ver2", BaseAttack: 0,
+                Health: > 0, SpawnerCardId: 0, Modifiers.IsClone: false } &&
+            (unit.RegisteredStatus(StatusId) == null && unit.Modifiers.Upgrades.Count == 0 ||
+             HasObservedHordeInput(context) && unit.Status(StatusId) is { Stacks: 1, ParamInt: 1 } &&
+             (unit.Modifiers.Upgrades.Count == 0 ||
+              unit.Modifiers.Upgrades is [var upgrade] && IsAttackUpgrade(upgrade, 0)));
+
+        internal static CombatContext ObserveInfestedRandomCastTests(TrainCombatState train, RoomCombatState room,
+            CombatContext context, CardPlayRule rule)
+        {
+            if (room.Preview || !IsInfestedHordeGrantFrame(room) || !IsInfestedOpeningCombat(room) ||
+                rule.DataId != FanningTheFlame ||
+                rule.Effects is not [{ Type: "Damage", Target: "RandomInRoom", Value: 3, AllowEnemy: true,
+                    AllowPlayer: false, Range: null } effect] || effect.Tests?.ShouldTest == false ||
+                context.Enchantments is not { AutomaticLifecycle: true } world)
+                return context;
+            CardTargets targets = CardTargetModel.RandomCandidates(train, room.RoomIndex, effect);
+            if (!targets.Supported || targets.UnitIds.Count != 5) return context;
+            // The paid cast preflight and runtime effect test each select from the same captured room.
+            // Their selections affect only test RNG. The committed target still comes from Battle RNG.
+            UnityRng test = world.TestRng.Range(0, targets.UnitIds.Count).State;
+            return context.WithEnchantments(world.WithTestRng(test.Range(0, targets.UnitIds.Count).State));
+        }
 
         internal static bool IsFirstCombat(RoomCombatState room) =>
             room.Context?.QueryFrame?.Turn == 1 &&
@@ -354,6 +411,17 @@ namespace MonsterTrain2Poju.Model
             string[] markers = room.ExternalInteractions.Append(Marker(owner)).Distinct().OrderBy(marker => marker, StringComparer.Ordinal).ToArray();
             return new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, markers, room.Context, room.Preview,
                 room.ActiveCompanionBossIds);
+        }
+
+        internal static RoomCombatState PublishInfestedHordeMarkers(RoomCombatState room)
+        {
+            if (room.Preview || !IsInfestedHordeGrantFrame(room) || !IsInfestedHordeGrantState(room)) return room;
+            string[] markers = room.ExternalInteractions.Concat(room.Units.Where(unit =>
+                IsObservedHordeRecipient(unit, room.Context) && unit.Modifiers?.Upgrades is [var upgrade] &&
+                IsAttackUpgrade(upgrade, 0)).Select(Marker)).Distinct().OrderBy(marker => marker, StringComparer.Ordinal).ToArray();
+            return room.ExternalInteractions.SequenceEqual(markers) ? room :
+                new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, markers, room.Context, room.Preview,
+                    room.ActiveCompanionBossIds);
         }
 
         private static bool NativeFedUpgrade(CombatUnit unit, int stacks, int damage) =>
@@ -666,6 +734,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static bool NeedsFeedMarker(RoomCombatState room, CombatUnit unit) =>
             (IsInfestedFirstBossMarkerOwner(room, unit) && unit.Modifiers?.Upgrades.Count == 0 ||
+             IsInfestedHordeGrantFrame(room) && !room.Preview && HasObservedHordeInput(room.Context) &&
+                 IsObservedHordeRecipient(unit, room.Context) && unit.Status(StatusId) != null ||
              IsFirstCombat(room) && IsFedPreviewRecipient(unit) ||
              IsSecondCombat(room) && unit.AssetKey == Zealot && IsFedSecondPreviewRecipient(unit) ||
              IsThirdCombat(room) && room.RoomIndex == 0 && IsThirdNewHeavy(unit)) &&

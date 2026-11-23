@@ -35,6 +35,44 @@ internal static class LifemotherInfestedChecks
         Console.WriteLine("NATIVE-INFESTED CHAMBER BRANCH PASS: six original prefix inputs and one exact alternate placement.");
     }
 
+    internal static void HordeBranch(FixtureValue capture)
+    {
+        FixtureValue request = capture.GetProperty("Request");
+        PlayCardAction action = request.GetProperty("Action").Deserialize<PlayCardAction>()!;
+        bool spell = action.CardInstanceId == 15;
+        const string reason = "Hivemind owner death requires a calibrated native callback.";
+        Require(request.GetProperty("SourceSHA256").GetString() == ChamberBattleHash &&
+            request.GetProperty("Prefix").GetArrayLength() == 6 && action.RoomIndex == 0 &&
+            (spell && action.TargetUnitId == 0 && action.ActivatorUnitId == 0 ||
+                action is { CardInstanceId: 32, TargetUnitId: 8, ActivatorUnitId: 2 }),
+            "Expected an original Infested death branch.");
+        FixtureValue[] rows = NativeBranchObservationChecks.Replay(capture, reason,
+            expectedGameModule: Guid.Parse(Game231FixtureCatalog.Module), requirePlayerProjection: false);
+        FixtureValue row = rows.Last();
+        var before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        RoomCombatState floor = after.Spawn.Train.Rooms[0];
+        Require(rows.Length == 7 && floor.Units.All(unit => unit.Id != 8) &&
+            floor.Units.Where(unit => unit.Status("hivemind") != null)
+                .Select(unit => (unit.Id, unit.Status("hivemind")!.Stacks, unit.Attack))
+                .SequenceEqual([(7, 2, 18), (9, 2, 5), (10, 1, 0), (11, 1, 0)]),
+            "Expected the original Horde death and four recipients without an immediate attack refresh.");
+        var oldBattle = before.RngStreams.Single(stream => stream.Name == "Battle").State;
+        var oldTest = before.Spawn.Train.Context!.Enchantments!.TestRng;
+        Require(after.RngStreams.Single(stream => stream.Name == "Battle").State.Equals(spell ? oldBattle.Next() : oldBattle) &&
+            after.Spawn.Train.Context!.Enchantments!.TestRng.Equals(spell ? oldTest.Next().Next() : oldTest),
+            "Original Infested spell or ability RNG differs.");
+        if (spell)
+        {
+            FixtureValue grant = capture.GetProperty("InfestedHordeGrants").EnumerateArray().Single();
+            Require(grant.GetProperty("Completed").GetBoolean() && grant.GetProperty("ActorId").GetInt32() == 8 &&
+                grant.GetProperty("Kind").GetString() == "OnDeath" &&
+                grant.GetProperty("Targets").EnumerateArray().Select(target => target.GetInt32()).SequenceEqual([7, 9, 10, 11]),
+                "Expected the ordered original Horde death callback.");
+        }
+        Console.WriteLine($"NATIVE-INFESTED HORDE BRANCH PASS: card {action.CardInstanceId}, four recipients and exact RNG.");
+    }
+
     private static readonly (int Index, int Turn, int Floor, bool Exchange)[] FirstCombatStages =
         [(10, 1, 2, false), (11, 1, 2, true), (14, 1, 0, false), (15, 1, 0, true)];
     private static readonly (int Index, int Turn, int Floor, bool Exchange)[] LaterCombatStages =

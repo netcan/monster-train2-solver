@@ -950,6 +950,8 @@ namespace MonsterTrain2Poju.Model
                     if (!consumed.Supported) return Unsupported(consumed.UnsupportedReason!);
                     spellInput = CardSpellModel.WithContext(spellInput, consumed.Context!);
                 }
+                spellInput = CardSpellModel.WithContext(spellInput, HivemindTurnUpgrade.ObserveInfestedRandomCastTests(
+                    spellInput, target, spellInput.Context!, rule));
                 TrainSpellResult result = CardSpellModel.ApplyForCardPlay(spellInput, action.RoomIndex, rule.Effects, action.TargetUnitId,
                     card.InstanceId, source.PlayRules, piles, recursionSelections: action.RecursionSelections
                         .Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray(),
