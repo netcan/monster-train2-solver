@@ -18,6 +18,39 @@ foreach ($path in $Archive) {
     if ([string]::IsNullOrWhiteSpace($path)) { throw 'Archive requires a registered path.' }
     $null = $selected.Add($path.Replace('\', '/'))
 }
+
+function Get-ChangedArchiveRegistrations([string] $revision, [string] $relativeDirectory) {
+    $manifestPatterns = @(":(glob)${relativeDirectory}**/manifest.tsv", "${relativeDirectory}solver-stage.tsv")
+    $changed = @(& git -C $workspace -c core.quotePath=false diff --name-status --no-renames --diff-filter=AM $revision -- @manifestPatterns)
+    if ($LASTEXITCODE) { throw 'Could not compare archive manifests.' }
+    $untracked = @(& git -C $workspace -c core.quotePath=false ls-files --others --exclude-standard -- @manifestPatterns)
+    if ($LASTEXITCODE) { throw 'Could not list untracked archive manifests.' }
+
+    foreach ($entry in $changed + @($untracked | ForEach-Object { "A`t$_" })) {
+        $status, $manifest = $entry -split "`t", 2
+        $previousRows = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+        if ($status -eq 'M') {
+            $previous = @(& git -C $workspace show "${revision}:$manifest")
+            if ($LASTEXITCODE) { throw "Could not read previous archive manifest: $manifest" }
+            foreach ($row in $previous | Select-Object -Skip 1) {
+                $null = $previousRows.Add($row.Replace('"', ''))
+            }
+        }
+
+        $directory = $manifest.Substring(0, $manifest.LastIndexOf('/') + 1)
+        $pathColumn = [int]($manifest -eq "${relativeDirectory}solver-stage.tsv")
+        foreach ($row in Get-Content -LiteralPath (Join-Path $workspace $manifest) | Select-Object -Skip 1) {
+            $row = $row.Replace('"', '')
+            if ($previousRows.Contains($row)) { continue }
+            $fields = $row -split "`t"
+            if ($fields.Count -ne (3 + $pathColumn) -or !$fields[$pathColumn].EndsWith('.mt2f', [StringComparison]::Ordinal)) {
+                throw "Invalid archive registration: $manifest"
+            }
+            $directory + $fields[$pathColumn]
+        }
+    }
+}
+
 if ($PSBoundParameters.ContainsKey('ChangedFrom')) {
     $revision = & git -C $workspace rev-parse --verify --quiet --end-of-options "$ChangedFrom^{commit}"
     if ($LASTEXITCODE) { throw "Unknown Git commit or ref: $ChangedFrom" }
@@ -27,7 +60,8 @@ if ($PSBoundParameters.ContainsKey('ChangedFrom')) {
     if ($LASTEXITCODE) { throw "Could not compare native archives with $ChangedFrom." }
     $untracked = @(& git -C $workspace -c core.quotePath=false ls-files --others --exclude-standard -- $pattern)
     if ($LASTEXITCODE) { throw 'Could not list untracked native archives.' }
-    $candidates = @($changed + $untracked | Sort-Object -Unique -CaseSensitive)
+    $registrations = @(Get-ChangedArchiveRegistrations $revision $relativeDirectory)
+    $candidates = @($changed + $untracked + $registrations | Sort-Object -Unique -CaseSensitive)
     if ($candidates.Count) {
         $catalogAssembly = Join-Path $workspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll'
         if (!(Test-Path -LiteralPath $catalogAssembly -PathType Leaf) -and !$SkipBuild) {
