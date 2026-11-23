@@ -429,6 +429,11 @@ Infested 完成原版整战验收。录制固定五次原版部署，连续核�
 [后两轮楼层结算](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/later-combat.mt2f) ·
 [原版整战](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/native-battle.mt2f)
 
+另一条原版路线加入 Sacrificial Chamber。实际战斗中两次死亡回调各发放 10 金币，首领受伤后
+继续保有 Hivemind，第三回合从 6 层增至 12 层。8 次出牌、4 次结束回合、34 次楼层结算
+和结束回合候选均通过。录制决策点的出牌候选仍在补齐。
+[Sacrificial Chamber 整战](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/sacrificial-chamber-battle.mt2f)
+
 `Run-FullBattleProbe.ps1 -OriginalLifemotherInfestedObservation` 从隔离的原版 BattleIntro
 采集待出生首领、施法控制器和同层死亡回调。该录制模式复用手牌界面测试随机流隔离，以便逐字段
 对照游戏规则引发的随机消耗。首轮抽牌后首领在索引 2 的楼层，下一动作是第 0 组第 0 个动作。

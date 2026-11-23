@@ -117,7 +117,7 @@ namespace MonsterTrain2Poju.Model
             bool infestedCasting = infestedTurn is 2 or 3 && battle.MoonPhaseTrackingActive == false &&
                 actor != null && boss.AssetKey == actor.AssetKey &&
                 OuterBossDefinitions.IsLifemotherInfestedCastingActor(actor, train.Context) &&
-                HivemindTurnUpgrade.IsInfestedDrawOwner(actor, infestedTurn, afterRemoval: false) &&
+                HivemindTurnUpgrade.IsInfestedDrawOwner(actor, infestedTurn, afterRemoval: false, train.Context) &&
                 boss is { ValidAttackPhases: -1, BaseCanAttack: true,
                     Actions: [[{ Behavior: "RandomOccupiedBossActionBehavior", TargetTeam: CombatTeam.Player,
                         Empty: true, DestroyRoom: false, SetupAsInitialAction: false, TargetRoom: 0, PostActionRoom: 0 }]],

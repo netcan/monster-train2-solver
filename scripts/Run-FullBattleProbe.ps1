@@ -822,6 +822,7 @@ param(
     [switch] $OriginalLifemotherReanimateBattle,
     [switch] $OriginalLifemotherInfestedObservation,
     [switch] $LifemotherInfestedWholeBattle,
+    [switch] $LifemotherInfestedChamberBattle,
     [switch] $OriginalLifemotherDebuffs,
     [switch] $LifemotherDebuffsWholeBattle,
     [ValidateSet('DuplicateEnemy', 'Scourge', 'SniperAdvance')][string] $OriginalUnrulyVariant = 'DuplicateEnemy',
@@ -1922,6 +1923,9 @@ if ($LifemotherDebuffsWholeBattle -and -not $OriginalLifemotherDebuffs) {
 if ($LifemotherInfestedWholeBattle -and -not $OriginalLifemotherInfestedObservation) {
     throw 'LifemotherInfestedWholeBattle requires OriginalLifemotherInfestedObservation.'
 }
+if ($LifemotherInfestedChamberBattle -and -not $LifemotherInfestedWholeBattle) {
+    throw 'LifemotherInfestedChamberBattle requires LifemotherInfestedWholeBattle.'
+}
 if ($IndulgentTrampleWholeBattle) { $IndulgentTrampleCasting = $true }
 if ($IndulgentTrampleCasting -and -not ($OriginalIndulgentCapacityBattle -or $OriginalIndulgentGorgeOnSlay)) {
     throw 'IndulgentTrampleCasting requires an original Indulgent variant with Trample.'
@@ -1972,7 +1976,7 @@ if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
     $unrulyArguments = @($unrulyMode, 'InputProfile', 'BattleDistance', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'OriginalUnrulyVariant')
     if ($OriginalLifemotherDebuffs) { $unrulyArguments += 'LifemotherDebuffsWholeBattle' }
-    if ($OriginalLifemotherInfestedObservation) { $unrulyArguments += 'LifemotherInfestedWholeBattle' }
+    if ($OriginalLifemotherInfestedObservation) { $unrulyArguments += @('LifemotherInfestedWholeBattle', 'LifemotherInfestedChamberBattle') }
     if ($lifemotherBranchObservation) { $unrulyArguments += 'UnsupportedBranchInput' }
     if ($IndulgentTrampleCasting) { $unrulyArguments += 'IndulgentTrampleCasting' }
     if ($IndulgentTrampleWholeBattle) { $unrulyArguments += 'IndulgentTrampleWholeBattle' }
@@ -3514,7 +3518,9 @@ if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
         $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
     }
     if ($LifemotherDebuffsWholeBattle) { $environment['MT2_PROBE_LIFEMOTHER_DEBUFFS_BATTLE'] = '1' }
-    if ($LifemotherInfestedWholeBattle) { $environment['MT2_PROBE_LIFEMOTHER_INFESTED_WHOLE'] = '1' }
+    if ($LifemotherInfestedWholeBattle) {
+        $environment['MT2_PROBE_LIFEMOTHER_INFESTED_WHOLE'] = if ($LifemotherInfestedChamberBattle) { 'chamber' } else { 'deployment' }
+    }
     if ($IndulgentTrampleCasting) { $environment['MT2_PROBE_INDULGENT_TRAMPLE_CASTING'] = '1' }
 }
 if ($OriginalSpurnedBattle) {
@@ -4775,9 +4781,13 @@ if ($OriginalUnrulyBattle) {
                 SHA256 = (Get-FileHash -LiteralPath $tracePath -Algorithm SHA256).Hash } | ConvertTo-Json
             return
         }
-        if ((@($trace.Actions | ForEach-Object { $_.Action.CardInstanceId }) -join ',') -cne '7,6,5,4,1' -or
-            (@($trace.Actions | ForEach-Object { $_.Action.RoomIndex }) -join ',') -cne '0,0,1,1,2' -or
-            (@($trace.Actions | ForEach-Object { $_.Before.Spawn.Turn }) -join ',') -cne '0,0,0,0,0') {
+        $route = @('0:7:0:0:0', '0:6:0:0:0', '0:5:1:0:0', '0:4:1:0:0', '0:1:2:0:0')
+        if ($LifemotherInfestedChamberBattle) { $route += @('1:2:2:1:0', '1:17:1:-1:4', '1:29:1:-1:0') }
+        $played = @($trace.Actions | ForEach-Object {
+            '{0}:{1}:{2}:{3}:{4}' -f $_.Before.Spawn.Turn, $_.Action.CardInstanceId, $_.Action.RoomIndex,
+                $_.Action.PlayerPosition, $_.Action.TargetUnitId
+        })
+        if (($played -join ',') -cne ($route -join ',')) {
             throw "Original Lifemother Infested did not replay the recorded deployment prefix. Inspect $tracePath and $unityLog"
         }
     }

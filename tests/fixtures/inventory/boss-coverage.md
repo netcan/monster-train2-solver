@@ -43,5 +43,5 @@ The pinned 2.3.1 catalog contains 15 original encounters. 12 definitions use the
 | SoulSavior_R4_BossBattle_EstrangedChild_2 | allowed | 1 |
 | SoulSavior_R4_BossBattle_EstrangedChild_3 | allowed | 2 |
 | SoulSavior_R5_BossBattle_Lifemother_Debuffs | allowed | 1 |
-| SoulSavior_R5_BossBattle_Lifemother_Infested | scoped | 1 |
+| SoulSavior_R5_BossBattle_Lifemother_Infested | scoped | 2 |
 | SoulSavior_R5_BossBattle_Lifemother_Reanimate | allowed | 1 |

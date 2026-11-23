@@ -148,13 +148,20 @@ namespace MonsterTrain2Poju.Probe
             data.GetAttackDamage() == 40 && data.GetHealth() == 9000 && data.GetSize() == 5 &&
             data.GetStartingStatusEffects() is [{ statusId: "trample", count: 1 }];
 
-        internal static bool ReplaysInfestedOpening => LifemotherInfested &&
-            Environment.GetEnvironmentVariable("MT2_PROBE_LIFEMOTHER_INFESTED_WHOLE") == "1";
+        private static string? InfestedReplay => Environment.GetEnvironmentVariable("MT2_PROBE_LIFEMOTHER_INFESTED_WHOLE");
+        internal static bool ReplaysInfestedOpening => LifemotherInfested && InfestedReplay is "deployment" or "chamber";
 
         private static readonly int[] InfestedDeployment = [7, 6, 5, 4, 1];
 
         internal static PlayCardAction? ChooseInfestedOpening(BattleTurnState battle)
         {
+            if (battle.Spawn.Turn == 1 && InfestedReplay == "chamber")
+            {
+                var hand = battle.Spawn.Train.Context!.Cards.Hand;
+                if (hand.Any(card => card.InstanceId == 2)) return RequirePlay(2, 2, 1, 0);
+                if (hand.Any(card => card.InstanceId == 17)) return RequirePlay(17, 1, -1, 4);
+                if (hand.Any(card => card.InstanceId == 29)) return RequirePlay(29, 1, -1, 0);
+            }
             if (battle.Spawn.Turn != 0) return null;
             var deployed = battle.Spawn.Train.Rooms.SelectMany(room => room.Units)
                 .Where(unit => unit.Team == CombatTeam.Player && unit.SpawnerCardId > 0).Select(unit => unit.SpawnerCardId).ToHashSet();
@@ -163,9 +170,12 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("The recorded original Infested deployment prefix changed.");
             int card = InfestedDeployment[deployed.Count];
             int floor = deployed.Count / 2;
-            return BattleActionModel.EnumerateSupportedPlays(battle, card).SingleOrDefault(action =>
-                action.RoomIndex == floor && action.PlayerPosition == 0 && action.TargetUnitId == 0)
-                ?? throw new InvalidOperationException("The recorded original Infested deployment is no longer playable.");
+            return RequirePlay(card, floor, 0, 0);
+
+            PlayCardAction RequirePlay(int instanceId, int room, int position, int target) =>
+                BattleActionModel.EnumerateSupportedPlays(battle, instanceId).SingleOrDefault(action =>
+                    action.RoomIndex == room && action.PlayerPosition == position && action.TargetUnitId == target)
+                ?? throw new InvalidOperationException("The recorded original Infested play is no longer available.");
         }
 
         internal static void ObserveFullBattle(SaveManager save)

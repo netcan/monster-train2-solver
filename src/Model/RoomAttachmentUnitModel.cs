@@ -373,7 +373,11 @@ namespace MonsterTrain2Poju.Model
                 SpellUpgrade: null, DeathEffect: null, Ability: null, CorruptionModifier: null, Echo: null } ||
                 !Guid.TryParse(attachment.AttachmentId, out Guid id) || id == Guid.Empty) return false;
 
-            CardUpgradeModifier upgrade = attachment.CharacterUpgrades[0];
+            return OriginalTriggerRoomUpgrade(attachment, attachment.CharacterUpgrades[0]);
+        }
+
+        private static bool OriginalTriggerRoomUpgrade(RoomCapacityAttachmentState attachment, CardUpgradeModifier upgrade)
+        {
             if (upgrade.Stats is not { Damage: 0, Health: 0, Cost: 0, Heal: 0, Size: 0,
                 XCost: 0, EquipmentLimit: 0, UpgradeSlotCount: 0 } ||
                 upgrade.Statuses.Count != 0 || upgrade.ExternalInteractions.Count != 0 ||
@@ -393,6 +397,37 @@ namespace MonsterTrain2Poju.Model
                     effect is { Type: "CardEffectRewardGold", Value: 10, Action: null },
                 _ => false
             };
+        }
+
+        internal static bool HasOriginalSacrificialChamber(CombatContext? context, int roomIndex) => context?.RoomCapacities?.Any(capacity =>
+            capacity.RoomIndex == roomIndex &&
+            capacity.Attachments?.Any(attachment => attachment.AssetKey == "SacrificialChamber" && OriginalTriggerRoom(attachment)) == true) == true;
+
+        // Use the stock-identity view when checking the original actor. Combat
+        // still uses the original capture, including the attachment callback.
+        internal static CombatUnit OriginalIdentityWithoutSacrificialChamber(CombatUnit unit, CombatContext? context)
+        {
+            if (unit.Modifiers == null || context?.RoomCapacities == null ||
+                !unit.Modifiers.Upgrades.Any(upgrade => upgrade.AssetKey == "SacrificialChamber"))
+                return unit;
+            RoomCapacityAttachmentState[] attachments = context.RoomCapacities.SelectMany(room =>
+                room.Attachments ?? Array.Empty<RoomCapacityAttachmentState>()).Where(attachment =>
+                    attachment.AssetKey == "SacrificialChamber" && OriginalTriggerRoom(attachment) && IsApplied(unit, attachment)).ToArray();
+            if (attachments is not [var attachment]) return unit;
+            CardUpgradeModifier expected = attachment.CharacterUpgrades![0];
+            CardUpgradeModifier[] applied = unit.Modifiers.Upgrades.Where(upgrade => upgrade.DataId == expected.DataId).ToArray();
+            if (applied is not [{ Unique: false, UnhealedHealth: 0, DamageBuff: 0, RestrictSizeToRoomCapacity: false,
+                    RemoveOnDiscard: false } upgrade] || !OriginalTriggerRoomUpgrade(attachment, upgrade))
+                return unit;
+            CombatTrigger[] triggers = unit.Triggers.Where(trigger => trigger.Origin?.UpgradeId == attachment.AttachmentId).ToArray();
+            if (triggers is not [{ Kind: "OnDeath", Once: false, HasTriggered: false, IgnoreSilence: true,
+                FireCount: 1, SkipDuringDeployment: false, TriggerAtThreshold: 0, Conditions: null, ActivationCondition: null,
+                Origin: { EquipmentCardId: 0, IsFromEquipment: false, OnlyIfEquipped: false }, Effects: [var effect] }] ||
+                effect.Type != expected.TriggerUpgrades![0].Effects[0].Type || effect.Value != expected.TriggerUpgrades[0].Effects[0].Value ||
+                effect.Action != null)
+                return unit;
+            return WithUpgrades(unit, unit.Modifiers.Upgrades.Where(upgrade => !ReferenceEquals(upgrade, applied[0])).ToArray())
+                .WithTriggers(unit.Triggers.Where(trigger => !ReferenceEquals(trigger, triggers[0])).ToArray());
         }
 
         internal static bool OriginalBatchRoom(RoomCapacityAttachmentState attachment)

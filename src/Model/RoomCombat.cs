@@ -1196,18 +1196,18 @@ namespace MonsterTrain2Poju.Model
             int infestedDrawTurn = allowFreshHivemind && state.Context?.QueryFrame?.Turn is 2 or 3 &&
                 OuterBossDefinitions.HasLifemotherInfestedOwner(state.Context) ? state.Context.QueryFrame.Turn.Value : 0;
             bool infestedBossCombat = state.RoomIndex == 2 && state.Units.Any(unit =>
-                unit.Triggers.Count == 2 &&
+                unit.Triggers.Count >= 2 &&
                 (OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(unit, unit.Triggers[0], state.Context) ||
                  allowFirstHivemindCombat && HivemindTurnUpgrade.IsInfestedFirstBossMarkerOwner(state, unit)));
             string[] interactions = state.ExternalInteractions.Where(item =>
                 !((linkedTargetOnly || linkedMaximumPreview || infestedBossCombat) && item == "Outer train boss") &&
                 !((allowFreshHivemind || observedHivemindCombat) && state.Units.Any(unit => HivemindTurnUpgrade.MatchesRoomMarker(item, unit))) &&
                 !(infestedWaveCombat && state.Units.Any(unit => HivemindTurnUpgrade.Marker(unit) == item &&
-                    HivemindTurnUpgrade.IsInfestedWaveCombatOwner(unit))) &&
+                    HivemindTurnUpgrade.IsInfestedWaveCombatOwner(unit, state.Context))) &&
                 !(infestedCombat && state.Units.Any(unit => HivemindTurnUpgrade.Marker(unit) == item &&
                     HivemindTurnUpgrade.IsInfestedCombatOwner(state, unit))) &&
                 !(infestedDrawTurn > 0 && state.Units.Any(unit => HivemindTurnUpgrade.Marker(unit) == item &&
-                    HivemindTurnUpgrade.IsInfestedDrawOwner(unit, infestedDrawTurn, afterRemoval: false)))).ToArray();
+                    HivemindTurnUpgrade.IsInfestedDrawOwner(unit, infestedDrawTurn, afterRemoval: false, state.Context)))).ToArray();
             if (interactions.Length > 0)
                 return string.Join("; ", interactions);
             foreach (CardInstanceState instance in state.Context?.CardInstances ?? Array.Empty<CardInstanceState>())
@@ -1227,7 +1227,7 @@ namespace MonsterTrain2Poju.Model
             foreach (CombatUnit unit in state.Units)
             {
                 bool infestedDrawOwner = infestedDrawTurn > 0 &&
-                    HivemindTurnUpgrade.IsInfestedDrawOwner(unit, infestedDrawTurn, afterRemoval: true);
+                    HivemindTurnUpgrade.IsInfestedDrawOwner(unit, infestedDrawTurn, afterRemoval: true, state.Context);
                 bool infestedCombatOwner = infestedCombat && HivemindTurnUpgrade.IsInfestedCombatOwner(state, unit);
                 string? selfAttackError = UnitSelfAttackModel.Validate(state, unit);
                 string? roomResourceError = UnitRoomResourceModel.Validate(unit);
@@ -1290,7 +1290,7 @@ namespace MonsterTrain2Poju.Model
                             (HivemindTurnUpgrade.IsWaitingSecondWaveOwner(unit, status) ||
                              HivemindTurnUpgrade.IsInfestedOpeningOwner(unit, status))) ||
                             ((observedHivemindCombat || infestedDrawOwner || infestedCombatOwner ||
-                                infestedWaveCombat && HivemindTurnUpgrade.IsInfestedWaveCombatOwner(unit) ||
+                                infestedWaveCombat && HivemindTurnUpgrade.IsInfestedWaveCombatOwner(unit, state.Context) ||
                                 infestedBossCombat && allowFirstHivemindCombat && HivemindTurnUpgrade.IsInfestedFirstBossMarkerOwner(state, unit)) &&
                                 status.Id == HivemindTurnUpgrade.StatusId)) && !(status.Id == "pyrebane" &&
                         OuterBossDefinitions.IsAngelDuoInner(unit.AssetKey) && unit.Status("lifelink") == null) && !(linkedHealthOnly &&
@@ -1726,7 +1726,7 @@ namespace MonsterTrain2Poju.Model
                                 bool dormantDeath = allowFreshHivemind && !state.Preview &&
                                     (HivemindTurnUpgrade.HasDormantOpeningDeathGrant(unit, trigger) ||
                                      OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(unit, trigger, state.Context)) ||
-                                    infestedWaveCombat && HivemindTurnUpgrade.IsInfestedOpeningPreviewOwner(unit) && trigger.Kind == "OnDeath" ||
+                                    infestedWaveCombat && HivemindTurnUpgrade.IsInfestedOpeningPreviewOwner(unit, state.Context) && trigger.Kind == "OnDeath" ||
                                     infestedBossCombat && (OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(unit, trigger, state.Context) ||
                                         allowFirstHivemindCombat && HivemindTurnUpgrade.IsInfestedFirstBossMarkerOwner(state, unit) &&
                                         ReferenceEquals(trigger, unit.Triggers[0])) ||
@@ -6472,7 +6472,7 @@ namespace MonsterTrain2Poju.Model
                     int? damageActorId = effect.Type == FriendlyDamageStatusModel.NativeEffect ? overrideTarget?.Source.Id : null;
                     var roster = damageActorId.HasValue ? targets.UnitIds.Concat(new[] { damageActorId.Value }).Distinct().ToArray() : targets.UnitIds;
                     bool observedInfestedDeathGrant = triggerKind == "OnAnyUnitDeathOnFloor" && roster.Count == 1 && roster[0] == actor.Source.Id &&
-                        actor.Source.Triggers.Count == 2 &&
+                        actor.Source.Triggers.Count >= 2 &&
                         (source.RoomIndex == 2 &&
                             OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(actor.Source, actor.Source.Triggers[0], source.Context) ||
                          HivemindTurnUpgrade.HasObservedLaterInfestedDeathGrant(source, actor.Source, actor.Source.Triggers[0])) &&

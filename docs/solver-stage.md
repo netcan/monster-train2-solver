@@ -695,3 +695,7 @@ Soul Savior 整战覆盖完成后执行一次阶段全量。453 场连续战斗�
 已从相同原版源重新导出。随后只复验该组件和两场相关整战，全部通过。
 [阶段报告](../results/recorded-chain-triage-20261124-043628-96fa477e/report.tsv) ·
 [定向复验报告](../results/recorded-chain-triage-20261124-044128-ee86ce0a/report.tsv)
+
+Infested 追加一条 Sacrificial Chamber 原版路线，定向核对 8 次出牌、4 次结束回合与结束回合候选。
+累计经过整战回放的归档为 473 份，核对 7,245 次出牌或技能和 2,815 次结束回合。
+[Sacrificial Chamber 整战](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/sacrificial-chamber-battle.mt2f)
