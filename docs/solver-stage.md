@@ -586,3 +586,13 @@ Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时
 端到端耗时从 7.64 秒降至 4.26 秒，实际模拟的候选从 140 个降到 73 个。复测执行 15 次
 出牌和 6 次结束回合，原版败局已结算。逐项重放、随机流和两类候选检查均通过。
 [实战归档](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring9-advisor-deadline.mt2f)
+
+三份新增整战的定向回归共核对 81 次出牌、24 次结束回合及两类候选。2.3.1 的已结算
+归档达到 445 场，卡牌定义匹配的出牌记录为 601/601，遗物有序效果匹配的在场记录为
+236/236。第 3 环后续优化将离线找到 37 点路线所需的回合结算从五次减至三次，3 秒配置
+原版复测仍以 35 点获胜，42 个输入的实际后继及随机流逐项匹配。
+[定向报告](../results/recorded-chain-triage-20261123-144302-936253aa/report.tsv)
+
+`scripts/Check-SolverCompletion.ps1 -SkipBuild` 使用已有构建运行求解器专项，包括多回合深搜、
+预算中断、独立计划重放，并刷新当前卡牌和遗物证据。日常录制回归仍可用
+`Check-Game231RecordedChains.ps1 -ChangedFrom <revision> -SkipBuild` 选择新增或变更的归档。

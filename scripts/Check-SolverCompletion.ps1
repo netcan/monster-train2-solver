@@ -28,6 +28,10 @@ try {
         dotnet $checks $mode $original
         if ($LASTEXITCODE -ne 0) { throw "Search certificate acceptance failed: $mode" }
     }
+    dotnet $checks --exact-battle-multi-turn-only $workspace
+    if ($LASTEXITCODE -ne 0) { throw 'Current multi-turn search acceptance failed.' }
+    dotnet $checks --atomic-advice-budget-only tests/fixtures/planning/search/advisor-atomic-budget-failure.mt2f
+    if ($LASTEXITCODE -ne 0) { throw 'Advice budget acceptance failed.' }
     $output = Join-Path '.probe-runs' ('solver-completion-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
     $null = New-Item -ItemType Directory -Path $output
     dotnet $tools solve-exact $original (Join-Path $output 'node-cutoff.mt2f') 1 30000 1
@@ -61,5 +65,7 @@ try {
     $manifest = @(Import-Csv tests/fixtures/manifest.tsv -Delimiter "`t")
     pwsh -NoProfile -File scripts/Get-CardCoverageInventory.ps1 -Check -SkipBuild
     if ($LASTEXITCODE -ne 0) { throw 'Coverage inventory is stale.' }
-    Write-Output "SOLVER-COMPLETION PASS: focused native/model/CLI checks; $($manifest.Count) fixture hashes/registrations; coverage index current. No full regression. Predictions: $output"
+    & (Join-Path $PSScriptRoot 'Get-CardCoverageInventory.ps1') -Current -SkipBuild
+    & (Join-Path $PSScriptRoot 'Get-RelicCoverageInventory.ps1') -Current -SkipBuild
+    Write-Output "SOLVER-COMPLETION PASS: focused native/model/CLI checks, $($manifest.Count) fixture hashes/registrations, current card and relic evidence. Predictions: $output"
 } finally { Pop-Location }
