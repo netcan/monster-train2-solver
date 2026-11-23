@@ -10,21 +10,70 @@ internal static class LifemotherInfestedChecks
     private const string BossKey = "Boss_SoulSavior_Final_Lifemother_Infested";
     private const string Boundary = "NativeLifemotherInfestedStatusAddition";
     private const string OpeningBoundary = "NativeLifemotherInfestedOpening";
+    private const string FirstTurnBoundary = "NativeLifemotherInfestedFirstTurn";
 
     internal static void FirstTurn(string battlePath, string birthPath)
     {
         using var battleDocument = ModelJson.ReadFixture(battlePath);
         using var birthDocument = ModelJson.ReadFixture(birthPath);
         FixtureValue battle = battleDocument.RootElement;
-        FixtureValue birth = birthDocument.RootElement;
+        VerifyFirstTurn(battle, battle.GetProperty("OriginalUnrulyBattle"), battle.GetProperty("Turns")[0],
+            birthDocument.RootElement, allowHistoricalControllerOmission:
+            Hash(battlePath) == "041DB0E09B2F23E140E8E824F10F3EB5DFE4BD5F4A5E7016EF58B7F56B560D97" &&
+            Hash(birthPath) == "A36EEA0FA27C91D4667F6A2076CE083487CE5BCA6AAEDFA63C804C5742FA9BFD");
+    }
+
+    internal static void FirstTurnComponent(FixtureValue component)
+    {
+        Require(component.GetProperty("Boundary").GetString() == FirstTurnBoundary &&
+            HasHash("SourceBattleSha256") && HasHash("SourceBirthSha256"),
+            "Expected original Infested first-turn source provenance.");
+        VerifyFirstTurn(component, component.GetProperty("Observation"), component.GetProperty("Turn"),
+            component.GetProperty("Birth"));
+
+        bool HasHash(string key) => component.GetProperty(key).GetString() is { Length: 64 } hash && hash.All(Uri.IsHexDigit);
+    }
+
+    internal static void ExportFirstTurn(string battlePath, string birthPath, string outputPath)
+    {
+        using var battleDocument = ModelJson.ReadFixture(battlePath);
+        using var birthDocument = ModelJson.ReadFixture(birthPath);
+        FixtureValue battle = battleDocument.RootElement;
         FixtureValue observation = battle.GetProperty("OriginalUnrulyBattle");
+        Require(battle.GetProperty("TerminalEffectsSettled").GetBoolean() && battle.GetProperty("CaptureFailures").GetInt32() == 0 &&
+            battle.GetProperty("Pending").GetInt32() == 0, "Expected a settled native source.");
+        var builder = new FixtureBuilder();
+        int root = builder.Add(FixtureKind.Object, children:
+        [
+            Key("Boundary"), Key(FirstTurnBoundary),
+            Key("SourceBattleSha256"), Key(Hash(battlePath).ToLowerInvariant()),
+            Key("SourceBirthSha256"), Key(Hash(birthPath).ToLowerInvariant()),
+            Key("GameVersion"), builder.Import(battle.GetProperty("GameVersion")),
+            Key("GameModuleMvid"), builder.Import(battle.GetProperty("GameModuleMvid")),
+            Key("Observation"), builder.Add(FixtureKind.Object, children: new[]
+            {
+                "Scenario", "BossKey", "ControlledTestScenario", "RailforgedInstalled"
+            }.SelectMany(name => new[] { Key(name), builder.Import(observation.GetProperty(name)) }).ToArray()),
+            Key("Turn"), builder.Import(battle.GetProperty("Turns")[0]),
+            Key("Birth"), builder.Import(birthDocument.RootElement)
+        ]);
+        using FixtureDocument component = builder.Build(root, 0, new byte[32]);
+        FirstTurnComponent(component.RootElement);
+        using var output = new FileStream(outputPath, FileMode.CreateNew);
+        component.Write(output);
+
+        int Key(string value) => builder.Add(FixtureKind.String, value);
+    }
+
+    private static void VerifyFirstTurn(FixtureValue battle, FixtureValue observation, FixtureValue observedTurn, FixtureValue birth,
+        bool allowHistoricalControllerOmission = false)
+    {
         Require(battle.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
             battle.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
             observation.GetProperty("Scenario").GetString() == Scenario && observation.GetProperty("BossKey").GetString() == BossKey &&
             observation.GetProperty("ControlledTestScenario").GetBoolean() && observation.GetProperty("RailforgedInstalled").GetBoolean(),
             "Expected the installed original Infested encounter.");
         OuterBossBirthChecks.Native(birth, Game231FixtureCatalog.Module);
-        var observedTurn = battle.GetProperty("Turns")[0];
         var before = observedTurn.GetProperty("Before").Deserialize<BattleTurnState>()!;
         var actual = observedTurn.GetProperty("Actual").Deserialize<BattleTurnState>()!;
         var definition = birth.GetProperty("Births")[0].GetProperty("Instantiation").GetProperty("Definition")
@@ -34,14 +83,16 @@ internal static class LifemotherInfestedChecks
             "Expected the first original Infested EndTurn with battle preview enabled.");
 
         EnemySpawnState spawn = before.Spawn;
-        bool legacy = spawn.QueuedOuterBoss == null;
+        bool missingSettledController = actual.Spawn.OuterBoss == null;
+        Require(!missingSettledController || allowHistoricalControllerOmission,
+            "Missing settled controller is allowed only for the pinned historical capture.");
         BattleTurnState input = before;
-        if (legacy)
+        if (spawn.QueuedOuterBoss == null)
         {
-            Require(Hash(battlePath) == "041DB0E09B2F23E140E8E824F10F3EB5DFE4BD5F4A5E7016EF58B7F56B560D97" &&
-                Hash(birthPath) == "A36EEA0FA27C91D4667F6A2076CE083487CE5BCA6AAEDFA63C804C5742FA9BFD" &&
-                spawn.ExternalInteractions.SequenceEqual(["Outer or queued final boss spawning"]) && actual.Spawn.OuterBoss == null,
-                "Missing native controller is allowed only for the pinned historical capture.");
+            // The native queue predates the capture's supported scheduler. Its exact
+            // definition is independently present before the first native birth.
+            Require(spawn.ExternalInteractions.SequenceEqual(["Outer or queued final boss spawning"]),
+                "Expected the original queue marker for the independent birth receipt.");
             var queued = new EnemySpawnState(spawn.Train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, spawn.Rng,
                 spawn.NextUnitId, spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,
                 spawn.FirstTreasureRoom, spawn.Turn, [], spawn.CanonicalDecisionReferences, spawn.PendingDestroyedUnitIds,
@@ -52,8 +103,8 @@ internal static class LifemotherInfestedChecks
                 before.CanonicalPhysicalReferences, before.SelectedRoom, before.MoonPhaseTrackingActive);
         }
         else
-            Require(spawn.QueuedOuterBoss!.Actor.Unit.AssetKey == BossKey && actual.Spawn.OuterBoss?.AssetKey == BossKey,
-                "Expected both queued and settled original controller snapshots.");
+            Require(Serialize(spawn.QueuedOuterBoss) == Serialize(definition),
+                "The queued original boss definition differs from its independent birth receipt.");
 
         string immutable = Serialize(input);
         BattleTurnResult result = BattleTurnModel.EndTurn(input, RecordedBattleChecks.Decisions(observedTurn));
@@ -62,7 +113,7 @@ internal static class LifemotherInfestedChecks
             !OuterBossDefinitions.Supports(BossKey), "Original Infested first turn failed: " + result.UnsupportedReason);
         string expected = BattleTurnChecks.Comparable(actual);
         string predicted = BattleTurnChecks.Comparable(result.State!);
-        if (legacy)
+        if (missingSettledController)
         {
             JsonObject projected = JsonNode.Parse(predicted)!.AsObject();
             Require(projected.Remove("OuterBoss"), "Expected a modeled controller outside the old observation.");
@@ -71,13 +122,13 @@ internal static class LifemotherInfestedChecks
         string? difference = ModelJson.Difference(predicted, expected);
         Require(difference == null, "Original Infested first settled state or RNG differs: " + difference);
         Console.WriteLine("NATIVE-LIFEMOTHER-INFESTED FIRST-TURN PASS: full captured state, RNG and preview; " +
-            (legacy ? "settled controller absent from pinned historical capture." : "exact settled controller."));
+            (missingSettledController ? "settled controller absent from pinned historical capture." : "exact settled controller."));
+    }
 
-        static string Hash(string path)
-        {
-            using var stream = File.OpenRead(path);
-            return Convert.ToHexString(SHA256.HashData(stream));
-        }
+    private static string Hash(string path)
+    {
+        using var stream = File.OpenRead(path);
+        return Convert.ToHexString(SHA256.HashData(stream));
     }
 
     internal static void Opening(FixtureValue component)

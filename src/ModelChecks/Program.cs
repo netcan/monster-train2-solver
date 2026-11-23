@@ -1,5 +1,16 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--native-lifemother-infested-first-turn")
+{
+    using var component = ModelJson.ReadFixture(args[1]);
+    LifemotherInfestedChecks.FirstTurnComponent(component.RootElement);
+    return;
+}
+if (args.Length == 4 && args[0] == "--export-native-lifemother-infested-first-turn")
+{
+    LifemotherInfestedChecks.ExportFirstTurn(args[1], args[2], args[3]);
+    return;
+}
 if (args.Length == 3 && args[0] == "--native-lifemother-infested-first-turn")
 {
     LifemotherInfestedChecks.FirstTurn(args[1], args[2]);
