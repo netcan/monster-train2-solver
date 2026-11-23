@@ -16,4 +16,14 @@ pwsh -File scripts/Run-CampaignProgress.ps1 -RegionRun -StopBeforeRing 1 -Seed 4
 检查点位于 `.probe-runs/campaign-region-battle1-20261124-062358-90ad43e9-before-ring1`，
 存档记录种子 `424242`、地图距离 0、完成战斗 0 场及 `wasDevCheatUsed=false`。
 检查点存档 SHA-256 为 `c7ecf40d9fdd905d9605d2fb7e243b2eb23646d9642db9bffedc7369b0c5d7cc`，与 `checkpoint` 审计一致。
-验收覆盖进入原版战前界面、持久化检查点和输入哈希复核。后续战斗与区域首领尚待验证。
+从该检查点续接原版战役，在 32 次出牌和 6 次结束回合后赢得序章，火车核心仍为 50 生命。
+原版区域选择界面选中了默认区域 0，并保存了该区域的首场 `SoulSavior_R1_Battle_HealOnShiftHeavy`。
+
+```powershell
+pwsh -File scripts/Run-CampaignProgress.ps1 -RegionRun -StopBeforeRing 2 -NativeWorker 3 -TimeoutSeconds 240 -InputProfile .probe-runs/campaign-region-battle1-20261124-062358-90ad43e9-before-ring1
+```
+
+续接检查点位于 `.probe-runs/campaign-region-battle2-20261124-063542-9f9db4ca-before-ring2`，
+为种子 `424242`、地图距离 1、完成战斗 1 场及 `wasDevCheatUsed=false` 的 `BattleIntro`。
+其存档 SHA-256 为 `e6c19df2cb24d0cea1f303d7f4e9b442cc4d4b986e92ced092328762430926f0`。
+验收核对了输入和原版存档哈希。区域首领尚待实机验证。
