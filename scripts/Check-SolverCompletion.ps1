@@ -35,7 +35,7 @@ try {
     $current = 'tests/compatibility/game-2.3.1/mechanics'
     dotnet $checks --relentless-battle-pair-only "$current/relentless-battle/abandon.mt2f" "$current/relentless-battle/continue.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Current combat dialog replay failed.' }
-    dotnet $checks --planner-replay-only "$current/relentless-advisor/mixed-policy.mt2f"
+    dotnet $checks --planner-pair-only "$current/relentless-advisor/mixed-policy.mt2f" "$current/relentless-advisor/mixed-policy-replay.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Current advisor dialog plan failed to replay.' }
     dotnet $checks --advisor-future-target-only "$current/player-advisor-rolling/current-ring9-advisor-deadline.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Verified future-target advice failed.' }
