@@ -42,7 +42,9 @@ namespace MonsterTrain2Poju.Model
             if (statError != null) return Fail(statError);
             if (train.Context?.Relics?.Any(owner => owner.IsCovenant == true) == true && source.BirthStats == null)
                 return Fail("Outer-boss Covenant birth requires its calibrated native stats.");
-            if (!OuterBossDefinitions.Supports(boss.AssetKey) || boss.Phase != "Casting" || boss.Room != -1 || boss.UnitId != unit.Id ||
+            bool trampleIndulgent = boss.AssetKey == unit.AssetKey && battle is { MoonPhase: "New", MoonPhaseTrackingActive: true } &&
+                OuterBossDefinitions.IsIndulgentTrampleBirth(unit, train.Context, beforePlacement: true);
+            if (!(OuterBossDefinitions.Supports(boss.AssetKey) || trampleIndulgent) || boss.Phase != "Casting" || boss.Room != -1 || boss.UnitId != unit.Id ||
                 unit.BumpRules?.OuterBoss != true || unit.Health <= 0 || unit.DeathState?.IsDestroyed == true ||
                 !duo && unit.BumpRules.PairedBossUnitId != 0 || source.CreatedMovement?.UnitId != unit.Id || source.CreatedMovement.Speed != 1 ||
                 source.CreatedMovement.CompanionBoss != duo || unit.BumpRules.CompanionBoss != duo || boss.Controller.Groups.Count != 1 || boss.DestroyActions.Count != 1 ||

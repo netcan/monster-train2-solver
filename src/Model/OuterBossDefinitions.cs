@@ -166,6 +166,25 @@ namespace MonsterTrain2Poju.Model
             unit.Statuses.Count == 2 && unit.Status("trample")?.Stacks == 1 && unit.Status("titanskin")?.Stacks == 3 &&
             OriginalGrant(rage, "buff") && OriginalGrant(skin, "titanskin");
 
+        internal static bool IsIndulgentTrampleBirth(CombatUnit unit, CombatContext? context, bool beforePlacement = false)
+        {
+            bool startingStatuses = beforePlacement
+                ? unit is { MoonPhaseMask: 5, Statuses: [{ Id: "newmoon", Stacks: 1 }, { Id: "trample", Stacks: 1 }] }
+                : unit.Statuses is [{ Id: "trample", Stacks: 1 }];
+            if (!startingStatuses || unit is not { Health: 1100, Triggers: [_, var additional] } ||
+                unit.Attack != unit.BaseAttack || context?.Relics == null) return false;
+            return unit.AssetKey switch
+            {
+                IndulgentReduceCapacity => IsIndulgentCapacityFeed(unit, additional) && context.Relics.Count(relic => relic is
+                    { DataId: "0809140a-a5c5-41f7-ab7c-375e6d88fb14", AssetKey: "Boss_Railforged_Region2_BossBattle_2",
+                        IsCovenant: false, EffectTypes: [RelicModel.Null] }) == 1,
+                IndulgentGorgeOnSlay => IsIndulgentSlayFeed(unit, additional) && context.Relics.Count(relic => relic is
+                    { DataId: "ce0711e4-7113-43cc-9cbf-ca92bbf1e4b3", AssetKey: "Boss_Railforged_Region2_BossBattle_1",
+                        IsCovenant: false, EffectTypes.Count: 0 }) == 1,
+                _ => false
+            };
+        }
+
         internal static bool IsIndulgentCapacityFeed(CombatUnit unit, CombatTrigger trigger) =>
             unit is { AssetKey: IndulgentReduceCapacity, Team: CombatTeam.Enemy, BumpRules.OuterBoss: true,
                 BaseAttack: 12, MaxHealth: 1100, Size: 5, SpawnerCardId: 0,

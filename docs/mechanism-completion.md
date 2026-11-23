@@ -367,6 +367,11 @@ Indulgent GorgeOnSlay 击杀后排入一次自身 OnFeed，获得 3 Rage，攻�
 同一段原版回放中，回调、首领状态、战斗上下文和 RNG 均一致。
 [原版击杀和 OnFeed 记录](../tests/compatibility/game-2.3.1/mechanics/indulgent-gorge-on-slay/native-gorge-on-slay.mt2f)
 
+减容和 GorgeOnSlay 的新月出生均通过原版独立回放。两个旧录档把原版控制器记录在出生事件里，
+校验时将同一份控制器数据放回回合快照，核对未放置实体、初始选层、物理站位和随机流。
+[减容出生](../tests/compatibility/game-2.3.1/mechanics/indulgent-capacity/native-birth.mt2f)
+[GorgeOnSlay 出生](../tests/compatibility/game-2.3.1/mechanics/indulgent-gorge-on-slay/native-birth.mt2f)
+
 Railforged 波次里的 `R1_Attacker_AscendGainAtk_Ver2` 击杀后尝试下移并获得 10 护甲。
 原版底层和跨层两次交战的完整状态、物理站位和随机流均通过对照。跨层样本也覆盖伤害
 预演触发目标层原生单位的 Shift 回调。

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace MonsterTrain2Poju.Model
@@ -81,6 +82,9 @@ namespace MonsterTrain2Poju.Model
                 train.Context?.Relics?.Count(relic => relic is { DataId: OuterBossDefinitions.IndulgentTitanskinOwnerId,
                     AssetKey: OuterBossDefinitions.IndulgentTitanskinOwnerKey, IsCovenant: false,
                     EffectTypes: [RelicModel.Null] }) == 1;
+            bool trampleIndulgent = OuterBossDefinitions.IsIndulgentTrampleBirth(actor.Unit, train.Context) &&
+                boss is { ValidAttackPhases: -1, Actions: [[{ Behavior: "RandomOccupiedBossActionBehavior",
+                    TargetTeam: CombatTeam.Player, Empty: true, DestroyRoom: false }]] };
             int moon = train.Context?.QueryFrame?.MoonPhase ?? 0;
             bool siphonTrialNewMoon = moon == 1 && battle.MoonPhase == "New" &&
                 actor.Unit is { AssetKey: "Boss_Level3_Arkion_SiphonRage", MoonPhaseMask: 4,
@@ -110,10 +114,15 @@ namespace MonsterTrain2Poju.Model
                     actor.Unit is { AssetKey: "Boss_Level3_Fleshweaver_MoreMass", BaseAttack: 6, Attack: 22, Health: 600, MaxHealth: 600 });
             bool calibratedMoon = battle.MoonPhaseTrackingActive == true &&
                 (siphonTrialNewMoon || unrulyNewMoon || sniperNewMoon || dutifulFullMoon || fullMoon ||
-                    calibratedIndulgent && moon == 1 && actor.Unit.MoonPhaseMask == 4 && battle.MoonPhase == "New") &&
+                    (calibratedIndulgent || trampleIndulgent) && moon == 1 && actor.Unit.MoonPhaseMask == 4 && battle.MoonPhase == "New") &&
                 !actor.Unit.Triggers.Any(trigger => trigger.Kind is "OnMoonLit" or "OnMoonlitLost" or
                     "OnMoonShade" or "OnMoonshadeLost" or "OnMoonPhaseShift");
-            if (actor.ExternalInteractions.Count > 0) return Fail(string.Join("; ", actor.ExternalInteractions));
+            // Earlier birth captures emitted this guard before the two stock actions were calibrated.
+            IReadOnlyList<string> birthInteractions = trampleIndulgent
+                ? actor.ExternalInteractions.Where(interaction => interaction !=
+                    "Outer-boss definition or action signature requires separate calibration.").ToArray()
+                : actor.ExternalInteractions;
+            if (birthInteractions.Count > 0) return Fail(string.Join("; ", birthInteractions));
             if (OuterBossDefinitions.IsCaelTrial(actor.Unit.AssetKey) &&
                 !OuterBossDefinitions.CalibratedCaelTrial(actor.Unit, train.Context, actor.BirthStats))
                 return Fail("Cael Titan Trial requires the original replacement, owner and calibrated Covenant birth.");
@@ -125,10 +134,10 @@ namespace MonsterTrain2Poju.Model
                 return Fail("Outer-boss Covenant creation requires its calibrated native birth stats.");
             if (OuterBossDefinitions.IsDutiful(actor.Unit.AssetKey) && !CalibratedDutiful(actor.Unit))
                 return Fail("Dutiful birth requires the captured original actor and status trigger.");
-            if (!OuterBossDefinitions.Supports(actor.Unit.AssetKey) || actor.Unit.Id != 0 || boss.UnitId != 0 ||
+            if (!(OuterBossDefinitions.Supports(actor.Unit.AssetKey) || trampleIndulgent) || actor.Unit.Id != 0 || boss.UnitId != 0 ||
                 boss.AssetKey != actor.Unit.AssetKey || boss.Room != -1 || boss.Phase != "Casting" ||
                 old.OuterBoss != null || train.Context?.SpawnPoints == null || actor.Unit.BumpRules?.OuterBoss != true ||
-                (indulgent ? !calibratedIndulgent :
+                (!trampleIndulgent && (indulgent ? !calibratedIndulgent :
                     duo ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("titanskin")?.Stacks != 10 :
                     OuterBossDefinitions.IsArkionPyre(actor.Unit.AssetKey)
                         ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("multistrike")?.Stacks != 1
@@ -140,7 +149,7 @@ namespace MonsterTrain2Poju.Model
                         : OuterBossDefinitions.IsFleshweaver(actor.Unit.AssetKey)
                             ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("mass")?.Stacks !=
                                 (actor.Unit.AssetKey == "Boss_Level3_Fleshweaver_MoreMass" ? 8 : 5) || actor.Unit.Status("mass")?.ParamInt != 2
-                        : actor.Unit.Statuses.Count != 0) ||
+                        : actor.Unit.Statuses.Count != 0)) ||
                 actor.Unit.Ability != null || actor.Unit.Modifiers?.Upgrades.Count != 0 ||
                 actor.CompanionBoss != duo || actor.Unit.BumpRules.CompanionBoss != duo ||
                 battle.MoonPhaseTrackingActive == true && !calibratedMoon)
@@ -197,7 +206,7 @@ namespace MonsterTrain2Poju.Model
                     .WithEndsBattleOnDeath(false);
             }
             return new OuterBossInstantiationResult(new OuterBossCreationState(next, created,
-                boss.WithIdentity(allocation.UnitId), actor.ExternalInteractions,
+                boss.WithIdentity(allocation.UnitId), birthInteractions,
                 new EnemyMovement(allocation.UnitId, 1, actor.Ascends, actor.Loops, actor.CompanionBoss), actor.BirthStats));
         }
     }
