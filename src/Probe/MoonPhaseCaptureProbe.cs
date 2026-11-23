@@ -11,7 +11,7 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static bool Enabled => AdvisorRuntime.PlayerSession || RoomMoonCallbackCalibration.Enabled ||
 #if DEVELOPMENT_PROBE
-            OriginalPyreAbilityCooldownWitness.Reuse ||
+            OriginalPyreAbilityCooldownWitness.Reuse || OriginalFhyraGoldWitness.Enabled || OriginalFhyraGoldWitness.FullBattle ||
             RankThreeRoomSlayScenario.Enabled || OriginalRoomHealthAttackScenario.Enabled || OriginalStatusMagnitudeWitness.Moon ||
             OriginalOpeningUnitsScenario.Enabled ||
 #endif

@@ -7,6 +7,28 @@ namespace MonsterTrain2Poju.Model
     public static partial class RelicResourceModel
     {
         public const string ExtraPyreDamage = "RelicEffectApplyExtraPyreDamage";
+        internal const string GoldOnPyreDamage = "RelicEffectAddGoldOnPyreDamage";
+        internal const string FhyraOwnerId = "cc792aac-4b82-40af-bf80-3a83bc511383";
+        internal const string FhyraOwnerKey = "PyreHeartFhyra_ArtifactData";
+
+        internal static bool IsFhyraGold(CombatRelicState owner, RelicResourceEffect rule) =>
+            owner.DataId == FhyraOwnerId && owner.AssetKey == FhyraOwnerKey && owner.IsCovenant == false &&
+            owner.DisallowedInPlacementPhase.HasValue && owner.EffectTypes is [GoldOnPyreDamage] &&
+            rule.EffectIndex == 0 && rule.ParamInt == 10 && rule.Amount == rule.ParamInt &&
+            rule.RequiredMutatorId == null && rule.Conditions.Count == 0 && rule.CanApplyInPreviewMode;
+
+        internal static CombatContext AwardGoldForPyreLoss(CombatContext source, int damage, bool placement)
+        {
+            if (damage <= 0 || source.Relics == null) return source;
+            CombatContext result = source;
+            foreach (CombatRelicState owner in source.Relics)
+            {
+                if (owner.DataId != FhyraOwnerId || (placement && owner.DisallowedInPlacementPhase == true) ||
+                    owner.ResourceEffects is not [RelicResourceEffect rule] || rule.Type != GoldOnPyreDamage) continue;
+                result = result.WithGold(Math.Max(0, unchecked(result.Gold + rule.Amount)));
+            }
+            return result;
+        }
 
         // DoGetDamageToTarget invokes this after defenses, before HP/resurrection.
         // GetDamageToTarget's synchronous estimate does not invoke this manager.

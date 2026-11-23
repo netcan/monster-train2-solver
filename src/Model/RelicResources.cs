@@ -347,7 +347,7 @@ namespace MonsterTrain2Poju.Model
         public const string StartTurnRoomEffect = RelicStartTurnStatusModel.Effect;
         public const string PostOpeningDiscardReplacement = RelicJudgesScalesModel.Effect;
         public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == StartCombatHoard || type == Draw ||
-            type == PyreAttack || type == PyreHealth || type == ExtraPyreDamage || type == RelicPileSpawnUpgradeModel.Effect || type == RelicSpawnStatusScalingModel.Effect || type == PayCardCostWithPyreHealth || type == FloorCapacity || type == MoonPhaseEnergy || type == MoonPhaseStatus || type == RelicDamagedFloorEnergyModel.Effect || RelicTurnEnergyModel.IsEffect(type) ||
+            type == PyreAttack || type == PyreHealth || type == ExtraPyreDamage || type == GoldOnPyreDamage || type == RelicPileSpawnUpgradeModel.Effect || type == RelicSpawnStatusScalingModel.Effect || type == PayCardCostWithPyreHealth || type == FloorCapacity || type == MoonPhaseEnergy || type == MoonPhaseStatus || type == RelicDamagedFloorEnergyModel.Effect || RelicTurnEnergyModel.IsEffect(type) ||
             type == EnergyOnCardEarlyDiscard || type == RelicEndCombatModel.GrosMichelDestroy || type == RelicPyreResurrectionModel.Effect || type == RelicDecayDeathModel.Effect ||
             type == GoldOnExhaust || type == RelicOpeningSpawnModel.Effect || type == RelicAfterDrawSpawnModel.Effect || type == RelicOpeningDeckSpawnModel.Effect || type == RelicCorruptedAngelsModel.Effect ||
             type == EnergyOnCorruptRestrictedPlayed || type == CorruptionOnCorruptRestrictedPlayed ||
@@ -625,6 +625,8 @@ namespace MonsterTrain2Poju.Model
                 if (rule.Type == ExtraPyreDamage && (rule.Amount != rule.ParamInt || !rule.CanApplyInPreviewMode ||
                     rule.RequiredMutatorId != null || !relic.DisallowedInPlacementPhase.HasValue || !relic.IsCovenant.HasValue))
                     return "Missing or inconsistent native extra Pyre damage definition.";
+                if (rule.Type == GoldOnPyreDamage && !IsFhyraGold(relic, rule))
+                    return "Missing or inconsistent native Fhyra Pyre damage reward.";
                 if ((rule.Type == Energy || rule.Type == DeploymentEnergy || rule.Type == StartCombatEnergy || rule.Type == RelicDamagedFloorEnergyModel.Effect) && rule.Amount != rule.ParamInt)
                     return "Relic energy initialized amount differs from its original parameter.";
                 if (rule.Type == MoonPhaseEnergy && (rule.Amount != rule.ParamInt || rule.ParamInt2 <= 0 || (rule.ParamInt2 & ~7) != 0))

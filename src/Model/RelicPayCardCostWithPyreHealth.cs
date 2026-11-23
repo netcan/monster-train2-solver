@@ -79,6 +79,15 @@ namespace MonsterTrain2Poju.Model
             // Later room effects resume the enchantment world. Preserve the
             // payment there as well as on the live Pyre before queuing OnHit.
             TrainCombatState paidState = UnitCloneModel.ReplaceUnit(source, paidPyre);
+            foreach (int amount in callbackCosts)
+            {
+                CombatContext beforeReward = paidState.Context!;
+                CombatContext awarded = RelicResourceModel.AwardGoldForPyreLoss(beforeReward, amount, placement: false);
+                if (ReferenceEquals(awarded, beforeReward)) continue;
+                TrainCombatResult refreshed = RelicResourceModel.RefreshPyreAttack(CardSpellModel.WithContext(paidState, awarded));
+                if (!refreshed.Supported) return Fail(source, refreshed.UnsupportedReason!);
+                paidState = refreshed.State!;
+            }
             var callbacks = callbackCosts.Select(amount => new RoomCombatModel.QueuedCharacterTrigger(
                 pyreRoom.RoomIndex, paidPyre, "OnHit", paramInt: amount, paramInt2: 0)).ToArray();
             return new RelicPyreCostPlan(paidState, true, true, callbacks);

@@ -587,6 +587,8 @@ param(
     [switch] $OriginalPreventMonsterDamageBattle,
     [ValidateSet('WithOwner', 'WithoutOwner', 'WithOwnerReuse', 'WithoutOwnerReuse')]
     [string] $OriginalPyreAbilityCooldownWitness = '',
+    [switch] $OriginalFhyraGoldWitness,
+    [switch] $OriginalFhyraGoldBattle,
     [switch] $OriginalRandomSpellTargetsWitness,
     [switch] $OriginalRandomSpellTargetsBattle,
     [switch] $OriginalRandomJustCauseWitness,
@@ -887,6 +889,17 @@ param(
 $ErrorActionPreference = 'Stop'
 if ($NativeBuildRoot -and -not $SkipBuild) {
     throw 'NativeBuildRoot requires prebuilt native binaries with SkipBuild.'
+}
+if ($OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle) {
+    $witnessArguments = @('OriginalFhyraGoldWitness', 'OriginalFhyraGoldBattle', 'InputProfile', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+        'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not ($BinaryCapture -and $InputProfile) -or ($OriginalFhyraGoldWitness -and $OriginalFhyraGoldBattle) -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count) {
+        throw 'Original Fhyra gold requires an isolated first-battle InputProfile and binary capture.'
+    }
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = if ($OriginalFhyraGoldBattle) { 'no-cards' } else { 'units-spells-and-junk' }
 }
 if ($OriginalPyreAbilityCooldownWitness) {
     $witnessArguments = @('OriginalPyreAbilityCooldownWitness', 'InputProfile', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
@@ -2335,7 +2348,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll'
 }
 if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $AdvisorOffRoute -or
     $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth -or $OriginalFunguyDeckScalingDoubleUnits -or
-    $OriginalPyreAbilityCooldownWitness) {
+    $OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -2348,8 +2361,8 @@ if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput 
     if (($OriginalThikDeckChange -or $OriginalThikBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original Thik capture requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
-    if ($OriginalPyreAbilityCooldownWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
-        throw "Original Pyre ability cooldown birth requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
+    if (($OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw "Original Pyre witness requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
     if ($AdvisorOffRoute -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "AdvisorOffRoute requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
@@ -2509,10 +2522,10 @@ if ($InputProfile) {
         throw 'Original opening cohorts require a standard native first-battle checkpoint.'
     }
     if ($CapturePlayerDeploymentOnly) { $deploymentInputSignature = Get-OriginalSignature $checkpoint }
-    if ($OriginalPyreAbilityCooldownWitness) {
+    if ($OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle) {
         if ($checkpointData.runType -cne 'Class' -or $checkpointData.wasDevCheatUsed -ne $false -or
             $checkpointData.runState.numBattlesCompleted -ne 0) {
-            throw 'Original Pyre ability cooldown birth requires a standard first battle checkpoint.'
+            throw 'Original Pyre witness requires a standard first battle checkpoint.'
         }
         $pyreBirthInputSignature = Get-OriginalSignature $checkpoint
     }
@@ -2689,6 +2702,8 @@ $environment = @{
     MT2_PROBE_EFFECT_OWNER_TYPE = $EffectOwnerType
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_WITNESS = $(if ($OriginalPreventMonsterDamageWitness) { '1' } else { '0' })
     MT2_PROBE_PYRE_ABILITY_COOLDOWN_WITNESS = $OriginalPyreAbilityCooldownWitness
+    MT2_PROBE_ORIGINAL_FHYRA_GOLD = $(if ($OriginalFhyraGoldWitness) { '1' } else { '0' })
+    MT2_PROBE_ORIGINAL_FHYRA_BATTLE = $(if ($OriginalFhyraGoldBattle) { '1' } else { '0' })
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_BATTLE = $(if ($OriginalPreventMonsterDamageBattle) { '1' } else { '0' })
     MT2_PROBE_RANDOM_SPELL_TARGETS_WITNESS = $(if ($OriginalRandomSpellTargetsWitness) { '1' } else { '0' })
     MT2_PROBE_RANDOM_SPELL_TARGETS_BATTLE = $(if ($OriginalRandomSpellTargetsBattle) { '1' } else { '0' })
@@ -3636,6 +3651,16 @@ if ($OriginalPreventMonsterDamageWitness) {
     Write-Output "NATIVE-PREVENT-MONSTER-DAMAGE PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
+if ($OriginalFhyraGoldWitness) {
+    $capturePath = Join-Path $profile 'fhyra-gold-on-pyre-damage.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Fhyra gold on Pyre damage component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore -or (Get-OriginalSignature $checkpoint) -cne $pyreBirthInputSignature) {
+        throw "Original Fhyra gold on Pyre damage witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-FHYRA-GOLD PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
 if ($OriginalPyreAbilityCooldownWitness) {
     $boundary = if ($OriginalPyreAbilityCooldownWitness.EndsWith('Reuse')) { 'reuse' } else { 'birth' }
     $capturePath = Join-Path $profile "pyre-ability-cooldown-$boundary.mt2f"
@@ -4554,6 +4579,9 @@ if ($DamageOverflow -and ($trace.ModifierScenario -ne 'damage-overflow' -or
 }
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
+if ($OriginalFhyraGoldBattle -and (Get-OriginalSignature $checkpoint) -cne $pyreBirthInputSignature) {
+    throw 'The Fhyra battle donor checkpoint changed.'
+}
 if ($OriginalOpeningRelicRosterIds.Count) {
     $turns = @($trace.Turns)
     $expectedOwners = @($trace.OriginalOpeningRelicRosterOwners)

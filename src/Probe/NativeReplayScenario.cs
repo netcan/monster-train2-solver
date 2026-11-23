@@ -765,6 +765,8 @@ namespace MonsterTrain2Poju.Probe
                     if (fullBattle && OriginalPriorityRelicBattleScenario.Enabled && !OriginalPriorityRelicBattleScenario.Acquired)
                         OriginalPriorityRelicBattleScenario.AcquireBeforeBattle(managers!, log);
 #if DEVELOPMENT_PROBE
+                    if (fullBattle && (OriginalFhyraGoldWitness.Enabled || OriginalFhyraGoldWitness.FullBattle) && !OriginalFhyraGoldWitness.Prepared)
+                        OriginalFhyraGoldWitness.Prepare(save);
                     if (fullBattle && OriginalPyreAbilityCooldownWitness.Enabled && !OriginalPyreAbilityCooldownWitness.Prepared)
                         OriginalPyreAbilityCooldownWitness.Prepare(save);
 #endif
@@ -972,6 +974,20 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && OriginalFhyraGoldWitness.Enabled)
+            {
+                if (combat!.GetTurnCount() == 0)
+                {
+                    save.MarkOneTimeMessageComplete(OneTimeMessage.EndTurnWithoutPlayingChampion);
+                    AdvanceTurn(combat, record: false);
+                }
+                else
+                {
+                    OriginalFhyraGoldWitness.Write(FullBattleTrace.Active!, managers);
+                    Finish(true, "Original Fhyra gold on Pyre damage component captured.");
+                }
+                return;
+            }
             if (fullBattle && OriginalPyreAbilityCooldownWitness.Enabled)
             {
                 if (OriginalPyreAbilityCooldownWitness.Reuse)

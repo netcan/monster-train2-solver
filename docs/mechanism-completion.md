@@ -304,6 +304,11 @@ Just Cause 的原版专项确认，随机选中的单位换位后仍由同一个
 [随机换位专项](../tests/compatibility/game-2.3.1/mechanics/random-spell-targets/just-cause.mt2f) ·
 [原版整战](../tests/compatibility/game-2.3.1/mechanics/random-spell-targets/native-battle.mt2f)
 
+Fhyra 在原版扣血并触发薪火受伤回调后获得 10 金币。零伤害和未触发回调的扣血对照均无金币变化。
+不出牌的原版开局胜局包含 5 次有效受伤，金币从 50 升至 100，7 次结束回合及候选检查全部匹配。
+[原版受伤回调](../tests/compatibility/game-2.3.1/mechanics/fhyra-gold-on-pyre-damage/tower-damage-callbacks.mt2f) ·
+[原版整战](../tests/compatibility/game-2.3.1/mechanics/fhyra-gold-on-pyre-damage/native-battle.mt2f)
+
 ExtraFeedTrigger 的原版查询确认友军 OnFeed 次数为 2，OnDeath 次数保持 1。
 61 个战斗阶段、5 次出牌、7 次结束回合与两类候选通过。实际普通进食也已录到两次 OnFeed，
 合金构装体的燃料从 1 增至 3，矿工只被吃掉一次，完整状态与随机数在 16 条分支上复放一致。

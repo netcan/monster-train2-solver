@@ -3298,7 +3298,18 @@ namespace MonsterTrain2Poju.Model
                 if (attackingTrigger && actor != null && actor != target)
                     FireTriggers(actor, "OnAttackingBeforeDamage", overrideTarget: target, attackDamageDealt: attackDamageDealt);
                 if (unsupportedReason != null) return;
+                int towerHealthLoss = target.Source.IsPyre ? target.Health - resultingHealth : 0;
                 if (!SetHealth(target, resultingHealth)) return;
+                if (!source.Preview && towerHealthLoss > 0 && context != null)
+                {
+                    CombatContext awarded = RelicResourceModel.AwardGoldForPyreLoss(context, towerHealthLoss, source.Deployment);
+                    if (!ReferenceEquals(awarded, context))
+                    {
+                        RelicPyreAttackRefreshResult refreshed = RefreshGold(awarded);
+                        if (!refreshed.Supported) { unsupportedReason = refreshed.UnsupportedReason; return; }
+                        context = refreshed.Context;
+                    }
+                }
                 if (!source.Preview && target.Source.Team == CombatTeam.Player && !target.Source.IsPyre &&
                     context?.Statistics?.MonsterDamage != null)
                 {
