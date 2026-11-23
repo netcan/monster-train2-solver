@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--original-fecundity-oncast-only" &&
+    (args.Length == 2 || args[2] == "--observe-only"))
+{
+    using var observation = ModelJson.ReadFixture(args[1]);
+    OriginalFullCostReductionChecks.NativeCast(observation.RootElement, observeOnly: args.Length == 3);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--original-full-cost-reduction-only")
 {
     using var observation = ModelJson.ReadFixture(args[1]);

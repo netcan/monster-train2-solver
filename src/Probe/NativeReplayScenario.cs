@@ -1216,6 +1216,12 @@ namespace MonsterTrain2Poju.Probe
                 Finish(true, "Original full-cost reduction captured.");
                 return;
             }
+            if (fullBattle && OriginalFullCostReductionWitness.CastEnabled)
+            {
+                if (OriginalFullCostReductionWitness.TickCast(managers, log))
+                    Finish(true, "Original Fecundity paid cast captured.");
+                return;
+            }
             if (fullBattle && OriginalMollisShelterObservation.Enabled)
             {
                 if (OriginalMollisShelterObservation.Tick(managers, log)) AdvanceTurn(combat!, record: false);

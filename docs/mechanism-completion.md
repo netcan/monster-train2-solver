@@ -1349,9 +1349,11 @@ Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者
 [波次整战归档](../tests/compatibility/game-2.3.1/mechanics/randomized-waves/native-battle.mt2f)
 
 Fecundity 的原版升级回调会把全额减费值改为目标卡当前的实际费用。专项归档对照了目标卡和显式来源卡
-分别持有该特性的两条路径，以及两卡均无该特性的控制组。已接入 `FreeFromBlessing` 的手牌升级；
-Fecundity 的出牌后副本替换仍待实机核对。
-[减费专项归档](../tests/compatibility/game-2.3.1/mechanics/fecundity-cost/full-cost-reduction.mt2f)
+分别持有该特性的两条路径，以及两卡均无该特性的控制组。该回调已接入 `FreeFromBlessing` 的手牌升级。
+原版 Train Steward 付费出牌后也生成了独立手牌副本。副本采用临时费用 +1 的后继升级，来源卡保留原升级。
+专项复放核对了本次操作的完整状态、随机流和出牌候选。
+[减费专项归档](../tests/compatibility/game-2.3.1/mechanics/fecundity-cost/full-cost-reduction.mt2f) ·
+[付费出牌归档](../tests/compatibility/game-2.3.1/mechanics/fecundity-cost/fecundity-oncast.mt2f)
 
 `LoseMoneyOnHit` 的原版触发器经过三次实机命中对照。每次命中扣 1 金，金币为 0 时由现有金币规则钳制。
 专项复放逐项核对伤害、金币和随机流，并检查缺少原版触发器时的拒绝路径。

@@ -774,6 +774,7 @@ param(
     [switch] $OriginalMollisCycleOfLife,
     [switch] $OriginalMollisShelterObservation,
     [switch] $OriginalFullCostReduction,
+    [switch] $OriginalFecundityOnCast,
     [ValidateRange(1, 3)][int] $OriginalElleTier,
     [switch] $OriginalBurnoutDamageRelic,
     [switch] $OriginalHealDamageRelic,
@@ -2173,14 +2174,19 @@ if ($OriginalMollisCycleOfLife) {
     $SettleDeathDissolves = $true
     $Policy = 'units-spells-and-junk'
 }
-if ($OriginalFullCostReduction) {
-    $allowed = @('OriginalFullCostReduction', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
+if ($OriginalFullCostReduction -or $OriginalFecundityOnCast) {
+    $scenarioFlag = if ($OriginalFecundityOnCast) { 'OriginalFecundityOnCast' } else { 'OriginalFullCostReduction' }
+    $allowed = @($scenarioFlag, 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
         'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if (!$BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
-        throw 'OriginalFullCostReduction requires a separate first-battle binary observation.'
+        throw "$scenarioFlag requires a separate first-battle binary observation."
+    }
+    if ($OriginalFecundityOnCast -and $NativeWorker -lt 2) {
+        throw 'OriginalFecundityOnCast requires an explicitly assigned isolated native worker.'
     }
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
+    if ($OriginalFecundityOnCast) { $SettleCardAnimations = $true }
     $Policy = 'units-spells-and-junk'
 }
 if ($OriginalMollisShelterObservation) {
@@ -2604,7 +2610,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll'
 if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $AdvisorOffRoute -or
     $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth -or $OriginalFunguyDeckScalingDoubleUnits -or
     $OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness -or
-    $OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle -or $OriginalHandAndEmberWitness) {
+    $OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle -or $OriginalHandAndEmberWitness -or $OriginalFecundityOnCast) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -2622,6 +2628,9 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     }
     if ($OriginalHandAndEmberWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original hand and Ember witness requires the pinned 2.3.1 game module.'
+    }
+    if ($OriginalFecundityOnCast -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'Original Fecundity paid cast requires the pinned 2.3.1 game module.'
     }
     if (($OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original Pyre witness requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
@@ -3694,6 +3703,7 @@ if ($OriginalMollisCycleOfLife) {
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
 if ($OriginalFullCostReduction) { $environment['MT2_PROBE_MODIFIERS'] = 'original-full-cost-reduction' }
+if ($OriginalFecundityOnCast) { $environment['MT2_PROBE_MODIFIERS'] = 'original-fecundity-oncast' }
 if ($OriginalMollisShelterObservation) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-mollis-shelter-observation'
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
@@ -4448,6 +4458,15 @@ if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness) {
         (Get-OriginalSignature) -cne $originalBefore) { throw "Original status magnitude witness failed; inspect $unityLog" }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
         MoonPhaseWitness=[bool]$OriginalStatusMagnitudeMoonWitness; Trace=$capturePath } | ConvertTo-Json
+    return
+}
+if ($OriginalFecundityOnCast) {
+    $capturePath = Join-Path $profile 'fecundity-oncast.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Fecundity paid cast captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Original Fecundity paid cast observation failed; inspect $unityLog" }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        Cases=1; Trace=$capturePath; SHA256=(Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash } | ConvertTo-Json
     return
 }
 if ($OriginalFullCostReduction) {

@@ -508,6 +508,7 @@ namespace MonsterTrain2Poju.Probe
                     trait.GetType().Name != "CardTraitIgnoreArmor" &&
                     trait.GetType().Name != "CardTraitDrawInDeploymentPhase" &&
                     !DamageScalingProbe.Known(trait.GetType().Name) &&
+                    !CardModifierProbe.SupportedFecunditySpawnerTrait(card, trait) &&
                     !OriginalExtractForEmberAndEchosScenario.IsSupportedCarrierTrait(card, trait)) || unsupportedSpawnerCardTriggers))
                 interactions.Add(character.GetSourceCharacterData().GetAssetKey() + " card traits/triggers");
             var nativeStatuses = new List<CharacterState.StatusEffectStack>();

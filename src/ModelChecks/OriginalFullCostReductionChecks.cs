@@ -4,6 +4,57 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalFullCostReductionChecks
 {
+    internal static void NativeCast(FixtureValue fixture, bool observeOnly)
+    {
+        Require(fixture.GetProperty("Schema").GetInt32() == 1 &&
+            fixture.GetProperty("Boundary").GetString() == "OriginalFecundityOnCast" &&
+            fixture.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            fixture.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            fixture.GetProperty("FecundityOwner").GetString() == "d968e210-0d44-47c9-b783-f0c90dfe757b" &&
+            fixture.GetProperty("CallbackCount").GetInt32() == 1,
+            "Expected one original 2.3.1 Fecundity callback.");
+        FixtureValue definition = fixture.GetProperty("Definition");
+        var authored = definition.Deserialize<CardUpgradeModifier>()!;
+        Require(definition.ContentEquals(fixture.GetProperty("DefinitionAfter")) && authored.Lifecycle != null &&
+            CardFullCostReductionModel.OriginalTraitUpgrade(authored.DataId, authored.AssetKey, authored.Lifecycle),
+            "The paid cast does not have the unchanged original Fecundity definition.");
+
+        var before = fixture.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var actual = fixture.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        var action = fixture.GetProperty("Action").Deserialize<PlayCardAction>()!;
+        int sourceId = fixture.GetProperty("SourceId").GetInt32(), copyId = fixture.GetProperty("CopyId").GetInt32();
+        int actorId = fixture.GetProperty("ActorId").GetInt32(), paid = fixture.GetProperty("PaidCost").GetInt32();
+        var prior = before.Spawn.Train.Context!;
+        var next = actual.Spawn.Train.Context!;
+        CardInstanceState source = prior.FindCard(sourceId)!;
+        CardInstanceState copy = next.FindCard(copyId)!;
+        Require(action.CardInstanceId == sourceId && sourceId != copyId && paid > 0 && before.Energy - actual.Energy == paid &&
+            prior.Cards.Hand.Any(card => card.InstanceId == sourceId) && !next.Cards.Hand.Any(card => card.InstanceId == sourceId) &&
+            prior.FindCard(copyId) == null && next.Cards.Hand.Any(card => card.InstanceId == copyId) &&
+            source.DataId == "d14a50f3-728d-43e1-87f0-ef1b013f6678" && source.DataId == copy.DataId &&
+            source.Permanent.Upgrades.Any(CardFullCostReductionModel.HasOriginalTrait) &&
+            next.FindCard(sourceId)?.Permanent.Upgrades.Any(CardFullCostReductionModel.HasOriginalTrait) == true &&
+            copy is { Permanent.Upgrades.Count: 0, Temporary.Upgrades: [{ DataId: CardFullCostReductionModel.FecundityCopyId, Stats.Cost: 1 }],
+                MaskDescriptor: { BaseTraits.Count: 0, AuthoredCastEffects.Count: 0 } } &&
+            prior.Statistics?.DeckCards?.SequenceEqual(next.Statistics?.DeckCards ?? Array.Empty<int>()) == true &&
+            Serialize(before.RngStreams) == Serialize(actual.RngStreams) &&
+            actual.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex).Units.Any(unit =>
+                unit.Id == actorId && unit.SpawnerCardId == sourceId && unit.Team == CombatTeam.Player && unit.Health > 0),
+            "The paid native cast did not deploy the original source and generate a distinct copy in hand.");
+        if (!observeOnly)
+        {
+            string parent = Serialize(before);
+            var replay = BattleActionModel.PlayCard(before, action);
+            Require(replay.State != null, "Normal paid Fecundity action was rejected: " + replay.Reason);
+            Require(BattleActionModel.EnumerateSupportedPlays(before, sourceId).Any(candidate =>
+                candidate.CardInstanceId == sourceId && candidate.RoomIndex == action.RoomIndex &&
+                candidate.PlayerPosition == action.PlayerPosition), "The advisor frontier omitted the observed paid Fecundity play.");
+            string? difference = ModelJson.Difference(Serialize(actual), Serialize(replay.State));
+            Require(difference == null && parent == Serialize(before), "Original Fecundity replay differed: " + difference);
+        }
+        Console.WriteLine($"ORIGINAL-FECUNDITY-ONCAST PASS: paid={paid} source={sourceId} copy={copyId} actor={actorId} exactReplay={!observeOnly}.");
+    }
+
     internal static void Native(FixtureValue fixture, FixtureValue? randomHandFixture = null)
     {
         Require(fixture.GetProperty("Schema").GetInt32() == 1 &&

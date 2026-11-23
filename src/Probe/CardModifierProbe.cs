@@ -18,6 +18,17 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static readonly List<CacheDecision> DecisionCaches = new List<CacheDecision>();
         [ThreadStatic] private static int upgradeDepth;
+        internal static bool SupportedFecunditySpawnerTrait(CardState card, CardTraitState trait)
+        {
+            if (trait is not CardTraitResetFullCostReductionUpgrades || trait.GetParamInt() != 0 ||
+                card.GetCardType() != CardType.Monster || card.GetTemporaryCardStateModifiers().GetCardUpgrades().Count != 0 ||
+                card.GetCardStateModifiers().GetCardUpgrades() is not [var upgrade] ||
+                upgrade.GetCardUpgradeDataId() != CardFullCostReductionModel.FecundityId)
+                return false;
+
+            return CardFullCostReductionModel.HasOriginalTrait(Upgrade(upgrade, rejectFilters: false));
+        }
+
         internal static CardInstanceState[] Capture(CardManager cards, Func<CardState, int> cardId,
             Dictionary<CardState, CardInstanceState>? captured = null)
             => Capture(cards.GetAllCards(new List<CardState>()), cardId, captured);

@@ -242,11 +242,18 @@ namespace MonsterTrain2Poju.Model
             if (rule.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.ExternalInteractions));
             if (!new[] { "HandPile", "DiscardPile", "DeckPile", "DeckPileTop", "DeckPileRandom" }.Contains(rule.Destination))
                 return Unsupported("Unmodeled generated card destination " + rule.Destination);
+            bool fecundityCopy = rule.Upgrade?.DataId == CardFullCostReductionModel.FecundityCopyId;
+            if (fecundityCopy)
+            {
+                CardGenerationRule? resolved = CardFullCostReductionModel.ResolveCopy(source.FindCard(sourceCardId), rule);
+                if (resolved == null) return Unsupported("Fecundity copying requires the observed original paid unit and replacement upgrade.");
+                rule = resolved;
+            }
             if (rule.RequireCopyableSource)
             {
                 CardInstanceState? sourceCard = source.FindCard(sourceCardId);
                 if (sourceCard == null) return Unsupported("Copy generation requires a captured source card.");
-                string? copyError = CopyabilityError(sourceCard);
+                string? copyError = CopyabilityError(sourceCard, fecundityCopy);
                 if (copyError != null) return Unsupported(copyError);
                 if (sourceCard.CanBeCopied == false) return new CardGenerationResult(source, Array.Empty<CardToken>());
             }
@@ -353,7 +360,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (applyOptionalUpgrade)
                 {
-                    if (rule.Upgrade!.ExternalInteractions.Count > 0) return Unsupported(string.Join("; ", rule.Upgrade.ExternalInteractions));
+                    if (rule.Upgrade!.ExternalInteractions.Count > 0 && !fecundityCopy) return Unsupported(string.Join("; ", rule.Upgrade.ExternalInteractions));
                     UnitUpgradeScalingResult scaled = CardConsumedUpgradeModel.Apply(context, sourceCardId, sourceCardId, rule.Upgrade);
                     if (!scaled.Supported) return Unsupported(scaled.UnsupportedReason!);
                     context = scaled.Context!;
@@ -555,7 +562,7 @@ namespace MonsterTrain2Poju.Model
         private static bool HasModifiers(CardModifiers modifiers) => modifiers.Upgrades.Count > 0 || modifiers.PersistentHealth != 0 || modifiers.BoxedCards?.Count > 0 ||
             new[] { "Damage", "Health", "Cost", "Heal", "Size", "XCost", "EquipmentLimit", "UpgradeSlotCount" }
                 .Any(stat => modifiers.Offsets.Value(stat) != 0);
-        private static string? CopyabilityError(CardInstanceState card)
+        private static string? CopyabilityError(CardInstanceState card, bool fecundityCopy)
         {
             if (card.GraftedEquipmentCardId.HasValue) return "Grafted source-card copying requires its independent graft identity transition.";
             if (CardGraftedEquipmentModel.Present(card)) return "Grafted equipment copying requires native private-state calibration.";
@@ -569,12 +576,12 @@ namespace MonsterTrain2Poju.Model
                 CardCopyOnPlayModel.SupportedMerchantPermafrost(card) || trait.RuntimeType == CardJuiceModel.TripleTrait &&
                 CardJuiceModel.KnownTripleCleanseCopySource(card) || trait.RuntimeType == "CardTraitIntrinsicState" &&
                 CardCopyOnPlayModel.SupportedIntrinsicUpgrade(card)) && trait.DeclaredName == trait.RuntimeType;
-            if (card.MaskDescriptor.TemporaryTraits.Any(trait => !Neutral(trait)) ||
+            if (!fecundityCopy && (card.MaskDescriptor.TemporaryTraits.Any(trait => !Neutral(trait)) ||
                 card.MaskDescriptor.PermanentReplacements.Any(rule => !NeutralType(rule.OldName) || !NeutralType(rule.NewRuntimeType)) ||
                 card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade =>
                     upgrade.Lifecycle?.AddedTraits.Any(trait => !Neutral(trait)) == true ||
                     upgrade.Lifecycle?.RemovedRuntimeTypes.Count > 0 &&
-                    (!card.Permanent.Upgrades.Contains(upgrade) || !IsOriginalConsumeRemoval(upgrade))))
+                    (!card.Permanent.Upgrades.Contains(upgrade) || !IsOriginalConsumeRemoval(upgrade)))))
                 return "Copyability changes from card trait upgrades are not modeled.";
             return null;
         }
