@@ -36,6 +36,9 @@ internal static class RecordedBattleChecks
             int turn = DecisionTurn(row);
             return turn >= firstTurn && turn <= lastTurn;
         }
+        bool trackPreviewPosition = root.TryGetProperty("NativeRunInput", out FixtureValue run) &&
+            run.ValueKind == FixtureKind.Object && run.TryGetProperty("RunType", out FixtureValue runType) &&
+            runType.GetString() == "RegionRun";
         Require(actions.Length > 0 || turns.Length > 0, "Recorded battle contains no actions or EndTurns.");
         BattleTurnState initial = (actions.Length > 0 ? actions[0] : turns[0])
             .GetProperty("Before").Deserialize<BattleTurnState>()!;
@@ -52,11 +55,11 @@ internal static class RecordedBattleChecks
                 while (actionIndex < actions.Length && DecisionTurn(actions[actionIndex]) <= number)
                     Play(actionIndex++);
                 string label = $"EndTurn {number}";
-                state = RecordedBoundary(state, turn.GetProperty("Before"), terminal: false, "before " + label);
+                state = RecordedBoundary(state, turn.GetProperty("Before"), terminal: false, "before " + label, trackPreviewPosition);
                 BattleTurnResult next = BattleTurnModel.EndTurn(state, Decisions(turn));
                 Require(next.Supported, label + ": " + (next.UnsupportedReason ?? "Unsupported."));
                 Require(next.Outcome == turn.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(), label + ": Outcome differs.");
-                state = RecordedBoundary(next.State!, turn.GetProperty("Actual"), Terminal(next.Outcome), "after " + label);
+                state = RecordedBoundary(next.State!, turn.GetProperty("Actual"), Terminal(next.Outcome), "after " + label, trackPreviewPosition);
             }
             while (actionIndex < actions.Length) Play(actionIndex++);
             completed?.Invoke(state);
@@ -64,11 +67,11 @@ internal static class RecordedBattleChecks
             {
                 FixtureValue row = actions[index];
                 string label = $"play {index + 1} in turn {state.Spawn.Turn}";
-                state = RecordedBoundary(state, row.GetProperty("Before"), terminal: false, "before " + label);
+                state = RecordedBoundary(state, row.GetProperty("Before"), terminal: false, "before " + label, trackPreviewPosition);
                 BattleActionResult next = BattleActionModel.PlayCard(state, row.GetProperty("Action").Deserialize<PlayCardAction>()!);
                 Require(next.Supported, label + ": " + (next.Reason ?? "Unsupported."));
                 Require(next.Outcome == row.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(), label + ": Outcome differs.");
-                state = RecordedBoundary(next.State!, row.GetProperty("Actual"), Terminal(next.Outcome), "after " + label);
+                state = RecordedBoundary(next.State!, row.GetProperty("Actual"), Terminal(next.Outcome), "after " + label, trackPreviewPosition);
             }
         }
         Replay();
@@ -80,50 +83,25 @@ internal static class RecordedBattleChecks
     private static bool Terminal(RoomOutcome outcome) => outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
     internal static RelentlessDecision[]? Decisions(FixtureValue row) => row.TryGetProperty("RelentlessDecisions", out var choices) &&
         choices.ValueKind != FixtureKind.Null ? choices.Deserialize<RelentlessDecision[]>() : null;
-    internal static BattleTurnState RecordedBoundary(BattleTurnState state, FixtureValue snapshot, bool terminal, string label)
+    internal static BattleTurnState RecordedBoundary(BattleTurnState state, FixtureValue snapshot, bool terminal, string label,
+        bool trackPreviewPosition = false)
     {
         BattleTurnState actual = snapshot.Deserialize<BattleTurnState>()!;
         string? difference = Difference(state, actual, terminal);
-        if (difference == null) return state;
+        bool PreviewPositionMatches(BattleTurnState candidate) => terminal || !trackPreviewPosition ||
+            candidate.SelectedRoom == actual.SelectedRoom &&
+            candidate.Spawn.Train.Context?.SpawnPoints?.NextPreviewCopyId == actual.Spawn.Train.Context?.SpawnPoints?.NextPreviewCopyId;
+        if (difference == null && PreviewPositionMatches(state)) return state;
 
         // The game can focus another floor before the input or between settlement
         // and capture. Reproduce the observed focus from the modeled state.
         if (!terminal && BattleTurnModel.ReplayObservedFocus(state, actual) is BattleTurnState focused &&
-            Difference(focused, actual, terminal: false) == null)
+            PreviewPositionMatches(focused) && Difference(focused, actual, terminal: false) == null)
             return focused;
-        if (!terminal && ReplayPreviewBetweenInputs(state, actual) is BattleTurnState refreshed &&
-            Difference(refreshed, actual, terminal: false) == null)
+        if (!terminal && BattleTurnModel.ReplayObservedPreview(state, actual, trackPreviewPosition) is BattleTurnState refreshed &&
+            PreviewPositionMatches(refreshed) && Difference(refreshed, actual, terminal: false) == null)
             return refreshed;
-        throw new InvalidOperationException(label + ": " + difference);
-    }
-
-    private static BattleTurnState? ReplayPreviewBetweenInputs(BattleTurnState previous, BattleTurnState observed)
-    {
-        if (!previous.BattlePreviewEnabled || !observed.BattlePreviewEnabled || previous.Spawn.Turn != observed.Spawn.Turn ||
-            previous.PlayRules == null ||
-            previous.Spawn.Train.Context?.SpawnPoints?.NextPreviewCopyId is not int priorCopy ||
-            observed.Spawn.Train.Context?.SpawnPoints?.NextPreviewCopyId is not int actualCopy || actualCopy <= priorCopy)
-            return null;
-        if (previous.SelectedRoom != observed.SelectedRoom)
-            return BattleTurnModel.SelectRoom(previous, observed.SelectedRoom).State;
-        // Native UI can refresh a second time on the same floor between inputs.
-        // Re-run one complete preview and compare its entire resulting decision.
-        TrainCombatResult preview = BattlePreviewModel.Refresh(previous.Spawn.Train, previous.PlayRules);
-        if (!preview.Supported || preview.State!.Context?.SpawnPoints?.NextPreviewCopyId != actualCopy)
-            return null;
-        TrainCombatState train = preview.State;
-        EnemySpawnState spawn = previous.Spawn;
-        var refreshed = new EnemySpawnState(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, spawn.Rng,
-            train.Context!.NextUnitId ?? spawn.NextUnitId, spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,
-            spawn.FirstTreasureRoom, spawn.Turn, spawn.ExternalInteractions, spawn.CanonicalDecisionReferences, spawn.PendingDestroyedUnitIds,
-            spawn.OuterBoss, spawn.QueuedOuterBoss, spawn.QueuedTrueFinalBoss, spawn.TrueFinalBoss);
-        BattleRngStream[] streams = previous.RngStreams.Select(stream => stream.Name == "Battle"
-            ? new BattleRngStream(stream.Name, stream.Seed, train.Context.BattleRng)
-            : stream).ToArray();
-        return new BattleTurnState(refreshed, previous.Energy, previous.EnergyPerTurn, previous.DrawPerTurn, previous.ForgePoints,
-            previous.DragonsHoard, previous.MoonPhase, streams, previous.OtherPiles, previous.ExternalInteractions, previous.PlayRules,
-            previous.BattlePreviewEnabled, previous.UiRngIsolated, previous.CanonicalDecisionReferences, previous.CanonicalPhysicalReferences,
-            previous.SelectedRoom, previous.MoonPhaseTrackingActive);
+        throw new InvalidOperationException(label + ": " + (difference ?? "Preview room or allocator differs."));
     }
 
     internal static void Compare(BattleTurnState predicted, BattleTurnState actual, bool terminal, string label)

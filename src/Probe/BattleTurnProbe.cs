@@ -180,6 +180,14 @@ namespace MonsterTrain2Poju.Probe
                 JToken comparableFocus = Comparable(focused);
                 if (JToken.DeepEquals(comparableFocus, actual)) return comparableFocus;
             }
+#if DEVELOPMENT_PROBE
+            if (!terminal && BattleTestRngProbe.RegionPreviewEnabled && !JToken.DeepEquals(predicted, actual) &&
+                BattleTurnModel.ReplayObservedPreview(prediction, observation) is BattleTurnState refreshed)
+            {
+                JToken comparableRefresh = Comparable(refreshed);
+                if (JToken.DeepEquals(comparableRefresh, actual)) return comparableRefresh;
+            }
+#endif
             return predicted;
         }
 

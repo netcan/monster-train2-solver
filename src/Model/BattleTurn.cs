@@ -187,6 +187,51 @@ namespace MonsterTrain2Poju.Model
             return SelectRoom(source, room, refreshPreview: false).State;
         }
 
+        internal static BattleTurnState? ReplayObservedPreview(BattleTurnState source, BattleTurnState observed,
+            bool allowAdditionalRefreshes = false)
+        {
+            if (!source.BattlePreviewEnabled || !observed.BattlePreviewEnabled || source.Spawn.Turn != observed.Spawn.Turn ||
+                source.PlayRules == null || source.Spawn.Train.Context?.SpawnPoints?.NextPreviewCopyId is not int priorCopy ||
+                observed.Spawn.Train.Context?.SpawnPoints?.NextPreviewCopyId is not int actualCopy || actualCopy <= priorCopy)
+                return null;
+            if (source.SelectedRoom != observed.SelectedRoom)
+            {
+                BattleTurnState? focused = SelectRoom(source, observed.SelectedRoom).State;
+                if (!allowAdditionalRefreshes || focused == null) return focused;
+                source = focused;
+            }
+
+            // Each observed refresh must advance the allocator without crossing
+            // the native boundary. Callers still compare the full successor.
+            TrainCombatState train = source.Spawn.Train;
+            if (train.Context?.SpawnPoints?.NextPreviewCopyId is not int currentCopy || currentCopy > actualCopy)
+                return null;
+            if (currentCopy == actualCopy) return source;
+            do
+            {
+                TrainCombatResult preview = BattlePreviewModel.Refresh(train, source.PlayRules!);
+                if (!preview.Supported || preview.State!.Context?.SpawnPoints?.NextPreviewCopyId is not int nextCopy ||
+                    nextCopy <= currentCopy || nextCopy > actualCopy)
+                    return null;
+                train = preview.State;
+                currentCopy = nextCopy;
+            } while (allowAdditionalRefreshes && currentCopy < actualCopy);
+            if (currentCopy != actualCopy) return null;
+
+            EnemySpawnState spawn = source.Spawn;
+            var refreshed = new EnemySpawnState(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, spawn.Rng,
+                train.Context!.NextUnitId ?? spawn.NextUnitId, spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled,
+                spawn.FirstTreasureTurn, spawn.FirstTreasureRoom, spawn.Turn, spawn.ExternalInteractions,
+                spawn.CanonicalDecisionReferences, spawn.PendingDestroyedUnitIds, spawn.OuterBoss, spawn.QueuedOuterBoss,
+                spawn.QueuedTrueFinalBoss, spawn.TrueFinalBoss);
+            BattleRngStream[] streams = source.RngStreams.Select(stream => stream.Name == "Battle"
+                ? new BattleRngStream(stream.Name, stream.Seed, train.Context.BattleRng) : stream).ToArray();
+            return new BattleTurnState(refreshed, source.Energy, source.EnergyPerTurn, source.DrawPerTurn, source.ForgePoints,
+                source.DragonsHoard, source.MoonPhase, streams, source.OtherPiles, source.ExternalInteractions, source.PlayRules,
+                source.BattlePreviewEnabled, source.UiRngIsolated, source.CanonicalDecisionReferences,
+                source.CanonicalPhysicalReferences, source.SelectedRoom, source.MoonPhaseTrackingActive);
+        }
+
         // One quiet player decision point through EndTurn to the next decision or terminal battle.
         public static BattleTurnResult EndTurn(BattleTurnState source, IReadOnlyList<RelentlessDecision>? relentlessDecisions = null)
         {
