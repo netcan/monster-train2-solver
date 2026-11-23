@@ -27,10 +27,13 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static bool HasOriginalFirstWave(IEnumerable<CombatUnit> units)
+            => HasOriginalFirstWavePair(units) || HasInfestedOpeningWave(units);
+
+        internal static bool HasInfestedOpeningWave(IEnumerable<CombatUnit> units)
         {
             CombatUnit[] owners = units.Where(unit => unit.RegisteredStatus(StatusId) != null ||
                 unit.RegisteredStatus("hivemindkiller") != null).ToArray();
-            return HasOriginalFirstWavePair(owners) || owners.Length == 3 &&
+            return owners.Length == 3 &&
                 owners.Count(unit => unit.AssetKey == HeavyT2) == 1 && owners.Count(unit => unit.AssetKey == DeathHorde) == 2 &&
                 owners.All(unit => unit.Status(StatusId) is CombatStatus status && IsInfestedOpeningOwner(unit, status) &&
                     unit.RegisteredStatus("hivemindkiller") == null);
@@ -54,11 +57,43 @@ namespace MonsterTrain2Poju.Model
             !status.RemoveAtEndOfTurnIfTriggered && !status.MarkedForRemovalAfterCardPlayed;
 
         internal static bool IsInfestedOpeningOwner(CombatUnit unit, CombatStatus status) =>
-            IsOriginalStatus(unit, status) && unit.Modifiers!.Upgrades.Count == 0 &&
-            (unit is { AssetKey: HeavyT2, BaseAttack: 15, MaxHealth: 250, Size: 2, Triggers: [{ Kind: "OnFeed", Effects:
-                 [{ Type: "CardEffectAddStatusEffect" }, { Type: "CardEffectAddStatusEffect" }, { Type: "CardEffectHeal" }] }] } ||
-             unit is { AssetKey: DeathHorde, BaseAttack: 2, MaxHealth: 3, Size: 1, Triggers: [var death] } &&
-             IsOpeningDeathGrant(death));
+            IsOriginalStatus(unit, status) && unit.Modifiers!.Upgrades.Count == 0 && IsInfestedOpeningUnit(unit);
+
+        private static bool IsInfestedOpeningUnit(CombatUnit unit, int upgradeDamage = 0) =>
+            unit is { AssetKey: HeavyT2, MaxHealth: 250, Size: 2, Triggers: [{ Kind: "OnFeed", Effects:
+                 [{ Type: "CardEffectAddStatusEffect" }, { Type: "CardEffectAddStatusEffect" }, { Type: "CardEffectHeal" }] }] } &&
+             unit.BaseAttack == 15 + upgradeDamage ||
+             unit is { AssetKey: DeathHorde, MaxHealth: 3, Size: 1, Triggers: [var death] } &&
+             unit.BaseAttack == 2 + upgradeDamage &&
+             IsOpeningDeathGrant(death);
+
+        internal static bool IsInfestedOpeningPreviewOwner(CombatUnit unit) =>
+            unit.Status(StatusId) is CombatStatus status && IsOriginalStatus(unit, status) &&
+            unit.Modifiers!.Upgrades is [var upgrade] && IsAttackUpgrade(upgrade, 3) && IsInfestedOpeningUnit(unit, upgrade.Stats.Damage);
+
+        internal static bool IsInfestedWavePreview(RoomCombatState room) =>
+            room is { Preview: true, RoomIndex: 0 } &&
+            room.Context?.QueryFrame is { Turn: 1, MoonPhase: 2, MoonPhaseTrackingActive: false } &&
+            OuterBossDefinitions.HasLifemotherInfestedOwner(room.Context) &&
+            (room.Units.Count(unit => unit.AssetKey == DeathHorde && IsInfestedOpeningPreviewOwner(unit)) == 2 &&
+                room.Units.Count(IsInfestedPreviewFeedRecipient) == 1 ||
+             room.Units is [var retained] && IsInfestedPreviewFeedRecipient(retained));
+
+        private static bool IsInfestedStatusUpgrade(CardUpgradeModifier upgrade) =>
+            upgrade is { DataId: "2ffda46d-a18b-4659-a709-0c758a688337", AssetKey: "R2_Support_FeedTitanskinUpgrade_T2",
+                Unique: false, RemoveOnDiscard: false, ExcludeFromClones: false, ExternalInteractions.Count: 0,
+                Stats: { Damage: 0, Health: 0, Cost: 0, Heal: 0, Size: 0, XCost: 0, EquipmentLimit: 0, UpgradeSlotCount: 0 },
+                Statuses: [{ Id: "burst", Stacks: 1, ParamInt: 2 }, { Id: StatusId, Stacks: 6, ParamInt: 1 }] };
+
+        private static bool IsInfestedPreviewFeedRecipient(CombatUnit unit) =>
+            unit.AssetKey == HeavyT2 && unit.Status(StatusId) is { Stacks: var stacks } && IsInfestedOpeningUnit(unit, 3) &&
+            unit.Team == CombatTeam.Enemy && unit.SpawnerCardId == 0 && unit.Health > 0 && unit.IsBoss != true &&
+            unit.Modifiers is { IsClone: false } modifiers && (stacks == 1 && modifiers.Upgrades is [var opening] &&
+                IsAttackUpgrade(opening, 3) || stacks == 7 && modifiers.Upgrades is [var active, var feeding] &&
+                IsAttackUpgrade(active, 3) && IsInfestedStatusUpgrade(feeding));
+
+        internal static bool IsInfestedWavePreviewOwner(CombatUnit unit) =>
+            IsInfestedOpeningPreviewOwner(unit) || IsInfestedPreviewFeedRecipient(unit);
 
         private static bool IsOpeningDeathGrant(CombatTrigger trigger) =>
             trigger is { Kind: "OnDeath", Once: false, IgnoreSilence: false, FireCount: 1, TriggerAtThreshold: 0,
@@ -308,8 +343,11 @@ namespace MonsterTrain2Poju.Model
 
         internal static string Marker(CombatUnit unit) => unit.AssetKey + " room modifiers";
 
+        private static bool IsObservedInfestedFeedUpgrade(RoomCombatState room, CombatUnit unit, CardUpgradeModifier upgrade, string? kind) =>
+            kind == "OnEaten" && IsInfestedWavePreview(room) && IsInfestedPreviewFeedRecipient(unit) && IsInfestedStatusUpgrade(upgrade);
+
         internal static bool IsObservedFeedUpgrade(RoomCombatState room, CombatUnit unit, CardUpgradeModifier upgrade, string? kind) =>
-            kind == "OnEaten" && IsFeedUpgrade(upgrade) && (
+            IsObservedInfestedFeedUpgrade(room, unit, upgrade, kind) || kind == "OnEaten" && IsFeedUpgrade(upgrade) && (
                 IsFirstCombat(room) && unit.AssetKey == Heavy && IsFeedRecipient(unit) && unit.RegisteredStatus(StatusId) == null ||
                 IsSecondCombat(room) && IsFeedRecipient(unit) && (unit.AssetKey == Heavy && unit.Status(StatusId)?.Stacks == 3 ||
                     unit.AssetKey == Zealot && unit.RegisteredStatus(StatusId) == null) ||

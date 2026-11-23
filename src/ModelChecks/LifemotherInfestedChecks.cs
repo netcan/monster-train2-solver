@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 
@@ -9,6 +10,75 @@ internal static class LifemotherInfestedChecks
     private const string BossKey = "Boss_SoulSavior_Final_Lifemother_Infested";
     private const string Boundary = "NativeLifemotherInfestedStatusAddition";
     private const string OpeningBoundary = "NativeLifemotherInfestedOpening";
+
+    internal static void FirstTurn(string battlePath, string birthPath)
+    {
+        using var battleDocument = ModelJson.ReadFixture(battlePath);
+        using var birthDocument = ModelJson.ReadFixture(birthPath);
+        FixtureValue battle = battleDocument.RootElement;
+        FixtureValue birth = birthDocument.RootElement;
+        FixtureValue observation = battle.GetProperty("OriginalUnrulyBattle");
+        Require(battle.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            battle.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            observation.GetProperty("Scenario").GetString() == Scenario && observation.GetProperty("BossKey").GetString() == BossKey &&
+            observation.GetProperty("ControlledTestScenario").GetBoolean() && observation.GetProperty("RailforgedInstalled").GetBoolean(),
+            "Expected the installed original Infested encounter.");
+        OuterBossBirthChecks.Native(birth, Game231FixtureCatalog.Module);
+        var observedTurn = battle.GetProperty("Turns")[0];
+        var before = observedTurn.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var actual = observedTurn.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        var definition = birth.GetProperty("Births")[0].GetProperty("Instantiation").GetProperty("Definition")
+            .Deserialize<OuterBossSpawnDefinition>()!;
+        Require(observedTurn.GetProperty("Index").GetInt32() == 0 && before.Spawn.Turn == 0 && actual.Spawn.Turn == 1 &&
+            before.BattlePreviewEnabled && actual.BattlePreviewEnabled && definition.Actor.Unit.AssetKey == BossKey,
+            "Expected the first original Infested EndTurn with battle preview enabled.");
+
+        EnemySpawnState spawn = before.Spawn;
+        bool legacy = spawn.QueuedOuterBoss == null;
+        BattleTurnState input = before;
+        if (legacy)
+        {
+            Require(Hash(battlePath) == "041DB0E09B2F23E140E8E824F10F3EB5DFE4BD5F4A5E7016EF58B7F56B560D97" &&
+                Hash(birthPath) == "A36EEA0FA27C91D4667F6A2076CE083487CE5BCA6AAEDFA63C804C5742FA9BFD" &&
+                spawn.ExternalInteractions.SequenceEqual(["Outer or queued final boss spawning"]) && actual.Spawn.OuterBoss == null,
+                "Missing native controller is allowed only for the pinned historical capture.");
+            var queued = new EnemySpawnState(spawn.Train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, spawn.Rng,
+                spawn.NextUnitId, spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,
+                spawn.FirstTreasureRoom, spawn.Turn, [], spawn.CanonicalDecisionReferences, spawn.PendingDestroyedUnitIds,
+                queuedOuterBoss: definition);
+            input = new BattleTurnState(queued, before.Energy, before.EnergyPerTurn, before.DrawPerTurn, before.ForgePoints,
+                before.DragonsHoard, before.MoonPhase, before.RngStreams, before.OtherPiles, before.ExternalInteractions,
+                before.PlayRules, before.BattlePreviewEnabled, before.UiRngIsolated, before.CanonicalDecisionReferences,
+                before.CanonicalPhysicalReferences, before.SelectedRoom, before.MoonPhaseTrackingActive);
+        }
+        else
+            Require(spawn.QueuedOuterBoss!.Actor.Unit.AssetKey == BossKey && actual.Spawn.OuterBoss?.AssetKey == BossKey,
+                "Expected both queued and settled original controller snapshots.");
+
+        string immutable = Serialize(input);
+        BattleTurnResult result = BattleTurnModel.EndTurn(input, RecordedBattleChecks.Decisions(observedTurn));
+        Require(result.Supported && result.Outcome == (RoomOutcome)observedTurn.GetProperty("ActualOutcome").GetInt32() &&
+            result.State!.Spawn.OuterBoss?.AssetKey == BossKey && Serialize(input) == immutable &&
+            !OuterBossDefinitions.Supports(BossKey), "Original Infested first turn failed: " + result.UnsupportedReason);
+        string expected = BattleTurnChecks.Comparable(actual);
+        string predicted = BattleTurnChecks.Comparable(result.State!);
+        if (legacy)
+        {
+            JsonObject projected = JsonNode.Parse(predicted)!.AsObject();
+            Require(projected.Remove("OuterBoss"), "Expected a modeled controller outside the old observation.");
+            predicted = projected.ToJsonString();
+        }
+        string? difference = ModelJson.Difference(predicted, expected);
+        Require(difference == null, "Original Infested first settled state or RNG differs: " + difference);
+        Console.WriteLine("NATIVE-LIFEMOTHER-INFESTED FIRST-TURN PASS: full captured state, RNG and preview; " +
+            (legacy ? "settled controller absent from pinned historical capture." : "exact settled controller."));
+
+        static string Hash(string path)
+        {
+            using var stream = File.OpenRead(path);
+            return Convert.ToHexString(SHA256.HashData(stream));
+        }
+    }
 
     internal static void Opening(FixtureValue component)
     {

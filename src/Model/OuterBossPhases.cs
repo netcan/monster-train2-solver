@@ -109,7 +109,11 @@ namespace MonsterTrain2Poju.Model
                     TargetTeam: CombatTeam.Player, Empty: true, DestroyRoom: false }]],
                     DestroyActions: [{ Behavior: "RoomDestroyActionBehavior", TargetTeam: CombatTeam.Player,
                         Empty: false, DestroyRoom: true }] };
-            if (!(OuterBossDefinitions.Supports(boss.AssetKey) || trampleIndulgent) || boss.Phase != "Casting" ||
+            bool infestedOpening = preCombat && battle.Spawn.Turn == 1 && battle.MoonPhase == "Full" &&
+                battle.MoonPhaseTrackingActive == false && actor != null &&
+                OuterBossDefinitions.IsLifemotherInfestedBirth(actor, boss, train.Context, beforePlacement: true) &&
+                HivemindTurnUpgrade.HasInfestedOpeningWave(train.Rooms.SelectMany(room => room.Units));
+            if (!(OuterBossDefinitions.Supports(boss.AssetKey) || trampleIndulgent || infestedOpening) || boss.Phase != "Casting" ||
                 boss.Actions.Count != boss.Controller.Groups.Count || boss.Actions.Count != 1 ||
                 boss.Actions[0].Count != 1 || !boss.Actions[0][0].Empty || boss.DestroyActions.Count != 1 ||
                 battle.PlayRules == null || train.Context?.SpawnPoints == null)
@@ -119,7 +123,7 @@ namespace MonsterTrain2Poju.Model
                 (battle.Spawn.Turn == 1 && HivemindTurnUpgrade.HasOriginalFirstWavePair(train.Rooms.SelectMany(room => room.Units)) ||
                  battle.Spawn.Turn == 2 && HivemindTurnUpgrade.HasSecondWave(train) ||
                  battle.Spawn.Turn == 3 && HivemindTurnUpgrade.HasThirdWave(train));
-            string? error = TrainCombatModel.Validate(train, allowFreshHivemind: firstHivemindWave);
+            string? error = TrainCombatModel.Validate(train, allowFreshHivemind: firstHivemindWave || infestedOpening);
             if (error != null) return Fail(error);
             if (actor?.BumpRules?.OuterBoss != true || actor.Health <= 0 || actor.DeathState?.IsDestroyed == true ||
                 boss.Controller.Groups[0].Executable.Count != 1 || !boss.Controller.Groups[0].Executable[0])

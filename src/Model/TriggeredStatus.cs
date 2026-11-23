@@ -85,11 +85,12 @@ namespace MonsterTrain2Poju.Model
             SelfHealthFilter: true, IgnoreBosses: false, Subtype.Length: 0, RequiredStatuses.Count: 0,
             ExcludedStatuses.Count: 0, ExcludedSubtypes.Count: 0 };
 
-        internal static string? Validate(CombatEffect effect)
+        internal static string? Validate(CombatEffect effect, bool observedInfestedPreview = false)
         {
             CardActionEffect action = effect.Action!;
             if (action.Statuses.Count == 0) return "Triggered status requires a nonempty status pool.";
-            if (action.Statuses.Any(status => !RoomCombatModel.KnowsStatus(status.Id))) return "Unmodeled triggered status definition.";
+            if (action.Statuses.Any(status => !RoomCombatModel.KnowsStatus(status.Id) &&
+                !(observedInfestedPreview && status.Id == HivemindTurnUpgrade.StatusId))) return "Unmodeled triggered status definition.";
             if (effect.Type == OtherStatusEffect &&
                 !MatchesOtherStatus(effect, "LastAttackedCharacter", RoomCombatModel.Witherbloom, 1) &&
                 !MatchesOtherStatus(effect, "Self", "armor", 3))
@@ -166,9 +167,10 @@ namespace MonsterTrain2Poju.Model
         // The engine supplies a fixed collection and retains dying actor/target snapshots.
         // Native TestEffect selects on BattleTest; only actual application advances Battle here.
         internal static RoomCombatResult Apply(RoomCombatState source, int actorId, CombatEffect effect, IReadOnlyList<int> targetIds,
-            int? sourceCardId = null, bool isFromHiddenTrigger = false, int? damageActorId = null)
+            int? sourceCardId = null, bool isFromHiddenTrigger = false, int? damageActorId = null,
+            bool observedInfestedPreview = false)
         {
-            string? error = Validate(effect);
+            string? error = Validate(effect, observedInfestedPreview);
             CombatUnit? actor = source.Units.FirstOrDefault(unit => unit.Id == actorId);
             if (error != null || actor == null || source.Context == null || targetIds.Any(id => source.Units.All(unit => unit.Id != id)))
                 return Unsupported(error ?? "Triggered status requires captured actor, targets and battle context.");

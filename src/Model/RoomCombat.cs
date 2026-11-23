@@ -1189,8 +1189,15 @@ namespace MonsterTrain2Poju.Model
             bool observedHivemindCombat = ((state.Preview || allowFirstHivemindCombat) &&
                 (HivemindTurnUpgrade.IsFirstCombat(state) || HivemindTurnUpgrade.IsSecondCombat(state) ||
                  HivemindTurnUpgrade.IsThirdCombat(state) || HivemindTurnUpgrade.IsObservedPyreCombat(state)));
-            string[] interactions = state.ExternalInteractions.Where(item => !((linkedTargetOnly || linkedMaximumPreview) && item == "Outer train boss") &&
-                !((allowFreshHivemind || observedHivemindCombat) && state.Units.Any(unit => HivemindTurnUpgrade.MatchesRoomMarker(item, unit)))).ToArray();
+            bool infestedWavePreview = HivemindTurnUpgrade.IsInfestedWavePreview(state);
+            bool infestedBossPreview = state is { Preview: true, RoomIndex: 2 } && state.Units.Any(unit =>
+                unit.Triggers.Count == 2 &&
+                OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(unit, unit.Triggers[0], state.Context));
+            string[] interactions = state.ExternalInteractions.Where(item =>
+                !((linkedTargetOnly || linkedMaximumPreview || infestedBossPreview) && item == "Outer train boss") &&
+                !((allowFreshHivemind || observedHivemindCombat) && state.Units.Any(unit => HivemindTurnUpgrade.MatchesRoomMarker(item, unit))) &&
+                !(infestedWavePreview && state.Units.Any(unit => HivemindTurnUpgrade.Marker(unit) == item &&
+                    HivemindTurnUpgrade.IsInfestedWavePreviewOwner(unit)))).ToArray();
             if (interactions.Length > 0)
                 return string.Join("; ", interactions);
             foreach (CardInstanceState instance in state.Context?.CardInstances ?? Array.Empty<CardInstanceState>())
@@ -1269,7 +1276,8 @@ namespace MonsterTrain2Poju.Model
                         !((allowFreshHivemind && status.Id == HivemindTurnUpgrade.StatusId &&
                             (HivemindTurnUpgrade.IsWaitingSecondWaveOwner(unit, status) ||
                              HivemindTurnUpgrade.IsInfestedOpeningOwner(unit, status))) ||
-                            (observedHivemindCombat && status.Id == HivemindTurnUpgrade.StatusId)) && !(status.Id == "pyrebane" &&
+                            ((observedHivemindCombat || infestedWavePreview && HivemindTurnUpgrade.IsInfestedWavePreviewOwner(unit)) &&
+                                status.Id == HivemindTurnUpgrade.StatusId)) && !(status.Id == "pyrebane" &&
                         OuterBossDefinitions.IsAngelDuoInner(unit.AssetKey) && unit.Status("lifelink") == null) && !(linkedHealthOnly &&
                         (status.Id == "lifelink" || status.Id == "pyrebound" && unit.AssetKey == "Boss_Level9_Dominion_V2" ||
                             status.Id == "pyrebane" && unit.AssetKey == "Boss_Level9_Savagery_V2") &&
@@ -1702,7 +1710,9 @@ namespace MonsterTrain2Poju.Model
                                 // The opening checks retain these death triggers for later validation at dispatch.
                                 bool dormantDeath = allowFreshHivemind && !state.Preview &&
                                     (HivemindTurnUpgrade.HasDormantOpeningDeathGrant(unit, trigger) ||
-                                     OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(unit, trigger, state.Context));
+                                     OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(unit, trigger, state.Context)) ||
+                                    infestedWavePreview && HivemindTurnUpgrade.IsInfestedOpeningPreviewOwner(unit) && trigger.Kind == "OnDeath" ||
+                                    infestedBossPreview && OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(unit, trigger, state.Context);
                                 string? statusError = dormantDeath
                                     ? null : TriggeredStatusModel.Validate(effect);
                                 if (statusError != null) return statusError;
@@ -6443,8 +6453,14 @@ namespace MonsterTrain2Poju.Model
                     EnchantmentWorld? physicalWorld = context?.Enchantments;
                     int? damageActorId = effect.Type == FriendlyDamageStatusModel.NativeEffect ? overrideTarget?.Source.Id : null;
                     var roster = damageActorId.HasValue ? targets.UnitIds.Concat(new[] { damageActorId.Value }).Distinct().ToArray() : targets.UnitIds;
+                    bool observedInfestedPreview = source is { Preview: true, RoomIndex: 2 } &&
+                        triggerKind == "OnAnyUnitDeathOnFloor" && roster.Count == 1 && roster[0] == actor.Source.Id &&
+                        actor.Source.Triggers.Count == 2 &&
+                        OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(actor.Source, actor.Source.Triggers[0], source.Context) &&
+                        ReferenceEquals(actor.Source.Triggers[0].Effects[0], effect);
                     RoomCombatResult applied = TriggeredStatusModel.Apply(RetainedStatusRoom(actor, roster), actor.Source.Id,
-                        effect, targets.UnitIds, isFromHiddenTrigger: hiddenTrigger, damageActorId: damageActorId);
+                        effect, targets.UnitIds, isFromHiddenTrigger: hiddenTrigger, damageActorId: damageActorId,
+                        observedInfestedPreview: observedInfestedPreview);
                     if (!applied.Supported) { unsupportedReason = applied.UnsupportedReason; return false; }
                     context = applied.State!.Context;
                     foreach (CombatUnit changed in applied.State.Units) units.First(unit => unit.Source.Id == changed.Id).Apply(changed);

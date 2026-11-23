@@ -250,6 +250,9 @@ namespace MonsterTrain2Poju.Model
                     TriggerAtThreshold: 0, Conditions: null, Effects: [{ Type: "CardEffectRemoveStatusEffect",
                         Action: { Type: "RemoveStatus", Target: "Self", Value: 0, Range: null, AllowEnemy: true,
                             AllowPlayer: true, Statuses: [{ Id: "dazed", Stacks: 5 }] } }] }] } &&
+            HasLifemotherInfestedOwner(context);
+
+        internal static bool HasLifemotherInfestedOwner(CombatContext? context) =>
             context?.Relics?.Count(owner => owner is { DataId: "72f9f4e3-df23-4954-99e6-9040ab573590",
                 AssetKey: "Boss_Railforged_Lifemother_Infested", IsCovenant: false,
                 EffectTypes: [RelicModel.Null, RelicModel.Null, RelicModel.Null, RelicModel.Null] }) == 1;
