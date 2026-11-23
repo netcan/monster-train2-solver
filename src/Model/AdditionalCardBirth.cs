@@ -12,33 +12,39 @@ namespace MonsterTrain2Poju.Model
             CombatContext context = room.Context!;
             if (context.SpawnPoints?.FirstEmpty(room.RoomIndex, CombatTeam.Player) < 0)
                 return new UnitBirthResult(new RoomCombatResult(room, RoomOutcome.Exchanged, 0, new List<CombatEvent>()));
+            bool copyOnBirth = RoomSpawnCopyModel.Active(room);
+            UnitGraftRule? graft = definition.SpawnUnit?.Modifiers?.Graft;
             if (count != 1 || context is not { Enchantments: null, LifeLinks: null } ||
                 context.Relics?.Any(relic => relic.EffectTypes.Any(effect =>
                     effect != "RelicEffectNull" && effect != RelicUnitSpawnCountModel.Effect)) == true ||
-                !RoomSpawnCopyModel.OriginalMirrorsOnly(room) ||
-                definition.SpawnUnit is not { Triggers.Count: 0, Modifiers.Graft: UnitGraftRule graft } ||
+                copyOnBirth && !RoomSpawnCopyModel.OriginalMirrorsOnly(room) ||
+                definition.SpawnUnit is not { Triggers.Count: 0 } ||
+                room.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind is "OnSpawn" or "OnUnscaledSpawn" or
+                    "OnSpawnNotFromCard" or "OnSpawnLate" or "AfterSpawnEnchant" or "CardMonsterPlayed")))
+                return Fail("Additional paid births require an ordinary primary birth and supported callback contract.");
+            if (graft != null && (!copyOnBirth ||
                 context.FindCard(playedCardId) is not
                     { GraftedEquipmentCardId: int originalGraftId, MaskDescriptor: { PermanentGraft: true, Purified: false } } ||
                 context.FindCard(originalGraftId) is not { EquippedUnitId: > 0 } originalGraft ||
-                originalGraft.DataId != graft.Card.DataId ||
-                room.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind is "OnSpawn" or "OnUnscaledSpawn" or
-                    "OnSpawnNotFromCard" or "OnSpawnLate" or "AfterSpawnEnchant" or "CardMonsterPlayed")))
-                return Fail("Additional paid graft births require the original settled Hall birth and callback contract.");
+                originalGraft.DataId != graft.Card.DataId))
+                return Fail("Additional paid graft births require the original settled Hall graft contract.");
             CardCreationRule? creation = catalog?.Cards.SingleOrDefault(card => card.DataId == definition.DataId);
             CombatStatus? cardless = context.StatusRules.SingleOrDefault(status => status.Id == "cardless");
             if (creation == null || cardless == null || context.NextCardId is <= 0 or >= int.MaxValue - 1)
                 return Fail("Additional paid births require captured source-card creation, Cardless and free card identities.");
 
-            int equipmentId = context.NextCardId;
-            CardGenerationResult spawner = CardGenerationModel.CloneDetached(context.WithNextCardId(equipmentId + 1),
-                creation, playedCardId, keepGraftAlias: true);
+            int equipmentId = graft == null ? 0 : context.NextCardId;
+            CombatContext source = equipmentId == 0 ? context : context.WithNextCardId(equipmentId + 1);
+            CardGenerationResult spawner = CardGenerationModel.CloneDetached(source, creation, playedCardId, keepGraftAlias: graft != null);
             if (!spawner.Supported) return Fail(spawner.UnsupportedReason!);
             return UnitBirthModel.SpawnAdditionalCardUnit(room.WithContext(spawner.Context), definition,
-                spawner.AddedCards.Single().InstanceId, position, cardless.WithStacks(1), AttachThenCopy);
+                spawner.AddedCards.Single().InstanceId, position, cardless.WithStacks(1),
+                copyOnBirth ? AttachThenCopy : null);
 
             RoomCombatResult AttachThenCopy(RoomCombatState born, int id)
             {
-                RoomCombatResult attached = UnitGraftModel.AttachReserved(born, id, equipmentId, graft);
+                RoomCombatResult attached = graft == null ? new RoomCombatResult(born, RoomOutcome.Exchanged, 0, new List<CombatEvent>()) :
+                    UnitGraftModel.AttachReserved(born, id, equipmentId, graft);
                 if (!attached.Supported) return attached;
                 RoomCombatState equipped = attached.State!;
                 var frame = new TrainCombatState(train.Rooms.Select(item => item.RoomIndex == equipped.RoomIndex

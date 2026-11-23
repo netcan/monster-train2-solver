@@ -221,6 +221,7 @@ namespace MonsterTrain2Poju.Probe
                 reachable.Values.Any(rule => rule.SpawnUnit?.Modifiers?.SpawnCopySubtype != null ||
                     rule.Effects.Any(effect => effect.Type == "CopyUnits" || effect.RoomAttachment?.SpawnCopySubtype != null)) ||
                 spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Modifiers?.SpawnCopySubtype != null) ||
+                spawn.Train.Context?.Relics?.Any(relic => relic.EffectTypes.Contains(RelicUnitSpawnCountModel.Effect)) == true ||
                 spawn.Train.Context?.RoomCapacities?.Any(room => room.Attachments?.Any(attachment => attachment.SpawnCopySubtype != null) == true) == true
                     ? UnitCopyCatalogProbe.Capture(reachable.Values.ToArray(), spawn) : null,
                 elixirs, forgeUpgrade, ConditionalActivationProbe.HasVanguard ? true : (bool?)null);

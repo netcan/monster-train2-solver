@@ -14,8 +14,12 @@ namespace MonsterTrain2Poju.Probe
         internal const string AssistantId = "3a8240bd-8b96-4d6e-b2d1-49ff8b5d8022";
         private const string AssistantGraftId = "0a928329-666c-4ce6-a1c3-413977e37e46";
         private const string ExtraSpawnId = "559f443d-bbeb-40fc-aa86-772ef4c2c2dc";
+        private static readonly string[] OrdinaryExtraSpawnCards = {
+            "38e70e6a-20f3-4e36-8d31-c5110be07f87", "5de24977-6800-4015-a20e-9949e79e057c"
+        };
         internal static bool ObserveHallGraftedBirth => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_HALL_GRAFTED_BIRTH") == "1";
         internal static bool HallExtraSpawn => ObserveHallGraftedBirth && Environment.GetEnvironmentVariable("MT2_PROBE_HALL_EXTRA_SPAWN") == "1";
+        internal static bool OrdinaryExtraSpawn => HallExtraSpawn && Environment.GetEnvironmentVariable("MT2_PROBE_DOUBLE_UNITS_ORDINARY") == "1";
         internal static object? HallExtraSpawnDefinition { get; private set; }
         internal static List<object> HallExtraSpawnCountQueries { get; } = new List<object>();
 
@@ -65,12 +69,48 @@ namespace MonsterTrain2Poju.Probe
 
             private static void Postfix(CharacterData? spawningUnitData, Team.Type spawningOnTeam, int __state, int __result)
             {
-                if (!HallExtraSpawn || FullBattleTrace.Active == null || spawningUnitData?.GetAssetKey() != "MonsterTwistedAssistant" ||
+                if (!HallExtraSpawn || FullBattleTrace.Active == null || spawningUnitData == null ||
                     AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
+                string assetKey = spawningUnitData.GetAssetKey();
+                if (OrdinaryExtraSpawn ? assetKey is not ("TrainStewardSmall" or "BasicDemon") : assetKey != "MonsterTwistedAssistant") return;
                 HallExtraSpawnCountQueries.Add(new { Unit = spawningUnitData.GetAssetKey(),
                     Team = spawningOnTeam.ToString(), Turn = AllGameManagers.Instance.GetCombatManager()!.GetTurnCount(),
                     CountBefore = __state, CountAfter = __result });
             }
+        }
+
+        internal static void PrepareOrdinaryExtraSpawnHand(AllGameManagers managers, int turn)
+        {
+            if (!OrdinaryExtraSpawn || turn is not (1 or 2) || CardIds.Length >= turn * 2) return;
+            SaveManager save = managers.GetSaveManager();
+            CardManager cards = managers.GetCardManager()!;
+            CardData[] originals = OrdinaryExtraSpawnCards.Select(id => save.GetAllGameData().FindCardData(id)!).ToArray();
+            if (originals.Any(card => card.GetCardType() != CardType.Monster || card.GetCost() != 1 ||
+                card.GetSpawnCharacterData()?.GetGraftedEquipment() != null ||
+                !card.GetEffects().Select(effect => effect.GetEffectStateName()).SequenceEqual(new[] { "CardEffectSpawnMonster" })))
+                throw new InvalidOperationException("Expected unchanged nongrafted one-Ember monsters.");
+            CardIds = CardIds.Concat(originals.Select(card => FullBattleTrace.Active!.CardId(
+                cards.AddNewCard(card, CardPile.HandPile, false, false, animate: false)))).ToArray();
+            AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
+            Set(managers.GetCombatManager()!, "combatStateChanged", true);
+        }
+
+        private static PlayCardAction? ChooseOrdinaryExtraSpawn(BattleTurnState source, int[] ids)
+        {
+            int turn = source.Spawn.Turn;
+            if (turn is not (1 or 2)) return null;
+            int first = (turn - 1) * 2;
+            CombatContext context = source.Spawn.Train.Context!;
+            for (int index = first; index < first + 2; index++)
+            {
+                if (!context.Cards.Hand.Any(card => card.InstanceId == ids[index])) continue;
+                int room = index == 0 ? 1 : index == 2 ? 0 : 2;
+                var occupants = context.SpawnPoints!.Groups.Single(group =>
+                    group.RoomIndex == room && group.Team == CombatTeam.Player && group.PreviewCopyId == null).Occupants;
+                int position = Enumerable.Range(0, occupants.Count).First(slot => occupants[slot] == 0);
+                return new PlayCardAction(ids[index], room, playerPosition: position);
+            }
+            return null;
         }
 
         private static PlayCardAction ChooseHallGraftedBirth(BattleTurnState source, int[] ids, int index)
@@ -153,6 +193,7 @@ namespace MonsterTrain2Poju.Probe
         {
             int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
 #if DEVELOPMENT_PROBE
+            if (OrdinaryExtraSpawn) return ChooseOrdinaryExtraSpawn(source, ids);
             if (HallExtraSpawn)
                 return source.Spawn.Turn == 0 || index < 0 ? null : ChooseHallGraftedBirth(source, ids, index);
 #endif
@@ -379,6 +420,12 @@ namespace MonsterTrain2Poju.Probe
                     throw new InvalidOperationException("Expected the original Hall and equipment-bearing Assistant.");
                 if (HallExtraSpawn)
                 {
+                    if (OrdinaryExtraSpawn)
+                    {
+                        PrepareOrdinaryExtraSpawnHand(managers, 1);
+                        Prepared = true;
+                        return;
+                    }
                     CardIds = new[] { hall, assistant }.Select(card => FullBattleTrace.Active!.CardId(
                         cards.AddNewCard(card, CardPile.HandPile, false, false, animate: false))).ToArray();
                     AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);

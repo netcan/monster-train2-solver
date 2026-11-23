@@ -863,6 +863,11 @@ DoubleUnits 原版对照记录了付费单位、首个镜厅复制体、额外�
 其他触发召唤、状态替代和不同接枝组合仍需对应的原版差分。
 [`extra-spawn.mt2f`](../tests/compatibility/game-2.3.1/mechanics/hall-grafted-birth/extra-spawn.mt2f)
 
+普通单位对照在连续两回合使用长矛列车员和角魔战士。每回合首张付费单位生成两个，
+第二张生成一个。四次完整后继核对了独立的来源卡、出生点上限和回合重置。
+采样使用 `-OriginalDoubleUnitsOrdinary -BinaryCapture`，专项使用 `--native-double-units-ordinary-only`。
+[`ordinary-extra-spawn.mt2f`](../tests/compatibility/game-2.3.1/mechanics/hall-grafted-birth/ordinary-extra-spawn.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和

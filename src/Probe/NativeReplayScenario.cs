@@ -2166,6 +2166,10 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalSupportSpellsScenario.Prepare(managers, log);
             }
+#if DEVELOPMENT_PROBE
+            if (fullBattle && OriginalSupportSpellsScenario.OrdinaryExtraSpawn && OriginalSupportSpellsScenario.Prepared)
+                OriginalSupportSpellsScenario.PrepareOrdinaryExtraSpawnHand(managers, combat!.GetTurnCount());
+#endif
             if (fullBattle && !numericModifiersPrepared && OriginalRearrangeSpellsScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original rearrange fixture must start on deployment turn.");

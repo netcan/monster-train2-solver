@@ -621,13 +621,14 @@ namespace MonsterTrain2Poju.Probe
                     BattleSpawnPointProbe.Decisions.RemoveRange(decisionStart, BattleSpawnPointProbe.Decisions.Count - decisionStart);
             } while (observedCards != projection.KnownCards.Count() || observedUnits != identities.Count);
             var relics = RelicProbe.Capture(managers);
-            bool turnSpawn = relics.Any(owner => owner.EffectTypes.Contains(nameof(RelicEffectSpawnMonsterOnTurnStart)));
+            bool relicCardlessBirth = relics.Any(owner => owner.EffectTypes.Contains(nameof(RelicEffectSpawnMonsterOnTurnStart)) ||
+                owner.EffectTypes.Contains(RelicUnitSpawnCountModel.Effect));
             var context = new CombatContext(new CardCycleState(state.Hand, state.Draw, state.Discard,
                 new UnityRng(draw[0], draw[1], draw[2], draw[3]), state.DrawModifier, Array.Empty<string>(), bonusDraw,
                 TypedDrawProbe.CaptureQueue(cards), TypedDrawProbe.NextUpgradeReferenceId,
                 OriginalDiscardDrawScenario.Enabled ? cards.GetDrawingDeckCardsDisabledThisTurn() : (bool?)null),
                 new UnityRng(battle[0], battle[1], battle[2], battle[3]), state.Gold, projection.NextCardId,
-                cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel", "relentless", "cooldown", "unit_ability", "unit_ability_available", "horde", "duality" }.Concat(turnSpawn || OriginalOpeningMorselsScenario.Enabled || TriggeredSummonProbe.Enabled || TriggeredSummonProbe.HasPlayerBirths || UnitCloneScenario.Enabled || UnitCopyScenario.Enabled || HeroCopyScenario.Enabled || HasCopyUnitsCard(managers) ? new[] { "cardless" } : Array.Empty<string>()).Concat(new[] { "undying", "endless" })
+                cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel", "relentless", "cooldown", "unit_ability", "unit_ability_available", "horde", "duality" }.Concat(relicCardlessBirth || OriginalOpeningMorselsScenario.Enabled || TriggeredSummonProbe.Enabled || TriggeredSummonProbe.HasPlayerBirths || UnitCloneScenario.Enabled || UnitCopyScenario.Enabled || HeroCopyScenario.Enabled || HasCopyUnitsCard(managers) ? new[] { "cardless" } : Array.Empty<string>()).Concat(new[] { "undying", "endless" })
                     .Concat(registry.Any(card => UnitGraftProbe.Known(card.DataId) || card.MaskDescriptor?.GraftedEquipment != null) ? new[] { "unit_grafted_equipment" } : Array.Empty<string>())
                     .Concat(ConditionalActivationProbe.HasVanguard ? new[] { "zeal" } : Array.Empty<string>())
                     .Concat(ZealStatusCalibration.Enabled ? new[] { "purify" } : Array.Empty<string>())
@@ -980,6 +981,23 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
         internal bool WriteHallGraftedBirth()
         {
+            if (OriginalSupportSpellsScenario.OrdinaryExtraSpawn)
+            {
+                if (actions.Records.Count < 4) return false;
+                if (actions.Records.Count != 4 || actions.Records.Any(record => record.Actual == null) || CaptureFailures != 0 || Pending != 0)
+                    throw new InvalidOperationException("Expected four settled ordinary extra-spawn inputs.");
+                using var witness = NativeFixtureCapture.Capture(new
+                {
+                    Schema = 2, Boundary = "NativeOriginalHallGraftedBirth", Scope = "NativeOriginalDoubleUnitsOrdinary",
+                    GameVersion = Application.version, GameModuleMvid = typeof(RelicState).Assembly.ManifestModule.ModuleVersionId,
+                    CaptureFailures, Pending, ExtraSpawn = true, OrdinaryPlays = actions.Records,
+                    ExtraSpawnDefinition = OriginalSupportSpellsScenario.HallExtraSpawnDefinition,
+                    ExtraSpawnCountQueries = OriginalSupportSpellsScenario.HallExtraSpawnCountQueries
+                });
+                using var outputFile = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "hall-grafted-birth.mt2f"));
+                witness.Write(outputFile);
+                return true;
+            }
             BattleActionProbe.Record? birth = actions.Records.LastOrDefault();
             if (birth?.Before.Spawn.Train.Context?.FindCard(birth.Action.CardInstanceId)?.DataId != OriginalSupportSpellsScenario.AssistantId)
                 return false;

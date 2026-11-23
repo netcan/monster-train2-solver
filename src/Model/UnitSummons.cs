@@ -86,7 +86,7 @@ namespace MonsterTrain2Poju.Model
             => SpawnCore(source, definition, 0, position, true, cardlessStatus, null, null, false,
                 drainBirthQueue: drain, compactBirth: false);
         internal static UnitBirthResult SpawnAdditionalCardUnit(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
-            int position, CombatStatus cardlessStatus, Func<RoomCombatState, int, RoomCombatResult> beforeEnchant)
+            int position, CombatStatus cardlessStatus, Func<RoomCombatState, int, RoomCombatResult>? beforeEnchant)
             => SpawnCore(source, definition, spawnerCardId, position, true, cardlessStatus, null, null, true,
                 beforeEnchant: beforeEnchant);
         private static UnitBirthResult SpawnCore(RoomCombatState source, CardPlayRule definition, int spawnerCardId,

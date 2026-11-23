@@ -275,6 +275,56 @@ internal static class HallGraftedBirthChecks
         Console.WriteLine("NATIVE-HALL-EXTRA-SPAWN-DEFINITION PASS: original ordered condition, absent required mutator and spawn count 1 to 2.");
     }
 
+    internal static void NativeOrdinaryExtraSpawn(FixtureValue root)
+    {
+        Require(root.GetProperty("Scope").GetString() == "NativeOriginalDoubleUnitsOrdinary" &&
+            root.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            root.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            root.GetProperty("CaptureFailures").GetInt32() == 0 && root.GetProperty("Pending").GetInt32() == 0,
+            "Expected the original ordinary DoubleUnits component.");
+        var plays = root.GetProperty("OrdinaryPlays").EnumerateArray().ToArray();
+        var queries = root.GetProperty("ExtraSpawnCountQueries").EnumerateArray().ToArray();
+        Require(plays.Length == 4 && queries.Length == plays.Length, "Expected two original unit plays per turn over two turns.");
+        var definitions = new HashSet<string>(StringComparer.Ordinal);
+        for (int index = 0; index < plays.Length; index++)
+        {
+            FixtureValue row = plays[index], query = queries[index];
+            var before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            var after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            var action = row.GetProperty("Action").Deserialize<PlayCardAction>()!;
+            CombatContext prior = before.Spawn.Train.Context!, settled = after.Spawn.Train.Context!;
+            int turn = index / 2 + 1, births = index % 2 == 0 ? 2 : 1;
+            var conditionBefore = prior.Relics!.Single(owner => owner.DataId == ExtraSpawnId).ResourceEffects!.Single().Conditions.Single();
+            var conditionAfter = settled.Relics!.Single(owner => owner.DataId == ExtraSpawnId).ResourceEffects!.Single().Conditions.Single();
+            CombatUnit[] born = after.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex).Units
+                .Where(unit => unit.Id >= before.Spawn.NextUnitId).OrderBy(unit => unit.Id).ToArray();
+            Require(before.Spawn.Turn == turn && after.Spawn.Turn == turn && before.Energy - after.Energy == 1 &&
+                before.PlayRules!.Rooms.All(room => prior.RoomCapacities!.Single(capacity => capacity.RoomIndex == room.RoomIndex)
+                    .Attachments?.Any(attachment => attachment.DataId == HallId) != true) &&
+                query.GetProperty("Turn").GetInt32() == turn && query.GetProperty("Team").GetString() == "Monsters" &&
+                query.GetProperty("CountBefore").GetInt32() == 1 && query.GetProperty("CountAfter").GetInt32() == births &&
+                conditionBefore.DurationTriggerCount == (births == 2 ? 0 : 1) && conditionAfter.DurationTriggerCount == 1 &&
+                born.Length == births && born[0].SpawnerCardId == action.CardInstanceId &&
+                born.All(actor => actor.Modifiers is { IsClone: false, Graft: null }),
+                "Original ordinary birth count, source, payment or turn-scoped trigger diverged on play " + (index + 1));
+            definitions.Add(prior.FindCard(action.CardInstanceId)!.DataId);
+            if (births == 2)
+            {
+                var detached = settled.FindCard(born[1].SpawnerCardId);
+                Require(born[0].Status("cardless") == null && born[1].Status("cardless")?.Stacks == 1 &&
+                    detached?.DataId == prior.FindCard(action.CardInstanceId)?.DataId &&
+                    settled.CardInstances!.All(card => card.InstanceId != detached!.InstanceId),
+                    "The additional ordinary unit needs its own detached spawner and Cardless status.");
+            }
+            BattleActionResult result = BattleActionModel.PlayCard(before, action);
+            Require(result.Supported && result.Outcome == row.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(),
+                result.Reason ?? "Ordinary DoubleUnits replay failed on play " + (index + 1));
+            RecordedBattleChecks.Compare(result.State!, after, false, "Ordinary DoubleUnits play " + (index + 1));
+        }
+        Require(definitions.Count == 2, "Expected two distinct original ordinary card definitions.");
+        Console.WriteLine("NATIVE-DOUBLE-UNITS-ORDINARY PASS: four full native successors, first-play extra births, same-turn suppression and reset.");
+    }
+
     private static void VerifyCloneCallbacks(FixtureValue root, int count = 1)
     {
         FixtureValue[] observations = root.GetProperty("CloneObservations").EnumerateArray().ToArray();
