@@ -91,7 +91,39 @@ internal static class RecordedBattleChecks
         if (!terminal && BattleTurnModel.ReplayObservedFocus(state, actual) is BattleTurnState focused &&
             Difference(focused, actual, terminal: false) == null)
             return focused;
+        if (!terminal && ReplayPreviewBetweenInputs(state, actual) is BattleTurnState refreshed &&
+            Difference(refreshed, actual, terminal: false) == null)
+            return refreshed;
         throw new InvalidOperationException(label + ": " + difference);
+    }
+
+    private static BattleTurnState? ReplayPreviewBetweenInputs(BattleTurnState previous, BattleTurnState observed)
+    {
+        if (!previous.BattlePreviewEnabled || !observed.BattlePreviewEnabled || previous.Spawn.Turn != observed.Spawn.Turn ||
+            previous.PlayRules == null ||
+            previous.Spawn.Train.Context?.SpawnPoints?.NextPreviewCopyId is not int priorCopy ||
+            observed.Spawn.Train.Context?.SpawnPoints?.NextPreviewCopyId is not int actualCopy || actualCopy <= priorCopy)
+            return null;
+        if (previous.SelectedRoom != observed.SelectedRoom)
+            return BattleTurnModel.SelectRoom(previous, observed.SelectedRoom).State;
+        // Native UI can refresh a second time on the same floor between inputs.
+        // Re-run one complete preview and compare its entire resulting decision.
+        TrainCombatResult preview = BattlePreviewModel.Refresh(previous.Spawn.Train, previous.PlayRules);
+        if (!preview.Supported || preview.State!.Context?.SpawnPoints?.NextPreviewCopyId != actualCopy)
+            return null;
+        TrainCombatState train = preview.State;
+        EnemySpawnState spawn = previous.Spawn;
+        var refreshed = new EnemySpawnState(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, spawn.Rng,
+            train.Context!.NextUnitId ?? spawn.NextUnitId, spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,
+            spawn.FirstTreasureRoom, spawn.Turn, spawn.ExternalInteractions, spawn.CanonicalDecisionReferences, spawn.PendingDestroyedUnitIds,
+            spawn.OuterBoss, spawn.QueuedOuterBoss, spawn.QueuedTrueFinalBoss, spawn.TrueFinalBoss);
+        BattleRngStream[] streams = previous.RngStreams.Select(stream => stream.Name == "Battle"
+            ? new BattleRngStream(stream.Name, stream.Seed, train.Context.BattleRng)
+            : stream).ToArray();
+        return new BattleTurnState(refreshed, previous.Energy, previous.EnergyPerTurn, previous.DrawPerTurn, previous.ForgePoints,
+            previous.DragonsHoard, previous.MoonPhase, streams, previous.OtherPiles, previous.ExternalInteractions, previous.PlayRules,
+            previous.BattlePreviewEnabled, previous.UiRngIsolated, previous.CanonicalDecisionReferences, previous.CanonicalPhysicalReferences,
+            previous.SelectedRoom, previous.MoonPhaseTrackingActive);
     }
 
     internal static void Compare(BattleTurnState predicted, BattleTurnState actual, bool terminal, string label)

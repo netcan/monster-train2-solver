@@ -325,8 +325,11 @@ Entropy 薪火读取永久牌组中的祸害。在隔离原版存档中加入两
 
 Railforged 第三环 Unruly 在原版受控战后回调中依次测试复制和召唤。首领独处时召唤原版 Decoy，
 已有 Decoy 时复制它。两种状态的效果次序、出生站位、完整后继和随机数均与模型一致。
-常规战斗中的首领行动调度仍需独立验证。
-[原版战后回调](../tests/compatibility/game-2.3.1/mechanics/unruly-post-combat/native-post-combat.mt2f)
+原版测试场景的整战还通过首次出生、选层、Relentless 转相和终局。32 次出牌、7 次结束回合、
+结束回合候选及 16 条独立分支均通过。卡牌候选另需用带 Conduit 跟踪的录档验证。
+[原版战后回调](../tests/compatibility/game-2.3.1/mechanics/unruly-post-combat/native-post-combat.mt2f) ·
+[原版出生](../tests/compatibility/game-2.3.1/mechanics/unruly-post-combat/native-birth.mt2f) ·
+[原版整战](../tests/compatibility/game-2.3.1/mechanics/unruly-post-combat/native-battle.mt2f)
 
 原版部署限制使底层和中层在部署阶段无法召唤，进入第 1 回合后解禁。完整结束回合后继通过对照。
 同一次组合采样中，BigMonsters 使列车乘务员的占位由 3 变为 4，冠军由 2 变为 3，

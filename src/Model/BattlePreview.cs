@@ -198,7 +198,8 @@ namespace MonsterTrain2Poju.Model
                     externalPyreRoomIndex: targetsPyre && previewPyre != null ? pyreRoomIndex : -1,
                     externalTargets: !targetsTower && previewContext.LifeLinks == null ? null : previewContext.Enchantments!.Rooms
                         .Where(other => other.RoomIndex != room.RoomIndex).SelectMany(other => other.Units
-                            .Where(unit => !targetsPyre || unit.Id != previewPyre?.Id).Select(unit => (other.RoomIndex, unit))).ToArray());
+                            .Where(unit => !targetsPyre || unit.Id != previewPyre?.Id).Select(unit => (other.RoomIndex, unit))).ToArray(),
+                    unitCopyCatalog: playRules?.UnitCopyCatalog);
                 if (!preview.Supported)
                     return new TrainCombatResult(null, RoomOutcome.Unsupported,
                         Array.Empty<RoomCombatResult>(), "Battle preview floor " + room.RoomIndex + ": " + preview.UnsupportedReason);

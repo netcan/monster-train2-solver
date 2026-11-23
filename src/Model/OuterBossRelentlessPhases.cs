@@ -146,9 +146,13 @@ namespace MonsterTrain2Poju.Model
                 old.OuterBoss == null ? null : progress, queuedTrueFinalBoss: old.QueuedTrueFinalBoss, trueFinalBoss: old.TrueFinalBoss);
             var streams = battle.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                 stream.Name == "BossActions" ? rng : stream.Name == "Battle" ? train.Context!.BattleRng : stream.State)).ToArray();
+            BattlePlayRules playRules = battle.PlayRules.WithRooms(rules);
+            if (boss.AssetKey == TriggeredSummonModel.UnrulyBoss && boss.Phase == "Casting" && phase == "Relentless" &&
+                playRules.UnitCopyCatalog != null && !BattlePlayRules.NeedsUnitCopyCatalog(playRules.Cards, train))
+                playRules = playRules.WithoutUnitCopyCatalog();
             return new OuterBossPhaseResult(new OuterBossPhaseState(new BattleTurnState(spawn, battle.Energy, battle.EnergyPerTurn,
                 battle.DrawPerTurn, battle.ForgePoints, battle.DragonsHoard, battle.MoonPhase, streams, battle.OtherPiles,
-                battle.ExternalInteractions, battle.PlayRules.WithRooms(rules), battle.BattlePreviewEnabled, battle.UiRngIsolated,
+                battle.ExternalInteractions, playRules, battle.BattlePreviewEnabled, battle.UiRngIsolated,
                 battle.CanonicalDecisionReferences, battle.CanonicalPhysicalReferences, selectedRoom, battle.MoonPhaseTrackingActive), progress));
         }
     }

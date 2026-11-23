@@ -807,6 +807,7 @@ param(
     [switch] $OriginalSpurned,
     [switch] $OriginalSpurnedBattle,
     [switch] $OriginalUnrulyWitness,
+    [switch] $OriginalUnrulyBattle,
     [ValidateRange(1, 3)][int] $OriginalSpurnedChallenge = 2,
     [switch] $OriginalSpurnedRetainPiles,
     [switch] $OriginalRageOnBurnoutStackLoss,
@@ -1860,8 +1861,9 @@ if ($OriginalAffordableNonPlayable) {
     $PhysicalSpawnPoints = $true
     $Policy = 'units-and-junk'
 }
-if ($OriginalUnrulyWitness) {
-    $unrulyArguments = @('OriginalUnrulyWitness', 'InputProfile', 'BattleDistance', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
+    $unrulyMode = if ($OriginalUnrulyBattle) { 'OriginalUnrulyBattle' } else { 'OriginalUnrulyWitness' }
+    $unrulyArguments = @($unrulyMode, 'InputProfile', 'BattleDistance', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne 2 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $unrulyArguments }).Count) {
@@ -1869,7 +1871,13 @@ if ($OriginalUnrulyWitness) {
     }
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
-    $Policy = 'no-cards'
+    if ($OriginalUnrulyBattle) {
+        $OuterBossTurns = $true
+        $OuterBossBirth = $true
+        $Policy = 'units-spells-and-junk'
+    } else {
+        $Policy = 'no-cards'
+    }
 }
 if ($OriginalSpurned -and (-not $BinaryCapture -or -not $InputProfile -or $BattleDistance -ne 3 -or $PlayerAdvisor -or $Planner -or $OriginalSpurnedChallenge -eq 3)) {
     throw 'OriginalSpurned requires an isolated Ring 4 BattleIntro checkpoint and binary capture.'
@@ -2594,7 +2602,7 @@ if ($InputProfile) {
         throw 'Original opening cohorts require a standard native first-battle checkpoint.'
     }
     if ($CapturePlayerDeploymentOnly) { $deploymentInputSignature = Get-OriginalSignature $checkpoint }
-    if ($OriginalUnrulyWitness) { $unrulyInputSignature = Get-OriginalSignature $checkpoint }
+    if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) { $unrulyInputSignature = Get-OriginalSignature $checkpoint }
     if ($OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness) {
         if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
             $checkpointData.wasDevCheatUsed -ne $false -or $checkpointData.runState.numBattlesCompleted -ne 0) {
@@ -3381,7 +3389,9 @@ if ($OriginalSpurned) {
     $environment['MT2_PROBE_PHYSICAL_SPAWNPOINTS'] = '1'
     $environment['MT2_PROBE_SPURNED_CHALLENGE'] = [string]$OriginalSpurnedChallenge
 }
-if ($OriginalUnrulyWitness) { $environment['MT2_PROBE_ORIGINAL_UNRULY'] = '1' }
+if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
+    $environment['MT2_PROBE_ORIGINAL_UNRULY'] = if ($OriginalUnrulyBattle) { 'battle' } else { 'component' }
+}
 if ($OriginalSpurnedBattle) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-spurned-battle'
     $environment['MT2_PROBE_SPURNED_CHALLENGE'] = [string]$OriginalSpurnedChallenge
@@ -4522,6 +4532,16 @@ if ($OriginalTriggerRelicBatchStationaryReserve) {
     }
     $witnessAction = $stationaryReserveWitnesses[0].Action
     Write-Output "ORIGINAL-TRIGGER-RELIC-STATIONARY-ENEMY-EQUIP PASS card=$($witnessAction.CardInstanceId) target=$($witnessAction.TargetUnitId)"
+}
+if ($OriginalUnrulyBattle) {
+    $unruly = $trace.OriginalUnrulyBattle
+    if ($trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+        $unruly.Scenario -cne 'SoulSavior_R3_BossBattle_DuplicateEnemy' -or $unruly.BossKey -cne 'Boss_SoulSavior_R3_Unruly_DuplicateEnemy' -or
+        -not $unruly.ControlledTestScenario -or -not $unruly.RailforgedInstalled -or
+        @($trace.Actions).Count -eq 0 -or @($trace.Turns).Count -eq 0 -or -not $trace.TerminalEffectsSettled -or
+        (Get-OriginalSignature $checkpoint) -cne $unrulyInputSignature) {
+        throw "Original Unruly battle did not settle ordinary play in the unchanged test scenario. Inspect $tracePath and $unityLog"
+    }
 }
 if ($OriginalSpurnedBattle) {
     $spurned = $trace.OriginalSpurnedBattle

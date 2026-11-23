@@ -143,7 +143,8 @@ namespace MonsterTrain2Poju.Model
         public static bool Supports(string assetKey) => assetKey is
             "Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" or "Boss_Level8_Corrupter" or
             "Boss_Level8_AllyBuffer_TitanTrial" or "Boss_Level8_Fragile_TitanTrial" or "Boss_Level8_Corrupter_TitanTrial" or
-            TriggeredStatusModel.OriginalSpurned or TriggeredStatusModel.OriginalSpurnedWitherbloom or TriggeredStatusModel.OriginalSpurnedDuality ||
+            TriggeredStatusModel.OriginalSpurned or TriggeredStatusModel.OriginalSpurnedWitherbloom or TriggeredStatusModel.OriginalSpurnedDuality or
+            TriggeredSummonModel.UnrulyBoss ||
             IsAngelDuo(assetKey) || IsCael(assetKey) || IsCaelTrial(assetKey) || IsArkionPyre(assetKey) ||
             IsArkionRage(assetKey) || IsArkionPush(assetKey) || IsFleshweaver(assetKey);
     }

@@ -79,8 +79,15 @@ namespace MonsterTrain2Poju.Model
             foreach (CombatUnit unit in retainedUnits ?? Array.Empty<CombatUnit>())
             {
                 if (liveIds.Contains(unit.Id)) continue;
+                // A remote lethal Pyre hit stops combat without moving the Pyre
+                // object to the attacker floor.
+                int retainedRoom = source.RoomIndex;
+                if (unit.IsPyre && external?.ContainsKey(unit.Id) == true)
+                    retainedRoom = source.Context.SpawnPoints?.Units.FirstOrDefault(point => point.UnitId == unit.Id)?.Current?.RoomIndex
+                        ?? world.Rooms.FirstOrDefault(room => room.Units.Any(actor => actor.Id == unit.Id))?.RoomIndex
+                        ?? retained.FirstOrDefault(actor => actor.Unit.Id == unit.Id)?.RoomIndex ?? source.RoomIndex;
                 retained.RemoveAll(actor => actor.Unit.Id == unit.Id);
-                retained.Add(new EnchantmentRetainedUnit(unit, source.RoomIndex, source.Preview));
+                retained.Add(new EnchantmentRetainedUnit(unit, retainedRoom, source.Preview));
             }
             // Status application can borrow a scope that retains a living revived
             // enemy outside its room list. HeroManager still owns its movement rule.

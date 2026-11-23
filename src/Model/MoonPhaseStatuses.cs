@@ -33,13 +33,24 @@ namespace MonsterTrain2Poju.Model
             CombatContext context = source.Context!;
             // HeroManager retains these unplaced births in its active roster;
             // the next real moon change reaches them before any new preview births.
+            bool unruly = source.Rooms.SelectMany(room => room.Units)
+                .Any(unit => unit.AssetKey == TriggeredSummonModel.UnrulyBoss && unit.Health > 0);
+            bool RetainedUnrulyHero(EnchantmentRetainedUnit actor) => unruly && !actor.Preview &&
+                actor.Unit is { Team: CombatTeam.Enemy, IsPyre: false, MoonPhaseMask: 4 or 5 or 6,
+                    DeathState: { HasFinishedDying: false, IsBeingRemoved: false, IsDespawned: false, IsDestroyed: false } } &&
+                !actor.Unit.Triggers.Any(trigger => trigger.Kind is "OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or
+                    "OnMoonshadeLost" or "OnMoonPhaseShift") &&
+                context.SpawnPoints?.Units.Any(point => point.UnitId == actor.Unit.Id &&
+                    point.SpawnedInPreview == true && point.Current == null && point.LastKnown == null) == true;
             bool FollowsMoon(EnchantmentRetainedUnit actor) => actor.RoomIndex == -1 &&
-                actor.Unit.AssetKey is "Boss_Level3_MiniFleshweaver_Corruption" or "Boss_Level3_MiniFleshweaver_MoreMass" &&
+                (actor.Unit.AssetKey is "Boss_Level3_MiniFleshweaver_Corruption" or "Boss_Level3_MiniFleshweaver_MoreMass" ||
+                    RetainedUnrulyHero(actor)) &&
                 actor.Unit.Health > 0 && actor.Unit.DeathState?.IsDestroyed != true;
             if (context.Enchantments is EnchantmentWorld world && world.RetainedUnits.Any(FollowsMoon))
                 context = context.WithEnchantments(new EnchantmentWorld(world.Rooms, world.Movement, world.EnemySlotsPerRoom,
                     world.RetainedUnits.Select(actor => FollowsMoon(actor)
-                        ? new EnchantmentRetainedUnit(WithPhase(actor.Unit, phase).WithMoonPhaseMask(phase), actor.RoomIndex, actor.Preview) : actor).ToArray(),
+                        ? new EnchantmentRetainedUnit(WithPhase(actor.Unit, phase).WithMoonPhaseMask(phase),
+                            actor.RoomIndex, actor.Preview) : actor).ToArray(),
                     world.EnchanterIds, world.AllowUpdates, world.Updating, world.Preview, world.TestRng, world.AutomaticLifecycle,
                     world.TemporaryPreviewUnitIds));
             return EnchantmentWorldModel.Rebase(CardSpellModel.WithContext(new TrainCombatState(rooms, source.Movement,

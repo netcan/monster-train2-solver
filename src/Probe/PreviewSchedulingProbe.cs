@@ -30,7 +30,11 @@ namespace MonsterTrain2Poju.Probe
         internal static void Observe(string operation, bool callers = false)
         {
             if (FullBattleTrace.Active == null || !(AbilityIncantScenario.Prepared ||
-                PreviewReferenceProbe.Enabled && EnchantmentBattleScenario.Prepared)) return;
+                PreviewReferenceProbe.Enabled && EnchantmentBattleScenario.Prepared
+#if DEVELOPMENT_PROBE
+                || OriginalUnrulyWitness.FullBattle
+#endif
+                )) return;
             AllGameManagers managers = AllGameManagers.Instance!;
             CombatManager combat = managers.GetCombatManager()!;
             Records.Add(new Record { Operation = operation, Frame = UnityEngine.Time.frameCount,

@@ -317,6 +317,15 @@ namespace MonsterTrain2Poju.Model
             UnitCopyCatalog? unitCopyCatalog = null, ElixirCatalog? elixirs = null, ForgeUpgradeDefinition? forgeUpgrade = null, bool? devoteEnabled = null)
         { Rooms = Array.AsReadOnly(rooms.ToArray()); Cards = Array.AsReadOnly(cards.ToArray()); StatusRules = Array.AsReadOnly((statusRules ?? Array.Empty<CombatStatus>()).ToArray()); UnitCopyCatalog = unitCopyCatalog; Elixirs = elixirs; ForgeUpgrade = forgeUpgrade; DevoteEnabled = devoteEnabled; }
         internal BattlePlayRules WithRooms(IReadOnlyList<RoomPlayRule> rooms) => new(rooms, Cards, StatusRules, UnitCopyCatalog, Elixirs, ForgeUpgrade, DevoteEnabled);
+        internal BattlePlayRules WithoutUnitCopyCatalog() => new(Rooms, Cards, StatusRules, null, Elixirs, ForgeUpgrade, DevoteEnabled);
+        internal static bool NeedsUnitCopyCatalog(IEnumerable<CardPlayRule> cards, TrainCombatState train, CombatUnit? queuedBoss = null) =>
+            cards.Any(rule => rule.SpawnUnit?.Modifiers?.SpawnCopySubtype != null ||
+                rule.Effects.Any(effect => effect.Type == "CopyUnits" || effect.RoomAttachment?.SpawnCopySubtype != null)) ||
+            train.Rooms.SelectMany(room => room.Units).Concat(queuedBoss == null ? Array.Empty<CombatUnit>() : new[] { queuedBoss })
+                .Any(unit => unit.Modifiers?.SpawnCopySubtype != null || unit.Triggers.Any(trigger => trigger.Kind == "PostCombat" &&
+                    trigger.Effects.Any(effect => effect.Action?.Type == "CopyUnits"))) ||
+            train.Context?.Relics?.Any(relic => relic.EffectTypes.Contains(RelicUnitSpawnCountModel.Effect)) == true ||
+            train.Context?.RoomCapacities?.Any(room => room.Attachments?.Any(attachment => attachment.SpawnCopySubtype != null) == true) == true;
         internal BattlePlayRules WithGeneratedEquipment(CombatContext context)
         {
             if (context.SummonCatalog?.Cards.Any(card => card.GeneratedEquipmentRule != null) != true) return this;

@@ -218,15 +218,7 @@ namespace MonsterTrain2Poju.Probe
             var forgeUpgrade = new ForgeUpgradeDefinition(Upgrade(defaultForgeData), hasRoomForgeOverride, relicForgeUpgrades);
             rules = new BattlePlayRules(roomRules, reachable.Values.OrderBy(rule => rule.DataId, StringComparer.Ordinal).ToArray(),
                 new[] { "armor", "valor", "pyregel", "duality" }.Select(id => Status(id, 1)).ToArray(),
-                reachable.Values.Any(rule => rule.SpawnUnit?.Modifiers?.SpawnCopySubtype != null ||
-                    rule.Effects.Any(effect => effect.Type == "CopyUnits" || effect.RoomAttachment?.SpawnCopySubtype != null)) ||
-                spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Modifiers?.SpawnCopySubtype != null) ||
-                spawn.Train.Rooms.SelectMany(room => room.Units)
-                    .Concat(spawn.QueuedOuterBoss == null ? Array.Empty<CombatUnit>() : new[] { spawn.QueuedOuterBoss.Actor.Unit })
-                    .Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "PostCombat" &&
-                        trigger.Effects.Any(effect => effect.Action?.Type == "CopyUnits"))) ||
-                spawn.Train.Context?.Relics?.Any(relic => relic.EffectTypes.Contains(RelicUnitSpawnCountModel.Effect)) == true ||
-                spawn.Train.Context?.RoomCapacities?.Any(room => room.Attachments?.Any(attachment => attachment.SpawnCopySubtype != null) == true) == true
+                BattlePlayRules.NeedsUnitCopyCatalog(reachable.Values, spawn.Train, spawn.QueuedOuterBoss?.Actor.Unit)
                     ? UnitCopyCatalogProbe.Capture(reachable.Values.ToArray(), spawn) : null,
                 elixirs, forgeUpgrade, ConditionalActivationProbe.HasVanguard ? true : (bool?)null);
             return rules;

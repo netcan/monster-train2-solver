@@ -859,7 +859,8 @@ namespace MonsterTrain2Poju.Probe
                             pendingPhysicalDeathIds: pendingDeaths) :
                             RoomCombatModel.Resolve(before, externalPyre: pyre,
                                 externalPyreRoomIndex: pyre == null ? -1 : pyreRoomIndex, externalTargets: externalTargets,
-                                relentlessDecisions: RelentlessBattleScenario.CurrentPlan)
+                                relentlessDecisions: RelentlessBattleScenario.CurrentPlan,
+                                unitCopyCatalog: trainCombat.CaptureTriggeredCopyCatalog(new[] { before }))
                     };
                     stages.Add(record);
                 }
@@ -1225,6 +1226,7 @@ namespace MonsterTrain2Poju.Probe
                 ModifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS"),
 #if DEVELOPMENT_PROBE
                 OriginalSpurnedBattle = OriginalSpurnedScenario.FullBattleEvidence,
+                OriginalUnrulyBattle = OriginalUnrulyWitness.FullBattleEvidence,
 #endif
                 OriginalChampionStartTurnHealSchema = OriginalChampionStartTurnHealScenario.Prepared ? 208 : 0,
                 OriginalChampionStartTurnHeal = OriginalChampionStartTurnHealScenario.Prepared ? OriginalChampionStartTurnHealScenario.Evidence : null,

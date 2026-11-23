@@ -47,12 +47,13 @@ internal static class OuterBossBirthChecks
             OuterBossDefinitions.IsAngelDuo(born.AssetKey) || OuterBossDefinitions.IsCael(born.AssetKey) ||
             OuterBossDefinitions.IsCaelTrial(born.AssetKey) ||
             OuterBossDefinitions.IsArkionPyre(born.AssetKey) || OuterBossDefinitions.IsArkionRage(born.AssetKey) ||
-            OuterBossDefinitions.IsArkionPush(born.AssetKey) || OuterBossDefinitions.IsFleshweaver(born.AssetKey) ? auras.Length == 0 :
+            OuterBossDefinitions.IsArkionPush(born.AssetKey) || OuterBossDefinitions.IsFleshweaver(born.AssetKey) ||
+            born.AssetKey == TriggeredSummonModel.UnrulyBoss ? auras.Length == 0 :
             auras.Length == 1 && auras[0].Bound && auras[0].State.PrimaryTargets.Count == 0 && auras[0].State.CachedStatus == null;
         Require(deferredAura && born.Triggers.Where(trigger => trigger.Effects.Any(effect => effect.Enchantment != null))
                 .All(trigger => !trigger.HasTriggered) &&
                 (before.CreatedBoss.Actions[0][0].Behavior == "RandomBossActionBehavior" || occupiedFloors == 0 || chosenPlayers > 0),
-            "Native birth must bind its aura without firing AfterSpawnEnchant or eagerly applying targets.");
+            "Unexpected aura or initial target at the native boss birth boundary.");
         Console.WriteLine($"OUTER-BOSS-BIRTH PASS: initial action, room {actual.Boss.Room}, {occupiedFloors} occupied floors/{chosenPlayers} selected allies, {auras.Length} deferred auras, physical birth and full battle/controller/RNG equality; immutable boundary.");
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }

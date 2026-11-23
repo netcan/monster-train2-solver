@@ -536,7 +536,7 @@ namespace MonsterTrain2Poju.Model
         public static RoomCombatResult Resolve(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
             bool updateSelectedRoom = true, CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
             IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
-            IReadOnlyList<RelentlessDecision>? relentlessDecisions = null)
+            IReadOnlyList<RelentlessDecision>? relentlessDecisions = null, UnitCopyCatalog? unitCopyCatalog = null)
         {
             int? interval = state.Context?.QueryFrame?.RelentlessNotificationInterval;
             var decisions = relentlessDecisions?.Count > 0 ? relentlessDecisions.ToArray() : null;
@@ -545,7 +545,7 @@ namespace MonsterTrain2Poju.Model
                     "Invalid Relentless notification interval or decisions.");
             return ResolveCore(state, refreshPyre, updateSelectedRoom, externalPyre, externalPyreRoomIndex, externalTargets,
                 decisions != null ? (room, round) => decisions.FirstOrDefault(choice =>
-                    choice.RoomIndex == room && choice.CompletedRounds == round) : null);
+                    choice.RoomIndex == room && choice.CompletedRounds == round) : null, unitCopyCatalog);
         }
 
         internal static bool ValidRelentlessDecisions(int? interval, IReadOnlyList<RelentlessDecision>? decisions) =>

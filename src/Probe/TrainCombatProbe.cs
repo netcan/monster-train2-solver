@@ -22,6 +22,13 @@ namespace MonsterTrain2Poju.Probe
         internal TrainCombatProbe(ManualLogSource log, FullBattleTrace trace)
         { this.log = log; this.trace = trace; active = this; }
 
+        internal UnitCopyCatalog? CaptureTriggeredCopyCatalog(IEnumerable<RoomCombatState> rooms) =>
+            rooms.SelectMany(room => room.Units).Any(unit => unit.AssetKey == TriggeredSummonModel.UnrulyBoss &&
+                unit.Triggers.Any(trigger => trigger.Kind == "PostCombat" &&
+                    trigger.Effects.Any(effect => effect.Action?.Type == "CopyUnits")))
+                ? trace.CaptureDecision(includeOuterBossForBump: true).PlayRules?.UnitCopyCatalog
+                : null;
+
         internal TrainCombatState Capture(bool captureContext = true, bool includeOuterBossForBump = false)
         {
             AllGameManagers managers = AllGameManagers.Instance!;
@@ -91,6 +98,7 @@ namespace MonsterTrain2Poju.Probe
                     TrainCombatState before = Capture();
                     var roomRules = kind == "Combat" && RelicTurnEndBumpModel.Present(before.Context)
                         ? BattleActionProbe.CaptureRoomRules() : null;
+                    UnitCopyCatalog? unitCopyCatalog = kind == "Combat" ? CaptureTriggeredCopyCatalog(before.Rooms) : null;
                     record = new Record
                     {
                         Index = records.Count, Turn = managers.GetCombatManager()!.GetTurnCount(),
@@ -102,7 +110,9 @@ namespace MonsterTrain2Poju.Probe
                         SettlementFrames = settlementFrames,
                         RelentlessDecisions = kind == "Combat" ? RelentlessBattleScenario.CurrentPlan : null,
                         RoomRules = roomRules,
-                        Predicted = kind == "Combat" ? TrainCombatModel.ResolveCombat(before, RelentlessBattleScenario.CurrentPlan, roomRules) : TrainCombatModel.Ascend(before)
+                        Predicted = kind == "Combat"
+                            ? TrainCombatModel.ResolveCombat(before, RelentlessBattleScenario.CurrentPlan, roomRules, unitCopyCatalog)
+                            : TrainCombatModel.Ascend(before)
                     };
                     records.Add(record);
                 }

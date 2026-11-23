@@ -19,10 +19,13 @@ namespace MonsterTrain2Poju.Probe
         private const string BossKey = "Boss_SoulSavior_R3_Unruly_DuplicateEnemy";
         private const string DecoyKey = "R3_Horde_T1_Decoy";
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_UNRULY") == "1";
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_UNRULY") is "component" or "battle";
+        internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_UNRULY") == "battle";
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
+        internal static object? FullBattleEvidence { get; private set; }
         private static bool requested, started;
+        private static int? pendingEndTurn;
         private static CharacterState? actor;
         private static IReadOnlyList<CardEffectState>? effects;
         private static List<object>? events;
@@ -43,14 +46,49 @@ namespace MonsterTrain2Poju.Probe
             log.LogInfo("ORIGINAL-UNRULY controlled TestScenario requested " + ScenarioKey);
         }
 
+        private static void CheckScenario(SaveManager save)
+        {
+            if (!requested || !save.InTestScenario || save.GetCurrentScenarioData()?.name != ScenarioKey ||
+                !save.IsDlcInstalled(DLC.Railforged))
+                throw new InvalidOperationException("The native DLC check or controlled Unruly scenario changed.");
+        }
+
+        internal static void ObserveFullBattle(SaveManager save)
+        {
+            if (FullBattleEvidence != null) return;
+            CheckScenario(save);
+            FullBattleEvidence = new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true, ControlledTestScenario = true };
+        }
+
+        internal static void ArmEndTurn(int turn)
+        {
+            if (pendingEndTurn.HasValue)
+                throw new InvalidOperationException("The previous Unruly EndTurn is still pending.");
+            pendingEndTurn = turn;
+        }
+
+        [HarmonyPatch(typeof(ReplayManager), nameof(ReplayManager.RecordEntry))]
+        private static class AcceptedEndTurnPatch
+        {
+            private static void Prefix(ReplayEntry replayEntryNew)
+            {
+                if (replayEntryNew is not ReplayEntryEndTurn || !pendingEndTurn.HasValue) return;
+                CombatManager combat = AllGameManagers.Instance!.GetCombatManager();
+                if (combat.GetTurnCount() != pendingEndTurn || !combat.IsPlayerActionPhase())
+                    throw new InvalidOperationException("Unruly EndTurn did not commit at the expected native player decision.");
+                // The confirmed replay entry precedes the native transition to
+                // MonsterTurnQueueClear and follows pending player previews.
+                pendingEndTurn = null;
+                PreviewSchedulingProbe.Observe("EndTurnAccepted");
+                FullBattleTrace.Active!.BeginEndTurn();
+            }
+        }
+
         internal static bool Tick(AllGameManagers managers, ManualLogSource log)
         {
             if (started) return true;
             var save = managers.GetSaveManager();
-            if (!requested || !save.InTestScenario || save.GetCurrentScenarioData()?.name != ScenarioKey ||
-                !save.IsDlcInstalled(DLC.Railforged))
-                throw new InvalidOperationException("The native DLC check or controlled Unruly scenario changed.");
-
+            CheckScenario(save);
             CharacterState? boss = managers.GetHeroManager().GetOuterTrainBossCharacter();
             if (boss == null || boss.GetCurrentRoomIndex() < 0) return false;
             if (boss.GetSourceCharacterData().GetAssetKey() != BossKey)

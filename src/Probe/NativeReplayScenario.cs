@@ -261,7 +261,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (RollingAdviceScenario.Enabled
 #if DEVELOPMENT_PROBE
-                    || fullBattle && OriginalSpurnedScenario.FullBattle
+                    || fullBattle && (OriginalSpurnedScenario.FullBattle || OriginalUnrulyWitness.FullBattle)
 #endif
                     )
                 {
@@ -286,7 +286,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (RollingAdviceScenario.Enabled
 #if DEVELOPMENT_PROBE
-                    || fullBattle && OriginalSpurnedScenario.FullBattle
+                    || fullBattle && (OriginalSpurnedScenario.FullBattle || OriginalUnrulyWitness.FullBattle)
 #endif
                     )
                 {
@@ -1169,7 +1169,9 @@ namespace MonsterTrain2Poju.Probe
                     return;
                 }
             }
-            if (fullBattle && OriginalUnrulyWitness.Enabled)
+            if (fullBattle && OriginalUnrulyWitness.FullBattle)
+                OriginalUnrulyWitness.ObserveFullBattle(save);
+            else if (fullBattle && OriginalUnrulyWitness.Enabled)
             {
                 if (OriginalUnrulyWitness.Error is string error) throw new InvalidOperationException(error);
                 if (OriginalUnrulyWitness.Completed) Finish(true, "Original Unruly PostCombat component captured.");
@@ -4592,7 +4594,14 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && TrueFinalBossRelentlessScenario.Prepare()) return;
             if (fullBattle && TrueFinalBossDormantScenario.Prepare()) return;
             if (replayEndTurn) ReplayRelentlessChoices.Arm(combat.GetTurnCount(), choices);
-            if (fullBattle && record) FullBattleTrace.Active?.BeginEndTurn();
+            if (fullBattle && record)
+            {
+#if DEVELOPMENT_PROBE
+                if (OriginalUnrulyWitness.FullBattle) OriginalUnrulyWitness.ArmEndTurn(combat.GetTurnCount());
+                else
+#endif
+                    FullBattleTrace.Active?.BeginEndTurn();
+            }
             expectedTurn = combat.GetTurnCount() - initialTurn + 1;
             endTurn.Invoke(null, null);
             Enter(Stage.WaitingTurn, 90f);
