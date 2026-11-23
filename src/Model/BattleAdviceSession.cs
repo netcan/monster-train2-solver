@@ -304,7 +304,7 @@ namespace MonsterTrain2Poju.Model
                         plan = search(root, token);
                         token.ThrowIfCancellationRequested();
                         verification.Start();
-                        if (retainPlans) proof = VerifyAndRetain(root, plan, true, token);
+                        if (retainPlans) proof = VerifyAndRetain(root, plan, true, token, verifiedRootKey: key);
                         else { verify(root, plan); proof = null; }
                     }
                     verification.Stop();
@@ -325,7 +325,7 @@ namespace MonsterTrain2Poju.Model
             root.Spawn.Turn > candidate.Root.Spawn.Turn;
 
         private static VerifiedAdviceContinuation? VerifyAndRetain(BattleTurnState root, BattlePlanResult plan,
-            bool retain, CancellationToken token = default)
+            bool retain, CancellationToken token = default, string? verifiedRootKey = null)
         {
             if (plan.Cancelled || (!plan.CompletedHorizon && !plan.UsedShorterHorizon) || plan.Steps.Count == 0)
                 throw new InvalidOperationException("No complete verified continuation within the planning budget. turns=" +
@@ -351,7 +351,8 @@ namespace MonsterTrain2Poju.Model
             {
                 token.ThrowIfCancellationRequested();
                 roots?.Add(continuationKeys.Key(replayed));
-                fullRoots?.Add(keys.Key(replayed));
+                if (fullRoots != null)
+                    fullRoots.Add(fullRoots.Count == 0 && verifiedRootKey != null ? verifiedRootKey : keys.Key(replayed));
                 unitKeys?.Add(VerifiedAdviceContinuation.CaptureUnitKeys(replayed, step));
                 if (step.IsEndTurn)
                 {
