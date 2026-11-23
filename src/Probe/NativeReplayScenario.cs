@@ -765,6 +765,8 @@ namespace MonsterTrain2Poju.Probe
                     if (fullBattle && OriginalPriorityRelicBattleScenario.Enabled && !OriginalPriorityRelicBattleScenario.Acquired)
                         OriginalPriorityRelicBattleScenario.AcquireBeforeBattle(managers!, log);
 #if DEVELOPMENT_PROBE
+                    if (fullBattle && (OriginalPactDrawWitness.Enabled || OriginalPactDrawWitness.FullBattle) && !OriginalPactDrawWitness.Prepared)
+                        OriginalPactDrawWitness.Prepare(save);
                     if (fullBattle && (OriginalFhyraGoldWitness.Enabled || OriginalFhyraGoldWitness.FullBattle) && !OriginalFhyraGoldWitness.Prepared)
                         OriginalFhyraGoldWitness.Prepare(save);
                     if (fullBattle && OriginalPyreAbilityCooldownWitness.Enabled && !OriginalPyreAbilityCooldownWitness.Prepared)
@@ -974,6 +976,14 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && OriginalPactDrawWitness.Enabled)
+            {
+                var next = OriginalPactDrawWitness.Tick(FullBattleTrace.Active!, managers);
+                if (next == OriginalPactDrawWitness.Step.EndTurn) AdvanceTurn(combat!, record: false);
+                else if (next == OriginalPactDrawWitness.Step.Complete)
+                    Finish(true, "Original Pact draw component captured.");
+                return;
+            }
             if (fullBattle && OriginalFhyraGoldWitness.Enabled)
             {
                 if (combat!.GetTurnCount() == 0)

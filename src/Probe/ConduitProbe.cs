@@ -16,7 +16,7 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => AdvisorRuntime.PlayerSession ||
             Environment.GetEnvironmentVariable("MT2_PROBE_PLAYER_ADVISOR") == "1" ||
 #if DEVELOPMENT_PROBE
-            OriginalOpeningUnitsScenario.Enabled ||
+            OriginalOpeningUnitsScenario.Enabled || OriginalPactDrawWitness.Enabled || OriginalPactDrawWitness.FullBattle ||
 #endif
             ConduitMovementCalibration.Enabled || EclipseChamberScenario.EnemyConduit || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "original-conduit-relics" || OriginalMooncycleFaeScenario.Enabled ||
             PlanetariumScenario.Enabled || OriginalStrongMagicCardsScenario.Enabled || OriginalScaledMoonPhaseScenario.Enabled || OriginalMoonCardUpgradesScenario.Lunacy ||

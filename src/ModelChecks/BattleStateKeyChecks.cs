@@ -125,7 +125,7 @@ internal static class BattleStateKeyChecks
             {
                 object? child = property.GetValue(value);
                 if (child == null &&
-                    (value is RelicResourceEffect && property.Name == nameof(RelicResourceEffect.LastKnownDeckCount) ||
+                    (value is RelicResourceEffect && property.Name is nameof(RelicResourceEffect.LastKnownDeckCount) or nameof(RelicResourceEffect.PactDraw) ||
                      value is CardMaskDescriptor && property.Name == nameof(CardMaskDescriptor.RandomTargetsFromRelic)))
                     continue;
                 yield return property.Name;

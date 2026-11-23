@@ -187,6 +187,7 @@ namespace MonsterTrain2Poju.Probe
             RelicSuppressExhaustRule? suppressExhaust = null;
             RelicEndTurnHealthRule? endTurnHealth = null;
             RelicCardTypeSequenceRule? cardTypeSequence = null;
+            RelicPactDrawRule? pactDraw = null;
             RelicUnitSpawnEffectRule? unitSpawnEffect = null;
             RelicDeathEffectRule? deathEffect = null;
             RelicOpeningSpawnRule? openingSpawn = null;
@@ -635,6 +636,14 @@ namespace MonsterTrain2Poju.Probe
                 amount = (int)AccessTools.Field(effect.GetType(), "extraDamage").GetValue(effect);
             else if (effect is RelicEffectAddGoldOnPyreDamage)
                 amount = (int)AccessTools.Field(effect.GetType(), "goldAmount").GetValue(effect);
+            else if (effect is RelicEffectDrawCardAfterEachClanPlayed)
+            {
+                SaveManager save = managers.GetSaveManager();
+                bool Flag(string field) => (bool)AccessTools.Field(effect.GetType(), field).GetValue(effect);
+                pactDraw = new RelicPactDrawRule(save.GetMainClass()?.GetID() ?? "", save.GetSubClass()?.GetID() ?? "",
+                    Flag("hasPlayedMainClan"), Flag("hasPlayedSubClan"), Flag("hasDrawnBonusCardsThisTurn"), Flag("drawCardNextTurn"));
+                amount = (int)AccessTools.Field(effect.GetType(), "numCardsToDraw").GetValue(effect);
+            }
             else if (effect is RelicEffectEnergyOnCardEarlyDiscard)
                 amount = data.GetParamInt();
             else if (effect is RelicEffectAddGoldOnExhaust)
@@ -654,7 +663,7 @@ namespace MonsterTrain2Poju.Probe
                     type == RelicUnitSpawnCountModel.Effect ? data.GetParamFloat() : 0,
                 generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence, unitSpawnEffect, deathEffect, openingSpawn, deckSpawn, drawAndEnergy, pileSpawnUpgrade, spawnStatusScaling, turnEnergy, goldMagicPowerCards,
                 lastKnownDeckCount: effect is RelicEffectAddPyreAttackAndHealthPerCardInDeck deckChange
-                    ? ReadLastKnownDeckCount(deckChange) : null, handTrait: handTrait, unitSpawnCount: unitSpawnCount);
+                    ? ReadLastKnownDeckCount(deckChange) : null, handTrait: handTrait, unitSpawnCount: unitSpawnCount, pactDraw: pactDraw);
         }
 
         internal static ResourceSnapshot Capture()

@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--native-pact-draw-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    PactDrawChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-fhyra-gold-on-pyre-damage-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

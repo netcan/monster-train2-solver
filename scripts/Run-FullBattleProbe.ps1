@@ -587,6 +587,8 @@ param(
     [switch] $OriginalPreventMonsterDamageBattle,
     [ValidateSet('WithOwner', 'WithoutOwner', 'WithOwnerReuse', 'WithoutOwnerReuse')]
     [string] $OriginalPyreAbilityCooldownWitness = '',
+    [switch] $OriginalPactDrawWitness,
+    [switch] $OriginalPactDrawBattle,
     [switch] $OriginalFhyraGoldWitness,
     [switch] $OriginalFhyraGoldBattle,
     [switch] $OriginalRandomSpellTargetsWitness,
@@ -889,6 +891,17 @@ param(
 $ErrorActionPreference = 'Stop'
 if ($NativeBuildRoot -and -not $SkipBuild) {
     throw 'NativeBuildRoot requires prebuilt native binaries with SkipBuild.'
+}
+if ($OriginalPactDrawWitness -or $OriginalPactDrawBattle) {
+    $pactArguments = @('OriginalPactDrawWitness', 'OriginalPactDrawBattle', 'InputProfile', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+        'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not ($BinaryCapture -and $InputProfile) -or ($OriginalPactDrawWitness -and $OriginalPactDrawBattle) -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $pactArguments }).Count) {
+        throw 'Original Pact draw requires an isolated first-battle InputProfile and binary capture.'
+    }
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = 'units-spells-and-junk'
 }
 if ($OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle) {
     $witnessArguments = @('OriginalFhyraGoldWitness', 'OriginalFhyraGoldBattle', 'InputProfile', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
@@ -2348,7 +2361,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll'
 }
 if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $AdvisorOffRoute -or
     $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth -or $OriginalFunguyDeckScalingDoubleUnits -or
-    $OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle) {
+    $OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -2363,6 +2376,9 @@ if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput 
     }
     if (($OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original Pyre witness requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
+    }
+    if (($OriginalPactDrawWitness -or $OriginalPactDrawBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw "Original Pact draw requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
     if ($AdvisorOffRoute -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "AdvisorOffRoute requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
@@ -2522,6 +2538,13 @@ if ($InputProfile) {
         throw 'Original opening cohorts require a standard native first-battle checkpoint.'
     }
     if ($CapturePlayerDeploymentOnly) { $deploymentInputSignature = Get-OriginalSignature $checkpoint }
+    if ($OriginalPactDrawWitness -or $OriginalPactDrawBattle) {
+        if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
+            $checkpointData.wasDevCheatUsed -ne $false -or $checkpointData.runState.numBattlesCompleted -ne 0) {
+            throw 'Original Pact draw requires a standard native first battle checkpoint.'
+        }
+        $pactInputSignature = Get-OriginalSignature $checkpoint
+    }
     if ($OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle) {
         if ($checkpointData.runType -cne 'Class' -or $checkpointData.wasDevCheatUsed -ne $false -or
             $checkpointData.runState.numBattlesCompleted -ne 0) {
@@ -2702,6 +2725,8 @@ $environment = @{
     MT2_PROBE_EFFECT_OWNER_TYPE = $EffectOwnerType
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_WITNESS = $(if ($OriginalPreventMonsterDamageWitness) { '1' } else { '0' })
     MT2_PROBE_PYRE_ABILITY_COOLDOWN_WITNESS = $OriginalPyreAbilityCooldownWitness
+    MT2_PROBE_ORIGINAL_PACT_DRAW = $(if ($OriginalPactDrawWitness) { '1' } else { '0' })
+    MT2_PROBE_ORIGINAL_PACT_BATTLE = $(if ($OriginalPactDrawBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_FHYRA_GOLD = $(if ($OriginalFhyraGoldWitness) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_FHYRA_BATTLE = $(if ($OriginalFhyraGoldBattle) { '1' } else { '0' })
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_BATTLE = $(if ($OriginalPreventMonsterDamageBattle) { '1' } else { '0' })
@@ -3651,6 +3676,16 @@ if ($OriginalPreventMonsterDamageWitness) {
     Write-Output "NATIVE-PREVENT-MONSTER-DAMAGE PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
+if ($OriginalPactDrawWitness) {
+    $capturePath = Join-Path $profile 'pact-draw-after-each-clan.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Pact draw component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore -or (Get-OriginalSignature $checkpoint) -cne $pactInputSignature) {
+        throw "Original Pact draw witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-PACT-DRAW PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
 if ($OriginalFhyraGoldWitness) {
     $capturePath = Join-Path $profile 'fhyra-gold-on-pyre-damage.mt2f'
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
@@ -4579,6 +4614,9 @@ if ($DamageOverflow -and ($trace.ModifierScenario -ne 'damage-overflow' -or
 }
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
+if ($OriginalPactDrawBattle -and (Get-OriginalSignature $checkpoint) -cne $pactInputSignature) {
+    throw 'The Pact battle donor checkpoint changed.'
+}
 if ($OriginalFhyraGoldBattle -and (Get-OriginalSignature $checkpoint) -cne $pyreBirthInputSignature) {
     throw 'The Fhyra battle donor checkpoint changed.'
 }

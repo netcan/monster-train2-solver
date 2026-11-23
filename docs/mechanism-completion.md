@@ -309,6 +309,12 @@ Fhyra 在原版扣血并触发薪火受伤回调后获得 10 金币。零伤害�
 [原版受伤回调](../tests/compatibility/game-2.3.1/mechanics/fhyra-gold-on-pyre-damage/tower-damage-callbacks.mt2f) ·
 [原版整战](../tests/compatibility/game-2.3.1/mechanics/fhyra-gold-on-pyre-damage/native-battle.mt2f)
 
+Pact 薪火在每回合首次打齐两个氏族时，为下一回合增加 1 次抽牌。实机两个相邻回合的七次出牌和两次结束回合
+逐步匹配完整状态和随机数，三个开局手牌数依次为 5、6、6。另一场原版开局胜局的 39 次出牌、7 次结束回合
+和两类候选检查均通过。
+[双氏族专项](../tests/compatibility/game-2.3.1/mechanics/pact-draw-after-each-clan/paired-clans-two-rounds.mt2f) ·
+[原版整战](../tests/compatibility/game-2.3.1/mechanics/pact-draw-after-each-clan/native-battle.mt2f)
+
 ExtraFeedTrigger 的原版查询确认友军 OnFeed 次数为 2，OnDeath 次数保持 1。
 61 个战斗阶段、5 次出牌、7 次结束回合与两类候选通过。实际普通进食也已录到两次 OnFeed，
 合金构装体的燃料从 1 增至 3，矿工只被吃掉一次，完整状态与随机数在 16 条分支上复放一致。

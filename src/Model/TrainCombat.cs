@@ -356,6 +356,7 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<RoomPlayRule>? updatedRoomRules = null;
             if (context != null)
             {
+                if (!rooms.Any(room => room.Preview)) context = RelicPactDrawModel.Reset(context);
                 if (RelicTurnEndBumpModel.Present(context) && !rooms.Any(room => room.Deployment || room.Preview))
                 {
                     TrainCombatResult moved = RelicTurnEndBumpModel.Apply(Freeze(source, rooms, context), roomRules, removedFromDeck, results);
