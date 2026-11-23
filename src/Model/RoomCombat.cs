@@ -3892,10 +3892,10 @@ namespace MonsterTrain2Poju.Model
                 if (!source.Preview && context?.Statistics != null && target.Source.DeathState?.HasStatisticsListener != false)
                 {
                     int responsible = sourceCardId > 0 ? sourceCardId : target.Source.SpawnerCardId;
-                    // Native GetResponsibleCard checks the current IsSacrifice
-                    // flag. Revival can clear it while retaining SacrificeCard.
-                    if (actor?.Source.SacrificeCardId > 0 && actor.Source.DeathState?.IsSacrifice != false &&
-                        context.AbilityCardCache?.Any(entry => entry.InstanceId == sourceCardId) != true)
+                    // An explicit damage source belongs to the death callback. For
+                    // an unattributed hit, revival can clear the sacrifice flag
+                    // while retaining SacrificeCard.
+                    if (sourceCardId <= 0 && actor?.Source.SacrificeCardId > 0 && actor.Source.DeathState?.IsSacrifice != false)
                         responsible = actor.Source.SacrificeCardId.Value;
                     // Native has no IncrementStat call (and no cache refresh) for a null responsible card.
                     BattleStatistics statistics = responsible > 0 ? context.LiveStatistics! : context.Statistics;
