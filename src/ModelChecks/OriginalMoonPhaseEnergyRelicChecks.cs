@@ -31,10 +31,12 @@ internal static class OriginalMoonPhaseEnergyRelicChecks
 
     internal static void Native(FixtureValue root)
     {
+        string? version = root.GetProperty("GameVersion").GetString();
+        string? module = root.GetProperty("GameModuleMvid").GetString();
         Require(root.GetProperty("Schema").GetInt32() == 146 &&
             root.GetProperty("ModifierScenario").GetString() == "original-moon-phase-energy-relic" &&
-            root.GetProperty("GameVersion").GetString() == "2.2.1" &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
+            (version, module) is ("2.2.1", "8fb07b96-f4db-4d2b-884d-c00536d6ccf4") or
+                (Game231FixtureCatalog.Version, Game231FixtureCatalog.Module) &&
             root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
             root.GetProperty("Actions").GetArrayLength() > 0 && root.GetProperty("Turns").GetArrayLength() >= 2 &&
             root.GetProperty("Stages").GetArrayLength() > 0,

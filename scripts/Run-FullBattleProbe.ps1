@@ -5261,13 +5261,13 @@ if ($OriginalRoomEntryStatusRelics -and ($trace.Schema -ne 132 -or
     throw 'Original room-entry status relics were not exercised in the expected full-battle capture.'
 }
 if ($OriginalMoonPhaseEnergyRelic) {
-    $moonPhaseCallbacks = @($trace.RelicResourceOperations | Where-Object { $_.Kind -eq 'MoonPhaseEnergy' })
-    $fullMoonCallbacks = @($moonPhaseCallbacks | Where-Object { $_.Before.MoonPhase -eq 'Full' })
-    $newMoonCallbacks = @($moonPhaseCallbacks | Where-Object { $_.Before.MoonPhase -eq 'New' })
+    $moonEnergyCallbacks = @($trace.RelicResourceOperations | Where-Object { $_.Kind -eq 'MoonPhaseEnergy' })
+    $fullMoonCallbacks = @($moonEnergyCallbacks | Where-Object { $_.Before.MoonPhase -eq 'Full' })
+    $newMoonCallbacks = @($moonEnergyCallbacks | Where-Object { $_.Before.MoonPhase -eq 'New' })
     if ($trace.Schema -ne 146 -or $trace.ModifierScenario -ne 'original-moon-phase-energy-relic' -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-MOON-PHASE-ENERGY-RELIC-PREPARED isolated native tracking enabled' -Quiet) -or
-        @($trace.Turns).Count -lt 2 -or $moonPhaseCallbacks.Count -ne 6 -or
-        @($moonPhaseCallbacks | Where-Object { $_.OwnerDataId -ne '70096a91-220a-4ab3-b8d0-b8fe8f3a819c' -or $_.EffectIndex -ne 0 }).Count -gt 0 -or
+        @($trace.Turns).Count -lt 2 -or $moonEnergyCallbacks.Count -ne 6 -or
+        @($moonEnergyCallbacks | Where-Object { $_.OwnerDataId -ne '70096a91-220a-4ab3-b8d0-b8fe8f3a819c' -or $_.EffectIndex -ne 0 }).Count -gt 0 -or
         $fullMoonCallbacks.Count -ne 3 -or $newMoonCallbacks.Count -ne 3 -or
         @($fullMoonCallbacks | Where-Object { $_.Notifications -ne 1 -or $_.After.Energy -ne [Math]::Min($_.Before.Resources.MaxEnergy, $_.Before.Energy + 1) }).Count -gt 0 -or
         @($newMoonCallbacks | Where-Object { $_.Notifications -ne 0 -or $_.After.Energy -ne $_.Before.Energy }).Count -gt 0) {
