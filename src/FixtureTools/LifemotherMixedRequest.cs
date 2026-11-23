@@ -16,12 +16,17 @@ internal static class LifemotherMixedRequest
 
     internal static void ExtractInfested(string sourcePath, string outputPath, int cardInstanceId)
     {
-        if (cardInstanceId is not (15 or 29)) throw new ArgumentOutOfRangeException(nameof(cardInstanceId));
-        int room = cardInstanceId == 15 ? 0 : 2;
-        string reason = cardInstanceId == 15 ? "Hivemind owner death requires a calibrated native callback." :
+        PlayCardAction action = cardInstanceId switch
+        {
+            15 => new PlayCardAction(15, 0),
+            29 => new PlayCardAction(29, 2),
+            32 => new PlayCardAction(32, 0, targetUnitId: 8, activatorUnitId: 2),
+            _ => throw new ArgumentOutOfRangeException(nameof(cardInstanceId))
+        };
+        string reason = cardInstanceId is 15 or 32 ? "Hivemind owner death requires a calibrated native callback." :
             "Unmodeled triggered status definition.";
         ExtractPinned(sourcePath, outputPath, "ddb6d07cb504b615df04e227c47c14be84a98127df91dacdaff7046523ceeb6b",
-            5, 1, new PlayCardAction(cardInstanceId, room), reason);
+            5, 1, action, reason);
     }
 
     private static void ExtractPinned(string sourcePath, string outputPath, string sourceSha,

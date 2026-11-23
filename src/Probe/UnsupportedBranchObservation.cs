@@ -122,12 +122,14 @@ namespace MonsterTrain2Poju.Probe
                 {
                     Require(prefix.Length == 6 && !request.GetProperty("IsEndTurn").GetBoolean() &&
                         request.GetProperty("SourceSHA256").GetString() == "ddb6d07cb504b615df04e227c47c14be84a98127df91dacdaff7046523ceeb6b" &&
-                        action is { TargetUnitId: 0, PlayerPosition: -1, ActivatorUnitId: 0, ActivatorRoomIndex: null,
+                        action is { PlayerPosition: -1, ActivatorRoomIndex: null,
                             TargetSpawnPointIndex: -1, RecursionSelections.Count: 0, MixSelections.Count: 0 } &&
-                        (action.CardInstanceId, action.RoomIndex, request.GetProperty("Reason").GetString()) is
-                            (15, 0, "Hivemind owner death requires a calibrated native callback.") or
-                            (29, 2, "Unmodeled triggered status definition."),
-                        "Expected one of the two original Infested alternatives.");
+                        (action.CardInstanceId, action.RoomIndex, action.ActivatorUnitId, action.TargetUnitId,
+                            request.GetProperty("Reason").GetString()) is
+                            (15, 0, 0, 0, "Hivemind owner death requires a calibrated native callback.") or
+                            (29, 2, 0, 0, "Unmodeled triggered status definition.") or
+                            (32, 0, 2, 8, "Hivemind owner death requires a calibrated native callback."),
+                        "Expected a recorded original Infested alternative.");
                 }
                 else
                 {
