@@ -43,8 +43,9 @@ internal static partial class OfflineBattleSearch
                 Require(!Terminal(replayOutcome), "Failure prefix follows a terminal result.");
                 replay = ReplayStep(replay, step, out replayOutcome);
             }
-            using var independent = new BattleStateKeys();
-            Require(independent.Key(replay) == independent.Key(current) && independent.Key(root) == immutable,
+            using var settled = new BattleStateKeys(ignorePreviewCopyAllocator: !deployment);
+            using var immutableCheck = new BattleStateKeys();
+            Require(settled.Key(replay) == settled.Key(current) && immutableCheck.Key(root) == immutable,
                 "Failure prefix differs or mutated its deployment root.");
             if (end)
                 Require(BattleTurnModel.EndTurn(replay).UnsupportedReason == reason,
