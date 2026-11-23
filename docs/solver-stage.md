@@ -572,3 +572,11 @@ Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时
 准备边界分段复放。共核对 6,594 次出牌或技能与 2,620 次结束回合，共 132 份组件或诊断档
 按清单跳过。卡牌和遗物的原版记录分别保持 601/601 和 236/236。
 [阶段复放报告](../results/recorded-chain-triage-20261123-131730-28290707/report.tsv)
+
+第 3 环沿原版战斗前 35 个输入继续搜索。8 秒配置下，隔离原版双线程顾问找到
+并执行了剩余七步，以 37 点薪火获胜。独立冻结路线也在原版以 37 点获胜。两场均
+核对了 33 次出牌、9 次结束回合、完整后继和随机流。采用新的终局分支顺序后，同一
+快照在离线 24 节点回归中找到五步、37 点薪火的胜局。原版 3 秒配置复测仍以 35 点
+获胜，首次重新求解耗时 3.38 秒，建议端到端耗时 4.68 秒。
+[独立原版复放](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring3-endgame-pyre37.mt2f) ·
+[8 秒配置顾问实战](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring3-endgame-parallel-resumed.mt2f)
