@@ -706,3 +706,7 @@ Infested 追加一条 Sacrificial Chamber 原版路线，定向核对 8 次出�
 随后只复验两条 Infested 整战。13 次出牌、8 次结束回合和每个决策点的两类候选均匹配，
 另有两条实际执行的 Horde 击杀分支核对状态回调与随机流。
 [定向复验报告](../results/recorded-chain-triage-20261124-054415-9c58f9da/report.tsv)
+
+随机波次的原版胜局追加 18 次操作和 6 次结束回合，并通过两类候选检查。整战复放累计 474 份归档，
+7,263 次出牌或技能和 2,821 次结束回合。
+[波次整战](../tests/compatibility/game-2.3.1/mechanics/randomized-waves/native-battle.mt2f)
