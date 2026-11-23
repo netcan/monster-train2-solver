@@ -115,7 +115,7 @@ namespace MonsterTrain2Poju.Probe
                 gorgeOnSlayGrant = OriginalUnrulyWitness.IndulgentGorgeOnSlay &&
                     cardEffectParams.selfTarget?.GetSourceCharacterData().GetAssetKey() == OriginalUnrulyWitness.GorgeOnSlayBoss &&
                     cardEffectParams.sourceCharacterTriggerState?.GetTrigger() == CharacterTriggerData.Trigger.OnFeed &&
-                    OriginalUnrulyWitness.GorgeOnSlayGrant(cardEffectState.GetSourceCardEffectData());
+                    IndulgentTrampleCaptureProbe.RageGrant(cardEffectState.GetSourceCardEffectData());
                 if (OriginalUnrulyWitness.LifemotherReanimate &&
                     cardEffectParams.selfTarget?.GetSourceCharacterData().GetAssetKey() == OuterBossDefinitions.LifemotherReanimate &&
                     cardEffectParams.sourceCharacterTriggerState?.GetTrigger() == CharacterTriggerData.Trigger.PostCombat)

@@ -23,8 +23,8 @@ namespace MonsterTrain2Poju.Probe
             "DutifulArmor" => "SoulSavior_R1_BossBattle_DutifulChild_Heal",
             "DutifulAscendDescend" => "SoulSavior_R1_BossBattle_DutifulChild_AscendDescend",
             "IndulgentTitanskin" => "SoulSavior_R2_BossBattle_FavoredChild_3",
-            "IndulgentCapacity" => "SoulSavior_R2_BossBattle_FavoredChild_2",
-            "IndulgentGorgeOnSlay" => "SoulSavior_R2_BossBattle_FavoredChild_1",
+            "IndulgentCapacity" => IndulgentTrampleCaptureProbe.CapacityScenario,
+            "IndulgentGorgeOnSlay" => IndulgentTrampleCaptureProbe.GorgeScenario,
             "LifemotherReanimate" => "SoulSavior_R5_BossBattle_Lifemother_Reanimate",
             OriginalLifemotherDebuffsWitness.Variant => OriginalLifemotherDebuffsWitness.Scenario,
             _ => "SoulSavior_R3_BossBattle_DuplicateEnemy"
@@ -96,42 +96,8 @@ namespace MonsterTrain2Poju.Probe
             if (replay != null) replay.GrantSequence = grant.Sequence;
         }
 
-        internal static bool GorgeOnSlayGrant(CardEffectData effect) =>
-            effect.GetEffectStateName() == nameof(CardEffectAddStatusEffect) && SelfEffect(effect) &&
-            effect.GetParamInt() == 0 && effect.GetParamStatusEffects() is [var status] &&
-            status.statusId == "buff" && status.count == 3;
-
-        private static bool GorgeOnSlayReplay(CardEffectData effect) =>
-            effect.GetEffectStateName() == nameof(CardEffectPlayUnitTrigger) && SelfEffect(effect) &&
-            effect.GetParamInt() == 1 && effect.GetParamTrigger() == CharacterTriggerData.Trigger.OnFeed;
-
-        private static bool SelfEffect(CardEffectData effect) =>
-            effect.GetTargetMode() == TargetMode.Self && effect.GetTargetTeamType() == (Team.Type.Heroes | Team.Type.Monsters) &&
-            !effect.GetUseIntRange();
-
-        private static bool SupportsGorgeOnSlay(CharacterData? data) =>
-            data?.GetAssetKey() == GorgeOnSlayBoss && data.GetTriggers() is [var feed, var kill] &&
-            !feed.GetTriggerOnce() && !kill.GetTriggerOnce() && feed.GetTrigger() == CharacterTriggerData.Trigger.OnFeed &&
-            kill.GetTrigger() == CharacterTriggerData.Trigger.OnKill &&
-            feed.GetEffects() is [var grant] && GorgeOnSlayGrant(grant) &&
-            kill.GetEffects() is [var replay] && GorgeOnSlayReplay(replay);
-
         internal static bool SupportsIndulgentTrampleCasting(CharacterData data) => IndulgentTrampleCasting &&
-            data.GetAssetKey() == BossKey && data.GetSize() == 5 && data.GetHealth() == 1100 &&
-            data.GetStartingStatusEffects() is [{ statusId: "trample", count: 1 }] &&
-            (IndulgentCapacity ? SupportsIndulgentCapacity(data) :
-                data.GetAttackDamage() == 13 && SupportsGorgeOnSlay(data));
-
-        private static bool SupportsIndulgentCapacity(CharacterData data) =>
-            data.GetAttackDamage() == 12 && data.GetHealth() == 1100 && data.GetSize() == 5 &&
-            data.GetStartingStatusEffects() is [{ statusId: "trample", count: 1 }] &&
-            data.GetTriggers() is [var feed, var post] && !feed.GetTriggerOnce() && !post.GetTriggerOnce() &&
-            feed.GetTrigger() == CharacterTriggerData.Trigger.OnFeed && feed.GetEffects() is [var grant] && GorgeOnSlayGrant(grant) &&
-            post.GetTrigger() == CharacterTriggerData.Trigger.PostCombat && post.GetEffects() is [var capacity, var replay] &&
-            capacity.GetEffectStateName() == nameof(CardEffectAdjustRoomCapacity) && capacity.GetTargetMode() == TargetMode.Room &&
-            capacity.GetTargetTeamType() == (Team.Type.Heroes | Team.Type.Monsters) && capacity.GetParamInt() == -1 &&
-            !capacity.GetUseIntRange() && replay.GetEffectStateName() == nameof(CardEffectPlayUnitTrigger) && SelfEffect(replay) &&
-            replay.GetParamInt() == -1 && replay.GetParamTrigger() == CharacterTriggerData.Trigger.OnFeed;
+            data.GetAssetKey() == BossKey && IndulgentTrampleCaptureProbe.MatchesDefinition(data);
 
         internal static void Request(SaveManager save, ManualLogSource log)
         {
@@ -147,15 +113,10 @@ namespace MonsterTrain2Poju.Probe
                     FullBattle && !IndulgentGorgeOnSlay && !IndulgentCapacity && !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false))) ||
                 IndulgentTrampleCasting && (!OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false)) ||
                     !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(true))) ||
-                IndulgentCapacity && (!SupportsIndulgentCapacity(scenario.GetOuterTrainBoss(false)) ||
-                    !SupportsIndulgentCapacity(scenario.GetOuterTrainBoss(true)) || scenario.GetEnemyRelicData() is not [var capacityOwner] ||
-                    capacityOwner.GetID() != "0809140a-a5c5-41f7-ab7c-375e6d88fb14" ||
-                    capacityOwner.GetEffects() is not [var capacityDescription] ||
-                    capacityDescription.GetEffectClassName() != nameof(RelicEffectNull)) ||
-                IndulgentGorgeOnSlay && (!SupportsGorgeOnSlay(scenario.GetOuterTrainBoss(false)) ||
-                    !SupportsGorgeOnSlay(scenario.GetOuterTrainBoss(true)) || scenario.GetEnemyRelicData() is not [var gorgeOwner] ||
-                    gorgeOwner.GetID() != "ce0711e4-7113-43cc-9cbf-ca92bbf1e4b3" ||
-                    gorgeOwner.name != "Boss_Railforged_Region2_BossBattle_1" || gorgeOwner.GetEffects().Count != 0) ||
+                (IndulgentCapacity || IndulgentGorgeOnSlay) &&
+                    (!IndulgentTrampleCaptureProbe.MatchesDefinition(scenario.GetOuterTrainBoss(false)) ||
+                     !IndulgentTrampleCaptureProbe.MatchesDefinition(scenario.GetOuterTrainBoss(true)) ||
+                     !IndulgentTrampleCaptureProbe.MatchesScenarioOwner(scenario, BossKey)) ||
                 LifemotherReanimate && (scenario.GetID() != "1199a33a-0049-4084-a2b3-752740e202ca" ||
                     !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(true))) ||
                 IndulgentTitanskin && (scenario.GetEnemyRelicData() is not [var owner] ||
@@ -208,7 +169,7 @@ namespace MonsterTrain2Poju.Probe
                 if (FullBattleTrace.Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode ||
                     boss?.GetSourceCharacterData().GetAssetKey() != GorgeOnSlayBoss ||
                     cardEffectParams.sourceCharacterTriggerState?.GetTrigger() != CharacterTriggerData.Trigger.OnKill ||
-                    !GorgeOnSlayReplay(cardEffectState.GetSourceCardEffectData()) || cardEffectParams.targets.Count != 1 ||
+                    !IndulgentTrampleCaptureProbe.FeedReplay(cardEffectState.GetSourceCardEffectData(), 1) || cardEffectParams.targets.Count != 1 ||
                     cardEffectParams.targets[0] != boss) return;
                 __result = Observe(__result, FullBattleTrace.Active, boss, cardEffectState.GetParamTrigger().ToString());
             }

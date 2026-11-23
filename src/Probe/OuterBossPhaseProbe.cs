@@ -25,6 +25,8 @@ namespace MonsterTrain2Poju.Probe
             {
                 CharacterState? boss = AllGameManagers.Instance?.GetHeroManager()?.GetOuterTrainBossCharacter();
                 return boss != null && boss.IsAlive && !boss.IsDestroyed &&
+                    (!OuterBossDefinitions.IsIndulgentTrample(boss.GetSourceCharacterData().GetAssetKey()) ||
+                        boss.GetBossState().GetCurrentAttackPhase() == BossState.AttackPhase.Casting) &&
                     (TurnsEnabled && Supports(boss.GetSourceCharacterData()) || TrueFinalBossTurnProbe.CaptureEnabled &&
                         boss.IsTrueFinalBoss() && boss.GetSourceCharacterData().GetAssetKey() == "Boss_Level9_Entropy_Top_V2");
             }
@@ -35,10 +37,17 @@ namespace MonsterTrain2Poju.Probe
         {
             if (data == null) return false;
             var groups = data.GetBossActionData();
-            bool supported = OuterBossDefinitions.Supports(data.GetAssetKey());
+            string assetKey = data.GetAssetKey();
+            bool supported = OuterBossDefinitions.Supports(assetKey);
+            if (OuterBossDefinitions.IsIndulgentTrample(assetKey))
+            {
+                SaveManager? save = AllGameManagers.Instance?.GetSaveManager();
+                supported = save is { InTestScenario: false } && save.GetAscensionLevel() == 0 &&
+                    IndulgentTrampleCaptureProbe.Supports(save.GetCurrentScenarioData(), data);
 #if DEVELOPMENT_PROBE
-            supported |= OriginalUnrulyWitness.SupportsIndulgentTrampleCasting(data);
+                supported |= OriginalUnrulyWitness.SupportsIndulgentTrampleCasting(data);
 #endif
+            }
             if (!supported || groups.Count != 1 ||
                 groups[0].GetNumRepeats() != 0 || groups[0].GetActions().Count != 1) return false;
             BossActionData action = groups[0].GetActions()[0];

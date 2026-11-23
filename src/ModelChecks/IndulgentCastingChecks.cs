@@ -9,7 +9,7 @@ internal static class IndulgentCastingChecks
         OuterBossBirthChecks.Native(birth, Game231FixtureCatalog.Module);
         var placement = birth.GetProperty("Births")[0].GetProperty("Actual").Deserialize<OuterBossPhaseState>()!;
         string asset = placement.Boss.AssetKey;
-        Require(asset is OuterBossDefinitions.IndulgentGorgeOnSlay or OuterBossDefinitions.IndulgentReduceCapacity &&
+        Require(OuterBossDefinitions.IsIndulgentTrample(asset) &&
             !OuterBossDefinitions.Supports(asset), "Expected a scoped original Trample variant.");
         OuterBossPhaseResult guard = OuterBossPhaseModel.Apply(placement, preCombat: false);
         Require(guard.Supported && ReferenceEquals(guard.State, placement),
@@ -19,6 +19,11 @@ internal static class IndulgentCastingChecks
             boss.Room, boss.MovementSpeed, boss.VisitedRooms, boss.Controller, boss.Actions, boss.DestroyActions);
         Require(!OuterBossPhaseModel.Apply(new OuterBossPhaseState(placement.Battle, editedBoss), preCombat: false).Supported,
             "Changed attack phases entered the scoped casting path.");
+        var relentlessBoss = new OuterBossProgress(boss.UnitId, boss.AssetKey, "Relentless", boss.ValidAttackPhases,
+            boss.BaseCanAttack, boss.Room, boss.MovementSpeed, boss.VisitedRooms, boss.Controller, boss.Actions, boss.DestroyActions);
+        var relentless = new OuterBossPhaseState(placement.Battle, relentlessBoss);
+        Require(!OuterBossPhaseModel.Apply(relentless, preCombat: true).Supported && !OuterBossPyreModel.Apply(relentless).Supported,
+            "Casting recognition admitted a Relentless or Pyre path.");
         if (!phases.HasValue)
         {
             Console.WriteLine($"INDULGENT-CASTING-GUARD PASS {asset}: original placement reaches casting.");

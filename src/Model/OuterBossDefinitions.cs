@@ -13,6 +13,12 @@ namespace MonsterTrain2Poju.Model
         public const string IndulgentTitanskin = "Boss_SoulSavior_R2_Indulgent_Titanskin";
         internal const string IndulgentReduceCapacity = "Boss_SoulSavior_R2_Indulgent_ReduceCapacityResolve";
         internal const string IndulgentGorgeOnSlay = "Boss_SoulSavior_R2_Indulgent_GorgeOnSlay";
+        internal const string IndulgentGorgeOwnerId = "ce0711e4-7113-43cc-9cbf-ca92bbf1e4b3";
+        internal const string IndulgentGorgeOwnerKey = "Boss_Railforged_Region2_BossBattle_1";
+        internal const string IndulgentCapacityOwnerId = "0809140a-a5c5-41f7-ab7c-375e6d88fb14";
+        internal const string IndulgentCapacityOwnerKey = "Boss_Railforged_Region2_BossBattle_2";
+        internal static bool IsIndulgentTrample(string assetKey) =>
+            assetKey is IndulgentGorgeOnSlay or IndulgentReduceCapacity;
         public const string LifemotherReanimate = "Boss_SoulSavior_Final_Lifemother_HealReanimate";
         internal const string LifemotherInfested = "Boss_SoulSavior_Final_Lifemother_Infested";
         internal const string LifemotherDebuffsOwner = "Boss_Railforged_Lifemother_Debuff";
@@ -200,10 +206,10 @@ namespace MonsterTrain2Poju.Model
             return unit.AssetKey switch
             {
                 IndulgentReduceCapacity => IsIndulgentCapacityFeed(unit, additional) && context.Relics.Count(relic => relic is
-                    { DataId: "0809140a-a5c5-41f7-ab7c-375e6d88fb14", AssetKey: "Boss_Railforged_Region2_BossBattle_2",
+                    { DataId: IndulgentCapacityOwnerId, AssetKey: IndulgentCapacityOwnerKey,
                         IsCovenant: false, EffectTypes: [RelicModel.Null] }) == 1,
                 IndulgentGorgeOnSlay => IsIndulgentSlayFeed(unit, additional) && context.Relics.Count(relic => relic is
-                    { DataId: "ce0711e4-7113-43cc-9cbf-ca92bbf1e4b3", AssetKey: "Boss_Railforged_Region2_BossBattle_1",
+                    { DataId: IndulgentGorgeOwnerId, AssetKey: IndulgentGorgeOwnerKey,
                         IsCovenant: false, EffectTypes.Count: 0 }) == 1,
                 _ => false
             };
