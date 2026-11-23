@@ -14,6 +14,23 @@ namespace MonsterTrain2Poju.Model
         internal const string IndulgentReduceCapacity = "Boss_SoulSavior_R2_Indulgent_ReduceCapacityResolve";
         internal const string IndulgentGorgeOnSlay = "Boss_SoulSavior_R2_Indulgent_GorgeOnSlay";
         public const string LifemotherReanimate = "Boss_SoulSavior_Final_Lifemother_HealReanimate";
+        internal const string LifemotherDebuffsOwner = "Boss_Railforged_Lifemother_Debuff";
+        internal const string LifemotherDebuffsOwnerId = "93efdaa9-7496-46d3-ae86-7a08223b8f94";
+        internal static bool IsLifemotherDebuffsBirth(CombatUnit unit) =>
+            unit is { AssetKey: TriggeredStatusTransferModel.LifemotherDebuffer, Team: CombatTeam.Enemy, BaseAttack: 50, Attack: 50,
+                Health: 9000, MaxHealth: 9000, Size: 5, Statuses: [{ Id: "trample", Stacks: 1 }],
+                Triggers: [var attack, var death, var turn] } &&
+            unit.Triggers.All(trigger => !trigger.Once && !trigger.HasTriggered && !trigger.IgnoreSilence &&
+                trigger.FireCount == 1 && trigger.TriggerAtThreshold == 0 && trigger.Conditions == null &&
+                trigger.RemoveOnRelentlessChange != true && trigger.Effects.Count == 1) &&
+            attack is { Kind: "OnAttacking", Effects: [{ Type: "CardEffectAddStatusEffect", Action:
+                { Type: "AddStatus", Target: "LastAttackedCharacter", Range: null, Value: 0, AllowEnemy: false, AllowPlayer: true,
+                    Statuses: [{ Id: "malaise", Stacks: 12 }] } }] } &&
+            death.Effects[0].Type == TriggeredStatusTransferModel.EffectType &&
+            TriggeredStatusTransferModel.IsLifemotherDeath(unit, death.Kind, death.Effects[0].Action) &&
+            turn is { Kind: "OnTeamTurnBegin", Effects: [{ Type: "CardEffectRemoveStatusEffect", Action:
+                { Type: "RemoveStatus", Target: "Self", Range: null, Value: 5, AllowEnemy: true, AllowPlayer: true,
+                    Statuses: [{ Id: "dazed", Stacks: 5 }] } }] };
         internal const string IndulgentTitanskinOwnerId = "d029a392-703b-4b96-ae89-f89c2c38aaac";
         internal const string IndulgentTitanskinOwnerKey = "Boss_Railforged_Region2_BossBattle_3";
         internal const string UnrulyScourgeCard = "4d1f27af-3122-4a08-87e3-5ef5a14ced94";
@@ -219,7 +236,8 @@ namespace MonsterTrain2Poju.Model
             "Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" or "Boss_Level8_Corrupter" or
             "Boss_Level8_AllyBuffer_TitanTrial" or "Boss_Level8_Fragile_TitanTrial" or "Boss_Level8_Corrupter_TitanTrial" or
             TriggeredStatusModel.OriginalSpurned or TriggeredStatusModel.OriginalSpurnedWitherbloom or TriggeredStatusModel.OriginalSpurnedDuality or
-            TriggeredSummonModel.UnrulyBoss or UnrulyScourge or UnrulySniperAdvance or IndulgentTitanskin or LifemotherReanimate || IsDutiful(assetKey) ||
+            TriggeredSummonModel.UnrulyBoss or UnrulyScourge or UnrulySniperAdvance or IndulgentTitanskin or LifemotherReanimate or
+            TriggeredStatusTransferModel.LifemotherDebuffer || IsDutiful(assetKey) ||
             IsAngelDuo(assetKey) || IsCael(assetKey) || IsCaelTrial(assetKey) || IsArkionPyre(assetKey) ||
             IsArkionRage(assetKey) || IsArkionPush(assetKey) || IsFleshweaver(assetKey);
     }

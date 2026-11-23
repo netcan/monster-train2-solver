@@ -78,6 +78,12 @@ namespace MonsterTrain2Poju.Model
             EnemyDefinition actor = definition.Actor; OuterBossProgress boss = definition.Boss;
             bool duo = OuterBossDefinitions.IsAngelDuo(actor.Unit.AssetKey);
             bool indulgent = actor.Unit.AssetKey == OuterBossDefinitions.IndulgentTitanskin;
+            bool lifemotherDebuffs = actor.Unit.AssetKey == TriggeredStatusTransferModel.LifemotherDebuffer;
+            bool calibratedLifemotherDebuffs = lifemotherDebuffs && OuterBossDefinitions.IsLifemotherDebuffsBirth(actor.Unit) &&
+                train.Context?.Relics?.Count(relic => relic is { DataId: OuterBossDefinitions.LifemotherDebuffsOwnerId,
+                    AssetKey: OuterBossDefinitions.LifemotherDebuffsOwner, IsCovenant: false,
+                    EffectTypes: [RelicModel.Null, RelicModel.Null, RelicModel.Null, RelicModel.Null] }) == 1 &&
+                battle.MoonPhaseTrackingActive == false;
             bool calibratedIndulgent = indulgent && OuterBossDefinitions.IsIndulgentTitanskinBirth(actor.Unit) &&
                 train.Context?.Relics?.Count(relic => relic is { DataId: OuterBossDefinitions.IndulgentTitanskinOwnerId,
                     AssetKey: OuterBossDefinitions.IndulgentTitanskinOwnerKey, IsCovenant: false,
@@ -137,7 +143,7 @@ namespace MonsterTrain2Poju.Model
             if (!(OuterBossDefinitions.Supports(actor.Unit.AssetKey) || trampleIndulgent) || actor.Unit.Id != 0 || boss.UnitId != 0 ||
                 boss.AssetKey != actor.Unit.AssetKey || boss.Room != -1 || boss.Phase != "Casting" ||
                 old.OuterBoss != null || train.Context?.SpawnPoints == null || actor.Unit.BumpRules?.OuterBoss != true ||
-                (!trampleIndulgent && (indulgent ? !calibratedIndulgent :
+                (!trampleIndulgent && (lifemotherDebuffs ? !calibratedLifemotherDebuffs : indulgent ? !calibratedIndulgent :
                     duo ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("titanskin")?.Stacks != 10 :
                     OuterBossDefinitions.IsArkionPyre(actor.Unit.AssetKey)
                         ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("multistrike")?.Stacks != 1

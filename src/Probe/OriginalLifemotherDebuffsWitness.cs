@@ -18,23 +18,24 @@ namespace MonsterTrain2Poju.Probe
         internal const string Boss = "Boss_SoulSavior_Final_Lifemother_Debuffer";
         private const string ScenarioId = "9928005f-f7da-42c7-887a-b26b38ae8bcb";
         private const string BossId = "9dc77d80-0ab2-471e-af73-135080c7d4a6";
-        private const string OwnerId = "93efdaa9-7496-46d3-ae86-7a08223b8f94";
+        private const string OwnerId = OuterBossDefinitions.LifemotherDebuffsOwnerId;
         private const string Champion = "19705414-816d-4549-bcf5-866f338a551f";
         private const string Avenger = "69fcbe85-a5b7-4a83-bf6d-21888604d99e";
         private static readonly List<Application> Applications = new();
         internal static bool Enabled => OriginalUnrulyWitness.FullBattle &&
             Environment.GetEnvironmentVariable("MT2_PROBE_UNRULY_VARIANT") == Variant;
+        internal static bool WholeBattle => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_LIFEMOTHER_DEBUFFS_BATTLE") == "1";
         internal static bool Complete => Applications.Any(row => row.Kind == "OnAttacking" && row.PositiveMalaise) &&
             Applications.Any(row => row.Kind == "OnAnyMonsterDeathOnFloor" && row.PositiveMalaise);
 
         internal static bool Supports(ScenarioData scenario) => scenario.GetID() == ScenarioId &&
             Supports(scenario.GetOuterTrainBoss(false)) && Supports(scenario.GetOuterTrainBoss(true)) &&
             scenario.GetEnemyRelicData() is [var owner] && owner.GetID() == OwnerId &&
-            owner.name == "Boss_Railforged_Lifemother_Debuff" &&
+            owner.name == OuterBossDefinitions.LifemotherDebuffsOwner &&
             owner.GetEffects().All(effect => effect.GetEffectClassName() == nameof(RelicEffectNull)) &&
             owner.GetEffects().Select(effect => effect.GetParamInt()).SequenceEqual(new[] { 12, 10, 15, 18 });
 
-        private static bool Supports(CharacterData? data) => data != null && data.GetAssetKey() == Boss && data.GetID() == BossId &&
+        internal static bool Supports(CharacterData? data) => data != null && data.GetAssetKey() == Boss && data.GetID() == BossId &&
             data.GetAttackDamage() == 50 && data.GetHealth() == 9000 && data.GetSize() == 5 &&
             data.GetStartingStatusEffects() is [{ statusId: "trample", count: 1 }] && data.GetRoomModifiersData().Count == 0 &&
             data.GetBossActionData() is [var group] && group.GetNumRepeats() == 0 && group.GetActions() is [var action] &&

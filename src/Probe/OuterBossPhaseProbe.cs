@@ -33,6 +33,14 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Supports(CharacterData? data)
         {
             if (data == null) return false;
+            if (data.GetAssetKey() == TriggeredStatusTransferModel.LifemotherDebuffer)
+            {
+#if DEVELOPMENT_PROBE
+                return OriginalLifemotherDebuffsWitness.WholeBattle && OriginalLifemotherDebuffsWitness.Supports(data);
+#else
+                return false;
+#endif
+            }
             var groups = data.GetBossActionData();
             if (!OuterBossDefinitions.Supports(data.GetAssetKey()) || groups.Count != 1 ||
                 groups[0].GetNumRepeats() != 0 || groups[0].GetActions().Count != 1) return false;

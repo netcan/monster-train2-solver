@@ -819,6 +819,7 @@ param(
     [switch] $OriginalIndulgentGorgeOnSlay,
     [switch] $OriginalLifemotherReanimateBattle,
     [switch] $OriginalLifemotherDebuffs,
+    [switch] $LifemotherDebuffsWholeBattle,
     [ValidateSet('DuplicateEnemy', 'Scourge', 'SniperAdvance')][string] $OriginalUnrulyVariant = 'DuplicateEnemy',
     [ValidateRange(1, 3)][int] $OriginalSpurnedChallenge = 2,
     [switch] $OriginalSpurnedRetainPiles,
@@ -1905,6 +1906,9 @@ if ($OriginalAffordableNonPlayable) {
     $PhysicalSpawnPoints = $true
     $Policy = 'units-and-junk'
 }
+if ($LifemotherDebuffsWholeBattle -and -not $OriginalLifemotherDebuffs) {
+    throw 'LifemotherDebuffsWholeBattle requires OriginalLifemotherDebuffs.'
+}
 if ($PSBoundParameters.ContainsKey('OriginalUnrulyVariant') -and -not $OriginalUnrulyBattle) {
     throw 'OriginalUnrulyVariant requires OriginalUnrulyBattle.'
 }
@@ -1948,6 +1952,7 @@ if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
         elseif ($OriginalLifemotherReanimateBattle -or $OriginalLifemotherDebuffs) { 4 } else { 2 }
     $unrulyArguments = @($unrulyMode, 'InputProfile', 'BattleDistance', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'OriginalUnrulyVariant')
+    if ($OriginalLifemotherDebuffs) { $unrulyArguments += 'LifemotherDebuffsWholeBattle' }
     if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne $soulSaviorDistance -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $unrulyArguments }).Count) {
         throw 'Original Soul Savior battle requires an isolated matching BattleIntro and binary capture.'
@@ -1955,8 +1960,8 @@ if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
     if ($OriginalUnrulyBattle) {
-        $OuterBossTurns = -not $OriginalLifemotherDebuffs
-        $OuterBossBirth = -not $OriginalLifemotherDebuffs
+        $OuterBossTurns = -not $OriginalLifemotherDebuffs -or $LifemotherDebuffsWholeBattle
+        $OuterBossBirth = $OuterBossTurns
         $Policy = 'units-spells-and-junk'
     } else {
         $Policy = 'no-cards'
@@ -3482,6 +3487,7 @@ if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
     $environment['MT2_PROBE_ORIGINAL_UNRULY'] = if ($OriginalUnrulyBattle) { 'battle' } else { 'component' }
     $environment['MT2_PROBE_UNRULY_VARIANT'] = $originalSoulSaviorVariant
     if ($OriginalLifemotherReanimateBattle -or $OriginalLifemotherDebuffs) { $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1' }
+    if ($LifemotherDebuffsWholeBattle) { $environment['MT2_PROBE_LIFEMOTHER_DEBUFFS_BATTLE'] = '1' }
 }
 if ($OriginalSpurnedBattle) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-spurned-battle'
@@ -4179,8 +4185,9 @@ if ($earlyTrialSubstitution) {
 }
 if ($OriginalLifemotherDebuffs) {
     $capturePath = Join-Path $profile 'lifemother-debuffs.mt2f'
-    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
-        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Lifemother Debuffs component' -Quiet) -or
+    if ((-not $LifemotherDebuffsWholeBattle -and ($process.ExitCode -ne 0 -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Lifemother Debuffs component' -Quiet))) -or
+        -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
         (Get-OriginalSignature) -cne $originalBefore -or (Get-OriginalSignature $checkpoint) -cne $unrulyInputSignature) {
         throw "Original Lifemother Debuffs capture failed. Inspect $unityLog and $capturePath"
     }
@@ -4199,7 +4206,7 @@ if ($OriginalLifemotherDebuffs) {
         }
     } finally { $document.Dispose() }
     Write-Output "NATIVE-LIFEMOTHER-DEBUFFS PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
-    return
+    if (-not $LifemotherDebuffsWholeBattle) { return }
 }
 if ($OriginalUnrulyWitness) {
     $capturePath = Join-Path $profile 'unruly-post-combat.mt2f'
@@ -4619,7 +4626,9 @@ if (-not (Test-Path -LiteralPath $tracePath)) {
 }
 $inspectionTimer = [System.Diagnostics.Stopwatch]::StartNew()
 if ($BinaryCapture) {
-    Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    if (-not $LifemotherDebuffsWholeBattle) {
+        Add-Type -Path (Join-Path $workspace 'src\FixtureArchive\bin\Release\net8.0\FixtureArchive.dll')
+    }
     $archive = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($tracePath)
     try {
         $prefix = [MonsterTrain2Poju.Fixtures.FixtureValue]::new()
@@ -4688,12 +4697,14 @@ if ($OriginalUnrulyBattle) {
         elseif ($OriginalIndulgentCapacityBattle) { 'SoulSavior_R2_BossBattle_FavoredChild_2' }
         elseif ($OriginalIndulgentGorgeOnSlay) { 'SoulSavior_R2_BossBattle_FavoredChild_1' }
         elseif ($OriginalLifemotherReanimateBattle) { 'SoulSavior_R5_BossBattle_Lifemother_Reanimate' }
+        elseif ($LifemotherDebuffsWholeBattle) { 'SoulSavior_R5_BossBattle_Lifemother_Debuffs' }
         else { "SoulSavior_R3_BossBattle_$OriginalUnrulyVariant" }
     $unrulyBoss = if ($originalDutifulBattle) { 'Boss_SoulSavior_R1_Dutiful_' + $originalSoulSaviorVariant.Substring('Dutiful'.Length) }
         elseif ($OriginalIndulgentTitanskinBattle) { 'Boss_SoulSavior_R2_Indulgent_Titanskin' }
         elseif ($OriginalIndulgentCapacityBattle) { 'Boss_SoulSavior_R2_Indulgent_ReduceCapacityResolve' }
         elseif ($OriginalIndulgentGorgeOnSlay) { 'Boss_SoulSavior_R2_Indulgent_GorgeOnSlay' }
         elseif ($OriginalLifemotherReanimateBattle) { 'Boss_SoulSavior_Final_Lifemother_HealReanimate' }
+        elseif ($LifemotherDebuffsWholeBattle) { 'Boss_SoulSavior_Final_Lifemother_Debuffer' }
         else { "Boss_SoulSavior_R3_Unruly_$OriginalUnrulyVariant" }
     if ($trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
         $unruly.Scenario -cne $unrulyScenario -or $unruly.BossKey -cne $unrulyBoss -or

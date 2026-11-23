@@ -205,8 +205,11 @@ namespace MonsterTrain2Poju.Probe
                     if (OriginalLifemotherDebuffsWitness.Enabled)
                     {
                         OriginalLifemotherDebuffsWitness.Write();
-                        Finish(OriginalLifemotherDebuffsWitness.Complete, "Original Lifemother Debuffs component reached terminal.");
-                        return;
+                        if (!OriginalLifemotherDebuffsWitness.WholeBattle)
+                        {
+                            Finish(OriginalLifemotherDebuffsWitness.Complete, "Original Lifemother Debuffs component reached terminal.");
+                            return;
+                        }
                     }
                     if (UnsupportedBranchObservation.Enabled)
                     {
@@ -1226,7 +1229,8 @@ namespace MonsterTrain2Poju.Probe
                     return;
                 }
             }
-            if (fullBattle && OriginalLifemotherDebuffsWitness.Enabled && OriginalLifemotherDebuffsWitness.Complete)
+            if (fullBattle && OriginalLifemotherDebuffsWitness.Enabled && !OriginalLifemotherDebuffsWitness.WholeBattle &&
+                OriginalLifemotherDebuffsWitness.Complete)
             {
                 OriginalLifemotherDebuffsWitness.Write();
                 Finish(true, "Original Lifemother Debuffs component captured.");
@@ -4317,7 +4321,7 @@ namespace MonsterTrain2Poju.Probe
                 if (AngelDuoIncantScenario.Enabled)
                     pendingPlay = AngelDuoIncantScenario.Choose(decision) ?? pendingPlay;
 #if DEVELOPMENT_PROBE
-                if (OriginalLifemotherDebuffsWitness.Enabled)
+                if (OriginalLifemotherDebuffsWitness.Enabled && (!OriginalLifemotherDebuffsWitness.WholeBattle || decision.Spawn.Turn <= 1))
                     pendingPlay = OriginalLifemotherDebuffsWitness.Choose(decision);
 #endif
                 if (PlannerReplayScenario.TryChoose(decision, log, out PlayCardAction? planned, out var choices))
