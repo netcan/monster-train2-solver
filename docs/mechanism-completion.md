@@ -273,6 +273,12 @@ PyreHealthForEmberCardCost 的实际支付也按房间的预演状态判断。�
 三张对照牌，专项逐项核对 31 次出牌及 6 次结束回合，并从准备后的局面复放常规操作到终局。
 [薪火支付专项](../tests/fixtures/combat/damage/full-battle-original-pyre-health-card-cost-isolated-preview.mt2f)
 
+Echoes 的友军伤害限制在隔离原版用同一变异器分别录制了伤害回调和整场战斗。只有普通友军作为
+攻击者时才会把对敌伤害归零。实战中已验证带 Pyregel 的目标，以及无攻击者的伤害对照。完整胜局
+的 21 次出牌、7 次结束回合和两类候选检查通过。
+[原版伤害回调](../tests/compatibility/game-2.3.1/mechanics/prevent-monster-damage/adjustments.mt2f) ·
+[原版整战](../tests/compatibility/game-2.3.1/mechanics/prevent-monster-damage/native-battle.mt2f)
+
 ExtraFeedTrigger 的原版查询确认友军 OnFeed 次数为 2，OnDeath 次数保持 1。
 61 个战斗阶段、5 次出牌、7 次结束回合与两类候选通过。实际普通进食也已录到两次 OnFeed，
 合金构装体的燃料从 1 增至 3，矿工只被吃掉一次，完整状态与随机数在 16 条分支上复放一致。

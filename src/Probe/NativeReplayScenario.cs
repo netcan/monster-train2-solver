@@ -469,6 +469,10 @@ namespace MonsterTrain2Poju.Probe
                         OriginalFirstRoomAttachmentScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalStartRoomAttachmentScenario.Enabled && !OriginalStartRoomAttachmentScenario.Acquired)
                         OriginalStartRoomAttachmentScenario.AcquireBeforeBattle(managers!, log);
+#if DEVELOPMENT_PROBE
+                    if (fullBattle && OriginalPreventMonsterDamageWitness.FullBattle && !OriginalPreventMonsterDamageWitness.Acquired)
+                        OriginalPreventMonsterDamageWitness.Acquire(save);
+#endif
                     if (fullBattle && OriginalCardAttackRelicScenario.Enabled && !OriginalCardAttackRelicScenario.Acquired)
                         OriginalCardAttackRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalGarfieldBoxRandomCardScenario.Enabled && !OriginalGarfieldBoxRandomCardScenario.Acquired)
@@ -957,6 +961,13 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && OriginalPreventMonsterDamageWitness.Enabled)
+            {
+                OriginalPreventMonsterDamageWitness.TryStart(managers, log);
+                if (OriginalPreventMonsterDamageWitness.Completed)
+                    Finish(true, "Original monster damage prevention component captured.");
+                if (OriginalPreventMonsterDamageWitness.Started) return;
+            }
             if (fullBattle && OriginalFunguyDeckScalingScenario.DoubleUnits && combat!.GetTurnCount() == 1)
             {
                 FullBattleTrace.Active!.Checkpoint("decision-1");

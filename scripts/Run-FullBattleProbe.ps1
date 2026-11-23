@@ -583,6 +583,8 @@ param(
     [switch] $CardCatalog,
     [ValidatePattern('^[A-Za-z_][A-Za-z0-9_.]{0,127}$')]
     [string] $EffectOwnerType,
+    [switch] $OriginalPreventMonsterDamageWitness,
+    [switch] $OriginalPreventMonsterDamageBattle,
     [switch] $SummonChoiceCalibration,
     [switch] $RoomHealthMechanismBatch,
     [switch] $JuiceMechanismBatch,
@@ -877,6 +879,19 @@ param(
 $ErrorActionPreference = 'Stop'
 if ($NativeBuildRoot -and -not $SkipBuild) {
     throw 'NativeBuildRoot requires prebuilt native binaries with SkipBuild.'
+}
+if ($OriginalPreventMonsterDamageWitness -or $OriginalPreventMonsterDamageBattle) {
+    $witnessArguments = @('OriginalPreventMonsterDamageWitness', 'OriginalPreventMonsterDamageBattle', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+        'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not $BinaryCapture -or ($OriginalPreventMonsterDamageWitness -and $OriginalPreventMonsterDamageBattle) -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
+        throw 'Select one stock monster damage prevention test with binary capture.'
+    }
+    if ($OriginalPreventMonsterDamageBattle) {
+        $BranchCardMasks = $true
+        $PhysicalSpawnPoints = $true
+    }
+    $Policy = 'units-spells-and-junk'
 }
 if ($EffectOwnerType) {
     $effectOwnerArguments = @('EffectOwnerType', 'Policy', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'InputProfile', 'BattleDistance',
@@ -2615,6 +2630,8 @@ $environment = @{
     MT2_PROBE_PREVIEW_REFERENCES = $(if ($PreviewReferences) { '1' } else { '0' })
     MT2_PROBE_RELIC_CATALOG = $(if ($RelicCatalog) { '1' } else { '0' })
     MT2_PROBE_EFFECT_OWNER_TYPE = $EffectOwnerType
+    MT2_PROBE_PREVENT_MONSTER_DAMAGE_WITNESS = $(if ($OriginalPreventMonsterDamageWitness) { '1' } else { '0' })
+    MT2_PROBE_PREVENT_MONSTER_DAMAGE_BATTLE = $(if ($OriginalPreventMonsterDamageBattle) { '1' } else { '0' })
     MT2_PROBE_CARD_CATALOG = $(if ($CardCatalog) { '1' } else { '0' })
     MT2_PROBE_SUMMON_CHOICE_CALIBRATION = $(if ($SummonChoiceCalibration) { '1' } else { '0' })
     MT2_PROBE_ROOM_HEALTH_MECHANISM_BATCH = $(if ($RoomHealthMechanismBatch) { '1' } else { '0' })
@@ -3513,6 +3530,16 @@ if ($CapturePlayerDeploymentOnly) {
     [pscustomobject]@{ Profile=$profile; NativeDeploymentCaptured=$true; InputProfileUnchanged=$true;
         OriginalFilesUnchanged=$true; Trace=$capturePath; SHA256=(Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash } |
         ConvertTo-Json
+    return
+}
+if ($OriginalPreventMonsterDamageWitness) {
+    $capturePath = Join-Path $profile 'prevent-monster-damage.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original monster damage prevention component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original monster damage prevention witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-PREVENT-MONSTER-DAMAGE PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($EffectOwnerType) {

@@ -3152,6 +3152,11 @@ namespace MonsterTrain2Poju.Model
                     damage = checked(damage + StatusMagnitude(target, "pyregel"));
                     Trigger(target, "pyregel", 1);
                 }
+                // The damage coroutine applies the relic after the flat
+                // increase stage and before the target's shields.
+                if (actor?.Source is { Team: CombatTeam.Player, IsPyre: false } && target.Source.Team == CombatTeam.Enemy &&
+                    context?.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.PreventMonsterDamage)) == true)
+                    damage = 0;
                 // Native resolves Spell Shield before Damage Shield. Both stages
                 // check card/relic piercing without the character attacker.
                 if (damage > 0 && kind == "Spell" && sourceCardId > 0 && target.Has("spell shield") && !cardPiercing)

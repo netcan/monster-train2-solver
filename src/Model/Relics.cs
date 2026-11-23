@@ -240,6 +240,9 @@ namespace MonsterTrain2Poju.Model
         internal const string ModifyCharacterMaxHealthPerRarityType = "RelicEffectModifyCharacterMaxHealthPerRarityType";
         internal const string ModifyCharacterMaxHealthPerRarityTypeTrigger = "RelicEffectModifyCharacterMaxHealthPerRarityTypeTrigger";
         internal const string AllDamageIsPiercing = "RelicEffectAllDamageIsPiercing";
+        internal const string PreventMonsterDamage = "RelicEffectPreventMonstersDamagingHeroes";
+        internal const string PreventMonsterDamageOwnerId = "2bfeeb36-11e6-4894-8006-99356276a17b";
+        internal const string PreventMonsterDamageOwnerKey = "Echoes_FriendlyUnitsDealNoDamageToEnemyUnits";
         internal const string AdditionalForgePoints = "RelicEffectAdditionalForgePoints";
         internal const string ModifyForgeUpgrade = "RelicEffectModifyForgeUpgrade";
         internal const string HealOnMoonPhase = "RelicEffectHealOnMoonPhase";
@@ -353,6 +356,12 @@ namespace MonsterTrain2Poju.Model
                     // The separate campaign resource consumer models those
                     // rewards and their gate; keep checking companion effects.
                     if (effect is "RelicEffectModifyGoldEndOfBattle" or "RelicEffectModifyDragonsHoardEndOfBattle") continue;
+                    if (effect == PreventMonsterDamage)
+                    {
+                        if (relic.DataId == PreventMonsterDamageOwnerId &&
+                            relic.AssetKey == PreventMonsterDamageOwnerKey && relic.EffectTypes.Count == 1) continue;
+                        return "Missing or changed original monster damage prevention owner.";
+                    }
                     if (effect == ModifyCardHealingPower || effect == Null ||
                         effect == ChanceToDestroySelf || effect == BalatroBananaShake) continue;
                     if (effect != RelicPercentageStatModel.Effect && effect != AbilityIncant && effect != ModifyTriggerCount && effect != AddStatusOnSpawn && effect != AddStatusPerDevotionOnSpawn && effect != RemoveStatusOnSpawn && effect != AddStatusOnTeamSpawn && effect != AddStatusOnRoomEntry && effect != AddStatusOnUnitMovedUpDown && effect != AddStatusOnCorruption && effect != ChanceAddEffectAfterSpawn && effect != AddTempUpgrade && effect != ModifyTrait && effect != ModifyCardCostIfNoUpgrades && effect != AddTempUpgradeToHandCardsIfCheaper && effect != ModifyForgeUpgrade && effect != ModifyCardTypeCost && effect != ModifyFirstCardCostPerPile && effect != ModifyCardHealth && effect != ModifyCardHealthPerRarityType && effect != ModifyCharacterMaxHealthPerRarityType && effect != ModifyCharacterMaxHealthPerRarityTypeTrigger && effect != ModifyCardAttack && effect != ModifyAttackByStatus && effect != AddRemoveTempUpgradeOnUnitTrigger && effect != AddTempSoloUnitUpgradeStartOfTurn && effect != AddCardsNull && effect != ModifyCardMagicalPower && effect != ModifyCardMagicPowerOnCardPlayed && effect != AddStatusEffectOnDamage && effect != CardDrawOnCardPlay && effect != CopyCardOnCardPlay && effect != MonsterSpellTargeting && effect != ModifyRoomCapacityOnCardPlay && effect != ModifyCorruptionOnCardPlayed && effect != FirstRoomCardOnAllFloors && effect != RelicStartCombatAttachmentModel.Effect && effect != RelicShowtimeModel.Effect && effect != AddTrigger && effect != AddEffectOnStatusAdded && effect != AddStatusOnApplied && effect != AddStatusOnOtherStatusRemoved && effect != ModifyStatusMagnitude && effect != RebalanceValor && effect != PreventStatusDecay && effect != EnergyAndCardDrawOnUnitSpawned && effect != ApplyCardUpgradeToHandEndOfTurnOnMoon && effect != RelicSoloUnitUpgradeModel.FrontRoomEffect && effect != ModifyCharacterAttackDamage && effect != ModifyCharacterMaxHealth && effect != AllDamageIsPiercing && effect != AdditionalForgePoints && effect != HealOnMoonPhase && effect != DamageOnMonsterSummoned && effect != DamageEnemyOnAscend && effect != DamageEnemyOnDescend && effect != RelicUnstableRebalanceModel.Effect && effect != RelicExpensiveCardUpgradeModel.Effect && !RelicResourceModel.IsEffect(effect)) return "Unmodeled relic effect " + effect + " on " + relic.AssetKey + ".";
