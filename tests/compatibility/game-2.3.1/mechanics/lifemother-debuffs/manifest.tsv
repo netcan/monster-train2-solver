@@ -1,3 +1,5 @@
 path	bytes	sha256
 native-component.mt2f	14455	0620fb7e1dbb03759f9dc15bd4690dfc78c8d84121bbf0d77d3da7bd6ef92abb
 native-birth.mt2f	18360	912490195b98fa6662f2da64c9bd1121d8e6c7e0e92e5abb1ef5067c477f805f
+native-mixed-transfer.mt2f	28420	bed8c6a830c4e6c0a86252868940406f3cdb422213b643aba17e9d40bd26e2a2
+native-reverse-cleanup.mt2f	28398	137665fe8905e636b0aeebdcac4a8438c48f1ad00fb3765cab40cc5321ea3145

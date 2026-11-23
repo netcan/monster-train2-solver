@@ -102,19 +102,33 @@ namespace MonsterTrain2Poju.Model
                 .Where(status => status.Stacks > 0 && status.Id != "horde" && status.Hidden != true && status.DisplayCategory == "Negative")
                 .ToArray();
             if (debuffs.Length == 0) return new RoomCombatResult(room, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
-            if (debuffs is not [{ Id: "malaise" } malaise])
-                return Unsupported("Lifemother death transfer requires observed Malaise-only status effects.");
             CombatUnit? recipient = room.Units.FirstOrDefault(unit => unit.Team == dying.Team && unit.Health > 0 &&
                 unit.DeathState?.IsDestroyed != true && unit.DeathState?.IsDespawned != true && unit.Status("untouchable") == null);
+            bool observedOrder = debuffs is [{ Id: "malaise" }] or [{ Id: "malaise" }, { Id: "pyregel" }] ||
+                recipient == null && debuffs is [{ Id: "pyregel" }, { Id: "malaise" }];
+            if (!observedOrder)
+                return Unsupported("Lifemother death transfer requires an observed ordered debuff set.");
             const string nativeStatusOrigin = "CardEffectTransferAllStatusEffects";
-            RoomCombatResult removed = StatusRemovalModel.Remove(room, dying.Id, malaise.Id, malaise.Stacks,
-                fromEffectType: nativeStatusOrigin);
-            if (!removed.Supported || recipient == null) return removed;
-            RoomCombatResult applied = StatusApplicationModel.ApplyRetained(removed.State!, recipient.Id, malaise, 0,
-                allowModification: false, fromEffectType: nativeStatusOrigin, allowStackModifiers: false);
-            if (!applied.Supported) return applied;
-            return new RoomCombatResult(applied.State, RoomOutcome.Exchanged, 0, removed.Events.Concat(applied.Events).ToList(),
-                pendingCallbacks: removed.PendingCallbacks.Concat(applied.PendingCallbacks).ToArray());
+            var events = new List<CombatEvent>();
+            var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
+            foreach (CombatStatus debuff in debuffs)
+            {
+                RoomCombatResult removed = StatusRemovalModel.Remove(room, dying.Id, debuff.Id, debuff.Stacks,
+                    fromEffectType: nativeStatusOrigin);
+                if (!removed.Supported) return removed;
+                room = removed.State!; events.AddRange(removed.Events); callbacks.AddRange(removed.PendingCallbacks);
+            }
+            if (recipient != null)
+            {
+                foreach (CombatStatus debuff in debuffs)
+                {
+                    RoomCombatResult applied = StatusApplicationModel.ApplyRetained(room, recipient.Id, debuff, 0,
+                        allowModification: false, fromEffectType: nativeStatusOrigin, allowStackModifiers: false);
+                    if (!applied.Supported) return applied;
+                    room = applied.State!; events.AddRange(applied.Events); callbacks.AddRange(applied.PendingCallbacks);
+                }
+            }
+            return new RoomCombatResult(room, RoomOutcome.Exchanged, 0, events, pendingCallbacks: callbacks);
         }
 
         private static RoomCombatResult CopyBuffs(RoomCombatState source, CombatUnit actor, int sourceCardId)

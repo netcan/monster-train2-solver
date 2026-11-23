@@ -131,7 +131,7 @@ internal static class NativeBranchObservationChecks
         Func<BattleTurnState, BattleTurnState>? revalidateHistoricalCapture = null,
         Func<string, string>? normalizeComparison = null,
         Func<BattleTurnState, BattleTurnState, bool>? matchesRequestCapture = null,
-        Guid? expectedGameModule = null)
+        Guid? expectedGameModule = null, bool requirePlayerProjection = true)
     {
         string CaptureKey(BattleTurnState state, bool terminal = false) => normalizeComparison?.Invoke(Key(state, terminal)) ?? Key(state, terminal);
         Require(!historicalBoundaryOutcome.HasValue || historicalBoundaryMismatch != null,
@@ -198,10 +198,13 @@ internal static class NativeBranchObservationChecks
             }
             current = actual;
         }
-        FixtureValue overlay = fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay");
-        Require(overlay.GetProperty("Captures").GetInt32() > 0 && overlay.GetProperty("PurityFailures").GetInt32() == 0 &&
-            overlay.GetProperty("Failures").GetInt32() == 0 && !overlay.GetProperty("InTestScenario").GetBoolean(),
-            "Native player projection was not pure/original.");
+        if (requirePlayerProjection)
+        {
+            FixtureValue overlay = fixture.GetProperty("PlayerAdvisor").GetProperty("Overlay");
+            Require(overlay.GetProperty("Captures").GetInt32() > 0 && overlay.GetProperty("PurityFailures").GetInt32() == 0 &&
+                overlay.GetProperty("Failures").GetInt32() == 0 && !overlay.GetProperty("InTestScenario").GetBoolean(),
+                "Native player projection was not pure/original.");
+        }
         return rows;
     }
 

@@ -58,6 +58,11 @@ if (args.Length == 2 && args[0] == "--native-indulgent-gorge-only")
     IndulgentGorgeChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 4 && args[0] == "--lifemother-debuffs-mixed-only")
+{
+    LifemotherDebuffsChecks.MixedPreview(args[1], args[2], args[3]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--lifemother-debuffs-only")
 {
     LifemotherDebuffsChecks.Native(args[1]);
