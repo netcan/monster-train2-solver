@@ -662,3 +662,9 @@ Dutiful Burst 两场各自通过完整连续回放、16 条独立分支和两类
 [阶段复放报告](../results/recorded-chain-triage-20261124-000240-52465205/report.tsv) ·
 [SniperAdvance](../tests/compatibility/game-2.3.1/mechanics/unruly-sniper/native-battle.mt2f) ·
 [Dutiful Burst](../tests/compatibility/game-2.3.1/mechanics/dutiful-burst/native-battle.mt2f)
+
+随后定向新增 Dutiful AscendDescend、Dutiful Armor 和 Lifemother Reanimate 三场原版整战。
+三场共 68 次出牌或技能、13 次结束回合，均通过连续回放、16 条独立分支和两类候选。
+加上前述两场定向复验，已有 467 场通过，合计 7,197 次出牌或技能和 2,791 次结束回合。
+Soul Savior 原版遭遇已有 10／15 场整战证据。
+[首领覆盖清单](../tests/fixtures/inventory/boss-coverage.md)
