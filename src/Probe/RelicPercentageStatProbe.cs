@@ -35,6 +35,7 @@ namespace MonsterTrain2Poju.Probe
                     owner.GetEffects() is [RelicEffectPreventMonstersDamagingHeroes] ||
                     owner.GetRelicDataID() == RelicPersistentMonsterHealthModel.OwnerId &&
                     owner.GetEffects() is [RelicEffectPersistMonsterHp persistentHealth] && SupportsPersistentHealth(persistentHealth) ||
+                    SupportsPyreAbilityCooldown(owner, save) ||
                     owner.GetEffects().Count > 0 && owner.GetEffects().All(effect =>
                     (effect is RelicEffectModifyCharacterAttackOrHealthPercentage || effect is RelicEffectMultiplyAttackLate ||
                         effect is RelicEffectApplyExtraPyreDamage || effect is RelicEffectAddUnitUpgradePerPile ||
@@ -57,6 +58,18 @@ namespace MonsterTrain2Poju.Probe
         {
             var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect);
             return data.GetEffectConditions().Count == 0 && data.GetParamCharacterSubtype()?.IsNone == true;
+        }
+
+        private static bool SupportsPyreAbilityCooldown(RelicState owner, SaveManager save)
+        {
+            if (owner.GetRelicDataID() != RelicPyreAbilityCooldownModel.OwnerId ||
+                owner.GetEffects() is not [RelicEffectModifyUnitAbilityCooldown]) return false;
+            MutatorData? definition = save.GetAllGameData().FindMutatorData(RelicPyreAbilityCooldownModel.OwnerId);
+            if (definition == null || definition.name != RelicPyreAbilityCooldownModel.OwnerKey || definition.DisallowInDeploymentPhase ||
+                definition.GetEffects().Count != 1) return false;
+            RelicEffectData effect = definition.GetEffects()[0];
+            return effect.GetParamInt() == RelicPyreAbilityCooldownModel.Cooldown &&
+                effect.GetParamInt2() == (int)RelicEffectModifyUnitAbilityCooldown.UnitType.PyreHeart && effect.GetEffectConditions().Count == 0;
         }
     }
 }

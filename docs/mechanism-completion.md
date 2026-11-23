@@ -287,6 +287,11 @@ Echoes 的留存生命效果按单位的来源卡记录。原版专项中，列�
 [提高生命上限与死亡](../tests/compatibility/game-2.3.1/mechanics/persistent-monster-health/maximum-birth-death.mt2f) ·
 [原版整战](../tests/compatibility/game-2.3.1/mechanics/persistent-monster-health/native-battle.mt2f)
 
+时光薪火沿原版出生流程加载同一张技能牌。Echoes 变异器将使用后的冷却间隔从 99 改为 2，
+原版对照保持 99。两组的出生冷却和当前剩余冷却均为 0，模型出生回调通过定向核对。
+[启用变异器](../tests/compatibility/game-2.3.1/mechanics/pyre-ability-cooldown-birth/with-owner.mt2f) ·
+[原版对照](../tests/compatibility/game-2.3.1/mechanics/pyre-ability-cooldown-birth/without-owner.mt2f)
+
 ExtraFeedTrigger 的原版查询确认友军 OnFeed 次数为 2，OnDeath 次数保持 1。
 61 个战斗阶段、5 次出牌、7 次结束回合与两类候选通过。实际普通进食也已录到两次 OnFeed，
 合金构装体的燃料从 1 增至 3，矿工只被吃掉一次，完整状态与随机数在 16 条分支上复放一致。

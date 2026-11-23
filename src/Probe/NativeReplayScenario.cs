@@ -760,6 +760,10 @@ namespace MonsterTrain2Poju.Probe
                         OriginalHoldoverGrantScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPriorityRelicBattleScenario.Enabled && !OriginalPriorityRelicBattleScenario.Acquired)
                         OriginalPriorityRelicBattleScenario.AcquireBeforeBattle(managers!, log);
+#if DEVELOPMENT_PROBE
+                    if (fullBattle && OriginalPyreAbilityCooldownWitness.Enabled && !OriginalPyreAbilityCooldownWitness.Prepared)
+                        OriginalPyreAbilityCooldownWitness.Prepare(save);
+#endif
                     if (ReplayManager.TryClickButton(intro.GetFightButton())) Enter(Stage.Battle, 120f);
                 }
                 return;
@@ -964,6 +968,12 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && OriginalPyreAbilityCooldownWitness.Enabled)
+            {
+                OriginalPyreAbilityCooldownWitness.Write(FullBattleTrace.Active!, managers);
+                Finish(true, "Original Pyre ability cooldown birth captured.");
+                return;
+            }
             if (fullBattle && OriginalPersistentMonsterHpWitness.Enabled)
             {
                 if (OriginalPersistentMonsterHpWitness.Tick(FullBattleTrace.Active!, managers, log))

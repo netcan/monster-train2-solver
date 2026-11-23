@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--native-pyre-ability-cooldown-only")
+{
+    using var withOwner = ModelJson.ReadFixture(args[1]);
+    using var withoutOwner = ModelJson.ReadFixture(args[2]);
+    PyreAbilityCooldownChecks.Native(withOwner.RootElement, withoutOwner.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-persistent-monster-hp-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
