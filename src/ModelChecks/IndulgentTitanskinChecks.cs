@@ -24,6 +24,8 @@ internal static class IndulgentTitanskinChecks
         int root = builder.Add(FixtureKind.Object, children: [
             Key("Schema"), builder.Add(FixtureKind.Number, "1"),
             Key("Boundary"), Key("NativeIndulgentTitanskinBirthAndDamage"),
+            Key("GameVersion"), builder.Import(battle.GetProperty("GameVersion")),
+            Key("GameModuleMvid"), builder.Import(battle.GetProperty("GameModuleMvid")),
             Key("SourceBattleSha256"), Key(Hash(battlePath)),
             Key("SourceBirthSha256"), Key(Hash(birthPath)),
             Key("Observation"), builder.Import(observation),
@@ -46,6 +48,8 @@ internal static class IndulgentTitanskinChecks
     {
         if (component.GetProperty("Schema").GetInt32() != 1 ||
             component.GetProperty("Boundary").GetString() != "NativeIndulgentTitanskinBirthAndDamage" ||
+            component.GetProperty("GameVersion").GetString() != Game231FixtureCatalog.Version ||
+            component.GetProperty("GameModuleMvid").GetString() != Game231FixtureCatalog.Module ||
             !IsSha(component.GetProperty("SourceBattleSha256").GetString()) ||
             !IsSha(component.GetProperty("SourceBirthSha256").GetString()))
             throw new InvalidDataException("Expected an original Indulgent Titanskin component with binary source provenance.");
