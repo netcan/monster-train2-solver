@@ -246,12 +246,14 @@ internal static class RoomCombatChecks
                     target.GetProperty("Unit").Deserialize<CombatUnit>()!)).ToArray()
                 : Array.Empty<(int, CombatUnit)>();
             bool exchange = stage.GetProperty("Kind").GetString() == "Exchange";
+            RoomPlayRule[]? movementRules = stage.TryGetProperty("TriggeredMovementRoomRules", out FixtureValue roomRules) &&
+                roomRules.ValueKind != FixtureKind.Null ? roomRules.Deserialize<RoomPlayRule[]>() : null;
             RoomCombatResult result = exchange
                 ? RoomCombatModel.Exchange(state, externalTargets: externalTargets,
                     pendingPhysicalDeathIds: stage.TryGetProperty("PendingPhysicalDeaths", out FixtureValue deaths)
-                        ? deaths.Deserialize<int[]>() : null) : RoomCombatModel.Resolve(state,
+                        ? deaths.Deserialize<int[]>() : null, roomRules: movementRules) : RoomCombatModel.Resolve(state,
                     externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets,
-                    relentlessDecisions: RecordedBattleChecks.Decisions(stage));
+                    relentlessDecisions: RecordedBattleChecks.Decisions(stage), roomRules: movementRules);
             if (!result.Supported) { unsupported++; firstUnsupported ??= result.UnsupportedReason; continue; }
             // The oracle is the captured game state, not the recorded model prediction.
             CombatUnit[] actual = stage.GetProperty("Actual").GetProperty("Units").Deserialize<CombatUnit[]>()!;

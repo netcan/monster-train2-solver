@@ -98,7 +98,9 @@ namespace MonsterTrain2Poju.Model
             int prior = unit.MoonPhaseMask.Value;
             int mask = (prior & ~3) | Effective(source.Context, room!.RoomIndex, source.Context.QueryFrame.MoonPhase.Value);
             if ((prior & 3) == (mask & 3)) return new MoonPhaseTransitionResult(source);
-            if (room.Preview)
+            if (room.Preview && !(source.Context.QueryFrame.MoonPhaseTrackingActive == false && spawner == null &&
+                !HasMask(source) && unit.Triggers.Count == 2 && unit.Triggers.Any(trigger =>
+                    RoomCombatModel.IsRailforgedAttackerKillBump(unit, trigger)) && unit.Triggers.Any(trigger => trigger.Kind == "OnShift")))
                 return new MoonPhaseTransitionResult(null, "Preview movement moon understanding requires native calibration.");
             CombatUnit changed = unit.WithMoonPhaseMask(mask);
             void Queue(int bit, string gained, string lost)

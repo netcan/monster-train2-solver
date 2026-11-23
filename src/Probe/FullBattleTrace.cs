@@ -809,6 +809,9 @@ namespace MonsterTrain2Poju.Probe
                         .SelectMany(trigger => trigger.Effects)
                         .Any(effect => (effect.Action ?? effect.UnitUpgrade)?.Target is "Tower" or "FrontInAllRooms");
                     TrainCombatState? beforeTrain = requiresTowerRoster ? CaptureTrain() : null;
+                    IReadOnlyList<RoomPlayRule>? movementRoomRules = before.Units.Any(unit =>
+                        unit.Triggers.Any(trigger => RoomCombatModel.IsRailforgedAttackerKillBump(unit, trigger)))
+                        ? BattleActionProbe.CaptureRoomRules() : null;
                     (int RoomIndex, CombatUnit Unit)[] externalTargets = beforeTrain?.Rooms
                         .Where(item => item.RoomIndex != room.GetRoomIndex())
                         .SelectMany(item => item.Units.Select(unit => (RoomIndex: item.RoomIndex, Unit: unit)))
@@ -848,6 +851,7 @@ namespace MonsterTrain2Poju.Probe
                         ActiveDeaths = activeDeaths.Select(death => new StageDeathRecord
                             { Kind = death.Kind, UnitId = death.UnitId, Started = death.Started }).ToArray(),
                         PendingPhysicalDeaths = pendingDeaths.ToArray(),
+                        TriggeredMovementRoomRules = movementRoomRules,
                         RelentlessDecisions = kind == "Room" ? RelentlessBattleScenario.CurrentPlan : null,
                         Room = room,
                         Before = before,
@@ -856,11 +860,11 @@ namespace MonsterTrain2Poju.Probe
                         ExternalPyre = pyre,
                         ExternalPyreRoomIndex = pyre == null ? -1 : pyreRoomIndex,
                         Predicted = kind == "Exchange" ? RoomCombatModel.Exchange(before, externalTargets: externalTargets,
-                            pendingPhysicalDeathIds: pendingDeaths) :
+                            pendingPhysicalDeathIds: pendingDeaths, roomRules: movementRoomRules) :
                             RoomCombatModel.Resolve(before, externalPyre: pyre,
                                 externalPyreRoomIndex: pyre == null ? -1 : pyreRoomIndex, externalTargets: externalTargets,
                                 relentlessDecisions: RelentlessBattleScenario.CurrentPlan,
-                                unitCopyCatalog: trainCombat.CaptureTriggeredCopyCatalog(new[] { before }))
+                                unitCopyCatalog: trainCombat.CaptureTriggeredCopyCatalog(new[] { before }), roomRules: movementRoomRules)
                     };
                     stages.Add(record);
                 }
@@ -2397,6 +2401,8 @@ namespace MonsterTrain2Poju.Probe
             public StageQueuedTrigger[] QueuedTriggers { get; set; } = Array.Empty<StageQueuedTrigger>();
             public StageDeathRecord[] ActiveDeaths { get; set; } = Array.Empty<StageDeathRecord>();
             public int[] PendingPhysicalDeaths { get; set; } = Array.Empty<int>();
+            public IReadOnlyList<RoomPlayRule>? TriggeredMovementRoomRules { get; set; }
+            public bool ShouldSerializeTriggeredMovementRoomRules() => TriggeredMovementRoomRules != null;
             public IReadOnlyList<RelentlessDecision>? RelentlessDecisions { get; set; }
             public bool ShouldSerializeRelentlessDecisions() => RelentlessDecisions != null;
             [JsonIgnore] public RoomState Room { get; set; } = null!;

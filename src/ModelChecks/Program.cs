@@ -1,5 +1,15 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--railforged-kill-bump-only")
+{
+    RailforgedKillBumpChecks.Native(args[1]);
+    return;
+}
+if (args.Length == 3 && args[0] == "--extract-railforged-kill-bump")
+{
+    RailforgedKillBumpChecks.Extract(args[1], args[2]);
+    return;
+}
 if (args.Length == 4 && args[0] == "--export-native-indulgent-titanskin")
 {
     IndulgentTitanskinChecks.Export(args[1], args[2], args[3]);

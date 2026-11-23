@@ -517,6 +517,26 @@ namespace MonsterTrain2Poju.Model
         internal const string Witherbloom = "witherbloom";
         internal static bool KnowsStatus(string id) => KnownStatuses.Contains(id);
 
+        internal const string RailforgedKillAttacker = "R1_Attacker_AscendGainAtk_Ver2";
+
+        internal static bool IsRailforgedAttackerKillBump(CombatUnit actor, CombatTrigger trigger) =>
+            actor.AssetKey == RailforgedKillAttacker && actor.Team == CombatTeam.Enemy &&
+            actor.BumpRules is { OuterBoss: false, CompanionBoss: false } &&
+            trigger is { Kind: "OnKill", Once: false, IgnoreSilence: false, FireCount: 1,
+                Conditions: null, TriggerAtThreshold: 0, Origin: { UpgradeId: "", EquipmentCardId: 0,
+                    IsFromEquipment: false, OnlyIfEquipped: false }, Effects: [var bump, var armor] } &&
+            bump is { Type: "CardEffectBump", Action: { Type: "Bump", Target: "Self", Value: -1,
+                Range: null, AllowEnemy: true, AllowPlayer: true, UseCardTraits: false, Statuses.Count: 0 } } &&
+            armor is { Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Self", Value: 0,
+                Range: null, AllowEnemy: true, AllowPlayer: true, UseCardTraits: false, Statuses: [{ Id: "armor", Stacks: 10 }] } };
+
+        private static bool IsRailforgedKillPreviewShift(CombatUnit actor, CombatTrigger trigger) =>
+            actor.Team == CombatTeam.Enemy && trigger is { Kind: "OnShift", Once: false, IgnoreSilence: false,
+                FireCount: 1, Conditions: null, Effects: [{ Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus",
+                    Target: "Self", Value: 0, Range: null, UseCardTraits: false, Statuses: [var status] } action }] } &&
+            (actor.AssetKey == RailforgedKillAttacker && action.AllowEnemy && action.AllowPlayer && status is { Id: "burst", Stacks: 1 } ||
+                actor.AssetKey == "R1_Heavy_HealOnShift_Ver2" && !action.AllowEnemy && !action.AllowPlayer && status is { Id: "armor", Stacks: 20 });
+
         private static bool MatchesWitherbloom(CombatStatus status) =>
             status.ParamInt == 1 && status.Stackable == true && status.Hidden == false && status.DisplayCategory == "Negative" &&
             status.Propagatable == true && status.ExcludeHeroPropagation == false && status.ExcludeMonsterPropagation == true &&
@@ -530,13 +550,14 @@ namespace MonsterTrain2Poju.Model
 
         public static RoomCombatResult Exchange(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
             bool updateSelectedRoom = true, IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
-            IReadOnlyCollection<int>? pendingPhysicalDeathIds = null) =>
+            IReadOnlyCollection<int>? pendingPhysicalDeathIds = null, IReadOnlyList<RoomPlayRule>? roomRules = null) =>
             Run(state, false, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom, externalTargets: externalTargets,
-                pendingPhysicalDeathIds: pendingPhysicalDeathIds);
+                pendingPhysicalDeathIds: pendingPhysicalDeathIds, roomRules: roomRules);
         public static RoomCombatResult Resolve(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
             bool updateSelectedRoom = true, CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
             IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
-            IReadOnlyList<RelentlessDecision>? relentlessDecisions = null, UnitCopyCatalog? unitCopyCatalog = null)
+            IReadOnlyList<RelentlessDecision>? relentlessDecisions = null, UnitCopyCatalog? unitCopyCatalog = null,
+            IReadOnlyList<RoomPlayRule>? roomRules = null)
         {
             int? interval = state.Context?.QueryFrame?.RelentlessNotificationInterval;
             var decisions = relentlessDecisions?.Count > 0 ? relentlessDecisions.ToArray() : null;
@@ -545,7 +566,7 @@ namespace MonsterTrain2Poju.Model
                     "Invalid Relentless notification interval or decisions.");
             return ResolveCore(state, refreshPyre, updateSelectedRoom, externalPyre, externalPyreRoomIndex, externalTargets,
                 decisions != null ? (room, round) => decisions.FirstOrDefault(choice =>
-                    choice.RoomIndex == room && choice.CompletedRounds == round) : null, unitCopyCatalog);
+                    choice.RoomIndex == room && choice.CompletedRounds == round) : null, unitCopyCatalog, roomRules);
         }
 
         internal static bool ValidRelentlessDecisions(int? interval, IReadOnlyList<RelentlessDecision>? decisions) =>
@@ -556,7 +577,7 @@ namespace MonsterTrain2Poju.Model
         internal static RoomCombatResult ResolveCore(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre,
             bool updateSelectedRoom, CombatUnit? externalPyre, int externalPyreRoomIndex,
             IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets, Func<int, int, RelentlessDecision?>? chooseRelentless,
-            UnitCopyCatalog? unitCopyCatalog = null)
+            UnitCopyCatalog? unitCopyCatalog = null, IReadOnlyList<RoomPlayRule>? roomRules = null)
         {
             // Native room modifiers run once before the first exchange, including
             // deaths and queued callbacks; unit PreCombat is a separate phase.
@@ -565,7 +586,7 @@ namespace MonsterTrain2Poju.Model
             RoomCombatResult result = pre.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated ? pre :
                 Run(pre.State!, true, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom,
                     externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets,
-                    chooseRelentless: chooseRelentless, unitCopyCatalog: unitCopyCatalog);
+                    chooseRelentless: chooseRelentless, unitCopyCatalog: unitCopyCatalog, roomRules: roomRules);
             if (!ReferenceEquals(result, pre) && pre.Events.Count > 0)
                 result = new RoomCombatResult(result.State, result.Outcome, result.Rounds, pre.Events.Concat(result.Events).ToList(),
                     result.UnsupportedReason, result.PendingCallbacks, result.RetainedUnits, result.Dispatches,
@@ -1114,7 +1135,7 @@ namespace MonsterTrain2Poju.Model
             CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
             IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
             IReadOnlyCollection<int>? pendingPhysicalDeathIds = null, Func<int, int, RelentlessDecision?>? chooseRelentless = null,
-            UnitCopyCatalog? unitCopyCatalog = null)
+            UnitCopyCatalog? unitCopyCatalog = null, IReadOnlyList<RoomPlayRule>? roomRules = null)
         {
             var events = new List<CombatEvent>();
             string? error = Validate(state);
@@ -1125,7 +1146,7 @@ namespace MonsterTrain2Poju.Model
                     "True-final-boss room attack scheduling remains uncalibrated; linked damage/heal APIs are separate.");
             var engine = new Engine(state, events, refreshPyre: refreshPyre,
                 externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets,
-                chooseRelentless: chooseRelentless, unitCopyCatalog: unitCopyCatalog);
+                chooseRelentless: chooseRelentless, unitCopyCatalog: unitCopyCatalog, roomRules: roomRules);
             return engine.Run(entireRoom, updateSelectedRoom, pendingPhysicalDeathIds);
         }
 
@@ -1447,7 +1468,8 @@ namespace MonsterTrain2Poju.Model
                         }
                         if (effect.Type == "CardEffectBump")
                         {
-                            if (state.Context?.SpawnPoints == null || !HarvesterBirthModel.IsTrigger(unit, trigger))
+                            if (state.Context?.SpawnPoints == null ||
+                                !HarvesterBirthModel.IsTrigger(unit, trigger) && !IsRailforgedAttackerKillBump(unit, trigger))
                                 return "Triggered Bump requires the original Harvester tower birth payload and physical positions.";
                             continue;
                         }
@@ -1830,8 +1852,9 @@ namespace MonsterTrain2Poju.Model
             internal int? LastFeederId;
             private IReadOnlyList<CombatStatus>? statusRegistry;
             private StatusDictionaryState? dictionary;
-            private readonly int roomIndex;
+            private int roomIndex;
             internal int RoomIndex => roomIndex;
+            internal void MoveToRoom(int destination) { roomIndex = destination; InRoom = false; }
             private readonly Func<CombatContext?>? getContext;
             private readonly Action<string>? reject;
             private readonly Func<WorkingUnit, string, int>? roomStatusModifier;
@@ -1956,6 +1979,7 @@ namespace MonsterTrain2Poju.Model
             private readonly Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre;
             private readonly Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase;
             private readonly Func<RoomCombatState, CardActionEffect, int, BumpResult>? birthBump;
+            private readonly IReadOnlyList<RoomPlayRule>? roomRules;
             private readonly Func<RoomCombatState, int, IReadOnlyList<QueuedCharacterTrigger>, RoomCombatResult>? relicBirthEffect;
             private readonly Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect;
             private readonly Queue<(int RoomIndex, WorkingUnit Unit, string Kind, bool CanFire, int ParamInt, WorkingUnit? OverrideTarget, int ParamInt2, string? ParamString, WorkingUnit? DyingCharacter, int TriggerCount, int LastSpawnedOverrideUnitId, int? ExclusiveTriggerStateId, int? AttackDamageDealt)> triggerQueue = new Queue<(int, WorkingUnit, string, bool, int, WorkingUnit?, int, string?, WorkingUnit?, int, int, int?, int?)>();
@@ -1973,6 +1997,7 @@ namespace MonsterTrain2Poju.Model
             private readonly HashSet<int> cannotAttackOrHeal = new HashSet<int>();
             private readonly HashSet<int> cannotFireTriggers = new HashSet<int>();
             private readonly HashSet<int> externalTurnActorIds = new HashSet<int>();
+            private HashSet<int>? previewKillBumpShiftedActors;
             private readonly bool hasExternalTargetRoster;
             private readonly HashSet<int> activeCompanionBossIds;
             private string? unsupportedReason;
@@ -1990,7 +2015,8 @@ namespace MonsterTrain2Poju.Model
                 Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect = null,
                 Func<RoomCombatState, CardActionEffect, int, BumpResult>? birthBump = null, bool centerDamageDeaths = true,
                 Func<RoomCombatResult, RoomCombatResult>? settleDamageCallbacks = null,
-                Func<int, int, RelentlessDecision?>? chooseRelentless = null, UnitCopyCatalog? unitCopyCatalog = null)
+                Func<int, int, RelentlessDecision?>? chooseRelentless = null, UnitCopyCatalog? unitCopyCatalog = null,
+                IReadOnlyList<RoomPlayRule>? roomRules = null)
             {
                 this.source = source; this.events = events;
                 this.chooseRelentless = chooseRelentless;
@@ -2006,6 +2032,7 @@ namespace MonsterTrain2Poju.Model
                 this.refreshPyre = refreshPyre;
                 this.moonPhase = moonPhase;
                 this.birthBump = birthBump;
+                this.roomRules = roomRules;
                 this.relicBirthEffect = relicBirthEffect;
                 this.relicCharacterEffect = relicCharacterEffect;
                 context = source.Context;
@@ -3012,7 +3039,8 @@ namespace MonsterTrain2Poju.Model
                     .Where(unit => externalTurnActorIds.Contains(unit.Source.Id) && unit.Source.Id != externalActor?.Id)
                     .Select(unit => (unit.RoomIndex, unit.Freeze())).ToArray() : null;
                 var preview = new Engine(copied, new List<CombatEvent>(), externalActor: externalActor,
-                    externalActorRoomIndex: externalActor == null ? -1 : actor.RoomIndex, externalTargets: previewTargets);
+                    externalActorRoomIndex: externalActor == null ? -1 : actor.RoomIndex, externalTargets: previewTargets,
+                    roomRules: roomRules);
                 // A sweep preview shares the running-queue gate: its temporary callbacks
                 // stay queued rather than healing or damaging between individual targets.
                 preview.runningTriggerQueue = runningTriggerQueue;
@@ -3091,8 +3119,18 @@ namespace MonsterTrain2Poju.Model
                         context = context.WithSpawnPoints(context.SpawnPoints.WithState(context.SpawnPoints.Groups, context.SpawnPoints.Units.Concat(
                             births.Select(actor => new UnitSpawnPointState(actor.Unit.Id, null, null, spawnedInPreview: true))).ToArray()));
                     var restoredActors = temporaryPreviewIds;
-                    CombatUnit Restore(CombatUnit unit, int room) => EnchantmentWorldModel.RestorePreviewEffects(unit, observed,
-                        restoredActors.Contains(unit.Id), removedPreviewIds);
+                    CombatUnit Restore(CombatUnit unit, int room)
+                    {
+                        // The local boss-kill preview copies the combat floor only.
+                        // Shift callbacks on uncopied actors in the destination change their primary state.
+                        if (preview.previewKillBumpShiftedActors?.Contains(unit.Id) == true && !restoredActors.Contains(unit.Id))
+                        {
+                            CombatUnit? shifted = observed.Rooms[room].Units.SingleOrDefault(candidate => candidate.Id == unit.Id);
+                            if (shifted != null) return shifted;
+                            unsupportedReason = "Railforged kill preview removed an uncopied actor from the destination room.";
+                        }
+                        return EnchantmentWorldModel.RestorePreviewEffects(unit, observed, restoredActors.Contains(unit.Id), removedPreviewIds);
+                    }
                     // Earlier preview births were also outside the collected restore
                     // list. Keep their complete observed state and location, including
                     // status withdrawals and callbacks from this temporary preview.
@@ -5863,11 +5901,61 @@ namespace MonsterTrain2Poju.Model
                 return true;
             }
 
+            private bool ApplyRailforgedKillBump(WorkingUnit actor, CardActionEffect action)
+            {
+                if (roomRules == null || context?.Enchantments is not { AutomaticLifecycle: true } world || actor.RoomIndex != source.RoomIndex)
+                {
+                    unsupportedReason = "Railforged kill movement requires the captured destination room and its rules.";
+                    return false;
+                }
+                RoomCombatState frame = EnchantmentWorldModel.Sync(PhysicalRoom(), units.Where(unit => !unit.Alive || !unit.InRoom)
+                    .Select(unit => unit.Freeze()).ToArray(), ExternalEnchantmentUnits());
+                var train = new TrainCombatState(frame.Context!.Enchantments!.Rooms.Select(room => new RoomCombatState(room.RoomIndex,
+                    room.Deployment, room.Units, room.ExternalInteractions, frame.Context, source.Preview, room.ActiveCompanionBossIds))
+                    .ToArray(), world.Movement, world.EnemySlotsPerRoom, frame.Context);
+                BumpResult moved = BumpModel.Apply(train, new[] { actor.Source.Id }, action.Value, roomRules, 0, null,
+                    deferCharacterCallbacks: true);
+                if (!moved.Supported) { unsupportedReason = moved.UnsupportedReason; return false; }
+                RoomCombatState? destination = moved.State!.Rooms.SingleOrDefault(room => room.Units.Any(unit => unit.Id == actor.Source.Id));
+                if (destination == null)
+                { unsupportedReason = "Railforged kill movement lost its original actor."; return false; }
+                actor.Apply(destination.Units.Single(unit => unit.Id == actor.Source.Id));
+                if (destination.RoomIndex != source.RoomIndex)
+                {
+                    actor.MoveToRoom(destination.RoomIndex);
+                    externalTurnActorIds.Add(actor.Source.Id);
+                }
+                MergeSummon(new RoomCombatResult(moved.State.Rooms[source.RoomIndex], moved.Outcome, 0, moved.Events.ToList()));
+                foreach (QueuedCharacterTrigger callback in moved.PendingCallbacks)
+                {
+                    if (world.TemporaryPreviewUnitIds is { } copied && destination.RoomIndex != source.RoomIndex &&
+                        callback.RoomIndex == destination.RoomIndex && !copied.Contains(callback.Unit.Id) && callback.Kind == "OnShift" &&
+                        callback.Unit.Triggers.Where(trigger => trigger.Kind == "OnShift").ToArray() is { Length: > 0 } shifts)
+                    {
+                        if (shifts is not [var shift] || !IsRailforgedKillPreviewShift(callback.Unit, shift))
+                        { unsupportedReason = "Railforged kill preview requires a calibrated uncopied destination Shift effect."; return false; }
+                        (previewKillBumpShiftedActors ??= new HashSet<int>()).Add(callback.Unit.Id);
+                    }
+                    QueueCallback(callback);
+                }
+                return true;
+            }
+
             private bool ApplyTriggeredAction(WorkingUnit actor, CombatEffect effect, WorkingUnit? overrideTarget, int triggerIndex, int effectIndex, string triggerKind, int lastSpawnedOverrideUnitId, bool hiddenTrigger)
             {
                 CardActionEffect action = effect.Action!;
                 if (action.Type == "Bump")
                 {
+                    if (triggerKind == "OnKill" && actor.Triggers.Any(trigger => trigger.StateId == triggerIndex &&
+                        IsRailforgedAttackerKillBump(actor.Source, trigger)))
+                    {
+                        // The captured bottom-floor attempt keeps the actor in place,
+                        // so the following native Armor effect still applies to it.
+                        if (actor.RoomIndex == 0 && !actor.Has("rooted") &&
+                            context?.Enchantments is { EnchanterIds.Count: 0, AllowUpdates: true, Updating: false } &&
+                            !actor.Source.Triggers.Any(trigger => trigger.Kind == "PostAttemptedDescension")) return true;
+                        return ApplyRailforgedKillBump(actor, action);
+                    }
                     if (birthBump == null || source.Preview || source.RoomIndex != 0 || triggerKind != "OnSpawnNotFromCard")
                     { unsupportedReason = "Harvester birth movement requires the complete native spawn train and room rules."; return false; }
                     BumpResult moved = birthBump(CurrentRoom(), action, actor.Source.Id);

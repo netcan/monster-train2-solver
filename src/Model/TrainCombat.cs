@@ -311,9 +311,11 @@ namespace MonsterTrain2Poju.Model
                     refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement),
                     updateSelectedRoom: true, externalPyre: externalPyre, externalPyreRoomIndex: externalPyre == null ? -1 : pyreRoomIndex,
                     externalTargets: requiresTowerTargets ? externalTargets : null,
-                    chooseRelentless: decisions.Length > 0 ? ChooseRelentless : null, unitCopyCatalog: unitCopyCatalog);
+                    chooseRelentless: decisions.Length > 0 ? ChooseRelentless : null, unitCopyCatalog: unitCopyCatalog, roomRules: roomRules);
                 if (!result.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported, results,
                     "Train combat floor " + index + ": " + result.UnsupportedReason, relentlessChoice: result.RelentlessChoice);
+                CombatUnit[] movedAttackers = rooms[index].Units.Where(unit => unit.AssetKey == RoomCombatModel.RailforgedKillAttacker &&
+                    result.State!.Units.All(actor => actor.Id != unit.Id)).ToArray();
                 rooms[index] = result.State!; results.Add(result);
                 RelicDeckPyreStatsModel.UpdateRemoteHealth(rooms, rooms[index].RoomIndex, context, result.State!.Context);
                 context = result.State!.Context;
@@ -328,8 +330,16 @@ namespace MonsterTrain2Poju.Model
                 // an already resolved upper room. Preserve those shared objects
                 // before collecting that room again as a later Tower target.
                 if (context?.Enchantments is EnchantmentWorld observed)
+                {
+                    if (movedAttackers.Length > 0)
+                    {
+                        var destinations = observed.Rooms.Where(room => room.RoomIndex != index &&
+                            room.Units.Any(unit => movedAttackers.Any(actor => actor.Id == unit.Id)));
+                        foreach (RoomCombatState destination in destinations) rooms[destination.RoomIndex] = WithContext(destination, context);
+                    }
                     rooms = rooms.Select(room => room.WithUnits(room.Units.Select(unit =>
                         EnchantmentWorldModel.RestorePreviewEffects(unit, observed, false)).ToArray())).ToArray();
+                }
                 SetCompanionBosses(rooms, result.State!.ActiveCompanionBossIds);
                 if (Terminal(result.Outcome))
                     return consumedChoices == decisions.Length ? new TrainCombatResult(Freeze(source, rooms, context), result.Outcome, results) :
