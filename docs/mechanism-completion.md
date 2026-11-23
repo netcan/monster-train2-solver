@@ -873,6 +873,12 @@ Eager Conscript 的原版对照确认，DoubleUnits 将首次状态量从 1 提�
 采样使用 `-OriginalDoubleUnitsSpawnOrStatus -BinaryCapture`，专项使用 `--native-double-units-spawn-or-status-only`。
 [`spawn-or-status.mt2f`](../tests/compatibility/game-2.3.1/mechanics/hall-grafted-birth/spawn-or-status.mt2f)
 
+Kinhost Vessel 的原版对照在部署回合先消耗一次 DoubleUnits，随后在第一普通回合通过
+自然孵化生成两只 Pupa。定向检查核对孵化回调、站位、来源牌、随机流、回合计数重置和完整
+结束回合。采样使用 `-OriginalDoubleUnitsTriggeredSpawn -BinaryCapture`，专项使用
+`--native-double-units-triggered-only`。
+[`double-units-triggered.mt2f`](../tests/compatibility/game-2.3.1/mechanics/hall-grafted-birth/double-units-triggered.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和

@@ -5135,8 +5135,6 @@ namespace MonsterTrain2Poju.Model
             private bool ApplyTriggeredSummon(WorkingUnit actor, TriggeredSummonRule rule, out int firstId)
             {
                 firstId = 0;
-                string? spawnCountError = RelicUnitSpawnCountModel.CheckOtherSummon(context);
-                if (spawnCountError != null) { unsupportedReason = spawnCountError; return false; }
                 SpawnPointReference? from = SummonSourcePoint(actor);
                 var equipment = new List<int>();
                 bool transferEquipment = from != null && !rule.IgnoreCardUpgrades && actor.Source.SpawnerCardId > 0;
@@ -5162,8 +5160,15 @@ namespace MonsterTrain2Poju.Model
                             if (!definition.Equipment.ReturnToHand) equipment.Add(id);
                         }
                 }
-                int requested = Math.Max(1, rule.Count);
-                if (rule.AdditionalCharacterId.Length > 0) requested = unchecked(requested + requested);
+                int baseCount = Math.Max(1, rule.Count);
+                int requested = baseCount;
+                if (rule.CharacterId.Length > 0 && !AddTriggeredSpawnCount(ref requested)) return false;
+                if (rule.AdditionalCharacterId.Length > 0)
+                {
+                    int additionalCount = baseCount;
+                    if (!AddTriggeredSpawnCount(ref additionalCount)) return false;
+                    requested = unchecked(requested + additionalCount);
+                }
                 SpawnPointGroupState group = context!.SpawnPoints!.SelectedGroup(source.RoomIndex, CombatTeam.Player)!;
                 int count = Math.Min(requested, group.GroupCount - group.Occupants.Take(group.GroupCount).Count(id => id != 0));
                 int bornCount = 0;
@@ -5244,6 +5249,15 @@ namespace MonsterTrain2Poju.Model
                 // Native SpawnMonster completes the birth batch with the room-order
                 // handler, so the last bound child updates its aura before queued OnSpawn.
                 return UpdateEnchantments();
+            }
+
+            private bool AddTriggeredSpawnCount(ref int count)
+            {
+                RelicResourceResult result = RelicUnitSpawnCountModel.Evaluate(context!, CombatTeam.Player, source.Preview);
+                if (!result.Supported) { unsupportedReason = result.UnsupportedReason; return false; }
+                context = result.Context!;
+                count = Math.Max(0, unchecked(count + result.Value));
+                return true;
             }
 
             private RoomCombatState CurrentRoom() => new RoomCombatState(source.RoomIndex, source.Deployment,

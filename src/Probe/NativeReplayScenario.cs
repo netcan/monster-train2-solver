@@ -957,6 +957,13 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && OriginalEggCardScenario.DoubleUnitsTriggered && combat!.GetTurnCount() == 2)
+            {
+                FullBattleTrace.Active!.Checkpoint("decision-2");
+                FullBattleTrace.Active.WriteDoubleUnitsTriggered();
+                Finish(true, "Original DoubleUnits triggered summon captured.");
+                return;
+            }
             if (RollingAdviceScenario.DeploymentOnly)
             {
                 if (!PlayerAdvisorProbe.DeploymentCaptureReady) return;
@@ -3743,6 +3750,11 @@ namespace MonsterTrain2Poju.Probe
                     pendingPlay = OriginalAcceleratedIncubationScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalTomeOfContractsScenario.Enabled)
                     pendingPlay = OriginalTomeOfContractsScenario.Choose(decision) ?? pendingPlay;
+#if DEVELOPMENT_PROBE
+                if (OriginalEggCardScenario.DoubleUnitsTriggered)
+                    pendingPlay = OriginalEggCardScenario.ChooseDoubleUnitsTriggered(decision);
+                else
+#endif
                 if (OriginalEggCardScenario.Enabled)
                     pendingPlay = OriginalEggCardScenario.Choose(decision) ?? pendingPlay;
                 if (OriginalCombatTriggerBatchScenario.Enabled)

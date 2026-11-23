@@ -979,6 +979,26 @@ namespace MonsterTrain2Poju.Probe
         }
 
 #if DEVELOPMENT_PROBE
+        internal void WriteDoubleUnitsTriggered()
+        {
+            if (actions.Records.Count != 2 || actions.Records.Any(record => record.Actual == null) ||
+                turns.Records.Count != 2 || turns.Records.Any(record => record.Actual == null) ||
+                TriggeredSummonProbe.Records.Count != 1 || TriggeredSummonProbe.Records.Any(record => !record.Completed) ||
+                CaptureFailures != 0 || Pending != 0)
+                throw new InvalidOperationException("Expected two native deployments and one settled original hatch by turn two.");
+            using var document = NativeFixtureCapture.Capture(new
+            {
+                Schema = 1, Boundary = "NativeOriginalDoubleUnitsTriggeredSummon", GameVersion = Application.version,
+                GameModuleMvid = typeof(RelicState).Assembly.ManifestModule.ModuleVersionId,
+                CaptureFailures, Pending, NativeRunInput = nativeRunInput,
+                Actions = actions.Records, Turns = turns.Records, TriggeredSummons = TriggeredSummonProbe.Records,
+                ExtraSpawnDefinition = OriginalSupportSpellsScenario.HallExtraSpawnDefinition,
+                ExtraSpawnCountQueries = OriginalSupportSpellsScenario.HallExtraSpawnCountQueries
+            });
+            using var file = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "double-units-triggered.mt2f"));
+            document.Write(file);
+        }
+
         internal bool WriteHallGraftedBirth()
         {
             if (OriginalSupportSpellsScenario.OrdinaryExtraSpawn || OriginalSupportSpellsScenario.SpawnOrStatusExtraSpawn)

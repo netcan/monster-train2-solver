@@ -17,11 +17,13 @@ namespace MonsterTrain2Poju.Probe
             CombatUnit[] rootUnits = reachable.SelectMany(rule => new[] { rule.SpawnUnit, rule.Summon?.Additional?.Unit }
                 .Where(unit => unit != null).Cast<CombatUnit>().Concat(rule.Summon?.Pool.Select(choice => choice.Unit) ?? Array.Empty<CombatUnit>()))
                 .Concat(spawn.Waves.SelectMany(wave => wave.Candidates).SelectMany(group => group.Units).Concat(spawn.Treasures).Select(item => item.Unit)).ToArray();
+            IReadOnlyList<SummonUnitDefinition> triggeredBirths = spawn.Train.Context?.SummonCatalog?.Units ?? Array.Empty<SummonUnitDefinition>();
             // Copy definitions must already contain queued bosses and cardless
             // trigger births. Discovering them only through live characters
             // changes the immutable rule catalog after an otherwise identical
             // EndTurn and invalidates an accepted plan's successor.
             var pending = new Queue<CombatUnit>(rootUnits.Concat(spawn.Train.Rooms.SelectMany(room => room.Units))
+                .Concat(triggeredBirths.Select(definition => definition.Unit))
                 .Concat(spawn.QueuedOuterBoss != null ? new[] { spawn.QueuedOuterBoss.Actor.Unit } :
                     OuterBossBirthProbe.CreatedDefinition != null ? new[] { OuterBossBirthProbe.CreatedDefinition } : Array.Empty<CombatUnit>())
                 .Concat(spawn.QueuedTrueFinalBoss?.Definitions.Select(definition => definition.Unit) ?? Array.Empty<CombatUnit>())
@@ -48,6 +50,7 @@ namespace MonsterTrain2Poju.Probe
             }).OrderBy(item => item.Unit.AssetKey, StringComparer.Ordinal).ToArray();
             string[] cardIds = reachable.Select(rule => rule.DataId).Concat(live.SelectMany(unit => unit.GetEquipment())
                 .Select(card => card.GetCardDataID())).Concat(live.Select(unit => unit.GetSpawnerCard()?.GetCardDataID()).Where(id => id != null).Cast<string>())
+                .Concat(triggeredBirths.Select(definition => definition.Fallback?.DataId).OfType<string>())
                 .Distinct().OrderBy(id => id, StringComparer.Ordinal).ToArray();
             CardData[] cards = cardIds.Select(id => all.FindCardData(id)!).ToArray();
             var gear = cards.Where(data => data.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectAttachEquipment") ||

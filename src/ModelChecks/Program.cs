@@ -5756,6 +5756,13 @@ if (args.Length == 2 && args[0] == "--native-double-units-spawn-or-status-only")
     HallGraftedBirthChecks.NativeSpawnOrStatusExtraSpawn(fixture.RootElement);
     return;
 }
+
+if (args.Length == 2 && args[0] == "--native-double-units-triggered-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    DoubleUnitsTriggeredChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-self-attack-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

@@ -15,6 +15,19 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Delayed => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == DelayedName;
         internal static bool Enabled => Delayed || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Prepared { get; private set; }
+#if DEVELOPMENT_PROBE
+        internal static bool DoubleUnitsTriggered => Environment.GetEnvironmentVariable("MT2_PROBE_DOUBLE_UNITS_TRIGGERED") == "1";
+
+        internal static PlayCardAction? ChooseDoubleUnitsTriggered(BattleTurnState source)
+        {
+            if (source.Spawn.Turn != 0) return null;
+            bool usedCount = source.Spawn.Train.Context!.Relics!.Single(owner => owner.DataId == RelicUnitSpawnCountModel.DataId)
+                .ResourceEffects!.Single().Conditions.Single().Triggered;
+            string cardId = usedCount ? CardId : "d14a50f3-728d-43e1-87f0-ef1b013f6678";
+            CardToken? card = source.Spawn.Train.Context.Cards.Hand.FirstOrDefault(item => item.DataId == cardId);
+            return card == null ? null : new PlayCardAction(card.InstanceId, usedCount ? 2 : 0, playerPosition: 0);
+        }
+#endif
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {

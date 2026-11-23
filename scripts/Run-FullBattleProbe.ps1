@@ -261,6 +261,7 @@ param(
     [switch] $OriginalHallExtraSpawn,
     [switch] $OriginalDoubleUnitsOrdinary,
     [switch] $OriginalDoubleUnitsSpawnOrStatus,
+    [switch] $OriginalDoubleUnitsTriggeredSpawn,
     [switch] $OriginalSelfAttack,
     [switch] $OriginalHealingCleanse,
     [switch] $OriginalOnKill,
@@ -1262,6 +1263,11 @@ if ($OriginalEggHatchRelic -and ($OriginalSpawnCombatRelics -or $OriginalChicotR
 if ($OriginalEggTransformation -and ($OriginalEggHatchRelic -or $OriginalSpawnCombatRelics -or $OriginalChicotRelic -or $OriginalTunedGearRelic -or $OriginalStealthWaxersRelic -or $OriginalTeamSpawnStatusRelic -or $SpawnStatusRelicsClones -or $MixedCardlessRelicOrder)) {
     throw 'OriginalEggTransformation is an isolated spawn-status scenario.'
 }
+if ($OriginalDoubleUnitsTriggeredSpawn) {
+    if (-not $BinaryCapture -or $OriginalEggCardDelayed) { throw 'OriginalDoubleUnitsTriggeredSpawn requires its own immediate original egg binary capture.' }
+    $OriginalEggCard = $true
+    $BranchCardMasks = $true
+}
 if (($OriginalEggCard -or $OriginalEggCardDelayed) -and
     ($OriginalEggTransformation -or $SpawnStatusRelics -or $OriginalEggHatchRelic -or ($OriginalEggCard -and $OriginalEggCardDelayed))) {
     throw 'OriginalEggCard is an isolated original-card scenario.'
@@ -2257,8 +2263,8 @@ if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput 
     if (($OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original opening relics require the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
-    if ($OriginalHallGraftedBirth -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
-        throw "Original grafted birth observation requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
+    if (($OriginalHallGraftedBirth -or $OriginalDoubleUnitsTriggeredSpawn) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw "Original birth observation requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
 }
 $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
@@ -2686,6 +2692,7 @@ if ($OriginalEggCard -or $OriginalEggCardDelayed) {
     $environment['MT2_PROBE_MODIFIERS'] = $(if ($OriginalEggCardDelayed) { 'original-egg-card-delayed' } else { 'original-egg-card' })
     $environment['MT2_PROBE_STATUS_CALLBACKS'] = '1'
 }
+if ($OriginalDoubleUnitsTriggeredSpawn) { $environment['MT2_PROBE_DOUBLE_UNITS_TRIGGERED'] = '1' }
 if ($MixedCardlessRelicOrder) {
     $environment['MT2_PROBE_MODIFIERS'] = 'spawn-status-relics-mixed-cardless-order'
 }
@@ -3946,6 +3953,16 @@ if ($OriginalSourceBackedFeeding) {
         throw "Original source-backed feeding capture failed. Inspect $unityLog"
     }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true; Trace=$feedingPath } | ConvertTo-Json
+    return
+}
+if ($OriginalDoubleUnitsTriggeredSpawn) {
+    $componentPath = Join-Path $profile 'double-units-triggered.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath -PathType Leaf) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original DoubleUnits triggered summon failed. Inspect $unityLog"
+    }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        Trace=$componentPath; SHA256=(Get-FileHash -LiteralPath $componentPath -Algorithm SHA256).Hash } | ConvertTo-Json
     return
 }
 if ($OriginalHallGraftedBirth) {

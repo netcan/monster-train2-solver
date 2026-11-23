@@ -18,13 +18,6 @@ namespace MonsterTrain2Poju.Model
         public const string AssetKey = "DoubleUnits";
         public const string Effect = "RelicEffectExtraSpawnsFirstUnitPerTurn";
 
-        internal static string? CheckOtherSummon(CombatContext? source)
-        {
-            if (source?.Relics?.Any(owner => owner.EffectTypes.Contains(Effect)) != true) return null;
-            RelicResourceResult count = Evaluate(source, CombatTeam.Player, preview: true);
-            return count.UnsupportedReason ?? (count.Value > 0 ? "Additional units or status stacks in this summon path require native calibration." : null);
-        }
-
         internal static CombatStatus ScaleStatus(CombatStatus status, int extra) =>
             extra == 0 ? status : status.WithStacks(unchecked(status.Stacks * (1 + extra)));
 
