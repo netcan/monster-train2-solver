@@ -1,5 +1,10 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--lifemother-debuffs-only")
+{
+    LifemotherDebuffsChecks.Native(args[1]);
+    return;
+}
 if (args.Length == 3 && args[0] == "--export-lifemother-infested-component")
 {
     LifemotherInfestedChecks.Export(args[1], args[2]);

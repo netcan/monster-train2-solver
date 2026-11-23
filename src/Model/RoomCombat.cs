@@ -1520,7 +1520,8 @@ namespace MonsterTrain2Poju.Model
                         }
                         if (effect.Type == TriggeredStatusTransferModel.EffectType)
                         {
-                            string? transferError = TriggeredStatusTransferModel.Validate(effect.Action);
+                            string? transferError = TriggeredStatusTransferModel.IsLifemotherDeath(unit, trigger.Kind, effect.Action)
+                                ? null : TriggeredStatusTransferModel.Validate(effect.Action);
                             if (transferError != null) return transferError;
                             continue;
                         }
@@ -2739,6 +2740,7 @@ namespace MonsterTrain2Poju.Model
 
             internal RoomCombatResult QueuedTrigger(QueuedCharacterTrigger queued)
             {
+                int retainedDuringCallback = 0;
                 if (queued.Kind == DeathRoomFocusPhase)
                 {
                     FocusAfterDeath(queued.Unit, queued.RoomIndex);
@@ -2803,10 +2805,20 @@ namespace MonsterTrain2Poju.Model
                             isSacrifice: actor.Source.DeathState.IsSacrifice, statisticsListenerOnce: actor.Source.DeathState.StatisticsListenerOnce.HasValue ? false : (bool?)null)));
                     queued.Unit = actor.Freeze();
                     if (overridden != null) queued.OverrideTarget = overridden.Freeze();
-                    if (dying != null) queued.DyingCharacter = dying.Freeze();
+                    if (dying != null)
+                    {
+                        queued.DyingCharacter = dying.Freeze();
+                        // The transfer returns before the death queue detaches its
+                        // source from the room's physical position.
+                        if (actor.Triggers.Any(trigger => trigger.Kind == queued.Kind && trigger.Effects.Any(effect =>
+                            TriggeredStatusTransferModel.IsLifemotherDeath(actor.Source, trigger.Kind, effect.Action))) &&
+                            context?.SpawnPoints?.Units.Any(point => point.UnitId == dying.Source.Id &&
+                                point.Current?.RoomIndex == source.RoomIndex) == true)
+                            retainedDuringCallback = dying.Source.Id;
+                    }
                 }
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
-                    ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged);
+                    ? RoomOutcome.PlayerDefeated : RoomOutcome.Exchanged, retainedDuringCallback);
             }
 
             internal RoomCombatResult SacrificeRetained(CombatUnit unit, int sourceCardId, bool whileRunningQueue, bool doNotFullyRemove,
@@ -4633,7 +4645,7 @@ namespace MonsterTrain2Poju.Model
                         dyingCharacter != null && trigger.Conditions.RequiredDyingStatuses.Any(id => !Present(dyingCharacter, id)))) continue;
                     // Removed native characters have no spawn point and skip trigger
                     // preflight, though their once flag can still be marked before abort.
-                    if (unit.InRoom && !unit.Removed && !ActionTriggerPassesTest(unit, trigger, lastSpawnedOverrideUnitId)) continue;
+                    if (unit.InRoom && !unit.Removed && !ActionTriggerPassesTest(unit, trigger, lastSpawnedOverrideUnitId, dyingCharacter)) continue;
                     if ((kind == "CorruptionAdded" && trigger.SuppressTriggerNotification == false ||
                         kind == "OnEncounterComplete" && trigger.SuppressTriggerNotification != true) && !source.Preview &&
                         context?.QueryFrame?.SelectedRoomIndex != null)
@@ -4735,7 +4747,7 @@ namespace MonsterTrain2Poju.Model
                             {
                                 if (live < 0 && effect.Action.Type == "DrawNextTurn" && retained.StateId == null)
                                 { unsupportedReason = "Detached bonus-draw trigger source requires captured persistent identity."; break; }
-                                if (!ApplyTriggeredAction(unit, effect, overrideTarget, retained.StateId ?? (live < 0 ? index : live), effectIndex, kind, lastSpawnedOverrideUnitId, retained.IgnoreSilence)) break;
+                                if (!ApplyTriggeredAction(unit, effect, overrideTarget, retained.StateId ?? (live < 0 ? index : live), effectIndex, kind, lastSpawnedOverrideUnitId, retained.IgnoreSilence, dyingCharacter)) break;
                             }
                             else if (effect.UnitUpgrade != null)
                             {
@@ -5572,7 +5584,8 @@ namespace MonsterTrain2Poju.Model
                 return new CardTargets(new[] { actor.Source.Id });
             }
 
-            private bool ActionTriggerPassesTest(WorkingUnit actor, CombatTrigger trigger, int lastSpawnedOverrideUnitId)
+            private bool ActionTriggerPassesTest(WorkingUnit actor, CombatTrigger trigger, int lastSpawnedOverrideUnitId,
+                WorkingUnit? dyingCharacter = null)
             {
                 if (!trigger.Effects.Any(effect => effect.UnitUpgrade != null || effect.Action != null || effect.Summon != null || effect.Enchantment != null || effect.Generation != null ||
                     effect.Type == "CardEffectUnboxJackInTheBoxUnitCard")) return true;
@@ -5625,6 +5638,7 @@ namespace MonsterTrain2Poju.Model
                     else if (action.Type == "Recursion") valid = true; // Native TestEffect delegates to the unconditional base for RequiresRoomInHand=false.
                     else if (action.Type == "ScheduleNextDrawUpgrade") valid = true;
                     else if (action.Type == "SpawnOrStatus") valid = SpawnOrStatusCanApply(actor, action, trigger.Kind);
+                    else if (TriggeredStatusTransferModel.IsLifemotherDeath(actor.Source, trigger.Kind, action)) valid = dyingCharacter != null;
                     else
                     {
                         CardTargets targets = TriggerTargets(actor, action, testing: true, lastSpawnedOverrideUnitId: lastSpawnedOverrideUnitId);
@@ -5941,9 +5955,21 @@ namespace MonsterTrain2Poju.Model
                 return true;
             }
 
-            private bool ApplyTriggeredAction(WorkingUnit actor, CombatEffect effect, WorkingUnit? overrideTarget, int triggerIndex, int effectIndex, string triggerKind, int lastSpawnedOverrideUnitId, bool hiddenTrigger)
+            private bool ApplyTriggeredAction(WorkingUnit actor, CombatEffect effect, WorkingUnit? overrideTarget, int triggerIndex, int effectIndex, string triggerKind, int lastSpawnedOverrideUnitId, bool hiddenTrigger, WorkingUnit? dyingCharacter)
             {
                 CardActionEffect action = effect.Action!;
+                if (TriggeredStatusTransferModel.IsLifemotherDeath(actor.Source, triggerKind, action))
+                {
+                    if (dyingCharacter == null) return true;
+                    RoomCombatResult transfer = TriggeredStatusTransferModel.ApplyLifemotherDeath(
+                        RetainedStatusRoom(actor, new[] { dyingCharacter.Source.Id }), actor.Freeze(), dyingCharacter.Freeze(), action);
+                    if (!transfer.Supported) { unsupportedReason = transfer.UnsupportedReason; return false; }
+                    context = transfer.State!.Context;
+                    foreach (CombatUnit changed in transfer.State.Units) units.Single(unit => unit.Source.Id == changed.Id).Apply(changed);
+                    foreach (QueuedCharacterTrigger callback in transfer.PendingCallbacks) QueueCallback(callback);
+                    events.AddRange(transfer.Events);
+                    return true;
+                }
                 if (action.Type == "Bump")
                 {
                     if (triggerKind == "OnKill" && actor.Triggers.Any(trigger => trigger.StateId == triggerIndex &&
@@ -6909,7 +6935,7 @@ namespace MonsterTrain2Poju.Model
             private void Emit(string kind, WorkingUnit? actor, WorkingUnit target, int amount) =>
                 events.Add(new CombatEvent(round, kind, actor?.Source.Id ?? 0, target.Source.Id, amount));
 
-            private RoomCombatResult Finish(RoomOutcome outcome)
+            private RoomCombatResult Finish(RoomOutcome outcome, int retainedDuringCallback = 0)
             {
                 if (context != null) context = ConduitModel.Destroyed(context, units.Select(unit => unit.Freeze()));
                 // Native attack snapshots query tracked Gold for each attached Goldtooth.
@@ -6968,7 +6994,8 @@ namespace MonsterTrain2Poju.Model
                         context = context!.WithCard(card.WithPlayedRoomUnits(card.PlayedRoomUnitIds.Where(id => !removedIds.Contains(id)).ToArray()));
                 }
                 RoomCombatState state = EnchantmentWorldModel.Sync(PhysicalRoom(), units.Where(unit => !unit.Alive || !unit.InRoom ||
-                    externalTurnActorIds.Contains(unit.Source.Id)).Select(unit => unit.Freeze()).ToArray(), ExternalEnchantmentUnits());
+                    externalTurnActorIds.Contains(unit.Source.Id)).Select(unit => unit.Freeze()).ToArray(), ExternalEnchantmentUnits(),
+                    retainedDuringCallback);
                 state = state.WithCompanionBosses(CompanionBossSnapshot());
                 context = state.Context;
                 if (!source.Preview && context?.SpawnPoints is BattleSpawnPoints points && context.Enchantments != null)
@@ -6976,7 +7003,7 @@ namespace MonsterTrain2Poju.Model
                     int[] destroyedBirths = context.Enchantments.RetainedUnits.Where(actor =>
                         actor.Unit.DeathState?.IsDestroyed == true).Select(actor => actor.Unit.Id).ToArray();
                     state = state.WithContext(context.WithSpawnPoints(points.ClearDestroyedPreviewBirths(destroyedBirths)));
-                    context = EnchantmentWorldModel.PruneRetiredActors(state.Context!);
+                    context = EnchantmentWorldModel.PruneRetiredActors(state.Context!, retainedDuringCallback);
                     state = state.WithContext(context);
                 }
                 return unsupportedReason != null

@@ -376,6 +376,10 @@ Lifemother Infested 的三个同层死亡回调将首领的 Hivemind 从 0 依�
 波次进食及楼层修正器的攻击刷新仍待整战对照。
 [原版 Hivemind 加层回调](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/status-additions.mt2f)
 
+Lifemother Debuffs 的原版践踏在濒死冠军和后排复仇者身上各施加 12 层 Malaise。
+死亡回调把冠军身上的 12 层转给存活复仇者，叠到 24 层。四次回调的状态和随机流均通过专项回放。
+[原版 Malaise 转移](../tests/compatibility/game-2.3.1/mechanics/lifemother-debuffs/native-component.mt2f)
+
 原版部署限制使底层和中层在部署阶段无法召唤，进入第 1 回合后解禁。完整结束回合后继通过对照。
 同一次组合采样中，BigMonsters 使列车乘务员的占位由 3 变为 4，冠军由 2 变为 3，
 部署和普通回合的结果相同。六条原版造牌记录确认先按原始占位应用突变，再应用造牌升级。

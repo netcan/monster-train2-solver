@@ -52,7 +52,7 @@ namespace MonsterTrain2Poju.Model
     internal static class EnchantmentWorldModel
     {
         internal static RoomCombatState Sync(RoomCombatState source, IReadOnlyList<CombatUnit>? retainedUnits = null,
-            IReadOnlyList<CombatUnit>? externalUnits = null)
+            IReadOnlyList<CombatUnit>? externalUnits = null, int retainedDuringCallback = 0)
         {
             EnchantmentWorld? world = source.Context?.Enchantments;
             if (world == null) return source;
@@ -114,6 +114,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (RelicOccupiedFloorDrawModel.Has(source.Context) || RelicRelentlessDrawModel.Has(source.Context))
                     referenced.UnionWith(source.Context!.SpawnPoints?.Groups.SelectMany(group => group.Occupants) ?? Array.Empty<int>());
+                if (retainedDuringCallback > 0) referenced.Add(retainedDuringCallback);
                 retained = retained.Where(actor => referenced.Contains(actor.Unit.Id)).Select(actor =>
                     new EnchantmentRetainedUnit(actor.Unit, actor.Unit.DeathState?.IsDestroyed == true ? -1 : actor.RoomIndex, actor.Preview)).ToList();
             }
@@ -133,7 +134,7 @@ namespace MonsterTrain2Poju.Model
         internal static RoomCombatState Room(RoomCombatState source, CombatContext? context) => new RoomCombatState(source.RoomIndex,
             source.Deployment, source.Units, source.ExternalInteractions, context, source.Preview, source.ActiveCompanionBossIds);
 
-        internal static CombatContext PruneRetiredActors(CombatContext context)
+        internal static CombatContext PruneRetiredActors(CombatContext context, int retainedDuringCallback = 0)
         {
             EnchantmentWorld? world = context.Enchantments;
             if (world?.AutomaticLifecycle != true) return context;
@@ -156,6 +157,7 @@ namespace MonsterTrain2Poju.Model
             }
             if (RelicOccupiedFloorDrawModel.Has(context) || RelicRelentlessDrawModel.Has(context))
                 referenced.UnionWith(context.SpawnPoints?.Groups.SelectMany(group => group.Occupants) ?? Array.Empty<int>());
+            if (retainedDuringCallback > 0) referenced.Add(retainedDuringCallback);
             var retained = world.RetainedUnits.Where(actor => referenced.Contains(actor.Unit.Id)).ToArray();
             return retained.Length == world.RetainedUnits.Count ? context : context.WithEnchantments(new EnchantmentWorld(
                 world.Rooms, world.Movement, world.EnemySlotsPerRoom, retained, world.EnchanterIds, world.AllowUpdates,

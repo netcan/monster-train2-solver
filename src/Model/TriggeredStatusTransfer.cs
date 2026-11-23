@@ -10,6 +10,17 @@ namespace MonsterTrain2Poju.Model
         private const string FromEffectType = EffectType;
         private const int EvenlyDistributedAcrossFriendlyTeam = 11;
         private const int EvenlyDistributedAcrossHeroTeam = 12;
+        internal const string LifemotherDebuffer = "Boss_SoulSavior_Final_Lifemother_Debuffer";
+
+        internal static bool IsLifemotherDeath(CombatUnit owner, string trigger, CardActionEffect? action) =>
+            owner is { AssetKey: LifemotherDebuffer, Team: CombatTeam.Enemy, BaseAttack: 50, MaxHealth: 9000,
+                Size: 5, SpawnerCardId: 0 } && trigger == "OnAnyMonsterDeathOnFloor" &&
+            action is { Type: "TransferAllStatusesFromUnit", Target: "DyingCharacter", Value: 2, Range: null,
+                AllowEnemy: true, AllowPlayer: true, UseCardTraits: false, Statuses.Count: 0,
+                StatusTransfer: { TargetMode: "FrontFriendlyUnit", AllowedStatusTypes: "DebuffsOnly",
+                    RoomScope: "SourceRoomOnly", AllowStackModification: false, SkipRemove: false, StackPercentage: 0f },
+                Filters: { Health: "Both", Subtype: "", IgnoreBosses: false, RequiredStatuses.Count: 0,
+                    ExcludedStatuses.Count: 0, ExcludedSubtypes.Count: 0 } };
 
         internal static bool IsDecayTransfer(CardActionEffect? action) =>
             action != null && action.StatusTransfer is { AllowedStatusTypes: "DebuffsOnly", SkipRemove: true } transfer &&
@@ -78,6 +89,32 @@ namespace MonsterTrain2Poju.Model
                 }
             }
             return new RoomCombatResult(state, RoomOutcome.Exchanged, 0, events, pendingCallbacks: callbacks);
+        }
+
+        internal static RoomCombatResult ApplyLifemotherDeath(RoomCombatState room, CombatUnit owner, CombatUnit dying,
+            CardActionEffect action)
+        {
+            if (!IsLifemotherDeath(owner, "OnAnyMonsterDeathOnFloor", action) || dying.Team != CombatTeam.Player ||
+                dying.Health > 0 || dying.StatusRegistry == null || dying.StatusDictionary == null ||
+                room.Context?.SpawnPoints?.Units.FirstOrDefault(point => point.UnitId == dying.Id)?.Current?.RoomIndex != room.RoomIndex)
+                return Unsupported("Lifemother requires the original same-room retained death and status payload.");
+            CombatStatus[] debuffs = dying.StatusDictionary.Order(dying.StatusRegistry)
+                .Where(status => status.Stacks > 0 && status.Id != "horde" && status.Hidden != true && status.DisplayCategory == "Negative")
+                .ToArray();
+            if (debuffs.Length == 0) return new RoomCombatResult(room, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
+            if (debuffs is not [{ Id: "malaise" } malaise])
+                return Unsupported("Lifemother death transfer requires observed Malaise-only status effects.");
+            CombatUnit? recipient = room.Units.FirstOrDefault(unit => unit.Team == dying.Team && unit.Health > 0 &&
+                unit.DeathState?.IsDestroyed != true && unit.DeathState?.IsDespawned != true && unit.Status("untouchable") == null);
+            const string nativeStatusOrigin = "CardEffectTransferAllStatusEffects";
+            RoomCombatResult removed = StatusRemovalModel.Remove(room, dying.Id, malaise.Id, malaise.Stacks,
+                fromEffectType: nativeStatusOrigin);
+            if (!removed.Supported || recipient == null) return removed;
+            RoomCombatResult applied = StatusApplicationModel.ApplyRetained(removed.State!, recipient.Id, malaise, 0,
+                allowModification: false, fromEffectType: nativeStatusOrigin, allowStackModifiers: false);
+            if (!applied.Supported) return applied;
+            return new RoomCombatResult(applied.State, RoomOutcome.Exchanged, 0, removed.Events.Concat(applied.Events).ToList(),
+                pendingCallbacks: removed.PendingCallbacks.Concat(applied.PendingCallbacks).ToArray());
         }
 
         private static RoomCombatResult CopyBuffs(RoomCombatState source, CombatUnit actor, int sourceCardId)
