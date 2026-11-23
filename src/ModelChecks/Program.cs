@@ -1,5 +1,16 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--export-indulgent-gorge-component")
+{
+    IndulgentGorgeChecks.Export(args[1], args[2]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--native-indulgent-gorge-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    IndulgentGorgeChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--lifemother-debuffs-only")
 {
     LifemotherDebuffsChecks.Native(args[1]);

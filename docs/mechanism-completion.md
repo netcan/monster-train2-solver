@@ -359,6 +359,10 @@ Indulgent 的减容变体三次把玩家侧楼层容量减 1，敌方容量保�
 第一组还在同一战后队列内验证先减容，再重放一次自身 OnFeed 获得 3 Rage。整战仍受波次机制阻塞。
 [原版减容和 OnFeed 记录](../tests/compatibility/game-2.3.1/mechanics/indulgent-capacity/native-capacity-feed.mt2f)
 
+Indulgent GorgeOnSlay 击杀后排入一次自身 OnFeed，获得 3 Rage，攻击从 13 升至 19。
+同一段原版回放中，回调、首领状态、战斗上下文和 RNG 均一致。
+[原版击杀和 OnFeed 记录](../tests/compatibility/game-2.3.1/mechanics/indulgent-gorge-on-slay/native-gorge-on-slay.mt2f)
+
 Railforged 波次里的 `R1_Attacker_AscendGainAtk_Ver2` 击杀后尝试下移并获得 10 护甲。
 原版底层和跨层两次交战的完整状态、物理站位和随机流均通过对照。跨层样本也覆盖伤害
 预演触发目标层原生单位的 Shift 回调。

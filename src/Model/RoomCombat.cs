@@ -1556,7 +1556,8 @@ namespace MonsterTrain2Poju.Model
                         {
                             CardActionEffect? replay = effect.Action;
                             if (replay is not { Type: "PlayUnitTrigger", UnitTriggerKind: "OnShift", Target: "Self", Range: null } &&
-                                !OuterBossDefinitions.IsIndulgentCapacityFeed(unit, trigger))
+                                !OuterBossDefinitions.IsIndulgentCapacityFeed(unit, trigger) &&
+                                !OuterBossDefinitions.IsIndulgentSlayFeed(unit, trigger))
                                 return "Triggered unit replay requires its calibrated native self definition.";
                             continue;
                         }
