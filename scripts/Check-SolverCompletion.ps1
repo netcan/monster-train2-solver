@@ -32,11 +32,16 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Current multi-turn search acceptance failed.' }
     dotnet $checks --atomic-advice-budget-only tests/fixtures/planning/search/advisor-atomic-budget-failure.mt2f
     if ($LASTEXITCODE -ne 0) { throw 'Advice budget acceptance failed.' }
+    $current = 'tests/compatibility/game-2.3.1/mechanics'
+    dotnet $checks --relentless-battle-pair-only "$current/relentless-battle/abandon.mt2f" "$current/relentless-battle/continue.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Current combat dialog replay failed.' }
+    dotnet $checks --advisor-future-target-only "$current/player-advisor-rolling/current-ring9-advisor-deadline.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Verified future-target advice failed.' }
     $output = Join-Path '.probe-runs' ('solver-completion-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
     $null = New-Item -ItemType Directory -Path $output
     dotnet $tools solve-exact $original (Join-Path $output 'node-cutoff.mt2f') 1 30000 1
     if ($LASTEXITCODE -ne 0) { throw 'Exact-search CLI export/independent replay failed.' }
-    $relentless = 'tests/compatibility/game-2.3.1/mechanics/relentless-battle/abandon.mt2f'
+    $relentless = "$current/relentless-battle/abandon.mt2f"
     $exactRelentless = Join-Path $output 'relentless-choices.mt2f'
     dotnet $tools solve-exact $relentless $exactRelentless 200 12000 2
     if ($LASTEXITCODE -ne 0) { throw 'Exact-search CLI failed to replay its Relentless choices.' }
