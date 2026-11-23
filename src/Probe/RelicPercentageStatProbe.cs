@@ -41,6 +41,7 @@ namespace MonsterTrain2Poju.Probe
                     CardBranchMaskProbe.Enabled && SupportsBigMonsters(owner, save) ||
                     BattleSpawnPointProbe.Enabled && CardBranchMaskProbe.Enabled && SupportsSpellDamageMove(owner, save) ||
                     SupportsLoseMoneyOnHit(owner, save) ||
+                    SupportsSoulSaviorStarterDeck(owner, save) ||
                     owner.GetRelicDataID() == RelicPersistentMonsterHealthModel.OwnerId &&
                     owner.GetEffects() is [RelicEffectPersistMonsterHp persistentHealth] && SupportsPersistentHealth(persistentHealth) ||
                     SupportsPyreAbilityCooldown(owner, save) ||
@@ -63,6 +64,13 @@ namespace MonsterTrain2Poju.Probe
                         owner.GetEffects().Count == 1 && effect is RelicEffectSpawnMonsterOnTurnStart) &&
                     ((RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect)).GetEffectConditions().Count == 0));
         }
+
+        private static bool SupportsSoulSaviorStarterDeck(RelicState owner, SaveManager save) =>
+            save.GetRunType() == RunType.RegionRun && owner.GetRelicDataID() == RelicModel.SoulSaviorStarterDeckId &&
+            owner.GetAssetName() == RelicModel.SoulSaviorStarterDeckKey && !owner.DisallowedInPlacementPhase &&
+            owner.GetEffects() is [RelicEffectPurgeStarterDeck, RelicEffectAddCardSetStartOfRun] &&
+            owner.GetSourceRelicData().GetEffects() is [var purge, var add] &&
+            purge.GetEffectConditions().Count == 0 && add.GetEffectConditions().Count == 0 && add.GetParamInt() == 1;
 
         private static bool SupportsLoseMoneyOnHit(MutatorState owner, SaveManager save) =>
             owner.GetRelicDataID() == RelicGoldLossOnHitModel.OwnerId &&

@@ -129,6 +129,7 @@ param(
     [string] $UnsupportedBranchSource = '',
     [switch] $ObserveRedCrownEquipment,
     [string] $InputProfile = '',
+    [switch] $RegionRunInput,
     [string] $PrimaryClan = '',
     [string] $SecondaryClan = '',
     [ValidateRange(0, 20)] [int] $BattleDistance = 0,
@@ -2584,11 +2585,23 @@ if ($damagePerHpModes.Count -gt 0) { $Policy = 'units-spells-and-junk' }
 if ($DamagePerHpAbility) { $Policy = 'units-spells-and-junk' }
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $nativeBuildWorkspace = if ($NativeBuildRoot) { (Resolve-Path -LiteralPath $NativeBuildRoot).Path } else { $workspace }
+if ($RegionRunInput) {
+    $regionArguments = @('RegionRunInput', 'InputProfile', 'BattleDistance', 'Policy', 'BinaryCapture', 'NativeWorker',
+        'GameSpeed', 'TimeoutSeconds', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (!$InputProfile -or !$BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $regionArguments }).Count) {
+        throw 'RegionRunInput requires a native Soul Savior BattleIntro checkpoint and binary capture.'
+    }
+    $PhysicalSpawnPoints = $true
+    $BranchCardMasks = $true
+    $OuterBossTurns = $true
+    $OuterBossBirth = $true
+    if (!$PSBoundParameters.ContainsKey('Policy')) { $Policy = 'units-spells-and-junk' }
+}
 $gameRoot = Join-Path $workspace $(if ($NativeWorker -gt 1) { ".sandbox-game-worker$NativeWorker" } else { '.sandbox-game' })
 if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll') -PathType Leaf)) {
     throw "Native worker $NativeWorker is not initialized; run scripts/Initialize-NativeWorker.ps1 -Worker $NativeWorker first."
 }
-if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $AdvisorOffRoute -or
+if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $AdvisorOffRoute -or
     $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth -or $OriginalFunguyDeckScalingDoubleUnits -or
     $OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness -or
     $OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle -or $OriginalHandAndEmberWitness) {
@@ -2601,6 +2614,9 @@ if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput 
             $nativeModule = $nativeMetadata.GetGuid($nativeMetadata.GetModuleDefinition().Mvid)
         } finally { $nativePe.Dispose() }
     } finally { $nativeDllStream.Dispose() }
+    if ($RegionRunInput -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'RegionRunInput requires the pinned 2.3.1 native module.'
+    }
     if (($OriginalThikDeckChange -or $OriginalThikBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original Thik capture requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
@@ -2763,10 +2779,16 @@ if ($InputProfile) {
     if ((Split-Path $checkpoint -Parent) -ine (Join-Path $workspace '.probe-runs')) {
         throw 'InputProfile must be a direct child of this workspace .probe-runs directory.'
     }
-    $checkpointSave = Join-Path $checkpoint 'saves/save-singlePlayer.json'
+    $checkpointSave = Join-Path $checkpoint $(if ($RegionRunInput) { 'saves/save-regionRun.json' } else { 'saves/save-singlePlayer.json' })
     $checkpointData = Get-Content -LiteralPath $checkpointSave -Raw | ConvertFrom-Json
     if ($checkpointData.gameSequence -ne 6 -or $checkpointData.runState.distance -ne $BattleDistance) {
         throw 'InputProfile must be a native BattleIntro checkpoint at BattleDistance.'
+    }
+    if ($RegionRunInput) {
+        if ($checkpointData.runType -cne 'RegionRun' -or $checkpointData.isEndless -or $checkpointData.wasDevCheatUsed -ne $false) {
+            throw 'RegionRunInput requires an original RegionRun checkpoint.'
+        }
+        $regionInputSignature = Get-OriginalSignature $checkpoint
     }
     if ($OriginalRandomizedWavesBattle) {
         if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
@@ -2841,6 +2863,7 @@ if (Test-Path -LiteralPath $preferencesPath) {
 $environment = @{
     MT2_PROBE_CAPTURE_PROFILE = $(if ($ProfileCapture) { '1' } else { '0' })
     MT2_PROBE_RESUME_RUN = $(if ($InputProfile) { '1' } else { '0' })
+    MT2_PROBE_REGION_RUN_INPUT = $(if ($RegionRunInput) { '1' } else { '0' })
     MT2_PROBE_PRIMARY_CLAN = $PrimaryClan
     MT2_PROBE_SECONDARY_CLAN = $SecondaryClan
     MT2_PROBE_CONDUIT_MOVEMENT = $(if ($ConduitMovement) { '1' } else { '0' })
@@ -5141,6 +5164,12 @@ if ($OriginalMoreTreasureUnitsBattle) {
 }
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
+if ($RegionRunInput -and ((Get-OriginalSignature $checkpoint) -cne $regionInputSignature -or
+    $trace.NativeRunInput.RunType -cne 'RegionRun' -or $trace.NativeRunInput.WasDevCheatUsed -ne $false -or
+    $trace.NativeRunInput.Distance -ne $BattleDistance -or $trace.NativeRunInput.Seed -ne $checkpointData.startingConditions.seed -or
+    $trace.NativeRunInput.BattlesWon -ne $checkpointData.runState.numBattlesCompleted)) {
+    throw "Natural Soul Savior battle lineage differs from its native checkpoint. Inspect $tracePath and $unityLog"
+}
 if ($OriginalRandomizedWavesBattle) {
     if ($InputProfile -and (Get-OriginalSignature $checkpoint) -cne $waveInputSignature) {
         throw 'The randomized wave donor checkpoint changed.'

@@ -274,6 +274,14 @@ namespace MonsterTrain2Poju.Model
         internal const string DamageEnemyOnAscend = "RelicEffectDamageEnemyOnAscend";
         internal const string DamageEnemyOnDescend = "RelicEffectDamageEnemyOnDescend";
         internal const string ModifyDragonsHoardCap = "RelicEffectModifyDragonsHoardCap";
+        internal const string SoulSaviorStarterDeckId = "28d887c8-4fe3-4c55-a92e-90cd4b1baa25";
+        internal const string SoulSaviorStarterDeckKey = "SoulSavior_StarterDeck";
+        internal static bool IsSoulSaviorStarterDeck(CombatRelicState relic) => relic is
+        {
+            DataId: SoulSaviorStarterDeckId, AssetKey: SoulSaviorStarterDeckKey,
+            IsCovenant: false, DisallowedInPlacementPhase: false,
+            EffectTypes: ["RelicEffectPurgeStarterDeck", "RelicEffectAddCardSetStartOfRun"]
+        };
         internal static bool AbilitiesTriggerIncant(CombatContext? context) =>
             context?.Relics?.Any(relic => relic.EffectTypes.Contains(AbilityIncant)) == true;
         internal static string? Validate(CombatContext? context) => ConduitModel.Validate(context) ?? Validate(context?.Relics) ??
@@ -296,6 +304,9 @@ namespace MonsterTrain2Poju.Model
                 if (endCombatError != null) return endCombatError;
                 foreach (string effect in relic.EffectTypes)
                 {
+                    // This RegionRun owner builds the deck before combat. Card
+                    // instances and any permanent starter upgrades are captured.
+                    if (IsSoulSaviorStarterDeck(relic)) continue;
                     if (effect == RelicDeckPyreStatsModel.CardCopies && RelicDeckPyreStatsModel.IsOriginal(relic)) continue;
                     if (effect == RelicLateAttackModel.Effect) continue;
                     if (effect == RelicSpawnSilenceModel.Effect) continue;

@@ -240,6 +240,7 @@ namespace MonsterTrain2Poju.Probe
                 nativeRunInput = new
                 {
                     Schema = 1, Seed = data.GetSeed(), Distance = save.GetCurrentDistance(),
+                    RunType = save.GetRunType().ToString(),
                     AscensionLevel = save.GetAscensionLevel(), StartingLevel = save.GetStartingConditions().AscensionLevel,
                     PrimaryClan = save.GetMainClass().GetCardStyle().ToString(), PrimaryClanId = save.GetMainClass().GetID(),
                     SecondaryClan = save.GetSubClass().GetCardStyle().ToString(), SecondaryClanId = save.GetSubClass().GetID(),

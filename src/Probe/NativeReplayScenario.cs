@@ -349,14 +349,18 @@ namespace MonsterTrain2Poju.Probe
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_RESUME_RUN") == "1")
                 {
                     int targetDistance = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_BATTLE_DISTANCE") ?? "0", CultureInfo.InvariantCulture);
-                    save.SetActiveRunType(RunType.Class);
-                    if (!save.HasRun(RunType.Class) || save.GetCurrentDistance() != targetDistance ||
+                    RunType runType = Environment.GetEnvironmentVariable("MT2_PROBE_REGION_RUN_INPUT") == "1"
+                        ? RunType.RegionRun : RunType.Class;
+                    save.SetActiveRunType(runType);
+                    if (!save.HasRun(runType) || save.GetCurrentDistance() != targetDistance ||
                         save.GetGameSequence() != SaveData.GameSequence.BattleIntro)
                         throw new InvalidOperationException("A resumed battle requires a matching native BattleIntro checkpoint.");
+                    if (runType == RunType.RegionRun && (!save.IsDlcInstalled(DLC.Railforged) || save.InTestScenario || SaveManager.WasDevCheatUsed))
+                        throw new InvalidOperationException("Expected the installed original Soul Savior campaign.");
                     if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_ANGEL_DUO")) ||
                         !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_EARLY_OUTER_BOSS")))
                         OriginalOuterBossRoute.ArmResume(save, targetDistance, log);
-                    save.ContinueRunWithReplay(RunType.Class);
+                    save.ContinueRunWithReplay(runType);
                     battleRoutePrepared = true;
                     log.LogInfo("ROLLING-NATIVE-CHECKPOINT distance=" + targetDistance);
                     Enter(Stage.NaturalMap, 240f);
