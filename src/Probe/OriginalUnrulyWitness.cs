@@ -23,6 +23,7 @@ namespace MonsterTrain2Poju.Probe
             "DutifulArmor" => "SoulSavior_R1_BossBattle_DutifulChild_Heal",
             "DutifulAscendDescend" => "SoulSavior_R1_BossBattle_DutifulChild_AscendDescend",
             "IndulgentTitanskin" => "SoulSavior_R2_BossBattle_FavoredChild_3",
+            "IndulgentCapacity" => "SoulSavior_R2_BossBattle_FavoredChild_2",
             "IndulgentGorgeOnSlay" => "SoulSavior_R2_BossBattle_FavoredChild_1",
             "LifemotherReanimate" => "SoulSavior_R5_BossBattle_Lifemother_Reanimate",
             OriginalLifemotherDebuffsWitness.Variant => OriginalLifemotherDebuffsWitness.Scenario,
@@ -36,6 +37,7 @@ namespace MonsterTrain2Poju.Probe
             "DutifulArmor" => OuterBossDefinitions.DutifulArmor,
             "DutifulAscendDescend" => OuterBossDefinitions.DutifulAscendDescend,
             "IndulgentTitanskin" => OuterBossDefinitions.IndulgentTitanskin,
+            "IndulgentCapacity" => OuterBossDefinitions.IndulgentReduceCapacity,
             "IndulgentGorgeOnSlay" => GorgeOnSlayBoss,
             "LifemotherReanimate" => OuterBossDefinitions.LifemotherReanimate,
             OriginalLifemotherDebuffsWitness.Variant => OriginalLifemotherDebuffsWitness.Boss,
@@ -55,6 +57,7 @@ namespace MonsterTrain2Poju.Probe
             parameters.sourceCharacterTriggerState is { } trigger &&
             OuterBossPhaseProbe.DutifulGrant(BossKey, trigger.GetTrigger(), effect.GetSourceCardEffectData());
         internal static bool IndulgentTitanskin => Variant == "IndulgentTitanskin";
+        private static bool IndulgentCapacity => Variant == "IndulgentCapacity";
         internal static bool IndulgentGorgeOnSlay => Variant == "IndulgentGorgeOnSlay";
         internal static bool LifemotherReanimate => Variant == "LifemotherReanimate";
         internal static bool Completed { get; private set; }
@@ -111,6 +114,17 @@ namespace MonsterTrain2Poju.Probe
             feed.GetEffects() is [var grant] && GorgeOnSlayGrant(grant) &&
             kill.GetEffects() is [var replay] && GorgeOnSlayReplay(replay);
 
+        private static bool SupportsIndulgentCapacity(CharacterData data) =>
+            data.GetAttackDamage() == 12 && data.GetHealth() == 1100 && data.GetSize() == 5 &&
+            data.GetStartingStatusEffects() is [{ statusId: "trample", count: 1 }] &&
+            data.GetTriggers() is [var feed, var post] && !feed.GetTriggerOnce() && !post.GetTriggerOnce() &&
+            feed.GetTrigger() == CharacterTriggerData.Trigger.OnFeed && feed.GetEffects() is [var grant] && GorgeOnSlayGrant(grant) &&
+            post.GetTrigger() == CharacterTriggerData.Trigger.PostCombat && post.GetEffects() is [var capacity, var replay] &&
+            capacity.GetEffectStateName() == nameof(CardEffectAdjustRoomCapacity) && capacity.GetTargetMode() == TargetMode.Room &&
+            capacity.GetTargetTeamType() == (Team.Type.Heroes | Team.Type.Monsters) && capacity.GetParamInt() == -1 &&
+            !capacity.GetUseIntRange() && replay.GetEffectStateName() == nameof(CardEffectPlayUnitTrigger) && SelfEffect(replay) &&
+            replay.GetParamInt() == -1 && replay.GetParamTrigger() == CharacterTriggerData.Trigger.OnFeed;
+
         internal static void Request(SaveManager save, ManualLogSource log)
         {
             if (requested || Application.version != "2.3.1" || typeof(CardState).Module.ModuleVersionId != Module ||
@@ -122,7 +136,12 @@ namespace MonsterTrain2Poju.Probe
                 scenario.GetOuterTrainBoss(false)?.GetAssetKey() != BossKey ||
                 scenario.GetOuterTrainBoss(true)?.GetAssetKey() != BossKey ||
                 (OriginalLifemotherDebuffsWitness.Enabled ? !OriginalLifemotherDebuffsWitness.Supports(scenario) :
-                    FullBattle && !IndulgentGorgeOnSlay && !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false))) ||
+                    FullBattle && !IndulgentGorgeOnSlay && !IndulgentCapacity && !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false))) ||
+                IndulgentCapacity && (!SupportsIndulgentCapacity(scenario.GetOuterTrainBoss(false)) ||
+                    !SupportsIndulgentCapacity(scenario.GetOuterTrainBoss(true)) || scenario.GetEnemyRelicData() is not [var capacityOwner] ||
+                    capacityOwner.GetID() != "0809140a-a5c5-41f7-ab7c-375e6d88fb14" ||
+                    capacityOwner.GetEffects() is not [var capacityDescription] ||
+                    capacityDescription.GetEffectClassName() != nameof(RelicEffectNull)) ||
                 IndulgentGorgeOnSlay && (!SupportsGorgeOnSlay(scenario.GetOuterTrainBoss(false)) ||
                     !SupportsGorgeOnSlay(scenario.GetOuterTrainBoss(true)) || scenario.GetEnemyRelicData() is not [var gorgeOwner] ||
                     gorgeOwner.GetID() != "ce0711e4-7113-43cc-9cbf-ca92bbf1e4b3" ||

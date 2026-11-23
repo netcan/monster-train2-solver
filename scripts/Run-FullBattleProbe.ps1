@@ -815,6 +815,7 @@ param(
     [switch] $OriginalDutifulBurstBattle,
     [ValidateSet('AscendDescend', 'Armor')][string] $OriginalDutifulVariant,
     [switch] $OriginalIndulgentTitanskinBattle,
+    [switch] $OriginalIndulgentCapacityBattle,
     [switch] $OriginalIndulgentGorgeOnSlay,
     [switch] $OriginalLifemotherReanimateBattle,
     [switch] $OriginalLifemotherDebuffs,
@@ -1912,7 +1913,7 @@ if ($OriginalDutifulBurstBattle -and $OriginalDutifulVariant) {
 }
 $originalDutifulBattle = $OriginalDutifulBurstBattle -or $OriginalDutifulVariant
 $originalSoulSaviorVariant = $OriginalUnrulyVariant
-$additionalSoulSaviorCases = @($originalDutifulBattle, $OriginalIndulgentTitanskinBattle, $OriginalIndulgentGorgeOnSlay,
+$additionalSoulSaviorCases = @($originalDutifulBattle, $OriginalIndulgentTitanskinBattle, $OriginalIndulgentCapacityBattle, $OriginalIndulgentGorgeOnSlay,
     $OriginalLifemotherReanimateBattle, $OriginalLifemotherDebuffs) |
     Where-Object { $_ }
 if (@($additionalSoulSaviorCases).Count) {
@@ -1923,6 +1924,7 @@ if (@($additionalSoulSaviorCases).Count) {
     $originalSoulSaviorVariant = if ($OriginalDutifulBurstBattle) { 'DutifulBurst' }
         elseif ($OriginalDutifulVariant -eq 'Armor') { 'DutifulArmor' }
         elseif ($OriginalIndulgentTitanskinBattle) { 'IndulgentTitanskin' }
+        elseif ($OriginalIndulgentCapacityBattle) { 'IndulgentCapacity' }
         elseif ($OriginalIndulgentGorgeOnSlay) { 'IndulgentGorgeOnSlay' }
         elseif ($OriginalLifemotherReanimateBattle) { 'LifemotherReanimate' }
         elseif ($OriginalLifemotherDebuffs) { 'LifemotherDebuffs' }
@@ -1936,12 +1938,13 @@ if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
     $unrulyMode = if ($OriginalDutifulBurstBattle) { 'OriginalDutifulBurstBattle' }
         elseif ($originalDutifulBattle) { 'OriginalDutifulVariant' }
         elseif ($OriginalIndulgentTitanskinBattle) { 'OriginalIndulgentTitanskinBattle' }
+        elseif ($OriginalIndulgentCapacityBattle) { 'OriginalIndulgentCapacityBattle' }
         elseif ($OriginalIndulgentGorgeOnSlay) { 'OriginalIndulgentGorgeOnSlay' }
         elseif ($OriginalLifemotherReanimateBattle) { 'OriginalLifemotherReanimateBattle' }
         elseif ($OriginalLifemotherDebuffs) { 'OriginalLifemotherDebuffs' }
         elseif ($OriginalUnrulyBattle) { 'OriginalUnrulyBattle' } else { 'OriginalUnrulyWitness' }
     $soulSaviorDistance = if ($originalDutifulBattle) { 0 }
-        elseif ($OriginalIndulgentTitanskinBattle -or $OriginalIndulgentGorgeOnSlay) { 1 }
+        elseif ($OriginalIndulgentTitanskinBattle -or $OriginalIndulgentCapacityBattle -or $OriginalIndulgentGorgeOnSlay) { 1 }
         elseif ($OriginalLifemotherReanimateBattle -or $OriginalLifemotherDebuffs) { 4 } else { 2 }
     $unrulyArguments = @($unrulyMode, 'InputProfile', 'BattleDistance', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'OriginalUnrulyVariant')
@@ -4682,11 +4685,13 @@ if ($OriginalUnrulyBattle) {
         elseif ($OriginalDutifulVariant -eq 'Armor') { 'SoulSavior_R1_BossBattle_DutifulChild_Heal' }
         elseif ($OriginalDutifulVariant -eq 'AscendDescend') { 'SoulSavior_R1_BossBattle_DutifulChild_AscendDescend' }
         elseif ($OriginalIndulgentTitanskinBattle) { 'SoulSavior_R2_BossBattle_FavoredChild_3' }
+        elseif ($OriginalIndulgentCapacityBattle) { 'SoulSavior_R2_BossBattle_FavoredChild_2' }
         elseif ($OriginalIndulgentGorgeOnSlay) { 'SoulSavior_R2_BossBattle_FavoredChild_1' }
         elseif ($OriginalLifemotherReanimateBattle) { 'SoulSavior_R5_BossBattle_Lifemother_Reanimate' }
         else { "SoulSavior_R3_BossBattle_$OriginalUnrulyVariant" }
     $unrulyBoss = if ($originalDutifulBattle) { 'Boss_SoulSavior_R1_Dutiful_' + $originalSoulSaviorVariant.Substring('Dutiful'.Length) }
         elseif ($OriginalIndulgentTitanskinBattle) { 'Boss_SoulSavior_R2_Indulgent_Titanskin' }
+        elseif ($OriginalIndulgentCapacityBattle) { 'Boss_SoulSavior_R2_Indulgent_ReduceCapacityResolve' }
         elseif ($OriginalIndulgentGorgeOnSlay) { 'Boss_SoulSavior_R2_Indulgent_GorgeOnSlay' }
         elseif ($OriginalLifemotherReanimateBattle) { 'Boss_SoulSavior_Final_Lifemother_HealReanimate' }
         else { "Boss_SoulSavior_R3_Unruly_$OriginalUnrulyVariant" }
@@ -4942,6 +4947,21 @@ if ($DamageOverflow -and ($trace.ModifierScenario -ne 'damage-overflow' -or
 }
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
+if ($OriginalIndulgentCapacityBattle) {
+    $reductions = @($trace.CapacityEffects | Where-Object {
+        $_.Completed -and $_.SourceCardId -eq 0 -and $_.Effect.Type -ceq 'AdjustCapacity' -and $_.Effect.Value -eq -1 -and
+        @($_.Before.Units | Where-Object AssetKey -CEQ 'Boss_SoulSavior_R2_Indulgent_ReduceCapacityResolve').Count -eq 1 -and
+        @($_.Attempts | Where-Object { $_.Requested -eq -1 -and $_.Approved -eq -1 -and $_.Allowed }).Count -gt 0
+    })
+    if ($process.ExitCode -ne 0 -or -not $terminalSettled -or -not $originalUnchanged -or
+        $trace.CaptureFailures -ne 0 -or $trace.Pending -ne 0 -or $reductions.Count -eq 0) {
+        throw "Original Indulgent did not settle a native capacity witness. Inspect $tracePath and $unityLog"
+    }
+    [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; OriginalFilesUnchanged = $true;
+        CapacityReductions = $reductions.Count; SourceUnsupported = $trace.Unsupported; SourceMismatches = $trace.Mismatches;
+        Trace = $tracePath; SHA256 = (Get-FileHash -LiteralPath $tracePath -Algorithm SHA256).Hash } | ConvertTo-Json
+    return
+}
 if ($OriginalIndulgentGorgeOnSlay) {
     $replays = @($trace.OriginalUnrulyBattle.GorgeOnSlayReplays | Where-Object {
         $replay = $_
