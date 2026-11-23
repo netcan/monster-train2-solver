@@ -213,10 +213,16 @@ internal static class HivemindChecks
         BattleTurnResult result = BattleTurnModel.EndTurn(before, RecordedBattleChecks.Decisions(row));
         if (!result.Supported || immutable != JsonSerializer.Serialize(before, ModelJson.Options))
             throw new InvalidDataException($"Original Hivemind EndTurn {index} failed: " + result.UnsupportedReason);
-        string? difference = ModelJson.Difference(JsonSerializer.Serialize(result.State, ModelJson.Options),
-            JsonSerializer.Serialize(actual, ModelJson.Options));
-        if (difference != null || (int)result.Outcome != Number(row, "ActualOutcome"))
-            throw new InvalidDataException($"Original Hivemind EndTurn {index} differs: " + difference);
+        if ((int)result.Outcome != Number(row, "ActualOutcome"))
+            throw new InvalidDataException($"Original Hivemind EndTurn {index} outcome differs.");
+        if (result.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated)
+            RecordedBattleChecks.RecordedBoundary(result.State!, row.GetProperty("Actual"), terminal: true, $"Hivemind EndTurn {index}");
+        else
+        {
+            string? difference = ModelJson.Difference(JsonSerializer.Serialize(result.State, ModelJson.Options),
+                JsonSerializer.Serialize(actual, ModelJson.Options));
+            if (difference != null) throw new InvalidDataException($"Original Hivemind EndTurn {index} differs: " + difference);
+        }
         Console.WriteLine($"NATIVE-HIVEMIND TURN {index} PASS.");
     }
 

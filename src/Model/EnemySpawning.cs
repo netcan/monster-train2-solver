@@ -148,7 +148,7 @@ namespace MonsterTrain2Poju.Model
                 firstWaveHivemind = !includeTreasure && source.Turn == 1 && phase == 0 &&
                     HivemindTurnUpgrade.HasOriginalFirstWave(wave.Candidates[selected].Units.Select(entry => entry.Unit));
                 IEnumerable<CombatUnit> present = source.Train.Rooms.SelectMany(room => room.Units);
-                secondWaveHivemind = includeTreasure &&
+                secondWaveHivemind =
                     (source.Turn is 1 or 2 && phase == 1 && HivemindTurnUpgrade.HasSecondWaveCarriers(present) ||
                      source.Turn is 2 or 3 && phase == 2 && HivemindTurnUpgrade.HasThirdWaveCarriers(present)) &&
                     wave.Candidates[selected].Units.Count(entry => entry.Unit.Status(HivemindTurnUpgrade.StatusId) != null) == 1 &&

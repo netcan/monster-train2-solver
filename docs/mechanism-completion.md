@@ -352,7 +352,7 @@ Dutiful 的 Armor 变体在三次原版战后回调中累计六次增加 12 护�
 [原版护甲整战](../tests/compatibility/game-2.3.1/mechanics/dutiful-armor/native-battle.mt2f)
 
 Indulgent 的 Titanskin 变体已对照原版出生、楼层结算和单次交战。命中造成 5 点生命伤害，
-Titanskin 吸收 3 点，状态层数保持 3。整战还涉及波次敌人的 Hivemind 与喂食。
+Titanskin 吸收 3 点，状态层数保持 3。
 [原版出生和受伤记录](../tests/compatibility/game-2.3.1/mechanics/indulgent-titanskin/birth-and-damage.mt2f)
 
 Indulgent Titanskin 第一个结束回合与原版逐字段匹配。抽牌后两名波次敌人分别获得 +2 攻击，
@@ -366,6 +366,11 @@ Indulgent Titanskin 第一个结束回合与原版逐字段匹配。抽牌后两
 第三个结束回合也匹配完整状态。六名持有者在三层楼各获得 +13 攻击，顶层喂食移除一名队友，
 让接收者的 Hivemind 从 6 增至 9 层。记录同时保留了喂食后原版物理站位。
 [原版第三回合](../tests/compatibility/game-2.3.1/mechanics/indulgent-hivemind/native-third-turn.mt2f)
+
+Titanskin 整战验证了结算时新增和移除 Hivemind 房间修饰器，以及它们随单位上层移动。
+终局的 Hunter 被薪火反击击杀，剩余 Heavy 完成最后一次交战。原版录档包含 8 次出牌、4 次
+结束回合、35 次楼层或单次交战结算和 8 次整车结算，两个候选集和 16 条独立分支均通过。
+[原版 Titanskin 整战](../tests/compatibility/game-2.3.1/mechanics/indulgent-titanskin/native-battle.mt2f)
 
 Indulgent 的减容变体三次把玩家侧楼层容量减 1，敌方容量保持 5。专项回放核对三组完整减容状态，
 第一组还在同一战后队列内验证先减容，再重放一次自身 OnFeed 获得 3 Rage。整战仍受波次机制阻塞。

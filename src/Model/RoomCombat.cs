@@ -1187,8 +1187,8 @@ namespace MonsterTrain2Poju.Model
                     linked.Actors.Any(actor => actor.Id == unit.Id && actor.TrueFinalBoss && actor.OuterBoss && actor.Health == unit.Health));
             bool linkedMaximumPreview = linkedHealthOnly && linkedCombat && state.Preview && state.Context?.LifeLinks?.TemporaryPreviewIds != null;
             bool observedHivemindCombat = ((state.Preview || allowFirstHivemindCombat) &&
-                (HivemindTurnUpgrade.IsFirstCombat(state) || HivemindTurnUpgrade.IsSecondCombat(state))) ||
-                HivemindTurnUpgrade.IsThirdPreview(state);
+                (HivemindTurnUpgrade.IsFirstCombat(state) || HivemindTurnUpgrade.IsSecondCombat(state) ||
+                 HivemindTurnUpgrade.IsThirdCombat(state) || HivemindTurnUpgrade.IsObservedPyreCombat(state)));
             string[] interactions = state.ExternalInteractions.Where(item => !((linkedTargetOnly || linkedMaximumPreview) && item == "Outer train boss") &&
                 !((allowFreshHivemind || observedHivemindCombat) && state.Units.Any(unit => HivemindTurnUpgrade.MatchesRoomMarker(item, unit)))).ToArray();
             if (interactions.Length > 0)
@@ -3841,7 +3841,8 @@ namespace MonsterTrain2Poju.Model
             {
                 if (target.DeathFinished) return;
                 if (target.Source.Status(HivemindTurnUpgrade.StatusId) != null &&
-                    !HivemindTurnUpgrade.IsObservedThirdPreviewFeedDeath(source, target.Source.Id, actor?.Source.Id))
+                    !HivemindTurnUpgrade.IsObservedThirdFeedDeath(source, target.Source.Id, actor?.Source.Id) &&
+                    !HivemindTurnUpgrade.IsObservedPyreHunterDeath(source, target.Source.Id, actor?.Source.IsPyre == true))
                 {
                     unsupportedReason = "Hivemind owner death requires a calibrated native callback.";
                     return;
@@ -7023,7 +7024,10 @@ namespace MonsterTrain2Poju.Model
                     else if (!source.Preview && card.PlayedRoomUnitIds.Any(removedIds.Contains))
                         context = context!.WithCard(card.WithPlayedRoomUnits(card.PlayedRoomUnitIds.Where(id => !removedIds.Contains(id)).ToArray()));
                 }
-                RoomCombatState state = EnchantmentWorldModel.Sync(PhysicalRoom(), units.Where(unit => !unit.Alive || !unit.InRoom ||
+                RoomCombatState physical = PhysicalRoom();
+                if (HivemindTurnUpgrade.PublishesAtCombat(source))
+                    physical = HivemindTurnUpgrade.PublishRoomMarkers(physical);
+                RoomCombatState state = EnchantmentWorldModel.Sync(physical, units.Where(unit => !unit.Alive || !unit.InRoom ||
                     externalTurnActorIds.Contains(unit.Source.Id)).Select(unit => unit.Freeze()).ToArray(), ExternalEnchantmentUnits(),
                     retainedDuringCallback);
                 state = state.WithCompanionBosses(CompanionBossSnapshot());

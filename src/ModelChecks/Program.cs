@@ -55,6 +55,12 @@ if (args.Length == 2 && args[0] == "--native-hivemind-second-draw-only")
     HivemindChecks.DrawRefresh(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-hivemind-terminal-turn-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    HivemindChecks.Turn(fixture.RootElement, index: 3);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--native-hivemind-callbacks-only")
 {
     if (args.Length == 3 && args[2] != "--preview-feed")

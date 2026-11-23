@@ -557,9 +557,14 @@ namespace MonsterTrain2Poju.Model
                 rooms = destroyed.State!.Rooms.Select(room => room.Units.ToList()).ToArray();
                 movementContext = destroyed.State.Context;
             }
-            RoomCombatState[] next = source.Rooms.Select((room, index) => new RoomCombatState(room.RoomIndex,
-                room.Deployment, BattleSpawnPointModel.Order(movementContext?.SpawnPoints, index, rooms[index]), room.ExternalInteractions,
-                movementContext, room.Preview, room.ActiveCompanionBossIds)).ToArray();
+            bool publishHivemind = !onlyUnitId.HasValue && !forceLoop && HivemindTurnUpgrade.PublishesAtAscension(source);
+            RoomCombatState[] next = source.Rooms.Select((room, index) =>
+            {
+                var destination = new RoomCombatState(room.RoomIndex, room.Deployment,
+                    BattleSpawnPointModel.Order(movementContext?.SpawnPoints, index, rooms[index]), room.ExternalInteractions,
+                    movementContext, room.Preview, room.ActiveCompanionBossIds);
+                return publishHivemind ? HivemindTurnUpgrade.PublishRoomMarkers(destination) : destination;
+            }).ToArray();
             TrainCombatState moving = EnchantmentWorldModel.Rebase(new TrainCombatState(next, source.Movement, source.EnemySlotsPerRoom, movementContext));
             // DoAscension reserves all destinations first, then compacts physical
             // enemy points. A looping enemy can reserve a slot behind units that

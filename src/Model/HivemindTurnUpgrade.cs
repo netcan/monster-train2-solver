@@ -15,6 +15,7 @@ namespace MonsterTrain2Poju.Model
         private const string HeavyT2 = "R2_Heavy_HealGorge_T2";
         private const string DeathHorde = "RAny_Horde_T1_DeathAddsHivemind_Ver2";
         private const string FeedUpgrade = "661fb64c-20d2-484c-8c30-309931b8148c";
+        private const string FeedBuffUpgrade = "25bad7b2-5fc2-4f03-b735-39b1551275de";
 
         internal static bool HasOriginalFirstWavePair(IEnumerable<CombatUnit> units)
         {
@@ -92,20 +93,21 @@ namespace MonsterTrain2Poju.Model
                 carriers.Count(unit => unit.AssetKey == Heavy && IsFedSecondPreviewRecipient(unit)) == 1;
         }
 
-        internal static bool IsThirdPreview(RoomCombatState room)
+        internal static bool IsThirdCombat(RoomCombatState room)
         {
-            if (!room.Preview || room.Context?.QueryFrame?.Turn != 3 || room.RoomIndex is < 0 or > 2 ||
+            if (room.Context?.QueryFrame?.Turn != 3 || room.RoomIndex is < 0 or > 2 ||
                 room.Units.Any(unit => unit.RegisteredStatus("hivemindkiller") != null))
                 return false;
             CombatUnit[] carriers = room.Units.Where(unit => unit.RegisteredStatus(StatusId) != null).ToArray();
-            return carriers.Count(unit => unit.AssetKey == Infested && HasAttackUpgrade(unit, 13)) == 1 &&
+            int food = carriers.Count(unit => unit.AssetKey == Infested && HasAttackUpgrade(unit, 13));
+            return food <= 1 && (food == 1 || room.RoomIndex == 2 && carriers.Any(unit => NativeFedUpgrade(unit, 9, 13))) &&
                 (room.RoomIndex == 0 && carriers.Length <= 2 &&
                     carriers.All(unit => unit.AssetKey == Infested && HasAttackUpgrade(unit, 13) || IsThirdNewHeavy(unit)) ||
                  room.RoomIndex == 1 && carriers.Length == 2 &&
                     carriers.Count(unit => unit.AssetKey == Zealot &&
                         (NativeFedUpgrade(unit, 3, 13) || NativeFedUpgrade(unit, 6, 13))) == 1 ||
                  room.RoomIndex == 2 && carriers.Count(unit => unit.AssetKey == Hunter && HasAttackUpgrade(unit, 13)) == 1 &&
-                    carriers.Length == 3 && carriers.Count(unit => unit.AssetKey == Heavy &&
+                    carriers.Length == food + 2 && carriers.Count(unit => unit.AssetKey == Heavy &&
                         (NativeFedUpgrade(unit, 6, 13) || NativeFedUpgrade(unit, 9, 13))) == 1);
         }
 
@@ -115,13 +117,48 @@ namespace MonsterTrain2Poju.Model
                 unit.Modifiers.Upgrades.Count(upgrade => IsAttackUpgrade(upgrade, 0)) &&
             unit.Modifiers.Upgrades.Count(upgrade => IsAttackUpgrade(upgrade, 0)) <= 1;
 
-        internal static bool IsObservedThirdPreviewFeedDeath(RoomCombatState room, int targetId, int? actorId) =>
-            targetId == actorId && room.RoomIndex == 2 && IsThirdPreview(room) &&
+        internal static bool IsObservedThirdFeedDeath(RoomCombatState room, int targetId, int? actorId) =>
+            targetId == actorId && room.RoomIndex == 2 && IsThirdCombat(room) &&
             room.Units.Any(unit => unit.Id == targetId && unit.AssetKey == Infested && HasAttackUpgrade(unit, 13)) &&
-            room.Context?.Enchantments is EnchantmentWorld world &&
-            world.Rooms.SelectMany(floor => floor.Units).All(unit =>
+            NoCapturedKiller(room);
+
+        internal static bool IsObservedPyreCombat(RoomCombatState room)
+        {
+            if (room.Context?.QueryFrame?.Turn != 3 || room.RoomIndex != 3 || !NoCapturedKiller(room) ||
+                room.Units.Count(unit => unit.IsPyre && unit.Health > 0) != 1 ||
+                room.Units.Count(unit => unit.AssetKey == Heavy && NativeFedUpgrade(unit, 9, 13)) != 1)
+                return false;
+            return room.Units.Count == 2 ||
+                room.Units.Count == 3 && room.Units.Count(unit =>
+                    unit.AssetKey == Hunter && HasAttackUpgrade(unit, 13)) == 1;
+        }
+
+        internal static bool IsObservedPyreHunterDeath(RoomCombatState room, int targetId, bool pyreAttacker) =>
+            pyreAttacker && IsObservedPyreCombat(room) && room.Units.Any(unit => unit.Id == targetId && unit.AssetKey == Hunter);
+
+        private static bool NoCapturedKiller(RoomCombatState room) => room.Context?.Enchantments is EnchantmentWorld world &&
+            world.Rooms.SelectMany(floor => floor.Units).Concat(world.RetainedUnits.Select(actor => actor.Unit)).All(unit =>
                 unit.RegisteredStatus("hivemindkiller") == null && unit.Modifiers?.Upgrades.Any(upgrade =>
                     upgrade.DataId == "RoomStateHivemindKillerModifierUpgrade") != true);
+
+        internal static bool PublishesAtCombat(RoomCombatState room) =>
+            !room.Preview && (IsFirstCombat(room) || IsSecondCombat(room) || IsThirdCombat(room) || IsObservedPyreCombat(room));
+
+        internal static bool PublishesAtAscension(TrainCombatState train) =>
+            train.Context?.QueryFrame?.Turn is >= 1 and <= 3 && train.Rooms.All(room => !room.Preview) &&
+            train.Rooms.Any(room => room.ExternalInteractions.Any(IsKnownMarker)) &&
+            train.Rooms.SelectMany(room => room.Units).All(unit => unit.RegisteredStatus("hivemindkiller") == null &&
+                (unit.Status(StatusId) == null || MatchesRoomMarker(Marker(unit), unit)));
+
+        internal static RoomCombatState PublishRoomMarkers(RoomCombatState room)
+        {
+            string[] markers = room.ExternalInteractions.Where(marker => !IsKnownMarker(marker)).Concat(
+                room.Units.Where(unit => MatchesRoomMarker(Marker(unit), unit))
+                    .Select(Marker)).Distinct().OrderBy(marker => marker, StringComparer.Ordinal).ToArray();
+            return room.ExternalInteractions.SequenceEqual(markers) ? room :
+                new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, markers, room.Context, room.Preview,
+                    room.ActiveCompanionBossIds);
+        }
 
         private static bool NativeFedUpgrade(CombatUnit unit, int stacks, int damage) =>
             IsFeedRecipient(unit) && unit.Status(StatusId)?.Stacks == stacks &&
@@ -276,14 +313,17 @@ namespace MonsterTrain2Poju.Model
                 IsFirstCombat(room) && unit.AssetKey == Heavy && IsFeedRecipient(unit) && unit.RegisteredStatus(StatusId) == null ||
                 IsSecondCombat(room) && IsFeedRecipient(unit) && (unit.AssetKey == Heavy && unit.Status(StatusId)?.Stacks == 3 ||
                     unit.AssetKey == Zealot && unit.RegisteredStatus(StatusId) == null) ||
-                IsThirdPreview(room) && (room.RoomIndex == 0 && unit.AssetKey == Heavy &&
+                IsThirdCombat(room) && (room.RoomIndex == 0 && unit.AssetKey == Heavy &&
                     IsFeedRecipient(unit) && unit.RegisteredStatus(StatusId) == null ||
                     room.RoomIndex == 1 && unit.AssetKey == Zealot && NativeFedUpgrade(unit, 3, 13) ||
                     room.RoomIndex == 2 && unit.AssetKey == Heavy && NativeFedUpgrade(unit, 6, 13)));
 
         internal static bool IsObservedCombatUpgrade(RoomCombatState room, CardUpgradeModifier upgrade, string? kind) =>
-            (IsFirstCombat(room) || IsSecondCombat(room)) &&
-            ((kind == "OnEaten" && IsFeedUpgrade(upgrade)) ||
+            (IsFirstCombat(room) || IsSecondCombat(room) || IsThirdCombat(room)) &&
+            ((kind == "OnEaten" && (IsFeedUpgrade(upgrade) || IsThirdCombat(room) &&
+                room.RoomIndex == 0 && upgrade.DataId == FeedBuffUpgrade &&
+                upgrade.Statuses.Select(status => (status.Id, status.Stacks)).SequenceEqual(
+                    new[] { ("damage shield", 1), ("spell shield", 1), ("lifesteal", 1) }))) ||
              (kind == "OnStatusEffectChanged" && upgrade.DataId == UpgradeId && upgrade.Stats.Damage == 0 &&
                 upgrade.Stats.Health == 0 && upgrade.Statuses.Count == 0 && upgrade.Unique));
 
@@ -319,7 +359,7 @@ namespace MonsterTrain2Poju.Model
         internal static bool NeedsFeedMarker(RoomCombatState room, CombatUnit unit) =>
             (IsFirstCombat(room) && IsFedPreviewRecipient(unit) ||
              IsSecondCombat(room) && unit.AssetKey == Zealot && IsFedSecondPreviewRecipient(unit) ||
-             IsThirdPreview(room) && room.RoomIndex == 0 && IsThirdNewHeavy(unit)) &&
+             IsThirdCombat(room) && room.RoomIndex == 0 && IsThirdNewHeavy(unit)) &&
             !unit.Modifiers!.Upgrades.Any(upgrade => upgrade.DataId == UpgradeId);
 
         // This first ordinary turn projects the native attack-only upgrade

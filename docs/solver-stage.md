@@ -673,3 +673,7 @@ Lifemother Debuffs 追加 11 次出牌、4 次结束回合及两条实际付费�
 整战两类候选通过，累计已有 468 场、7,208 次出牌或技能及 2,795 次结束回合通过。
 Soul Savior 原版遭遇已有 11／15 场整战证据。
 [Debuffs 整战](../tests/compatibility/game-2.3.1/mechanics/lifemother-debuffs/native-battle.mt2f)
+
+Indulgent Titanskin 追加 8 次出牌、4 次结束回合，两类候选通过。累计已有 469 场原版
+战斗通过，合计 7,216 次出牌或技能和 2,799 次结束回合。Soul Savior 已有 12／15 场
+整战证据。 [Titanskin 整战](../tests/compatibility/game-2.3.1/mechanics/indulgent-titanskin/native-battle.mt2f)
