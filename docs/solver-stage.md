@@ -531,3 +531,7 @@ Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时
 移动记录。三组首张法术复制和一组未出牌费用变化分别在隔离原版执行备选输入，复放核对了完整
 后继及 RNG。该整战通过 953 个出牌候选和 48 个结束回合候选，未支持与截断均为零。
 [原版整局](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/native-moon-remnant-sixth-battle-defeat.mt2f)
+
+以 409 场的阶段提交为基线，11 场新增整局在同一构建上完成定向复放和两类候选检查，
+累计 177 次操作与 68 次结束回合。420 场已结算归档覆盖了 186/236 件遗物的在场阵容。
+定向结果为 `results/recorded-chain-triage-20261123-105302-92e1186c/report.tsv`。
