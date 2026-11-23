@@ -28,6 +28,7 @@ namespace MonsterTrain2Poju.Probe
         private readonly string? requestedDraftRelic;
         private readonly string? requestedMerchantUpgrade;
         private readonly int seed;
+        private readonly bool regionRun;
         private readonly int? requestedStartingCovenant;
         private float nextAction, lastProgress, heartbeat, quitAt;
         private bool started, setup, menuRequested, checkpointSaving;
@@ -74,6 +75,7 @@ namespace MonsterTrain2Poju.Probe
             requestedDraftRelic = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_DRAFT_RELIC");
             requestedMerchantUpgrade = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_PREFER_MERCHANT_UPGRADE");
             seed = int.Parse(Environment.GetEnvironmentVariable("MT2_PROBE_SEED") ?? "424242");
+            regionRun = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_REGION") == "1";
             string? covenant = Environment.GetEnvironmentVariable("MT2_PROBE_STARTING_COVENANT_LEVEL");
             requestedStartingCovenant = afterBattle || covenant == null ? (int?)null : int.Parse(covenant);
             auditPath = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "campaign-audit.jsonl");
@@ -112,7 +114,16 @@ namespace MonsterTrain2Poju.Probe
             AllGameManagers? m = AllGameManagers.Instance;
             SaveManager? save = m?.GetSaveManager();
             ScreenManager? screens = m?.GetScreenManager();
-            if (save == null || screens == null) return;
+            if (save == null || screens == null)
+            {
+                if (regionRun && Time.realtimeSinceStartup > heartbeat)
+                {
+                    heartbeat = Time.realtimeSinceStartup + 15f;
+                    log.LogInfo("CAMPAIGN-REGION-STARTUP managers=" + (m != null) + " save=" + (save != null) +
+                        " screens=" + (screens != null));
+                }
+                return;
+            }
             if (!draftRelicGranted && selectedDraftRelicId != null && save.GetCollectedRelics()
                 .Any(relic => relic.GetRelicDataID() == selectedDraftRelicId))
             {
@@ -156,16 +167,31 @@ namespace MonsterTrain2Poju.Probe
                     { menuRequested = true; screens.ReturnToMainMenu(); }
                     return;
                 }
-                started = true;
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_RESUME_RUN") == "1")
                 {
-                    if (!save.HasRun(RunType.Class)) throw new InvalidOperationException("Resume requires an existing native run.");
-                    save.SetActiveRunType(RunType.Class);
-                    save.ContinueRunWithReplay(RunType.Class);
-                    Record("resume", new { distance = save.GetCurrentDistance() });
+                    RunType runType = regionRun ? RunType.RegionRun : RunType.Class;
+                    if (!save.HasRun(runType)) throw new InvalidOperationException("Resume requires an existing native run.");
+                    started = true;
+                    save.SetActiveRunType(runType);
+                    save.ContinueRunWithReplay(runType);
+                    Record("resume", new { distance = save.GetCurrentDistance(), runType = runType.ToString() });
+                }
+                else if (regionRun)
+                {
+                    // The main menu can be marked active before its scene has registered the screen component.
+                    if (LoadingScreen.IsWorking() || screens.GetScreen(ScreenName.MainMenu) is not MainMenuScreen mainMenu ||
+                        mainMenu == null)
+                        return;
+                    if (!save.IsDlcInstalled(DLC.Railforged) || save.HasRun(RunType.RegionRun))
+                        throw new InvalidOperationException("Starting Soul Savior requires installed Railforged and an idle RegionRun save.");
+                    // ReplayManager reports synthetic pointer delivery even when this menu does not consume it.
+                    AccessTools.DeclaredMethod(typeof(MainMenuScreen), "HandleTheRiftStationSelected").Invoke(mainMenu, null);
+                    started = true;
+                    Record("open-soul-savior", new { input = "HandleTheRiftStationSelected" });
                 }
                 else
                 {
+                    started = true;
                     CheatManager.SetupConsoleCommands(save, screens);
                     Command("Command_CompleteFTUE").Invoke(null, null);
                     Command("Command_SetSeed", typeof(string)).Invoke(null, new object[] { seed.ToString() });
@@ -204,6 +230,25 @@ namespace MonsterTrain2Poju.Probe
             if (screen is UnlockScreen unlock)
             { Click(unlock.GetDefaultGameUISelectable() as GameUISelectableButton, "collect-unlock"); return; }
             if (screen is RunOpeningScreen opening) { Click(opening.GetConfirmButton(), "opening"); return; }
+            if (regionRun && screen is SoulSaviorScreen soulSavior)
+            {
+                Click(soulSavior.GetDefaultGameUISelectable() as GameUISelectableButton, "region-new-run");
+                return;
+            }
+            if (regionRun && screen is SoulSaviorRunSetupScreen soulSetup)
+            {
+                save.Cheat_ForceSeed(seed);
+                Click(Field<GameUISelectableButton>(soulSetup, "startButton"), "region-run-setup", new { seed });
+                return;
+            }
+            if (regionRun && screen is RegionSelectionScreen regionSelection)
+            {
+                RegionSelectionButton selected = Field<RegionSelectionButton>(regionSelection, "selectedRegionButton");
+                if (selected != null)
+                    Click(regionSelection.GetContinueButton() as GameUISelectableButton, "region-selected",
+                        new { region = selected.RegionIndex });
+                return;
+            }
             if (screen is RunSetupScreen runSetup)
             {
                 if (!setup)
@@ -433,7 +478,9 @@ namespace MonsterTrain2Poju.Probe
             }
             if (screen is BattleIntroScreen intro)
             {
-                int ring = save.GetCurrentDistance() + 1;
+                int ring = regionRun ? save.GetRunState().GetNumBattlesCompleted() + 1 : save.GetCurrentDistance() + 1;
+                if (regionRun && (save.GetRunType() != RunType.RegionRun || save.InTestScenario || SaveManager.WasDevCheatUsed))
+                    throw new InvalidOperationException("Expected a natural native Soul Savior BattleIntro.");
                 if (ring >= stopRing && captureBeforeMap && !beforeMapCaptured)
                     throw new InvalidOperationException("The campaign reached the target ring without its native pre-map checkpoint.");
                 if (ring >= stopRing && !preferredMerchantInstalled && !string.IsNullOrEmpty(requestedMerchantUpgrade))
@@ -694,7 +741,8 @@ namespace MonsterTrain2Poju.Probe
             return true;
         }
 
-        private static string CopyCheckpointProfile(string root, string destination, byte[]? primarySave = null)
+        private static string CopyCheckpointProfile(string root, string destination, byte[]? primarySave = null,
+            string saveName = "save-singlePlayer.json")
         {
             if (Directory.Exists(destination)) throw new IOException("Checkpoint already exists: " + destination);
             Directory.CreateDirectory(destination);
@@ -702,12 +750,12 @@ namespace MonsterTrain2Poju.Probe
             foreach (string file in Directory.GetFiles(Path.Combine(root, "saves")))
             {
                 string name = Path.GetFileName(file);
-                if (primarySave == null || name != "save-singlePlayer.json")
+                if (primarySave == null || name != saveName)
                     File.Copy(file, Path.Combine(destination, "saves", name));
             }
             foreach (string name in new[] { "metagameSave.json", "preferences.json", "preferences-local.json", "campaign-input.json", "campaign-parent-audit.jsonl" })
                 if (File.Exists(Path.Combine(root, name))) File.Copy(Path.Combine(root, name), Path.Combine(destination, name));
-            string savePath = Path.Combine(destination, "saves", "save-singlePlayer.json");
+            string savePath = Path.Combine(destination, "saves", saveName);
             if (primarySave != null) File.WriteAllBytes(savePath, primarySave);
             using (SHA256 sha = SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(File.ReadAllBytes(savePath))).Replace("-", "");
         }
@@ -716,12 +764,20 @@ namespace MonsterTrain2Poju.Probe
         {
             string root = Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!;
             string destination = root + "-before-ring" + ring;
-            string hash = CopyCheckpointProfile(root, destination);
+            string hash = CopyCheckpointProfile(root, destination, saveName: regionRun ? "save-regionRun.json" : "save-singlePlayer.json");
             if (Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_AFTER_REPLAY") == "1")
                 File.Copy(Path.Combine(root, "full-battle.mt2f"), Path.Combine(destination, "campaign-battle-replay.mt2f"));
             // Read the native pool as well as its stored index: different run
             // definitions need not use the same index for the same final boss.
             SaveManager save = AllGameManagers.Instance.GetSaveManager();
+            if (regionRun)
+            {
+                Record("checkpoint", new { ring, profile = destination, sha256 = hash, runType = save.GetRunType().ToString(),
+                    distance = save.GetCurrentDistance(), scenario = save.GetCurrentScenarioData().name,
+                    battles = save.GetRunState().GetNumBattlesCompleted() });
+                File.Copy(auditPath, Path.Combine(destination, "campaign-audit.jsonl"));
+                return;
+            }
             var finals = new List<ScenarioData>();
             save.GetRunData().GetDistanceData(7).GetAllScenarioDatas(finals);
             int selected = save.GetRunState().GetNodeStateAtDistance(7).scenarioIndex;

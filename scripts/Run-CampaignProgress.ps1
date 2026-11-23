@@ -9,6 +9,7 @@ param(
     [string] $InputProfile = '',
     [string] $NewRunFromProfile = '',
     [string] $BattleReplay = '',
+    [switch] $RegionRun,
     [switch] $CompleteDefeat,
     [string[]] $ExcludeUpgradeTrait = @(),
     [switch] $SkipMerchantPurchases,
@@ -37,6 +38,12 @@ if ($CaptureBeforeMap -and ($StopBeforeRing -lt 2 -or $StoryProgressionOnly -or 
     throw 'CaptureBeforeMap requires campaign progression after a battle victory.'
 }
 $explicitStartingCovenant = $PSBoundParameters.ContainsKey('StartingCovenantLevel')
+if ($RegionRun -and ($BattleReplay -or $StoryProgressionOnly -or $CaptureBeforeMap -or $MapBranch -or
+    $PrimaryClan -or $SecondaryClan -or $explicitStartingCovenant)) {
+    throw 'RegionRun uses the native Soul Savior setup choices and battle checkpoints.'
+}
+$saveName = if ($RegionRun) { 'save-regionRun.json' } else { 'save-singlePlayer.json' }
+$relativeSavePath = 'saves/' + $saveName
 if ($CompleteDefeat -and (-not $BattleReplay -or -not $InputProfile)) {
     throw 'CompleteDefeat requires a settled native BattleReplay and its original InputProfile.'
 }
@@ -79,11 +86,23 @@ $profileSource = if ($NewRunFromProfile) { $NewRunFromProfile } else { $InputPro
 if ($profileSource) {
     $source = (Resolve-Path -LiteralPath $profileSource).Path.TrimEnd('\')
     if ((Split-Path $source -Parent) -ine $profilesRoot) { throw 'Source profile must be a direct child of .probe-runs.' }
-    if (-not (Test-Path -LiteralPath (Join-Path $source 'saves/save-singlePlayer.json'))) { throw 'Source profile has no native save.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $source $relativeSavePath))) { throw 'Source profile has no native save.' }
+}
+if ($RegionRun) {
+    $regionSave = Get-Content -LiteralPath (Join-Path $source $relativeSavePath) -Raw | ConvertFrom-Json
+    if ($regionSave.runType -cne 'RegionRun' -or $regionSave.wasDevCheatUsed -or
+        ($InputProfile -and ($regionSave.gameSequence -ne 6 -or $null -eq $regionSave.runState)) -or
+        (-not $InputProfile -and $regionSave.gameSequence -ne 0)) {
+        throw 'Expected an idle native RegionRun save or a RegionRun BattleIntro checkpoint.'
+    }
+    if ($InputProfile -and $StopBeforeRing -lt ([int]$regionSave.runState.numBattlesCompleted + 1)) {
+        throw 'The requested battle has already been completed in the RegionRun checkpoint.'
+    }
 }
 if ($NewRunFromProfile) {
-    $idle = Get-Content -LiteralPath (Join-Path $source 'saves/save-singlePlayer.json') -Raw | ConvertFrom-Json
-    if ($idle.gameSequence -ne 0 -or $idle.runState.distance -ne -1 -or $idle.completedBattles.Count -ne 0 -or $idle.wasDevCheatUsed -or
+    $idle = Get-Content -LiteralPath (Join-Path $source $relativeSavePath) -Raw | ConvertFrom-Json
+    if ($idle.gameSequence -ne 0 -or (-not $RegionRun -and $idle.runState.distance -ne -1) -or
+        $idle.completedBattles.Count -ne 0 -or $idle.wasDevCheatUsed -or
         -not (Test-Path -LiteralPath (Join-Path $source 'metagameSave.json'))) {
         throw 'NewRunFromProfile requires an idle native profile after EndGame, with no active campaign.'
     }
@@ -144,7 +163,8 @@ function Get-OriginalHashes {
     } | Sort-Object FullName | ForEach-Object { $_.FullName + '=' + (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash })
 }
 $originalBefore = Get-OriginalHashes
-$profilePrefix = if ($StoryProgressionOnly) { 'campaign-story' } else { 'campaign-ring' + $StopBeforeRing }
+$profilePrefix = if ($RegionRun) { 'campaign-region-battle' + $StopBeforeRing }
+    elseif ($StoryProgressionOnly) { 'campaign-story' } else { 'campaign-ring' + $StopBeforeRing }
 $profile = Join-Path $profilesRoot ($profilePrefix + '-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
 $null = New-Item -ItemType Directory -Path $profile
 foreach ($item in Get-ChildItem -LiteralPath $source) {
@@ -158,11 +178,11 @@ foreach ($item in Get-ChildItem -LiteralPath $source) {
 if (Test-Path -LiteralPath (Join-Path $source 'campaign-audit.jsonl')) {
     Copy-Item -LiteralPath (Join-Path $source 'campaign-audit.jsonl') -Destination (Join-Path $profile 'campaign-parent-audit.jsonl')
 }
-$savePath = Join-Path $profile 'saves/save-singlePlayer.json'
+$savePath = Join-Path $profile $relativeSavePath
 $inputSaveHash = (Get-FileHash -LiteralPath $savePath -Algorithm SHA256).Hash
 $inputMetagameHash = (Get-FileHash -LiteralPath (Join-Path $source 'metagameSave.json') -Algorithm SHA256).Hash
 [pscustomobject]@{ InputProfile = $source; InputSaveSHA256 = $inputSaveHash; InputMetagameSHA256 = $inputMetagameHash;
-    NewRunFromProfile = [bool]$NewRunFromProfile;
+    NewRunFromProfile = [bool]$NewRunFromProfile; RegionRun = [bool]$RegionRun;
     StopBeforeRing = $StopBeforeRing; Seed = $Seed; NativeWorker = $NativeWorker; ExcludeUpgradeTrait = $ExcludeUpgradeTrait;
     PrimaryClan = $PrimaryClan; SecondaryClan = $SecondaryClan; StartingCovenantLevel = $StartingCovenantLevel;
     ExplicitStartingCovenant = $explicitStartingCovenant;
@@ -225,6 +245,7 @@ $settings = @{
     MT2_PROBE_DATA_DIR = $profile; MT2_PROBE_SCENARIO = 'campaign'; MT2_PROBE_SEED = "$Seed"
     MT2_PROBE_PRIMARY_CLAN = $PrimaryClan; MT2_PROBE_SECONDARY_CLAN = $SecondaryClan
     MT2_PROBE_CAMPAIGN_STOP_RING = "$StopBeforeRing"; MT2_PROBE_SETTLE_CARD_ANIMATIONS = '1'
+    MT2_PROBE_CAMPAIGN_REGION = $(if ($RegionRun) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_STORY_ONLY = $(if ($StoryProgressionOnly) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_EXCLUDED_UPGRADE_TRAITS = ($ExcludeUpgradeTrait -join ';')
     MT2_PROBE_CAMPAIGN_SKIP_MERCHANT_PURCHASES = $(if ($SkipMerchantPurchases) { '1' } else { '0' })
@@ -297,9 +318,28 @@ if ($BattleReplay -and (Test-Path -LiteralPath (Join-Path $profile 'full-battle.
             $player['Overlay']['Published'] -eq 0
     }
 }
-$inputUnchanged = (Get-FileHash -LiteralPath (Join-Path $source 'saves/save-singlePlayer.json')).Hash -ceq $inputSaveHash -and
+$inputUnchanged = (Get-FileHash -LiteralPath (Join-Path $source $relativeSavePath)).Hash -ceq $inputSaveHash -and
     (Get-FileHash -LiteralPath (Join-Path $source 'metagameSave.json')).Hash -ceq $inputMetagameHash
 $passed = $process.ExitCode -eq 0 -and $audit.Count -gt 0 -and $audit[-1].kind -eq 'complete' -and $unchanged -and $inputUnchanged -and $replayPassed
+$targetRegionProfile = $null
+if ($RegionRun -and $passed) {
+    $target = @($audit | Where-Object { $_.kind -ceq 'checkpoint' -and $_.data.ring -eq $StopBeforeRing })
+    $expectedProfile = $profile + "-before-ring$StopBeforeRing"
+    $snapshotPath = Join-Path $expectedProfile $relativeSavePath
+    $passed = $target.Count -eq 1 -and $target[0].data.profile -ceq $expectedProfile -and
+        $target[0].data.runType -ceq 'RegionRun' -and $target[0].data.scenario -and
+        (Test-Path -LiteralPath $snapshotPath -PathType Leaf)
+    if ($passed) {
+        $snapshot = Get-Content -LiteralPath $snapshotPath -Raw | ConvertFrom-Json
+        $expectedSeed = if ($InputProfile) { $regionSave.startingConditions.seed } elseif ($Seed -ne 0) { $Seed }
+        $passed = (Get-FileHash -LiteralPath $snapshotPath).Hash -ceq $target[0].data.sha256 -and
+            $snapshot.runType -ceq 'RegionRun' -and $snapshot.gameSequence -eq 6 -and
+            $snapshot.runState.distance -eq $target[0].data.distance -and
+            $snapshot.runState.numBattlesCompleted -eq ($StopBeforeRing - 1) -and
+            ($null -eq $expectedSeed -or $snapshot.startingConditions.seed -eq $expectedSeed) -and -not $snapshot.wasDevCheatUsed
+        if ($passed) { $targetRegionProfile = $expectedProfile }
+    }
+}
 $runOutcome = @($audit | Where-Object kind -EQ 'run-outcome')
 if ($DraftRelic -and $passed) {
     $selection = @($audit | Where-Object { $_.kind -eq 'draft' -and $_.data.requestedRelic -ceq $DraftRelic })
@@ -384,6 +424,7 @@ if ($CompleteDefeat) {
     $passed = $passed -and $defeatSettled
 }
 $summary = [pscustomobject]@{ Profile = $profile; NativePassed = $passed; ExitCode = $process.ExitCode;
+    RegionRun = [bool]$RegionRun; RegionBattleIntroProfile = $targetRegionProfile;
     BeforeMapProfile = $beforeMapProfile;
     CompleteDefeat = [bool]$CompleteDefeat;
     StoryProgressionOnly = [bool]$StoryProgressionOnly;
