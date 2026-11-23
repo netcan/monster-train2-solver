@@ -243,6 +243,14 @@ namespace MonsterTrain2Poju.Probe
                         return;
                     }
                     trace.Write();
+#if DEVELOPMENT_PROBE
+                    if (OriginalUnrulyWitness.LifemotherInfested)
+                    {
+                        Finish(trace.CaptureFailures == 0 && trace.Pending == 0,
+                            "Original Lifemother Infested controller and callback observation exported.");
+                        return;
+                    }
+#endif
                     bool passed = trace.CaptureFailures == 0 && trace.Pending == 0 && trace.Mismatches == 0 && trace.Unsupported == 0;
                     bool campaignReplay = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_AFTER_REPLAY") == "1";
                     bool campaignRolling = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_AFTER_ROLLING") == "1";

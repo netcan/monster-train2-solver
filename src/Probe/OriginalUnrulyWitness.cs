@@ -25,6 +25,7 @@ namespace MonsterTrain2Poju.Probe
             "IndulgentTitanskin" => "SoulSavior_R2_BossBattle_FavoredChild_3",
             "IndulgentCapacity" => IndulgentTrampleCaptureProbe.CapacityScenario,
             "IndulgentGorgeOnSlay" => IndulgentTrampleCaptureProbe.GorgeScenario,
+            "LifemotherInfested" => "SoulSavior_R5_BossBattle_Lifemother_Infested",
             "LifemotherReanimate" => "SoulSavior_R5_BossBattle_Lifemother_Reanimate",
             OriginalLifemotherDebuffsWitness.Variant => OriginalLifemotherDebuffsWitness.Scenario,
             _ => "SoulSavior_R3_BossBattle_DuplicateEnemy"
@@ -39,6 +40,7 @@ namespace MonsterTrain2Poju.Probe
             "IndulgentTitanskin" => OuterBossDefinitions.IndulgentTitanskin,
             "IndulgentCapacity" => OuterBossDefinitions.IndulgentReduceCapacity,
             "IndulgentGorgeOnSlay" => GorgeOnSlayBoss,
+            "LifemotherInfested" => OuterBossDefinitions.LifemotherInfested,
             "LifemotherReanimate" => OuterBossDefinitions.LifemotherReanimate,
             OriginalLifemotherDebuffsWitness.Variant => OriginalLifemotherDebuffsWitness.Boss,
             _ => TriggeredSummonModel.UnrulyBoss
@@ -62,6 +64,9 @@ namespace MonsterTrain2Poju.Probe
         internal static bool IndulgentTrampleCasting => (IndulgentCapacity || IndulgentGorgeOnSlay) &&
             Environment.GetEnvironmentVariable("MT2_PROBE_INDULGENT_TRAMPLE_CASTING") == "1";
         internal static bool LifemotherReanimate => Variant == "LifemotherReanimate";
+        internal static bool LifemotherInfested => Variant == "LifemotherInfested";
+        private const string InfestedOwner = "Boss_Railforged_Lifemother_Infested";
+        private const string InfestedOwnerId = "72f9f4e3-df23-4954-99e6-9040ab573590";
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
         internal static object? FullBattleEvidence { get; private set; }
@@ -110,7 +115,12 @@ namespace MonsterTrain2Poju.Probe
                 scenario.GetOuterTrainBoss(false)?.GetAssetKey() != BossKey ||
                 scenario.GetOuterTrainBoss(true)?.GetAssetKey() != BossKey ||
                 (OriginalLifemotherDebuffsWitness.Enabled ? !OriginalLifemotherDebuffsWitness.Supports(scenario) :
-                    FullBattle && !IndulgentGorgeOnSlay && !IndulgentCapacity && !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false))) ||
+                    FullBattle && !IndulgentGorgeOnSlay && !IndulgentCapacity && !LifemotherInfested &&
+                    !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false))) ||
+                LifemotherInfested && (scenario.GetEnemyRelicData() is not [var infestedOwner] ||
+                    infestedOwner.GetID() != InfestedOwnerId || infestedOwner.name != InfestedOwner ||
+                    infestedOwner.GetEffects() is not [var first, var second, var third, var fourth] ||
+                    new[] { first, second, third, fourth }.Any(effect => effect.GetEffectClassName() != nameof(RelicEffectNull))) ||
                 IndulgentTrampleCasting && (!OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false)) ||
                     !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(true))) ||
                 (IndulgentCapacity || IndulgentGorgeOnSlay) &&
@@ -136,6 +146,11 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("The native DLC check or controlled Unruly scenario changed.");
         }
 
+        internal static bool ObservesInfestedBoss(CharacterData? data) => requested && LifemotherInfested &&
+            data?.GetAssetKey() == OuterBossDefinitions.LifemotherInfested &&
+            data.GetAttackDamage() == 40 && data.GetHealth() == 9000 && data.GetSize() == 5 &&
+            data.GetStartingStatusEffects() is [{ statusId: "trample", count: 1 }];
+
         internal static void ObserveFullBattle(SaveManager save)
         {
             if (FullBattleEvidence != null) return;
@@ -154,8 +169,66 @@ namespace MonsterTrain2Poju.Probe
                     HivemindCallbacks = OriginalHivemindProbe.Records },
                 "IndulgentCapacity" when IndulgentTrampleCasting => new { Scenario = ScenarioKey, BossKey,
                     RailforgedInstalled = true, ControlledTestScenario = true, HivemindCallbacks = OriginalHivemindProbe.Records },
+                "LifemotherInfested" => new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true,
+                    ControlledTestScenario = true, Owner = InfestedOwner, OwnerId = InfestedOwnerId,
+                    HivemindCallbacks = OriginalHivemindProbe.Records, InfestedDeathGrants = infestedDeathGrants },
                 _ => new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true, ControlledTestScenario = true }
             };
+        }
+
+        private static readonly List<InfestedDeathGrant> infestedDeathGrants = new();
+
+        private sealed class InfestedDeathGrant
+        {
+            public int Sequence { get; set; }
+            public int Turn { get; set; }
+            public bool Preview { get; set; }
+            public int ActorId { get; set; }
+            public int TargetId { get; set; }
+            public int BeforeStacks { get; set; }
+            public int? AfterStacks { get; set; }
+            public int BeforeAttack { get; set; }
+            public int? AfterAttack { get; set; }
+        }
+
+        [HarmonyPatch(typeof(CardEffectAddStatusEffect), nameof(CardEffectAddStatusEffect.ApplyEffect))]
+        private static class InfestedDeathGrantPatch
+        {
+            private static bool Prepare() => LifemotherInfested;
+
+            private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
+            {
+                if (FullBattleTrace.Active is not { } trace || cardEffectParams.selfTarget is not { } boss ||
+                    !ObservesInfestedBoss(boss.GetSourceCharacterData()) ||
+                    cardEffectParams.sourceCharacterTriggerState?.GetTrigger() != CharacterTriggerData.Trigger.OnAnyUnitDeathOnFloor ||
+                    cardEffectState.GetSourceCardEffectData().GetParamStatusEffects() is not [{ statusId: "hivemind", count: 2 }] ||
+                    cardEffectParams.targets.Count != 1 || !ReferenceEquals(cardEffectParams.targets[0], boss))
+                    return;
+                __result = Observe(__result, trace, boss);
+            }
+
+            private static IEnumerator Observe(IEnumerator native, FullBattleTrace trace, CharacterState boss)
+            {
+                AllGameManagers managers = AllGameManagers.Instance!;
+                var row = new InfestedDeathGrant
+                {
+                    Sequence = trace.NextPhaseSequence(),
+                    Turn = managers.GetCombatManager().GetTurnCount(),
+                    Preview = managers.GetSaveManager().PreviewMode,
+                    ActorId = trace.UnitId(boss),
+                    TargetId = trace.UnitId(boss),
+                    BeforeStacks = boss.GetStatusEffectStacks("hivemind"),
+                    BeforeAttack = boss.GetAttackDamage()
+                };
+                infestedDeathGrants.Add(row);
+                try
+                {
+                    while (native.MoveNext()) yield return native.Current;
+                    row.AfterStacks = boss.GetStatusEffectStacks("hivemind");
+                    row.AfterAttack = boss.GetAttackDamage();
+                }
+                finally { (native as IDisposable)?.Dispose(); }
+            }
         }
 
         [HarmonyPatch(typeof(CardEffectPlayUnitTrigger), nameof(CardEffectPlayUnitTrigger.ApplyEffect))]

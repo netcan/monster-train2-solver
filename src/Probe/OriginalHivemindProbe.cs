@@ -12,7 +12,8 @@ namespace MonsterTrain2Poju.Probe
         private const string Status = "hivemind";
         private const string Upgrade = "RoomStateHivemindModifierUpgrade";
         internal static readonly List<Callback> Records = new();
-        private static bool Enabled => OriginalUnrulyWitness.IndulgentTitanskin || OriginalUnrulyWitness.IndulgentTrampleCasting;
+        private static bool Enabled => OriginalUnrulyWitness.IndulgentTitanskin || OriginalUnrulyWitness.IndulgentTrampleCasting ||
+            OriginalUnrulyWitness.LifemotherInfested;
 
         internal sealed class Callback
         {
@@ -31,7 +32,10 @@ namespace MonsterTrain2Poju.Probe
         private static void Observe(string kind, CharacterState? actor, ref IEnumerator native)
         {
             if (FullBattleTrace.Active == null || actor == null || actor.GetTeamType() != Team.Type.Heroes ||
-                AllGameManagers.Instance is not AllGameManagers managers || managers.GetCombatManager().GetTurnCount() != 1)
+                AllGameManagers.Instance is not AllGameManagers managers)
+                return;
+            int turn = managers.GetCombatManager().GetTurnCount();
+            if (turn != 1 && !(OriginalUnrulyWitness.LifemotherInfested && turn == 2))
                 return;
             native = Capture(native, kind, actor, managers);
         }

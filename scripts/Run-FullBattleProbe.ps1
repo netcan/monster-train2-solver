@@ -820,6 +820,7 @@ param(
     [switch] $IndulgentTrampleCasting,
     [switch] $IndulgentTrampleWholeBattle,
     [switch] $OriginalLifemotherReanimateBattle,
+    [switch] $OriginalLifemotherInfestedObservation,
     [switch] $OriginalLifemotherDebuffs,
     [switch] $LifemotherDebuffsWholeBattle,
     [ValidateSet('DuplicateEnemy', 'Scourge', 'SniperAdvance')][string] $OriginalUnrulyVariant = 'DuplicateEnemy',
@@ -1930,7 +1931,7 @@ if ($OriginalDutifulBurstBattle -and $OriginalDutifulVariant) {
 $originalDutifulBattle = $OriginalDutifulBurstBattle -or $OriginalDutifulVariant
 $originalSoulSaviorVariant = $OriginalUnrulyVariant
 $additionalSoulSaviorCases = @($originalDutifulBattle, $OriginalIndulgentTitanskinBattle, $OriginalIndulgentCapacityBattle, $OriginalIndulgentGorgeOnSlay,
-    $OriginalLifemotherReanimateBattle, $OriginalLifemotherDebuffs) |
+    $OriginalLifemotherReanimateBattle, $OriginalLifemotherInfestedObservation, $OriginalLifemotherDebuffs) |
     Where-Object { $_ }
 if (@($additionalSoulSaviorCases).Count) {
     if ($OriginalUnrulyBattle -or $OriginalUnrulyWitness -or @($additionalSoulSaviorCases).Count -gt 1) {
@@ -1943,6 +1944,7 @@ if (@($additionalSoulSaviorCases).Count) {
         elseif ($OriginalIndulgentCapacityBattle) { 'IndulgentCapacity' }
         elseif ($OriginalIndulgentGorgeOnSlay) { 'IndulgentGorgeOnSlay' }
         elseif ($OriginalLifemotherReanimateBattle) { 'LifemotherReanimate' }
+        elseif ($OriginalLifemotherInfestedObservation) { 'LifemotherInfested' }
         elseif ($OriginalLifemotherDebuffs) { 'LifemotherDebuffs' }
         else { 'DutifulAscendDescend' }
     if ($OriginalDutifulVariant -eq 'Armor') {
@@ -1957,11 +1959,12 @@ if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
         elseif ($OriginalIndulgentCapacityBattle) { 'OriginalIndulgentCapacityBattle' }
         elseif ($OriginalIndulgentGorgeOnSlay) { 'OriginalIndulgentGorgeOnSlay' }
         elseif ($OriginalLifemotherReanimateBattle) { 'OriginalLifemotherReanimateBattle' }
+        elseif ($OriginalLifemotherInfestedObservation) { 'OriginalLifemotherInfestedObservation' }
         elseif ($OriginalLifemotherDebuffs) { 'OriginalLifemotherDebuffs' }
         elseif ($OriginalUnrulyBattle) { 'OriginalUnrulyBattle' } else { 'OriginalUnrulyWitness' }
     $soulSaviorDistance = if ($originalDutifulBattle) { 0 }
         elseif ($OriginalIndulgentTitanskinBattle -or $OriginalIndulgentCapacityBattle -or $OriginalIndulgentGorgeOnSlay) { 1 }
-        elseif ($OriginalLifemotherReanimateBattle -or $OriginalLifemotherDebuffs) { 4 } else { 2 }
+        elseif ($OriginalLifemotherReanimateBattle -or $OriginalLifemotherInfestedObservation -or $OriginalLifemotherDebuffs) { 4 } else { 2 }
     $unrulyArguments = @($unrulyMode, 'InputProfile', 'BattleDistance', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'OriginalUnrulyVariant')
     if ($OriginalLifemotherDebuffs) { $unrulyArguments += 'LifemotherDebuffsWholeBattle' }
@@ -3502,7 +3505,9 @@ if ($OriginalSpurned) {
 if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
     $environment['MT2_PROBE_ORIGINAL_UNRULY'] = if ($OriginalUnrulyBattle) { 'battle' } else { 'component' }
     $environment['MT2_PROBE_UNRULY_VARIANT'] = $originalSoulSaviorVariant
-    if ($OriginalLifemotherReanimateBattle -or $OriginalLifemotherDebuffs) { $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1' }
+    if ($OriginalLifemotherReanimateBattle -or $OriginalLifemotherInfestedObservation -or $OriginalLifemotherDebuffs) {
+        $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+    }
     if ($LifemotherDebuffsWholeBattle) { $environment['MT2_PROBE_LIFEMOTHER_DEBUFFS_BATTLE'] = '1' }
     if ($IndulgentTrampleCasting) { $environment['MT2_PROBE_INDULGENT_TRAMPLE_CASTING'] = '1' }
 }
@@ -4720,6 +4725,7 @@ if ($OriginalUnrulyBattle) {
         elseif ($OriginalIndulgentCapacityBattle) { 'SoulSavior_R2_BossBattle_FavoredChild_2' }
         elseif ($OriginalIndulgentGorgeOnSlay) { 'SoulSavior_R2_BossBattle_FavoredChild_1' }
         elseif ($OriginalLifemotherReanimateBattle) { 'SoulSavior_R5_BossBattle_Lifemother_Reanimate' }
+        elseif ($OriginalLifemotherInfestedObservation) { 'SoulSavior_R5_BossBattle_Lifemother_Infested' }
         elseif ($LifemotherDebuffsWholeBattle) { 'SoulSavior_R5_BossBattle_Lifemother_Debuffs' }
         else { "SoulSavior_R3_BossBattle_$OriginalUnrulyVariant" }
     $unrulyBoss = if ($originalDutifulBattle) { 'Boss_SoulSavior_R1_Dutiful_' + $originalSoulSaviorVariant.Substring('Dutiful'.Length) }
@@ -4727,6 +4733,7 @@ if ($OriginalUnrulyBattle) {
         elseif ($OriginalIndulgentCapacityBattle) { 'Boss_SoulSavior_R2_Indulgent_ReduceCapacityResolve' }
         elseif ($OriginalIndulgentGorgeOnSlay) { 'Boss_SoulSavior_R2_Indulgent_GorgeOnSlay' }
         elseif ($OriginalLifemotherReanimateBattle) { 'Boss_SoulSavior_Final_Lifemother_HealReanimate' }
+        elseif ($OriginalLifemotherInfestedObservation) { 'Boss_SoulSavior_Final_Lifemother_Infested' }
         elseif ($LifemotherDebuffsWholeBattle) { 'Boss_SoulSavior_Final_Lifemother_Debuffer' }
         else { "Boss_SoulSavior_R3_Unruly_$OriginalUnrulyVariant" }
     if ($trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
@@ -4735,6 +4742,31 @@ if ($OriginalUnrulyBattle) {
         @($trace.Actions).Count -eq 0 -or @($trace.Turns).Count -eq 0 -or -not $trace.TerminalEffectsSettled -or
         (Get-OriginalSignature $checkpoint) -cne $unrulyInputSignature) {
         throw "Original Soul Savior battle did not settle ordinary play in the unchanged test scenario. Inspect $tracePath and $unityLog"
+    }
+    if ($OriginalLifemotherInfestedObservation) {
+        $firstDraw = @($trace.Turns | Where-Object { $_.Before.Spawn.Turn -eq 0 -and $_.Actual.Spawn.Turn -eq 1 })
+        $boss = if ($firstDraw.Count -eq 1) { $firstDraw[0].Actual.Spawn.OuterBoss }
+        $nativeActor = @($firstDraw.Actual.Spawn.Train.Rooms | ForEach-Object { $_.Units } |
+            Where-Object { $_.Id -eq $boss.UnitId -and $_.AssetKey -ceq $unrulyBoss })
+        $committedGrants = @($unruly.InfestedDeathGrants | Where-Object {
+            -not $_.Preview -and $_.ActorId -eq $boss.UnitId -and $_.TargetId -eq $_.ActorId -and
+            $null -ne $_.AfterStacks -and $_.AfterStacks -eq ($_.BeforeStacks + 2)
+        })
+        if ($process.ExitCode -ne 0 -or (Get-OriginalSignature) -cne $originalBefore -or
+            $trace.CaptureFailures -ne 0 -or $trace.Pending -ne 0 -or
+            $trace.TerminalCaptureBoundary -cne 'AfterStopCombatLoop' -or
+            $unruly.Owner -cne 'Boss_Railforged_Lifemother_Infested' -or
+            $unruly.OwnerId -cne '72f9f4e3-df23-4954-99e6-9040ab573590' -or
+            $null -eq $boss -or $boss.AssetKey -cne $unrulyBoss -or $boss.Phase -cne 'Casting' -or
+            $null -eq $boss.Controller -or @($boss.Actions).Count -ne 1 -or
+            $nativeActor.Count -ne 1 -or $committedGrants.Count -eq 0) {
+            throw "Original Lifemother Infested has incomplete controller or status-grant observations. Inspect $tracePath and $unityLog"
+        }
+        [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; OriginalFilesUnchanged = $true;
+            FirstDrawBossRoom = $boss.Room; DeathGrants = $committedGrants.Count; SourceUnsupported = $trace.Unsupported;
+            SourceMismatches = $trace.Mismatches; Trace = $tracePath;
+            SHA256 = (Get-FileHash -LiteralPath $tracePath -Algorithm SHA256).Hash } | ConvertTo-Json
+        return
     }
     if ($OriginalLifemotherReanimateBattle) {
         $postCombat = @($trace.TriggeredStatuses | Where-Object { $_.Completed -and $_.Kind -ceq 'PostCombat' })

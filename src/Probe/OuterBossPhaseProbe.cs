@@ -28,7 +28,11 @@ namespace MonsterTrain2Poju.Probe
                     (!OuterBossDefinitions.IsIndulgentTrample(boss.GetSourceCharacterData().GetAssetKey()) ||
                         boss.GetBossState().GetCurrentAttackPhase() == BossState.AttackPhase.Casting) &&
                     (TurnsEnabled && Supports(boss.GetSourceCharacterData()) || TrueFinalBossTurnProbe.CaptureEnabled &&
-                        boss.IsTrueFinalBoss() && boss.GetSourceCharacterData().GetAssetKey() == "Boss_Level9_Entropy_Top_V2");
+                        boss.IsTrueFinalBoss() && boss.GetSourceCharacterData().GetAssetKey() == "Boss_Level9_Entropy_Top_V2"
+#if DEVELOPMENT_PROBE
+                        || OriginalUnrulyWitness.ObservesInfestedBoss(boss.GetSourceCharacterData())
+#endif
+                    );
             }
         }
         private static bool ForceRelentless => Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_RELENTLESS") == "1";
@@ -39,6 +43,9 @@ namespace MonsterTrain2Poju.Probe
             var groups = data.GetBossActionData();
             string assetKey = data.GetAssetKey();
             bool supported = OuterBossDefinitions.Supports(assetKey);
+#if DEVELOPMENT_PROBE
+            supported |= OriginalUnrulyWitness.ObservesInfestedBoss(data);
+#endif
             if (OuterBossDefinitions.IsIndulgentTrample(assetKey))
             {
                 SaveManager? save = AllGameManagers.Instance?.GetSaveManager();

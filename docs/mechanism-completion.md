@@ -418,6 +418,10 @@ Infested 的出生和初始站位也通过。首轮抽牌后三名波次单位�
 首领阶段与同层死亡组合仍待继续对照。
 [原版开局](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/native-opening.mt2f)
 
+`Run-FullBattleProbe.ps1 -OriginalLifemotherInfestedObservation` 从隔离的原版 BattleIntro
+采集待出生首领、施法控制器和同层死亡回调。该录制模式复用手牌界面测试随机流隔离，以便逐字段
+对照游戏规则引发的随机消耗。首轮抽牌后首领在索引 2 的楼层，下一动作是第 0 组第 0 个动作。
+
 Lifemother Debuffs 的原版践踏在濒死冠军和后排复仇者身上各施加 12 层 Malaise。
 死亡回调把冠军身上的 12 层转给存活复仇者，叠到 24 层。四次回调的状态和随机流均通过专项回放。
 两条原版 Torch 分支进一步核对 Malaise 与 Pyregel 的转移和清除顺序。反向顺序的样本中没有存活接收者。
