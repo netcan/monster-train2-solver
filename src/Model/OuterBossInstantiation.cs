@@ -26,6 +26,25 @@ namespace MonsterTrain2Poju.Model
     }
     public static class OuterBossInstantiationModel
     {
+        private static bool CalibratedDutiful(CombatUnit unit)
+        {
+            if (unit is not { MoonPhaseMask: 4, Triggers: [var trigger], Statuses.Count: 0 } ||
+                unit.Attack != unit.BaseAttack || unit.Health != unit.MaxHealth ||
+                trigger is not { Once: false, HasTriggered: false, IgnoreSilence: false, FireCount: 1,
+                    TriggerAtThreshold: 0, Conditions: null, Effects: [var effect] } ||
+                effect.Action is not { Type: "AddStatus", Target: "Room", AllowEnemy: true, AllowPlayer: false,
+                    Range: null, Statuses: [var status] }) return false;
+            return unit.AssetKey switch
+            {
+                OuterBossDefinitions.DutifulBurst => unit.BaseAttack == 16 && unit.MaxHealth == 800 &&
+                    trigger.Kind == "PostCombat" && effect.Type == "CardEffectAddStatusEffect" &&
+                    status is { Id: "burst", Stacks: 1 },
+                OuterBossDefinitions.DutifulAscendDescend => unit.BaseAttack == 15 && unit.MaxHealth == 900 &&
+                    trigger.Kind == "OnShift" && effect.Type == "CardEffectAddStatusEffect" &&
+                    status is { Id: "buff", Stacks: 3 },
+                _ => false
+            };
+        }
         private static bool CalibratedPushMoon(CombatUnit unit) =>
             unit is { AssetKey: "Boss_Level3_Arkion_PushAttack", BaseAttack: 13, Attack: 13,
                 Health: 425, MaxHealth: 425, Triggers.Count: 1 } &&
@@ -72,12 +91,7 @@ namespace MonsterTrain2Poju.Model
                     Health: 800, MaxHealth: 800, MoonPhaseMask: 4, Triggers: [var sniper],
                     Statuses: [{ Id: "sniper", Stacks: 1 }] } &&
                 sniper.Effects is [var rearrangement] && OuterBossDefinitions.IsUnrulySniperAdvance(actor.Unit, sniper, rearrangement);
-            bool dutifulFullMoon = moon == 2 && battle.MoonPhase == "Full" &&
-                actor.Unit is { AssetKey: OuterBossDefinitions.DutifulBurst, BaseAttack: 16, Attack: 16,
-                    Health: 800, MaxHealth: 800, MoonPhaseMask: 4, Triggers:
-                    [{ Kind: "PostCombat", Once: false, Effects: [{ Type: "CardEffectAddStatusEffect", Action:
-                        { Type: "AddStatus", Target: "Room", AllowEnemy: true, AllowPlayer: false,
-                            Range: null, Statuses: [{ Id: "burst", Stacks: 1 }] } }] }] };
+            bool dutifulFullMoon = moon == 2 && battle.MoonPhase == "Full" && CalibratedDutiful(actor.Unit);
             bool fullMoon = moon == 2 &&
                 (actor.Unit.AssetKey is "Boss_Level3_Fleshweaver_Corruption" or "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth" or
                     "Boss_Level3_Arkion_SiphonRage" or "Boss_Level6_Cael_DamageShield" || CalibratedLifestealMoon(actor.Unit) || CalibratedPushMoon(actor.Unit) ||
@@ -100,6 +114,8 @@ namespace MonsterTrain2Poju.Model
             if (statError != null) return Fail(statError);
             if (train.Context?.Relics?.Any(owner => owner.IsCovenant == true) == true && actor.BirthStats == null)
                 return Fail("Outer-boss Covenant creation requires its calibrated native birth stats.");
+            if (OuterBossDefinitions.IsDutiful(actor.Unit.AssetKey) && !CalibratedDutiful(actor.Unit))
+                return Fail("Dutiful birth requires the captured original actor and status trigger.");
             if (!OuterBossDefinitions.Supports(actor.Unit.AssetKey) || actor.Unit.Id != 0 || boss.UnitId != 0 ||
                 boss.AssetKey != actor.Unit.AssetKey || boss.Room != -1 || boss.Phase != "Casting" ||
                 old.OuterBoss != null || train.Context?.SpawnPoints == null || actor.Unit.BumpRules?.OuterBoss != true ||

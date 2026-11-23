@@ -20,6 +20,7 @@ namespace MonsterTrain2Poju.Probe
             "Scourge" => "SoulSavior_R3_BossBattle_Scourge",
             "SniperAdvance" => "SoulSavior_R3_BossBattle_StealBuffs1",
             "DutifulBurst" => "SoulSavior_R1_BossBattle_DutifulChild_Burst",
+            "DutifulAscendDescend" => "SoulSavior_R1_BossBattle_DutifulChild_AscendDescend",
             _ => "SoulSavior_R3_BossBattle_DuplicateEnemy"
         };
         private static string BossKey => Variant switch
@@ -27,6 +28,7 @@ namespace MonsterTrain2Poju.Probe
             "Scourge" => OuterBossDefinitions.UnrulyScourge,
             "SniperAdvance" => OuterBossDefinitions.UnrulySniperAdvance,
             "DutifulBurst" => OuterBossDefinitions.DutifulBurst,
+            "DutifulAscendDescend" => OuterBossDefinitions.DutifulAscendDescend,
             _ => TriggeredSummonModel.UnrulyBoss
         };
         private const string DecoyKey = "R3_Horde_T1_Decoy";
@@ -36,6 +38,11 @@ namespace MonsterTrain2Poju.Probe
         private static string? Variant => FullBattle ? Environment.GetEnvironmentVariable("MT2_PROBE_UNRULY_VARIANT") : null;
         internal static bool Scourge => Variant == "Scourge";
         internal static bool DutifulBurst => Variant == "DutifulBurst";
+        internal static bool DutifulGrant(CardEffectState effect, CardEffectParams parameters) =>
+            FullBattle && OuterBossDefinitions.IsDutiful(BossKey) &&
+            parameters.selfTarget?.GetSourceCharacterData().GetAssetKey() == BossKey &&
+            parameters.sourceCharacterTriggerState is { } trigger &&
+            OuterBossPhaseProbe.DutifulGrant(BossKey, trigger.GetTrigger(), effect.GetSourceCardEffectData());
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
         internal static object? FullBattleEvidence { get; private set; }

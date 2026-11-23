@@ -103,15 +103,12 @@ namespace MonsterTrain2Poju.Probe
             {
                 bool pyreRevenge = OriginalPyreRevengeScenario.Prepared && cardEffectParams.selfTarget?.IsPyreHeart() == true &&
                     cardEffectParams.sourceCharacterTriggerState?.GetTrigger() == CharacterTriggerData.Trigger.OnHit;
-                bool dutifulBurst = false;
+                bool dutifulGrant = false;
 #if DEVELOPMENT_PROBE
-                dutifulBurst = OriginalUnrulyWitness.DutifulBurst &&
-                    cardEffectParams.selfTarget?.GetSourceCharacterData().GetAssetKey() == OuterBossDefinitions.DutifulBurst &&
-                    cardEffectParams.sourceCharacterTriggerState?.GetTrigger() == CharacterTriggerData.Trigger.PostCombat &&
-                    OuterBossPhaseProbe.DutifulBurstGrant(cardEffectState.GetSourceCardEffectData());
+                dutifulGrant = OriginalUnrulyWitness.DutifulGrant(cardEffectState, cardEffectParams);
 #endif
                 if (((Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "triggered-status" && TriggeredStatusScenario.Prepared) ||
-                    OriginalPunishedUnitsScenario.Prepared || PurifyScenario.Prepared || OriginalEquipmentGrowthScenario.Prepared || pyreRevenge || dutifulBurst) &&
+                    OriginalPunishedUnitsScenario.Prepared || PurifyScenario.Prepared || OriginalEquipmentGrowthScenario.Prepared || pyreRevenge || dutifulGrant) &&
                     FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode && cardEffectParams.selfTarget != null)
                     __result = Wrap(__result, cardEffectState, cardEffectParams, pyreRevenge);
             }

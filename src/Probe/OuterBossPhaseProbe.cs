@@ -49,10 +49,11 @@ namespace MonsterTrain2Poju.Probe
                     data.GetTriggers() is [var sniper] && sniper.GetTrigger() == CharacterTriggerData.Trigger.OnAttacking &&
                     !sniper.GetTriggerOnce() && !sniper.GetHideVisualAndIgnoreSilence() &&
                     sniper.GetEffects() is [var movement] && SniperAdvance(movement)) &&
-                (data.GetAssetKey() != OuterBossDefinitions.DutifulBurst ||
-                    data.GetTriggers() is [var burst] && burst.GetTrigger() == CharacterTriggerData.Trigger.PostCombat &&
-                    !burst.GetTriggerOnce() && !burst.GetHideVisualAndIgnoreSilence() && !burst.GetOnlyTriggerIfEquipped() &&
-                    burst.GetTriggerAtThreshold() == 0 && burst.GetEffects() is [var grant] && DutifulBurstGrant(grant));
+                (!OuterBossDefinitions.IsDutiful(data.GetAssetKey()) ||
+                    data.GetTriggers() is [var dutiful] && !dutiful.GetTriggerOnce() &&
+                    !dutiful.GetHideVisualAndIgnoreSilence() && !dutiful.GetOnlyTriggerIfEquipped() &&
+                    dutiful.GetTriggerAtThreshold() == 0 && dutiful.GetEffects() is [var grant] &&
+                    DutifulGrant(data.GetAssetKey(), dutiful.GetTrigger(), grant));
         }
 
         internal static bool ScourgeAward(CardEffectData effect) =>
@@ -68,11 +69,19 @@ namespace MonsterTrain2Poju.Probe
             effect.GetTargetMode() == TargetMode.LastAttackedCharacter && effect.GetTargetTeamType() == Team.Type.Monsters &&
             effect.GetParamInt() == (int)SpawnMode.FrontSlot && !effect.GetUseIntRange();
 
-        internal static bool DutifulBurstGrant(CardEffectData effect) =>
-            effect.GetEffectStateName() == nameof(CardEffectAddStatusEffect) &&
-            effect.GetTargetMode() == TargetMode.Room && effect.GetTargetTeamType() == Team.Type.Heroes &&
-            !effect.GetUseIntRange() &&
-            effect.GetParamStatusEffects() is [var status] && status.statusId == "burst" && status.count == 1;
+        internal static bool DutifulGrant(string assetKey, CharacterTriggerData.Trigger trigger, CardEffectData effect)
+        {
+            if (effect.GetTargetMode() != TargetMode.Room || effect.GetTargetTeamType() != Team.Type.Heroes ||
+                effect.GetUseIntRange() || effect.GetParamStatusEffects() is not [var status]) return false;
+            return assetKey switch
+            {
+                OuterBossDefinitions.DutifulBurst => trigger == CharacterTriggerData.Trigger.PostCombat &&
+                    effect.GetEffectStateName() == nameof(CardEffectAddStatusEffect) && status.statusId == "burst" && status.count == 1,
+                OuterBossDefinitions.DutifulAscendDescend => trigger == CharacterTriggerData.Trigger.OnShift &&
+                    effect.GetEffectStateName() == nameof(CardEffectAddStatusEffect) && status.statusId == "buff" && status.count == 3,
+                _ => false
+            };
+        }
         internal sealed class Record
         {
             public string Phase { get; set; } = "";

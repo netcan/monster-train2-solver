@@ -813,7 +813,8 @@ param(
     [switch] $OriginalUnrulyWitness,
     [switch] $OriginalUnrulyBattle,
     [switch] $OriginalDutifulBurstBattle,
-    [ValidateSet('DuplicateEnemy', 'Scourge', 'SniperAdvance', 'DutifulBurst')][string] $OriginalUnrulyVariant = 'DuplicateEnemy',
+    [ValidateSet('AscendDescend')][string] $OriginalDutifulVariant,
+    [ValidateSet('DuplicateEnemy', 'Scourge', 'SniperAdvance')][string] $OriginalUnrulyVariant = 'DuplicateEnemy',
     [ValidateRange(1, 3)][int] $OriginalSpurnedChallenge = 2,
     [switch] $OriginalSpurnedRetainPiles,
     [switch] $OriginalRageOnBurnoutStackLoss,
@@ -1902,20 +1903,24 @@ if ($OriginalAffordableNonPlayable) {
 if ($PSBoundParameters.ContainsKey('OriginalUnrulyVariant') -and -not $OriginalUnrulyBattle) {
     throw 'OriginalUnrulyVariant requires OriginalUnrulyBattle.'
 }
-if ($OriginalUnrulyVariant -eq 'DutifulBurst' -and -not $OriginalDutifulBurstBattle) {
-    throw 'Use -OriginalDutifulBurstBattle to observe the original Dutiful battle.'
+if ($OriginalDutifulBurstBattle -and $OriginalDutifulVariant) {
+    throw 'Choose a single Dutiful variant.'
 }
-if ($OriginalDutifulBurstBattle) {
+$originalDutifulBattle = $OriginalDutifulBurstBattle -or $OriginalDutifulVariant
+$originalSoulSaviorVariant = $OriginalUnrulyVariant
+if ($originalDutifulBattle) {
     if ($OriginalUnrulyBattle -or $OriginalUnrulyWitness) {
         throw 'Choose a single Soul Savior battle or component.'
     }
     $OriginalUnrulyBattle = $true
-    $OriginalUnrulyVariant = 'DutifulBurst'
+    $originalSoulSaviorVariant = if ($OriginalDutifulBurstBattle) { 'DutifulBurst' }
+        else { 'DutifulAscendDescend' }
 }
 if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
     $unrulyMode = if ($OriginalDutifulBurstBattle) { 'OriginalDutifulBurstBattle' }
+        elseif ($originalDutifulBattle) { 'OriginalDutifulVariant' }
         elseif ($OriginalUnrulyBattle) { 'OriginalUnrulyBattle' } else { 'OriginalUnrulyWitness' }
-    $soulSaviorDistance = if ($OriginalDutifulBurstBattle) { 0 } else { 2 }
+    $soulSaviorDistance = if ($originalDutifulBattle) { 0 } else { 2 }
     $unrulyArguments = @($unrulyMode, 'InputProfile', 'BattleDistance', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'OriginalUnrulyVariant')
     if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne $soulSaviorDistance -or
@@ -3450,7 +3455,7 @@ if ($OriginalSpurned) {
 }
 if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
     $environment['MT2_PROBE_ORIGINAL_UNRULY'] = if ($OriginalUnrulyBattle) { 'battle' } else { 'component' }
-    $environment['MT2_PROBE_UNRULY_VARIANT'] = $OriginalUnrulyVariant
+    $environment['MT2_PROBE_UNRULY_VARIANT'] = $originalSoulSaviorVariant
 }
 if ($OriginalSpurnedBattle) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-spurned-battle'
@@ -4627,8 +4632,9 @@ if ($OriginalUnrulyBattle) {
     $unruly = $trace.OriginalUnrulyBattle
     $unrulyScenario = if ($OriginalUnrulyVariant -eq 'SniperAdvance') { 'SoulSavior_R3_BossBattle_StealBuffs1' }
         elseif ($OriginalDutifulBurstBattle) { 'SoulSavior_R1_BossBattle_DutifulChild_Burst' }
+        elseif ($OriginalDutifulVariant -eq 'AscendDescend') { 'SoulSavior_R1_BossBattle_DutifulChild_AscendDescend' }
         else { "SoulSavior_R3_BossBattle_$OriginalUnrulyVariant" }
-    $unrulyBoss = if ($OriginalDutifulBurstBattle) { 'Boss_SoulSavior_R1_Dutiful_Burst' }
+    $unrulyBoss = if ($originalDutifulBattle) { 'Boss_SoulSavior_R1_Dutiful_' + $originalSoulSaviorVariant.Substring('Dutiful'.Length) }
         else { "Boss_SoulSavior_R3_Unruly_$OriginalUnrulyVariant" }
     if ($trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
         $unruly.Scenario -cne $unrulyScenario -or $unruly.BossKey -cne $unrulyBoss -or
@@ -4637,20 +4643,26 @@ if ($OriginalUnrulyBattle) {
         (Get-OriginalSignature $checkpoint) -cne $unrulyInputSignature) {
         throw "Original Soul Savior battle did not settle ordinary play in the unchanged test scenario. Inspect $tracePath and $unityLog"
     }
-    if ($OriginalDutifulBurstBattle) {
+    if ($originalDutifulBattle) {
+        $status, $kind, $stacks = switch ($originalSoulSaviorVariant) {
+            'DutifulBurst' { 'burst', 'PostCombat', 1 }
+            'DutifulAscendDescend' { 'buff', 'OnShift', 3 }
+        }
         $gains = @($trace.TriggeredStatuses | ForEach-Object {
             $grant = $_
-            if ($grant.Completed -and $grant.Kind -ceq 'PostCombat') {
+            if ($grant.Completed -and $grant.Kind -ceq $kind -and $grant.Effect.Action.Statuses.Id -ceq $status -and
+                @($grant.BeforeUnits | Where-Object { $_.Id -eq $grant.ActorId -and $_.AssetKey -ceq $unrulyBoss }).Count -eq 1) {
                 foreach ($prior in $grant.BeforeUnits | Where-Object { $_.Id -in $grant.Targets }) {
                     $after = $grant.ActualUnits | Where-Object { $_.Id -eq $prior.Id }
-                    $beforeBurst = ($prior.Statuses | Where-Object { $_.Id -ceq 'burst' } | ForEach-Object { [int]$_.Stacks } | Measure-Object -Sum).Sum
-                    $afterBurst = ($after.Statuses | Where-Object { $_.Id -ceq 'burst' } | ForEach-Object { [int]$_.Stacks } | Measure-Object -Sum).Sum
-                    if ([int]$afterBurst -eq ([int]$beforeBurst + 1)) { $prior.Id }
+                    $beforeStacks = ($prior.Statuses | Where-Object { $_.Id -ceq $status } | ForEach-Object { [int]$_.Stacks } | Measure-Object -Sum).Sum
+                    $afterStacks = ($after.Statuses | Where-Object { $_.Id -ceq $status } | ForEach-Object { [int]$_.Stacks } | Measure-Object -Sum).Sum
+                    $gain = [int]$afterStacks - [int]$beforeStacks
+                    if ($gain -eq $stacks) { $prior.Id }
                 }
             }
         })
         if ($gains.Count -eq 0) {
-            throw "Original Dutiful did not grant native Burst. Inspect $tracePath and $unityLog"
+            throw "Original Dutiful did not grant native $status. Inspect $tracePath and $unityLog"
         }
     }
     if ($OriginalUnrulyVariant -eq 'Scourge') {
