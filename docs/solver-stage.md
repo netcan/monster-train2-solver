@@ -668,3 +668,8 @@ Dutiful Burst 两场各自通过完整连续回放、16 条独立分支和两类
 加上前述两场定向复验，已有 467 场通过，合计 7,197 次出牌或技能和 2,791 次结束回合。
 Soul Savior 原版遭遇已有 10／15 场整战证据。
 [首领覆盖清单](../tests/fixtures/inventory/boss-coverage.md)
+
+Lifemother Debuffs 追加 11 次出牌、4 次结束回合及两条实际付费的替代分支。
+整战两类候选通过，累计已有 468 场、7,208 次出牌或技能及 2,795 次结束回合通过。
+Soul Savior 原版遭遇已有 11／15 场整战证据。
+[Debuffs 整战](../tests/compatibility/game-2.3.1/mechanics/lifemother-debuffs/native-battle.mt2f)
