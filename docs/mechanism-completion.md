@@ -1108,6 +1108,8 @@ TSV 的 `RunnerOption` 和 `DataIds` 可用于开局批录。清单按效果与�
 可在隔离首战批量取得原版遗物。采集先核对实际部署的遗物顺序和效果列表，再走整局验收。
 四件遗物的首批胜局完成了 27 次操作、7 次结束回合和两类候选检查。
 [原版整局](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/native-four-owner-roster.mt2f)
+随机冻结、随机手牌升级等效果可追加 `-OriginalOpeningRelicRosterNativeRng`。
+该选项按原版随机流采集出牌和结束回合，保留相同的整局差分验收。
 
 新原版胜局可用 `scripts/Register-Game231NativeBattle.ps1` 登记到现有机制目录。
 该入口校验隔离运行摘要和归档哈希，完成单场复放后再发布归档与清单。按需启用

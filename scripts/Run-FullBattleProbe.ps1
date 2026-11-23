@@ -649,6 +649,7 @@ param(
     [string[]] $OriginalOpeningRelicIds = @(),
     [switch] $OriginalOpeningPhaseRelics,
     [string[]] $OriginalOpeningRelicRosterIds = @(),
+    [switch] $OriginalOpeningRelicRosterNativeRng,
     [switch] $OriginalOpeningPassiveRelics,
     [switch] $OriginalOpeningPassiveRelicsFullBattle,
     [switch] $OriginalLifecycleRelicBatch,
@@ -1614,12 +1615,16 @@ if ($PSBoundParameters.ContainsKey('OriginalOpeningRelicRosterIds')) {
 if ($OriginalOpeningPassiveRelicsFullBattle -and !$OriginalOpeningPassiveRelics) {
     throw 'OriginalOpeningPassiveRelicsFullBattle requires OriginalOpeningPassiveRelics.'
 }
+if ($OriginalOpeningRelicRosterNativeRng -and !$OriginalOpeningRelicRosterIds.Count) {
+    throw 'OriginalOpeningRelicRosterNativeRng requires OriginalOpeningRelicRosterIds.'
+}
 if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells -or $OriginalTargetedStatusSpells -or $OriginalOpeningSpellIds.Count -or $OriginalOpeningUnitIds.Count -or $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics) {
     $allowed = @('OriginalStatusMagnitudeWitness', 'OriginalStatusMagnitudeMoonWitness', 'OriginalRoomStatusSpells', 'OriginalTargetedStatusSpells', 'OriginalOpeningSpellIds', 'OriginalOpeningUnitIds', 'OriginalOpeningRelicIds', 'OriginalOpeningPhaseRelics', 'OriginalOpeningRelicRosterIds', 'OriginalOpeningPassiveRelics', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
         'OriginalRoomStatusSpellsFullBattle', 'WithOriginalStatusMagnitudeRelics', 'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if ($OriginalOpeningSpellIds.Count -or $OriginalOpeningUnitIds.Count) { $allowed += 'InputProfile' }
     if ($OriginalOpeningUnitIds.Count) { $allowed += 'UseOpeningUnitAbilities', 'OpeningUnitRoomCorruption' }
     if ($OriginalOpeningPassiveRelics) { $allowed += 'OriginalOpeningPassiveRelicsFullBattle' }
+    if ($OriginalOpeningRelicRosterIds.Count) { $allowed += 'OriginalOpeningRelicRosterNativeRng' }
     $modes = @($OriginalStatusMagnitudeWitness, $OriginalStatusMagnitudeMoonWitness, $OriginalRoomStatusSpells, $OriginalTargetedStatusSpells, ($OriginalOpeningSpellIds.Count -gt 0), ($OriginalOpeningUnitIds.Count -gt 0), ($OriginalOpeningRelicIds.Count -gt 0), $OriginalOpeningPhaseRelics, ($OriginalOpeningRelicRosterIds.Count -gt 0), $OriginalOpeningPassiveRelics) | Where-Object { $_ }
     if (!$BinaryCapture -or @($modes).Count -ne 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
@@ -3027,8 +3032,10 @@ if ($OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics) {
 }
 if ($OriginalOpeningRelicRosterIds.Count) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-relic-roster:' + ($OriginalOpeningRelicRosterIds -join ',')
-    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
-    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+    if (!$OriginalOpeningRelicRosterNativeRng) {
+        $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+        $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+    }
 }
 if ($OriginalOpeningPassiveRelics) {
     $environment['MT2_PROBE_MODIFIERS'] = if ($OriginalOpeningPassiveRelicsFullBattle) {
