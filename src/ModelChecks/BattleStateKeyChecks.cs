@@ -36,6 +36,7 @@ internal static class BattleStateKeyChecks
             if (actual != expected[index][mode])
                 throw new InvalidOperationException($"State key differs from reference encoding: sample={index}, mode={mode}, actual={actual}.");
         });
+        CheckRandomTargetMetadata(states[0]);
         using (var keys = new BattleStateKeys())
         {
             if (keys.SnapshotKey(new EncodingWitness()) != "DAEA4C806CCE2A479A5155D396B8BE8CCD1EF7B83C0509C4E34FE09C2A16E8C6")
@@ -52,9 +53,42 @@ internal static class BattleStateKeyChecks
             using var keys = new BattleStateKeys();
             if (keys.Key(states[0]) != expected[0][0]) throw new InvalidOperationException("A repeated capture changed its key.");
         }
-        Console.WriteLine($"STATE-KEY PASS: 12 independent reference keys, frozen Unicode digest, concurrent instances, all three modes; " +
+        Console.WriteLine($"STATE-KEY PASS: 12 independent reference keys, absent/false/true card targeting metadata, frozen Unicode digest, concurrent instances, all three modes; " +
             $"20 warm fresh-root keys={watch.Elapsed.TotalMilliseconds:F1}ms " +
             $"allocatedBytes={GC.GetAllocatedBytesForCurrentThread() - allocated} gc0={GC.CollectionCount(0) - collections}.");
+    }
+
+    private static void CheckRandomTargetMetadata(BattleTurnState source)
+    {
+        EnemySpawnState spawn = source.Spawn;
+        CombatContext context = spawn.Train.Context!;
+        CardInstanceState card = context.CardInstances!.First(item => item.MaskDescriptor?.Definition.CardType == "Spell");
+        CardMaskDescriptor mask = card.MaskDescriptor!;
+        if (mask.RandomTargetsFromRelic.HasValue)
+            throw new InvalidOperationException("Expected a legacy card without random-target metadata.");
+        BattleTurnState[] states = [WithMask(mask), WithMask(mask.WithRandomTargets(false)), WithMask(mask.WithRandomTargets(true))];
+        for (int mode = 0; mode < 3; mode++)
+        {
+            using var keys = new BattleStateKeys(mode > 0, mode == 2);
+            string[] hashes = states.Select(keys.Key).ToArray();
+            if (hashes[0] != keys.Key(source) || hashes.Distinct().Count() != states.Length ||
+                !hashes.SequenceEqual(states.Select(state => ReferenceKey(state, mode))))
+                throw new InvalidOperationException($"Optional random-target metadata changed key compatibility or identity in mode {mode}.");
+        }
+
+        BattleTurnState WithMask(CardMaskDescriptor descriptor)
+        {
+            TrainCombatState train = CardSpellModel.WithContext(spawn.Train, context.WithCard(card.WithMaskDescriptor(descriptor)));
+            EnemySpawnState changed = new(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping,
+                spawn.Rng, spawn.NextUnitId, spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled,
+                spawn.FirstTreasureTurn, spawn.FirstTreasureRoom, spawn.Turn, spawn.ExternalInteractions,
+                spawn.CanonicalDecisionReferences, spawn.PendingDestroyedUnitIds, spawn.OuterBoss, spawn.QueuedOuterBoss,
+                spawn.QueuedTrueFinalBoss, spawn.TrueFinalBoss);
+            return new(changed, source.Energy, source.EnergyPerTurn, source.DrawPerTurn, source.ForgePoints, source.DragonsHoard,
+                source.MoonPhase, source.RngStreams, source.OtherPiles, source.ExternalInteractions, source.PlayRules,
+                source.BattlePreviewEnabled, source.UiRngIsolated, source.CanonicalDecisionReferences,
+                source.CanonicalPhysicalReferences, source.SelectedRoom, source.MoonPhaseTrackingActive);
+        }
     }
 
     private static string ReferenceKey(object snapshot, int mode)
@@ -90,7 +124,9 @@ internal static class BattleStateKeyChecks
                 .OrderBy(item => item.Name, StringComparer.Ordinal))
             {
                 object? child = property.GetValue(value);
-                if (value is RelicResourceEffect && property.Name == nameof(RelicResourceEffect.LastKnownDeckCount) && child == null)
+                if (child == null &&
+                    (value is RelicResourceEffect && property.Name == nameof(RelicResourceEffect.LastKnownDeckCount) ||
+                     value is CardMaskDescriptor && property.Name == nameof(CardMaskDescriptor.RandomTargetsFromRelic)))
                     continue;
                 yield return property.Name;
                 if (mode == 2 && child is int selected && selected >= 0 &&
