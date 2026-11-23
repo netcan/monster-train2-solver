@@ -6,8 +6,7 @@ internal static class CampaignDraftEnhancerCountChecks
     internal static void Native(string path)
     {
         using var document = ModelJson.ReadFixture(path); var root = document.RootElement;
-        Require(root.GetProperty("Schema").GetInt32() == 1 && root.GetProperty("GameVersion").GetString() == "2.2.1" &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
+        Require(root.GetProperty("Schema").GetInt32() == 1 && CampaignRelicChecks.SupportsCalibrationBuild(root) &&
             root.GetProperty("Before").ContentEquals(root.GetProperty("After")), "Draft-count identity or recorded state/frame/RNG restoration differs.");
         var owner = root.GetProperty("Owner"); var runtime = owner.GetProperty("Runtime");
         Require(owner.GetProperty("Id").GetString() == "9427e610-0c7b-4430-ab1f-c84049097168" && owner.GetProperty("Key").GetString() == "DrawOnCorruption" &&

@@ -7,8 +7,8 @@ internal static class CampaignDeckCopyChecks
     internal static void Native(string path)
     {
         using var document = ModelJson.ReadFixture(path); var root = document.RootElement; var owner = root.GetProperty("Owner");
-        Require(root.GetProperty("Schema").GetInt32() == 1 && root.GetProperty("GameVersion").GetString() == "2.2.1" &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" && root.GetProperty("Before").ContentEquals(root.GetProperty("After")), "Copy capture identity/restoration differs.");
+        Require(root.GetProperty("Schema").GetInt32() == 1 && CampaignRelicChecks.SupportsCalibrationBuild(root) &&
+            root.GetProperty("Before").ContentEquals(root.GetProperty("After")), "Copy capture identity/restoration differs.");
         Require(owner.GetProperty("Id").GetString() == "8ee399d2-4ee4-409d-af95-319bcd6accc4" && owner.GetProperty("Key").GetString() == "MothersRemnant1Relic" &&
             owner.GetProperty("Type").GetString() == "RelicEffectCopyRandomCardFromDeckEndOfBattle" && owner.GetProperty("Conditions").GetInt32() == 0, "Original permanent-copy owner changed.");
         var mask = owner.GetProperty("Mask").Deserialize<CardUpgradeMaskRule>()!;

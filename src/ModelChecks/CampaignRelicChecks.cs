@@ -37,8 +37,7 @@ internal static class CampaignRelicChecks
     {
         using var document = ModelJson.ReadFixture(path);
         FixtureValue root = document.RootElement;
-        Require(root.GetProperty("Schema").GetInt32() == 1 && root.GetProperty("GameVersion").GetString() == "2.2.1" &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
+        Require(root.GetProperty("Schema").GetInt32() == 1 && SupportsCalibrationBuild(root) &&
             root.GetProperty("Before").ContentEquals(root.GetProperty("After")),
             "Campaign calibration build or recorded state restoration differs.");
         var owners = root.GetProperty("Owners").EnumerateArray().ToArray();
@@ -115,5 +114,13 @@ internal static class CampaignRelicChecks
             "Original slot owners did not change an eligible native card.");
         Console.WriteLine("CAMPAIGN-RELICS-NATIVE PASS: six unchanged owners; 80 slot queries, 108 merchant prices, 66 actual reward displays/grants, six hoard acquisition/removal transitions; baseline/removed controls and recorded state/RNG restoration.");
     }
+    internal static bool SupportsCalibrationBuild(FixtureValue root)
+        => (root.GetProperty("GameVersion").GetString(), root.GetProperty("GameModuleMvid").GetString()) switch
+        {
+            (Game231FixtureCatalog.Version, Game231FixtureCatalog.Module) => true,
+            ("2.2.1", var module) => module == NativeBranchIdentity.HistoricalModule.ToString(),
+            _ => false
+        };
+
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

@@ -5,8 +5,7 @@ internal static class CampaignPurgeGoldChecks
     internal static void Native(string path)
     {
         using var document = ModelJson.ReadFixture(path); var root = document.RootElement; var owner = root.GetProperty("Owner");
-        Require(root.GetProperty("Schema").GetInt32() == 1 && root.GetProperty("GameVersion").GetString() == "2.2.1" &&
-            root.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
+        Require(root.GetProperty("Schema").GetInt32() == 1 && CampaignRelicChecks.SupportsCalibrationBuild(root) &&
             root.GetProperty("Before").ContentEquals(root.GetProperty("After")), "Purge consumer identity/restoration differs.");
         const string id = "d8d1e069-938e-4141-b6ac-e20f4578163a";
         Require(owner.GetProperty("Id").GetString() == id && owner.GetProperty("Key").GetString() == "BalatroEventCanio" &&
