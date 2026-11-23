@@ -6,6 +6,7 @@ namespace MonsterTrain2Poju.Model
     public static class OuterBossDefinitions
     {
         public const string UnrulyScourge = "Boss_SoulSavior_R3_Unruly_Scourge";
+        public const string UnrulySniperAdvance = "Boss_SoulSavior_R3_Unruly_SniperAdvance";
         internal const string UnrulyScourgeCard = "4d1f27af-3122-4a08-87e3-5ef5a14ced94";
         public const string CaelShieldTrial = "Boss_Level6_Cael_DamageShield_TitanTrial";
         public const string CaelAtkHpTrial = "Boss_Level6_Cael_AtkHP_TitanTrial";
@@ -142,11 +143,17 @@ namespace MonsterTrain2Poju.Model
         public static bool IsArkionPush(string assetKey) => assetKey == "Boss_Level3_Arkion_PushAttack";
         public static bool IsFleshweaver(string assetKey) => assetKey is "Boss_Level3_Fleshweaver_Corruption" or
             "Boss_Level3_Fleshweaver_MoreMass" or "Boss_Level3_Fleshweaver_Spike";
+        internal static bool IsUnrulySniperAdvance(CombatUnit unit, CombatTrigger trigger, CombatEffect effect) =>
+            unit.AssetKey == UnrulySniperAdvance && unit.Team == CombatTeam.Enemy &&
+            trigger is { Kind: "OnAttacking", Once: false, IgnoreSilence: false, Effects.Count: 1 } &&
+            effect is { Type: "CardEffectFloorRearrange", Action: { Type: "FloorRearrange",
+                Target: "LastAttackedCharacter", Value: 0, AllowEnemy: false, AllowPlayer: true,
+                Range: null, UseCardTraits: false, Statuses.Count: 0 } };
         public static bool Supports(string assetKey) => assetKey is
             "Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" or "Boss_Level8_Corrupter" or
             "Boss_Level8_AllyBuffer_TitanTrial" or "Boss_Level8_Fragile_TitanTrial" or "Boss_Level8_Corrupter_TitanTrial" or
             TriggeredStatusModel.OriginalSpurned or TriggeredStatusModel.OriginalSpurnedWitherbloom or TriggeredStatusModel.OriginalSpurnedDuality or
-            TriggeredSummonModel.UnrulyBoss or UnrulyScourge ||
+            TriggeredSummonModel.UnrulyBoss or UnrulyScourge or UnrulySniperAdvance ||
             IsAngelDuo(assetKey) || IsCael(assetKey) || IsCaelTrial(assetKey) || IsArkionPyre(assetKey) ||
             IsArkionRage(assetKey) || IsArkionPush(assetKey) || IsFleshweaver(assetKey);
     }

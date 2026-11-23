@@ -15,13 +15,24 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class OriginalUnrulyWitness
     {
-        private static string ScenarioKey => Scourge ? "SoulSavior_R3_BossBattle_Scourge" : "SoulSavior_R3_BossBattle_DuplicateEnemy";
-        private static string BossKey => Scourge ? OuterBossDefinitions.UnrulyScourge : TriggeredSummonModel.UnrulyBoss;
+        private static string ScenarioKey => Variant switch
+        {
+            "Scourge" => "SoulSavior_R3_BossBattle_Scourge",
+            "SniperAdvance" => "SoulSavior_R3_BossBattle_StealBuffs1",
+            _ => "SoulSavior_R3_BossBattle_DuplicateEnemy"
+        };
+        private static string BossKey => Variant switch
+        {
+            "Scourge" => OuterBossDefinitions.UnrulyScourge,
+            "SniperAdvance" => OuterBossDefinitions.UnrulySniperAdvance,
+            _ => TriggeredSummonModel.UnrulyBoss
+        };
         private const string DecoyKey = "R3_Horde_T1_Decoy";
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_UNRULY") is "component" or "battle";
         internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_UNRULY") == "battle";
-        internal static bool Scourge => FullBattle && Environment.GetEnvironmentVariable("MT2_PROBE_UNRULY_VARIANT") == "Scourge";
+        private static string? Variant => FullBattle ? Environment.GetEnvironmentVariable("MT2_PROBE_UNRULY_VARIANT") : null;
+        internal static bool Scourge => Variant == "Scourge";
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
         internal static object? FullBattleEvidence { get; private set; }
@@ -30,6 +41,7 @@ namespace MonsterTrain2Poju.Probe
         private static CharacterState? actor;
         private static IReadOnlyList<CardEffectState>? effects;
         private static List<object>? events;
+        private static readonly List<object> nativeAdvances = new();
 
         internal static void Request(SaveManager save, ManualLogSource log)
         {
@@ -41,7 +53,7 @@ namespace MonsterTrain2Poju.Probe
             if (save.GetAllGameData().FindScenarioDataByName(ScenarioKey) is not ScenarioData scenario ||
                 scenario.GetOuterTrainBoss(false)?.GetAssetKey() != BossKey ||
                 scenario.GetOuterTrainBoss(true)?.GetAssetKey() != BossKey ||
-                Scourge && !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false)))
+                FullBattle && !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false)))
                 throw new InvalidOperationException("Expected the installed original Soul Savior Ring 3 Unruly battle.");
             requested = true;
             AccessTools.Method(typeof(CheatManager), "Command_StartBattle", new[] { typeof(string) }).Invoke(null, new object[] { ScenarioKey });
@@ -59,7 +71,44 @@ namespace MonsterTrain2Poju.Probe
         {
             if (FullBattleEvidence != null) return;
             CheckScenario(save);
-            FullBattleEvidence = new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true, ControlledTestScenario = true };
+            FullBattleEvidence = Variant == "SniperAdvance"
+                ? new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true, ControlledTestScenario = true, Advances = nativeAdvances }
+                : new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true, ControlledTestScenario = true };
+        }
+
+        [HarmonyPatch(typeof(CardEffectFloorRearrange), nameof(CardEffectFloorRearrange.ApplyEffect))]
+        private static class SniperAdvancePatch
+        {
+            private static bool Prepare() => Variant == "SniperAdvance";
+
+            private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
+            {
+                if (AllGameManagers.Instance!.GetSaveManager().PreviewMode ||
+                    cardEffectParams.selfTarget?.GetSourceCharacterData().GetAssetKey() != BossKey ||
+                    cardEffectParams.sourceCharacterTriggerState?.GetTrigger() != CharacterTriggerData.Trigger.OnAttacking ||
+                    !OuterBossPhaseProbe.SniperAdvance(cardEffectState.GetSourceCardEffectData()) ||
+                    cardEffectParams.targets.Count == 0) return;
+                __result = Observe(__result, cardEffectParams.selfTarget, cardEffectParams.targets[0]);
+            }
+
+            private static IEnumerator Observe(IEnumerator native, CharacterState boss, CharacterState target)
+            {
+                FullBattleTrace trace = FullBattleTrace.Active!;
+                int room = target.GetCurrentRoomIndex();
+                int id = trace.UnitId(target);
+                int[] before = Occupants();
+                try { while (native.MoveNext()) yield return native.Current; }
+                finally { (native as IDisposable)?.Dispose(); }
+                int[] after = Occupants();
+                nativeAdvances.Add(new
+                {
+                    Turn = AllGameManagers.Instance!.GetCombatManager().GetTurnCount(), Room = room,
+                    BossId = trace.UnitId(boss), TargetId = id, Before = before, After = after
+                });
+
+                int[] Occupants() => BattleSpawnPointProbe.Capture(trace).Group(room, CombatTeam.Player)?.Occupants
+                    .Where(occupant => occupant > 0).ToArray() ?? Array.Empty<int>();
+            }
         }
 
         internal static void ArmEndTurn(int turn)

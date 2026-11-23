@@ -48,7 +48,7 @@ internal static class OuterBossBirthChecks
             OuterBossDefinitions.IsCaelTrial(born.AssetKey) ||
             OuterBossDefinitions.IsArkionPyre(born.AssetKey) || OuterBossDefinitions.IsArkionRage(born.AssetKey) ||
             OuterBossDefinitions.IsArkionPush(born.AssetKey) || OuterBossDefinitions.IsFleshweaver(born.AssetKey) ||
-            born.AssetKey is TriggeredSummonModel.UnrulyBoss or OuterBossDefinitions.UnrulyScourge ? auras.Length == 0 :
+            born.AssetKey is TriggeredSummonModel.UnrulyBoss or OuterBossDefinitions.UnrulyScourge or OuterBossDefinitions.UnrulySniperAdvance ? auras.Length == 0 :
             auras.Length == 1 && auras[0].Bound && auras[0].State.PrimaryTargets.Count == 0 && auras[0].State.CachedStatus == null;
         Require(deferredAura && born.Triggers.Where(trigger => trigger.Effects.Any(effect => effect.Enchantment != null))
                 .All(trigger => !trigger.HasTriggered) &&

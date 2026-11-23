@@ -1457,8 +1457,9 @@ namespace MonsterTrain2Poju.Model
                             bool arkion = OuterBossDefinitions.IsArkionPush(unit.AssetKey) && trigger.Kind == "OnAttackingBeforeDamage" &&
                                 effect.Action is { Type: "FloorRearrange", Target: "LastAttackedCharacter", Value: 1, Range: null,
                                     AllowEnemy: true, AllowPlayer: true, UseCardTraits: false } && effect.Action.Statuses.Count == 0;
-                            if (state.Context?.SpawnPoints == null || !self && !arkion && !HarvesterBirthModel.IsTrigger(unit, trigger))
-                                return "Triggered rearrangement requires its original self/front or Arkion attacked-target/back payload and physical positions.";
+                            if (state.Context?.SpawnPoints == null || !self && !arkion &&
+                                !OuterBossDefinitions.IsUnrulySniperAdvance(unit, trigger, effect) && !HarvesterBirthModel.IsTrigger(unit, trigger))
+                                return "Triggered rearrangement requires a calibrated original payload and physical positions.";
                             continue;
                         }
                         if (effect.Type == "CardEffectDrawType")
@@ -5592,6 +5593,9 @@ namespace MonsterTrain2Poju.Model
                             ? actor.Source.DamageHistory!.DamageTakenBeforeArmor > 0 && targets.UnitIds.Count > 0
                             : effect.Type is "CardEffectAddStatusEffectIfNoPlayerUnits" or "CardEffectPyreDamageIfNoPlayerUnits"
                             ? NoPlayerUnitsInActorRoom(actor)
+                            : OuterBossDefinitions.IsUnrulySniperAdvance(actor.Source, trigger, effect)
+                            ? units.Any(target => target.Alive && target.InRoom && !target.Destroyed &&
+                                targets.UnitIds.Contains(target.Source.Id))
                             : action.Type is "AddStatus" or DevotionStatusModel.Effect ? StatusTest(actor, effect, targets) : ActionTestValid(action, targets, TestActionAmount(action));
                     }
                     if (!valid && action.Tests?.FailToCast == true) return false;
@@ -6227,6 +6231,9 @@ namespace MonsterTrain2Poju.Model
                 {
                     if (targets.UnitIds.Count == 0) return true;
                     WorkingUnit target = units.Single(unit => unit.Source.Id == targets.UnitIds[0]);
+                    // The native attack trigger can retain a lethal hit target.
+                    // FloorRearrange exits before moving or centering a dead actor.
+                    if (!target.Alive || target.Destroyed) return true;
                     var shifted = units.Where(unit => unit.Alive && unit.InRoom && unit.Source.Team == target.Source.Team &&
                         context!.SpawnPoints!.Units.Single(point => point.UnitId == unit.Source.Id).OuterBoss != true).ToArray();
                     int from = Array.FindIndex(shifted, unit => unit == target);

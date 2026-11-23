@@ -67,6 +67,11 @@ namespace MonsterTrain2Poju.Model
                     Health: 900, MaxHealth: 900, MoonPhaseMask: 4, Triggers:
                     [{ Kind: "OnAnyHeroDeathOnFloor", Effects: [{ Type: "CardEffectAddBattleCard", Generation:
                         { Destination: "HandPile", Count: 1, Pool: [{ DataId: OuterBossDefinitions.UnrulyScourgeCard }] } }] }] });
+            bool sniperNewMoon = moon == 1 && battle.MoonPhase == "New" &&
+                actor.Unit is { AssetKey: OuterBossDefinitions.UnrulySniperAdvance, BaseAttack: 14, Attack: 14,
+                    Health: 800, MaxHealth: 800, MoonPhaseMask: 4, Triggers: [var sniper],
+                    Statuses: [{ Id: "sniper", Stacks: 1 }] } &&
+                sniper.Effects is [var rearrangement] && OuterBossDefinitions.IsUnrulySniperAdvance(actor.Unit, sniper, rearrangement);
             bool fullMoon = moon == 2 &&
                 (actor.Unit.AssetKey is "Boss_Level3_Fleshweaver_Corruption" or "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth" or
                     "Boss_Level3_Arkion_SiphonRage" or "Boss_Level6_Cael_DamageShield" || CalibratedLifestealMoon(actor.Unit) || CalibratedPushMoon(actor.Unit) ||
@@ -75,7 +80,7 @@ namespace MonsterTrain2Poju.Model
                         Health: 1250, MaxHealth: 1250 } ||
                     actor.Unit is { AssetKey: "Boss_Level8_Fragile", BaseAttack: 30, Attack: 30, Health: 3000, MaxHealth: 3000 } ||
                     actor.Unit is { AssetKey: "Boss_Level3_Fleshweaver_MoreMass", BaseAttack: 6, Attack: 22, Health: 600, MaxHealth: 600 });
-            bool calibratedMoon = battle.MoonPhaseTrackingActive == true && (siphonTrialNewMoon || unrulyNewMoon || fullMoon) &&
+            bool calibratedMoon = battle.MoonPhaseTrackingActive == true && (siphonTrialNewMoon || unrulyNewMoon || sniperNewMoon || fullMoon) &&
                 !actor.Unit.Triggers.Any(trigger => trigger.Kind is "OnMoonLit" or "OnMoonlitLost" or
                     "OnMoonShade" or "OnMoonshadeLost" or "OnMoonPhaseShift");
             if (actor.ExternalInteractions.Count > 0) return Fail(string.Join("; ", actor.ExternalInteractions));
@@ -94,6 +99,8 @@ namespace MonsterTrain2Poju.Model
                 (duo ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("titanskin")?.Stacks != 10 :
                     OuterBossDefinitions.IsArkionPyre(actor.Unit.AssetKey)
                         ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("multistrike")?.Stacks != 1
+                        : actor.Unit.AssetKey == OuterBossDefinitions.UnrulySniperAdvance
+                            ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("sniper")?.Stacks != 1
                         : OuterBossDefinitions.IsFleshweaver(actor.Unit.AssetKey)
                             ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("mass")?.Stacks !=
                                 (actor.Unit.AssetKey == "Boss_Level3_Fleshweaver_MoreMass" ? 8 : 5) || actor.Unit.Status("mass")?.ParamInt != 2

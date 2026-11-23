@@ -38,7 +38,7 @@ namespace MonsterTrain2Poju.Probe
                     OuterBossDefinitions.IsArkionPyre(data.GetAssetKey()) ||
                     OuterBossDefinitions.IsArkionRage(data.GetAssetKey()) || OuterBossDefinitions.IsArkionPush(data.GetAssetKey()) ||
                     OuterBossDefinitions.IsFleshweaver(data.GetAssetKey()) ||
-                    data.GetAssetKey() is TriggeredSummonModel.UnrulyBoss or OuterBossDefinitions.UnrulyScourge) &&
+                    data.GetAssetKey() is TriggeredSummonModel.UnrulyBoss or OuterBossDefinitions.UnrulyScourge or OuterBossDefinitions.UnrulySniperAdvance) &&
                     OuterBossPhaseProbe.Supports(data);
             }
         }

@@ -811,7 +811,7 @@ param(
     [switch] $OriginalSpurnedBattle,
     [switch] $OriginalUnrulyWitness,
     [switch] $OriginalUnrulyBattle,
-    [ValidateSet('DuplicateEnemy', 'Scourge')][string] $OriginalUnrulyVariant = 'DuplicateEnemy',
+    [ValidateSet('DuplicateEnemy', 'Scourge', 'SniperAdvance')][string] $OriginalUnrulyVariant = 'DuplicateEnemy',
     [ValidateRange(1, 3)][int] $OriginalSpurnedChallenge = 2,
     [switch] $OriginalSpurnedRetainPiles,
     [switch] $OriginalRageOnBurnoutStackLoss,
@@ -4590,7 +4590,8 @@ if ($OriginalTriggerRelicBatchStationaryReserve) {
 }
 if ($OriginalUnrulyBattle) {
     $unruly = $trace.OriginalUnrulyBattle
-    $unrulyScenario = "SoulSavior_R3_BossBattle_$OriginalUnrulyVariant"
+    $unrulyScenario = if ($OriginalUnrulyVariant -eq 'SniperAdvance') { 'SoulSavior_R3_BossBattle_StealBuffs1' }
+        else { "SoulSavior_R3_BossBattle_$OriginalUnrulyVariant" }
     $unrulyBoss = "Boss_SoulSavior_R3_Unruly_$OriginalUnrulyVariant"
     if ($trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
         $unruly.Scenario -cne $unrulyScenario -or $unruly.BossKey -cne $unrulyBoss -or
@@ -4609,6 +4610,16 @@ if ($OriginalUnrulyBattle) {
         })
         if ($awards.Count -eq 0) {
             throw "Original Unruly Scourge did not award a new native card to hand. Inspect $tracePath and $unityLog"
+        }
+    }
+    if ($OriginalUnrulyVariant -eq 'SniperAdvance') {
+        $advances = @($unruly.Advances | Where-Object {
+            $_.BossId -gt 0 -and $_.TargetId -gt 0 -and $_.Before.Count -gt 1 -and
+            $_.Before[0] -ne $_.TargetId -and $_.TargetId -in $_.Before -and
+            $_.After.Count -gt 0 -and $_.After[0] -eq $_.TargetId
+        })
+        if ($advances.Count -eq 0) {
+            throw "Original Unruly Sniper did not move a native attacked unit to the front. Inspect $tracePath and $unityLog"
         }
     }
 }

@@ -44,7 +44,11 @@ namespace MonsterTrain2Poju.Probe
                 data.GetRoomModifiersData().Count == 0 &&
                 (data.GetAssetKey() != OuterBossDefinitions.UnrulyScourge ||
                     data.GetTriggers() is [var trigger] && trigger.GetTrigger() == CharacterTriggerData.Trigger.OnAnyHeroDeathOnFloor &&
-                    !trigger.GetTriggerOnce() && trigger.GetEffects() is [var effect] && ScourgeAward(effect));
+                    !trigger.GetTriggerOnce() && trigger.GetEffects() is [var effect] && ScourgeAward(effect)) &&
+                (data.GetAssetKey() != OuterBossDefinitions.UnrulySniperAdvance ||
+                    data.GetTriggers() is [var sniper] && sniper.GetTrigger() == CharacterTriggerData.Trigger.OnAttacking &&
+                    !sniper.GetTriggerOnce() && !sniper.GetHideVisualAndIgnoreSilence() &&
+                    sniper.GetEffects() is [var movement] && SniperAdvance(movement));
         }
 
         internal static bool ScourgeAward(CardEffectData effect) =>
@@ -54,6 +58,11 @@ namespace MonsterTrain2Poju.Probe
             !effect.GetParamBool() && !effect.GetParamBool2() && !effect.GetCopyModifiersFromSource() &&
             !effect.GetFilterBasedOnMainSubClass() && effect.GetParamCardUpgradeData() == null &&
             effect.GetParamCardPool()?.GetFilteredChoices() is [var card] && card.GetID() == OuterBossDefinitions.UnrulyScourgeCard;
+
+        internal static bool SniperAdvance(CardEffectData effect) =>
+            effect.GetEffectStateName() == nameof(CardEffectFloorRearrange) &&
+            effect.GetTargetMode() == TargetMode.LastAttackedCharacter && effect.GetTargetTeamType() == Team.Type.Monsters &&
+            effect.GetParamInt() == (int)SpawnMode.FrontSlot && !effect.GetUseIntRange();
         internal sealed class Record
         {
             public string Phase { get; set; } = "";
