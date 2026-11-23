@@ -1,5 +1,16 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--export-lifemother-reanimate-component")
+{
+    LifemotherReanimateChecks.Export(args[1], args[2]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--native-lifemother-reanimate-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    LifemotherReanimateChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--railforged-kill-bump-only")
 {
     RailforgedKillBumpChecks.Native(args[1]);
