@@ -11,6 +11,7 @@ namespace MonsterTrain2Poju.Model
         public const string DutifulArmor = "Boss_SoulSavior_R1_Dutiful_Armor";
         public const string DutifulAscendDescend = "Boss_SoulSavior_R1_Dutiful_AscendDescend";
         public const string IndulgentTitanskin = "Boss_SoulSavior_R2_Indulgent_Titanskin";
+        internal const string IndulgentReduceCapacity = "Boss_SoulSavior_R2_Indulgent_ReduceCapacityResolve";
         public const string LifemotherReanimate = "Boss_SoulSavior_Final_Lifemother_HealReanimate";
         internal const string IndulgentTitanskinOwnerId = "d029a392-703b-4b96-ae89-f89c2c38aaac";
         internal const string IndulgentTitanskinOwnerKey = "Boss_Railforged_Region2_BossBattle_3";
@@ -163,6 +164,20 @@ namespace MonsterTrain2Poju.Model
                 Health: 1000, MaxHealth: 1000, Size: 5, Triggers: [{ Kind: "OnFeed", Once: false, IgnoreSilence: false, Effects: [var rage, var skin] }] } &&
             unit.Statuses.Count == 2 && unit.Status("trample")?.Stacks == 1 && unit.Status("titanskin")?.Stacks == 3 &&
             OriginalGrant(rage, "buff") && OriginalGrant(skin, "titanskin");
+
+        internal static bool IsIndulgentCapacityFeed(CombatUnit unit, CombatTrigger trigger) =>
+            unit is { AssetKey: IndulgentReduceCapacity, Team: CombatTeam.Enemy, BumpRules.OuterBoss: true,
+                BaseAttack: 12, MaxHealth: 1100, Size: 5, SpawnerCardId: 0,
+                Triggers: [{ Kind: "OnFeed", Once: false, IgnoreSilence: false, FireCount: 1,
+                    TriggerAtThreshold: 0, Conditions: null, Effects: [var rage] }, var postCombat] } &&
+            ReferenceEquals(trigger, postCombat) &&
+            trigger is { Kind: "PostCombat", Once: false, IgnoreSilence: false, FireCount: 1,
+                TriggerAtThreshold: 0, Conditions: null, Effects: [var capacity, var replay] } &&
+            capacity is { Type: "CardEffectAdjustRoomCapacity", Value: -1, Action: { Type: "AdjustCapacity", Target: "Room",
+                Value: -1, Range: null, AllowEnemy: true, AllowPlayer: true, Statuses.Count: 0 } } &&
+            replay is { Type: "CardEffectPlayUnitTrigger", Value: -1, Action: { Type: "PlayUnitTrigger", Target: "Self",
+                UnitTriggerKind: "OnFeed", Value: -1, Range: null, AllowEnemy: true, AllowPlayer: true, Statuses.Count: 0 } } &&
+            rage.Action?.Value == 0 && OriginalGrant(rage, "buff");
 
         private static bool OriginalGrant(CombatEffect effect, string status) =>
             effect is { Type: "CardEffectAddStatusEffect", Action:

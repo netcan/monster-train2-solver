@@ -1554,9 +1554,9 @@ namespace MonsterTrain2Poju.Model
                         if (effect.Type == "CardEffectPlayUnitTrigger")
                         {
                             CardActionEffect? replay = effect.Action;
-                            if (replay?.Type != "PlayUnitTrigger" || replay.UnitTriggerKind != "OnShift" ||
-                                replay.Target != "Self" || replay.Range != null)
-                                return "Triggered unit replay requires its fixed native self OnShift definition.";
+                            if (replay is not { Type: "PlayUnitTrigger", UnitTriggerKind: "OnShift", Target: "Self", Range: null } &&
+                                !OuterBossDefinitions.IsIndulgentCapacityFeed(unit, trigger))
+                                return "Triggered unit replay requires its calibrated native self definition.";
                             continue;
                         }
                         if (effect.Type == "CardEffectAdjustCorruption")

@@ -1,5 +1,16 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--export-indulgent-capacity-component")
+{
+    IndulgentCapacityChecks.Export(args[1], args[2]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--native-indulgent-capacity-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    IndulgentCapacityChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--export-lifemother-reanimate-component")
 {
     LifemotherReanimateChecks.Export(args[1], args[2]);

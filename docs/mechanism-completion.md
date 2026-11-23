@@ -355,6 +355,10 @@ Indulgent 的 Titanskin 变体已对照原版出生、楼层结算和单次交�
 Titanskin 吸收 3 点，状态层数保持 3。整战还涉及波次敌人的 Hivemind 与喂食。
 [原版出生和受伤记录](../tests/compatibility/game-2.3.1/mechanics/indulgent-titanskin/birth-and-damage.mt2f)
 
+Indulgent 的减容变体三次把玩家侧楼层容量减 1，敌方容量保持 5。专项回放核对三组完整减容状态，
+第一组还在同一战后队列内验证先减容，再重放一次自身 OnFeed 获得 3 Rage。整战仍受波次机制阻塞。
+[原版减容和 OnFeed 记录](../tests/compatibility/game-2.3.1/mechanics/indulgent-capacity/native-capacity-feed.mt2f)
+
 Railforged 波次里的 `R1_Attacker_AscendGainAtk_Ver2` 击杀后尝试下移并获得 10 护甲。
 原版底层和跨层两次交战的完整状态、物理站位和随机流均通过对照。跨层样本也覆盖伤害
 预演触发目标层原生单位的 Shift 回调。
