@@ -29,6 +29,7 @@ namespace MonsterTrain2Poju.Probe
             var save = managers.GetSaveManager();
             return save.GetCovenants().Count == 0 && save.GetMutators().Count > 0 &&
                 save.GetMutators().All(owner => OriginalStartRoomAttachmentScenario.SupportsInfernoMutator(owner, save) ||
+                    CardBranchMaskProbe.Enabled && SupportsHandOrEmber(owner, save) ||
                     owner.GetRelicDataID() == RelicUnitSpawnCountModel.DataId &&
                     owner.GetEffects() is [RelicEffectExtraSpawnsFirstUnitPerTurn] ||
                     owner.GetRelicDataID() == RelicModel.PreventMonsterDamageOwnerId &&
@@ -61,6 +62,29 @@ namespace MonsterTrain2Poju.Probe
 
         internal static bool BigMonstersActive(SaveManager save) =>
             save.GetMutators().Any(owner => SupportsBigMonsters(owner, save));
+
+        private static bool SupportsHandOrEmber(MutatorState owner, SaveManager save)
+        {
+            string id = owner.GetRelicDataID();
+            if (id is not (RelicHandAndEmberModel.HandOwnerId or RelicHandAndEmberModel.EmberOwnerId) ||
+                typeof(SaveManager).Module.ModuleVersionId != new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d"))
+                return false;
+            MutatorData? definition = save.GetAllGameData().FindMutatorData(id);
+            if (definition == null || definition.DisallowInDeploymentPhase ||
+                definition.GetEffects().Any(effect => effect.GetEffectConditions().Count != 0)) return false;
+
+            if (id == RelicHandAndEmberModel.HandOwnerId)
+                return definition.name == "HandDoesntDiscard" &&
+                    owner.GetEffects() is [RelicEffectChangeStartingHandSize, RelicEffectSuppressHandDiscard] &&
+                    definition.GetEffects()[0].GetParamInt() == -2;
+
+            if (definition.name != "EmberAtStartOfTurnOnly" ||
+                owner.GetEffects() is not [RelicEffectModifyEnergyStartOfCombat, RelicEffectConserveEnergyStartOfTurn, RelicEffectAddRelicStartOfRun] ||
+                definition.GetEffects()[0].GetParamInt() != 20 || definition.GetEffects()[2].GetParamRelic()?.GetID() != RelicHandAndEmberModel.ConserveOwnerId)
+                return false;
+            return save.GetCollectedRelics().Count(relic => relic.GetRelicDataID() == RelicHandAndEmberModel.ConserveOwnerId &&
+                relic.GetEffects() is [RelicEffectConserveEnergyEndOfTurn]) == 1;
+        }
 
         private static bool SupportsBigMonsters(RelicState owner, SaveManager save)
         {

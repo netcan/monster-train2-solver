@@ -980,7 +980,8 @@ namespace MonsterTrain2Poju.Model
                 RelicDamagedFloorEnergyModel.ValidateBeforeDrawOrder(source) ?? RelicRelentlessDrawModel.ValidateBeforeDrawOrder(source) : null);
             if (error != null) return Fail(error);
             CombatContext context = EnergyModel.SetPhase(source, "MonsterTurn");
-            int income = unchecked(context.Resources!.BaseEnergy + context.EnergyState!.NextTurn + context.EnergyState.EveryTurn + RoomCapacityModel.EnergyPerTurnDelta(context) + unitRoomEnergy +
+            int baseEnergy = !deployment && RelicHandAndEmberModel.SupportsEnergyOwner(context.Relics!) ? 0 : context.Resources!.BaseEnergy;
+            int income = unchecked(baseEnergy + context.EnergyState!.NextTurn + context.EnergyState.EveryTurn + RoomCapacityModel.EnergyPerTurnDelta(context) + unitRoomEnergy +
                 (deployment ? context.Resources.DeploymentExtraEnergy : 0));
             if (deployment || income > 0) context = context.WithQueryFrame(context.QueryFrame!.With(
                 energy: Math.Min(context.Resources.MaxEnergy, unchecked(context.QueryFrame.Energy!.Value + income))));

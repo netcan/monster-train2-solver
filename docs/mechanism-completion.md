@@ -344,6 +344,13 @@ Unruly 的 Scourge 变体在同层敌军死亡后向手牌生成原版祸害。�
 [原版单位占位](../tests/compatibility/game-2.3.1/mechanics/placement-mutators/placement-size.mt2f) ·
 [原版造牌](../tests/compatibility/game-2.3.1/mechanics/placement-mutators/big-monsters-creation.mt2f)
 
+两项原版自定义局突变经过同种子对照。部署仍弃牌，普通回合保留两张未出的牌，
+并排在三张新抽牌之后。原版余烬在部署和首回合均为 24，支付 1 点后降至 23，
+第二回合仍为 23。两组共两次出牌和四次结束回合，完整状态和随机数匹配。
+保留手牌和 Ephemeral 清理叠加的场景仍待验证。
+[双突变](../tests/compatibility/game-2.3.1/mechanics/hand-and-ember/combined.mt2f) ·
+[普通对照](../tests/compatibility/game-2.3.1/mechanics/hand-and-ember/stock.mt2f)
+
 ExtraFeedTrigger 的原版查询确认友军 OnFeed 次数为 2，OnDeath 次数保持 1。
 61 个战斗阶段、5 次出牌、7 次结束回合与两类候选通过。实际普通进食也已录到两次 OnFeed，
 合金构装体的燃料从 1 增至 3，矿工只被吃掉一次，完整状态与随机数在 16 条分支上复放一致。

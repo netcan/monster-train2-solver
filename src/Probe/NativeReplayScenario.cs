@@ -353,6 +353,15 @@ namespace MonsterTrain2Poju.Probe
             }
             if (stage == Stage.NewRun)
             {
+#if DEVELOPMENT_PROBE
+                if (fullBattle && OriginalHandAndEmberWitness.Combined && save.GetRunType() == RunType.Custom &&
+                    !LoadingScreen.IsWorking() && screen.GetTopScreen() == ScreenName.Reward &&
+                    screen.GetScreen(ScreenName.Reward) is RewardScreen mutators)
+                {
+                    OriginalHandAndEmberWitness.ConfirmMutatorShowcase(mutators);
+                    return;
+                }
+#endif
                 if (!LoadingScreen.IsWorking() && screen.GetScreenActive(ScreenName.RunOpening) &&
                     screen.GetScreen(ScreenName.RunOpening) is RunOpeningScreen opening &&
                     ReplayManager.TryClickButton(opening.GetConfirmButton()))
@@ -366,12 +375,19 @@ namespace MonsterTrain2Poju.Probe
                     runSetupRequested = true;
                     NativeStartingClans.Select(setup, save, log);
                     StartingCovenantScenario.Select(setup, save);
+#if DEVELOPMENT_PROBE
+                    if (fullBattle && OriginalHandAndEmberWitness.Enabled) OriginalHandAndEmberWitness.Select(setup, save);
+#endif
                     if (fullBattle && OriginalPyreCapacityCarryoverScenario.Enabled)
                         OriginalPyreCapacityCarryoverScenario.SelectBeforeRun(setup, save, log);
                     startRunFromSetup.Invoke(setup, null);
                     return;
                 }
-                if (!LoadingScreen.IsWorking() && save.GetRunType() == RunType.Class &&
+                bool expectedRunType = save.GetRunType() == RunType.Class;
+#if DEVELOPMENT_PROBE
+                if (fullBattle && OriginalHandAndEmberWitness.Combined) expectedRunType = save.GetRunType() == RunType.Custom;
+#endif
+                if (!LoadingScreen.IsWorking() && expectedRunType &&
                     save.GetGameSequence() == SaveData.GameSequence.DestinationReached)
                 {
                     Enter(Stage.NaturalMap, 120f);
@@ -1011,6 +1027,14 @@ namespace MonsterTrain2Poju.Probe
                     save.MarkOneTimeMessageComplete(OneTimeMessage.EndTurnWithoutPlayingChampion);
                     AdvanceTurn(combat!, record: false);
                 }
+                return;
+            }
+            if (fullBattle && OriginalHandAndEmberWitness.Enabled)
+            {
+                var next = OriginalHandAndEmberWitness.Tick(FullBattleTrace.Active!, managers);
+                if (next == OriginalHandAndEmberWitness.Step.EndTurn) AdvanceTurn(combat!, record: false);
+                else if (next == OriginalHandAndEmberWitness.Step.Complete)
+                    Finish(true, "Original hand and Ember component captured.");
                 return;
             }
             if (fullBattle && OriginalEntropyDrawWitness.Enabled)

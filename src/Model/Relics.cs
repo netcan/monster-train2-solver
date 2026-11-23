@@ -403,6 +403,17 @@ namespace MonsterTrain2Poju.Model
                         if (IsOriginalDeploymentSummonBlock(relic)) continue;
                         return "Missing or changed original deployment summon restriction owner.";
                     }
+                    if (effect == RelicHandAndEmberModel.SuppressDiscardEffect)
+                    {
+                        if (RelicHandAndEmberModel.OriginalHand(relic) && relics.Count(RelicHandAndEmberModel.OriginalHand) == 1) continue;
+                        return "Missing, changed or duplicate original hand discard mutator.";
+                    }
+                    if (effect == RelicHandAndEmberModel.SuppressBaseEnergyEffect ||
+                        effect == RelicHandAndEmberModel.StartingRelicEffect && relic.DataId == RelicHandAndEmberModel.EmberOwnerId)
+                    {
+                        if (RelicHandAndEmberModel.OriginalEmber(relic) && RelicHandAndEmberModel.SupportsEnergyOwner(relics)) continue;
+                        return "Missing or changed original opening Ember mutator or its acquired relic.";
+                    }
                     if (effect == BigMonstersEffect)
                     {
                         if (IsOriginalBigMonsters(relic) && relics.Count(IsOriginalBigMonsters) == 1) continue;

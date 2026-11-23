@@ -343,6 +343,13 @@ namespace MonsterTrain2Poju.Model
                 }
                 catch (InvalidOperationException error) { return Unsupported(error.Message); }
             }
+            if (spawn.Turn > 0 && context.IsolatedBattlePreview != true &&
+                context.Relics?.Any(RelicHandAndEmberModel.OriginalHand) == true)
+            {
+                if (ephemeralCardIds.Count != 0 || context.Cards.Hand.Any(card => context.FindCard(card.InstanceId)?.MaskDescriptor == null))
+                    return Unsupported("Suppressed hand discard requires captured hand cards without Ephemeral cleanup.");
+                persistentCardIds = context.Cards.Hand.Select(card => card.InstanceId).ToList();
+            }
             CardCycleResult discard = CardCycleModel.DiscardHand(context.Cards, ephemeralCardIds, persistentCardIds, infusionCardIds);
             if (!discard.Supported) return Unsupported(discard.UnsupportedReason!);
             BattleStatistics? statistics = context.Statistics;
