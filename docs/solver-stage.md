@@ -556,7 +556,14 @@ Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时
 
 第 9 环的发布版实测在隔离原版中直接进入最终首领。首次结束回合时，五个首领部位现在保留
 原版满月掩码。两个原版进程独立完成 10 次出牌和 6 次结束回合并结算为败局，核对了实际后继、
-顾问预测、随机流和结束回合候选。额外的出牌候选仍有 111 个被现有支持范围拦下，涉及友军状态变化
-后的 LifeLink 与预演校验。
+顾问预测、随机流和结束回合候选。随后在三个原版分支中核对 Valor、Pyregel 与 Sap，修正友军
+变化后的 LifeLink 与预演校验。同一场的 528 个出牌候选和 16 个结束回合候选全部通过。
 [顾问运行](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring9-original-true-final-boss.mt2f) ·
 [独立复放](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring9-original-true-final-boss-frozen.mt2f)
+
+三个备选出牌后均在隔离原版继续到终局，分别执行 10、10 和 15 个输入。随后用两工作线程和
+3 秒单次搜索预算运行发布版顾问，原版败局的 15 次出牌、6 次结束回合和两类候选全部通过。
+六份新增第 9 环整战归档通过同一构建的定向检查。总计 442 场已结算归档。旧版 2.2.1 的
+17 个实际后继仍通过，旧版完整建议复放在一个重复攻击触发标记上有已有差异。
+[双线程实战](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring9-two-worker-advisor.mt2f)
+· [定向报告](../results/recorded-chain-triage-20261123-131627-e746f3d0/report.tsv)
