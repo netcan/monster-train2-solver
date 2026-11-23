@@ -15,10 +15,10 @@
 | inspect-guard-links | 45 | 45 | 45 |
 | review-existing-code | 227 | 227 | 227 |
 | resolve-reference-only | 7 | 7 | 0 |
-| resolve-entry | 284 | 0 | 0 |
-| scoped-review-recorded | 71 | 69 | 69 |
+| resolve-entry | 282 | 0 | 0 |
+| scoped-review-recorded | 73 | 69 | 69 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 74 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 76 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -101,9 +101,11 @@
 | RelicEffectSuppressHandDiscard | shared-path | The original HandDoesntDiscard custom run and same-seed stock control both discard during deployment. On the next ordinary turn the owner keeps two unplayed cards in order after three new draws. The two paid actions and four EndTurns match complete successors and RNG. Combined Ephemeral cleanup requires its own witness. |
 | RoomStateAddEffectPostCombatModifier | shared-path | The original Showtime T3 room records four front-only attack and maximum-health upgrades on floor one, with rear controls. The showtime/tier3.mt2f archive passes the complete successor and stage checks with --showtime-only. Other post-combat payloads have individual calibration. |
 | RoomStateAddEffectPreCombatModifier | shared-path | Unchanged Echoes Inferno installs the original Inferno Room on all three battle floors. The installed-inferno-rooms/battle.mt2f archive records an exact 50-damage enemy hit on floor zero and passes --installed-inferno-rooms-only. Other target and owner payloads require their own evidence. |
+| RoomStateHivemindModifier | shared-path | Original phase receipts cover publication for new owners, preserving the existing attack modifier before next draw, transfer of active room markers during ascent and casting movement, and cleanup when a holder dies. The complete Infested routes and both candidate sets are checked. |
 | RoomStateSpawnUnitOnUnitSpawnModifier | shared-path | The original Hall of Mirrors copies a paid Twisted Assistant with one unmodified graft. The hall-grafted-birth/predicted-birth.mt2f archive passes --native-hall-grafted-birth-only for ordered callbacks, distinct graft ownership, physical slots, Battle and Draw RNG, and EndTurn at the observed root. Triggered or generated births have separate call sites. |
 | StatusEffectBurstState | shared-path | Original Dutiful Burst has three native PostCombat grants and seven native consumptions. Its settled whole battle matches 23 plays, four EndTurns, both frontiers and sixteen branches. Combined extra-attack sources retain separate guards. |
-| StatusEffectTitanskinState | shared-path | Original Indulgent Titanskin birth and two boundaries for one genuine hit match full native room state. The hit deals five health damage and three absorption with the same three stacks. Feed and whole battle still await acceptance. |
+| StatusEffectHivemindState | shared-path | Original Indulgent and Infested settled encounters include after-draw attack refresh, durable floor markers, feed, and the original Horde OnDeath grant through both a spell and an ability. The typed fixtures check the original parent and complete successors, including Battle and BattleTest RNG. Other native Hivemind and HivemindKiller paths retain their own scopes. |
+| StatusEffectTitanskinState | shared-path | Original Indulgent Titanskin birth and two boundaries for one genuine hit match full native room state. The hit deals five health damage and three absorption with the same three stacks. The settled original battle now matches eight plays, four EndTurns, both frontiers and sixteen independent branches. |
 ## 第一批需核对的代码入口
 
 | 原生类 | 队列 | 声明引用 | 全部引用 | 模型／探针示例 |
@@ -128,10 +130,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `497766376b887ac495b2827beeb734cc3f779b23350e906bd7fef231055eca57`。
-- Model: PDB 校验过的项目源码集合 `cc383e44a446dca8aa3c4528286d595c5de0d9638c4be9471f521768580cde5b`。
-- Probe: PDB 校验过的项目源码集合 `2bb397b7b43874a0bfc1649bc0a5abe7bcb554b48b732ad320e711fbb4d8b07e`。
-- ModelChecks: PDB 校验过的项目源码集合 `2a5e1eb5ad4c7017cf9c7e9d8e718819472d70ad4eb0781c5e9aa52207b1a18d`。
+- 人工审查索引 SHA-256: `3e7dffa3944d93247eb7fcbaea4f02abef457a29f242374faa82178e16f0fc38`。
+- Model: PDB 校验过的项目源码集合 `817fe326a7926ab336ba8676757569beab64b65b06642be718bdc85fdadf082c`。
+- Probe: PDB 校验过的项目源码集合 `eedb8ec5a6ae86fa49b211a7885208260dcf3ab9fd1d3172453b1781688547d0`。
+- ModelChecks: PDB 校验过的项目源码集合 `a819fd102b494f133e130be50aa0a013ec35a39cb00224a0a4afa2fdf6c94706`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
