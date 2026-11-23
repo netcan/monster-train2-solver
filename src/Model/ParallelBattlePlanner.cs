@@ -98,7 +98,7 @@ namespace MonsterTrain2Poju.Model
             ExactBattleResult exact = ExactBattleSolver.MinimizeCore(source, null,
                 new ExactBattleOptions(options.MaxNodes, options.TimeLimit), cancellationToken,
                 maxSteps: options.MaxSteps, maxActionsPerTurn: options.MaxActionsPerTurn, earlyStop: earlyStop,
-                preferPositionOnTie: true);
+                useAdvisorOrdering: true);
             bool complete = exact.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
             return new BattlePlanResult(complete ? exact.State : source, complete ? exact.Outcome : RoomOutcome.Exchanged,
                 complete ? exact.Steps : Array.Empty<BattleSearchStep>(),

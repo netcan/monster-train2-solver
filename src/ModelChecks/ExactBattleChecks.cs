@@ -58,11 +58,18 @@ internal static class ExactBattleChecks
         using var document = FixtureDocument.Read(registration.Verify(directory));
         var root = document.RootElement.GetProperty("Turns")[7].GetProperty("Before").Deserialize<BattleTurnState>()!;
         string parent = Json(root);
-        var options = new BattlePlannerOptions(256, beamWidth: 8, timeLimit: TimeSpan.FromSeconds(25),
+        var traversal = ExactBattleSolver.MinimizeCore(root, null, new ExactBattleOptions(12),
+            CancellationToken.None, useAdvisorOrdering: true);
+        var traversalReplay = BattlePlannerChecks.Replay(root, traversal.Steps, out var traversalOutcome);
+        Require(traversalOutcome == RoomOutcome.BattleWon && PyreHealth(traversalReplay) >= 37 &&
+            Json(traversalReplay) == Json(traversal.State),
+            $"Bounded terminal traversal lost the native route (health={PyreHealth(traversalReplay)}, nodes={traversal.ExpandedNodes}).");
+        int nodes = Environment.ProcessorCount > 2 ? 24 : 256;
+        var options = new BattlePlannerOptions(nodes, beamWidth: 8, timeLimit: TimeSpan.FromSeconds(25),
             allowShorterHorizon: true, searchToBattleEnd: true, stopAtBestPyreHealth: true);
         var plan = ParallelBattlePlanner.Plan(root, options);
         var replay = BattlePlannerChecks.Replay(root, plan.Steps, out var outcome);
-        int pyre = replay.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health;
+        int pyre = PyreHealth(replay);
         Require(outcome == RoomOutcome.BattleWon && plan.CompletedHorizon && (plan.SearchWorkers == 1 || pyre >= 37) &&
             plan.ExpandedNodes <= options.MaxNodes && Json(replay) == Json(plan.State) && Json(root) == parent,
             $"Parallel endgame lost a known native-root route (health={pyre}, nodes={plan.ExpandedNodes}).");
@@ -71,6 +78,9 @@ internal static class ExactBattleChecks
         Require(shortSearch.ReachedStepLimit && !shortSearch.ExhaustedEnumeratedFrontier && shortSearch.Steps.Count <= 1,
             "The terminal traversal exceeded its step limit or certified the restricted frontier.");
         Console.WriteLine($"PARALLEL-NATIVE-ENDGAME PASS turn={root.Spawn.Turn} pyre={pyre} nodes={plan.ExpandedNodes} steps={plan.Steps.Count}");
+
+        static int PyreHealth(BattleTurnState state) => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+            .Single(unit => unit.IsPyre).Health;
     }
 
     internal static void Native(FixtureValue fixture)

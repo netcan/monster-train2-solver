@@ -76,7 +76,7 @@ namespace MonsterTrain2Poju.Model
             Func<BattleTurnState, RoomOutcome, double>? evaluate, ExactBattleOptions? options,
             CancellationToken cancellationToken, Func<bool>? deadlineReached = null,
             int? maxSteps = null, int? maxActionsPerTurn = null, BattleEarlyStop? earlyStop = null,
-            bool preferPositionOnTie = false)
+            bool useAdvisorOrdering = false)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             evaluate ??= BattlePlanner.Evaluate; options ??= new ExactBattleOptions();
@@ -115,7 +115,9 @@ namespace MonsterTrain2Poju.Model
                 {
                     var frontier = BattleActionModel.EnumerateActions(node.State, null, true, workspace);
                     unsupported.AddRange(frontier.UnsupportedAttempts);
-                    foreach (var candidate in frontier.SupportedCandidates.Reverse())
+                    IEnumerable<SupportedActionCandidate> candidates = useAdvisorOrdering ? frontier.SupportedCandidates
+                        .OrderByDescending(candidate => FrontlineProtection(candidate.Result.State!)) : frontier.SupportedCandidates;
+                    foreach (var candidate in candidates.Reverse())
                         pending.Push(new Node(candidate.Result.State!, candidate.Result.Outcome, node,
                             new BattleSearchStep(candidate.Action, false), node.Turns));
                 }
@@ -158,7 +160,7 @@ namespace MonsterTrain2Poju.Model
                 else if (options.TurnHorizon.HasValue && node.Turns >= options.TurnHorizon.Value) horizons++;
                 else return false;
                 double value = Value(node);
-                if (best == null || value < score || preferPositionOnTie && value == score &&
+                if (best == null || value < score || useAdvisorOrdering && value == score &&
                     BattlePlanner.PositionCost(node.State, node.Outcome) < BattlePlanner.PositionCost(best.State, best.Outcome))
                 { best = node; score = value; }
                 return true;
@@ -170,6 +172,22 @@ namespace MonsterTrain2Poju.Model
                 return value;
             }
         }
+
+        // This only orders the bounded worker's choices. The actual combat
+        // transition still decides whether protection prevents Pyre damage.
+        private static double FrontlineProtection(BattleTurnState state)
+        {
+            double protection = 0;
+            foreach (RoomCombatState room in state.Spawn.Train.Rooms)
+            {
+                CombatUnit? ally = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0);
+                CombatUnit? enemy = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Enemy && unit.CanAttack && unit.Health > 0);
+                if (ally == null || enemy == null || enemy.Attack <= 0) continue;
+                protection += Math.Min(enemy.Attack + 1d, ally.Health + (double)(ally.Status("armor")?.Stacks ?? 0));
+            }
+            return protection;
+        }
+
         private static bool Terminal(RoomOutcome outcome) => outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
         private sealed class Node
         {
