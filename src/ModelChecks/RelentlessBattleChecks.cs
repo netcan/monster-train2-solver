@@ -102,6 +102,16 @@ internal static class RelentlessBattleChecks
             "Common plan replay dropped the exact solver's dialog choices.");
         if (!abandon)
         {
+            RelentlessDecision[] recordedChoices = recorded.Decisions.ToArray();
+            var missing = BattleTurnModel.EndTurn(source, recordedChoices.SkipLast(1).ToArray());
+            Require(missing.RelentlessChoice is { } request && request.RoomIndex == recordedChoices[^1].RoomIndex &&
+                request.CompletedRounds == recordedChoices[^1].CompletedRounds,
+                "A genuine choice prefix must still request the next native dialog.");
+            RelentlessDecision[] trailing = [.. recordedChoices,
+                new(recordedChoices[^1].RoomIndex, recordedChoices[^1].CompletedRounds + 3, true)];
+            Reject(trailing, "EndTurn accepted a dialog after the last native choice.");
+            Reject(recordedChoices.Reverse().ToArray(), "EndTurn accepted choices in reverse native order.");
+
             var belief = new BattleBelief([new BattleBeliefWorld(source, 0.25), new BattleBeliefWorld(source, 0.75)],
                 true, "One native state with split probability mass");
             var policy = BattleBeliefPlanner.Plan(belief, new(64, 1, TimeSpan.FromSeconds(20)), Score);
@@ -123,6 +133,12 @@ internal static class RelentlessBattleChecks
                 !limitedDecisions[0].Continue, "A bounded common Abandon script was lost or certified as optimal.");
             BattleBeliefReplay.Verify(belief, limitedBelief.Policy, Score);
             Console.WriteLine("RELENTLESS-BELIEF PASS: typed native Continue and bounded shared Abandon, binary policy, budget accounting and full native replay.");
+
+            void Reject(IReadOnlyList<RelentlessDecision> choices, string message)
+            {
+                var rejected = BattleTurnModel.EndTurn(source, choices);
+                Require(!rejected.Supported && rejected.RelentlessChoice == null, message);
+            }
         }
         using var keys = new BattleStateKeys();
         var plan = BattlePlanner.Plan(source, keys.Key, new(maxNodes: 128, maxTurns: 1, timeLimit: TimeSpan.FromSeconds(20)), Score);

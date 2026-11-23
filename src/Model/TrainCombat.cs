@@ -278,6 +278,18 @@ namespace MonsterTrain2Poju.Model
         {
             string? error = Validate(source) ?? RelicEndCombatModel.Validate(source.Context);
             if (error != null) return Unsupported(error);
+            var decisions = relentlessDecisions?.Count > 0 ? relentlessDecisions.ToArray() : Array.Empty<RelentlessDecision>();
+            if (!RoomCombatModel.ValidRelentlessDecisions(source.Context?.QueryFrame?.RelentlessNotificationInterval, decisions))
+                return Unsupported("Invalid Relentless notification interval or decisions.");
+            // Native dialogs consume one ordered stream across all combat rooms.
+            int consumedChoices = 0;
+            RelentlessDecision? ChooseRelentless(int room, int round)
+            {
+                if (consumedChoices == decisions.Length) return null;
+                RelentlessDecision choice = decisions[consumedChoices];
+                if (choice.RoomIndex == room && choice.CompletedRounds == round) consumedChoices++;
+                return choice;
+            }
             int[] removedFromDeck = (source.Context?.OtherPiles ?? Array.Empty<CardPileState>())
                 .Where(pile => pile.Name == "Purged").SelectMany(pile => pile.Cards)
                 .Select(card => card.InstanceId).Distinct().ToArray();
@@ -295,10 +307,11 @@ namespace MonsterTrain2Poju.Model
                 bool requiresTowerTargets = NeedsTowerTargets(rooms[index]);
                 (int RoomIndex, CombatUnit Unit)[] externalTargets = requiresTowerTargets
                     ? TowerTargets(rooms[index], rooms, externalPyre?.Id ?? 0) : Array.Empty<(int, CombatUnit)>();
-                RoomCombatResult result = RoomCombatModel.Resolve(WithContext(rooms[index], context),
+                RoomCombatResult result = RoomCombatModel.ResolveCore(WithContext(rooms[index], context),
                     refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement),
-                    externalPyre: externalPyre, externalPyreRoomIndex: externalPyre == null ? -1 : pyreRoomIndex,
-                    externalTargets: requiresTowerTargets ? externalTargets : null, relentlessDecisions: relentlessDecisions);
+                    updateSelectedRoom: true, externalPyre: externalPyre, externalPyreRoomIndex: externalPyre == null ? -1 : pyreRoomIndex,
+                    externalTargets: requiresTowerTargets ? externalTargets : null,
+                    chooseRelentless: decisions.Length > 0 ? ChooseRelentless : null);
                 if (!result.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported, results,
                     "Train combat floor " + index + ": " + result.UnsupportedReason, relentlessChoice: result.RelentlessChoice);
                 rooms[index] = result.State!; results.Add(result);
@@ -319,7 +332,8 @@ namespace MonsterTrain2Poju.Model
                         EnchantmentWorldModel.RestorePreviewEffects(unit, observed, false)).ToArray())).ToArray();
                 SetCompanionBosses(rooms, result.State!.ActiveCompanionBossIds);
                 if (Terminal(result.Outcome))
-                    return new TrainCombatResult(Freeze(source, rooms, context), result.Outcome, results);
+                    return consumedChoices == decisions.Length ? new TrainCombatResult(Freeze(source, rooms, context), result.Outcome, results) :
+                        Unsupported("EndTurn did not reach every supplied Relentless dialog.");
                 if (context?.SpawnPoints != null)
                 {
                     foreach (CombatTeam team in new[] { CombatTeam.Enemy, CombatTeam.Player })
@@ -331,7 +345,8 @@ namespace MonsterTrain2Poju.Model
                     rooms[index] = WithContext(rooms[index], context);
                 }
             }
-            return FinishCombat(source, rooms, context, RoomOutcome.Cleared, results, removedFromDeck, roomRules);
+            return consumedChoices == decisions.Length ? FinishCombat(source, rooms, context, RoomOutcome.Cleared, results, removedFromDeck, roomRules) :
+                Unsupported("EndTurn did not reach every supplied Relentless dialog.");
         }
 
         private static TrainCombatResult FinishCombat(TrainCombatState source, RoomCombatState[] rooms,

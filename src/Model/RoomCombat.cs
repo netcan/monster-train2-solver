@@ -539,11 +539,24 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<RelentlessDecision>? relentlessDecisions = null)
         {
             int? interval = state.Context?.QueryFrame?.RelentlessNotificationInterval;
-            if (interval <= 0 || relentlessDecisions?.Any(choice => choice.RoomIndex < 0 || choice.CompletedRounds <= 0 ||
-                !interval.HasValue || choice.CompletedRounds % interval.Value != 0) == true ||
-                relentlessDecisions?.GroupBy(choice => (choice.RoomIndex, choice.CompletedRounds)).Any(group => group.Count() != 1) == true)
+            var decisions = relentlessDecisions?.Count > 0 ? relentlessDecisions.ToArray() : null;
+            if (!ValidRelentlessDecisions(interval, decisions))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                     "Invalid Relentless notification interval or decisions.");
+            return ResolveCore(state, refreshPyre, updateSelectedRoom, externalPyre, externalPyreRoomIndex, externalTargets,
+                decisions != null ? (room, round) => decisions.FirstOrDefault(choice =>
+                    choice.RoomIndex == room && choice.CompletedRounds == round) : null);
+        }
+
+        internal static bool ValidRelentlessDecisions(int? interval, IReadOnlyList<RelentlessDecision>? decisions) =>
+            !(interval <= 0) && decisions?.Any(choice => choice.RoomIndex < 0 || choice.CompletedRounds <= 0 ||
+                !interval.HasValue || choice.CompletedRounds % interval.Value != 0) != true &&
+            decisions?.GroupBy(choice => (choice.RoomIndex, choice.CompletedRounds)).Any(group => group.Count() != 1) != true;
+
+        internal static RoomCombatResult ResolveCore(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre,
+            bool updateSelectedRoom, CombatUnit? externalPyre, int externalPyreRoomIndex,
+            IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets, Func<int, int, RelentlessDecision?>? chooseRelentless)
+        {
             // Native room modifiers run once before the first exchange, including
             // deaths and queued callbacks; unit PreCombat is a separate phase.
             RoomCombatResult pre = RoomPreCombatModel.Apply(state, refreshPyre);
@@ -551,7 +564,7 @@ namespace MonsterTrain2Poju.Model
             RoomCombatResult result = pre.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated ? pre :
                 Run(pre.State!, true, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom,
                     externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets,
-                    relentlessDecisions: relentlessDecisions);
+                    chooseRelentless: chooseRelentless);
             if (!ReferenceEquals(result, pre) && pre.Events.Count > 0)
                 result = new RoomCombatResult(result.State, result.Outcome, result.Rounds, pre.Events.Concat(result.Events).ToList(),
                     result.UnsupportedReason, result.PendingCallbacks, result.RetainedUnits, result.Dispatches,
@@ -1098,7 +1111,7 @@ namespace MonsterTrain2Poju.Model
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, bool updateSelectedRoom = true,
             CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
             IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
-            IReadOnlyCollection<int>? pendingPhysicalDeathIds = null, IReadOnlyList<RelentlessDecision>? relentlessDecisions = null)
+            IReadOnlyCollection<int>? pendingPhysicalDeathIds = null, Func<int, int, RelentlessDecision?>? chooseRelentless = null)
         {
             var events = new List<CombatEvent>();
             string? error = Validate(state);
@@ -1109,7 +1122,7 @@ namespace MonsterTrain2Poju.Model
                     "True-final-boss room attack scheduling remains uncalibrated; linked damage/heal APIs are separate.");
             var engine = new Engine(state, events, refreshPyre: refreshPyre,
                 externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets,
-                relentlessDecisions: relentlessDecisions);
+                chooseRelentless: chooseRelentless);
             return engine.Run(entireRoom, updateSelectedRoom, pendingPhysicalDeathIds);
         }
 
@@ -1910,7 +1923,7 @@ namespace MonsterTrain2Poju.Model
             private readonly List<CombatEvent> events;
             private readonly List<CharacterTriggerDispatch> dispatches = new List<CharacterTriggerDispatch>();
             private bool battleWon;
-            private readonly IReadOnlyList<RelentlessDecision> relentlessDecisions;
+            private readonly Func<int, int, RelentlessDecision?>? chooseRelentless;
             private bool previewTruncated;
             private int round;
             private CombatContext? context;
@@ -1962,10 +1975,10 @@ namespace MonsterTrain2Poju.Model
                 Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect = null,
                 Func<RoomCombatState, CardActionEffect, int, BumpResult>? birthBump = null, bool centerDamageDeaths = true,
                 Func<RoomCombatResult, RoomCombatResult>? settleDamageCallbacks = null,
-                IReadOnlyList<RelentlessDecision>? relentlessDecisions = null)
+                Func<int, int, RelentlessDecision?>? chooseRelentless = null)
             {
                 this.source = source; this.events = events;
-                this.relentlessDecisions = Array.AsReadOnly((relentlessDecisions ?? Array.Empty<RelentlessDecision>()).ToArray());
+                this.chooseRelentless = chooseRelentless;
                 this.deferSpawnerExhaustion = deferSpawnerExhaustion;
                 this.pendingSummonCardId = pendingSummonCardId;
                 this.enqueueCharacterTrigger = enqueueCharacterTrigger;
@@ -2118,12 +2131,14 @@ namespace MonsterTrain2Poju.Model
                         { previewTruncated = true; return Finish(RoomOutcome.Exchanged); }
                         if (source.RoomIndex != 3)
                         {
-                            RelentlessDecision? choice = relentlessDecisions.FirstOrDefault(item =>
-                                item.RoomIndex == source.RoomIndex && item.CompletedRounds == round);
+                            RelentlessDecision? choice = chooseRelentless?.Invoke(source.RoomIndex, round);
                             if (choice == null)
                                 return new RoomCombatResult(null, RoomOutcome.Unsupported, round, events,
                                     "Relentless combat requires Continue or Abandon before the next exchange.",
                                     relentlessChoice: new RelentlessChoiceRequest(source.RoomIndex, round));
+                            if (choice.RoomIndex != source.RoomIndex || choice.CompletedRounds != round)
+                                return new RoomCombatResult(null, RoomOutcome.Unsupported, round, events,
+                                    "Relentless decision does not match the next combat dialog.");
                             if (!choice.Continue) break;
                         }
                     }

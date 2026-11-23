@@ -185,6 +185,7 @@ namespace MonsterTrain2Poju.Model
         // One quiet player decision point through EndTurn to the next decision or terminal battle.
         public static BattleTurnResult EndTurn(BattleTurnState source, IReadOnlyList<RelentlessDecision>? relentlessDecisions = null)
         {
+            bool resolvedCombat = false;
             IReadOnlyList<string> turnInteractions = ActionInteractions(source);
             if (turnInteractions.Count > 0) return Unsupported(string.Join("; ", turnInteractions));
             if (source.Spawn.Train.Context == null) return Unsupported("Missing shared battle context.");
@@ -431,6 +432,7 @@ namespace MonsterTrain2Poju.Model
             TrainCombatResult combat = TrainCombatModel.ResolveCombat(train, relentlessDecisions, outputPlayRules?.Rooms);
             if (!combat.Supported) return new BattleTurnResult(null, RoomOutcome.Unsupported, combat.UnsupportedReason,
                 combat.RelentlessChoice);
+            resolvedCombat = true;
             if (!RouteDeadUnits(train, combat)) return Unsupported("Missing unit death event or card routing.");
             train = combat.State!;
             if (outputPlayRules != null && combat.RoomRules != null) outputPlayRules = outputPlayRules.WithRooms(combat.RoomRules);
@@ -754,6 +756,8 @@ namespace MonsterTrain2Poju.Model
 
             BattleTurnResult Finish(RoomOutcome outcome, int energy, string phase)
             {
+                if (!resolvedCombat && relentlessDecisions?.Count > 0)
+                    return Unsupported("EndTurn did not reach every supplied Relentless dialog.");
                 CombatContext settled = spawn.Train.Context!;
                 if (settled.EnergyState != null)
                     energy = settled.QueryFrame!.Energy!.Value;
