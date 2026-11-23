@@ -150,9 +150,12 @@ namespace MonsterTrain2Poju.Model
                 !lifecycle.AvoidClobbering && lifecycle.TraitsModified.Count == 0;
         }
 
-        internal static bool SupportedPermafrost(CardInstanceState card)
+        internal static bool SupportedPermafrost(CardInstanceState card) =>
+            card.MaskDescriptor is { } descriptor && SupportedUndyingSource(descriptor) && SupportedMerchantPermafrost(card);
+
+        internal static bool SupportedMerchantPermafrost(CardInstanceState card)
         {
-            if (card.MaskDescriptor is not { } descriptor || !SupportedUndyingSource(descriptor)) return false;
+            if (card.MaskDescriptor is not { } descriptor) return false;
             bool Ordinary(CardTraitValue trait) => trait.RuntimeType == "CardTraitPermafrost" &&
                 trait.DeclaredName == trait.RuntimeType && trait.ParamInt == 0 && trait.DefinitionParamInt == 0 &&
                 trait.StackMode == 0 && trait.Removable && trait.DefinitionRemovable == true && !trait.TemporaryReplacement;
