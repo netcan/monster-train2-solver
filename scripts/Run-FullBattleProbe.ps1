@@ -589,6 +589,7 @@ param(
     [string] $OriginalPyreAbilityCooldownWitness = '',
     [switch] $OriginalRandomSpellTargetsWitness,
     [switch] $OriginalRandomSpellTargetsBattle,
+    [switch] $OriginalRandomJustCauseWitness,
     [switch] $OriginalPersistentMonsterHpWitness,
     [switch] $PersistentMonsterHpAboveMaxAndDeath,
     [switch] $OriginalPersistentMonsterHpBattle,
@@ -897,14 +898,16 @@ if ($OriginalPyreAbilityCooldownWitness) {
     $PhysicalSpawnPoints = $true
     $Policy = 'units-spells-and-junk'
 }
-if ($OriginalRandomSpellTargetsWitness -or $OriginalRandomSpellTargetsBattle) {
-    $witnessArguments = @('OriginalRandomSpellTargetsWitness', 'OriginalRandomSpellTargetsBattle', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+if ($OriginalRandomSpellTargetsWitness -or $OriginalRandomSpellTargetsBattle -or $OriginalRandomJustCauseWitness) {
+    $witnessArguments = @('OriginalRandomSpellTargetsWitness', 'OriginalRandomSpellTargetsBattle', 'OriginalRandomJustCauseWitness', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
-    if (-not $BinaryCapture -or ($OriginalRandomSpellTargetsWitness -and $OriginalRandomSpellTargetsBattle) -or
+    if (-not $BinaryCapture -or @($OriginalRandomSpellTargetsWitness, $OriginalRandomSpellTargetsBattle, $OriginalRandomJustCauseWitness |
+        Where-Object { $_ }).Count -ne 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
         throw 'Select one original random spell targets test with binary capture.'
     }
     if ($OriginalRandomSpellTargetsBattle) { $PrimaryClan = 'Banished'; $SecondaryClan = 'Hellhorned' }
+    if ($OriginalRandomJustCauseWitness) { $SecondaryClan = 'Hellhorned' }
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
     $Policy = 'units-spells-and-junk'
@@ -2689,6 +2692,7 @@ $environment = @{
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_BATTLE = $(if ($OriginalPreventMonsterDamageBattle) { '1' } else { '0' })
     MT2_PROBE_RANDOM_SPELL_TARGETS_WITNESS = $(if ($OriginalRandomSpellTargetsWitness) { '1' } else { '0' })
     MT2_PROBE_RANDOM_SPELL_TARGETS_BATTLE = $(if ($OriginalRandomSpellTargetsBattle) { '1' } else { '0' })
+    MT2_PROBE_RANDOM_JUST_CAUSE_WITNESS = $(if ($OriginalRandomJustCauseWitness) { '1' } else { '0' })
     MT2_PROBE_PERSISTENT_MONSTER_HP_WITNESS = $(if ($OriginalPersistentMonsterHpWitness) { '1' } else { '0' })
     MT2_PROBE_PERSISTENT_MONSTER_HP_BATTLE = $(if ($OriginalPersistentMonsterHpBattle) { '1' } else { '0' })
     MT2_PROBE_PERSISTENT_HP_ABOVE_MAX_AND_DEATH = $(if ($PersistentMonsterHpAboveMaxAndDeath) { '1' } else { '0' })
@@ -3600,6 +3604,16 @@ if ($OriginalPersistentMonsterHpWitness) {
         throw "Original persistent monster health witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-PERSISTENT-MONSTER-HP PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalRandomJustCauseWitness) {
+    $capturePath = Join-Path $profile 'random-just-cause.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original random Just Cause component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original randomized Just Cause witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-RANDOM-JUST-CAUSE PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalRandomSpellTargetsWitness) {

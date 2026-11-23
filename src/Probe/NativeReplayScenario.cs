@@ -470,7 +470,8 @@ namespace MonsterTrain2Poju.Probe
                     if (fullBattle && OriginalStartRoomAttachmentScenario.Enabled && !OriginalStartRoomAttachmentScenario.Acquired)
                         OriginalStartRoomAttachmentScenario.AcquireBeforeBattle(managers!, log);
 #if DEVELOPMENT_PROBE
-                    if (fullBattle && (OriginalRandomSpellTargetsWitness.Enabled || OriginalRandomSpellTargetsWitness.FullBattle) &&
+                    if (fullBattle && (OriginalRandomSpellTargetsWitness.Enabled || OriginalRandomSpellTargetsWitness.FullBattle ||
+                        OriginalRandomJustCauseWitness.Enabled) &&
                         !OriginalRandomSpellTargetsWitness.Acquired)
                         OriginalRandomSpellTargetsWitness.Acquire(save);
                     if (fullBattle && OriginalPreventMonsterDamageWitness.FullBattle && !OriginalPreventMonsterDamageWitness.Acquired)
@@ -986,6 +987,12 @@ namespace MonsterTrain2Poju.Probe
                 }
                 else if (OriginalRandomSpellTargetsWitness.Tick(FullBattleTrace.Active!, managers, log))
                     Finish(true, "Original random spell targets component captured.");
+                return;
+            }
+            if (fullBattle && OriginalRandomJustCauseWitness.Enabled && combat!.GetTurnCount() >= 3)
+            {
+                if (OriginalRandomJustCauseWitness.Tick(FullBattleTrace.Active!, managers, log))
+                    Finish(true, "Original random Just Cause component captured.");
                 return;
             }
             if (fullBattle && OriginalPersistentMonsterHpWitness.Enabled)
@@ -3782,6 +3789,10 @@ namespace MonsterTrain2Poju.Probe
                             : BattleActionModel.ChooseUnitSpellAndJunkPlay(decision,
                                 card => !OriginalFinalEndingArtifactScenario.IsGeneratedCard(card.InstanceId));
                 }
+#if DEVELOPMENT_PROBE
+                else if (OriginalRandomJustCauseWitness.Enabled)
+                    pendingPlay = BattleActionModel.ChooseUnitAndJunkPlay(decision);
+#endif
                 else
                 {
                     bool playerPlan = PlayerAdvisorProbe.Enabled && decision.Spawn.Turn >=

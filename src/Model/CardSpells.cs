@@ -2990,7 +2990,7 @@ namespace MonsterTrain2Poju.Model
                     effect.Lifetime != "TemporaryUntilUnitDeath") return "Unmodeled maximum-health buff lifetime.";
                 if (effect.Type == "FloorRearrange" && effect.Target != "DropTargetCharacter" &&
                     effect.Target != "FrontInRoom" && effect.Target != "StrongestLastTargetedCharactersRoom" && effect.Target != "LastTargetedCharacters" &&
-                    effect.Target != "Self")
+                    effect.Target != "Self" && effect.Target != "RandomInRoom")
                     return "Uncalibrated floor rearrangement target selector.";
                 if (effect.Type == "AdjustAllStatusEffects" && (!effect.StatusAdjustmentFilter.HasValue || effect.StatusAdjustmentFilter < 0 || effect.StatusAdjustmentFilter > 1))
                     return "Unmodeled all-status adjustment filter.";

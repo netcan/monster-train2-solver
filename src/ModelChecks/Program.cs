@@ -13,6 +13,12 @@ if (args.Length == 2 && args[0] == "--native-random-spell-targets-only")
     RandomSpellTargetsChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-random-just-cause-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RandomSpellTargetsChecks.JustCause(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-persistent-monster-hp-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

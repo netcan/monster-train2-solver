@@ -295,8 +295,9 @@ Echoes 的留存生命效果按单位的来源卡记录。原版专项中，列�
 随机目标变异器会在法术入手时改写手动目标和同层前排目标。原版回调核对火把、冰矛及重组，
 其中重组保留原来的消耗牌堆目标。真实火把出牌从两名敌人中抽取一名，战斗随机数推进一次，
 完整状态及无指定目标的候选均通过。原版放逐者与狱魔胜局的 18 次出牌和 7 次结束回合通过复放。
-该胜局的未选候选仍包含待校准的随机换位及后续同一目标效果。
+Just Cause 的原版专项确认，随机选中的单位换位后仍由同一个单位获得 Valor。该胜局的全部出牌和结束回合候选通过。
 [随机火把专项](../tests/compatibility/game-2.3.1/mechanics/random-spell-targets/targetless-cast.mt2f) ·
+[随机换位专项](../tests/compatibility/game-2.3.1/mechanics/random-spell-targets/just-cause.mt2f) ·
 [原版整战](../tests/compatibility/game-2.3.1/mechanics/random-spell-targets/native-battle.mt2f)
 
 ExtraFeedTrigger 的原版查询确认友军 OnFeed 次数为 2，OnDeath 次数保持 1。
