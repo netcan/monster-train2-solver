@@ -265,6 +265,25 @@ internal static class BattleSearchChecks
         Require(keys.Key(root) == parent, "Large-budget search changed its native root.");
         Console.WriteLine($"NATIVE-LARGE-SEARCH-BUDGET PASS: {baseline.DecisionStatesVisited} decisions, two optimal plays, exact serial, parallel and bounded native replay.");
 
+        int scoredHorizonLeaves = 0;
+        BattleSearchResult limited = BattleSearchModel.Minimize(root, LimitedScore,
+            new BattleSearchOptions(maxNodes: 4, maxTurns: 1), _ => 0d);
+        Require(scoredHorizonLeaves > 0, "A node-budget fallback incorrectly pruned every reachable horizon leaf.");
+        Require(limited.ReachedNodeLimit && limited.Score == -1 && limited.BestState?.Spawn.Turn == root.Spawn.Turn,
+            "A bounded search must still report its best scored fallback.");
+        BattleTurnState fallback = BattlePlannerChecks.Replay(root, limited.Steps, out RoomOutcome fallbackOutcome);
+        Require(fallbackOutcome == limited.Outcome && keys.Key(fallback) == keys.Key(limited.BestState!) &&
+            keys.Key(root) == parent, "The bounded fallback did not replay exactly from the native root.");
+        Console.WriteLine($"NATIVE-SEARCH-PRUNING PASS: {scoredHorizonLeaves} horizon leaves scored, exact bounded fallback replay.");
+
+        double LimitedScore(BattleTurnState state, RoomOutcome outcome)
+        {
+            if (outcome != RoomOutcome.Exchanged) return 0;
+            if (state.Spawn.Turn == root.Spawn.Turn) return -1;
+            scoredHorizonLeaves++;
+            return 0;
+        }
+
         BattleSearchResult Search(int maxNodes, int parallelism) => BattleSearchModel.Minimize(root, Score,
             new BattleSearchOptions(maxNodes, maxTurns: 0, maxDegreeOfParallelism: parallelism));
     }

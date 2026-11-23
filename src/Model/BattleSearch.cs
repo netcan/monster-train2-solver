@@ -94,14 +94,16 @@ namespace MonsterTrain2Poju.Model
             if (budget <= 0)
             {
                 summary.ReachedNodeLimit = true;
-                summary.Consider(Leaf(state, RoomOutcome.Exchanged, Array.Empty<BattleSearchStep>(), score));
+                summary.Consider(Leaf(state, RoomOutcome.Exchanged, Array.Empty<BattleSearchStep>(), score),
+                    isObjectiveLeaf: turnsElapsed >= options.MaxTurns);
                 return summary;
             }
             summary.NodesVisited = 1;
             if (cancellationToken.IsCancellationRequested)
             {
                 summary.Cancelled = true;
-                summary.Consider(Leaf(state, RoomOutcome.Exchanged, Array.Empty<BattleSearchStep>(), score));
+                summary.Consider(Leaf(state, RoomOutcome.Exchanged, Array.Empty<BattleSearchStep>(), score),
+                    isObjectiveLeaf: turnsElapsed >= options.MaxTurns);
                 return summary;
             }
 
@@ -126,7 +128,8 @@ namespace MonsterTrain2Poju.Model
             else
             {
                 summary.ReachedTurnLimit = true;
-                summary.Consider(Leaf(state, RoomOutcome.Exchanged, Array.Empty<BattleSearchStep>(), score));
+                summary.Consider(Leaf(state, RoomOutcome.Exchanged, Array.Empty<BattleSearchStep>(), score),
+                    isObjectiveLeaf: true);
             }
 
             PrioritizeBranches(branches, Math.Max(1, budget - summary.NodesVisited + 1), root, score, options, lowerBound);
@@ -163,7 +166,7 @@ namespace MonsterTrain2Poju.Model
                         childBudget = remaining == 0 ? 0 : 1 + (remaining - 1) / remainingChildren;
                     }
                     SearchSummary child = ExploreBranch(branch, childBudget, score, options, lowerBound,
-                        cancellationToken, summary.Best?.Score);
+                        cancellationToken, summary.PruningScore);
                     summary.Merge(child);
                     if (!IsTerminal(branch.Outcome))
                     {
@@ -225,7 +228,8 @@ namespace MonsterTrain2Poju.Model
             if (IsTerminal(branch.Outcome))
             {
                 var terminal = new SearchSummary();
-                terminal.Consider(Leaf(branch.State, branch.Outcome, new[] { branch.Step }, score));
+                terminal.Consider(Leaf(branch.State, branch.Outcome, new[] { branch.Step }, score),
+                    isObjectiveLeaf: true);
                 return terminal;
             }
             if (incumbent.HasValue && lowerBound != null)
@@ -244,7 +248,8 @@ namespace MonsterTrain2Poju.Model
             if (budget <= 0)
             {
                 var cutoff = new SearchSummary { ReachedNodeLimit = true };
-                cutoff.Consider(Leaf(branch.State, RoomOutcome.Exchanged, new[] { branch.Step }, score));
+                cutoff.Consider(Leaf(branch.State, RoomOutcome.Exchanged, new[] { branch.Step }, score),
+                    isObjectiveLeaf: branch.TurnsElapsed >= options.MaxTurns);
                 return cutoff;
             }
             SearchSummary child = Explore(branch.State, branch.TurnsElapsed, budget, root: false, score, options,
@@ -317,6 +322,8 @@ namespace MonsterTrain2Poju.Model
         {
             private readonly HashSet<string> unsupportedKeys = new HashSet<string>(StringComparer.Ordinal);
             public SearchLeaf? Best { get; set; }
+            // Lower bounds apply to terminal and horizon scores only. Best can also report an earlier fallback.
+            public double? PruningScore { get; private set; }
             public int NodesVisited { get; set; }
             public int PrunedBranches { get; set; }
             public bool ReachedNodeLimit { get; set; }
@@ -324,10 +331,13 @@ namespace MonsterTrain2Poju.Model
             public bool Cancelled { get; set; }
             public List<UnsupportedActionAttempt> UnsupportedAttempts { get; } = new List<UnsupportedActionAttempt>();
 
-            public void Consider(SearchLeaf candidate)
+            public void Consider(SearchLeaf candidate, bool isObjectiveLeaf = false)
             {
                 if (Best == null || candidate.Score < Best.Score) Best = candidate;
+                if (isObjectiveLeaf) ConsiderPruningScore(candidate.Score);
             }
+
+            private void ConsiderPruningScore(double score) => PruningScore = Math.Min(PruningScore ?? score, score);
 
             public void AddUnsupported(UnsupportedActionAttempt attempt)
             {
@@ -349,6 +359,7 @@ namespace MonsterTrain2Poju.Model
             public void Merge(SearchSummary other)
             {
                 if (other.Best != null) Consider(other.Best);
+                if (other.PruningScore is double score) ConsiderPruningScore(score);
                 NodesVisited += other.NodesVisited;
                 PrunedBranches += other.PrunedBranches;
                 ReachedNodeLimit |= other.ReachedNodeLimit;
