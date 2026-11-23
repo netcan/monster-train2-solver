@@ -32,6 +32,13 @@ health, replayed all 26 decisions, and checked 449 card or skill successors and
 including during search, without starting another search. The fault itself was
 exercised by the deterministic `--battle-advice-only` check.
 
+The Windows build at `c82ebc12` passed the same isolated floor-browse and
+rolling checks after removing one redundant hash of an already prepared
+snapshot. The run verified 26 decisions and all 449 card or skill and 26
+EndTurn successors. It won with 73 Pyre health and started no additional
+search for seven floor changes. The run verifies compatibility of this change.
+Its timing does not establish an end-to-end speedup.
+
 Last documented Windows installation: 0.2.438, installed 2026-10-30 after an isolated
 native player battle and focused continuation checks. The three installed DLL
 hashes match the tested build; the prior 0.2.437 payload is retained at
