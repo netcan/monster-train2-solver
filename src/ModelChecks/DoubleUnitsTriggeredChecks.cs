@@ -54,11 +54,21 @@ internal static class DoubleUnitsTriggeredChecks
             Condition(Decision(turns[1], "Actual").Spawn.Train.Context!) is { Triggered: false, DurationTriggerCount: 0 },
             "Native hatch did not consume exactly one turn-scoped trigger before the next draw.");
 
-        var result = BattleTurnModel.EndTurn(Decision(turns[1], "Before"));
-        Require(result.Supported && result.Outcome == turns[1].GetProperty("ActualOutcome").Deserialize<RoomOutcome>(),
-            result.UnsupportedReason ?? "Triggered summon outcome differs from native.");
-        RecordedBattleChecks.Compare(result.State!, Decision(turns[1], "Actual"), false, "Original DoubleUnits hatch EndTurn");
-        Console.WriteLine("NATIVE-DOUBLE-UNITS-TRIGGERED PASS: two original hatchlings, turn-scoped count and exact EndTurn state/RNG.");
+        foreach (var row in actions)
+        {
+            var result = BattleActionModel.PlayCard(Decision(row, "Before"), row.GetProperty("Action").Deserialize<PlayCardAction>()!);
+            Require(result.Supported && result.Outcome == row.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(),
+                result.Reason ?? "DoubleUnits deployment outcome differs from native.");
+            RecordedBattleChecks.Compare(result.State!, Decision(row, "Actual"), false, "Original DoubleUnits deployment");
+        }
+        foreach (var row in turns)
+        {
+            var result = BattleTurnModel.EndTurn(Decision(row, "Before"));
+            Require(result.Supported && result.Outcome == row.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(),
+                result.UnsupportedReason ?? "Triggered summon outcome differs from native.");
+            RecordedBattleChecks.Compare(result.State!, Decision(row, "Actual"), false, "Original DoubleUnits hatch EndTurn");
+        }
+        Console.WriteLine("NATIVE-DOUBLE-UNITS-TRIGGERED PASS: exact deployment and EndTurn state/RNG, two original hatchlings and turn reset.");
     }
 
     private static RelicConditionState Condition(CombatContext context) => context.Relics!

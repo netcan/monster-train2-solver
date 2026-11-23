@@ -725,7 +725,7 @@ namespace MonsterTrain2Poju.Model
                     if (spawnCount.Value > 0)
                     {
                         if (context.SpawnPoints?.Group(action.RoomIndex, CombatTeam.Player) is not SpawnPointGroupState points ||
-                            rule.Summon != null || rule.CardType != "Monster" || target.Preview || target.Deployment)
+                            rule.Summon != null || rule.CardType != "Monster" || target.Preview)
                             return Unsupported("Additional paid units require the ordinary primary physical birth path.");
                         int occupied = points.Occupants.Count(id => id != 0 &&
                             !context.SpawnPoints.Units.Any(unit => unit.UnitId == id && unit.OuterBoss));
