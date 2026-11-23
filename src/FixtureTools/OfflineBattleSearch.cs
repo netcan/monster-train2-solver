@@ -11,12 +11,14 @@ internal static partial class OfflineBattleSearch
     // Reuse recorded forecasts before spending another search/native battle.
     // This exports a replayable failure boundary, never a native successor.
     internal static void ExtractUnsupported(string input, string output, string reason,
-        bool endTurnOnly = false, int preferredRoom = 2, bool strength = false, int fromDecision = 0, int exploreDepth = 0)
+        bool endTurnOnly = false, int preferredRoom = 2, bool strength = false, int fromDecision = 0, int exploreDepth = 0,
+        int? cardInstanceId = null)
     {
         if (File.Exists(output)) throw new IOException("Output already exists: " + output);
         Require(!string.IsNullOrWhiteSpace(reason), "An exact rejection reason is required.");
         Require(fromDecision >= 0, "The starting decision must be nonnegative.");
         Require(exploreDepth is >= 0 and <= 8, "Exploration depth exceeds diagnostic bound.");
+        Require(cardInstanceId is null or > 0, "The requested card instance ID must be positive.");
         using var source = FixtureDocument.Read(input);
         bool deployment = IsDeploymentObservation(source.RootElement);
         FixtureValue[] rows = source.RootElement.TryGetProperty("RollingDecisions", out FixtureValue recorded)
@@ -31,9 +33,10 @@ internal static partial class OfflineBattleSearch
         {
             if (!visited.Add(keys.Key(current))) return false;
             UnsupportedActionAttempt? failure = endTurnOnly ? null : BattleActionModel.EnumerateActions(current).UnsupportedAttempts
-                .FirstOrDefault(attempt => attempt.Reason == reason);
+                .FirstOrDefault(attempt => attempt.Reason == reason &&
+                    (!cardInstanceId.HasValue || attempt.Action?.CardInstanceId == cardInstanceId));
             bool end = failure == null;
-            if (end && BattleTurnModel.EndTurn(current).UnsupportedReason != reason) return false;
+            if (end && (cardInstanceId.HasValue || BattleTurnModel.EndTurn(current).UnsupportedReason != reason)) return false;
             Require((end || failure!.Action != null) && forecastPrefix.Count <= 256,
                 "Failure boundary exceeds the native input bound.");
             BattleTurnState replay = root;

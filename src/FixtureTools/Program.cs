@@ -128,9 +128,10 @@ else if (args.Length == 4 && args[0] == "extract-unsupported-branch")
 {
     OfflineBattleSearch.ExtractUnsupported(args[1], args[2], args[3]);
 }
-else if (args.Length == 5 && args[0] == "extract-unsupported-from")
+else if (args.Length is 5 or 6 && args[0] == "extract-unsupported-from")
 {
-    OfflineBattleSearch.ExtractUnsupported(args[1], args[2], args[3], fromDecision: int.Parse(args[4]));
+    OfflineBattleSearch.ExtractUnsupported(args[1], args[2], args[3], fromDecision: int.Parse(args[4]),
+        cardInstanceId: args.Length == 6 ? int.Parse(args[5]) : null);
 }
 else if (args.Length == 6 && args[0] == "explore-unsupported-from")
 {
@@ -336,7 +337,7 @@ else
 {
     Console.Error.WriteLine("Diagnostics: extract-simple-policy-unsupported <native.mt2f> <new-output.mt2f>");
     Console.Error.WriteLine("Diagnostics: extract-unsupported-branch <recorded.mt2f> <new-output.mt2f> <exact-rejection-reason>");
-    Console.Error.WriteLine("Diagnostics: extract-unsupported-from <recorded.mt2f> <new-output.mt2f> <exact-rejection-reason> <first-decision-index>; retain the complete original prefix.");
+    Console.Error.WriteLine("Diagnostics: extract-unsupported-from <recorded.mt2f> <new-output.mt2f> <exact-rejection-reason> <first-decision-index> [card-instance-id]; retain the complete original prefix.");
     Console.Error.WriteLine("Diagnostics: explore-unsupported-from <recorded.mt2f> <new-output.mt2f> <exact-rejection-reason> <first-decision-index> <depth:1..8>; explore up to 2000 model states after the recorded prefix.");
     Console.Error.WriteLine("Diagnostics: observe-partial-mismatch <partial-native.mt2f> <new-request.mt2f>; validate the matched prefix and independently observe the mismatching input.");
     Console.Error.WriteLine("Diagnostics: refresh-native-prefix <old-request.mt2f> <native-observation.mt2f> <new-request.mt2f>; verify the native prefix before rebuilding the protected target.");
