@@ -1231,6 +1231,7 @@ namespace MonsterTrain2Poju.Probe
                 CopyOnPlayTerminalThreat = CopyOnPlayTerminalScenario.LethalBoss,
                 CopyOnPlayTerminalCardIds = CopyOnPlayTerminalScenario.CardIds,
                 Policy = Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY"),
+                CampaignBattlePolicy = CampaignProgressScenario.ObservedBattlePolicy,
                 ModifierScenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS"),
 #if DEVELOPMENT_PROBE
                 OriginalSpurnedBattle = OriginalSpurnedScenario.FullBattleEvidence,

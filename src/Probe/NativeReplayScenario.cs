@@ -42,6 +42,7 @@ namespace MonsterTrain2Poju.Probe
         private readonly bool noTimeoutReplay;
         private readonly bool branchAnyUnit;
         private readonly bool fullBattle;
+        private CampaignProgressScenario? campaignBattlePolicy;
         private readonly MethodInfo setSeed;
         private readonly MethodInfo newRun;
         private readonly MethodInfo completeFtue;
@@ -1017,7 +1018,7 @@ namespace MonsterTrain2Poju.Probe
                     OriginalTwoChargesOnCardConsumedScenario.CompleteCardPlay(managers);
                     OriginalFirstRoomAttachmentScenario.CompleteCardPlay(managers);
                     log.LogInfo("DEPTH-PLAYED pass=" + pass + " turn=" + (combat!.GetTurnCount() - initialTurn));
-                    if (IsUnitAndJunkPolicy()) Enter(Stage.Battle, 60f);
+                    if (IsUnitAndJunkPolicy() || campaignBattlePolicy != null) Enter(Stage.Battle, 60f);
                     else AdvanceTurn(combat);
                 }
                 return;
@@ -3794,6 +3795,16 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #endif
+            if (fullBattle && Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_BATTLE_POLICY") == "1")
+            {
+                if (save.GetRunType() != RunType.RegionRun || save.InTestScenario || SaveManager.WasDevCheatUsed)
+                    throw new InvalidOperationException("The campaign battle policy requires an original Soul Savior run.");
+                campaignBattlePolicy ??= new CampaignProgressScenario(log);
+                var input = campaignBattlePolicy.PlayBattle(managers, save, FullBattleTrace.Active!);
+                if (input == CampaignProgressScenario.BattleInput.Card) Enter(Stage.PlayingCard, 30f);
+                else if (input == CampaignProgressScenario.BattleInput.EndTurn) AdvanceTurn(combat);
+                return;
+            }
             if (IsUnitAndJunkPolicy())
             {
                 if (fullBattle && MagebladeScenario.Enabled && !MagebladeScenario.CaptureReady)

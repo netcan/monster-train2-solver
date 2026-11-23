@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using BepInEx.Logging;
 using HarmonyLib;
+using MonsterTrain2Poju.Model;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ShinyShoe;
@@ -19,6 +20,9 @@ namespace MonsterTrain2Poju.Probe
     // claim model equivalence: strict battle probes run separately from checkpoints.
     internal sealed class CampaignProgressScenario
     {
+        internal enum BattleInput { Waiting, SelectedRoom, Card, EndTurn }
+        internal static bool ObservedBattlePolicy { get; private set; }
+
         private static CampaignProgressScenario? active;
         private readonly ManualLogSource log;
         private readonly string auditPath;
@@ -507,13 +511,19 @@ namespace MonsterTrain2Poju.Probe
             if (save.GetGameSequence() == SaveData.GameSequence.InBattle) PlayBattle(m!, save);
         }
 
-        private void PlayBattle(AllGameManagers m, SaveManager save)
+        internal BattleInput PlayBattle(AllGameManagers m, SaveManager save, FullBattleTrace? trace = null)
         {
-            if (save.PreviewMode || PreviewRngIsolation.Active || !CardAnimationSettlement.Ready()) return;
+            if (trace != null)
+            {
+                if (Time.realtimeSinceStartup < nextAction) return BattleInput.Waiting;
+                nextAction = Time.realtimeSinceStartup + .25f;
+            }
+            if (save.PreviewMode || PreviewRngIsolation.Active || !CardAnimationSettlement.Ready()) return BattleInput.Waiting;
             CombatManager combat = m.GetCombatManager(); CardManager cards = m.GetCardManager();
             if (!combat.ShouldShowEndTurnButton() || !combat.HaveCardsBeenDrawnForCurrentTurn() || combat.IsRunningTriggerQueue ||
                 m.GetReplayManager().IsCardPlaying() || (m.GetHandUI()?.AreAnyCardsAnimating() ?? false) ||
-                save.GetBattlePreviewEnabled() && (bool)AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(combat)) return;
+                save.GetBattlePreviewEnabled() && (bool)AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(combat))
+                return BattleInput.Waiting;
             RoomManager rooms = m.GetRoomManager();
             if (selectingRoom.HasValue)
             {
@@ -524,7 +534,7 @@ namespace MonsterTrain2Poju.Probe
                     // request, with a bound rather than waiting indefinitely.
                     if (Time.realtimeSinceStartup - roomSelectionRequestedAt >= 2f)
                         SelectRoom(rooms, save, selectingRoom.Value, retry: true);
-                    return;
+                    return BattleInput.SelectedRoom;
                 }
                 selectingRoom = null;
             }
@@ -603,27 +613,41 @@ namespace MonsterTrain2Poju.Probe
             var best = choices.OrderByDescending(x => x.score).FirstOrDefault();
             // Deployment precedes abilities; useful abilities precede ordinary
             // spells so that those spells cannot spend all of their ember first.
-            if ((best.card == null || best.card.GetCardType() != CardType.Monster) && PlayAbility(m, save, combat, cards)) return;
+            if (best.card == null || best.card.GetCardType() != CardType.Monster)
+            {
+                BattleInput input = PlayAbility(m, save, combat, cards, trace);
+                if (input != BattleInput.Waiting) return input;
+            }
             if (best.card != null)
             {
                 if (rooms.GetSelectedRoom() != best.room)
                 {
-                    SelectRoom(rooms, save, best.room); return;
+                    SelectRoom(rooms, save, best.room); return BattleInput.SelectedRoom;
                 }
                 var error = default(CommonSelectionBehavior.SelectionError);
                 int index = cards.GetHand().IndexOf(best.card);
                 int? point = best.drop?.GetIndexInRoom();
                 CharacterState? target = best.drop?.GetCharacterState();
                 string? targetName = target?.GetSourceCharacterData().name, targetTeam = target?.GetTeamType().ToString();
+                if (trace != null)
+                {
+                    bool deploy = best.card.GetCardType() == CardType.Monster;
+                    trace.BeginCardPlay(new PlayCardAction(trace.CardId(best.card), best.room,
+                        playerPosition: deploy ? point ?? -1 : -1,
+                        targetUnitId: !deploy && target != null ? trace.UnitId(target) : 0));
+                }
                 if (!cards.PlayCard(index, best.drop, ref error)) throw new InvalidOperationException("Native campaign card rejected: " + error);
+                if (trace != null) ObservedBattlePolicy = true;
                 Record("play", new { card = best.card.GetAssetName(), room = best.room, point, target = targetName, targetTeam });
-                return;
+                return BattleInput.Card;
             }
-            Command("Command_EndTurn").Invoke(null, null);
+            if (trace == null) Command("Command_EndTurn").Invoke(null, null);
             Record("end-turn", new { distance = battleDistance, turn = lastTurn });
+            return BattleInput.EndTurn;
         }
 
-        private bool PlayAbility(AllGameManagers m, SaveManager save, CombatManager combat, CardManager cards)
+        private BattleInput PlayAbility(AllGameManagers m, SaveManager save, CombatManager combat, CardManager cards,
+            FullBattleTrace? trace)
         {
             foreach (CharacterState actor in m.GetMonsterManager().GetCharactersReadOnly())
             {
@@ -643,14 +667,21 @@ namespace MonsterTrain2Poju.Probe
                     if (!combat.TestEffects(ability.GetEffectStates(), room.GetRoomIndex(), ability, actor, drop, actor, null, out _)) continue;
                     RoomManager rooms = m.GetRoomManager();
                     if (rooms.GetSelectedRoom() != room.GetRoomIndex())
-                    { SelectRoom(rooms, save, room.GetRoomIndex()); return true; }
+                    { SelectRoom(rooms, save, room.GetRoomIndex()); return BattleInput.SelectedRoom; }
+                    if (trace != null)
+                    {
+                        CharacterState? target = drop?.GetCharacterState();
+                        trace.BeginCardPlay(new PlayCardAction(trace.CardId(ability), room.GetRoomIndex(),
+                            targetUnitId: target == null ? 0 : trace.UnitId(target), activatorUnitId: trace.UnitId(actor)));
+                    }
                     if (!cards.PlayAnyCard(ability, out _, actor, drop, ignoreCost: false, discardCard: false,
                         fromDirectPlay: true, characterThatActivatedAbility: actor)) throw new InvalidOperationException("Native ability play rejected.");
+                    if (trace != null) ObservedBattlePolicy = true;
                     Record("ability", new { unit = actor.GetSourceCharacterData().name, ability = ability.GetAssetName(), room = room.GetRoomIndex() });
-                    return true;
+                    return BattleInput.Card;
                 }
             }
-            return false;
+            return BattleInput.Waiting;
         }
 
         private void SelectRoom(RoomManager rooms, SaveManager save, int room, bool retry = false)

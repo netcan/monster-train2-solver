@@ -130,6 +130,7 @@ param(
     [switch] $ObserveRedCrownEquipment,
     [string] $InputProfile = '',
     [switch] $RegionRunInput,
+    [switch] $CampaignBattlePolicy,
     [string] $PrimaryClan = '',
     [string] $SecondaryClan = '',
     [ValidateRange(0, 20)] [int] $BattleDistance = 0,
@@ -2591,8 +2592,12 @@ if ($damagePerHpModes.Count -gt 0) { $Policy = 'units-spells-and-junk' }
 if ($DamagePerHpAbility) { $Policy = 'units-spells-and-junk' }
 $workspace = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $nativeBuildWorkspace = if ($NativeBuildRoot) { (Resolve-Path -LiteralPath $NativeBuildRoot).Path } else { $workspace }
+if ($CampaignBattlePolicy -and (!$RegionRunInput -or
+    ($PSBoundParameters.ContainsKey('Policy') -and $Policy -ne 'units-spells-and-junk'))) {
+    throw 'CampaignBattlePolicy requires RegionRunInput and the standard full-battle output policy.'
+}
 if ($RegionRunInput) {
-    $regionArguments = @('RegionRunInput', 'InputProfile', 'BattleDistance', 'Policy', 'BinaryCapture', 'NativeWorker',
+    $regionArguments = @('RegionRunInput', 'CampaignBattlePolicy', 'InputProfile', 'BattleDistance', 'Policy', 'BinaryCapture', 'NativeWorker',
         'GameSpeed', 'TimeoutSeconds', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (!$InputProfile -or !$BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $regionArguments }).Count) {
         throw 'RegionRunInput requires a native Soul Savior BattleIntro checkpoint and binary capture.'
@@ -2873,6 +2878,7 @@ $environment = @{
     MT2_PROBE_CAPTURE_PROFILE = $(if ($ProfileCapture) { '1' } else { '0' })
     MT2_PROBE_RESUME_RUN = $(if ($InputProfile) { '1' } else { '0' })
     MT2_PROBE_REGION_RUN_INPUT = $(if ($RegionRunInput) { '1' } else { '0' })
+    MT2_PROBE_CAMPAIGN_BATTLE_POLICY = $(if ($CampaignBattlePolicy) { '1' } else { '0' })
     MT2_PROBE_PRIMARY_CLAN = $PrimaryClan
     MT2_PROBE_SECONDARY_CLAN = $SecondaryClan
     MT2_PROBE_CONDUIT_MOVEMENT = $(if ($ConduitMovement) { '1' } else { '0' })
@@ -5188,6 +5194,9 @@ if ($RegionRunInput -and ((Get-OriginalSignature $checkpoint) -cne $regionInputS
     $trace.NativeRunInput.Distance -ne $BattleDistance -or $trace.NativeRunInput.Seed -ne $checkpointData.startingConditions.seed -or
     $trace.NativeRunInput.BattlesWon -ne $checkpointData.runState.numBattlesCompleted)) {
     throw "Natural Soul Savior battle lineage differs from its native checkpoint. Inspect $tracePath and $unityLog"
+}
+if ($CampaignBattlePolicy -and $trace.CampaignBattlePolicy -ne $true) {
+    throw "The native trace did not record the requested campaign battle policy. Inspect $tracePath and $unityLog"
 }
 if ($OriginalRandomizedWavesBattle) {
     if ($InputProfile -and (Get-OriginalSignature $checkpoint) -cne $waveInputSignature) {
