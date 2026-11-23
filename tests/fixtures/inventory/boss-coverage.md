@@ -26,11 +26,11 @@ The TSV retains native identities, growth signatures and exact player-source arc
 
 ## Soul Savior
 
-The pinned 2.3.1 catalog contains 15 original encounters. 7 model definition gates are open and 7 encounters have settled recordings. The registered fixtures use original TestScenario selections and can include defeats.
+The pinned 2.3.1 catalog contains 15 original encounters. 8 model definition gates are open and 8 encounters have settled recordings. The registered fixtures use original TestScenario selections and can include defeats.
 
 | Original scenario | Model definition gate | Settled recordings |
 | --- | --- | ---: |
-| SoulSavior_R1_BossBattle_DutifulChild_AscendDescend | guarded | 0 |
+| SoulSavior_R1_BossBattle_DutifulChild_AscendDescend | allowed | 1 |
 | SoulSavior_R1_BossBattle_DutifulChild_Burst | allowed | 1 |
 | SoulSavior_R1_BossBattle_DutifulChild_Heal | guarded | 0 |
 | SoulSavior_R2_BossBattle_FavoredChild_1 | guarded | 0 |
