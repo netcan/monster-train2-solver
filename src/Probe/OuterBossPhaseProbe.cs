@@ -30,17 +30,10 @@ namespace MonsterTrain2Poju.Probe
             }
         }
         private static bool ForceRelentless => Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_RELENTLESS") == "1";
+        internal const string LifemotherDebuffsId = "9dc77d80-0ab2-471e-af73-135080c7d4a6";
         internal static bool Supports(CharacterData? data)
         {
             if (data == null) return false;
-            if (data.GetAssetKey() == TriggeredStatusTransferModel.LifemotherDebuffer)
-            {
-#if DEVELOPMENT_PROBE
-                return OriginalLifemotherDebuffsWitness.WholeBattle && OriginalLifemotherDebuffsWitness.Supports(data);
-#else
-                return false;
-#endif
-            }
             var groups = data.GetBossActionData();
             if (!OuterBossDefinitions.Supports(data.GetAssetKey()) || groups.Count != 1 ||
                 groups[0].GetNumRepeats() != 0 || groups[0].GetActions().Count != 1) return false;
@@ -63,8 +56,43 @@ namespace MonsterTrain2Poju.Probe
                     dutiful.GetTriggerAtThreshold() == 0 && dutiful.GetEffects() is [var grant] &&
                     DutifulGrant(data.GetAssetKey(), dutiful.GetTrigger(), grant)) &&
                 (data.GetAssetKey() != OuterBossDefinitions.IndulgentTitanskin || SupportsIndulgentTitanskin(data)) &&
-                (data.GetAssetKey() != OuterBossDefinitions.LifemotherReanimate || LifemotherDefinition(data));
+                (data.GetAssetKey() != OuterBossDefinitions.LifemotherReanimate || LifemotherDefinition(data)) &&
+                (data.GetAssetKey() != TriggeredStatusTransferModel.LifemotherDebuffer || LifemotherDebuffsDefinition(data));
         }
+
+        private static bool LifemotherDebuffsDefinition(CharacterData data) => data.GetID() == LifemotherDebuffsId &&
+            data.GetAttackDamage() == 50 && data.GetHealth() == 9000 && data.GetSize() == 5 &&
+            data.GetStartingStatusEffects() is [{ statusId: "trample", count: 1 }] &&
+            data.GetTriggers() is [var attack, var death, var turn] &&
+            LifemotherDebuffsTrigger(attack, CharacterTriggerData.Trigger.OnAttacking) &&
+            LifemotherDebuffsTrigger(death, CharacterTriggerData.Trigger.OnAnyMonsterDeathOnFloor) &&
+            LifemotherDebuffsTrigger(turn, CharacterTriggerData.Trigger.OnTeamTurnBegin);
+
+        private static bool LifemotherDebuffsTrigger(CharacterTriggerData trigger, CharacterTriggerData.Trigger kind) =>
+            LifemotherTrigger(trigger, kind) && trigger.GetRequiredStatusEffects().Count == 0 &&
+            trigger.GetRequiredStatusEffectsForDyingCharacter().Count == 0 &&
+            trigger.GetEffects() is [var effect] && LifemotherDebuffsEffect(effect, kind);
+
+        internal static bool LifemotherDebuffsEffect(CardEffectData effect, CharacterTriggerData.Trigger kind) =>
+            !effect.GetUseIntRange() && kind switch
+            {
+                CharacterTriggerData.Trigger.OnAttacking => effect.GetEffectStateName() == nameof(CardEffectAddStatusEffect) &&
+                    effect.GetTargetMode() == TargetMode.LastAttackedCharacter && effect.GetTargetTeamType() == Team.Type.Monsters &&
+                    effect.GetParamInt() == 0 && effect.GetParamStatusEffects() is [{ statusId: "malaise", count: 12 }],
+                CharacterTriggerData.Trigger.OnAnyMonsterDeathOnFloor =>
+                    effect.GetEffectStateName() == nameof(CardEffectTransferAllStatusEffectsFromUnit) &&
+                    effect.GetTargetMode() == TargetMode.DyingCharacter && effect.GetTargetTeamType() == (Team.Type.Heroes | Team.Type.Monsters) &&
+                    effect.GetParamInt() == (int)CardEffectTransferAllStatusEffectsFromUnit.TransferTarget.FrontFriendlyUnit &&
+                    effect.GetAdditionalParamInt() == (int)CardEffectTransferAllStatusEffectsFromUnit.AllowedStatusEffectType.DebuffsOnly &&
+                    effect.GetAdditionalParamInt1() == (int)CardEffectTransferAllStatusEffectsFromUnit.TransferRoomType.SourceRoomOnly &&
+                    effect.GetParamFloat() == 0 && !effect.GetParamBool() && !effect.GetParamBool2() &&
+                    effect.GetParamStatusEffects().Length == 0 && effect.GetTargetCharacterSubtype().IsNone &&
+                    !effect.GetTargetIgnoreBosses(),
+                CharacterTriggerData.Trigger.OnTeamTurnBegin => effect.GetEffectStateName() == nameof(CardEffectRemoveStatusEffect) &&
+                    effect.GetTargetMode() == TargetMode.Self && effect.GetTargetTeamType() == (Team.Type.Heroes | Team.Type.Monsters) &&
+                    effect.GetParamInt() == 5 && effect.GetParamStatusEffects() is [{ statusId: "dazed", count: 5 }],
+                _ => false
+            };
 
         internal static bool ScourgeAward(CardEffectData effect) =>
             effect.GetEffectStateName() == nameof(CardEffectAddBattleCard) &&

@@ -40,6 +40,7 @@ namespace MonsterTrain2Poju.Probe
                     OuterBossDefinitions.IsFleshweaver(data.GetAssetKey()) ||
                     data.GetAssetKey() is TriggeredSummonModel.UnrulyBoss or OuterBossDefinitions.UnrulyScourge or
                         OuterBossDefinitions.UnrulySniperAdvance or OuterBossDefinitions.LifemotherReanimate ||
+                    data.GetAssetKey() == TriggeredStatusTransferModel.LifemotherDebuffer ||
                     OuterBossDefinitions.IsDutiful(data.GetAssetKey())) &&
                     OuterBossPhaseProbe.Supports(data);
             }

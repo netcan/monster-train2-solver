@@ -395,7 +395,10 @@ Lifemother Infested 的三个同层死亡回调将首领的 Hivemind 从 0 依�
 
 Lifemother Debuffs 的原版践踏在濒死冠军和后排复仇者身上各施加 12 层 Malaise。
 死亡回调把冠军身上的 12 层转给存活复仇者，叠到 24 层。四次回调的状态和随机流均通过专项回放。
+两条原版 Torch 分支进一步核对 Malaise 与 Pyregel 的转移和清除顺序。反向顺序的样本中没有存活接收者。
+整战的 11 次出牌、4 次结束回合、两类候选和 16 条独立分支通过，原版结算为败局。
 [原版 Malaise 转移](../tests/compatibility/game-2.3.1/mechanics/lifemother-debuffs/native-component.mt2f)
+[原版整战](../tests/compatibility/game-2.3.1/mechanics/lifemother-debuffs/native-battle.mt2f)
 
 原版部署限制使底层和中层在部署阶段无法召唤，进入第 1 回合后解禁。完整结束回合后继通过对照。
 同一次组合采样中，BigMonsters 使列车乘务员的占位由 3 变为 4，冠军由 2 变为 3，

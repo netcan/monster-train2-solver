@@ -17,7 +17,6 @@ namespace MonsterTrain2Poju.Probe
         internal const string Scenario = "SoulSavior_R5_BossBattle_Lifemother_Debuffs";
         internal const string Boss = "Boss_SoulSavior_Final_Lifemother_Debuffer";
         private const string ScenarioId = "9928005f-f7da-42c7-887a-b26b38ae8bcb";
-        private const string BossId = "9dc77d80-0ab2-471e-af73-135080c7d4a6";
         private const string OwnerId = OuterBossDefinitions.LifemotherDebuffsOwnerId;
         private const string Champion = "19705414-816d-4549-bcf5-866f338a551f";
         private const string Avenger = "69fcbe85-a5b7-4a83-bf6d-21888604d99e";
@@ -29,47 +28,12 @@ namespace MonsterTrain2Poju.Probe
             Applications.Any(row => row.Kind == "OnAnyMonsterDeathOnFloor" && row.PositiveMalaise);
 
         internal static bool Supports(ScenarioData scenario) => scenario.GetID() == ScenarioId &&
-            Supports(scenario.GetOuterTrainBoss(false)) && Supports(scenario.GetOuterTrainBoss(true)) &&
+            OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false)) &&
+            OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(true)) &&
             scenario.GetEnemyRelicData() is [var owner] && owner.GetID() == OwnerId &&
             owner.name == OuterBossDefinitions.LifemotherDebuffsOwner &&
             owner.GetEffects().All(effect => effect.GetEffectClassName() == nameof(RelicEffectNull)) &&
             owner.GetEffects().Select(effect => effect.GetParamInt()).SequenceEqual(new[] { 12, 10, 15, 18 });
-
-        internal static bool Supports(CharacterData? data) => data != null && data.GetAssetKey() == Boss && data.GetID() == BossId &&
-            data.GetAttackDamage() == 50 && data.GetHealth() == 9000 && data.GetSize() == 5 &&
-            data.GetStartingStatusEffects() is [{ statusId: "trample", count: 1 }] && data.GetRoomModifiersData().Count == 0 &&
-            data.GetBossActionData() is [var group] && group.GetNumRepeats() == 0 && group.GetActions() is [var action] &&
-            action.GetActionBehaviorName() == "RandomOccupiedBossActionBehavior" && action.GetParamTeamType() == Team.Type.Monsters &&
-            action.GetActionEffectData().Count == 0 && data.GetTriggers() is [var attack, var death, var turn] &&
-            Matches(attack, CharacterTriggerData.Trigger.OnAttacking) &&
-            Matches(death, CharacterTriggerData.Trigger.OnAnyMonsterDeathOnFloor) &&
-            Matches(turn, CharacterTriggerData.Trigger.OnTeamTurnBegin);
-
-        private static bool Matches(CharacterTriggerData trigger, CharacterTriggerData.Trigger kind) =>
-            trigger.GetTrigger() == kind && !trigger.GetTriggerOnce() && !trigger.GetHideVisualAndIgnoreSilence() &&
-            !trigger.GetOnlyTriggerIfEquipped() && trigger.GetTriggerAtThreshold() == 0 &&
-            trigger.GetRequiredStatusEffects().Count == 0 && trigger.GetRequiredStatusEffectsForDyingCharacter().Count == 0 &&
-            trigger.GetEffects() is [var effect] && Matches(effect, kind);
-
-        private static bool Matches(CardEffectData effect, CharacterTriggerData.Trigger kind) => !effect.GetUseIntRange() && kind switch
-        {
-            CharacterTriggerData.Trigger.OnAttacking => effect.GetEffectStateName() == nameof(CardEffectAddStatusEffect) &&
-                effect.GetTargetMode() == TargetMode.LastAttackedCharacter && effect.GetTargetTeamType() == Team.Type.Monsters &&
-                effect.GetParamInt() == 0 && effect.GetParamStatusEffects() is [{ statusId: "malaise", count: 12 }],
-            CharacterTriggerData.Trigger.OnAnyMonsterDeathOnFloor =>
-                effect.GetEffectStateName() == nameof(CardEffectTransferAllStatusEffectsFromUnit) &&
-                effect.GetTargetMode() == TargetMode.DyingCharacter && effect.GetTargetTeamType() == (Team.Type.Heroes | Team.Type.Monsters) &&
-                effect.GetParamInt() == (int)CardEffectTransferAllStatusEffectsFromUnit.TransferTarget.FrontFriendlyUnit &&
-                effect.GetAdditionalParamInt() == (int)CardEffectTransferAllStatusEffectsFromUnit.AllowedStatusEffectType.DebuffsOnly &&
-                effect.GetAdditionalParamInt1() == (int)CardEffectTransferAllStatusEffectsFromUnit.TransferRoomType.SourceRoomOnly &&
-                effect.GetParamFloat() == 0 && !effect.GetParamBool() && !effect.GetParamBool2() &&
-                effect.GetParamStatusEffects().Length == 0 && effect.GetTargetCharacterSubtype().IsNone &&
-                !effect.GetTargetIgnoreBosses(),
-            CharacterTriggerData.Trigger.OnTeamTurnBegin => effect.GetEffectStateName() == nameof(CardEffectRemoveStatusEffect) &&
-                effect.GetTargetMode() == TargetMode.Self && effect.GetTargetTeamType() == (Team.Type.Heroes | Team.Type.Monsters) &&
-                effect.GetParamInt() == 5 && effect.GetParamStatusEffects() is [{ statusId: "dazed", count: 5 }],
-            _ => false
-        };
 
         internal static PlayCardAction? Choose(BattleTurnState state)
         {
@@ -87,7 +51,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 Schema = 1, Boundary = "OriginalLifemotherDebuffs", GameVersion = UnityEngine.Application.version,
                 GameModuleMvid = typeof(CardState).Module.ModuleVersionId,
-                Scenario, ScenarioId, Boss, BossId, OwnerId, Complete, Applications
+                Scenario, ScenarioId, Boss, BossId = OuterBossPhaseProbe.LifemotherDebuffsId, OwnerId, Complete, Applications
             });
             using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "lifemother-debuffs.mt2f"));
             archive.Write(stream);
@@ -135,7 +99,7 @@ namespace MonsterTrain2Poju.Probe
                 if (FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode &&
                     cardEffectParams.selfTarget?.GetSourceCharacterData().GetAssetKey() == Boss &&
                     cardEffectParams.sourceCharacterTriggerState?.GetTrigger() is { } kind &&
-                    Matches(cardEffectState.GetSourceCardEffectData(), kind))
+                    OuterBossPhaseProbe.LifemotherDebuffsEffect(cardEffectState.GetSourceCardEffectData(), kind))
                     __result = Observe(__result, cardEffectState, cardEffectParams, kind);
             }
         }
