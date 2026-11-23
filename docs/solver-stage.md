@@ -640,3 +640,8 @@ Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时
 在原版消耗堆界面显示「选择 虫裔道钉」，并用原版确认操作选中第 25 号实例。发布版顾问继续到败局结算。
 31 次出牌、7 次结束回合、完整状态、随机流和两类候选均通过独立复放。同名提示另有离线测试及手牌界面对照。
 [第 8 环原版选牌整局](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring8-visible-deck-choice.mt2f)
+
+同一份第 8 环战前存档也在 2.3.1 上复放了旧版的 48 步胜路。当前模型从原版部署快照重新生成
+全部后继，独立原版进程按原输入复放，最终保住 1 点薪火。39 次出牌、9 次结束回合、完整状态、
+随机流和两类候选均通过。该胜局使用冻结输入，3 秒顾问的记录仍为败局。
+[第 8 环原版 1 点薪火胜局](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring8-historic-one-pyre-route.mt2f)
