@@ -57,8 +57,10 @@ namespace MonsterTrain2Poju.Model
                 ? item.WithAfterSpawnChanceRules(new[] { item.AfterSpawnChanceRules![0].WithTriggeredInRooms(rooms) }) : item).ToArray());
             RoomCombatState staged = source.WithContext(context);
             CombatUnit? target = Back(staged);
-            return target == null ? Match(staged) : CardSpellModel.Apply(staged,
-                new[] { new CardActionEffect("FloorRearrange", "DropTargetCharacter", 0, true, false, Array.Empty<CombatStatus>()) }, target.Id);
+            // The outer spawn queue owns world settlement. Running a complete
+            // spell from this room would rebase that world onto a single floor.
+            return target == null ? Match(staged) : CardSpellModel.ApplyRearrangement(staged,
+                new CardActionEffect("FloorRearrange", "DropTargetCharacter", 0, true, false, Array.Empty<CombatStatus>()), target.Id);
         }
 
         internal static TrainCombatResult Apply(TrainCombatState source, int actorId, string trigger, bool managed)
