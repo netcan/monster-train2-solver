@@ -238,13 +238,16 @@ namespace MonsterTrain2Poju.Model
                 Actions: [[{ Behavior: "RandomOccupiedBossActionBehavior", TargetTeam: CombatTeam.Player, Empty: true, DestroyRoom: false }]] };
 
         internal static bool HasDormantLifemotherInfestedDeathGrant(CombatUnit unit, CombatTrigger trigger, CombatContext? context) =>
-            context?.QueryFrame is { Turn: 1, MoonPhase: 2, MoonPhaseTrackingActive: false } &&
-            unit.MoonPhaseMask == 6 && IsLifemotherInfestedOpeningActor(unit, context) && ReferenceEquals(trigger, unit.Triggers[0]);
+            IsLifemotherInfestedFirstTurnActor(unit, context) &&
+            unit.Statuses is [{ Id: "trample", Stacks: 1 }] && ReferenceEquals(trigger, unit.Triggers[0]);
 
         internal static bool IsLifemotherInfestedFirstGrant(CombatUnit unit, CombatContext? context) =>
-            context?.QueryFrame is { Turn: 1, MoonPhase: 2, MoonPhaseTrackingActive: false } &&
-            unit is { MoonPhaseMask: 6, BaseAttack: 40, Attack: 40 } && IsLifemotherInfestedCastingActor(unit, context) &&
+            IsLifemotherInfestedFirstTurnActor(unit, context) &&
             unit.Statuses is [{ Id: "hivemind", Stacks: 2, ParamInt: 1 }, { Id: "trample", Stacks: 1 }];
+
+        private static bool IsLifemotherInfestedFirstTurnActor(CombatUnit unit, CombatContext? context) =>
+            context?.QueryFrame is { Turn: 1, MoonPhase: 2, MoonPhaseTrackingActive: false } &&
+            unit is { MoonPhaseMask: 6, BaseAttack: 40, Attack: 40 } && IsLifemotherInfestedCastingActor(unit, context);
 
         private static bool IsLifemotherInfestedOpeningActor(CombatUnit unit, CombatContext? context) =>
             IsLifemotherInfestedOpeningActorShape(unit, context) && unit.Statuses is [{ Id: "trample", Stacks: 1 }];

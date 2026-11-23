@@ -89,7 +89,12 @@ namespace MonsterTrain2Poju.Model
         {
             if (source.Context == null) return GoldModel.Fail("Pyre refresh requires shared battle context.");
             if (source.Rooms.Any(room => room.ExternalInteractions.Count > 0))
-                return GoldModel.Fail(string.Join("; ", source.Rooms.SelectMany(room => room.ExternalInteractions)));
+            {
+                string? error = OuterBossDefinitions.HasLifemotherInfestedOwner(source.Context)
+                    ? TrainCombatModel.Validate(source, allowFirstHivemindCombat: true)
+                    : string.Join("; ", source.Rooms.SelectMany(room => room.ExternalInteractions));
+                if (error != null) return GoldModel.Fail(error);
+            }
             CombatUnit[] pyres = source.Rooms.SelectMany(room => room.Units).Where(unit => unit.IsPyre && unit.DeathState?.IsDestroyed != true).ToArray();
             if (pyres.Length > 1) return GoldModel.Fail("A native train has only one live Pyre heart.");
             RelicPyreAttackRefreshResult result = RefreshPyreAttack(source.Context, pyres.SingleOrDefault(), placement);

@@ -142,7 +142,12 @@ namespace MonsterTrain2Poju.Model
             if (actionInteractions.Count > 0)
                 return Unsupported(string.Join("; ", actionInteractions));
             if (train.Rooms.Any(room => room.ExternalInteractions.Count > 0))
-                return Unsupported(string.Join("; ", train.Rooms.SelectMany(room => room.ExternalInteractions).Distinct()));
+            {
+                string? roomError = OuterBossDefinitions.HasLifemotherInfestedOwner(train.Context)
+                    ? TrainCombatModel.Validate(train, allowFirstHivemindCombat: true)
+                    : string.Join("; ", train.Rooms.SelectMany(room => room.ExternalInteractions).Distinct());
+                if (roomError != null) return Unsupported(roomError);
+            }
             string? relicError = RelicModel.Validate(train.Context);
             if (relicError != null) return Unsupported(relicError);
             if (currentRoom >= 0 && !source.PlayRules.Rooms.Any(room => room.RoomIndex == currentRoom))
