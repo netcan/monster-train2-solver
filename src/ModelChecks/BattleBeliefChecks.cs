@@ -27,7 +27,7 @@ internal static class BattleBeliefChecks
             plan.Policy.Branches.Count == 2 && plan.Policy.Branches.All(branch => Math.Abs(branch.Probability - 0.5) < 1e-12),
             "Unknown draw did not produce a complete observable posterior policy: nodes=" + plan.ExpandedWorlds +
             " unsupported=" + string.Join(";", plan.UnsupportedReasons));
-        var replayed = BattleBeliefReplay.Verify(belief, plan.Policy);
+        var replayed = BattleBeliefReplay.Verify(belief, plan.Policy, decisionHorizon: 2);
         Require(replayed.FinalWorlds.Count == 2 && Math.Abs(replayed.ExpectedScore - plan.Policy.ExpectedScore) < 1e-6,
             "Policy probability/value failed independent two-world replay.");
         var live = BattleTurnModel.EndTurn(root);
@@ -53,13 +53,23 @@ internal static class BattleBeliefChecks
                 plan.Policy.ExpectedScore, true, plan.Policy.AllTerminal, nonfiniteBranches);
             RejectPolicy(invalidPosterior, "Independent replay accepted a nonfinite posterior probability.");
         }
+        var rare = new BattleBelief([new BattleBeliefWorld(belief.Worlds[0].State, 1e-12),
+            new BattleBeliefWorld(belief.Worlds[1].State, 1)], true, "RareDrawOrder");
+        var rarePolicy = BattleBeliefPlanner.Plan(rare, new BattleBeliefOptions(maxDecisions: 1)).Policy;
+        Require(rarePolicy.Branches.Count == 2 && rarePolicy.Branches.Any(branch => branch.Probability < 1e-9),
+            "The posterior range control needs a positive probability below replay tolerance.");
+        BattleBeliefReplay.Verify(rare, rarePolicy, decisionHorizon: 1);
+        RejectPolicy(WithProbability(branch => branch.Probability < .5 ? 0 : branch.Probability),
+            "Replay accepted a zero-probability branch for an observed world.", horizon: 1, source: rare);
+        RejectPolicy(WithProbability(branch => branch.Probability > .5 ? 1 + 1e-12 : branch.Probability),
+            "Replay accepted a posterior probability above one.", horizon: 1, source: rare);
         // Unequal weights across many aliases exercise summation stability at
         // the terminal win/loss scale, without adding model expansions.
         var many = new BattleBelief(Enumerable.Range(1, 4096).Select(index =>
             new BattleBeliefWorld(root, index)).ToArray(), true, "WeightedAliasNumericalControl");
         var weighted = BattleBeliefPlanner.Plan(many, new BattleBeliefOptions(maxDecisions: 0),
             (_, _) => -1e12 - 104);
-        BattleBeliefReplay.Verify(many, weighted.Policy, (_, _) => -1e12 - 104);
+        BattleBeliefReplay.Verify(many, weighted.Policy, decisionHorizon: 0, evaluate: (_, _) => -1e12 - 104);
         Require(Math.Abs(weighted.Policy.ExpectedScore - (-1e12 - 104)) < 0.01,
             "Many weighted hypotheses lost terminal health precision.");
         var sampled = DrawOrderBelief.Create(root, 1);
@@ -69,19 +79,46 @@ internal static class BattleBeliefChecks
         var cancelled = BattleBeliefPlanner.Plan(belief, cancellationToken: new CancellationToken(true));
         Require(cancelled.Cancelled && cancelled.ExpandedWorlds == 0 && !cancelled.CertifiedFiniteHorizonOptimal, "Belief cancellation certified a result.");
         var expired = BattleBeliefPlanner.Plan(belief, new BattleBeliefOptions(timeLimit: TimeSpan.Zero));
-        Require(expired.TimedOut && !expired.CertifiedFiniteHorizonOptimal, "Belief time cutoff certified a result.");
+        Require(expired.TimedOut && expired.Policy.IsLeaf && !expired.Policy.CompletedHorizon && !expired.Policy.AllTerminal &&
+            !expired.CertifiedFiniteHorizonOptimal, "Belief time cutoff certified a result.");
+        BattleBeliefReplay.Verify(belief, expired.Policy, decisionHorizon: 3);
+        var falseTerminal = new BattleBeliefPolicy(null, false, true, expired.Policy.ExpectedScore, false, true, []);
+        RejectPolicy(falseTerminal, "Replay accepted a false terminal claim.");
+        var falseHorizon = new BattleBeliefPolicy(null, false, true, expired.Policy.ExpectedScore, true, false, []);
+        RejectPolicy(falseHorizon, "Replay accepted a premature horizon claim.", horizon: 3);
+        RejectPolicy(plan.Policy, "Replay accepted an action beyond the declared horizon.", horizon: 0);
+
+        var terminalState = turns[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        var terminalOutcome = turns[^1].GetProperty("ActualOutcome").Deserialize<RoomOutcome>();
+        Require(terminalOutcome == RoomOutcome.BattleWon, "The terminal-policy check requires a recorded native win.");
+        var terminalBelief = new BattleBelief([new BattleBeliefWorld(terminalState, 1, terminalOutcome)], true, "NativeVictory");
+        var finished = BattleBeliefPlanner.Plan(terminalBelief, new BattleBeliefOptions(maxDecisions: 1));
+        BattleBeliefReplay.Verify(terminalBelief, finished.Policy, decisionHorizon: 1);
+        RejectPolicy(plan.Policy, "Replay attempted to execute an action after the recorded win.", horizon: 2,
+            source: terminalBelief, reason: "Policy takes an action after a terminal outcome.");
+
         var limited = BattleBeliefPlanner.Plan(belief, new BattleBeliefOptions(1, 2));
         Require(limited.ReachedNodeLimit && limited.ExpandedWorlds == 1 && !limited.CertifiedFiniteHorizonOptimal,
             "Belief world expansion escaped the common node budget.");
         Nonanticipation(fixture.GetProperty("Actions")[0].GetProperty("Before").Deserialize<BattleTurnState>()!);
         Require(parent == Json(root), "Belief search mutated the native parent.");
         Console.WriteLine($"BELIEF-BATTLE PASS: two exact hidden draw orders, {plan.ExpandedWorlds} shared expansions, observable posterior branches, " +
-            "independent weighted replay and nonfinite claims rejected, sampling/cutoff guards and non-anticipating unequal-probability action choice.");
+            "independent weighted replay, terminal/horizon guards, sampling/cutoff guards and non-anticipating unequal-probability action choice.");
 
-        void RejectPolicy(BattleBeliefPolicy policy, string message)
+        BattleBeliefPolicy WithProbability(Func<BattleBeliefBranch, double> probability) => new(rarePolicy.Action,
+            rarePolicy.IsEndTurn, false, rarePolicy.ExpectedScore, true, rarePolicy.AllTerminal,
+            rarePolicy.Branches.Select(branch => new BattleBeliefBranch(branch.Observation, probability(branch), branch.Policy)).ToArray(),
+            rarePolicy.RelentlessDecisions);
+
+        void RejectPolicy(BattleBeliefPolicy policy, string message, int? horizon = null, BattleBelief? source = null,
+            string? reason = null)
         {
-            try { BattleBeliefReplay.Verify(belief, policy); }
-            catch (InvalidOperationException) { return; }
+            try
+            {
+                if (horizon.HasValue) BattleBeliefReplay.Verify(source ?? belief, policy, horizon.Value);
+                else BattleBeliefReplay.Verify(source ?? belief, policy);
+            }
+            catch (InvalidOperationException error) when (reason == null || error.Message == reason) { return; }
             throw new InvalidOperationException(message);
         }
     }

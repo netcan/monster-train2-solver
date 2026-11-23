@@ -25,7 +25,7 @@ internal static class BattleBeliefCommands
         }
         var belief = DrawOrderBelief.Create(root, worlds);
         var result = BattleBeliefPlanner.Plan(belief, new BattleBeliefOptions(nodes, decisions, TimeSpan.FromMilliseconds(milliseconds)));
-        var replay = BattleBeliefReplay.Verify(belief, result.Policy);
+        var replay = BattleBeliefReplay.Verify(belief, result.Policy, decisionHorizon: decisions);
         using var document = NativeFixtureCapture.Capture(new { Schema = 1, EvidenceKind = "ModelPrediction", Verified = true,
             ProofScope = "FiniteCurrentDrawOrderBelief", SourceArchive = Path.GetFileName(input),
             SourceSHA256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(input))).ToLowerInvariant(),
@@ -45,15 +45,16 @@ internal static class BattleBeliefCommands
             "Unknown belief policy archive.");
         var belief = source.GetProperty("Belief").Deserialize<BattleBelief>()!;
         var policy = source.GetProperty("Policy").Deserialize<BattleBeliefPolicy>()!;
-        var replay = BattleBeliefReplay.Verify(belief, policy);
+        int horizon = source.GetProperty("Options").GetProperty("MaxDecisions").GetInt32();
+        var replay = BattleBeliefReplay.Verify(belief, policy, decisionHorizon: horizon);
         Require(replay.ExpectedScore == source.GetProperty("ExpectedScore").GetDouble(), "Archived policy score differs.");
         var actual = source.GetProperty("FinalWorlds").Deserialize<BattleBeliefWorld[]>()!;
         using var keys = new BattleStateKeys();
         Require(actual.Length == replay.FinalWorlds.Count && actual.Zip(replay.FinalWorlds).All(pair =>
             pair.First.Weight == pair.Second.Weight && pair.First.Outcome == pair.Second.Outcome &&
             keys.Key(pair.First.State) == keys.Key(pair.Second.State)), "Archived policy final states/RNG differ.");
-        Console.WriteLine($"BELIEF-VERIFY PASS: {actual.Length} immutable hypotheses, observation-based actions, " +
-            "all posterior probabilities/values and final complete states/RNG reproduced independently.");
+        Console.WriteLine($"BELIEF-VERIFY PASS: policy replay with {actual.Length} immutable hypotheses, decision horizon {horizon}, " +
+            $"complete={policy.CompletedHorizon}, terminal={policy.AllTerminal}, independent posterior values and final states/RNG.");
     }
     private static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
 }
