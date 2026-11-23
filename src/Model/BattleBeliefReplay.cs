@@ -85,7 +85,7 @@ namespace MonsterTrain2Poju.Model
             }
             return new BattleBeliefReplayResult(expected.Value, final);
         }
-        private static bool Close(double left, double right) => Math.Abs(left - right) <=
-            1e-9 + 8e-15 * Math.Max(Math.Abs(left), Math.Abs(right));
+        private static bool Close(double left, double right) => double.IsFinite(left) && double.IsFinite(right) &&
+            Math.Abs(left - right) <= 1e-9 + 8e-15 * Math.Max(Math.Abs(left), Math.Abs(right));
     }
 }

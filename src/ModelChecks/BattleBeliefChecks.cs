@@ -39,14 +39,20 @@ internal static class BattleBeliefChecks
             index == 0 ? 0.75 : branch.Probability, branch.Policy)).ToArray();
         var corrupted = new BattleBeliefPolicy(plan.Policy.Action, plan.Policy.IsEndTurn, false, plan.Policy.ExpectedScore,
             true, plan.Policy.AllTerminal, badBranches);
-        bool rejected = false;
-        try { BattleBeliefReplay.Verify(belief, corrupted); } catch (InvalidOperationException) { rejected = true; }
-        Require(rejected, "Independent replay accepted a corrupted posterior probability.");
+        RejectPolicy(corrupted, "Independent replay accepted a corrupted posterior probability.");
         var wrongScore = new BattleBeliefPolicy(plan.Policy.Action, plan.Policy.IsEndTurn, false,
             plan.Policy.ExpectedScore + 1, true, plan.Policy.AllTerminal, plan.Policy.Branches);
-        rejected = false;
-        try { BattleBeliefReplay.Verify(belief, wrongScore); } catch (InvalidOperationException) { rejected = true; }
-        Require(rejected, "Large terminal-score scale hid a one-health expected-value error.");
+        RejectPolicy(wrongScore, "Large terminal-score scale hid a one-health expected-value error.");
+        foreach (double nonfinite in new[] { double.PositiveInfinity, double.NegativeInfinity, double.NaN })
+        {
+            var leaf = new BattleBeliefPolicy(null, false, true, nonfinite, true, false, []);
+            RejectPolicy(leaf, "Independent replay accepted a nonfinite expected score.");
+            var nonfiniteBranches = plan.Policy.Branches.Select((branch, index) => new BattleBeliefBranch(branch.Observation,
+                index == 0 ? nonfinite : branch.Probability, branch.Policy)).ToArray();
+            var invalidPosterior = new BattleBeliefPolicy(plan.Policy.Action, plan.Policy.IsEndTurn, false,
+                plan.Policy.ExpectedScore, true, plan.Policy.AllTerminal, nonfiniteBranches);
+            RejectPolicy(invalidPosterior, "Independent replay accepted a nonfinite posterior probability.");
+        }
         // Unequal weights across many aliases exercise summation stability at
         // the terminal win/loss scale, without adding model expansions.
         var many = new BattleBelief(Enumerable.Range(1, 4096).Select(index =>
@@ -70,7 +76,14 @@ internal static class BattleBeliefChecks
         Nonanticipation(fixture.GetProperty("Actions")[0].GetProperty("Before").Deserialize<BattleTurnState>()!);
         Require(parent == Json(root), "Belief search mutated the native parent.");
         Console.WriteLine($"BELIEF-BATTLE PASS: two exact hidden draw orders, {plan.ExpandedWorlds} shared expansions, observable posterior branches, " +
-            "independent weighted replay, sampling/cutoff guards and non-anticipating unequal-probability action choice.");
+            "independent weighted replay and nonfinite claims rejected, sampling/cutoff guards and non-anticipating unequal-probability action choice.");
+
+        void RejectPolicy(BattleBeliefPolicy policy, string message)
+        {
+            try { BattleBeliefReplay.Verify(belief, policy); }
+            catch (InvalidOperationException) { return; }
+            throw new InvalidOperationException(message);
+        }
     }
     private static void Nonanticipation(BattleTurnState root)
     {
