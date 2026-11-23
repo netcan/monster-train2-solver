@@ -614,3 +614,8 @@ Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时
 两场都保留 35 点薪火，已有 37 点的原版路线仍是限时搜索的对照。
 [修复前日志](../.probe-runs/full-battle-units-spells-and-junk-20261123-162527-04eaf1a4/unity-scenario.log) ·
 [修复后日志](../.probe-runs/full-battle-units-spells-and-junk-20261123-163106-b79665b6/unity-scenario.log)
+
+终局搜索优先尝试能保住前排的治疗后，同一战前档在 3 秒配置下找到五步原版胜路，
+以 37 点薪火结算。首次搜索耗时 3.31 秒，端到端 3.96 秒。40 个原版输入及随机流
+通过独立复放，其中 35 个来自固定前缀，随后五步来自顾问。
+[原版复放归档](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring3-endgame-three-second.mt2f)

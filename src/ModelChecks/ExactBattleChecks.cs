@@ -62,7 +62,8 @@ internal static class ExactBattleChecks
             CancellationToken.None, maxSteps: 256, maxActionsPerTurn: 12, useAdvisorOrdering: true);
         var traversalReplay = BattlePlannerChecks.Replay(root, traversal.Steps, out var traversalOutcome);
         Require(traversalOutcome == RoomOutcome.BattleWon && PyreHealth(traversalReplay) >= 37 &&
-            traversal.SearchMetrics.SimulatedEndTurns <= 3 && Json(traversalReplay) == Json(traversal.State),
+            traversal.Steps.Count == 5 && traversal.SearchMetrics.SimulatedEndTurns == 2 &&
+            Json(traversalReplay) == Json(traversal.State),
             $"Bounded terminal traversal lost the native route (health={PyreHealth(traversalReplay)}, nodes={traversal.ExpandedNodes}).");
         int nodes = Environment.ProcessorCount > 2 ? 24 : 256;
         var options = new BattlePlannerOptions(nodes, beamWidth: 8, timeLimit: TimeSpan.FromSeconds(25),

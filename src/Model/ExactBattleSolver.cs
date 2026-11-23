@@ -85,28 +85,49 @@ namespace MonsterTrain2Poju.Model
             using var keys = new BattleStateKeys();
             var workspace = new BattleSearchWorkspace(enabled: maxSteps.HasValue || maxActionsPerTurn.HasValue);
             var visited = new HashSet<string>(StringComparer.Ordinal);
-            var pending = new Stack<(Node Node, bool EndTurnOnly)>();
+            var pending = new Stack<(Node Node, Expansion Work)>();
             var root = new Node(source, RoomOutcome.Exchanged, null, null, 0);
-            pending.Push((root, false)); Node? best = null; Node fallback = root;
+            pending.Push((root, Expansion.Full)); Node? best = null; Node fallback = root;
             double score = Value(root); int nodes = 0, duplicates = 0, terminals = 0, horizons = 0;
             bool cancelled = false, timedOut = false, limited = false;
             bool actionLimit = false, stepLimit = false, stoppedEarly = false;
             var unsupported = new List<UnsupportedActionAttempt>();
             Func<bool>? stopActions = useAdvisorOrdering ? CheckStop : null;
+            bool openingDefense = useAdvisorOrdering;
             while (pending.Count > 0)
             {
                 if (CheckStop()) break;
-                var (node, endTurnOnly) = pending.Pop();
-                if (endTurnOnly) { ExpandEndTurns(node); continue; }
-                if (ConsiderLeaf(node)) continue;
-                if (node.Depth >= maxSteps) { stepLimit = true; continue; }
-                string key = keys.Key(node.State) + (options.TurnHorizon.HasValue ? "/" + node.Turns : "");
-                if (maxSteps.HasValue) key += "/depth=" + node.Depth;
-                if (maxActionsPerTurn.HasValue) key += "/actions=" + node.Actions;
-                if (!visited.Add(key)) { duplicates++; continue; }
-                if (nodes >= options.MaxNodes) { limited = true; break; }
-                nodes++;
-                if (node.Turns > fallback.Turns) fallback = node;
+                var (node, work) = pending.Pop();
+                if (work == Expansion.EndTurn) { ExpandEndTurns(node); continue; }
+                if (work != Expansion.Full) openingDefense = false;
+                else
+                {
+                    if (ConsiderLeaf(node)) { openingDefense = false; continue; }
+                    if (node.Depth >= maxSteps) { stepLimit = true; continue; }
+                    string key = keys.Key(node.State) + (options.TurnHorizon.HasValue ? "/" + node.Turns : "");
+                    if (maxSteps.HasValue) key += "/depth=" + node.Depth;
+                    if (maxActionsPerTurn.HasValue) key += "/actions=" + node.Actions;
+                    if (!visited.Add(key)) { duplicates++; continue; }
+                    if (nodes >= options.MaxNodes) { limited = true; break; }
+                    nodes++;
+                    if (node.Turns > fallback.Turns) fallback = node;
+                    if (openingDefense && nodes <= 6 && node.Actions < maxActionsPerTurn)
+                    {
+                        // Explore one short route first. Leave its full frontier
+                        // in the stack so it is still available within the budget.
+                        Node? protectedChild = FirstProtectingHeal(node);
+                        if (CheckStop())
+                        {
+                            if (protectedChild != null) pending.Push((protectedChild, Expansion.Full));
+                            break;
+                        }
+                        pending.Push((node, protectedChild == null ? Expansion.Actions : Expansion.ActionsAndEndTurn));
+                        if (protectedChild == null) ExpandEndTurns(node);
+                        else pending.Push((protectedChild, Expansion.Full));
+                        continue;
+                    }
+                    openingDefense = false;
+                }
                 // Push the complete action frontier, then visit EndTurn first to
                 // obtain a terminal witness early. Enumeration order breaks ties.
                 int beforeActions = pending.Count;
@@ -119,16 +140,17 @@ namespace MonsterTrain2Poju.Model
                         .OrderByDescending(candidate => FrontlineProtection(candidate.Result.State!)) : frontier.SupportedCandidates;
                     foreach (var candidate in candidates.Reverse())
                         pending.Push((new Node(candidate.Result.State!, candidate.Result.Outcome, node,
-                            new BattleSearchStep(candidate.Action, false), node.Turns), false));
+                            new BattleSearchStep(candidate.Action, false), node.Turns), Expansion.Full));
                     if (frontier.Interrupted) break;
                 }
+                if (work == Expansion.Actions) continue;
                 if (useAdvisorOrdering && best?.Outcome == RoomOutcome.BattleWon && pending.Count > beforeActions &&
                     FrontlineProtection(pending.Peek().Node.State) > FrontlineProtection(node.State))
                 {
                     // Preserve a terminal witness, then try the improved defense
                     // before simulating the previous position's EndTurn.
                     var protectedChild = pending.Pop();
-                    pending.Push((node, true));
+                    pending.Push((node, Expansion.EndTurn));
                     pending.Push(protectedChild);
                 }
                 else ExpandEndTurns(node);
@@ -138,10 +160,10 @@ namespace MonsterTrain2Poju.Model
             cancelled |= cancellationToken.IsCancellationRequested;
             stoppedEarly |= earlyStop?.Reached == true;
             if (!cancelled && (timedOut || limited || stoppedEarly))
-                foreach (var (completed, endTurnOnly) in pending)
+                foreach (var (completed, work) in pending)
                 {
                     if (cancellationToken.IsCancellationRequested) { cancelled = true; break; }
-                    if (!endTurnOnly && completed.Step != null) ConsiderLeaf(completed);
+                    if (work == Expansion.Full && completed.Step != null) ConsiderLeaf(completed);
                 }
             watch.Stop();
             Node chosen = best ?? fallback;
@@ -160,8 +182,37 @@ namespace MonsterTrain2Poju.Model
                 return cancelled || timedOut || stoppedEarly;
             }
 
+            Node? FirstProtectingHeal(Node node)
+            {
+                if (node.State.PlayRules == null || node.State.Spawn.Train.Context == null) return null;
+                double current = FrontlineProtection(node.State);
+                int attempts = 0;
+                foreach (var (room, ally, enemy) in ContestedFronts(node.State))
+                {
+                    if (EffectiveHealth(ally) > enemy.Attack) continue;
+                    foreach (var card in node.State.Spawn.Train.Context.Cards.Hand)
+                    {
+                        var rule = node.State.PlayRules.Cards.FirstOrDefault(item => item.DataId == card.DataId);
+                        if (rule?.Effect != "Spell" || !rule.Effects.Any(effect => effect is
+                                { Type: "Heal", Target: "DropTargetCharacter", AllowPlayer: true, Value: > 0 })) continue;
+                        var targeted = new PlayCardAction(card.InstanceId, room.RoomIndex, targetUnitId: ally.Id);
+                        foreach (var action in BattleActionModel.EnumerateRecursionChoices(node.State, targeted, rule))
+                        {
+                            if (attempts++ >= 3 || CheckStop()) return null;
+                            BattleActionResult play = workspace.Play(node.State, action);
+                            if (play.Supported && (Terminal(play.Outcome) || FrontlineProtection(play.State!) > current))
+                                return new Node(play.State!, play.Outcome, node, new BattleSearchStep(action, false), node.Turns);
+                            if (play.Rejection == ActionRejection.Unsupported)
+                                unsupported.Add(new UnsupportedActionAttempt(action, play.Reason ?? "Unsupported card action."));
+                        }
+                    }
+                }
+                return null;
+            }
+
             void ExpandEndTurns(Node node)
             {
+                if (useAdvisorOrdering && CheckStop()) return;
                 BattleEndTurnFrontier ends = BattleEndTurnModel.Enumerate(node.State, Math.Max(0, options.MaxNodes - nodes),
                     () => cancellationToken.IsCancellationRequested || deadlineReached() || earlyStop?.Reached == true,
                     choices => workspace.EndTurn(node.State, choices));
@@ -170,7 +221,7 @@ namespace MonsterTrain2Poju.Model
                 timedOut |= deadlineReached();
                 unsupported.AddRange(ends.UnsupportedAttempts);
                 foreach (BattleEndTurnCandidate end in ends.Candidates.Reverse())
-                    pending.Push((new Node(end.Result.State!, end.Result.Outcome, node, end.Step, node.Turns + 1), false));
+                    pending.Push((new Node(end.Result.State!, end.Result.Outcome, node, end.Step, node.Turns + 1), Expansion.Full));
             }
 
             bool ConsiderLeaf(Node node)
@@ -198,18 +249,23 @@ namespace MonsterTrain2Poju.Model
 
         // This only orders the bounded worker's choices. The actual combat
         // transition still decides whether protection prevents Pyre damage.
-        private static double FrontlineProtection(BattleTurnState state)
+        private static double FrontlineProtection(BattleTurnState state) =>
+            ContestedFronts(state).Sum(front => Math.Min(front.Enemy.Attack + 1d, EffectiveHealth(front.Ally)));
+
+        private static double EffectiveHealth(CombatUnit unit) =>
+            unit.Health + (double)(unit.Status("armor")?.Stacks ?? 0);
+
+        private static IEnumerable<(RoomCombatState Room, CombatUnit Ally, CombatUnit Enemy)> ContestedFronts(BattleTurnState state)
         {
-            double protection = 0;
             foreach (RoomCombatState room in state.Spawn.Train.Rooms)
             {
                 CombatUnit? ally = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0);
                 CombatUnit? enemy = room.Units.FirstOrDefault(unit => unit.Team == CombatTeam.Enemy && unit.CanAttack && unit.Health > 0);
-                if (ally == null || enemy == null || enemy.Attack <= 0) continue;
-                protection += Math.Min(enemy.Attack + 1d, ally.Health + (double)(ally.Status("armor")?.Stacks ?? 0));
+                if (ally != null && enemy?.Attack > 0) yield return (room, ally, enemy);
             }
-            return protection;
         }
+
+        private enum Expansion { Full, EndTurn, Actions, ActionsAndEndTurn }
 
         private static bool Terminal(RoomOutcome outcome) => outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
         private sealed class Node
