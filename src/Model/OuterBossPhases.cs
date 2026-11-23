@@ -45,6 +45,18 @@ namespace MonsterTrain2Poju.Model
         }
         internal OuterBossProgress WithRoom(int room) => room == Room ? this : new OuterBossProgress(UnitId, AssetKey,
             Phase, ValidAttackPhases, BaseCanAttack, room, MovementSpeed, VisitedRooms, Controller, Actions, DestroyActions);
+        internal OuterBossProgress WithDestroyRoomAvailability(IReadOnlyList<RoomPlayRule> rooms)
+        {
+            if (DestroyActions is not [{ Behavior: "RoomDestroyActionBehavior", DestroyRoom: true }] ||
+                Controller.DestroyGroup is not { Executable: [bool previous], AlwaysValid: true } destroy) return this;
+            bool available = rooms.Any(room => !room.IsPyre && room.Enabled);
+            if (available == previous) return this;
+            var updated = new BossActionGroupProgress(destroy.Repeats, destroy.ActionIndex, destroy.CurrentAction, new[] { available }, true);
+            var controller = new BossActionControllerProgress(Controller.Groups, updated, Controller.GroupIndex,
+                Controller.CurrentGroup, Controller.InitialAction);
+            return new OuterBossProgress(UnitId, AssetKey, Phase, ValidAttackPhases, BaseCanAttack, Room,
+                MovementSpeed, VisitedRooms, controller, Actions, DestroyActions);
+        }
         internal OuterBossProgress WithActor(TrainCombatState train)
         {
             RoomCombatState? floor = train.Rooms.FirstOrDefault(room => room.Units.Any(unit => unit.Id == UnitId));

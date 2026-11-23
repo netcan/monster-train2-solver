@@ -1430,9 +1430,12 @@ namespace MonsterTrain2Poju.Model
             // and bound auras survive until the turn-end ProcessRemovals call.
             if (source.CanonicalPhysicalReferences) train = TrainCombatModel.CompleteFrameRemovals(train, Array.Empty<int>());
             else if (source.CanonicalDecisionReferences) train = TrainCombatModel.ProcessRemovals(train);
+            OuterBossProgress? movedBoss = spawn.OuterBoss;
+            if (movedBoss != null && !ReferenceEquals(outputPlayRules.Rooms, source.PlayRules.Rooms))
+                movedBoss = movedBoss.WithDestroyRoomAvailability(outputPlayRules.Rooms);
             spawn = new EnemySpawnState(train, spawn.Waves, spawn.SelectedGroups, spawn.Phase, spawn.Looping, spawn.Rng,
                 train.Context?.NextUnitId ?? nextUnitId, spawn.Treasures, spawn.TreasuresRemaining, spawn.TreasureEnabled, spawn.FirstTreasureTurn,
-                spawn.FirstTreasureRoom, spawn.Turn, spawn.ExternalInteractions, spawn.CanonicalDecisionReferences, outerBoss: spawn.OuterBoss, queuedOuterBoss: spawn.QueuedOuterBoss,
+                spawn.FirstTreasureRoom, spawn.Turn, spawn.ExternalInteractions, spawn.CanonicalDecisionReferences, outerBoss: movedBoss, queuedOuterBoss: spawn.QueuedOuterBoss,
                 queuedTrueFinalBoss: spawn.QueuedTrueFinalBoss, trueFinalBoss: spawn.TrueFinalBoss);
             spawn = ForcedRelentlessModel.Synchronize(spawn);
             if (context.RoomCapacities != null) outputPlayRules = outputPlayRules.WithCapacities(context.RoomCapacities);
