@@ -648,6 +648,7 @@ param(
     [ValidateRange(0, 99)] [int] $OpeningUnitRoomCorruption = 0,
     [string[]] $OriginalOpeningRelicIds = @(),
     [switch] $OriginalOpeningPhaseRelics,
+    [string[]] $OriginalOpeningRelicRosterIds = @(),
     [switch] $OriginalOpeningPassiveRelics,
     [switch] $OriginalOpeningPassiveRelicsFullBattle,
     [switch] $OriginalLifecycleRelicBatch,
@@ -1603,16 +1604,23 @@ if ($PSBoundParameters.ContainsKey('OriginalOpeningRelicIds')) {
         throw 'OriginalOpeningRelicIds requires distinct native collectible relic UUIDs.'
     }
 }
+if ($PSBoundParameters.ContainsKey('OriginalOpeningRelicRosterIds')) {
+    $OriginalOpeningRelicRosterIds = @($OriginalOpeningRelicRosterIds | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim().ToLowerInvariant() })
+    if (!$OriginalOpeningRelicRosterIds.Count -or @($OriginalOpeningRelicRosterIds | Where-Object { $_ -notmatch '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' }).Count -or
+        @($OriginalOpeningRelicRosterIds | Select-Object -Unique).Count -ne $OriginalOpeningRelicRosterIds.Count) {
+        throw 'OriginalOpeningRelicRosterIds requires distinct native collectible relic UUIDs.'
+    }
+}
 if ($OriginalOpeningPassiveRelicsFullBattle -and !$OriginalOpeningPassiveRelics) {
     throw 'OriginalOpeningPassiveRelicsFullBattle requires OriginalOpeningPassiveRelics.'
 }
-if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells -or $OriginalTargetedStatusSpells -or $OriginalOpeningSpellIds.Count -or $OriginalOpeningUnitIds.Count -or $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningPassiveRelics) {
-    $allowed = @('OriginalStatusMagnitudeWitness', 'OriginalStatusMagnitudeMoonWitness', 'OriginalRoomStatusSpells', 'OriginalTargetedStatusSpells', 'OriginalOpeningSpellIds', 'OriginalOpeningUnitIds', 'OriginalOpeningRelicIds', 'OriginalOpeningPhaseRelics', 'OriginalOpeningPassiveRelics', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
+if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness -or $OriginalRoomStatusSpells -or $OriginalTargetedStatusSpells -or $OriginalOpeningSpellIds.Count -or $OriginalOpeningUnitIds.Count -or $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics) {
+    $allowed = @('OriginalStatusMagnitudeWitness', 'OriginalStatusMagnitudeMoonWitness', 'OriginalRoomStatusSpells', 'OriginalTargetedStatusSpells', 'OriginalOpeningSpellIds', 'OriginalOpeningUnitIds', 'OriginalOpeningRelicIds', 'OriginalOpeningPhaseRelics', 'OriginalOpeningRelicRosterIds', 'OriginalOpeningPassiveRelics', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
         'OriginalRoomStatusSpellsFullBattle', 'WithOriginalStatusMagnitudeRelics', 'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
     if ($OriginalOpeningSpellIds.Count -or $OriginalOpeningUnitIds.Count) { $allowed += 'InputProfile' }
     if ($OriginalOpeningUnitIds.Count) { $allowed += 'UseOpeningUnitAbilities', 'OpeningUnitRoomCorruption' }
     if ($OriginalOpeningPassiveRelics) { $allowed += 'OriginalOpeningPassiveRelicsFullBattle' }
-    $modes = @($OriginalStatusMagnitudeWitness, $OriginalStatusMagnitudeMoonWitness, $OriginalRoomStatusSpells, $OriginalTargetedStatusSpells, ($OriginalOpeningSpellIds.Count -gt 0), ($OriginalOpeningUnitIds.Count -gt 0), ($OriginalOpeningRelicIds.Count -gt 0), $OriginalOpeningPhaseRelics, $OriginalOpeningPassiveRelics) | Where-Object { $_ }
+    $modes = @($OriginalStatusMagnitudeWitness, $OriginalStatusMagnitudeMoonWitness, $OriginalRoomStatusSpells, $OriginalTargetedStatusSpells, ($OriginalOpeningSpellIds.Count -gt 0), ($OriginalOpeningUnitIds.Count -gt 0), ($OriginalOpeningRelicIds.Count -gt 0), $OriginalOpeningPhaseRelics, ($OriginalOpeningRelicRosterIds.Count -gt 0), $OriginalOpeningPassiveRelics) | Where-Object { $_ }
     if (!$BinaryCapture -or @($modes).Count -ne 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
         throw 'Original opening and status witness modes require separate first-battle binary captures.'
@@ -2208,7 +2216,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll'
     throw "Native worker $NativeWorker is not initialized; run scripts/Initialize-NativeWorker.ps1 -Worker $NativeWorker first."
 }
 if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or
-    $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth) {
+    $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -2221,7 +2229,7 @@ if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput 
     if (($OriginalThikDeckChange -or $OriginalThikBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original Thik capture requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
-    if (($OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningPassiveRelics) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+    if (($OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original opening relics require the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
     if ($OriginalHallGraftedBirth -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
@@ -3014,6 +3022,11 @@ if ($OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics) {
     $environment['MT2_PROBE_MODIFIERS'] = if ($OriginalOpeningPhaseRelics) { 'original-opening-phase-relics' } else {
         'original-opening-relics:' + ($OriginalOpeningRelicIds -join ',')
     }
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+    $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
+}
+if ($OriginalOpeningRelicRosterIds.Count) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-opening-relic-roster:' + ($OriginalOpeningRelicRosterIds -join ',')
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
@@ -4244,6 +4257,30 @@ if ($DamageOverflow -and ($trace.ModifierScenario -ne 'damage-overflow' -or
 }
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
+if ($OriginalOpeningRelicRosterIds.Count) {
+    $turns = @($trace.Turns)
+    $expectedOwners = @($trace.OriginalOpeningRelicRosterOwners)
+    $ids = $OriginalOpeningRelicRosterIds -join ','
+    if ($trace.ModifierScenario -cne ('original-opening-relic-roster:' + $ids) -or
+        $trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -ne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+        !$turns.Count -or $turns[0].Before.Spawn.Turn -ne 0 -or ($expectedOwners.DataId -join ',') -cne $ids) {
+        throw "Expected original relic roster and pinned native deployment. Inspect $unityLog"
+    }
+    $owners = @($turns[0].Before.Spawn.Train.Context.Relics | Where-Object DataId -CIn $OriginalOpeningRelicRosterIds)
+    if (($owners.DataId -join ',') -cne $ids) {
+        throw "Active deployment relic roster differs from original acquisition order. Inspect $unityLog"
+    }
+    for ($index = 0; $index -lt $expectedOwners.Count; $index++) {
+        $owner = $owners[$index]
+        $expected = $expectedOwners[$index]
+        if ($owner.AssetKey -cne $expected.AssetKey -or $owner.IsCovenant -ne $false -or
+            $owner.DisallowedInPlacementPhase -ne $expected.DisallowedInPlacementPhase -or
+            ($owner.EffectTypes -join ',') -cne ($expected.EffectTypes -join ',')) {
+            throw "Active deployment relic roster differs from the original definition $($expected.AssetKey). Inspect $unityLog"
+        }
+    }
+    Write-Output "ORIGINAL-OPENING-RELIC-ROSTER BATTLE: $($owners.Count) original collectible owners with ordered effects."
+}
 if ($OriginalOpeningPassiveRelicsFullBattle) {
     $turns = @($trace.Turns)
     $expectedOwners = @($trace.OriginalOpeningPassiveRelicOwners)

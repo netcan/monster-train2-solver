@@ -3552,6 +3552,9 @@ namespace MonsterTrain2Poju.Probe
                 BattleTurnState decision = FullBattleTrace.Active!.CaptureDecision(
                     includeOuterBossForBump: OuterBossPhaseProbe.Enabled || OuterBossBirthProbe.Enabled,
                     ignoreOuterBossSpawnInteraction: OuterBossPhaseProbe.Enabled || OuterBossBirthProbe.Enabled);
+#if DEVELOPMENT_PROBE
+                OriginalOpeningRelicsScenario.ValidateRosterDeployment(decision, log);
+#endif
                 try { if (PlannerReplayScenario.AwaitingAdvice(decision)) return; }
                 catch (Exception error) { throw new InvalidOperationException("Asynchronous advisor preparation failed.", error); }
                 if (fullBattle && RelicCardModifierScenario.CastTriggerUpgrade)
