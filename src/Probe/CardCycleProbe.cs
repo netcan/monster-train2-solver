@@ -72,8 +72,10 @@ namespace MonsterTrain2Poju.Probe
                 RoomState room = rooms.GetRoom(index);
                 var units = new List<CharacterState>();
                 room.AddCharactersToList(units, Team.Type.Heroes | Team.Type.Monsters);
+                // Hivemind modifiers listen to character triggers or unit spawns only.
                 if (!RoomCapacityProbe.SupportsAttachments(room) ||
-                    units.Any(unit => unit.GetRoomStateModifiers().Any(modifier => modifier is not RoomStateSelfDamagePerMagicPowerModifier &&
+                    units.Any(unit => unit.GetRoomStateModifiers().Any(modifier => modifier is not (RoomStateSelfDamagePerMagicPowerModifier or
+                        RoomStateHivemindModifier or RoomStateHivemindKillerModifier) &&
                         !(ConduitProbe.Enabled && modifier is RoomStateConduitModifier) && !UnitSelfAttackModel.Known(modifier.GetType().Name) &&
                         !UnitRoomResourceModel.Known(modifier.GetType().Name) && !UnitRoomStatusModel.Known(modifier.GetType().Name) &&
                         modifier.GetType().Name != UnitRoomTriggerCountModel.Type && modifier is not RoomStateSpawnUnitOnUnitSpawnModifier && modifier is not RoomStateSentryAttackModifier && modifier is not RoomStateTroopUnitUpgradeModifier)))
