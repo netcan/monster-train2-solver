@@ -988,6 +988,20 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && OriginalBigMonstersCreationWitness.Enabled)
+            {
+                if (combat!.IsPlacementPhase)
+                {
+                    save.MarkOneTimeMessageComplete(OneTimeMessage.EndTurnWithoutPlayingChampion);
+                    AdvanceTurn(combat, record: false);
+                }
+                else
+                {
+                    OriginalBigMonstersCreationWitness.Write(managers, FullBattleTrace.Active!);
+                    Finish(true, "Original BigMonsters card generation captured.");
+                }
+                return;
+            }
             if (fullBattle && OriginalPlacementMutatorsWitness.Enabled)
             {
                 if (OriginalPlacementMutatorsWitness.CaptureDecision(managers, FullBattleTrace.Active!))

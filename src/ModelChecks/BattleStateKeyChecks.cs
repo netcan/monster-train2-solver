@@ -37,6 +37,7 @@ internal static class BattleStateKeyChecks
                 throw new InvalidOperationException($"State key differs from reference encoding: sample={index}, mode={mode}, actual={actual}.");
         });
         CheckRandomTargetMetadata(states[0]);
+        CheckCreationSizeMetadata();
         using (var keys = new BattleStateKeys())
         {
             if (keys.SnapshotKey(new EncodingWitness()) != "DAEA4C806CCE2A479A5155D396B8BE8CCD1EF7B83C0509C4E34FE09C2A16E8C6")
@@ -56,6 +57,19 @@ internal static class BattleStateKeyChecks
         Console.WriteLine($"STATE-KEY PASS: 12 independent reference keys, absent/false/true card targeting metadata, frozen Unicode digest, concurrent instances, all three modes; " +
             $"20 warm fresh-root keys={watch.Elapsed.TotalMilliseconds:F1}ms " +
             $"allocatedBytes={GC.GetAllocatedBytesForCurrentThread() - allocated} gc0={GC.CollectionCount(0) - collections}.");
+    }
+
+    private static void CheckCreationSizeMetadata()
+    {
+        CardCreationRule[] rules = new int?[] { null, 3, 6 }.Select(size => new CardCreationRule(
+            "key-check", CardModifiers.Empty(), null, [], sizeBeforeAddCardUpgrades: size)).ToArray();
+        using var keys = new BattleStateKeys();
+        string[] hashes = rules.Select(keys.SnapshotKey).ToArray();
+        if (rules[0].ShouldSerializeSizeBeforeAddCardUpgrades() ||
+            rules.Skip(1).Any(rule => !rule.ShouldSerializeSizeBeforeAddCardUpgrades()) ||
+            hashes.Distinct().Count() != rules.Length ||
+            !hashes.SequenceEqual(rules.Select(rule => ReferenceKey(rule, 0))))
+            throw new InvalidOperationException("Optional creation size changed legacy keys or branch identity.");
     }
 
     private static void CheckRandomTargetMetadata(BattleTurnState source)
@@ -126,7 +140,8 @@ internal static class BattleStateKeyChecks
                 object? child = property.GetValue(value);
                 if (child == null &&
                     (value is RelicResourceEffect && property.Name is nameof(RelicResourceEffect.LastKnownDeckCount) or nameof(RelicResourceEffect.PactDraw) ||
-                     value is CardMaskDescriptor && property.Name == nameof(CardMaskDescriptor.RandomTargetsFromRelic)))
+                     value is CardMaskDescriptor && property.Name == nameof(CardMaskDescriptor.RandomTargetsFromRelic) ||
+                     value is CardCreationRule && property.Name == nameof(CardCreationRule.SizeBeforeAddCardUpgrades)))
                     continue;
                 yield return property.Name;
                 if (mode == 2 && child is int selected && selected >= 0 &&

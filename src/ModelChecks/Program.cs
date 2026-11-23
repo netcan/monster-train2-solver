@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--native-big-monsters-creation-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    BigMonstersCreationChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-placement-mutators-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

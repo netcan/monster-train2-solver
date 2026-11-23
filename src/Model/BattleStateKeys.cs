@@ -130,6 +130,8 @@ namespace MonsterTrain2Poju.Model
                         if (value is RelicResourceEffect { PactDraw: null } && field.Name == nameof(RelicResourceEffect.PactDraw)) continue;
                         if (value is CardMaskDescriptor { RandomTargetsFromRelic: null } &&
                             field.Name == nameof(CardMaskDescriptor.RandomTargetsFromRelic)) continue;
+                        if (value is CardCreationRule { SizeBeforeAddCardUpgrades: null } &&
+                            field.Name == nameof(CardCreationRule.SizeBeforeAddCardUpgrades)) continue;
                         Append(field.Name);
                         if (ignoreRoomSelection &&
                             (value is BattleTurnState && field.Name == nameof(BattleTurnState.SelectedRoom) ||

@@ -246,6 +246,15 @@ namespace MonsterTrain2Poju.Model
         internal const string DisableRoomPreview = "RelicEffectDisableRoomPreview";
         internal const string DisableRoomPreviewOwnerId = "d32fad27-7d66-4d6e-8db7-6f35bcba988c";
         internal const string DisableRoomPreviewOwnerKey = "NoCombatPreviews";
+        internal const string BigMonstersEffect = "RelicEffectModifyMonsterCapacity";
+        internal const string BigMonstersOwnerId = "af623737-a208-4b85-bce3-e1066b4f4bcd";
+        internal const string BigMonstersOwnerKey = "BigMonsters";
+
+        internal static bool IsOriginalBigMonsters(CombatRelicState owner) =>
+            owner.DataId == BigMonstersOwnerId && owner.AssetKey == BigMonstersOwnerKey &&
+            owner.IsCovenant == false && owner.DisallowedInPlacementPhase == false &&
+            owner.EffectTypes.Count == 1 && owner.EffectTypes[0] == BigMonstersEffect;
+
         internal const string DeploymentSummonBlock = "RelicEffectBlockRoomSummon";
         internal const string DeploymentSummonBlockOwnerId = "cdd8f536-acb4-4f82-a2f3-fc2a593af09b";
         internal const string DeploymentSummonBlockOwnerKey = "Echoes_DeployOnlyToTopFloor";
@@ -393,6 +402,11 @@ namespace MonsterTrain2Poju.Model
                     {
                         if (IsOriginalDeploymentSummonBlock(relic)) continue;
                         return "Missing or changed original deployment summon restriction owner.";
+                    }
+                    if (effect == BigMonstersEffect)
+                    {
+                        if (IsOriginalBigMonsters(relic) && relics.Count(IsOriginalBigMonsters) == 1) continue;
+                        return "Missing, changed or duplicate original BigMonsters owner.";
                     }
                     if (effect == RelicPyreAbilityCooldownModel.Effect)
                     {

@@ -333,9 +333,12 @@ Railforged 第三环 Unruly 在原版受控战后回调中依次测试复制和�
 
 原版部署限制使底层和中层在部署阶段无法召唤，进入第 1 回合后解禁。完整结束回合后继通过对照。
 同一次组合采样中，BigMonsters 使列车乘务员的占位由 3 变为 4，冠军由 2 变为 3，
-部署和普通回合的结果相同。战中生成牌与升级应用顺序仍待验证。
+部署和普通回合的结果相同。六条原版造牌记录确认先按原始占位应用突变，再应用造牌升级。
+基础占位 6 的 Shadowsiege 无临时加成，应用原版 Tiny Stone 后降到 1。模型对照覆盖这六条记录的完整后继和随机数。
+复制、开箱及多种占位效果叠加仍需独立对照。
 [部署解禁](../tests/compatibility/game-2.3.1/mechanics/placement-mutators/placement-reopen.mt2f) ·
-[原版单位占位](../tests/compatibility/game-2.3.1/mechanics/placement-mutators/placement-size.mt2f)
+[原版单位占位](../tests/compatibility/game-2.3.1/mechanics/placement-mutators/placement-size.mt2f) ·
+[原版造牌](../tests/compatibility/game-2.3.1/mechanics/placement-mutators/big-monsters-creation.mt2f)
 
 ExtraFeedTrigger 的原版查询确认友军 OnFeed 次数为 2，OnDeath 次数保持 1。
 61 个战斗阶段、5 次出牌、7 次结束回合与两类候选通过。实际普通进食也已录到两次 OnFeed，

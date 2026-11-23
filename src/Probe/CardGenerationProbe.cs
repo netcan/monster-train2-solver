@@ -135,7 +135,8 @@ namespace MonsterTrain2Poju.Probe
             // It must not enter live fallback identity/creation observation, including
             // when another observer captures card definitions inside ApplyEffect.
             projectionSetupDepth++;
-            try { instance.Setup(data, AllGameManagers.Instance!.GetSaveManager()); }
+            SaveManager save = AllGameManagers.Instance!.GetSaveManager();
+            try { instance.Setup(data, save); }
             finally { projectionSetupDepth--; }
             CardModifiers modifiers = new CardModifiers(new CardStatModifier(), Array.Empty<CardUpgradeModifier>(), 0,
                 graftedSpawn ? new[] { "Grafted equipment" } : Array.Empty<string>(),
@@ -159,11 +160,15 @@ namespace MonsterTrain2Poju.Probe
             CardEffectCounter[] counters = data.GetEffects().Select((effect, index) => new { effect, index })
                 .Where(item => item.effect.GetEffectStateName() == "CardEffectDiscardHand")
                 .Select(item => new CardEffectCounter(item.index, "CardEffectDiscardHand", 0)).ToArray();
+            int? sizeBeforeAddCardUpgrades = CardBranchMaskProbe.Enabled && !graftedSpawn &&
+                data.GetEffects().Count(effect => effect.GetEffectStateName() == nameof(CardEffectSpawnMonster)) == 1 &&
+                RelicPercentageStatProbe.BigMonstersActive(save) ? instance.GetSize() : (int?)null;
             return new CardCreationRule(data.GetID(), modifiers, counters.Length == 0 ? null : counters, interactions,
                 DamageScalingProbe.Creation(data), StatusScalingProbe.Creation(data), UnitUpgradeScalingProbe.Creation(data),
                 RoomCapacityProbe.Creation(data), 0, descriptor, CardModifierProbe.ForgeCountScalingTraits(instance), instance.CanBeCopied(),
                 CardModifierProbe.TrainHealScalingTraits(instance),
-                activatesMoonTracking: instance.HasMoonPhaseCardEffect() ? true : (bool?)null);
+                activatesMoonTracking: instance.HasMoonPhaseCardEffect() ? true : (bool?)null,
+                sizeBeforeAddCardUpgrades: sizeBeforeAddCardUpgrades);
         }
     }
 }

@@ -21,13 +21,14 @@ namespace MonsterTrain2Poju.Model
         public bool? CanBeCopied { get; }
         public bool? ActivatesMoonTracking { get; }
         public IReadOnlyList<CardUpgradeModifier> AddCardUpgrades { get; }
+        public int? SizeBeforeAddCardUpgrades { get; }
         public CardCreationRule(string dataId, CardModifiers startingModifiers, IReadOnlyList<CardEffectCounter>? effectCounters,
             IReadOnlyList<string> externalInteractions, IReadOnlyList<ScalingDamageTrait>? damageScalingTraits = null,
             IReadOnlyList<ScalingStatusTrait>? statusScalingTraits = null, IReadOnlyList<ScalingUnitUpgradeTrait>? unitUpgradeScalingTraits = null,
             IReadOnlyList<ScalingCapacityTrait>? capacityScalingTraits = null, int? equippedUnitId = null, CardMaskDescriptor? maskDescriptor = null,
             IReadOnlyList<ScalingForgeCountTrait>? forgeCountScalingTraits = null, bool? canBeCopied = null,
             IReadOnlyList<ScalingTrainHealTrait>? trainHealScalingTraits = null, IReadOnlyList<CardUpgradeModifier>? addCardUpgrades = null,
-            bool? activatesMoonTracking = null)
+            bool? activatesMoonTracking = null, int? sizeBeforeAddCardUpgrades = null)
         { DataId = dataId; StartingModifiers = startingModifiers; EffectCounters = effectCounters == null ? null : Array.AsReadOnly(effectCounters.ToArray());
             ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
             DamageScalingTraits = damageScalingTraits == null ? null : Array.AsReadOnly(damageScalingTraits.ToArray());
@@ -38,11 +39,13 @@ namespace MonsterTrain2Poju.Model
             TrainHealScalingTraits = trainHealScalingTraits == null ? null : Array.AsReadOnly(trainHealScalingTraits.ToArray());
             EquippedUnitId = equippedUnitId; MaskDescriptor = maskDescriptor; CanBeCopied = canBeCopied;
             ActivatesMoonTracking = activatesMoonTracking;
+            SizeBeforeAddCardUpgrades = sizeBeforeAddCardUpgrades;
             AddCardUpgrades = Array.AsReadOnly((addCardUpgrades ?? Array.Empty<CardUpgradeModifier>()).ToArray()); }
+        public bool ShouldSerializeSizeBeforeAddCardUpgrades() => SizeBeforeAddCardUpgrades.HasValue;
         internal CardCreationRule WithAddCardUpgrades(IReadOnlyList<CardUpgradeModifier> upgrades) => new(DataId,
             StartingModifiers, EffectCounters, ExternalInteractions, DamageScalingTraits, StatusScalingTraits,
             UnitUpgradeScalingTraits, CapacityScalingTraits, EquippedUnitId, MaskDescriptor, ForgeCountScalingTraits,
-            CanBeCopied, TrainHealScalingTraits, upgrades, ActivatesMoonTracking);
+            CanBeCopied, TrainHealScalingTraits, upgrades, ActivatesMoonTracking, SizeBeforeAddCardUpgrades);
     }
 
     public sealed class DiscardGenerationUpgrade
@@ -297,6 +300,28 @@ namespace MonsterTrain2Poju.Model
                 if (error != null && !(allowDeferredGraftedSpawnCard &&
                     error == "Unmodeled unit card statistics; Grafted equipment" &&
                     RelicCardGenerationModel.IsPartFactoryGraftedCard(candidate))) return Unsupported(error);
+                if (context.Relics is { } creationRelics && creationRelics.Any(owner =>
+                        owner.EffectTypes.Contains(RelicModel.BigMonstersEffect)) &&
+                    creation.MaskDescriptor?.Definition.MainEffectNames.Contains("CardEffectSpawnMonster") != false)
+                {
+                    if (creationRelics.Count(RelicModel.IsOriginalBigMonsters) != 1 ||
+                        creationRelics.Count(owner => owner.EffectTypes.Contains(RelicModel.BigMonstersEffect)) != 1 ||
+                        creation.SizeBeforeAddCardUpgrades is not int size || size is < 1 or > 6 ||
+                        cachedCopy != null || rule.CopyModifiers ||
+                        context.NextAddedTemporaryUpgrades?.Any(upgrade => upgrade.Stats.Size != 0) == true ||
+                        creation.AddCardUpgrades.Any(upgrade => upgrade.Stats.Size != 0) ||
+                        creationRelics.Any(owner => owner.CardModifiers?.Any(effect => effect.Upgrade is { Stats.Size: not 0 }) == true))
+                        return Unsupported("BigMonsters requires an original single-spawn card with captured creation size and calibrated upgrade order.");
+                    if (size < 6)
+                    {
+                        CardStatModifier offsets = temporary.Offsets;
+                        temporary = new CardModifiers(new CardStatModifier(offsets.Damage, offsets.Health, offsets.Cost,
+                            offsets.Heal, offsets.Size + 1, offsets.XCost, offsets.EquipmentLimit, offsets.UpgradeSlotCount),
+                            temporary.Upgrades, temporary.PersistentHealth, temporary.ExternalInteractions,
+                            temporary.BoxedCards, temporary.MergedEquipment);
+                        candidate = candidate.WithModifiers(permanent, temporary);
+                    }
+                }
                 // AddCardImpl applies the manager's current relics before optional,
                 // copied, discard-conditional and pending temporary upgrades.
                 if (cachedCopy == null && context.Relics?.Any(relic => relic.CardModifiers?.Count > 0 || relic.CardHealthModifiers?.Count > 0 ||

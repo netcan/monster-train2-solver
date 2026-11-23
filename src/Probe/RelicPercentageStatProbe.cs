@@ -36,6 +36,7 @@ namespace MonsterTrain2Poju.Probe
                     owner.GetRelicDataID() == RelicModel.DisableRoomPreviewOwnerId &&
                     owner.GetEffects() is [RelicEffectDisableRoomPreview] && !save.GetBattlePreviewEnabled() ||
                     SupportsDeploymentSummonBlock(owner, save) ||
+                    CardBranchMaskProbe.Enabled && SupportsBigMonsters(owner, save) ||
                     owner.GetRelicDataID() == RelicPersistentMonsterHealthModel.OwnerId &&
                     owner.GetEffects() is [RelicEffectPersistMonsterHp persistentHealth] && SupportsPersistentHealth(persistentHealth) ||
                     SupportsPyreAbilityCooldown(owner, save) ||
@@ -56,6 +57,24 @@ namespace MonsterTrain2Poju.Probe
                         owner.GetRelicDataID() is RelicResourceProbe.AfterDrawMorselsId or RelicResourceProbe.AfterDrawCultLeaderId &&
                         owner.GetEffects().Count == 1 && effect is RelicEffectSpawnMonsterOnTurnStart) &&
                     ((RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect)).GetEffectConditions().Count == 0));
+        }
+
+        internal static bool BigMonstersActive(SaveManager save) =>
+            save.GetMutators().Any(owner => SupportsBigMonsters(owner, save));
+
+        private static bool SupportsBigMonsters(RelicState owner, SaveManager save)
+        {
+            if (owner.GetRelicDataID() != RelicModel.BigMonstersOwnerId ||
+                typeof(CardState).Module.ModuleVersionId != new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d") ||
+                owner.GetEffects() is not [RelicEffectModifyMonsterCapacity])
+                return false;
+            MutatorData? definition = save.GetAllGameData().FindMutatorData(RelicModel.BigMonstersOwnerId);
+            if (definition == null || definition.name != RelicModel.BigMonstersOwnerKey ||
+                definition.DisallowInDeploymentPhase || definition.GetEffects().Count != 1)
+                return false;
+            RelicEffectData effect = definition.GetEffects()[0];
+            return effect.GetParamInt() == 1 && effect.GetParamBool() && effect.GetEffectConditions().Count == 0 &&
+                string.IsNullOrEmpty(effect.GetParamString()) && effect.GetParamCharacterSubtype()?.IsNone == true;
         }
 
         private static bool SupportsDeploymentSummonBlock(RelicState owner, SaveManager save)
