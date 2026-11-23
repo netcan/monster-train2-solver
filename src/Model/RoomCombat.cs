@@ -1189,17 +1189,18 @@ namespace MonsterTrain2Poju.Model
             bool observedHivemindCombat = ((state.Preview || allowFirstHivemindCombat) &&
                 (HivemindTurnUpgrade.IsFirstCombat(state) || HivemindTurnUpgrade.IsSecondCombat(state) ||
                  HivemindTurnUpgrade.IsThirdCombat(state) || HivemindTurnUpgrade.IsObservedPyreCombat(state)));
-            bool infestedWavePreview = HivemindTurnUpgrade.IsInfestedWavePreview(state);
+            bool infestedWaveCombat = HivemindTurnUpgrade.IsInfestedOpeningCombat(state);
             int infestedDrawTurn = allowFreshHivemind && state.Context?.QueryFrame?.Turn is 2 or 3 &&
                 OuterBossDefinitions.HasLifemotherInfestedOwner(state.Context) ? state.Context.QueryFrame.Turn.Value : 0;
-            bool infestedBossPreview = state is { Preview: true, RoomIndex: 2 } && state.Units.Any(unit =>
+            bool infestedBossCombat = state.RoomIndex == 2 && state.Units.Any(unit =>
                 unit.Triggers.Count == 2 &&
-                OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(unit, unit.Triggers[0], state.Context));
+                (OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(unit, unit.Triggers[0], state.Context) ||
+                 allowFirstHivemindCombat && HivemindTurnUpgrade.IsInfestedFirstBossMarkerOwner(state, unit)));
             string[] interactions = state.ExternalInteractions.Where(item =>
-                !((linkedTargetOnly || linkedMaximumPreview || infestedBossPreview) && item == "Outer train boss") &&
+                !((linkedTargetOnly || linkedMaximumPreview || infestedBossCombat) && item == "Outer train boss") &&
                 !((allowFreshHivemind || observedHivemindCombat) && state.Units.Any(unit => HivemindTurnUpgrade.MatchesRoomMarker(item, unit))) &&
-                !(infestedWavePreview && state.Units.Any(unit => HivemindTurnUpgrade.Marker(unit) == item &&
-                    HivemindTurnUpgrade.IsInfestedWavePreviewOwner(unit)))).ToArray();
+                !(infestedWaveCombat && state.Units.Any(unit => HivemindTurnUpgrade.Marker(unit) == item &&
+                    HivemindTurnUpgrade.IsInfestedWaveCombatOwner(unit)))).ToArray();
             if (interactions.Length > 0)
                 return string.Join("; ", interactions);
             foreach (CardInstanceState instance in state.Context?.CardInstances ?? Array.Empty<CardInstanceState>())
@@ -1280,7 +1281,8 @@ namespace MonsterTrain2Poju.Model
                         !((allowFreshHivemind && status.Id == HivemindTurnUpgrade.StatusId &&
                             (HivemindTurnUpgrade.IsWaitingSecondWaveOwner(unit, status) ||
                              HivemindTurnUpgrade.IsInfestedOpeningOwner(unit, status))) ||
-                            ((observedHivemindCombat || infestedDrawOwner || infestedWavePreview && HivemindTurnUpgrade.IsInfestedWavePreviewOwner(unit)) &&
+                            ((observedHivemindCombat || infestedDrawOwner || infestedWaveCombat && HivemindTurnUpgrade.IsInfestedWaveCombatOwner(unit) ||
+                                infestedBossCombat && allowFirstHivemindCombat && HivemindTurnUpgrade.IsInfestedFirstBossMarkerOwner(state, unit)) &&
                                 status.Id == HivemindTurnUpgrade.StatusId)) && !(status.Id == "pyrebane" &&
                         OuterBossDefinitions.IsAngelDuoInner(unit.AssetKey) && unit.Status("lifelink") == null) && !(linkedHealthOnly &&
                         (status.Id == "lifelink" || status.Id == "pyrebound" && unit.AssetKey == "Boss_Level9_Dominion_V2" ||
@@ -1715,8 +1717,10 @@ namespace MonsterTrain2Poju.Model
                                 bool dormantDeath = allowFreshHivemind && !state.Preview &&
                                     (HivemindTurnUpgrade.HasDormantOpeningDeathGrant(unit, trigger) ||
                                      OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(unit, trigger, state.Context)) ||
-                                    infestedWavePreview && HivemindTurnUpgrade.IsInfestedOpeningPreviewOwner(unit) && trigger.Kind == "OnDeath" ||
-                                    infestedBossPreview && OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(unit, trigger, state.Context) ||
+                                    infestedWaveCombat && HivemindTurnUpgrade.IsInfestedOpeningPreviewOwner(unit) && trigger.Kind == "OnDeath" ||
+                                    infestedBossCombat && (OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(unit, trigger, state.Context) ||
+                                        allowFirstHivemindCombat && HivemindTurnUpgrade.IsInfestedFirstBossMarkerOwner(state, unit) &&
+                                        ReferenceEquals(trigger, unit.Triggers[0])) ||
                                     infestedDrawOwner && trigger.Kind is "OnDeath" or "OnAnyUnitDeathOnFloor";
                                 string? statusError = dormantDeath
                                     ? null : TriggeredStatusModel.Validate(effect);
@@ -6458,7 +6462,7 @@ namespace MonsterTrain2Poju.Model
                     EnchantmentWorld? physicalWorld = context?.Enchantments;
                     int? damageActorId = effect.Type == FriendlyDamageStatusModel.NativeEffect ? overrideTarget?.Source.Id : null;
                     var roster = damageActorId.HasValue ? targets.UnitIds.Concat(new[] { damageActorId.Value }).Distinct().ToArray() : targets.UnitIds;
-                    bool observedInfestedPreview = source is { Preview: true, RoomIndex: 2 } &&
+                    bool observedInfestedPreview = source.RoomIndex == 2 &&
                         triggerKind == "OnAnyUnitDeathOnFloor" && roster.Count == 1 && roster[0] == actor.Source.Id &&
                         actor.Source.Triggers.Count == 2 &&
                         OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(actor.Source, actor.Source.Triggers[0], source.Context) &&
@@ -7048,6 +7052,8 @@ namespace MonsterTrain2Poju.Model
                 RoomCombatState physical = PhysicalRoom();
                 if (HivemindTurnUpgrade.PublishesAtCombat(source))
                     physical = HivemindTurnUpgrade.PublishRoomMarkers(physical);
+                if (!source.Preview && source.RoomIndex == 2)
+                    physical = HivemindTurnUpgrade.PublishInfestedFirstBossMarker(physical);
                 RoomCombatState state = EnchantmentWorldModel.Sync(physical, units.Where(unit => !unit.Alive || !unit.InRoom ||
                     externalTurnActorIds.Contains(unit.Source.Id)).Select(unit => unit.Freeze()).ToArray(), ExternalEnchantmentUnits(),
                     retainedDuringCallback);

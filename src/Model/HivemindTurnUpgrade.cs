@@ -71,8 +71,8 @@ namespace MonsterTrain2Poju.Model
             unit.Status(StatusId) is CombatStatus status && IsOriginalStatus(unit, status) &&
             unit.Modifiers!.Upgrades is [var upgrade] && IsAttackUpgrade(upgrade, 3) && IsInfestedOpeningUnit(unit, upgrade.Stats.Damage);
 
-        internal static bool IsInfestedWavePreview(RoomCombatState room) =>
-            room is { Preview: true, RoomIndex: 0 } &&
+        internal static bool IsInfestedOpeningCombat(RoomCombatState room) =>
+            room.RoomIndex == 0 &&
             room.Context?.QueryFrame is { Turn: 1, MoonPhase: 2, MoonPhaseTrackingActive: false } &&
             OuterBossDefinitions.HasLifemotherInfestedOwner(room.Context) &&
             (room.Units.Count(unit => unit.AssetKey == DeathHorde && IsInfestedOpeningPreviewOwner(unit)) == 2 &&
@@ -92,7 +92,7 @@ namespace MonsterTrain2Poju.Model
                 IsAttackUpgrade(opening, 3) || stacks == 7 && modifiers.Upgrades is [var active, var feeding] &&
                 IsAttackUpgrade(active, 3) && IsInfestedStatusUpgrade(feeding));
 
-        internal static bool IsInfestedWavePreviewOwner(CombatUnit unit) =>
+        internal static bool IsInfestedWaveCombatOwner(CombatUnit unit) =>
             IsInfestedOpeningPreviewOwner(unit) || IsInfestedPreviewFeedRecipient(unit);
 
         private static bool IsOpeningDeathGrant(CombatTrigger trigger) =>
@@ -193,6 +193,23 @@ namespace MonsterTrain2Poju.Model
             return room.ExternalInteractions.SequenceEqual(markers) ? room :
                 new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, markers, room.Context, room.Preview,
                     room.ActiveCompanionBossIds);
+        }
+
+        internal static bool IsInfestedFirstBossMarkerOwner(RoomCombatState room, CombatUnit unit) =>
+            room is { RoomIndex: 2, Preview: false } && OuterBossDefinitions.IsLifemotherInfestedFirstGrant(unit, room.Context);
+
+        internal static bool CanRegisterInfestedFirstBossMarker(RoomCombatState room, CardUpgradeModifier upgrade, string? kind) =>
+            kind == "OnStatusEffectChanged" && IsAttackUpgrade(upgrade, 0) &&
+            room.Units.Any(unit => IsInfestedFirstBossMarkerOwner(room, unit) && unit.Modifiers?.Upgrades.Count == 0);
+
+        internal static RoomCombatState PublishInfestedFirstBossMarker(RoomCombatState room)
+        {
+            CombatUnit? owner = room.Units.FirstOrDefault(unit => IsInfestedFirstBossMarkerOwner(room, unit) &&
+                unit.Modifiers?.Upgrades is [var upgrade] && IsAttackUpgrade(upgrade, 0));
+            if (owner == null) return room;
+            string[] markers = room.ExternalInteractions.Append(Marker(owner)).Distinct().OrderBy(marker => marker, StringComparer.Ordinal).ToArray();
+            return new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, markers, room.Context, room.Preview,
+                room.ActiveCompanionBossIds);
         }
 
         private static bool NativeFedUpgrade(CombatUnit unit, int stacks, int damage) =>
@@ -413,7 +430,7 @@ namespace MonsterTrain2Poju.Model
         internal static string Marker(CombatUnit unit) => unit.AssetKey + " room modifiers";
 
         private static bool IsObservedInfestedFeedUpgrade(RoomCombatState room, CombatUnit unit, CardUpgradeModifier upgrade, string? kind) =>
-            kind == "OnEaten" && IsInfestedWavePreview(room) && IsInfestedPreviewFeedRecipient(unit) && IsInfestedStatusUpgrade(upgrade);
+            kind == "OnEaten" && IsInfestedOpeningCombat(room) && IsInfestedPreviewFeedRecipient(unit) && IsInfestedStatusUpgrade(upgrade);
 
         internal static bool IsObservedFeedUpgrade(RoomCombatState room, CombatUnit unit, CardUpgradeModifier upgrade, string? kind) =>
             IsObservedInfestedFeedUpgrade(room, unit, upgrade, kind) || kind == "OnEaten" && IsFeedUpgrade(upgrade) && (
@@ -464,7 +481,8 @@ namespace MonsterTrain2Poju.Model
             upgrade.Statuses.Count == 0 && upgrade.Unique;
 
         internal static bool NeedsFeedMarker(RoomCombatState room, CombatUnit unit) =>
-            (IsFirstCombat(room) && IsFedPreviewRecipient(unit) ||
+            (IsInfestedFirstBossMarkerOwner(room, unit) && unit.Modifiers?.Upgrades.Count == 0 ||
+             IsFirstCombat(room) && IsFedPreviewRecipient(unit) ||
              IsSecondCombat(room) && unit.AssetKey == Zealot && IsFedSecondPreviewRecipient(unit) ||
              IsThirdCombat(room) && room.RoomIndex == 0 && IsThirdNewHeavy(unit)) &&
             !unit.Modifiers!.Upgrades.Any(upgrade => upgrade.DataId == UpgradeId);

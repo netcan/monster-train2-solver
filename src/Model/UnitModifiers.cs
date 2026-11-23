@@ -134,7 +134,8 @@ namespace MonsterTrain2Poju.Model
             bool halfHealth = source.Units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger));
             string? error = RoomCombatModel.Validate(source, allowDyingTarget ? targetId : (int?)null,
                 halfHealthLifecycle: changeHealth != null, allowFreshHivemind: allowFreshHivemind,
-                allowFirstHivemindCombat: !remove && HivemindTurnUpgrade.IsObservedCombatUpgrade(source, upgrade, triggerKind));
+                allowFirstHivemindCombat: !remove && (HivemindTurnUpgrade.IsObservedCombatUpgrade(source, upgrade, triggerKind) ||
+                    HivemindTurnUpgrade.CanRegisterInfestedFirstBossMarker(source, upgrade, triggerKind)));
             if (error != null) return Unsupported(error);
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target?.Modifiers == null || source.Context?.CardInstances == null)

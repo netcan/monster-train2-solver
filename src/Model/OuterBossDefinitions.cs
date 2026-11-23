@@ -239,9 +239,17 @@ namespace MonsterTrain2Poju.Model
             context?.QueryFrame is { Turn: 1, MoonPhase: 2, MoonPhaseTrackingActive: false } &&
             unit.MoonPhaseMask == 6 && IsLifemotherInfestedOpeningActor(unit, context) && ReferenceEquals(trigger, unit.Triggers[0]);
 
-        private static bool IsLifemotherInfestedOpeningActor(CombatUnit unit, CombatContext? context) => unit is
+        internal static bool IsLifemotherInfestedFirstGrant(CombatUnit unit, CombatContext? context) =>
+            context?.QueryFrame is { Turn: 1, MoonPhase: 2, MoonPhaseTrackingActive: false } &&
+            unit.MoonPhaseMask == 6 && IsLifemotherInfestedOpeningActorShape(unit, context) &&
+            unit.Statuses is [{ Id: "hivemind", Stacks: 2, ParamInt: 1 }, { Id: "trample", Stacks: 1 }];
+
+        private static bool IsLifemotherInfestedOpeningActor(CombatUnit unit, CombatContext? context) =>
+            IsLifemotherInfestedOpeningActorShape(unit, context) && unit.Statuses is [{ Id: "trample", Stacks: 1 }];
+
+        private static bool IsLifemotherInfestedOpeningActorShape(CombatUnit unit, CombatContext? context) => unit is
             { AssetKey: LifemotherInfested, Team: CombatTeam.Enemy, BumpRules.OuterBoss: true, BaseAttack: 40,
-                Attack: 40, MaxHealth: 9000, Health: 9000, Size: 5, SpawnerCardId: 0, Statuses: [{ Id: "trample", Stacks: 1 }],
+                Attack: 40, MaxHealth: 9000, Health: 9000, Size: 5, SpawnerCardId: 0,
                 Triggers: [{ Kind: "OnAnyUnitDeathOnFloor", Once: false, IgnoreSilence: false, FireCount: 1,
                     TriggerAtThreshold: 0, Conditions: null, Effects: [{ Type: "CardEffectAddStatusEffect",
                         Action: { Type: "AddStatus", Target: "Self", Value: 0, Range: null, AllowEnemy: false,

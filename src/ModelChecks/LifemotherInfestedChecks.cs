@@ -11,8 +11,75 @@ internal static class LifemotherInfestedChecks
     private const string Boundary = "NativeLifemotherInfestedStatusAddition";
     private const string OpeningBoundary = "NativeLifemotherInfestedOpening";
     private const string FirstTurnBoundary = "NativeLifemotherInfestedFirstTurn";
+    private const string FirstCombatBoundary = "NativeLifemotherInfestedFirstCombat";
     private const string DrawBoundary = "NativeLifemotherInfestedLaterDraws";
     private const string SpawnBoundary = "NativeLifemotherInfestedLaterSpawns";
+
+    private static readonly int[] FirstCombatStages = [10, 11, 14, 15];
+
+    internal static void ExportFirstCombat(string sourcePath, string outputPath)
+    {
+        using FixtureDocument source = ModelJson.ReadFixture(sourcePath);
+        FixtureValue battle = source.RootElement;
+        FixtureValue observation = battle.GetProperty("OriginalUnrulyBattle");
+        Require(battle.GetProperty("TerminalEffectsSettled").GetBoolean() && battle.GetProperty("CaptureFailures").GetInt32() == 0 &&
+            battle.GetProperty("Pending").GetInt32() == 0 && observation.GetProperty("ControlledTestScenario").GetBoolean() &&
+            observation.GetProperty("RailforgedInstalled").GetBoolean(), "Expected the settled original Infested battle.");
+        FixtureValue sourceStages = battle.GetProperty("Stages");
+        var builder = new FixtureBuilder();
+        int root = builder.Add(FixtureKind.Object, children:
+        [
+            Key("Boundary"), Key(FirstCombatBoundary), Key("SourceBattleSha256"), Key(Hash(sourcePath).ToLowerInvariant()),
+            Key("GameVersion"), builder.Import(battle.GetProperty("GameVersion")),
+            Key("GameModuleMvid"), builder.Import(battle.GetProperty("GameModuleMvid")),
+            Key("Scenario"), builder.Import(observation.GetProperty("Scenario")),
+            Key("Stages"), builder.Add(FixtureKind.Array, children: FirstCombatStages.Select(index => builder.Add(FixtureKind.Object,
+                children: new[] { "Index", "Turn", "Kind", "Before", "Actual", "PendingPhysicalDeaths",
+                    "ExternalTargets", "ExternalPyre" }.SelectMany(name => new[] { Key(name), builder.Import(sourceStages[index].GetProperty(name)) })
+                    .ToArray())).ToArray())
+        ]);
+        using FixtureDocument component = builder.Build(root, 0, new byte[32]);
+        FirstCombat(component.RootElement);
+        using var output = new FileStream(outputPath, FileMode.CreateNew);
+        component.Write(output);
+
+        int Key(string value) => builder.Add(FixtureKind.String, value);
+    }
+
+    internal static void FirstCombat(FixtureValue component)
+    {
+        FixtureValue[] stages = component.GetProperty("Stages").EnumerateArray().ToArray();
+        Require(component.GetProperty("Boundary").GetString() == FirstCombatBoundary &&
+            component.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            component.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            component.GetProperty("Scenario").GetString() == Scenario &&
+            component.GetProperty("SourceBattleSha256").GetString() is { Length: 64 } hash && hash.All(Uri.IsHexDigit) &&
+            stages.Select(stage => stage.GetProperty("Index").GetInt32()).SequenceEqual(FirstCombatStages),
+            "Expected the four original first-combat stages with source provenance.");
+        foreach (FixtureValue stage in stages)
+        {
+            int index = stage.GetProperty("Index").GetInt32();
+            bool exchange = index is 11 or 15;
+            int floor = index is 10 or 11 ? 2 : 0;
+            var before = stage.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            var actual = stage.GetProperty("Actual").Deserialize<RoomCombatState>()!;
+            Require(stage.GetProperty("Turn").GetInt32() == 1 && stage.GetProperty("Kind").GetString() == (exchange ? "Exchange" : "Room") &&
+                !before.Preview && !actual.Preview && before.RoomIndex == floor && actual.RoomIndex == floor &&
+                stage.GetProperty("ExternalTargets").GetArrayLength() == 0 && stage.GetProperty("ExternalPyre").ValueKind == FixtureKind.Null,
+                "Changed original first-combat boundary at stage " + index);
+            int[] physical = stage.GetProperty("PendingPhysicalDeaths").Deserialize<int[]>()!;
+            string immutable = Serialize(before);
+            RoomCombatResult replay = exchange ? RoomCombatModel.Exchange(before, pendingPhysicalDeathIds: physical) :
+                RoomCombatModel.Resolve(before);
+            Require(replay.Supported && Serialize(before) == immutable, "First physical combat unsupported at stage " + index + ": " + replay.UnsupportedReason);
+            string? difference = ModelJson.Difference(Comparable(replay.State!), Comparable(actual));
+            Require(difference == null, "First physical combat differs at stage " + index + ": " + difference);
+        }
+        Require(!OuterBossDefinitions.Supports(BossKey), "The scoped combat evidence may not admit the full boss battle.");
+        Console.WriteLine("NATIVE-LIFEMOTHER-INFESTED FIRST-COMBAT PASS: four physical room/exchange stages, complete actor state and RNG.");
+
+        static string Comparable(RoomCombatState room) => Serialize(room.WithContext(BattleTurnChecks.ComparableContext(room.Context)));
+    }
 
     internal static void ExportSpawns(string sourcePath, string outputPath)
     {
