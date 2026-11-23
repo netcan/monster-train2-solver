@@ -195,12 +195,15 @@ namespace MonsterTrain2Poju.Model
         public static TrainCombatResult PreCombat(TrainCombatState source, CombatTeam team)
             => CharacterPhase(source, team, "PreCombat");
 
-        private static TrainCombatResult CharacterPhase(TrainCombatState source, CombatTeam team, string kind)
+        internal static TrainCombatResult PreCombat(TrainCombatState source, CombatTeam team, bool allowFreshHivemind)
+            => CharacterPhase(source, team, "PreCombat", allowFreshHivemind);
+
+        private static TrainCombatResult CharacterPhase(TrainCombatState source, CombatTeam team, string kind, bool allowFreshHivemind = false)
         {
             // These two passive phases never dispatch PostCombat, movement or
             // attacks. Retain their deferred original boss effects while still
             // validating all statuses and captured canonical health links.
-            string? error = Validate(source, linkedHealthOnly: true);
+            string? error = Validate(source, linkedHealthOnly: true, allowFreshHivemind: allowFreshHivemind);
             if (error != null || team != CombatTeam.Player && team != CombatTeam.Enemy)
                 return Unsupported(error ?? "Invalid combat team.");
             RoomCombatState[] rooms = source.Rooms.ToArray();
@@ -223,7 +226,8 @@ namespace MonsterTrain2Poju.Model
                 int index = Array.FindIndex(rooms, room => room.Units.Any(unit => unit.Id == actor));
                 if (index < 0) continue; // An earlier queued trigger may remove a later actor.
                 RoomCombatResult result = RoomCombatModel.ApplyCharacterPhase(WithContext(rooms[index], context), actor, kind, queue.Add,
-                    refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement));
+                    refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement),
+                    allowFreshHivemind: allowFreshHivemind);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 rooms[index] = result.State!;
                 RelicDeckPyreStatsModel.UpdateRemoteHealth(rooms, rooms[index].RoomIndex, context, result.State!.Context);
@@ -993,7 +997,7 @@ namespace MonsterTrain2Poju.Model
         private static bool Terminal(RoomOutcome outcome) => outcome == RoomOutcome.BattleWon ||
             outcome == RoomOutcome.PlayerDefeated || outcome == RoomOutcome.Stalemate;
 
-        internal static string? Validate(TrainCombatState source, bool linkedHealthOnly = false)
+        internal static string? Validate(TrainCombatState source, bool linkedHealthOnly = false, bool allowFreshHivemind = false)
         {
             string? relicError = RelicModel.Validate(source.Context);
             if (relicError != null) return relicError;
@@ -1009,7 +1013,7 @@ namespace MonsterTrain2Poju.Model
                 return "Enemy movement identities must be unique.";
             foreach (RoomCombatState room in source.Rooms)
             {
-                string? error = RoomCombatModel.Validate(room, linkedHealthOnly: linkedHealthOnly);
+                string? error = RoomCombatModel.Validate(room, linkedHealthOnly: linkedHealthOnly, allowFreshHivemind: allowFreshHivemind);
                 if (error != null) return error;
             }
             return null;

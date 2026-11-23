@@ -1,5 +1,41 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--export-native-hivemind")
+{
+    HivemindChecks.Export(args[1], args[2]);
+    return;
+}
+if (args.Length == 3 && args[0] == "--export-native-hivemind-first-turn")
+{
+    HivemindChecks.ExportFirstTurn(args[1], args[2]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--native-hivemind-first-turn-component")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    HivemindChecks.FirstTurnWithCallbacks(fixture.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--native-hivemind-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    HivemindChecks.Native(fixture.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--native-hivemind-first-turn-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    HivemindChecks.FirstTurn(fixture.RootElement);
+    return;
+}
+if (args.Length is 2 or 3 && args[0] == "--native-hivemind-callbacks-only")
+{
+    if (args.Length == 3 && args[2] != "--preview-feed")
+        throw new ArgumentException("Expected --preview-feed or no mode.");
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    HivemindChecks.Callbacks(fixture.RootElement, requirePreviewFeed: args.Length == 3);
+    return;
+}
 if (args.Length == 3 && args[0] == "--export-indulgent-gorge-component")
 {
     IndulgentGorgeChecks.Export(args[1], args[2]);

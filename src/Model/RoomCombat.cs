@@ -822,9 +822,11 @@ namespace MonsterTrain2Poju.Model
             return Drain();
         }
 
-        internal static RoomCombatResult ApplyCharacterPhase(RoomCombatState state, int unitId, string kind, Action<QueuedCharacterTrigger> enqueue, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+        internal static RoomCombatResult ApplyCharacterPhase(RoomCombatState state, int unitId, string kind, Action<QueuedCharacterTrigger> enqueue,
+            Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, bool allowFreshHivemind = false)
         {
-            string? error = Validate(state, linkedHealthOnly: kind is "PreCombat" or "EndTurnPreHandDiscard");
+            string? error = Validate(state, linkedHealthOnly: kind is "PreCombat" or "EndTurnPreHandDiscard",
+                allowFreshHivemind: allowFreshHivemind);
             if (error != null || !state.Units.Any(unit => unit.Id == unitId))
                 return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(),
                     error ?? "Character phases require a living character actor.");
@@ -1159,7 +1161,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static string? Validate(RoomCombatState state, int? dyingTargetId = null, bool linkedHealthOnly = false,
-            bool halfHealthLifecycle = true)
+            bool halfHealthLifecycle = true, bool allowFreshHivemind = false)
         {
             // Real direct and battle queue scheduling share native callbacks.
             // Shared aura worlds keep their independent guard. Captured card
@@ -1183,7 +1185,9 @@ namespace MonsterTrain2Poju.Model
                 state.Units.Count > 0 && state.Units.All(unit => unit.Status("lifelink") != null &&
                     linked.Actors.Any(actor => actor.Id == unit.Id && actor.TrueFinalBoss && actor.OuterBoss && actor.Health == unit.Health));
             bool linkedMaximumPreview = linkedHealthOnly && linkedCombat && state.Preview && state.Context?.LifeLinks?.TemporaryPreviewIds != null;
-            string[] interactions = state.ExternalInteractions.Where(item => !((linkedTargetOnly || linkedMaximumPreview) && item == "Outer train boss")).ToArray();
+            bool passiveHivemindPreview = HivemindTurnUpgrade.IsFirstPreview(state);
+            string[] interactions = state.ExternalInteractions.Where(item => !((linkedTargetOnly || linkedMaximumPreview) && item == "Outer train boss") &&
+                !((allowFreshHivemind || passiveHivemindPreview) && state.Units.Any(unit => HivemindTurnUpgrade.MatchesRoomMarker(item, unit)))).ToArray();
             if (interactions.Length > 0)
                 return string.Join("; ", interactions);
             foreach (CardInstanceState instance in state.Context?.CardInstances ?? Array.Empty<CardInstanceState>())
@@ -1258,7 +1262,9 @@ namespace MonsterTrain2Poju.Model
                     unit.StatusRegistry.Any(status => status.Stacks < 0 || status.Stacks > 9999)))
                     return "Invalid retained status dictionary on unit " + unit.Id;
                 foreach (CombatStatus status in unit.Statuses)
-                    if (!KnownStatuses.Contains(status.Id) && !EquipmentPoolGrantModel.CosmeticStatus(status) && !(status.Id == "pyrebane" &&
+                    if (!KnownStatuses.Contains(status.Id) && !EquipmentPoolGrantModel.CosmeticStatus(status) &&
+                        !((allowFreshHivemind && HivemindTurnUpgrade.IsOriginalFreshOwner(unit, status)) ||
+                            (passiveHivemindPreview && status.Id == HivemindTurnUpgrade.StatusId)) && !(status.Id == "pyrebane" &&
                         OuterBossDefinitions.IsAngelDuoInner(unit.AssetKey) && unit.Status("lifelink") == null) && !(linkedHealthOnly &&
                         (status.Id == "lifelink" || status.Id == "pyrebound" && unit.AssetKey == "Boss_Level9_Dominion_V2" ||
                             status.Id == "pyrebane" && unit.AssetKey == "Boss_Level9_Savagery_V2") &&
@@ -3824,6 +3830,11 @@ namespace MonsterTrain2Poju.Model
                 WorkingUnit? waitForRevival = null, bool maximumHealthSacrifice = false)
             {
                 if (target.DeathFinished) return;
+                if (target.Source.Status(HivemindTurnUpgrade.StatusId) != null)
+                {
+                    unsupportedReason = "Hivemind owner death requires a calibrated native callback.";
+                    return;
+                }
                 if (!source.Preview && target.Health == 0 && TrueFinalBossTerminalCombatModel.SupportsRoot(source, target.Source.Id,
                     plainSpellDamage: plainSpellDamage && actor == null && sourceCardId > 0, triggeredCommand: triggeredCommand,
                     ordinaryPyreAttack: ordinaryPyreAttack && actor?.Source.IsPyre == true, maximumHealthSacrifice: maximumHealthSacrifice))
@@ -4586,6 +4597,13 @@ namespace MonsterTrain2Poju.Model
             private void ExecuteTriggers(WorkingUnit unit, string kind, bool canFireTriggers, int paramInt, WorkingUnit? overrideTarget, WorkingUnit? dyingCharacter, int triggerCount, int lastSpawnedOverrideUnitId,
                 int paramInt2 = 0, string? paramString = null, int? exclusiveTriggerStateId = null, int? attackDamageDealt = null)
             {
+                if (kind == "OnStatusEffectChanged" && paramString == HivemindTurnUpgrade.StatusId &&
+                    HivemindTurnUpgrade.NeedsPreviewFeedMarker(CurrentRoom(), unit.Freeze()))
+                {
+                    CardUpgradeModifier marker = HivemindTurnUpgrade.AttackUpgrade(0);
+                    if (!ApplyUpgrade(unit, marker, "TemporaryUntilUnitDeath", false, null, 0, kind,
+                        directApi: true, upgradeId: marker.DataId)) return;
+                }
                 if (kind == "OnDeath" && paramInt != 1 && !unit.Despawned && unit.Source.Modifiers?.TroopAura != null)
                 {
                     RoomCombatResult cleanup = TroopAuraModel.OwnerKilled(CurrentRoom(), unit.Freeze());

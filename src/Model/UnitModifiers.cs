@@ -129,10 +129,11 @@ namespace MonsterTrain2Poju.Model
             Action<RoomCombatModel.QueuedCharacterTrigger>? enqueueCallback = null, bool directApi = false,
             string upgradeId = "", int? anonymousRemovalIndex = null, int equipmentSourceCardId = 0,
             bool deferAbilityCallbacks = false, bool scaleUpgrade = false, bool accumulateScaledUpgradeRecord = true,
-            Func<RoomCombatState, int, bool, bool, RoomCombatResult>? changeHealth = null)
+            Func<RoomCombatState, int, bool, bool, RoomCombatResult>? changeHealth = null, bool allowFreshHivemind = false)
         {
             bool halfHealth = source.Units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger));
-            string? error = RoomCombatModel.Validate(source, allowDyingTarget ? targetId : (int?)null, halfHealthLifecycle: changeHealth != null);
+            string? error = RoomCombatModel.Validate(source, allowDyingTarget ? targetId : (int?)null,
+                halfHealthLifecycle: changeHealth != null, allowFreshHivemind: allowFreshHivemind);
             if (error != null) return Unsupported(error);
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target?.Modifiers == null || source.Context?.CardInstances == null)
@@ -180,6 +181,8 @@ namespace MonsterTrain2Poju.Model
                 if (status.Stacks <= 0) continue;
                 // OnStacksAdded creates the Mageblade cache after admission.
                 CombatUnit statusTemplate = StatusAttackDamageModel.PrepareBirthTemplate(target, new[] { status });
+                if (status.Id == HivemindTurnUpgrade.StatusId &&
+                    HivemindTurnUpgrade.IsPreviewFeedUpgrade(source, target, upgrade, triggerKind)) continue;
                 error = RoomCombatModel.Validate(new RoomCombatState(source.RoomIndex, source.Deployment,
                     new[] { CardSpellModel.Copy(statusTemplate, target.Health, target.Statuses.Where(item => item.Id != status.Id).Concat(new[] { status }).ToArray()) },
                     Array.Empty<string>(), source.Context, source.Preview, source.ActiveCompanionBossIds),

@@ -132,6 +132,7 @@ namespace MonsterTrain2Poju.Model
             if (identityError != null) return Unsupported(identityError);
             RoomOutcome outcome = RoomOutcome.Cleared;
             int pyre = rooms.Length - 1;
+            bool firstWaveHivemind = false;
             if (source.Looping || phase < source.Waves.Count)
             {
                 int waveIndex = phase % source.Waves.Count;
@@ -144,13 +145,15 @@ namespace MonsterTrain2Poju.Model
                     selected = groups[waveIndex] = choice.Value;
                 }
                 if (selected >= wave.Candidates.Count) return Unsupported("Invalid cached spawn group.");
+                firstWaveHivemind = !includeTreasure && source.Turn == 1 && phase == 0 &&
+                    HivemindTurnUpgrade.HasOriginalFirstWavePair(wave.Candidates[selected].Units.Select(entry => entry.Unit));
                 if (wave.Candidates[selected].Units.Count > 0 && context?.QueryFrame?.SelectedRoomIndex != null)
                     context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: 0));
                 bool enteredPyre = false;
                 var entered = new List<int>();
                 foreach (EnemyDefinition definition in wave.Candidates[selected].Units.Reverse())
                 {
-                    string? error = Validate(definition, context);
+                    string? error = Validate(definition, context, allowFreshHivemind: firstWaveHivemind);
                     if (error != null) return Unsupported(error);
                     int roomIndex = 0;
                     while (roomIndex <= pyre && rooms[roomIndex].Count(unit => unit.Team == CombatTeam.Enemy)
@@ -410,7 +413,10 @@ namespace MonsterTrain2Poju.Model
             EnemySpawnResult Finish()
             {
                 RoomCombatState[] states = source.Train.Rooms.Select((room, index) => new RoomCombatState(index,
-                    room.Deployment, rooms[index], room.ExternalInteractions, context, room.Preview,
+                    room.Deployment, rooms[index], firstWaveHivemind ? room.ExternalInteractions.Concat(rooms[index].Where(unit =>
+                        unit.Status(HivemindTurnUpgrade.StatusId) is CombatStatus status && HivemindTurnUpgrade.IsOriginalFreshOwner(unit, status))
+                        .Select(HivemindTurnUpgrade.Marker)).Distinct().OrderBy(marker => marker, StringComparer.Ordinal).ToArray() :
+                        room.ExternalInteractions, context, room.Preview,
                     room.ActiveCompanionBossIds)).ToArray();
                 var alive = new HashSet<int>(states.SelectMany(room => room.Units).Select(unit => unit.Id));
                 var train = EnchantmentWorldModel.Rebase(new TrainCombatState(states, movement.Where(rule => alive.Contains(rule.UnitId)).ToArray(),
@@ -439,7 +445,7 @@ namespace MonsterTrain2Poju.Model
                 return "Enemy birth stats require a matching calibrated original Covenant and bounded native stats.";
             return null;
         }
-        private static string? Validate(EnemyDefinition definition, CombatContext? context)
+        private static string? Validate(EnemyDefinition definition, CombatContext? context, bool allowFreshHivemind = false)
         {
             string? statsError = ValidateBirthStats(definition, context);
             if (statsError != null) return statsError;
@@ -447,7 +453,8 @@ namespace MonsterTrain2Poju.Model
             // callback dereferences the physical room even for a starting status.
             if (definition.Unit.Status("conduit")?.Stacks > 0)
                 return "Enemy starting Conduit applies stacks off-train; a post-entry status callback is required.";
-            return RoomCombatModel.Validate(new RoomCombatState(0, false, new[] { definition.Unit }, definition.ExternalInteractions, context));
+            return RoomCombatModel.Validate(new RoomCombatState(0, false, new[] { definition.Unit }, definition.ExternalInteractions, context),
+                allowFreshHivemind: allowFreshHivemind);
         }
         private static bool Terminal(RoomOutcome outcome) => outcome == RoomOutcome.BattleWon ||
             outcome == RoomOutcome.PlayerDefeated || outcome == RoomOutcome.Stalemate;

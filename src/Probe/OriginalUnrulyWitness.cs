@@ -157,7 +157,8 @@ namespace MonsterTrain2Poju.Probe
                 "DutifulBurst" => new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true,
                     ControlledTestScenario = true, BurstConsumptions = burstConsumptions },
                 "IndulgentTitanskin" => new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true,
-                    ControlledTestScenario = true, TitanSkinAbsorptions = titanSkinAbsorptions },
+                    ControlledTestScenario = true, TitanSkinAbsorptions = titanSkinAbsorptions,
+                    HivemindCallbacks = OriginalHivemindProbe.Records },
                 "IndulgentGorgeOnSlay" => new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true,
                     ControlledTestScenario = true, GorgeOnSlayReplays = gorgeOnSlayReplays },
                 _ => new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true, ControlledTestScenario = true }

@@ -586,10 +586,11 @@ namespace MonsterTrain2Poju.Model
             }
             spawn = WithTrain(spawn, train, turn, UnityRng.Seed(unchecked(spawningStream.Seed + turn)));
             train = WithContext(train, EnergyModel.SetPhase(train.Context!, "PreCombat"), false);
+            bool firstWaveHivemind = turn == 1 && HivemindTurnUpgrade.HasOriginalFirstWavePair(train.Rooms.SelectMany(room => room.Units));
             // Native queues each team's PreCombat after spawning/rollover, before energy and draw.
             foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
             {
-                TrainCombatResult triggers = TrainCombatModel.PreCombat(train, team);
+                TrainCombatResult triggers = TrainCombatModel.PreCombat(train, team, firstWaveHivemind);
                 if (!triggers.Supported) return Unsupported(triggers.UnsupportedReason!);
                 if (!RouteDeadUnits(train, triggers)) return Unsupported("Pre-combat deaths require standby card routing.");
                 train = triggers.State!;
@@ -778,6 +779,12 @@ namespace MonsterTrain2Poju.Model
             ScorchStatusResult scorched = ScorchStatusModel.StartTurn(train);
             if (!scorched.Supported) return Unsupported(scorched.UnsupportedReason!);
             train = scorched.State!;
+            if (firstWaveHivemind)
+            {
+                TrainCombatState? refreshed = HivemindTurnUpgrade.ApplyFirstOrdinaryTurn(train, out string? hivemindError);
+                if (refreshed == null) return Unsupported(hivemindError!);
+                train = refreshed;
+            }
             // Native drains queued room support effects after drawing and
             // turn-begin statuses. Initial enemy focus can leave an Eclipse
             // floor after the global phase refresh; retained spells must then
