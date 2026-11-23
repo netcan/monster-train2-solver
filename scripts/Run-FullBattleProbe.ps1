@@ -818,6 +818,7 @@ param(
     [switch] $OriginalIndulgentCapacityBattle,
     [switch] $OriginalIndulgentGorgeOnSlay,
     [switch] $IndulgentTrampleCasting,
+    [switch] $IndulgentTrampleWholeBattle,
     [switch] $OriginalLifemotherReanimateBattle,
     [switch] $OriginalLifemotherDebuffs,
     [switch] $LifemotherDebuffsWholeBattle,
@@ -1916,6 +1917,7 @@ if ($OriginalAffordableNonPlayable) {
 if ($LifemotherDebuffsWholeBattle -and -not $OriginalLifemotherDebuffs) {
     throw 'LifemotherDebuffsWholeBattle requires OriginalLifemotherDebuffs.'
 }
+if ($IndulgentTrampleWholeBattle) { $IndulgentTrampleCasting = $true }
 if ($IndulgentTrampleCasting -and -not ($OriginalIndulgentCapacityBattle -or $OriginalIndulgentGorgeOnSlay)) {
     throw 'IndulgentTrampleCasting requires an original Indulgent variant with Trample.'
 }
@@ -1965,6 +1967,7 @@ if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
     if ($OriginalLifemotherDebuffs) { $unrulyArguments += 'LifemotherDebuffsWholeBattle' }
     if ($lifemotherBranchObservation) { $unrulyArguments += 'UnsupportedBranchInput' }
     if ($IndulgentTrampleCasting) { $unrulyArguments += 'IndulgentTrampleCasting' }
+    if ($IndulgentTrampleWholeBattle) { $unrulyArguments += 'IndulgentTrampleWholeBattle' }
     if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne $soulSaviorDistance -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $unrulyArguments }).Count) {
         throw 'Original Soul Savior battle requires an isolated matching BattleIntro and binary capture.'
@@ -4988,10 +4991,12 @@ if ($OriginalIndulgentCapacityBattle) {
         $trace.CaptureFailures -ne 0 -or $trace.Pending -ne 0 -or $reductions.Count -eq 0) {
         throw "Original Indulgent did not settle a native capacity witness. Inspect $tracePath and $unityLog"
     }
-    [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; OriginalFilesUnchanged = $true;
-        CapacityReductions = $reductions.Count; SourceUnsupported = $trace.Unsupported; SourceMismatches = $trace.Mismatches;
-        Trace = $tracePath; SHA256 = (Get-FileHash -LiteralPath $tracePath -Algorithm SHA256).Hash } | ConvertTo-Json
-    return
+    if (-not $IndulgentTrampleWholeBattle) {
+        [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; OriginalFilesUnchanged = $true;
+            CapacityReductions = $reductions.Count; SourceUnsupported = $trace.Unsupported; SourceMismatches = $trace.Mismatches;
+            Trace = $tracePath; SHA256 = (Get-FileHash -LiteralPath $tracePath -Algorithm SHA256).Hash } | ConvertTo-Json
+        return
+    }
 }
 if ($OriginalIndulgentGorgeOnSlay) {
     $replays = @($trace.OriginalUnrulyBattle.GorgeOnSlayReplays | Where-Object {
@@ -5012,10 +5017,12 @@ if ($OriginalIndulgentGorgeOnSlay) {
         $trace.CaptureFailures -ne 0 -or $trace.Pending -ne 0 -or $replays.Count -eq 0) {
         throw "Original GorgeOnSlay did not settle a native OnKill → self OnFeed +3 Rage witness. Inspect $tracePath and $unityLog"
     }
-    [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; OriginalFilesUnchanged = $true;
-        GorgeOnSlayReplays = $replays.Count; SourceUnsupported = $trace.Unsupported; SourceMismatches = $trace.Mismatches;
-        Trace = $tracePath; SHA256 = (Get-FileHash -LiteralPath $tracePath -Algorithm SHA256).Hash } | ConvertTo-Json
-    return
+    if (-not $IndulgentTrampleWholeBattle) {
+        [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; OriginalFilesUnchanged = $true;
+            GorgeOnSlayReplays = $replays.Count; SourceUnsupported = $trace.Unsupported; SourceMismatches = $trace.Mismatches;
+            Trace = $tracePath; SHA256 = (Get-FileHash -LiteralPath $tracePath -Algorithm SHA256).Hash } | ConvertTo-Json
+        return
+    }
 }
 if ($OriginalPactDrawBattle -and (Get-OriginalSignature $checkpoint) -cne $pactInputSignature) {
     throw 'The Pact battle donor checkpoint changed.'

@@ -373,8 +373,10 @@ Titanskin 整战验证了结算时新增和移除 Hivemind 房间修饰器，以
 [原版 Titanskin 整战](../tests/compatibility/game-2.3.1/mechanics/indulgent-titanskin/native-battle.mt2f)
 
 Indulgent 的减容变体三次把玩家侧楼层容量减 1，敌方容量保持 5。专项回放核对三组完整减容状态，
-第一组还在同一战后队列内验证先减容，再重放一次自身 OnFeed 获得 3 Rage。整战仍受波次机制阻塞。
+第一组还在同一战后队列内验证先减容，再重放一次自身 OnFeed 获得 3 Rage。追加的原版整战验证了
+8 次出牌、4 次结束回合与两类候选检查，实机结算为败局。
 [原版减容和 OnFeed 记录](../tests/compatibility/game-2.3.1/mechanics/indulgent-capacity/native-capacity-feed.mt2f)
+[原版减容整战](../tests/compatibility/game-2.3.1/mechanics/indulgent-capacity/native-battle.mt2f)
 
 FavoredChild_2 的 2.3.1 原版施法记录覆盖 3 次战前行动和 2 次战后行动。
 回放逐字段核对首领控制器、跨层移动后的物理站位、Hivemind 持有者和随机流，并检查输入状态保持原样。

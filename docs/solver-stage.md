@@ -677,3 +677,7 @@ Soul Savior 原版遭遇已有 11／15 场整战证据。
 Indulgent Titanskin 追加 8 次出牌、4 次结束回合，两类候选通过。累计已有 469 场原版
 战斗通过，合计 7,216 次出牌或技能和 2,799 次结束回合。Soul Savior 已有 12／15 场
 整战证据。 [Titanskin 整战](../tests/compatibility/game-2.3.1/mechanics/indulgent-titanskin/native-battle.mt2f)
+
+Indulgent 减容变体追加 8 次出牌、4 次结束回合，两类候选通过。累计已有 470 场原版战斗通过，
+合计 7,224 次出牌或技能和 2,803 次结束回合。Soul Savior 已有 13／15 场整战证据。
+[减容整战](../tests/compatibility/game-2.3.1/mechanics/indulgent-capacity/native-battle.mt2f)
