@@ -1026,14 +1026,16 @@ namespace MonsterTrain2Poju.Probe
             if (OriginalSupportSpellsScenario.OrdinaryExtraSpawn || OriginalSupportSpellsScenario.SpawnOrStatusExtraSpawn)
             {
                 bool spawnOrStatus = OriginalSupportSpellsScenario.SpawnOrStatusExtraSpawn;
-                int expectedPlays = spawnOrStatus ? 2 : 4;
+                bool firstShield = OriginalSupportSpellsScenario.FirstShieldExtraSpawn;
+                int expectedPlays = spawnOrStatus || firstShield ? 2 : 4;
                 if (actions.Records.Count < expectedPlays) return false;
                 if (actions.Records.Count != expectedPlays || actions.Records.Any(record => record.Actual == null) || CaptureFailures != 0 || Pending != 0)
                     throw new InvalidOperationException("Missing settled extra-spawn inputs.");
                 using var witness = NativeFixtureCapture.Capture(new
                 {
                     Schema = 2, Boundary = "NativeOriginalHallGraftedBirth", Scope = spawnOrStatus
-                        ? "NativeOriginalDoubleUnitsSpawnOrStatus" : "NativeOriginalDoubleUnitsOrdinary",
+                        ? "NativeOriginalDoubleUnitsSpawnOrStatus" : firstShield
+                        ? "NativeOriginalDoubleUnitsFirstShield" : "NativeOriginalDoubleUnitsOrdinary",
                     GameVersion = Application.version, GameModuleMvid = typeof(RelicState).Assembly.ManifestModule.ModuleVersionId,
                     CaptureFailures, Pending, ExtraSpawn = true, OrdinaryPlays = actions.Records,
                     ExtraSpawnDefinition = OriginalSupportSpellsScenario.HallExtraSpawnDefinition,

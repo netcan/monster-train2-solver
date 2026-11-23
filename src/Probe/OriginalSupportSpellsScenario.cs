@@ -20,6 +20,8 @@ namespace MonsterTrain2Poju.Probe
         internal static bool ObserveHallGraftedBirth => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_HALL_GRAFTED_BIRTH") == "1";
         internal static bool HallExtraSpawn => ObserveHallGraftedBirth && Environment.GetEnvironmentVariable("MT2_PROBE_HALL_EXTRA_SPAWN") == "1";
         internal static bool OrdinaryExtraSpawn => HallExtraSpawn && Environment.GetEnvironmentVariable("MT2_PROBE_DOUBLE_UNITS_ORDINARY") == "1";
+        internal static bool FirstShieldExtraSpawn => OrdinaryExtraSpawn &&
+            Environment.GetEnvironmentVariable("MT2_PROBE_DOUBLE_UNITS_FIRST_SHIELD") == "1";
         internal static bool SpawnOrStatusExtraSpawn => HallExtraSpawn &&
             Environment.GetEnvironmentVariable("MT2_PROBE_DOUBLE_UNITS_SPAWN_OR_STATUS") == "1";
         internal static object? HallExtraSpawnDefinition { get; private set; }
@@ -57,12 +59,35 @@ namespace MonsterTrain2Poju.Probe
                 }).ToArray()
             };
             save.AddMutator(owner);
+            if (FirstShieldExtraSpawn) AcquireOriginalFirstShield(save);
             hallExtraSpawnAcquired = true;
             log.LogInfo("ORIGINAL-HALL-EXTRA-SPAWN acquired DoubleUnits " + owner.GetID());
         }
 
         private static object ConditionField(RelicEffectCondition condition, string field) =>
             AccessTools.Field(condition.GetType(), field).GetValue(condition);
+
+        private static void AcquireOriginalFirstShield(SaveManager save)
+        {
+            const string id = "60a2a8a3-5f7a-4a9d-b427-5f261145fa1f";
+            var relic = save.GetAllGameData().GetAllCollectableRelicData().Single(item => item.GetID() == id);
+            var effect = relic.GetEffects().Single();
+            var status = effect.GetParamStatusEffects().Single();
+            var condition = effect.GetEffectConditions().Single();
+            if (save.GetCollectedRelics().Any(item => item.GetRelicDataID() == id) ||
+                relic.name != "FirstUnitGainDamageShield" || relic.DisallowInDeploymentPhase ||
+                effect.GetEffectClassName() != nameof(RelicEffectAddStatusEffectOnSpawn) ||
+                effect.GetParamSourceTeam() != Team.Type.Monsters || effect.GetParamCharacterSubtype()?.IsNone != true ||
+                status.statusId != "damage shield" || status.count != 2 ||
+                ConditionField(condition, "paramTrackedValue").ToString() != "SubtypeInDeck" ||
+                ConditionField(condition, "paramEntryDuration").ToString() != "ThisTurn" ||
+                !((bool)ConditionField(condition, "paramTrackTriggerCount")) ||
+                Convert.ToInt32(ConditionField(condition, "paramComparator")) != 6 ||
+                (int)ConditionField(condition, "paramInt") != 1 ||
+                (bool)ConditionField(condition, "allowMultipleTriggersPerDuration"))
+                throw new InvalidOperationException("Original first-unit Damage Shield relic definition changed.");
+            save.AddRelic(relic);
+        }
 
         [HarmonyPatch(typeof(RelicManager), nameof(RelicManager.GetUnitSpawnCountModifiedByRelics))]
         private static class HallSpawnCountPatch

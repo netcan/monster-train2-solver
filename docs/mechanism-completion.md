@@ -885,6 +885,12 @@ Kinhost Vessel 的原版对照在部署回合先消耗一次 DoubleUnits，随�
 `--native-funguy-deck-double-units-only`。
 [`funguy-deck-scaling-double-units.mt2f`](../tests/compatibility/game-2.3.1/mechanics/funguy-deck-scaling/funguy-deck-scaling-double-units.mt2f)
 
+FirstUnitGainDamageShield 的原版对照中，付费单位获得 2 层伤害护盾，额外单位只获得
+Cardless。第二张付费单位维持原有触发计数。定向检查重放两次出牌、楼层切换与完整 RNG。
+采样使用 `-OriginalDoubleUnitsFirstShield -BinaryCapture`，专项使用
+`--native-double-units-first-shield-only`。
+[`first-shield.mt2f`](../tests/compatibility/game-2.3.1/mechanics/hall-grafted-birth/first-shield.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和
