@@ -129,6 +129,10 @@ namespace MonsterTrain2Poju.Model
         {
             if (relic.IsCovenant != false) return false;
             if (RelicStatusStackModel.IsCalibratedBurnoutLossRelic(relic)) return true;
+            // These owners from the native Soul Savior run dispatch through
+            // setup, unit triggers, birth, or before-draw resources. The
+            // ordinary relic validator still checks their captured payloads.
+            if (IndependentSoulSaviorRelic(relic)) return true;
             // The original Hoard reward observes Pyre damage and settles after
             // combat. It has no moon change or CardUpdated callback.
             if (relic.DataId == "26c9bc93-f5a6-439d-8239-14c22cbeb02e" &&
@@ -201,6 +205,28 @@ namespace MonsterTrain2Poju.Model
             return relic.EffectTypes.SequenceEqual(new[] { RelicModel.AddTempUpgrade }) &&
                 modifier.Rule?.Filters.Any(filter => filter.CardType == "Monster" && filter.AdditionalCardTypes.Count == 0) == true &&
                 RelicCardModifierModel.Validate(relic) == null;
+        }
+
+        private static bool IndependentSoulSaviorRelic(CombatRelicState relic)
+        {
+            if (relic.DisallowedInPlacementPhase != false) return false;
+            if (RelicModel.IsSoulSaviorStarterDeck(relic)) return true;
+            return (relic.DataId, relic.AssetKey) switch
+            {
+                ("4687feca-a053-48ed-b208-81dc6dfc6e72", "UnitsGainStealthOnSlayPlusAttack") =>
+                    relic.EffectTypes is [RelicModel.ModifyAttackByStatus, RelicModel.AddTrigger] &&
+                    relic.StatusAttackModifiers is [{ StatusId: "stealth", Team: "Monsters", Multiplier: 3, LateAttack: null }],
+                ("f2c1e86b-ac5c-474f-8c3a-ebee76981fb8", "SoulSavior_DifficultyTier2") =>
+                    relic.EffectTypes.Count == 12 && relic.EffectTypes.Take(11).All(type => type == RelicPercentageStatModel.Effect) &&
+                    relic.EffectTypes[11] == RelicSpawnStatusScalingModel.Effect,
+                ("e21a3bc5-0816-4bec-8d0d-9a1fe80b6308", "GrumpT3") =>
+                    relic.EffectTypes is ["RelicEffectCardUpgrade"],
+                ("75b688f5-daa0-487b-bf02-81d5ff014135", "WormgutT3") =>
+                    relic.EffectTypes is ["RelicEffectModifyEnergyWhenFloorsOccupied", "RelicEffectChangeFloorCapacity"],
+                ("c8c93ca2-014e-405c-8d86-7573f40c9520", "LilCapT3") =>
+                    relic.EffectTypes is [RelicPileSpawnUpgradeModel.Effect],
+                _ => false
+            };
         }
 
         // Starstruck's original moon Daze fires after its damage has settled.
