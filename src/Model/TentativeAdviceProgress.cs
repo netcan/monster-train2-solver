@@ -8,16 +8,23 @@ namespace MonsterTrain2Poju.Model
         internal static bool Matches(IReadOnlyList<BattleSearchStep> steps, int offset, int cardId,
             int room, int dropPosition, int targetId, bool directHandPlay)
         {
-            if (!directHandPlay || offset < 0 || offset + 1 >= steps.Count) return false;
-            BattleSearchStep step = steps[offset];
-            PlayCardAction? action = step.Action;
-            if (step.IsEndTurn || action == null || action.CardInstanceId != cardId || action.RoomIndex != room ||
+            if (offset + 1 >= steps.Count || !directHandPlay) return false;
+            PlayCardAction? action = MatchedCard(steps, offset, cardId, room, dropPosition, targetId);
+            return action != null && action.RecursionSelections.Count == 0 &&
+                action.MixSelections.Count == 0 && action.SummonSelections.Count == 0;
+        }
+
+        internal static PlayCardAction? MatchedCard(IReadOnlyList<BattleSearchStep> steps, int offset, int cardId,
+            int room, int dropPosition, int targetId)
+        {
+            if (offset < 0 || offset >= steps.Count) return null;
+            PlayCardAction? action = steps[offset].Action;
+            if (steps[offset].IsEndTurn || action == null || action.CardInstanceId != cardId || action.RoomIndex != room ||
                 action.ActivatorUnitId != 0 || action.ActivatorRoomIndex.HasValue ||
-                action.RecursionSelections.Count != 0 || action.MixSelections.Count != 0 || action.SummonSelections.Count != 0 ||
-                action.TargetSpawnPointIndex >= 0) return false;
+                action.TargetSpawnPointIndex >= 0) return null;
             if (action.PlayerPosition >= 0)
-                return action.TargetUnitId == 0 && action.PlayerPosition == dropPosition;
-            return action.TargetUnitId == targetId;
+                return action.TargetUnitId == 0 && action.PlayerPosition == dropPosition ? action : null;
+            return action.TargetUnitId == targetId ? action : null;
         }
     }
 }

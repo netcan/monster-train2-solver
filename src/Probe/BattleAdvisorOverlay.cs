@@ -46,6 +46,8 @@ namespace MonsterTrain2Poju.Probe
         private bool HiddenPause => pauseWhenHidden && !panelVisible;
         private BattleAdvice? displayed;
         private int tentativeSteps;
+        private CardRecursionSelection? pendingCardChoice;
+        private bool showingCardChoice;
         private int displayFrame;
         private long displayedSearches;
         private long unavailableGeneration = -1;
@@ -58,6 +60,9 @@ namespace MonsterTrain2Poju.Probe
         private TimeSpan preparationCaptureElapsed;
         private int manualBattleDistance = -1;
         private static readonly FieldInfo combatChanged = AccessTools.Field(typeof(CombatManager), "combatStateChanged");
+        private static readonly FieldInfo deckMode = AccessTools.Field(typeof(DeckScreen), "mode");
+        private static readonly FieldInfo deckCards = AccessTools.Field(typeof(DeckScreen), "cardInfos");
+        private static readonly FieldInfo deckColumns = AccessTools.Field(typeof(DeckScreen), "columnCount");
         private bool paused, wasInBattle, screenshotTaken;
         private bool selectionPending;
         private bool browseOnly;
@@ -289,9 +294,9 @@ namespace MonsterTrain2Poju.Probe
             RectTransform refresh = (RectTransform)panel.transform.Find("重新计算");
             refresh.anchoredPosition = new Vector2(18, expanded ? -570 : -315);
             planLabel.text = expanded ? "收起方案" : "完整方案";
-            if (displayed != null) body.text = DescribeAdvice(displayed, tentativeSteps);
+            if (displayed != null && !showingCardChoice) body.text = DescribeAdvice(displayed, tentativeSteps);
             planScroll.verticalNormalizedPosition = 1;
-            if (displayed != null && tentativeSteps == 0) RecordDiagnosticView("view");
+            if (displayed != null && tentativeSteps == 0 && !showingCardChoice) RecordDiagnosticView("view");
         }
 
         private void SetPending(bool pending)
@@ -307,6 +312,8 @@ namespace MonsterTrain2Poju.Probe
         {
             displayed = null;
             tentativeSteps = 0;
+            pendingCardChoice = null;
+            showingCardChoice = false;
             cardHover.Entries.Clear(); cardHover.Clear();
             SetPending(false);
             if (body != null) body.text = message;
@@ -380,6 +387,16 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
             bool inBattle = managers?.GetSaveManager()?.GetGameSequence() == SaveData.GameSequence.InBattle;
+            if (pendingCardChoice != null && inBattle && !paused && !HiddenPause && managers != null &&
+                !managers.GetSaveManager().PreviewMode && !PreviewRngIsolation.Active)
+            {
+                if (ShowPendingCardChoice(managers)) return;
+                if (showingCardChoice)
+                {
+                    showingCardChoice = false;
+                    body.text = "正在核对局面…";
+                }
+            }
             if (!inBattle && wasInBattle && ManualSession)
             { new FullBattleTrace(log); manualBattleKey = null; Invalidate(); }
             wasInBattle = inBattle;
@@ -467,6 +484,7 @@ namespace MonsterTrain2Poju.Probe
                 {
                     var capture = Stopwatch.StartNew();
                     BattleTurnState root = CaptureReadOnly(managers);
+                    pendingCardChoice = null;
                     lastCapture = root;
                     capture.Stop();
                     LastCaptureMs = capture.Elapsed.TotalMilliseconds; TotalCaptureMs += LastCaptureMs;
@@ -488,7 +506,7 @@ namespace MonsterTrain2Poju.Probe
                     (session.Current.ReusedContinuation || session.Current.ReusedSelection) &&
                     (showFullPlan || displayed.Root.Spawn.Turn == session.Current.Root.Spawn.Turn);
                 float scroll = preserveScroll ? planScroll.verticalNormalizedPosition : 1;
-                displayed = session.Current; tentativeSteps = 0; Published++;
+                displayed = session.Current; tentativeSteps = 0; pendingCardChoice = null; Published++;
                 if (displayed.ReusedSelection) SelectionReuses++;
                 displayFrame = Time.frameCount;
                 displayedSearches = session.SearchCount;
@@ -704,8 +722,13 @@ namespace MonsterTrain2Poju.Probe
                     AllGameManagers.Instance.GetSaveManager().GetAllGameData().FindCardData(dataId)?.GetName() ?? "卡牌 #" + id;
                 return rootCard == null && forecastCard != null ? AdvisorCardPresentation.Predicted(name) : name;
             }
-            string CardChoiceName(int id) => cards.TryGetValue(id, out CardState known)
-                ? AdvisorCardPresentation.Plain(known.GetTitle()) : ProjectedCardName(id);
+            string CardChoiceName(int id)
+            {
+                if (!cards.TryGetValue(id, out CardState known)) return ProjectedCardName(id);
+                int index = tentative ? -1 : hand.IndexOf(known);
+                return index < 0 ? AdvisorCardPresentation.Plain(known.GetTitle()) :
+                    AdvisorCardPresentation.Choice(known, hand, AdvisorForecastPresentation.ChoiceHandPosition(index));
+            }
             string UnitName(int id, string? assetKey)
             {
                 if (units.TryGetValue(id, out CharacterState known)) return known.GetName();
@@ -826,6 +849,7 @@ namespace MonsterTrain2Poju.Probe
             internal int Offset;
             internal bool DirectHandPlay;
             internal bool Matches;
+            internal CardRecursionSelection? CardChoice;
         }
 
         private CardInputState PrepareCardInput(CardState card, CharacterState selfTarget, SpawnPoint drop,
@@ -848,7 +872,54 @@ namespace MonsterTrain2Poju.Probe
             int targetId = target == null ? 0 : trace.TryGetUnitId(target, out int id) ? id : -1;
             input.Matches = TentativeAdviceProgress.Matches(displayed.Plan.Steps, tentativeSteps, cardId, room,
                 drop?.GetIndexInRoom() ?? -1, targetId, true);
+            PlayCardAction? planned = TentativeAdviceProgress.MatchedCard(displayed.Plan.Steps, tentativeSteps, cardId,
+                room, drop?.GetIndexInRoom() ?? -1, targetId);
+            if (planned != null && planned.RecursionSelections.Count == 1 && planned.MixSelections.Count == 0 &&
+                planned.SummonSelections.Count == 0 && planned.RecursionSelections[0].CardInstanceIds.Count > 0)
+                input.CardChoice = planned.RecursionSelections[0];
             return input;
+        }
+
+        private bool ShowPendingCardChoice(AllGameManagers managers)
+        {
+            if (FullBattleTrace.Active is not { } trace || pendingCardChoice == null) return false;
+            IReadOnlyList<CardState> options;
+            Func<int, string> position;
+            Func<int, bool> eligible;
+            var screens = managers.GetScreenManager();
+            if (screens.GetScreenActive(ScreenName.Deck) && screens.GetScreen(ScreenName.Deck) is DeckScreen deck &&
+                deckMode.GetValue(deck) is DeckScreen.Mode.CardEffectSelection or DeckScreen.Mode.SpellMergeSelection &&
+                deckCards.GetValue(deck) is List<DeckScreen.CardInfo> infos &&
+                deckColumns.GetValue(deck) is int columns && columns > 0)
+            {
+                options = infos.Select(info => info.cardState).ToArray();
+                position = index => AdvisorForecastPresentation.ChoiceDeckPosition(index, columns);
+                eligible = index => !infos[index].cardState.IsCurrentlyDisabled();
+            }
+            else if (managers.GetHandUI() is HandUI hand && hand.IsHandSelectionActive() && !hand.IsHandSelectionHidden())
+            {
+                var cardUis = hand.GetCardUIList().Where(card => card != null && card.GetCardState() != null).ToArray();
+                options = cardUis.Select(card => card.GetCardState()).ToArray();
+                position = index => AdvisorForecastPresentation.ChoiceHandPosition(hand.IndexOfCardUIs(cardUis[index]));
+                eligible = index => hand.CanSelectCardFromHand(cardUis[index]);
+            }
+            else return false;
+
+            var choices = new List<string>();
+            foreach (int id in pendingCardChoice.CardInstanceIds)
+            {
+                int index = -1;
+                for (int candidate = 0; candidate < options.Count; candidate++)
+                    if (options[candidate] != null && trace.TryGetCardId(options[candidate], out int actualId) && actualId == id)
+                    { index = candidate; break; }
+                if (index < 0 || !eligible(index)) return false;
+                choices.Add(AdvisorCardPresentation.Choice(options[index], options, position(index)));
+            }
+            string guidance = "选择 " + string.Join("、", choices);
+            if (body.text != guidance) body.text = guidance;
+            showingCardChoice = true;
+            SetPending(true);
+            return true;
         }
 
         private void CompleteCardInput(bool accepted, CardInputState? input)
@@ -856,8 +927,16 @@ namespace MonsterTrain2Poju.Probe
             if (input == null) return;
             if (accepted && input.Diagnostic != null) journal?.Record(input.Diagnostic);
             if (!input.DirectHandPlay || !accepted) return;
-            if (!input.Matches || input.Advice == null || !ReferenceEquals(displayed, input.Advice) || tentativeSteps != input.Offset)
+            pendingCardChoice = null;
+            if (input.Advice == null || !ReferenceEquals(displayed, input.Advice) || tentativeSteps != input.Offset ||
+                (!input.Matches && input.CardChoice == null))
             { ShowMessage("正在核对局面…"); return; }
+            if (input.CardChoice != null)
+            {
+                pendingCardChoice = input.CardChoice;
+                SetPending(true);
+                return;
+            }
             tentativeSteps++;
             body.text = DescribeAdvice(displayed, tentativeSteps);
             planScroll.StopMovement();
@@ -896,7 +975,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Prefix()
             {
-                if (Active != null && !Active.capturing && Active.tentativeSteps > 0 &&
+                if (Active != null && !Active.capturing && (Active.tentativeSteps > 0 || Active.pendingCardChoice != null) &&
                     AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false && !PreviewRngIsolation.Active)
                     Active.ShowMessage("正在核对局面…");
                 NativeAction(reason: "end-turn");

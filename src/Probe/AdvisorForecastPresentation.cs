@@ -41,6 +41,15 @@ namespace MonsterTrain2Poju.Probe
                 .OrderBy(choice => choice.EffectIndex).Select(choice => " · " + choice.Label));
         }
 
+        internal static string ChoiceCard(string title, bool duplicate, string? position, string? upgrades) =>
+            !duplicate ? title : title + "（" + string.Join("，", new[] { position, upgrades }
+                .Where(value => !string.IsNullOrEmpty(value))) + "）";
+
+        internal static string ChoiceHandPosition(int index) => "手牌左起第 " + (index + 1) + " 张";
+
+        internal static string ChoiceDeckPosition(int index, int columns) =>
+            "从上往下第 " + (index / columns + 1) + " 行，左起第 " + (index % columns + 1) + " 列";
+
         internal static string EndTurn(BattleSearchStep step) => "结束回合" +
             (step.RelentlessDecisions?.Count > 0 ? "；" + string.Join("；", step.RelentlessDecisions.Select(choice =>
                 "第 " + (choice.RoomIndex + 1) + " 层第 " + choice.CompletedRounds + " 轮" + (choice.Continue ? "继续" : "放弃"))) : "");

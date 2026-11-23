@@ -5,6 +5,12 @@ if (args.Length == 3 && args[0] == "--advisor-choice-presentation-only")
     AdvisorChoicePresentationChecks.Native(args[1], args[2]);
     return;
 }
+if (args.Length == 2 && args[0] == "--advisor-duplicate-choice-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    AdvisorChoicePresentationChecks.DuplicateHand(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--pile-spawn-upgrade-batch-only")
 {
     PileSpawnUpgradeMechanismChecks.Batch(args[1]);

@@ -40,6 +40,19 @@ namespace MonsterTrain2Poju.Probe
                 title + (stats.Count == 0 ? "" : "（" + string.Join("，", stats) + "）");
         }
 
+        internal static string Choice(CardState card, IReadOnlyList<CardState> options, string? position)
+        {
+            string title = Plain(card.GetTitle());
+            if (!options.Any(option => !ReferenceEquals(option, card) && Plain(option.GetTitle()) == title))
+                return title;
+            string damage = card.GetCardType() == CardType.Spell ? "法强" : "攻击";
+            var permanent = card.GetCardStateModifiers().GetCardUpgrades().Select(upgrade => Upgrade(upgrade, damage));
+            var temporary = card.GetTemporaryCardStateModifiers().GetCardUpgrades().Select(upgrade => "临时 " + Upgrade(upgrade, damage));
+            string upgrades = string.Join("、", permanent.Concat(temporary));
+            return AdvisorForecastPresentation.ChoiceCard(title, true, position,
+                upgrades.Length == 0 ? "无升级" : upgrades);
+        }
+
         internal static string Plain(string value) => Regex.Replace(value, "<[^>]*>", "").Replace('\n', ' ').Replace('\r', ' ').Trim();
     }
 }
