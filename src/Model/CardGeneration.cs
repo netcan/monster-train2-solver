@@ -546,10 +546,23 @@ namespace MonsterTrain2Poju.Model
             if (card.MaskDescriptor.TemporaryTraits.Any(trait => !Neutral(trait)) ||
                 card.MaskDescriptor.PermanentReplacements.Any(rule => !NeutralType(rule.OldName) || !NeutralType(rule.NewRuntimeType)) ||
                 card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade =>
-                    upgrade.Lifecycle?.AddedTraits.Any(trait => !Neutral(trait)) == true || upgrade.Lifecycle?.RemovedRuntimeTypes.Count > 0))
+                    upgrade.Lifecycle?.AddedTraits.Any(trait => !Neutral(trait)) == true ||
+                    upgrade.Lifecycle?.RemovedRuntimeTypes.Count > 0 &&
+                    (!card.Permanent.Upgrades.Contains(upgrade) || !IsOriginalConsumeRemoval(upgrade))))
                 return "Copyability changes from card trait upgrades are not modeled.";
             return null;
         }
+
+        // Native RemoveConsume removes only the copy-neutral Exhaust trait.
+        private static bool IsOriginalConsumeRemoval(CardUpgradeModifier upgrade) =>
+            upgrade.DataId == "84f045a9-3dbe-41fe-9ba5-590dc6f68244" && upgrade.AssetKey == "RemoveConsume" &&
+            upgrade is { Unique: false, RemoveOnDiscard: false, ExcludeFromClones: false, Statuses.Count: 0,
+                ExternalInteractions.Count: 0, AbilityUpgrade: null } && upgrade.TriggerUpgrades?.Count is not > 0 &&
+            upgrade.Stats is { Damage: 0, Health: 0, Cost: 0, Heal: 0, Size: 0, XCost: 0, EquipmentLimit: 0, UpgradeSlotCount: 0 } &&
+            upgrade.Lifecycle is { AssetKey: "RemoveConsume", AddedTraits.Count: 0, AvoidClobbering: false,
+                TraitsModified.Count: 0, ReplacedAssets.Count: 0, Triggers.Count: 0 } lifecycle &&
+            lifecycle.Values.DataId == upgrade.DataId && lifecycle.RemovedRuntimeTypes.SequenceEqual(new[] { "CardTraitExhaustState" });
+
         private static CardGenerationResult Unsupported(string error) => new CardGenerationResult(null, Array.Empty<CardToken>(), error);
     }
 }
