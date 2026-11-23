@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 
 namespace MonsterTrain2Poju.Model
@@ -74,10 +75,11 @@ namespace MonsterTrain2Poju.Model
             BattleTurnState actual, CancellationToken token)
         {
             // Native automatic focus can omit the preview refresh. Try that
-            // narrow transition only when the ordinary callback path fails;
-            // every observed checkpoint and the entire suffix must still match.
+            // alternate transition only when a recorded view change could
+            // have run the refresh.
             return MatchAfterObservations(advice, observations, actual, token, refreshPreview: true) ??
-                (observations.Count > 0 ? MatchAfterObservations(advice, observations, actual, token, refreshPreview: false) : null);
+                (observations.Any(observation => observation.Root == null)
+                    ? MatchAfterObservations(advice, observations, actual, token, refreshPreview: false) : null);
         }
 
         private static VerifiedAdviceContinuation? MatchAfterObservations(BattleAdvice advice, IReadOnlyList<Observation> observations,
