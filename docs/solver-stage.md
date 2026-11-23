@@ -596,3 +596,9 @@ Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时
 `scripts/Check-SolverCompletion.ps1 -SkipBuild` 使用已有构建运行求解器专项，包括多回合深搜、
 预算中断、独立计划重放，并刷新当前卡牌和遗物证据。日常录制回归仍可用
 `Check-Game231RecordedChains.ps1 -ChangedFrom <revision> -SkipBuild` 选择新增或变更的归档。
+
+2.3.1 发布版顾问从 Relentless 首个选择前生成整战建议。隔离原版执行六次建议的结束回合，
+期间按顺序选择九次继续、一次放弃，以 53 点薪火获胜。独立重放逐项核对原版后继和随机流，
+整场一次出牌、七次结束回合及两类候选均通过。启动器按顾问给出的回合、楼层、交战轮数和
+选择核对整场记录，并拒绝被篡改的一条选择。
+[原版顾问归档](../tests/compatibility/game-2.3.1/mechanics/relentless-advisor/mixed-policy.mt2f)
