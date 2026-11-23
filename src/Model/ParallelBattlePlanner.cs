@@ -58,7 +58,11 @@ namespace MonsterTrain2Poju.Model
                     else
                     {
                         using var keys = new BattleStateKeys();
-                        results[index] = BattlePlanner.PlanCore(source, keys.Key, branchOptions, null, cancellationToken, true, earlyStop);
+                        bool tryBossTargetAlternate = index == 1 && !options.UseTacticalSeed &&
+                            options.SearchToBattleEnd && options.AllowShorterHorizon && source.Spawn.Turn > 0 &&
+                            !source.Spawn.Looping && source.Spawn.Waves.Count - source.Spawn.Phase is 1 or 2;
+                        results[index] = BattlePlanner.PlanCore(source, keys.Key, branchOptions, null, cancellationToken, true, earlyStop,
+                            tryBossTargetAlternate: tryBossTargetAlternate);
                     }
                 }
                 catch (Exception error) { errors[index] = error; }

@@ -645,3 +645,9 @@ Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时
 全部后继，独立原版进程按原输入复放，最终保住 1 点薪火。39 次出牌、9 次结束回合、完整状态、
 随机流和两类候选均通过。该胜局使用冻结输入，3 秒顾问的记录仍为败局。
 [第 8 环原版 1 点薪火胜局](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring8-historic-one-pyre-route.mt2f)
+
+同一第 8 环结局局面中，第二个搜索线程对普通伤害法术多尝试一次异层首领目标。离线 3 秒、96 节点
+配置从此前两回合的部分方案改为找到 11 步胜路。随后从原版前 39 个输入恢复 3 秒顾问，找到并执行
+最后 11 步，以 5 点薪火结算。首次搜索耗时 3.21 秒，端到端 5.86 秒。41 次出牌、9 次结束回合及两类
+候选检查全部通过。另两个第 8 环局面及第 3 环 37 点薪火对照仍返回相同的操作序列和完整终态。
+[第 8 环 3 秒顾问实战](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring8-endgame-boss-target-three-second.mt2f)

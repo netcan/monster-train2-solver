@@ -154,7 +154,7 @@ namespace MonsterTrain2Poju.Model
         internal static BattlePlanResult PlanCore(BattleTurnState source, Func<BattleTurnState, string> stateKey,
             BattlePlannerOptions? options, Func<BattleTurnState, RoomOutcome, double>? evaluate,
             CancellationToken cancellationToken, bool optimizeTransitions, BattleEarlyStop? earlyStop = null,
-            bool cacheTrainValidation = true, Func<bool>? timeLimitReached = null)
+            bool cacheTrainValidation = true, Func<bool>? timeLimitReached = null, bool tryBossTargetAlternate = false)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (stateKey == null) throw new ArgumentNullException(nameof(stateKey));
@@ -270,6 +270,8 @@ namespace MonsterTrain2Poju.Model
                         chosen = workspace.Choose(tactical.State, out IReadOnlyList<UnsupportedActionAttempt> omitted,
                             options.PreferredDeploymentRoom, StopTransitions);
                         foreach (UnsupportedActionAttempt attempt in omitted) Unsupported(attempt);
+                        if (tryBossTargetAlternate && ReferenceEquals(tactical, root) && chosen != null && !Stop())
+                            chosen = BossTargetAlternate(chosen) ?? chosen;
                     }
                     else actionLimit = true;
                     if (chosen != null)
@@ -298,6 +300,29 @@ namespace MonsterTrain2Poju.Model
                 // A winning seed remains an incumbent; use the remaining budget
                 // to seek a win that preserves more Pyre health.
             }
+
+            SupportedActionCandidate? BossTargetAlternate(SupportedActionCandidate chosen)
+            {
+                PlayCardAction action = chosen.Action;
+                if (action is not { TargetUnitId: > 0, ActivatorUnitId: 0, ActivatorRoomIndex: null, Operation: null,
+                        RecursionSelections.Count: 0, MixSelections.Count: 0, SummonSelections.Count: 0 } ||
+                    source.Spawn.Train.Context?.FindCard(action.CardInstanceId) is not { } card ||
+                    source.PlayRules?.Cards.FirstOrDefault(rule => rule.DataId == card.DataId) is not
+                        { CardType: "Spell", IsAnyAbility: not true, OnCastEffects.Count: 0,
+                            Effects: [{ Type: "Damage", Target: "DropTargetCharacter", AllowEnemy: true, Value: > 0, Range: null }] } ||
+                    !source.Spawn.Train.Rooms.Any(room => room.RoomIndex == action.RoomIndex &&
+                        room.Units.Any(unit => unit.Id == action.TargetUnitId && unit.Team == CombatTeam.Enemy && unit.IsBoss != true)))
+                    return null;
+                RoomCombatState? bossRoom = source.Spawn.Train.Rooms.FirstOrDefault(room => room.Units.Any(IsLivingBoss));
+                CombatUnit? boss = bossRoom?.Units.FirstOrDefault(IsLivingBoss);
+                if (boss == null || boss.Id == action.TargetUnitId || bossRoom!.RoomIndex == action.RoomIndex) return null;
+                var alternate = new PlayCardAction(action.CardInstanceId, bossRoom.RoomIndex, targetUnitId: boss.Id);
+                nodes++;
+                BattleActionResult played = workspace.Play(source, alternate);
+                return played.Supported ? new SupportedActionCandidate(alternate, played) : null;
+            }
+
+            static bool IsLivingBoss(CombatUnit unit) => unit is { Team: CombatTeam.Enemy, IsBoss: true, Health: > 0 };
 
             // With too few nodes for the requested horizon, retain complete
             // turn boundaries instead of spending the only node on a card
