@@ -45,6 +45,8 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_ADVICE") == "1";
 #if DEVELOPMENT_PROBE
         internal static bool DeploymentOnly => Environment.GetEnvironmentVariable("MT2_PROBE_PLAYER_DEPLOYMENT_ONLY") == "1";
+        internal static bool OffRouteEnabled => Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR_OFF_ROUTE") == "1";
+        private static long offRouteSearches;
 #endif
         private static bool Replay => (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_INPUT"))
 #if DEVELOPMENT_PROBE
@@ -302,6 +304,23 @@ namespace MonsterTrain2Poju.Probe
                     ReusedContinuation = advice.ReusedContinuation,
                     RequestedHorizon = plan.RequestedTurns, TurnsPlanned = plan.TurnsCompleted, UsedShorterHorizon = plan.UsedShorterHorizon,
                     Generation = timing.Generation, Timing = timing };
+#if DEVELOPMENT_PROBE
+                if (OffRouteEnabled)
+                {
+                    if (Records.Count != 0 || root.Spawn.Turn != 0 || steps[0].Action is not { } advised ||
+                        root.Spawn.Train.Context == null || root.PlayRules == null)
+                        throw new InvalidOperationException("The off-route test requires a published original deployment.");
+                    var hand = root.Spawn.Train.Context.Cards.Hand;
+                    decision.Action = hand.Where(card => card.InstanceId != advised.CardInstanceId &&
+                            root.PlayRules.Cards.Any(rule => rule.DataId == card.DataId && rule.CardType == "Monster" &&
+                                rule.Effect == "SpawnMonster" && rule.Summon == null))
+                        .Select(card => new PlayCardAction(card.InstanceId, root.SelectedRoom))
+                        .FirstOrDefault(action => BattleActionModel.PlayCard(root, action).Supported)
+                        ?? throw new InvalidOperationException("The selected deployment floor has no legal alternate native unit card.");
+                    decision.Mode = "off-route-observation";
+                    offRouteSearches = PlayerAdvisorProbe.SearchCount;
+                }
+#endif
                 if (decision.IsEndTurn)
                 {
                     BattleTurnResult next = BattleTurnModel.EndTurn(root, decision.RelentlessDecisions);
@@ -329,6 +348,38 @@ namespace MonsterTrain2Poju.Probe
                 " searchMs=" + decision.Timing?.SearchMs + " responseMs=" + decision.Timing?.EndToEndMs);
             return true;
         }
+
+#if DEVELOPMENT_PROBE
+        internal static bool WriteOffRouteObservation()
+        {
+            if (!OffRouteEnabled || Records.Count != 1) return false;
+            Decision input = Records[0];
+            BattleAdvice fresh = PlayerAdvisorProbe.Advice;
+            BattleAdvisorOverlay.Publication timing = PlayerAdvisorProbe.LatestTiming;
+            long searches = PlayerAdvisorProbe.SearchCount;
+            using var keys = new BattleStateKeys();
+            BattleTurnState actual = PlayerAdvisorProbe.Capture();
+            if (waiting || input.Actual == null || input.Difference != null || input.Root.Spawn.Turn != 0 ||
+                input.Outcome != RoomOutcome.Exchanged || !PlayerAdvisorProbe.OffRouteInputInvalidated ||
+                timing.Generation <= input.Generation || searches != offRouteSearches + 1 ||
+                fresh.ReusedContinuation || fresh.ReusedWinningContinuation || fresh.ReusedSelection ||
+                keys.Key(input.Actual) != fresh.RootKey || keys.Key(actual) != fresh.RootKey ||
+                FullBattleTrace.Active!.CaptureFailures != 0 || FullBattleTrace.Active.Pending != 0)
+                throw new InvalidOperationException("Native off-route input did not produce a fresh exact-root advisor publication.");
+            using var document = NativeFixtureCapture.Capture(new
+            {
+                Schema = 1, EvidenceKind = "NativePlayerAdvisorOffRoute", GameVersion = UnityEngine.Application.version,
+                GameModuleMvid = typeof(CardState).Module.ModuleVersionId, PlayerAdvisor = PlayerAdvisorProbe.Evidence,
+                Input = input, StaleInputInvalidated = PlayerAdvisorProbe.OffRouteInputInvalidated,
+                PreviousSearches = offRouteSearches, FreshSearches = searches, FreshGeneration = timing.Generation,
+                FreshRoot = fresh.Root, FreshRootKey = fresh.RootKey, FreshNativeRoot = actual, FreshPlan = fresh.Plan
+            });
+            using var stream = new FileStream(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                "player-advisor-off-route.mt2f"), FileMode.CreateNew, FileAccess.Write);
+            document.Write(stream);
+            return true;
+        }
+#endif
 
         private static Decision ReplayDecision()
         {

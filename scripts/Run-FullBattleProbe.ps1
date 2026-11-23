@@ -16,6 +16,7 @@ param(
     [switch] $ProfileCapture,
     [switch] $AdvisorFloorBrowse,
     [switch] $AdvisorPresentation,
+    [switch] $AdvisorOffRoute,
     [switch] $RollingAdvice,
     [switch] $ContinueToNextRing,
     [switch] $PreviewAttackTrace,
@@ -892,6 +893,15 @@ if ($AdvisorFloorBrowse -and (-not $PlayerAdvisor -or -not $RollingAdvice)) {
 }
 if ($AdvisorPresentation -and (-not $PlayerAdvisor -or -not $RollingAdvice)) {
     throw 'AdvisorPresentation requires the real PlayerAdvisor and RollingAdvice driver.'
+}
+if ($AdvisorOffRoute) {
+    $allowed = @('AdvisorOffRoute', 'PlayerAdvisor', 'RollingAdvice', 'AdvisorPresentation', 'BinaryCapture',
+        'Seed', 'PlannerWholeBattle', 'PlannerSearchWorkers', 'PlannerTimeLimitMs', 'GameSpeed',
+        'NativeWorker', 'NativeBuildRoot', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    if (-not ($PlayerAdvisor -and $RollingAdvice -and $BinaryCapture) -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
+        throw 'AdvisorOffRoute needs a fresh binary PlayerAdvisor rolling test without scenario controls.'
+    }
 }
 if ($RoomMoonSpellThresholdRelic) {
     if ($RoomMoonSpellCostRelic -or $RoomMoonSpellAttackRelic -or $RoomMoonSpellHealingRelic -or
@@ -2258,7 +2268,7 @@ $gameRoot = Join-Path $workspace $(if ($NativeWorker -gt 1) { ".sandbox-game-wor
 if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll') -PathType Leaf)) {
     throw "Native worker $NativeWorker is not initialized; run scripts/Initialize-NativeWorker.ps1 -Worker $NativeWorker first."
 }
-if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or
+if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $AdvisorOffRoute -or
     $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth -or $OriginalFunguyDeckScalingDoubleUnits) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
@@ -2271,6 +2281,9 @@ if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput 
     } finally { $nativeDllStream.Dispose() }
     if (($OriginalThikDeckChange -or $OriginalThikBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original Thik capture requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
+    }
+    if ($AdvisorOffRoute -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw "AdvisorOffRoute requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
     if (($OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original opening relics require the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
@@ -2558,6 +2571,7 @@ $environment = @{
     MT2_PROBE_PLAYER_DEPLOYMENT_ONLY = $(if ($CapturePlayerDeploymentOnly) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_FLOOR_BROWSE = $(if ($AdvisorFloorBrowse) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_PRESENTATION = $(if ($AdvisorPresentation) { '1' } else { '0' })
+    MT2_PROBE_ADVISOR_OFF_ROUTE = $(if ($AdvisorOffRoute) { '1' } else { '0' })
     MT2_ADVISOR_SCREENSHOT = $(if ($Advisor) { '1' } else { '0' })
     MT2_PROBE_SEED = "$Seed"
     MT2_PROBE_PLANNER_TURN = "$PlannerTurn"
@@ -3454,6 +3468,16 @@ Wait-NativeBattleExit -Process $process -Timer $nativeTimer -UnityLog $unityLog 
     -FailFastOnIsolatedUnitReject:$FailFastOnIsolatedUnitReject
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
+if ($AdvisorOffRoute) {
+    $capturePath = Join-Path $profile 'player-advisor-off-route.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Player advisor off-route observation failed. Inspect $unityLog"
+    }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        Trace=$capturePath; SHA256=(Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash } | ConvertTo-Json
+    return
+}
 if ($CapturePlayerDeploymentOnly) {
     $capturePath = Join-Path $profile 'player-deployment.mt2f'
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or

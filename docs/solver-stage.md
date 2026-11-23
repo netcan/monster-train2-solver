@@ -625,3 +625,8 @@ Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时
 74.2 MB。三种状态键模式均与独立编码器一致。2.3.1 Windows 原版随后执行双线程顾问的
 28 步胜局，21 次出牌、7 次结束回合及两类候选检查均通过。
 [原版归档](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-state-key-buffered-advisor.mt2f)
+
+隔离的 2.3.1 Windows 发布版顾问在部署建议显示后，通过原版出牌入口打出另一张合法单位牌。
+旧建议立即失效，顾问额外搜索一次并发布 27 步新方案。新建议起点与独立采集的原版状态及
+随机流一致。专项从该起点复放新方案的全部步骤，并重算终局与评分。
+[偏离建议专项](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-player-advisor-off-route.mt2f)

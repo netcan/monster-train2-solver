@@ -21,6 +21,58 @@ internal static class RollingAdviceChecks
     private static (int Room, int Rounds, bool Continue) Choice(RelentlessDecision choice) =>
         (choice.RoomIndex, choice.CompletedRounds, choice.Continue);
 
+    internal static void OffRoute(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("Schema").GetInt32() == 1 &&
+            fixture.GetProperty("EvidenceKind").GetString() == "NativePlayerAdvisorOffRoute" &&
+            fixture.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            fixture.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
+            fixture.GetProperty("PlayerAdvisor").GetProperty("Assembly").GetString() == "MonsterTrain2Poju.Advisor",
+            "Expected an off-route witness from the pinned player advisor and native build.");
+        FixtureValue input = fixture.GetProperty("Input");
+        BattleTurnState root = State(input.GetProperty("Root"));
+        BattleTurnState actual = State(input.GetProperty("Actual"));
+        BattleSearchStep executed = ReadStep(input);
+        BattleSearchStep published = ReadStep(input.GetProperty("PlanSteps")[0]);
+        Require(input.GetProperty("Mode").GetString() == "off-route-observation" && root.Spawn.Turn == 0 &&
+            root.Spawn.Turn == actual.Spawn.Turn && executed.Action != null && published.Action != null &&
+            executed.Action.CardInstanceId != published.Action.CardInstanceId && executed.Action.RoomIndex == root.SelectedRoom &&
+            input.GetProperty("Difference").ValueKind == FixtureKind.Null && fixture.GetProperty("StaleInputInvalidated").GetBoolean(),
+            "Missing a distinct accepted original deployment or immediate invalidation.");
+        using var keys = new BattleStateKeys();
+        string parent = keys.Key(root);
+        BattleActionResult played = BattleActionModel.PlayCard(root, executed.Action!);
+        Require(played.Supported && played.Outcome == RoomOutcome.Exchanged &&
+            played.Outcome == input.GetProperty("Outcome").Deserialize<RoomOutcome>() &&
+            Key(played.State!) == Key(actual) && Key(State(input.GetProperty("Expected"))) == Key(actual) &&
+            keys.Key(root) == parent && keys.Key(actual) != parent,
+            "Independent alternate input replay differs in state/RNG or mutated its parent.");
+        FixtureValue publishedRoot = fixture.GetProperty("FreshRoot");
+        BattleTurnState fresh = State(publishedRoot);
+        string freshKey = keys.Key(fresh);
+        string nativeKey = fixture.GetProperty("FreshRootKey").GetString()!;
+        // The live driver verifies the publication key in the engine process.
+        // Independently compare the complete archived values before hydration.
+        Require(nativeKey.Length == 64 && nativeKey.All(Uri.IsHexDigit) && freshKey == keys.Key(actual) &&
+            publishedRoot.ContentEquals(input.GetProperty("Actual")) && publishedRoot.ContentEquals(fixture.GetProperty("FreshNativeRoot")) &&
+            fixture.GetProperty("FreshGeneration").GetInt64() > input.GetProperty("Generation").GetInt64() &&
+            fixture.GetProperty("FreshSearches").GetInt64() == fixture.GetProperty("PreviousSearches").GetInt64() + 1,
+            "The post-input publication was stale, reused search, or captured a different native state/RNG.");
+        FixtureValue forecast = fixture.GetProperty("FreshPlan");
+        BattleSearchStep[] steps = forecast.GetProperty("Steps").EnumerateArray().Select(ReadStep).ToArray();
+        Require(steps.Length > 0 && steps.Length <= forecast.GetProperty("MaxSteps").GetInt32() &&
+            !forecast.GetProperty("Cancelled").GetBoolean() &&
+            (forecast.GetProperty("CompletedHorizon").GetBoolean() || forecast.GetProperty("UsedShorterHorizon").GetBoolean()),
+            "The fresh publication has no usable forecast.");
+        BattleTurnState forecastEnd = BattlePlannerChecks.Replay(fresh, steps, out RoomOutcome outcome);
+        Require(keys.Key(forecastEnd) == keys.Key(State(forecast.GetProperty("State"))) && keys.Key(fresh) == freshKey &&
+            outcome == forecast.GetProperty("Outcome").Deserialize<RoomOutcome>() &&
+            BattlePlanner.Evaluate(forecastEnd, outcome) == forecast.GetProperty("Score").GetDouble() &&
+            steps.Count(step => step.IsEndTurn) == forecast.GetProperty("TurnsCompleted").GetInt32(),
+            "The fresh forecast does not independently reproduce its state, RNG, horizon and score.");
+        Console.WriteLine($"PLAYER-ADVISOR-OFF-ROUTE PASS planned={published.Action!.CardInstanceId} actual={executed.Action.CardInstanceId} next-generation={fixture.GetProperty("FreshGeneration").GetInt64()}");
+    }
+
     internal static void FutureTargets(FixtureValue fixture)
     {
         FixtureValue decision = fixture.GetProperty("RollingDecisions")[0];

@@ -93,6 +93,8 @@ namespace MonsterTrain2Poju.Probe
             " playerHasBattleKey=" + (Field<string?>("manualBattleKey") != null) +
             " playerHiddenPause=" + Property("HiddenPause");
         internal static BattleAdvice Advice => Get<BattleAdvice>("CurrentAdvice");
+        internal static long SearchCount => Get<long>("Searches");
+        internal static bool OffRouteInputInvalidated { get; private set; }
         internal static BattleAdvisorOverlay.Publication LatestTiming =>
             JArray.FromObject(Get<object>("Publications")).Last!.ToObject<BattleAdvisorOverlay.Publication>()!;
         internal static object? Evidence => !Enabled ? null : new
@@ -159,6 +161,17 @@ namespace MonsterTrain2Poju.Probe
             log = BepInEx.Logging.Logger.CreateLogSource("PlayerAdvisorAcceptance");
             AdvisorCaptureProfileProbe.Install(assembly, log);
             if (AdvisorPresentationProbe.Enabled) AdvisorPresentationProbe.Install(type!, advisor!, log);
+            if (RollingAdviceScenario.OffRouteEnabled)
+                new Harmony("netcan.poju.off-route-acceptance").Patch(AccessTools.Method(type, "CompleteCardInput"),
+                    postfix: new HarmonyMethod(typeof(PlayerAdvisorProbe), nameof(ObserveOffRouteInput)));
+        }
+
+        private static void ObserveOffRouteInput(bool accepted, object? input)
+        {
+            if (!accepted || input == null || RollingAdviceScenario.Records.Count != 1) return;
+            if ((bool)AccessTools.Field(input.GetType(), "DirectHandPlay").GetValue(input))
+                OffRouteInputInvalidated = CurrentIsNull() && Field<int>("tentativeSteps") == 0 &&
+                    Field<object?>("pendingCardChoice") == null && Field<Text>("body").text == "正在核对局面…";
         }
 
         internal static BattleTurnState Capture()

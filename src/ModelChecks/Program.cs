@@ -7304,6 +7304,13 @@ if (args.Length is 2 or 3 && args[0] == "--rolling-advice-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--player-advisor-off-route-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RollingAdviceChecks.OffRoute(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--advisor-future-target-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
