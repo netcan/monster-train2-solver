@@ -24,9 +24,31 @@ namespace MonsterTrain2Poju.Model
                 SupportsOnHitMeleeWeakness(unit, context)) && unit.EquipmentCards.Count == 0 &&
             unit.Modifiers?.Upgrades.Count == 0 && unit.Statuses.All(status => status.Id == "corruption" ||
                 ordinary && status.Id == "valor" && status.Stacks == 5 && status.ParamInt == 1 ||
+                CapturedBattleStatus(unit, status, context) ||
                 status.Id == "multistrike" && status.ParamInt == 2 &&
                     (unit.AssetKey == "MonsterBanishedChampion1" && status.Stacks == 1 || ordinary && status.Stacks is >= 1 and <= 2));
         }
+
+        // The existing card pipeline applies these native status records on
+        // validated allies without altering the linked boss roster.
+        private static bool CapturedBattleStatus(CombatUnit unit, CombatStatus status, CombatContext? context) =>
+            context?.LifeLinks is { Actors.Count: 5 } &&
+            status is { Stacks: > 0 and <= 9999, Stackable: true, Hidden: false,
+                RemoveAllAtEnd: false, RemoveAfterPostCombat: false,
+                PreventRemovalDuringRelentless: false, SkipDuringDeployment: false,
+                RemoveWhenTriggeredAfterCardPlayed: false, RemoveAtEndOfTurnIfTriggered: false,
+                MarkedForRemovalAfterCardPlayed: false } &&
+            (status is { Propagatable: true, RemoveWhenTriggered: false, RemoveDuringDeployment: false } &&
+                status is
+                    { Id: "valor", ParamInt: 1, RemoveStackAtEnd: false, DisplayCategory: "Positive",
+                        TriggerVfxEnemy: false, TriggerVfxPlayer: false, ExcludeHeroPropagation: true, ExcludeMonsterPropagation: false } or
+                    { Id: "pyregel", ParamInt: 1, RemoveStackAtEnd: false, DisplayCategory: "Negative",
+                        TriggerVfxEnemy: true, TriggerVfxPlayer: true, ExcludeHeroPropagation: false, ExcludeMonsterPropagation: true } or
+                    { Id: "debuff", ParamInt: 2, RemoveStackAtEnd: true, DisplayCategory: "Negative",
+                        TriggerVfxEnemy: false, TriggerVfxPlayer: false, ExcludeHeroPropagation: false, ExcludeMonsterPropagation: true } ||
+                unit.Status("valor") != null && status is { Id: "armor", ParamInt: 1, RemoveStackAtEnd: false, DisplayCategory: "Persistent",
+                    Propagatable: false, RemoveWhenTriggered: true, RemoveDuringDeployment: true,
+                    TriggerVfxEnemy: true, TriggerVfxPlayer: true, ExcludeHeroPropagation: false, ExcludeMonsterPropagation: false });
 
         private static bool SupportsOnHitMeleeWeakness(CombatUnit unit, CombatContext? context)
         {
@@ -76,7 +98,8 @@ namespace MonsterTrain2Poju.Model
                 modifiers.StatusAttackModifiers?.Count > 0) return false;
             return definition.StartingStatuses.All(status => status.Id == "multistrike" && status.Count is >= 1 and <= 2) &&
                 unit.Statuses.Where(status => status.Id is not ("corruption" or "valor")).All(status =>
-                    definition.StartingStatuses.Any(original => original.Id == status.Id && original.Count == status.Stacks)) &&
+                    definition.StartingStatuses.Any(original => original.Id == status.Id && original.Count == status.Stacks) ||
+                    CapturedBattleStatus(unit, status, context)) &&
                 definition.StartingStatuses.All(original => unit.Status(original.Id)?.Stacks == original.Count);
         }
         private static bool Unmodified(CardModifiers modifiers) => modifiers.Upgrades.Count == 0 && NoOffsets(modifiers);
