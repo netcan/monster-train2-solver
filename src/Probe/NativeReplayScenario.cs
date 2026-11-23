@@ -810,6 +810,8 @@ namespace MonsterTrain2Poju.Probe
                     if (fullBattle && OriginalStatusMagnitudeWitness.Enabled)
                         OriginalStatusMagnitudeWitness.AcquireBeforeBattle(managers!);
 #if DEVELOPMENT_PROBE
+                    if (fullBattle && OriginalSecondFloorEnemyOpeningWitness.Enabled && !OriginalSecondFloorEnemyOpeningWitness.Acquired)
+                        OriginalSecondFloorEnemyOpeningWitness.Acquire(save);
                     if (fullBattle && OriginalOpeningRelicsScenario.Enabled)
                         OriginalOpeningRelicsScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalRandomizedWavesScenario.Enabled && !OriginalRandomizedWavesScenario.Acquired)
@@ -1141,6 +1143,20 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (OriginalRandomJustCauseWitness.Tick(FullBattleTrace.Active!, managers, log))
                     Finish(true, "Original random Just Cause component captured.");
+                return;
+            }
+            if (fullBattle && OriginalSecondFloorEnemyOpeningWitness.Enabled)
+            {
+                if (combat!.GetTurnCount() == 0)
+                {
+                    OriginalSecondFloorEnemyOpeningWitness.CaptureDeployment(FullBattleTrace.Active!);
+                    AdvanceTurn(combat, record: false);
+                }
+                else
+                {
+                    OriginalSecondFloorEnemyOpeningWitness.Write(FullBattleTrace.Active!);
+                    Finish(true, "Original second-floor enemy opening captured.");
+                }
                 return;
             }
             if (fullBattle && OriginalPersistentMonsterHpWitness.Enabled)

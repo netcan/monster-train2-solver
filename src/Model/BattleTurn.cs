@@ -581,6 +581,22 @@ namespace MonsterTrain2Poju.Model
                 TrainCombatResult initialOrder = EnchantmentWorldModel.UpdateAll(train);
                 if (!initialOrder.Supported) return Unsupported(initialOrder.UnsupportedReason!);
                 train = initialOrder.State!;
+                if (train.Context!.Relics?.Any(RelicSecondFloorEnemyOpeningModel.IsOriginal) == true)
+                {
+                    spawn = WithTrain(spawn, train, turn, spawn.Rng);
+                    if (!RelicSecondFloorEnemyOpeningModel.Calibrated(spawn))
+                        return Unsupported("Second-floor enemy opening requires the captured ordinary first-wave movement boundary.");
+                    TrainCombatResult moved = TrainCombatModel.Ascend(train);
+                    if (!moved.Supported) return Unsupported(moved.UnsupportedReason!);
+                    if (!RouteDeadUnits(train, moved)) return Unsupported("Second-floor enemy opening requires captured death routing.");
+                    train = moved.State!;
+                    spawn = WithTrain(spawn, train, turn, spawn.Rng);
+                    if (Terminal(moved.Outcome)) return Finish(moved.Outcome, 0, moon);
+                    EnemySpawnResult nextWave = EnemySpawningModel.Spawn(spawn, true, outputPlayRules?.Rooms);
+                    if (!nextWave.Supported) return Unsupported(nextWave.UnsupportedReason!);
+                    spawn = nextWave.State!; train = spawn.Train;
+                    if (Terminal(nextWave.Outcome)) return Finish(nextWave.Outcome, 0, moon);
+                }
                 if (train.Context!.Relics?.Any(relic => relic.EffectTypes.Any(type =>
                     RelicResourceModel.IsOpeningCorruption(type) || type == RelicResourceModel.StartCombatEnergy || type == RelicOpeningSpawnModel.Effect || type == RelicOpeningDeckSpawnModel.Effect)) == true)
                 {

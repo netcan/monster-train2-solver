@@ -1363,6 +1363,10 @@ Fecundity 的原版升级回调会把全额减费值改为目标卡当前的实�
 专项回归逐项匹配两次出生与对应随机流。该场整战仍有月相采集差异。
 [寻宝单位出生归档](../tests/compatibility/game-2.3.1/mechanics/more-treasure-units/two-collector-births.mt2f)
 
+第二层开局突变在首个可操作决策前多结算一次移层和出生。专项对照匹配了首波移至第二层、
+第二波在底层生成、寻宝单位生成及出生随机流的重置。支持范围由该开局的原版状态约束。
+[第二层开局归档](../tests/compatibility/game-2.3.1/mechanics/second-floor-enemy-opening/first-decision.mt2f)
+
 ## 自动化与测试成本
 
 从仓库根目录运行下列命令，按已登记的原版战斗生成待采集卡牌清单。

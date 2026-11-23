@@ -46,6 +46,7 @@ namespace MonsterTrain2Poju.Probe
                     owner.GetEffects() is [RelicEffectPersistMonsterHp persistentHealth] && SupportsPersistentHealth(persistentHealth) ||
                     SupportsPyreAbilityCooldown(owner, save) ||
                     MoreTreasureUnitsProbe.MatchesOriginal(owner, save) ||
+                    SupportsSecondFloorEnemyOpening(owner, save) ||
                     CardBranchMaskProbe.Enabled && SupportsRandomTargets(owner, save) ||
                     owner.GetEffects().Count > 0 && owner.GetEffects().All(effect =>
                     (effect is RelicEffectModifyCharacterAttackOrHealthPercentage || effect is RelicEffectMultiplyAttackLate ||
@@ -71,6 +72,18 @@ namespace MonsterTrain2Poju.Probe
             owner.GetEffects() is [RelicEffectPurgeStarterDeck, RelicEffectAddCardSetStartOfRun] &&
             owner.GetSourceRelicData().GetEffects() is [var purge, var add] &&
             purge.GetEffectConditions().Count == 0 && add.GetEffectConditions().Count == 0 && add.GetParamInt() == 1;
+
+        private static bool SupportsSecondFloorEnemyOpening(MutatorState owner, SaveManager save) =>
+            owner.GetRelicDataID() == RelicSecondFloorEnemyOpeningModel.OwnerId &&
+            typeof(CombatManager).Module.ModuleVersionId == new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d") &&
+            owner.GetEffects() is [RelicEffectChangeHeroSpawnRoom { HeroesStarterRoomIndex: 1 }] &&
+            save.GetAllGameData().FindMutatorData(RelicSecondFloorEnemyOpeningModel.OwnerId) is MutatorData definition &&
+            ValidSecondFloorEnemyOpeningDefinition(definition);
+
+        internal static bool ValidSecondFloorEnemyOpeningDefinition(MutatorData definition) =>
+            definition.name == RelicSecondFloorEnemyOpeningModel.OwnerKey && !definition.DisallowInDeploymentPhase &&
+            definition.GetEffects() is [var effect] && effect.GetEffectClassName() == RelicSecondFloorEnemyOpeningModel.Effect &&
+            effect.GetParamInt() == -1 && effect.GetParamInt2() == 1 && effect.GetEffectConditions().Count == 0;
 
         private static bool SupportsLoseMoneyOnHit(MutatorState owner, SaveManager save) =>
             owner.GetRelicDataID() == RelicGoldLossOnHitModel.OwnerId &&

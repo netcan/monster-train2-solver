@@ -589,6 +589,7 @@ param(
     [switch] $OriginalPreventMonsterDamageWitness,
     [switch] $OriginalLoseMoneyOnHitWitness,
     [switch] $OriginalPreventMonsterDamageBattle,
+    [switch] $OriginalSecondFloorEnemyOpening,
     [switch] $OriginalRandomizedWavesBattle,
     [switch] $OriginalDisabledRoomPreviewBattle,
     [switch] $OriginalMoreTreasureUnitsBattle,
@@ -1014,6 +1015,18 @@ if ($OriginalMoreTreasureUnitsBattle) {
     if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $treasureArguments }).Count) {
         throw 'MoreTreasureUnits requires an original Ring 2 checkpoint and binary capture.'
+    }
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($OriginalSecondFloorEnemyOpening) {
+    $openingArguments = @('OriginalSecondFloorEnemyOpening', 'InputProfile', 'BattleDistance',
+        'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild',
+        'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne 1 -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $openingArguments }).Count) {
+        throw 'Original second-floor enemy opening requires a stock Ring 2 checkpoint and binary capture.'
     }
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
@@ -2808,6 +2821,14 @@ if ($InputProfile) {
         }
         $regionInputSignature = Get-OriginalSignature $checkpoint
     }
+    if ($OriginalSecondFloorEnemyOpening) {
+        if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
+            $checkpointData.wasDevCheatUsed -ne $false -or $checkpointData.runState.numBattlesCompleted -ne 1 -or
+            $checkpointData.startingConditions.ascensionLevel -ne 0) {
+            throw 'Original second-floor enemy opening requires a standard native Rank 0 Ring 2 checkpoint.'
+        }
+        $secondFloorInputSignature = Get-OriginalSignature $checkpoint
+    }
     if ($OriginalRandomizedWavesBattle) {
         if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
             $checkpointData.wasDevCheatUsed -ne $false -or $checkpointData.runState.numBattlesCompleted -ne 0 -or
@@ -3029,6 +3050,7 @@ $environment = @{
     MT2_PROBE_ORIGINAL_FHYRA_BATTLE = $(if ($OriginalFhyraGoldBattle) { '1' } else { '0' })
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_BATTLE = $(if ($OriginalPreventMonsterDamageBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_RANDOMIZED_WAVES = $(if ($OriginalRandomizedWavesBattle) { '1' } else { '0' })
+    MT2_PROBE_SECOND_FLOOR_ENEMY_OPENING = $(if ($OriginalSecondFloorEnemyOpening) { '1' } else { '0' })
     MT2_PROBE_DISABLED_ROOM_PREVIEW = $(if ($OriginalDisabledRoomPreviewBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_MORE_TREASURE_UNITS = $(if ($OriginalMoreTreasureUnitsBattle) { '1' } else { '0' })
     MT2_PROBE_HAND_AND_EMBER_WITNESS = $OriginalHandAndEmberWitness
@@ -3993,6 +4015,16 @@ if ($OriginalLoseMoneyOnHitWitness) {
         throw "Original LoseMoneyOnHit witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-LOSE-MONEY-ON-HIT PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalSecondFloorEnemyOpening) {
+    $capturePath = Join-Path $profile 'second-floor-enemy-opening.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original second-floor enemy opening captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore -or (Get-OriginalSignature $checkpoint) -cne $secondFloorInputSignature) {
+        throw "Original second-floor enemy opening capture failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-SECOND-FLOOR-ENEMY-OPENING PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalPreventMonsterDamageWitness) {
