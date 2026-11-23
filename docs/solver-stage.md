@@ -689,3 +689,9 @@ Indulgent GorgeOnSlay 再追加 8 次出牌、4 次结束回合并通过两类�
 Lifemother Infested 追加 5 次出牌、4 次结束回合及两类候选。Soul Savior 的 15 个原版遭遇
 都有已结算整战归档。定向验收累计 472 场，合计 7,237 次出牌或技能和 2,811 次结束回合。
 [Infested 整战](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/native-battle.mt2f)
+
+Soul Savior 整战覆盖完成后执行一次阶段全量。453 场连续战斗和 19 场分段战斗全部通过，
+共核对 7,237 次出牌或技能及 2,811 次结束回合。其中一份 Titanskin 伤害组件缺少顶层模块标识，
+已从相同原版源重新导出。随后只复验该组件和两场相关整战，全部通过。
+[阶段报告](../results/recorded-chain-triage-20261124-043628-96fa477e/report.tsv) ·
+[定向复验报告](../results/recorded-chain-triage-20261124-044128-ee86ce0a/report.tsv)
