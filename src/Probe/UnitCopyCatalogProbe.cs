@@ -18,12 +18,16 @@ namespace MonsterTrain2Poju.Probe
                 .Where(unit => unit != null).Cast<CombatUnit>().Concat(rule.Summon?.Pool.Select(choice => choice.Unit) ?? Array.Empty<CombatUnit>()))
                 .Concat(spawn.Waves.SelectMany(wave => wave.Candidates).SelectMany(group => group.Units).Concat(spawn.Treasures).Select(item => item.Unit)).ToArray();
             IReadOnlyList<SummonUnitDefinition> triggeredBirths = spawn.Train.Context?.SummonCatalog?.Units ?? Array.Empty<SummonUnitDefinition>();
+            var relicBirths = (spawn.Train.Context?.Relics ?? Array.Empty<CombatRelicState>())
+                .SelectMany(owner => owner.ResourceEffects ?? Array.Empty<RelicResourceEffect>())
+                .Select(effect => effect.PileStartTurn?.Effect.SpawnFallbackUnit).OfType<CombatUnit>();
             // Copy definitions must already contain queued bosses and cardless
             // trigger births. Discovering them only through live characters
             // changes the immutable rule catalog after an otherwise identical
             // EndTurn and invalidates an accepted plan's successor.
             var pending = new Queue<CombatUnit>(rootUnits.Concat(spawn.Train.Rooms.SelectMany(room => room.Units))
                 .Concat(triggeredBirths.Select(definition => definition.Unit))
+                .Concat(relicBirths)
                 .Concat(spawn.QueuedOuterBoss != null ? new[] { spawn.QueuedOuterBoss.Actor.Unit } :
                     OuterBossBirthProbe.CreatedDefinition != null ? new[] { OuterBossBirthProbe.CreatedDefinition } : Array.Empty<CombatUnit>())
                 .Concat(spawn.QueuedTrueFinalBoss?.Definitions.Select(definition => definition.Unit) ?? Array.Empty<CombatUnit>())

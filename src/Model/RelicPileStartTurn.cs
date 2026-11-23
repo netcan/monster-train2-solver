@@ -36,8 +36,6 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Deck-scaled relic requires captured relic and visible-deck state.");
             string? error = RelicModel.Validate(initial);
             if (error != null) return Unsupported(error);
-            if (initial.Relics.Any(owner => owner.EffectTypes.Contains("RelicEffectExtraSpawnsFirstUnitPerTurn")))
-                return Unsupported("Deck-scaled Funguy spawn-count relic interaction is not modeled.");
 
             TrainCombatState state = source;
             var events = new List<CombatEvent>();

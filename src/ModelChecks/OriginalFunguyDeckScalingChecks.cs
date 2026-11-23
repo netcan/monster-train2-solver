@@ -143,6 +143,53 @@ internal static class OriginalFunguyDeckScalingChecks
         Console.WriteLine($"ORIGINAL-FUNGUY-DECK NATIVE PASS: {records.Length} callbacks at 40 cards (2/room), spawn={spawnCount}, Horde-stack-delta={hordeIncrease}; exact callback model and full battle matched.");
     }
 
+    internal static void NativeDoubleUnits(FixtureValue root)
+    {
+        Require(root.GetProperty("Schema").GetInt32() == 1 &&
+            root.GetProperty("Boundary").GetString() == "NativeOriginalFunguyDeckScalingDoubleUnits" &&
+            root.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            root.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            root.GetProperty("CaptureFailures").GetInt32() == 0 && root.GetProperty("Pending").GetInt32() == 0,
+            "Expected the pinned original deck-scaling and DoubleUnits component.");
+        var callback = root.GetProperty("RelicPileStartTurn").EnumerateArray().Single();
+        var before = callback.GetProperty("Before").Deserialize<TrainCombatState>()!;
+        var actual = callback.GetProperty("Actual").Deserialize<TrainCombatState>()!;
+        var rules = callback.GetProperty("PlayRules").Deserialize<BattlePlayRules>()!;
+        var queries = root.GetProperty("ExtraSpawnCountQueries").EnumerateArray().ToArray();
+        Require(callback.GetProperty("Completed").GetBoolean() &&
+            callback.GetProperty("VisibleDeckCount").GetInt32() == 40 &&
+            callback.GetProperty("ApplicationsPerRoom").GetInt32() == 2 && queries.Length == 6 &&
+            queries.Select((query, index) => query.GetProperty("Unit").GetString() == "MonsterFunguy" &&
+                query.GetProperty("Team").GetString() == "Monsters" && query.GetProperty("Turn").GetInt32() == 1 &&
+                query.GetProperty("CountBefore").GetInt32() == 1 && query.GetProperty("CountAfter").GetInt32() == (index == 0 ? 2 : 1))
+                .All(matches => matches),
+            "Expected the original six room callbacks, with only the first receiving DoubleUnits.");
+        var actors = actual.Rooms.OrderByDescending(room => room.RoomIndex).SelectMany(room => room.Units)
+            .Where(unit => unit.AssetKey == "MonsterFunguy").ToArray();
+        Require(before.Rooms.SelectMany(room => room.Units).All(unit => unit.AssetKey != "MonsterFunguy") &&
+            actors.Length == 3 && actors.Select(unit => unit.Status("horde")?.Stacks).SequenceEqual([3, 2, 2]) &&
+            before.Context!.BattleRng.Equals(actual.Context!.BattleRng) && before.Context.Cards.Rng.Equals(actual.Context.Cards.Rng) &&
+            Condition(before.Context) is { Triggered: false, DurationTriggerCount: 0 } &&
+            Condition(actual.Context) is { Triggered: true, DurationTriggerCount: 1 },
+            "The original room order, Horde counts, condition ledger or gameplay RNG differs.");
+        TrainSpellResult applied = RelicPileStartTurnModel.Apply(before, rules);
+        Require(applied.Supported, applied.UnsupportedReason ?? "Deck scaling did not replay.");
+        using var keys = new BattleStateKeys();
+        Require(keys.SnapshotKey(applied.State) == keys.SnapshotKey(actual), "The complete deck-scaling callback differs.");
+
+        var turn = root.GetProperty("Turns").EnumerateArray().Single();
+        var start = turn.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var target = turn.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        BattleTurnResult ended = BattleTurnModel.EndTurn(start);
+        Require(ended.Supported && ended.Outcome == turn.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(),
+            ended.UnsupportedReason ?? "Deck scaling failed in regular EndTurn.");
+        RecordedBattleChecks.Compare(ended.State!, target, false, "Original DoubleUnits and deck-scaled Funguy EndTurn");
+        Console.WriteLine("NATIVE-FUNGUY-DECK-DOUBLE-UNITS PASS: six ordered queries, Horde 3/2/2, complete callback and EndTurn state/RNG.");
+
+        static RelicConditionState Condition(CombatContext context) => context.Relics!.Single(owner =>
+            owner.DataId == RelicUnitSpawnCountModel.DataId).ResourceEffects!.Single().Conditions.Single();
+    }
+
     private static string Serialize(object? value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Require(bool pass, string message)
     { if (!pass) throw new InvalidOperationException(message); }

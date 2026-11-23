@@ -16,6 +16,7 @@ namespace MonsterTrain2Poju.Probe
             public int ApplicationsPerRoom { get; set; }
             public bool Completed { get; set; }
             public TrainCombatState Before { get; set; } = null!;
+            public BattlePlayRules? PlayRules { get; set; }
             public TrainCombatState? Predicted { get; set; }
             public TrainCombatState? Actual { get; set; }
             public string? UnsupportedReason { get; set; }
@@ -36,6 +37,9 @@ namespace MonsterTrain2Poju.Probe
                 FullBattleTrace trace = FullBattleTrace.Active!;
                 BattleTurnState captured = trace.CaptureDecision();
                 record.Before = captured.Spawn.Train;
+#if DEVELOPMENT_PROBE
+                if (OriginalFunguyDeckScalingScenario.DoubleUnits) record.PlayRules = captured.PlayRules;
+#endif
                 record.VisibleDeckCount = record.Before.Context?.Resources?.VisibleDeckCount ?? -1;
                 CombatRelicState? owner = record.Before.Context?.Relics?.SingleOrDefault(relic =>
                     relic.DataId == RelicPileStartTurnModel.DataId);

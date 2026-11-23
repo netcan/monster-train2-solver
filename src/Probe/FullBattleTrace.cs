@@ -979,6 +979,28 @@ namespace MonsterTrain2Poju.Probe
         }
 
 #if DEVELOPMENT_PROBE
+        internal void WriteFunguyDeckScalingDoubleUnits()
+        {
+            var records = RelicPileStartTurnProbe.Records;
+            if (actions.Records.Count != 0 || turns.Records.Count != 1 || turns.Records[0].Actual == null ||
+                records.Count != 1 || !records[0].Completed || records[0].Actual == null || records[0].PlayRules == null ||
+                records[0].VisibleDeckCount != 40 || records[0].ApplicationsPerRoom != 2 ||
+                OriginalSupportSpellsScenario.HallExtraSpawnDefinition == null ||
+                OriginalSupportSpellsScenario.HallExtraSpawnCountQueries.Count == 0 || CaptureFailures != 0 || Pending != 0)
+                throw new InvalidOperationException("Expected one settled original turn-one deck scaling callback with native DoubleUnits queries.");
+            using var document = NativeFixtureCapture.Capture(new
+            {
+                Schema = 1, Boundary = "NativeOriginalFunguyDeckScalingDoubleUnits", GameVersion = Application.version,
+                GameModuleMvid = typeof(RelicState).Assembly.ManifestModule.ModuleVersionId,
+                CaptureFailures, Pending, NativeRunInput = nativeRunInput, Turns = turns.Records,
+                RelicPileStartTurn = records,
+                ExtraSpawnDefinition = OriginalSupportSpellsScenario.HallExtraSpawnDefinition,
+                ExtraSpawnCountQueries = OriginalSupportSpellsScenario.HallExtraSpawnCountQueries
+            });
+            using var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "funguy-deck-scaling-double-units.mt2f"));
+            document.Write(output);
+        }
+
         internal void WriteDoubleUnitsTriggered()
         {
             if (actions.Records.Count != 2 || actions.Records.Any(record => record.Actual == null) ||

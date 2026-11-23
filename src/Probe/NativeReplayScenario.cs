@@ -957,6 +957,13 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && OriginalFunguyDeckScalingScenario.DoubleUnits && combat!.GetTurnCount() == 1)
+            {
+                FullBattleTrace.Active!.Checkpoint("decision-1");
+                FullBattleTrace.Active.WriteFunguyDeckScalingDoubleUnits();
+                Finish(true, "Original deck-scaled Funguy and DoubleUnits first turn captured.");
+                return;
+            }
             if (fullBattle && OriginalEggCardScenario.DoubleUnitsTriggered && combat!.GetTurnCount() == 2)
             {
                 FullBattleTrace.Active!.Checkpoint("decision-2");

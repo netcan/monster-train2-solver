@@ -28,7 +28,7 @@ namespace MonsterTrain2Poju.Probe
         private static bool hallExtraSpawnAcquired;
         internal static void AcquireHallExtraSpawn(AllGameManagers managers, ManualLogSource log)
         {
-            if (!(HallExtraSpawn || OriginalEggCardScenario.DoubleUnitsTriggered) || hallExtraSpawnAcquired) return;
+            if (!(HallExtraSpawn || OriginalEggCardScenario.DoubleUnitsTriggered || OriginalFunguyDeckScalingScenario.DoubleUnits) || hallExtraSpawnAcquired) return;
             SaveManager save = managers.GetSaveManager();
             if (save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle || save.GetMutators().Count != 0)
                 throw new InvalidOperationException("Expected an isolated first battle for the original extra-spawn mutator.");
@@ -71,12 +71,13 @@ namespace MonsterTrain2Poju.Probe
 
             private static void Postfix(CharacterData? spawningUnitData, Team.Type spawningOnTeam, int __state, int __result)
             {
-                if (!(HallExtraSpawn || OriginalEggCardScenario.DoubleUnitsTriggered) || FullBattleTrace.Active == null || spawningUnitData == null ||
+                if (!(HallExtraSpawn || OriginalEggCardScenario.DoubleUnitsTriggered || OriginalFunguyDeckScalingScenario.DoubleUnits) ||
+                    FullBattleTrace.Active == null || spawningUnitData == null ||
                     AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
                 string assetKey = spawningUnitData.GetAssetKey();
                 bool observedUnit = OriginalEggCardScenario.DoubleUnitsTriggered
                     ? assetKey is "TrainStewardBig" or "MonsterKinhostVessel" or "MonsterKinhostPupa"
-                    : SpawnOrStatusExtraSpawn ? assetKey == "MonsterFunguy" : OrdinaryExtraSpawn
+                    : SpawnOrStatusExtraSpawn || OriginalFunguyDeckScalingScenario.DoubleUnits ? assetKey == "MonsterFunguy" : OrdinaryExtraSpawn
                     ? assetKey is "TrainStewardSmall" or "BasicDemon" : assetKey == "MonsterTwistedAssistant";
                 if (!observedUnit) return;
                 HallExtraSpawnCountQueries.Add(new { Unit = spawningUnitData.GetAssetKey(),

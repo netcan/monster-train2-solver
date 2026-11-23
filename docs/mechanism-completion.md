@@ -879,6 +879,12 @@ Kinhost Vessel 的原版对照在部署回合先消耗一次 DoubleUnits，随�
 `--native-double-units-triggered-only`。
 [`double-units-triggered.mt2f`](../tests/compatibility/game-2.3.1/mechanics/hall-grafted-birth/double-units-triggered.mt2f)
 
+40 张牌的原版 Funguy 遗物在首个普通回合执行六次数量查询。DoubleUnits 只增加第一次，
+顶层、中层和底层分别结算为 3、2、2 层 Horde。独立检查核对完整遗物回调与结束回合。
+采样使用 `-OriginalFunguyDeckScalingDoubleUnits -BinaryCapture`，专项使用
+`--native-funguy-deck-double-units-only`。
+[`funguy-deck-scaling-double-units.mt2f`](../tests/compatibility/game-2.3.1/mechanics/funguy-deck-scaling/funguy-deck-scaling-double-units.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和

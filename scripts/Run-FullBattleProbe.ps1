@@ -771,6 +771,8 @@ param(
     [switch] $OriginalOpeningDeckSpawnRelic,
     [switch] $OriginalMonsterSpellTargeting,
     [switch] $OriginalFunguyDeckScaling,
+
+    [switch] $OriginalFunguyDeckScalingDoubleUnits,
     [switch] $OriginalCardDrawOnHeal,
     [switch] $OriginalBrokenRailRelic,
     [switch] $OriginalHephsBlueprints,
@@ -1678,6 +1680,10 @@ if ($OriginalFirstCardCost) { $BranchCardMasks = $true; $Policy = 'units-and-jun
 if ($OriginalRebalanceValor) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalCopyFirstSpellPlayed -or $OriginalCopyFirstConsumePlayed -or $OriginalCopyConsumedCard -or $OriginalMothersRemnant3Relic -or $OriginalTribouletRelic -or $OriginalCooldownOnDamageRelic -or $OriginalMonsterSpellTargeting) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalFunguyDeckScalingDoubleUnits) {
+    if (-not $BinaryCapture -or $InputProfile) { throw 'Original Funguy deck scaling with DoubleUnits requires a fresh binary capture.' }
+    $OriginalFunguyDeckScaling = $true
+}
 if ($OriginalFunguyDeckScaling) { $PhysicalSpawnPoints = $true; $Policy = 'no-cards' }
 if ($OriginalCardDrawOnHeal) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalBrokenRailRelic) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -2247,7 +2253,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll'
     throw "Native worker $NativeWorker is not initialized; run scripts/Initialize-NativeWorker.ps1 -Worker $NativeWorker first."
 }
 if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or
-    $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth) {
+    $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth -or $OriginalFunguyDeckScalingDoubleUnits) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -2265,6 +2271,9 @@ if ($OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput 
     }
     if (($OriginalHallGraftedBirth -or $OriginalDoubleUnitsTriggeredSpawn) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original birth observation requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
+    }
+    if ($OriginalFunguyDeckScalingDoubleUnits -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw "Original Funguy deck scaling with DoubleUnits requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
 }
 $runId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
@@ -3144,6 +3153,7 @@ if ($OriginalTribouletRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-b
 if ($OriginalCooldownOnDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-cooldown-on-damage-dh' }
 if ($OriginalMonsterSpellTargeting) { $environment['MT2_PROBE_MODIFIERS'] = 'original-monster-spell-targeting' }
 if ($OriginalFunguyDeckScaling) { $environment['MT2_PROBE_MODIFIERS'] = 'original-funguy-deck-scaling' }
+if ($OriginalFunguyDeckScalingDoubleUnits) { $environment['MT2_PROBE_FUNGUY_DECK_DOUBLE_UNITS'] = '1' }
 if ($OriginalCardDrawOnHeal) { $environment['MT2_PROBE_MODIFIERS'] = 'original-card-draw-on-heal' }
 if ($OriginalBrokenRailRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-broken-rail' }
 if ($OriginalHephsBlueprints) { $environment['MT2_PROBE_MODIFIERS'] = 'original-hephs-blueprints' }
@@ -3953,6 +3963,16 @@ if ($OriginalSourceBackedFeeding) {
         throw "Original source-backed feeding capture failed. Inspect $unityLog"
     }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true; Trace=$feedingPath } | ConvertTo-Json
+    return
+}
+if ($OriginalFunguyDeckScalingDoubleUnits) {
+    $componentPath = Join-Path $profile 'funguy-deck-scaling-double-units.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $componentPath -PathType Leaf) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original Funguy deck scaling with DoubleUnits failed. Inspect $unityLog"
+    }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        Trace=$componentPath; SHA256=(Get-FileHash -LiteralPath $componentPath -Algorithm SHA256).Hash } | ConvertTo-Json
     return
 }
 if ($OriginalDoubleUnitsTriggeredSpawn) {

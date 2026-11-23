@@ -11,6 +11,9 @@ namespace MonsterTrain2Poju.Probe
         internal const string Name = "original-funguy-deck-scaling";
         internal const int TargetDeckCount = 40;
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+#if DEVELOPMENT_PROBE
+        internal static bool DoubleUnits => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_FUNGUY_DECK_DOUBLE_UNITS") == "1";
+#endif
         internal static bool Acquired { get; private set; }
         internal static bool Prepared { get; private set; }
         internal static object? Evidence => Prepared ? new { DeckCount = TargetDeckCount, Threshold = 20, ApplyAllRooms = true } : null;
