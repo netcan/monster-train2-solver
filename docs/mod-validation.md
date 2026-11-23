@@ -25,6 +25,13 @@ EndTurn successors passed with zero unsupported or truncated branches.
 The driver exercised the panel in an isolated profile. Manual Steam interaction remains pending.
 [Recorded battle](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-two-workers-rolling-win.mt2f)
 
+The Windows build at `250e5a15` also passed the isolated rolling battle after
+fixing recovery from a retired snapshot's preparation fault. It won with 73 Pyre
+health, replayed all 26 decisions, and checked 449 card or skill successors and
+26 EndTurn successors. The floor-browse driver switched floors seven times,
+including during search, without starting another search. The fault itself was
+exercised by the deterministic `--battle-advice-only` check.
+
 Last documented Windows installation: 0.2.438, installed 2026-10-30 after an isolated
 native player battle and focused continuation checks. The three installed DLL
 hashes match the tested build; the prior 0.2.437 payload is retained at
