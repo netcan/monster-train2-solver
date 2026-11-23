@@ -95,6 +95,7 @@ namespace MonsterTrain2Poju.Model
                     context = context.WithStatistics(context.Statistics?.Increment(token.InstanceId, "TimesDrawn"));
                     context = RelicExpensiveCardUpgradeModel.Drawn(context, new[] { token.InstanceId }, out failure);
                     if (failure != null) return count;
+                    context = RelicRandomSpellTargetsModel.CardAdded(context, token.InstanceId);
                 }
                 return count;
             }

@@ -705,9 +705,9 @@ namespace MonsterTrain2Poju.Model
                         source.PlayRules);
                     if (!cardAdded.Supported) return Unsupported(cardAdded.UnsupportedReason!);
                     context = cardAdded.Context;
-                    var holdover = RelicHoldoverGrantModel.CardAdded(context, card.InstanceId);
-                    if (!holdover.Supported) return Unsupported(holdover.UnsupportedReason!);
-                    context = holdover.Context!;
+                    var handCallback = RelicHandCardModel.CardAdded(context, card.InstanceId);
+                    if (!handCallback.Supported) return Unsupported(handCallback.UnsupportedReason!);
+                    context = handCallback.Context!;
                 }
             }
             train = WithContext(train, context, false);

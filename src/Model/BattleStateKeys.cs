@@ -127,6 +127,8 @@ namespace MonsterTrain2Poju.Model
                     {
                         if (value is RelicResourceEffect { LastKnownDeckCount: null } &&
                             field.Name == nameof(RelicResourceEffect.LastKnownDeckCount)) continue;
+                        if (value is CardMaskDescriptor { RandomTargetsFromRelic: null } &&
+                            field.Name == nameof(CardMaskDescriptor.RandomTargetsFromRelic)) continue;
                         Append(field.Name);
                         if (ignoreRoomSelection &&
                             (value is BattleTurnState && field.Name == nameof(BattleTurnState.SelectedRoom) ||

@@ -80,9 +80,9 @@ namespace MonsterTrain2Poju.Model
                 if (!added.Supported) return new(null, Array.Empty<int>(), added.UnsupportedReason);
                 context = added.Context;
             }
-            var holdover = RelicHoldoverGrantModel.CardAdded(context, cardId);
-            if (!holdover.Supported) return new TypedDrawResult(null, Array.Empty<int>(), holdover.UnsupportedReason);
-            context = holdover.Context!;
+            var handCallback = RelicHandCardModel.CardAdded(context, cardId);
+            if (!handCallback.Supported) return new TypedDrawResult(null, Array.Empty<int>(), handCallback.UnsupportedReason);
+            context = handCallback.Context!;
             if (interleaved)
             {
                 var existing = new HashSet<int>(source.Cards.Hand.Select(card => card.InstanceId));

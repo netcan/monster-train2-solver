@@ -480,9 +480,9 @@ namespace MonsterTrain2Poju.Model
                 // the copy is played again without changing floors.
                 if (rule.Destination == "HandPile" && !overflow)
                 {
-                    var holdover = RelicHoldoverGrantModel.CardAdded(context, card.InstanceId);
-                    if (!holdover.Supported) return Unsupported(holdover.UnsupportedReason!);
-                    context = holdover.Context!;
+                    var handCallback = RelicHandCardModel.CardAdded(context, card.InstanceId);
+                    if (!handCallback.Supported) return Unsupported(handCallback.UnsupportedReason!);
+                    context = handCallback.Context!;
                     context = ConduitModel.Updated(ConduitModel.Drawn(context, new[] { card.InstanceId }), card.InstanceId);
                 }
                 // Setup/upgrade refresh builds scaling trait text in an active battle.
@@ -514,7 +514,7 @@ namespace MonsterTrain2Poju.Model
                 destination = destination.WithMaskDescriptor(new CardMaskDescriptor(d.Definition, d.BaseCost, d.BaseTraits,
                     d.AuthoredCastEffects, d.Purified, d.PermanentGraft, d.TemporaryTraits,
                     d.PermanentReplacements.Concat(source.MaskDescriptor.PermanentReplacements).ToArray(),
-                    d.SourceTraits, d.KillTriggers, d.HoldoverUpgradePending, d.GraftedEquipment, d.SpareTriggers));
+                    d.SourceTraits, d.KillTriggers, d.HoldoverUpgradePending, d.GraftedEquipment, d.SpareTriggers, d.RandomTargetsFromRelic));
             return destination;
         }
         private static CardModifiers Copy(CardModifiers destination, CardModifiers source, HashSet<string> ignored,

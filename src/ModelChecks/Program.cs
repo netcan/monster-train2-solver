@@ -7,6 +7,12 @@ if (args.Length == 3 && args[0] == "--native-pyre-ability-cooldown-only")
     PyreAbilityCooldownChecks.Native(withOwner.RootElement, withoutOwner.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-random-spell-targets-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RandomSpellTargetsChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-persistent-monster-hp-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

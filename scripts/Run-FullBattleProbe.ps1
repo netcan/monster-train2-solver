@@ -587,6 +587,8 @@ param(
     [switch] $OriginalPreventMonsterDamageBattle,
     [ValidateSet('WithOwner', 'WithoutOwner')]
     [string] $OriginalPyreAbilityCooldownWitness = '',
+    [switch] $OriginalRandomSpellTargetsWitness,
+    [switch] $OriginalRandomSpellTargetsBattle,
     [switch] $OriginalPersistentMonsterHpWitness,
     [switch] $PersistentMonsterHpAboveMaxAndDeath,
     [switch] $OriginalPersistentMonsterHpBattle,
@@ -891,6 +893,18 @@ if ($OriginalPyreAbilityCooldownWitness) {
     if (-not ($BinaryCapture -and $InputProfile) -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count) {
         throw 'Original Pyre ability cooldown birth requires an isolated first-battle InputProfile and binary capture.'
     }
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($OriginalRandomSpellTargetsWitness -or $OriginalRandomSpellTargetsBattle) {
+    $witnessArguments = @('OriginalRandomSpellTargetsWitness', 'OriginalRandomSpellTargetsBattle', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+        'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not $BinaryCapture -or ($OriginalRandomSpellTargetsWitness -and $OriginalRandomSpellTargetsBattle) -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
+        throw 'Select one original random spell targets test with binary capture.'
+    }
+    if ($OriginalRandomSpellTargetsBattle) { $PrimaryClan = 'Banished'; $SecondaryClan = 'Hellhorned' }
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
     $Policy = 'units-spells-and-junk'
@@ -2673,6 +2687,8 @@ $environment = @{
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_WITNESS = $(if ($OriginalPreventMonsterDamageWitness) { '1' } else { '0' })
     MT2_PROBE_PYRE_ABILITY_COOLDOWN_WITNESS = $OriginalPyreAbilityCooldownWitness
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_BATTLE = $(if ($OriginalPreventMonsterDamageBattle) { '1' } else { '0' })
+    MT2_PROBE_RANDOM_SPELL_TARGETS_WITNESS = $(if ($OriginalRandomSpellTargetsWitness) { '1' } else { '0' })
+    MT2_PROBE_RANDOM_SPELL_TARGETS_BATTLE = $(if ($OriginalRandomSpellTargetsBattle) { '1' } else { '0' })
     MT2_PROBE_PERSISTENT_MONSTER_HP_WITNESS = $(if ($OriginalPersistentMonsterHpWitness) { '1' } else { '0' })
     MT2_PROBE_PERSISTENT_MONSTER_HP_BATTLE = $(if ($OriginalPersistentMonsterHpBattle) { '1' } else { '0' })
     MT2_PROBE_PERSISTENT_HP_ABOVE_MAX_AND_DEATH = $(if ($PersistentMonsterHpAboveMaxAndDeath) { '1' } else { '0' })
@@ -3584,6 +3600,16 @@ if ($OriginalPersistentMonsterHpWitness) {
         throw "Original persistent monster health witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-PERSISTENT-MONSTER-HP PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalRandomSpellTargetsWitness) {
+    $capturePath = Join-Path $profile 'random-spell-targets.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original random spell targets component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original random spell targeting witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-RANDOM-SPELL-TARGETS PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalPreventMonsterDamageWitness) {

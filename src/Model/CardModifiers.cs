@@ -632,7 +632,10 @@ namespace MonsterTrain2Poju.Model
                 .Concat(unplayedTriggers.Where(trigger => trigger.Type == "OnUnplayedNegative").SelectMany(trigger => trigger.Actions))
                 .Select(ResolveEffect).ToArray();
             bool unsupportedUnplayedTriggers = rule.HasUnsupportedUnplayedTriggers || unplayedTriggers.Any(trigger => !RelicPerkeoModel.IsConversionTrigger(trigger));
-            CardActionEffect[] effects = rule.Effects.Select(ResolveEffect).ToArray();
+            CardActionEffect[] effects = instance.MaskDescriptor?.RandomTargetsFromRelic == true
+                ? rule.Effects.Select(effect => ResolveMergedEffect(effect, 1,
+                    RelicRandomSpellTargetsModel.IsRemappable(effect.Target) ? "RandomInRoom" : effect.Target)).ToArray()
+                : rule.Effects.Select(ResolveEffect).ToArray();
             CardActionEffect[] onCastEffects = rule.OnCastEffects.Select(ResolveEffect).Concat(triggerEffects).ToArray();
             string? groupError = CardTriggerGroupModel.Validate(rule.OnCastEffectGroupSizes, rule.OnCastEffects.Count);
             if (groupError != null) interactions.Add(groupError);
@@ -656,7 +659,7 @@ namespace MonsterTrain2Poju.Model
                 rule.UnplayedNegativeOrder, unsupportedUnplayedTriggers, rule.ForgeEligible, rule.HasKillTriggers, rule.OnForgeEffects, onCastGroupSizes, rule.HasSpareTriggers);
 
             CardActionEffect ResolveEffect(CardActionEffect effect) => ResolveMergedEffect(effect, 1);
-            CardActionEffect ResolveMergedEffect(CardActionEffect effect, int count) => new CardActionEffect(effect.Type, effect.Target,
+            CardActionEffect ResolveMergedEffect(CardActionEffect effect, int count, string? target = null) => new CardActionEffect(effect.Type, target ?? effect.Target,
                 ResolveValue(effect, unchecked(effect.Value * count)), effect.AllowEnemy, effect.AllowPlayer,
                 count == 1 ? effect.Statuses : effect.Statuses.Select(status => status.WithStacks(unchecked(status.Stacks * count))).ToArray(),
                 effect.Upgrade, effect.Lifetime, effect.Tests,

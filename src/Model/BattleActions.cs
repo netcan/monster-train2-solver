@@ -503,6 +503,11 @@ namespace MonsterTrain2Poju.Model
                 rule = CardModifierModel.Resolve(rule, playingInstance, out CombatUnit? purifiedTemplate);
                 if (purifiedTemplate != null) originalRule = originalRule!.WithSpawn(purifiedTemplate);
             }
+            if (originalRule!.CardType == "Spell" && playingInstance?.MaskDescriptor?.Definition.IsSpawner != true &&
+                context.Relics?.Any(RelicRandomSpellTargetsModel.IsOriginal) == true &&
+                originalRule.Effects.Any(effect => RelicRandomSpellTargetsModel.IsRemappable(effect.Target)) &&
+                playingInstance?.MaskDescriptor?.RandomTargetsFromRelic != true)
+                return Unsupported("Random spell targeting requires the settled native hand mutation.");
             var choiceEffects = rule.Effects.Concat(rule.OnCastEffects).ToArray();
             if (action.SummonSelections.Any(selection => selection.EffectIndex < 0 || selection.EffectIndex >= choiceEffects.Length ||
                 choiceEffects[selection.EffectIndex].Type != "SummonChoice" || string.IsNullOrEmpty(selection.CardDataId)) ||
@@ -1468,7 +1473,9 @@ namespace MonsterTrain2Poju.Model
                 }
                 CardInstanceState? targetInstance = source.Spawn.Train.Context.FindCard(card.InstanceId);
                 if (targetInstance?.Permanent.MergedEquipment != null) rule = targetInstance.Permanent.MergedEquipment.Resolve(rule);
-            if (CardSpellModel.RequiresUnitTarget(rule.Effects.Concat(rule.OnCastEffects).ToArray()))
+                if (targetInstance?.MaskDescriptor?.RandomTargetsFromRelic == true)
+                    rule = CardModifierModel.Resolve(rule, targetInstance);
+                if (CardSpellModel.RequiresUnitTarget(rule.Effects.Concat(rule.OnCastEffects).ToArray()))
                 {
                 RoomCombatState targetRoom = source.Spawn.Train.Rooms.First(item => item.RoomIndex == room.RoomIndex);
                 int targetedPlayerCount = targetRoom.Units.Count(unit => unit.Team == CombatTeam.Player);
@@ -1782,6 +1789,9 @@ namespace MonsterTrain2Poju.Model
                 if (rule?.Effect != effect) continue;
                 if (shouldStop?.Invoke() == true) return null;
                 IReadOnlyList<PlayCardAction> choices = cardPlays == null ? plays! : cardPlays(card);
+                CardInstanceState? instance = source.Spawn.Train.Context.FindCard(card.InstanceId);
+                if (instance?.MaskDescriptor?.RandomTargetsFromRelic == true)
+                    rule = CardModifierModel.Resolve(rule, instance);
                 IEnumerable<int> roomOrder = Enumerable.Range(0, roomCount).Select(offset => (source.Spawn.Turn + offset) % roomCount);
                 if (effect == "Spell" && !CardSpellModel.RequiresUnitTarget(rule.Effects))
                 {

@@ -26,6 +26,7 @@ namespace MonsterTrain2Poju.Probe
             Dictionary<CardState, CardInstanceState>? captured = null)
         {
             AllGameManagers managers = AllGameManagers.Instance!;
+            bool randomSpellTargets = CardBranchMaskProbe.Enabled && RelicPercentageStatProbe.RandomSpellTargetsActive(managers.GetSaveManager());
             return cards.Select(card =>
             {
                 if (captured != null && captured.TryGetValue(card, out CardInstanceState cached)) return cached;
@@ -110,12 +111,31 @@ namespace MonsterTrain2Poju.Probe
                             effects[index].GetParamInt() != rule.Effects[index].Value)
                             interactions.Add("Unmodeled spell damage/heal modifier");
                 }
+                CardMaskDescriptor? descriptor = CardBranchMaskProbe.Capture(card);
+                if (randomSpellTargets && descriptor != null && CanRandomizeTargets(data))
+                    descriptor = CaptureRandomizedTargets(card, data, descriptor, interactions);
                 var result = new CardInstanceState(state.InstanceId, state.DataId, state.Permanent, state.Temporary,
                     state.LastPlayedCost, state.LastForgedAmount, state.PlayCount,
-                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits, state.EquippedUnitId, state.PlayedRoomUnitIds, state.RawPlayedRoomUnitIds, CardBranchMaskProbe.Capture(card), CardExhaustProbe.Capture(card, cardId), state.ForgeCountScalingTraits, state.RawCostOverride, card.CanBeCopied(), state.TrainHealScalingTraits, state.GraftedEquipmentCardId);
+                    interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), state.EffectCounters, state.DamageScalingTraits, state.StatusScalingTraits, state.UnitUpgradeScalingTraits, state.CapacityScalingTraits, state.EquippedUnitId, state.PlayedRoomUnitIds, state.RawPlayedRoomUnitIds, descriptor, CardExhaustProbe.Capture(card, cardId), state.ForgeCountScalingTraits, state.RawCostOverride, card.CanBeCopied(), state.TrainHealScalingTraits, state.GraftedEquipmentCardId);
                 captured?.Add(card, result);
                 return result;
             }).OrderBy(card => card.InstanceId).ToArray();
+        }
+
+        internal static bool CanRandomizeTargets(CardData data) => data.GetCardType() == CardType.Spell && !data.IsSpawnerCard() &&
+            data.GetEffects().Any(effect => Remappable(effect.GetTargetMode()));
+
+        private static bool Remappable(TargetMode mode) => mode is TargetMode.DropTargetCharacter or TargetMode.FrontInRoom;
+
+        private static CardMaskDescriptor CaptureRandomizedTargets(CardState card, CardData data, CardMaskDescriptor descriptor, List<string> interactions)
+        {
+            TargetMode[] authored = data.GetEffects().Select(effect => effect.GetTargetMode()).ToArray();
+            TargetMode[] actual = card.GetEffectStates().Select(effect => effect.GetTargetMode()).ToArray();
+            if (card.GetTargetless() && actual.SequenceEqual(authored.Select(mode => Remappable(mode) ? TargetMode.RandomInRoom : mode)))
+                return descriptor.WithRandomTargets(true);
+            if (card.GetTargetless() == data.GetTargetless() && actual.SequenceEqual(authored)) return descriptor.WithRandomTargets(false);
+            interactions.Add("Unknown native random spell target mutation");
+            return descriptor;
         }
 
         private static int[]? PlayedRoomUnits(CardState card)

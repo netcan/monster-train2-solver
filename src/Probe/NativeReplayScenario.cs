@@ -470,6 +470,9 @@ namespace MonsterTrain2Poju.Probe
                     if (fullBattle && OriginalStartRoomAttachmentScenario.Enabled && !OriginalStartRoomAttachmentScenario.Acquired)
                         OriginalStartRoomAttachmentScenario.AcquireBeforeBattle(managers!, log);
 #if DEVELOPMENT_PROBE
+                    if (fullBattle && (OriginalRandomSpellTargetsWitness.Enabled || OriginalRandomSpellTargetsWitness.FullBattle) &&
+                        !OriginalRandomSpellTargetsWitness.Acquired)
+                        OriginalRandomSpellTargetsWitness.Acquire(save);
                     if (fullBattle && OriginalPreventMonsterDamageWitness.FullBattle && !OriginalPreventMonsterDamageWitness.Acquired)
                         OriginalPreventMonsterDamageWitness.Acquire(save);
                     if (fullBattle && (OriginalPersistentMonsterHpWitness.Enabled || OriginalPersistentMonsterHpWitness.FullBattle) &&
@@ -972,6 +975,17 @@ namespace MonsterTrain2Poju.Probe
             {
                 OriginalPyreAbilityCooldownWitness.Write(FullBattleTrace.Active!, managers);
                 Finish(true, "Original Pyre ability cooldown birth captured.");
+                return;
+            }
+            if (fullBattle && OriginalRandomSpellTargetsWitness.Enabled)
+            {
+                if (!OriginalRandomSpellTargetsWitness.Prepared)
+                {
+                    OriginalRandomSpellTargetsWitness.Prepare(managers);
+                    AdvanceTurn(combat!, record: false);
+                }
+                else if (OriginalRandomSpellTargetsWitness.Tick(FullBattleTrace.Active!, managers, log))
+                    Finish(true, "Original random spell targets component captured.");
                 return;
             }
             if (fullBattle && OriginalPersistentMonsterHpWitness.Enabled)

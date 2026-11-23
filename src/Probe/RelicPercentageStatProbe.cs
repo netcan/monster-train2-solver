@@ -36,6 +36,7 @@ namespace MonsterTrain2Poju.Probe
                     owner.GetRelicDataID() == RelicPersistentMonsterHealthModel.OwnerId &&
                     owner.GetEffects() is [RelicEffectPersistMonsterHp persistentHealth] && SupportsPersistentHealth(persistentHealth) ||
                     SupportsPyreAbilityCooldown(owner, save) ||
+                    CardBranchMaskProbe.Enabled && SupportsRandomTargets(owner, save) ||
                     owner.GetEffects().Count > 0 && owner.GetEffects().All(effect =>
                     (effect is RelicEffectModifyCharacterAttackOrHealthPercentage || effect is RelicEffectMultiplyAttackLate ||
                         effect is RelicEffectApplyExtraPyreDamage || effect is RelicEffectAddUnitUpgradePerPile ||
@@ -70,6 +71,18 @@ namespace MonsterTrain2Poju.Probe
             RelicEffectData effect = definition.GetEffects()[0];
             return effect.GetParamInt() == RelicPyreAbilityCooldownModel.Cooldown &&
                 effect.GetParamInt2() == (int)RelicEffectModifyUnitAbilityCooldown.UnitType.PyreHeart && effect.GetEffectConditions().Count == 0;
+        }
+
+        internal static bool RandomSpellTargetsActive(SaveManager save) => save.GetMutators().Any(owner => SupportsRandomTargets(owner, save));
+
+        private static bool SupportsRandomTargets(RelicState owner, SaveManager save)
+        {
+            if (owner.GetRelicDataID() != RelicRandomSpellTargetsModel.OwnerId ||
+                typeof(CardState).Module.ModuleVersionId != new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d") ||
+                owner.GetEffects() is not [RelicEffectModifyTargetsRandom, RelicEffectDisableUndo]) return false;
+            MutatorData? definition = save.GetAllGameData().FindMutatorData(RelicRandomSpellTargetsModel.OwnerId);
+            return definition != null && definition.name == RelicRandomSpellTargetsModel.OwnerKey && !definition.DisallowInDeploymentPhase &&
+                definition.GetEffects().All(effect => effect.GetParamCardFilter()?.name == "OnlySpells" && effect.GetEffectConditions().Count == 0);
         }
     }
 }

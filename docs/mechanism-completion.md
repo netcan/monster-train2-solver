@@ -292,6 +292,13 @@ Echoes 的留存生命效果按单位的来源卡记录。原版专项中，列�
 [启用变异器](../tests/compatibility/game-2.3.1/mechanics/pyre-ability-cooldown-birth/with-owner.mt2f) ·
 [原版对照](../tests/compatibility/game-2.3.1/mechanics/pyre-ability-cooldown-birth/without-owner.mt2f)
 
+随机目标变异器会在法术入手时改写手动目标和同层前排目标。原版回调核对火把、冰矛及重组，
+其中重组保留原来的消耗牌堆目标。真实火把出牌从两名敌人中抽取一名，战斗随机数推进一次，
+完整状态及无指定目标的候选均通过。原版放逐者与狱魔胜局的 18 次出牌和 7 次结束回合通过复放。
+该胜局的未选候选仍包含待校准的随机换位及后续同一目标效果。
+[随机火把专项](../tests/compatibility/game-2.3.1/mechanics/random-spell-targets/targetless-cast.mt2f) ·
+[原版整战](../tests/compatibility/game-2.3.1/mechanics/random-spell-targets/native-battle.mt2f)
+
 ExtraFeedTrigger 的原版查询确认友军 OnFeed 次数为 2，OnDeath 次数保持 1。
 61 个战斗阶段、5 次出牌、7 次结束回合与两类候选通过。实际普通进食也已录到两次 OnFeed，
 合金构装体的燃料从 1 增至 3，矿工只被吃掉一次，完整状态与随机数在 16 条分支上复放一致。

@@ -51,7 +51,9 @@ namespace MonsterTrain2Poju.Probe
                 killTriggers: KillTriggers(data.GetCardTriggers().Where(trigger => trigger.GetTrigger() == CardTriggerType.OnKill)
                     .Select(CardUpgradeLifecycleProbe.TriggerDefinition).ToArray()),
                 spareTriggers: KillTriggers(data.GetCardTriggers().Where(trigger => trigger.GetTrigger() == CardTriggerType.OnSpare)
-                    .Select(CardUpgradeLifecycleProbe.TriggerDefinition).ToArray()));
+                    .Select(CardUpgradeLifecycleProbe.TriggerDefinition).ToArray()),
+                randomTargetsFromRelic: CardModifierProbe.CanRandomizeTargets(data) &&
+                    RelicPercentageStatProbe.RandomSpellTargetsActive(AllGameManagers.Instance!.GetSaveManager()) ? false : null);
         }
         private static CardLifecycleTrigger[]? KillTriggers(CardLifecycleTrigger[] triggers) => triggers.Length == 0 ? null : triggers;
         internal static void Observe(FullBattleTrace trace, CombatContext context)

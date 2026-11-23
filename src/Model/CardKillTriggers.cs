@@ -163,7 +163,8 @@ namespace MonsterTrain2Poju.Model
                     CardGenerationRule rule = effect.Generation!;
                     CardMaskDescriptor d = card.MaskDescriptor!;
                     var original = new CardMaskDescriptor(d.Definition, d.BaseCost, CopyBaseTraits(card), d.AuthoredCastEffects,
-                        sourceTraits: d.SourceTraits, killTriggers: d.KillTriggers, spareTriggers: d.SpareTriggers);
+                        sourceTraits: d.SourceTraits, killTriggers: d.KillTriggers, spareTriggers: d.SpareTriggers,
+                        randomTargetsFromRelic: d.RandomTargetsFromRelic.HasValue ? false : null);
                     var creation = new CardCreationRule(card.DataId, CardModifiers.Empty(), null, Array.Empty<string>(),
                         card.DamageScalingTraits, card.StatusScalingTraits, card.UnitUpgradeScalingTraits, card.CapacityScalingTraits,
                         card.EquippedUnitId, original, card.ForgeCountScalingTraits, card.CanBeCopied, card.TrainHealScalingTraits);

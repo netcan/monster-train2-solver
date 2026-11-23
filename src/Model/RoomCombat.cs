@@ -5885,9 +5885,9 @@ namespace MonsterTrain2Poju.Model
                             (card.ExhaustState != null || CardRetainModel.Present(card))) context = context.WithCard(CardExhaustModel.ResetTraits(card));
                         if (restored.Cards!.Hand.Any(token => token.InstanceId == id))
                         {
-                            var holdover = RelicHoldoverGrantModel.CardAdded(context, id);
-                            if (!holdover.Supported) { unsupportedReason = holdover.UnsupportedReason; return false; }
-                            context = holdover.Context!;
+                            var handCallback = RelicHandCardModel.CardAdded(context, id);
+                            if (!handCallback.Supported) { unsupportedReason = handCallback.UnsupportedReason; return false; }
+                            context = handCallback.Context!;
                         }
                         Emit("Recursion", actor, actor, id);
                     }
