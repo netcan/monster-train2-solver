@@ -315,6 +315,10 @@ Pact 薪火在每回合首次打齐两个氏族时，为下一回合增加 1 次
 [双氏族专项](../tests/compatibility/game-2.3.1/mechanics/pact-draw-after-each-clan/paired-clans-two-rounds.mt2f) ·
 [原版整战](../tests/compatibility/game-2.3.1/mechanics/pact-draw-after-each-clan/native-battle.mt2f)
 
+Entropy 薪火读取永久牌组中的祸害。在隔离原版存档中加入两张原版自净化祸害后，首轮抽 6 张。
+花费 3 点余烬打出一张祸害并永久移除后，次轮抽 5 张。出牌和两次结束回合的完整状态与随机数通过回放。
+[原版祸害清除专项](../tests/compatibility/game-2.3.1/mechanics/entropy-pyre-draw/owned-blight-purge.mt2f)
+
 ExtraFeedTrigger 的原版查询确认友军 OnFeed 次数为 2，OnDeath 次数保持 1。
 61 个战斗阶段、5 次出牌、7 次结束回合与两类候选通过。实际普通进食也已录到两次 OnFeed，
 合金构装体的燃料从 1 增至 3，矿工只被吃掉一次，完整状态与随机数在 16 条分支上复放一致。

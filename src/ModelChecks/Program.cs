@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--native-entropy-draw-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    EntropyDrawChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-pact-draw-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

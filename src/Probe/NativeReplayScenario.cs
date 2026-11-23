@@ -767,6 +767,8 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                     if (fullBattle && (OriginalPactDrawWitness.Enabled || OriginalPactDrawWitness.FullBattle) && !OriginalPactDrawWitness.Prepared)
                         OriginalPactDrawWitness.Prepare(save);
+                    if (fullBattle && OriginalEntropyDrawWitness.Enabled && !OriginalEntropyDrawWitness.Prepared)
+                        OriginalEntropyDrawWitness.Prepare(save);
                     if (fullBattle && (OriginalFhyraGoldWitness.Enabled || OriginalFhyraGoldWitness.FullBattle) && !OriginalFhyraGoldWitness.Prepared)
                         OriginalFhyraGoldWitness.Prepare(save);
                     if (fullBattle && OriginalPyreAbilityCooldownWitness.Enabled && !OriginalPyreAbilityCooldownWitness.Prepared)
@@ -976,6 +978,14 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && OriginalEntropyDrawWitness.Enabled)
+            {
+                var next = OriginalEntropyDrawWitness.Tick(FullBattleTrace.Active!, managers);
+                if (next == OriginalEntropyDrawWitness.Step.EndTurn) AdvanceTurn(combat!, record: false);
+                else if (next == OriginalEntropyDrawWitness.Step.Complete)
+                    Finish(true, "Original Entropy owned Blight draw captured.");
+                return;
+            }
             if (fullBattle && OriginalPactDrawWitness.Enabled)
             {
                 var next = OriginalPactDrawWitness.Tick(FullBattleTrace.Active!, managers);

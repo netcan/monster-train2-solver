@@ -819,7 +819,7 @@ namespace MonsterTrain2Poju.Model
                     }
                 }
                 int displayedDraw = drawPerTurn;
-                if (RelicOccupiedFloorDrawModel.Has(finalContext))
+                if (RelicOccupiedFloorDrawModel.Has(finalContext) || RelicEntropyDrawModel.Present(finalContext))
                 {
                     var cachedDraw = RelicResourceModel.GetDrawCount(finalContext);
                     if (!cachedDraw.Supported) return Unsupported(cachedDraw.UnsupportedReason!);

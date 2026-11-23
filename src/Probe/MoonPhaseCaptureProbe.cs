@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
             OriginalPyreAbilityCooldownWitness.Reuse || OriginalFhyraGoldWitness.Enabled || OriginalFhyraGoldWitness.FullBattle ||
             OriginalPactDrawWitness.Enabled || OriginalPactDrawWitness.FullBattle ||
+            OriginalEntropyDrawWitness.Enabled ||
             RankThreeRoomSlayScenario.Enabled || OriginalRoomHealthAttackScenario.Enabled || OriginalStatusMagnitudeWitness.Moon ||
             OriginalOpeningUnitsScenario.Enabled ||
 #endif

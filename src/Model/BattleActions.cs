@@ -1420,7 +1420,7 @@ namespace MonsterTrain2Poju.Model
             if (context.RoomCapacities != null) outputPlayRules = outputPlayRules.WithCapacities(context.RoomCapacities);
             outputPlayRules = outputPlayRules.WithGeneratedEquipment(context);
             int displayedDraw = source.DrawPerTurn - UnitRoomResourceModel.Amount(source.Spawn.Train, UnitRoomResourceModel.Draw);
-            if (RelicOccupiedFloorDrawModel.Has(train.Context))
+            if (RelicOccupiedFloorDrawModel.Has(train.Context) || train.Context is { } drawContext && RelicEntropyDrawModel.Present(drawContext))
             {
                 var cachedDraw = RelicResourceModel.GetDrawCount(train.Context!);
                 if (!cachedDraw.Supported) return Unsupported(cachedDraw.UnsupportedReason!);

@@ -248,7 +248,7 @@ namespace MonsterTrain2Poju.Model
                 if (sourceCard.CanBeCopied == false) return new CardGenerationResult(source, Array.Empty<CardToken>());
             }
             CombatContext context = source;
-            bool hasDeckChange = rule.Permanent == true && RelicDeckPyreStatsModel.Present(source);
+            bool hasDeckChange = rule.Permanent == true && (RelicDeckPyreStatsModel.Present(source) || RelicEntropyDrawModel.Present(source));
             var added = new List<CardToken>();
             for (int index = 0; index < Math.Max(1, rule.Count); index++)
             {
@@ -460,7 +460,7 @@ namespace MonsterTrain2Poju.Model
                 if (hasDeckChange)
                 {
                     if (context.Resources == null || context.Statistics?.DeckCards == null)
-                        return Unsupported("Thik requires the captured raw resources and permanent deck.");
+                        return Unsupported("Permanent deck changes require captured resources and permanent deck membership.");
                     context = context.WithResources(context.Resources.WithVisibleDeckCount(checked(context.Resources.VisibleDeckCount + 1)))
                         .WithStatistics(context.Statistics.AddDeckCards(new[] { card.InstanceId }));
                     CombatContext? changed = RelicDeckPyreStatsModel.DeckChanged(context, out string? deckError);

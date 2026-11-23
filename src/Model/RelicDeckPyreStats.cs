@@ -60,6 +60,12 @@ namespace MonsterTrain2Poju.Model
 
         internal static CombatContext? DeckChanged(CombatContext source, out string? error)
         {
+            CombatContext? withDraw = RelicEntropyDrawModel.Refresh(source, out error);
+            return withDraw == null ? null : RefreshPyreStats(withDraw, out error);
+        }
+
+        private static CombatContext? RefreshPyreStats(CombatContext source, out string? error)
+        {
             error = null;
             if (!Present(source)) return source;
             error = RelicModel.Validate(source);
