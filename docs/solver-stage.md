@@ -630,3 +630,8 @@ Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时
 旧建议立即失效，顾问额外搜索一次并发布 27 步新方案。新建议起点与独立采集的原版状态及
 随机流一致。专项从该起点复放新方案的全部步骤，并重算终局与评分。
 [偏离建议专项](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-player-advisor-off-route.mt2f)
+
+旧方案的匹配只复放到实机快照所在回合。同一原版开局再次偏离建议，匹配旧方案从 4.62 秒降至
+0.68 秒，随后分别耗时 1.18 和 1.10 秒执行重新搜索。两次都发布了经独立复放验证的 27 步新方案。
+快速连续出牌、跨回合与换楼层的复用专项均通过。原版在两次采样之间分配的预览编号只在比较这两个采样时归一化。
+[限回合复放后的原版复测](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-player-advisor-off-route-bounded.mt2f)

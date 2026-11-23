@@ -40,11 +40,13 @@ internal static class RollingAdviceChecks
             input.GetProperty("Difference").ValueKind == FixtureKind.Null && fixture.GetProperty("StaleInputInvalidated").GetBoolean(),
             "Missing a distinct accepted original deployment or immediate invalidation.");
         using var keys = new BattleStateKeys();
+        using var boundaryKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
         string parent = keys.Key(root);
         BattleActionResult played = BattleActionModel.PlayCard(root, executed.Action!);
         Require(played.Supported && played.Outcome == RoomOutcome.Exchanged &&
             played.Outcome == input.GetProperty("Outcome").Deserialize<RoomOutcome>() &&
-            Key(played.State!) == Key(actual) && Key(State(input.GetProperty("Expected"))) == Key(actual) &&
+            boundaryKeys.Key(played.State!) == boundaryKeys.Key(actual) &&
+            boundaryKeys.Key(State(input.GetProperty("Expected"))) == boundaryKeys.Key(actual) &&
             keys.Key(root) == parent && keys.Key(actual) != parent,
             "Independent alternate input replay differs in state/RNG or mutated its parent.");
         FixtureValue publishedRoot = fixture.GetProperty("FreshRoot");
@@ -53,8 +55,8 @@ internal static class RollingAdviceChecks
         string nativeKey = fixture.GetProperty("FreshRootKey").GetString()!;
         // The live driver verifies the publication key in the engine process.
         // Independently compare the complete archived values before hydration.
-        Require(nativeKey.Length == 64 && nativeKey.All(Uri.IsHexDigit) && freshKey == keys.Key(actual) &&
-            publishedRoot.ContentEquals(input.GetProperty("Actual")) && publishedRoot.ContentEquals(fixture.GetProperty("FreshNativeRoot")) &&
+        Require(nativeKey.Length == 64 && nativeKey.All(Uri.IsHexDigit) && boundaryKeys.Key(fresh) == boundaryKeys.Key(actual) &&
+            publishedRoot.ContentEquals(fixture.GetProperty("FreshNativeRoot")) &&
             fixture.GetProperty("FreshGeneration").GetInt64() > input.GetProperty("Generation").GetInt64() &&
             fixture.GetProperty("FreshSearches").GetInt64() == fixture.GetProperty("PreviousSearches").GetInt64() + 1,
             "The post-input publication was stale, reused search, or captured a different native state/RNG.");

@@ -358,14 +358,26 @@ namespace MonsterTrain2Poju.Probe
             BattleAdvisorOverlay.Publication timing = PlayerAdvisorProbe.LatestTiming;
             long searches = PlayerAdvisorProbe.SearchCount;
             using var keys = new BattleStateKeys();
+            using var boundaryKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
             BattleTurnState actual = PlayerAdvisorProbe.Capture();
+            // The native preview can allocate unused IDs between the recorded
+            // action boundary and the later exact publication capture.
+            bool settledMatch = input.Actual != null && boundaryKeys.Key(input.Actual) == boundaryKeys.Key(fresh.Root);
+            bool currentMatch = keys.Key(actual) == fresh.RootKey;
             if (waiting || input.Actual == null || input.Difference != null || input.Root.Spawn.Turn != 0 ||
                 input.Outcome != RoomOutcome.Exchanged || !PlayerAdvisorProbe.OffRouteInputInvalidated ||
                 timing.Generation <= input.Generation || searches != offRouteSearches + 1 ||
                 fresh.ReusedContinuation || fresh.ReusedWinningContinuation || fresh.ReusedSelection ||
-                keys.Key(input.Actual) != fresh.RootKey || keys.Key(actual) != fresh.RootKey ||
+                !settledMatch || !currentMatch ||
                 FullBattleTrace.Active!.CaptureFailures != 0 || FullBattleTrace.Active.Pending != 0)
-                throw new InvalidOperationException("Native off-route input did not produce a fresh exact-root advisor publication.");
+                throw new InvalidOperationException("Native off-route publication failed: waiting=" + waiting +
+                    " difference=" + input.Difference + " outcome=" + input.Outcome + " invalidated=" + PlayerAdvisorProbe.OffRouteInputInvalidated +
+                    " generation=" + input.Generation + "->" + timing.Generation + " searches=" + offRouteSearches + "->" + searches +
+                    " reused=" + (fresh.ReusedContinuation || fresh.ReusedWinningContinuation || fresh.ReusedSelection) +
+                    " settledMatch=" + settledMatch + " currentMatch=" + currentMatch + " settledDifference=" +
+                    (input.Actual == null ? "missing" : UnitPlayModelProbe.FirstDifference(JToken.FromObject(input.Actual),
+                        JToken.FromObject(fresh.Root), "$")) + " captures=" + FullBattleTrace.Active?.CaptureFailures +
+                    " pending=" + FullBattleTrace.Active?.Pending);
             using var document = NativeFixtureCapture.Capture(new
             {
                 Schema = 1, EvidenceKind = "NativePlayerAdvisorOffRoute", GameVersion = UnityEngine.Application.version,

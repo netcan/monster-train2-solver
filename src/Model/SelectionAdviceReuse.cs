@@ -114,6 +114,7 @@ namespace MonsterTrain2Poju.Model
                 while (index < advice.Plan.Steps.Count)
                 {
                     token.ThrowIfCancellationRequested();
+                    if (projected.Spawn.Turn > checkpoint.Spawn.Turn) return false;
                     if (keys.Key(projected) == actualKey) return true;
                     // Automatic turn focus can settle while capture preparation
                     // is pending, before a view callback can be recorded. Match
@@ -127,6 +128,9 @@ namespace MonsterTrain2Poju.Model
                     BattleSearchStep step = advice.Plan.Steps[index++];
                     if (step.IsEndTurn)
                     {
+                        // An exchanged EndTurn advances the turn. A terminal
+                        // result cannot supply another prefix in this turn.
+                        if (projected.Spawn.Turn == checkpoint.Spawn.Turn) return false;
                         BattleTurnResult next = BattleTurnModel.EndTurn(projected, step.RelentlessDecisions);
                         if (!next.Supported) return false;
                         projected = next.State!;
