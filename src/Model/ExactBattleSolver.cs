@@ -85,9 +85,9 @@ namespace MonsterTrain2Poju.Model
             using var keys = new BattleStateKeys();
             var workspace = new BattleSearchWorkspace(enabled: maxSteps.HasValue || maxActionsPerTurn.HasValue);
             var visited = new HashSet<string>(StringComparer.Ordinal);
-            var pending = new Stack<Node>();
+            var pending = new Stack<(Node Node, bool EndTurnOnly)>();
             var root = new Node(source, RoomOutcome.Exchanged, null, null, 0);
-            pending.Push(root); Node? best = null; Node fallback = root;
+            pending.Push((root, false)); Node? best = null; Node fallback = root;
             double score = Value(root); int nodes = 0, duplicates = 0, terminals = 0, horizons = 0;
             bool cancelled = false, timedOut = false, limited = false;
             bool actionLimit = false, stepLimit = false, stoppedEarly = false;
@@ -98,7 +98,8 @@ namespace MonsterTrain2Poju.Model
                 timedOut = deadlineReached();
                 stoppedEarly = earlyStop?.Reached == true;
                 if (cancelled || timedOut || stoppedEarly) break;
-                Node node = pending.Pop();
+                var (node, endTurnOnly) = pending.Pop();
+                if (endTurnOnly) { ExpandEndTurns(node); continue; }
                 if (ConsiderLeaf(node)) continue;
                 if (node.Depth >= maxSteps) { stepLimit = true; continue; }
                 string key = keys.Key(node.State) + (options.TurnHorizon.HasValue ? "/" + node.Turns : "");
@@ -110,6 +111,7 @@ namespace MonsterTrain2Poju.Model
                 if (node.Turns > fallback.Turns) fallback = node;
                 // Push the complete action frontier, then visit EndTurn first to
                 // obtain a terminal witness early. Enumeration order breaks ties.
+                int beforeActions = pending.Count;
                 if (node.Actions >= maxActionsPerTurn) actionLimit = true;
                 else
                 {
@@ -118,28 +120,29 @@ namespace MonsterTrain2Poju.Model
                     IEnumerable<SupportedActionCandidate> candidates = useAdvisorOrdering ? frontier.SupportedCandidates
                         .OrderByDescending(candidate => FrontlineProtection(candidate.Result.State!)) : frontier.SupportedCandidates;
                     foreach (var candidate in candidates.Reverse())
-                        pending.Push(new Node(candidate.Result.State!, candidate.Result.Outcome, node,
-                            new BattleSearchStep(candidate.Action, false), node.Turns));
+                        pending.Push((new Node(candidate.Result.State!, candidate.Result.Outcome, node,
+                            new BattleSearchStep(candidate.Action, false), node.Turns), false));
                 }
-                BattleEndTurnFrontier ends = BattleEndTurnModel.Enumerate(node.State, Math.Max(0, options.MaxNodes - nodes),
-                    () => cancellationToken.IsCancellationRequested || deadlineReached() || earlyStop?.Reached == true,
-                    choices => workspace.EndTurn(node.State, choices));
-                nodes += ends.ChoiceNodes; limited |= ends.ReachedNodeLimit;
-                cancelled |= cancellationToken.IsCancellationRequested;
-                timedOut |= deadlineReached();
-                unsupported.AddRange(ends.UnsupportedAttempts);
-                foreach (BattleEndTurnCandidate end in ends.Candidates.Reverse())
-                    pending.Push(new Node(end.Result.State!, end.Result.Outcome, node, end.Step, node.Turns + 1));
+                if (useAdvisorOrdering && best?.Outcome == RoomOutcome.BattleWon && pending.Count > beforeActions &&
+                    FrontlineProtection(pending.Peek().Node.State) > FrontlineProtection(node.State))
+                {
+                    // Preserve a terminal witness, then try the improved defense
+                    // before simulating the previous position's EndTurn.
+                    var protectedChild = pending.Pop();
+                    pending.Push((node, true));
+                    pending.Push(protectedChild);
+                }
+                else ExpandEndTurns(node);
             }
             // A cutoff prevents further expansions, but the frontier already
             // contains fully simulated successors. Keep finished leaves in stack order.
             cancelled |= cancellationToken.IsCancellationRequested;
             stoppedEarly |= earlyStop?.Reached == true;
             if (!cancelled && (timedOut || limited || stoppedEarly))
-                foreach (Node completed in pending)
+                foreach (var (completed, endTurnOnly) in pending)
                 {
                     if (cancellationToken.IsCancellationRequested) { cancelled = true; break; }
-                    if (completed.Step != null) ConsiderLeaf(completed);
+                    if (!endTurnOnly && completed.Step != null) ConsiderLeaf(completed);
                 }
             watch.Stop();
             Node chosen = best ?? fallback;
@@ -149,6 +152,19 @@ namespace MonsterTrain2Poju.Model
             return new ExactBattleResult(chosen.State, chosen.Outcome, Value(chosen), steps, nodes, duplicates,
                 terminals, horizons, limited, timedOut, cancelled, watch.Elapsed, unsupported, workspace.Metrics,
                 actionLimit, stepLimit, stoppedEarly);
+
+            void ExpandEndTurns(Node node)
+            {
+                BattleEndTurnFrontier ends = BattleEndTurnModel.Enumerate(node.State, Math.Max(0, options.MaxNodes - nodes),
+                    () => cancellationToken.IsCancellationRequested || deadlineReached() || earlyStop?.Reached == true,
+                    choices => workspace.EndTurn(node.State, choices));
+                nodes += ends.ChoiceNodes; limited |= ends.ReachedNodeLimit;
+                cancelled |= cancellationToken.IsCancellationRequested;
+                timedOut |= deadlineReached();
+                unsupported.AddRange(ends.UnsupportedAttempts);
+                foreach (BattleEndTurnCandidate end in ends.Candidates.Reverse())
+                    pending.Push((new Node(end.Result.State!, end.Result.Outcome, node, end.Step, node.Turns + 1), false));
+            }
 
             bool ConsiderLeaf(Node node)
             {

@@ -58,11 +58,11 @@ internal static class ExactBattleChecks
         using var document = FixtureDocument.Read(registration.Verify(directory));
         var root = document.RootElement.GetProperty("Turns")[7].GetProperty("Before").Deserialize<BattleTurnState>()!;
         string parent = Json(root);
-        var traversal = ExactBattleSolver.MinimizeCore(root, null, new ExactBattleOptions(12),
-            CancellationToken.None, useAdvisorOrdering: true);
+        var traversal = ExactBattleSolver.MinimizeCore(root, null, new ExactBattleOptions(5),
+            CancellationToken.None, maxSteps: 256, maxActionsPerTurn: 12, useAdvisorOrdering: true);
         var traversalReplay = BattlePlannerChecks.Replay(root, traversal.Steps, out var traversalOutcome);
         Require(traversalOutcome == RoomOutcome.BattleWon && PyreHealth(traversalReplay) >= 37 &&
-            Json(traversalReplay) == Json(traversal.State),
+            traversal.SearchMetrics.SimulatedEndTurns <= 3 && Json(traversalReplay) == Json(traversal.State),
             $"Bounded terminal traversal lost the native route (health={PyreHealth(traversalReplay)}, nodes={traversal.ExpandedNodes}).");
         int nodes = Environment.ProcessorCount > 2 ? 24 : 256;
         var options = new BattlePlannerOptions(nodes, beamWidth: 8, timeLimit: TimeSpan.FromSeconds(25),
