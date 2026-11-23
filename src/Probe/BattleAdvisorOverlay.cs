@@ -434,9 +434,10 @@ namespace MonsterTrain2Poju.Probe
                 Task<PreparedBattleObservation> completed = preparation; preparation = null;
                 try
                 {
-                    PreparedBattleObservation prepared = completed.GetAwaiter().GetResult();
-                    if (preparationRevision != observationRevision || !(browseOnly
-                        ? preparationObservation.SameGameplay(currentObservation) : preparationObservation.Equals(currentObservation)))
+                    bool current = preparationRevision == observationRevision && (browseOnly
+                        ? preparationObservation.SameGameplay(currentObservation) : preparationObservation.Equals(currentObservation));
+                    PreparedBattleObservation? prepared = AdvisorObservationPreparation.ReadIfCurrent(completed, current);
+                    if (prepared == null)
                     { DiscardedPreparations++; captureNeeded = true; }
                     else
                     {

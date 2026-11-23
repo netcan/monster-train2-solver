@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
+using MonsterTrain2Poju.Probe;
 
 internal static class BattleAdviceChecks
 {
@@ -67,6 +68,7 @@ internal static class BattleAdviceChecks
             int owner = Environment.CurrentManagedThreadId;
             PreparedBattleObservation prepared = preparedSession.PrepareObservationAsync(root).GetAwaiter().GetResult();
             Require(prepared.ThreadId != owner && prepared.RootKey == Key(root), "Preparation did not hash the complete snapshot on a worker.");
+            PreparationFaultAfterInvalidation(prepared);
             preparedSession.Observe(prepared); Pump(preparedSession, BattleAdviceStatus.Ready);
             Require(preparedSession.Current!.RootKey == prepared.RootKey, "Prepared advice published a different root.");
             PreparedBattleObservation obsolete = preparedSession.PrepareObservationAsync(second).GetAwaiter().GetResult();
@@ -147,6 +149,24 @@ internal static class BattleAdviceChecks
         }
         finally { disposingRelease.Set(); }
         Require(JsonSerializer.Serialize(root) == unchanged, "Advice modified its root snapshot.");
-        Console.WriteLine("BATTLE-ADVICE PASS: stale result rejection, latest snapshot coalescing, one worker, cancellation, verified budget fallback, failure and nonblocking disposal.");
+        Console.WriteLine("BATTLE-ADVICE PASS: stale results and preparation faults, latest snapshot coalescing, one worker, cancellation, verified budget fallback, current failure and nonblocking disposal.");
+    }
+
+    private static void PreparationFaultAfterInvalidation(PreparedBattleObservation next)
+    {
+        var previous = new TaskCompletionSource<PreparedBattleObservation>();
+        var failure = new InvalidOperationException("snapshot preparation failed");
+        previous.SetException(failure);
+        if (AdvisorObservationPreparation.ReadIfCurrent(previous.Task, current: false) != null)
+            throw new InvalidOperationException("Obsolete preparation returned an observation.");
+
+        var current = new TaskCompletionSource<PreparedBattleObservation>();
+        current.SetResult(next);
+        if (!ReferenceEquals(AdvisorObservationPreparation.ReadIfCurrent(current.Task, current: true), next))
+            throw new InvalidOperationException("An obsolete preparation fault prevented the next observation.");
+
+        try { AdvisorObservationPreparation.ReadIfCurrent(previous.Task, current: true); }
+        catch (InvalidOperationException error) when (ReferenceEquals(error, failure)) { return; }
+        throw new InvalidOperationException("Current preparation failure did not reach error handling.");
     }
 }
