@@ -182,6 +182,16 @@ namespace MonsterTrain2Poju.Probe
             private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
             {
                 string? scenario = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS");
+#if DEVELOPMENT_PROBE
+                if (OriginalUnrulyWitness.Scourge &&
+                    cardEffectParams.selfTarget?.GetSourceCharacterData().GetAssetKey() == OuterBossDefinitions.UnrulyScourge &&
+                    cardEffectParams.sourceCharacterTriggerState?.GetTrigger() == CharacterTriggerData.Trigger.OnAnyHeroDeathOnFloor &&
+                    OuterBossPhaseProbe.ScourgeAward(cardEffectState.GetSourceCardEffectData()))
+                {
+                    __result = Wrap(__result, cardEffectState, cardEffectParams);
+                    return;
+                }
+#endif
                 if (scenario is "generation" or "generation-lethal" or "generation-permanent-consume" or "spawn-triggers" or "spawn-triggers-lethal" or
                     "pre-hand-discard" or "pre-hand-discard-lethal" or "clone-upgrade-refresh" or "pre-combat" or
                     "pre-combat-lethal" or "triggered-healing" or "post-combat-healing" or "triggered-damage" or

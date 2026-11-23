@@ -41,8 +41,19 @@ namespace MonsterTrain2Poju.Probe
                 ? action.GetActionBehaviorName() == "RandomBossActionBehavior" && action.GetParamTeamType() == Team.Type.None
                 : action.GetActionBehaviorName() == "RandomOccupiedBossActionBehavior" && action.GetParamTeamType() == Team.Type.Monsters;
             return target && action.GetActionEffectData().Count == 0 &&
-                data.GetRoomModifiersData().Count == 0;
+                data.GetRoomModifiersData().Count == 0 &&
+                (data.GetAssetKey() != OuterBossDefinitions.UnrulyScourge ||
+                    data.GetTriggers() is [var trigger] && trigger.GetTrigger() == CharacterTriggerData.Trigger.OnAnyHeroDeathOnFloor &&
+                    !trigger.GetTriggerOnce() && trigger.GetEffects() is [var effect] && ScourgeAward(effect));
         }
+
+        internal static bool ScourgeAward(CardEffectData effect) =>
+            effect.GetEffectStateName() == nameof(CardEffectAddBattleCard) &&
+            effect.GetTargetMode() == TargetMode.Room && effect.GetTargetTeamType() == Team.Type.Heroes &&
+            (CardPile)effect.GetParamInt() == CardPile.HandPile && effect.GetAdditionalParamInt() == 1 &&
+            !effect.GetParamBool() && !effect.GetParamBool2() && !effect.GetCopyModifiersFromSource() &&
+            !effect.GetFilterBasedOnMainSubClass() && effect.GetParamCardUpgradeData() == null &&
+            effect.GetParamCardPool()?.GetFilteredChoices() is [var card] && card.GetID() == OuterBossDefinitions.UnrulyScourgeCard;
         internal sealed class Record
         {
             public string Phase { get; set; } = "";

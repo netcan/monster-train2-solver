@@ -809,6 +809,7 @@ param(
     [switch] $OriginalSpurnedBattle,
     [switch] $OriginalUnrulyWitness,
     [switch] $OriginalUnrulyBattle,
+    [ValidateSet('DuplicateEnemy', 'Scourge')][string] $OriginalUnrulyVariant = 'DuplicateEnemy',
     [ValidateRange(1, 3)][int] $OriginalSpurnedChallenge = 2,
     [switch] $OriginalSpurnedRetainPiles,
     [switch] $OriginalRageOnBurnoutStackLoss,
@@ -1872,10 +1873,13 @@ if ($OriginalAffordableNonPlayable) {
     $PhysicalSpawnPoints = $true
     $Policy = 'units-and-junk'
 }
+if ($PSBoundParameters.ContainsKey('OriginalUnrulyVariant') -and -not $OriginalUnrulyBattle) {
+    throw 'OriginalUnrulyVariant requires OriginalUnrulyBattle.'
+}
 if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
     $unrulyMode = if ($OriginalUnrulyBattle) { 'OriginalUnrulyBattle' } else { 'OriginalUnrulyWitness' }
     $unrulyArguments = @($unrulyMode, 'InputProfile', 'BattleDistance', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
-        'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+        'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'OriginalUnrulyVariant')
     if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne 2 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $unrulyArguments }).Count) {
         throw 'Original Unruly requires an isolated native Ring 3 BattleIntro and binary capture.'
@@ -3403,6 +3407,7 @@ if ($OriginalSpurned) {
 }
 if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
     $environment['MT2_PROBE_ORIGINAL_UNRULY'] = if ($OriginalUnrulyBattle) { 'battle' } else { 'component' }
+    $environment['MT2_PROBE_UNRULY_VARIANT'] = $OriginalUnrulyVariant
 }
 if ($OriginalSpurnedBattle) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-spurned-battle'
@@ -4557,12 +4562,26 @@ if ($OriginalTriggerRelicBatchStationaryReserve) {
 }
 if ($OriginalUnrulyBattle) {
     $unruly = $trace.OriginalUnrulyBattle
+    $unrulyScenario = "SoulSavior_R3_BossBattle_$OriginalUnrulyVariant"
+    $unrulyBoss = "Boss_SoulSavior_R3_Unruly_$OriginalUnrulyVariant"
     if ($trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
-        $unruly.Scenario -cne 'SoulSavior_R3_BossBattle_DuplicateEnemy' -or $unruly.BossKey -cne 'Boss_SoulSavior_R3_Unruly_DuplicateEnemy' -or
+        $unruly.Scenario -cne $unrulyScenario -or $unruly.BossKey -cne $unrulyBoss -or
         -not $unruly.ControlledTestScenario -or -not $unruly.RailforgedInstalled -or
         @($trace.Actions).Count -eq 0 -or @($trace.Turns).Count -eq 0 -or -not $trace.TerminalEffectsSettled -or
         (Get-OriginalSignature $checkpoint) -cne $unrulyInputSignature) {
         throw "Original Unruly battle did not settle ordinary play in the unchanged test scenario. Inspect $tracePath and $unityLog"
+    }
+    if ($OriginalUnrulyVariant -eq 'Scourge') {
+        $scourge = '4d1f27af-3122-4a08-87e3-5ef5a14ced94'
+        $awards = @($trace.CardGenerations | Where-Object {
+            $beforeIds = @($_.Before.Cards.Hand.InstanceId)
+            $_.Origin -ceq 'Unit' -and $_.SourceCardId -eq 0 -and $_.Rule.Destination -ceq 'HandPile' -and
+            $_.Rule.Count -eq 1 -and $_.Rule.Pool.DataId -ceq $scourge -and
+            @($_.Actual.Cards.Hand | Where-Object { $_.DataId -ceq $scourge -and $_.InstanceId -notin $beforeIds }).Count -eq 1
+        })
+        if ($awards.Count -eq 0) {
+            throw "Original Unruly Scourge did not award a new native card to hand. Inspect $tracePath and $unityLog"
+        }
     }
 }
 if ($OriginalSpurnedBattle) {

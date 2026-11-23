@@ -15,12 +15,13 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class OriginalUnrulyWitness
     {
-        private const string ScenarioKey = "SoulSavior_R3_BossBattle_DuplicateEnemy";
-        private const string BossKey = "Boss_SoulSavior_R3_Unruly_DuplicateEnemy";
+        private static string ScenarioKey => Scourge ? "SoulSavior_R3_BossBattle_Scourge" : "SoulSavior_R3_BossBattle_DuplicateEnemy";
+        private static string BossKey => Scourge ? OuterBossDefinitions.UnrulyScourge : TriggeredSummonModel.UnrulyBoss;
         private const string DecoyKey = "R3_Horde_T1_Decoy";
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_UNRULY") is "component" or "battle";
         internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_UNRULY") == "battle";
+        internal static bool Scourge => FullBattle && Environment.GetEnvironmentVariable("MT2_PROBE_UNRULY_VARIANT") == "Scourge";
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
         internal static object? FullBattleEvidence { get; private set; }
@@ -39,7 +40,8 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("The native platform did not confirm the installed Railforged DLC.");
             if (save.GetAllGameData().FindScenarioDataByName(ScenarioKey) is not ScenarioData scenario ||
                 scenario.GetOuterTrainBoss(false)?.GetAssetKey() != BossKey ||
-                scenario.GetOuterTrainBoss(true)?.GetAssetKey() != BossKey)
+                scenario.GetOuterTrainBoss(true)?.GetAssetKey() != BossKey ||
+                Scourge && !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false)))
                 throw new InvalidOperationException("Expected the installed original Soul Savior Ring 3 Unruly battle.");
             requested = true;
             AccessTools.Method(typeof(CheatManager), "Command_StartBattle", new[] { typeof(string) }).Invoke(null, new object[] { ScenarioKey });

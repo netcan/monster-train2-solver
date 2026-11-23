@@ -61,8 +61,12 @@ namespace MonsterTrain2Poju.Model
                 train.Context?.Relics?.Any(relic => relic is { DataId: "1ee2320c-75e1-4d28-93c6-24c160bab659",
                     AssetKey: "Enemy_Boss_Level3SiphonRage_TitanTrial" } && RelicCharacterTriggerModel.Validate(relic) == null) == true;
             bool unrulyNewMoon = moon == 1 && battle.MoonPhase == "New" &&
-                actor.Unit is { AssetKey: TriggeredSummonModel.UnrulyBoss, BaseAttack: 12, Attack: 12,
-                    Health: 800, MaxHealth: 800, MoonPhaseMask: 4, Triggers: [{ Kind: "PostCombat" }] };
+                (actor.Unit is { AssetKey: TriggeredSummonModel.UnrulyBoss, BaseAttack: 12, Attack: 12,
+                    Health: 800, MaxHealth: 800, MoonPhaseMask: 4, Triggers: [{ Kind: "PostCombat" }] } ||
+                 actor.Unit is { AssetKey: OuterBossDefinitions.UnrulyScourge, BaseAttack: 13, Attack: 13,
+                    Health: 900, MaxHealth: 900, MoonPhaseMask: 4, Triggers:
+                    [{ Kind: "OnAnyHeroDeathOnFloor", Effects: [{ Type: "CardEffectAddBattleCard", Generation:
+                        { Destination: "HandPile", Count: 1, Pool: [{ DataId: OuterBossDefinitions.UnrulyScourgeCard }] } }] }] });
             bool fullMoon = moon == 2 &&
                 (actor.Unit.AssetKey is "Boss_Level3_Fleshweaver_Corruption" or "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth" or
                     "Boss_Level3_Arkion_SiphonRage" or "Boss_Level6_Cael_DamageShield" || CalibratedLifestealMoon(actor.Unit) || CalibratedPushMoon(actor.Unit) ||
