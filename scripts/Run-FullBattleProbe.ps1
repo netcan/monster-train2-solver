@@ -4762,11 +4762,26 @@ if ($LethalMaximumBattle -and ($trace.ModifierScenario -cne ('lethal-maximum-bat
 }
 if ($RelentlessBattle) {
     $abandon = $RelentlessBattle -ceq 'Abandon'
+    $dialogs = @($trace.RelentlessBattle.Dialogs)
+    $invalidDialogs = $dialogs.Count -eq 0 -or @($dialogs | Where-Object { $_.CompletedRounds % 3 -ne 0 }).Count -ne 0
+    if ($Planner -and $PlannerWholeBattle) {
+        $plan = @($trace.PlannerRuns) | Select-Object -First 1
+        $expected = @(for ($index = 0; $index -lt $plan.Steps.Count; $index++) {
+            $before = if ($index -eq 0) { $plan.Root } else { $plan.Actual[$index - 1] }
+            foreach ($choice in $plan.Steps[$index].RelentlessDecisions) {
+                "$($before.Spawn.Turn)/$($choice.RoomIndex)/$($choice.CompletedRounds)/$($choice.Continue)"
+            }
+        })
+        $observed = @($dialogs | ForEach-Object { "$($_.Turn)/$($_.RoomIndex)/$($_.CompletedRounds)/$($_.Continue)" })
+        $invalidDialogs = $invalidDialogs -or -not $plan.Completed -or $expected.Count -eq 0 -or
+            ($observed -join ',') -cne ($expected -join ',')
+    } else {
+        $invalidDialogs = $invalidDialogs -or @($dialogs | Where-Object { $_.Continue -eq $abandon }).Count -ne 0
+    }
     if ($trace.ModifierScenario -cne ('relentless-battle-' + $RelentlessBattle.ToLowerInvariant()) -or
         -not $trace.RelentlessBattle.Prepared -or $trace.RelentlessBattle.Abandon -ne $abandon -or
         @($trace.Actions).Count -ne 1 -or @($trace.Turns).Count -ne 7 -or
-        @($trace.RelentlessBattle.Dialogs).Count -eq 0 -or @($trace.RelentlessBattle.RoomStates).Count -lt 7 -or
-        @($trace.RelentlessBattle.Dialogs | Where-Object { $_.Continue -eq $abandon -or $_.CompletedRounds % 3 -ne 0 }).Count -ne 0 -or
+        $invalidDialogs -or @($trace.RelentlessBattle.RoomStates).Count -lt 7 -or
         -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled -or
         $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0) {
         throw 'Missing complete native Relentless policy, seven turns, observed dialogs/floor states or matching successors.'
