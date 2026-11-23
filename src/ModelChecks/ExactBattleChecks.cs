@@ -41,12 +41,36 @@ internal static class ExactBattleChecks
             $"nodes={result.ExpandedNodes} duplicates={result.DuplicateStates} terminals={result.TerminalLeaves} " +
             $"steps={result.Steps.Count} score={result.Score} seconds={result.Elapsed.TotalSeconds:F3}");
 
+        NativeParallelEndgame(directory);
+
         static int LegalPlays(BattleTurnState state)
         {
             var frontier = BattleActionModel.EnumerateActions(state);
             Require(!frontier.HasUnsupportedAttempts, "The recorded Tenacious decision has unsupported plays.");
             return frontier.SupportedCandidates.Count;
         }
+    }
+
+    private static void NativeParallelEndgame(string directory)
+    {
+        const string path = "mechanics/player-advisor-rolling/unlocked-covenant0-ring3-siphon-trial.mt2f";
+        var registration = Game231FixtureCatalog.Load(directory)[path];
+        using var document = FixtureDocument.Read(registration.Verify(directory));
+        var root = document.RootElement.GetProperty("Turns")[7].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        string parent = Json(root);
+        var options = new BattlePlannerOptions(256, beamWidth: 8, timeLimit: TimeSpan.FromSeconds(25),
+            allowShorterHorizon: true, searchToBattleEnd: true, stopAtBestPyreHealth: true);
+        var plan = ParallelBattlePlanner.Plan(root, options);
+        var replay = BattlePlannerChecks.Replay(root, plan.Steps, out var outcome);
+        int pyre = replay.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.IsPyre).Health;
+        Require(outcome == RoomOutcome.BattleWon && plan.CompletedHorizon && (plan.SearchWorkers == 1 || pyre >= 37) &&
+            plan.ExpandedNodes <= options.MaxNodes && Json(replay) == Json(plan.State) && Json(root) == parent,
+            $"Parallel endgame lost a known native-root route (health={pyre}, nodes={plan.ExpandedNodes}).");
+        var shortSearch = ExactBattleSolver.MinimizeCore(root, null, new ExactBattleOptions(64),
+            CancellationToken.None, maxSteps: 1, maxActionsPerTurn: 1);
+        Require(shortSearch.ReachedStepLimit && !shortSearch.ExhaustedEnumeratedFrontier && shortSearch.Steps.Count <= 1,
+            "The terminal traversal exceeded its step limit or certified the restricted frontier.");
+        Console.WriteLine($"PARALLEL-NATIVE-ENDGAME PASS turn={root.Spawn.Turn} pyre={pyre} nodes={plan.ExpandedNodes} steps={plan.Steps.Count}");
     }
 
     internal static void Native(FixtureValue fixture)

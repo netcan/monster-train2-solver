@@ -31,6 +31,11 @@ namespace MonsterTrain2Poju.Model
                 !options.UseTacticalSeed && options.PreferredDeploymentRoom == 2 && source.Spawn.Turn == 0 &&
                 !source.Spawn.Train.Rooms.SelectMany(room => room.Units)
                     .Any(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0);
+            // Once scheduled arrivals are exhausted, use the alternate worker to
+            // reach terminal states before the beam ranks intermediate positions.
+            bool exploreTerminalRoutes = count > 1 && options.SearchToBattleEnd && source.Spawn.Turn > 0 &&
+                !source.Spawn.Looping && source.Spawn.Phase >= source.Spawn.Waves.Count && source.Spawn.QueuedOuterBoss == null &&
+                source.Spawn.QueuedTrueFinalBoss == null;
             void Run(int index)
             {
                 Thread thread = Thread.CurrentThread;
@@ -46,8 +51,15 @@ namespace MonsterTrain2Poju.Model
                         index == 0 || rooms.Length == 0 ? options.PreferredDeploymentRoom : rooms[0],
                         splitOpeningFloors || (index == 0 ? options.UseTacticalSeed : !options.UseTacticalSeed),
                         options.AllowShorterHorizon, options.SearchToBattleEnd, options.MaxSteps, earlyStop != null);
-                    using var keys = new BattleStateKeys();
-                    results[index] = BattlePlanner.PlanCore(source, keys.Key, branchOptions, null, cancellationToken, true, earlyStop);
+                    if (index == 1 && exploreTerminalRoutes)
+                    {
+                        results[index] = ExploreTerminalRoutes(source, branchOptions, earlyStop, cancellationToken);
+                    }
+                    else
+                    {
+                        using var keys = new BattleStateKeys();
+                        results[index] = BattlePlanner.PlanCore(source, keys.Key, branchOptions, null, cancellationToken, true, earlyStop);
+                    }
                 }
                 catch (Exception error) { errors[index] = error; }
                 finally { thread.Priority = priority; }
@@ -78,6 +90,24 @@ namespace MonsterTrain2Poju.Model
                 BattleSearchMetrics.Sum(results.Select(result => result.SearchMetrics)),
                 results.Any(result => result.StoppedEarly), earlyStop?.PyreHealthUpperBound,
                 results.Sum(result => result.BeamExpandedNodes));
+        }
+
+        private static BattlePlanResult ExploreTerminalRoutes(BattleTurnState source, BattlePlannerOptions options,
+            BattleEarlyStop? earlyStop, CancellationToken cancellationToken)
+        {
+            ExactBattleResult exact = ExactBattleSolver.MinimizeCore(source, null,
+                new ExactBattleOptions(options.MaxNodes, options.TimeLimit), cancellationToken,
+                maxSteps: options.MaxSteps, maxActionsPerTurn: options.MaxActionsPerTurn, earlyStop: earlyStop,
+                preferPositionOnTie: true);
+            bool complete = exact.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
+            return new BattlePlanResult(complete ? exact.State : source, complete ? exact.Outcome : RoomOutcome.Exchanged,
+                complete ? exact.Steps : Array.Empty<BattleSearchStep>(),
+                complete ? exact.Score : BattlePlanner.Evaluate(source, RoomOutcome.Exchanged),
+                complete ? exact.Steps.Count(step => step.IsEndTurn) : 0, exact.ExpandedNodes, exact.DuplicateStates,
+                0, exact.Elapsed, exact.TimedOut, exact.Cancelled, exact.ReachedNodeLimit, exact.ReachedActionLimit, complete,
+                exact.UnsupportedAttempts, null, requestedTurns: options.MaxSteps + 1, searchedToBattleEnd: true,
+                stepLimit: exact.ReachedStepLimit, maxSteps: options.MaxSteps, searchMetrics: exact.SearchMetrics,
+                stoppedEarly: exact.StoppedEarly, pyreHealthUpperBound: earlyStop?.PyreHealthUpperBound);
         }
 
         internal static BattlePlanResult SelectBest(System.Collections.Generic.IEnumerable<BattlePlanResult> results) =>
