@@ -3057,7 +3057,7 @@ namespace MonsterTrain2Poju.Model
             if (effect.Target == "Self" && effect.Type == "AttackWithUnit" && !effect.UseSelectedRoom &&
                 retainedSelf?.Health <= 0 && retainedSelf.DeathState?.HasFinishedDying == true &&
                 retainedSelf.Triggers.All(trigger => trigger.Kind != "OnTurnBegin") && retainedSelf.Statuses.All(status =>
-                    status.Id is "cooldown" or "unit_ability" or "unit_ability_available" or "spite") &&
+                    status.Id is "cooldown" or "unit_ability" or "unit_ability_available" or "spite" or "fullmoon" or "buff" or "scorch") &&
                 state.Rooms.SelectMany(room => room.Units).All(unit => unit.Id != selfUnitId))
                 return CardTargetModel.Collect(state.Rooms.Single(room => room.RoomIndex == roomIndex)
                     .WithUnits(new[] { retainedSelf }), effect, last, isTesting: isTesting, selfUnitId: selfUnitId);
