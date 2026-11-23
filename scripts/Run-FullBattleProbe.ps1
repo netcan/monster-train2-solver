@@ -590,6 +590,7 @@ param(
     [string] $OriginalHandAndEmberWitness = '',
     [switch] $OriginalPlacementMutatorsWitness,
     [switch] $OriginalBigMonstersCreationWitness,
+    [switch] $OriginalSpellDamageMoveWitness,
     [switch] $PlacementSummonBlockOnly,
     [ValidateSet('WithOwner', 'WithoutOwner', 'WithOwnerReuse', 'WithoutOwnerReuse')]
     [string] $OriginalPyreAbilityCooldownWitness = '',
@@ -1012,6 +1013,16 @@ if ($OriginalBigMonstersCreationWitness) {
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count) {
         throw 'Original BigMonsters card generation requires a stock opening battle and binary capture.'
+    }
+    $Policy = 'units-spells-and-junk'
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+}
+if ($OriginalSpellDamageMoveWitness) {
+    $witnessArguments = @('OriginalSpellDamageMoveWitness', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+        'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count) {
+        throw 'Original spell-damage movement requires a stock opening battle and binary capture.'
     }
     $Policy = 'units-spells-and-junk'
     $BranchCardMasks = $true
@@ -2832,6 +2843,7 @@ $environment = @{
     MT2_PROBE_HAND_AND_EMBER_WITNESS = $OriginalHandAndEmberWitness
     MT2_PROBE_PLACEMENT_MUTATORS_WITNESS = $(if ($PlacementSummonBlockOnly) { 'block' } elseif ($OriginalPlacementMutatorsWitness) { '1' } else { '0' })
     MT2_PROBE_BIG_MONSTERS_CREATION = $(if ($OriginalBigMonstersCreationWitness) { '1' } else { '0' })
+    MT2_PROBE_SPELL_DAMAGE_MOVE = $(if ($OriginalSpellDamageMoveWitness) { '1' } else { '0' })
     MT2_PROBE_RANDOM_SPELL_TARGETS_WITNESS = $(if ($OriginalRandomSpellTargetsWitness) { '1' } else { '0' })
     MT2_PROBE_RANDOM_SPELL_TARGETS_BATTLE = $(if ($OriginalRandomSpellTargetsBattle) { '1' } else { '0' })
     MT2_PROBE_RANDOM_JUST_CAUSE_WITNESS = $(if ($OriginalRandomJustCauseWitness) { '1' } else { '0' })
@@ -3800,6 +3812,16 @@ if ($OriginalBigMonstersCreationWitness) {
         throw "Original BigMonsters card generation witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-BIG-MONSTERS-CREATION PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalSpellDamageMoveWitness) {
+    $capturePath = Join-Path $profile 'spell-damage-move.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original spell-damage move captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original spell-damage move witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-SPELL-DAMAGE-MOVE PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalEntropyDrawWitness) {

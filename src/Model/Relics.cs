@@ -419,6 +419,12 @@ namespace MonsterTrain2Poju.Model
                         if (IsOriginalBigMonsters(relic) && relics.Count(IsOriginalBigMonsters) == 1) continue;
                         return "Missing, changed or duplicate original BigMonsters owner.";
                     }
+                    if (effect == RelicSpellDamageMoveModel.Effect)
+                    {
+                        if (RelicSpellDamageMoveModel.IsOriginal(relic) && relics.Count(RelicSpellDamageMoveModel.IsOriginal) == 1)
+                            continue;
+                        return "Missing, changed or duplicate original spell-damage move owner.";
+                    }
                     if (effect == RelicPyreAbilityCooldownModel.Effect)
                     {
                         if (RelicPyreAbilityCooldownModel.IsOriginal(relic)) continue;

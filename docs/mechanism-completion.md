@@ -355,6 +355,11 @@ SniperAdvance 变体命中存活的后排目标后把该单位移到首位。只
 [双突变](../tests/compatibility/game-2.3.1/mechanics/hand-and-ember/combined.mt2f) ·
 [普通对照](../tests/compatibility/game-2.3.1/mechanics/hand-and-ember/stock.mt2f)
 
+原版法术伤害推层突变在火把打掉 3 点护甲时触发。敌人保留 5 点生命，从底层移到中层。
+同一目标随后受到非伤害法术，站位保持不变。另一个被火把击杀的单位也未触发移动。
+三次出牌后继和随机数均通过对照，范围是普通敌人的单目标直接法术。
+[原版推层对照](../tests/compatibility/game-2.3.1/mechanics/spell-damage-move/component.mt2f)
+
 ExtraFeedTrigger 的原版查询确认友军 OnFeed 次数为 2，OnDeath 次数保持 1。
 61 个战斗阶段、5 次出牌、7 次结束回合与两类候选通过。实际普通进食也已录到两次 OnFeed，
 合金构装体的燃料从 1 增至 3，矿工只被吃掉一次，完整状态与随机数在 16 条分支上复放一致。

@@ -75,7 +75,8 @@ namespace MonsterTrain2Poju.Model
             bool placement = false, bool preview = false, TrainCombatState? trainState = null,
             CardPlayRule? playedCardRule = null, IReadOnlyList<int>? lastTargets = null,
             CombatTeam? originalTargetTeam = null, IReadOnlyList<int>? lastDamagedUnitIds = null,
-            int? originalRoomCorruption = null, bool afterTerminalClear = false)
+            int? originalRoomCorruption = null, bool afterTerminalClear = false,
+            IReadOnlyList<int>? spellArmorDamageUnitIds = null)
         {
             bool hasMagicPower = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.ModifyCardMagicPowerOnCardPlayed)) == true;
             bool hasCheaperSpellUpgrade = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.AddTempUpgradeToHandCardsIfCheaper)) == true;
@@ -89,6 +90,7 @@ namespace MonsterTrain2Poju.Model
             bool hasRoomCapacity = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.ModifyRoomCapacityOnCardPlay)) == true;
             bool hasCorruption = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.ModifyCorruptionOnCardPlayed)) == true;
             bool hasDamageStatus = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicCardDamageStatusModel.Effect)) == true;
+            bool hasSpellDamageMove = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicSpellDamageMoveModel.Effect)) == true;
             bool hasCardPlayDamage = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicCardPlayDamageModel.Effect)) == true;
             bool hasConsumeDamage = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicConsumeDamageModel.Effect)) == true;
             bool hasRoomAttachmentReplication = source.Relics?.Any(relic => relic.EffectTypes.Contains(RelicModel.FirstRoomCardOnAllFloors)) == true;
@@ -96,7 +98,7 @@ namespace MonsterTrain2Poju.Model
                 type == RelicResourceModel.EnergyOnCorruptRestrictedPlayed ||
                 type == RelicResourceModel.CorruptionOnCorruptRestrictedPlayed)) == true;
             if (!hasRandomHandUpgrade && !hasMagicPower && !hasCheaperSpellUpgrade && !hasCardCopy && !hasCardDraw && !hasMonsterSpellTargeting && !hasRoomCapacity &&
-                !hasRoomAttachmentReplication && !hasCorruptRestrictedCardPlay && !hasGoldOnExhaust && !hasCorruption && !hasDamageStatus && !hasCardPlayDamage && !hasConsumeDamage && !hasCardTypeSequence && !hasPactDraw)
+                !hasRoomAttachmentReplication && !hasCorruptRestrictedCardPlay && !hasGoldOnExhaust && !hasCorruption && !hasDamageStatus && !hasSpellDamageMove && !hasCardPlayDamage && !hasConsumeDamage && !hasCardTypeSequence && !hasPactDraw)
                 return new RelicCardPlayMagicPowerResult(source);
             if ((hasMagicPower || hasCheaperSpellUpgrade || hasCardCopy || hasCorruptRestrictedCardPlay || hasGoldOnExhaust || hasCorruption) && source.CardInstances == null)
                 return Fail(source, "Native card-play relic effects require the current owned-card list.");
@@ -273,6 +275,21 @@ namespace MonsterTrain2Poju.Model
                         if (!applied.Supported) return Fail(context, applied.UnsupportedReason!);
                         trainState = applied.State!;
                         context = trainState.Context!;
+                        continue;
+                    }
+                    if (relic.EffectTypes[effectIndex] == RelicSpellDamageMoveModel.Effect)
+                    {
+                        if (placement || afterTerminalClear) continue;
+                        if (trainState == null || definitions == null || playedCardRule == null ||
+                            lastDamagedUnitIds == null || !RelicSpellDamageMoveModel.IsOriginal(relic))
+                            return Fail(context, "Spell-damage movement requires the original callback and physical cast state.");
+                        int selectedRoom = context.QueryFrame?.SelectedRoomIndex ?? selectedRoomIndex ?? -1;
+                        var applied = RelicSpellDamageMoveModel.Apply(CardSpellModel.WithContext(trainState, context),
+                            selectedRoom, definitions.Rooms, playedCardRule, lastDamagedUnitIds
+                                .Concat(spellArmorDamageUnitIds ?? Array.Empty<int>()).Distinct().ToArray());
+                        if (!applied.Supported) return Fail(context, applied.UnsupportedReason!);
+                        trainState = applied.State;
+                        context = trainState!.Context!;
                         continue;
                     }
                     if (relic.EffectTypes[effectIndex] == RelicModel.AddTempUpgradeToHandCardsIfCheaper)

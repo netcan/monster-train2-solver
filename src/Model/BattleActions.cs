@@ -664,6 +664,7 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<CombatUnit> retainedSpellUnits = Array.Empty<CombatUnit>();
             IReadOnlyList<int>? lastMainTargets = null;
             var lastDamagedUnitIds = new HashSet<int>();
+            List<int>? spellArmorDamageUnitIds = context.Relics?.Any(RelicSpellDamageMoveModel.IsOriginal) == true ? new List<int>() : null;
             int nextUnitId = source.Spawn.NextUnitId;
             string? identityError = UnitIdentityModel.Validate(context, train.Rooms.SelectMany(room => room.Units), nextUnitId);
             if (identityError != null) return Unsupported(identityError);
@@ -957,6 +958,9 @@ namespace MonsterTrain2Poju.Model
                 if (!result.Supported) return result.IllegalChoice ? Illegal(result.UnsupportedReason!) : Unsupported(result.UnsupportedReason!);
                 foreach (CombatEvent damage in result.Events.Where(item => item.Kind == "Spell" && item.Amount > 0))
                     lastDamagedUnitIds.Add(damage.Target);
+                if (spellArmorDamageUnitIds != null)
+                    spellArmorDamageUnitIds.AddRange(result.Events.Where(item => item.Kind == RelicSpellDamageMoveModel.SpellArmorDamage)
+                        .Select(item => item.Target));
                 piles = result.OtherPiles?.ToArray() ?? piles;
                 train = result.State!; context = train.Context!;
                 if (result.Outcome != RoomOutcome.Exchanged || outcome == RoomOutcome.Exchanged) outcome = result.Outcome;
@@ -1072,6 +1076,7 @@ namespace MonsterTrain2Poju.Model
                     room.RoomIndex == action.RoomIndex)?.Preview == true, trainState: train, playedCardRule: rule,
                 lastTargets: lastMainTargets ?? Array.Empty<int>(), originalTargetTeam: originalTargetTeam,
                 lastDamagedUnitIds: lastDamagedUnitIds.ToArray(),
+                spellArmorDamageUnitIds: spellArmorDamageUnitIds,
                 originalRoomCorruption: source.Spawn.Train.Context?.RoomCapacities?
                     .FirstOrDefault(room => room.RoomIndex == action.RoomIndex)?.Corruption,
                 afterTerminalClear: afterTerminalClear);

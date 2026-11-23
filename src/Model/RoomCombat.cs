@@ -3377,6 +3377,9 @@ namespace MonsterTrain2Poju.Model
                 if (!source.Preview && !target.Alive && target.Count("undying") <= 0 && IsTerminalBossDeath(target))
                 { battleWon = true; context = context?.WithBossesDead(); }
                 Emit(kind, actor, target, damage);
+                if (kind == "Spell" && armorBlockedThisHit > 0 && sourceCardId > 0 &&
+                    context?.Relics?.Any(RelicSpellDamageMoveModel.IsOriginal) == true)
+                    Emit(RelicSpellDamageMoveModel.SpellArmorDamage, actor, target, armorBlockedThisHit);
                 if (attackingTrigger && actor != null && actor != target)
                     FireTriggers(actor, "OnAttacking", overrideTarget: target, attackDamageDealt: attackDamageDealt);
                 // Native queues Slay before lifesteal and retaliation, for every damage type

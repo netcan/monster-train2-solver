@@ -488,6 +488,8 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                     if (fullBattle && OriginalDisabledRoomPreview.Enabled && !OriginalDisabledRoomPreview.Acquired)
                         OriginalDisabledRoomPreview.Acquire(save);
+                    if (fullBattle && OriginalSpellDamageMoveWitness.Enabled && !OriginalSpellDamageMoveWitness.Acquired)
+                        OriginalSpellDamageMoveWitness.Acquire(save);
                     if (fullBattle && OriginalPlacementMutatorsWitness.Enabled && !OriginalPlacementMutatorsWitness.Acquired)
                         OriginalPlacementMutatorsWitness.Acquire(save);
                     if (fullBattle && (OriginalRandomSpellTargetsWitness.Enabled || OriginalRandomSpellTargetsWitness.FullBattle ||
@@ -1004,6 +1006,17 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && OriginalSpellDamageMoveWitness.Enabled)
+            {
+                if (combat!.IsPlacementPhase)
+                {
+                    save.MarkOneTimeMessageComplete(OneTimeMessage.EndTurnWithoutPlayingChampion);
+                    AdvanceTurn(combat, record: false);
+                }
+                else if (OriginalSpellDamageMoveWitness.Tick(FullBattleTrace.Active!, managers))
+                    Finish(true, "Original spell-damage move captured.");
+                return;
+            }
             if (fullBattle && OriginalBigMonstersCreationWitness.Enabled)
             {
                 if (combat!.IsPlacementPhase)

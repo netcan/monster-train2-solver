@@ -30,6 +30,7 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
             UiRngIsolation.CaelShieldTrialTestQueries || OriginalReactiveUnitsScenario.Enabled ||
             OriginalHealingCleanseScenario.Enabled || OriginalMovementSpellsScenario.Enabled ||
+            OriginalSpellDamageMoveWitness.Enabled ||
             OriginalRearrangeSpellsScenario.Enabled || BumpScenario.RelicScenario ||
             (OriginalTriggerRelicBatchScenario.Enabled &&
                 (!OriginalTriggerRelicBatchScenario.Stationary || OriginalTriggerRelicBatchScenario.StationaryReserve)) ||

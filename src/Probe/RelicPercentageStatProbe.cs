@@ -38,6 +38,7 @@ namespace MonsterTrain2Poju.Probe
                     owner.GetEffects() is [RelicEffectDisableRoomPreview] && !save.GetBattlePreviewEnabled() ||
                     SupportsDeploymentSummonBlock(owner, save) ||
                     CardBranchMaskProbe.Enabled && SupportsBigMonsters(owner, save) ||
+                    BattleSpawnPointProbe.Enabled && CardBranchMaskProbe.Enabled && SupportsSpellDamageMove(owner, save) ||
                     owner.GetRelicDataID() == RelicPersistentMonsterHealthModel.OwnerId &&
                     owner.GetEffects() is [RelicEffectPersistMonsterHp persistentHealth] && SupportsPersistentHealth(persistentHealth) ||
                     SupportsPyreAbilityCooldown(owner, save) ||
@@ -84,6 +85,28 @@ namespace MonsterTrain2Poju.Probe
                 return false;
             return save.GetCollectedRelics().Count(relic => relic.GetRelicDataID() == RelicHandAndEmberModel.ConserveOwnerId &&
                 relic.GetEffects() is [RelicEffectConserveEnergyEndOfTurn]) == 1;
+        }
+
+        private static bool SupportsSpellDamageMove(RelicState owner, SaveManager save)
+        {
+            if (owner.GetRelicDataID() != RelicSpellDamageMoveModel.OwnerId ||
+                typeof(CardState).Module.ModuleVersionId != new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d") ||
+                owner.GetEffects() is not [RelicEffectChanceAddEffectOnDamageCardPlayed]) return false;
+            MutatorData? definition = save.GetAllGameData().FindMutatorData(RelicSpellDamageMoveModel.OwnerId);
+            return definition != null && ValidSpellDamageMoveDefinition(definition);
+        }
+
+        internal static bool ValidSpellDamageMoveDefinition(MutatorData definition)
+        {
+            if (definition.name != RelicSpellDamageMoveModel.OwnerKey || definition.DisallowInDeploymentPhase ||
+                definition.GetEffects() is not [RelicEffectData effect] ||
+                effect.GetEffectClassName() != RelicSpellDamageMoveModel.Effect || effect.GetEffectConditions().Count != 0 ||
+                effect.GetParamInt() != RelicSpellDamageMoveModel.Chance ||
+                effect.GetParamCardEffectData() is not [CardEffectData move]) return false;
+            return move.GetEffectStateName() == nameof(CardEffectBump) && move.GetTargetMode() == TargetMode.Self &&
+                move.GetTargetTeamType() == (Team.Type.Heroes | Team.Type.Monsters) &&
+                move.GetParamInt() == RelicSpellDamageMoveModel.BumpAmount &&
+                move.GetParamMinInt() == 0 && move.GetParamMaxInt() == 0;
         }
 
         private static bool SupportsBigMonsters(RelicState owner, SaveManager save)

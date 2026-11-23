@@ -7,6 +7,12 @@ if (args.Length == 3 && args[0] == "--native-hand-and-ember-only")
     HandAndEmberChecks.Pair(combined.RootElement, stock.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-spell-damage-move-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    SpellDamageMoveChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-big-monsters-creation-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
