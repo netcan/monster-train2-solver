@@ -23,6 +23,7 @@ namespace MonsterTrain2Poju.Probe
             "DutifulArmor" => "SoulSavior_R1_BossBattle_DutifulChild_Heal",
             "DutifulAscendDescend" => "SoulSavior_R1_BossBattle_DutifulChild_AscendDescend",
             "IndulgentTitanskin" => "SoulSavior_R2_BossBattle_FavoredChild_3",
+            "LifemotherReanimate" => "SoulSavior_R5_BossBattle_Lifemother_Reanimate",
             _ => "SoulSavior_R3_BossBattle_DuplicateEnemy"
         };
         private static string BossKey => Variant switch
@@ -33,6 +34,7 @@ namespace MonsterTrain2Poju.Probe
             "DutifulArmor" => OuterBossDefinitions.DutifulArmor,
             "DutifulAscendDescend" => OuterBossDefinitions.DutifulAscendDescend,
             "IndulgentTitanskin" => OuterBossDefinitions.IndulgentTitanskin,
+            "LifemotherReanimate" => OuterBossDefinitions.LifemotherReanimate,
             _ => TriggeredSummonModel.UnrulyBoss
         };
         private const string DecoyKey = "R3_Horde_T1_Decoy";
@@ -48,6 +50,7 @@ namespace MonsterTrain2Poju.Probe
             parameters.sourceCharacterTriggerState is { } trigger &&
             OuterBossPhaseProbe.DutifulGrant(BossKey, trigger.GetTrigger(), effect.GetSourceCardEffectData());
         internal static bool IndulgentTitanskin => Variant == "IndulgentTitanskin";
+        internal static bool LifemotherReanimate => Variant == "LifemotherReanimate";
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
         internal static object? FullBattleEvidence { get; private set; }
@@ -71,6 +74,8 @@ namespace MonsterTrain2Poju.Probe
                 scenario.GetOuterTrainBoss(false)?.GetAssetKey() != BossKey ||
                 scenario.GetOuterTrainBoss(true)?.GetAssetKey() != BossKey ||
                 FullBattle && !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false)) ||
+                LifemotherReanimate && (scenario.GetID() != "1199a33a-0049-4084-a2b3-752740e202ca" ||
+                    !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(true))) ||
                 IndulgentTitanskin && (scenario.GetEnemyRelicData() is not [var owner] ||
                     owner.GetID() != OuterBossDefinitions.IndulgentTitanskinOwnerId ||
                     owner.name != OuterBossDefinitions.IndulgentTitanskinOwnerKey || owner.GetEffects() is not [var authoring] ||

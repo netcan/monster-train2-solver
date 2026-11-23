@@ -105,11 +105,21 @@ namespace MonsterTrain2Poju.Probe
                 bool pyreRevenge = OriginalPyreRevengeScenario.Prepared && cardEffectParams.selfTarget?.IsPyreHeart() == true &&
                     cardEffectParams.sourceCharacterTriggerState?.GetTrigger() == CharacterTriggerData.Trigger.OnHit;
                 bool dutifulGrant = false;
+                bool lifemotherGrant = false;
 #if DEVELOPMENT_PROBE
                 dutifulGrant = OriginalUnrulyWitness.DutifulGrant(cardEffectState, cardEffectParams);
+                if (OriginalUnrulyWitness.LifemotherReanimate &&
+                    cardEffectParams.selfTarget?.GetSourceCharacterData().GetAssetKey() == OuterBossDefinitions.LifemotherReanimate &&
+                    cardEffectParams.sourceCharacterTriggerState?.GetTrigger() == CharacterTriggerData.Trigger.PostCombat)
+                {
+                    CardEffectData effect = cardEffectState.GetSourceCardEffectData();
+                    lifemotherGrant = OuterBossPhaseProbe.LifemotherGrant(effect, Team.Type.Monsters, "witherbloom", 10) ||
+                        OuterBossPhaseProbe.LifemotherGrant(effect, Team.Type.Heroes, "undying", 2);
+                }
 #endif
                 if (((Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "triggered-status" && TriggeredStatusScenario.Prepared) ||
-                    OriginalPunishedUnitsScenario.Prepared || PurifyScenario.Prepared || OriginalEquipmentGrowthScenario.Prepared || pyreRevenge || dutifulGrant) &&
+                    OriginalPunishedUnitsScenario.Prepared || PurifyScenario.Prepared || OriginalEquipmentGrowthScenario.Prepared ||
+                    pyreRevenge || dutifulGrant || lifemotherGrant) &&
                     FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode && cardEffectParams.selfTarget != null)
                     __result = Wrap(__result, cardEffectState, cardEffectParams, pyreRevenge);
             }

@@ -815,6 +815,7 @@ param(
     [switch] $OriginalDutifulBurstBattle,
     [ValidateSet('AscendDescend', 'Armor')][string] $OriginalDutifulVariant,
     [switch] $OriginalIndulgentTitanskinBattle,
+    [switch] $OriginalLifemotherReanimateBattle,
     [ValidateSet('DuplicateEnemy', 'Scourge', 'SniperAdvance')][string] $OriginalUnrulyVariant = 'DuplicateEnemy',
     [ValidateRange(1, 3)][int] $OriginalSpurnedChallenge = 2,
     [switch] $OriginalSpurnedRetainPiles,
@@ -1909,14 +1910,17 @@ if ($OriginalDutifulBurstBattle -and $OriginalDutifulVariant) {
 }
 $originalDutifulBattle = $OriginalDutifulBurstBattle -or $OriginalDutifulVariant
 $originalSoulSaviorVariant = $OriginalUnrulyVariant
-if ($originalDutifulBattle -or $OriginalIndulgentTitanskinBattle) {
-    if ($OriginalUnrulyBattle -or $OriginalUnrulyWitness -or ($originalDutifulBattle -and $OriginalIndulgentTitanskinBattle)) {
+$additionalSoulSaviorCases = @($originalDutifulBattle, $OriginalIndulgentTitanskinBattle, $OriginalLifemotherReanimateBattle) |
+    Where-Object { $_ }
+if (@($additionalSoulSaviorCases).Count) {
+    if ($OriginalUnrulyBattle -or $OriginalUnrulyWitness -or @($additionalSoulSaviorCases).Count -gt 1) {
         throw 'Choose a single Soul Savior battle or component.'
     }
     $OriginalUnrulyBattle = $true
     $originalSoulSaviorVariant = if ($OriginalDutifulBurstBattle) { 'DutifulBurst' }
         elseif ($OriginalDutifulVariant -eq 'Armor') { 'DutifulArmor' }
         elseif ($OriginalIndulgentTitanskinBattle) { 'IndulgentTitanskin' }
+        elseif ($OriginalLifemotherReanimateBattle) { 'LifemotherReanimate' }
         else { 'DutifulAscendDescend' }
     if ($OriginalDutifulVariant -eq 'Armor') {
         $SettleCardAnimations = $true
@@ -1927,8 +1931,11 @@ if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
     $unrulyMode = if ($OriginalDutifulBurstBattle) { 'OriginalDutifulBurstBattle' }
         elseif ($originalDutifulBattle) { 'OriginalDutifulVariant' }
         elseif ($OriginalIndulgentTitanskinBattle) { 'OriginalIndulgentTitanskinBattle' }
+        elseif ($OriginalLifemotherReanimateBattle) { 'OriginalLifemotherReanimateBattle' }
         elseif ($OriginalUnrulyBattle) { 'OriginalUnrulyBattle' } else { 'OriginalUnrulyWitness' }
-    $soulSaviorDistance = if ($originalDutifulBattle) { 0 } elseif ($OriginalIndulgentTitanskinBattle) { 1 } else { 2 }
+    $soulSaviorDistance = if ($originalDutifulBattle) { 0 }
+        elseif ($OriginalIndulgentTitanskinBattle) { 1 }
+        elseif ($OriginalLifemotherReanimateBattle) { 4 } else { 2 }
     $unrulyArguments = @($unrulyMode, 'InputProfile', 'BattleDistance', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'OriginalUnrulyVariant')
     if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne $soulSaviorDistance -or
@@ -3464,6 +3471,7 @@ if ($OriginalSpurned) {
 if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
     $environment['MT2_PROBE_ORIGINAL_UNRULY'] = if ($OriginalUnrulyBattle) { 'battle' } else { 'component' }
     $environment['MT2_PROBE_UNRULY_VARIANT'] = $originalSoulSaviorVariant
+    if ($OriginalLifemotherReanimateBattle) { $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1' }
 }
 if ($OriginalSpurnedBattle) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-spurned-battle'
@@ -4643,9 +4651,11 @@ if ($OriginalUnrulyBattle) {
         elseif ($OriginalDutifulVariant -eq 'Armor') { 'SoulSavior_R1_BossBattle_DutifulChild_Heal' }
         elseif ($OriginalDutifulVariant -eq 'AscendDescend') { 'SoulSavior_R1_BossBattle_DutifulChild_AscendDescend' }
         elseif ($OriginalIndulgentTitanskinBattle) { 'SoulSavior_R2_BossBattle_FavoredChild_3' }
+        elseif ($OriginalLifemotherReanimateBattle) { 'SoulSavior_R5_BossBattle_Lifemother_Reanimate' }
         else { "SoulSavior_R3_BossBattle_$OriginalUnrulyVariant" }
     $unrulyBoss = if ($originalDutifulBattle) { 'Boss_SoulSavior_R1_Dutiful_' + $originalSoulSaviorVariant.Substring('Dutiful'.Length) }
         elseif ($OriginalIndulgentTitanskinBattle) { 'Boss_SoulSavior_R2_Indulgent_Titanskin' }
+        elseif ($OriginalLifemotherReanimateBattle) { 'Boss_SoulSavior_Final_Lifemother_HealReanimate' }
         else { "Boss_SoulSavior_R3_Unruly_$OriginalUnrulyVariant" }
     if ($trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
         $unruly.Scenario -cne $unrulyScenario -or $unruly.BossKey -cne $unrulyBoss -or
@@ -4653,6 +4663,15 @@ if ($OriginalUnrulyBattle) {
         @($trace.Actions).Count -eq 0 -or @($trace.Turns).Count -eq 0 -or -not $trace.TerminalEffectsSettled -or
         (Get-OriginalSignature $checkpoint) -cne $unrulyInputSignature) {
         throw "Original Soul Savior battle did not settle ordinary play in the unchanged test scenario. Inspect $tracePath and $unityLog"
+    }
+    if ($OriginalLifemotherReanimateBattle) {
+        $postCombat = @($trace.TriggeredStatuses | Where-Object { $_.Completed -and $_.Kind -ceq 'PostCombat' })
+        $grantedStatuses = @($postCombat | Where-Object { @($_.Targets).Count -gt 0 } |
+            ForEach-Object { $_.Effect.Action.Statuses.Id })
+        if ('witherbloom' -cnotin $grantedStatuses -or 'undying' -cnotin $grantedStatuses -or
+            @($trace.UiRngIsolation).Count -eq 0) {
+            throw "Original Lifemother did not record both native PostCombat grants and UI query RNG isolation. Inspect $tracePath and $unityLog"
+        }
     }
     if ($originalDutifulBattle) {
         $status, $kind, $stacks = switch ($originalSoulSaviorVariant) {

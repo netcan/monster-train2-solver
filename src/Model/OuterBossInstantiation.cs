@@ -134,6 +134,9 @@ namespace MonsterTrain2Poju.Model
                         ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("multistrike")?.Stacks != 1
                         : actor.Unit.AssetKey == OuterBossDefinitions.UnrulySniperAdvance
                             ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("sniper")?.Stacks != 1
+                        : actor.Unit.AssetKey == OuterBossDefinitions.LifemotherReanimate
+                            ? actor.Unit is not { BaseAttack: 40, Attack: 40, Health: 10000, MaxHealth: 10000, Size: 5,
+                                Statuses: [{ Id: "trample", Stacks: 1 }] }
                         : OuterBossDefinitions.IsFleshweaver(actor.Unit.AssetKey)
                             ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("mass")?.Stacks !=
                                 (actor.Unit.AssetKey == "Boss_Level3_Fleshweaver_MoreMass" ? 8 : 5) || actor.Unit.Status("mass")?.ParamInt != 2

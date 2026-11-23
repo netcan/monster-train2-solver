@@ -362,8 +362,10 @@ Railforged 波次里的 `R1_Attacker_AscendGainAtk_Ver2` 击杀后尝试下移�
 
 Lifemother Reanimate 的战后效果先给玩家前排加 10 Witherbloom，再给敌方前排加 2 Undying。
 六条原版回调包含一次 Witherbloom 生效、两次空目标和三次 Undying 生效，效果顺序、目标状态
-和 RNG 均通过对照。整战另需验证暗月楼层切换与手牌界面测试 RNG。
+和 RNG 均通过对照。暗月下移与手牌界面测试 RNG 按既有隔离入口处理后，原版败局的 17 次出牌、
+4 次结束回合、两类候选和 16 条分支通过。归档中的实际复活次数为零。
 [原版战后回调](../tests/compatibility/game-2.3.1/mechanics/lifemother-reanimate/post-combat.mt2f)
+[原版整战](../tests/compatibility/game-2.3.1/mechanics/lifemother-reanimate/native-battle.mt2f)
 
 原版部署限制使底层和中层在部署阶段无法召唤，进入第 1 回合后解禁。完整结束回合后继通过对照。
 同一次组合采样中，BigMonsters 使列车乘务员的占位由 3 变为 4，冠军由 2 变为 3，

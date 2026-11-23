@@ -54,7 +54,8 @@ namespace MonsterTrain2Poju.Probe
                     !dutiful.GetHideVisualAndIgnoreSilence() && !dutiful.GetOnlyTriggerIfEquipped() &&
                     dutiful.GetTriggerAtThreshold() == 0 && dutiful.GetEffects() is [var grant] &&
                     DutifulGrant(data.GetAssetKey(), dutiful.GetTrigger(), grant)) &&
-                (data.GetAssetKey() != OuterBossDefinitions.IndulgentTitanskin || SupportsIndulgentTitanskin(data));
+                (data.GetAssetKey() != OuterBossDefinitions.IndulgentTitanskin || SupportsIndulgentTitanskin(data)) &&
+                (data.GetAssetKey() != OuterBossDefinitions.LifemotherReanimate || LifemotherDefinition(data));
         }
 
         internal static bool ScourgeAward(CardEffectData effect) =>
@@ -99,6 +100,29 @@ namespace MonsterTrain2Poju.Probe
             effect.GetEffectStateName() == nameof(CardEffectAddStatusEffect) && effect.GetTargetMode() == TargetMode.Self &&
             effect.GetTargetTeamType() == (Team.Type.Heroes | Team.Type.Monsters) && !effect.GetUseIntRange() &&
             effect.GetParamStatusEffects() is [var status] && status.statusId == id && status.count == 3;
+
+        private static bool LifemotherDefinition(CharacterData data) =>
+            data.GetID() == "5111391a-4817-4d2c-862b-9750895bf402" &&
+            data.GetTriggers() is [var postCombat, var turnBegin] &&
+            LifemotherTrigger(postCombat, CharacterTriggerData.Trigger.PostCombat) &&
+            postCombat.GetEffects() is [var witherbloom, var undying] &&
+            LifemotherGrant(witherbloom, Team.Type.Monsters, "witherbloom", 10) &&
+            LifemotherGrant(undying, Team.Type.Heroes, "undying", 2) &&
+            LifemotherTrigger(turnBegin, CharacterTriggerData.Trigger.OnTeamTurnBegin) &&
+            turnBegin.GetEffects() is [var remove] &&
+            remove.GetEffectStateName() == nameof(CardEffectRemoveStatusEffect) && remove.GetTargetMode() == TargetMode.Self &&
+            remove.GetTargetTeamType() == (Team.Type.Monsters | Team.Type.Heroes) &&
+            remove.GetParamInt() == 0 && !remove.GetUseIntRange() &&
+            remove.GetParamStatusEffects() is [var dazed] && dazed.statusId == "dazed" && dazed.count == 5;
+
+        private static bool LifemotherTrigger(CharacterTriggerData trigger, CharacterTriggerData.Trigger kind) =>
+            trigger.GetTrigger() == kind && !trigger.GetTriggerOnce() && !trigger.GetHideVisualAndIgnoreSilence() &&
+            !trigger.GetOnlyTriggerIfEquipped() && trigger.GetTriggerAtThreshold() == 0;
+
+        internal static bool LifemotherGrant(CardEffectData effect, Team.Type team, string id, int stacks) =>
+            effect.GetEffectStateName() == nameof(CardEffectAddStatusEffect) && effect.GetTargetMode() == TargetMode.FrontInRoom &&
+            effect.GetTargetTeamType() == team && effect.GetParamInt() == 0 && !effect.GetUseIntRange() &&
+            effect.GetParamStatusEffects() is [var status] && status.statusId == id && status.count == stacks;
         internal sealed class Record
         {
             public string Phase { get; set; } = "";

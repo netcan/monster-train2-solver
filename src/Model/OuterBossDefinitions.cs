@@ -11,6 +11,7 @@ namespace MonsterTrain2Poju.Model
         public const string DutifulArmor = "Boss_SoulSavior_R1_Dutiful_Armor";
         public const string DutifulAscendDescend = "Boss_SoulSavior_R1_Dutiful_AscendDescend";
         public const string IndulgentTitanskin = "Boss_SoulSavior_R2_Indulgent_Titanskin";
+        public const string LifemotherReanimate = "Boss_SoulSavior_Final_Lifemother_HealReanimate";
         internal const string IndulgentTitanskinOwnerId = "d029a392-703b-4b96-ae89-f89c2c38aaac";
         internal const string IndulgentTitanskinOwnerKey = "Boss_Railforged_Region2_BossBattle_3";
         internal const string UnrulyScourgeCard = "4d1f27af-3122-4a08-87e3-5ef5a14ced94";
@@ -171,7 +172,7 @@ namespace MonsterTrain2Poju.Model
             "Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" or "Boss_Level8_Corrupter" or
             "Boss_Level8_AllyBuffer_TitanTrial" or "Boss_Level8_Fragile_TitanTrial" or "Boss_Level8_Corrupter_TitanTrial" or
             TriggeredStatusModel.OriginalSpurned or TriggeredStatusModel.OriginalSpurnedWitherbloom or TriggeredStatusModel.OriginalSpurnedDuality or
-            TriggeredSummonModel.UnrulyBoss or UnrulyScourge or UnrulySniperAdvance or IndulgentTitanskin || IsDutiful(assetKey) ||
+            TriggeredSummonModel.UnrulyBoss or UnrulyScourge or UnrulySniperAdvance or IndulgentTitanskin or LifemotherReanimate || IsDutiful(assetKey) ||
             IsAngelDuo(assetKey) || IsCael(assetKey) || IsCaelTrial(assetKey) || IsArkionPyre(assetKey) ||
             IsArkionRage(assetKey) || IsArkionPush(assetKey) || IsFleshweaver(assetKey);
     }
