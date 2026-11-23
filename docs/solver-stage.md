@@ -528,6 +528,6 @@ Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时
 报告为 `results/recorded-chain-triage-20261123-093044-fa984afb/report.tsv`。
 
 另一份第 6 环原版存档的 48 次顾问输入均复放至败局结算。楼层重排回调现在保留全列车的
-移动记录。首张法术复制分支通过原版 13 步前缀和 1 步实际备选输入，完整后继、生成牌、牌堆、
-统计和 RNG 一致。该整战仍有 40 个未支持的候选，含其他升级复制和法强叠加，暂留原始运行档。
-[首张法术复制原版分支](../tests/compatibility/game-2.3.1/mechanics/first-spell-copy-permafrost/native-branch.mt2f)
+移动记录。三组首张法术复制和一组未出牌费用变化分别在隔离原版执行备选输入，复放核对了完整
+后继及 RNG。该整战通过 953 个出牌候选和 48 个结束回合候选，未支持与截断均为零。
+[原版整局](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/native-moon-remnant-sixth-battle-defeat.mt2f)
