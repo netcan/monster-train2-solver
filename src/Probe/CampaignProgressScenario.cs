@@ -670,7 +670,10 @@ namespace MonsterTrain2Poju.Probe
                     { SelectRoom(rooms, save, room.GetRoomIndex()); return BattleInput.SelectedRoom; }
                     if (trace != null)
                     {
-                        CharacterState? target = drop?.GetCharacterState();
+                        // The native Character highlight also includes Self. The
+                        // activator already identifies that implicit target.
+                        CharacterState? target = ability.DoesAnyEffectTarget(TargetMode.DropTargetCharacter)
+                            ? drop?.GetCharacterState() : null;
                         trace.BeginCardPlay(new PlayCardAction(trace.CardId(ability), room.GetRoomIndex(),
                             targetUnitId: target == null ? 0 : trace.UnitId(target), activatorUnitId: trace.UnitId(actor)));
                     }
