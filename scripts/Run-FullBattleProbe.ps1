@@ -124,6 +124,7 @@ param(
     [switch] $ResumeRollingAdvice,
     [switch] $PreserveRollingPrefixOnTimeout,
     [string] $UnsupportedBranchInput = '',
+    [string] $UnsupportedBranchSource = '',
     [switch] $ObserveRedCrownEquipment,
     [string] $InputProfile = '',
     [string] $PrimaryClan = '',
@@ -1201,11 +1202,22 @@ if ($ContinueToNextRing) {
     }
 }
 if ($ObserveRedCrownEquipment -and -not $UnsupportedBranchInput) { throw 'ObserveRedCrownEquipment requires an original branch request.' }
+if ($UnsupportedBranchSource -and (-not $UnsupportedBranchInput -or -not $OriginalTrueFinalBoss)) {
+    throw 'UnsupportedBranchSource requires UnsupportedBranchInput and OriginalTrueFinalBoss.'
+}
 if ($UnsupportedBranchInput) {
     $allowed = @('UnsupportedBranchInput', 'ObserveRedCrownEquipment', 'InputProfile', 'BattleDistance', 'OuterBossTurns', 'OuterBossBirth', 'PhysicalSpawnPoints',
         'BranchCardMasks', 'SettleDeathDissolves', 'SettleCardAnimations', 'GameSpeed', 'TimeoutSeconds', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction')
+    if ($OriginalTrueFinalBoss) {
+        $allowed = @($allowed | Where-Object { $_ -notin @('InputProfile', 'OuterBossBirth', 'ObserveRedCrownEquipment') }) +
+            @('OriginalTrueFinalBoss', 'UnsupportedBranchSource', 'Seed', 'BinaryCapture')
+        if (!$UnsupportedBranchSource -or !$OuterBossTurns -or !$PhysicalSpawnPoints -or !$BranchCardMasks) {
+            throw 'Fresh Ring9 branch observation requires UnsupportedBranchSource, OuterBossTurns, PhysicalSpawnPoints and BranchCardMasks.'
+        }
+        $UnsupportedBranchSource = (Resolve-Path -LiteralPath $UnsupportedBranchSource).Path
+    }
     if (@($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) { throw 'UnsupportedBranchInput observes an original checkpoint without scenario controls.' }
-    if ($RollingInput -or $Planner -or -not $InputProfile) { throw 'UnsupportedBranchInput requires an immutable native InputProfile and its own observation mode.' }
+    if ($RollingInput -or $Planner -or (-not $OriginalTrueFinalBoss -and -not $InputProfile)) { throw 'UnsupportedBranchInput requires an immutable native InputProfile and its own observation mode.' }
     $UnsupportedBranchInput = (Resolve-Path -LiteralPath $UnsupportedBranchInput).Path
     $RollingAdvice = $true; $PlayerAdvisor = $true
 }
@@ -2286,7 +2298,7 @@ if (-not $SkipBuild) {
         dotnet build (Join-Path $workspace 'src/FixtureTools/FixtureTools.csproj') -c Release --no-restore -p:WarningLevel=0 -v:q
         if ($LASTEXITCODE -ne 0) { throw 'External planner build failed.' }
     }
-    if ($BinaryCapture) {
+    if ($BinaryCapture -or $UnsupportedBranchSource) {
         dotnet build (Join-Path $workspace 'src\FixtureArchive\FixtureArchive.csproj') -c Release -f net8.0
         if ($LASTEXITCODE -ne 0) { throw 'Fixture inspection build failed.' }
     }
@@ -2300,6 +2312,48 @@ if ($UnsupportedBranchInput) {
     try {
         $branchRequest = $branchRequestDocument.RootElement
         [MonsterTrain2Poju.Fixtures.NativeBranchIdentity]::RequireModule($branchRequest, $nativeModule)
+        if ($UnsupportedBranchSource) {
+            $sourceStream = [IO.File]::OpenRead($UnsupportedBranchSource)
+            try {
+                $sourceHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($sourceStream)).ToLowerInvariant()
+                if ($sourceHash -cne $branchRequest.GetProperty('SourceSHA256').GetString()) {
+                    throw 'Fresh Ring9 source archive SHA-256 differs from the branch request.'
+                }
+                $sourceStream.Position = 0
+                $sourceDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($sourceStream)
+                try {
+                    $source = $sourceDocument.RootElement
+                    $expectedModule = [MonsterTrain2Poju.Fixtures.Game231FixtureCatalog]::Module
+                    if ($source.GetProperty('GameVersion').GetString() -cne [MonsterTrain2Poju.Fixtures.Game231FixtureCatalog]::Version -or
+                        $source.GetProperty('GameModuleMvid').GetString() -cne $expectedModule -or $nativeModule -ne [Guid]$expectedModule -or
+                        -not $source.GetProperty('TerminalEffectsSettled').GetBoolean() -or
+                        @('CaptureFailures', 'Mismatches', 'Unsupported', 'Pending').Where({ $source.GetProperty($_).GetInt32() -ne 0 }).Count) {
+                        throw 'Fresh Ring9 branch source must be a settled native 2.3.1 battle with four zero counters.'
+                    }
+                    $route = $source.GetProperty('OriginalTrueFinalBossRoute')
+                    $run = $source.GetProperty('NativeRunInput')
+                    $scenario = 'Level9TrueFinalBoss_V2'
+                    if ($route.GetProperty('Kind').GetString() -cne 'NativeCheatJumpToTFB' -or
+                        $route.GetProperty('DistanceBefore').GetInt32() -ne 0 -or $route.GetProperty('DistanceAfter').GetInt32() -ne $BattleDistance -or
+                        $route.GetProperty('Scenario').GetString() -cne $scenario -or $route.GetProperty('CovenantControl').ValueKind -ne 'Null' -or
+                        -not $route.GetProperty('ScenarioAssetsUnchanged').GetBoolean() -or -not $route.GetProperty('CharacterAssetsUnchanged').GetBoolean() -or
+                        -not $route.GetProperty('StartingDeckUnchanged').GetBoolean() -or
+                        $source.GetProperty('BattleDistance').GetInt32() -ne $BattleDistance -or
+                        $run.GetProperty('Schema').GetInt32() -ne 1 -or $run.GetProperty('Distance').GetInt32() -ne $BattleDistance -or
+                        $run.GetProperty('Scenario').GetString() -cne $scenario -or $run.GetProperty('Seed').GetInt32() -ne $Seed -or
+                        $run.GetProperty('StartingLevel').GetInt32() -ne 0 -or $run.GetProperty('AscensionLevel').GetInt32() -ne 0 -or
+                        $source.GetProperty('ModifierScenario').ValueKind -ne 'Null' -or $source.GetProperty('StartingCovenantControl').ValueKind -ne 'Null') {
+                        throw 'Fresh Ring9 source route, original assets or run input differs from the requested battle.'
+                    }
+                    $rolling = $source.GetProperty('RollingDecisions')
+                    if ($rolling.GetArrayLength() -lt 1 -or
+                        $rolling[0].GetProperty('Root').GetProperty('Spawn').GetProperty('Turn').GetInt32() -ne 0 -or
+                        -not $branchRequest.GetProperty('Root').ContentEquals($rolling[0].GetProperty('Root'))) {
+                        throw 'Fresh Ring9 branch request differs from the source rolling deployment root.'
+                    }
+                } finally { $sourceDocument.Dispose() }
+            } finally { $sourceStream.Dispose() }
+        }
         if ($ObserveRedCrownEquipment -and ($branchRequest.GetProperty('Reason').GetString() -cne 'Unmodeled status redcrown on LadyOfTheReformed' -or
             $nativeModule.ToString() -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d')) {
             throw 'ObserveRedCrownEquipment requires the original game 2.3.1 red crown branch request.'
