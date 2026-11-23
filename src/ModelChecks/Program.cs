@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--native-lifemother-infested-chamber-branch")
+{
+    using var component = ModelJson.ReadFixture(args[1]);
+    LifemotherInfestedChecks.ChamberBranch(component.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-lifemother-infested-later-combat")
 {
     using var component = ModelJson.ReadFixture(args[1]);

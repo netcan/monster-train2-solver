@@ -15,6 +15,25 @@ internal static class LifemotherInfestedChecks
     private const string LaterCombatBoundary = "NativeLifemotherInfestedLaterCombat";
     private const string DrawBoundary = "NativeLifemotherInfestedLaterDraws";
     private const string SpawnBoundary = "NativeLifemotherInfestedLaterSpawns";
+    private const string ChamberBattleHash = "ddb6d07cb504b615df04e227c47c14be84a98127df91dacdaff7046523ceeb6b";
+
+    internal static void ChamberBranch(FixtureValue capture)
+    {
+        FixtureValue request = capture.GetProperty("Request");
+        PlayCardAction action = request.GetProperty("Action").Deserialize<PlayCardAction>()!;
+        Require(request.GetProperty("SourceSHA256").GetString() == ChamberBattleHash &&
+            action is { CardInstanceId: 29, RoomIndex: 2, PlayerPosition: -1, TargetUnitId: 0 } &&
+            request.GetProperty("Prefix").GetArrayLength() == 6, "Expected the original Infested Chamber branch.");
+        FixtureValue[] rows = NativeBranchObservationChecks.Replay(capture, "Unmodeled triggered status definition.",
+            expectedGameModule: Guid.Parse(Game231FixtureCatalog.Module), requirePlayerProjection: false);
+        var actual = rows.Last().GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        CombatUnit boss = actual.Spawn.Train.Rooms[2].Units.Single(unit => unit.AssetKey == BossKey);
+        Require(rows.Length == 7 && boss.Triggers.Select(trigger => trigger.Kind)
+            .SequenceEqual(["OnAnyUnitDeathOnFloor", "OnTeamTurnBegin", "OnDeath"]) &&
+            boss.Triggers[2].Effects is [{ Type: "CardEffectRewardGold", Value: 10 }],
+            "The attached Chamber's original boss callback changed.");
+        Console.WriteLine("NATIVE-INFESTED CHAMBER BRANCH PASS: six original prefix inputs and one exact alternate placement.");
+    }
 
     private static readonly (int Index, int Turn, int Floor, bool Exchange)[] FirstCombatStages =
         [(10, 1, 2, false), (11, 1, 2, true), (14, 1, 0, false), (15, 1, 0, true)];
