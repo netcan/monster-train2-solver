@@ -128,7 +128,8 @@ namespace MonsterTrain2Poju.Probe
                 !OriginalFirstCardCostScenario.Enabled &&
                 !grosMichelResourceObserved && !pileDrawResourceObserved && !corruptTraitResourceObserved &&
                 !Current(managers).Any(relic => relic.GetEffects().Any(effect =>
-                    RelicResourceModel.IsEffect(effect.GetType().Name) || effect.GetType().Name == RelicFirstCardCostModel.Effect)) &&
+                    RelicResourceModel.IsEffect(effect.GetType().Name) ||
+                    effect.GetType().Name is RelicFirstCardCostModel.Effect or RelicModel.ModifyDragonsHoardCap)) &&
                 !dragonHoardResourceObserved && !trainHealResourceObserved && !runCardResourceObserved && !goldRewardResourceObserved)
                 return null;
             SaveManager save = managers.GetSaveManager();

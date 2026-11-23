@@ -31,6 +31,20 @@ internal static class CampaignRelicChecks
         Require(CampaignRelicModel.AcquireHoardCap(99, 3, 100) == 100 &&
             CampaignRelicModel.RemoveHoardCap(100, 100, 3, 100) == (97, 97),
             "Hoard acquisition clamp/removal truncation differs.");
+        foreach (var owner in Owners.Skip(4))
+        {
+            CombatRelicState[] relics = [new CombatRelicState(owner.Id, owner.Key, [owner.Type],
+                isCovenant: false, disallowedInPlacementPhase: false)];
+            Require(RelicModel.Validate(relics) == null &&
+                RelicModel.Validate(new[] { new CombatRelicState(owner.Id, "UnknownHoardOwner", [owner.Type],
+                    isCovenant: false, disallowedInPlacementPhase: false) }) != null &&
+                RelicModel.Validate(new[] { new CombatRelicState(owner.Id, owner.Key, [owner.Type, owner.Type],
+                    isCovenant: false, disallowedInPlacementPhase: false) }) != null,
+                "Battle compatibility must identify each original Hoard acquisition owner.");
+            var context = new CombatContext(new CardCycleState([], [], [], default, 0, []), default, 0, 0, 10, relics: relics);
+            Require(RelicModel.Validate(context) == "Missing or inconsistent settled native Dragon's Hoard state.",
+                "Battle decisions with a Hoard acquisition owner require a settled native amount and cap.");
+        }
         Console.WriteLine("CAMPAIGN-RELIC-CHECKS PASS: upgrade slot bounds/types, all-cost merchant rounding/discount exclusions, ordered trial gold and capped hoard acquisition/removal.");
     }
     internal static void Native(string path)

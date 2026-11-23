@@ -246,12 +246,16 @@ namespace MonsterTrain2Poju.Model
         internal const string DamageOnMonsterSummoned = "RelicEffectDamageOnMonsterSummoned";
         internal const string DamageEnemyOnAscend = "RelicEffectDamageEnemyOnAscend";
         internal const string DamageEnemyOnDescend = "RelicEffectDamageEnemyOnDescend";
+        internal const string ModifyDragonsHoardCap = "RelicEffectModifyDragonsHoardCap";
         internal static bool AbilitiesTriggerIncant(CombatContext? context) =>
             context?.Relics?.Any(relic => relic.EffectTypes.Contains(AbilityIncant)) == true;
         internal static string? Validate(CombatContext? context) => ConduitModel.Validate(context) ?? Validate(context?.Relics) ??
             RelicStartCombatAttachmentModel.Validate(context) ?? RelicShowtimeModel.Validate(context) ??
             (context?.Relics?.Any(relic => relic.EffectTypes.Contains(ModifyTriggerCount) || relic.EffectTypes.Contains(AddTrigger)) == true && context.TriggerCounts == null
-                ? "Missing native relic trigger count cache." : TriggerCountModel.Validate(context?.TriggerCounts)) ?? RelicResourceModel.Validate(context);
+                ? "Missing native relic trigger count cache." : TriggerCountModel.Validate(context?.TriggerCounts)) ??
+            (context?.Relics?.Any(relic => relic.EffectTypes.Contains(ModifyDragonsHoardCap)) == true &&
+                (context.Resources?.DragonsHoardCap is not int cap || context.QueryFrame?.DragonsHoard is not int hoard || hoard < 0 || hoard > cap)
+                ? "Missing or inconsistent settled native Dragon's Hoard state." : RelicResourceModel.Validate(context));
         internal static string? Validate(IReadOnlyList<CombatRelicState>? relics)
         {
             if (relics == null) return null; // Legacy captures retained their external-effect guard.
@@ -324,6 +328,12 @@ namespace MonsterTrain2Poju.Model
                     // Acquired gold and permanent upgrades are already captured;
                     // the original effect has no battle callbacks.
                     if (effect == "RelicEffectModifyTrialGoldRewards") continue;
+                    // These original effects adjust the cap on acquisition or removal.
+                    // A battle decision uses the settled cap and amount from its native save.
+                    if (effect == ModifyDragonsHoardCap && relic.EffectTypes.Count == 1 &&
+                        relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false && (relic.DataId, relic.AssetKey) is
+                        ("00a8f443-cdea-437a-98bf-0ebe0ead00b0", "ModifyDragonsHoardCap") or
+                        ("c3f91e0e-629f-4d3f-b422-ce1653147293", "ModifyDragonsHoardCap_DH")) continue;
                     // RelicManager.ApplyPostBattleRelicRewards is the only
                     // consumer. This effect gathers rewards after combat;
                     // it neither runs battle callbacks nor grants them here.
