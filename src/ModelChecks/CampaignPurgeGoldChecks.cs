@@ -7,9 +7,9 @@ internal static class CampaignPurgeGoldChecks
         using var document = ModelJson.ReadFixture(path); var root = document.RootElement; var owner = root.GetProperty("Owner");
         Require(root.GetProperty("Schema").GetInt32() == 1 && CampaignRelicChecks.SupportsCalibrationBuild(root) &&
             root.GetProperty("Before").ContentEquals(root.GetProperty("After")), "Purge consumer identity/restoration differs.");
-        const string id = "d8d1e069-938e-4141-b6ac-e20f4578163a";
+        const string id = CampaignPurgeGoldModel.CanioId;
         Require(owner.GetProperty("Id").GetString() == id && owner.GetProperty("Key").GetString() == "BalatroEventCanio" &&
-            owner.GetProperty("Type").GetString() == "RelicEffectAddGoldOnPurge" && owner.GetProperty("Amount").GetInt32() == 75 &&
+            owner.GetProperty("Type").GetString() == CampaignPurgeGoldModel.CanioEffect && owner.GetProperty("Amount").GetInt32() == 75 &&
             owner.GetProperty("CardType").GetString() == "Invalid" && !owner.GetProperty("DisallowedInPlacement").GetBoolean() &&
             owner.GetProperty("Conditions").GetInt32() == 0, "Original purge-gold definition changed.");
         var rule = new CampaignPurgeGoldOwner(id, 75, "Invalid", false, false);

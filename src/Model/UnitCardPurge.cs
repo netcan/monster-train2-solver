@@ -12,8 +12,10 @@ namespace MonsterTrain2Poju.Model
             if (source.OtherPiles == null || source.FindCard(cardId) == null ||
                 !source.OtherPiles.Any(pile => pile.Name == "Purged"))
             { error = "Unit-card purge requires captured card metadata and native piles."; return null; }
-            // Native purge dispatches only IOnPurgeRelicEffect; these observed types do not implement it.
-            if (source.Relics?.Any(relic => relic.EffectTypes.Any(effect => effect is not
+            // The original Canio combat callback immediately completes. The other
+            // calibrated owners have no callback on this native purge path.
+            if (source.Relics?.Any(relic => !CampaignPurgeGoldModel.IsOriginalCombatNoOp(relic) &&
+                relic.EffectTypes.Any(effect => effect is not
                 ("RelicEffectModifyEnergyDuringDeployment" or "RelicEffectModifyEnergy" or
                  "RelicEffectIncreasePyreHealth" or "RelicEffectIncreasePyreAttack" or
                  "RelicEffectAddTempUpgrade"))) == true)

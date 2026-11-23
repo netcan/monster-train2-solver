@@ -21,6 +21,14 @@ namespace MonsterTrain2Poju.Model
     }
     public static class CampaignPurgeGoldModel
     {
+        internal const string CanioId = "d8d1e069-938e-4141-b6ac-e20f4578163a";
+        internal const string CanioEffect = "RelicEffectAddGoldOnPurge";
+
+        internal static bool IsOriginalCombatNoOp(CombatRelicState relic) =>
+            relic.DataId == CanioId && relic.AssetKey == "BalatroEventCanio" &&
+            relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false &&
+            relic.EffectTypes.Count == 1 && relic.EffectTypes[0] == CanioEffect;
+
         // Models the actual purge callback, not deck removal or merchant payment.
         public static CampaignPurgeGoldResult Apply(int gold, IReadOnlyList<CampaignPurgeGoldOwner> owners,
             string cardType, float rewardMultiplier = 1f, bool inCombat = false, bool placement = false, bool preview = false)
