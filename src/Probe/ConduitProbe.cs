@@ -18,6 +18,7 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
             OriginalOpeningUnitsScenario.Enabled || OriginalPactDrawWitness.Enabled || OriginalPactDrawWitness.FullBattle || OriginalEntropyDrawWitness.Enabled ||
             OriginalUnrulyWitness.FullBattle ||
+            Environment.GetEnvironmentVariable("MT2_PROBE_REGION_RUN_INPUT") == "1" ||
 #endif
             ConduitMovementCalibration.Enabled || EclipseChamberScenario.EnemyConduit || Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "original-conduit-relics" || OriginalMooncycleFaeScenario.Enabled ||
             PlanetariumScenario.Enabled || OriginalStrongMagicCardsScenario.Enabled || OriginalScaledMoonPhaseScenario.Enabled || OriginalMoonCardUpgradesScenario.Lunacy ||
