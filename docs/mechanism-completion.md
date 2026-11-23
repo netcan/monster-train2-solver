@@ -868,6 +868,11 @@ DoubleUnits 原版对照记录了付费单位、首个镜厅复制体、额外�
 采样使用 `-OriginalDoubleUnitsOrdinary -BinaryCapture`，专项使用 `--native-double-units-ordinary-only`。
 [`ordinary-extra-spawn.mt2f`](../tests/compatibility/game-2.3.1/mechanics/hall-grafted-birth/ordinary-extra-spawn.mt2f)
 
+Eager Conscript 的原版对照确认，DoubleUnits 将首次状态量从 1 提到 2。首张生成一只带
+2 层 Horde 的 Funguy，第二张给同一单位加 1 层。两次完整结算及随机流均与模拟一致。
+采样使用 `-OriginalDoubleUnitsSpawnOrStatus -BinaryCapture`，专项使用 `--native-double-units-spawn-or-status-only`。
+[`spawn-or-status.mt2f`](../tests/compatibility/game-2.3.1/mechanics/hall-grafted-birth/spawn-or-status.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和

@@ -20,6 +20,8 @@ namespace MonsterTrain2Poju.Probe
         internal static bool ObserveHallGraftedBirth => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_HALL_GRAFTED_BIRTH") == "1";
         internal static bool HallExtraSpawn => ObserveHallGraftedBirth && Environment.GetEnvironmentVariable("MT2_PROBE_HALL_EXTRA_SPAWN") == "1";
         internal static bool OrdinaryExtraSpawn => HallExtraSpawn && Environment.GetEnvironmentVariable("MT2_PROBE_DOUBLE_UNITS_ORDINARY") == "1";
+        internal static bool SpawnOrStatusExtraSpawn => HallExtraSpawn &&
+            Environment.GetEnvironmentVariable("MT2_PROBE_DOUBLE_UNITS_SPAWN_OR_STATUS") == "1";
         internal static object? HallExtraSpawnDefinition { get; private set; }
         internal static List<object> HallExtraSpawnCountQueries { get; } = new List<object>();
 
@@ -72,7 +74,9 @@ namespace MonsterTrain2Poju.Probe
                 if (!HallExtraSpawn || FullBattleTrace.Active == null || spawningUnitData == null ||
                     AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
                 string assetKey = spawningUnitData.GetAssetKey();
-                if (OrdinaryExtraSpawn ? assetKey is not ("TrainStewardSmall" or "BasicDemon") : assetKey != "MonsterTwistedAssistant") return;
+                bool observedUnit = SpawnOrStatusExtraSpawn ? assetKey == "MonsterFunguy" : OrdinaryExtraSpawn
+                    ? assetKey is "TrainStewardSmall" or "BasicDemon" : assetKey == "MonsterTwistedAssistant";
+                if (!observedUnit) return;
                 HallExtraSpawnCountQueries.Add(new { Unit = spawningUnitData.GetAssetKey(),
                     Team = spawningOnTeam.ToString(), Turn = AllGameManagers.Instance.GetCombatManager()!.GetTurnCount(),
                     CountBefore = __state, CountAfter = __result });
@@ -193,6 +197,8 @@ namespace MonsterTrain2Poju.Probe
         {
             int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
 #if DEVELOPMENT_PROBE
+            if (SpawnOrStatusExtraSpawn)
+                return source.Spawn.Turn == 1 && index >= 0 ? new PlayCardAction(ids[index], 0) : null;
             if (OrdinaryExtraSpawn) return ChooseOrdinaryExtraSpawn(source, ids);
             if (HallExtraSpawn)
                 return source.Spawn.Turn == 0 || index < 0 ? null : ChooseHallGraftedBirth(source, ids, index);
@@ -407,6 +413,23 @@ namespace MonsterTrain2Poju.Probe
             if (spellIds.Length == 0 || spellIds.Length > 30 || spellIds.Any(id => all.FindCardData(id)?.GetCardType() is not (CardType.Spell or CardType.Equipment or CardType.Monster or CardType.Junk or CardType.TrainRoomAttachment)))
                 throw new InvalidOperationException("Isolated spell IDs must name one to thirty native playable card definitions.");
 #if DEVELOPMENT_PROBE
+            if (SpawnOrStatusExtraSpawn)
+            {
+                CardData eager = all.FindCardData(OriginalEagerConscriptScenario.CardId)!;
+                var effect = eager.GetEffects().Single();
+                var status = effect.GetParamStatusEffects().Single();
+                if (eager.name != "EagerConscript" || eager.GetCardType() != CardType.Spell || eager.GetCost() != 1 ||
+                    effect.GetEffectStateName() != "CardEffectSpawnMonsterOrAddStatusEffect" || effect.GetTargetMode() != TargetMode.Room ||
+                    effect.GetTargetCharacterSubtype()?.Key != "SubtypesData_Horde" || effect.GetParamCharacterData()?.name != "MonsterFunguy" ||
+                    effect.GetParamInt() != 1 || status.statusId != "horde" || status.count != 1)
+                    throw new InvalidOperationException("Expected unchanged original Eager Conscript.");
+                CardIds = Enumerable.Range(0, 2).Select(_ => FullBattleTrace.Active!.CardId(
+                    cards.AddNewCard(eager, CardPile.HandPile, false, false, animate: false))).ToArray();
+                AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
+                Prepared = true;
+                Set(managers.GetCombatManager()!, "combatStateChanged", true);
+                return;
+            }
             if (ObserveHallGraftedBirth)
             {
                 CardData hall = all.FindCardData(HallId)!;

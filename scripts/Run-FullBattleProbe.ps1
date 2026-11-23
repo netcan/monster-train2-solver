@@ -260,6 +260,7 @@ param(
     [switch] $OriginalHallGraftedBirth,
     [switch] $OriginalHallExtraSpawn,
     [switch] $OriginalDoubleUnitsOrdinary,
+    [switch] $OriginalDoubleUnitsSpawnOrStatus,
     [switch] $OriginalSelfAttack,
     [switch] $OriginalHealingCleanse,
     [switch] $OriginalOnKill,
@@ -1432,10 +1433,13 @@ if ($OriginalIsolatedEquipmentIds.Count -gt 0) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk'
 }
 if ($OriginalSupportSpells) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
-if ($OriginalDoubleUnitsOrdinary) { $OriginalHallExtraSpawn = $true }
+if ($OriginalDoubleUnitsOrdinary -and $OriginalDoubleUnitsSpawnOrStatus) {
+    throw 'Select one original DoubleUnits observation.'
+}
+if ($OriginalDoubleUnitsOrdinary -or $OriginalDoubleUnitsSpawnOrStatus) { $OriginalHallExtraSpawn = $true }
 if ($OriginalHallExtraSpawn) { $OriginalHallGraftedBirth = $true }
 if ($OriginalHallGraftedBirth) {
-    $allowed = @('OriginalHallGraftedBirth', 'OriginalHallExtraSpawn', 'OriginalDoubleUnitsOrdinary', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
+    $allowed = @('OriginalHallGraftedBirth', 'OriginalHallExtraSpawn', 'OriginalDoubleUnitsOrdinary', 'OriginalDoubleUnitsSpawnOrStatus', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
         'GameSpeed', 'TimeoutSeconds', 'InputProfile', 'Verbose', 'Debug', 'ErrorAction')
     if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
         throw 'OriginalHallGraftedBirth requires the isolated binary first-battle observation.'
@@ -2854,6 +2858,7 @@ if ($OriginalHallGraftedBirth) {
     $environment['MT2_PROBE_ORIGINAL_HALL_GRAFTED_BIRTH'] = '1'
     $environment['MT2_PROBE_HALL_EXTRA_SPAWN'] = $(if ($OriginalHallExtraSpawn) { '1' } else { '0' })
     $environment['MT2_PROBE_DOUBLE_UNITS_ORDINARY'] = $(if ($OriginalDoubleUnitsOrdinary) { '1' } else { '0' })
+    $environment['MT2_PROBE_DOUBLE_UNITS_SPAWN_OR_STATUS'] = $(if ($OriginalDoubleUnitsSpawnOrStatus) { '1' } else { '0' })
 }
 if ($OriginalIsolatedSpellIds.Count -gt 0) { $environment['MT2_PROBE_MODIFIERS'] = 'original-isolated-spells:' + ($OriginalIsolatedSpellIds -join ',') }
 if ($OriginalIsolatedSpellUpgrades.Count -gt 0) {
@@ -3957,13 +3962,14 @@ if ($OriginalHallGraftedBirth) {
         $extraSpawnValue = $result
         $extraSpawn = $result.TryGetProperty('ExtraSpawn', [ref]$extraSpawnValue) -and $extraSpawnValue.GetBoolean()
         $scopeValue = $result
-        $ordinaryExtraSpawn = $result.TryGetProperty('Scope', [ref]$scopeValue) -and
-            $scopeValue.GetString() -ceq 'NativeOriginalDoubleUnitsOrdinary'
+        $scope = if ($result.TryGetProperty('Scope', [ref]$scopeValue)) { $scopeValue.GetString() } else { '' }
+        $expectedScope = if ($OriginalDoubleUnitsOrdinary) { 'NativeOriginalDoubleUnitsOrdinary' }
+            elseif ($OriginalDoubleUnitsSpawnOrStatus) { 'NativeOriginalDoubleUnitsSpawnOrStatus' } else { '' }
         if ($result.GetProperty('Boundary').GetString() -cne 'NativeOriginalHallGraftedBirth' -or
             [Guid]$result.GetProperty('GameModuleMvid').GetString() -ne $nativeModule -or
             $result.GetProperty('GameVersion').GetString() -cne '2.3.1' -or
             $extraSpawn -ne [bool]$OriginalHallExtraSpawn -or
-            $ordinaryExtraSpawn -ne [bool]$OriginalDoubleUnitsOrdinary -or
+            $scope -cne $expectedScope -or
             $result.GetProperty('CaptureFailures').GetInt32() -ne 0 -or $result.GetProperty('Pending').GetInt32() -ne 0) {
             throw 'Original Hall grafted birth observation identity or native capture is incomplete.'
         }

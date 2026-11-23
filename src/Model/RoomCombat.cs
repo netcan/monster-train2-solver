@@ -5702,8 +5702,6 @@ namespace MonsterTrain2Poju.Model
                     return unsupportedReason == null && action.Tests?.CancelSubsequent != true;
                 if (action.Statuses.Count == 0 || action.SpawnFallbackUnit == null)
                 { unsupportedReason = "Triggered spawn-or-status requires its status and fallback unit definitions."; return false; }
-                string? spawnCountError = RelicUnitSpawnCountModel.CheckOtherSummon(context);
-                if (spawnCountError != null) { unsupportedReason = spawnCountError; return false; }
 
                 CombatStatus status = action.Statuses[0];
                 int statusSourceCardId = fromRoomModifier ? 0 : sourceCardIdOverride > 0 ? sourceCardIdOverride : actor.Source.SpawnerCardId;
@@ -5713,6 +5711,10 @@ namespace MonsterTrain2Poju.Model
                     context = context.WithBattleRng(draw.State);
                     status = action.Statuses[draw.Value];
                 }
+                RelicResourceResult spawnCount = RelicUnitSpawnCountModel.Evaluate(context!, CombatTeam.Player, source.Preview);
+                if (!spawnCount.Supported) { unsupportedReason = spawnCount.UnsupportedReason; return false; }
+                context = spawnCount.Context!;
+                status = RelicUnitSpawnCountModel.ScaleStatus(status, spawnCount.Value);
                 CombatUnit[] targets = SpawnOrStatusTargets(actor, action);
                 if (targets.Length > 0)
                 {

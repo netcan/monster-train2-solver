@@ -325,6 +325,47 @@ internal static class HallGraftedBirthChecks
         Console.WriteLine("NATIVE-DOUBLE-UNITS-ORDINARY PASS: four full native successors, first-play extra births, same-turn suppression and reset.");
     }
 
+    internal static void NativeSpawnOrStatusExtraSpawn(FixtureValue root)
+    {
+        Require(root.GetProperty("Scope").GetString() == "NativeOriginalDoubleUnitsSpawnOrStatus" &&
+            root.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            root.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            root.GetProperty("CaptureFailures").GetInt32() == 0 && root.GetProperty("Pending").GetInt32() == 0,
+            "Expected the original DoubleUnits spawn-or-status component.");
+        var plays = root.GetProperty("OrdinaryPlays").EnumerateArray().ToArray();
+        var queries = root.GetProperty("ExtraSpawnCountQueries").EnumerateArray().ToArray();
+        Require(plays.Length == 2 && queries.Length == 2 &&
+            plays[0].GetProperty("Actual").ContentEquals(plays[1].GetProperty("Before")),
+            "Expected two consecutive original Eager Conscript plays.");
+        int bornId = 0;
+        for (int index = 0; index < plays.Length; index++)
+        {
+            FixtureValue row = plays[index], query = queries[index];
+            var before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            var after = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            var action = row.GetProperty("Action").Deserialize<PlayCardAction>()!;
+            CombatContext prior = before.Spawn.Train.Context!, actual = after.Spawn.Train.Context!;
+            CombatUnit[] funguy = after.Spawn.Train.Rooms.Single(room => room.RoomIndex == action.RoomIndex).Units
+                .Where(unit => unit.AssetKey == "MonsterFunguy").ToArray();
+            Require(before.Spawn.Turn == 1 && after.Spawn.Turn == 1 && before.Energy - after.Energy == 1 &&
+                prior.FindCard(action.CardInstanceId)?.DataId == "0c8ff108-478c-4c1c-9c49-f6a297b4e0d8" &&
+                query.GetProperty("Unit").GetString() == "MonsterFunguy" && query.GetProperty("Turn").GetInt32() == 1 &&
+                query.GetProperty("Team").GetString() == "Monsters" && query.GetProperty("CountBefore").GetInt32() == 1 &&
+                query.GetProperty("CountAfter").GetInt32() == 2 - index &&
+                funguy is [{ SpawnerCardId: 0 }] && funguy[0].Status("horde")?.Stacks == 2 + index &&
+                prior.BattleRng.Equals(actual.BattleRng) && prior.Cards.Rng.Equals(actual.Cards.Rng),
+                "Expected a single cardless Funguy with 2 then 3 Horde and unchanged gameplay RNG.");
+            if (index == 0) bornId = funguy[0].Id;
+            else Require(funguy[0].Id == bornId && prior.NextUnitId == actual.NextUnitId,
+                "The second original card must grow the same Funguy.");
+            BattleActionResult result = BattleActionModel.PlayCard(before, action);
+            Require(result.Supported && result.Outcome == row.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(),
+                result.Reason ?? "DoubleUnits spawn-or-status replay failed on play " + (index + 1));
+            RecordedBattleChecks.Compare(result.State!, after, false, "DoubleUnits spawn-or-status play " + (index + 1));
+        }
+        Console.WriteLine("NATIVE-DOUBLE-UNITS-SPAWN-OR-STATUS PASS: one Funguy with 2 then 3 Horde, exact model state and RNG.");
+    }
+
     private static void VerifyCloneCallbacks(FixtureValue root, int count = 1)
     {
         FixtureValue[] observations = root.GetProperty("CloneObservations").EnumerateArray().ToArray();

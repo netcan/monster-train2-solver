@@ -1019,8 +1019,12 @@ namespace MonsterTrain2Poju.Model
                     RoomPlayRule? spawnRule = definitions?.Rooms.FirstOrDefault(item => item.RoomIndex == collectionRoom);
                     if (spawnRule == null) return UnsupportedTrain("Spawn-or-status requires the selected room rule.");
                     if (!spawnRule.Enabled || spawnRule.SummonBlocked || spawnRule.IsPyre) continue;
-                    string? spawnCountError = RelicUnitSpawnCountModel.CheckOtherSummon(state.Context);
-                    if (spawnCountError != null) return UnsupportedTrain(spawnCountError);
+                    RelicResourceResult spawnCount = RelicUnitSpawnCountModel.Evaluate(state.Context!, CombatTeam.Player, selected.Preview);
+                    if (!spawnCount.Supported) return UnsupportedTrain(spawnCount.UnsupportedReason!);
+                    if (!ReferenceEquals(spawnCount.Context, state.Context))
+                        state = WithContext(state, spawnCount.Context!);
+                    if (spawnCount.Value > 0)
+                        effect = effect.WithStatuses(new[] { RelicUnitSpawnCountModel.ScaleStatus(effect.Statuses[0], spawnCount.Value) });
                     if (targets.UnitIds.Count == 0)
                     {
                         if (!fullTrain || definitions == null || effect.SpawnFallbackUnit == null)

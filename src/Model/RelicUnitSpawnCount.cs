@@ -25,6 +25,9 @@ namespace MonsterTrain2Poju.Model
             return count.UnsupportedReason ?? (count.Value > 0 ? "Additional units or status stacks in this summon path require native calibration." : null);
         }
 
+        internal static CombatStatus ScaleStatus(CombatStatus status, int extra) =>
+            extra == 0 ? status : status.WithStacks(unchecked(status.Stacks * (1 + extra)));
+
         internal static string? Validate(CombatRelicState owner, RelicResourceEffect effect)
         {
             if (owner.DataId != DataId || owner.AssetKey != AssetKey || owner.IsCovenant != false ||
