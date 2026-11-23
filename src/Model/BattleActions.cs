@@ -1104,9 +1104,11 @@ namespace MonsterTrain2Poju.Model
             var discardTraits = discardInstance?.MaskDescriptor == null ? null : CardBranchMaskModel.Resolve(discardInstance).Traits;
             bool skipNaturalDiscard = discardTraits?.Any(trait => trait is "CardTraitInfusion" or "CardTraitPersistent") == true;
             bool ephemeral = discardTraits?.Contains("CardTraitEphemeral", StringComparer.Ordinal) == true;
-            // The 2.3.1 discard callback skips Consume entirely for Ephemeral cards.
-            bool suppressConsume = consumeSuppression == RelicSuppressExhaustModel.Trait ||
-                (context.Statistics?.MonsterDamage != null && rule.Destination == "Purged" && ephemeral);
+            // The current native discard callback skips Consume routing for a played Ephemeral purge.
+            bool ephemeralPurgeSuppressesConsume = context.Statistics?.MonsterDamage != null && rule.Destination == "Purged" && ephemeral;
+            bool suppressConsume = consumeSuppression == RelicSuppressExhaustModel.Trait || ephemeralPurgeSuppressesConsume;
+            bool notifyEphemeralExhausted = !skipNaturalDiscard && ephemeralPurgeSuppressesConsume &&
+                discardInstance != null && CardExhaustModel.HasConsume(discardInstance);
             bool consumedOnPlay = !skipNaturalDiscard && !suppressConsume && discardInstance != null &&
                 CardExhaustModel.ShouldExhaustOnPlayedDiscard(discardInstance);
             bool ephemeralEquipment = !skipNaturalDiscard && rule.Effect == "Equipment" && rule.Destination == "Standby" && ephemeral;
@@ -1329,6 +1331,14 @@ namespace MonsterTrain2Poju.Model
                 context, room.Preview, room.ActiveCompanionBossIds)).ToArray();
             var living = new HashSet<int>(rooms.SelectMany(room => room.Units).Select(unit => unit.Id));
             train = new TrainCombatState(rooms, train.Movement.Where(rule => living.Contains(rule.UnitId)).ToArray(), train.EnemySlotsPerRoom, context);
+            if (notifyEphemeralExhausted && !terminal)
+            {
+                // The native played purge still dispatches CardExhausted for a card with Consume.
+                TrainCombatResult notified = CardPlayedTriggerModel.Exhausted(train, action.RoomIndex);
+                if (!notified.Supported) return Unsupported(notified.UnsupportedReason!);
+                train = notified.State!; context = train.Context!;
+                if (notified.Outcome != RoomOutcome.Exchanged) outcome = notified.Outcome;
+            }
             TrainCombatResult returnedEquipment = consumedOnPlay && !terminal
                 ? EquipmentModel.ReturnAfterConsume(train, action.RoomIndex, card.InstanceId)
                 : EquipmentModel.ReturnUnattached(train, action.RoomIndex);
