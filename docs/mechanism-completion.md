@@ -289,8 +289,12 @@ Echoes 的留存生命效果按单位的来源卡记录。原版专项中，列�
 
 时光薪火沿原版出生流程加载同一张技能牌。Echoes 变异器将使用后的冷却间隔从 99 改为 2，
 原版对照保持 99。两组的出生冷却和当前剩余冷却均为 0，模型出生回调通过定向核对。
+实战中，带变异器的时光薪火在第 1 回合使用后进入 2 点冷却，第 3 回合再次零费使用。
+无变异器时，首次使用后移除本场技能。三次使用与四次结束回合均匹配原版完整状态和随机数。
 [启用变异器](../tests/compatibility/game-2.3.1/mechanics/pyre-ability-cooldown-birth/with-owner.mt2f) ·
-[原版对照](../tests/compatibility/game-2.3.1/mechanics/pyre-ability-cooldown-birth/without-owner.mt2f)
+[原版对照](../tests/compatibility/game-2.3.1/mechanics/pyre-ability-cooldown-birth/without-owner.mt2f) ·
+[实战再次使用](../tests/compatibility/game-2.3.1/mechanics/pyre-ability-cooldown-birth/reuse-with-owner.mt2f) ·
+[实战移除对照](../tests/compatibility/game-2.3.1/mechanics/pyre-ability-cooldown-birth/reuse-without-owner.mt2f)
 
 随机目标变异器会在法术入手时改写手动目标和同层前排目标。原版回调核对火把、冰矛及重组，
 其中重组保留原来的消耗牌堆目标。真实火把出牌从两名敌人中抽取一名，战斗随机数推进一次，

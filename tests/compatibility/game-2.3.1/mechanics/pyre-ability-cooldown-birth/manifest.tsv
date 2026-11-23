@@ -1,3 +1,5 @@
 path	bytes	sha256
+reuse-with-owner.mt2f	18619	710c3feb1ba9c5e020b5891e749492d1b5194a54819a5bd70fa4a7ec02bac229
+reuse-without-owner.mt2f	16732	cee44fe2a775e97d7edd33faf429bca6d7eb0a217f5ce2c42d9de11a3ccbfea4
 with-owner.mt2f	15144	2ea36bef0c14c69ec83e15524a769da90c7808250608d9a83ec5c84080df681a
 without-owner.mt2f	15103	24edbf7bf7d6c3c87e52a7879c8bbfebb1700f65f9266b64f5480077a37da412

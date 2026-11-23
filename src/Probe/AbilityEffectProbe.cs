@@ -29,7 +29,11 @@ namespace MonsterTrain2Poju.Probe
                 .Select(type => AccessTools.Method(type, "ApplyEffect"));
             private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
             {
-                if (AbilityEffectsScenario.Prepared && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
+                bool capture = AbilityEffectsScenario.Prepared;
+#if DEVELOPMENT_PROBE
+                capture |= OriginalPyreAbilityCooldownWitness.ReuseCasting;
+#endif
+                if (capture && FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
                     __result = Observe(__result, cardEffectState, cardEffectParams);
             }
         }

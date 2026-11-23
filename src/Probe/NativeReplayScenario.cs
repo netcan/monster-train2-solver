@@ -974,8 +974,18 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
             if (fullBattle && OriginalPyreAbilityCooldownWitness.Enabled)
             {
-                OriginalPyreAbilityCooldownWitness.Write(FullBattleTrace.Active!, managers);
-                Finish(true, "Original Pyre ability cooldown birth captured.");
+                if (OriginalPyreAbilityCooldownWitness.Reuse)
+                {
+                    var next = OriginalPyreAbilityCooldownWitness.TickReuse(FullBattleTrace.Active!, managers);
+                    if (next == OriginalPyreAbilityCooldownWitness.ReuseInput.EndTurn) AdvanceTurn(combat!, record: false);
+                    else if (next == OriginalPyreAbilityCooldownWitness.ReuseInput.Complete)
+                        Finish(true, "Original Pyre ability cooldown reuse captured.");
+                }
+                else
+                {
+                    OriginalPyreAbilityCooldownWitness.Write(FullBattleTrace.Active!, managers);
+                    Finish(true, "Original Pyre ability cooldown birth captured.");
+                }
                 return;
             }
             if (fullBattle && OriginalRandomSpellTargetsWitness.Enabled)

@@ -585,7 +585,7 @@ param(
     [string] $EffectOwnerType,
     [switch] $OriginalPreventMonsterDamageWitness,
     [switch] $OriginalPreventMonsterDamageBattle,
-    [ValidateSet('WithOwner', 'WithoutOwner')]
+    [ValidateSet('WithOwner', 'WithoutOwner', 'WithOwnerReuse', 'WithoutOwnerReuse')]
     [string] $OriginalPyreAbilityCooldownWitness = '',
     [switch] $OriginalRandomSpellTargetsWitness,
     [switch] $OriginalRandomSpellTargetsBattle,
@@ -3637,14 +3637,15 @@ if ($OriginalPreventMonsterDamageWitness) {
     return
 }
 if ($OriginalPyreAbilityCooldownWitness) {
-    $capturePath = Join-Path $profile 'pyre-ability-cooldown-birth.mt2f'
+    $boundary = if ($OriginalPyreAbilityCooldownWitness.EndsWith('Reuse')) { 'reuse' } else { 'birth' }
+    $capturePath = Join-Path $profile "pyre-ability-cooldown-$boundary.mt2f"
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
-        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Pyre ability cooldown birth captured' -Quiet) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern "DEPTH-PASS Original Pyre ability cooldown $boundary captured" -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore -or
         (Get-OriginalSignature $checkpoint) -cne $pyreBirthInputSignature) {
-        throw "Original Pyre ability cooldown birth failed. Inspect $unityLog"
+        throw "Original Pyre ability cooldown $boundary failed. Inspect $unityLog"
     }
-    Write-Output "NATIVE-PYRE-ABILITY-COOLDOWN-BIRTH PASS mode=$OriginalPyreAbilityCooldownWitness trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    Write-Output "NATIVE-PYRE-ABILITY-COOLDOWN-$($boundary.ToUpperInvariant()) PASS mode=$OriginalPyreAbilityCooldownWitness trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($EffectOwnerType) {
