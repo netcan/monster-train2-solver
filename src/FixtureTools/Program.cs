@@ -2,7 +2,11 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using MonsterTrain2Poju.Fixtures;
 
-if (args.Length == 4 && args[0] == "extract-lifemother-mixed")
+if (args.Length == 4 && args[0] == "extract-lifemother-infested")
+{
+    LifemotherMixedRequest.ExtractInfested(args[1], args[2], int.Parse(args[3]));
+}
+else if (args.Length == 4 && args[0] == "extract-lifemother-mixed")
 {
     LifemotherMixedRequest.Extract(args[1], args[2], int.Parse(args[3]));
 }

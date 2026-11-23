@@ -110,7 +110,11 @@ namespace MonsterTrain2Poju.Probe
                 bool dutifulGrant = false;
                 bool lifemotherGrant = false;
                 bool gorgeOnSlayGrant = false;
+                bool infestedHorde = false;
 #if DEVELOPMENT_PROBE
+                infestedHorde = UnsupportedBranchObservation.ObserveInfestedHorde &&
+                    cardEffectParams.selfTarget?.GetSourceCharacterData().GetAssetKey() == "RAny_Horde_T1_DeathAddsHivemind_Ver2" &&
+                    cardEffectParams.sourceCharacterTriggerState?.GetTrigger() == CharacterTriggerData.Trigger.OnDeath;
                 dutifulGrant = OriginalUnrulyWitness.DutifulGrant(cardEffectState, cardEffectParams);
                 gorgeOnSlayGrant = OriginalUnrulyWitness.IndulgentGorgeOnSlay &&
                     cardEffectParams.selfTarget?.GetSourceCharacterData().GetAssetKey() == OriginalUnrulyWitness.GorgeOnSlayBoss &&
@@ -127,7 +131,7 @@ namespace MonsterTrain2Poju.Probe
 #endif
                 if (((Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "triggered-status" && TriggeredStatusScenario.Prepared) ||
                     OriginalPunishedUnitsScenario.Prepared || PurifyScenario.Prepared || OriginalEquipmentGrowthScenario.Prepared ||
-                    pyreRevenge || dutifulGrant || lifemotherGrant || gorgeOnSlayGrant) &&
+                    pyreRevenge || dutifulGrant || lifemotherGrant || gorgeOnSlayGrant || infestedHorde) &&
                     FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode && cardEffectParams.selfTarget != null)
                     __result = Wrap(__result, cardEffectState, cardEffectParams, pyreRevenge);
             }

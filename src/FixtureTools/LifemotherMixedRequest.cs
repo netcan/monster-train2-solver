@@ -8,15 +8,33 @@ internal static class LifemotherMixedRequest
     internal static void Extract(string sourcePath, string outputPath, int targetId)
     {
         if (targetId is not (3 or 14)) throw new ArgumentOutOfRangeException(nameof(targetId));
+        string reason = targetId == 3 ? "Battle preview floor 2: Lifemother death transfer requires observed Malaise-only status effects." :
+            "Battle preview floor 2: Lifemother death transfer requires an observed ordered debuff set.";
+        ExtractPinned(sourcePath, outputPath, "02fd04bd37210d6e3bc947b13377d97015394bd39747612b27324b183ee164e9",
+            7, 3, new PlayCardAction(31, 2, targetUnitId: targetId), reason);
+    }
+
+    internal static void ExtractInfested(string sourcePath, string outputPath, int cardInstanceId)
+    {
+        if (cardInstanceId is not (15 or 29)) throw new ArgumentOutOfRangeException(nameof(cardInstanceId));
+        int room = cardInstanceId == 15 ? 0 : 2;
+        string reason = cardInstanceId == 15 ? "Hivemind owner death requires a calibrated native callback." :
+            "Unmodeled triggered status definition.";
+        ExtractPinned(sourcePath, outputPath, "ddb6d07cb504b615df04e227c47c14be84a98127df91dacdaff7046523ceeb6b",
+            5, 1, new PlayCardAction(cardInstanceId, room), reason);
+    }
+
+    private static void ExtractPinned(string sourcePath, string outputPath, string sourceSha,
+        int plays, int endTurns, PlayCardAction actionCandidate, string reason)
+    {
         using var input = File.OpenRead(sourcePath);
         string sha = Convert.ToHexString(SHA256.HashData(input)).ToLowerInvariant();
-        if (sha != "02fd04bd37210d6e3bc947b13377d97015394bd39747612b27324b183ee164e9")
-            throw new InvalidDataException("Expected the accepted original Lifemother Debuffs source battle.");
+        if (sha != sourceSha) throw new InvalidDataException("Expected the accepted original Lifemother source battle.");
         input.Position = 0;
         using var source = FixtureDocument.Read(input);
         var root = source.RootElement;
-        var actions = root.GetProperty("Actions").EnumerateArray().Take(7).ToArray();
-        var turns = root.GetProperty("Turns").EnumerateArray().Take(3).ToArray();
+        var actions = root.GetProperty("Actions").EnumerateArray().Take(plays).ToArray();
+        var turns = root.GetProperty("Turns").EnumerateArray().Take(endTurns).ToArray();
         var rows = actions.Select(row => (Row: row, End: false)).Concat(turns.Select(row => (Row: row, End: true)))
             .OrderBy(input => input.Row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32())
             .ThenBy(input => input.End).ThenBy(input => input.Row.GetProperty("Index").GetInt32()).ToArray();
@@ -43,9 +61,6 @@ internal static class LifemotherMixedRequest
                 throw new InvalidDataException("Recorded prefix successor differed at " + prefix.Count);
             prefix.Add(step);
         }
-        string reason = targetId == 3 ? "Battle preview floor 2: Lifemother death transfer requires observed Malaise-only status effects." :
-            "Battle preview floor 2: Lifemother death transfer requires an observed ordered debuff set.";
-        var actionCandidate = new PlayCardAction(31, 2, targetUnitId: targetId);
         BattleActionResult candidate = BattleActionModel.PlayCard(current, actionCandidate);
         if (!candidate.Supported && (candidate.Rejection != ActionRejection.Unsupported || candidate.Reason != reason))
             throw new InvalidDataException("Original Torch alternative was rejected at a different boundary: " + candidate.Reason);
@@ -58,6 +73,6 @@ internal static class LifemotherMixedRequest
             FailedRoot = current, Action = actionCandidate, IsEndTurn = false, Reason = reason, NativeValidationRequired = true });
         using var output = new FileStream(outputPath, FileMode.CreateNew, FileAccess.Write);
         request.Write(output);
-        Console.WriteLine($"LIFEMOTHER-MIXED prefix={prefix.Count} turn={current.Spawn.Turn} card=31 target={targetId}.");
+        Console.WriteLine($"LIFEMOTHER-BRANCH prefix={prefix.Count} turn={current.Spawn.Turn} card={actionCandidate.CardInstanceId} floor={actionCandidate.RoomIndex} target={actionCandidate.TargetUnitId}.");
     }
 }

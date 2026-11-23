@@ -19,8 +19,11 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static bool Enabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_UNSUPPORTED_BRANCH"));
         internal static bool Completed { get; private set; }
-        internal static bool UseDevelopmentCapture => Enabled && OriginalLifemotherDebuffsWitness.WholeBattle;
-        internal static bool ObserveLifemotherMixedTransfer => UseDevelopmentCapture && waiting && rows.Last().Boundary;
+        private static bool InfestedDevelopmentCapture => Enabled && OriginalUnrulyWitness.ReplaysInfestedOpening;
+        internal static bool UseDevelopmentCapture => Enabled && (OriginalLifemotherDebuffsWitness.WholeBattle || InfestedDevelopmentCapture);
+        internal static bool ObserveLifemotherMixedTransfer => Enabled && OriginalLifemotherDebuffsWitness.WholeBattle && waiting && rows.Last().Boundary;
+        internal static bool ObserveInfestedHorde => InfestedDevelopmentCapture && waiting && rows.Count > 0 &&
+            rows.Last() is { Boundary: true, Action.CardInstanceId: 15 };
         private static FixtureValue request;
         private static FixtureValue[]? prefix;
         internal static bool ObserveTriggeredCorruption => prefix != null && request.GetProperty("Reason").GetString() ==
@@ -115,14 +118,28 @@ namespace MonsterTrain2Poju.Probe
             if (UseDevelopmentCapture)
             {
                 PlayCardAction? action = Read<PlayCardAction?>(request.GetProperty("Action"));
-                Require(prefix.Length == 10 && !request.GetProperty("IsEndTurn").GetBoolean() &&
-                    request.GetProperty("SourceSHA256").GetString() == "02fd04bd37210d6e3bc947b13377d97015394bd39747612b27324b183ee164e9" &&
-                    action is { CardInstanceId: 31, RoomIndex: 2, PlayerPosition: -1, ActivatorUnitId: 0, ActivatorRoomIndex: null,
-                        TargetSpawnPointIndex: -1, RecursionSelections.Count: 0, MixSelections.Count: 0 } &&
-                    (action.TargetUnitId, request.GetProperty("Reason").GetString()) is
-                        (3, "Battle preview floor 2: Lifemother death transfer requires observed Malaise-only status effects.") or
-                        (14, "Battle preview floor 2: Lifemother death transfer requires an observed ordered debuff set."),
-                    "Expected the original frozen Lifemother Torch alternative.");
+                if (InfestedDevelopmentCapture)
+                {
+                    Require(prefix.Length == 6 && !request.GetProperty("IsEndTurn").GetBoolean() &&
+                        request.GetProperty("SourceSHA256").GetString() == "ddb6d07cb504b615df04e227c47c14be84a98127df91dacdaff7046523ceeb6b" &&
+                        action is { TargetUnitId: 0, PlayerPosition: -1, ActivatorUnitId: 0, ActivatorRoomIndex: null,
+                            TargetSpawnPointIndex: -1, RecursionSelections.Count: 0, MixSelections.Count: 0 } &&
+                        (action.CardInstanceId, action.RoomIndex, request.GetProperty("Reason").GetString()) is
+                            (15, 0, "Hivemind owner death requires a calibrated native callback.") or
+                            (29, 2, "Unmodeled triggered status definition."),
+                        "Expected one of the two original Infested alternatives.");
+                }
+                else
+                {
+                    Require(prefix.Length == 10 && !request.GetProperty("IsEndTurn").GetBoolean() &&
+                        request.GetProperty("SourceSHA256").GetString() == "02fd04bd37210d6e3bc947b13377d97015394bd39747612b27324b183ee164e9" &&
+                        action is { CardInstanceId: 31, RoomIndex: 2, PlayerPosition: -1, ActivatorUnitId: 0, ActivatorRoomIndex: null,
+                            TargetSpawnPointIndex: -1, RecursionSelections.Count: 0, MixSelections.Count: 0 } &&
+                        (action.TargetUnitId, request.GetProperty("Reason").GetString()) is
+                            (3, "Battle preview floor 2: Lifemother death transfer requires observed Malaise-only status effects.") or
+                            (14, "Battle preview floor 2: Lifemother death transfer requires an observed ordered debuff set."),
+                        "Expected the original frozen Lifemother Torch alternative.");
+                }
             }
             expected = Read<BattleTurnState>(request.GetProperty("Root"));
             Require(expected.Spawn.Turn == 0, "Branch observation must start at native deployment.");
@@ -195,7 +212,8 @@ namespace MonsterTrain2Poju.Probe
                 TroopTargetability = TroopTargetabilityProbe.Records.ToArray(),
                 IdentityCorrespondence = identityCorrespondence,
                 TriggeredCorruption = TriggeredCorruptionProbe.Records.ToArray(),
-                LifemotherMixedTransfers = UseDevelopmentCapture ? OriginalLifemotherDebuffsWitness.MixedTransfers : null,
+                LifemotherMixedTransfers = OriginalLifemotherDebuffsWitness.WholeBattle ? OriginalLifemotherDebuffsWitness.MixedTransfers : null,
+                InfestedHordeGrants = InfestedDevelopmentCapture ? TriggeredStatusProbe.Records.ToArray() : null,
                 RoomPreCombatRecords = RoomPreCombatProbe.Records.ToArray(),
                 CorruptRestrictedState = CorruptRestrictedStateCalibration.Evidence,
                 BattleTestRng = BattleTestRngProbe.Records.ToArray(),
