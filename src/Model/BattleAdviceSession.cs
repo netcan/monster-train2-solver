@@ -53,11 +53,13 @@ namespace MonsterTrain2Poju.Model
         private readonly Func<BattleTurnState, CancellationToken, BattlePlanResult> search;
         private readonly Action<BattleTurnState, BattlePlanResult> verify;
         private readonly bool retainPlans;
+        private readonly object preparationOwner = new object();
         private VerifiedAdviceContinuation? continuation;
         private Task<BattleAdvice>? worker;
         private CancellationTokenSource? cancellation;
         private BattleTurnState? pending;
         private BattleTurnState? observed;
+        private bool observedKeyPrepared;
         private BattleAdvice? reusable;
         private readonly List<SelectionAdviceReuse.Observation> reuseObservations = new List<SelectionAdviceReuse.Observation>();
         private int workerObservationCount;
@@ -149,18 +151,22 @@ namespace MonsterTrain2Poju.Model
             string? previousKey = currentKey;
             long version = observationVersion;
             long requestedAt = Stopwatch.GetTimestamp();
-            return Task.Run(() => new PreparedBattleObservation(state, previous, previousKey, version, requestedAt));
+            object owner = preparationOwner;
+            return Task.Run(() => new PreparedBattleObservation(state, previous, previousKey, owner, version, requestedAt));
         }
 
         public void Observe(PreparedBattleObservation observation, TimeSpan captureElapsed = default)
         {
             if (observation == null) throw new ArgumentNullException(nameof(observation));
+            if (!ReferenceEquals(observation.Owner, preparationOwner))
+                throw new InvalidOperationException("Prepared observation belongs to another advice session.");
             if (observationVersion != observation.Version || !ReferenceEquals(observed, observation.Previous))
                 throw new InvalidOperationException("Prepared observation belongs to an obsolete root.");
-            Observe(observation.Root, observation.RootKey, captureElapsed, observation.SameBattle, observation.ResponseElapsed);
+            Observe(observation.Root, observation.RootKey, captureElapsed, observation.SameBattle, observation.ResponseElapsed, keyPrepared: true);
         }
 
-        private void Observe(BattleTurnState state, string fullStateKey, TimeSpan captureElapsed, bool? sameBattle, TimeSpan preparationElapsed = default)
+        private void Observe(BattleTurnState state, string fullStateKey, TimeSpan captureElapsed, bool? sameBattle,
+            TimeSpan preparationElapsed = default, bool keyPrepared = false)
         {
             if (disposed) throw new ObjectDisposedException(nameof(BattleAdviceSession));
             if (state == null) throw new ArgumentNullException(nameof(state));
@@ -173,6 +179,7 @@ namespace MonsterTrain2Poju.Model
                 if (!browsing) { generation++; cancellation?.Cancel(); }
                 if (reusable != null) reuseObservations.Add(new SelectionAdviceReuse.Observation(state));
                 currentKey = fullStateKey; observed = state;
+                observedKeyPrepared = keyPrepared;
                 Current = null; Error = null;
                 // A floor change must not cancel an in-flight search. Rebase
                 // that verified result onto the latest settled root afterward.
@@ -200,7 +207,7 @@ namespace MonsterTrain2Poju.Model
             if (reusable == null && continuation == null) reuseObservations.Clear();
             if (currentKey != null) generation++;
             currentKey = pendingKey = null; pending = null;
-            observed = null;
+            observed = null; observedKeyPrepared = false;
             Current = null; Error = null; Status = BattleAdviceStatus.Idle;
             cancellation?.Cancel();
         }
@@ -244,6 +251,7 @@ namespace MonsterTrain2Poju.Model
             {
                 BattleTurnState root = pending;
                 string key = pendingKey!;
+                bool keyPrepared = observedKeyPrepared && ReferenceEquals(root, observed) && key == currentKey;
                 long requestedAt = pendingRequestedAt;
                 TimeSpan captureElapsed = pendingCaptureElapsed;
                 TimeSpan preparationElapsed = pendingPreparationElapsed;
@@ -263,10 +271,14 @@ namespace MonsterTrain2Poju.Model
                     VerifiedAdviceContinuation? proof = null;
                     var verification = new Stopwatch();
                     verification.Start();
-                    using var fullKeys = new BattleStateKeys();
-                    if (fullKeys.Key(root) != key)
-                        throw new InvalidOperationException(retained == null ? "Captured state differs from its full-state key." :
-                            "Captured state differs from the retained continuation.");
+                    // The same-session prepared observation already hashed this immutable root.
+                    if (!keyPrepared)
+                    {
+                        using var fullKeys = new BattleStateKeys();
+                        if (fullKeys.Key(root) != key)
+                            throw new InvalidOperationException(retained == null ? "Captured state differs from its full-state key." :
+                                "Captured state differs from the retained continuation.");
+                    }
                     bool browsed = observations.Any(item => item.Root == null);
                     VerifiedAdviceContinuation? matched = retained?.MatchObserved(root, observations, browsed ? key : null);
                     bool exhaustedTurn = candidate != null && ConsumedFinalTurn(candidate, root);

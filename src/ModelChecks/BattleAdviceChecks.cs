@@ -69,6 +69,15 @@ internal static class BattleAdviceChecks
             PreparedBattleObservation prepared = preparedSession.PrepareObservationAsync(root).GetAwaiter().GetResult();
             Require(prepared.ThreadId != owner && prepared.RootKey == Key(root), "Preparation did not hash the complete snapshot on a worker.");
             PreparationFaultAfterInvalidation(prepared);
+            using (var otherSession = new BattleAdviceSession((state, _) => Plan(state)))
+            {
+                bool foreignRejected = false;
+                try { otherSession.Observe(prepared); }
+                catch (InvalidOperationException error) when (error.Message == "Prepared observation belongs to another advice session.")
+                { foreignRejected = true; }
+                Require(foreignRejected && otherSession.Status == BattleAdviceStatus.Idle && otherSession.Current == null,
+                    "Another session's prepared snapshot was accepted at the same observation version.");
+            }
             preparedSession.Observe(prepared); Pump(preparedSession, BattleAdviceStatus.Ready);
             Require(preparedSession.Current!.RootKey == prepared.RootKey, "Prepared advice published a different root.");
             PreparedBattleObservation obsolete = preparedSession.PrepareObservationAsync(second).GetAwaiter().GetResult();
@@ -83,6 +92,12 @@ internal static class BattleAdviceChecks
             preparedSession.Observe(preparedSession.PrepareObservationAsync(latest).GetAwaiter().GetResult());
             Pump(preparedSession, BattleAdviceStatus.Ready);
             Require(preparedSession.Current!.RootKey == Key(latest), "The latest prepared snapshot was not published.");
+            long searches = preparedSession.SearchCount;
+            preparedSession.Observe(latest, Key(second));
+            Pump(preparedSession, BattleAdviceStatus.Unavailable);
+            Require(preparedSession.Current == null && preparedSession.SearchCount == searches &&
+                preparedSession.Error?.StartsWith("Captured state differs", StringComparison.Ordinal) == true,
+                "An incorrect caller-provided key reused prepared validation or started a search.");
         }
         using var entered = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();

@@ -12,16 +12,18 @@ namespace MonsterTrain2Poju.Model
         public string RootKey { get; }
         public TimeSpan Elapsed { get; }
         public int ThreadId { get; }
+        internal object Owner { get; }
         internal BattleTurnState? Previous { get; }
         internal bool SameBattle { get; }
         internal long Version { get; }
         private readonly long requestedAt;
         internal TimeSpan ResponseElapsed => BattleAdvice.Since(requestedAt);
 
-        internal PreparedBattleObservation(BattleTurnState root, BattleTurnState? previous, string? previousKey, long version, long requestedAt)
+        internal PreparedBattleObservation(BattleTurnState root, BattleTurnState? previous, string? previousKey,
+            object owner, long version, long requestedAt)
         {
             var timer = Stopwatch.StartNew();
-            Root = root; Previous = previous; Version = version;
+            Root = root; Previous = previous; Owner = owner; Version = version;
             this.requestedAt = requestedAt;
             ThreadId = Thread.CurrentThread.ManagedThreadId;
             using var keys = new BattleStateKeys();
