@@ -54,9 +54,12 @@ namespace MonsterTrain2Poju.Model
         // Replacing every alias in this branch preserves that behavior without
         // writing to the immutable parent or relying on definition IDs.
         public static CombatContext Refresh(CombatContext context, CardInstanceState card, out CardInstanceState refreshed)
+            => Refresh(context, card, Multiplier(card), out refreshed);
+
+        internal static CombatContext Refresh(CombatContext context, CardInstanceState card, int multiplier, out CardInstanceState refreshed)
         {
             var shared = new Dictionary<int, CardUpgradeModifier>();
-            refreshed = Refresh(card);
+            refreshed = Refresh(card, multiplier);
             foreach (CardUpgradeModifier upgrade in refreshed.Permanent.Upgrades.Concat(refreshed.Temporary.Upgrades))
                 if (upgrade.SharedReferenceId.HasValue) shared[upgrade.SharedReferenceId.Value] = upgrade;
             return ReplaceShared(context.WithCard(refreshed), shared);

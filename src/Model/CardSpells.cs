@@ -520,7 +520,9 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (effect.Type == "UpgradeDeckSpells")
                 {
-                    DeckSpellUpgradeResult upgraded = DeckSpellUpgradeModel.Apply(state.Context!, effect, definitions);
+                    bool unplayedTitanCurse = onUnplayedNegativeEffects &&
+                        state.Context!.FindCard(sourceCardId)?.DataId == "17fef621-2bb7-4847-b41d-52a89795c784";
+                    DeckSpellUpgradeResult upgraded = DeckSpellUpgradeModel.Apply(state.Context!, effect, definitions, unplayedTitanCurse);
                     if (!upgraded.Supported) return UnsupportedTrain(upgraded.UnsupportedReason!);
                     state = WithContext(state, upgraded.Context!);
                     continue;

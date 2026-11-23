@@ -2185,6 +2185,12 @@ if (args.Length == 2 && args[0] == "--consumed-curse-cleanse-terminal-only")
     ConsumedCurseCleanseChecks.Native(source.RootElement, terminal: true);
     return;
 }
+if (args.Length == 2 && args[0] == "--unplayed-curse-cleanse-terminal-only")
+{
+    using var source = ModelJson.ReadFixture(args[1]);
+    ConsumedCurseCleanseChecks.NativeUnplayedTerminal(source.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--consumed-curse-cleanse-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

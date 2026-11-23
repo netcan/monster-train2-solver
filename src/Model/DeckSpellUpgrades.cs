@@ -19,6 +19,10 @@ namespace MonsterTrain2Poju.Model
         private static readonly string[] NativeOtherPileOrder = ["Exhausted", "Eaten", "Purged", "Standby", "DiscardBuffer"];
 
         public static DeckSpellUpgradeResult Apply(CombatContext source, CardActionEffect effect, BattlePlayRules? definitions)
+            => Apply(source, effect, definitions, unplayedTitanCurse: false);
+
+        internal static DeckSpellUpgradeResult Apply(CombatContext source, CardActionEffect effect, BattlePlayRules? definitions,
+            bool unplayedTitanCurse)
         {
             if (effect.Type != "UpgradeDeckSpells" || effect.Upgrade == null)
                 return Unsupported("Missing deck spell upgrade definition.");
@@ -81,12 +85,23 @@ namespace MonsterTrain2Poju.Model
                 CardModifiers temporary = UnitModifierModel.Add(card.Temporary, upgrade);
                 CardInstanceState changed = card.WithModifiers(card.Permanent, temporary);
                 modifierError = CardModifierModel.UnsupportedReason(changed);
-                if (modifierError != null) return Unsupported(modifierError);
-                context = CardMagicPowerModel.Refresh(context, changed, out _);
+                if (modifierError == null) context = CardMagicPowerModel.Refresh(context, changed, out _);
+                else
+                {
+                    // The original unplayed curse can write to this draw-pile card without casting it.
+                    if (!unplayedTitanCurse || !CanDeferUnplayedTitanCurse(source, changed)) return Unsupported(modifierError);
+                    // The cost-only payload leaves the already validated magic-power traits intact.
+                    context = CardMagicPowerModel.Refresh(context, changed, CardMagicPowerModel.Multiplier(card), out _);
+                }
                 applied.Add(card.InstanceId);
             }
             return new DeckSpellUpgradeResult(context, applied);
         }
+
+        internal static bool CanDeferUnplayedTitanCurse(CombatContext context, CardInstanceState card) =>
+            card.Temporary.Upgrades.Count == 1 && CardJuiceModel.KnownTitanCurse(card.Temporary.Upgrades[0]) &&
+            context.Cards.Draw.Any(token => token.InstanceId == card.InstanceId && token.DataId == card.DataId) &&
+            CardModifierModel.ValidateUnplayedSpellUpgrade(card) == null;
 
         private static DeckSpellUpgradeResult Unsupported(string reason) =>
             new DeckSpellUpgradeResult(null, Array.Empty<int>(), reason);

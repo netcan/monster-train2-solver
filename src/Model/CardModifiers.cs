@@ -445,9 +445,11 @@ namespace MonsterTrain2Poju.Model
         internal static string? UnsupportedReason(CardInstanceState instance) =>
             validations.GetValue(instance, static card => new CardValidation(ValidateCard(card))).UnsupportedReason;
 
-        private static string? ValidateCard(CardInstanceState instance)
+        internal static string? ValidateUnplayedSpellUpgrade(CardInstanceState instance) => ValidateCard(instance, allowUnplayedCleanseCurse: true);
+
+        private static string? ValidateCard(CardInstanceState instance, bool allowUnplayedCleanseCurse = false)
         {
-            string? juiceError = CardJuiceModel.Validate(instance);
+            string? juiceError = CardJuiceModel.Validate(instance, allowUnplayedCleanseCurse);
             if (juiceError != null) return juiceError;
             string? retainError = CardRetainModel.Validate(instance);
             if (retainError != null) return retainError;

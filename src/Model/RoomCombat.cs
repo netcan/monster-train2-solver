@@ -1155,7 +1155,8 @@ namespace MonsterTrain2Poju.Model
                 if (unsupported != null && !RelicCardGenerationModel.CanDeferUnplayedGraftedCard(state.Context, instance, state.Units) &&
                     !CardCopyOnPlayModel.CanDeferUnplayedDrawCard(state.Context!, instance, state.Units, unsupported) &&
                     !(state.Units.All(unit => unit.SpawnerCardId != instance.InstanceId) &&
-                      CardCopyOnPlayModel.CanDeferDrawNotification(state.Context!, instance, unsupported)))
+                      (CardCopyOnPlayModel.CanDeferDrawNotification(state.Context!, instance, unsupported) ||
+                       DeckSpellUpgradeModel.CanDeferUnplayedTitanCurse(state.Context!, instance))))
                     return unsupported;
             }
             if (state.Units.Select(unit => unit.Id).Distinct().Count() != state.Units.Count)

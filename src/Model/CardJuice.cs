@@ -179,11 +179,12 @@ namespace MonsterTrain2Poju.Model
                 TraitsModified.Count: 0, ReplacedAssets.Count: 0, AvoidClobbering: false,
             } &&
             card.Temporary.Upgrades.Skip(1).All(LazarusJuiceSpikeModel.KnownConduit);
-        private static bool KnownConsumedCleanseCurse(CardInstanceState card) =>
+        private static bool KnownCleanseCurse(CardInstanceState card, bool allowUnplayed) =>
             card.Permanent.Upgrades.Count == 2 && KnownCleanseConsume(card.Permanent.Upgrades[1]) &&
-            card.PlayCount == 1 && card.ExhaustState is { PlayCountModifier: 0, BaseTraits.Count: 1, UpgradeTrait: null } exhausted &&
-            exhausted.BaseTraits[0].TraitIndex == 1 && exhausted.BaseTraits[0].IsExhausted &&
-            exhausted.BaseTraits[0].ExhaustedCardId == card.InstanceId &&
+            card.ExhaustState is { PlayCountModifier: 0, BaseTraits.Count: 1, UpgradeTrait: null } exhausted &&
+            exhausted.BaseTraits[0].TraitIndex == 1 &&
+            (card.PlayCount == 1 && exhausted.BaseTraits[0].IsExhausted && exhausted.BaseTraits[0].ExhaustedCardId == card.InstanceId ||
+                allowUnplayed && card.PlayCount == 0 && !exhausted.BaseTraits[0].IsExhausted && exhausted.BaseTraits[0].ExhaustedCardId == null) &&
             card.Temporary.Upgrades.Count == 1 && KnownTitanCurse(card.Temporary.Upgrades[0]) &&
             card.Temporary.Upgrades[0] is { Unique: false, RemoveOnDiscard: false, ExcludeFromClones: false,
                 RestrictSizeToRoomCapacity: false, MagicPowerTraitScalingOnly: false, CloneDamageBase: null, CloneHealBase: null,
@@ -236,7 +237,7 @@ namespace MonsterTrain2Poju.Model
             card.DamageScalingTraits?.Count is not > 0 && card.StatusScalingTraits?.Count is not > 0 &&
             card.UnitUpgradeScalingTraits?.Count is not > 0 && card.TrainHealScalingTraits?.Count is not > 0 &&
             card.CapacityScalingTraits?.Count is not > 0 && card.ForgeCountScalingTraits?.Count is not > 0;
-        internal static string? Validate(CardInstanceState card)
+        internal static string? Validate(CardInstanceState card, bool allowUnplayedCleanseCurse = false)
         {
             if (!Present(card)) return null;
             if (card.MaskDescriptor == null) return "Juice requires captured card traits.";
@@ -261,7 +262,7 @@ namespace MonsterTrain2Poju.Model
                     traits[1].DeclaredName == "CardTraitExhaustState" && Ordinary(traits[1], 0) &&
                     card.Permanent.Upgrades.Count == 2 && KnownCleanseConsume(card.Permanent.Upgrades[1])) &&
                 (copiedCleanse || card.Temporary.Upgrades.Count <= 1 && card.Temporary.Upgrades.All(LazarusJuiceSpikeModel.KnownConduit) ||
-                    KnownConsumedCleanseCurse(card)) &&
+                    KnownCleanseCurse(card, allowUnplayedCleanseCurse)) &&
                 card.MaskDescriptor.SourceTraits?.Count is not > 0 &&
                 card.DamageScalingTraits?.Count is not > 0 && card.StatusScalingTraits?.Count is not > 0 &&
                 card.UnitUpgradeScalingTraits?.Count is not > 0 && card.TrainHealScalingTraits?.Count is not > 0 &&
