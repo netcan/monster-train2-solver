@@ -8413,10 +8413,10 @@ if (args.Length == 1 && args[0] == "--relic-pyre-card-cost-pure")
     RelicPayCardCostWithPyreHealthChecks.Run();
     return;
 }
-if (args.Length == 2 && args[0] == "--original-pyre-health-card-cost-only")
+if ((args.Length == 2 || args.Length == 3 && args[2] == "--isolated-preview") && args[0] == "--original-pyre-health-card-cost-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    RelicPayCardCostWithPyreHealthChecks.Native(fixture.RootElement);
+    RelicPayCardCostWithPyreHealthChecks.Native(fixture.RootElement, requireIsolatedPreview: args.Length == 3);
     Console.WriteLine($"NATIVE-FIXTURE-METADATA schema={fixture.RootElement.GetProperty("Schema").GetInt32()} bytes={new FileInfo(args[1]).Length} uniqueNodes={fixture.UniqueNodeCount}");
     return;
 }

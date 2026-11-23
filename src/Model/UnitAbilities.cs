@@ -97,8 +97,7 @@ namespace MonsterTrain2Poju.Model
             RoomCombatState? selectedRoomState = train.Rooms.FirstOrDefault(room => room.RoomIndex == action.RoomIndex);
             if (selectedRoomState == null) return Illegal("The selected ability room is missing from train state.");
             RelicPyreCostPlan pyreCost = RelicPayCardCostWithPyreHealthModel.Plan(train, effectiveCost,
-                source.Energy, rule.CostType, source.Spawn.Turn,
-                context.IsolatedBattlePreview == true || selectedRoomState.Preview);
+                source.Energy, rule.CostType, source.Spawn.Turn, selectedRoomState.Preview);
             if (!pyreCost.Supported) return Unsupported(pyreCost.UnsupportedReason!);
             if (!pyreCost.CanPay) return Illegal("Insufficient energy for the unit ability.");
             bool paidWithPyre = pyreCost.PaidWithPyre;

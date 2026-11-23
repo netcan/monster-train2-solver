@@ -51,7 +51,7 @@ internal static class RelicPayCardCostWithPyreHealthChecks
         Console.WriteLine("RELIC-PYRE-CARD-COST-PURE PASS: affordability/X-cost gates, scale, ordered owner stacking, immutable HP, callback payload and explicit support boundaries.");
     }
 
-    internal static void Native(FixtureValue root)
+    internal static void Native(FixtureValue root, bool requireIsolatedPreview)
     {
         Require(root.GetProperty("OriginalPyreCardCostSchema").GetInt32() == 209 &&
             root.GetProperty("ModifierScenario").GetString() == "original-pyre-health-card-cost" &&
@@ -117,6 +117,17 @@ internal static class RelicPayCardCostWithPyreHealthChecks
                 .SequenceEqual([affordableCard, pyrePaidCard, xCostCard]) &&
             actions.All(action => action.GetProperty("Difference").ValueKind == FixtureKind.Null),
             "Independent action replay differed or did not play the controls in order.");
+        if (requireIsolatedPreview)
+        {
+            foreach (FixtureValue action in actions)
+            {
+                BattleTurnState before = action.GetProperty("Before").Deserialize<BattleTurnState>()!;
+                int roomIndex = action.GetProperty("Action").GetProperty("RoomIndex").GetInt32();
+                Require(before.Spawn.Train.Context?.IsolatedBattlePreview == true &&
+                    !before.Spawn.Train.Rooms.Single(room => room.RoomIndex == roomIndex).Preview,
+                    "The native payment test must be a live action with preview RNG isolation enabled.");
+            }
+        }
         BattleTurnChecks.Native(root);
         BattleActionChecks.Native(root);
         Console.WriteLine("ORIGINAL-PYRE-HEALTH-CARD-COST NATIVE PASS: affordable Ember, scaled nonlethal Pyre payment, exact OnHit payload, X-cost ablation and three action replays.");

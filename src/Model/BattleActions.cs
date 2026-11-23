@@ -565,8 +565,7 @@ namespace MonsterTrain2Poju.Model
                     return Illegal("The room cannot accept this unit's size or another spawn slot.");
             }
             RelicPyreCostPlan pyreCost = RelicPayCardCostWithPyreHealthModel.Plan(train, effectiveCost,
-                source.Energy, rule.CostType, source.Spawn.Turn,
-                context.IsolatedBattlePreview == true || target.Preview);
+                source.Energy, rule.CostType, source.Spawn.Turn, target.Preview);
             if (!pyreCost.Supported) return Unsupported(pyreCost.UnsupportedReason!);
             if (!pyreCost.CanPay) return Illegal("Insufficient energy.");
             if (rule.CostType == "NonPlayable" && !IsOriginalNonPlayableSummon(originalRule))

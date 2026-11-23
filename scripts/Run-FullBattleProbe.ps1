@@ -3354,7 +3354,10 @@ if ($OriginalFirstImpBonusRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'origin
 if ($OriginalMoonPhaseRoomsGainMagicPowerRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-phase-rooms-magic-power' }
 if ($OriginalPropagateOnStatusEffectAppliedRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-propagate-on-status-effect-applied' }
 if ($OriginalNoUpgradeCardCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-reduce-cost-unit-no-upgrade' }
-if ($OriginalPyreHealthCardCostRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-health-card-cost' }
+if ($OriginalPyreHealthCardCostRelic) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-pyre-health-card-cost'
+    $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
+}
 if ($OriginalNullRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic' }
 if ($OriginalNullRelicBaseline) { $environment['MT2_PROBE_MODIFIERS'] = 'original-null-relic-baseline' }
 if ($OriginalRelicCountAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'original-relic-count-attack' }
@@ -7231,6 +7234,7 @@ if ($OriginalPyreHealthCardCostRelic -and ($trace.OriginalPyreCardCostSchema -ne
     @($trace.OriginalPyreCardCost.Results).Count -ne 3 -or
     @($trace.OriginalPyreCardCost.QueuedHits).Count -ne 1 -or
     @($trace.Actions | Where-Object ScenarioAction).Count -ne 3 -or
+    @($trace.Actions | Where-Object { $_.ScenarioAction -and $_.Before.Spawn.Train.Context.IsolatedBattlePreview -ne $true }).Count -ne 0 -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'ORIGINAL-PYRE-CARD-COST-PREPARED' -Quiet))) {
     throw 'PyreHealthForEmberCardCost lacks native affordable, health-paid, X-cost and OnHit callback evidence.'
 }
