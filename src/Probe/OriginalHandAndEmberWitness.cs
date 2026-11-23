@@ -15,14 +15,20 @@ namespace MonsterTrain2Poju.Probe
         private const string HandId = "2dd0e035-96a9-46f3-8c52-eacbe82e871b";
         private const string EmberId = "0421d885-09a3-48ec-ad5e-762127ac336e";
         private const string TorchId = "f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b";
+        private const string EphemeralId = "9f9afce5-44fe-40ff-aee5-1df851b30263";
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
         private static readonly string? Mode = Environment.GetEnvironmentVariable("MT2_PROBE_HAND_AND_EMBER_WITNESS");
-        internal static bool Enabled => Mode is "Combined" or "Stock";
-        internal static bool Combined => Mode == "Combined";
+        internal static bool Enabled => Combined || Mode == "Stock";
+        internal static bool Combined => Mode is "Combined" or "Ephemeral";
+        private static bool Ephemeral => Mode == "Ephemeral";
         private static bool prepared;
         private static int? endingTurn;
         private static readonly List<PhaseEvent> phases = new List<PhaseEvent>();
         private static Snapshot? deployment, firstDraw, beforePlay, afterPlay;
+        private static Snapshot? beforeCleanup;
+        private static CardState? donor;
+        private static CleanupMovement? cleanup;
+        private static int donorDiscardCalls, donorPurgeCalls;
         private static Input? input;
         private static PlayCardAction? action;
 
@@ -100,7 +106,21 @@ namespace MonsterTrain2Poju.Probe
                         throw new InvalidOperationException("Original paid control was rejected: " + error);
                     return Step.Wait;
                 case 1:
-                    afterPlay = Capture();
+                    afterPlay ??= Capture();
+                    if (Ephemeral && donor == null)
+                    {
+                        var definition = save.GetAllGameData().FindCardData(EphemeralId);
+                        if (definition == null || definition.name != "TFB_PyreAttack" || definition.GetCardTriggers().Any() ||
+                            !definition.GetTraits().Select(trait => trait.GetTraitStateName())
+                                .SequenceEqual(new[] { nameof(CardTraitSelfPurge), nameof(CardTraitEphemeral) }))
+                            throw new InvalidOperationException("Original Ephemeral donor definition changed.");
+                        donor = cards.AddNewCard(definition, CardPile.HandPile, false, false, animate: false);
+                        if (donor == null || !cards.GetHand().Contains(donor) || !donor.HasTrait<CardTraitEphemeral>() ||
+                            !donor.HasTrait<CardTraitSelfPurge>() || donor.TriggersOnUnplayed() || save.GetDeckState().Contains(donor))
+                            throw new InvalidOperationException("Native original Ephemeral donor did not enter only the combat hand.");
+                        return Step.Wait;
+                    }
+                    if (Ephemeral) beforeCleanup = Capture();
                     return Advance();
                 case 2:
                     Snapshot secondDraw = Capture();
@@ -117,7 +137,8 @@ namespace MonsterTrain2Poju.Probe
                         Mutators = mutators, Relics = relics,
                         BaseEnergy = baseEnergy, DeploymentExtraEnergy = deploymentExtra, BaseDraw = baseDraw, MaxEnergy = maximum,
                         Deployment = deployment, FirstDraw = firstDraw, BeforePlay = beforePlay, Action = action,
-                        PaidCard = input.Card.GetCardDataID(), Paid = paid, AfterPlay = afterPlay, SecondDraw = secondDraw, Phases = phases
+                        PaidCard = input.Card.GetCardDataID(), Paid = paid, AfterPlay = afterPlay, SecondDraw = secondDraw, Phases = phases,
+                        BeforeCleanup = beforeCleanup, Cleanup = cleanup, DonorDiscardCalls = donorDiscardCalls, DonorPurgeCalls = donorPurgeCalls
                     }))
                     using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "hand-and-ember.mt2f")))
                         archive.Write(stream);
@@ -137,6 +158,12 @@ namespace MonsterTrain2Poju.Probe
                             $"deployment={deployment.Decision.Energy} first={firstDraw.Decision.Energy} after={afterPlay.Decision.Energy} " +
                             $"second={secondDraw.Decision.Energy} hand={firstDraw.HandIds.Length}/{survivorIds.Length}/{secondDraw.HandIds.Length} " +
                             $"phases={string.Join(",", phases.Select(row => $"{row.Turn}:{row.Kind}:{row.Amount}"))}");
+                    if (Ephemeral && (beforeCleanup == null || cleanup is not
+                        { WasPlayed: false, HandDiscarded: false, Forced: true, HandBefore: true, HandAfter: false,
+                            BufferBefore: false, BufferAfter: true, DiscardAfter: false, PurgedAfter: false } ||
+                        donorDiscardCalls != 0 || donorPurgeCalls != 0 || !cards.GetDiscardBufferPile().Contains(donor!)))
+                        throw new InvalidOperationException($"Native Ephemeral cleanup did not settle as a buffer-only move. " +
+                            $"movement={cleanup?.CardId}, discardCalls={donorDiscardCalls}, purgeCalls={donorPurgeCalls}.");
                     return Step.Complete;
                 default:
                     throw new InvalidOperationException("Missed the original hand and Ember observation window.");
@@ -226,6 +253,20 @@ namespace MonsterTrain2Poju.Probe
             internal CharacterState? Target { get; } = target;
         }
 
+        private sealed class CleanupMovement(int cardId, CardManager.DiscardCardParams parameters, bool forced, bool handBefore, bool bufferBefore)
+        {
+            public int CardId { get; } = cardId;
+            public bool WasPlayed { get; } = parameters.wasPlayed;
+            public bool HandDiscarded { get; } = parameters.handDiscarded;
+            public bool Forced { get; } = forced;
+            public bool HandBefore { get; } = handBefore;
+            public bool BufferBefore { get; } = bufferBefore;
+            public bool HandAfter { get; set; }
+            public bool BufferAfter { get; set; }
+            public bool DiscardAfter { get; set; }
+            public bool PurgedAfter { get; set; }
+        }
+
         private static void Observe(string kind, int value = 0)
         {
             if (endingTurn is not int turn || AllGameManagers.Instance is not AllGameManagers managers ||
@@ -259,6 +300,55 @@ namespace MonsterTrain2Poju.Probe
         {
             private static bool Prepare() => Enabled;
             private static void Postfix(int __result) => Observe("EnergyRemoval", __result);
+        }
+
+        [HarmonyPatch(typeof(CardManager), "RemoveCardFromHandUI")]
+        private static class CleanupMovementPatch
+        {
+            private static bool Prepare() => Ephemeral;
+
+            private static void Prefix(CardManager __instance, CardManager.DiscardCardParams discardCardParams,
+                bool forceDiscardEffect, out CleanupMovement? __state)
+            {
+                __state = null;
+                if (endingTurn != 1 || donor == null || !ReferenceEquals(donor, discardCardParams.discardCard) ||
+                    AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
+                __state = new CleanupMovement(FullBattleTrace.Active!.CardId(donor), discardCardParams, forceDiscardEffect,
+                    __instance.GetHand().Contains(donor), __instance.GetDiscardBufferPile().Contains(donor));
+            }
+
+            private static void Postfix(CardManager __instance, CleanupMovement? __state)
+            {
+                if (__state == null) return;
+                if (cleanup != null) throw new InvalidOperationException("Native Ephemeral donor left hand twice.");
+                __state.HandAfter = __instance.GetHand().Contains(donor!);
+                __state.BufferAfter = __instance.GetDiscardBufferPile().Contains(donor!);
+                __state.DiscardAfter = __instance.GetDiscardPile().Contains(donor!);
+                __state.PurgedAfter = __instance.GetPurgedPile().Contains(donor!);
+                cleanup = __state;
+            }
+        }
+
+        [HarmonyPatch(typeof(CardManager), nameof(CardManager.DiscardCard))]
+        private static class DonorDiscardPatch
+        {
+            private static bool Prepare() => Ephemeral;
+            private static void Prefix(CardManager.DiscardCardParams discardCardParams)
+            {
+                if (endingTurn == 1 && donor != null && ReferenceEquals(donor, discardCardParams.discardCard) &&
+                    !AllGameManagers.Instance!.GetSaveManager().PreviewMode) donorDiscardCalls++;
+            }
+        }
+
+        [HarmonyPatch(typeof(CardManager), nameof(CardManager.PurgeCard))]
+        private static class DonorPurgePatch
+        {
+            private static bool Prepare() => Ephemeral;
+            private static void Prefix(CardState cardState)
+            {
+                if (endingTurn == 1 && donor != null && ReferenceEquals(donor, cardState) &&
+                    !AllGameManagers.Instance!.GetSaveManager().PreviewMode) donorPurgeCalls++;
+            }
         }
     }
 }

@@ -343,11 +343,14 @@ namespace MonsterTrain2Poju.Model
                 }
                 catch (InvalidOperationException error) { return Unsupported(error.Message); }
             }
-            if (spawn.Turn > 0 && context.IsolatedBattlePreview != true &&
-                context.Relics?.Any(RelicHandAndEmberModel.OriginalHand) == true)
+            bool suppressDiscard = spawn.Turn > 0 && context.IsolatedBattlePreview != true &&
+                context.Relics?.Any(RelicHandAndEmberModel.OriginalHand) == true;
+            if (suppressDiscard)
             {
-                if (ephemeralCardIds.Count != 0 || context.Cards.Hand.Any(card => context.FindCard(card.InstanceId)?.MaskDescriptor == null))
-                    return Unsupported("Suppressed hand discard requires captured hand cards without Ephemeral cleanup.");
+                if (context.Cards.Hand.Any(card => context.FindCard(card.InstanceId)?.MaskDescriptor == null))
+                    return Unsupported("Suppressed hand discard requires captured hand traits.");
+                if (ephemeralCardIds.Any(id => !RelicHandAndEmberModel.OriginalEphemeral(context.FindCard(id))))
+                    return Unsupported("Unverified Ephemeral cleanup during suppressed hand discard.");
                 persistentCardIds = context.Cards.Hand.Select(card => card.InstanceId).ToList();
             }
             CardCycleResult discard = CardCycleModel.DiscardHand(context.Cards, ephemeralCardIds, persistentCardIds, infusionCardIds);
@@ -387,6 +390,20 @@ namespace MonsterTrain2Poju.Model
                     outputPlayRules?.Cards.FirstOrDefault(rule => rule.DataId == card.DataId))) : card).ToArray());
             foreach (int discardedId in discardedIds) context = ConduitModel.Discarded(context, discardedId);
             CardCycleState cards = discard.State!;
+            if (suppressDiscard && ephemeralCardIds.Count > 0)
+            {
+                int bufferIndex = Array.FindIndex(otherPiles, pile => pile.Name == "DiscardBuffer");
+                if (bufferIndex < 0) return Unsupported("Missing discard buffer during Ephemeral hand cleanup.");
+                CardPileState buffer = otherPiles[bufferIndex];
+                CardToken[] moving = cards.Hand.Reverse().Where(card => ephemeralCardIds.Contains(card.InstanceId)).ToArray();
+                if (buffer.Cards.Any(card => ephemeralCardIds.Contains(card.InstanceId)))
+                    return Unsupported("Ephemeral hand cleanup has a live discard buffer reference.");
+                otherPiles[bufferIndex] = new CardPileState(buffer.Name, buffer.Cards.Concat(moving).ToArray());
+                context = context.WithOtherPiles(otherPiles);
+                cards = new CardCycleState(cards.Hand.Where(card => !ephemeralCardIds.Contains(card.InstanceId)).ToArray(),
+                    cards.Draw, cards.Discard, cards.Rng, cards.DrawModifier, cards.ExternalInteractions, cards.BonusDraw,
+                    cards.NextDrawUpgrades, cards.NextUpgradeReferenceId, cards.DeckDrawDisabledThisTurn);
+            }
             if (discard.PurgedCards.Count > 0)
             {
                 int purgedIndex = Array.FindIndex(otherPiles, pile => pile.Name == "Purged");

@@ -586,7 +586,7 @@ param(
     [switch] $OriginalPreventMonsterDamageWitness,
     [switch] $OriginalPreventMonsterDamageBattle,
     [switch] $OriginalDisabledRoomPreviewBattle,
-    [ValidateSet('Combined', 'Stock')]
+    [ValidateSet('Combined', 'Stock', 'Ephemeral')]
     [string] $OriginalHandAndEmberWitness = '',
     [switch] $OriginalPlacementMutatorsWitness,
     [switch] $OriginalBigMonstersCreationWitness,

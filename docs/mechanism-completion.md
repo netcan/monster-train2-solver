@@ -351,9 +351,11 @@ SniperAdvance 变体命中存活的后排目标后把该单位移到首位。只
 两项原版自定义局突变经过同种子对照。部署仍弃牌，普通回合保留两张未出的牌，
 并排在三张新抽牌之后。原版余烬在部署和首回合均为 24，支付 1 点后降至 23，
 第二回合仍为 23。两组共两次出牌和四次结束回合，完整状态和随机数匹配。
-保留手牌和 Ephemeral 清理叠加的场景仍待验证。
+同一规则下，原版未打出的 TFB_PyreAttack 从手牌移到弃牌缓冲，普通牌仍按原顺序保留。
+原版未调用普通弃牌或永久移除回调，新回合完整后继和随机数匹配。
 [双突变](../tests/compatibility/game-2.3.1/mechanics/hand-and-ember/combined.mt2f) ·
-[普通对照](../tests/compatibility/game-2.3.1/mechanics/hand-and-ember/stock.mt2f)
+[普通对照](../tests/compatibility/game-2.3.1/mechanics/hand-and-ember/stock.mt2f) ·
+[临时牌清理](../tests/compatibility/game-2.3.1/mechanics/hand-and-ember/ephemeral.mt2f)
 
 原版法术伤害推层突变在火把打掉 3 点护甲时触发。敌人保留 5 点生命，从底层移到中层。
 同一目标随后受到非伤害法术，站位保持不变。另一个被火把击杀的单位也未触发移动。
