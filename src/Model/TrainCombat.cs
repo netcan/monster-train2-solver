@@ -192,18 +192,23 @@ namespace MonsterTrain2Poju.Model
         public static TrainCombatResult EndTurnPreHandDiscard(TrainCombatState source, CombatTeam team)
             => CharacterPhase(source, team, "EndTurnPreHandDiscard");
 
+        internal static TrainCombatResult EndTurnPreHandDiscard(TrainCombatState source, CombatTeam team, bool allowFirstHivemindCombat)
+            => CharacterPhase(source, team, "EndTurnPreHandDiscard", allowFirstHivemindCombat: allowFirstHivemindCombat);
+
         public static TrainCombatResult PreCombat(TrainCombatState source, CombatTeam team)
             => CharacterPhase(source, team, "PreCombat");
 
         internal static TrainCombatResult PreCombat(TrainCombatState source, CombatTeam team, bool allowFreshHivemind)
             => CharacterPhase(source, team, "PreCombat", allowFreshHivemind);
 
-        private static TrainCombatResult CharacterPhase(TrainCombatState source, CombatTeam team, string kind, bool allowFreshHivemind = false)
+        private static TrainCombatResult CharacterPhase(TrainCombatState source, CombatTeam team, string kind, bool allowFreshHivemind = false,
+            bool allowFirstHivemindCombat = false)
         {
             // These two passive phases never dispatch PostCombat, movement or
             // attacks. Retain their deferred original boss effects while still
             // validating all statuses and captured canonical health links.
-            string? error = Validate(source, linkedHealthOnly: true, allowFreshHivemind: allowFreshHivemind);
+            string? error = Validate(source, linkedHealthOnly: true, allowFreshHivemind: allowFreshHivemind,
+                allowFirstHivemindCombat: allowFirstHivemindCombat);
             if (error != null || team != CombatTeam.Player && team != CombatTeam.Enemy)
                 return Unsupported(error ?? "Invalid combat team.");
             RoomCombatState[] rooms = source.Rooms.ToArray();
@@ -227,7 +232,7 @@ namespace MonsterTrain2Poju.Model
                 if (index < 0) continue; // An earlier queued trigger may remove a later actor.
                 RoomCombatResult result = RoomCombatModel.ApplyCharacterPhase(WithContext(rooms[index], context), actor, kind, queue.Add,
                     refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement),
-                    allowFreshHivemind: allowFreshHivemind);
+                    allowFreshHivemind: allowFreshHivemind, allowFirstHivemindCombat: allowFirstHivemindCombat);
                 if (!result.Supported) return Unsupported(result.UnsupportedReason!);
                 rooms[index] = result.State!;
                 RelicDeckPyreStatsModel.UpdateRemoteHealth(rooms, rooms[index].RoomIndex, context, result.State!.Context);
@@ -280,7 +285,7 @@ namespace MonsterTrain2Poju.Model
         public static TrainCombatResult ResolveCombat(TrainCombatState source, IReadOnlyList<RelentlessDecision>? relentlessDecisions = null,
             IReadOnlyList<RoomPlayRule>? roomRules = null, UnitCopyCatalog? unitCopyCatalog = null)
         {
-            string? error = Validate(source) ?? RelicEndCombatModel.Validate(source.Context);
+            string? error = Validate(source, allowFirstHivemindCombat: true) ?? RelicEndCombatModel.Validate(source.Context);
             if (error != null) return Unsupported(error);
             var decisions = relentlessDecisions?.Count > 0 ? relentlessDecisions.ToArray() : Array.Empty<RelentlessDecision>();
             if (!RoomCombatModel.ValidRelentlessDecisions(source.Context?.QueryFrame?.RelentlessNotificationInterval, decisions))
@@ -428,7 +433,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static TrainCombatResult Ascend(TrainCombatState source, int? onlyUnitId, bool forceLoop)
         {
-            string? error = Validate(source);
+            string? error = Validate(source, allowFirstHivemindCombat: !onlyUnitId.HasValue && !forceLoop);
             if (error != null) return Unsupported(error);
             var rooms = source.Rooms.Select(room => room.Units.ToList()).ToArray();
             int pyre = rooms.Length - 1;
@@ -997,7 +1002,8 @@ namespace MonsterTrain2Poju.Model
         private static bool Terminal(RoomOutcome outcome) => outcome == RoomOutcome.BattleWon ||
             outcome == RoomOutcome.PlayerDefeated || outcome == RoomOutcome.Stalemate;
 
-        internal static string? Validate(TrainCombatState source, bool linkedHealthOnly = false, bool allowFreshHivemind = false)
+        internal static string? Validate(TrainCombatState source, bool linkedHealthOnly = false, bool allowFreshHivemind = false,
+            bool allowFirstHivemindCombat = false)
         {
             string? relicError = RelicModel.Validate(source.Context);
             if (relicError != null) return relicError;
@@ -1013,7 +1019,8 @@ namespace MonsterTrain2Poju.Model
                 return "Enemy movement identities must be unique.";
             foreach (RoomCombatState room in source.Rooms)
             {
-                string? error = RoomCombatModel.Validate(room, linkedHealthOnly: linkedHealthOnly, allowFreshHivemind: allowFreshHivemind);
+                string? error = RoomCombatModel.Validate(room, linkedHealthOnly: linkedHealthOnly, allowFreshHivemind: allowFreshHivemind,
+                    allowFirstHivemindCombat: allowFirstHivemindCombat);
                 if (error != null) return error;
             }
             return null;

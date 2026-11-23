@@ -132,7 +132,7 @@ namespace MonsterTrain2Poju.Model
             if (identityError != null) return Unsupported(identityError);
             RoomOutcome outcome = RoomOutcome.Cleared;
             int pyre = rooms.Length - 1;
-            bool firstWaveHivemind = false;
+            bool firstWaveHivemind = false, secondWaveHivemind = false;
             if (source.Looping || phase < source.Waves.Count)
             {
                 int waveIndex = phase % source.Waves.Count;
@@ -147,13 +147,18 @@ namespace MonsterTrain2Poju.Model
                 if (selected >= wave.Candidates.Count) return Unsupported("Invalid cached spawn group.");
                 firstWaveHivemind = !includeTreasure && source.Turn == 1 && phase == 0 &&
                     HivemindTurnUpgrade.HasOriginalFirstWavePair(wave.Candidates[selected].Units.Select(entry => entry.Unit));
+                secondWaveHivemind = includeTreasure && source.Turn is 1 or 2 && phase == 1 &&
+                    HivemindTurnUpgrade.HasSecondWaveCarriers(source.Train.Rooms.SelectMany(room => room.Units)) &&
+                    wave.Candidates[selected].Units.Count(entry => entry.Unit.Status(HivemindTurnUpgrade.StatusId) != null) == 1 &&
+                    wave.Candidates[selected].Units.Any(entry => entry.Unit.Status(HivemindTurnUpgrade.StatusId) is CombatStatus status &&
+                        HivemindTurnUpgrade.IsOriginalFreshOwner(entry.Unit, status));
                 if (wave.Candidates[selected].Units.Count > 0 && context?.QueryFrame?.SelectedRoomIndex != null)
                     context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: 0));
                 bool enteredPyre = false;
                 var entered = new List<int>();
                 foreach (EnemyDefinition definition in wave.Candidates[selected].Units.Reverse())
                 {
-                    string? error = Validate(definition, context, allowFreshHivemind: firstWaveHivemind);
+                    string? error = Validate(definition, context, allowFreshHivemind: firstWaveHivemind || secondWaveHivemind);
                     if (error != null) return Unsupported(error);
                     int roomIndex = 0;
                     while (roomIndex <= pyre && rooms[roomIndex].Count(unit => unit.Team == CombatTeam.Enemy)
@@ -413,10 +418,12 @@ namespace MonsterTrain2Poju.Model
             EnemySpawnResult Finish()
             {
                 RoomCombatState[] states = source.Train.Rooms.Select((room, index) => new RoomCombatState(index,
-                    room.Deployment, rooms[index], firstWaveHivemind ? room.ExternalInteractions.Concat(rooms[index].Where(unit =>
-                        unit.Status(HivemindTurnUpgrade.StatusId) is CombatStatus status && HivemindTurnUpgrade.IsOriginalFreshOwner(unit, status))
-                        .Select(HivemindTurnUpgrade.Marker)).Distinct().OrderBy(marker => marker, StringComparer.Ordinal).ToArray() :
-                        room.ExternalInteractions, context, room.Preview,
+                    room.Deployment, rooms[index], firstWaveHivemind || secondWaveHivemind
+                        ? room.ExternalInteractions.Where(marker => !HivemindTurnUpgrade.IsKnownMarker(marker))
+                            .Concat(rooms[index].Where(unit => unit.Status(HivemindTurnUpgrade.StatusId) is CombatStatus status &&
+                                HivemindTurnUpgrade.IsWaitingSecondWaveOwner(unit, status)).Select(HivemindTurnUpgrade.Marker))
+                            .Distinct().OrderBy(marker => marker, StringComparer.Ordinal).ToArray()
+                        : room.ExternalInteractions, context, room.Preview,
                     room.ActiveCompanionBossIds)).ToArray();
                 var alive = new HashSet<int>(states.SelectMany(room => room.Units).Select(unit => unit.Id));
                 var train = EnchantmentWorldModel.Rebase(new TrainCombatState(states, movement.Where(rule => alive.Contains(rule.UnitId)).ToArray(),

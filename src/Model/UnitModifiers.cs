@@ -133,7 +133,8 @@ namespace MonsterTrain2Poju.Model
         {
             bool halfHealth = source.Units.Any(unit => unit.Triggers.Any(HalfHealthDeathwishModel.IsTrigger));
             string? error = RoomCombatModel.Validate(source, allowDyingTarget ? targetId : (int?)null,
-                halfHealthLifecycle: changeHealth != null, allowFreshHivemind: allowFreshHivemind);
+                halfHealthLifecycle: changeHealth != null, allowFreshHivemind: allowFreshHivemind,
+                allowFirstHivemindCombat: !remove && HivemindTurnUpgrade.IsObservedCombatUpgrade(source, upgrade, triggerKind));
             if (error != null) return Unsupported(error);
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target?.Modifiers == null || source.Context?.CardInstances == null)
@@ -182,7 +183,7 @@ namespace MonsterTrain2Poju.Model
                 // OnStacksAdded creates the Mageblade cache after admission.
                 CombatUnit statusTemplate = StatusAttackDamageModel.PrepareBirthTemplate(target, new[] { status });
                 if (status.Id == HivemindTurnUpgrade.StatusId &&
-                    HivemindTurnUpgrade.IsPreviewFeedUpgrade(source, target, upgrade, triggerKind)) continue;
+                    HivemindTurnUpgrade.IsObservedFeedUpgrade(source, target, upgrade, triggerKind)) continue;
                 error = RoomCombatModel.Validate(new RoomCombatState(source.RoomIndex, source.Deployment,
                     new[] { CardSpellModel.Copy(statusTemplate, target.Health, target.Statuses.Where(item => item.Id != status.Id).Concat(new[] { status }).ToArray()) },
                     Array.Empty<string>(), source.Context, source.Preview, source.ActiveCompanionBossIds),

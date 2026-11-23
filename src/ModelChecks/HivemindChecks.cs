@@ -7,6 +7,7 @@ internal static class HivemindChecks
 {
     private const string Boundary = "NativeHivemindTurnSettlement";
     private const string FirstTurnBoundary = "NativeHivemindFirstTurn";
+    private const string SecondTurnBoundary = "NativeHivemindSecondTurn";
     private const string Scenario = "SoulSavior_R2_BossBattle_FavoredChild_3";
     private const string Boss = "Boss_SoulSavior_R2_Indulgent_Titanskin";
     private const string Hunter = "RAny_Attacker_Hunter_Hivemind_Ver2";
@@ -14,13 +15,15 @@ internal static class HivemindChecks
     private const string Heavy = "R2_Heavy_HealGorge";
     private const string Upgrade = "RoomStateHivemindModifierUpgrade";
 
-    internal static void ExportFirstTurn(string battlePath, string outputPath)
+    internal static void ExportTurnComponent(string battlePath, string outputPath, bool secondTurn = false)
     {
         using var source = ModelJson.ReadFixture(battlePath);
         FixtureValue battle = source.RootElement;
-        FirstTurn(battle);
-        Callbacks(battle, requirePreviewFeed: true);
-        FixtureValue turn = Row(battle, "Turns", 0);
+        int index = secondTurn ? 1 : 0;
+        Turn(battle, index);
+        if (secondTurn) SecondDraw(battle);
+        else Callbacks(battle, requirePreviewFeed: true);
+        FixtureValue turn = Row(battle, "Turns", index);
         var builder = new FixtureBuilder();
         var fields = new List<int>();
         foreach (string name in new[] { "Index", "Before", "Actual", "ActualOutcome" })
@@ -29,9 +32,9 @@ internal static class HivemindChecks
             fields.AddRange(new[] { Key("RelentlessDecisions"), builder.Import(decisions) });
         int row = builder.Add(FixtureKind.Object, children: fields.ToArray());
         using var stream = File.OpenRead(battlePath);
-        int root = builder.Add(FixtureKind.Object, children: [
+        var properties = new List<int> {
             Key("Schema"), builder.Add(FixtureKind.Number, "1"),
-            Key("Boundary"), Key(FirstTurnBoundary),
+            Key("Boundary"), Key(secondTurn ? SecondTurnBoundary : FirstTurnBoundary),
             Key("SourceBattleSha256"), Key(Convert.ToHexString(SHA256.HashData(stream)).ToLowerInvariant()),
             Key("GameVersion"), builder.Import(battle.GetProperty("GameVersion")),
             Key("GameModuleMvid"), builder.Import(battle.GetProperty("GameModuleMvid")),
@@ -39,23 +42,32 @@ internal static class HivemindChecks
             Key("Pending"), builder.Import(battle.GetProperty("Pending")),
             Key("OriginalUnrulyBattle"), builder.Import(battle.GetProperty("OriginalUnrulyBattle")),
             Key("Turns"), builder.Add(FixtureKind.Array, children: [row])
-        ]);
+        };
+        if (secondTurn)
+        {
+            FixtureValue draw = Row(battle, "CardCycles", 3);
+            properties.Add(Key("CardCycles"));
+            properties.Add(builder.Add(FixtureKind.Array, children: [builder.Import(draw)]));
+        }
+        int root = builder.Add(FixtureKind.Object, children: properties.ToArray());
         using FixtureDocument component = builder.Build(root, 0, new byte[32]);
-        FirstTurnWithCallbacks(component.RootElement);
+        TurnComponent(component.RootElement, secondTurn);
         using var output = new FileStream(outputPath, FileMode.CreateNew);
         component.Write(output);
 
         int Key(string value) => builder.Add(FixtureKind.String, value);
     }
 
-    internal static void FirstTurnWithCallbacks(FixtureValue component)
+    internal static void TurnComponent(FixtureValue component, bool secondTurn)
     {
-        if (Number(component, "Schema") != 1 || component.GetProperty("Boundary").GetString() != FirstTurnBoundary ||
+        string boundary = secondTurn ? SecondTurnBoundary : FirstTurnBoundary;
+        if (Number(component, "Schema") != 1 || component.GetProperty("Boundary").GetString() != boundary ||
             component.GetProperty("SourceBattleSha256").GetString() is not { Length: 64 } hash || !hash.All(Uri.IsHexDigit) ||
             component.GetProperty("Turns").GetArrayLength() != 1)
-            throw new InvalidDataException("Expected the original first-turn Hivemind component with source provenance.");
-        FirstTurn(component);
-        Callbacks(component, requirePreviewFeed: true);
+            throw new InvalidDataException("Expected an original Hivemind turn component with source provenance.");
+        Turn(component, secondTurn ? 1 : 0);
+        if (secondTurn) SecondDraw(component);
+        else Callbacks(component, requirePreviewFeed: true);
     }
 
     internal static void Export(string battlePath, string outputPath)
@@ -174,22 +186,49 @@ internal static class HivemindChecks
             throw new InvalidDataException("The later native feeding transition requires its own calibration.");
     }
 
-    internal static void FirstTurn(FixtureValue battle)
+    internal static void Turn(FixtureValue battle, int index = 0)
     {
         CheckBuild(battle);
         CheckScenario(battle.GetProperty("OriginalUnrulyBattle"));
-        FixtureValue row = Row(battle, "Turns", 0);
+        FixtureValue row = Row(battle, "Turns", index);
         BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
         BattleTurnState actual = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
         string immutable = JsonSerializer.Serialize(before, ModelJson.Options);
         BattleTurnResult result = BattleTurnModel.EndTurn(before, RecordedBattleChecks.Decisions(row));
         if (!result.Supported || immutable != JsonSerializer.Serialize(before, ModelJson.Options))
-            throw new InvalidDataException("First original Hivemind EndTurn failed: " + result.UnsupportedReason);
+            throw new InvalidDataException($"Original Hivemind EndTurn {index} failed: " + result.UnsupportedReason);
         string? difference = ModelJson.Difference(JsonSerializer.Serialize(result.State, ModelJson.Options),
             JsonSerializer.Serialize(actual, ModelJson.Options));
         if (difference != null || (int)result.Outcome != Number(row, "ActualOutcome"))
-            throw new InvalidDataException("First original Hivemind EndTurn differs: " + difference);
-        Console.WriteLine("NATIVE-HIVEMIND FIRST TURN PASS.");
+            throw new InvalidDataException($"Original Hivemind EndTurn {index} differs: " + difference);
+        Console.WriteLine($"NATIVE-HIVEMIND TURN {index} PASS.");
+    }
+
+    internal static void SecondDraw(FixtureValue battle)
+    {
+        CheckBuild(battle);
+        CheckScenario(battle.GetProperty("OriginalUnrulyBattle"));
+        var rooms = DrawRooms(battle, 3, 2).Deserialize<RoomCombatState[]>()!;
+        var context = Row(battle, "CardCycles", 3).GetProperty("StandbyContext").Deserialize<CombatContext>()!;
+        var source = new TrainCombatState(rooms, Array.Empty<EnemyMovement>(), 4, context);
+        string immutable = JsonSerializer.Serialize(source, ModelJson.Options);
+        TrainCombatState? state = HivemindTurnUpgrade.ApplySecondOrdinaryTurn(source, out string? error);
+        if (state == null || immutable != JsonSerializer.Serialize(source, ModelJson.Options))
+            throw new InvalidDataException("Second native Hivemind draw projection failed: " + error);
+        RoomCombatState[] actual = SettledRooms(battle, 1).Deserialize<RoomCombatState[]>()!;
+        var owners = state.Rooms.SelectMany(room => room.Units.Where(unit => unit.Status(HivemindTurnUpgrade.StatusId) != null)
+            .Select(unit => (room.RoomIndex, Unit: unit))).ToArray();
+        if (owners.Length != 4 || owners.Select(owner => owner.RoomIndex).Distinct().Count() != 2)
+            throw new InvalidDataException("Second native Hivemind attack refresh needs four owners on two floors.");
+        foreach (var owner in owners)
+        {
+            CombatUnit matched = actual[owner.RoomIndex].Units.Single(unit => unit.Id == owner.Unit.Id);
+            string? difference = ModelJson.Difference(JsonSerializer.Serialize(owner.Unit, ModelJson.Options),
+                JsonSerializer.Serialize(matched, ModelJson.Options));
+            if (difference != null)
+                throw new InvalidDataException("Second settled native Hivemind actor differs: " + difference);
+        }
+        Console.WriteLine("NATIVE-HIVEMIND SECOND DRAW PASS: four native actors and immutable source.");
     }
 
     internal static void Callbacks(FixtureValue battle, bool requirePreviewFeed)

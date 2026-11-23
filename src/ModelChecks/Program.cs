@@ -7,13 +7,18 @@ if (args.Length == 3 && args[0] == "--export-native-hivemind")
 }
 if (args.Length == 3 && args[0] == "--export-native-hivemind-first-turn")
 {
-    HivemindChecks.ExportFirstTurn(args[1], args[2]);
+    HivemindChecks.ExportTurnComponent(args[1], args[2]);
     return;
 }
-if (args.Length == 2 && args[0] == "--native-hivemind-first-turn-component")
+if (args.Length == 3 && args[0] == "--export-native-hivemind-second-turn")
+{
+    HivemindChecks.ExportTurnComponent(args[1], args[2], secondTurn: true);
+    return;
+}
+if (args.Length == 2 && args[0] is "--native-hivemind-first-turn-component" or "--native-hivemind-second-turn-component")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    HivemindChecks.FirstTurnWithCallbacks(fixture.RootElement);
+    HivemindChecks.TurnComponent(fixture.RootElement, secondTurn: args[0] == "--native-hivemind-second-turn-component");
     return;
 }
 if (args.Length == 2 && args[0] == "--native-hivemind-only")
@@ -25,7 +30,13 @@ if (args.Length == 2 && args[0] == "--native-hivemind-only")
 if (args.Length == 2 && args[0] == "--native-hivemind-first-turn-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    HivemindChecks.FirstTurn(fixture.RootElement);
+    HivemindChecks.Turn(fixture.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--native-hivemind-second-draw-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    HivemindChecks.SecondDraw(fixture.RootElement);
     return;
 }
 if (args.Length is 2 or 3 && args[0] == "--native-hivemind-callbacks-only")

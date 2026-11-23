@@ -244,7 +244,7 @@ namespace MonsterTrain2Poju.Model
             train = WithContext(train, context, spawn.Turn == 0);
             foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
             {
-                TrainCombatResult triggers = TrainCombatModel.EndTurnPreHandDiscard(train, team);
+                TrainCombatResult triggers = TrainCombatModel.EndTurnPreHandDiscard(train, team, allowFirstHivemindCombat: true);
                 if (!triggers.Supported) return Unsupported(triggers.UnsupportedReason!);
                 if (!RouteDeadUnits(train, triggers)) return Unsupported("Missing pre-discard unit death or card routing.");
                 train = triggers.State!;
@@ -587,10 +587,11 @@ namespace MonsterTrain2Poju.Model
             spawn = WithTrain(spawn, train, turn, UnityRng.Seed(unchecked(spawningStream.Seed + turn)));
             train = WithContext(train, EnergyModel.SetPhase(train.Context!, "PreCombat"), false);
             bool firstWaveHivemind = turn == 1 && HivemindTurnUpgrade.HasOriginalFirstWavePair(train.Rooms.SelectMany(room => room.Units));
+            bool secondWaveHivemind = turn == 2 && HivemindTurnUpgrade.HasSecondWave(train);
             // Native queues each team's PreCombat after spawning/rollover, before energy and draw.
             foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
             {
-                TrainCombatResult triggers = TrainCombatModel.PreCombat(train, team, firstWaveHivemind);
+                TrainCombatResult triggers = TrainCombatModel.PreCombat(train, team, firstWaveHivemind || secondWaveHivemind);
                 if (!triggers.Supported) return Unsupported(triggers.UnsupportedReason!);
                 if (!RouteDeadUnits(train, triggers)) return Unsupported("Pre-combat deaths require standby card routing.");
                 train = triggers.State!;
@@ -782,6 +783,12 @@ namespace MonsterTrain2Poju.Model
             if (firstWaveHivemind)
             {
                 TrainCombatState? refreshed = HivemindTurnUpgrade.ApplyFirstOrdinaryTurn(train, out string? hivemindError);
+                if (refreshed == null) return Unsupported(hivemindError!);
+                train = refreshed;
+            }
+            if (secondWaveHivemind)
+            {
+                TrainCombatState? refreshed = HivemindTurnUpgrade.ApplySecondOrdinaryTurn(train, out string? hivemindError);
                 if (refreshed == null) return Unsupported(hivemindError!);
                 train = refreshed;
             }

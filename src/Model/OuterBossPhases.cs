@@ -108,8 +108,9 @@ namespace MonsterTrain2Poju.Model
                 battle.PlayRules == null || train.Context?.SpawnPoints == null)
                 return Fail("Outer boss phase requires the calibrated empty-action casting definition and physical room rules.");
             if (!preCombat) return new OuterBossPhaseResult(source);
-            bool firstHivemindWave = battle.Spawn.Turn == 1 && boss.AssetKey == OuterBossDefinitions.IndulgentTitanskin &&
-                HivemindTurnUpgrade.HasOriginalFirstWavePair(train.Rooms.SelectMany(room => room.Units));
+            bool firstHivemindWave = boss.AssetKey == OuterBossDefinitions.IndulgentTitanskin &&
+                (battle.Spawn.Turn == 1 && HivemindTurnUpgrade.HasOriginalFirstWavePair(train.Rooms.SelectMany(room => room.Units)) ||
+                 battle.Spawn.Turn == 2 && HivemindTurnUpgrade.HasSecondWave(train));
             string? error = TrainCombatModel.Validate(train, allowFreshHivemind: firstHivemindWave);
             if (error != null) return Fail(error);
             CombatUnit? actor = train.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == boss.UnitId);
