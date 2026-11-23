@@ -12,6 +12,49 @@ internal static class LifemotherInfestedChecks
     private const string OpeningBoundary = "NativeLifemotherInfestedOpening";
     private const string FirstTurnBoundary = "NativeLifemotherInfestedFirstTurn";
     private const string DrawBoundary = "NativeLifemotherInfestedLaterDraws";
+    private const string SpawnBoundary = "NativeLifemotherInfestedLaterSpawns";
+
+    internal static void ExportSpawns(string sourcePath, string outputPath)
+    {
+        using FixtureDocument source = ModelJson.ReadFixture(sourcePath);
+        FixtureValue battle = source.RootElement;
+        FixtureValue observation = battle.GetProperty("OriginalUnrulyBattle");
+        Require(observation.GetProperty("Scenario").GetString() == Scenario &&
+            observation.GetProperty("BossKey").GetString() == BossKey &&
+            observation.GetProperty("RailforgedInstalled").GetBoolean() &&
+            observation.GetProperty("ControlledTestScenario").GetBoolean() &&
+            battle.GetProperty("CaptureFailures").GetInt32() == 0 && battle.GetProperty("Pending").GetInt32() == 0,
+            "Expected completed original Infested wave observations.");
+        using var input = File.OpenRead(sourcePath);
+        var builder = new FixtureBuilder();
+        int[] spawns = battle.GetProperty("Spawns").EnumerateArray().Skip(1).Select(builder.Import).ToArray();
+        int root = builder.Add(FixtureKind.Object, children: [
+            Key("Boundary"), Key(SpawnBoundary),
+            Key("SourceBattleSha256"), Key(Convert.ToHexString(SHA256.HashData(input)).ToLowerInvariant()),
+            Key("GameVersion"), builder.Import(battle.GetProperty("GameVersion")),
+            Key("GameModuleMvid"), builder.Import(battle.GetProperty("GameModuleMvid")),
+            Key("Spawns"), builder.Add(FixtureKind.Array, children: spawns)]);
+        using FixtureDocument fixture = builder.Build(root, 0, new byte[32]);
+        Spawns(fixture.RootElement);
+        using var output = new FileStream(outputPath, FileMode.CreateNew);
+        fixture.Write(output);
+
+        int Key(string name) => builder.Add(FixtureKind.String, name);
+    }
+
+    internal static void Spawns(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("Boundary").GetString() == SpawnBoundary &&
+            fixture.GetProperty("SourceBattleSha256").GetString() is { Length: 64 } hash && hash.All(Uri.IsHexDigit) &&
+            fixture.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            fixture.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module, "Expected original Infested wave provenance.");
+        FixtureValue[] rows = fixture.GetProperty("Spawns").EnumerateArray().ToArray();
+        Require(rows.Length == 4 &&
+            rows.Select(row => row.GetProperty("Before").GetProperty("Phase").GetInt32()).SequenceEqual([1, 1, 2, 2]) &&
+            rows.Select(row => row.GetProperty("IncludeTreasure").GetBoolean()).SequenceEqual([true, false, true, false]),
+            "Expected the second and third installed waves at both entry points.");
+        EnemySpawningChecks.Native(fixture);
+    }
 
     internal static void ExportDraws(string sourcePath, string outputPath)
     {

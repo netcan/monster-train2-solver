@@ -17,10 +17,21 @@ if (args.Length == 3 && args[0] == "--export-native-infested-draws")
     LifemotherInfestedChecks.ExportDraws(args[1], args[2]);
     return;
 }
- if (args.Length == 2 && args[0] == "--native-infested-draws")
+if (args.Length == 2 && args[0] == "--native-infested-draws")
 {
     using var capture = ModelJson.ReadFixture(args[1]);
     LifemotherInfestedChecks.Draws(capture.RootElement);
+    return;
+}
+if (args.Length == 2 && args[0] == "--native-infested-spawns")
+{
+    using var capture = ModelJson.ReadFixture(args[1]);
+    LifemotherInfestedChecks.Spawns(capture.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--export-native-infested-spawns")
+{
+    LifemotherInfestedChecks.ExportSpawns(args[1], args[2]);
     return;
 }
 if (args.Length == 3 && args[0] == "--native-lifemother-infested-first-turn")

@@ -286,16 +286,31 @@ namespace MonsterTrain2Poju.Model
                 frame.MoonPhase != frame.Turn - 1 ||
                 !OuterBossDefinitions.HasLifemotherInfestedOwner(source.Context) || source.Rooms.Any(room => room.Preview))
                 return false;
-            CombatUnit[] units = source.Rooms.SelectMany(room => room.Units).ToArray();
+            return MatchesInfestedDrawRoster(source.Rooms.SelectMany(room => room.Units), frame.Turn.Value);
+        }
+
+        internal static bool IsInfestedWaveSpawn(EnemySpawnState source, IReadOnlyList<EnemyDefinition> definitions)
+        {
+            if (source.Phase is not (1 or 2) || source.Turn != source.Phase || source.Train.Rooms.Any(room => room.Preview) ||
+                source.OuterBoss is not { AssetKey: OuterBossDefinitions.LifemotherInfested, Phase: "Casting" } ||
+                !OuterBossDefinitions.HasLifemotherInfestedOwner(source.Train.Context))
+                return false;
+            return MatchesInfestedDrawRoster(source.Train.Rooms.SelectMany(room => room.Units)
+                .Concat(definitions.Select(definition => definition.Unit)), source.Turn + 1);
+        }
+
+        private static bool MatchesInfestedDrawRoster(IEnumerable<CombatUnit> roster, int turn)
+        {
+            CombatUnit[] units = roster.ToArray();
             var owners = units.Where(unit => unit.RegisteredStatus(StatusId) != null).ToArray();
-            return owners.Length == (frame.Turn == 2 ? 7 : 9) &&
+            return owners.Length == (turn == 2 ? 7 : 9) &&
                 owners.Count(unit => unit.AssetKey == OuterBossDefinitions.LifemotherInfested) == 1 &&
-                owners.Count(unit => unit.AssetKey == HeavyT2) == frame.Turn &&
-                owners.Count(unit => unit.AssetKey == DeathHorde) == (frame.Turn == 2 ? 4 : 5) &&
-                owners.Count(unit => unit.Modifiers?.Upgrades.Count == 0) == (frame.Turn == 2 ? 3 : 2) &&
+                owners.Count(unit => unit.AssetKey == HeavyT2) == turn &&
+                owners.Count(unit => unit.AssetKey == DeathHorde) == (turn == 2 ? 4 : 5) &&
+                owners.Count(unit => unit.Modifiers?.Upgrades.Count == 0) == (turn == 2 ? 3 : 2) &&
                 units.All(unit => unit.RegisteredStatus("hivemindkiller") == null) &&
-                owners.All(unit => IsInfestedDrawOwner(unit, frame.Turn.Value, afterRemoval: false)) &&
-                owners.Sum(unit => unit.Status(StatusId)?.Stacks) == (frame.Turn == 2 ? 14 : 32);
+                owners.All(unit => IsInfestedDrawOwner(unit, turn, afterRemoval: false)) &&
+                owners.Sum(unit => unit.Status(StatusId)?.Stacks) == (turn == 2 ? 14 : 32);
         }
 
         internal static bool IsInfestedDrawOwner(CombatUnit unit, int turn, bool afterRemoval)
