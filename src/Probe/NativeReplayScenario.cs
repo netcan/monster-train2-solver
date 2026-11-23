@@ -790,6 +790,10 @@ namespace MonsterTrain2Poju.Probe
                     }
 #endif
                     OriginalOuterBossRoute.PrepareIntro(save, intro, log);
+#if DEVELOPMENT_PROBE
+                    if (fullBattle && MoreTreasureUnitsProbe.Enabled && !MoreTreasureUnitsProbe.Acquired)
+                        MoreTreasureUnitsProbe.Acquire(save);
+#endif
                     if (fullBattle && OriginalStartRoomAttachmentScenario.InstalledInferno && !OriginalStartRoomAttachmentScenario.Acquired)
                         OriginalStartRoomAttachmentScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalThikDeckChangeScenario.Enabled && !OriginalThikDeckChangeScenario.Acquired)

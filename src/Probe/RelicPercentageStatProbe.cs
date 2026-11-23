@@ -44,6 +44,7 @@ namespace MonsterTrain2Poju.Probe
                     owner.GetRelicDataID() == RelicPersistentMonsterHealthModel.OwnerId &&
                     owner.GetEffects() is [RelicEffectPersistMonsterHp persistentHealth] && SupportsPersistentHealth(persistentHealth) ||
                     SupportsPyreAbilityCooldown(owner, save) ||
+                    MoreTreasureUnitsProbe.MatchesOriginal(owner, save) ||
                     CardBranchMaskProbe.Enabled && SupportsRandomTargets(owner, save) ||
                     owner.GetEffects().Count > 0 && owner.GetEffects().All(effect =>
                     (effect is RelicEffectModifyCharacterAttackOrHealthPercentage || effect is RelicEffectMultiplyAttackLate ||

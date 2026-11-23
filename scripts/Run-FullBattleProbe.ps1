@@ -588,6 +588,7 @@ param(
     [switch] $OriginalPreventMonsterDamageBattle,
     [switch] $OriginalRandomizedWavesBattle,
     [switch] $OriginalDisabledRoomPreviewBattle,
+    [switch] $OriginalMoreTreasureUnitsBattle,
     [ValidateSet('Combined', 'Stock', 'Ephemeral')]
     [string] $OriginalHandAndEmberWitness = '',
     [switch] $OriginalPlacementMutatorsWitness,
@@ -997,6 +998,18 @@ if ($OriginalPersistentMonsterHpWitness -or $OriginalPersistentMonsterHpBattle) 
     if (-not $BinaryCapture -or ($OriginalPersistentMonsterHpWitness -and $OriginalPersistentMonsterHpBattle) -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
         throw 'Select one stock persistent monster health test with binary capture.'
+    }
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($OriginalMoreTreasureUnitsBattle) {
+    $treasureArguments = @('OriginalMoreTreasureUnitsBattle', 'InputProfile', 'BattleDistance',
+        'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild',
+        'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne 1 -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $treasureArguments }).Count) {
+        throw 'MoreTreasureUnits requires an original Ring 2 checkpoint and binary capture.'
     }
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
@@ -2763,6 +2776,14 @@ if ($InputProfile) {
         }
         $waveInputSignature = Get-OriginalSignature $checkpoint
     }
+    if ($OriginalMoreTreasureUnitsBattle) {
+        if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
+            $checkpointData.wasDevCheatUsed -ne $false -or $checkpointData.runState.numBattlesCompleted -ne 1 -or
+            $checkpointData.startingConditions.ascensionLevel -ne 0) {
+            throw 'MoreTreasureUnits requires a standard original Rank 0 Ring 2 checkpoint.'
+        }
+        $treasureInputSignature = Get-OriginalSignature $checkpoint
+    }
     if (($OriginalOpeningSpellIds.Count -or $OriginalOpeningUnitIds.Count) -and
         ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
          $checkpointData.wasDevCheatUsed -ne $false -or $checkpointData.runState.numBattlesCompleted -ne 0)) {
@@ -2966,6 +2987,7 @@ $environment = @{
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_BATTLE = $(if ($OriginalPreventMonsterDamageBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_RANDOMIZED_WAVES = $(if ($OriginalRandomizedWavesBattle) { '1' } else { '0' })
     MT2_PROBE_DISABLED_ROOM_PREVIEW = $(if ($OriginalDisabledRoomPreviewBattle) { '1' } else { '0' })
+    MT2_PROBE_ORIGINAL_MORE_TREASURE_UNITS = $(if ($OriginalMoreTreasureUnitsBattle) { '1' } else { '0' })
     MT2_PROBE_HAND_AND_EMBER_WITNESS = $OriginalHandAndEmberWitness
     MT2_PROBE_PLACEMENT_MUTATORS_WITNESS = $(if ($PlacementSummonBlockOnly) { 'block' } elseif ($OriginalPlacementMutatorsWitness) { '1' } else { '0' })
     MT2_PROBE_BIG_MONSTERS_CREATION = $(if ($OriginalBigMonstersCreationWitness) { '1' } else { '0' })
@@ -5103,6 +5125,19 @@ if ($DamagePerHpAbility -and ($trace.ModifierScenario -ne 'damage-per-hp-ability
 if ($DamageOverflow -and ($trace.ModifierScenario -ne 'damage-overflow' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'DAMAGE-OVERFLOW-PREPARED friendly-team damage=20' -Quiet))) {
     throw 'Damage overflow native setup did not run.'
+}
+if ($OriginalMoreTreasureUnitsBattle) {
+    $deployment = $trace.Turns[0].Before.Spawn
+    $owners = @($deployment.Train.Context.Relics | Where-Object DataId -ceq 'cbacfccc-fc3b-43b9-b1d2-27a4c30ed628')
+    $births = @($trace.Spawns | Where-Object {
+        $_.IncludeTreasure -and $_.Actual.TreasuresRemaining -eq ($_.Before.TreasuresRemaining - 1)
+    })
+    if ($trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -ne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+        (Get-OriginalSignature $checkpoint) -cne $treasureInputSignature -or -not $deployment.TreasureEnabled -or
+        $deployment.TreasuresRemaining -ne 2 -or @($deployment.Treasures).Count -eq 0 -or $owners.Count -ne 1 -or
+        ($owners[0].EffectTypes -join ',') -cne 'RelicEffectChangeTreasureUnitCount' -or $births.Count -ne 2) {
+        throw "MoreTreasureUnits did not settle two original treasure births. Inspect $tracePath and $unityLog"
+    }
 }
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore

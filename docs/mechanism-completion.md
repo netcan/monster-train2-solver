@@ -1357,6 +1357,10 @@ Fecundity 的出牌后副本替换仍待实机核对。
 专项复放逐项核对伤害、金币和随机流，并检查缺少原版触发器时的拒绝路径。
 [受击扣金归档](../tests/compatibility/game-2.3.1/mechanics/lose-money-on-hit/three-physical-hits.mt2f)
 
+`MoreTreasureUnits` 通过原版第二环同源对照。待生成的寻宝单位由 1 增至 2，两次出生后依次降到 1 和 0。
+专项回归逐项匹配两次出生与对应随机流。该场整战仍有月相采集差异。
+[寻宝单位出生归档](../tests/compatibility/game-2.3.1/mechanics/more-treasure-units/two-collector-births.mt2f)
+
 ## 自动化与测试成本
 
 从仓库根目录运行下列命令，按已登记的原版战斗生成待采集卡牌清单。
