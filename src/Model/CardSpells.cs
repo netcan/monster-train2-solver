@@ -1764,10 +1764,12 @@ namespace MonsterTrain2Poju.Model
                     CombatUnit? recipient = transferRoom.Units.FirstOrDefault(unit => unit.Team == sourceUnit.Team &&
                         unit.Status("untouchable") == null);
                     if (recipient == null || recipient.Id == sourceUnit.Id) continue;
-                    if (sourceUnit.Statuses.Any(status => status.Stacks > 0 && status.Id != "horde" &&
+                    IReadOnlyList<CombatStatus> registry = sourceUnit.StatusRegistry ?? sourceUnit.Statuses;
+                    IReadOnlyList<CombatStatus> transferOrder = sourceUnit.StatusDictionary?.Order(registry) ?? registry;
+                    if (transferOrder.Any(status => status.Stacks > 0 && status.Id != "horde" &&
                         (!status.Hidden.HasValue || status.DisplayCategory == null)))
                         return UnsupportedTrain("Status transfer requires visible-category metadata on its source statuses.");
-                    CombatStatus[] moved = sourceUnit.Statuses.Where(status => status.Stacks > 0 && status.Id != "horde" &&
+                    CombatStatus[] moved = transferOrder.Where(status => status.Stacks > 0 && status.Id != "horde" &&
                         status.Hidden == false && status.DisplayCategory is "Positive" or "Negative").ToArray();
                     foreach (CombatStatus status in moved)
                     {
