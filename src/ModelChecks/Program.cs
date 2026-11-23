@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--native-persistent-monster-hp-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    PersistentMonsterHpChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-prevent-monster-damage-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

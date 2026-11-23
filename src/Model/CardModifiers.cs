@@ -229,6 +229,8 @@ namespace MonsterTrain2Poju.Model
             new(Offsets, Upgrades, PersistentHealth, ExternalInteractions, contents, MergedEquipment);
         internal CardModifiers WithMergedEquipment(MergedEquipmentState merged) =>
             new(Offsets, Upgrades, PersistentHealth, ExternalInteractions, BoxedCards, merged);
+        internal CardModifiers WithPersistentHealth(int health) =>
+            new(Offsets, Upgrades, health, ExternalInteractions, BoxedCards, MergedEquipment);
         public static CardModifiers Empty() => new CardModifiers(new CardStatModifier(), Array.Empty<CardUpgradeModifier>(), 0, Array.Empty<string>());
         internal CardModifiers WithAdditionalDamage(int damage) => new CardModifiers(new CardStatModifier(
             unchecked(Offsets.Damage + damage), Offsets.Health, Offsets.Cost, Offsets.Heal, Offsets.Size,
@@ -478,9 +480,13 @@ namespace MonsterTrain2Poju.Model
                 .Concat(instance.Permanent.ExternalInteractions)
                 .Concat(instance.Temporary.ExternalInteractions)
                 .Concat(InstanceUpgradeInteractions(instance, CardShardtailImpCostModel.PermanentSource(instance))).ToList();
-            if (instance.Permanent.PersistentHealth != 0 || instance.Temporary.PersistentHealth != 0) interactions.Add("Persistent card health");
+            if (InvalidPersistentHealth(instance, instance.MaskDescriptor?.Definition.CardType)) interactions.Add("Invalid persistent card health");
             return interactions.Count == 0 ? null : string.Join("; ", interactions.Distinct());
         }
+
+        private static bool InvalidPersistentHealth(CardInstanceState instance, string? cardType) =>
+            instance.Temporary.PersistentHealth != 0 || instance.Permanent.PersistentHealth is < 0 or > 99999 ||
+            instance.Permanent.PersistentHealth > 0 && cardType != null && cardType != "Monster";
 
         private static IEnumerable<string> InstanceUpgradeInteractions(CardInstanceState instance, CardUpgradeModifier? shardtailSource) =>
             instance.Permanent.Upgrades.Concat(instance.Temporary.Upgrades).SelectMany(upgrade =>
@@ -541,7 +547,7 @@ namespace MonsterTrain2Poju.Model
                 interactions.Add("Card OnSpare requires captured branch-owned trigger payloads.");
             if (CardExhaustModel.HasConsume(instance) && instance.ExhaustState == null) interactions.Add("Consume requires captured private trait state.");
             if (rule.DataId != instance.DataId) interactions.Add("Card instance definition differs.");
-            if (instance.Permanent.PersistentHealth != 0 || instance.Temporary.PersistentHealth != 0) interactions.Add("Persistent card health");
+            if (InvalidPersistentHealth(instance, rule.CardType)) interactions.Add("Invalid persistent card health");
             CardModifiers[] modifiers = { instance.Permanent, instance.Temporary };
             CardUpgradeModifier[] cardUpgrades = modifiers.SelectMany(modifier => modifier.Upgrades).ToArray();
             CombatUnit? unit = rule.SpawnUnit;

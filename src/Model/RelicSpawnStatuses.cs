@@ -139,6 +139,7 @@ namespace MonsterTrain2Poju.Model
             string? error = RelicModel.Validate(source.Context);
             if (error != null) return Fail(error);
             if (source.Context?.Relics == null || !source.Context.Relics.Any(relic => relic.SpawnStatuses?.Count > 0 ||
+                relic.EffectTypes.Contains(RelicPersistentMonsterHealthModel.Effect) ||
                 relic.EffectTypes.Contains(RelicPyreResurrectionModel.Effect) || relic.EffectTypes.Contains(RelicOccupiedFloorDrawModel.Effect) || relic.EffectTypes.Contains(RelicPileSpawnUpgradeModel.Effect) || relic.EffectTypes.Contains(RelicSpawnStatusScalingModel.Effect) ||
                 relic.PercentageStats?.Count > 0 || relic.CardModifiers?.Count > 0 || relic.CardAttackModifiers?.Count > 0 || relic.TriggerAdditions?.Any(rule => rule.Triggers.Count > 0) == true ||
                 relic.CardPlayMagicPowerModifiers?.Count > 0 || relic.CardDrawOnCardPlayModifiers?.Count > 0 || relic.CardHealthModifiers?.Count > 0))
@@ -161,6 +162,18 @@ namespace MonsterTrain2Poju.Model
                 for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
                     relic = state.Context!.Relics![relicIndex];
+                    if (relic.EffectTypes[effectIndex] == RelicPersistentMonsterHealthModel.Effect)
+                    {
+                        CombatUnit? healthActor = state.Units.FirstOrDefault(unit => unit.Id == unitId);
+                        if (healthActor == null) return Fail("Persistent monster health birth requires a retained native actor.");
+                        RoomCombatResult restored = RelicPersistentMonsterHealthModel.RestoreAtBirth(state, healthActor);
+                        if (!restored.Supported) return restored;
+                        state = restored.State!;
+                        callbacks.AddRange(restored.PendingCallbacks);
+                        events.AddRange(restored.Events);
+                        if (!onlyCovenants && !DrainYield()) return failed!;
+                        continue;
+                    }
                     if (relic.EffectTypes[effectIndex] == RelicOccupiedFloorDrawModel.Effect)
                     {
                         var refreshed = RelicOccupiedFloorDrawModel.RefreshRoomOne(state, relicIndex, effectIndex,

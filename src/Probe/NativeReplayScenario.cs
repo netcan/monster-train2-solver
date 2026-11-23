@@ -472,6 +472,9 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                     if (fullBattle && OriginalPreventMonsterDamageWitness.FullBattle && !OriginalPreventMonsterDamageWitness.Acquired)
                         OriginalPreventMonsterDamageWitness.Acquire(save);
+                    if (fullBattle && (OriginalPersistentMonsterHpWitness.Enabled || OriginalPersistentMonsterHpWitness.FullBattle) &&
+                        !OriginalPersistentMonsterHpWitness.Acquired)
+                        OriginalPersistentMonsterHpWitness.Acquire(save);
 #endif
                     if (fullBattle && OriginalCardAttackRelicScenario.Enabled && !OriginalCardAttackRelicScenario.Acquired)
                         OriginalCardAttackRelicScenario.AcquireBeforeBattle(managers!, log);
@@ -961,6 +964,12 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && OriginalPersistentMonsterHpWitness.Enabled)
+            {
+                if (OriginalPersistentMonsterHpWitness.Tick(FullBattleTrace.Active!, managers, log))
+                    Finish(true, "Original persistent monster health component captured.");
+                return;
+            }
             if (fullBattle && OriginalPreventMonsterDamageWitness.Enabled)
             {
                 OriginalPreventMonsterDamageWitness.TryStart(managers, log);

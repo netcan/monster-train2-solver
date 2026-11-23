@@ -33,6 +33,8 @@ namespace MonsterTrain2Poju.Probe
                     owner.GetEffects() is [RelicEffectExtraSpawnsFirstUnitPerTurn] ||
                     owner.GetRelicDataID() == RelicModel.PreventMonsterDamageOwnerId &&
                     owner.GetEffects() is [RelicEffectPreventMonstersDamagingHeroes] ||
+                    owner.GetRelicDataID() == RelicPersistentMonsterHealthModel.OwnerId &&
+                    owner.GetEffects() is [RelicEffectPersistMonsterHp persistentHealth] && SupportsPersistentHealth(persistentHealth) ||
                     owner.GetEffects().Count > 0 && owner.GetEffects().All(effect =>
                     (effect is RelicEffectModifyCharacterAttackOrHealthPercentage || effect is RelicEffectMultiplyAttackLate ||
                         effect is RelicEffectApplyExtraPyreDamage || effect is RelicEffectAddUnitUpgradePerPile ||
@@ -49,6 +51,12 @@ namespace MonsterTrain2Poju.Probe
                         owner.GetRelicDataID() is RelicResourceProbe.AfterDrawMorselsId or RelicResourceProbe.AfterDrawCultLeaderId &&
                         owner.GetEffects().Count == 1 && effect is RelicEffectSpawnMonsterOnTurnStart) &&
                     ((RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect)).GetEffectConditions().Count == 0));
+        }
+
+        private static bool SupportsPersistentHealth(RelicEffectPersistMonsterHp effect)
+        {
+            var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect);
+            return data.GetEffectConditions().Count == 0 && data.GetParamCharacterSubtype()?.IsNone == true;
         }
     }
 }

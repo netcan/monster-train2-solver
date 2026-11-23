@@ -4832,6 +4832,12 @@ namespace MonsterTrain2Poju.Model
                 foreach (CombatRelicState relic in context.Relics)
                 for (int effectIndex = 0; effectIndex < relic.EffectTypes.Count; effectIndex++)
                 {
+                    if (relic.EffectTypes[effectIndex] == RelicPersistentMonsterHealthModel.Effect)
+                    {
+                        if (!source.Preview && (kind is "OnHit" or "OnHeal" or "OnDeath"))
+                            context = RelicPersistentMonsterHealthModel.Record(context!, unit.Source, kind == "OnDeath" ? 0 : unit.Health);
+                        continue;
+                    }
                     if (relic.EffectTypes[effectIndex] == RelicDecayDeathModel.Effect)
                     {
                         if (!RelicDecayDeathModel.Test(unit.Freeze(), kind, paramInt2)) continue;

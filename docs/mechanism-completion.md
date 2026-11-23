@@ -279,6 +279,14 @@ Echoes 的友军伤害限制在隔离原版用同一变异器分别录制了伤�
 [原版伤害回调](../tests/compatibility/game-2.3.1/mechanics/prevent-monster-damage/adjustments.mt2f) ·
 [原版整战](../tests/compatibility/game-2.3.1/mechanics/prevent-monster-damage/native-battle.mt2f)
 
+Echoes 的留存生命效果按单位的来源卡记录。原版专项中，列车员受击后写回 24 点生命，
+以 24/25 部署的单位治疗后写回 25 点，预置 26 点的单位以 26/26 部署并在死亡时清零。
+部署、受击、治疗和死亡的分支回放通过。原版开局整战的 21 次出牌、7 次结束回合及两类候选检查通过。
+常规战役胜利后的存档写入在战斗终局采样之后发生，跨战存档生命周期仍待实机核对。
+[受击、部署与治疗](../tests/compatibility/game-2.3.1/mechanics/persistent-monster-health/hit-birth-heal.mt2f) ·
+[提高生命上限与死亡](../tests/compatibility/game-2.3.1/mechanics/persistent-monster-health/maximum-birth-death.mt2f) ·
+[原版整战](../tests/compatibility/game-2.3.1/mechanics/persistent-monster-health/native-battle.mt2f)
+
 ExtraFeedTrigger 的原版查询确认友军 OnFeed 次数为 2，OnDeath 次数保持 1。
 61 个战斗阶段、5 次出牌、7 次结束回合与两类候选通过。实际普通进食也已录到两次 OnFeed，
 合金构装体的燃料从 1 增至 3，矿工只被吃掉一次，完整状态与随机数在 16 条分支上复放一致。

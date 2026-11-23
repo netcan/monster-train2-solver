@@ -97,6 +97,7 @@ namespace MonsterTrain2Poju.Probe
                     if (!displayStatuses.Any(status => status.statusId == "fixedattack" || status.statusId == "equalizer"))
                         cardAttack = RelicLateAttackModel.Scale(cardAttack, RelicLateAttackModel.Multiplier(rule.SpawnUnit, applyPyreSkip: false));
                 }
+                if (state.Permanent.PersistentHealth > 0) cardHealth = state.Permanent.PersistentHealth;
                 if (data.GetCardType() == CardType.Monster && rule.SpawnUnit != null && (card.GetSize() != rule.SpawnUnit.Size ||
                     card.GetTotalAttackDamage() != cardAttack || (int)Math.Round(card.GetHealth()) != cardHealth))
                     interactions.Add("Unmodeled unit card statistics");
