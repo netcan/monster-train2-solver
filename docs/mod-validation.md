@@ -39,6 +39,15 @@ EndTurn successors. It won with 73 Pyre health and started no additional
 search for seven floor changes. The run verifies compatibility of this change.
 Its timing does not establish an end-to-end speedup.
 
+The isolated 2.3.1 Ring 9 advisor now resolves units scheduled to appear later
+in the plan. In the first expanded publication, the game supplied localized
+names for all seven targets that previously appeared only as unit numbers.
+The same battle reached native defeat after 15 plays and six EndTurns. All
+21 advice decisions, 652 card or skill candidates and 21 EndTurn successors
+passed independent replay.
+The isolated [UI journal](../.probe-runs/full-battle-units-spells-and-junk-20261123-151305-7b2153a6/PojuAdvisor/diagnostics/advice.jsonl)
+records the displayed names before the targets entered play.
+
 Last documented Windows installation: 0.2.438, installed 2026-10-30 after an isolated
 native player battle and focused continuation checks. The three installed DLL
 hashes match the tested build; the prior 0.2.437 payload is retained at

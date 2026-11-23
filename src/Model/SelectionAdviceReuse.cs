@@ -154,6 +154,7 @@ namespace MonsterTrain2Poju.Model
             var roots = retainPlans && VerifiedAdviceContinuation.CanRetain(plan) ? new List<string>() : null;
             using var fullKeys = new BattleStateKeys();
             var fullRoots = roots == null ? null : new List<string>();
+            var unitKeys = roots == null ? null : new List<(string? Actor, string? Target)>();
             VerifiedAdviceContinuation? suffix = roots == null ? null : previous?.ForReplay(plan);
             foreach (BattleSearchStep step in plan.Steps)
             {
@@ -161,10 +162,11 @@ namespace MonsterTrain2Poju.Model
                 if (roots != null)
                 {
                     string fullKey = fullKeys.Key(state);
-                    proof = suffix?.JoinAt(plan, fullKey, roots, fullRoots!);
+                    proof = suffix?.JoinAt(plan, fullKey, roots, fullRoots!, unitKeys!);
                     if (proof != null) { state = plan.State; break; }
                     roots.Add(continuationKeys.Key(state));
                     fullRoots!.Add(fullKey);
+                    unitKeys!.Add(VerifiedAdviceContinuation.CaptureUnitKeys(state, step));
                 }
                 if (step.IsEndTurn)
                 {
@@ -182,7 +184,8 @@ namespace MonsterTrain2Poju.Model
             }
             if (proof == null && (outcome != plan.Outcome || !SameBattle(state, plan.State))) return false;
             plan = Reused(plan, state);
-            if (roots != null && proof == null) proof = new VerifiedAdviceContinuation(plan, roots.ToArray(), fullRoots!.ToArray());
+            if (roots != null && proof == null)
+                proof = new VerifiedAdviceContinuation(plan, roots.ToArray(), fullRoots!.ToArray(), unitKeys!.ToArray());
             // Preview allocators can advance on every browse. Bound retained
             // calibration graphs even if none of those exact roots repeat.
             if (cache != null && key != null)

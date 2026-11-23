@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Model
         private readonly BattlePlanResult original;
         private readonly string[] roots;
         private readonly string[] fullRoots;
+        private readonly (string? Actor, string? Target)[] unitKeys;
         private readonly int offset;
 
         internal bool IsWinning => original.Outcome == RoomOutcome.BattleWon;
@@ -22,14 +23,28 @@ namespace MonsterTrain2Poju.Model
         internal static bool CanRetain(BattlePlanResult plan) => plan.Steps.Count > 0 &&
             plan.Outcome is RoomOutcome.Exchanged or RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
 
-        internal VerifiedAdviceContinuation(BattlePlanResult original, string[] roots, string[] fullRoots)
-            : this(original, roots, fullRoots, 0) { }
+        internal VerifiedAdviceContinuation(BattlePlanResult original, string[] roots, string[] fullRoots,
+            (string? Actor, string? Target)[] unitKeys)
+            : this(original, roots, fullRoots, unitKeys, 0) { }
 
-        private VerifiedAdviceContinuation(BattlePlanResult original, string[] roots, string[] fullRoots, int offset,
+        private VerifiedAdviceContinuation(BattlePlanResult original, string[] roots, string[] fullRoots,
+            (string? Actor, string? Target)[] unitKeys, int offset,
             int reusedVerifiedSteps = 0)
         {
-            this.original = original; this.roots = roots; this.fullRoots = fullRoots; this.offset = offset;
+            this.original = original; this.roots = roots; this.fullRoots = fullRoots; this.unitKeys = unitKeys; this.offset = offset;
             ReusedVerifiedSteps = reusedVerifiedSteps;
+        }
+
+        internal (string? Actor, string? Target) UnitKeys(int stepIndex) => unitKeys[offset + stepIndex];
+
+        internal static (string? Actor, string? Target) CaptureUnitKeys(BattleTurnState state, BattleSearchStep step)
+        {
+            PlayCardAction? action = step.Action;
+            if (action == null) return default;
+            return (Key(action.ActivatorUnitId), Key(action.TargetUnitId));
+
+            string? Key(int id) => id <= 0 ? null : state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .FirstOrDefault(unit => unit.Id == id)?.AssetKey;
         }
 
         internal VerifiedAdviceContinuation? ForReplay(BattlePlanResult plan)
@@ -43,23 +58,26 @@ namespace MonsterTrain2Poju.Model
                 return null;
             for (int i = 0; i < plan.Steps.Count; i++)
                 if (!ReferenceEquals(original.Steps[start + i], plan.Steps[i])) return null;
-            return new VerifiedAdviceContinuation(original, roots, fullRoots, start);
+            return new VerifiedAdviceContinuation(original, roots, fullRoots, unitKeys, start);
         }
 
         // The prefix has already been replayed from the actual root. Joining
         // the verified suffix requires the complete state at the same action.
         internal VerifiedAdviceContinuation? JoinAt(BattlePlanResult plan, string fullKey,
-            List<string> prefix, List<string> fullPrefix)
+            List<string> prefix, List<string> fullPrefix, List<(string? Actor, string? Target)> unitPrefix)
         {
             int index = offset + prefix.Count;
             if (fullRoots[index] != fullKey) return null;
             int reused = fullRoots.Length - index;
             string[] joined = new string[plan.Steps.Count], fullJoined = new string[plan.Steps.Count];
+            var unitJoined = new (string? Actor, string? Target)[plan.Steps.Count];
             prefix.CopyTo(joined);
             fullPrefix.CopyTo(fullJoined);
+            unitPrefix.CopyTo(unitJoined);
             Array.Copy(roots, index, joined, prefix.Count, reused);
             Array.Copy(fullRoots, index, fullJoined, fullPrefix.Count, reused);
-            return new VerifiedAdviceContinuation(plan, joined, fullJoined, 0, reused);
+            Array.Copy(unitKeys, index, unitJoined, unitPrefix.Count, reused);
+            return new VerifiedAdviceContinuation(plan, joined, fullJoined, unitJoined, 0, reused);
         }
 
         internal VerifiedAdviceContinuation? Match(BattleTurnState state)
@@ -92,7 +110,7 @@ namespace MonsterTrain2Poju.Model
         private VerifiedAdviceContinuation? MatchKey(string key)
         {
             for (int index = offset; index < roots.Length; index++)
-                if (roots[index] == key) return new VerifiedAdviceContinuation(original, roots, fullRoots, index);
+                if (roots[index] == key) return new VerifiedAdviceContinuation(original, roots, fullRoots, unitKeys, index);
             return null;
         }
 

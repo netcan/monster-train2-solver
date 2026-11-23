@@ -20,6 +20,47 @@ internal static class RollingAdviceChecks
             (RecordedBattleChecks.Decisions(right) ?? []).Select(Choice));
     private static (int Room, int Rounds, bool Continue) Choice(RelentlessDecision choice) =>
         (choice.RoomIndex, choice.CompletedRounds, choice.Continue);
+
+    internal static void FutureTargets(FixtureValue fixture)
+    {
+        FixtureValue decision = fixture.GetProperty("RollingDecisions")[0];
+        BattleTurnState root = State(decision.GetProperty("Root"));
+        BattleSearchStep[] steps = decision.GetProperty("PlanSteps").EnumerateArray().Select(ReadStep).ToArray();
+        Require(root.Spawn.Turn == 0 && root.Spawn.NextUnitId == 2 &&
+            root.Spawn.Train.Rooms.SelectMany(room => room.Units).All(unit => unit.Id != 3) &&
+            steps[3].IsEndTurn && steps[4].Action is { CardInstanceId: 7, TargetUnitId: 3 } &&
+            steps[6].Action is { CardInstanceId: 6, TargetUnitId: 5 },
+            "The Ring 9 forecast must target future original units.");
+        BattleTurnState end = BattlePlannerChecks.Replay(root, steps, out RoomOutcome outcome);
+        var plan = new BattlePlanResult(end, outcome, steps, BattlePlanner.Evaluate(end, outcome),
+            steps.Count(step => step.IsEndTurn), 1, 0, 0, TimeSpan.Zero, true, false, false, false, false,
+            [], null, requestedTurns: decision.GetProperty("RequestedHorizon").GetInt32(), usedShorterHorizon: true,
+            searchedToBattleEnd: true);
+        using var keys = new BattleStateKeys();
+        using var session = new BattleAdviceSession((_, _) => plan);
+        Observe(root);
+        Require(session.Current!.Continuation!.UnitKeys(4).Target == "TrainStewardBig" &&
+            session.Current.Continuation.UnitKeys(6).Target == "Boss_Level9_Dominion_V2",
+            "The initial forecast omitted the future unit identities.");
+
+        session.InvalidateForInput();
+        Observe(State(decision.GetProperty("Actual")));
+        Require(session.SearchCount == 1 && session.Current!.ReusedContinuation &&
+            session.Current.Plan.Steps.Count == steps.Length - 1 &&
+            session.Current.Continuation!.UnitKeys(3).Target == "TrainStewardBig" &&
+            session.Current.Continuation.UnitKeys(5).Target == "Boss_Level9_Dominion_V2",
+            "The retained forecast lost the future identities or applied them to the wrong steps.");
+        Console.WriteLine("ADVISOR-FUTURE-TARGET PASS: verified future ally and enemy names retained at the correct suffix indices.");
+
+        void Observe(BattleTurnState state)
+        {
+            session.Observe(state, keys.Key(state));
+            Require(SpinWait.SpinUntil(() => { session.Poll(); return session.Status != BattleAdviceStatus.Planning; }, 30000),
+                "The advice publication timed out.");
+            Require(session.Status == BattleAdviceStatus.Ready, session.Error ?? "Advice was unavailable.");
+        }
+    }
+
     // Partial failure archives remain useful native observations. This deliberately
     // checks actual successors only; it does not accept their old plans or counters.
     internal static void ObservedSuccessors(FixtureValue fixture)

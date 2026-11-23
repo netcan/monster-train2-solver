@@ -680,6 +680,7 @@ namespace MonsterTrain2Poju.Probe
             AllGameManagers managers = AllGameManagers.Instance;
             List<CardState> hand = managers.GetCardManager().GetHand();
             var descriptions = new Dictionary<int, string>();
+            Dictionary<string, string>? projectedUnitNames = null;
             cardHover.Clear(); cardHover.Entries.Clear();
             string CardName(int id)
             {
@@ -705,11 +706,27 @@ namespace MonsterTrain2Poju.Probe
             }
             string CardChoiceName(int id) => cards.TryGetValue(id, out CardState known)
                 ? AdvisorCardPresentation.Plain(known.GetTitle()) : ProjectedCardName(id);
-            string UnitName(int id) => units.TryGetValue(id, out CharacterState known) ? known.GetName() : "单位 #" + id;
-            void AppendStep(BattleSearchStep step)
+            string UnitName(int id, string? assetKey)
+            {
+                if (units.TryGetValue(id, out CharacterState known)) return known.GetName();
+                if (!string.IsNullOrEmpty(assetKey))
+                {
+                    projectedUnitNames ??= new Dictionary<string, string>(StringComparer.Ordinal);
+                    if (!projectedUnitNames.TryGetValue(assetKey!, out string name))
+                    {
+                        name = managers.GetSaveManager().GetAllGameData().GetAllCharacterData()
+                            .FirstOrDefault(data => data != null && data.GetAssetKey() == assetKey)?.GetName() ?? "";
+                        projectedUnitNames.Add(assetKey!, name);
+                    }
+                    if (name.Length > 0) return name + "（预计出现）";
+                }
+                return "单位 #" + id;
+            }
+            void AppendStep(BattleSearchStep step, int index)
             {
                 if (step.IsEndTurn) { text.Append(AdvisorForecastPresentation.EndTurn(step)); return; }
                 PlayCardAction action = step.Action!;
+                var unitKeys = advice.Continuation?.UnitKeys(index) ?? default;
                 int start = text.Length;
                 if (action.ActivatorUnitId > 0 && units.TryGetValue(action.ActivatorUnitId, out CharacterState actor))
                 {
@@ -720,7 +737,7 @@ namespace MonsterTrain2Poju.Probe
                     text.Append(AdvisorForecastPresentation.Ability(actor.GetName(), ability?.GetTitle() ?? definition?.GetName() ?? "单位技能",
                         actor.GetCurrentRoomIndex(), cost));
                 }
-                else if (action.ActivatorUnitId > 0) text.Append("【单位技能】").Append(UnitName(action.ActivatorUnitId));
+                else if (action.ActivatorUnitId > 0) text.Append("【单位技能】").Append(UnitName(action.ActivatorUnitId, unitKeys.Actor));
                 else text.Append(action.Operation == DevoteModel.Operation ? "供奉（消耗 1 能量，随机弃一张牌）" :
                     action.CardInstanceId > 0 ? CardName(action.CardInstanceId) : "房间技能");
                 text.Append(showFullPlan ? " → 第 " : "\n第 ").Append(action.RoomIndex + 1).Append(" 层");
@@ -731,7 +748,7 @@ namespace MonsterTrain2Poju.Probe
                 if (action.ActivatorRoomIndex.HasValue) text.Append(" · 来源：第 ").Append(action.ActivatorRoomIndex.Value + 1).Append(" 层房间技能");
                 if (action.TargetUnitId > 0)
                 {
-                    text.Append(" · 目标：").Append(UnitName(action.TargetUnitId));
+                    text.Append(" · 目标：").Append(UnitName(action.TargetUnitId, unitKeys.Target));
                     if (!tentative && !showFullPlan && units.TryGetValue(action.TargetUnitId, out CharacterState target))
                         text.Append("（").Append(target.GetHP()).Append(" 血）");
                 }
@@ -745,7 +762,7 @@ namespace MonsterTrain2Poju.Probe
                 int turns = 0;
                 for (int index = skipped; index < plan.Steps.Count; index++)
                 {
-                    text.Append(index - skipped + 1).Append(". "); AppendStep(plan.Steps[index]); text.Append('\n');
+                    text.Append(index - skipped + 1).Append(". "); AppendStep(plan.Steps[index], index); text.Append('\n');
                     if (plan.Steps[index].IsEndTurn && index + 1 < plan.Steps.Count)
                         text.Append("\n后续第 ").Append(++turns).Append(" 回合\n");
                 }
@@ -760,7 +777,7 @@ namespace MonsterTrain2Poju.Probe
                 for (int index = skipped; index < plan.Steps.Count; index++)
                 {
                     BattleSearchStep step = plan.Steps[index];
-                    text.Append(index - skipped + 1).Append(". "); AppendStep(step); text.Append('\n');
+                    text.Append(index - skipped + 1).Append(". "); AppendStep(step, index); text.Append('\n');
                     if (step.IsEndTurn) break;
                 }
             }

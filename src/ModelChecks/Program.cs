@@ -7260,6 +7260,13 @@ if (args.Length is 2 or 3 && args[0] == "--rolling-advice-only")
     RollingAdviceChecks.Native(fixture.RootElement, calibration: args.Length == 3 ? args[2] : null);
     return;
 }
+
+if (args.Length == 2 && args[0] == "--advisor-future-target-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RollingAdviceChecks.FutureTargets(fixture.RootElement);
+    return;
+}
 if (args.Length == 4 && args[0] == "--player-native-covenant-default-loss-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

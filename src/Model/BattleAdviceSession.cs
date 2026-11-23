@@ -346,11 +346,13 @@ namespace MonsterTrain2Poju.Model
             using var continuationKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
             var roots = retain && VerifiedAdviceContinuation.CanRetain(plan) ? new List<string>() : null;
             var fullRoots = roots == null ? null : new List<string>();
+            var unitKeys = roots == null ? null : new List<(string? Actor, string? Target)>();
             foreach (BattleSearchStep step in plan.Steps)
             {
                 token.ThrowIfCancellationRequested();
                 roots?.Add(continuationKeys.Key(replayed));
                 fullRoots?.Add(keys.Key(replayed));
+                unitKeys?.Add(VerifiedAdviceContinuation.CaptureUnitKeys(replayed, step));
                 if (step.IsEndTurn)
                 {
                     BattleTurnResult next = BattleTurnModel.EndTurn(replayed, step.RelentlessDecisions);
@@ -369,7 +371,7 @@ namespace MonsterTrain2Poju.Model
                 throw new InvalidOperationException("Advice does not reproduce the full planned state.");
             if (plan.PolicyBaselineScore.HasValue && plan.Score > plan.PolicyBaselineScore.Value)
                 throw new InvalidOperationException("Advice lost its completed policy baseline.");
-            return roots == null ? null : new VerifiedAdviceContinuation(plan, roots.ToArray(), fullRoots!.ToArray());
+            return roots == null ? null : new VerifiedAdviceContinuation(plan, roots.ToArray(), fullRoots!.ToArray(), unitKeys!.ToArray());
         }
 
         public void Dispose()
