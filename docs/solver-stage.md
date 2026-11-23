@@ -655,3 +655,10 @@ Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时
 本阶段复放通过 454 场 2.3.1 已结算战斗，其中 435 场连续复放，19 场按已验证的准备边界分段。
 共核对 6,886 次出牌或技能和 2,711 次结束回合，失败为零。另有 141 份组件或诊断归档。两类候选检查
 在新增整战各自登记时执行。 [阶段复放报告](../results/recorded-chain-triage-20261123-195536-7cfe4e68/report.tsv)
+
+11 月 24 日的阶段回放通过 462 场已结算战斗，含 443 场连续回放和 19 场分段回放。
+核对了 7,072 次出牌或技能和 2,767 次结束回合，失败为零。登记后补跑的 SniperAdvance 和
+Dutiful Burst 两场各自通过完整连续回放、16 条独立分支和两类候选检查。
+[阶段复放报告](../results/recorded-chain-triage-20261124-000240-52465205/report.tsv) ·
+[SniperAdvance](../tests/compatibility/game-2.3.1/mechanics/unruly-sniper/native-battle.mt2f) ·
+[Dutiful Burst](../tests/compatibility/game-2.3.1/mechanics/dutiful-burst/native-battle.mt2f)
