@@ -26,4 +26,22 @@ pwsh -File scripts/Run-CampaignProgress.ps1 -RegionRun -StopBeforeRing 2 -Native
 续接检查点位于 `.probe-runs/campaign-region-battle2-20261124-063542-9f9db4ca-before-ring2`，
 为种子 `424242`、地图距离 1、完成战斗 1 场及 `wasDevCheatUsed=false` 的 `BattleIntro`。
 其存档 SHA-256 为 `e6c19df2cb24d0cea1f303d7f4e9b442cc4d4b986e92ced092328762430926f0`。
-验收核对了输入和原版存档哈希。区域首领尚待实机验证。
+从该存档续接，36 次出牌、4 次主动技能及 7 次结束回合后赢得区域首战，火车核心仍为 50 生命。
+原版随后进入该区域首领 `SoulSavior_R1_BossBattle_DutifulChild_Heal` 的 `BattleIntro`，原版目录中的车外首领为 `Boss_SoulSavior_R1_Dutiful_Armor`。
+
+```powershell
+pwsh -File scripts/Run-CampaignProgress.ps1 -RegionRun -StopBeforeRing 3 -NativeWorker 3 -TimeoutSeconds 300 -InputProfile .probe-runs/campaign-region-battle2-20261124-063542-9f9db4ca-before-ring2
+```
+
+首领检查点位于 `.probe-runs/campaign-region-battle3-20261124-064242-7c3bd82f-before-ring3`。
+存档记录种子 `424242`、地图距离 2、两场胜利及 `wasDevCheatUsed=false`，SHA-256 为 `9ba5418fe8be8c0a127991bd917c5478bd5d48eeb0cd9d02786ed6a984994bac`。
+验收核对了输入和原版存档哈希。
+
+下列命令从首领检查点续接原版战役。原版接受了 35 次出牌、4 次主动技能和 7 次结束回合，并以火车核心 32 生命赢得首领战。奖励结算后，火车核心恢复到 47 生命。
+
+```powershell
+pwsh -File scripts/Run-CampaignProgress.ps1 -RegionRun -StopBeforeRing 4 -NativeWorker 3 -TimeoutSeconds 360 -InputProfile .probe-runs/campaign-region-battle3-20261124-064242-7c3bd82f-before-ring3
+```
+
+随后原版选择区域 1，保存 `SoulSavior_R2_Battle_TroopBuffFeed` 的战前状态。新存档位于 `.probe-runs/campaign-region-battle4-20261124-064646-0aee0a1e-before-ring4`，SHA-256 为 `f389ae0511b24a64043890bb57f68ad8e53be7d9bf0231882e8dfb887a125981`。
+存档记录种子 `424242`、地图距离 3、三场胜利及 `wasDevCheatUsed=false`。验收核对了输入和原版存档哈希。
