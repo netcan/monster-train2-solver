@@ -110,7 +110,8 @@ namespace MonsterTrain2Poju.Model
             if (!preCombat) return new OuterBossPhaseResult(source);
             bool firstHivemindWave = boss.AssetKey == OuterBossDefinitions.IndulgentTitanskin &&
                 (battle.Spawn.Turn == 1 && HivemindTurnUpgrade.HasOriginalFirstWavePair(train.Rooms.SelectMany(room => room.Units)) ||
-                 battle.Spawn.Turn == 2 && HivemindTurnUpgrade.HasSecondWave(train));
+                 battle.Spawn.Turn == 2 && HivemindTurnUpgrade.HasSecondWave(train) ||
+                 battle.Spawn.Turn == 3 && HivemindTurnUpgrade.HasThirdWave(train));
             string? error = TrainCombatModel.Validate(train, allowFreshHivemind: firstHivemindWave);
             if (error != null) return Fail(error);
             CombatUnit? actor = train.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == boss.UnitId);

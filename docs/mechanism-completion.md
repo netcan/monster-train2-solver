@@ -363,6 +363,10 @@ Indulgent Titanskin 第一个结束回合与原版逐字段匹配。抽牌后两
 分别刷新为 +6 攻击。原版旧加成 +2、+2、+0 和新出生者未登记加成的四个输入均保留在归档中。
 [原版第二回合](../tests/compatibility/game-2.3.1/mechanics/indulgent-hivemind/native-second-turn.mt2f)
 
+第三个结束回合也匹配完整状态。六名持有者在三层楼各获得 +13 攻击，顶层喂食移除一名队友，
+让接收者的 Hivemind 从 6 增至 9 层。记录同时保留了喂食后原版物理站位。
+[原版第三回合](../tests/compatibility/game-2.3.1/mechanics/indulgent-hivemind/native-third-turn.mt2f)
+
 Indulgent 的减容变体三次把玩家侧楼层容量减 1，敌方容量保持 5。专项回放核对三组完整减容状态，
 第一组还在同一战后队列内验证先减容，再重放一次自身 OnFeed 获得 3 Rage。整战仍受波次机制阻塞。
 [原版减容和 OnFeed 记录](../tests/compatibility/game-2.3.1/mechanics/indulgent-capacity/native-capacity-feed.mt2f)

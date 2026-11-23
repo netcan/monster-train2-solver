@@ -1187,7 +1187,8 @@ namespace MonsterTrain2Poju.Model
                     linked.Actors.Any(actor => actor.Id == unit.Id && actor.TrueFinalBoss && actor.OuterBoss && actor.Health == unit.Health));
             bool linkedMaximumPreview = linkedHealthOnly && linkedCombat && state.Preview && state.Context?.LifeLinks?.TemporaryPreviewIds != null;
             bool observedHivemindCombat = ((state.Preview || allowFirstHivemindCombat) &&
-                HivemindTurnUpgrade.IsFirstCombat(state)) || HivemindTurnUpgrade.IsSecondPreview(state);
+                (HivemindTurnUpgrade.IsFirstCombat(state) || HivemindTurnUpgrade.IsSecondCombat(state))) ||
+                HivemindTurnUpgrade.IsThirdPreview(state);
             string[] interactions = state.ExternalInteractions.Where(item => !((linkedTargetOnly || linkedMaximumPreview) && item == "Outer train boss") &&
                 !((allowFreshHivemind || observedHivemindCombat) && state.Units.Any(unit => HivemindTurnUpgrade.MatchesRoomMarker(item, unit)))).ToArray();
             if (interactions.Length > 0)
@@ -3833,7 +3834,8 @@ namespace MonsterTrain2Poju.Model
                 WorkingUnit? waitForRevival = null, bool maximumHealthSacrifice = false)
             {
                 if (target.DeathFinished) return;
-                if (target.Source.Status(HivemindTurnUpgrade.StatusId) != null)
+                if (target.Source.Status(HivemindTurnUpgrade.StatusId) != null &&
+                    !HivemindTurnUpgrade.IsObservedThirdPreviewFeedDeath(source, target.Source.Id, actor?.Source.Id))
                 {
                     unsupportedReason = "Hivemind owner death requires a calibrated native callback.";
                     return;

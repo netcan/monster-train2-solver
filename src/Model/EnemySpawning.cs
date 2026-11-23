@@ -147,8 +147,10 @@ namespace MonsterTrain2Poju.Model
                 if (selected >= wave.Candidates.Count) return Unsupported("Invalid cached spawn group.");
                 firstWaveHivemind = !includeTreasure && source.Turn == 1 && phase == 0 &&
                     HivemindTurnUpgrade.HasOriginalFirstWavePair(wave.Candidates[selected].Units.Select(entry => entry.Unit));
-                secondWaveHivemind = includeTreasure && source.Turn is 1 or 2 && phase == 1 &&
-                    HivemindTurnUpgrade.HasSecondWaveCarriers(source.Train.Rooms.SelectMany(room => room.Units)) &&
+                IEnumerable<CombatUnit> present = source.Train.Rooms.SelectMany(room => room.Units);
+                secondWaveHivemind = includeTreasure &&
+                    (source.Turn is 1 or 2 && phase == 1 && HivemindTurnUpgrade.HasSecondWaveCarriers(present) ||
+                     source.Turn is 2 or 3 && phase == 2 && HivemindTurnUpgrade.HasThirdWaveCarriers(present)) &&
                     wave.Candidates[selected].Units.Count(entry => entry.Unit.Status(HivemindTurnUpgrade.StatusId) != null) == 1 &&
                     wave.Candidates[selected].Units.Any(entry => entry.Unit.Status(HivemindTurnUpgrade.StatusId) is CombatStatus status &&
                         HivemindTurnUpgrade.IsOriginalFreshOwner(entry.Unit, status));

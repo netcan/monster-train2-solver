@@ -56,10 +56,10 @@ namespace MonsterTrain2Poju.Model
             bool synchronizeRoomAttachments = true)
         {
             bool observedHivemindCasting = outerBossActionMovement &&
-                source.Context?.QueryFrame?.Turn == 2 &&
                 source.Rooms.SelectMany(room => room.Units).Any(unit => targets.Contains(unit.Id) &&
                     unit.AssetKey == OuterBossDefinitions.IndulgentTitanskin && unit.BumpRules?.OuterBoss == true) &&
-                HivemindTurnUpgrade.HasSecondWave(source);
+                (source.Context?.QueryFrame?.Turn == 2 && HivemindTurnUpgrade.HasSecondWave(source) ||
+                 source.Context?.QueryFrame?.Turn == 3 && HivemindTurnUpgrade.HasThirdWave(source));
             string? error = TrainCombatModel.Validate(source, allowFreshHivemind: observedHivemindCasting);
             var events = new List<CombatEvent>(); var retained = new Dictionary<int, CombatUnit>();
             var dispatched = new List<RoomCombatModel.QueuedCharacterTrigger>();
