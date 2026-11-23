@@ -96,7 +96,9 @@ namespace MonsterTrain2Poju.Probe
                 if (managers != null && !managers.GetSaveManager().PreviewMode && trace.NativeWon == null)
                 {
                     TrainCombatState before = Capture();
-                    var roomRules = kind == "Combat" && RelicTurnEndBumpModel.Present(before.Context)
+                    var roomRules = kind == "Combat" && (RelicTurnEndBumpModel.Present(before.Context) ||
+                        before.Rooms.SelectMany(room => room.Units).Any(unit =>
+                            unit.Triggers.Any(trigger => RoomCombatModel.IsRailforgedAttackerKillBump(unit, trigger))))
                         ? BattleActionProbe.CaptureRoomRules() : null;
                     UnitCopyCatalog? unitCopyCatalog = kind == "Combat" ? CaptureTriggeredCopyCatalog(before.Rooms) : null;
                     record = new Record

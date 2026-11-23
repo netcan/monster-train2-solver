@@ -267,6 +267,10 @@ namespace MonsterTrain2Poju.Model
                             inactive.MoonPhase == 2 && OriginalMushyDarkEntry(added, previousUnit) ||
                             OriginalHellfurnaceEntry(added, previousUnit, inactive.MoonPhase.Value) ||
                             OriginalCardlessRoomMoonSync(added, previousUnit);
+                        bool railforgedKillPreview = oldRoom.Preview && newRoom.Preview && oldRoom.RoomIndex == 1 &&
+                            newRoom.RoomIndex == 0 && inactive.MoonPhase == 1 &&
+                            added.AssetKey == "SacrificialChamber" && OriginalTriggerRoom(added) && previousUnit.SpawnerCardId == 0 &&
+                            previousUnit.Triggers.Any(trigger => RoomCombatModel.IsRailforgedAttackerKillBump(previousUnit, trigger));
                         if (!originalObservedEntry && ((inactive.MoonPhase == 1 && previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
                             previousUnit.AssetKey != "HeavyT3_PyreDamageIfUnblocked") ||
                             previousUnit is not { AssetKey: "Boss_Level8_Fragile", MaxHealth: 3000 } &&
@@ -277,7 +281,7 @@ namespace MonsterTrain2Poju.Model
                                         Action: { Type: "Damage", Target: "Pyre", Value: 5 } }] }] } &&
                             !(previousUnit is { AssetKey: "AttackerT3_Sweep", BaseAttack: 5, MaxHealth: 5, Size: 1, Triggers.Count: 0 } &&
                                 previousUnit.Status("sweep")?.Stacks == 1) || !OriginalInferno(added)) ||
-                            oldRoom.Preview || newRoom.Preview || currentUnit.Triggers.Any(trigger => trigger.Kind is
+                            (oldRoom.Preview || newRoom.Preview) && !railforgedKillPreview || currentUnit.Triggers.Any(trigger => trigger.Kind is
                                 "OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or "OnMoonshadeLost"))
                             return Fail("Inactive enemy room-entry moon understanding requires native calibration.");
                         int mask = (previousUnit.MoonPhaseMask.Value & ~3) | inactive.MoonPhase.Value;
