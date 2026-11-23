@@ -604,3 +604,13 @@ Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时
 起点执行十次选择，再次以 53 点薪火获胜。配对检查通过完整后继、终局和随机流。
 [原版顾问归档](../tests/compatibility/game-2.3.1/mechanics/relentless-advisor/mixed-policy.mt2f) ·
 [独立原版复放](../tests/compatibility/game-2.3.1/mechanics/relentless-advisor/mixed-policy-replay.mt2f)
+
+本轮阶段回归通过 447 场已结算整战，其中 428 场连续复放，19 场按已验证的准备边界分段。
+共核对 6,677 次出牌或技能和 2,658 次结束回合。136 份组件或诊断档由各自的专项检查核对。
+[阶段复放报告](../results/recorded-chain-triage-20261123-173528-ffa0815d/report.tsv)
+
+第 3 环复用同一份战前档和前 35 个原版输入。终局线程和技能候选在截止后停止安排新模拟，
+3 秒配置下首次搜索由 4.33 秒降到 3.28 秒，建议端到端由 5.96 秒降到 4.04 秒。
+两场都保留 35 点薪火，已有 37 点的原版路线仍是限时搜索的对照。
+[修复前日志](../.probe-runs/full-battle-units-spells-and-junk-20261123-162527-04eaf1a4/unity-scenario.log) ·
+[修复后日志](../.probe-runs/full-battle-units-spells-and-junk-20261123-163106-b79665b6/unity-scenario.log)
