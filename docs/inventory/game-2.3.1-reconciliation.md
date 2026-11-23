@@ -9,16 +9,16 @@
 | 待办分类 | 类数 | 含目录引用 | 含类型声明 |
 | --- | ---: | ---: | ---: |
 | known-gap | 1 | 1 | 1 |
-| inspect-no-code-link | 47 | 47 | 47 |
+| inspect-no-code-link | 45 | 45 | 45 |
 | inspect-inherited-code | 8 | 8 | 8 |
 | inspect-projection-normalization | 55 | 55 | 55 |
 | inspect-guard-links | 47 | 47 | 47 |
 | review-existing-code | 231 | 231 | 231 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 286 | 0 | 0 |
-| scoped-review-recorded | 52 | 52 | 52 |
+| scoped-review-recorded | 54 | 54 | 54 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 55 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 57 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -37,6 +37,7 @@
 | CardEffectDamageFloorByFloor | shared-path | Original current Heavenfall installs its native full-moon 80 enemy floor sweep and executes through the shared OnCast and floor-damage pipeline. The current win verifies both moon phases, full successors, sixteen branches, recorded frontiers and serial/parallel plan replay. The older native Moon archive still passes with its tower damage payload. This battle's positive damage targets occupy one floor. |
 | CardTraitDrawOnPlay | shared-path | Three unchanged original soul upgrades attached through native SoulHelper. Played discard draws 3/3/5 and the two higher tiers install the captured next-draw upgrade on actual cards. Full wins, exact successors, sixteen branches, frontiers and equal serial/parallel search and replay pass. Other carriers and mixed discard traits remain outside this evidence. |
 | CardTraitScalingRewardGold | shared-path | Three unchanged Goldie soul upgrades attached using native SoulHelper. Actual original Vent pays three Ember; its zero-base OnCast reward remains unchanged, while played discard grants 30/60/90 gold from captured paid-cost statistics. Next-turn Retain and complete native wins, full successors, sixteen branches, all recorded frontiers and serial/parallel plans pass. Other carriers and compound signed affordability remain outside this evidence. |
+| RelicEffectAddGoldOnPyreDamage | shared-path | Pinned native callback order verifies zero flagged loss, real unflagged loss and one flagged tower hit for +10 gold. The unplayed opening win gains 50 gold over five native damages and matches seven EndTurns and their candidates. |
 | RelicEffectAddPyreAttackAndHealthPerCardInDeck | shared-path | All three original Thik tiers confirm exact deck-change successors, sixteen branches, complete recorded frontiers, and equal serial and parallel search and plan replay. Permanent addition and removal affect Pyre health by three, four, or five and attack by zero, zero, or two. Temporary purge supplies a zero delta. The T3 component also checks acquisition, raw saved HP carryover, and live health caps. Mixed relic combinations remain unwitnessed. |
 | RelicEffectAddRelicStartOfRun | input-only | Sealed native class implements StartOfRun ApplyEffect, which adds the configured relic through SaveManager. Battle input captures the resulting relic roster. No combat callback override in this class; start-of-run campaign handling and carried-owner validation remain separate. |
 | RelicEffectAddStatusEffectOnSpawn | shared-path | Four pinned 2.3.1 archives replay 59 original birth boundaries and 32 independent branches per boundary. Positive checks include two Titan Skin and four Burst stacks on the Pyre, three Muted stacks on the eligible Chicot boss, friendly Armor, enemy Frostbite and first-unit Damage Shield with same-turn skips. The first-unit owner uses this class with a tracked condition. Other owner payloads require their own evidence. |
@@ -56,6 +57,7 @@
 | RelicEffectDamageEnemyOnDescend | shared-path | The second ordered effect of the unchanged DamageOnFloorTransition owner deals 3 damage to a native enemy moved downward before PostDescension. The pinned 2.3.1 floor-transition-damage.mt2f receipt compares the complete movement successor and recorded callback. The checker verifies individual paid inputs and the continuous policy after the test setup. Concurrent same-direction damage owners remain guarded. |
 | RelicEffectDamageForNumCardsStartOfBattle | input-only | Two original Endless assets acquired through the native relic API in controlled isolated saves. Actual ten-card draw pile and a single signed damage call with damage callbacks enabled lead to first deployment Pyre HP 70 and 60. Full native wins, exact successors, sixteen branches, frontiers and serial/parallel plans pass. Projection requires settled Pyre state; natural progression and stacked penalties remain unverified. |
 | RelicEffectDamageOnCardPlayed | shared-path | The original DamageOnCardPlayed owner verifies four committed random-target tests, lethal and nonlethal damage, and death queue order. Two pinned four-owner battles exercise paid casts with both preview RNG settings and match 46 plays, 12 EndTurns and their candidate frontiers. |
+| RelicEffectDrawCardAfterEachClanPlayed | shared-path | Pinned two-round control verifies seven paid cards, first distinct clan pairing each turn, no repeat bonus and two native resets. The unchanged opening win matches 39 plays, seven EndTurns and both candidate frontiers. |
 | RelicEffectExtraSpawnsFirstUnitPerTurn | shared-path | Original DoubleUnits queries match across deployment, ordinary turns, a triggered hatch and deck-scaled Funguy. Additional grafted Hall births, first-unit shield and room Armor each have a pinned original control. The checked consumers preserve native allocation order and RNG. |
 | RelicEffectHealStartOfTurn | shared-path | Existing Champion-only timed full-heal consumer accepts exact owner/effect selection without filtering the passive roster. Two unchanged original relic orders prove native heal incoming energy4 versus3 and full healing across three authored wounded floors; complete native battles/16 branches/frontiers/serial-parallel root search and legacy champion heal regression. Other healing behaviors, all conditional branches and complex callback competition are not certified by these two controls. |
 | RelicEffectIncreasePyreAttack | shared-path | The original BossEmber, BossEmber2 and BossEmberDH owners use their native table-indexed amounts in the pinned 2.3.1 opening resource battle. The checker isolates each attack contribution, verifies the initialized Pyre and replays native Pyre combat. The scope is the captured enhancement tables and combat conditions. |
@@ -73,7 +75,7 @@
 | RelicEffectModifyRandomRoomCapacityAfterBattle | input-only | Capture settled native capacities after the opening callback. Original Bogwurm is naturally selected and the unchanged catalog Life artifact is attached in an isolated control. Capacity bonuses +2/0/+1 and the Life static -1 enter actual deployment legality, with an oversized legal summon and unchanged-floor denial. Original wins, exact successors, 16 branches, frontiers and serial/parallel plans pass. Campaign reward mutation remains native. |
 | RelicEffectModifyStatusMagnitude | shared-path | Four unchanged collectible owners for Rage, Spikes, Regen and Mageblade each returned a positive native combat query. Five original plays and the first exchange matched complete successors and RNG. Removing each owner from its query input removed only its contribution. Separate neutral and active moon native witnesses match five plays and the first ordinary exchange each. The active case preserves Selene phase masks and Sweep cleanup. The active deployment EndTurn and raw ascent also match. The raw combat snapshot differs only by the phase enum and its room mirrors. Other status modifier payloads remain open. |
 | RelicEffectModifyTargetsRandom | shared-path | Original targetless cast, unchanged Exhaust selector, and RandomInRoom rearrangement retain native RNG, physical ordering and the subsequent same-target Valor. The unchanged Banished and Hellhorned opening win matches 18 plays, seven EndTurns and both candidate frontiers. |
-| RelicEffectModifyUnitAbilityCooldown | shared-path | Original Time Pyre birth changes after-use cooldown from 99 to 2 only with the Echoes owner. Initial and remaining cooldown stay at zero in both native comparisons. |
+| RelicEffectModifyUnitAbilityCooldown | shared-path | Original Time Pyre birth changes after-use cooldown from 99 to 2 only with the Echoes owner. Two paid activations with the owner verify the 2 to 1 to 0 to 2 cooldown sequence. The stock control removes the ability until the battle ends. Three activations and four EndTurns match full state and RNG. |
 | RelicEffectMultiplyAttackLate | shared-path | Shared parameter-driven late multiplier preserves manager order, champion filtering, captured native Pyre exemption and raw snapshots. Pinned one original owner; 640 native queries, 80 products, 640 actual attacks plus 7728 percentage query/birth pairs with nonneutral late. Unchanged half-attack plus double-enemy-health native win; full successors, 16 branches/frontiers and serial/parallel root search. Actual status callback interactions, all other owner combinations and mixed Covenants are not fully certified. |
 | RelicEffectPayCardCostWithPyreHealth | shared-path | The pinned preview-isolation witness checks affordable Ember, a four-health nonlethal Pyre payment, X-cost and one native OnHit callback. 31 plays and six EndTurns match independently. The prepared control cards are inserted at turn one. |
 | RelicEffectPersistMonsterHp | shared-path | The pinned Echoes owner matches paid deployment below and above the original health cap, native hit and heal writes to the source card, and lethal clearing. The unchanged opening battle matches 21 plays, seven EndTurns and both candidate frontiers. The later campaign save callback is outside the battle terminal capture. |
@@ -109,10 +111,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `4a6fc5161871688e429457f92cbdaed0936ed4d20a833b697f28dc2eba1604be`。
-- Model: PDB 校验过的项目源码集合 `3d83ce695e7c4a8595fddb0b60016b4aa6fe68663ecb6355941e0873a10b55d6`。
-- Probe: PDB 校验过的项目源码集合 `6c835dde73d3eba2593c99348ceff4c4f2a1e60f47b3d13560ae1a26930e4c44`。
-- ModelChecks: PDB 校验过的项目源码集合 `b104d8de0799ceeb2c8938fda6b3641034dd514c7ba829113bd946ac998ed4fe`。
+- 人工审查索引 SHA-256: `8c79195bd5a5bda18d02db33be96ce4443c3359c47fe33f02225b72dc46f7023`。
+- Model: PDB 校验过的项目源码集合 `be852aeb231d3f7e97e9507e173084530b7f4be11684f83f6bf620a2e0028025`。
+- Probe: PDB 校验过的项目源码集合 `4973600c74d050e8242c2291c2216608ae25af0d29470646df1d891b7bf62f33`。
+- ModelChecks: PDB 校验过的项目源码集合 `5bfe8811db522fd517396610eec4eb1d4a1ee6297372422067093953e102ce3a`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
