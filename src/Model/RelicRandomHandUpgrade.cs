@@ -104,8 +104,14 @@ namespace MonsterTrain2Poju.Model
                     CardUpgradeMaskCard mask = CardBranchMaskModel.Resolve(card);
                     if (!rule.Filters.All(filter => CardUpgradeMaskModel.FilterCard(filter, mask))) continue;
                     if (mask.Traits.Any(trait => trait is "CardTraitInfusion")) return new(source, "Unmodeled random-upgrade trait callback.");
+                    CardUpgradeModifier applied = rule.Upgrade;
+                    if (mask.Traits.Contains(CardFullCostReductionModel.Trait))
+                    {
+                        applied = CardFullCostReductionModel.Resolve(context, card, null, applied, out string? error);
+                        if (error != null) return new(source, error);
+                    }
                     CardUpgradeModifier[] upgrades = card.Temporary.Upgrades.Where(item => !rule.Upgrade.Unique || item.DataId != rule.Upgrade.DataId)
-                        .Concat(new[] { rule.Upgrade }).ToArray();
+                        .Concat(new[] { applied }).ToArray();
                     CardInstanceState changed = card.WithModifiers(card.Permanent, new CardModifiers(card.Temporary.Offsets, upgrades,
                         card.Temporary.PersistentHealth, card.Temporary.ExternalInteractions));
                     context = CardMagicPowerModel.Refresh(context, changed, out _); tracked.Add(id);

@@ -436,7 +436,8 @@ namespace MonsterTrain2Poju.Model
                 !CardCorruptionAttackUpgradeModel.Known(upgrade) && !CardSentientDrawUpgradeModel.Known(upgrade) &&
                 !CardUnderlegionTroopUpgradeModel.Known(upgrade) && !CardPyremaniacUpgradeModel.Known(upgrade))
             .Where(interaction => interaction != "Upgrade traits" ||
-                !CardJuiceModel.KnownTripleUpgrade(upgrade) && !CardJuiceModel.SimpleUpgrade(upgrade))
+                !CardJuiceModel.KnownTripleUpgrade(upgrade) && !CardJuiceModel.SimpleUpgrade(upgrade) &&
+                !CardFullCostReductionModel.HasOriginalTrait(upgrade))
             .Concat(UnitSelfAttackUpgradeModel.Validate(upgrade) is string selfError ? new[] { selfError } : Array.Empty<string>())
             .Concat((upgrade.Lifecycle?.Triggers ?? Array.Empty<CardLifecycleTrigger>()).SelectMany(trigger =>
                 trigger.Type != "OnCast" && !(RelicPerkeoModel.IsConversionUpgrade(upgrade) && RelicPerkeoModel.IsConversionTrigger(trigger))

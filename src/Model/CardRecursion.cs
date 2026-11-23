@@ -178,6 +178,8 @@ namespace MonsterTrain2Poju.Model
                         return new CardRecursionResult(null, null, null, "Card recursion upgrade requires branch-owned upgrade mask metadata.");
                     if (card.ExhaustState != null && card.MaskDescriptor == null)
                         return new CardRecursionResult(null, null, null, "Card recursion upgrade cannot refresh traits without branch-owned card mask metadata.");
+                    if (effect.Upgrade.Stats.Cost == -99 && CardFullCostReductionModel.HasOriginalTrait(card))
+                        return new CardRecursionResult(null, null, null, "Original full-cost reset during card recursion requires a native upgrade witness.");
                     CardModifiers temporary = UnitModifierModel.Add(card.Temporary, effect.Upgrade);
                     if (!ReferenceEquals(temporary, card.Temporary))
                     {

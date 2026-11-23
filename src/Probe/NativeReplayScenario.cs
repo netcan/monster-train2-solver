@@ -1190,6 +1190,12 @@ namespace MonsterTrain2Poju.Probe
                 if (!captured && combat.GetTurnCount() >= 5)
                     throw new InvalidOperationException("No matching original Titan Trial substitution was created by turn five.");
             }
+            if (fullBattle && OriginalFullCostReductionWitness.Enabled)
+            {
+                OriginalFullCostReductionWitness.Capture(managers, log);
+                Finish(true, "Original full-cost reduction captured.");
+                return;
+            }
             if (fullBattle && OriginalMollisShelterObservation.Enabled)
             {
                 if (OriginalMollisShelterObservation.Tick(managers, log)) AdvanceTurn(combat!, record: false);

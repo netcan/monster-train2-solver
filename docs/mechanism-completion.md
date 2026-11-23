@@ -1345,6 +1345,11 @@ Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者
 提取 11 个生成阶段，逐项核对单位、阶段、缓存和随机流。原版保持最后两波顺序。
 [波次专项归档](../tests/compatibility/game-2.3.1/mechanics/randomized-waves/nontrivial-permutation.mt2f)
 
+Fecundity 的原版升级回调会把全额减费值改为目标卡当前的实际费用。专项归档对照了目标卡和显式来源卡
+分别持有该特性的两条路径，以及两卡均无该特性的控制组。已接入 `FreeFromBlessing` 的手牌升级；
+Fecundity 的出牌后副本替换仍待实机核对。
+[减费专项归档](../tests/compatibility/game-2.3.1/mechanics/fecundity-cost/full-cost-reduction.mt2f)
+
 ## 自动化与测试成本
 
 从仓库根目录运行下列命令，按已登记的原版战斗生成待采集卡牌清单。

@@ -90,6 +90,8 @@ namespace MonsterTrain2Poju.Model
                     try { traits = CardBranchMaskModel.Resolve(card).Traits; }
                     catch (InvalidOperationException failure) { return new(context, failure.Message); }
                     if (!rule.RequiredTraits!.All(traits.Contains)) continue;
+                    if (traits.Contains(CardFullCostReductionModel.Trait))
+                        return new(source, "Original full-cost reset with a frozen card requires a native upgrade witness.");
                     CardInstanceState changed = card.WithModifiers(card.Permanent,
                         new CardModifiers(card.Temporary.Offsets, card.Temporary.Upgrades.Concat(new[] { rule.Upgrade }).ToArray(),
                             card.Temporary.PersistentHealth, card.Temporary.ExternalInteractions));

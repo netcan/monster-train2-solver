@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--original-full-cost-reduction-only")
+{
+    using var observation = ModelJson.ReadFixture(args[1]);
+    using var randomHand = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    OriginalFullCostReductionChecks.Native(observation.RootElement, randomHand?.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-lifemother-infested-horde-branch")
 {
     using var component = ModelJson.ReadFixture(args[1]);

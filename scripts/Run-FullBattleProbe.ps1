@@ -770,6 +770,7 @@ param(
     [ValidateRange(1, 3)][int] $OriginalGoldieTier,
     [switch] $OriginalMollisCycleOfLife,
     [switch] $OriginalMollisShelterObservation,
+    [switch] $OriginalFullCostReduction,
     [ValidateRange(1, 3)][int] $OriginalElleTier,
     [switch] $OriginalBurnoutDamageRelic,
     [switch] $OriginalHealDamageRelic,
@@ -2145,6 +2146,16 @@ if ($OriginalMollisCycleOfLife) {
     $BranchCardMasks = $true
     $SettleCardAnimations = $true
     $SettleDeathDissolves = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($OriginalFullCostReduction) {
+    $allowed = @('OriginalFullCostReduction', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
+        'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    if (!$BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
+        throw 'OriginalFullCostReduction requires a separate first-battle binary observation.'
+    }
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
     $Policy = 'units-spells-and-junk'
 }
 if ($OriginalMollisShelterObservation) {
@@ -3625,6 +3636,7 @@ if ($OriginalMollisCycleOfLife) {
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
     $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1'
 }
+if ($OriginalFullCostReduction) { $environment['MT2_PROBE_MODIFIERS'] = 'original-full-cost-reduction' }
 if ($OriginalMollisShelterObservation) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-mollis-shelter-observation'
     $environment['MT2_PROBE_ISOLATE_PREVIEW_RNG'] = '1'
@@ -4369,6 +4381,15 @@ if ($OriginalStatusMagnitudeWitness -or $OriginalStatusMagnitudeMoonWitness) {
         (Get-OriginalSignature) -cne $originalBefore) { throw "Original status magnitude witness failed; inspect $unityLog" }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
         MoonPhaseWitness=[bool]$OriginalStatusMagnitudeMoonWitness; Trace=$capturePath } | ConvertTo-Json
+    return
+}
+if ($OriginalFullCostReduction) {
+    $capturePath = Join-Path $profile 'full-cost-reduction.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original full-cost reduction captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) { throw "Original full-cost reduction observation failed; inspect $unityLog" }
+    [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;
+        Cases=3; Trace=$capturePath; SHA256=(Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash } | ConvertTo-Json
     return
 }
 if ($OriginalMollisShelterObservation) {
