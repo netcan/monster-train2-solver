@@ -1547,6 +1547,7 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                 OriginalOpeningPassiveRelicOwners = OriginalOpeningPassiveRelicsScenario.FullBattleOwners,
                 OriginalOpeningRelicRosterOwners = OriginalOpeningRelicsScenario.RosterOwners,
+                OriginalRandomizedWaves = OriginalRandomizedWavesScenario.DeploymentWaveOrder,
                 OriginalPercentageStatsPrepared = OriginalPercentageStatsScenario.Prepared,
                 OriginalPercentageStatsDefinition = OriginalPercentageStatsScenario.Definition,
                 OriginalPercentageStatsDefinitionAfter = OriginalPercentageStatsScenario.CurrentDefinition,

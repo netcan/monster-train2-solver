@@ -1,5 +1,6 @@
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
+using System.Security.Cryptography;
 using System.Text.Json;
 
 internal static class EnemySpawningChecks
@@ -119,6 +120,68 @@ internal static class EnemySpawningChecks
         Require(unsupported == 0, "Native spawning verification skipped unsupported phases.");
         Console.WriteLine($"NATIVE-SPAWN-CHECKS PASS: {matched} matched, {unsupported} unsupported.");
     }
+
+    internal static void OriginalRandomizedWaves(FixtureValue fixture, bool requireNontrivial)
+    {
+        Require(fixture.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            fixture.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d",
+            "Expected the pinned randomized wave capture.");
+        FixtureValue evidence = fixture.GetProperty("OriginalRandomizedWaves");
+        int[] order = evidence.GetProperty("AuthoredWaveIndices").Deserialize<int[]>()!;
+        int[] authored = Enumerable.Range(0, order.Length).ToArray();
+        Require(order.Length >= 4 && order.Order().SequenceEqual(authored) && (!requireNontrivial || !order.SequenceEqual(authored)) &&
+            order[^2] == authored[^2] && order[^1] == authored[^1] &&
+            evidence.GetProperty("BonusCovenantId").GetString() == RelicRandomizedWavesModel.BonusCovenantId,
+            "Expected the original permutation, authored final waves and bonus enemy Covenant.");
+        bool isComponent = fixture.TryGetProperty("DeploymentSpawn", out FixtureValue deploymentValue);
+        if (isComponent)
+        {
+            Require(fixture.GetProperty("SourceBattleSha256").GetString() is { Length: 64 } hash && hash.All(Uri.IsHexDigit),
+                "Expected serialized source battle provenance for the wave component.");
+        }
+        else deploymentValue = fixture.GetProperty("Turns")[0].GetProperty("Before").GetProperty("Spawn");
+        EnemySpawnState deployment = deploymentValue.Deserialize<EnemySpawnState>()!;
+        Require(deployment.Turn == 0 && !deployment.Looping && deployment.Waves.Count == order.Length &&
+            deployment.SelectedGroups.All(group => group == -1) &&
+            deployment.Train.Context?.Relics?.Count(RelicRandomizedWavesModel.IsOriginal) == 1,
+            "Expected an unsettled spawn cache and the active original owner at deployment.");
+        var rows = fixture.GetProperty("Spawns").EnumerateArray().ToArray();
+        for (int phase = 0; phase < order.Length; phase++)
+        {
+            Require(rows.Any(row => row.GetProperty("Before").GetProperty("Phase").GetInt32() == phase &&
+                row.GetProperty("Actual").GetProperty("Phase").GetInt32() == phase + 1 &&
+                row.GetProperty("Actual").GetProperty("SelectedGroups")[phase].GetInt32() >= 0),
+                "Native did not select a group at projected wave phase " + phase + ".");
+        }
+        Native(fixture);
+    }
+
+    internal static void ExportRandomizedWaves(string inputPath, string outputPath)
+    {
+        using var source = File.OpenRead(inputPath);
+        string hash = Convert.ToHexString(SHA256.HashData(source)).ToLowerInvariant();
+        source.Position = 0;
+        using var captured = FixtureDocument.Read(source);
+        FixtureValue battle = captured.RootElement;
+        Require(battle.GetProperty("CaptureFailures").GetInt32() == 0 && battle.GetProperty("Pending").GetInt32() == 0,
+            "Expected a complete native wave capture.");
+        OriginalRandomizedWaves(battle, requireNontrivial: true);
+
+        var builder = new FixtureBuilder();
+        int root = builder.Add(FixtureKind.Object, children: [
+            Text("SourceBattleSha256"), Text(hash),
+            Text("GameVersion"), builder.Import(battle.GetProperty("GameVersion")),
+            Text("GameModuleMvid"), builder.Import(battle.GetProperty("GameModuleMvid")),
+            Text("OriginalRandomizedWaves"), builder.Import(battle.GetProperty("OriginalRandomizedWaves")),
+            Text("DeploymentSpawn"), builder.Import(battle.GetProperty("Turns")[0].GetProperty("Before").GetProperty("Spawn")),
+            Text("Spawns"), builder.Import(battle.GetProperty("Spawns"))]);
+        using FixtureDocument fixture = builder.Build(root, 0, new byte[32]);
+        using var output = new FileStream(outputPath, FileMode.CreateNew);
+        fixture.Write(output);
+
+        int Text(string value) => builder.Add(FixtureKind.String, value);
+    }
+
     private static string Comparable(EnemySpawnState state) => JsonSerializer.Serialize(new
     {
         Rooms = state.Train.Rooms.Select(room => new { room.RoomIndex, room.Units }).ToArray(),

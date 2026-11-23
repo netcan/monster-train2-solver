@@ -4123,6 +4123,20 @@ if (args.Length == 2 && args[0] == "--deployment-advice-budget-only")
     return;
 }
 
+if (args.Length is 2 or 3 && args[0] == "--original-randomized-waves-only" &&
+    (args.Length == 2 || args[2] == "--nontrivial"))
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    EnemySpawningChecks.OriginalRandomizedWaves(fixture.RootElement, requireNontrivial: args.Length == 3);
+    return;
+}
+
+if (args.Length == 3 && args[0] == "--export-original-randomized-waves")
+{
+    EnemySpawningChecks.ExportRandomizedWaves(args[1], args[2]);
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--project-live-forsaken")
 {
     OpeningForsakenTrialChecks.ProjectLive(args[1], args[2]);

@@ -34,6 +34,7 @@ namespace MonsterTrain2Poju.Probe
                     owner.GetEffects() is [RelicEffectExtraSpawnsFirstUnitPerTurn] ||
                     owner.GetRelicDataID() == RelicModel.PreventMonsterDamageOwnerId &&
                     owner.GetEffects() is [RelicEffectPreventMonstersDamagingHeroes] ||
+                    RandomizedWaveProbe.MatchesOriginal(owner) ||
                     owner.GetRelicDataID() == RelicModel.DisableRoomPreviewOwnerId &&
                     owner.GetEffects() is [RelicEffectDisableRoomPreview] && !save.GetBattlePreviewEnabled() ||
                     SupportsDeploymentSummonBlock(owner, save) ||

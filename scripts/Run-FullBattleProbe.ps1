@@ -585,6 +585,7 @@ param(
     [string] $EffectOwnerType,
     [switch] $OriginalPreventMonsterDamageWitness,
     [switch] $OriginalPreventMonsterDamageBattle,
+    [switch] $OriginalRandomizedWavesBattle,
     [switch] $OriginalDisabledRoomPreviewBattle,
     [ValidateSet('Combined', 'Stock', 'Ephemeral')]
     [string] $OriginalHandAndEmberWitness = '',
@@ -1066,6 +1067,18 @@ if ($EffectOwnerType) {
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $effectOwnerArguments }).Count -gt 0) {
         throw 'EffectOwnerType uses the no-cards definition profile and binary capture.'
     }
+}
+if ($OriginalRandomizedWavesBattle) {
+    $waveArguments = @('OriginalRandomizedWavesBattle', 'Seed', 'InputProfile', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+        'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not $BinaryCapture -or ($InputProfile -and $PSBoundParameters.ContainsKey('Seed')) -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $waveArguments }).Count) {
+        throw 'OriginalRandomizedWavesBattle requires binary capture and either a fresh run or a native opening checkpoint.'
+    }
+    if (!$InputProfile) { $PrimaryClan = 'Hellhorned'; $SecondaryClan = 'Awoken' }
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = 'units-spells-and-junk'
 }
 if ($ProfileCapture -and -not $PlayerAdvisor) { throw 'ProfileCapture requires the separately loaded PlayerAdvisor.' }
 if ($AdvisorFloorBrowse -and (-not $PlayerAdvisor -or -not $RollingAdvice)) {
@@ -2720,6 +2733,14 @@ if ($InputProfile) {
     if ($checkpointData.gameSequence -ne 6 -or $checkpointData.runState.distance -ne $BattleDistance) {
         throw 'InputProfile must be a native BattleIntro checkpoint at BattleDistance.'
     }
+    if ($OriginalRandomizedWavesBattle) {
+        if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
+            $checkpointData.wasDevCheatUsed -ne $false -or $checkpointData.runState.numBattlesCompleted -ne 0 -or
+            $checkpointData.startingConditions.ascensionLevel -ne 0) {
+            throw 'The randomized wave witness requires a standard native Rank 0 first-battle checkpoint.'
+        }
+        $waveInputSignature = Get-OriginalSignature $checkpoint
+    }
     if (($OriginalOpeningSpellIds.Count -or $OriginalOpeningUnitIds.Count) -and
         ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
          $checkpointData.wasDevCheatUsed -ne $false -or $checkpointData.runState.numBattlesCompleted -ne 0)) {
@@ -2920,6 +2941,7 @@ $environment = @{
     MT2_PROBE_ORIGINAL_FHYRA_GOLD = $(if ($OriginalFhyraGoldWitness) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_FHYRA_BATTLE = $(if ($OriginalFhyraGoldBattle) { '1' } else { '0' })
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_BATTLE = $(if ($OriginalPreventMonsterDamageBattle) { '1' } else { '0' })
+    MT2_PROBE_ORIGINAL_RANDOMIZED_WAVES = $(if ($OriginalRandomizedWavesBattle) { '1' } else { '0' })
     MT2_PROBE_DISABLED_ROOM_PREVIEW = $(if ($OriginalDisabledRoomPreviewBattle) { '1' } else { '0' })
     MT2_PROBE_HAND_AND_EMBER_WITNESS = $OriginalHandAndEmberWitness
     MT2_PROBE_PLACEMENT_MUTATORS_WITNESS = $(if ($PlacementSummonBlockOnly) { 'block' } elseif ($OriginalPlacementMutatorsWitness) { '1' } else { '0' })
@@ -5041,6 +5063,23 @@ if ($DamageOverflow -and ($trace.ModifierScenario -ne 'damage-overflow' -or
 }
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
+if ($OriginalRandomizedWavesBattle) {
+    if ($InputProfile -and (Get-OriginalSignature $checkpoint) -cne $waveInputSignature) {
+        throw 'The randomized wave donor checkpoint changed.'
+    }
+    $order = @($trace.OriginalRandomizedWaves.AuthoredWaveIndices)
+    $owners = @($trace.Turns[0].Before.Spawn.Train.Context.Relics | Where-Object DataId -ceq 'f6ab3e2c-2e61-4a53-ac4a-501ecda375ac')
+    $sortedOrder = @($order | Sort-Object)
+    if ($trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -ne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+        $order.Count -lt 4 -or
+        ($sortedOrder -join ',') -ne ((0..($order.Count - 1)) -join ',') -or
+        $order[-2] -ne ($order.Count - 2) -or $order[-1] -ne ($order.Count - 1) -or
+        $trace.OriginalRandomizedWaves.BonusCovenantId -ne '92c18b99-e4c0-4953-ba2c-4815f570a66e' -or
+        $owners.Count -ne 1 -or $trace.Turns[0].Before.Spawn.Looping -or
+        ($owners[0].EffectTypes -join ',') -cne 'RelicEffectRandomizeWaveOrder,RelicEffectForceBonusEnemyCovenant') {
+        throw "Expected a native wave permutation with the final two authored waves. Inspect $tracePath and $unityLog"
+    }
+}
 if ($OriginalIndulgentCapacityBattle) {
     $reductions = @($trace.CapacityEffects | Where-Object {
         $_.Completed -and $_.SourceCardId -eq 0 -and $_.Effect.Type -ceq 'AdjustCapacity' -and $_.Effect.Value -eq -1 -and

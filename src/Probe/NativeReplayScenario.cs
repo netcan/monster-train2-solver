@@ -801,6 +801,8 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                     if (fullBattle && OriginalOpeningRelicsScenario.Enabled)
                         OriginalOpeningRelicsScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle && OriginalRandomizedWavesScenario.Enabled && !OriginalRandomizedWavesScenario.Acquired)
+                        OriginalRandomizedWavesScenario.Acquire(save);
 #endif
                     if (fullBattle && OriginalAfterDrawSpawnScenario.Enabled && !OriginalAfterDrawSpawnScenario.Acquired)
                         OriginalAfterDrawSpawnScenario.AcquireBeforeBattle(managers!, log);

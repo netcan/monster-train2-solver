@@ -87,18 +87,24 @@ namespace MonsterTrain2Poju.Probe
             var cache = (Dictionary<int, SpawnGroupData>)AccessTools.Field(typeof(SpawnPatternData),
                 "groupIndexToGroupData").GetValue(pattern);
             var waves = new List<SpawnGroupPoolData>(); pattern.GetUnlockedWaves(save, waves);
+            var spawnCovenants = save.GetCovenantsForSpawnPattern();
+            int[] waveIndices = RandomizedWaveProbe.CaptureIndices(managers, pattern, waves.Count, spawnCovenants, interactions);
             var selectedGroups = new List<int>();
-            EnemyWave[] definitions = waves.Select((wave, index) =>
+            EnemyWave[] definitions = waveIndices.Select(index =>
             {
                 SpawnGroupData[] groups = ((IEnumerable)AccessTools.Field(typeof(SpawnGroupPoolData),
-                    "possibleGroups").GetValue(wave)).Cast<SpawnGroupData>().ToArray();
+                    "possibleGroups").GetValue(waves[index])).Cast<SpawnGroupData>().ToArray();
                 selectedGroups.Add(cache.TryGetValue(index, out SpawnGroupData selected)
                     ? Array.IndexOf(groups, selected) : -1);
                 // GetCharacters resolves modeled Covenant spawn definitions before
                 // Definition captures their native stats, statuses and triggers.
                 return new EnemyWave(groups.Select(group => new EnemyGroup(group.GetCharacters(
-                    save.GetCovenantsForSpawnPattern(), save, save.GetGeneratedBoss()).Select(WaveDefinition).ToArray())).ToArray());
+                    spawnCovenants, save, save.GetGeneratedBoss()).Select(WaveDefinition).ToArray())).ToArray());
             }).ToArray();
+#if DEVELOPMENT_PROBE
+            if (canonicalReferences && interactions.Count == 0)
+                OriginalRandomizedWavesScenario.Observe(waveIndices, spawnCovenants);
+#endif
             var bossDefinitions = definitions.SelectMany(wave => wave.Candidates).SelectMany(group => group.Units)
                 .Where(definition => definition.Unit.IsBoss == true).GroupBy(definition => definition.Unit.AssetKey).Select(group => group.First()).ToArray();
             if (bossDefinitions.Any(definition => definition.CompanionBoss) && bossDefinitions.Length > 1)

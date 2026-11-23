@@ -302,6 +302,8 @@ namespace MonsterTrain2Poju.Model
                     if (effect == RelicFreezeHandUpgradeModel.Effect) continue;
                     if (effect == RelicRandomFreezeModel.Effect) continue;
                     if (effect == RelicRandomHandUpgradeModel.Effect) continue;
+                    if (effect is RelicRandomizedWavesModel.Shuffle or RelicRandomizedWavesModel.ForceBonusEnemy &&
+                        RelicRandomizedWavesModel.IsOriginal(relic) && relics.Count(RelicRandomizedWavesModel.IsOriginal) == 1) continue;
                     if (effect == CampaignPurgeGoldModel.CanioEffect && CampaignPurgeGoldModel.IsOriginalCombatNoOp(relic)) continue;
                     // Native IOverrideDraftRarityRelicEffect is consulted only by
                     // reward drafts. Its acquired deck is already in battle state.
