@@ -184,6 +184,7 @@ namespace MonsterTrain2Poju.Model
                 nodeLimit |= nodes >= options.MaxNodes;
                 return cancelled || timedOut || nodeLimit || earlyStop?.Reached == true;
             }
+            bool StopTransitions() => cancellationToken.IsCancellationRequested || timeLimitReached() || earlyStop?.Reached == true;
             double Score(BattleTurnState state, RoomOutcome outcome)
             {
                 double value = evaluate(state, outcome);
@@ -225,8 +226,7 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<BattleEndTurnCandidate> EndTurns(BattleTurnState state)
             {
                 BattleEndTurnFrontier ends = BattleEndTurnModel.Enumerate(state, Math.Max(0, options.MaxNodes - nodes),
-                    () => cancellationToken.IsCancellationRequested || timeLimitReached() || earlyStop?.Reached == true,
-                    choices => workspace.EndTurn(state, choices));
+                    StopTransitions, choices => workspace.EndTurn(state, choices));
                 nodes += ends.ChoiceNodes; nodeLimit |= ends.ReachedNodeLimit;
                 foreach (UnsupportedActionAttempt attempt in ends.UnsupportedAttempts) Unsupported(attempt);
                 return ends.Candidates;
@@ -268,7 +268,7 @@ namespace MonsterTrain2Poju.Model
                     if (tactical.Actions < options.MaxActionsPerTurn)
                     {
                         chosen = workspace.Choose(tactical.State, out IReadOnlyList<UnsupportedActionAttempt> omitted,
-                            options.PreferredDeploymentRoom);
+                            options.PreferredDeploymentRoom, StopTransitions);
                         foreach (UnsupportedActionAttempt attempt in omitted) Unsupported(attempt);
                     }
                     else actionLimit = true;
@@ -276,6 +276,7 @@ namespace MonsterTrain2Poju.Model
                         tactical = Child(tactical, chosen.Result.State!, chosen.Result.Outcome, new BattleSearchStep(chosen.Action, false));
                     else
                     {
+                        if (cancellationToken.IsCancellationRequested || earlyStop?.Reached == true) break;
                         BattleEndTurnCandidate? ended = BestEndTurn(tactical.State);
                         if (ended == null) break;
                         tactical = Child(tactical, ended.Result.State!, ended.Result.Outcome, ended.Step);
@@ -323,7 +324,7 @@ namespace MonsterTrain2Poju.Model
                 if (strength.Actions < options.MaxActionsPerTurn)
                 {
                     chosen = workspace.Choose(strength.State, out IReadOnlyList<UnsupportedActionAttempt> omitted,
-                        strengthRoom);
+                        strengthRoom, StopTransitions);
                     foreach (UnsupportedActionAttempt attempt in omitted) Unsupported(attempt);
                 }
                 else actionLimit = true;
@@ -341,6 +342,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 else
                 {
+                    if (cancellationToken.IsCancellationRequested || earlyStop?.Reached == true) break;
                     BattleEndTurnCandidate? ended = BestEndTurn(strength.State);
                     if (ended == null) break;
                     strength = Child(strength, ended.Result.State!, ended.Result.Outcome, ended.Step);
@@ -376,7 +378,8 @@ namespace MonsterTrain2Poju.Model
                                     SupportedActionCandidate? move = null;
                                     if (alternate.Actions < options.MaxActionsPerTurn)
                                     {
-                                        move = workspace.Choose(alternate.State, out IReadOnlyList<UnsupportedActionAttempt> omitted, room);
+                                        move = workspace.Choose(alternate.State, out IReadOnlyList<UnsupportedActionAttempt> omitted,
+                                            room, StopTransitions);
                                         foreach (UnsupportedActionAttempt attempt in omitted) Unsupported(attempt);
                                     }
                                     else actionLimit = true;
@@ -384,6 +387,7 @@ namespace MonsterTrain2Poju.Model
                                         alternate = Child(alternate, move.Result.State!, move.Result.Outcome, new BattleSearchStep(move.Action, false));
                                     else
                                     {
+                                        if (StopTransitions()) break;
                                         BattleEndTurnCandidate? nextTurn = BestEndTurn(alternate.State);
                                         if (nextTurn == null) break;
                                         alternate = Child(alternate, nextTurn.Result.State!, nextTurn.Result.Outcome, nextTurn.Step);
@@ -466,7 +470,7 @@ namespace MonsterTrain2Poju.Model
                     beamNodes++;
                     if (node.Actions < options.MaxActionsPerTurn)
                     {
-                        BattleActionEnumeration actions = workspace.Enumerate(node.State);
+                        BattleActionEnumeration actions = workspace.Enumerate(node.State, shouldStop: StopTransitions);
                         foreach (UnsupportedActionAttempt attempt in actions.UnsupportedAttempts) Unsupported(attempt);
                         var children = new List<Node>();
                         foreach (SupportedActionCandidate candidate in actions.SupportedCandidates)
@@ -483,7 +487,7 @@ namespace MonsterTrain2Poju.Model
                         foreach (Node child in children.OrderBy(child => child.Score).ThenBy(child => child.PositionCost).Take(2)) Rollout(child);
                     }
                     else actionLimit = true;
-                    if (timeLimitReached() || cancellationToken.IsCancellationRequested || earlyStop?.Reached == true) break;
+                    if (StopTransitions()) break;
                     foreach (BattleEndTurnCandidate end in EndTurns(node.State))
                         Add(Child(node, end.Result.State!, end.Result.Outcome, end.Step));
                 }

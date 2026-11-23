@@ -156,12 +156,13 @@ namespace MonsterTrain2Poju.Model
             if (enabled) { if (key == null) For(source).End = result; else For(source).DialogEnds[key] = result; }
             return result;
         }
-        internal BattleActionEnumeration Enumerate(BattleTurnState source, int? onlyCardId = null, bool includeAbilities = true)
+        internal BattleActionEnumeration Enumerate(BattleTurnState source, int? onlyCardId = null, bool includeAbilities = true,
+            Func<bool>? shouldStop = null)
         {
             var key = (onlyCardId, includeAbilities);
             if (enabled && For(source).Enumerations.TryGetValue(key, out var existing)) return existing;
-            var result = BattleActionModel.EnumerateActions(source, onlyCardId, includeAbilities, this);
-            if (enabled) For(source).Enumerations[key] = result;
+            var result = BattleActionModel.EnumerateActions(source, onlyCardId, includeAbilities, this, shouldStop);
+            if (enabled && !result.Interrupted) For(source).Enumerations[key] = result;
             return result;
         }
         internal BattleActionEnumeration Abilities(BattleTurnState source)
@@ -171,12 +172,15 @@ namespace MonsterTrain2Poju.Model
             if (enabled) For(source).Abilities = result;
             return result;
         }
-        internal SupportedActionCandidate? Choose(BattleTurnState source, out IReadOnlyList<UnsupportedActionAttempt> omitted, int room)
+        internal SupportedActionCandidate? Choose(BattleTurnState source, out IReadOnlyList<UnsupportedActionAttempt> omitted,
+            int room, Func<bool>? shouldStop = null)
         {
             if (enabled && For(source).Tactical.TryGetValue(room, out var existing))
             { policies++; omitted = existing.Omitted; return existing.Candidate; }
-            var result = BattleTacticalPolicy.Choose(source, out omitted, room, this);
-            if (enabled) For(source).Tactical[room] = (result, omitted);
+            bool interrupted = false;
+            var result = BattleTacticalPolicy.Choose(source, out omitted, room, this,
+                shouldStop == null ? null : () => interrupted |= shouldStop());
+            if (enabled && !interrupted) For(source).Tactical[room] = (result, omitted);
             return result;
         }
         internal SupportedActionCandidate? ChoosePolicy(BattleTurnState source, out IReadOnlyList<UnsupportedActionAttempt> omitted)

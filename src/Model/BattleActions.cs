@@ -397,12 +397,14 @@ namespace MonsterTrain2Poju.Model
         public IReadOnlyList<PlayCardAction> SupportedActions { get; }
         public IReadOnlyList<UnsupportedActionAttempt> UnsupportedAttempts { get; }
         public bool HasUnsupportedAttempts => UnsupportedAttempts.Count > 0;
+        internal bool Interrupted { get; }
         internal BattleActionEnumeration(IReadOnlyList<SupportedActionCandidate> supportedCandidates,
-            IReadOnlyList<UnsupportedActionAttempt> unsupportedAttempts)
+            IReadOnlyList<UnsupportedActionAttempt> unsupportedAttempts, bool interrupted = false)
         {
             SupportedCandidates = Array.AsReadOnly(supportedCandidates.ToArray());
             SupportedActions = Array.AsReadOnly(supportedCandidates.Select(candidate => candidate.Action).ToArray());
             UnsupportedAttempts = Array.AsReadOnly(unsupportedAttempts.ToArray());
+            Interrupted = interrupted;
         }
     }
 
@@ -1407,7 +1409,8 @@ namespace MonsterTrain2Poju.Model
         public static BattleActionEnumeration EnumerateActions(BattleTurnState source, int? onlyCardId = null, bool includeAbilities = true)
             => EnumerateActions(source, onlyCardId, includeAbilities, null);
 
-        internal static BattleActionEnumeration EnumerateActions(BattleTurnState source, int? onlyCardId, bool includeAbilities, BattleSearchWorkspace? workspace)
+        internal static BattleActionEnumeration EnumerateActions(BattleTurnState source, int? onlyCardId,
+            bool includeAbilities, BattleSearchWorkspace? workspace, Func<bool>? shouldStop = null)
         {
             var actions = new List<SupportedActionCandidate>();
             var unsupported = new List<UnsupportedActionAttempt>();
@@ -1448,7 +1451,7 @@ namespace MonsterTrain2Poju.Model
                     {
                         foreach (PlayCardAction branch in EnumerateRecursionChoices(source,
                         new PlayCardAction(card.InstanceId, room.RoomIndex, position, target.Id), rule))
-                            Attempt(branch);
+                            if (!TryAttempt(branch)) return Interrupted();
                     }
                     continue;
                 }
@@ -1459,28 +1462,34 @@ namespace MonsterTrain2Poju.Model
                 for (int position = first; position <= last; position++)
                     foreach (PlayCardAction branch in EnumerateRecursionChoices(source,
                         new PlayCardAction(card.InstanceId, room.RoomIndex, position), rule!))
-                        Attempt(branch);
+                        if (!TryAttempt(branch)) return Interrupted();
             }
             if (includeAbilities)
             {
+                if (shouldStop?.Invoke() == true) return Interrupted();
                 BattleActionEnumeration abilities = workspace?.Abilities(source) ?? UnitAbilityModel.EnumerateActivations(source);
                 actions.AddRange(abilities.SupportedCandidates);
                 unsupported.AddRange(abilities.UnsupportedAttempts);
+                if (shouldStop?.Invoke() == true) return Interrupted();
                 BattleActionEnumeration roomAbilities = RoomAbilityModel.EnumerateActivations(source, workspace == null ? null : workspace.Play);
                 actions.AddRange(roomAbilities.SupportedCandidates);
                 unsupported.AddRange(roomAbilities.UnsupportedAttempts);
             }
             if (!onlyCardId.HasValue && source.PlayRules.DevoteEnabled == true)
                 foreach (RoomPlayRule room in source.PlayRules.Rooms.Where(room => room.Enabled))
-                    Attempt(new PlayCardAction(0, room.RoomIndex, operation: DevoteModel.Operation));
+                    if (!TryAttempt(new PlayCardAction(0, room.RoomIndex, operation: DevoteModel.Operation))) return Interrupted();
             return new BattleActionEnumeration(actions, unsupported);
 
-            void Attempt(PlayCardAction action)
+            BattleActionEnumeration Interrupted() => new BattleActionEnumeration(actions, unsupported, interrupted: true);
+
+            bool TryAttempt(PlayCardAction action)
             {
+                if (shouldStop?.Invoke() == true) return false;
                 BattleActionResult result = workspace?.Play(source, action) ?? PlayCard(source, action);
                 if (result.Supported) actions.Add(new SupportedActionCandidate(action, result));
                 else if (result.Rejection == ActionRejection.Unsupported)
                     unsupported.Add(new UnsupportedActionAttempt(action, result.Reason ?? "Unsupported card action."));
+                return true;
             }
         }
 

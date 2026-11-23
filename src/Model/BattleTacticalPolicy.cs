@@ -14,11 +14,12 @@ namespace MonsterTrain2Poju.Model
             => Choose(source, out unsupported, preferredDeploymentRoom, null);
 
         internal static SupportedActionCandidate? Choose(BattleTurnState source,
-            out IReadOnlyList<UnsupportedActionAttempt> unsupported, int preferredDeploymentRoom, BattleSearchWorkspace? workspace)
+            out IReadOnlyList<UnsupportedActionAttempt> unsupported, int preferredDeploymentRoom, BattleSearchWorkspace? workspace,
+            Func<bool>? shouldStop = null)
         {
             var omitted = new List<UnsupportedActionAttempt>(); unsupported = omitted;
             CombatContext? context = source.Spawn.Train.Context;
-            if (context == null || source.PlayRules == null) return null;
+            if (context == null || source.PlayRules == null || StopRequested()) return null;
             var targetedDamage = new TargetedDamagePolicy(source);
             BattleActionEnumeration? cachedAbilities = null;
             bool protectedChampion = source.Spawn.Train.Rooms.Any(room =>
@@ -39,6 +40,7 @@ namespace MonsterTrain2Poju.Model
                 .OrderByDescending(item => Priority(item.rule!));
             foreach (var choice in choices)
             {
+                if (StopRequested()) return ChooseAbility(cachedAbilities);
                 CardPlayRule rule = choice.rule!;
                 if (protectedChampion && rule.Effects.Any(effect => effect.Type == "FloorRearrange" &&
                     effect.Target == "DropTargetCharacter" && effect.Value == 0))
@@ -46,12 +48,14 @@ namespace MonsterTrain2Poju.Model
                     // A shift ability can temporarily expose its champion. Use
                     // it before a legal tank-restoring card only when the
                     // champion also survives both sets of shift callbacks.
+                    if (cachedAbilities == null && StopRequested()) return null;
                     BattleActionEnumeration shifts = Abilities();
                     foreach (SupportedActionCandidate ability in shifts.SupportedCandidates.Where(ExposesChampion))
                     {
                         RoomCombatState room = source.Spawn.Train.Rooms.Single(item =>
                             item.Units.Any(unit => unit.Id == ability.Action.ActivatorUnitId));
                         CombatUnit tank = room.Units.First(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0);
+                        if (StopRequested()) return ChooseAbility(cachedAbilities);
                         BattleActionResult restored = Play(ability.Result.State!,
                             new PlayCardAction(choice.token.InstanceId, room.RoomIndex, targetUnitId: tank.Id));
                         if (restored.Supported)
@@ -63,6 +67,7 @@ namespace MonsterTrain2Poju.Model
                         }
                     }
                 }
+                if (StopRequested()) return ChooseAbility(cachedAbilities);
                 if (rule.Effects.Concat(rule.OnCastEffects).Any(effect => effect.Recursion != null || effect.SpikeRecipe != null ||
                     effect.Type is "ChooseDiscard" or "FreezeCard" or "DuplicateCard" or "MergeEquipment" or "Mix"))
                 {
@@ -78,6 +83,7 @@ namespace MonsterTrain2Poju.Model
                             .Where(action => Rank(action, rule) > UnwantedTargetRank)
                             .OrderByDescending(action => Rank(action, rule)).ThenBy(action => action.TargetUnitId))
                         {
+                            if (StopRequested()) return ChooseAbility(cachedAbilities);
                             BattleActionResult result = Play(source, action);
                             if (result.Supported) return new SupportedActionCandidate(action, result);
                             if (result.Rejection == ActionRejection.Unsupported)
@@ -85,6 +91,7 @@ namespace MonsterTrain2Poju.Model
                         }
                         continue;
                     }
+                    if (StopRequested()) return ChooseAbility(cachedAbilities);
                     BattleActionEnumeration actions = workspace?.Enumerate(source, choice.token.InstanceId, false) ?? BattleActionModel.EnumerateActions(source, choice.token.InstanceId, includeAbilities: false);
                     omitted.AddRange(actions.UnsupportedAttempts);
                     SupportedActionCandidate? selected = actions.SupportedCandidates.Where(candidate => Rank(candidate.Action, rule) > UnwantedTargetRank)
@@ -101,6 +108,7 @@ namespace MonsterTrain2Poju.Model
                     .OrderByDescending(action => Rank(action, rule)).ThenBy(action => action.TargetUnitId);
                 foreach (PlayCardAction action in ordered)
                 {
+                    if (StopRequested()) return shieldBreakingFallback ?? ChooseAbility(cachedAbilities);
                     BattleActionResult result = Play(source, action);
                     if (result.Supported)
                     {
@@ -119,9 +127,13 @@ namespace MonsterTrain2Poju.Model
                 }
                 if (shieldBreakingFallback != null) return shieldBreakingFallback;
             }
-            BattleActionEnumeration abilities = Abilities();
-            return abilities.SupportedCandidates.Where(candidate => !ExposesChampion(candidate) && !EmptyGoldReward(candidate) &&
-                AbilityRank(candidate) > UnwantedTargetRank).OrderByDescending(AbilityRank).FirstOrDefault();
+            return ChooseAbility(cachedAbilities ?? (StopRequested() ? null : Abilities()));
+
+            bool StopRequested() => shouldStop?.Invoke() == true;
+
+            SupportedActionCandidate? ChooseAbility(BattleActionEnumeration? abilities) =>
+                abilities?.SupportedCandidates.Where(candidate => !ExposesChampion(candidate) && !EmptyGoldReward(candidate) &&
+                    AbilityRank(candidate) > UnwantedTargetRank).OrderByDescending(AbilityRank).FirstOrDefault();
 
             double AbilityRank(SupportedActionCandidate candidate)
             {
@@ -149,7 +161,7 @@ namespace MonsterTrain2Poju.Model
                 IEnumerable<PlayCardAction> ordered)
             {
                 if (initial.Result.Outcome != RoomOutcome.Exchanged || !TargetedDamagePolicy.IsPlainTargetedDamage(rule) ||
-                    !EnemyReacts(initial.Action.RoomIndex))
+                    !EnemyReacts(initial.Action.RoomIndex) || StopRequested())
                     return initial;
 
                 BattleTurnState resolved = initial.Result.State!;
@@ -168,6 +180,7 @@ namespace MonsterTrain2Poju.Model
                 foreach (PlayCardAction alternate in ordered.Where(action => action.RoomIndex != initial.Action.RoomIndex && !EnemyReacts(action.RoomIndex))
                     .GroupBy(action => action.RoomIndex).Select(group => group.First()).Take(3))
                 {
+                    if (StopRequested()) break;
                     BattleActionResult next = Play(source, alternate);
                     if (!next.Supported)
                     {

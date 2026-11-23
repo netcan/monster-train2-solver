@@ -20,13 +20,14 @@ internal static class AtomicAdviceBudgetChecks
         BattlePlanResult Slow(bool shorter, int nodes)
         {
             int evaluations = 0;
-            return BattlePlanner.Plan(root, keys.Key, Options(nodes, shorter), (state, outcome) =>
-            {
-                // Reproduce a completed atomic candidate returning after the
-                // soft deadline, independently of host/JIT/native runtime speed.
-                if (++evaluations == 2) Thread.Sleep(60);
-                return BattlePlanner.Evaluate(state, outcome);
-            });
+            return BattlePlanner.PlanCore(root, keys.Key, Options(nodes, shorter),
+                (state, outcome) =>
+                {
+                    evaluations++;
+                    return BattlePlanner.Evaluate(state, outcome);
+                }, CancellationToken.None, optimizeTransitions: true,
+                // Expire as the first completed candidate is scored.
+                timeLimitReached: () => evaluations >= 2);
         }
         BattlePlanResult bounded = Slow(true, 2);
         Require(bounded.TimedOut && !bounded.Cancelled && bounded.ExpandedNodes == 2 && bounded.TurnsCompleted == 1 &&
@@ -73,6 +74,17 @@ internal static class AtomicAdviceBudgetChecks
         var expected = BattleActionModel.EnumerateActions(root).SupportedCandidates
             .Select(candidate => keys.Key(candidate.Result.State!)).ToArray();
         Require(expected.Length > 1, "The native beam root must have multiple legal inputs.");
+        var workspace = new BattleSearchWorkspace();
+        int checks = 0;
+        var interrupted = workspace.Enumerate(root, shouldStop: () => ++checks > 3);
+        var partial = interrupted.SupportedCandidates.Select(candidate => keys.Key(candidate.Result.State!)).ToArray();
+        Require(interrupted.Interrupted && workspace.Metrics.CandidateRequests == 3 && partial.Length > 0 &&
+            partial.Length < expected.Length && partial.SequenceEqual(expected.Take(partial.Length)),
+            "The deadline did not preserve the completed candidate prefix or allowed a new simulation after cutoff.");
+        var complete = workspace.Enumerate(root);
+        Require(!complete.Interrupted && complete.SupportedCandidates.Select(candidate => keys.Key(candidate.Result.State!))
+            .SequenceEqual(expected) && ReferenceEquals(complete, workspace.Enumerate(root, shouldStop: () => true)),
+            "An interrupted action frontier was reused as a complete cache entry.");
         var options = new BattlePlannerOptions(32, 2, 2, maxSteps: 1);
         var expired = RunAfterFirstBeamCandidate(cancel: false);
         var cancelled = RunAfterFirstBeamCandidate(cancel: true);
