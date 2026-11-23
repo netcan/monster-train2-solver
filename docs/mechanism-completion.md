@@ -376,6 +376,14 @@ Indulgent 的减容变体三次把玩家侧楼层容量减 1，敌方容量保�
 第一组还在同一战后队列内验证先减容，再重放一次自身 OnFeed 获得 3 Rage。整战仍受波次机制阻塞。
 [原版减容和 OnFeed 记录](../tests/compatibility/game-2.3.1/mechanics/indulgent-capacity/native-capacity-feed.mt2f)
 
+FavoredChild_2 的 2.3.1 原版施法记录覆盖 3 次战前行动和 2 次战后行动。
+回放逐字段核对首领控制器、跨层移动后的物理站位、Hivemind 持有者和随机流，并检查输入状态保持原样。
+这份归档的验证范围截至施法阶段。采样来自隔离档案 `20261124-033144-04e51780`，
+原始整战 SHA-256 为 `19e5dd5e645bc5e51c097794942fcc7c9c25b9a1671605abbafe5dba647026e0`，
+施法记录 SHA-256 为 `76a45570951e1f50dfbec2e14d1f15ed9e5079e87f29b00d57520c92ed096214`。
+使用 `pwsh -File scripts/Check-Game231IndulgentCasting.ps1` 离线复验。
+[原版施法记录](../tests/compatibility/game-2.3.1/mechanics/indulgent-capacity/native-casting-phases.mt2f)
+
 Indulgent GorgeOnSlay 击杀后排入一次自身 OnFeed，获得 3 Rage，攻击从 13 升至 19。
 同一段原版回放中，回调、首领状态、战斗上下文和 RNG 均一致。
 [原版击杀和 OnFeed 记录](../tests/compatibility/game-2.3.1/mechanics/indulgent-gorge-on-slay/native-gorge-on-slay.mt2f)

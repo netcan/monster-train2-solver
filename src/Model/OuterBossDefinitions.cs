@@ -189,8 +189,14 @@ namespace MonsterTrain2Poju.Model
             bool startingStatuses = beforePlacement
                 ? unit is { MoonPhaseMask: 5, Statuses: [{ Id: "newmoon", Stacks: 1 }, { Id: "trample", Stacks: 1 }] }
                 : unit.Statuses is [{ Id: "trample", Stacks: 1 }];
-            if (!startingStatuses || unit is not { Health: 1100, Triggers: [_, var additional] } ||
-                unit.Attack != unit.BaseAttack || context?.Relics == null) return false;
+            return startingStatuses && unit.Health == 1100 && unit.Attack == unit.BaseAttack &&
+                IsIndulgentTrampleActor(unit, context);
+        }
+
+        internal static bool IsIndulgentTrampleActor(CombatUnit unit, CombatContext? context)
+        {
+            if (unit is not { Triggers: [_, var additional] } || unit.Status("trample")?.Stacks != 1 ||
+                context?.Relics == null) return false;
             return unit.AssetKey switch
             {
                 IndulgentReduceCapacity => IsIndulgentCapacityFeed(unit, additional) && context.Relics.Count(relic => relic is

@@ -106,6 +106,13 @@ if (args.Length == 3 && args[0] == "--export-indulgent-capacity-component")
     IndulgentCapacityChecks.Export(args[1], args[2]);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--native-indulgent-trample-casting-only")
+{
+    using var birth = ModelJson.ReadFixture(args[1]);
+    using var phases = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    IndulgentCastingChecks.Native(birth.RootElement, phases?.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-indulgent-capacity-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

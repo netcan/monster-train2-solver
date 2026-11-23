@@ -12,6 +12,7 @@ namespace MonsterTrain2Poju.Probe
         private const string Status = "hivemind";
         private const string Upgrade = "RoomStateHivemindModifierUpgrade";
         internal static readonly List<Callback> Records = new();
+        private static bool Enabled => OriginalUnrulyWitness.IndulgentTitanskin || OriginalUnrulyWitness.IndulgentTrampleCasting;
 
         internal sealed class Callback
         {
@@ -92,7 +93,7 @@ namespace MonsterTrain2Poju.Probe
         [HarmonyPatch(typeof(StatusEffectHivemindState), "OnTriggered")]
         private static class TurnStartPatch
         {
-            private static bool Prepare() => OriginalUnrulyWitness.IndulgentTitanskin;
+            private static bool Prepare() => Enabled;
 
             private static void Postfix(StatusEffectState.InputTriggerParams inputTriggerParams, ref IEnumerator __result) =>
                 Observe("TurnStart", inputTriggerParams.associatedCharacter, ref __result);
@@ -101,7 +102,7 @@ namespace MonsterTrain2Poju.Probe
         [HarmonyPatch(typeof(RoomStateHivemindModifier), nameof(RoomStateHivemindModifier.OnRoomModifierOwnerKilled))]
         private static class OwnerKilledPatch
         {
-            private static bool Prepare() => OriginalUnrulyWitness.IndulgentTitanskin;
+            private static bool Prepare() => Enabled;
 
             private static void Postfix(CharacterState ownerCharacterState, ref IEnumerator __result) =>
                 Observe("OwnerKilled", ownerCharacterState, ref __result);
@@ -110,7 +111,7 @@ namespace MonsterTrain2Poju.Probe
         [HarmonyPatch(typeof(RoomStateHivemindModifier), nameof(RoomStateHivemindModifier.ApplyCharacterTriggerModification))]
         private static class OwnerStatusChangedPatch
         {
-            private static bool Prepare() => OriginalUnrulyWitness.IndulgentTitanskin;
+            private static bool Prepare() => Enabled;
 
             private static void Postfix(RoomStateHivemindModifier __instance, CharacterTriggerData.Trigger trigger,
                 CharacterState affectedCharacter, CharacterState.FireTriggersData? fireTriggersData, ref IEnumerator __result)

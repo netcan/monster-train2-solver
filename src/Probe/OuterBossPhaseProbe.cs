@@ -35,7 +35,11 @@ namespace MonsterTrain2Poju.Probe
         {
             if (data == null) return false;
             var groups = data.GetBossActionData();
-            if (!OuterBossDefinitions.Supports(data.GetAssetKey()) || groups.Count != 1 ||
+            bool supported = OuterBossDefinitions.Supports(data.GetAssetKey());
+#if DEVELOPMENT_PROBE
+            supported |= OriginalUnrulyWitness.SupportsIndulgentTrampleCasting(data);
+#endif
+            if (!supported || groups.Count != 1 ||
                 groups[0].GetNumRepeats() != 0 || groups[0].GetActions().Count != 1) return false;
             BossActionData action = groups[0].GetActions()[0];
             bool target = OuterBossDefinitions.IsArkionPyre(data.GetAssetKey())

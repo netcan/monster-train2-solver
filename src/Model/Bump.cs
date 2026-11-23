@@ -57,7 +57,9 @@ namespace MonsterTrain2Poju.Model
         {
             bool observedHivemindCasting = outerBossActionMovement &&
                 source.Rooms.SelectMany(room => room.Units).Any(unit => targets.Contains(unit.Id) &&
-                    unit.AssetKey == OuterBossDefinitions.IndulgentTitanskin && unit.BumpRules?.OuterBoss == true) &&
+                    unit.BumpRules?.OuterBoss == true &&
+                    (unit.AssetKey == OuterBossDefinitions.IndulgentTitanskin ||
+                        OuterBossDefinitions.IsIndulgentTrampleActor(unit, source.Context))) &&
                 (source.Context?.QueryFrame?.Turn == 2 && HivemindTurnUpgrade.HasSecondWave(source) ||
                  source.Context?.QueryFrame?.Turn == 3 && HivemindTurnUpgrade.HasThirdWave(source));
             string? error = TrainCombatModel.Validate(source, allowFreshHivemind: observedHivemindCasting);

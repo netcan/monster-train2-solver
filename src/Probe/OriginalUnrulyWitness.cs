@@ -59,6 +59,8 @@ namespace MonsterTrain2Poju.Probe
         internal static bool IndulgentTitanskin => Variant == "IndulgentTitanskin";
         private static bool IndulgentCapacity => Variant == "IndulgentCapacity";
         internal static bool IndulgentGorgeOnSlay => Variant == "IndulgentGorgeOnSlay";
+        internal static bool IndulgentTrampleCasting => (IndulgentCapacity || IndulgentGorgeOnSlay) &&
+            Environment.GetEnvironmentVariable("MT2_PROBE_INDULGENT_TRAMPLE_CASTING") == "1";
         internal static bool LifemotherReanimate => Variant == "LifemotherReanimate";
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
@@ -114,6 +116,12 @@ namespace MonsterTrain2Poju.Probe
             feed.GetEffects() is [var grant] && GorgeOnSlayGrant(grant) &&
             kill.GetEffects() is [var replay] && GorgeOnSlayReplay(replay);
 
+        internal static bool SupportsIndulgentTrampleCasting(CharacterData data) => IndulgentTrampleCasting &&
+            data.GetAssetKey() == BossKey && data.GetSize() == 5 && data.GetHealth() == 1100 &&
+            data.GetStartingStatusEffects() is [{ statusId: "trample", count: 1 }] &&
+            (IndulgentCapacity ? SupportsIndulgentCapacity(data) :
+                data.GetAttackDamage() == 13 && SupportsGorgeOnSlay(data));
+
         private static bool SupportsIndulgentCapacity(CharacterData data) =>
             data.GetAttackDamage() == 12 && data.GetHealth() == 1100 && data.GetSize() == 5 &&
             data.GetStartingStatusEffects() is [{ statusId: "trample", count: 1 }] &&
@@ -137,6 +145,8 @@ namespace MonsterTrain2Poju.Probe
                 scenario.GetOuterTrainBoss(true)?.GetAssetKey() != BossKey ||
                 (OriginalLifemotherDebuffsWitness.Enabled ? !OriginalLifemotherDebuffsWitness.Supports(scenario) :
                     FullBattle && !IndulgentGorgeOnSlay && !IndulgentCapacity && !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false))) ||
+                IndulgentTrampleCasting && (!OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false)) ||
+                    !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(true))) ||
                 IndulgentCapacity && (!SupportsIndulgentCapacity(scenario.GetOuterTrainBoss(false)) ||
                     !SupportsIndulgentCapacity(scenario.GetOuterTrainBoss(true)) || scenario.GetEnemyRelicData() is not [var capacityOwner] ||
                     capacityOwner.GetID() != "0809140a-a5c5-41f7-ab7c-375e6d88fb14" ||
@@ -179,7 +189,10 @@ namespace MonsterTrain2Poju.Probe
                     ControlledTestScenario = true, TitanSkinAbsorptions = titanSkinAbsorptions,
                     HivemindCallbacks = OriginalHivemindProbe.Records },
                 "IndulgentGorgeOnSlay" => new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true,
-                    ControlledTestScenario = true, GorgeOnSlayReplays = gorgeOnSlayReplays },
+                    ControlledTestScenario = true, GorgeOnSlayReplays = gorgeOnSlayReplays,
+                    HivemindCallbacks = OriginalHivemindProbe.Records },
+                "IndulgentCapacity" when IndulgentTrampleCasting => new { Scenario = ScenarioKey, BossKey,
+                    RailforgedInstalled = true, ControlledTestScenario = true, HivemindCallbacks = OriginalHivemindProbe.Records },
                 _ => new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true, ControlledTestScenario = true }
             };
         }

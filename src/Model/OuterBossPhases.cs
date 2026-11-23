@@ -102,19 +102,25 @@ namespace MonsterTrain2Poju.Model
             OuterBossPhaseResult Fail(string reason) => new OuterBossPhaseResult(null, reason);
             BattleTurnState battle = source.Battle; OuterBossProgress boss = source.Boss;
             TrainCombatState train = battle.Spawn.Train;
-            if (!OuterBossDefinitions.Supports(boss.AssetKey) || boss.Phase != "Casting" ||
+            CombatUnit? actor = train.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == boss.UnitId);
+            bool trampleIndulgent = actor != null && actor.AssetKey == boss.AssetKey &&
+                OuterBossDefinitions.IsIndulgentTrampleActor(actor, train.Context) &&
+                boss is { ValidAttackPhases: -1, Actions: [[{ Behavior: "RandomOccupiedBossActionBehavior",
+                    TargetTeam: CombatTeam.Player, Empty: true, DestroyRoom: false }]],
+                    DestroyActions: [{ Behavior: "RoomDestroyActionBehavior", TargetTeam: CombatTeam.Player,
+                        Empty: false, DestroyRoom: true }] };
+            if (!(OuterBossDefinitions.Supports(boss.AssetKey) || trampleIndulgent) || boss.Phase != "Casting" ||
                 boss.Actions.Count != boss.Controller.Groups.Count || boss.Actions.Count != 1 ||
                 boss.Actions[0].Count != 1 || !boss.Actions[0][0].Empty || boss.DestroyActions.Count != 1 ||
                 battle.PlayRules == null || train.Context?.SpawnPoints == null)
                 return Fail("Outer boss phase requires the calibrated empty-action casting definition and physical room rules.");
             if (!preCombat) return new OuterBossPhaseResult(source);
-            bool firstHivemindWave = boss.AssetKey == OuterBossDefinitions.IndulgentTitanskin &&
+            bool firstHivemindWave = (trampleIndulgent || boss.AssetKey == OuterBossDefinitions.IndulgentTitanskin) &&
                 (battle.Spawn.Turn == 1 && HivemindTurnUpgrade.HasOriginalFirstWavePair(train.Rooms.SelectMany(room => room.Units)) ||
                  battle.Spawn.Turn == 2 && HivemindTurnUpgrade.HasSecondWave(train) ||
                  battle.Spawn.Turn == 3 && HivemindTurnUpgrade.HasThirdWave(train));
             string? error = TrainCombatModel.Validate(train, allowFreshHivemind: firstHivemindWave);
             if (error != null) return Fail(error);
-            CombatUnit? actor = train.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == boss.UnitId);
             if (actor?.BumpRules?.OuterBoss != true || actor.Health <= 0 || actor.DeathState?.IsDestroyed == true ||
                 boss.Controller.Groups[0].Executable.Count != 1 || !boss.Controller.Groups[0].Executable[0])
                 return Fail("Outer boss casting actor or action executability is missing.");

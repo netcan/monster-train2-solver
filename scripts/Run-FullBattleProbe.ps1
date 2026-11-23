@@ -817,6 +817,7 @@ param(
     [switch] $OriginalIndulgentTitanskinBattle,
     [switch] $OriginalIndulgentCapacityBattle,
     [switch] $OriginalIndulgentGorgeOnSlay,
+    [switch] $IndulgentTrampleCasting,
     [switch] $OriginalLifemotherReanimateBattle,
     [switch] $OriginalLifemotherDebuffs,
     [switch] $LifemotherDebuffsWholeBattle,
@@ -1915,6 +1916,9 @@ if ($OriginalAffordableNonPlayable) {
 if ($LifemotherDebuffsWholeBattle -and -not $OriginalLifemotherDebuffs) {
     throw 'LifemotherDebuffsWholeBattle requires OriginalLifemotherDebuffs.'
 }
+if ($IndulgentTrampleCasting -and -not ($OriginalIndulgentCapacityBattle -or $OriginalIndulgentGorgeOnSlay)) {
+    throw 'IndulgentTrampleCasting requires an original Indulgent variant with Trample.'
+}
 if ($PSBoundParameters.ContainsKey('OriginalUnrulyVariant') -and -not $OriginalUnrulyBattle) {
     throw 'OriginalUnrulyVariant requires OriginalUnrulyBattle.'
 }
@@ -1960,12 +1964,14 @@ if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'OriginalUnrulyVariant')
     if ($OriginalLifemotherDebuffs) { $unrulyArguments += 'LifemotherDebuffsWholeBattle' }
     if ($lifemotherBranchObservation) { $unrulyArguments += 'UnsupportedBranchInput' }
+    if ($IndulgentTrampleCasting) { $unrulyArguments += 'IndulgentTrampleCasting' }
     if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne $soulSaviorDistance -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $unrulyArguments }).Count) {
         throw 'Original Soul Savior battle requires an isolated matching BattleIntro and binary capture.'
     }
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
+    if ($IndulgentTrampleCasting) { $OuterBossPhases = $true }
     if ($OriginalUnrulyBattle) {
         $OuterBossTurns = -not $OriginalLifemotherDebuffs -or $LifemotherDebuffsWholeBattle
         $OuterBossBirth = $OuterBossTurns
@@ -3495,6 +3501,7 @@ if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
     $environment['MT2_PROBE_UNRULY_VARIANT'] = $originalSoulSaviorVariant
     if ($OriginalLifemotherReanimateBattle -or $OriginalLifemotherDebuffs) { $environment['MT2_PROBE_ISOLATE_UI_RNG'] = '1' }
     if ($LifemotherDebuffsWholeBattle) { $environment['MT2_PROBE_LIFEMOTHER_DEBUFFS_BATTLE'] = '1' }
+    if ($IndulgentTrampleCasting) { $environment['MT2_PROBE_INDULGENT_TRAMPLE_CASTING'] = '1' }
 }
 if ($OriginalSpurnedBattle) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-spurned-battle'
