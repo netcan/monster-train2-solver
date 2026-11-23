@@ -5,8 +5,8 @@ using MonsterTrain2Poju.Model;
 
 internal static partial class OfflineBattleSearch
 {
-    // Preserve an independently verified prefix and forecast, then use the
-    // existing policy only when the forecast has more battle to resolve.
+    // Preserve an independently verified prefix and forecast. Complete forecasts
+    // can be exported directly, while partial ones use the remaining policy.
     internal static void CompleteRootPlan(string nativeInput, string prediction, string output, int floor, bool strength,
         string? baselinePath = null)
     {
@@ -35,8 +35,8 @@ internal static partial class OfflineBattleSearch
         var plan = fixture.GetProperty("Plan");
         FixtureValue[] forecast = plan.GetProperty("Steps").EnumerateArray().ToArray();
         bool partial = !plan.GetProperty("CompletedHorizon").GetBoolean() && plan.GetProperty("UsedShorterHorizon").GetBoolean();
-        Require(partial || baseline != null && Terminal(plan.GetProperty("Outcome").Deserialize<RoomOutcome>()),
-            "Completion requires a verified partial root plan.");
+        Require(partial || plan.GetProperty("CompletedHorizon").GetBoolean() && Terminal(plan.GetProperty("Outcome").Deserialize<RoomOutcome>()),
+            "Completion requires a verified partial or terminal root plan.");
         using var keys = new BattleStateKeys();
         using var projectedKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
         BattleTurnState root = DeploymentRoot(native.RootElement);
