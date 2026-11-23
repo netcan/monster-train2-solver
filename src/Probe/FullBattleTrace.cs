@@ -25,6 +25,9 @@ namespace MonsterTrain2Poju.Probe
         private readonly EnemySpawningProbe spawning;
         private readonly BattleTurnProbe turns;
         private readonly BattleActionProbe actions;
+#if DEVELOPMENT_PROBE
+        internal int ObservedActionCount => actions.Records.Count;
+#endif
         private readonly Dictionary<CharacterState, int> identities = new Dictionary<CharacterState, int>();
         private readonly Dictionary<CharacterState, Dictionary<CharacterTriggerState, int>> triggerIdentities =
             new Dictionary<CharacterState, Dictionary<CharacterTriggerState, int>>();
@@ -1126,6 +1129,7 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
             AngelDuoForcedRelentlessProbe.Write(log);
             AngelDuoCompanionPhaseProbe.Write(log);
+            BattleTestRngProbe.WriteRegionPreview();
 #endif
             OuterBossPyreProbe.Write(log);
             CharacterRemovalProbe.Write();

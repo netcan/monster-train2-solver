@@ -131,6 +131,7 @@ param(
     [string] $InputProfile = '',
     [switch] $RegionRunInput,
     [switch] $CampaignBattlePolicy,
+    [switch] $ObserveRegionPreviewScheduling,
     [string] $PrimaryClan = '',
     [string] $SecondaryClan = '',
     [ValidateRange(0, 20)] [int] $BattleDistance = 0,
@@ -2596,8 +2597,11 @@ if ($CampaignBattlePolicy -and (!$RegionRunInput -or
     ($PSBoundParameters.ContainsKey('Policy') -and $Policy -ne 'units-spells-and-junk'))) {
     throw 'CampaignBattlePolicy requires RegionRunInput and the standard full-battle output policy.'
 }
+if ($ObserveRegionPreviewScheduling -and !$RegionRunInput) {
+    throw 'ObserveRegionPreviewScheduling requires RegionRunInput.'
+}
 if ($RegionRunInput) {
-    $regionArguments = @('RegionRunInput', 'CampaignBattlePolicy', 'InputProfile', 'BattleDistance', 'Policy', 'BinaryCapture', 'NativeWorker',
+    $regionArguments = @('RegionRunInput', 'CampaignBattlePolicy', 'ObserveRegionPreviewScheduling', 'InputProfile', 'BattleDistance', 'Policy', 'BinaryCapture', 'NativeWorker',
         'GameSpeed', 'TimeoutSeconds', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (!$InputProfile -or !$BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $regionArguments }).Count) {
         throw 'RegionRunInput requires a native Soul Savior BattleIntro checkpoint and binary capture.'
@@ -2879,6 +2883,7 @@ $environment = @{
     MT2_PROBE_RESUME_RUN = $(if ($InputProfile) { '1' } else { '0' })
     MT2_PROBE_REGION_RUN_INPUT = $(if ($RegionRunInput) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_BATTLE_POLICY = $(if ($CampaignBattlePolicy) { '1' } else { '0' })
+    MT2_PROBE_REGION_PREVIEW_SCHEDULING = $(if ($ObserveRegionPreviewScheduling) { '1' } else { '0' })
     MT2_PROBE_PRIMARY_CLAN = $PrimaryClan
     MT2_PROBE_SECONDARY_CLAN = $SecondaryClan
     MT2_PROBE_CONDUIT_MOVEMENT = $(if ($ConduitMovement) { '1' } else { '0' })

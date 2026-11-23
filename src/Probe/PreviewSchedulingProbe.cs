@@ -25,6 +25,10 @@ namespace MonsterTrain2Poju.Probe
             public bool CardPlaying { get; set; }
             public bool PlayerControl { get; set; }
             public string[] Callers { get; set; } = Array.Empty<string>();
+#if DEVELOPMENT_PROBE
+            public int? ActionCount { get; set; }
+            public bool ShouldSerializeActionCount() => ActionCount.HasValue;
+#endif
         }
         internal static readonly List<Record> Records = new List<Record>();
         internal static void Observe(string operation, bool callers = false)
@@ -33,6 +37,7 @@ namespace MonsterTrain2Poju.Probe
                 PreviewReferenceProbe.Enabled && EnchantmentBattleScenario.Prepared
 #if DEVELOPMENT_PROBE
                 || OriginalUnrulyWitness.FullBattle
+                || BattleTestRngProbe.RegionPreviewEnabled
 #endif
                 )) return;
             AllGameManagers managers = AllGameManagers.Instance!;
@@ -46,6 +51,9 @@ namespace MonsterTrain2Poju.Probe
                 PreviewRngActive = PreviewRngIsolation.Active,
                 HandAnimating = managers.GetHandUI()?.AreAnyCardsAnimating() ?? false,
                 CardPlaying = managers.GetReplayManager().IsCardPlaying(), PlayerControl = combat.ShouldShowEndTurnButton(),
+#if DEVELOPMENT_PROBE
+                ActionCount = BattleTestRngProbe.RegionPreviewEnabled ? FullBattleTrace.Active.ObservedActionCount : null,
+#endif
                 Callers = callers ? new StackTrace().GetFrames().Skip(2).Take(7).Select(frame =>
                     frame.GetMethod()!.DeclaringType?.FullName + "." + frame.GetMethod()!.Name).ToArray() : Array.Empty<string>() });
         }
