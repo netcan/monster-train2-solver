@@ -7,6 +7,8 @@ internal static class HallGraftedBirthChecks
     private const string HallId = "83734ffd-cbaa-47f1-9809-cc4c4dac568d";
     private const string AssistantId = "3a8240bd-8b96-4d6e-b2d1-49ff8b5d8022";
     private const string GraftId = "0a928329-666c-4ce6-a1c3-413977e37e46";
+    private const string ExtraSpawnId = "559f443d-bbeb-40fc-aa86-772ef4c2c2dc";
+    private const string ExtraSpawnEffect = "RelicEffectExtraSpawnsFirstUnitPerTurn";
     private const string Unsupported = "Grafted source-card cloning requires its independent graft identity transition.";
     private sealed record Callback(string Phase, int Card, int Result, int Graft, bool? Cardless);
 
@@ -160,12 +162,130 @@ internal static class HallGraftedBirthChecks
         Console.WriteLine("NATIVE-HALL-GRAFTED-BIRTH PASS: original paid and cloned units, distinct native graft ownership, source alias, physical slots, unchanged Battle/Draw RNG and observed-root EndTurn.");
     }
 
-    private static void VerifyCloneCallbacks(FixtureValue root)
+    internal static void NativeExtraSpawn(FixtureValue root)
+    {
+        Require(root.GetProperty("Schema").GetInt32() == 2 &&
+            root.GetProperty("Boundary").GetString() == "NativeOriginalHallGraftedBirth" &&
+            root.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            root.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            root.GetProperty("ExtraSpawn").GetBoolean() && root.GetProperty("CaptureFailures").GetInt32() == 0 &&
+            root.GetProperty("Pending").GetInt32() == 0, "Expected the pinned native DoubleUnits component.");
+        FixtureValue hall = root.GetProperty("Hall"), birth = root.GetProperty("Birth");
+        var hallBefore = hall.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var before = birth.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var after = birth.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        var install = hall.GetProperty("Action").Deserialize<PlayCardAction>()!;
+        var play = birth.GetProperty("Action").Deserialize<PlayCardAction>()!;
+        CombatContext prior = before.Spawn.Train.Context!, actual = after.Spawn.Train.Context!;
+        var owner = prior.Relics!.Single(relic => relic.DataId == ExtraSpawnId);
+        Require(owner.AssetKey == "DoubleUnits" && owner.EffectTypes.SequenceEqual([ExtraSpawnEffect]) &&
+            owner.DisallowedInPlacementPhase == false && actual.Relics!.Any(relic => relic.DataId == ExtraSpawnId &&
+                relic.EffectTypes.SequenceEqual([ExtraSpawnEffect])) &&
+            hallBefore.Spawn.Train.Context!.FindCard(install.CardInstanceId)?.DataId == HallId &&
+            prior.FindCard(play.CardInstanceId)?.DataId == AssistantId && hallBefore.Spawn.Turn == 1 &&
+            before.Spawn.Turn == 1 && after.Spawn.Turn == 1 && hallBefore.Energy - before.Energy == 2 &&
+            before.Energy - after.Energy == 1 && install.RoomIndex == play.RoomIndex &&
+            hall.GetProperty("Index").GetInt32() + 1 == birth.GetProperty("Index").GetInt32() &&
+            hall.GetProperty("Actual").ContentEquals(birth.GetProperty("Before")) &&
+            birth.GetProperty("ActualOutcome").Deserialize<RoomOutcome>() == RoomOutcome.Exchanged &&
+            prior.RoomCapacities!.Single(room => room.RoomIndex == play.RoomIndex).Attachments!
+                .Any(attachment => attachment.DataId == HallId && attachment.SpawnCopySubtype == ""),
+            "Expected one original Hall and one paid Assistant in the same native turn.");
+        Require(prior.BattleRng.Equals(actual.BattleRng) && prior.Cards.Rng.Equals(actual.Cards.Rng),
+            "The four native births changed Battle or CardDraw RNG.");
+
+        CombatUnit[] units = root.GetProperty("NewUnits").Deserialize<CombatUnit[]>()!.OrderBy(unit => unit.Id).ToArray();
+        var settledRoom = after.Spawn.Train.Rooms.Single(room => room.RoomIndex == play.RoomIndex);
+        Require(units.Length == 4 && units.Select(unit => unit.Modifiers?.IsClone).SequenceEqual([false, true, false, true]) &&
+            units.Select(unit => unit.Status("cardless")?.Stacks ?? 0).SequenceEqual([0, 1, 1, 1]) &&
+            units.All(unit => unit.Team == CombatTeam.Player && unit.AssetKey == "MonsterTwistedAssistant" &&
+                unit.Modifiers?.Graft?.Card.DataId == GraftId && unit.Status("unit_grafted_equipment")?.Stacks == 1 &&
+                unit.Health > 0 && Json(unit) == Json(settledRoom.Units.Single(actor => actor.Id == unit.Id))) &&
+            units[0].SpawnerCardId == play.CardInstanceId && prior.NextUnitId == units[0].Id &&
+            units.Select(unit => unit.Id).SequenceEqual(Enumerable.Range(units[0].Id, 4)) &&
+            prior.LastSpawnedUnitId == 0 && actual.LastSpawnedUnitId == units[3].Id && actual.NextUnitId == units[3].Id + 1,
+            "Expected the paid birth, first Hall clone, extra cardless birth and second Hall clone in creation order.");
+        var priorPoints = prior.SpawnPoints!.Groups.Single(group => group.RoomIndex == play.RoomIndex &&
+            group.Team == CombatTeam.Player && group.PreviewCopyId == null);
+        var settledPoints = actual.SpawnPoints!.Groups.Single(group => group.RoomIndex == play.RoomIndex &&
+            group.Team == CombatTeam.Player && group.PreviewCopyId == null);
+        int[] occupants = [units[0].Id, units[2].Id, units[3].Id, units[1].Id];
+        Require(play.PlayerPosition == 0 && priorPoints.Occupants.All(id => id == 0) &&
+            settledPoints.Occupants.Take(4).SequenceEqual(occupants) && settledPoints.Occupants.Skip(4).All(id => id == 0),
+            "The inserted extra birth and its Hall clone did not retain their native positions.");
+
+        int firstGear = units[0].EquipmentCards!.Single();
+        int[] identities = units.SelectMany(unit => new[] { unit.SpawnerCardId, unit.EquipmentCards!.Single() }).ToArray();
+        var standby = after.OtherPiles!.Single(pile => pile.Name == "Standby");
+        var equipmentEvents = root.GetProperty("Equipment").EnumerateArray().ToArray();
+        Require(identities.Distinct().Count() == 8 && prior.FindCard(play.CardInstanceId)?.GraftedEquipmentCardId == firstGear &&
+            equipmentEvents.Length == 4, "Each native unit needs a separate source and attached graft.");
+        foreach (var (unit, attachment) in units.Zip(equipmentEvents))
+        {
+            int gear = unit.EquipmentCards!.Single();
+            var source = actual.CardRegistry!.Single(card => card.InstanceId == unit.SpawnerCardId);
+            var equipped = actual.CardRegistry!.Single(card => card.InstanceId == gear);
+            bool paid = unit.Id == units[0].Id;
+            Require(source.DataId == AssistantId && source.GraftedEquipmentCardId == firstGear &&
+                actual.CardInstances!.Any(card => card.InstanceId == source.InstanceId) == paid &&
+                standby.Cards.Any(card => card.InstanceId == source.InstanceId) == paid &&
+                equipped.DataId == GraftId && equipped.EquippedUnitId == unit.Id &&
+                standby.EquipmentConditions!.Any(condition => condition.CardId == gear && condition.HostUnitId == unit.Id) &&
+                attachment.GetProperty("Completed").GetBoolean() && attachment.GetProperty("Grafted").GetBoolean() &&
+                !attachment.GetProperty("Remove").GetBoolean() && attachment.GetProperty("UnitId").GetInt32() == unit.Id &&
+                attachment.GetProperty("CardId").GetInt32() == gear,
+                "Native creation-order graft ownership, source aliases or standby conditions differ.");
+        }
+        VerifyCloneCallbacks(root, 2);
+        VerifyExtraSpawnDefinition(root, root.GetProperty("ExtraSpawnDefinition"));
+        Require(owner.ResourceEffects is [{ Conditions: [{ Triggered: false, DurationTriggerCount: 0 }] }] &&
+            actual.Relics!.Single(relic => relic.DataId == ExtraSpawnId).ResourceEffects is
+                [{ Conditions: [{ Triggered: true, DurationTriggerCount: 1, ValueAtLastTrigger: 0 }] }],
+            "The native extra birth did not consume exactly one turn-scoped trigger.");
+        BattleActionResult simulated = BattleActionModel.PlayCard(before, play);
+        Require(simulated.Supported && simulated.Outcome == RoomOutcome.Exchanged, simulated.Reason ??
+            "The model failed to complete the original additional birth.");
+        RecordedBattleChecks.Compare(simulated.State!, after, false, "Native DoubleUnits and Hall birth");
+        RelicResourceResult sameTurn = RelicUnitSpawnCountModel.Evaluate(actual, CombatTeam.Player);
+        RelicResourceResult nextTurn = RelicUnitSpawnCountModel.Evaluate(RelicConditionModel.EndDuration(actual, "ThisTurn"), CombatTeam.Player);
+        Require(sameTurn is { Supported: true, Value: 0 } && nextTurn is { Supported: true, Value: 1 },
+            "The modeled extra birth failed its same-turn or next-turn guard.");
+        Console.WriteLine("NATIVE-HALL-EXTRA-SPAWN PASS: two native Hall clones, distinct grafts and full model state/RNG.");
+    }
+
+    private static void VerifyExtraSpawnDefinition(FixtureValue root, FixtureValue definition)
+    {
+        Require(definition.GetProperty("Id").GetString() == ExtraSpawnId && definition.GetProperty("AssetKey").GetString() == "DoubleUnits" &&
+            !definition.GetProperty("DisallowedInPlacementPhase").GetBoolean() &&
+            definition.GetProperty("EffectTypes").Deserialize<string[]>()!.SequenceEqual([ExtraSpawnEffect]) &&
+            definition.GetProperty("Amount").GetInt32() == 1 && definition.GetProperty("Team").GetString() == "Monsters" &&
+            definition.GetProperty("Target").GetString() == "FrontInRoom" &&
+            definition.GetProperty("RequiredMutatorId").ValueKind == FixtureKind.Null,
+            "Original DoubleUnits owner or effect getters differ.");
+        FixtureValue condition = definition.GetProperty("Conditions").EnumerateArray().Single();
+        Require(condition.GetProperty("TrackedValue").GetString() == "SubtypeInDeck" &&
+            condition.GetProperty("CardType").GetString() == "Any" && condition.GetProperty("TrackTriggerCount").GetBoolean() &&
+            condition.GetProperty("Duration").GetString() == "ThisTurn" && condition.GetProperty("Comparator").GetInt32() == 6 &&
+            condition.GetProperty("Int").GetInt32() == 1 && !condition.GetProperty("AllowMultiple").GetBoolean() &&
+            condition.GetProperty("Subtype").GetString() == "SubtypesData_None", "Original DoubleUnits ordered condition differs.");
+        FixtureValue query = root.GetProperty("ExtraSpawnCountQueries").EnumerateArray().Single();
+        Require(query.GetProperty("Unit").GetString() == "MonsterTwistedAssistant" && query.GetProperty("Team").GetString() == "Monsters" &&
+            query.GetProperty("Turn").GetInt32() == 1 && query.GetProperty("CountBefore").GetInt32() == 1 &&
+            query.GetProperty("CountAfter").GetInt32() == 2, "Original paid Assistant count query did not request an additional birth.");
+        Console.WriteLine("NATIVE-HALL-EXTRA-SPAWN-DEFINITION PASS: original ordered condition, absent required mutator and spawn count 1 to 2.");
+    }
+
+    private static void VerifyCloneCallbacks(FixtureValue root, int count = 1)
     {
         FixtureValue[] observations = root.GetProperty("CloneObservations").EnumerateArray().ToArray();
-        Require(observations.Length == 1 && observations[0].GetProperty("Completed").GetBoolean(),
-            "Expected one completed original CloneMonsterState coroutine.");
-        FixtureValue observation = observations[0];
+        Require(observations.Length == count, "Unexpected number of completed native CloneMonsterState coroutines.");
+        foreach (var observation in observations) VerifyCloneCallback(observation);
+        Console.WriteLine("NATIVE-HALL-GRAFT-ORDER PASS: source copy, cardless birth, graft copy, graft attachment, exact native object aliases.");
+    }
+
+    private static void VerifyCloneCallback(FixtureValue observation)
+    {
+        Require(observation.GetProperty("Completed").GetBoolean(), "Native CloneMonsterState coroutine did not complete.");
         int paidSpawner = observation.GetProperty("PaidSpawner").GetInt32();
         int paidGraft = observation.GetProperty("PaidGraft").GetInt32();
         Callback[] actual = observation.GetProperty("Callbacks").Deserialize<Callback[]>()!;
@@ -186,7 +306,6 @@ internal static class HallGraftedBirthChecks
             new("AddEquipment", cloneSpawner, cloneGraft, paidGraft, null)
         ];
         Require(actual.SequenceEqual(expected), "Native clone did not preserve the source alias and attach the separate graft in observed order.");
-        Console.WriteLine("NATIVE-HALL-GRAFT-ORDER PASS: source copy, cardless birth, graft copy, graft attachment, exact native object aliases.");
     }
 
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);

@@ -5738,6 +5738,12 @@ if (args.Length == 2 && args[0] == "--native-hall-grafted-birth-only")
     HallGraftedBirthChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-hall-extra-spawn-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    HallGraftedBirthChecks.NativeExtraSpawn(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-self-attack-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

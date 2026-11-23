@@ -29,6 +29,8 @@ namespace MonsterTrain2Poju.Probe
             var save = managers.GetSaveManager();
             return save.GetCovenants().Count == 0 && save.GetMutators().Count > 0 &&
                 save.GetMutators().All(owner => OriginalStartRoomAttachmentScenario.SupportsInfernoMutator(owner, save) ||
+                    owner.GetRelicDataID() == RelicUnitSpawnCountModel.DataId &&
+                    owner.GetEffects() is [RelicEffectExtraSpawnsFirstUnitPerTurn] ||
                     owner.GetEffects().Count > 0 && owner.GetEffects().All(effect =>
                     (effect is RelicEffectModifyCharacterAttackOrHealthPercentage || effect is RelicEffectMultiplyAttackLate ||
                         effect is RelicEffectApplyExtraPyreDamage || effect is RelicEffectAddUnitUpgradePerPile ||

@@ -717,6 +717,23 @@ namespace MonsterTrain2Poju.Model
                     return Illegal("Invalid summon position.");
                 if (nextUnitId <= 0 || train.Rooms.SelectMany(room => room.Units).Any(unit => unit.Id >= nextUnitId))
                     return Unsupported("Invalid unit identity allocation.");
+                int extraCardBirths = 0;
+                if (context.Relics?.Any(relic => relic.EffectTypes.Contains(RelicUnitSpawnCountModel.Effect)) == true)
+                {
+                    RelicResourceResult spawnCount = RelicUnitSpawnCountModel.Evaluate(context, CombatTeam.Player, target.Preview);
+                    if (!spawnCount.Supported) return Unsupported(spawnCount.UnsupportedReason!);
+                    if (spawnCount.Value > 0)
+                    {
+                        if (context.SpawnPoints?.Group(action.RoomIndex, CombatTeam.Player) is not SpawnPointGroupState points ||
+                            rule.Summon != null || rule.CardType != "Monster" || target.Preview || target.Deployment)
+                            return Unsupported("Additional paid units require the ordinary primary physical birth path.");
+                        extraCardBirths = Math.Min(spawnCount.Value, Math.Max(0, Math.Min(points.Occupants.Count(id => id == 0),
+                            points.GroupCount - position) - 1));
+                    }
+                    context = spawnCount.Context!;
+                    target = target.WithContext(context);
+                    train = CardSpellModel.WithContext(train, context);
+                }
                 RoomCombatResult spawnTriggers;
                 if (rule.Summon != null)
                 {
@@ -859,6 +876,15 @@ namespace MonsterTrain2Poju.Model
                     if (completedBirth != null) train = UnitCloneModel.ReplaceUnit(train, HordeStatusModel.WithSpawning(completedBirth, false));
                     spawnTriggers = new RoomCombatResult(train.Rooms.Single(room => room.RoomIndex == target.RoomIndex),
                         enchanted.Outcome == RoomOutcome.Exchanged ? spawnTriggers.Outcome : enchanted.Outcome, 0, spawnTriggers.Events.ToList());
+                }
+                if (extraCardBirths > 0)
+                {
+                    UnitBirthResult additional = AdditionalCardBirthModel.Apply(train, spawnTriggers.State!, originalRule!,
+                        source.PlayRules.UnitCopyCatalog, card.InstanceId, position + 1, extraCardBirths);
+                    if (!additional.Supported) return Unsupported(additional.Result.UnsupportedReason!);
+                    spawnTriggers = new RoomCombatResult(additional.Result.State,
+                        additional.Result.Outcome == RoomOutcome.Exchanged ? spawnTriggers.Outcome : additional.Result.Outcome,
+                        0, spawnTriggers.Events.Concat(additional.Result.Events).ToList());
                 }
                 context = spawnTriggers.State!.Context!; outcome = spawnTriggers.Outcome;
                 piles = context.OtherPiles?.ToArray() ?? piles;

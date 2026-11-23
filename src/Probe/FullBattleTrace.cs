@@ -1005,6 +1005,9 @@ namespace MonsterTrain2Poju.Probe
                 GameVersion = Application.version,
                 GameModuleMvid = typeof(RelicState).Assembly.ManifestModule.ModuleVersionId,
                 CaptureFailures, Pending, Hall = hall, Birth = birth, NewUnits = born,
+                ExtraSpawn = OriginalSupportSpellsScenario.HallExtraSpawn,
+                ExtraSpawnDefinition = OriginalSupportSpellsScenario.HallExtraSpawnDefinition,
+                ExtraSpawnCountQueries = OriginalSupportSpellsScenario.HallExtraSpawnCountQueries,
                 CloneObservations = HallGraftedBirthProbe.Clones,
                 Equipment = EquipmentProbe.Records.Where(record => born.Any(actor => actor.Id == record.UnitId)).ToArray()
             });

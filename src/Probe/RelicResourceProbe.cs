@@ -196,6 +196,7 @@ namespace MonsterTrain2Poju.Probe
             RelicSpawnStatusScalingRule? spawnStatusScaling = null;
             RelicTurnEnergyRule? turnEnergy = null;
             RelicHandTraitRule? handTrait = null;
+            RelicUnitSpawnCountRule? unitSpawnCount = null;
             int[]? goldMagicPowerCards = null;
             if (effect is RelicEffectModifyEnergyReducingEveryTurn || effect is RelicEffectModifyEnergyWhenFloorsOccupied)
             {
@@ -568,6 +569,20 @@ namespace MonsterTrain2Poju.Probe
                 amount = (int)AccessTools.Field(effect.GetType(), "addPermanentAmount").GetValue(effect);
             else if (type == RelicOpeningPyreDamageModel.Effect)
                 amount = data.GetParamInt2();
+            else if (type == RelicUnitSpawnCountModel.Effect)
+            {
+                amount = data.GetParamInt();
+                required = data.GetParamMutatorData();
+                var conditions = data.GetEffectConditions();
+                if (conditions.Count == 1)
+                {
+                    object ConditionField(string name) => AccessTools.Field(typeof(RelicEffectCondition), name).GetValue(conditions[0]);
+                    // The shared trigger-count projection omits these unused native filters.
+                    if (ConditionField("paramCardType").ToString() == "Any" &&
+                        (string)ConditionField("paramSubtype") == "SubtypesData_None")
+                        unitSpawnCount = new RelicUnitSpawnCountRule(data.GetParamSourceTeam().ToString(), data.GetTargetMode().ToString());
+                }
+            }
             else if (type == RelicTurnEndBumpModel.Effect)
             {
                 if (data.GetParamSourceTeam() != Team.Type.Monsters)
@@ -633,10 +648,11 @@ namespace MonsterTrain2Poju.Probe
             return new RelicResourceEffect(index, type, data.GetParamInt(), data.GetParamInt2(), amount,
                 effect.CanApplyInPreviewMode, required?.GetID(), RelicCardModifierProbe.Conditions(effect), value, registration,
                 capacityValue, capacityRegistration, data.GetParamMinInt(),
-                effect is RelicEffectAddPermanentCorruptionStartOfCombat || effect is RelicEffectChangeSingleFloorCapacity || effect is RelicEffectRandomCardCostOnDraw || effect is RelicEffectSuppressExhaust || effect is RelicEffectPyreHeartResurrection ? data.GetParamFloat() : 0,
+                effect is RelicEffectAddPermanentCorruptionStartOfCombat || effect is RelicEffectChangeSingleFloorCapacity || effect is RelicEffectRandomCardCostOnDraw || effect is RelicEffectSuppressExhaust || effect is RelicEffectPyreHeartResurrection ||
+                    type == RelicUnitSpawnCountModel.Effect ? data.GetParamFloat() : 0,
                 generation, unitTrigger, openingDraw, pileStartTurn, moonPhaseStatus, startTurnHeal, startTurnRoomEffect, cardPlayDamage, unitDamage, mooncycleRoomEffect, randomDrawCost, suppressExhaust, endTurnHealth, cardTypeSequence, unitSpawnEffect, deathEffect, openingSpawn, deckSpawn, drawAndEnergy, pileSpawnUpgrade, spawnStatusScaling, turnEnergy, goldMagicPowerCards,
                 lastKnownDeckCount: effect is RelicEffectAddPyreAttackAndHealthPerCardInDeck deckChange
-                    ? ReadLastKnownDeckCount(deckChange) : null, handTrait: handTrait);
+                    ? ReadLastKnownDeckCount(deckChange) : null, handTrait: handTrait, unitSpawnCount: unitSpawnCount);
         }
 
         internal static ResourceSnapshot Capture()

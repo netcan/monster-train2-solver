@@ -229,11 +229,7 @@ namespace MonsterTrain2Poju.Model
             var targetEquipmentStatuses = new List<string>();
             if (hallGraft != null)
             {
-                CardGenerationResult created = CardGenerationModel.CreateDetached(state.Context!, hallGraft.Card, reservedGraftId);
-                if (!created.Supported) return Fail(created.UnsupportedReason!);
-                CardInstanceState graft = created.Context!.FindCard(reservedGraftId)!;
-                RoomCombatResult attached = UnitGraftModel.Attach(FindRoom(unitId)!.WithContext(created.Context),
-                    unitId, graft, hallGraft);
+                RoomCombatResult attached = UnitGraftModel.AttachReserved(FindRoom(unitId)!, unitId, reservedGraftId, hallGraft);
                 if (!Accept(attached)) return Fail(attached.UnsupportedReason!);
                 targetEquipmentStatuses.AddRange(hallGraft.Equipment.Upgrades.SelectMany(upgrade => upgrade.Statuses).Select(status => status.Id));
             }
@@ -314,13 +310,19 @@ namespace MonsterTrain2Poju.Model
             CombatContext? context = destination.Context;
             if (destination.Deployment || context is not { Enchantments: null, LifeLinks: null } ||
                 context.NextCardId is <= 0 or >= int.MaxValue - 1 ||
-                context.Relics?.Any(relic => relic.EffectTypes.Any(effect => effect != "RelicEffectNull")) == true ||
+                context.Relics?.Any(relic => relic.EffectTypes.Any(effect =>
+                    effect != "RelicEffectNull" && effect != RelicUnitSpawnCountModel.Effect)) == true ||
                 original is not { AssetKey: "MonsterTwistedAssistant", Modifiers.IsClone: false, EquipmentCards.Count: 1 } ||
                 !rule.GraftedBirth || rule.Gear.Count != 1 || rule.Ability != null ||
                 rule.Birth.SpawnUnit is not { Triggers.Count: 0, Modifiers.Graft: UnitGraftRule graft } ||
                 context.FindCard(original.SpawnerCardId) is not
                     { DataId: "3a8240bd-8b96-4d6e-b2d1-49ff8b5d8022", MaskDescriptor: { PermanentGraft: true, Purified: false } } spawner ||
-                spawner.GraftedEquipmentCardId != original.EquipmentCards[0] ||
+                spawner.GraftedEquipmentCardId != original.EquipmentCards[0] &&
+                    !(original.Status("cardless")?.Stacks == 1 &&
+                      context.Relics?.Any(relic => relic.EffectTypes.Contains(RelicUnitSpawnCountModel.Effect)) == true &&
+                      spawner.GraftedEquipmentCardId is int aliasId &&
+                      context.FindCard(aliasId) is CardInstanceState alias && alias.DataId == graft.Card.DataId &&
+                      alias.EquippedUnitId > 0 && !context.CardInstances!.Any(card => card.InstanceId == spawner.InstanceId)) ||
                 rule.Gear[0].CardId != original.EquipmentCards[0] || !rule.Gear[0].Grafted ||
                 context.FindCard(original.EquipmentCards[0]) is not CardInstanceState equipment ||
                 equipment.DataId != graft.Card.DataId || equipment.EquippedUnitId != original.Id ||

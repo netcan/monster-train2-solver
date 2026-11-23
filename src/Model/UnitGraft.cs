@@ -64,6 +64,14 @@ namespace MonsterTrain2Poju.Model
             return new RoomCombatResult(equipped.State.WithContext(context), equipped.Outcome, 0, equipped.Events.ToList(),
                 pendingCallbacks: equipped.PendingCallbacks);
         }
+        internal static RoomCombatResult AttachReserved(RoomCombatState source, int unitId, int equipmentId, UnitGraftRule rule)
+        {
+            CardGenerationResult created = CardGenerationModel.CreateDetached(source.Context!, rule.Card, equipmentId);
+            if (!created.Supported) return Fail(created.UnsupportedReason!);
+            CombatContext context = created.Context!;
+            return Attach(source.WithContext(context), unitId, context.FindCard(equipmentId)!, rule);
+        }
+
         private static RoomCombatResult Fail(string error) => new RoomCombatResult(null, RoomOutcome.Unsupported, 0,
             new List<CombatEvent>(), error);
     }

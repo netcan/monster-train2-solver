@@ -85,23 +85,28 @@ namespace MonsterTrain2Poju.Model
             CombatStatus cardlessStatus, Func<RoomCombatState, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>, RoomCombatResult> drain)
             => SpawnCore(source, definition, 0, position, true, cardlessStatus, null, null, false,
                 drainBirthQueue: drain, compactBirth: false);
+        internal static UnitBirthResult SpawnAdditionalCardUnit(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
+            int position, CombatStatus cardlessStatus, Func<RoomCombatState, int, RoomCombatResult> beforeEnchant)
+            => SpawnCore(source, definition, spawnerCardId, position, true, cardlessStatus, null, null, true,
+                beforeEnchant: beforeEnchant);
         private static UnitBirthResult SpawnCore(RoomCombatState source, CardPlayRule definition, int spawnerCardId,
             int position, bool isCardless, CombatStatus? cardlessStatus, Action<RoomCombatModel.QueuedCharacterTrigger>? enqueue,
             IReadOnlyList<CombatUnit>? positionActors, bool selectedSlot, bool isClone = false,
             Func<RoomCombatState, IReadOnlyList<RoomCombatModel.QueuedCharacterTrigger>, RoomCombatResult>? drainBirthQueue = null,
-            SpawnStatusApplication? cardStatus = null, bool compactBirth = true, bool restoreHallGraft = false)
+            SpawnStatusApplication? cardStatus = null, bool compactBirth = true, bool restoreHallGraft = false,
+            Func<RoomCombatState, int, RoomCombatResult>? beforeEnchant = null)
         {
             CombatContext? context = source.Context;
             CombatUnit? raw = definition.SpawnUnit;
             if (raw != null && RoomCombatModel.IsFood(raw) && source.Units.Any(unit => unit.Triggers.Any(trigger => trigger.Kind == "OnFoodSpawn")))
                 return Unsupported("Nested food births with food-spawn listeners require native creation-depth calibration.");
-            if (raw?.Modifiers?.Graft != null && !restoreHallGraft)
+            if (raw?.Modifiers?.Graft != null && !restoreHallGraft && beforeEnchant == null)
                 return Unsupported("Generated, triggered, or cloned graft births require their native equipment identity transition.");
             bool copyHordeBirth = !isClone && isCardless && spawnerCardId == 0 &&
                 cardStatus is { Status.Id: "horde", Status.Stacks: > 0 } &&
                 raw is { AssetKey: "MonsterFunguy", HordeDefinition.Attack: 3, HordeDefinition.Health: 4 } &&
                 RoomSpawnCopyModel.OriginalMirrorsOnly(source);
-            if (!isClone && RoomSpawnCopyModel.Active(source.WithContext(context)) && !copyHordeBirth)
+            if (!isClone && RoomSpawnCopyModel.Active(source.WithContext(context)) && !copyHordeBirth && beforeEnchant == null)
                 return Unsupported("Room spawn copying on generated/triggered births requires its native phase integration.");
             CardInstanceState? card = context?.FindCard(spawnerCardId);
             if (context == null || raw == null || raw.IsPyre || raw.Size < 0 || spawnerCardId < 0 ||
@@ -203,6 +208,13 @@ namespace MonsterTrain2Poju.Model
                     result = new RoomCombatResult(new RoomCombatState(source.RoomIndex, source.Deployment, result.State.Units,
                         source.ExternalInteractions, current.WithLastSpawned(spawned.Id), source.Preview,
                         result.State.ActiveCompanionBossIds), outcome, 0, new List<CombatEvent>());
+            }
+            if (beforeEnchant != null)
+            {
+                result = beforeEnchant(result.State!, spawned.Id);
+                if (!result.Supported) return new UnitBirthResult(result);
+                events.AddRange(result.Events);
+                if (result.Outcome != RoomOutcome.Exchanged) outcome = result.Outcome;
             }
             var queue = result.State!.Units.Where(unit => unit.Team == CombatTeam.Player)
                 .Select(unit => new RoomCombatModel.QueuedCharacterTrigger(source.RoomIndex, unit, "AfterSpawnEnchant")).ToList();

@@ -5135,6 +5135,8 @@ namespace MonsterTrain2Poju.Model
             private bool ApplyTriggeredSummon(WorkingUnit actor, TriggeredSummonRule rule, out int firstId)
             {
                 firstId = 0;
+                string? spawnCountError = RelicUnitSpawnCountModel.CheckOtherSummon(context);
+                if (spawnCountError != null) { unsupportedReason = spawnCountError; return false; }
                 SpawnPointReference? from = SummonSourcePoint(actor);
                 var equipment = new List<int>();
                 bool transferEquipment = from != null && !rule.IgnoreCardUpgrades && actor.Source.SpawnerCardId > 0;
@@ -5700,6 +5702,8 @@ namespace MonsterTrain2Poju.Model
                     return unsupportedReason == null && action.Tests?.CancelSubsequent != true;
                 if (action.Statuses.Count == 0 || action.SpawnFallbackUnit == null)
                 { unsupportedReason = "Triggered spawn-or-status requires its status and fallback unit definitions."; return false; }
+                string? spawnCountError = RelicUnitSpawnCountModel.CheckOtherSummon(context);
+                if (spawnCountError != null) { unsupportedReason = spawnCountError; return false; }
 
                 CombatStatus status = action.Statuses[0];
                 int statusSourceCardId = fromRoomModifier ? 0 : sourceCardIdOverride > 0 ? sourceCardIdOverride : actor.Source.SpawnerCardId;

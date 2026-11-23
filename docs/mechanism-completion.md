@@ -856,6 +856,13 @@ Ice and Pyre 的独立对照在顶层命中前排敌军并造成 90 点伤害，
 普通镜厅、房间替换及五种原版接枝装备的生命周期专项也通过。生成或触发召唤仍需要各自的出生证据。
 [`predicted-birth.mt2f`](../tests/compatibility/game-2.3.1/mechanics/hall-grafted-birth/predicted-birth.mt2f)
 
+DoubleUnits 原版对照记录了付费单位、首个镜厅复制体、额外召唤的接枝单位和第二个复制体。
+四件接枝装备分别绑定各自的单位，三个脱离牌组的来源牌仍引用原接枝装备。
+定向复放核对完整结算、物理站位、回合触发计数及 Battle 和 CardDraw 随机流。
+采样使用 `-OriginalHallExtraSpawn -BinaryCapture`，专项使用 `--native-hall-extra-spawn-only`。
+其他触发召唤、状态替代和不同接枝组合仍需对应的原版差分。
+[`extra-spawn.mt2f`](../tests/compatibility/game-2.3.1/mechanics/hall-grafted-birth/extra-spawn.mt2f)
+
 2026-11-21 用同一场新版原版胜局复测 `RootBeforePyre`、`SpellWeaknessBelowPyre` 和
 `PyregelOnEnterTopFloor`。三件遗物在入场前按原版流程获得。第三层分别有 2、3、3 名
 敌军出现相应状态。21 次出牌、7 次 EndTurn、59 个房间阶段、14 个列车阶段、完整链和

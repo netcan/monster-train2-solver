@@ -585,6 +585,7 @@ namespace MonsterTrain2Poju.Probe
                         OriginalMollisShelterObservation.AcquireBeforeBattle(managers!);
                     if (fullBattle && OriginalAfterDrawSpawnScenario.Enabled && !OriginalAfterDrawSpawnScenario.Acquired)
                         OriginalAfterDrawSpawnScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle) OriginalSupportSpellsScenario.AcquireHallExtraSpawn(managers!, log);
                     if (fullBattle && OriginalHoldoverGrantScenario.Enabled && !OriginalHoldoverGrantScenario.Acquired)
                         OriginalHoldoverGrantScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCorruptedAngelsScenario.Enabled && !OriginalCorruptedAngelsScenario.Acquired)
@@ -747,6 +748,7 @@ namespace MonsterTrain2Poju.Probe
 #endif
                     if (fullBattle && OriginalAfterDrawSpawnScenario.Enabled && !OriginalAfterDrawSpawnScenario.Acquired)
                         OriginalAfterDrawSpawnScenario.AcquireBeforeBattle(managers!, log);
+                    if (fullBattle) OriginalSupportSpellsScenario.AcquireHallExtraSpawn(managers!, log);
                     if (fullBattle && OriginalHoldoverGrantScenario.Enabled && !OriginalHoldoverGrantScenario.Acquired)
                         OriginalHoldoverGrantScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPriorityRelicBattleScenario.Enabled && !OriginalPriorityRelicBattleScenario.Acquired)
@@ -2156,9 +2158,11 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 OriginalEquipmentCardsScenario.Prepare(managers, log);
             }
-            if (fullBattle && !numericModifiersPrepared && OriginalSupportSpellsScenario.Enabled)
+            int supportPreparationTurn = OriginalSupportSpellsScenario.HallExtraSpawn ? 1 : 0;
+            if (fullBattle && !numericModifiersPrepared && OriginalSupportSpellsScenario.Enabled &&
+                (!OriginalSupportSpellsScenario.HallExtraSpawn || combat!.GetTurnCount() >= supportPreparationTurn))
             {
-                if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Original support fixture must start on deployment turn.");
+                if (combat!.GetTurnCount() != supportPreparationTurn) throw new InvalidOperationException("Original support fixture started on the wrong turn.");
                 numericModifiersPrepared = true;
                 OriginalSupportSpellsScenario.Prepare(managers, log);
             }

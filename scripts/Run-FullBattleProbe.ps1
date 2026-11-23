@@ -258,6 +258,7 @@ param(
     [switch] $OriginalStatusCompositions,
     [switch] $OriginalGraftedEquipment,
     [switch] $OriginalHallGraftedBirth,
+    [switch] $OriginalHallExtraSpawn,
     [switch] $OriginalSelfAttack,
     [switch] $OriginalHealingCleanse,
     [switch] $OriginalOnKill,
@@ -1430,8 +1431,9 @@ if ($OriginalIsolatedEquipmentIds.Count -gt 0) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk'
 }
 if ($OriginalSupportSpells) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalHallExtraSpawn) { $OriginalHallGraftedBirth = $true }
 if ($OriginalHallGraftedBirth) {
-    $allowed = @('OriginalHallGraftedBirth', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
+    $allowed = @('OriginalHallGraftedBirth', 'OriginalHallExtraSpawn', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot', 'SkipBuild',
         'GameSpeed', 'TimeoutSeconds', 'InputProfile', 'Verbose', 'Debug', 'ErrorAction')
     if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
         throw 'OriginalHallGraftedBirth requires the isolated binary first-battle observation.'
@@ -2846,7 +2848,10 @@ if ($OriginalStatusUnits) { $environment['MT2_PROBE_MODIFIERS'] = 'original-stat
 if ($OriginalEquipmentCards) { $environment['MT2_PROBE_MODIFIERS'] = 'original-equipment-cards' }
 if ($OriginalIsolatedEquipmentIds.Count -gt 0) { $environment['MT2_PROBE_MODIFIERS'] = 'original-isolated-equipment:' + ($OriginalIsolatedEquipmentIds -join ',') }
 if ($OriginalSupportSpells) { $environment['MT2_PROBE_MODIFIERS'] = 'original-support-spells' }
-if ($OriginalHallGraftedBirth) { $environment['MT2_PROBE_ORIGINAL_HALL_GRAFTED_BIRTH'] = '1' }
+if ($OriginalHallGraftedBirth) {
+    $environment['MT2_PROBE_ORIGINAL_HALL_GRAFTED_BIRTH'] = '1'
+    $environment['MT2_PROBE_HALL_EXTRA_SPAWN'] = $(if ($OriginalHallExtraSpawn) { '1' } else { '0' })
+}
 if ($OriginalIsolatedSpellIds.Count -gt 0) { $environment['MT2_PROBE_MODIFIERS'] = 'original-isolated-spells:' + ($OriginalIsolatedSpellIds -join ',') }
 if ($OriginalIsolatedSpellUpgrades.Count -gt 0) {
     if ($OriginalIsolatedSpellIds.Count -eq 0) { throw 'Isolated spell upgrades require an isolated spell batch.' }
@@ -3946,9 +3951,12 @@ if ($OriginalHallGraftedBirth) {
     $component = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($componentPath)
     try {
         $result = $component.RootElement
+        $extraSpawnValue = $result
+        $extraSpawn = $result.TryGetProperty('ExtraSpawn', [ref]$extraSpawnValue) -and $extraSpawnValue.GetBoolean()
         if ($result.GetProperty('Boundary').GetString() -cne 'NativeOriginalHallGraftedBirth' -or
             [Guid]$result.GetProperty('GameModuleMvid').GetString() -ne $nativeModule -or
             $result.GetProperty('GameVersion').GetString() -cne '2.3.1' -or
+            $extraSpawn -ne [bool]$OriginalHallExtraSpawn -or
             $result.GetProperty('CaptureFailures').GetInt32() -ne 0 -or $result.GetProperty('Pending').GetInt32() -ne 0) {
             throw 'Original Hall grafted birth observation identity or native capture is incomplete.'
         }

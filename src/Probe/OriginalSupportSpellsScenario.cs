@@ -13,15 +13,74 @@ namespace MonsterTrain2Poju.Probe
         internal const string HallId = "83734ffd-cbaa-47f1-9809-cc4c4dac568d";
         internal const string AssistantId = "3a8240bd-8b96-4d6e-b2d1-49ff8b5d8022";
         private const string AssistantGraftId = "0a928329-666c-4ce6-a1c3-413977e37e46";
+        private const string ExtraSpawnId = "559f443d-bbeb-40fc-aa86-772ef4c2c2dc";
         internal static bool ObserveHallGraftedBirth => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_HALL_GRAFTED_BIRTH") == "1";
+        internal static bool HallExtraSpawn => ObserveHallGraftedBirth && Environment.GetEnvironmentVariable("MT2_PROBE_HALL_EXTRA_SPAWN") == "1";
+        internal static object? HallExtraSpawnDefinition { get; private set; }
+        internal static List<object> HallExtraSpawnCountQueries { get; } = new List<object>();
+
+        private static bool hallExtraSpawnAcquired;
+        internal static void AcquireHallExtraSpawn(AllGameManagers managers, ManualLogSource log)
+        {
+            if (!HallExtraSpawn || hallExtraSpawnAcquired) return;
+            SaveManager save = managers.GetSaveManager();
+            if (save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle || save.GetMutators().Count != 0)
+                throw new InvalidOperationException("Expected an isolated first battle for the original extra-spawn mutator.");
+            MutatorData owner = SpawnStatusScalingMechanismBatch.Owners(save.GetAllGameData()).OfType<MutatorData>()
+                .Single(data => data.GetID() == ExtraSpawnId);
+            RelicEffectData effect = owner.GetEffects().Single();
+            if (owner.name != "DoubleUnits" || effect.GetEffectClassName() != "RelicEffectExtraSpawnsFirstUnitPerTurn" ||
+                effect.GetParamInt() != 1 || !effect.GetParamSourceTeam().HasFlag(Team.Type.Monsters))
+                throw new InvalidOperationException("Original DoubleUnits definition changed.");
+            HallExtraSpawnDefinition = new
+            {
+                Id = owner.GetID(), AssetKey = owner.name, DisallowedInPlacementPhase = owner.DisallowInDeploymentPhase,
+                EffectTypes = owner.GetEffects().Select(item => item.GetEffectClassName()).ToArray(),
+                Amount = effect.GetParamInt(), Team = effect.GetParamSourceTeam().ToString(), Target = effect.GetTargetMode().ToString(),
+                RequiredMutatorId = effect.GetParamMutatorData()?.GetID(),
+                Conditions = effect.GetEffectConditions().Select(condition => new
+                {
+                    TrackedValue = ConditionField(condition, "paramTrackedValue").ToString(),
+                    CardType = ConditionField(condition, "paramCardType").ToString(),
+                    TrackTriggerCount = (bool)ConditionField(condition, "paramTrackTriggerCount"),
+                    Duration = ConditionField(condition, "paramEntryDuration").ToString(),
+                    Comparator = Convert.ToInt32(ConditionField(condition, "paramComparator")),
+                    Int = (int)ConditionField(condition, "paramInt"),
+                    AllowMultiple = (bool)ConditionField(condition, "allowMultipleTriggersPerDuration"),
+                    Subtype = ConditionField(condition, "paramSubtype")
+                }).ToArray()
+            };
+            save.AddMutator(owner);
+            hallExtraSpawnAcquired = true;
+            log.LogInfo("ORIGINAL-HALL-EXTRA-SPAWN acquired DoubleUnits " + owner.GetID());
+        }
+
+        private static object ConditionField(RelicEffectCondition condition, string field) =>
+            AccessTools.Field(condition.GetType(), field).GetValue(condition);
+
+        [HarmonyPatch(typeof(RelicManager), nameof(RelicManager.GetUnitSpawnCountModifiedByRelics))]
+        private static class HallSpawnCountPatch
+        {
+            private static void Prefix(int unitSpawnCount, out int __state) => __state = unitSpawnCount;
+
+            private static void Postfix(CharacterData? spawningUnitData, Team.Type spawningOnTeam, int __state, int __result)
+            {
+                if (!HallExtraSpawn || FullBattleTrace.Active == null || spawningUnitData?.GetAssetKey() != "MonsterTwistedAssistant" ||
+                    AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
+                HallExtraSpawnCountQueries.Add(new { Unit = spawningUnitData.GetAssetKey(),
+                    Team = spawningOnTeam.ToString(), Turn = AllGameManagers.Instance.GetCombatManager()!.GetTurnCount(),
+                    CountBefore = __state, CountAfter = __result });
+            }
+        }
 
         private static PlayCardAction ChooseHallGraftedBirth(BattleTurnState source, int[] ids, int index)
         {
             const int room = 0;
-            if (source.Spawn.Turn != 1 || ids.Length != 6 || index is not (4 or 5))
+            int hallIndex = HallExtraSpawn ? 0 : 4;
+            if (source.Spawn.Turn != 1 || ids.Length != hallIndex + 2 || (index != hallIndex && index != hallIndex + 1))
                 throw new InvalidOperationException("Expected the first ordinary turn for the two original plays.");
             CombatContext context = source.Spawn.Train.Context!;
-            if (index == 4) return new PlayCardAction(ids[index], room);
+            if (index == hallIndex) return new PlayCardAction(ids[index], room);
             IReadOnlyList<int>? occupants = context.SpawnPoints?.Groups.Single(group =>
                 group.RoomIndex == room && group.Team == CombatTeam.Player && group.PreviewCopyId == null).Occupants;
             if (context.RoomCapacities?.Single(item => item.RoomIndex == room).Attachments?.Any(attachment =>
@@ -93,6 +152,10 @@ namespace MonsterTrain2Poju.Probe
         internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
         {
             int index = Array.FindIndex(ids, id => source.Spawn.Train.Context!.Statistics!.Value(id, "TimesPlayed", "ThisBattle") == 0);
+#if DEVELOPMENT_PROBE
+            if (HallExtraSpawn)
+                return source.Spawn.Turn == 0 || index < 0 ? null : ChooseHallGraftedBirth(source, ids, index);
+#endif
             if (index < 0 && IsolatedIds?.FirstOrDefault() == "bae01a8c-25dd-4a08-b08a-5f17a5f3f52a" &&
                 IsolatedIds.Contains("6a3633b6-4ecc-43b1-bb56-548f56cf1d60") &&
                 source.Spawn.Train.Context!.Statistics!.Value(ids[^1], "TimesPlayed", "ThisBattle") == 1)
@@ -314,6 +377,16 @@ namespace MonsterTrain2Poju.Probe
                     assistant.GetSpawnCharacterData()?.GetGraftedEquipment()?.GetID() != AssistantGraftId ||
                     hall.GetCost() != 2 || assistant.GetCost() != 1)
                     throw new InvalidOperationException("Expected the original Hall and equipment-bearing Assistant.");
+                if (HallExtraSpawn)
+                {
+                    CardIds = new[] { hall, assistant }.Select(card => FullBattleTrace.Active!.CardId(
+                        cards.AddNewCard(card, CardPile.HandPile, false, false, animate: false))).ToArray();
+                    AccessTools.Method(typeof(CardStatistics), "UpdateDeckStats").Invoke(managers.GetCardStatistics(), null);
+                    Prepared = true;
+                    Set(managers.GetCombatManager()!, "combatStateChanged", true);
+                    log.LogInfo("ORIGINAL-HALL-EXTRA-SPAWN prepared unchanged Hall and Assistant in the first ordinary hand.");
+                    return;
+                }
             }
 #endif
             foreach (string id in spellIds)
