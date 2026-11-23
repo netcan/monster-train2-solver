@@ -9045,6 +9045,13 @@ if (args.Length == 2 && args[0] == "--incant-only")
     return;
 }
 
+if (args.Length > 0 && args[0].StartsWith("--", StringComparison.Ordinal))
+{
+    Console.Error.WriteLine($"Unknown ModelChecks option or arguments: {args[0]}");
+    Environment.ExitCode = 2;
+    return;
+}
+
 const string steward = "d14a50f3-728d-43e1-87f0-ef1b013f6678";
 FixtureArchiveChecks.Run();
 var input = new CombatProjectionData
