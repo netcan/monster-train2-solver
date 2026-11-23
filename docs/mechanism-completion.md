@@ -262,6 +262,12 @@ CooldownOnDamage_DH 的原版对照核对冷却从 3 降到 2，以及空法术�
 [`cooldown-on-damage-no-prior-status.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/cooldown-on-damage-no-prior-status.mt2f) ·
 [`cooldown-on-damage-ability-zero.mt2f`](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/cooldown-on-damage-ability-zero.mt2f)
 
+DamageOnCardPlayed 在四遗物阵容的实战中按房间的预演状态判断是否触发。开启预演随机流隔离时，
+八次此前有差异的真实出牌现已匹配原版伤害与战斗随机流。开关两种设置均使用同一批四件原版遗物，
+合计 46 次出牌、12 次结束回合及两类候选检查全部通过。
+[隔离预演随机流](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/native-card-play-damage-roster-isolated-rng.mt2f) ·
+[原版随机流](../tests/compatibility/game-2.3.1/mechanics/configured-opening-relics/native-card-play-damage-roster.mt2f)
+
 ExtraFeedTrigger 的原版查询确认友军 OnFeed 次数为 2，OnDeath 次数保持 1。
 61 个战斗阶段、5 次出牌、7 次结束回合与两类候选通过。实际普通进食也已录到两次 OnFeed，
 合金构装体的燃料从 1 增至 3，矿工只被吃掉一次，完整状态与随机数在 16 条分支上复放一致。

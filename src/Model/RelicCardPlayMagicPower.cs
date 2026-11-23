@@ -150,9 +150,12 @@ namespace MonsterTrain2Poju.Model
                     {
                         if (trainState == null || playedCardRule == null)
                             return Fail(context, "Card-play damage requires train state and the played-card rule.");
+                        // RNG isolation can be enabled during a paid cast. The
+                        // room snapshot records whether this cast is in preview.
+                        bool nativePreview = trainState.Rooms.FirstOrDefault(room => room.RoomIndex == selectedRoomIndex)?.Preview ?? preview;
                         TrainCombatResult damaged = RelicCardPlayDamageModel.ApplyOne(
                             CardSpellModel.WithContext(trainState, context), playedCardRule,
-                            selectedRoomIndex ?? -1, relicIndex, effectIndex, preview);
+                            selectedRoomIndex ?? -1, relicIndex, effectIndex, nativePreview);
                         if (!damaged.Supported) return Fail(context, damaged.UnsupportedReason!);
                         trainState = damaged.State!;
                         context = trainState.Context!;
