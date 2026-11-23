@@ -53,7 +53,8 @@ namespace MonsterTrain2Poju.Probe
                     data.GetTriggers() is [var dutiful] && !dutiful.GetTriggerOnce() &&
                     !dutiful.GetHideVisualAndIgnoreSilence() && !dutiful.GetOnlyTriggerIfEquipped() &&
                     dutiful.GetTriggerAtThreshold() == 0 && dutiful.GetEffects() is [var grant] &&
-                    DutifulGrant(data.GetAssetKey(), dutiful.GetTrigger(), grant));
+                    DutifulGrant(data.GetAssetKey(), dutiful.GetTrigger(), grant)) &&
+                (data.GetAssetKey() != OuterBossDefinitions.IndulgentTitanskin || SupportsIndulgentTitanskin(data));
         }
 
         internal static bool ScourgeAward(CardEffectData effect) =>
@@ -85,6 +86,19 @@ namespace MonsterTrain2Poju.Probe
                 _ => false
             };
         }
+        private static bool SupportsIndulgentTitanskin(CharacterData data) =>
+            data.GetAttackDamage() == 12 && data.GetHealth() == 1000 && data.GetSize() == 5 &&
+            data.GetStartingStatusEffects() is [var trample, var skin] &&
+            trample.statusId == "trample" && trample.count == 1 && skin.statusId == "titanskin" && skin.count == 3 &&
+            data.GetTriggers() is [var feed] && feed.GetTrigger() == CharacterTriggerData.Trigger.OnFeed &&
+            !feed.GetTriggerOnce() && !feed.GetHideVisualAndIgnoreSilence() && !feed.GetOnlyTriggerIfEquipped() &&
+            feed.GetTriggerAtThreshold() == 0 && feed.GetEffects() is [var rage, var protection] &&
+            IndulgentGrant(rage, "buff") && IndulgentGrant(protection, "titanskin");
+
+        private static bool IndulgentGrant(CardEffectData effect, string id) =>
+            effect.GetEffectStateName() == nameof(CardEffectAddStatusEffect) && effect.GetTargetMode() == TargetMode.Self &&
+            effect.GetTargetTeamType() == (Team.Type.Heroes | Team.Type.Monsters) && !effect.GetUseIntRange() &&
+            effect.GetParamStatusEffects() is [var status] && status.statusId == id && status.count == 3;
         internal sealed class Record
         {
             public string Phase { get; set; } = "";

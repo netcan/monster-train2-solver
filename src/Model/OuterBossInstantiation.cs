@@ -76,6 +76,11 @@ namespace MonsterTrain2Poju.Model
             TrainCombatState train = old.Train; OuterBossSpawnDefinition definition = source.Definition;
             EnemyDefinition actor = definition.Actor; OuterBossProgress boss = definition.Boss;
             bool duo = OuterBossDefinitions.IsAngelDuo(actor.Unit.AssetKey);
+            bool indulgent = actor.Unit.AssetKey == OuterBossDefinitions.IndulgentTitanskin;
+            bool calibratedIndulgent = indulgent && OuterBossDefinitions.IsIndulgentTitanskinBirth(actor.Unit) &&
+                train.Context?.Relics?.Count(relic => relic is { DataId: OuterBossDefinitions.IndulgentTitanskinOwnerId,
+                    AssetKey: OuterBossDefinitions.IndulgentTitanskinOwnerKey, IsCovenant: false,
+                    EffectTypes: [RelicModel.Null] }) == 1;
             int moon = train.Context?.QueryFrame?.MoonPhase ?? 0;
             bool siphonTrialNewMoon = moon == 1 && battle.MoonPhase == "New" &&
                 actor.Unit is { AssetKey: "Boss_Level3_Arkion_SiphonRage", MoonPhaseMask: 4,
@@ -104,7 +109,8 @@ namespace MonsterTrain2Poju.Model
                     actor.Unit is { AssetKey: "Boss_Level8_Fragile", BaseAttack: 30, Attack: 30, Health: 3000, MaxHealth: 3000 } ||
                     actor.Unit is { AssetKey: "Boss_Level3_Fleshweaver_MoreMass", BaseAttack: 6, Attack: 22, Health: 600, MaxHealth: 600 });
             bool calibratedMoon = battle.MoonPhaseTrackingActive == true &&
-                (siphonTrialNewMoon || unrulyNewMoon || sniperNewMoon || dutifulFullMoon || fullMoon) &&
+                (siphonTrialNewMoon || unrulyNewMoon || sniperNewMoon || dutifulFullMoon || fullMoon ||
+                    calibratedIndulgent && moon == 1 && actor.Unit.MoonPhaseMask == 4 && battle.MoonPhase == "New") &&
                 !actor.Unit.Triggers.Any(trigger => trigger.Kind is "OnMoonLit" or "OnMoonlitLost" or
                     "OnMoonShade" or "OnMoonshadeLost" or "OnMoonPhaseShift");
             if (actor.ExternalInteractions.Count > 0) return Fail(string.Join("; ", actor.ExternalInteractions));
@@ -122,7 +128,8 @@ namespace MonsterTrain2Poju.Model
             if (!OuterBossDefinitions.Supports(actor.Unit.AssetKey) || actor.Unit.Id != 0 || boss.UnitId != 0 ||
                 boss.AssetKey != actor.Unit.AssetKey || boss.Room != -1 || boss.Phase != "Casting" ||
                 old.OuterBoss != null || train.Context?.SpawnPoints == null || actor.Unit.BumpRules?.OuterBoss != true ||
-                (duo ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("titanskin")?.Stacks != 10 :
+                (indulgent ? !calibratedIndulgent :
+                    duo ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("titanskin")?.Stacks != 10 :
                     OuterBossDefinitions.IsArkionPyre(actor.Unit.AssetKey)
                         ? actor.Unit.Statuses.Count != 1 || actor.Unit.Status("multistrike")?.Stacks != 1
                         : actor.Unit.AssetKey == OuterBossDefinitions.UnrulySniperAdvance

@@ -22,6 +22,7 @@ namespace MonsterTrain2Poju.Probe
             "DutifulBurst" => "SoulSavior_R1_BossBattle_DutifulChild_Burst",
             "DutifulArmor" => "SoulSavior_R1_BossBattle_DutifulChild_Heal",
             "DutifulAscendDescend" => "SoulSavior_R1_BossBattle_DutifulChild_AscendDescend",
+            "IndulgentTitanskin" => "SoulSavior_R2_BossBattle_FavoredChild_3",
             _ => "SoulSavior_R3_BossBattle_DuplicateEnemy"
         };
         private static string BossKey => Variant switch
@@ -31,6 +32,7 @@ namespace MonsterTrain2Poju.Probe
             "DutifulBurst" => OuterBossDefinitions.DutifulBurst,
             "DutifulArmor" => OuterBossDefinitions.DutifulArmor,
             "DutifulAscendDescend" => OuterBossDefinitions.DutifulAscendDescend,
+            "IndulgentTitanskin" => OuterBossDefinitions.IndulgentTitanskin,
             _ => TriggeredSummonModel.UnrulyBoss
         };
         private const string DecoyKey = "R3_Horde_T1_Decoy";
@@ -45,6 +47,7 @@ namespace MonsterTrain2Poju.Probe
             parameters.selfTarget?.GetSourceCharacterData().GetAssetKey() == BossKey &&
             parameters.sourceCharacterTriggerState is { } trigger &&
             OuterBossPhaseProbe.DutifulGrant(BossKey, trigger.GetTrigger(), effect.GetSourceCardEffectData());
+        internal static bool IndulgentTitanskin => Variant == "IndulgentTitanskin";
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
         internal static object? FullBattleEvidence { get; private set; }
@@ -55,6 +58,7 @@ namespace MonsterTrain2Poju.Probe
         private static List<object>? events;
         private static readonly List<object> nativeAdvances = new();
         private static readonly List<object> burstConsumptions = new();
+        private static readonly List<object> titanSkinAbsorptions = new();
 
         internal static void Request(SaveManager save, ManualLogSource log)
         {
@@ -66,7 +70,11 @@ namespace MonsterTrain2Poju.Probe
             if (save.GetAllGameData().FindScenarioDataByName(ScenarioKey) is not ScenarioData scenario ||
                 scenario.GetOuterTrainBoss(false)?.GetAssetKey() != BossKey ||
                 scenario.GetOuterTrainBoss(true)?.GetAssetKey() != BossKey ||
-                FullBattle && !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false)))
+                FullBattle && !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false)) ||
+                IndulgentTitanskin && (scenario.GetEnemyRelicData() is not [var owner] ||
+                    owner.GetID() != OuterBossDefinitions.IndulgentTitanskinOwnerId ||
+                    owner.name != OuterBossDefinitions.IndulgentTitanskinOwnerKey || owner.GetEffects() is not [var authoring] ||
+                    authoring.GetEffectClassName() != nameof(RelicEffectNull)))
                 throw new InvalidOperationException("Expected the installed original Soul Savior boss battle.");
             requested = true;
             AccessTools.Method(typeof(CheatManager), "Command_StartBattle", new[] { typeof(string) }).Invoke(null, new object[] { ScenarioKey });
@@ -90,8 +98,26 @@ namespace MonsterTrain2Poju.Probe
                     ControlledTestScenario = true, Advances = nativeAdvances },
                 "DutifulBurst" => new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true,
                     ControlledTestScenario = true, BurstConsumptions = burstConsumptions },
+                "IndulgentTitanskin" => new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true,
+                    ControlledTestScenario = true, TitanSkinAbsorptions = titanSkinAbsorptions },
                 _ => new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true, ControlledTestScenario = true }
             };
+        }
+
+        [HarmonyPatch(typeof(CharacterState), "DoNotifyDamageWasApplied")]
+        private static class TitanSkinAbsorptionPatch
+        {
+            private static bool Prepare() => IndulgentTitanskin;
+
+            private static void Prefix(CharacterState attacked, int damage, int damageBlocked, int titanSkinSoaked)
+            {
+                if (titanSkinSoaked <= 0 || FullBattleTrace.Active == null ||
+                    attacked.GetSourceCharacterData().GetAssetKey() != BossKey || AllGameManagers.Instance!.GetSaveManager().PreviewMode)
+                    return;
+                titanSkinAbsorptions.Add(new { Turn = AllGameManagers.Instance.GetCombatManager().GetTurnCount(),
+                    UnitId = FullBattleTrace.Active.UnitId(attacked), HealthDamage = damage,
+                    BlockedDamage = damageBlocked, Absorbed = titanSkinSoaked });
+            }
         }
 
         [HarmonyPatch(typeof(StatusEffectBurstState), "OnTriggered")]

@@ -10,7 +10,9 @@ namespace MonsterTrain2Poju.Model
         public const string DutifulBurst = "Boss_SoulSavior_R1_Dutiful_Burst";
         public const string DutifulArmor = "Boss_SoulSavior_R1_Dutiful_Armor";
         public const string DutifulAscendDescend = "Boss_SoulSavior_R1_Dutiful_AscendDescend";
-        public static bool IsDutiful(string assetKey) => assetKey is DutifulBurst or DutifulArmor or DutifulAscendDescend;
+        public const string IndulgentTitanskin = "Boss_SoulSavior_R2_Indulgent_Titanskin";
+        internal const string IndulgentTitanskinOwnerId = "d029a392-703b-4b96-ae89-f89c2c38aaac";
+        internal const string IndulgentTitanskinOwnerKey = "Boss_Railforged_Region2_BossBattle_3";
         internal const string UnrulyScourgeCard = "4d1f27af-3122-4a08-87e3-5ef5a14ced94";
         public const string CaelShieldTrial = "Boss_Level6_Cael_DamageShield_TitanTrial";
         public const string CaelAtkHpTrial = "Boss_Level6_Cael_AtkHP_TitanTrial";
@@ -21,6 +23,8 @@ namespace MonsterTrain2Poju.Model
         internal const string CaelAtkHpTrialOwnerId = "7e1b3da5-e6c6-408f-8d2b-055e4b286657";
         internal const string CaelLifestealTrialOwner = "Enemy_SpawnHeroEaterFeedLifesteal_TitanTrial";
         internal const string CaelLifestealTrialOwnerId = "4501ae73-0ec3-489c-b78c-3d1155af0bd4";
+
+        public static bool IsDutiful(string assetKey) => assetKey is DutifulBurst or DutifulArmor or DutifulAscendDescend;
 
         public static string? AngelDuoCompanion(string assetKey) => assetKey switch
         {
@@ -153,11 +157,21 @@ namespace MonsterTrain2Poju.Model
             effect is { Type: "CardEffectFloorRearrange", Action: { Type: "FloorRearrange",
                 Target: "LastAttackedCharacter", Value: 0, AllowEnemy: false, AllowPlayer: true,
                 Range: null, UseCardTraits: false, Statuses.Count: 0 } };
+        internal static bool IsIndulgentTitanskinBirth(CombatUnit unit) =>
+            unit is { AssetKey: IndulgentTitanskin, Team: CombatTeam.Enemy, Attack: 12, BaseAttack: 12,
+                Health: 1000, MaxHealth: 1000, Size: 5, Triggers: [{ Kind: "OnFeed", Once: false, IgnoreSilence: false, Effects: [var rage, var skin] }] } &&
+            unit.Statuses.Count == 2 && unit.Status("trample")?.Stacks == 1 && unit.Status("titanskin")?.Stacks == 3 &&
+            OriginalGrant(rage, "buff") && OriginalGrant(skin, "titanskin");
+
+        private static bool OriginalGrant(CombatEffect effect, string status) =>
+            effect is { Type: "CardEffectAddStatusEffect", Action:
+                { Type: "AddStatus", Target: "Self", AllowEnemy: true, AllowPlayer: true, Range: null, Statuses: [var grant] } } &&
+            grant.Id == status && grant.Stacks == 3;
         public static bool Supports(string assetKey) => assetKey is
             "Boss_Level8_AllyBuffer" or "Boss_Level8_Fragile" or "Boss_Level8_Corrupter" or
             "Boss_Level8_AllyBuffer_TitanTrial" or "Boss_Level8_Fragile_TitanTrial" or "Boss_Level8_Corrupter_TitanTrial" or
             TriggeredStatusModel.OriginalSpurned or TriggeredStatusModel.OriginalSpurnedWitherbloom or TriggeredStatusModel.OriginalSpurnedDuality or
-            TriggeredSummonModel.UnrulyBoss or UnrulyScourge or UnrulySniperAdvance || IsDutiful(assetKey) ||
+            TriggeredSummonModel.UnrulyBoss or UnrulyScourge or UnrulySniperAdvance or IndulgentTitanskin || IsDutiful(assetKey) ||
             IsAngelDuo(assetKey) || IsCael(assetKey) || IsCaelTrial(assetKey) || IsArkionPyre(assetKey) ||
             IsArkionRage(assetKey) || IsArkionPush(assetKey) || IsFleshweaver(assetKey);
     }

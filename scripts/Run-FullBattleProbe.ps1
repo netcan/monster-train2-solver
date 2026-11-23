@@ -814,6 +814,7 @@ param(
     [switch] $OriginalUnrulyBattle,
     [switch] $OriginalDutifulBurstBattle,
     [ValidateSet('AscendDescend', 'Armor')][string] $OriginalDutifulVariant,
+    [switch] $OriginalIndulgentTitanskinBattle,
     [ValidateSet('DuplicateEnemy', 'Scourge', 'SniperAdvance')][string] $OriginalUnrulyVariant = 'DuplicateEnemy',
     [ValidateRange(1, 3)][int] $OriginalSpurnedChallenge = 2,
     [switch] $OriginalSpurnedRetainPiles,
@@ -1908,13 +1909,14 @@ if ($OriginalDutifulBurstBattle -and $OriginalDutifulVariant) {
 }
 $originalDutifulBattle = $OriginalDutifulBurstBattle -or $OriginalDutifulVariant
 $originalSoulSaviorVariant = $OriginalUnrulyVariant
-if ($originalDutifulBattle) {
-    if ($OriginalUnrulyBattle -or $OriginalUnrulyWitness) {
+if ($originalDutifulBattle -or $OriginalIndulgentTitanskinBattle) {
+    if ($OriginalUnrulyBattle -or $OriginalUnrulyWitness -or ($originalDutifulBattle -and $OriginalIndulgentTitanskinBattle)) {
         throw 'Choose a single Soul Savior battle or component.'
     }
     $OriginalUnrulyBattle = $true
     $originalSoulSaviorVariant = if ($OriginalDutifulBurstBattle) { 'DutifulBurst' }
         elseif ($OriginalDutifulVariant -eq 'Armor') { 'DutifulArmor' }
+        elseif ($OriginalIndulgentTitanskinBattle) { 'IndulgentTitanskin' }
         else { 'DutifulAscendDescend' }
     if ($OriginalDutifulVariant -eq 'Armor') {
         $SettleCardAnimations = $true
@@ -1924,8 +1926,9 @@ if ($originalDutifulBattle) {
 if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
     $unrulyMode = if ($OriginalDutifulBurstBattle) { 'OriginalDutifulBurstBattle' }
         elseif ($originalDutifulBattle) { 'OriginalDutifulVariant' }
+        elseif ($OriginalIndulgentTitanskinBattle) { 'OriginalIndulgentTitanskinBattle' }
         elseif ($OriginalUnrulyBattle) { 'OriginalUnrulyBattle' } else { 'OriginalUnrulyWitness' }
-    $soulSaviorDistance = if ($originalDutifulBattle) { 0 } else { 2 }
+    $soulSaviorDistance = if ($originalDutifulBattle) { 0 } elseif ($OriginalIndulgentTitanskinBattle) { 1 } else { 2 }
     $unrulyArguments = @($unrulyMode, 'InputProfile', 'BattleDistance', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'OriginalUnrulyVariant')
     if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne $soulSaviorDistance -or
@@ -4639,8 +4642,10 @@ if ($OriginalUnrulyBattle) {
         elseif ($OriginalDutifulBurstBattle) { 'SoulSavior_R1_BossBattle_DutifulChild_Burst' }
         elseif ($OriginalDutifulVariant -eq 'Armor') { 'SoulSavior_R1_BossBattle_DutifulChild_Heal' }
         elseif ($OriginalDutifulVariant -eq 'AscendDescend') { 'SoulSavior_R1_BossBattle_DutifulChild_AscendDescend' }
+        elseif ($OriginalIndulgentTitanskinBattle) { 'SoulSavior_R2_BossBattle_FavoredChild_3' }
         else { "SoulSavior_R3_BossBattle_$OriginalUnrulyVariant" }
     $unrulyBoss = if ($originalDutifulBattle) { 'Boss_SoulSavior_R1_Dutiful_' + $originalSoulSaviorVariant.Substring('Dutiful'.Length) }
+        elseif ($OriginalIndulgentTitanskinBattle) { 'Boss_SoulSavior_R2_Indulgent_Titanskin' }
         else { "Boss_SoulSavior_R3_Unruly_$OriginalUnrulyVariant" }
     if ($trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
         $unruly.Scenario -cne $unrulyScenario -or $unruly.BossKey -cne $unrulyBoss -or
@@ -4682,6 +4687,14 @@ if ($OriginalUnrulyBattle) {
         })
         if ($awards.Count -eq 0) {
             throw "Original Unruly Scourge did not award a new native card to hand. Inspect $tracePath and $unityLog"
+        }
+    }
+    if ($OriginalIndulgentTitanskinBattle) {
+        $absorptions = @($unruly.TitanSkinAbsorptions | Where-Object {
+            $_.UnitId -gt 0 -and $_.Absorbed -gt 0 -and $_.HealthDamage -ge 0 -and $_.BlockedDamage -ge 0
+        })
+        if ($absorptions.Count -eq 0) {
+            throw "Original Indulgent did not absorb a native damage instance. Inspect $tracePath and $unityLog"
         }
     }
     if ($OriginalUnrulyVariant -eq 'SniperAdvance') {

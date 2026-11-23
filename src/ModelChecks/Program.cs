@@ -1,5 +1,16 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 4 && args[0] == "--export-native-indulgent-titanskin")
+{
+    IndulgentTitanskinChecks.Export(args[1], args[2], args[3]);
+    return;
+}
+if (args.Length == 2 && args[0] == "--native-indulgent-titanskin-only")
+{
+    using var component = ModelJson.ReadFixture(args[1]);
+    IndulgentTitanskinChecks.Native(component.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-hand-and-ember-ephemeral-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

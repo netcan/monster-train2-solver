@@ -351,6 +351,10 @@ Dutiful 的 Armor 变体在三次原版战后回调中累计六次增加 12 护�
 以便光环退出后再读取回合后继。整战的 28 次出牌、5 次结束回合和两类候选检查通过。
 [原版护甲整战](../tests/compatibility/game-2.3.1/mechanics/dutiful-armor/native-battle.mt2f)
 
+Indulgent 的 Titanskin 变体已对照原版出生、楼层结算和单次交战。命中造成 5 点生命伤害，
+Titanskin 吸收 3 点，状态层数保持 3。整战还涉及波次敌人的 Hivemind 与喂食。
+[原版出生和受伤记录](../tests/compatibility/game-2.3.1/mechanics/indulgent-titanskin/birth-and-damage.mt2f)
+
 原版部署限制使底层和中层在部署阶段无法召唤，进入第 1 回合后解禁。完整结束回合后继通过对照。
 同一次组合采样中，BigMonsters 使列车乘务员的占位由 3 变为 4，冠军由 2 变为 3，
 部署和普通回合的结果相同。六条原版造牌记录确认先按原始占位应用突变，再应用造牌升级。
