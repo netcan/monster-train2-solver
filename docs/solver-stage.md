@@ -550,3 +550,13 @@ Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时
 候选检查通过，切换楼层 7 次，未新增搜索。该发行包的三个托管 DLL 还通过了独立的 Windows
 界面启动检查，使用了复制的玩家配置和隔离存档。macOS 的加载和实战尚待目标机器验证。
 [发布版顾问整局](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-stage-two-worker-presentation.mt2f)
+
+定向复查的 16 场后期战斗通过 627 次出牌或技能、141 次结束回合及两类候选检查。
+报告为 `results/recorded-chain-triage-20261123-122444-e64c21b5/report.tsv`。
+
+第 9 环的发布版实测在隔离原版中直接进入最终首领。首次结束回合时，五个首领部位现在保留
+原版满月掩码。两个原版进程独立完成 10 次出牌和 6 次结束回合并结算为败局，核对了实际后继、
+顾问预测、随机流和结束回合候选。额外的出牌候选仍有 111 个被现有支持范围拦下，涉及友军状态变化
+后的 LifeLink 与预演校验。
+[顾问运行](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring9-original-true-final-boss.mt2f) ·
+[独立复放](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring9-original-true-final-boss-frozen.mt2f)
