@@ -333,6 +333,8 @@ internal static partial class OfflineBattleSearch
             Require(forecastOutcome == (RoomOutcome)row.GetProperty("PlannedOutcome").GetInt32() &&
                 keys.Key(forecast) == keys.Key(row.GetProperty("Planned").Deserialize<BattleTurnState>()!),
                 "Frozen complete forecast differs.");
+            Require(BattlePlanner.Evaluate(forecast, forecastOutcome) == row.GetProperty("Score").GetDouble(),
+                "Frozen forecast score differs.");
             current = ReplayStep(current, first, out outcome);
             Require(outcome == (RoomOutcome)row.GetProperty("Outcome").GetInt32() &&
                 keys.Key(current) == keys.Key(row.GetProperty("Expected").Deserialize<BattleTurnState>()!), "Frozen successor differs.");
