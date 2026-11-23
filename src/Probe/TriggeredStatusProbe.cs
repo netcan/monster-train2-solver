@@ -60,6 +60,9 @@ namespace MonsterTrain2Poju.Probe
                     {
                         record.Actual = trace.Capture(room);
                         record.ActualUnits = units.Select(unit => trace.CaptureUnit(unit, interactions)).ToArray(); record.Interactions = interactions.Distinct().ToArray();
+#if DEVELOPMENT_PROBE
+                        OriginalUnrulyWitness.ObserveGorgeOnSlayGrant(record);
+#endif
                     }
                     catch (Exception error) { trace.CaptureFailure(error); }
                 }
@@ -106,8 +109,13 @@ namespace MonsterTrain2Poju.Probe
                     cardEffectParams.sourceCharacterTriggerState?.GetTrigger() == CharacterTriggerData.Trigger.OnHit;
                 bool dutifulGrant = false;
                 bool lifemotherGrant = false;
+                bool gorgeOnSlayGrant = false;
 #if DEVELOPMENT_PROBE
                 dutifulGrant = OriginalUnrulyWitness.DutifulGrant(cardEffectState, cardEffectParams);
+                gorgeOnSlayGrant = OriginalUnrulyWitness.IndulgentGorgeOnSlay &&
+                    cardEffectParams.selfTarget?.GetSourceCharacterData().GetAssetKey() == OriginalUnrulyWitness.GorgeOnSlayBoss &&
+                    cardEffectParams.sourceCharacterTriggerState?.GetTrigger() == CharacterTriggerData.Trigger.OnFeed &&
+                    OriginalUnrulyWitness.GorgeOnSlayGrant(cardEffectState.GetSourceCardEffectData());
                 if (OriginalUnrulyWitness.LifemotherReanimate &&
                     cardEffectParams.selfTarget?.GetSourceCharacterData().GetAssetKey() == OuterBossDefinitions.LifemotherReanimate &&
                     cardEffectParams.sourceCharacterTriggerState?.GetTrigger() == CharacterTriggerData.Trigger.PostCombat)
@@ -119,7 +127,7 @@ namespace MonsterTrain2Poju.Probe
 #endif
                 if (((Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == "triggered-status" && TriggeredStatusScenario.Prepared) ||
                     OriginalPunishedUnitsScenario.Prepared || PurifyScenario.Prepared || OriginalEquipmentGrowthScenario.Prepared ||
-                    pyreRevenge || dutifulGrant || lifemotherGrant) &&
+                    pyreRevenge || dutifulGrant || lifemotherGrant || gorgeOnSlayGrant) &&
                     FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode && cardEffectParams.selfTarget != null)
                     __result = Wrap(__result, cardEffectState, cardEffectParams, pyreRevenge);
             }

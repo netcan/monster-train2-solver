@@ -815,6 +815,7 @@ param(
     [switch] $OriginalDutifulBurstBattle,
     [ValidateSet('AscendDescend', 'Armor')][string] $OriginalDutifulVariant,
     [switch] $OriginalIndulgentTitanskinBattle,
+    [switch] $OriginalIndulgentGorgeOnSlay,
     [switch] $OriginalLifemotherReanimateBattle,
     [switch] $OriginalLifemotherDebuffs,
     [ValidateSet('DuplicateEnemy', 'Scourge', 'SniperAdvance')][string] $OriginalUnrulyVariant = 'DuplicateEnemy',
@@ -1911,7 +1912,8 @@ if ($OriginalDutifulBurstBattle -and $OriginalDutifulVariant) {
 }
 $originalDutifulBattle = $OriginalDutifulBurstBattle -or $OriginalDutifulVariant
 $originalSoulSaviorVariant = $OriginalUnrulyVariant
-$additionalSoulSaviorCases = @($originalDutifulBattle, $OriginalIndulgentTitanskinBattle, $OriginalLifemotherReanimateBattle, $OriginalLifemotherDebuffs) |
+$additionalSoulSaviorCases = @($originalDutifulBattle, $OriginalIndulgentTitanskinBattle, $OriginalIndulgentGorgeOnSlay,
+    $OriginalLifemotherReanimateBattle, $OriginalLifemotherDebuffs) |
     Where-Object { $_ }
 if (@($additionalSoulSaviorCases).Count) {
     if ($OriginalUnrulyBattle -or $OriginalUnrulyWitness -or @($additionalSoulSaviorCases).Count -gt 1) {
@@ -1921,6 +1923,7 @@ if (@($additionalSoulSaviorCases).Count) {
     $originalSoulSaviorVariant = if ($OriginalDutifulBurstBattle) { 'DutifulBurst' }
         elseif ($OriginalDutifulVariant -eq 'Armor') { 'DutifulArmor' }
         elseif ($OriginalIndulgentTitanskinBattle) { 'IndulgentTitanskin' }
+        elseif ($OriginalIndulgentGorgeOnSlay) { 'IndulgentGorgeOnSlay' }
         elseif ($OriginalLifemotherReanimateBattle) { 'LifemotherReanimate' }
         elseif ($OriginalLifemotherDebuffs) { 'LifemotherDebuffs' }
         else { 'DutifulAscendDescend' }
@@ -1933,11 +1936,12 @@ if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) {
     $unrulyMode = if ($OriginalDutifulBurstBattle) { 'OriginalDutifulBurstBattle' }
         elseif ($originalDutifulBattle) { 'OriginalDutifulVariant' }
         elseif ($OriginalIndulgentTitanskinBattle) { 'OriginalIndulgentTitanskinBattle' }
+        elseif ($OriginalIndulgentGorgeOnSlay) { 'OriginalIndulgentGorgeOnSlay' }
         elseif ($OriginalLifemotherReanimateBattle) { 'OriginalLifemotherReanimateBattle' }
         elseif ($OriginalLifemotherDebuffs) { 'OriginalLifemotherDebuffs' }
         elseif ($OriginalUnrulyBattle) { 'OriginalUnrulyBattle' } else { 'OriginalUnrulyWitness' }
     $soulSaviorDistance = if ($originalDutifulBattle) { 0 }
-        elseif ($OriginalIndulgentTitanskinBattle) { 1 }
+        elseif ($OriginalIndulgentTitanskinBattle -or $OriginalIndulgentGorgeOnSlay) { 1 }
         elseif ($OriginalLifemotherReanimateBattle -or $OriginalLifemotherDebuffs) { 4 } else { 2 }
     $unrulyArguments = @($unrulyMode, 'InputProfile', 'BattleDistance', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction', 'OriginalUnrulyVariant')
@@ -4678,10 +4682,12 @@ if ($OriginalUnrulyBattle) {
         elseif ($OriginalDutifulVariant -eq 'Armor') { 'SoulSavior_R1_BossBattle_DutifulChild_Heal' }
         elseif ($OriginalDutifulVariant -eq 'AscendDescend') { 'SoulSavior_R1_BossBattle_DutifulChild_AscendDescend' }
         elseif ($OriginalIndulgentTitanskinBattle) { 'SoulSavior_R2_BossBattle_FavoredChild_3' }
+        elseif ($OriginalIndulgentGorgeOnSlay) { 'SoulSavior_R2_BossBattle_FavoredChild_1' }
         elseif ($OriginalLifemotherReanimateBattle) { 'SoulSavior_R5_BossBattle_Lifemother_Reanimate' }
         else { "SoulSavior_R3_BossBattle_$OriginalUnrulyVariant" }
     $unrulyBoss = if ($originalDutifulBattle) { 'Boss_SoulSavior_R1_Dutiful_' + $originalSoulSaviorVariant.Substring('Dutiful'.Length) }
         elseif ($OriginalIndulgentTitanskinBattle) { 'Boss_SoulSavior_R2_Indulgent_Titanskin' }
+        elseif ($OriginalIndulgentGorgeOnSlay) { 'Boss_SoulSavior_R2_Indulgent_GorgeOnSlay' }
         elseif ($OriginalLifemotherReanimateBattle) { 'Boss_SoulSavior_Final_Lifemother_HealReanimate' }
         else { "Boss_SoulSavior_R3_Unruly_$OriginalUnrulyVariant" }
     if ($trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
@@ -4936,6 +4942,30 @@ if ($DamageOverflow -and ($trace.ModifierScenario -ne 'damage-overflow' -or
 }
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
+if ($OriginalIndulgentGorgeOnSlay) {
+    $replays = @($trace.OriginalUnrulyBattle.GorgeOnSlayReplays | Where-Object {
+        $replay = $_
+        if (-not $replay.Completed -or $replay.Trigger -cne 'OnKill' -or $replay.Replay -cne 'OnFeed' -or
+            $replay.QueuedOnFeed -ne 1 -or $replay.BossId -le 0 -or $replay.GrantSequence -le 0) { return $false }
+        $grant = @($trace.TriggeredStatuses | Where-Object { $_.Sequence -eq $replay.GrantSequence })
+        if ($grant.Count -ne 1 -or -not $grant[0].Completed -or $grant[0].Kind -cne 'OnFeed' -or
+            $grant[0].ActorId -ne $replay.BossId -or @($grant[0].Targets).Count -ne 1 -or
+            $grant[0].Targets[0] -ne $replay.BossId -or $grant[0].Effect.Action.Statuses.Id -cne 'buff') { return $false }
+        $prior = $grant[0].BeforeUnits | Where-Object Id -eq $replay.BossId
+        $after = $grant[0].ActualUnits | Where-Object Id -eq $replay.BossId
+        $beforeRage = [int](($prior.Statuses | Where-Object Id -ceq 'buff').Stacks)
+        $afterRage = [int](($after.Statuses | Where-Object Id -ceq 'buff').Stacks)
+        $afterRage -eq ($beforeRage + 3)
+    })
+    if ($process.ExitCode -ne 0 -or -not $terminalSettled -or -not $originalUnchanged -or
+        $trace.CaptureFailures -ne 0 -or $trace.Pending -ne 0 -or $replays.Count -eq 0) {
+        throw "Original GorgeOnSlay did not settle a native OnKill → self OnFeed +3 Rage witness. Inspect $tracePath and $unityLog"
+    }
+    [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; OriginalFilesUnchanged = $true;
+        GorgeOnSlayReplays = $replays.Count; SourceUnsupported = $trace.Unsupported; SourceMismatches = $trace.Mismatches;
+        Trace = $tracePath; SHA256 = (Get-FileHash -LiteralPath $tracePath -Algorithm SHA256).Hash } | ConvertTo-Json
+    return
+}
 if ($OriginalPactDrawBattle -and (Get-OriginalSignature $checkpoint) -cne $pactInputSignature) {
     throw 'The Pact battle donor checkpoint changed.'
 }

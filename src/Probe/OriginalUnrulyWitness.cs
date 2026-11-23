@@ -23,6 +23,7 @@ namespace MonsterTrain2Poju.Probe
             "DutifulArmor" => "SoulSavior_R1_BossBattle_DutifulChild_Heal",
             "DutifulAscendDescend" => "SoulSavior_R1_BossBattle_DutifulChild_AscendDescend",
             "IndulgentTitanskin" => "SoulSavior_R2_BossBattle_FavoredChild_3",
+            "IndulgentGorgeOnSlay" => "SoulSavior_R2_BossBattle_FavoredChild_1",
             "LifemotherReanimate" => "SoulSavior_R5_BossBattle_Lifemother_Reanimate",
             OriginalLifemotherDebuffsWitness.Variant => OriginalLifemotherDebuffsWitness.Scenario,
             _ => "SoulSavior_R3_BossBattle_DuplicateEnemy"
@@ -35,11 +36,13 @@ namespace MonsterTrain2Poju.Probe
             "DutifulArmor" => OuterBossDefinitions.DutifulArmor,
             "DutifulAscendDescend" => OuterBossDefinitions.DutifulAscendDescend,
             "IndulgentTitanskin" => OuterBossDefinitions.IndulgentTitanskin,
+            "IndulgentGorgeOnSlay" => GorgeOnSlayBoss,
             "LifemotherReanimate" => OuterBossDefinitions.LifemotherReanimate,
             OriginalLifemotherDebuffsWitness.Variant => OriginalLifemotherDebuffsWitness.Boss,
             _ => TriggeredSummonModel.UnrulyBoss
         };
         private const string DecoyKey = "R3_Horde_T1_Decoy";
+        internal const string GorgeOnSlayBoss = "Boss_SoulSavior_R2_Indulgent_GorgeOnSlay";
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_UNRULY") is "component" or "battle";
         internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_UNRULY") == "battle";
@@ -52,6 +55,7 @@ namespace MonsterTrain2Poju.Probe
             parameters.sourceCharacterTriggerState is { } trigger &&
             OuterBossPhaseProbe.DutifulGrant(BossKey, trigger.GetTrigger(), effect.GetSourceCardEffectData());
         internal static bool IndulgentTitanskin => Variant == "IndulgentTitanskin";
+        internal static bool IndulgentGorgeOnSlay => Variant == "IndulgentGorgeOnSlay";
         internal static bool LifemotherReanimate => Variant == "LifemotherReanimate";
         internal static bool Completed { get; private set; }
         internal static string? Error { get; private set; }
@@ -64,6 +68,48 @@ namespace MonsterTrain2Poju.Probe
         private static readonly List<object> nativeAdvances = new();
         private static readonly List<object> burstConsumptions = new();
         private static readonly List<object> titanSkinAbsorptions = new();
+        private static readonly List<GorgeReplay> gorgeOnSlayReplays = new();
+
+        private sealed class GorgeReplay
+        {
+            public int Turn { get; set; }
+            public int BossId { get; set; }
+            public string Trigger { get; set; } = "OnKill";
+            public string Replay { get; set; } = "";
+            public int QueuedOnFeed { get; set; }
+            public bool Completed { get; set; }
+            public int? GrantSequence { get; set; }
+        }
+
+        internal static void ObserveGorgeOnSlayGrant(TriggeredStatusProbe.Record grant)
+        {
+            if (!IndulgentGorgeOnSlay || !grant.Completed || grant.Kind != "OnFeed" ||
+                !grant.Targets.SequenceEqual(new[] { grant.ActorId })) return;
+            int turn = AllGameManagers.Instance!.GetCombatManager().GetTurnCount();
+            GorgeReplay? replay = gorgeOnSlayReplays.FirstOrDefault(row => row.Turn == turn && row.BossId == grant.ActorId &&
+                row.Completed && row.QueuedOnFeed == 1 && row.GrantSequence == null);
+            if (replay != null) replay.GrantSequence = grant.Sequence;
+        }
+
+        internal static bool GorgeOnSlayGrant(CardEffectData effect) =>
+            effect.GetEffectStateName() == nameof(CardEffectAddStatusEffect) && SelfEffect(effect) &&
+            effect.GetParamInt() == 0 && effect.GetParamStatusEffects() is [var status] &&
+            status.statusId == "buff" && status.count == 3;
+
+        private static bool GorgeOnSlayReplay(CardEffectData effect) =>
+            effect.GetEffectStateName() == nameof(CardEffectPlayUnitTrigger) && SelfEffect(effect) &&
+            effect.GetParamInt() == 1 && effect.GetParamTrigger() == CharacterTriggerData.Trigger.OnFeed;
+
+        private static bool SelfEffect(CardEffectData effect) =>
+            effect.GetTargetMode() == TargetMode.Self && effect.GetTargetTeamType() == (Team.Type.Heroes | Team.Type.Monsters) &&
+            !effect.GetUseIntRange();
+
+        private static bool SupportsGorgeOnSlay(CharacterData? data) =>
+            data?.GetAssetKey() == GorgeOnSlayBoss && data.GetTriggers() is [var feed, var kill] &&
+            !feed.GetTriggerOnce() && !kill.GetTriggerOnce() && feed.GetTrigger() == CharacterTriggerData.Trigger.OnFeed &&
+            kill.GetTrigger() == CharacterTriggerData.Trigger.OnKill &&
+            feed.GetEffects() is [var grant] && GorgeOnSlayGrant(grant) &&
+            kill.GetEffects() is [var replay] && GorgeOnSlayReplay(replay);
 
         internal static void Request(SaveManager save, ManualLogSource log)
         {
@@ -76,7 +122,11 @@ namespace MonsterTrain2Poju.Probe
                 scenario.GetOuterTrainBoss(false)?.GetAssetKey() != BossKey ||
                 scenario.GetOuterTrainBoss(true)?.GetAssetKey() != BossKey ||
                 (OriginalLifemotherDebuffsWitness.Enabled ? !OriginalLifemotherDebuffsWitness.Supports(scenario) :
-                    FullBattle && !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false))) ||
+                    FullBattle && !IndulgentGorgeOnSlay && !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false))) ||
+                IndulgentGorgeOnSlay && (!SupportsGorgeOnSlay(scenario.GetOuterTrainBoss(false)) ||
+                    !SupportsGorgeOnSlay(scenario.GetOuterTrainBoss(true)) || scenario.GetEnemyRelicData() is not [var gorgeOwner] ||
+                    gorgeOwner.GetID() != "ce0711e4-7113-43cc-9cbf-ca92bbf1e4b3" ||
+                    gorgeOwner.name != "Boss_Railforged_Region2_BossBattle_1" || gorgeOwner.GetEffects().Count != 0) ||
                 LifemotherReanimate && (scenario.GetID() != "1199a33a-0049-4084-a2b3-752740e202ca" ||
                     !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(true))) ||
                 IndulgentTitanskin && (scenario.GetEnemyRelicData() is not [var owner] ||
@@ -108,8 +158,45 @@ namespace MonsterTrain2Poju.Probe
                     ControlledTestScenario = true, BurstConsumptions = burstConsumptions },
                 "IndulgentTitanskin" => new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true,
                     ControlledTestScenario = true, TitanSkinAbsorptions = titanSkinAbsorptions },
+                "IndulgentGorgeOnSlay" => new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true,
+                    ControlledTestScenario = true, GorgeOnSlayReplays = gorgeOnSlayReplays },
                 _ => new { Scenario = ScenarioKey, BossKey, RailforgedInstalled = true, ControlledTestScenario = true }
             };
+        }
+
+        [HarmonyPatch(typeof(CardEffectPlayUnitTrigger), nameof(CardEffectPlayUnitTrigger.ApplyEffect))]
+        private static class GorgeOnSlayReplayPatch
+        {
+            private static bool Prepare() => IndulgentGorgeOnSlay;
+
+            private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
+            {
+                CharacterState? boss = cardEffectParams.selfTarget;
+                if (FullBattleTrace.Active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode ||
+                    boss?.GetSourceCharacterData().GetAssetKey() != GorgeOnSlayBoss ||
+                    cardEffectParams.sourceCharacterTriggerState?.GetTrigger() != CharacterTriggerData.Trigger.OnKill ||
+                    !GorgeOnSlayReplay(cardEffectState.GetSourceCardEffectData()) || cardEffectParams.targets.Count != 1 ||
+                    cardEffectParams.targets[0] != boss) return;
+                __result = Observe(__result, FullBattleTrace.Active, boss, cardEffectState.GetParamTrigger().ToString());
+            }
+
+            private static IEnumerator Observe(IEnumerator native, FullBattleTrace trace, CharacterState boss, string replayKind)
+            {
+                CombatManager combat = AllGameManagers.Instance!.GetCombatManager();
+                int queued = CountPendingOnFeed();
+                var replay = new GorgeReplay { Turn = combat.GetTurnCount(), BossId = trace.UnitId(boss), Replay = replayKind };
+                gorgeOnSlayReplays.Add(replay);
+                try { while (native.MoveNext()) yield return native.Current; }
+                finally { (native as IDisposable)?.Dispose(); }
+                replay.QueuedOnFeed = CountPendingOnFeed() - queued;
+                replay.Completed = true;
+
+                // An OnKill effect is already inside RunTriggerQueue. The original
+                // OnFeed executes after this iterator returns.
+                int CountPendingOnFeed() => ((IEnumerable<CombatManager.TriggerQueueData>)AccessTools
+                    .Property(typeof(CombatManager), "TriggerQueue").GetValue(combat)).Count(entry =>
+                    entry.character == boss && entry.trigger == CharacterTriggerData.Trigger.OnFeed);
+            }
         }
 
         [HarmonyPatch(typeof(CharacterState), "DoNotifyDamageWasApplied")]
