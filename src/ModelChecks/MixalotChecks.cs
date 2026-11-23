@@ -9,7 +9,7 @@ internal static class MixalotChecks
     internal static PlayCardAction? Choose(BattleTurnState source, int[] cards)
     {
         CombatContext context = source.Spawn.Train.Context!; var plays = BattleActionModel.EnumerateSupportedPlays(source);
-        var steward = plays.FirstOrDefault(play => play.RoomIndex == 0 && context.FindCard(play.CardInstanceId)!.DataId == StewardId);
+        var steward = plays.FirstOrDefault(play => play.RoomIndex == 0 && context.FindCard(play.CardInstanceId)?.DataId == StewardId);
         if (steward != null) return steward;
         for (int index = 0; index < 2; index++)
             if (context.Statistics!.Value(cards[index], "TimesPlayed", "ThisBattle") == 0)
@@ -18,7 +18,7 @@ internal static class MixalotChecks
         if (context.Statistics!.Value(cards[2], "TimesPlayed", "ThisBattle") == 0)
         {
             if (hasElixir) return plays.FirstOrDefault(play => play.RoomIndex == 0 && source.PlayRules!.Elixirs!.Recipes.Any(recipe =>
-                recipe.Creation.DataId == context.FindCard(play.CardInstanceId)!.DataId));
+                recipe.Creation.DataId == context.FindCard(play.CardInstanceId)?.DataId));
             return plays.FirstOrDefault(play => play.CardInstanceId == cards[2] && play.RoomIndex == 0);
         }
         return BattleActionModel.ChooseUnitSpellAndJunkPlay(source, card => card.DataId != DataId);
