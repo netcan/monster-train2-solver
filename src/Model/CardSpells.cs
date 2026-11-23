@@ -3629,14 +3629,17 @@ namespace MonsterTrain2Poju.Model
             if (effect.Type == "AbilityTeleport") return Unchanged(state);
             if (target.Statuses.Any(status => status.Id == "immobile")) return Unchanged(state);
             var team = state.Units.Where(unit => unit.Team == target.Team).ToList();
-            if (state.Context?.SpawnPoints != null)
+            if (state.Context?.SpawnPoints is BattleSpawnPoints points)
             {
-                UnitSpawnPointState reference = state.Context.SpawnPoints.Units.Single(unit => unit.UnitId == target.Id);
+                UnitSpawnPointState reference = points.Units.Single(unit => unit.UnitId == target.Id);
                 if (reference.OuterBoss) return Unchanged(state);
                 if (reference.Current == null) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0,
                     new List<CombatEvent>(), "Floor rearrangement requires the target's physical point.");
-                var moved = BattleSpawnPointModel.Apply(state.Context.SpawnPoints, state, "Rearrange", target.Team,
-                    index: reference.Current.Index, targetIndex: effect.Value == 0 ? 0 : team.Count - 1);
+                // Outer boss anchors are visible in the room but occupy no slot in the rearrangement order.
+                int destination = effect.Value == 0 ? 0 :
+                    team.Count(unit => !points.Units.Any(point => point.UnitId == unit.Id && point.OuterBoss)) - 1;
+                var moved = BattleSpawnPointModel.Apply(points, state, "Rearrange", target.Team,
+                    index: reference.Current.Index, targetIndex: destination);
                 if (!moved.Supported) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), moved.Error!);
                 var context = state.Context.WithSpawnPoints(moved.State!);
                 var ordered = BattleSpawnPointModel.Order(context.SpawnPoints, state.RoomIndex, state.Units);
