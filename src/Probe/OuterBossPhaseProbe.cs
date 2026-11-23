@@ -24,15 +24,20 @@ namespace MonsterTrain2Poju.Probe
             get
             {
                 CharacterState? boss = AllGameManagers.Instance?.GetHeroManager()?.GetOuterTrainBossCharacter();
-                return boss != null && boss.IsAlive && !boss.IsDestroyed &&
-                    (!OuterBossDefinitions.IsIndulgentTrample(boss.GetSourceCharacterData().GetAssetKey()) ||
-                        boss.GetBossState().GetCurrentAttackPhase() == BossState.AttackPhase.Casting) &&
-                    (TurnsEnabled && Supports(boss.GetSourceCharacterData()) || TrueFinalBossTurnProbe.CaptureEnabled &&
-                        boss.IsTrueFinalBoss() && boss.GetSourceCharacterData().GetAssetKey() == "Boss_Level9_Entropy_Top_V2"
+                if (boss == null || !boss.IsAlive || boss.IsDestroyed) return false;
+                CharacterData data = boss.GetSourceCharacterData();
+                string assetKey = data.GetAssetKey();
+                if (OuterBossDefinitions.UsesEncounterScopedCasting(assetKey) &&
+                    boss.GetBossState().GetCurrentAttackPhase() != BossState.AttackPhase.Casting)
+                    return false;
+                if (assetKey == OuterBossDefinitions.LifemotherInfested && boss.GetCurrentRoom()?.GetIsPyreRoom() == true)
+                    return false;
+                return TurnsEnabled && Supports(data) || TrueFinalBossTurnProbe.CaptureEnabled &&
+                    boss.IsTrueFinalBoss() && assetKey == "Boss_Level9_Entropy_Top_V2"
 #if DEVELOPMENT_PROBE
-                        || OriginalUnrulyWitness.ObservesInfestedBoss(boss.GetSourceCharacterData())
+                    || OriginalUnrulyWitness.ObservesInfestedBoss(data)
 #endif
-                    );
+                    ;
             }
         }
         private static bool ForceRelentless => Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_RELENTLESS") == "1";
@@ -43,6 +48,8 @@ namespace MonsterTrain2Poju.Probe
             var groups = data.GetBossActionData();
             string assetKey = data.GetAssetKey();
             bool supported = OuterBossDefinitions.Supports(assetKey);
+            if (assetKey == OuterBossDefinitions.LifemotherInfested)
+                supported = LifemotherInfestedCaptureProbe.Supports(AllGameManagers.Instance?.GetSaveManager(), data);
 #if DEVELOPMENT_PROBE
             supported |= OriginalUnrulyWitness.ObservesInfestedBoss(data);
 #endif

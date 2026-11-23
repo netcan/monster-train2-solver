@@ -117,10 +117,7 @@ namespace MonsterTrain2Poju.Probe
                 (OriginalLifemotherDebuffsWitness.Enabled ? !OriginalLifemotherDebuffsWitness.Supports(scenario) :
                     FullBattle && !IndulgentGorgeOnSlay && !IndulgentCapacity && !LifemotherInfested &&
                     !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false))) ||
-                LifemotherInfested && (scenario.GetEnemyRelicData() is not [var infestedOwner] ||
-                    infestedOwner.GetID() != InfestedOwnerId || infestedOwner.name != InfestedOwner ||
-                    infestedOwner.GetEffects() is not [var first, var second, var third, var fourth] ||
-                    new[] { first, second, third, fourth }.Any(effect => effect.GetEffectClassName() != nameof(RelicEffectNull))) ||
+                LifemotherInfested && !LifemotherInfestedCaptureProbe.MatchesDefinition(scenario, scenario.GetOuterTrainBoss(false)) ||
                 IndulgentTrampleCasting && (!OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(false)) ||
                     !OuterBossPhaseProbe.Supports(scenario.GetOuterTrainBoss(true))) ||
                 (IndulgentCapacity || IndulgentGorgeOnSlay) &&

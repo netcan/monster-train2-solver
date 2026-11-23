@@ -19,6 +19,8 @@ namespace MonsterTrain2Poju.Model
         internal const string IndulgentCapacityOwnerKey = "Boss_Railforged_Region2_BossBattle_2";
         internal static bool IsIndulgentTrample(string assetKey) =>
             assetKey is IndulgentGorgeOnSlay or IndulgentReduceCapacity;
+        public static bool UsesEncounterScopedCasting(string assetKey) =>
+            IsIndulgentTrample(assetKey) || assetKey == LifemotherInfested;
         public const string LifemotherReanimate = "Boss_SoulSavior_Final_Lifemother_HealReanimate";
         internal const string LifemotherInfested = "Boss_SoulSavior_Final_Lifemother_Infested";
         internal const string LifemotherDebuffsOwner = "Boss_Railforged_Lifemother_Debuff";
