@@ -9,16 +9,16 @@
 | 待办分类 | 类数 | 含目录引用 | 含类型声明 |
 | --- | ---: | ---: | ---: |
 | known-gap | 1 | 1 | 1 |
-| inspect-no-code-link | 52 | 52 | 52 |
+| inspect-no-code-link | 50 | 50 | 50 |
 | inspect-inherited-code | 8 | 8 | 8 |
 | inspect-projection-normalization | 55 | 55 | 55 |
 | inspect-guard-links | 47 | 47 | 47 |
 | review-existing-code | 230 | 230 | 230 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 286 | 0 | 0 |
-| scoped-review-recorded | 48 | 48 | 48 |
+| scoped-review-recorded | 50 | 50 | 50 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 51 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 53 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -74,6 +74,8 @@
 | RelicEffectModifyStatusMagnitude | shared-path | Four unchanged collectible owners for Rage, Spikes, Regen and Mageblade each returned a positive native combat query. Five original plays and the first exchange matched complete successors and RNG. Removing each owner from its query input removed only its contribution. Separate neutral and active moon native witnesses match five plays and the first ordinary exchange each. The active case preserves Selene phase masks and Sweep cleanup. The active deployment EndTurn and raw ascent also match. The raw combat snapshot differs only by the phase enum and its room mirrors. Other status modifier payloads remain open. |
 | RelicEffectMultiplyAttackLate | shared-path | Shared parameter-driven late multiplier preserves manager order, champion filtering, captured native Pyre exemption and raw snapshots. Pinned one original owner; 640 native queries, 80 products, 640 actual attacks plus 7728 percentage query/birth pairs with nonneutral late. Unchanged half-attack plus double-enemy-health native win; full successors, 16 branches/frontiers and serial/parallel root search. Actual status callback interactions, all other owner combinations and mixed Covenants are not fully certified. |
 | RelicEffectPayCardCostWithPyreHealth | shared-path | The pinned preview-isolation witness checks affordable Ember, a four-health nonlethal Pyre payment, X-cost and one native OnHit callback. 31 plays and six EndTurns match independently. The prepared control cards are inserted at turn one. |
+| RelicEffectPersistMonsterHp | shared-path | The pinned Echoes owner matches paid deployment below and above the original health cap, native hit and heal writes to the source card, and lethal clearing. The unchanged opening battle matches 21 plays, seven EndTurns and both candidate frontiers. The later campaign save callback is outside the battle terminal capture. |
+| RelicEffectPreventMonstersDamagingHeroes | shared-path | The pinned Echoes owner supplies signed damage adjustment controls and a live Pyregel target. A friendly attacker leaves it at 45 HP and the attackerless hit lowers it to 44 HP. Full win matches 21 plays, seven EndTurns and both candidate frontiers. |
 | RelicEffectRemoveStatusEffectOnSpawn | shared-path | The unchanged EggHatchRemoval owner orders Hatch removal before adding 30 Armor to the eligible Egg. Two positive births in the pinned 2.3.1 archive remove three Hatch and gain 35 Armor including five from SpawnWithArmor. All 12 recorded births and 32 independent branches per boundary match. The scene provides controlled Egg carriers and preserves the original relic definitions. |
 | RelicEffectScaleStatusApplicationsOnSpawn | shared-path | Shared initialized birth rule preserves actual enemy-only/inverted required-mutator gate, original-definition positive starting additions, ordered exact-type runtime trigger scaling and immutable source/target metadata; enchant capture reads runtime parameters. Four original sources/54 configurations/2592 native callbacks in detached objects; starting AddStatus requests intercepted, not applied there. Unchanged original endless RunDistance4 owner acquired before Pyre setup, authored enemy status/trigger and defender controls; native full win/four zero, 16 branches/frontiers/serial-parallel root search. Other source companions, complex status callback competition, mixed Covenants, scaled enchant gameplay lifecycle and complete hover query remain outside certification. |
 | RelicEffectShowtime | shared-path | Three unchanged original souls apply their hidden floor attachment once before deployment. Settled capacities 5 to 8/8/10 admit a size-six pair and route the original front-only upgrade after room combat. Two/two/four positive repetitions, rear unit unaffected, and full-capacity no-op agree across full native wins, exact successors, 16 branches, frontiers and serial/parallel plans. Native RNG selects the opening room. Other floor seeds and mixed room attachments remain outside this evidence. |
@@ -105,10 +107,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `76d70b59e3b4af2d2ada7f1575778e9a08da522cbb1051017d61754c63f7291a`。
-- Model: PDB 校验过的项目源码集合 `337e4bc59dccc4a0a3a3df380fd1e18de2c9158b527e74279bcc6e9872033dde`。
-- Probe: PDB 校验过的项目源码集合 `f75f3a373ab01bcc5f08688888d2ce23ad4d9799165b15ceb763b18c97c2a333`。
-- ModelChecks: PDB 校验过的项目源码集合 `2ea2fe0f20985725c5d099f740e424cb1833448ff1c082efea22546c19c89f9f`。
+- 人工审查索引 SHA-256: `777e7f3d7cb9ae59229d82eba6e7b45080001499d02bb173c295538f9c7195df`。
+- Model: PDB 校验过的项目源码集合 `42f10d65f2901a5be53d6b8eba77455b24edd0e576be40347e147e1eeb205fc5`。
+- Probe: PDB 校验过的项目源码集合 `2d15bdc153800135de01e85e8cb197235f182db605185fb90dd7cc02dc2614a6`。
+- ModelChecks: PDB 校验过的项目源码集合 `559150ad81d0e609cdc26905ede164d2d46db4f71a4a0956135230be8ebf1b58`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
