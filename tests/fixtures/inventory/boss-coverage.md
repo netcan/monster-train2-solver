@@ -22,4 +22,26 @@ The gate is an identity filter. Allowed definitions can still reject uncalibrate
 | Level8FinalBossCorrupter | allowed | 18 | 7 |
 | Level8FinalBossMeleeWeakness | allowed | 32 | 9 |
 
-The TSV retains native identities, growth signatures and exact player-source archives. True-final-boss routing, Titan Trial substitutions, Endless/test scenarios and Soul Savior definitions are separate and are not included in this denominator. Card/relic logbook completion does not establish boss advice coverage.
+The TSV retains native identities, growth signatures and exact player-source archives. True-final-boss routing, Titan Trial substitutions and Endless/test scenarios have their own acceptance scopes.
+
+## Soul Savior
+
+The pinned 2.3.1 catalog contains 15 original encounters. 7 model definition gates are open and 7 encounters have settled recordings. The registered fixtures use original TestScenario selections and can include defeats.
+
+| Original scenario | Model definition gate | Settled recordings |
+| --- | --- | ---: |
+| SoulSavior_R1_BossBattle_DutifulChild_AscendDescend | guarded | 0 |
+| SoulSavior_R1_BossBattle_DutifulChild_Burst | allowed | 1 |
+| SoulSavior_R1_BossBattle_DutifulChild_Heal | guarded | 0 |
+| SoulSavior_R2_BossBattle_FavoredChild_1 | guarded | 0 |
+| SoulSavior_R2_BossBattle_FavoredChild_2 | guarded | 0 |
+| SoulSavior_R2_BossBattle_FavoredChild_3 | guarded | 0 |
+| SoulSavior_R3_BossBattle_DuplicateEnemy | allowed | 1 |
+| SoulSavior_R3_BossBattle_Scourge | allowed | 1 |
+| SoulSavior_R3_BossBattle_StealBuffs1 | allowed | 1 |
+| SoulSavior_R4_BossBattle_EstrangedChild_1 | allowed | 1 |
+| SoulSavior_R4_BossBattle_EstrangedChild_2 | allowed | 1 |
+| SoulSavior_R4_BossBattle_EstrangedChild_3 | allowed | 2 |
+| SoulSavior_R5_BossBattle_Lifemother_Debuffs | guarded | 0 |
+| SoulSavior_R5_BossBattle_Lifemother_Infested | guarded | 0 |
+| SoulSavior_R5_BossBattle_Lifemother_Reanimate | guarded | 0 |

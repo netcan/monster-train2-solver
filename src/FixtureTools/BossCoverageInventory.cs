@@ -71,11 +71,57 @@ internal static class BossCoverageInventory
             "This inventory reads prior curated evidence; it does not rerun native play or independent forecast checks. " +
             "Controlled selections and losses retain their original fixture boundaries and do not establish natural victories.\n\n" + table +
             "\nThe TSV retains native identities, growth signatures and exact player-source archives. " +
-            "True-final-boss routing, Titan Trial substitutions, Endless/test scenarios and Soul Savior definitions are separate " +
-            "and are not included in this denominator. Card/relic logbook completion does not establish boss advice coverage.\n";
+            "True-final-boss routing, Titan Trial substitutions and Endless/test scenarios have their own acceptance scopes.\n";
+        report += SoulSavior(workspace);
         Write(Path.Combine(directory, "inventory", "boss-inventory.tsv"), tsv.ToString(), check);
         Write(Path.Combine(directory, "inventory", "boss-coverage.md"), report, check);
         Console.WriteLine($"BOSS-INVENTORY {(check ? "CHECK" : "WRITE")} PASS: {scenarios.Length} original scenarios/{allowed} allowed definition gates/{paired} curated player-pair scenarios; metadata only, no battle regression.");
+    }
+
+    private static string SoulSavior(string workspace)
+    {
+        const string rulePath = "2.3.1/rule-catalog.mt2f";
+        const string ruleHash = "7ae35691d7d504f1513790709f3816bd252472c82de2f9d2a1bc2c9760b35ef9";
+        string directory = Game231FixtureCatalog.DirectoryFor(workspace);
+        var registrations = Game231FixtureCatalog.Load(directory);
+        Game231FixtureRegistration ruleCatalog = registrations[rulePath];
+        if (ruleCatalog.Sha256 != ruleHash) throw new InvalidOperationException("Unexpected Soul Savior definition catalog hash.");
+        using var catalog = FixtureDocument.Read(ruleCatalog.Verify(directory));
+        FixtureValue source = catalog.RootElement;
+        if (Text(source, "GameModuleMvid") != Game231FixtureCatalog.Module)
+            throw new InvalidOperationException("Unexpected Soul Savior definition module.");
+        var bosses = source.GetProperty("BossScenarios").EnumerateArray().Where(row =>
+            Text(row, "AssetKey").StartsWith("SoulSavior_", StringComparison.Ordinal))
+            .ToDictionary(row => Text(row, "AssetKey"), row => Text(row, "OuterBoss"), StringComparer.Ordinal);
+        var recorded = bosses.Keys.ToDictionary(key => key, _ => 0, StringComparer.Ordinal);
+        foreach (Game231FixtureRegistration archive in registrations.Values.Where(row =>
+            row.Path.StartsWith("mechanics/", StringComparison.Ordinal)))
+        {
+            using var document = FixtureDocument.Read(archive.Verify(directory));
+            FixtureValue root = document.RootElement;
+            FixtureValue receipt = root.TryGetProperty("OriginalUnrulyBattle", out FixtureValue witness) && witness.ValueKind == FixtureKind.Object
+                ? witness : root.TryGetProperty("OriginalSpurnedBattle", out witness) ? witness : default;
+            if (receipt.ValueKind != FixtureKind.Object) continue;
+            string scenario = Text(receipt, "Scenario");
+            if (bosses.TryGetValue(scenario, out string? expected) && Text(receipt, "BossKey") == expected &&
+                Game231FixtureCatalog.Classify(archive, root) == Game231FixtureKind.SettledBattle)
+                recorded[scenario]++;
+        }
+        var table = new StringBuilder("\n| Original scenario | Model definition gate | Settled recordings |\n| --- | --- | ---: |\n");
+        int allowed = 0;
+        foreach (var (scenario, boss) in bosses.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+        {
+            bool supported = OuterBossDefinitions.Supports(boss);
+            allowed += supported ? 1 : 0;
+            string gate = supported ? "allowed" : "guarded";
+            table.AppendLine($"| {scenario} | {gate} | {recorded[scenario]} |");
+        }
+        int observed = recorded.Values.Count(battles => battles > 0);
+        Console.WriteLine($"SOUL-SAVIOR-INVENTORY: {bosses.Count} original scenarios/{allowed} allowed definition gates/{observed} settled recorded scenarios.");
+        return "\n## Soul Savior\n\n" +
+            $"The pinned {Game231FixtureCatalog.Version} catalog contains {bosses.Count} original encounters. " +
+            $"{allowed} model definition gates are open and {observed} encounters have settled recordings. " +
+            "The registered fixtures use original TestScenario selections and can include defeats.\n" + table;
     }
 
     private static string Scenario(FixtureValue battle)
