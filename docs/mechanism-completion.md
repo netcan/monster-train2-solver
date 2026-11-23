@@ -387,8 +387,10 @@ FavoredChild_2 的 2.3.1 原版施法记录覆盖 3 次战前行动和 2 次战�
 [原版施法记录](../tests/compatibility/game-2.3.1/mechanics/indulgent-capacity/native-casting-phases.mt2f)
 
 Indulgent GorgeOnSlay 击杀后排入一次自身 OnFeed，获得 3 Rage，攻击从 13 升至 19。
-同一段原版回放中，回调、首领状态、战斗上下文和 RNG 均一致。
+同一段原版回放中，回调、首领状态、战斗上下文和 RNG 均一致。新的原版整战也通过 8 次出牌、
+4 次结束回合和两类候选检查，以薪火耗尽结算。
 [原版击杀和 OnFeed 记录](../tests/compatibility/game-2.3.1/mechanics/indulgent-gorge-on-slay/native-gorge-on-slay.mt2f)
+[原版 GorgeOnSlay 整战](../tests/compatibility/game-2.3.1/mechanics/indulgent-gorge-on-slay/native-battle.mt2f)
 
 减容和 GorgeOnSlay 的新月出生均通过原版独立回放。两个旧录档把原版控制器记录在出生事件里，
 校验时将同一份控制器数据放回回合快照，核对未放置实体、初始选层、物理站位和随机流。

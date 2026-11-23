@@ -681,3 +681,7 @@ Indulgent Titanskin 追加 8 次出牌、4 次结束回合，两类候选通过�
 Indulgent 减容变体追加 8 次出牌、4 次结束回合，两类候选通过。累计已有 470 场原版战斗通过，
 合计 7,224 次出牌或技能和 2,803 次结束回合。Soul Savior 已有 13／15 场整战证据。
 [减容整战](../tests/compatibility/game-2.3.1/mechanics/indulgent-capacity/native-battle.mt2f)
+
+Indulgent GorgeOnSlay 再追加 8 次出牌、4 次结束回合并通过两类候选。累计已有 471 场原版战斗
+通过，合计 7,232 次出牌或技能和 2,807 次结束回合。Soul Savior 已有 14／15 场整战证据，
+剩余 Lifemother Infested。 [GorgeOnSlay 整战](../tests/compatibility/game-2.3.1/mechanics/indulgent-gorge-on-slay/native-battle.mt2f)
