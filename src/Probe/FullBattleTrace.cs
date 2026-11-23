@@ -69,7 +69,8 @@ namespace MonsterTrain2Poju.Probe
         internal void InvalidateCardRules() => actions.InvalidateRules();
         internal EnemySpawnState CaptureSpawnPhase() => spawning.CapturePhase();
         internal EnemySpawnState CaptureCanonicalSpawn() => spawning.Capture();
-        internal TrainCombatState CaptureCanonicalTrain() => CaptureDecision(() => trainCombat.Capture());
+        internal TrainCombatState CaptureCanonicalTrain(bool includeOuterBossForBump = false) =>
+            CaptureDecision(() => trainCombat.Capture(includeOuterBossForBump: includeOuterBossForBump));
         internal int[] PendingDestroyedUnitIds() => identities.Where(pair => pair.Key != null && pair.Key.IsDestroyed)
             .Select(pair => pair.Value).OrderBy(id => id).ToArray();
         internal int NextUnitId => nextId;
@@ -109,6 +110,9 @@ namespace MonsterTrain2Poju.Probe
         {
             get
             {
+#if DEVELOPMENT_PROBE
+                if (OriginalUnrulyWitness.Enabled) return true;
+#endif
                 if (CardHoverLifecycleCalibration.Enabled || OuterBossPhaseProbe.TurnsEnabled || playerEnchantmentWorld ||
                     (nativeEnchantmentWorld ??= EnemySpawningProbe.RequiresEnchantmentWorld())) return true;
                 // A player unit can introduce an aura even when every enemy wave

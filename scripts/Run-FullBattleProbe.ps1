@@ -804,6 +804,7 @@ param(
     [switch] $OriginalAffordableNonPlayable,
     [switch] $OriginalSpurned,
     [switch] $OriginalSpurnedBattle,
+    [switch] $OriginalUnrulyWitness,
     [ValidateRange(1, 3)][int] $OriginalSpurnedChallenge = 2,
     [switch] $OriginalSpurnedRetainPiles,
     [switch] $OriginalRageOnBurnoutStackLoss,
@@ -1842,6 +1843,17 @@ if ($OriginalAffordableNonPlayable) {
     $PhysicalSpawnPoints = $true
     $Policy = 'units-and-junk'
 }
+if ($OriginalUnrulyWitness) {
+    $unrulyArguments = @('OriginalUnrulyWitness', 'InputProfile', 'BattleDistance', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+        'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne 2 -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $unrulyArguments }).Count) {
+        throw 'Original Unruly requires an isolated native Ring 3 BattleIntro and binary capture.'
+    }
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = 'no-cards'
+}
 if ($OriginalSpurned -and (-not $BinaryCapture -or -not $InputProfile -or $BattleDistance -ne 3 -or $PlayerAdvisor -or $Planner -or $OriginalSpurnedChallenge -eq 3)) {
     throw 'OriginalSpurned requires an isolated Ring 4 BattleIntro checkpoint and binary capture.'
 }
@@ -2565,6 +2577,7 @@ if ($InputProfile) {
         throw 'Original opening cohorts require a standard native first-battle checkpoint.'
     }
     if ($CapturePlayerDeploymentOnly) { $deploymentInputSignature = Get-OriginalSignature $checkpoint }
+    if ($OriginalUnrulyWitness) { $unrulyInputSignature = Get-OriginalSignature $checkpoint }
     if ($OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness) {
         if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
             $checkpointData.wasDevCheatUsed -ne $false -or $checkpointData.runState.numBattlesCompleted -ne 0) {
@@ -3350,6 +3363,7 @@ if ($OriginalSpurned) {
     $environment['MT2_PROBE_PHYSICAL_SPAWNPOINTS'] = '1'
     $environment['MT2_PROBE_SPURNED_CHALLENGE'] = [string]$OriginalSpurnedChallenge
 }
+if ($OriginalUnrulyWitness) { $environment['MT2_PROBE_ORIGINAL_UNRULY'] = '1' }
 if ($OriginalSpurnedBattle) {
     $environment['MT2_PROBE_MODIFIERS'] = 'original-spurned-battle'
     $environment['MT2_PROBE_SPURNED_CHALLENGE'] = [string]$OriginalSpurnedChallenge
@@ -4003,6 +4017,16 @@ if ($earlyTrialSubstitution) {
             Trace=$capturePath; Birth=$birthPath } | ConvertTo-Json
         return
     }
+}
+if ($OriginalUnrulyWitness) {
+    $capturePath = Join-Path $profile 'unruly-post-combat.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Unruly PostCombat component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore -or (Get-OriginalSignature $checkpoint) -cne $unrulyInputSignature) {
+        throw "Original Unruly PostCombat capture failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-UNRULY-POSTCOMBAT PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
 }
 if ($OriginalSpurned -and $OriginalSpurnedChallenge -eq 1) {
     $capturePath = Join-Path $profile 'spurned-health-threshold.mt2f'

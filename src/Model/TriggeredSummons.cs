@@ -65,6 +65,9 @@ namespace MonsterTrain2Poju.Model
     }
     internal static class TriggeredSummonModel
     {
+        internal const string SpawnHeroIfAlone = "CardEffectSpawnHeroIfNoOtherHeroUnits";
+        internal const string UnrulyBoss = "Boss_SoulSavior_R3_Unruly_DuplicateEnemy";
+        internal const string UnrulyDecoy = "R3_Horde_T1_Decoy";
         internal const string FleshweaverSpike = "Boss_Level3_Fleshweaver_Spike";
         internal const string FleshweaverSpikeMiniId = "eb00da55-1597-4768-85bc-2fa241af11cb";
         internal const string FleshweaverSpikeTrialMini = "Boss_Level3_MiniFleshweaver_Spike_TitanTrial";
@@ -142,7 +145,7 @@ namespace MonsterTrain2Poju.Model
                             { Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus", Target: "Self",
                                 Statuses: [{ Id: "immobile", Stacks: 1 }] } }] }] } };
         internal static string? Validate(RoomCombatState state, TriggeredSummonRule? rule,
-            CombatUnit? actor = null, string? triggerKind = null)
+            CombatUnit? actor = null, string? triggerKind = null, string? effectType = null)
         {
             TriggeredSummonCatalog? catalog = state.Context?.SummonCatalog;
             if (rule == null || catalog == null || state.Context?.SpawnPoints == null || state.Context.NextUnitId == null)
@@ -160,9 +163,14 @@ namespace MonsterTrain2Poju.Model
                 SummonUnitDefinition? unit = catalog.Units.FirstOrDefault(item => item.CharacterId == id);
                 if (unit == null || unit.Unit.IsPyre || unit.ExternalInteractions.Count > 0)
                     return unit == null ? "Missing triggered summon unit definition." : "Unmodeled triggered summon definition: " + string.Join("; ", unit.ExternalInteractions);
+                bool originalUnruly = effectType == SpawnHeroIfAlone && actor is { AssetKey: UnrulyBoss, BumpRules.OuterBoss: true } &&
+                    triggerKind == "PostCombat" && rule.Pool.Count == 0 && rule.CharacterId == id &&
+                    unit.HeroDefinition?.Unit.AssetKey == UnrulyDecoy && rule.Tests.ShouldTest;
+                if (effectType == SpawnHeroIfAlone && !originalUnruly)
+                    return "Conditional hero birth requires the observed Unruly PostCombat fallback.";
                 if (rule.EnemyHero && (unit.HeroDefinition == null || unit.HeroDefinition.Unit.Team != CombatTeam.Enemy ||
                     unit.HeroDefinition.Unit.IsBoss == true || unit.HeroDefinition.Unit.EndsBattleOnDeath ||
-                    !athane && unit.HeroDefinition.Unit.AssetKey is not ("Boss_Level3_MiniFleshweaver_MoreMass" or
+                    !athane && !originalUnruly && unit.HeroDefinition.Unit.AssetKey is not ("Boss_Level3_MiniFleshweaver_MoreMass" or
                         "Boss_Level3_MiniFleshweaver_Corruption" or "Boss_Level3_MiniFleshweaver_Spike") &&
                     !KnownFleshweaverTrial(state, actor, triggerKind, rule, unit)))
                     return "Triggered enemy birth requires its calibrated original Fleshweaver mini definition.";

@@ -555,7 +555,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static RoomCombatResult ResolveCore(RoomCombatState state, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre,
             bool updateSelectedRoom, CombatUnit? externalPyre, int externalPyreRoomIndex,
-            IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets, Func<int, int, RelentlessDecision?>? chooseRelentless)
+            IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets, Func<int, int, RelentlessDecision?>? chooseRelentless,
+            UnitCopyCatalog? unitCopyCatalog = null)
         {
             // Native room modifiers run once before the first exchange, including
             // deaths and queued callbacks; unit PreCombat is a separate phase.
@@ -564,7 +565,7 @@ namespace MonsterTrain2Poju.Model
             RoomCombatResult result = pre.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated ? pre :
                 Run(pre.State!, true, refreshPyre: refreshPyre, updateSelectedRoom: updateSelectedRoom,
                     externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets,
-                    chooseRelentless: chooseRelentless);
+                    chooseRelentless: chooseRelentless, unitCopyCatalog: unitCopyCatalog);
             if (!ReferenceEquals(result, pre) && pre.Events.Count > 0)
                 result = new RoomCombatResult(result.State, result.Outcome, result.Rounds, pre.Events.Concat(result.Events).ToList(),
                     result.UnsupportedReason, result.PendingCallbacks, result.RetainedUnits, result.Dispatches,
@@ -590,7 +591,8 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static RoomCombatResult ApplyUnitPostCombat(RoomCombatState state, IReadOnlyList<int> cannotAttackOrHeal,
-            IReadOnlyList<int> cannotFireTriggers, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            IReadOnlyList<int> cannotFireTriggers, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
+            UnitCopyCatalog? unitCopyCatalog = null)
         {
             string? error = Validate(state, linkedHealthOnly: true);
             if (error != null) return new RoomCombatResult(null, RoomOutcome.Unsupported, 0, new List<CombatEvent>(), error);
@@ -607,7 +609,7 @@ namespace MonsterTrain2Poju.Model
                 targets = state.Context.Enchantments.Rooms.Where(room => room.RoomIndex != state.RoomIndex)
                     .SelectMany(room => room.Units.Select(unit => (room.RoomIndex, unit))).ToArray();
             }
-            return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre, externalTargets: targets)
+            return new Engine(state, new List<CombatEvent>(), refreshPyre: refreshPyre, externalTargets: targets, unitCopyCatalog: unitCopyCatalog)
                 .UnitPostCombat(cannotAttackOrHeal, cannotFireTriggers);
         }
 
@@ -1111,7 +1113,8 @@ namespace MonsterTrain2Poju.Model
             Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null, bool updateSelectedRoom = true,
             CombatUnit? externalPyre = null, int externalPyreRoomIndex = -1,
             IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
-            IReadOnlyCollection<int>? pendingPhysicalDeathIds = null, Func<int, int, RelentlessDecision?>? chooseRelentless = null)
+            IReadOnlyCollection<int>? pendingPhysicalDeathIds = null, Func<int, int, RelentlessDecision?>? chooseRelentless = null,
+            UnitCopyCatalog? unitCopyCatalog = null)
         {
             var events = new List<CombatEvent>();
             string? error = Validate(state);
@@ -1122,7 +1125,7 @@ namespace MonsterTrain2Poju.Model
                     "True-final-boss room attack scheduling remains uncalibrated; linked damage/heal APIs are separate.");
             var engine = new Engine(state, events, refreshPyre: refreshPyre,
                 externalPyre: externalPyre, externalPyreRoomIndex: externalPyreRoomIndex, externalTargets: externalTargets,
-                chooseRelentless: chooseRelentless);
+                chooseRelentless: chooseRelentless, unitCopyCatalog: unitCopyCatalog);
             return engine.Run(entireRoom, updateSelectedRoom, pendingPhysicalDeathIds);
         }
 
@@ -1340,9 +1343,9 @@ namespace MonsterTrain2Poju.Model
                                 return "CardEffectEnchant requires a captured automatic lifecycle world and effect definition.";
                             continue;
                         }
-                        if (effect.Type is "CardEffectSpawnMonster" or "CardEffectSpawnHero")
+                        if (effect.Type is "CardEffectSpawnMonster" or "CardEffectSpawnHero" or TriggeredSummonModel.SpawnHeroIfAlone)
                         {
-                            string? summonError = TriggeredSummonModel.Validate(state, effect.Summon, unit, trigger.Kind);
+                            string? summonError = TriggeredSummonModel.Validate(state, effect.Summon, unit, trigger.Kind, effect.Type);
                             if (summonError != null) return summonError;
                             continue;
                         }
@@ -1643,7 +1646,7 @@ namespace MonsterTrain2Poju.Model
                             continue;
                         }
                         if (effect.Action != null && effect.Type != "CardEffectHeal" && effect.Type != "CardEffectDamage" && effect.Type != "CardEffectPyreDamageIfNoPlayerUnits" && effect.Type != "CardEffectAddStatusEffect" &&
-                            effect.Type is not ("CardEffectAddStatsFromSelf" or "CardEffectRemoveEquipment" or "CardEffectAdjustDragonsHoardPerStatusEffect" or "CardEffectFeederRules" or "CardEffectSynergizeStatusEffects") &&
+                            effect.Type is not ("CardEffectAddStatsFromSelf" or "CardEffectRemoveEquipment" or "CardEffectAdjustDragonsHoardPerStatusEffect" or "CardEffectFeederRules" or "CardEffectSynergizeStatusEffects" or "CardEffectCopyUnits") &&
                             effect.Type is not ("CardEffectMultiplyStatusEffect" or "CardEffectAddStatusEffectIfNoPlayerUnits" or FriendlyDamageStatusModel.NativeEffect or "CardEffectAddStatusEffectPerSelfAttack" or "CardEffectAddStatusEffectPerLastAttackDamage" or "CardEffectAddStatusEffectBasedOnHealth"))
                             return "Mismatched triggered action definition.";
                         if (effect.DamageStatusMultiplier != null && effect.Type is not ("CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits"))
@@ -1694,6 +1697,16 @@ namespace MonsterTrain2Poju.Model
                             if (action.Range != null) return "Self-stat copy range initialization is not modeled.";
                             string? filterError = action.Target == "LastAttackedCharacter" ? null : action.Filters?.Validate();
                             if (filterError != null) return filterError;
+                            continue;
+                        }
+                        if (effect.Type == "CardEffectCopyUnits")
+                        {
+                            if (unit.Team != CombatTeam.Enemy || unit.AssetKey != TriggeredSummonModel.UnrulyBoss || trigger.Kind != "PostCombat" ||
+                                effect.Action is not { Type: "CopyUnits", Target: "FrontInRoom", AllowEnemy: true, AllowPlayer: false,
+                                    Value: 1, CopyHeroStats: true, Range: null, Filters.IgnoreBosses: true })
+                                return "Unsupported triggered hero-copy configuration.";
+                            string? copyFilter = effect.Action.Filters.Validate();
+                            if (copyFilter != null) return copyFilter;
                             continue;
                         }
                         if (effect.Type == "CardEffectAddCardUpgradeToUnits" || effect.Type == "CardEffectAddTempCardUpgradeToUnits" ||
@@ -1924,6 +1937,7 @@ namespace MonsterTrain2Poju.Model
             private readonly List<CharacterTriggerDispatch> dispatches = new List<CharacterTriggerDispatch>();
             private bool battleWon;
             private readonly Func<int, int, RelentlessDecision?>? chooseRelentless;
+            private readonly UnitCopyCatalog? unitCopyCatalog;
             private bool previewTruncated;
             private int round;
             private CombatContext? context;
@@ -1975,10 +1989,11 @@ namespace MonsterTrain2Poju.Model
                 Func<RoomCombatState, int, string, RoomCombatResult>? relicCharacterEffect = null,
                 Func<RoomCombatState, CardActionEffect, int, BumpResult>? birthBump = null, bool centerDamageDeaths = true,
                 Func<RoomCombatResult, RoomCombatResult>? settleDamageCallbacks = null,
-                Func<int, int, RelentlessDecision?>? chooseRelentless = null)
+                Func<int, int, RelentlessDecision?>? chooseRelentless = null, UnitCopyCatalog? unitCopyCatalog = null)
             {
                 this.source = source; this.events = events;
                 this.chooseRelentless = chooseRelentless;
+                this.unitCopyCatalog = unitCopyCatalog;
                 this.deferSpawnerExhaustion = deferSpawnerExhaustion;
                 this.pendingSummonCardId = pendingSummonCardId;
                 this.enqueueCharacterTrigger = enqueueCharacterTrigger;
@@ -4646,6 +4661,9 @@ namespace MonsterTrain2Poju.Model
                             }
                             else if (effect.Summon != null)
                             {
+                                if (effect.Type == TriggeredSummonModel.SpawnHeroIfAlone &&
+                                    units.Count(candidate => candidate.InRoom && !candidate.Removed && candidate.Source.Team == CombatTeam.Enemy) > 1)
+                                { if (effect.Summon.Tests.CancelSubsequent) break; continue; }
                                 if (!TriggeredSummonTest(unit, effect.Summon))
                                 { if (effect.Summon.Tests.CancelSubsequent) break; continue; }
                                 if (effect.Summon.EnemyHero)
@@ -5034,26 +5052,32 @@ namespace MonsterTrain2Poju.Model
                 return SummonSourcePoint(actor) != null ? room.Enabled && !room.SummonBlocked :
                     context.SpawnPoints!.FirstEmpty(source.RoomIndex, CombatTeam.Player) >= 0;
             }
-            private bool ApplyTriggeredHero(TriggeredSummonRule rule)
+            private bool ApplyTriggeredHero(TriggeredSummonRule? rule, int copySourceId = 0)
             {
                 RoomCombatState room = EnchantmentWorldModel.Sync(CurrentRoom(),
                     units.Where(unit => !unit.Alive || !unit.InRoom).Select(unit => unit.Freeze()).ToArray(), ExternalEnchantmentUnits());
                 context = room.Context;
                 if (context?.Enchantments is not EnchantmentWorld world)
                 { unsupportedReason = "Triggered enemy birth requires the complete native train lifecycle world."; return false; }
-                string character = rule.CharacterId;
-                if (rule.Pool.Count > 0)
+                EnemyDefinition? birthDefinition = null;
+                if (rule != null)
                 {
-                    RngDraw draw = context.BattleRng.Range(0, rule.Pool.Count);
-                    context = context.WithBattleRng(draw.State); character = rule.Pool[draw.Value];
+                    string character = rule.CharacterId;
+                    if (rule.Pool.Count > 0)
+                    {
+                        RngDraw draw = context.BattleRng.Range(0, rule.Pool.Count);
+                        context = context.WithBattleRng(draw.State); character = rule.Pool[draw.Value];
+                    }
+                    birthDefinition = context.SummonCatalog!.Units.Single(unit => unit.CharacterId == character).HeroDefinition;
                 }
-                SummonUnitDefinition definition = context.SummonCatalog!.Units.Single(unit => unit.CharacterId == character);
+                else if (unitCopyCatalog == null)
+                { unsupportedReason = "Triggered hero copy requires the captured native copy catalog."; return false; }
                 room = room.WithContext(context);
                 var train = new TrainCombatState(world.Rooms.Select(other => other.RoomIndex == source.RoomIndex ? room :
                     new RoomCombatState(other.RoomIndex, other.Deployment, other.Units, other.ExternalInteractions, context,
                         source.Preview, other.ActiveCompanionBossIds)).ToArray(), world.Movement, world.EnemySlotsPerRoom, context);
-                UnitCloneResult born = HeroUnitBirthModel.Apply(train, 0, source.RoomIndex, null, false,
-                    Array.Empty<QueuedCharacterTrigger>(), definition.HeroDefinition, deferCallbacks: true);
+                UnitCloneResult born = HeroUnitBirthModel.Apply(train, copySourceId, source.RoomIndex, unitCopyCatalog, copySourceId > 0,
+                    Array.Empty<QueuedCharacterTrigger>(), birthDefinition, deferCallbacks: copySourceId == 0);
                 if (!born.Supported) { unsupportedReason = born.UnsupportedReason; return false; }
                 TrainCombatState synchronized = EnchantmentWorldModel.Rebase(born.State!);
                 RoomCombatState changed = synchronized.Rooms.Single(other => other.RoomIndex == source.RoomIndex);
@@ -6049,6 +6073,8 @@ namespace MonsterTrain2Poju.Model
                 CardTargets targets = TriggerTargets(actor, action, testing: false, overrideTarget, lastSpawnedOverrideUnitId);
                 if (!targets.Supported) { unsupportedReason = targets.UnsupportedReason; return false; }
                 if (targets.BattleRng.HasValue) context = context!.WithBattleRng(targets.BattleRng.Value);
+                if (action.Type == "CopyUnits")
+                    return ApplyTriggeredHero(null, targets.UnitIds.Single());
                 if (action.Type == "SynergizeStatuses")
                 {
                     foreach (int id in targets.UnitIds.Reverse())

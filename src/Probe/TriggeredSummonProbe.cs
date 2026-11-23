@@ -107,10 +107,10 @@ namespace MonsterTrain2Poju.Probe
             if (pattern == null) return false;
             bool harder = (bool)AccessTools.Field(typeof(HeroManager), "harderOuterTrainBossEnabled").GetValue(heroes);
             CharacterData? data = pattern.GetOuterTrainBossCharacter(harder);
-            if (data != null && OuterBossDefinitions.IsFleshweaver(data.GetAssetKey()))
+            if (data != null && (OuterBossDefinitions.IsFleshweaver(data.GetAssetKey()) || data.GetAssetKey() == TriggeredSummonModel.UnrulyBoss))
             {
                 foreach (CardEffectData effect in data.GetTriggers().SelectMany(trigger => trigger.GetEffects())
-                    .Where(effect => effect.GetEffectStateName() == "CardEffectSpawnHero")) Definition(effect);
+                    .Where(effect => effect.GetEffectStateName() is "CardEffectSpawnHero" or TriggeredSummonModel.SpawnHeroIfAlone)) Definition(effect);
                 return enemyCharacters.Count > 0;
             }
             // Athane is an inner wave boss. Discover its authored child before
@@ -137,14 +137,19 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static TriggeredSummonRule? Definition(CardEffectData effect)
         {
-            if (effect.GetEffectStateName() == "CardEffectSpawnHero")
+            if (effect.GetEffectStateName() is "CardEffectSpawnHero" or TriggeredSummonModel.SpawnHeroIfAlone)
             {
                 var pool = effect.GetParamCharacterDataPool();
                 bool athane = effect.GetTargetTeamType() == Team.Type.Heroes && effect.GetParamCharacterData() == null &&
                     pool is { Count: 1 } && pool[0].GetAssetKey() == "SpikyRockT3_Chosen_Boss_BasicNonAttack" &&
                     effect.GetParamInt() == 1 && !effect.GetParamBool() && effect.GetShouldTest() &&
                     !effect.GetShouldFailToCastIfTestFails() && !effect.GetShouldCancelSubsequentEffectsIfTestFails();
-                if (effect.GetTargetMode() != TargetMode.Room || effect.GetTargetTeamType() != Team.Type.None && !athane) return null;
+                if (effect.GetEffectStateName() == TriggeredSummonModel.SpawnHeroIfAlone)
+                {
+                    if (effect.GetTargetMode() != TargetMode.FrontInRoom || effect.GetTargetTeamType() != Team.Type.Heroes ||
+                        effect.GetParamCharacterData()?.GetAssetKey() != TriggeredSummonModel.UnrulyDecoy || pool?.Count > 0) return null;
+                }
+                else if (effect.GetTargetMode() != TargetMode.Room || effect.GetTargetTeamType() != Team.Type.None && !athane) return null;
                 string Enemy(CharacterData? data)
                 {
                     string id = Register(data);
@@ -168,7 +173,7 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static TriggeredSummonRule? Capture(CardEffectState effect)
         {
-            if (effect.GetCardEffect() is CardEffectSpawnHero) return Definition(effect.GetSourceCardEffectData());
+            if (effect.GetCardEffect() is CardEffectSpawnHero or CardEffectSpawnHeroIfNoOtherHeroUnits) return Definition(effect.GetSourceCardEffectData());
             if (!(effect.GetCardEffect() is CardEffectSpawnMonster native)) return null;
             TriggeredSummonRule rule = Definition(effect.GetSourceCardEffectData())!;
             CharacterState? spawned = native.GetSpawnedMonster();

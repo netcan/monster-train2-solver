@@ -18,6 +18,9 @@ namespace MonsterTrain2Poju.Probe
         private static bool HatchEffect(string type) => type is
             "CardEffectRemoveStatusEffectPerCorrupt" or "CardEffectSacrifice" or "CardEffectForceHatchCheck";
         private static bool StatsFromSelf(string type) => type == "CardEffectAddStatsFromSelf";
+        private static bool FrontHeroCopy(CardEffectData effect) =>
+            effect.GetEffectStateName() == "CardEffectCopyUnits" && effect.GetTargetMode() == TargetMode.FrontInRoom &&
+            effect.GetTargetTeamType() == Team.Type.Heroes && effect.GetTargetIgnoreBosses();
 
         internal static CardActionEffect EquipmentGrant(CardEffectData effect) => new CardActionEffect(
             EquipmentPoolGrantModel.NativeEffect, effect.GetTargetMode().ToString(), 0,
@@ -28,6 +31,10 @@ namespace MonsterTrain2Poju.Probe
 
         internal static CardActionEffect? Capture(CardEffectState state, List<string>? interactions = null)
         {
+            CardEffectData data = state.GetSourceCardEffectData();
+            if (FrontHeroCopy(data))
+                return state.GetParamInt() == data.GetParamInt() && state.GetParamBool() == data.GetParamBool()
+                    ? Definition(data, interactions) : null;
             if (state.GetCardEffect() is CardEffectAddStatusEffectDependingOnHealthPercent)
                 return Describe(state.GetSourceCardEffectData(), state.GetParamInt(), null);
             if (state.GetCardEffect().GetType().Name is "CardEffectGainDevotionPoints" or "CardEffectAddStatusEffectPerDevotionLevel" or "CardEffectAddStatusEffectPerOtherEffect")
@@ -66,6 +73,7 @@ namespace MonsterTrain2Poju.Probe
                     BattleActionProbe.Status(status.statusId, status.count)).ToArray() : null);
         }
         internal static CardActionEffect? Definition(CardEffectData effect, List<string>? interactions = null) =>
+            FrontHeroCopy(effect) ? BattleActionProbe.DescribeTriggerEffect(effect, interactions ?? new List<string>()) :
             effect.GetEffectStateName() is "CardEffectGainDevotionPoints" or "CardEffectAddStatusEffectPerDevotionLevel" or "CardEffectAddStatusEffectPerOtherEffect"
                 ? BattleActionProbe.DescribeTriggerEffect(effect, interactions ?? new List<string>()) :
             effect.GetEffectStateName() == "CardEffectFloorRearrange" && effect.GetTargetMode() == TargetMode.LastAttackedCharacter

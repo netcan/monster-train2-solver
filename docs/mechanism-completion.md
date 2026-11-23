@@ -323,6 +323,11 @@ Entropy 薪火读取永久牌组中的祸害。在隔离原版存档中加入两
 7 次结束回合及两类候选检查通过，并完成 16 条独立分支复放。
 [禁用原版预演的整战](../tests/compatibility/game-2.3.1/mechanics/no-combat-previews/native-battle.mt2f)
 
+Railforged 第三环 Unruly 在原版受控战后回调中依次测试复制和召唤。首领独处时召唤原版 Decoy，
+已有 Decoy 时复制它。两种状态的效果次序、出生站位、完整后继和随机数均与模型一致。
+常规战斗中的首领行动调度仍需独立验证。
+[原版战后回调](../tests/compatibility/game-2.3.1/mechanics/unruly-post-combat/native-post-combat.mt2f)
+
 ExtraFeedTrigger 的原版查询确认友军 OnFeed 次数为 2，OnDeath 次数保持 1。
 61 个战斗阶段、5 次出牌、7 次结束回合与两类候选通过。实际普通进食也已录到两次 OnFeed，
 合金构装体的燃料从 1 增至 3，矿工只被吃掉一次，完整状态与随机数在 16 条分支上复放一致。

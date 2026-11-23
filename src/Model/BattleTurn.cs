@@ -429,7 +429,7 @@ namespace MonsterTrain2Poju.Model
             else context = context.WithQueryFrame(context.QueryFrame?.With(energy: 0));
             context = EnergyModel.SetPhase(context, "Combat");
             train = WithContext(train, context, spawn.Turn == 0);
-            TrainCombatResult combat = TrainCombatModel.ResolveCombat(train, relentlessDecisions, outputPlayRules?.Rooms);
+            TrainCombatResult combat = TrainCombatModel.ResolveCombat(train, relentlessDecisions, outputPlayRules?.Rooms, outputPlayRules?.UnitCopyCatalog);
             if (!combat.Supported) return new BattleTurnResult(null, RoomOutcome.Unsupported, combat.UnsupportedReason,
                 combat.RelentlessChoice);
             resolvedCombat = true;

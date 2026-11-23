@@ -274,7 +274,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         public static TrainCombatResult ResolveCombat(TrainCombatState source, IReadOnlyList<RelentlessDecision>? relentlessDecisions = null,
-            IReadOnlyList<RoomPlayRule>? roomRules = null)
+            IReadOnlyList<RoomPlayRule>? roomRules = null, UnitCopyCatalog? unitCopyCatalog = null)
         {
             string? error = Validate(source) ?? RelicEndCombatModel.Validate(source.Context);
             if (error != null) return Unsupported(error);
@@ -311,7 +311,7 @@ namespace MonsterTrain2Poju.Model
                     refreshPyre: (changed, placement) => RelicResourceModel.RefreshPyreAttack(rooms, changed, placement),
                     updateSelectedRoom: true, externalPyre: externalPyre, externalPyreRoomIndex: externalPyre == null ? -1 : pyreRoomIndex,
                     externalTargets: requiresTowerTargets ? externalTargets : null,
-                    chooseRelentless: decisions.Length > 0 ? ChooseRelentless : null);
+                    chooseRelentless: decisions.Length > 0 ? ChooseRelentless : null, unitCopyCatalog: unitCopyCatalog);
                 if (!result.Supported) return new TrainCombatResult(null, RoomOutcome.Unsupported, results,
                     "Train combat floor " + index + ": " + result.UnsupportedReason, relentlessChoice: result.RelentlessChoice);
                 rooms[index] = result.State!; results.Add(result);

@@ -1,0 +1,214 @@
+#if DEVELOPMENT_PROBE
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using BepInEx.Logging;
+using HarmonyLib;
+using MonsterTrain2Poju.Capture;
+using MonsterTrain2Poju.Model;
+using UnityEngine;
+using DLC = ShinyShoe.DLC;
+
+namespace MonsterTrain2Poju.Probe
+{
+    internal static class OriginalUnrulyWitness
+    {
+        private const string ScenarioKey = "SoulSavior_R3_BossBattle_DuplicateEnemy";
+        private const string BossKey = "Boss_SoulSavior_R3_Unruly_DuplicateEnemy";
+        private const string DecoyKey = "R3_Horde_T1_Decoy";
+        private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_UNRULY") == "1";
+        internal static bool Completed { get; private set; }
+        internal static string? Error { get; private set; }
+        private static bool requested, started;
+        private static CharacterState? actor;
+        private static IReadOnlyList<CardEffectState>? effects;
+        private static List<object>? events;
+
+        internal static void Request(SaveManager save, ManualLogSource log)
+        {
+            if (requested || Application.version != "2.3.1" || typeof(CardState).Module.ModuleVersionId != Module ||
+                save.PreviewMode || save.GetGameSequence() != SaveData.GameSequence.BattleIntro)
+                throw new InvalidOperationException("Expected the original 2.3.1 Ring 3 BattleIntro.");
+            if (!save.IsDlcInstalled(DLC.Railforged))
+                throw new InvalidOperationException("The native platform did not confirm the installed Railforged DLC.");
+            if (save.GetAllGameData().FindScenarioDataByName(ScenarioKey) is not ScenarioData scenario ||
+                scenario.GetOuterTrainBoss(false)?.GetAssetKey() != BossKey ||
+                scenario.GetOuterTrainBoss(true)?.GetAssetKey() != BossKey)
+                throw new InvalidOperationException("Expected the installed original Soul Savior Ring 3 Unruly battle.");
+            requested = true;
+            AccessTools.Method(typeof(CheatManager), "Command_StartBattle", new[] { typeof(string) }).Invoke(null, new object[] { ScenarioKey });
+            log.LogInfo("ORIGINAL-UNRULY controlled TestScenario requested " + ScenarioKey);
+        }
+
+        internal static bool Tick(AllGameManagers managers, ManualLogSource log)
+        {
+            if (started) return true;
+            var save = managers.GetSaveManager();
+            if (!requested || !save.InTestScenario || save.GetCurrentScenarioData()?.name != ScenarioKey ||
+                !save.IsDlcInstalled(DLC.Railforged))
+                throw new InvalidOperationException("The native DLC check or controlled Unruly scenario changed.");
+
+            CharacterState? boss = managers.GetHeroManager().GetOuterTrainBossCharacter();
+            if (boss == null || boss.GetCurrentRoomIndex() < 0) return false;
+            if (boss.GetSourceCharacterData().GetAssetKey() != BossKey)
+                throw new InvalidOperationException("The native debug scenario loaded a different boss.");
+            RoomState room = boss.GetCurrentRoom();
+            if (Heroes(room).Any(hero => !ReferenceEquals(boss, hero)) || room.GetFirstEmptyHeroPoint() == null) return false;
+            started = true;
+            save.StartCoroutine(Observe());
+            return true;
+
+            IEnumerator Observe()
+            {
+                IEnumerator capture = Capture(managers, boss, log);
+                try
+                {
+                    while (true)
+                    {
+                        object current;
+                        try
+                        {
+                            if (!capture.MoveNext()) break;
+                            current = capture.Current;
+                        }
+                        catch (Exception error) { Error = error.ToString(); break; }
+                        yield return current;
+                    }
+                }
+                finally { (capture as IDisposable)?.Dispose(); }
+            }
+        }
+
+        private static IEnumerator Capture(AllGameManagers managers, CharacterState boss, ManualLogSource log)
+        {
+            var trigger = boss.GetTriggers().Single(state => state.GetTrigger() == CharacterTriggerData.Trigger.PostCombat &&
+                state.GetEffectStates().Any(effect => effect.GetCardEffect() is CardEffectSpawnHeroIfNoOtherHeroUnits));
+            var ordered = trigger.GetEffectStates();
+            if (ordered.Count != 2 || ordered[0].GetCardEffect() is not CardEffectCopyUnits ||
+                ordered[1].GetCardEffect() is not CardEffectSpawnHeroIfNoOtherHeroUnits ||
+                ordered[1].GetParamCharacterData()?.GetAssetKey() != DecoyKey ||
+                ordered[1].GetParamCharacterDataPool()?.Count > 0)
+                throw new InvalidOperationException("The original Unruly PostCombat definition changed.");
+            var combat = managers.GetCombatManager();
+            FullBattleTrace trace = FullBattleTrace.Active!;
+            List<object> samples = new();
+            actor = boss;
+            effects = ordered;
+            try
+            {
+                for (int pass = 0; pass < 2; pass++)
+                {
+                    object before = Snapshot();
+                    var priorHeroes = Heroes(boss.GetCurrentRoom());
+                    var recorded = new List<object>();
+                    events = recorded;
+                    yield return combat.QueueAndRunTrigger(boss, CharacterTriggerData.Trigger.PostCombat, exclusiveTrigger: trigger);
+                    events = null;
+                    object after = Snapshot();
+                    bool born = Heroes(boss.GetCurrentRoom()).Any(hero => !priorHeroes.Contains(hero) &&
+                        hero.GetSourceCharacterData().GetAssetKey() == DecoyKey);
+                    samples.Add(new { Control = pass == 0 ? "BossOnly" : "DecoyAlreadyPresent", Before = before, After = after, Events = recorded });
+                    if (pass == 0 && (!born || !recorded.Any(item => item is Callback { EffectIndex: 1, Stage: "Apply.Exit" })))
+                        throw new InvalidOperationException("The original lone-boss PostCombat did not create its Decoy through the fallback.");
+                    if (pass == 1 && recorded.Any(item => item is Callback { EffectIndex: 1, Stage: "Apply.Enter" }))
+                        throw new InvalidOperationException("The original fallback ran despite the existing Decoy.");
+                }
+            }
+            finally { events = null; effects = null; actor = null; }
+            using var archive = NativeFixtureCapture.Capture(new
+            {
+                Schema = 1, Boundary = "OriginalUnrulyPostCombat", GameVersion = Application.version, GameModuleMvid = Module,
+                Scenario = ScenarioKey, BossKey, DecoyKey, RailforgedInstalled = managers.GetSaveManager().IsDlcInstalled(DLC.Railforged),
+                ControlledTestScenario = managers.GetSaveManager().InTestScenario,
+                UnitCopyCatalog = trace.CaptureDecision(includeOuterBossForBump: true,
+                    ignoreOuterBossSpawnInteraction: true).PlayRules?.UnitCopyCatalog,
+                SourceEffects = ordered.Select(effect => new { Type = effect.GetSourceCardEffectData().GetEffectStateName(),
+                    Target = effect.GetTargetMode().ToString(), Team = effect.GetTargetTeamType().ToString(),
+                    IgnoreBosses = effect.GetSourceCardEffectData().GetTargetIgnoreBosses() }).ToArray(),
+                Samples = samples
+            });
+            using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "unruly-post-combat.mt2f"));
+            archive.Write(stream);
+            log.LogInfo("ORIGINAL-UNRULY-POSTCOMBAT PASS native Decoy fallback and populated control.");
+            Completed = true;
+        }
+
+        private static List<CharacterState> Heroes(RoomState room)
+        {
+            var characters = new List<CharacterState>();
+            room.AddCharactersToList(characters, Team.Type.Heroes);
+            return characters;
+        }
+
+        private static object Snapshot()
+        {
+            FullBattleTrace trace = FullBattleTrace.Active!;
+            return new
+            {
+                Boss = trace.CaptureUnit(actor!), RoomIndex = actor!.GetCurrentRoomIndex(),
+                Heroes = Heroes(actor.GetCurrentRoom()).Select(trace.UnitId).ToArray(),
+                Train = trace.CaptureCanonicalTrain(includeOuterBossForBump: true),
+                Battle = RngCalibration.Words(RandomManager.GetState(RngId.Battle)),
+                BattleTest = RngCalibration.Words(RandomManager.GetState(RngId.BattleTest))
+            };
+        }
+
+        private sealed class Callback(int effectIndex, string stage, bool? passed, int[] targets, object state)
+        {
+            public int EffectIndex { get; } = effectIndex;
+            public string Stage { get; } = stage;
+            public bool? Passed { get; } = passed;
+            public int[] Targets { get; } = targets;
+            public object State { get; } = state;
+        }
+
+        private static int Index(CardEffectState state, CardEffectParams parameters) =>
+            actor != null && events != null && !AllGameManagers.Instance.GetSaveManager().PreviewMode &&
+            ReferenceEquals(parameters.selfTarget, actor)
+                ? ReferenceEquals(state, effects![0]) ? 0 : ReferenceEquals(state, effects[1]) ? 1 : -1 : -1;
+
+        [HarmonyPatch]
+        private static class Tests
+        {
+            private static bool Prepare() => Enabled;
+            private static IEnumerable<System.Reflection.MethodBase> TargetMethods()
+            {
+                yield return AccessTools.DeclaredMethod(typeof(CardEffectCopyUnits), nameof(CardEffectCopyUnits.TestEffect));
+                yield return AccessTools.DeclaredMethod(typeof(CardEffectSpawnHeroIfNoOtherHeroUnits), nameof(CardEffectSpawnHeroIfNoOtherHeroUnits.TestEffect));
+            }
+            private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, bool __result)
+            {
+                int index = Index(cardEffectState, cardEffectParams);
+                if (index >= 0) events!.Add(new Callback(index, "Test", __result,
+                    cardEffectParams.targets.Select(FullBattleTrace.Active!.UnitId).ToArray(), Snapshot()));
+            }
+        }
+
+        [HarmonyPatch]
+        private static class Applications
+        {
+            private static bool Prepare() => Enabled;
+            private static IEnumerable<System.Reflection.MethodBase> TargetMethods()
+            {
+                yield return AccessTools.DeclaredMethod(typeof(CardEffectCopyUnits), nameof(CardEffectCopyUnits.ApplyEffect));
+                yield return AccessTools.DeclaredMethod(typeof(CardEffectSpawnHeroIfNoOtherHeroUnits), nameof(CardEffectSpawnHeroIfNoOtherHeroUnits.ApplyEffect));
+            }
+            private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
+            {
+                int index = Index(cardEffectState, cardEffectParams);
+                if (index >= 0) __result = Observe(__result, index, cardEffectParams.targets.Select(FullBattleTrace.Active!.UnitId).ToArray(), events!);
+            }
+            private static IEnumerator Observe(IEnumerator native, int index, int[] targets, List<object> capture)
+            {
+                capture.Add(new Callback(index, "Apply.Enter", null, targets, Snapshot()));
+                try { while (native.MoveNext()) yield return native.Current; }
+                finally { (native as IDisposable)?.Dispose(); }
+                capture.Add(new Callback(index, "Apply.Exit", null, targets, Snapshot()));
+            }
+        }
+    }
+}
+#endif

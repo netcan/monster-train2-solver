@@ -1,5 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length is 2 or 3 && args[0] == "--native-unruly-post-combat-only")
+{
+    if (args.Length == 3 && args[2] != "--observe-only")
+        throw new ArgumentException("Expected --observe-only or no mode.");
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    UnrulyPostCombatChecks.Native(fixture.RootElement, replay: args.Length == 2);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-disabled-room-preview-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

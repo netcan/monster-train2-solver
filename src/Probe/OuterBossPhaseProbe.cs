@@ -14,7 +14,11 @@ namespace MonsterTrain2Poju.Probe
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_PHASES") == "1";
         internal static bool TurnsEnabled => PlayerOuterBossProbe.Enabled || Environment.GetEnvironmentVariable("MT2_PROBE_OUTER_BOSS_TURNS") == "1";
-        internal static bool CaptureAnchors => Enabled || TurnsEnabled || TrueFinalBossTurnProbe.CaptureEnabled || TrueFinalBossDeathCalibration.Enabled;
+        internal static bool CaptureAnchors => Enabled || TurnsEnabled || TrueFinalBossTurnProbe.CaptureEnabled || TrueFinalBossDeathCalibration.Enabled
+#if DEVELOPMENT_PROBE
+            || OriginalUnrulyWitness.Enabled
+#endif
+            ;
         internal static bool ModelsLiveBoss
         {
             get

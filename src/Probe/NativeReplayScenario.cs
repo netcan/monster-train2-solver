@@ -737,6 +737,12 @@ namespace MonsterTrain2Poju.Probe
                 {
 #if DEVELOPMENT_PROBE
                     if (RollingAdviceScenario.DeploymentOnly) PlayerAdvisorProbe.PauseForFrozenPlan(beforeDeployment: true);
+                    if (fullBattle && OriginalUnrulyWitness.Enabled)
+                    {
+                        OriginalUnrulyWitness.Request(save, log);
+                        Enter(Stage.Battle, 120f);
+                        return;
+                    }
                     if (fullBattle && OriginalSpurnedScenario.Enabled)
                     {
                         OriginalSpurnedScenario.Request(save, log);
@@ -1149,6 +1155,18 @@ namespace MonsterTrain2Poju.Probe
                     Finish(true, "Original source-backed feeding captured.");
                     return;
                 }
+            }
+            if (fullBattle && OriginalUnrulyWitness.Enabled)
+            {
+                if (OriginalUnrulyWitness.Error is string error) throw new InvalidOperationException(error);
+                if (OriginalUnrulyWitness.Completed) Finish(true, "Original Unruly PostCombat component captured.");
+                else if (!OriginalUnrulyWitness.Tick(managers, log))
+                {
+                    if (combat.GetTurnCount() >= 6) throw new InvalidOperationException("The live Unruly boss was not alone in a suitable room by turn six.");
+                    if (combat.GetTurnCount() == 0) save.MarkOneTimeMessageComplete(OneTimeMessage.EndTurnWithoutPlayingChampion);
+                    AdvanceTurn(combat, record: false);
+                }
+                return;
             }
             if (fullBattle && OriginalSpurnedScenario.FullBattle)
                 OriginalSpurnedScenario.ObserveFullBattle(save, log);
