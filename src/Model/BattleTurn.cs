@@ -589,10 +589,12 @@ namespace MonsterTrain2Poju.Model
             bool firstWaveHivemind = turn == 1 && HivemindTurnUpgrade.HasOriginalFirstWave(train.Rooms.SelectMany(room => room.Units));
             bool secondWaveHivemind = turn == 2 && HivemindTurnUpgrade.HasSecondWave(train);
             bool thirdWaveHivemind = turn == 3 && HivemindTurnUpgrade.HasThirdWave(train);
+            bool infestedDraw = turn is 2 or 3 && HivemindTurnUpgrade.HasInfestedDraw(train);
             // Native queues each team's PreCombat after spawning/rollover, before energy and draw.
             foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
             {
-                TrainCombatResult triggers = TrainCombatModel.PreCombat(train, team, firstWaveHivemind || secondWaveHivemind || thirdWaveHivemind);
+                TrainCombatResult triggers = TrainCombatModel.PreCombat(train, team,
+                    firstWaveHivemind || secondWaveHivemind || thirdWaveHivemind || infestedDraw);
                 if (!triggers.Supported) return Unsupported(triggers.UnsupportedReason!);
                 if (!RouteDeadUnits(train, triggers)) return Unsupported("Pre-combat deaths require standby card routing.");
                 train = triggers.State!;
@@ -796,6 +798,12 @@ namespace MonsterTrain2Poju.Model
             if (thirdWaveHivemind)
             {
                 TrainCombatState? refreshed = HivemindTurnUpgrade.ApplyThirdOrdinaryTurn(train, out string? hivemindError);
+                if (refreshed == null) return Unsupported(hivemindError!);
+                train = refreshed;
+            }
+            if (infestedDraw)
+            {
+                TrainCombatState? refreshed = HivemindTurnUpgrade.ApplyInfestedDraw(train, out string? hivemindError);
                 if (refreshed == null) return Unsupported(hivemindError!);
                 train = refreshed;
             }

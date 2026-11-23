@@ -414,9 +414,11 @@ Lifemother Infested 的三个同层死亡回调将首领的 Hivemind 从 0 依�
 波次进食及楼层修正器的攻击刷新仍待整战对照。
 [原版 Hivemind 加层回调](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/status-additions.mt2f)
 
-Infested 的出生和初始站位也通过。首轮抽牌后三名波次单位各获 +3 攻击，随后进入战斗的
-首领阶段与同层死亡组合仍待继续对照。
-[原版开局](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/native-opening.mt2f)
+Infested 的第一个结束回合通过完整回放，核对出生、首领控制器、物理站位和随机流。首轮抽牌后
+三名波次单位各获 +3 攻击。第二和第三轮分别把 7 名持有者刷新为 +14 攻击、把 9 名持有者刷新为
++32 攻击。两个抽牌专项也核对了房间修饰器，并验证刷新过程不消耗随机数。
+[原版首个结束回合](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/native-first-turn.mt2f) ·
+[后两轮抽牌](../tests/compatibility/game-2.3.1/mechanics/lifemother-infested/later-draws.mt2f)
 
 `Run-FullBattleProbe.ps1 -OriginalLifemotherInfestedObservation` 从隔离的原版 BattleIntro
 采集待出生首领、施法控制器和同层死亡回调。该录制模式复用手牌界面测试随机流隔离，以便逐字段

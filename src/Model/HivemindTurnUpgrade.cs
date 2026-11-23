@@ -280,6 +280,60 @@ namespace MonsterTrain2Poju.Model
             return ApplyObservedRefresh(source, out error);
         }
 
+        internal static bool HasInfestedDraw(TrainCombatState source)
+        {
+            if (source.Context?.QueryFrame is not { Turn: 2 or 3, MoonPhaseTrackingActive: false } frame ||
+                frame.MoonPhase != frame.Turn - 1 ||
+                !OuterBossDefinitions.HasLifemotherInfestedOwner(source.Context) || source.Rooms.Any(room => room.Preview))
+                return false;
+            CombatUnit[] units = source.Rooms.SelectMany(room => room.Units).ToArray();
+            var owners = units.Where(unit => unit.RegisteredStatus(StatusId) != null).ToArray();
+            return owners.Length == (frame.Turn == 2 ? 7 : 9) &&
+                owners.Count(unit => unit.AssetKey == OuterBossDefinitions.LifemotherInfested) == 1 &&
+                owners.Count(unit => unit.AssetKey == HeavyT2) == frame.Turn &&
+                owners.Count(unit => unit.AssetKey == DeathHorde) == (frame.Turn == 2 ? 4 : 5) &&
+                owners.Count(unit => unit.Modifiers?.Upgrades.Count == 0) == (frame.Turn == 2 ? 3 : 2) &&
+                units.All(unit => unit.RegisteredStatus("hivemindkiller") == null) &&
+                owners.All(unit => IsInfestedDrawOwner(unit, frame.Turn.Value, afterRemoval: false)) &&
+                owners.Sum(unit => unit.Status(StatusId)?.Stacks) == (frame.Turn == 2 ? 14 : 32);
+        }
+
+        internal static bool IsInfestedDrawOwner(CombatUnit unit, int turn, bool afterRemoval)
+        {
+            if (turn is not (2 or 3) || unit.Status(StatusId) is not CombatStatus status ||
+                unit.Modifiers is not { IsClone: false } modifiers || unit.RegisteredStatus("hivemindkiller") != null ||
+                unit.Team != CombatTeam.Enemy || unit.SpawnerCardId != 0 || unit.Health <= 0)
+                return false;
+            int previousDamage = turn == 2 ? 3 : 14;
+            CardUpgradeModifier[] previous = modifiers.Upgrades.Where(upgrade => upgrade.DataId == UpgradeId).ToArray();
+            int oldDamage = previous.Length == 0 ? 0 : previous[0].Stats.Damage;
+            if (previous.Length > 1 || previous.Length == 1 && !IsAttackUpgrade(previous[0], oldDamage))
+                return false;
+            if (unit.AssetKey == OuterBossDefinitions.LifemotherInfested)
+                return status.Stacks == (turn == 2 ? 2 : 6) &&
+                    (modifiers.Upgrades.Count == 1 && oldDamage == (turn == 2 ? 0 : 14) ||
+                     afterRemoval && modifiers.Upgrades.Count == 0) &&
+                    unit.MaxHealth == 9000 && unit.BaseAttack == 40 + oldDamage &&
+                    unit.Triggers is [{ Kind: "OnAnyUnitDeathOnFloor" }, { Kind: "OnTeamTurnBegin" }];
+            if (IsInfestedOpeningOwner(unit, status)) return true;
+            if ((oldDamage != previousDamage && !(afterRemoval && previous.Length == 0)) ||
+                unit.IsBoss == true || !IsInfestedOpeningUnit(unit, oldDamage))
+                return false;
+            CardUpgradeModifier[] feedUpgrades = modifiers.Upgrades.Where(upgrade => upgrade.DataId != UpgradeId).ToArray();
+            if (unit.AssetKey == DeathHorde) return IsOriginalStatus(unit, status) && feedUpgrades.Length == 0;
+            int feeds = feedUpgrades.Count(IsInfestedStatusUpgrade);
+            return status.Stacks == 1 + 6 * feeds && feeds <= turn - 1 &&
+                feedUpgrades.All(upgrade => IsInfestedStatusUpgrade(upgrade) || upgrade.DataId == FeedBuffUpgrade) &&
+                feedUpgrades.Count(upgrade => upgrade.DataId == FeedBuffUpgrade) <= feeds;
+        }
+
+        internal static TrainCombatState? ApplyInfestedDraw(TrainCombatState source, out string? error)
+        {
+            if (HasInfestedDraw(source)) return ApplyObservedRefresh(source, out error);
+            error = "Hivemind requires the observed original Infested wave and carried owners.";
+            return null;
+        }
+
         private static TrainCombatState? ApplyObservedRefresh(TrainCombatState source, out string? error)
         {
             error = null;

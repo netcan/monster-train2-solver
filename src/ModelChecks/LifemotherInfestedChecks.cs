@@ -11,6 +11,85 @@ internal static class LifemotherInfestedChecks
     private const string Boundary = "NativeLifemotherInfestedStatusAddition";
     private const string OpeningBoundary = "NativeLifemotherInfestedOpening";
     private const string FirstTurnBoundary = "NativeLifemotherInfestedFirstTurn";
+    private const string DrawBoundary = "NativeLifemotherInfestedLaterDraws";
+
+    internal static void ExportDraws(string sourcePath, string outputPath)
+    {
+        using FixtureDocument source = ModelJson.ReadFixture(sourcePath);
+        FixtureValue battle = source.RootElement;
+        Require(battle.GetProperty("TerminalEffectsSettled").GetBoolean() &&
+            battle.GetProperty("CaptureFailures").GetInt32() == 0 && battle.GetProperty("Pending").GetInt32() == 0,
+            "Expected completed original Infested draw captures.");
+        using var input = File.OpenRead(sourcePath);
+        var builder = new FixtureBuilder();
+        var rows = new List<int>();
+        foreach (int turn in new[] { 2, 3 })
+        {
+            FixtureValue cycle = battle.GetProperty("CardCycles")[2 * turn - 1];
+            Require(cycle.GetProperty("Kind").GetString() == "Draw" && cycle.GetProperty("Turn").GetInt32() == turn,
+                "Expected original Infested draw " + turn);
+            FixtureValue before = cycle.GetProperty("StandbyContext");
+            FixtureValue after = battle.GetProperty("Turns")[turn - 1].GetProperty("Actual").GetProperty("Spawn")
+                .GetProperty("Train").GetProperty("Rooms");
+            rows.Add(builder.Add(FixtureKind.Object, children:
+                [Key("Before"), builder.Import(before), Key("ActualRooms"), builder.Import(after)]));
+        }
+        int root = builder.Add(FixtureKind.Object, children:
+            [Key("Boundary"), Key(DrawBoundary),
+             Key("SourceBattleSha256"), Key(Convert.ToHexString(SHA256.HashData(input)).ToLowerInvariant()),
+             Key("GameVersion"), builder.Import(battle.GetProperty("GameVersion")),
+             Key("GameModuleMvid"), builder.Import(battle.GetProperty("GameModuleMvid")),
+             Key("Observation"), builder.Import(battle.GetProperty("OriginalUnrulyBattle")),
+             Key("Draws"), builder.Add(FixtureKind.Array, children: rows.ToArray())]);
+        using FixtureDocument fixture = builder.Build(root, 0, new byte[32]);
+        Draws(fixture.RootElement);
+        using var output = new FileStream(outputPath, FileMode.CreateNew);
+        fixture.Write(output);
+
+        int Key(string name) => builder.Add(FixtureKind.String, name);
+    }
+
+    internal static void Draws(FixtureValue source)
+    {
+        FixtureValue observation = source.GetProperty("Observation");
+        Require(source.GetProperty("Boundary").GetString() == DrawBoundary &&
+            source.GetProperty("SourceBattleSha256").GetString() is { Length: 64 } hash && hash.All(Uri.IsHexDigit) &&
+            source.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            source.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            observation.GetProperty("Scenario").GetString() == Scenario &&
+            observation.GetProperty("BossKey").GetString() == BossKey, "Expected original Infested draws.");
+        foreach (int turn in new[] { 2, 3 })
+        {
+            FixtureValue capture = source.GetProperty("Draws")[turn - 2];
+            CombatContext context = capture.GetProperty("Before").Deserialize<CombatContext>()!;
+            EnchantmentWorld world = context.Enchantments!;
+            var before = new TrainCombatState(world.Rooms, world.Movement, world.EnemySlotsPerRoom, context);
+            string immutable = JsonSerializer.Serialize(before, ModelJson.Options);
+            TrainCombatState? result = HivemindTurnUpgrade.ApplyInfestedDraw(before, out string? error);
+            Require(result != null, "Original Infested draw " + turn + " unsupported: " + error);
+            RoomCombatState[] actual = capture.GetProperty("ActualRooms").Deserialize<RoomCombatState[]>()!;
+            int owners = 0;
+            foreach (RoomCombatState room in result!.Rooms)
+            {
+                foreach (CombatUnit unit in room.Units.Where(unit => unit.Status("hivemind") != null))
+                {
+                    CombatUnit expected = actual[room.RoomIndex].Units.Single(actor => actor.Id == unit.Id);
+                    string? difference = ModelJson.Difference(JsonSerializer.Serialize(unit, ModelJson.Options),
+                        JsonSerializer.Serialize(expected, ModelJson.Options));
+                    Require(difference == null, "Original Infested draw " + turn + " unit " + unit.Id + ": " + difference);
+                    Require(room.ExternalInteractions.Contains(HivemindTurnUpgrade.Marker(unit)) &&
+                        actual[room.RoomIndex].ExternalInteractions.Contains(HivemindTurnUpgrade.Marker(unit)),
+                        "Original Infested draw rested without the expected room marker.");
+                    owners++;
+                }
+            }
+            Require(owners == (turn == 2 ? 7 : 9) && context.BattleRng.Equals(result.Context!.BattleRng) &&
+                world.TestRng.Equals(result.Context.Enchantments!.TestRng) &&
+                context.Cards.Rng.Equals(result.Context.Cards.Rng) &&
+                immutable == JsonSerializer.Serialize(before, ModelJson.Options), "Original Infested draw changed RNG or its parent.");
+            Console.WriteLine($"NATIVE-INFESTED DRAW {turn} PASS: {owners} exact actors and room markers.");
+        }
+    }
 
     internal static void FirstTurn(string battlePath, string birthPath)
     {

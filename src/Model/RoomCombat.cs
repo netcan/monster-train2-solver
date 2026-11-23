@@ -1190,6 +1190,8 @@ namespace MonsterTrain2Poju.Model
                 (HivemindTurnUpgrade.IsFirstCombat(state) || HivemindTurnUpgrade.IsSecondCombat(state) ||
                  HivemindTurnUpgrade.IsThirdCombat(state) || HivemindTurnUpgrade.IsObservedPyreCombat(state)));
             bool infestedWavePreview = HivemindTurnUpgrade.IsInfestedWavePreview(state);
+            int infestedDrawTurn = allowFreshHivemind && state.Context?.QueryFrame?.Turn is 2 or 3 &&
+                OuterBossDefinitions.HasLifemotherInfestedOwner(state.Context) ? state.Context.QueryFrame.Turn.Value : 0;
             bool infestedBossPreview = state is { Preview: true, RoomIndex: 2 } && state.Units.Any(unit =>
                 unit.Triggers.Count == 2 &&
                 OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(unit, unit.Triggers[0], state.Context));
@@ -1216,6 +1218,8 @@ namespace MonsterTrain2Poju.Model
                 relic.StatusDecays?.Any(rule => rule.StatusIds.Contains("buff")) == true) == true;
             foreach (CombatUnit unit in state.Units)
             {
+                bool infestedDrawOwner = infestedDrawTurn > 0 &&
+                    HivemindTurnUpgrade.IsInfestedDrawOwner(unit, infestedDrawTurn, afterRemoval: true);
                 string? selfAttackError = UnitSelfAttackModel.Validate(state, unit);
                 string? roomResourceError = UnitRoomResourceModel.Validate(unit);
                 if (roomResourceError != null) return roomResourceError;
@@ -1276,7 +1280,7 @@ namespace MonsterTrain2Poju.Model
                         !((allowFreshHivemind && status.Id == HivemindTurnUpgrade.StatusId &&
                             (HivemindTurnUpgrade.IsWaitingSecondWaveOwner(unit, status) ||
                              HivemindTurnUpgrade.IsInfestedOpeningOwner(unit, status))) ||
-                            ((observedHivemindCombat || infestedWavePreview && HivemindTurnUpgrade.IsInfestedWavePreviewOwner(unit)) &&
+                            ((observedHivemindCombat || infestedDrawOwner || infestedWavePreview && HivemindTurnUpgrade.IsInfestedWavePreviewOwner(unit)) &&
                                 status.Id == HivemindTurnUpgrade.StatusId)) && !(status.Id == "pyrebane" &&
                         OuterBossDefinitions.IsAngelDuoInner(unit.AssetKey) && unit.Status("lifelink") == null) && !(linkedHealthOnly &&
                         (status.Id == "lifelink" || status.Id == "pyrebound" && unit.AssetKey == "Boss_Level9_Dominion_V2" ||
@@ -1712,7 +1716,8 @@ namespace MonsterTrain2Poju.Model
                                     (HivemindTurnUpgrade.HasDormantOpeningDeathGrant(unit, trigger) ||
                                      OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(unit, trigger, state.Context)) ||
                                     infestedWavePreview && HivemindTurnUpgrade.IsInfestedOpeningPreviewOwner(unit) && trigger.Kind == "OnDeath" ||
-                                    infestedBossPreview && OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(unit, trigger, state.Context);
+                                    infestedBossPreview && OuterBossDefinitions.HasDormantLifemotherInfestedDeathGrant(unit, trigger, state.Context) ||
+                                    infestedDrawOwner && trigger.Kind is "OnDeath" or "OnAnyUnitDeathOnFloor";
                                 string? statusError = dormantDeath
                                     ? null : TriggeredStatusModel.Validate(effect);
                                 if (statusError != null) return statusError;

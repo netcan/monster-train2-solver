@@ -11,6 +11,18 @@ if (args.Length == 4 && args[0] == "--export-native-lifemother-infested-first-tu
     LifemotherInfestedChecks.ExportFirstTurn(args[1], args[2], args[3]);
     return;
 }
+
+if (args.Length == 3 && args[0] == "--export-native-infested-draws")
+{
+    LifemotherInfestedChecks.ExportDraws(args[1], args[2]);
+    return;
+}
+ if (args.Length == 2 && args[0] == "--native-infested-draws")
+{
+    using var capture = ModelJson.ReadFixture(args[1]);
+    LifemotherInfestedChecks.Draws(capture.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--native-lifemother-infested-first-turn")
 {
     LifemotherInfestedChecks.FirstTurn(args[1], args[2]);
