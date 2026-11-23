@@ -580,3 +580,9 @@ Gravity 把一个敌人移动到中层，随即选中中层并清除底层临时
 获胜，首次重新求解耗时 3.38 秒，建议端到端耗时 4.68 秒。
 [独立原版复放](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring3-endgame-pyre37.mt2f) ·
 [8 秒配置顾问实战](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring3-endgame-parallel-resumed.mt2f)
+
+第 9 环第 5 回合的一次双线程搜索在 3 秒配置下耗时 6.70 秒。分线程计时确认固定策略
+在时限后仍模拟多批候选。将时限检查接入该策略后，同一原版快照的搜索耗时为 3.36 秒，
+端到端耗时从 7.64 秒降至 4.26 秒，实际模拟的候选从 140 个降到 73 个。复测执行 15 次
+出牌和 6 次结束回合，原版败局已结算。逐项重放、随机流和两类候选检查均通过。
+[实战归档](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring9-advisor-deadline.mt2f)
