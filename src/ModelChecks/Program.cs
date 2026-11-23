@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--native-disabled-room-preview-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    DisabledRoomPreviewChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-entropy-draw-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

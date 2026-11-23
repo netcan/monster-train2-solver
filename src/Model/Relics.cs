@@ -243,6 +243,9 @@ namespace MonsterTrain2Poju.Model
         internal const string PreventMonsterDamage = "RelicEffectPreventMonstersDamagingHeroes";
         internal const string PreventMonsterDamageOwnerId = "2bfeeb36-11e6-4894-8006-99356276a17b";
         internal const string PreventMonsterDamageOwnerKey = "Echoes_FriendlyUnitsDealNoDamageToEnemyUnits";
+        internal const string DisableRoomPreview = "RelicEffectDisableRoomPreview";
+        internal const string DisableRoomPreviewOwnerId = "d32fad27-7d66-4d6e-8db7-6f35bcba988c";
+        internal const string DisableRoomPreviewOwnerKey = "NoCombatPreviews";
         internal const string AdditionalForgePoints = "RelicEffectAdditionalForgePoints";
         internal const string ModifyForgeUpgrade = "RelicEffectModifyForgeUpgrade";
         internal const string HealOnMoonPhase = "RelicEffectHealOnMoonPhase";
@@ -366,6 +369,13 @@ namespace MonsterTrain2Poju.Model
                     {
                         if (RelicPersistentMonsterHealthModel.IsOriginal(relic)) continue;
                         return "Missing or changed original persistent monster health owner.";
+                    }
+                    if (effect == DisableRoomPreview)
+                    {
+                        // The runtime exports this setting on every captured battle decision.
+                        if (relic.DataId == DisableRoomPreviewOwnerId && relic.AssetKey == DisableRoomPreviewOwnerKey &&
+                            relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false && relic.EffectTypes.Count == 1) continue;
+                        return "Missing or changed original room preview setting owner.";
                     }
                     if (effect == RelicPyreAbilityCooldownModel.Effect)
                     {

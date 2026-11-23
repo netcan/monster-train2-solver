@@ -585,6 +585,7 @@ param(
     [string] $EffectOwnerType,
     [switch] $OriginalPreventMonsterDamageWitness,
     [switch] $OriginalPreventMonsterDamageBattle,
+    [switch] $OriginalDisabledRoomPreviewBattle,
     [ValidateSet('WithOwner', 'WithoutOwner', 'WithOwnerReuse', 'WithoutOwnerReuse')]
     [string] $OriginalPyreAbilityCooldownWitness = '',
     [switch] $OriginalPactDrawWitness,
@@ -959,6 +960,16 @@ if ($OriginalPersistentMonsterHpWitness -or $OriginalPersistentMonsterHpBattle) 
     if (-not $BinaryCapture -or ($OriginalPersistentMonsterHpWitness -and $OriginalPersistentMonsterHpBattle) -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
         throw 'Select one stock persistent monster health test with binary capture.'
+    }
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($OriginalDisabledRoomPreviewBattle) {
+    $witnessArguments = @('OriginalDisabledRoomPreviewBattle', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+        'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count) {
+        throw 'Original NoCombatPreviews requires a stock opening battle and binary capture.'
     }
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
@@ -2747,6 +2758,7 @@ $environment = @{
     MT2_PROBE_ORIGINAL_FHYRA_GOLD = $(if ($OriginalFhyraGoldWitness) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_FHYRA_BATTLE = $(if ($OriginalFhyraGoldBattle) { '1' } else { '0' })
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_BATTLE = $(if ($OriginalPreventMonsterDamageBattle) { '1' } else { '0' })
+    MT2_PROBE_DISABLED_ROOM_PREVIEW = $(if ($OriginalDisabledRoomPreviewBattle) { '1' } else { '0' })
     MT2_PROBE_RANDOM_SPELL_TARGETS_WITNESS = $(if ($OriginalRandomSpellTargetsWitness) { '1' } else { '0' })
     MT2_PROBE_RANDOM_SPELL_TARGETS_BATTLE = $(if ($OriginalRandomSpellTargetsBattle) { '1' } else { '0' })
     MT2_PROBE_RANDOM_JUST_CAUSE_WITNESS = $(if ($OriginalRandomJustCauseWitness) { '1' } else { '0' })

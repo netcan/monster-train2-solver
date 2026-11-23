@@ -470,6 +470,8 @@ namespace MonsterTrain2Poju.Probe
                     if (fullBattle && OriginalStartRoomAttachmentScenario.Enabled && !OriginalStartRoomAttachmentScenario.Acquired)
                         OriginalStartRoomAttachmentScenario.AcquireBeforeBattle(managers!, log);
 #if DEVELOPMENT_PROBE
+                    if (fullBattle && OriginalDisabledRoomPreview.Enabled && !OriginalDisabledRoomPreview.Acquired)
+                        OriginalDisabledRoomPreview.Acquire(save);
                     if (fullBattle && (OriginalRandomSpellTargetsWitness.Enabled || OriginalRandomSpellTargetsWitness.FullBattle ||
                         OriginalRandomJustCauseWitness.Enabled) &&
                         !OriginalRandomSpellTargetsWitness.Acquired)

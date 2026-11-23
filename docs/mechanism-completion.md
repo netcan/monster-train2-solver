@@ -319,6 +319,10 @@ Entropy 薪火读取永久牌组中的祸害。在隔离原版存档中加入两
 花费 3 点余烬打出一张祸害并永久移除后，次轮抽 5 张。出牌和两次结束回合的完整状态与随机数通过回放。
 [原版祸害清除专项](../tests/compatibility/game-2.3.1/mechanics/entropy-pyre-draw/owned-blight-purge.mt2f)
 
+`NoCombatPreviews` 激活后，原版所有录制决策均显示战斗预演关闭。整场原版胜局的 21 次出牌、
+7 次结束回合及两类候选检查通过，并完成 16 条独立分支复放。
+[禁用原版预演的整战](../tests/compatibility/game-2.3.1/mechanics/no-combat-previews/native-battle.mt2f)
+
 ExtraFeedTrigger 的原版查询确认友军 OnFeed 次数为 2，OnDeath 次数保持 1。
 61 个战斗阶段、5 次出牌、7 次结束回合与两类候选通过。实际普通进食也已录到两次 OnFeed，
 合金构装体的燃料从 1 增至 3，矿工只被吃掉一次，完整状态与随机数在 16 条分支上复放一致。

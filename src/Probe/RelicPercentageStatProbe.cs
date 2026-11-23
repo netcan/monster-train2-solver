@@ -33,6 +33,8 @@ namespace MonsterTrain2Poju.Probe
                     owner.GetEffects() is [RelicEffectExtraSpawnsFirstUnitPerTurn] ||
                     owner.GetRelicDataID() == RelicModel.PreventMonsterDamageOwnerId &&
                     owner.GetEffects() is [RelicEffectPreventMonstersDamagingHeroes] ||
+                    owner.GetRelicDataID() == RelicModel.DisableRoomPreviewOwnerId &&
+                    owner.GetEffects() is [RelicEffectDisableRoomPreview] && !save.GetBattlePreviewEnabled() ||
                     owner.GetRelicDataID() == RelicPersistentMonsterHealthModel.OwnerId &&
                     owner.GetEffects() is [RelicEffectPersistMonsterHp persistentHealth] && SupportsPersistentHealth(persistentHealth) ||
                     SupportsPyreAbilityCooldown(owner, save) ||
