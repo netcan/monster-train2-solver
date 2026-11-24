@@ -718,3 +718,7 @@ Soul Savior 的 Dutiful Child 自然战役归档通过 34 次操作和 7 次结�
 Dutiful Child 自然胜局通过 39 次出牌或技能、7 次结束回合及出牌和结束回合候选检查。
 整战复放累计 476 份归档，7,336 次出牌或技能和 2,835 次结束回合。
 [自然首领胜局](../tests/compatibility/game-2.3.1/mechanics/dutiful-armor/natural-region-run-win.mt2f)
+
+发布版顾问在隔离的 2.3.1 原版战斗中显示了 Secret Ingredient 调配弹窗的第一项建议。
+原版确认后提示立即消失，独立复放核对了完整付费后继、随机流和下一条建议的起点。
+[原版调配记录](../tests/compatibility/game-2.3.1/mechanics/player-advisor-mix/native-prompt.mt2f)
