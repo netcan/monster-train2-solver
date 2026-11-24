@@ -447,8 +447,10 @@ namespace MonsterTrain2Poju.Model
                         if (stacks <= 0) continue;
                     }
                     // Selection is before the required-subtype test, including a one-element list.
-                    bool matches = rule.SubtypeIsNone ? remove || actor.Team == CombatTeam.Enemy || !actor.IsPyre :
-                        actor.Subtypes.Contains(rule.RequiredSubtype!) && (actor.Team == CombatTeam.Enemy || (rule.SubtypeIsPyre == actor.IsPyre));
+                    bool matches = remove && rule.SubtypeIsNone ||
+                        OriginalAllSubtypesModel.MatchesCharacter(actor.Team, actor.IsPyre, actor.Subtypes,
+                            rule.SubtypeIsNone ? null : rule.RequiredSubtype, rule.SubtypeIsPyre,
+                            OriginalAllSubtypesModel.Active(state.Context, state.Deployment));
                     if (!matches) continue;
                     if (!onlyCovenants && !DrainYield()) return failed!;
                     relic = state.Context!.Relics![relicIndex];
