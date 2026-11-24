@@ -164,18 +164,31 @@ internal static class ParallelPlannerChecks
         Require(ordinary.CompletedHorizon && ordinary.TurnsCompleted == 1 && ordinary.Outcome == RoomOutcome.Exchanged,
             "Expected a complete one-turn ordinary forecast from this root.");
         BattleAdviceSession.Verify(root, ordinary);
-        var incorrectTurnCount = new BattlePlanResult(ordinary.State, ordinary.Outcome, ordinary.Steps, ordinary.Score,
-            99, ordinary.ExpandedNodes, ordinary.DuplicateStates, ordinary.BeamPruned, ordinary.Elapsed,
-            ordinary.TimedOut, ordinary.Cancelled, ordinary.ReachedNodeLimit, ordinary.ReachedActionLimit,
-            ordinary.CompletedHorizon, ordinary.UnsupportedAttempts, ordinary.PolicyBaselineScore, ordinary.RequestedTurns);
-        bool rejected = false;
-        try { BattleAdviceSession.Verify(root, incorrectTurnCount); }
-        catch (InvalidOperationException error) when (error.Message == "Advice turn count differs from its EndTurn steps.")
-        { rejected = true; }
-        Require(rejected, "A verified one-turn forecast accepted an inflated turn count.");
+        RejectOrdinaryClaim(99, ordinary.RequestedTurns, "Advice turn count differs from its EndTurn steps.");
+        RejectOrdinaryClaim(ordinary.TurnsCompleted, 2, "Completed ordinary advice must reach the requested turns.");
+
+        var lastNativeTurn = fixture.GetProperty("Turns").EnumerateArray().Last();
+        var terminalRoot = lastNativeTurn.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var terminal = ParallelBattlePlanner.Plan(terminalRoot, new BattlePlannerOptions(4, maxTurns: 4, beamWidth: 8,
+            timeLimit: TimeSpan.FromSeconds(10)), maxWorkers: 1);
+        Require(terminal.CompletedHorizon && terminal.Outcome == RoomOutcome.PlayerDefeated &&
+            terminal.TurnsCompleted == 1 && terminal.RequestedTurns == 4,
+            "Expected a terminal ordinary forecast before four turns on the final native root.");
+        BattleAdviceSession.Verify(terminalRoot, terminal);
 
         Require(keys.Key(root) == rootKey, "The exact forecast mutated its native root.");
-        Console.WriteLine("PARALLEL-SHORTER-FALLBACK PASS: two verified EndTurns from the original Ring 5 root, complete state/RNG, strict and cancelled exclusions, incorrect ordinary turn count rejected.");
+        Console.WriteLine("PARALLEL-SHORTER-FALLBACK PASS: two verified EndTurns from the original Ring 5 root, exact state/RNG, strict and cancelled exclusions, false ordinary horizon rejected, early terminal accepted.");
+
+        void RejectOrdinaryClaim(int completedTurns, int requestedTurns, string reason)
+        {
+            var changed = new BattlePlanResult(ordinary.State, ordinary.Outcome, ordinary.Steps, ordinary.Score,
+                completedTurns, ordinary.ExpandedNodes, ordinary.DuplicateStates, ordinary.BeamPruned, ordinary.Elapsed,
+                ordinary.TimedOut, ordinary.Cancelled, ordinary.ReachedNodeLimit, ordinary.ReachedActionLimit,
+                ordinary.CompletedHorizon, ordinary.UnsupportedAttempts, ordinary.PolicyBaselineScore, requestedTurns);
+            try { BattleAdviceSession.Verify(root, changed); }
+            catch (InvalidOperationException error) when (error.Message == reason) { return; }
+            throw new InvalidOperationException("A verified one-turn forecast accepted inconsistent horizon metadata.");
+        }
 
         void VerifyPrefix(BattlePlanResult forecast, int budget)
         {

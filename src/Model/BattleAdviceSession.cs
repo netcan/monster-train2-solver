@@ -390,13 +390,14 @@ namespace MonsterTrain2Poju.Model
                     " reasons=" + string.Join("; ", plan.UnsupportedAttempts.Select(attempt => attempt.Reason)));
             if (plan.TurnsCompleted != plan.Steps.Count(step => step.IsEndTurn))
                 throw new InvalidOperationException("Advice turn count differs from its EndTurn steps.");
+            bool terminal = plan.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
+            if (plan.CompletedHorizon && !plan.SearchedToBattleEnd && !terminal && plan.TurnsCompleted != plan.RequestedTurns)
+                throw new InvalidOperationException("Completed ordinary advice must reach the requested turns.");
             if (plan.UsedShorterHorizon && (plan.CompletedHorizon || plan.TurnsCompleted < 1 ||
                 plan.TurnsCompleted >= plan.RequestedTurns || (!plan.TimedOut && !plan.ReachedNodeLimit && !plan.ReachedStepLimit) ||
-                plan.PolicyBaselineScore.HasValue || !plan.Steps[plan.Steps.Count - 1].IsEndTurn ||
-                plan.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate))
+                plan.PolicyBaselineScore.HasValue || !plan.Steps[plan.Steps.Count - 1].IsEndTurn || terminal))
                 throw new InvalidOperationException("Invalid shorter planning window.");
-            if (plan.Steps.Count > plan.MaxSteps || plan.SearchedToBattleEnd && plan.CompletedHorizon &&
-                plan.Outcome is not (RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate))
+            if (plan.Steps.Count > plan.MaxSteps || plan.SearchedToBattleEnd && plan.CompletedHorizon && !terminal)
                 throw new InvalidOperationException("Whole-battle advice must reach a terminal outcome within its step limit.");
             BattleTurnState replayed = root;
             RoomOutcome outcome = RoomOutcome.Exchanged;
