@@ -9,16 +9,16 @@
 | 待办分类 | 类数 | 含目录引用 | 含类型声明 |
 | --- | ---: | ---: | ---: |
 | known-gap | 1 | 1 | 1 |
-| inspect-no-code-link | 30 | 30 | 30 |
+| inspect-no-code-link | 29 | 29 | 29 |
 | inspect-inherited-code | 8 | 8 | 8 |
 | inspect-projection-normalization | 54 | 54 | 54 |
-| inspect-guard-links | 44 | 44 | 44 |
-| review-existing-code | 225 | 225 | 225 |
+| inspect-guard-links | 43 | 43 | 43 |
+| review-existing-code | 226 | 226 | 226 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 282 | 0 | 0 |
-| scoped-review-recorded | 83 | 79 | 79 |
+| scoped-review-recorded | 84 | 80 | 80 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 86 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 87 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -51,6 +51,7 @@
 | RelicEffectAddGoldOnPyreDamage | shared-path | Pinned native callback order verifies zero flagged loss, real unflagged loss and one flagged tower hit for +10 gold. The unplayed opening win gains 50 gold over five native damages and matches seven EndTurns and their candidates. |
 | RelicEffectAddPyreAttackAndHealthPerCardInDeck | shared-path | All three original Thik tiers confirm exact deck-change successors, sixteen branches, complete recorded frontiers, and equal serial and parallel search and plan replay. Permanent addition and removal affect Pyre health by three, four, or five and attack by zero, zero, or two. Temporary purge supplies a zero delta. The T3 component also checks acquisition, raw saved HP carryover, and live health caps. Mixed relic combinations remain unwitnessed. |
 | RelicEffectAddRelicStartOfRun | input-only | Sealed native class implements StartOfRun ApplyEffect, which adds the configured relic through SaveManager. Battle input captures the resulting relic roster. No combat callback override in this class; start-of-run campaign handling and carried-owner validation remain separate. |
+| RelicEffectAddStatusEffectMultiplier | shared-path | The original DoubleStatusEffects owner doubles a paid SpikePotion application from ten to twenty; the full paid successor and gameplay RNG match. Seven original queries cover null targets, cooldown, permanent and deferred requests, and status transfers. Four native removals cover ordinary, enchantment and upgrade provenance including the negative sentinel. The witness uses the stock 200 percent descriptor. |
 | RelicEffectAddStatusEffectOnSpawn | shared-path | Four pinned 2.3.1 archives replay 59 original birth boundaries and 32 independent branches per boundary. Positive checks include two Titan Skin and four Burst stacks on the Pyre, three Muted stacks on the eligible Chicot boss, friendly Armor, enemy Frostbite and first-unit Damage Shield with same-turn skips. The first-unit owner uses this class with a tracked condition. Other owner payloads require their own evidence. |
 | RelicEffectAddStatusEffectToTeamOnSpawn | shared-path | The unchanged HymnistsApplyValorOnSummon owner grants five Valor. The pinned 2.3.1 team-spawn archive records 33 positive same-room teammate deltas over 22 native birth boundaries. Full room and train states, queued and dispatched callbacks, and 32 independent branches per boundary pass. Other team effects and additional owner combinations require separate evidence. |
 | RelicEffectAddStatusOnUnitMovedUpDown | shared-path | The unchanged PyregelOnAscend_DH owner applies 2 Pyregel to an enemy before its native PostAscension callback. The pinned 2.3.1 pyregel-on-ascend.mt2f receipt replays 22 movement boundaries, including descending, friendly, rooted and immobile controls. The checker also verifies the continuous policy after the test setup. Other movement status payloads and mixed owners have separate evidence requirements. |
@@ -132,18 +133,18 @@
 | RelicEffectModifyDraftSkip | inspect-no-code-link | 2 | 2 | 无直接链接 |
 | RelicEffectAddAllChampionsToDeck | inspect-no-code-link | 1 | 1 | 无直接链接 |
 | RelicEffectAddAlliedChampionToDeck | inspect-no-code-link | 1 | 1 | 无直接链接 |
-| RelicEffectAddStatusEffectMultiplier | inspect-no-code-link | 1 | 1 | 无直接链接 |
 | RelicEffectAutoselectTrainPath | inspect-no-code-link | 1 | 1 | 无直接链接 |
 | RelicEffectDamagePyreOnMerchantPurchase | inspect-no-code-link | 1 | 1 | 无直接链接 |
+| RelicEffectEndlessScalingOnSpawn | inspect-no-code-link | 1 | 1 | 无直接链接 |
 
 ## 可重建输入
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `26ed22d111a9d66d222a4ae3b9665a52d3cecc8667c61a7b96df6cdcf76c9749`。
-- Model: PDB 校验过的项目源码集合 `07be99578490859f6b3636d67298fb957930323111e5b2ae9cc755841e66cdbd`。
-- Probe: PDB 校验过的项目源码集合 `ed5246e50a6e1032ad67617205c1e2c458cd92fccac0afc96c327a9478884ffb`。
-- ModelChecks: PDB 校验过的项目源码集合 `c93fd84acc56bc8ecaa9793dc2bac9a4a311d3b926647604681830159742298e`。
+- 人工审查索引 SHA-256: `fc647a0fb7fe882a3b56f740d1ef899639c796278f926887c06270cdcb20aa94`。
+- Model: PDB 校验过的项目源码集合 `d5d8575b9be5de67da038bf130ea7cba162d92945c90b7d36ae50a5d2232c68b`。
+- Probe: PDB 校验过的项目源码集合 `d86af412b12951f75deae2473fc47d9339f5d50b152eb75b4e31554b7d67a5c5`。
+- ModelChecks: PDB 校验过的项目源码集合 `5baf01d3c457e07f444978fb6d0eb83a52c534565555d2fee11130200d634908`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
