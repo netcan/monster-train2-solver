@@ -7,6 +7,44 @@ internal static class LoseMoneyOnHitChecks
 {
     private const string HistoricalReceiptHash = "7C28B98F66E3D7A10C2CF1CC134C86646D717E948F5673B94797E282FFB08B55";
 
+    internal static void Battle(string path)
+    {
+        using var archive = ModelJson.ReadFixture(path);
+        FixtureValue root = archive.RootElement;
+        Require(root.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            root.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
+            new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.All(key => Int(root, key) == 0),
+            "The original LoseMoneyOnHit battle did not pass native acceptance.");
+        FixtureValue[] stages = root.GetProperty("Stages").EnumerateArray().ToArray();
+        int positives = 0;
+        foreach (FixtureValue fire in root.GetProperty("HitKills").EnumerateArray())
+        {
+            if (!fire.TryGetProperty("ExchangeIndex", out FixtureValue index) ||
+                fire.GetProperty("Stage").GetString() != "Fire" || fire.GetProperty("Kind").GetString() != "OnHit" ||
+                !fire.GetProperty("Completed").GetBoolean() || !fire.GetProperty("CanFire").GetBoolean() ||
+                Int(fire, "GoldBefore") <= 0 || Int(fire, "GoldAfter") != Int(fire, "GoldBefore") - 1)
+                continue;
+            FixtureValue stage = stages.Single(value => Int(value, "Index") == index.GetInt32());
+            Require(stage.GetProperty("Kind").GetString() == "Exchange", "Gold loss was recorded outside a physical combat exchange.");
+            var before = stage.GetProperty("Before").Deserialize<RoomCombatState>()!;
+            var after = stage.GetProperty("Actual").Deserialize<RoomCombatState>()!;
+            int actorId = Int(fire, "ActorId");
+            CombatUnit? actor = before.Units.SingleOrDefault(unit => unit.Id == actorId);
+            CombatUnit? wounded = after.Units.SingleOrDefault(unit => unit.Id == actorId);
+            if (actor == null || wounded == null || wounded.Health >= actor.Health) continue;
+            var trigger = actor.Triggers.SingleOrDefault(item => RelicGoldLossOnHitModel.OwnsTrigger(before.Context, actor, item));
+            var rewards = fire.GetProperty("Triggers").EnumerateArray()
+                .Select(item => Int(item, "Gold")).Where(value => value != 0).ToArray();
+            Require(!before.Preview && !after.Preview && trigger != null && rewards.SequenceEqual([-1]),
+                "The native physical hit did not resolve the exact original one-gold OnHit trigger.");
+            positives++;
+        }
+        Require(positives > 0, "No surviving original unit lost both health and gold during a real exchange.");
+        RecordedBattleChecks.Native(root);
+        Console.WriteLine($"ORIGINAL-LOSE-MONEY-ON-HIT-BATTLE PASS: {positives} native physical gold-loss witnesses and exact continuing battle replay.");
+    }
+
     internal static void Native(string path)
     {
         bool historical = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))) == HistoricalReceiptHash;

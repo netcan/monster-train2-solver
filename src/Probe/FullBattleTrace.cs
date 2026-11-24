@@ -30,6 +30,8 @@ namespace MonsterTrain2Poju.Probe
         internal IReadOnlyList<BattleActionProbe.Record> ObservedActions => actions.Records;
         internal IReadOnlyList<BattleTurnProbe.Record> ObservedTurns => turns.Records;
         internal object? ObservedRunInput => nativeRunInput;
+        internal int? ActiveExchangeIndex(int roomIndex) => stages.LastOrDefault(stage =>
+            stage.Kind == "Exchange" && stage.Actual == null && stage.Before.RoomIndex == roomIndex)?.Index;
         internal (int Stages, int TrainPhases, int Spawns, int CardCycles) ObservedPhaseCounts =>
             (stages.Count, trainCombat.Records.Count, spawning.Records.Count, cardCycles.Records.Count);
         internal object CaptureObservedPhases((int Stages, int TrainPhases, int Spawns, int CardCycles) start,

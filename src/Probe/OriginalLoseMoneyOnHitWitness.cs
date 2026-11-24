@@ -18,6 +18,7 @@ namespace MonsterTrain2Poju.Probe
         private const string OwnerKey = RelicGoldLossOnHitModel.OwnerKey;
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_LOSE_MONEY_ON_HIT") == "1";
+        internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_LOSE_MONEY_ON_HIT_BATTLE") == "1";
         internal static bool Acquired { get; private set; }
         internal static bool Started { get; private set; }
         internal static bool Completed { get; private set; }

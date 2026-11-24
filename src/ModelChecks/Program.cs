@@ -553,6 +553,11 @@ if (args.Length == 2 && args[0] == "--native-lose-money-on-hit-only")
     LoseMoneyOnHitChecks.Native(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-lose-money-on-hit-battle-only")
+{
+    LoseMoneyOnHitChecks.Battle(args[1]);
+    return;
+}
 if (args.Length == 4 && args[0] == "--export-more-treasure-units-component")
 {
     MoreTreasureUnitsChecks.Export(args[1], args[2], args[3]);

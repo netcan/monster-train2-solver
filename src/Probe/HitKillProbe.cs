@@ -34,6 +34,8 @@ namespace MonsterTrain2Poju.Probe
             public int ParamInt { get; set; }
             public int GoldBefore { get; set; }
             public int? GoldAfter { get; set; }
+            public int? ExchangeIndex { get; set; }
+            public bool ShouldSerializeExchangeIndex() => ExchangeIndex.HasValue;
             public bool[]? AfterTriggered { get; set; }
             public TriggerRecord[] Triggers { get; set; } = Array.Empty<TriggerRecord>();
             public bool Completed { get; set; }
@@ -43,7 +45,7 @@ namespace MonsterTrain2Poju.Probe
             FullBattleTrace.Active != null && !AllGameManagers.Instance!.GetSaveManager().PreviewMode &&
             (trigger == CharacterTriggerData.Trigger.OnHit || trigger == CharacterTriggerData.Trigger.OnKill);
         private static IEnumerator Wrap(IEnumerator native, CharacterState actor, CharacterTriggerData.Trigger kind,
-            CharacterState dying, CharacterState.FireTriggersData data, bool canFire, string stage)
+            CharacterState dying, CharacterState.FireTriggersData data, bool canFire, string stage, int? exchangeIndex = null)
         {
             FullBattleTrace trace = FullBattleTrace.Active!;
             SaveManager save = AllGameManagers.Instance!.GetSaveManager();
@@ -52,7 +54,7 @@ namespace MonsterTrain2Poju.Probe
                 DyingId = dying == null ? 0 : trace.UnitId(dying), Health = actor.GetHP(), FinishedDying = actor.HasFinishedDying,
                 DeadBoss = actor.IsDead && (actor.IsMiniboss() || actor.IsOuterTrainBoss()), Silenced = actor.HasStatusEffect("silenced"),
                 CanFire = canFire, QueueRunning = AllGameManagers.Instance!.GetCombatManager()!.IsRunningTriggerQueue,
-                ParamInt = data?.paramInt ?? 0, GoldBefore = save.GetGold(),
+                ParamInt = data?.paramInt ?? 0, GoldBefore = save.GetGold(), ExchangeIndex = exchangeIndex,
                 Triggers = triggers.Select(trigger => new TriggerRecord { Once = trigger.GetTriggerData().GetTriggerOnce(),
                     HasTriggered = trigger.GetHasTriggeredOnce(false), IgnoreSilence = trigger.GetHideVisualAndIgnoreSilence(),
                     Threshold = trigger.GetTriggerData().GetTriggerAtThreshold(), FireCount = actor.GetTriggerFireCount(kind, trigger),
@@ -77,7 +79,21 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Postfix(CharacterState __instance, CharacterTriggerData.Trigger trigger, CharacterState dyingCharacter,
                 CharacterState.FireTriggersData fireTriggersData, bool canFireTriggers, bool fromRunningTriggerQueue, ref IEnumerator __result)
-            { if (fromRunningTriggerQueue && Enabled(trigger)) __result = Wrap(__result, __instance, trigger, dyingCharacter, fireTriggersData, canFireTriggers, "Fire"); }
+            {
+                if (!fromRunningTriggerQueue) return;
+                if (Enabled(trigger))
+                {
+                    __result = Wrap(__result, __instance, trigger, dyingCharacter, fireTriggersData, canFireTriggers, "Fire");
+                    return;
+                }
+#if DEVELOPMENT_PROBE
+                if (OriginalLoseMoneyOnHitWitness.FullBattle && trigger == CharacterTriggerData.Trigger.OnHit &&
+                    __instance.GetTeamType() == Team.Type.Monsters && !__instance.IsPyreHeart() &&
+                    !AllGameManagers.Instance!.GetSaveManager().PreviewMode &&
+                    FullBattleTrace.Active?.ActiveExchangeIndex(__instance.GetCurrentRoomIndex()) is int exchangeIndex)
+                    __result = Wrap(__result, __instance, trigger, dyingCharacter, fireTriggersData, canFireTriggers, "Fire", exchangeIndex);
+#endif
+            }
         }
     }
 }

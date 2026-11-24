@@ -613,6 +613,7 @@ param(
     [string] $EffectOwnerType,
     [switch] $OriginalPreventMonsterDamageWitness,
     [switch] $OriginalLoseMoneyOnHitWitness,
+    [switch] $OriginalLoseMoneyOnHitBattle,
     [switch] $OriginalAllSubtypesWitness,
     [switch] $OriginalAllSubtypesBattle,
     [switch] $OriginalSurgicalStrikeSubtypesWitness,
@@ -1417,7 +1418,7 @@ if ($OriginalSpellDamageMoveWitness) {
 if ($PlacementSummonBlockOnly -and -not $OriginalPlacementMutatorsWitness) {
     throw 'PlacementSummonBlockOnly requires OriginalPlacementMutatorsWitness.'
 }
-$originalMutatorArguments = @('OriginalLoseMoneyOnHitWitness', 'OriginalAllSubtypesWitness', 'OriginalAllSubtypesBattle', 'OriginalSurgicalStrikeSubtypesWitness', 'OriginalDoubleStatusEffectsWitness',
+$originalMutatorArguments = @('OriginalLoseMoneyOnHitWitness', 'OriginalLoseMoneyOnHitBattle', 'OriginalAllSubtypesWitness', 'OriginalAllSubtypesBattle', 'OriginalSurgicalStrikeSubtypesWitness', 'OriginalDoubleStatusEffectsWitness',
     'OriginalDoubleStatusEffectsBattle', 'OriginalLonelyRoomsBattle', 'OriginalShuffleUnitsWitness',
     'OriginalShuffleUnitsBattle', 'OriginalDoubleFriendlyHealthWitness', 'OriginalDoubleFriendlyHealthBattle',
     'OriginalBothSidesUnitsWitness', 'OriginalBothSidesUnitsBattle')
@@ -1427,7 +1428,7 @@ if ($ShuffleUnitsThreeHosts -and -not $OriginalShuffleUnitsWitness) {
 if ($BothSidesUnitsCardless -and -not $OriginalBothSidesUnitsWitness) {
     throw 'BothSidesUnitsCardless requires OriginalBothSidesUnitsWitness.'
 }
-$selectedOriginalMutatorTests = @($OriginalLoseMoneyOnHitWitness, $OriginalAllSubtypesWitness, $OriginalAllSubtypesBattle, $OriginalSurgicalStrikeSubtypesWitness, $OriginalDoubleStatusEffectsWitness,
+$selectedOriginalMutatorTests = @($OriginalLoseMoneyOnHitWitness, $OriginalLoseMoneyOnHitBattle, $OriginalAllSubtypesWitness, $OriginalAllSubtypesBattle, $OriginalSurgicalStrikeSubtypesWitness, $OriginalDoubleStatusEffectsWitness,
     $OriginalDoubleStatusEffectsBattle, $OriginalLonelyRoomsBattle, $OriginalShuffleUnitsWitness,
     $OriginalShuffleUnitsBattle, $OriginalDoubleFriendlyHealthWitness, $OriginalDoubleFriendlyHealthBattle,
     $OriginalBothSidesUnitsWitness, $OriginalBothSidesUnitsBattle).Where({ $_ })
@@ -3144,7 +3145,8 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     $OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness -or
     $OriginalPyreAbilityCooldownWitness -or $OriginalPyreStewardDamageWitness -or $OriginalZarielPainWitness -or $OriginalZarielDevotionWitness -or $OriginalEmbeddedRoomWitness -or $OriginalEndlessEnemyScalingWitness -or $EndlessEnemyScalingFactorBatch -or
     $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle -or $OriginalHandAndEmberWitness -or $OriginalFecundityOnCast -or
-    $OriginalHealOnAscendWitness -or $OriginalFrontReanimationWitness -or $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle -or $OriginalLonelyRoomsBattle -or
+    $OriginalHealOnAscendWitness -or $OriginalFrontReanimationWitness -or $OriginalLoseMoneyOnHitBattle -or
+    $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle -or $OriginalLonelyRoomsBattle -or
     $OriginalShuffleUnitsWitness -or $OriginalShuffleUnitsBattle -or $OriginalDoubleFriendlyHealthWitness -or $OriginalDoubleFriendlyHealthBattle -or
     $OriginalBothSidesUnitsWitness -or $OriginalBothSidesUnitsBattle -or $OriginalSkullCollectorsWitness -or
     $PersistentMonsterHpCampaignContinuation -or $OriginalPersistentMonsterHpReload -or
@@ -3201,6 +3203,9 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     }
     if ($DamageByUnitsKilledHigherRanks -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'DamageByUnitsKilledHigherRanks requires the pinned 2.3.1 game module.'
+    }
+    if ($OriginalLoseMoneyOnHitBattle -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'Original LoseMoneyOnHit battle requires the pinned 2.3.1 game module.'
     }
     if (($OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle) -and
         $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
@@ -3733,6 +3738,7 @@ $environment = @{
     MT2_PROBE_EFFECT_OWNER_TYPE = $EffectOwnerType
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_WITNESS = $(if ($OriginalPreventMonsterDamageWitness) { '1' } else { '0' })
     MT2_PROBE_LOSE_MONEY_ON_HIT = $(if ($OriginalLoseMoneyOnHitWitness) { '1' } else { '0' })
+    MT2_PROBE_LOSE_MONEY_ON_HIT_BATTLE = $(if ($OriginalLoseMoneyOnHitBattle) { '1' } else { '0' })
     MT2_PROBE_ALL_UNIT_SUBTYPES = $(if ($OriginalAllSubtypesWitness) { '1' } else { '0' })
     MT2_PROBE_ALL_UNIT_SUBTYPES_BATTLE = $(if ($OriginalAllSubtypesBattle) { '1' } else { '0' })
     MT2_PROBE_SURGICAL_STRIKE_SUBTYPES = $(if ($OriginalSurgicalStrikeSubtypesWitness) { '1' } else { '0' })
@@ -6487,6 +6493,18 @@ if ($DamagePerHpAbility -and ($trace.ModifierScenario -ne 'damage-per-hp-ability
 if ($DamageOverflow -and ($trace.ModifierScenario -ne 'damage-overflow' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'DAMAGE-OVERFLOW-PREPARED friendly-team damage=20' -Quiet))) {
     throw 'Damage overflow native setup did not run.'
+}
+if ($OriginalLoseMoneyOnHitBattle) {
+    $owners = @($trace.Turns[0].Before.Spawn.Train.Context.Relics | Where-Object DataId -ceq '4c17065c-6391-45ce-a009-39ed89e1ba9c')
+    $positiveHits = @($trace.HitKills | Where-Object {
+        $_.Completed -and $_.Stage -ceq 'Fire' -and $_.Kind -ceq 'OnHit' -and $null -ne $_.ExchangeIndex -and
+        $_.GoldBefore -gt 0 -and $_.GoldAfter -eq ($_.GoldBefore - 1)
+    })
+    if ($trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -ne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+        $owners.Count -ne 1 -or $owners[0].AssetKey -cne 'LoseMoneyOnHit' -or
+        ($owners[0].EffectTypes -join ',') -cne 'RelicEffectAddTrigger' -or $positiveHits.Count -eq 0) {
+        throw "The full battle did not capture a positive original LoseMoneyOnHit exchange. Inspect $tracePath and $unityLog"
+    }
 }
 if ($OriginalDoubleStatusEffectsBattle) {
     $owners = @($trace.Turns[0].Before.Spawn.Train.Context.Relics | Where-Object DataId -ceq '459c7ec3-9c35-4298-8873-bda051605210')

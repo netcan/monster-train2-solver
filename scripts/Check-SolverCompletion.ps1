@@ -88,6 +88,9 @@ try {
         dotnet $checks --solver-stage-case-only $shardtailSacrifice
         if ($LASTEXITCODE -ne 0) { throw "Original Shardtail battle failed for $shardtailCase." }
     }
+    $loseMoneyOnHit = "$current/lose-money-on-hit/native-battle.mt2f"
+    dotnet $checks --native-lose-money-on-hit-battle-only $loseMoneyOnHit
+    if ($LASTEXITCODE -ne 0) { throw 'Original LoseMoneyOnHit battle failed.' }
     foreach ($rank in @('i', 'ii', 'iii')) {
         dotnet $checks --native-lazarus-devour-only "$current/lazarus-devour/native-devour-$rank.mt2f"
         if ($LASTEXITCODE -ne 0) { throw "Original Lazarus Devour ability failed at rank $rank." }
