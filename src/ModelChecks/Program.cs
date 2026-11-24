@@ -9103,6 +9103,12 @@ if (args.Length == 2 && args[0] == "--original-double-friendly-health-only")
     OriginalDoubleFriendlyHealthChecks.Native(document.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-pyre-steward-damage-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalPyreStewardDamageChecks.Native(document.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-both-sides-units-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);
