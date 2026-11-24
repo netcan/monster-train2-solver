@@ -439,11 +439,12 @@ namespace MonsterTrain2Poju.Probe
             if (stage == Stage.NewRun)
             {
 #if DEVELOPMENT_PROBE
-                if (fullBattle && OriginalHandAndEmberWitness.Combined && save.GetRunType() == RunType.Custom &&
+                if (fullBattle && (OriginalHandAndEmberWitness.Combined || OriginalBattleSetupWitness.Modified) && save.GetRunType() == RunType.Custom &&
                     !LoadingScreen.IsWorking() && screen.GetTopScreen() == ScreenName.Reward &&
                     screen.GetScreen(ScreenName.Reward) is RewardScreen mutators)
                 {
-                    OriginalHandAndEmberWitness.ConfirmMutatorShowcase(mutators);
+                    if (OriginalBattleSetupWitness.Modified) OriginalBattleSetupWitness.ConfirmMutatorShowcase(mutators);
+                    else OriginalHandAndEmberWitness.ConfirmMutatorShowcase(mutators);
                     return;
                 }
 #endif
@@ -462,6 +463,7 @@ namespace MonsterTrain2Poju.Probe
                     StartingCovenantScenario.Select(setup, save);
 #if DEVELOPMENT_PROBE
                     if (fullBattle && OriginalHandAndEmberWitness.Enabled) OriginalHandAndEmberWitness.Select(setup, save);
+                    if (fullBattle && OriginalBattleSetupWitness.Enabled) OriginalBattleSetupWitness.Select(setup, save);
 #endif
                     if (fullBattle && OriginalPyreCapacityCarryoverScenario.Enabled)
                         OriginalPyreCapacityCarryoverScenario.SelectBeforeRun(setup, save, log);
@@ -470,7 +472,8 @@ namespace MonsterTrain2Poju.Probe
                 }
                 bool expectedRunType = save.GetRunType() == RunType.Class;
 #if DEVELOPMENT_PROBE
-                if (fullBattle && OriginalHandAndEmberWitness.Combined) expectedRunType = save.GetRunType() == RunType.Custom;
+                if (fullBattle && (OriginalHandAndEmberWitness.Combined || OriginalBattleSetupWitness.Modified))
+                    expectedRunType = save.GetRunType() == RunType.Custom;
 #endif
                 if (!LoadingScreen.IsWorking() && expectedRunType &&
                     save.GetGameSequence() == SaveData.GameSequence.DestinationReached)
@@ -1161,6 +1164,12 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && OriginalBattleSetupWitness.Enabled)
+            {
+                OriginalBattleSetupWitness.Capture(managers, FullBattleTrace.Active!);
+                Finish(true, "Original battle setup deployment captured.");
+                return;
+            }
             if (fullBattle && OriginalSavageryCombatWitness.Enabled)
             {
                 if (OriginalSavageryCombatWitness.Tick(FullBattleTrace.Active!, managers))

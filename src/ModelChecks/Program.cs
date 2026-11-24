@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--original-battle-setup-only")
+{
+    using var stock = ModelJson.ReadFixture(args[1]);
+    using var modified = ModelJson.ReadFixture(args[2]);
+    OriginalBattleSetupChecks.Pair(stock.RootElement, modified.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-savagery-combat-only")
 {
     using var archive = ModelJson.ReadFixture(args[1]);

@@ -619,6 +619,9 @@ param(
     [ValidateRange(1, 3)] [int] $SkullCollectorsTier = 1,
     [ValidateSet('Combined', 'Stock', 'Ephemeral')]
     [string] $OriginalHandAndEmberWitness = '',
+
+    [ValidateSet('Stock', 'Modified')]
+    [string] $OriginalBattleSetupWitness = '',
     [switch] $OriginalPlacementMutatorsWitness,
     [switch] $OriginalBigMonstersCreationWitness,
     [switch] $OriginalSpellDamageMoveWitness,
@@ -1029,6 +1032,19 @@ if ($OriginalHandAndEmberWitness) {
     if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count) {
         throw 'Original hand and Ember witness requires a fresh isolated first battle with binary capture.'
     }
+    $PrimaryClan = 'Hellhorned'
+    $SecondaryClan = 'Awoken'
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($OriginalBattleSetupWitness) {
+    $witnessArguments = @('OriginalBattleSetupWitness', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture',
+        'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count) {
+        throw 'Original battle setup witness requires the paired isolated first battle with binary capture.'
+    }
+    $Seed = 424242
     $PrimaryClan = 'Hellhorned'
     $SecondaryClan = 'Awoken'
     $BranchCardMasks = $true
@@ -2871,7 +2887,7 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     $OriginalHealOnAscendWitness -or $OriginalFrontReanimationWitness -or $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle -or $OriginalLonelyRoomsBattle -or
     $OriginalShuffleUnitsWitness -or $OriginalShuffleUnitsBattle -or $OriginalDoubleFriendlyHealthWitness -or $OriginalDoubleFriendlyHealthBattle -or
     $OriginalBothSidesUnitsWitness -or $OriginalBothSidesUnitsBattle -or $OriginalSkullCollectorsWitness -or
-    $OriginalDominionMothersRemnantWitness -or $OriginalGoldRewardMultiplier -or $OriginalSavageryDeckUpgrade) {
+    $OriginalDominionMothersRemnantWitness -or $OriginalGoldRewardMultiplier -or $OriginalSavageryDeckUpgrade -or $OriginalBattleSetupWitness) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -2898,6 +2914,9 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     }
     if ($OriginalHandAndEmberWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original hand and Ember witness requires the pinned 2.3.1 game module.'
+    }
+    if ($OriginalBattleSetupWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'Original battle setup witness requires the pinned 2.3.1 native module.'
     }
     if ($OriginalFecundityOnCast -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original Fecundity paid cast requires the pinned 2.3.1 game module.'
@@ -3421,6 +3440,7 @@ $environment = @{
     MT2_PROBE_ORIGINAL_MORE_TREASURE_UNITS = $(if ($OriginalMoreTreasureUnitsBattle) { '1' } else { '0' })
     MT2_PROBE_SKULL_COLLECTORS = $(if ($OriginalSkullCollectorsWitness) { [string]$SkullCollectorsTier } else { '0' })
     MT2_PROBE_HAND_AND_EMBER_WITNESS = $OriginalHandAndEmberWitness
+    MT2_PROBE_ORIGINAL_BATTLE_SETUP = $(if ($OriginalBattleSetupWitness -eq 'Stock') { 'Stock' } elseif ($OriginalBattleSetupWitness) { 'Modified' } else { '' })
     MT2_PROBE_PLACEMENT_MUTATORS_WITNESS = $(if ($PlacementSummonBlockOnly) { 'block' } elseif ($OriginalPlacementMutatorsWitness) { '1' } else { '0' })
     MT2_PROBE_BIG_MONSTERS_CREATION = $(if ($OriginalBigMonstersCreationWitness) { '1' } else { '0' })
     MT2_PROBE_SPELL_DAMAGE_MOVE = $(if ($OriginalSpellDamageMoveWitness) { '1' } else { '0' })
@@ -4717,6 +4737,16 @@ if ($OriginalHandAndEmberWitness) {
         throw "Original hand and Ember witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-HAND-AND-EMBER PASS mode=$OriginalHandAndEmberWitness trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalBattleSetupWitness) {
+    $capturePath = Join-Path $profile 'original-battle-setup.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original battle setup deployment captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original battle setup witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-ORIGINAL-BATTLE-SETUP PASS mode=$OriginalBattleSetupWitness trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($EffectOwnerType) {

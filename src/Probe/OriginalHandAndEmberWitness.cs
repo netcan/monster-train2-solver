@@ -223,11 +223,13 @@ namespace MonsterTrain2Poju.Probe
             }
         }
 
-        internal static void ConfirmMutatorShowcase(RewardScreen screen)
+        internal static void ConfirmMutatorShowcase(RewardScreen screen) => ConfirmMutatorShowcase(screen, new[] { HandId, EmberId });
+
+        internal static void ConfirmMutatorShowcase(RewardScreen screen, IReadOnlyList<string> ids)
         {
             if (AccessTools.Field(typeof(RewardScreen), "currentRewards").GetValue(screen) is not IReadOnlyList<IRewardDisplayable> rewards ||
                 rewards.Count == 0 || rewards.Any(reward => reward is not RelicDisplayedAsReward ||
-                    reward.ReplayDataId != HandId && reward.ReplayDataId != EmberId)) return;
+                      !ids.Contains(reward.ReplayDataId))) return;
             ReplayManager.TryClickButton(screen.GetCollectButton());
         }
 
