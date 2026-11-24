@@ -1355,6 +1355,10 @@ pwsh -NoProfile -File scripts/Get-MechanismInventory.ps1 -SkipBuild -Check
 [首波对照](../tests/compatibility/game-2.3.1/mechanics/both-sides-units/native-first-wave-projected.mt2f) ·
 [原版整战归档](../tests/compatibility/game-2.3.1/mechanics/both-sides-units/native-win.mt2f)
 
+原版 Eager Conscript 支付 1 余烬后召唤无来源卡牌的 Funguy。三个回调依次把生命从 4/4 改为 14/14，
+再各加 5 点攻击，最终为 13 攻。完整出牌后继和随机流匹配。
+[无卡出生对照](../tests/compatibility/game-2.3.1/mechanics/both-sides-units/native-cardless-funguy.mt2f)
+
 Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者共筛出 58 张，六次抽牌后
 实际生成和随机状态均与模型一致。原版胜局的五次出牌、七次 EndTurn 和十六条独立分支
 通过，旧版 348 张卡池也通过专项回归。隔离实例尚无法启用 Punished DLC，
