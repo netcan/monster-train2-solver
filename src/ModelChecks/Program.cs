@@ -1,5 +1,13 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 4 && args[0] == "--original-endless-first-wave-only")
+{
+    using var transition = ModelJson.ReadFixture(args[1]);
+    using var natural = ModelJson.ReadFixture(args[2]);
+    using var controlled = ModelJson.ReadFixture(args[3]);
+    OriginalEndlessFirstWaveChecks.Native(transition.RootElement, natural.RootElement, controlled.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-zariel-devotion-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);
