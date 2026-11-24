@@ -41,6 +41,7 @@ namespace MonsterTrain2Poju.Probe
             var save = managers.GetSaveManager();
             return save.GetCovenants().Count == 0 && save.GetMutators().Count > 0 &&
                 save.GetMutators().All(owner => OriginalStartRoomAttachmentScenario.SupportsInfernoMutator(owner, save) ||
+                    SupportsEmbeddedRooms(owner) ||
                     RelicProbe.SupportsStatusMultiplier(owner) ||
                     BattleSpawnPointProbe.Enabled && RelicProbe.SupportsShuffleUnits(managers, owner) ||
                     BattleSpawnPointProbe.Enabled && SupportsLonelyRooms(owner, save) ||
@@ -83,6 +84,12 @@ namespace MonsterTrain2Poju.Probe
                         owner.GetEffects().Count == 1 && effect is RelicEffectSpawnMonsterOnTurnStart) &&
                     ((RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect)).GetEffectConditions().Count == 0));
         }
+
+        private static bool SupportsEmbeddedRooms(RelicState owner) =>
+            owner.GetRelicDataID() == RelicModel.AlwaysEmbeddedRoomsOwnerId &&
+            owner.GetAssetName() == RelicModel.AlwaysEmbeddedRoomsOwnerKey && !owner.DisallowedInPlacementPhase &&
+            owner.GetEffects() is [RelicEffectTrainRoomAttachmentsAlwaysEmbedded effect] && effect.GetIsAlwaysEmbedded() &&
+            ((RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect)).GetEffectConditions().Count == 0;
 
         internal static bool SupportsLonelyRooms(RelicState owner, SaveManager save) =>
             owner.GetRelicDataID() == RelicModel.LonelyRoomsOwnerId &&
