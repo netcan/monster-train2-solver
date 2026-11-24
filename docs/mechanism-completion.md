@@ -1427,6 +1427,11 @@ Zariel 的 Devotion 路线在法术支付并结算后读取当前等级。原版
 完整出牌后继、出牌候选和 16 条独立分支均通过定向复放。
 [原版永久副本归档](../tests/compatibility/game-2.3.1/mechanics/dominion-deck-upgrade/native-paid-copy.mt2f)
 
+原版 `DoubleGoldEarned` 和 `HalfGoldEarned` 分别把同一档 250 金奖励结算为 500 金和 125 金。
+两档均按原价扣除 3 金，奖励与支出过程的确定性随机流保持一致。
+[双倍归档](../tests/compatibility/game-2.3.1/mechanics/gold-reward-multiplier/native-double.mt2f) ·
+[减半归档](../tests/compatibility/game-2.3.1/mechanics/gold-reward-multiplier/native-half.mt2f)
+
 Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者共筛出 58 张，六次抽牌后
 实际生成和随机状态均与模型一致。原版胜局的五次出牌、七次 EndTurn 和十六条独立分支
 通过，旧版 348 张卡池也通过专项回归。隔离实例尚无法启用 Punished DLC，
