@@ -1361,8 +1361,8 @@ if ($OriginalSecondFloorEnemyOpening) {
     $PhysicalSpawnPoints = $true
     $Policy = 'units-spells-and-junk'
 }
-if ($FrontReanimationFullBattle -and $OriginalFrontReanimationWitness -cne 'Tier3') {
-    throw 'FrontReanimationFullBattle requires the original Tier3 first-spawn reanimation witness.'
+if ($FrontReanimationFullBattle -and -not $OriginalFrontReanimationWitness) {
+    throw 'FrontReanimationFullBattle requires an original first-spawn reanimation tier.'
 }
 if ($OriginalHealOnAscendWitness -or $OriginalFrontReanimationWitness) {
     $healArguments = @('OriginalHealOnAscendWitness', 'OriginalFrontReanimationWitness', 'FrontReanimationFullBattle', 'InputProfile', 'BattleDistance',
