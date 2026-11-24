@@ -251,6 +251,7 @@ namespace MonsterTrain2Poju.Model
             bool expectedFrame = (turn, room.RoomIndex, status.Stacks, cachedAttack) switch
             {
                 (5, 0 or 1, 3, 0) => true,
+                (5, 0, 6, 0) => room.Preview,
                 (6, 1, 3, 0 or 21) or (6, 1, 6 or 9, 21) or (6, 2, 9, 21) => true,
                 (7, 2, 9, 21 or 9) or (7, 3, 9, 9) => true,
                 (7, 2, 9, 0) => replacingCache,
@@ -259,8 +260,13 @@ namespace MonsterTrain2Poju.Model
             if (!expectedFrame) return false;
             var feeds = upgrades.Where(upgrade => !IsAttackUpgrade(upgrade, cachedAttack)).ToArray();
             int settledFeeds = 2 * (status.Stacks / 3);
-            return (feeds.Length == settledFeeds || IsScaledBossFeedingRoom(room) && turn == 6 &&
-                    status.Stacks < 9 && cachedAttack == 21 && feeds.Length == settledFeeds + 1) &&
+            bool pendingFeed = (turn, room.RoomIndex, status.Stacks, cachedAttack) switch
+            {
+                (5, 0, 3, 0) => room.Preview,
+                (6, 1, 3 or 6, 21) => true,
+                _ => false
+            };
+            return (feeds.Length == settledFeeds || pendingFeed && feeds.Length == settledFeeds + 1) &&
                 (upgrades.Count == feeds.Length + 1 || upgrades.Count == feeds.Length &&
                     (turn == 5 && room.RoomIndex == 0 || replacingCache && cachedAttack == 0)) &&
                 feeds.Where((_, index) => index % 2 == 0).All(IsFeedBuffUpgrade) &&
@@ -1044,8 +1050,10 @@ namespace MonsterTrain2Poju.Model
         {
             if (!IsScaledBossFeedingRoom(room) || !IsScaledBossFeedTarget(unit)) return false;
             if (room.Context?.QueryFrame?.Turn == 5)
-                return unit.BaseAttack == 22 && unit.RegisteredStatus(StatusId) == null &&
-                    unit.Modifiers!.Upgrades is [var buffs] && IsFeedBuffUpgrade(buffs);
+                return unit.BaseAttack == 22 &&
+                    (unit.RegisteredStatus(StatusId) == null && unit.Modifiers!.Upgrades is [var buffs] && IsFeedBuffUpgrade(buffs) ||
+                     room.Preview && unit.Status(StatusId)?.Stacks == 3 && IsScaledBossFeedOwner(room, unit) &&
+                        unit.Modifiers!.Upgrades.Count(IsFeedBuffUpgrade) == 2);
             return unit.BaseAttack == 43 && unit.Status(StatusId) is { Stacks: 3 or 6 } status &&
                 IsScaledBossFeedOwner(room, unit) && unit.Modifiers!.Upgrades.Count(IsFeedBuffUpgrade) == status.Stacks / 3 + 1;
         }
