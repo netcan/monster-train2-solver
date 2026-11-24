@@ -370,7 +370,7 @@ namespace MonsterTrain2Poju.Model
                         actor = Get(listed.Id) ?? retained.GetValueOrDefault(listed.Id);
                         if (actor == null) continue;
                     }
-                    RoomCombatResult sacrificed = RoomCombatModel.QueueSacrifice(state.Rooms[floor], actor, 0, queue.Add);
+                    RoomCombatResult sacrificed = RoomCombatModel.QueueSacrifice(state.Rooms[floor], actor, 0, queue.Add, destroyRoom: true);
                     if (!Accept(sacrificed) || !Drain()) return false;
                 }
                 return true;

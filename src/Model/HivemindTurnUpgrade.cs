@@ -195,6 +195,10 @@ namespace MonsterTrain2Poju.Model
             IsScaledFirstWaveOwner(unit, room.Context) || IsScaledCarriedFeedOwner(unit, room.Context) ||
             IsScaledPreviewFeedRecipient(room, unit) || IsScaledBossFeedOwner(room, unit);
 
+        internal static bool IsScaledRoomDestructionVictim(RoomCombatState room, CombatUnit unit) =>
+            room is { RoomIndex: 1, Preview: false } && room.Context?.QueryFrame?.Turn == 6 &&
+            NoCapturedKiller(room) && room.Units.Any(owner => owner.Id == unit.Id && IsScaledFirstWaveOwner(owner, room.Context));
+
         internal static bool IsScaledPyreVictim(RoomCombatState room, CombatUnit unit) =>
             room.RoomIndex == 3 && room.Context?.QueryFrame?.Turn is 5 or 6 && unit.AssetKey == Infested &&
             IsScaledFirstWaveOwner(unit, room.Context) && unit.Modifiers!.Upgrades is [var upgrade] &&
@@ -304,7 +308,7 @@ namespace MonsterTrain2Poju.Model
         private static bool IsScaledFeedRecipient(CombatUnit unit, int? observedTurn = null) =>
             unit is { AssetKey: Heavy, MaxHealth: 75 } &&
             IsFeedRecipient(unit) && unit.RegisteredStatus("hivemindkiller") == null &&
-            unit.Status(StatusId) is { Stacks: 3 or 6 or 9 or 12, ParamInt: 1 } status &&
+            unit.Status(StatusId) is { Stacks: > 0 } status && IsOriginalStatusDefinition(status) && status.Stacks % 3 == 0 &&
             unit.Modifiers!.Upgrades.Count(IsFeedUpgrade) == status.Stacks / 3 &&
             unit.Modifiers.Upgrades.Count(upgrade => IsAttackUpgrade(upgrade, unit.BaseAttack - 12)) <= 1 &&
             unit.Modifiers.Upgrades.All(upgrade => IsFeedUpgrade(upgrade) ||

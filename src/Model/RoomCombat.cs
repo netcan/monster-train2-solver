@@ -892,9 +892,11 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static RoomCombatResult QueueSacrifice(RoomCombatState state, CombatUnit unit, int sourceCardId, Action<QueuedCharacterTrigger> enqueue,
-            bool whileRunningQueue = false, bool doNotFullyRemove = false, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
+            bool whileRunningQueue = false, bool doNotFullyRemove = false, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
+            bool destroyRoom = false)
             => new Engine(state, new List<CombatEvent>(), deferSpawnerExhaustion: !whileRunningQueue, enqueueCharacterTrigger: enqueue, resetPreviewTriggers: false, refreshPyre: refreshPyre)
-                .SacrificeRetained(unit, sourceCardId, whileRunningQueue, doNotFullyRemove, returnSpawnerAfterQueue: !whileRunningQueue);
+                .SacrificeRetained(unit, sourceCardId, whileRunningQueue, doNotFullyRemove, returnSpawnerAfterQueue: !whileRunningQueue,
+                    destroyRoom: destroyRoom);
 
         internal static RoomCombatResult SettleQueuedSpawner(RoomCombatState state, CombatUnit unit, bool preservePhysicalPoint = false, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null)
             => new Engine(state, new List<CombatEvent>(), resetPreviewTriggers: false, refreshPyre: refreshPyre).ReturnQueuedSpawner(unit,
@@ -2884,7 +2886,7 @@ namespace MonsterTrain2Poju.Model
             }
 
             internal RoomCombatResult SacrificeRetained(CombatUnit unit, int sourceCardId, bool whileRunningQueue, bool doNotFullyRemove,
-                bool returnSpawnerAfterQueue)
+                bool returnSpawnerAfterQueue, bool destroyRoom = false)
             {
                 WorkingUnit? target = units.FirstOrDefault(item => item.Source.Id == unit.Id);
                 if (target == null) { target = NewUnit(unit.WithSacrifice(sourceCardId), false); units.Add(target); }
@@ -2905,7 +2907,8 @@ namespace MonsterTrain2Poju.Model
                 Death(null, target, sourceCardId,
                     deferRemoval: returnSpawnerAfterQueue && !doNotFullyRemove && context?.SpawnPoints != null,
                     sacrifice: true, immediateHarvest: whileRunningQueue,
-                    doNotFullyRemove: doNotFullyRemove, returnSpawnerAfterQueue: returnSpawnerAfterQueue);
+                    doNotFullyRemove: doNotFullyRemove, returnSpawnerAfterQueue: returnSpawnerAfterQueue,
+                    destroyRoom: destroyRoom);
                 if (whileRunningQueue)
                     foreach (string stage in HarvestModel.Stages(target.Freeze()))
                     {
@@ -3886,13 +3889,14 @@ namespace MonsterTrain2Poju.Model
 
             private void Death(WorkingUnit? actor, WorkingUnit target, int sourceCardId, bool deferRemoval = false, bool sacrifice = false,
                 bool immediateHarvest = false, bool doNotFullyRemove = false, bool returnSpawnerAfterQueue = false,
-                WorkingUnit? waitForRevival = null, bool maximumHealthSacrifice = false)
+                WorkingUnit? waitForRevival = null, bool maximumHealthSacrifice = false, bool destroyRoom = false)
             {
                 if (target.DeathFinished) return;
                 bool hivemind = target.Source.Status(HivemindTurnUpgrade.StatusId) != null;
                 bool observedPyrePreviewDeath = source.Preview && sourceCardId == 0 && actor?.Source.IsPyre == true &&
                     observedPyrePreviewVictimId != 0 && observedPyrePreviewVictimId == target.Source.Id;
                 bool scaledDeath = hivemind && (observedPyrePreviewDeath ||
+                    destroyRoom && HivemindTurnUpgrade.IsScaledRoomDestructionVictim(source, target.Source) ||
                     HivemindTurnUpgrade.IsObservedScaledWaveDeath(source, target.Source, sourceCardId));
                 if (hivemind && !scaledDeath &&
                     !HivemindTurnUpgrade.IsObservedInfestedHordeDeath(source, target.Source, sourceCardId) &&
