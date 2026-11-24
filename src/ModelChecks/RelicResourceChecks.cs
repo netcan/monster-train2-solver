@@ -120,6 +120,15 @@ internal static class RelicResourceChecks
             !RelicResourceModel.GetDrawCount(Context([Owner("bad-float", new(0, RelicResourceModel.Draw,
                 16777217, 0, 16777217, false, drawValue: (float)16777217, drawMutationOrder: 0))])).Supported,
             "Draw initialization skipped native single-precision conversion before integer rounding.");
+        CombatRelicState Equilibrius(int amount, int? order) => new(
+            "b7648a1e-47c3-4d52-a0ab-065079c7ae06", "EquilibriusT3",
+            [RelicResourceModel.PurgeCountDraw, RelicModel.Null, RelicModel.Null], isCovenant: false,
+            disallowedInPlacementPhase: false, resourceEffects: [new(0, RelicResourceModel.PurgeCountDraw,
+                5, 4, amount, false, drawValue: amount, drawMutationOrder: order)]);
+        Require(Draw(Context([Equilibrius(2, 1), Rule("draw-before-purge", RelicResourceModel.Draw, 1, order: 0)])).Value == 8 &&
+            Draw(Context([Equilibrius(2, null)])).Value == 5 &&
+            !RelicResourceModel.GetDrawCount(Context([Equilibrius(6, 0)])).Supported,
+            "Equilibrius ignored the registered draw amount, applied an unregistered effect or exceeded the native cap.");
 
         var attack = Owner("attack", new(0, RelicResourceModel.PyreAttack, 999, 1, 10, false));
         var health = Owner("health", new(0, RelicResourceModel.PyreHealth, 999, 1, 20, false, conditions: [spent]));

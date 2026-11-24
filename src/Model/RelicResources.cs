@@ -335,6 +335,7 @@ namespace MonsterTrain2Poju.Model
         public const string StartCombatEnergy = "RelicEffectModifyEnergyStartOfCombat";
         public const string StartCombatHoard = "RelicEffectModifyDragonsHoardStartOfCombat";
         public const string Draw = "RelicEffectChangeStartingHandSize";
+        internal const string PurgeCountDraw = "RelicEffectPurgeCardsUntilDeckLimitMet";
         public const string PyreAttack = "RelicEffectIncreasePyreAttack";
         public const string PyreHealth = "RelicEffectIncreasePyreHealth";
         public const string PayCardCostWithPyreHealth = "RelicEffectPayCardCostWithPyreHealth";
@@ -353,7 +354,7 @@ namespace MonsterTrain2Poju.Model
         public const string StartTurnHeal = RelicStartTurnHealModel.Effect;
         public const string StartTurnRoomEffect = RelicStartTurnStatusModel.Effect;
         public const string PostOpeningDiscardReplacement = RelicJudgesScalesModel.Effect;
-        public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == StartCombatHoard || type == Draw ||
+        public static bool IsEffect(string type) => type == Energy || type == DeploymentEnergy || type == StartCombatEnergy || type == StartCombatHoard || type == Draw || type == PurgeCountDraw ||
             type == PyreAttack || type == PyreHealth || type == ExtraPyreDamage || type == GoldOnPyreDamage || type == RelicPileSpawnUpgradeModel.Effect || type == RelicSpawnStatusScalingModel.Effect || type == PayCardCostWithPyreHealth || type == FloorCapacity || type == MoonPhaseEnergy || type == MoonPhaseStatus || type == RelicDamagedFloorEnergyModel.Effect || RelicTurnEnergyModel.IsEffect(type) || type == RelicEntropyDrawModel.Effect ||
             type == EnergyOnCardEarlyDiscard || type == RelicEndCombatModel.GrosMichelDestroy || type == RelicPyreResurrectionModel.Effect || type == RelicDecayDeathModel.Effect ||
             type == GoldOnExhaust || type == RelicOpeningSpawnModel.Effect || type == RelicAfterDrawSpawnModel.Effect || type == RelicOpeningDeckSpawnModel.Effect || type == RelicCorruptedAngelsModel.Effect ||
@@ -680,6 +681,14 @@ namespace MonsterTrain2Poju.Model
                     string? entropyError = RelicEntropyDrawModel.Validate(relic, rule);
                     if (entropyError != null) return entropyError;
                 }
+                else if (rule.Type == PurgeCountDraw)
+                {
+                    if (!IsPurgeCountDrawOwner(relic) || rule.EffectIndex != 0 || rule.ParamInt2 != 4 ||
+                        rule.ParamInt != (relic.AssetKey == "EquilibriusT1" ? 9 : relic.AssetKey == "EquilibriusT2" ? 7 : 5) ||
+                        rule.Conditions.Count != 0 || rule.RequiredMutatorId != null ||
+                        rule.Amount is < 0 or > 5 || rule.DrawValue != rule.Amount || rule.DrawMutationOrder < 0)
+                        return "Missing or changed original Equilibrius draw metadata.";
+                }
                 else if (rule.Type == Draw || rule.Type == RelicTurnDrawModel.FullHealth)
                 {
                     if (!rule.DrawValue.HasValue ||
@@ -857,6 +866,15 @@ namespace MonsterTrain2Poju.Model
             return new RelicResourceResult(context, deployment ? total : Math.Max(total, 0));
         }
 
+        internal static bool IsPurgeCountDrawOwner(CombatRelicState owner) => owner.IsCovenant == false &&
+            owner.DisallowedInPlacementPhase == false && (owner.DataId, owner.AssetKey) switch
+            {
+                ("c2d2d959-3a97-4dc1-99ba-4a9120785dba", "EquilibriusT1") => owner.EffectTypes is [PurgeCountDraw, RelicModel.Null],
+                ("4ec8b4b4-70dc-4edd-847b-0294a7d5ec1b", "EquilibriusT2") or
+                ("b7648a1e-47c3-4d52-a0ab-065079c7ae06", "EquilibriusT3") => owner.EffectTypes is [PurgeCountDraw, RelicModel.Null, RelicModel.Null],
+                _ => false
+            };
+
         public static RelicResourceResult GetDrawCount(CombatContext source)
         {
             string? error = Ready(source);
@@ -865,8 +883,8 @@ namespace MonsterTrain2Poju.Model
             // MutableRules tracks initialized object registration independently
             // of current manager order, preview, placement and outer conditions.
             foreach (RelicResourceEffect rule in source.Relics!.SelectMany(relic => relic.ResourceEffects ?? Array.Empty<RelicResourceEffect>())
-                .Where(rule => (rule.Type == Draw || rule.Type == RelicTurnDrawModel.FullHealth || rule.Type == RelicOccupiedFloorDrawModel.Effect || rule.Type == RelicRelentlessDrawModel.Effect || rule.Type == RelicEntropyDrawModel.Effect) && rule.DrawMutationOrder.HasValue).OrderBy(rule => rule.DrawMutationOrder))
-                value = unchecked(value + (rule.Type == Draw ? rule.Amount : rule.Type == RelicRelentlessDrawModel.Effect ? RelicRelentlessDrawModel.RoundedValue(rule.DrawValue!.Value) : (int)rule.DrawValue!.Value));
+                .Where(rule => (rule.Type is Draw or PurgeCountDraw || rule.Type == RelicTurnDrawModel.FullHealth || rule.Type == RelicOccupiedFloorDrawModel.Effect || rule.Type == RelicRelentlessDrawModel.Effect || rule.Type == RelicEntropyDrawModel.Effect) && rule.DrawMutationOrder.HasValue).OrderBy(rule => rule.DrawMutationOrder))
+                value = unchecked(value + (rule.Type is Draw or PurgeCountDraw ? rule.Amount : rule.Type == RelicRelentlessDrawModel.Effect ? RelicRelentlessDrawModel.RoundedValue(rule.DrawValue!.Value) : (int)rule.DrawValue!.Value));
             return new RelicResourceResult(source, Math.Min(source.Resources.MaxHandSize, Math.Max(1, value)));
         }
 

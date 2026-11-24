@@ -518,7 +518,8 @@ namespace MonsterTrain2Poju.Probe
             }
             else if (effect is RelicEffectChooseDiscardsDrawReplacementsOnPostOpeningDraw)
                 amount = data.GetParamInt();
-            else if (effect is RelicEffectChangeStartingHandSize || effect is RelicEffectAdditionalDrawOnTowerFullHealth || effect is RelicEffectAdditionalDrawForEnemyOccupiedFloors || effect is RelicEffectAdditionalDrawDuringRelentless || effect is RelicEffectAdditionalDrawPerCardType)
+            else if (effect is RelicEffectChangeStartingHandSize or RelicEffectPurgeCardsUntilDeckLimitMet or RelicEffectAdditionalDrawOnTowerFullHealth or
+                RelicEffectAdditionalDrawForEnemyOccupiedFloors or RelicEffectAdditionalDrawDuringRelentless or RelicEffectAdditionalDrawPerCardType)
             {
                 if (effect is RelicEffectAdditionalDrawPerCardType && data.GetParamCardType() != CardType.Blight)
                     throw new InvalidOperationException("Original Entropy draw requires the native Blight card filter.");
