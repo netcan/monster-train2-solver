@@ -882,6 +882,12 @@ namespace MonsterTrain2Poju.Probe
                     (bool)fightAvailable.GetValue(intro)! && intro.GetFightButton().interactable)
                 {
 #if DEVELOPMENT_PROBE
+                    if (fullBattle && OriginalSilverPostBattleWitness.Enabled)
+                    {
+                        OriginalSilverPostBattleWitness.Capture(managers!);
+                        Finish(true, "Original Silver post-battle callback captured.");
+                        return;
+                    }
                     if (RollingAdviceScenario.DeploymentOnly) PlayerAdvisorProbe.PauseForFrozenPlan(beforeDeployment: true);
                     if (fullBattle && OriginalEquilibriusDrawWitness.Enabled && !OriginalEquilibriusDrawWitness.Prepare(managers!))
                         return;

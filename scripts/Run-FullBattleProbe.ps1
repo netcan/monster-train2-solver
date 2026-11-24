@@ -132,6 +132,8 @@ param(
     [switch] $ObserveRedCrownEquipment,
     [string] $InputProfile = '',
     [switch] $RegionRunInput,
+
+    [switch] $OriginalSilverPostBattle,
     [string] $RegionAlternateSource = '',
     [string] $RegionAlternate = '',
     [switch] $RegionAlternateEndTurn,
@@ -2863,8 +2865,16 @@ if ($OriginalSproutWitness -and (!$RegionRunInput -or $BattleDistance -ne 3 -or 
 if ($PSBoundParameters.ContainsKey('OriginalSproutTier') -and !$OriginalSproutWitness) {
     throw 'OriginalSproutTier requires OriginalSproutWitness.'
 }
+if ($OriginalSilverPostBattle) {
+    $silverArguments = @('OriginalSilverPostBattle', 'RegionRunInput', 'InputProfile', 'BattleDistance', 'BinaryCapture',
+        'NativeWorker', 'GameSpeed', 'TimeoutSeconds', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (!$RegionRunInput -or !$InputProfile -or !$BinaryCapture -or $BattleDistance -lt 1 -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $silverArguments }).Count) {
+        throw 'Original Silver post-battle requires an isolated RegionRun BattleIntro after an ordinary win and binary capture.'
+    }
+}
 if ($RegionRunInput) {
-    $regionArguments = @('RegionRunInput', 'RegionAlternateSource', 'RegionAlternate', 'RegionAlternateEndTurn', 'RegionAlternateEndTurnCount', 'OriginalEquilibriusDrawWitness', 'OriginalSproutWitness', 'OriginalSproutTier', 'CampaignBattlePolicy', 'ObserveRegionPreviewScheduling', 'InputProfile', 'BattleDistance', 'Policy', 'BinaryCapture', 'NativeWorker',
+    $regionArguments = @('RegionRunInput', 'OriginalSilverPostBattle', 'RegionAlternateSource', 'RegionAlternate', 'RegionAlternateEndTurn', 'RegionAlternateEndTurnCount', 'OriginalEquilibriusDrawWitness', 'OriginalSproutWitness', 'OriginalSproutTier', 'CampaignBattlePolicy', 'ObserveRegionPreviewScheduling', 'InputProfile', 'BattleDistance', 'Policy', 'BinaryCapture', 'NativeWorker',
         'GameSpeed', 'TimeoutSeconds', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (!$InputProfile -or !$BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $regionArguments }).Count) {
         throw 'RegionRunInput requires a native Soul Savior BattleIntro checkpoint and binary capture.'
@@ -3257,6 +3267,7 @@ $environment = @{
     MT2_PROBE_CAPTURE_PROFILE = $(if ($ProfileCapture) { '1' } else { '0' })
     MT2_PROBE_RESUME_RUN = $(if ($InputProfile) { '1' } else { '0' })
     MT2_PROBE_REGION_RUN_INPUT = $(if ($RegionRunInput) { '1' } else { '0' })
+    MT2_PROBE_ORIGINAL_SILVER_POSTBATTLE = $(if ($OriginalSilverPostBattle) { '1' } else { '0' })
     MT2_PROBE_REGION_ALTERNATE_SOURCE = $RegionAlternateSource
     MT2_PROBE_REGION_ALTERNATE_ACTION = $RegionAlternate
     MT2_PROBE_REGION_ALTERNATE_END_TURN = "$regionAlternateTurns"
@@ -4388,6 +4399,16 @@ if ($CapturePlayerDeploymentOnly) {
     [pscustomobject]@{ Profile=$profile; NativeDeploymentCaptured=$true; InputProfileUnchanged=$true;
         OriginalFilesUnchanged=$true; Trace=$capturePath; SHA256=(Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash } |
         ConvertTo-Json
+    return
+}
+if ($OriginalSilverPostBattle) {
+    $capturePath = Join-Path $profile 'original-silver-postbattle.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Silver post-battle callback captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore -or (Get-OriginalSignature $checkpoint) -cne $regionInputSignature) {
+        throw "Original Silver post-battle callback failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-SILVER-POSTBATTLE PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalSavageryDeckUpgrade) {
