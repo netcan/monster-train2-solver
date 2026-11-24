@@ -175,7 +175,8 @@ namespace MonsterTrain2Poju.Model
             bool onUnplayedNegativeEffects = false, IReadOnlyList<ElixirMixSelection>? mixSelections = null,
             IReadOnlyList<int>? priorTargets = null, int? abilityRoomIndex = null, bool resolveLiveEffects = true,
             CombatUnit? retainedDropTarget = null, IReadOnlyList<int>? onCastEffectGroupSizes = null,
-            IReadOnlyList<SummonChoiceSelection>? summonSelections = null)
+            IReadOnlyList<SummonChoiceSelection>? summonSelections = null,
+            Action<int, CardActionEffect, CombatContext>? observeChooseDiscard = null)
         {
             string? groupError = CardTriggerGroupModel.Validate(onCastEffectGroupSizes, effects.Count);
             if (groupError != null) return UnsupportedTrain(groupError);
@@ -213,7 +214,7 @@ namespace MonsterTrain2Poju.Model
                 recursionSelections: recursionSelections, onCastEffects: onCastEffects,
                 onUnplayedNegativeEffects: onUnplayedNegativeEffects, mixSelections: mixSelections, summonSelections: summonSelections,
                 priorTargets: priorTargets, playerActionPhase: true, abilityRoomIndex: abilityRoomIndex,
-                resolveLiveEffects: resolveLiveEffects,
+                resolveLiveEffects: resolveLiveEffects, observeChooseDiscard: observeChooseDiscard,
                 effectGroupEnds: onCastEffectGroupSizes == null ? null : CardTriggerGroupModel.Ends(onCastEffectGroupSizes),
                 previewDropOverride: groupedRule == null ? null : groupedRule.Effects.Any(effect =>
                     effect.Target is "DropTargetCharacter" or "RoomExceptDropTarget" or "Self"));
@@ -421,7 +422,8 @@ namespace MonsterTrain2Poju.Model
             IReadOnlyList<int>? priorTargets = null, bool playerActionPhase = false, bool resolveLiveEffects = true,
             int? abilityRoomIndex = null, bool duringRoomPreCombat = false,
             bool? previewDropOverride = null, IReadOnlyList<int>? effectGroupEnds = null,
-            IReadOnlyList<SummonChoiceSelection>? summonSelections = null)
+            IReadOnlyList<SummonChoiceSelection>? summonSelections = null,
+            Action<int, CardActionEffect, CombatContext>? observeChooseDiscard = null)
         {
             if (summonSelections?.Any(selection => selection.EffectIndex < 0 || selection.EffectIndex >= effects.Count ||
                     effects[selection.EffectIndex].Type != "SummonChoice" || string.IsNullOrEmpty(selection.CardDataId)) == true ||
@@ -942,6 +944,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     IReadOnlyList<int>? selectedIds = recursionSelections?.FirstOrDefault(selection =>
                         selection.EffectIndex == index)?.CardInstanceIds;
+                    observeChooseDiscard?.Invoke(index, effect, state.Context!);
                     CardChooseDiscardResult chosen = CardChooseDiscardModel.Apply(state.Context!, effect, sourceCardId,
                         index, definitions, roomIndex, selectedIds?.Count == 1 ? selectedIds[0] : null);
                     if (!chosen.Supported) return UnsupportedTrain(chosen.UnsupportedReason!);

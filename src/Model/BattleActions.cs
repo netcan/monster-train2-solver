@@ -424,7 +424,8 @@ namespace MonsterTrain2Poju.Model
         public static BattleActionResult PlayCard(BattleTurnState source, PlayCardAction action)
             => PlayCard(source, action, null);
 
-        internal static BattleActionResult PlayCard(BattleTurnState source, PlayCardAction action, BattleSearchWorkspace? workspace)
+        internal static BattleActionResult PlayCard(BattleTurnState source, PlayCardAction action, BattleSearchWorkspace? workspace,
+            Action<int, CardActionEffect, CombatContext>? observeChooseDiscard = null)
         {
             if (action.Operation != null) return action.Operation == DevoteModel.Operation
                 ? DevoteModel.Apply(source, action) : Unsupported("Unknown battle operation: " + action.Operation);
@@ -958,7 +959,8 @@ namespace MonsterTrain2Poju.Model
                     card.InstanceId, source.PlayRules, piles, recursionSelections: action.RecursionSelections
                         .Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray(),
                     mixSelections: action.MixSelections.Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray(),
-                    summonSelections: action.SummonSelections.Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray());
+                    summonSelections: action.SummonSelections.Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray(),
+                    observeChooseDiscard: observeChooseDiscard);
                 if (!result.Supported) return result.IllegalChoice ? Illegal(result.UnsupportedReason!) : Unsupported(result.UnsupportedReason!);
                 foreach (CombatEvent damage in result.Events.Where(item => item.Kind == "Spell" && item.Amount > 0))
                     lastDamagedUnitIds.Add(damage.Target);
@@ -1010,7 +1012,9 @@ namespace MonsterTrain2Poju.Model
                     onCastEffectGroupSizes: rule.OnCastEffectGroupSizes,
                     retainedDropTarget: retainedSpellUnits.LastOrDefault(unit => unit.Id == action.TargetUnitId),
                     summonSelections: action.SummonSelections.Where(selection => selection.EffectIndex >= rule.Effects.Count)
-                        .Select(selection => new SummonChoiceSelection(selection.EffectIndex - rule.Effects.Count, selection.CardDataId)).ToArray());
+                        .Select(selection => new SummonChoiceSelection(selection.EffectIndex - rule.Effects.Count, selection.CardDataId)).ToArray(),
+                    observeChooseDiscard: observeChooseDiscard == null ? null :
+                        (index, effect, atChoice) => observeChooseDiscard(rule.Effects.Count + index, effect, atChoice));
                 if (!result.Supported) return result.IllegalChoice ? Illegal(result.UnsupportedReason!) : Unsupported(result.UnsupportedReason!);
                 foreach (CombatEvent damage in result.Events.Where(item => item.Kind == "Spell" && item.Amount > 0))
                     lastDamagedUnitIds.Add(damage.Target);
@@ -1557,7 +1561,8 @@ namespace MonsterTrain2Poju.Model
         internal static IEnumerable<PlayCardAction> EnumerateRecursionChoices(BattleTurnState source,
             PlayCardAction action, CardPlayRule rule)
         {
-            var choiceEffects = rule.Effects.Concat(rule.OnCastEffects).Select((effect, index) => (effect, index))
+            var effects = rule.Effects.Concat(rule.OnCastEffects);
+            var choiceEffects = effects.Select((effect, index) => (effect, index))
                 .Where(item => item.effect.Type is "ChooseDiscard" or "FreezeCard" or "DuplicateCard" or "MergeEquipment" || item.effect.Type == "Recursion" &&
                     item.effect.Recursion?.SelectionMode is "ChooseToHand" or "ChooseToDeck").ToArray();
             if (choiceEffects.Length == 0)
@@ -1568,16 +1573,17 @@ namespace MonsterTrain2Poju.Model
             }
 
             var selections = new List<CardRecursionSelection>();
-            var usedCards = new HashSet<int>();
+            int firstDraw = effects.TakeWhile(effect => effect.Type is not ("Draw" or "DrawType")).Count();
             foreach (PlayCardAction branch in Expand(0)) yield return branch;
+
+            PlayCardAction WithSelections() => new PlayCardAction(action.CardInstanceId, action.RoomIndex, action.PlayerPosition,
+                action.TargetUnitId, action.ActivatorUnitId, action.TargetSpawnPointIndex, selections, activatorRoomIndex: action.ActivatorRoomIndex);
 
             IEnumerable<PlayCardAction> Expand(int choiceIndex)
             {
                 if (choiceIndex == choiceEffects.Length)
                 {
-                    var chosen = new PlayCardAction(action.CardInstanceId, action.RoomIndex, action.PlayerPosition,
-                        action.TargetUnitId, action.ActivatorUnitId, action.TargetSpawnPointIndex, selections, activatorRoomIndex: action.ActivatorRoomIndex);
-                    foreach (PlayCardAction mixed in EnumerateMixChoices(source, chosen, rule))
+                    foreach (PlayCardAction mixed in EnumerateMixChoices(source, WithSelections(), rule))
                         foreach (PlayCardAction branch in SummonChoiceModel.Actions(rule, mixed)) yield return branch;
                     yield break;
                 }
@@ -1603,13 +1609,27 @@ namespace MonsterTrain2Poju.Model
                     }
                     yield break;
                 }
-                string? error;
-                IReadOnlyList<int> eligible = effect.Type == "ChooseDiscard"
-                    ? CardChooseDiscardModel.EligibleCards(context, effect, action.CardInstanceId, out error)
-                    : effect.Type == "FreezeCard" ? CardFreezeModel.EligibleCards(context, action.CardInstanceId, out error)
-                    : effect.Type == "DuplicateCard" ? CardDuplicateModel.EligibleCards(context, effect, action.CardInstanceId, out error)
-                    : CardRecursionModel.EligibleCards(context.Cards, context.OtherPiles, effect, source.PlayRules,
-                        action.CardInstanceId, out error, context.CardRegistry);
+                string? error = null;
+                IReadOnlyList<int> eligible;
+                bool liveHand = effect.Type == "ChooseDiscard" && firstDraw < effectIndex && rule.Effect == "Spell" &&
+                    action.ActivatorUnitId == 0 && !action.ActivatorRoomIndex.HasValue;
+                if (liveHand)
+                {
+                    // Draw and its callbacks must settle before the chooser sees the hand.
+                    eligible = Array.Empty<int>();
+                    PlayCard(source, WithSelections(), null, (index, liveEffect, atChoice) =>
+                    {
+                        if (index == effectIndex)
+                            eligible = CardChooseDiscardModel.EligibleCards(atChoice, liveEffect, action.CardInstanceId, out error);
+                    });
+                }
+                else
+                    eligible = effect.Type == "ChooseDiscard"
+                        ? CardChooseDiscardModel.EligibleCards(context, effect, action.CardInstanceId, out error)
+                        : effect.Type == "FreezeCard" ? CardFreezeModel.EligibleCards(context, action.CardInstanceId, out error)
+                        : effect.Type == "DuplicateCard" ? CardDuplicateModel.EligibleCards(context, effect, action.CardInstanceId, out error)
+                        : CardRecursionModel.EligibleCards(context.Cards, context.OtherPiles, effect, source.PlayRules,
+                            action.CardInstanceId, out error, context.CardRegistry);
                 if (error != null || eligible.Count == 0)
                 {
                     foreach (PlayCardAction branch in Expand(choiceIndex + 1)) yield return branch;
@@ -1618,11 +1638,9 @@ namespace MonsterTrain2Poju.Model
 
                 foreach (IReadOnlyList<int> choice in CardRecursionModel.EnumerateChosenCards(eligible))
                 {
-                    if (choice.Any(usedCards.Contains)) continue;
+                    if (!liveHand && selections.SelectMany(selection => selection.CardInstanceIds).Any(choice.Contains)) continue;
                     selections.Add(new CardRecursionSelection(effectIndex, choice));
-                    foreach (int id in choice) usedCards.Add(id);
                     foreach (PlayCardAction branch in Expand(choiceIndex + 1)) yield return branch;
-                    foreach (int id in choice) usedCards.Remove(id);
                     selections.RemoveAt(selections.Count - 1);
                 }
             }

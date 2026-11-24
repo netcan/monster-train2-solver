@@ -656,6 +656,11 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 2 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`offering-token.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/offering-token.mt2f)
 
+第二份原版归档选中刚抽到的乘务员，保留施放前手里的同名牌。求解器在抽牌和相关回调结算后
+读取选择范围，两种弃牌后继都与各自的实机记录一致。模型还检查了施放前手中只有 Offering Token
+时，刚抽到的牌仍能进入候选。
+[原版弃掉新抽牌归档](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/offering-token-discard-drawn.mt2f)
+
 原版 Starter Frostbite Discard 零费对敌方前排施加 8 层霜寒，并从合格手牌中随机弃一张。
 2 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`starter-frostbite-discard.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/starter-frostbite-discard.mt2f)

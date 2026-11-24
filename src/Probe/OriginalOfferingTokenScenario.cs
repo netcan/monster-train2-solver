@@ -13,6 +13,7 @@ namespace MonsterTrain2Poju.Probe
         internal const string Name = "original-offering-token";
         internal const string CardId = "e2d5dbd1-3930-4a41-9631-bef04cbc3fa4";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        private static bool DiscardDrawn => Environment.GetEnvironmentVariable("MT2_PROBE_OFFERING_TOKEN_DISCARD_DRAWN") == "1";
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
         private static int selectedId;
@@ -51,7 +52,7 @@ namespace MonsterTrain2Poju.Probe
             CardState discard = Add(steward.GetID());
             CardState drawn = Add(steward.GetID(), CardPile.DeckPile);
             CardIds = new[] { anchor, spell, discard, drawn }.Select(FullBattleTrace.Active!.CardId).ToArray();
-            selectedId = CardIds[2];
+            selectedId = CardIds[DiscardDrawn ? 3 : 2];
             chosenOnce = false;
 
             save.SetForgePoints(0);
@@ -74,7 +75,7 @@ namespace MonsterTrain2Poju.Probe
                 context.Cards.Draw.Any(card => card.InstanceId == ids[3]))
             {
                 var cast = new PlayCardAction(ids[1], 0,
-                    recursionSelections: [new CardRecursionSelection(1, [ids[2]])]);
+                    recursionSelections: [new CardRecursionSelection(1, [selectedId])]);
                 if (BattleActionModel.PlayCard(source, cast).Supported) return cast;
             }
             return null;

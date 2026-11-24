@@ -9,7 +9,7 @@ internal static class OriginalOfferingTokenChecks
 
     internal static PlayCardAction? Choose(BattleTurnState source, int[] ids) => OriginalOfferingTokenScenarioChooser.Choose(source, ids);
 
-    internal static void Native(FixtureValue root)
+    internal static void Native(FixtureValue root, bool discardDrawn = false)
     {
         Require(root.GetProperty("Schema").GetInt32() == 255 &&
             root.GetProperty("ModifierScenario").GetString() == "original-offering-token" &&
@@ -21,6 +21,8 @@ internal static class OriginalOfferingTokenChecks
         int[] ids = root.GetProperty("OriginalOfferingTokenCardIds").Deserialize<int[]>()!;
         FixtureValue[] actions = root.GetProperty("Actions").EnumerateArray().ToArray();
         Require(ids.Length == 4 && actions.Length >= 2, "Missing Offering Token, anchor or controlled card identities.");
+        int discardedId = ids[discardDrawn ? 3 : 2];
+        int retainedId = ids[discardDrawn ? 2 : 3];
         if (root.GetProperty("Mismatches").GetInt32() > 0)
         {
             for (int index = 0; index < actions.Length; index++)
@@ -57,19 +59,20 @@ internal static class OriginalOfferingTokenChecks
             rule.Effects[1].ChooseDiscard?.Condition == 0 &&
             rule.Effects[1].ChooseDiscard.ExcludeEphemeralCopies && !rule.Effects[1].ChooseDiscard.GainEmberForCost &&
             played.RecursionSelections.Count == 1 && played.RecursionSelections[0].EffectIndex == 1 &&
-            played.RecursionSelections[0].CardInstanceIds.SequenceEqual(new[] { ids[2] }),
+            played.RecursionSelections[0].CardInstanceIds.SequenceEqual(new[] { discardedId }),
             "Offering Token must draw one first, then select exactly one eligible card to discard.");
         Require(before.Spawn.Train.Context!.FindCard(ids[1])!.DataId == CardId &&
             before.Spawn.Train.Context.Cards.Draw.Any(card => card.InstanceId == ids[3] && card.DataId == StewardId) &&
             before.Spawn.Train.Context.Cards.Hand.Any(card => card.InstanceId == ids[2] && card.DataId == StewardId) &&
-            after.Spawn.Train.Context!.Cards.Hand.Any(card => card.InstanceId == ids[3] && card.DataId == StewardId) &&
+            after.Spawn.Train.Context!.Cards.Hand.Any(card => card.InstanceId == retainedId && card.DataId == StewardId) &&
+            after.Spawn.Train.Context.Cards.Hand.All(card => card.InstanceId != discardedId) &&
             after.Spawn.Train.Context.Cards.Discard.Any(card => card.InstanceId == ids[1]) &&
-            after.Spawn.Train.Context.Cards.Discard.Any(card => card.InstanceId == ids[2]) &&
+            after.Spawn.Train.Context.Cards.Discard.Any(card => card.InstanceId == discardedId) &&
             before.Energy == after.Energy,
             "Offering Token did not draw the controlled card, discard the selected Train Steward and preserve its zero-cost energy.");
 
         RecordedBattleChecks.Native(root);
-        System.Console.WriteLine("ORIGINAL-OFFERING-TOKEN PASS: unchanged zero-cost play draws one card, then discards the selected Train Steward and replays the native battle.");
+        System.Console.WriteLine($"ORIGINAL-OFFERING-TOKEN PASS: original zero-cost play draws one, discards the {(discardDrawn ? "newly drawn" : "previously held")} Train Steward and replays the native battle.");
     }
 
     private static void Require(bool condition, string message)

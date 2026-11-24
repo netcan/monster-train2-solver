@@ -33,6 +33,13 @@ try {
     dotnet $checks --atomic-advice-budget-only tests/fixtures/planning/search/advisor-atomic-budget-failure.mt2f
     if ($LASTEXITCODE -ne 0) { throw 'Advice budget acceptance failed.' }
     $current = 'tests/compatibility/game-2.3.1/mechanics'
+    $offeringToken = "$current/controlled-isolated-spells"
+    foreach ($offeringArchive in @('offering-token.mt2f', 'offering-token-discard-drawn.mt2f')) {
+        dotnet $checks --offering-token-frontier-only "$offeringToken/$offeringArchive"
+        if ($LASTEXITCODE -ne 0) { throw "Original Offering Token chooser frontier failed: $offeringArchive" }
+    }
+    dotnet $checks --original-offering-token-draw-discard-only "$offeringToken/offering-token-discard-drawn.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Original Offering Token newly drawn discard failed.' }
     dotnet $checks --parallel-shorter-fallback-only "$current/player-advisor-rolling/unlocked-covenant0-ring5-healing-route-defeat.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Parallel whole-battle cutoff acceptance failed.' }
     dotnet $checks --relentless-battle-pair-only "$current/relentless-battle/abandon.mt2f" "$current/relentless-battle/continue.mt2f"

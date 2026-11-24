@@ -6882,10 +6882,16 @@ if (args.Length == 2 && args[0] == "--original-wicked-blaze-only")
     OriginalWickedBlazeChecks.Native(fixture.RootElement);
     return;
 }
-if (args.Length == 2 && args[0] == "--original-offering-token-only")
+if (args.Length == 2 && args[0] is "--original-offering-token-only" or "--original-offering-token-draw-discard-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    OriginalOfferingTokenChecks.Native(fixture.RootElement);
+    OriginalOfferingTokenChecks.Native(fixture.RootElement, discardDrawn: args[0] == "--original-offering-token-draw-discard-only");
+    return;
+}
+if (args.Length == 2 && args[0] == "--offering-token-frontier-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OfferingTokenFrontierChecks.Run(fixture.RootElement);
     return;
 }
 if (args.Length == 2 && args[0] == "--original-moon-ritual-only")

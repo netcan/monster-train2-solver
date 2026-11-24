@@ -212,6 +212,7 @@ param(
     [switch] $OriginalBrokenMemories,
     [switch] $OriginalWickedBlaze,
     [switch] $OriginalOfferingToken,
+    [switch] $OriginalOfferingTokenDiscardDrawn,
     [switch] $OriginalMoonRitual,
     [switch] $OriginalSelfPurgeEnergyGain,
     [switch] $OriginalSmeltedTreasure,
@@ -1923,6 +1924,9 @@ if ($OriginalDeepOffering) { $BranchCardMasks = $true; $Policy = 'units-spells-a
 if ($OriginalMolded) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalBrokenMemories) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalWickedBlaze) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalOfferingTokenDiscardDrawn -and -not ($OriginalOfferingToken -and $BinaryCapture)) {
+    throw 'OriginalOfferingTokenDiscardDrawn requires OriginalOfferingToken with binary capture.'
+}
 if ($OriginalOfferingToken) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMoonRitual) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalSelfPurgeEnergyGain) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
@@ -3861,7 +3865,10 @@ if ($OriginalDeepOffering) { $environment['MT2_PROBE_MODIFIERS'] = 'original-dee
 if ($OriginalMolded) { $environment['MT2_PROBE_MODIFIERS'] = 'original-molded' }
 if ($OriginalBrokenMemories) { $environment['MT2_PROBE_MODIFIERS'] = 'original-broken-memories' }
 if ($OriginalWickedBlaze) { $environment['MT2_PROBE_MODIFIERS'] = 'original-wicked-blaze' }
-if ($OriginalOfferingToken) { $environment['MT2_PROBE_MODIFIERS'] = 'original-offering-token' }
+if ($OriginalOfferingToken) {
+    $environment['MT2_PROBE_MODIFIERS'] = 'original-offering-token'
+    $environment['MT2_PROBE_OFFERING_TOKEN_DISCARD_DRAWN'] = $(if ($OriginalOfferingTokenDiscardDrawn) { '1' } else { '0' })
+}
 if ($OriginalMoonRitual) { $environment['MT2_PROBE_MODIFIERS'] = 'original-moon-ritual' }
 if ($OriginalSelfPurgeEnergyGain) { $environment['MT2_PROBE_MODIFIERS'] = 'original-self-purge-energy-gain' }
 if ($OriginalSmeltedTreasure) { $environment['MT2_PROBE_MODIFIERS'] = 'original-smelted-treasure' }
@@ -9934,6 +9941,13 @@ $offeringTokenActions = @($trace.Actions | Where-Object {
 $offeringTokenCoverage = -not $OriginalOfferingToken -or @($offeringTokenActions | Where-Object {
     -not $_.Difference -and $_.Predicted.Supported
 }).Count -eq 1
+if ($OriginalOfferingTokenDiscardDrawn -and ($offeringTokenActions.Count -ne 1 -or
+    $offeringTokenActions[0].Action.RecursionSelections.Count -ne 1 -or
+    $offeringTokenActions[0].Action.RecursionSelections[0].EffectIndex -ne 1 -or
+    $offeringTokenActions[0].Action.RecursionSelections[0].CardInstanceIds.Count -ne 1 -or
+    $offeringTokenActions[0].Action.RecursionSelections[0].CardInstanceIds[0] -ne $trace.OriginalOfferingTokenCardIds[3])) {
+    throw 'The original Offering Token did not discard the card drawn by its first effect.'
+}
 $moonRitualActions = @($trace.Actions | Where-Object {
     $entry = $_
     $played = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
