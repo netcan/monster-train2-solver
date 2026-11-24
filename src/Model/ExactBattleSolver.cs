@@ -102,7 +102,7 @@ namespace MonsterTrain2Poju.Model
                 if (work != Expansion.Full) openingDefense = false;
                 else
                 {
-                    if (ConsiderLeaf(node)) { openingDefense = false; continue; }
+                    if (ConsiderCompletedResult(node)) { openingDefense = false; continue; }
                     if (node.Depth >= maxSteps) { stepLimit = true; continue; }
                     string key = keys.Key(node.State) + (options.TurnHorizon.HasValue ? "/" + node.Turns : "");
                     if (maxSteps.HasValue) key += "/depth=" + node.Depth;
@@ -110,7 +110,6 @@ namespace MonsterTrain2Poju.Model
                     if (!visited.Add(key)) { duplicates++; continue; }
                     if (nodes >= options.MaxNodes) { limited = true; break; }
                     nodes++;
-                    if (node.Turns > fallback.Turns) fallback = node;
                     if (openingDefense && nodes <= 6 && node.Actions < maxActionsPerTurn)
                     {
                         // Explore one short route first. Leave its full frontier
@@ -156,14 +155,14 @@ namespace MonsterTrain2Poju.Model
                 else ExpandEndTurns(node);
             }
             // A cutoff prevents further expansions, but the frontier already
-            // contains fully simulated successors. Keep finished leaves in stack order.
+            // contains fully simulated successors. Keep finished leaves and turn boundaries in stack order.
             cancelled |= cancellationToken.IsCancellationRequested;
             stoppedEarly |= earlyStop?.Reached == true;
             if (!cancelled && (timedOut || limited || stoppedEarly))
                 foreach (var (completed, work) in pending)
                 {
                     if (cancellationToken.IsCancellationRequested) { cancelled = true; break; }
-                    if (work == Expansion.Full && completed.Step != null) ConsiderLeaf(completed);
+                    if (work == Expansion.Full && completed.Step != null) ConsiderCompletedResult(completed);
                 }
             watch.Stop();
             Node chosen = best ?? fallback;
@@ -224,7 +223,7 @@ namespace MonsterTrain2Poju.Model
                     pending.Push((new Node(end.Result.State!, end.Result.Outcome, node, end.Step, node.Turns + 1), Expansion.Full));
             }
 
-            bool ConsiderLeaf(Node node)
+            bool ConsiderCompletedResult(Node node)
             {
                 if (Terminal(node.Outcome))
                 {
@@ -232,7 +231,11 @@ namespace MonsterTrain2Poju.Model
                     earlyStop?.Consider(node.State, node.Outcome);
                 }
                 else if (options.TurnHorizon.HasValue && node.Turns >= options.TurnHorizon.Value) horizons++;
-                else return false;
+                else
+                {
+                    if (node.Step?.IsEndTurn == true && node.Turns > fallback.Turns) fallback = node;
+                    return false;
+                }
                 double value = Value(node);
                 if (best == null || value < score || useAdvisorOrdering && value == score &&
                     BattlePlanner.PositionCost(node.State, node.Outcome) < BattlePlanner.PositionCost(best.State, best.Outcome))
