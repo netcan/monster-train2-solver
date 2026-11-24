@@ -1435,6 +1435,10 @@ Zariel 的 Devotion 路线在法术支付并结算后读取当前等级。原版
 建议对应局面、战斗状态及随机流，采集中出牌与结束回合输入均为零。
 [玩家版原版部署归档](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-loop2-advisor.mt2f)
 
+另一次玩家版实测接受首步出牌后立即显示临时建议。原版结算匹配预测后，顾问确认并显示剩余 16 步，
+搜索次数仍为 1。该验收执行一次原版出牌，结束回合输入为零。
+[玩家版出牌接续归档](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-loop2-advisor-handoff.mt2f)
+
 三阶原版 Silver 灵魂的薪火升级由 `SaveManager.BattleComplete` 在战斗终局快照之后调用，
 同一灵魂的额外奖励在战后生成。顾问识别原版灵魂和完整有序效果列表，并在下一场读取薪火的实际数值。
 Silver T1、T2、T3 分别用两份真实胜局后的隔离存档调用原版调度器。三阶各观察到一次生命分支和一次攻击分支，

@@ -3,6 +3,49 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalEndlessFirstWaveChecks
 {
+    internal static void Loop2AdvisorHandoff(FixtureValue receipt)
+    {
+        Require(Text(receipt, "GameVersion") == Game231FixtureCatalog.Version && Text(receipt, "GameModuleMvid") == Game231FixtureCatalog.Module &&
+            Text(receipt, "EvidenceKind") == "NativeEndlessLoop2AdvisorHandoff" &&
+            Text(receipt, "Assembly") == "MonsterTrain2Poju.Advisor" && Text(receipt, "Scenario") == "TestEndless_Level1Battle1" &&
+            Number(receipt, "Loop") == 2 && Number(receipt, "Distance") == 0 &&
+            Number(receipt, "AcceptedCardInputs") == 1 && Number(receipt, "EndTurnInputs") == 0 &&
+            Number(receipt, "PurityFailures") == 0 && Flag(receipt, "ReusedContinuation") &&
+            receipt.GetProperty("FinalSearches").GetInt64() == receipt.GetProperty("OriginalSearches").GetInt64() &&
+            Number(receipt, "FinalPublications") == Number(receipt, "OriginalPublications") + 1 &&
+            receipt.GetProperty("FinalGeneration").GetInt64() > receipt.GetProperty("OriginalGeneration").GetInt64() &&
+            Text(receipt, "TentativeStatusText")?.Contains("待确认", StringComparison.Ordinal) == true &&
+            Text(receipt, "TentativePanelText")?.Contains("待核对", StringComparison.Ordinal) == true &&
+            !string.IsNullOrEmpty(Text(receipt, "FinalPanelText")),
+            "Expected a tentative next step and one fresh publication after the single accepted input, without another search.");
+
+        var input = receipt.GetProperty("Input");
+        var nativeBefore = input.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var nativeAction = input.GetProperty("Action").Deserialize<PlayCardAction>()!;
+        var nativePlay = BattleActionModel.PlayCard(nativeBefore, nativeAction);
+        Require(nativePlay.Supported && nativePlay.Outcome == input.GetProperty("ActualOutcome").Deserialize<RoomOutcome>() &&
+            input.GetProperty("Difference").ValueKind == FixtureKind.Null, nativePlay.Reason ?? "Expected the recorded paid action to settle.");
+        RecordedBattleChecks.RecordedBoundary(nativePlay.State!, input.GetProperty("Actual"), terminal: false,
+            "original Loop 2 Advisor matching play", trackPreviewPosition: true);
+
+        var oldRoot = receipt.GetProperty("OriginalRoot").Deserialize<BattleTurnState>()!;
+        var final = receipt.GetProperty("FinalRoot").Deserialize<BattleTurnState>()!;
+        var published = receipt.GetProperty("FinalPublishedRoot").Deserialize<BattleTurnState>()!;
+        FixtureValue[] originalSteps = receipt.GetProperty("OriginalSteps").EnumerateArray().ToArray();
+        FixtureValue[] finalSteps = receipt.GetProperty("FinalSteps").EnumerateArray().ToArray();
+        Require(originalSteps.Length > 1 && originalSteps.Skip(1).Zip(finalSteps).All(pair => pair.First.ContentEquals(pair.Second)) &&
+            finalSteps.Length == originalSteps.Length - 1 && oldRoot.Spawn.Turn == 0 && final.Spawn.Turn == 0,
+            "The confirmed plan must be precisely the original suffix at deployment.");
+        var first = originalSteps[0].Deserialize<BattleSearchStep>()!;
+        Require(!first.IsEndTurn && first.Action != null, "Expected a paid first recommendation.");
+        var projected = BattleActionModel.PlayCard(oldRoot, first.Action!);
+        using var continuationKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
+        using var fullKeys = new BattleStateKeys();
+        Require(projected.Supported && continuationKeys.Key(projected.State!) == continuationKeys.Key(final) &&
+            fullKeys.Key(final) == fullKeys.Key(published), "Expected the native replacement publication and independent projected player successor.");
+        Console.WriteLine($"NATIVE-ENDLESS-LOOP2-ADVISOR-HANDOFF PASS: one paid play with {finalSteps.Length} retained steps and no new search.");
+    }
+
     internal static void Loop2Advisor(FixtureValue receipt)
     {
         Require(Text(receipt, "GameVersion") == Game231FixtureCatalog.Version &&

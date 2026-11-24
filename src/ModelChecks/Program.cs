@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--original-endless-loop2-advisor-handoff-only")
+{
+    using var archive = ModelJson.ReadFixture(args[1]);
+    OriginalEndlessFirstWaveChecks.Loop2AdvisorHandoff(archive.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-silver-natural-only")
 {
     using var archive = ModelJson.ReadFixture(args[1]);
