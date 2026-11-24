@@ -3123,7 +3123,7 @@ namespace MonsterTrain2Poju.Model
                 preview.ordinaryPyreAttack = ordinaryPyreAttack;
                 // The temporary victim can already have zero HP. Authenticate its owner in the enclosing room.
                 if (ordinaryPyreAttack && actor.Source.IsPyre && source.Units.Any(unit => unit.Id == target.Source.Id &&
-                    HivemindTurnUpgrade.IsScaledTurnFivePyreVictim(source, unit) &&
+                    HivemindTurnUpgrade.IsScaledPyreVictim(source, unit) &&
                     source.ExternalInteractions.Contains(HivemindTurnUpgrade.Marker(unit))))
                     preview.observedPyrePreviewVictimId = target.Source.Id;
                 preview.Damage(preview.units.Single(unit => unit.Source.Id == actor.Source.Id),

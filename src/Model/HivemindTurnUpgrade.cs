@@ -183,7 +183,7 @@ namespace MonsterTrain2Poju.Model
                     unit.AssetKey == Infested && IsScaledFirstWaveOwner(unit, room.Context) && NoCapturedKiller(room) ||
                     IsScaledCarriedFeedOwner(unit, room.Context) && unit.Status(StatusId)?.Stacks == 6) &&
                 unit.Modifiers!.Upgrades.Any(marker => IsAttackUpgrade(marker, 26)) ||
-             IsScaledTurnFivePyreVictim(room, unit) ||
+             IsScaledPyreVictim(room, unit) ||
              room.Context?.QueryFrame?.Turn == 6 && NoCapturedKiller(room) &&
                 (room.RoomIndex == 1 && unit.AssetKey == Infested && IsScaledFirstWaveOwner(unit, room.Context) &&
                     room.Units.Any(actor => IsScaledBossFeedOwner(room, actor)) ||
@@ -193,10 +193,11 @@ namespace MonsterTrain2Poju.Model
         internal static bool IsScaledRoomMarkerOwner(RoomCombatState room, CombatUnit unit) =>
             IsScaledFirstWaveOwner(unit, room.Context) || IsScaledCarriedFeedOwner(unit, room.Context) ||
             IsScaledPreviewFeedRecipient(room, unit) || IsScaledBossFeedOwner(room, unit);
-        internal static bool IsScaledTurnFivePyreVictim(RoomCombatState room, CombatUnit unit) =>
-            room.RoomIndex == 3 && room.Context?.QueryFrame?.Turn == 5 && unit.AssetKey == Infested &&
+        internal static bool IsScaledPyreVictim(RoomCombatState room, CombatUnit unit) =>
+            room.RoomIndex == 3 && room.Context?.QueryFrame?.Turn is 5 or 6 && unit.AssetKey == Infested &&
             IsScaledFirstWaveOwner(unit, room.Context) && unit.Modifiers!.Upgrades is [var upgrade] &&
-            IsAttackUpgrade(upgrade, 26) && room.Units.Any(actor => actor.IsPyre) &&
+            (room.Context.QueryFrame.Turn == 5 ? IsAttackUpgrade(upgrade, 26) : NoCapturedKiller(room)) &&
+            room.Units.Any(actor => actor.IsPyre) &&
             room.Units.Count(actor => actor.Team == CombatTeam.Enemy) == 1;
 
         internal static bool IsObservedScaledWaveInteraction(TrainCombatState train, string interaction)
