@@ -158,14 +158,16 @@ namespace MonsterTrain2Poju.Model
                  room is { RoomIndex: 1 } && room.Context.QueryFrame.Turn == 4 && unit.AssetKey == Hunter &&
                     IsScaledFirstWaveOwner(unit, room.Context) && unit.Modifiers!.Upgrades is [var hunterMarker] &&
                     IsAttackUpgrade(hunterMarker, 17) && NoCapturedKiller(room) && room.ExternalInteractions.Contains(Marker(unit)))) ||
-            (room is { RoomIndex: 0, Preview: false } && room.Context?.QueryFrame?.Turn is 2 or 5 &&
+            (!room.Preview && (room.Context?.QueryFrame?.Turn, room.RoomIndex) is (2 or 5, 0) or (6, 1) &&
                 room.Context.FindCard(sourceCardId)?.DataId == "87e45427-921e-45d3-b4c4-9c156a83cedf" &&
                 unit.AssetKey == Hunter && IsScaledFirstWaveOwner(unit, room.Context) &&
                 unit.Modifiers!.Upgrades is [var upgrade] &&
                 (room.Context.QueryFrame.Turn == 2 && IsAttackUpgrade(upgrade, 8) &&
                     room.Units.Any(survivor => survivor.Id != unit.Id && survivor.AssetKey == Hunter &&
                         IsScaledFirstWaveOwner(survivor, room.Context)) ||
-                 room.Context.QueryFrame.Turn == 5 && IsAttackUpgrade(upgrade, 26)));
+                 room.Context.QueryFrame.Turn == 5 && IsAttackUpgrade(upgrade, 26) ||
+                 room.Context.QueryFrame.Turn == 6 && NoCapturedKiller(room) &&
+                    room.ExternalInteractions.Contains(Marker(unit))));
 
         // An ordinary preview casualty leaves the existing attack upgrades on surviving holders.
         // Sprout uses a separate immediate refresh and needs its own validated death path.
