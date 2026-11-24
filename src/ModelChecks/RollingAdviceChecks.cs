@@ -1,6 +1,7 @@
 using System.Text.Json;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
+using MonsterTrain2Poju.Probe;
 
 internal static class RollingAdviceChecks
 {
@@ -108,6 +109,97 @@ internal static class RollingAdviceChecks
             Require(keys.Key(settled) == keys.Key(State(expected)) && outcome == expectedOutcome.Deserialize<RoomOutcome>() &&
                 BattlePlanner.Evaluate(settled, outcome) == score.GetDouble() && JsonSerializer.Serialize(root) == parent,
                 "The published forecast does not independently reproduce its result, score and immutable root.");
+        }
+    }
+
+    internal static void MixPrompt(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("Schema").GetInt32() == 1 &&
+            fixture.GetProperty("EvidenceKind").GetString() == "NativePlayerAdvisorMixPrompt" &&
+            fixture.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            fixture.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            fixture.GetProperty("PlayerAdvisor").GetProperty("Assembly").GetString() == "MonsterTrain2Poju.Advisor",
+            "Expected a Mix prompt receipt from the pinned native build and player advisor.");
+        FixtureValue input = fixture.GetProperty("Input");
+        BattleSearchStep step = ReadStep(input);
+        Require(input.GetProperty("Mode").GetString() == "rolling" && !step.IsEndTurn &&
+            step.Action is { ActivatorUnitId: 0, ActivatorRoomIndex: null } &&
+            SameStep(input.GetProperty("PlanSteps")[0], input) &&
+            input.GetProperty("Difference").ValueKind == FixtureKind.Null,
+            "Expected an accepted direct card matching the first published action.");
+        PlayCardAction action = step.Action!;
+        ElixirMixSelection[] choices = action.MixSelections.OrderBy(choice => choice.EffectIndex).ThenBy(choice => choice.MixNumber).ToArray();
+        FixtureValue[] prompts = fixture.GetProperty("Prompts").EnumerateArray().ToArray();
+        Require(choices.Length > 0 && choices.Length == prompts.Length && fixture.GetProperty("NormalPromptRestored").GetBoolean(),
+            "The native draft did not show and clear each published selection.");
+
+        int previousConfirmation = -1;
+        for (int index = 0; index < prompts.Length; index++)
+        {
+            FixtureValue prompt = prompts[index];
+            ElixirMixSelection choice = choices[index];
+            string[] offers = prompt.GetProperty("Offers").GetString()!.Split(',');
+            string selected = prompt.GetProperty("SelectedCard").GetString() + ":" +
+                (prompt.GetProperty("SelectedUpgrade").GetString() ?? "none");
+            int opened = prompt.GetProperty("PromptFrame").GetInt32();
+            int confirmed = prompt.GetProperty("ConfirmationFrame").GetInt32();
+            Require(prompt.GetProperty("Kind").GetString() is "new" or "upgrade" &&
+                prompt.GetProperty("EffectIndex").GetInt32() == choice.EffectIndex &&
+                prompt.GetProperty("MixNumber").GetInt32() == choice.MixNumber &&
+                prompt.GetProperty("ChoiceIndex").GetInt32() == choice.ChoiceIndex &&
+                prompt.GetProperty("Text").GetString() == AdvisorForecastPresentation.MixChoice(index, choice.ChoiceIndex) &&
+                choice.ChoiceIndex >= 0 && choice.ChoiceIndex < offers.Length && offers.All(OfferIdentity) &&
+                offers[choice.ChoiceIndex] == selected && opened >= 0 && opened >= previousConfirmation &&
+                confirmed >= opened && prompt.GetProperty("HiddenAfterConfirmation").GetBoolean(),
+                $"Native Mix selection {index + 1} differs from the published option, native offer, or prompt lifecycle.");
+            previousConfirmation = confirmed;
+        }
+
+        BattleTurnState root = State(input.GetProperty("Root"));
+        BattleTurnState actual = State(input.GetProperty("Actual"));
+        string parent = JsonSerializer.Serialize(root);
+        BattleActionResult played = BattleActionModel.PlayCard(root, action);
+        Require(played.Supported && played.Outcome == RoomOutcome.Exchanged &&
+            played.Outcome == input.GetProperty("Outcome").Deserialize<RoomOutcome>() &&
+            Key(played.State!) == Key(State(input.GetProperty("Expected"))) &&
+            Key(played.State!) == Key(actual) && JsonSerializer.Serialize(root) == parent,
+            "The paid native Mix successor differs from independent replay or replay mutated its root.");
+
+        FixtureValue publication = fixture.GetProperty("FinalRoot");
+        FixtureValue native = fixture.GetProperty("FinalNativeRoot");
+        BattleTurnState finalRoot = State(publication);
+        string nativeKey = fixture.GetProperty("FinalRootKey").GetString()!;
+        long inputGeneration = input.GetProperty("Generation").GetInt64();
+        long finalGeneration = fixture.GetProperty("FinalGeneration").GetInt64();
+        using var boundaryKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
+        Require(inputGeneration > 0 && finalGeneration > inputGeneration &&
+            nativeKey.Length == 64 && nativeKey.All(Uri.IsHexDigit) &&
+            nativeKey == fixture.GetProperty("FinalNativeRootKey").GetString() && publication.ContentEquals(native) &&
+            boundaryKeys.Key(finalRoot) == boundaryKeys.Key(actual),
+            "The next advisor publication does not match the settled native root.");
+
+        FixtureValue plan = fixture.GetProperty("FinalPlan");
+        BattleSearchStep[] steps = plan.GetProperty("Steps").EnumerateArray().Select(ReadStep).ToArray();
+        Require(steps.Length > 0 && steps.Length <= plan.GetProperty("MaxSteps").GetInt32() &&
+            !plan.GetProperty("Cancelled").GetBoolean() &&
+            (plan.GetProperty("CompletedHorizon").GetBoolean() || plan.GetProperty("UsedShorterHorizon").GetBoolean()),
+            "The next publication has no usable plan.");
+        using var keys = new BattleStateKeys();
+        string finalParent = JsonSerializer.Serialize(finalRoot);
+        BattleTurnState forecast = BattlePlannerChecks.Replay(finalRoot, steps, out RoomOutcome forecastOutcome);
+        Require(keys.Key(forecast) == keys.Key(State(plan.GetProperty("State"))) &&
+            forecastOutcome == plan.GetProperty("Outcome").Deserialize<RoomOutcome>() &&
+            BattlePlanner.Evaluate(forecast, forecastOutcome) == plan.GetProperty("Score").GetDouble() &&
+            steps.Count(item => item.IsEndTurn) == plan.GetProperty("TurnsCompleted").GetInt32() &&
+            JsonSerializer.Serialize(finalRoot) == finalParent,
+            "The next forecast differs on independent replay or replay mutated its root.");
+        Console.WriteLine($"PLAYER-ADVISOR-MIX-PROMPT PASS. {prompts.Length} native selections, exact paid successor and next generation {finalGeneration}.");
+
+        static bool OfferIdentity(string offer)
+        {
+            string[] parts = offer.Split(':');
+            return parts.Length == 2 && Guid.TryParseExact(parts[0], "D", out Guid card) && card != Guid.Empty &&
+                (parts[1] == "none" || Guid.TryParseExact(parts[1], "D", out Guid upgrade) && upgrade != Guid.Empty);
         }
     }
 
