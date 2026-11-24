@@ -227,7 +227,8 @@ namespace MonsterTrain2Poju.Model
             (room.RoomIndex == 0 && room.Context?.QueryFrame?.Turn == 2 ||
              (room.RoomIndex == 0 || room is { RoomIndex: 1, Preview: true }) && room.Context?.QueryFrame?.Turn == 3 ||
              room.RoomIndex is 0 or 1 && room.Context?.QueryFrame?.Turn == 4 ||
-             room.RoomIndex == 1 && room.Context?.QueryFrame?.Turn == 5);
+             (room.RoomIndex == 1 || room is { RoomIndex: 2, Preview: true } && NoCapturedKiller(room)) &&
+                room.Context?.QueryFrame?.Turn == 5);
 
         internal static bool IsScaledFirstFeedRecipient(RoomCombatState room, CombatUnit unit) =>
             ScaledFeedRoom(room) && IsScaledFeedRecipient(unit, room.Context?.QueryFrame?.Turn);
@@ -268,19 +269,25 @@ namespace MonsterTrain2Poju.Model
 
         internal static bool IsScaledPreviewFeedRecipient(RoomCombatState room, CombatUnit unit)
         {
-            bool secondWave = room is { RoomIndex: 1, Preview: true } && room.Context?.QueryFrame?.Turn == 3;
-            bool sproutFirstWave = room is { RoomIndex: 0, Preview: true } && room.Context?.QueryFrame?.Turn == 2 &&
-                room.Context.Relics?.Any(relic => SproutTier(relic) is 2 or 3) == true;
-            if (!(secondWave || sproutFirstWave) || !IsScaledCampaign(room.Context) || unit is not { Team: CombatTeam.Enemy, SpawnerCardId: 0, IsBoss: false,
+            if (!room.Preview || !IsScaledCampaign(room.Context) || unit is not { Team: CombatTeam.Enemy, SpawnerCardId: 0, IsBoss: false,
                     Modifiers: { IsClone: false } modifiers } || unit.RegisteredStatus("hivemindkiller") != null)
                 return false;
+            int? cachedAttack = (room.Context?.QueryFrame?.Turn, room.RoomIndex) switch
+            {
+                (2, 0) when room.Context.Relics?.Any(relic => SproutTier(relic) is 2 or 3) == true => 8,
+                (3, 1) => 18,
+                (4, 1) when NoCapturedKiller(room) => 17,
+                (5, 2) when NoCapturedKiller(room) => 26,
+                _ => null
+            };
+            if (cachedAttack == null) return false;
             int feeds = modifiers.Upgrades.Count(IsFeedUpgrade);
             if (feeds > 2) return false;
             CombatStatus? status = unit.Status(StatusId);
             if (unit is { AssetKey: Hunter, Health: > 0, MaxHealth: 4, Triggers: [{ Kind: "OnKill" }] })
                 return status != null && IsOriginalStatus(unit, status.WithStacks(1)) && status.Stacks == 2 + 3 * feeds &&
-                    modifiers.Upgrades.Count == feeds + 1 && modifiers.Upgrades.Count(upgrade => IsAttackUpgrade(upgrade, sproutFirstWave ? 8 : 18)) == 1;
-            return secondWave && unit is { AssetKey: "TreasureBagLvl1Gold", Health: 1, MaxHealth: 1, BaseAttack: 0,
+                    modifiers.Upgrades.Count == feeds + 1 && modifiers.Upgrades.Count(upgrade => IsAttackUpgrade(upgrade, cachedAttack.Value)) == 1;
+            return cachedAttack == 18 && unit is { AssetKey: "TreasureBagLvl1Gold", Health: 1, MaxHealth: 1, BaseAttack: 0,
                     Triggers: [{ Kind: "OnKill" }, { Kind: "OnDeath" }, { Kind: "PostCombat" }] } &&
                 modifiers.Upgrades.Count == feeds && (feeds == 0 ? status == null :
                     status != null && status.Stacks == 3 * feeds && IsOriginalStatus(unit, status.WithStacks(1)));
