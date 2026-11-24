@@ -52,6 +52,13 @@ namespace MonsterTrain2Poju.Model
                 if (state.Context!.Resources == null) return Fail("Missing birth scaling mutator roster.");
                 if (state.Context.Resources.MutatorIds.Contains(rule.RequiredMutatorId)) return Match(state);
             }
+            return ApplyRule(state, actor, rule, spawnEffect: true);
+        }
+
+        internal static RoomCombatResult ApplyRule(RoomCombatState state, CombatUnit actor,
+            RelicSpawnStatusScalingRule rule, bool spawnEffect)
+        {
+            int unitId = actor.Id;
             var events = new List<CombatEvent>(); var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
             var retained = new Dictionary<int, CombatUnit>(); var outcome = RoomOutcome.Exchanged;
             if (rule.ScaleStarting)
@@ -61,7 +68,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     int delta = rule.StartingDelta(original.Id, original.Stacks);
                     if (delta <= 0) continue;
-                    var added = StatusApplicationModel.ApplyRetained(state, unitId, original.WithStacks(delta), 0, spawnEffect: true);
+                    var added = StatusApplicationModel.ApplyRetained(state, unitId, original.WithStacks(delta), 0, spawnEffect: spawnEffect);
                     if (!added.Supported) return added;
                     state = added.State!; events.AddRange(added.Events); callbacks.AddRange(added.PendingCallbacks);
                     foreach (var unit in added.RetainedUnits) retained[unit.Id] = unit;

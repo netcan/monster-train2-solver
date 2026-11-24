@@ -1401,6 +1401,11 @@ Zariel 的 Devotion 路线在法术支付并结算后读取当前等级。原版
 [原版首战至终局](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-victory-origin-defeat.mt2f) ·
 [受控无尽首波](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-first-wave.mt2f)
 
+从原版胜利后的检查点受控推进至第 2 环，首波四名敌军的完整结束回合通过独立复放。
+附魔师的护甲从 120 到 240，泰坦皮肤从 15 到 30，附魔向三名追猎者各授予 10 层泰坦皮肤。
+遗物将后排追猎者移到前排，房间名单、物理槽位、附魔目标及随机流均与原版一致。
+[第 2 环受控原版对照](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-ring2-first-wave.mt2f)
+
 Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者共筛出 58 张，六次抽牌后
 实际生成和随机状态均与模型一致。原版胜局的五次出牌、七次 EndTurn 和十六条独立分支
 通过，旧版 348 张卡池也通过专项回归。隔离实例尚无法启用 Punished DLC，

@@ -50,14 +50,30 @@ internal static class OriginalEndlessFirstWaveChecks
 
     internal static void Forecast(FixtureValue archive)
     {
+        FixtureValue scenario = archive.GetProperty("Scenario");
+        string? boundary = Text(archive, "Boundary");
         Require(Text(archive, "GameModuleMvid") == Game231FixtureCatalog.Module &&
-            Text(archive, "Boundary") == "OriginalEndlessEnemyScaling" &&
-            !Flag(archive.GetProperty("Scenario"), "ControlledFirstLoop"), "Expected the original Endless first battle.");
+            !Flag(scenario, "ControlledFirstLoop") && Number(scenario, "Loop") == 1 &&
+            (boundary == "OriginalEndlessEnemyScaling" && Number(scenario, "Distance") == 0 ||
+                boundary == "OriginalEndlessEnemyScalingControlledNextRing" && Number(scenario, "Distance") == 1),
+            "Expected one of the pinned original Endless opening waves.");
         BattleTurnState deployment = archive.GetProperty("Deployment").Deserialize<BattleTurnState>()!;
         BattleTurnResult advanced = BattleTurnModel.EndTurn(deployment);
         Require(advanced.Supported, advanced.UnsupportedReason ?? "The original first wave must be supported.");
         RecordedBattleChecks.RecordedBoundary(advanced.State!, archive.GetProperty("FirstDecision"),
             terminal: false, "original Endless first wave", trackPreviewPosition: true);
+        if (Number(scenario, "Distance") == 1)
+        {
+            var births = archive.GetProperty("Births").EnumerateArray().ToArray();
+            Require(births.Length == 4 && births.All(row => row.GetProperty("Before").GetProperty("Rng").ContentEquals(
+                row.GetProperty("After").GetProperty("Rng"))), "Expected four original birth callbacks with unchanged Battle and BattleTest.");
+            CombatUnit[] enemies = advanced.State!.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .Where(actor => actor.Team == CombatTeam.Enemy).ToArray();
+            CombatUnit enchanter = enemies.Single(actor => actor.AssetKey == "ShieldGuardT3_Enchanter_Chosen");
+            Require(enchanter.Health == 600 && enchanter.Status("armor")?.Stacks == 240 &&
+                enchanter.Status("titanskin")?.Stacks == 30 && enemies.Count(actor => actor.Status("titanskin")?.Stacks == 10) == 3,
+                "Original starting statuses and aura recipients must match.");
+        }
         Console.WriteLine("NATIVE-ENDLESS-FORECAST PASS: complete deployment successor and original first-wave RNG.");
     }
 

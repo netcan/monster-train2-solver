@@ -218,6 +218,15 @@ namespace MonsterTrain2Poju.Model
                         CombatUnit? scaled = endlessBirth?.Apply(enemy);
                         if (scaled == null) return Fail(UnsupportedEndlessEnemyBirth);
                         state = state.WithUnits(state.Units.Select(unit => unit.Id == unitId ? scaled : unit).ToArray());
+                        if (endlessBirth!.StatusScaling is RelicSpawnStatusScalingRule statusScaling)
+                        {
+                            RoomCombatResult applied = RelicSpawnStatusScalingModel.ApplyRule(state, scaled, statusScaling, spawnEffect: false);
+                            if (!applied.Supported) return applied;
+                            state = applied.State!;
+                            callbacks.AddRange(applied.PendingCallbacks);
+                            events.AddRange(applied.Events);
+                            if (applied.Outcome != RoomOutcome.Exchanged) outcome = applied.Outcome;
+                        }
                         continue;
                     }
                     if (relic.EffectTypes[effectIndex] == RelicPyreAbilityCooldownModel.Effect)

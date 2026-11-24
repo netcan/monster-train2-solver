@@ -11,28 +11,33 @@ namespace MonsterTrain2Poju.Model
         public int Attack { get; }
         public int Health { get; }
         public IReadOnlyList<int> EffectValues { get; }
+        public RelicSpawnStatusScalingRule? StatusScaling { get; }
+        public bool ShouldSerializeStatusScaling() => StatusScaling != null;
 
-        public EndlessEnemyBirthStats(int initialAttack, int initialHealth, int attack, int health, IReadOnlyList<int> effectValues)
+        public EndlessEnemyBirthStats(int initialAttack, int initialHealth, int attack, int health, IReadOnlyList<int> effectValues,
+            RelicSpawnStatusScalingRule? statusScaling = null)
         {
             InitialAttack = initialAttack;
             InitialHealth = initialHealth;
             Attack = attack;
             Health = health;
             EffectValues = Array.AsReadOnly(effectValues.ToArray());
+            StatusScaling = statusScaling;
         }
 
         internal CombatUnit? Apply(CombatUnit actor)
         {
-            if (actor.SpawnerCardId > 0 || !SupportedShape(actor) ||
+            bool statusShape = IsStatusShape(actor);
+            if (actor.SpawnerCardId > 0 || !SupportedShape(actor) || statusShape != (StatusScaling != null) ||
                 actor.BaseAttack != InitialAttack || actor.Health != InitialHealth || actor.MaxHealth != InitialHealth ||
                 actor.Modifiers is not { AttackDamageAdded: 0, DamageBuff: 0 } modifiers ||
                 modifiers.AttackDamage != InitialAttack || Attack < 0 || Health < 1 ||
-                (actor.Triggers.FirstOrDefault()?.Effects.Count ?? 0) != EffectValues.Count ||
+                (statusShape ? 0 : actor.Triggers.FirstOrDefault()?.Effects.Count ?? 0) != EffectValues.Count ||
                 EffectValues.Any(value => value < 0))
                 return null;
 
             CombatUnit scaled = actor.WithRawAttack(Attack).WithHealthAndMaxHealth(Health, Health);
-            if (actor.Triggers is not [var trigger]) return scaled;
+            if (EffectValues.Count == 0 || actor.Triggers is not [var trigger]) return scaled;
             CombatEffect[] effects = trigger.Effects.Select((effect, index) => effect.WithActionValue(EffectValues[index])).ToArray();
             return scaled.WithTriggers(new[] { trigger.WithEffects(effects) });
         }
@@ -41,7 +46,21 @@ namespace MonsterTrain2Poju.Model
             actor.IsBoss == false && actor.Statuses.Count == 0 &&
                 (actor.Triggers.Count == 0 || SupportedTrigger(actor)) ||
             actor.IsBoss == true && actor.EndsBattleOnDeath && actor.BumpRules?.OuterBoss != true &&
-                actor.Triggers.Count == 0 && actor.Statuses is [{ Id: "relentless", Stacks: 1 }];
+                actor.Triggers.Count == 0 && actor.Statuses is [{ Id: "relentless", Stacks: 1 }] ||
+            IsStatusShape(actor);
+
+        internal static bool IsStatusShape(CombatUnit actor) => actor.IsBoss == false &&
+            actor.Triggers is [var trigger] && (trigger switch
+            {
+                { Kind: "OnKill", Effects: [{ Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus",
+                    Target: "Self", Range: null, Statuses: [{ Id: "buff" }] } }] } =>
+                    actor.Statuses.Count == 0 || actor.AbilityRules?.AuthoredStartingStatuses.Count == 0 &&
+                    actor.Statuses is [{ Id: "titanskin" }],
+                { Kind: "AfterSpawnEnchant", Effects: [{ Type: "CardEffectEnchant",
+                    Enchantment: { StatusPool: [{ Id: "titanskin" }], HasParentCard: false, Upgrade: null } }] } =>
+                    actor.Statuses is [{ Id: "armor" }, { Id: "titanskin" }],
+                _ => false
+            });
 
         private static bool SupportedTrigger(CombatUnit actor) => actor.Triggers is [var trigger] &&
             trigger.Effects.All(effect => effect.Action is { Range: null, Statuses.Count: 0 } action &&
