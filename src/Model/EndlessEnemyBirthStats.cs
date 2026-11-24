@@ -6,6 +6,7 @@ namespace MonsterTrain2Poju.Model
 {
     public sealed class EndlessEnemyBirthStats
     {
+        internal const string CorruptionHorde = "HordeT2_DeathAddsCorruption";
         public int InitialAttack { get; }
         public int InitialHealth { get; }
         public int Attack { get; }
@@ -55,6 +56,9 @@ namespace MonsterTrain2Poju.Model
         internal static bool SupportedShape(CombatUnit actor) =>
             actor.IsBoss == false && actor.Statuses.Count == 0 &&
                 (actor.Triggers.Count == 0 || SupportedTrigger(actor)) ||
+            actor is { AssetKey: "HeavyT1_LoseHealthOnMove_Chosen", IsBoss: false,
+                Statuses: [{ Id: "multistrike", Stacks: 1 }], Triggers: [{ Kind: "PostCombat" }] } &&
+                SupportedTrigger(actor) ||
             actor.IsBoss == true && actor.EndsBattleOnDeath && actor.BumpRules?.OuterBoss != true &&
                 actor.Triggers.Count == 0 && actor.Statuses is [{ Id: "relentless", Stacks: 1 }] ||
             IsStatusShape(actor);
@@ -69,6 +73,10 @@ namespace MonsterTrain2Poju.Model
                 { Kind: "AfterSpawnEnchant", Effects: [{ Type: "CardEffectEnchant",
                     Enchantment: { StatusPool: [{ Id: "titanskin" }], HasParentCard: false, Upgrade: null } }] } =>
                     actor.Statuses is [{ Id: "armor" }, { Id: "titanskin" }],
+                { Kind: "OnDeath", Effects: [{ Type: "CardEffectAddStatusEffect", Action: { Type: "AddStatus",
+                    Target: "FrontInRoom", AllowPlayer: true, AllowEnemy: false, Range: null,
+                    Statuses: [{ Id: "corruption" }] } }] } =>
+                    actor.AssetKey == CorruptionHorde && actor.Statuses.Count == 0,
                 _ => false
             });
 

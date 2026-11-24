@@ -47,8 +47,13 @@ namespace MonsterTrain2Poju.Probe
                 return null;
             string[] scalable = new[] { "armor", "titanskin", "buff" }.Where(id =>
                 managers.GetStatusEffectManager().GetStatusEffectDataById(id)?.ScalesInEndless() == true).ToArray();
-            var statusScaling = new RelicSpawnStatusScalingRule(status,
-                Array.Empty<string>(), scaleStarting: true, scaleApplied: true, onlyListed: true, scalable, scalable);
+            var statusScaling = scalable.Length == 3 ? new RelicSpawnStatusScalingRule(status,
+                Array.Empty<string>(), scaleStarting: true, scaleApplied: true, onlyListed: true, scalable, scalable) : null;
+            string[] corruption = { "corruption" };
+            var corruptionScaling = managers.GetStatusEffectManager().GetStatusEffectDataById("corruption")?.ScalesInEndless() == true
+                ? new RelicSpawnStatusScalingRule(status, Array.Empty<string>(), scaleStarting: true, scaleApplied: true,
+                    onlyListed: true, corruption, corruption)
+                : null;
 
             return (data, raw) =>
             {
@@ -66,8 +71,10 @@ namespace MonsterTrain2Poju.Probe
                 }
                 var baseline = data.GetEndlessBaselineStats();
                 bool statusShape = EndlessEnemyBirthStats.IsStatusShape(raw);
+                RelicSpawnStatusScalingRule? capturedStatuses = raw.AssetKey == EndlessEnemyBirthStats.CorruptionHorde
+                    ? corruptionScaling : statusScaling;
                 if (!baseline.HasHealth() || data.IsOuterTrainBoss() || !EndlessEnemyBirthStats.SupportedShape(raw) ||
-                    statusShape && scalable.Length != 3 ||
+                    statusShape && capturedStatuses == null ||
                     !statusShape && data.GetStartingStatusEffects().Any(status =>
                         managers.GetStatusEffectManager().GetStatusEffectDataById(status.statusId)?.ScalesInEndless() != false))
                     return null;
@@ -76,7 +83,7 @@ namespace MonsterTrain2Poju.Probe
                     (entry.Type == "CardEffectDamage" ? damage : entry.Type == "CardEffectHeal" ? heal : buff))).ToArray();
                 return new EndlessEnemyBirthStats(raw.BaseAttack, raw.Health,
                     Mathf.CeilToInt(baselineAttack * attack), Mathf.CeilToInt(baseline.GetHealth() * health), values,
-                    statusShape ? statusScaling : null);
+                    statusShape ? capturedStatuses : null);
             };
         }
     }
