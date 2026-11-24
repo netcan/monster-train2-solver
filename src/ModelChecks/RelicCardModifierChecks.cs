@@ -138,6 +138,16 @@ internal static class RelicCardModifierChecks
         var ignoredArmorTrait = new CardTraitValue("CardTraitIgnoreArmor", "CardTraitIgnoreArmor", 0, 0, true, 0);
         var exhaustTrait = new CardTraitValue("CardTraitExhaustState", "CardTraitExhaustState", 0, 0, true, 0);
         var purgeTrait = new CardTraitValue("CardTraitSelfPurge", "CardTraitSelfPurge", 0, 0, true, 0);
+        var traitCard = new CardInstanceState(2, definition.DataId, CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, [],
+            maskDescriptor: descriptor.WithBaseTraits([purgeTrait]));
+        var sourceSubtype = new CardUpgradeMaskRule(subtypes: new(required: ["required-subtype"]));
+        var traitSwap = new RelicTraitReplacement(purgeTrait.RuntimeType, exhaustTrait.RuntimeType,
+            new CardUpgradeMaskRule(cardType: "Equipment"), sourceSubtype);
+        RelicTraitReplacementModel.Apply(traitCard, traitSwap, false, out bool absent, out string? absentError, out var absentFilters);
+        RelicTraitReplacementModel.Apply(traitCard, traitSwap, true, out bool present, out string? presentError, out var presentFilters);
+        Require(!absent && absentError == null && absentFilters.Select(filter => filter.Accepted).SequenceEqual([false, false]) &&
+            present && presentError == null && presentFilters.Select(filter => filter.Accepted).SequenceEqual([false, true]),
+            "Relic trait replacement lost the all-subtypes flag or bypassed a card-type filter.");
         var removalLifecycle = new CardLifecycleUpgrade(new CardMaskUpgrade("temporary-purge-with-removed-trait",
             new CardStatModifier(), [], false, false, false, false), "temporary-purge-with-removed-trait", false, false,
             [purgeTrait, ignoredArmorTrait, exhaustTrait], ["CardTraitIgnoreArmor", "CardTraitExhaustState"], false, [], [], []);

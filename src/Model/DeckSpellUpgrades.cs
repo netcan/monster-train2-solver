@@ -32,6 +32,8 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported("Deck spell upgrades require complete card definitions, instances and pile membership.");
             if (effect.Upgrade.ExternalInteractions.Count > 0)
                 return Unsupported(string.Join("; ", effect.Upgrade.ExternalInteractions));
+            bool allSubtypes = effect.UpgradeFilters.Count > 0 &&
+                OriginalAllSubtypesModel.Active(source, deployment: source.QueryFrame?.Turn == 0);
 
             var allCards = new List<CardToken>();
             allCards.AddRange(source.Cards.Hand);
@@ -74,7 +76,7 @@ namespace MonsterTrain2Poju.Model
                     bool accepted = true;
                     foreach (CardUpgradeMaskRule filter in effect.UpgradeFilters)
                     {
-                        if (!CardUpgradeMaskModel.FilterCard(filter, view)) { accepted = false; break; }
+                        if (!CardUpgradeMaskModel.FilterCard(filter, view, allSubtypes)) { accepted = false; break; }
                     }
                     if (!accepted) continue;
                 }

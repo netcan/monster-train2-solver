@@ -287,6 +287,8 @@ namespace MonsterTrain2Poju.Model
             error = CardModifierModel.UnsupportedReason(source);
             if (error != null) return Fail(error);
             if (source.MaskDescriptor == null) return Fail("Relic card modifiers require branch-owned mask metadata.");
+            bool allSubtypes = context != null &&
+                OriginalAllSubtypesModel.Active(context, deployment: context.QueryFrame?.Turn == 0);
             var card = source;
             var owned = CardBranchMaskModel.OwnedState(card);
             int next = 1;
@@ -426,7 +428,7 @@ namespace MonsterTrain2Poju.Model
                     {
                         if (!cardEffects.TryGetValue(effectIndex, out RelicCardModifier? traitEffect) || traitEffect.TraitReplacement == null)
                             return Fail("Missing ordered relic trait-replacement definition.");
-                        card = RelicTraitReplacementModel.Apply(card, traitEffect.TraitReplacement, out bool returned,
+                        card = RelicTraitReplacementModel.Apply(card, traitEffect.TraitReplacement, allSubtypes, out bool returned,
                             out error, out var filters)!;
                         if (card == null) return Fail(error!);
                         dispatches.Add(new RelicCardModifierDispatch(relicIndex, effectIndex, returned, false, filters));
@@ -494,7 +496,7 @@ namespace MonsterTrain2Poju.Model
                     }
                     int addedInstanceId = next;
                     int temporaryCountBefore = state.Temporary.Count;
-                    var applied = RelicCardUpgradeModel.Apply(state, cardEffect.Rule!, next);
+                    var applied = RelicCardUpgradeModel.Apply(state, cardEffect.Rule!, next, monstersAreAllSubtypes: allSubtypes);
                     state = applied.State; next = applied.NextUpgradeInstanceId;
                     if (applied.UpgradeAdded)
                     {
@@ -588,10 +590,12 @@ namespace MonsterTrain2Poju.Model
                 return FailRoom("Cardless relic filters require the native character status registry.");
             var characterMask = new CardUpgradeMaskCharacter(actor.Subtypes,
                 (actor.StatusRegistry ?? actor.Statuses).Select(status => status.Id).ToArray(), actor.Size);
+            bool allSubtypes = effect.Rule.Filters.Count > 0 &&
+                OriginalAllSubtypesModel.Active(source.Context, deployment: source.Deployment);
             foreach (CardUpgradeMaskRule filter in effect.Rule.Filters)
             {
-                if (!CardUpgradeMaskModel.FilterCard(filter, cardMask) ||
-                    !CardUpgradeMaskModel.FilterCharacter(filter, characterMask)) return Match(source);
+                if (!CardUpgradeMaskModel.FilterCard(filter, cardMask, allSubtypes) ||
+                    !CardUpgradeMaskModel.FilterCharacter(filter, characterMask, allSubtypes)) return Match(source);
             }
             if (upgrade.Unique && fromCard != null && fromCard.Permanent.Upgrades.Concat(fromCard.Temporary.Upgrades)
                 .Any(item => item.DataId == upgrade.DataId)) return Match(source);
@@ -610,7 +614,7 @@ namespace MonsterTrain2Poju.Model
     internal static class RelicTraitReplacementModel
     {
         internal static CardInstanceState? Apply(CardInstanceState source, RelicTraitReplacement effect,
-            out bool returned, out string? error, out IReadOnlyList<RelicCardFilterResult> filters)
+            bool allSubtypes, out bool returned, out string? error, out IReadOnlyList<RelicCardFilterResult> filters)
         {
             returned = false;
             error = null;
@@ -634,10 +638,10 @@ namespace MonsterTrain2Poju.Model
             }
             return card;
 
-            static bool Matches(CardUpgradeMaskRule? filter, CardInstanceState current, out bool accepted)
+            bool Matches(CardUpgradeMaskRule? filter, CardInstanceState current, out bool accepted)
             {
                 if (filter == null) { accepted = false; return false; }
-                accepted = CardUpgradeMaskModel.FilterCard(filter, CardBranchMaskModel.Resolve(current));
+                accepted = CardUpgradeMaskModel.FilterCard(filter, CardBranchMaskModel.Resolve(current), allSubtypes);
                 return true;
             }
 
