@@ -83,7 +83,7 @@
 | RelicEffectChangeGoldReward | shared-path | Original DoubleGoldEarned and HalfGoldEarned feed the same captured mutable multiplier into reward forecasts. Each unchanged original grant of 250 produced 500 or 125, with the same signed 3-gold cost and unchanged RNG. Targeted controls include composition and rejected missing resource inputs. |
 | RelicEffectChangeHeroSpawnRoom | shared-path | The original second-floor mutator runs one enemy movement and spawn boundary before the first player decision. The captured extra wave, collector, entire first decision and gameplay RNG match the shared transition. The calibration requires the observed ordinary opening shape. |
 | RelicEffectChangeStartingHandSize | shared-path | The unchanged SilverIncreasedDraw and Inkbound_LeakyPen owners add one and two draws in the pinned 2.3.1 opening resource battle. The checker verifies a draw query of eight from five, six native observations and individual owner ablation. The stock-matched HandDoesntDiscard component verifies its two-card reduction and three new ordinary draws ahead of carried cards with full successor and RNG replay. |
-| RelicEffectChangeTreasureUnitCount | shared-path | The exact original additive plus-one mutator resolves its count at scenario initialization. Same-checkpoint stock and custom deployment start at one and two, with both original collector births and spawning RNG matched by the component checker. The Luna whole-battle capture needs a compatible moon-phase observer. |
+| RelicEffectChangeTreasureUnitCount | shared-path | The exact original additive plus-one mutator resolves its count at scenario initialization. Same-checkpoint stock and custom deployment start at one and two, with both original collector births and spawning RNG matched by the component checker. The current Luna whole-battle capture includes Moon and Conduit projections, matches 38 paid actions and seven EndTurns, and passes both strict candidate frontiers and sixteen immutable branches. |
 | RelicEffectConserveEnergyStartOfTurn | shared-path | The original EmberAtStartOfTurnOnly owner and its acquired ConserveEmber suppress ordinary base income and carry unspent Ember. The same-seed pair records 24 Ember at deployment and first draw, a one-Ember payment, and 23 at second draw in the custom run. One paid action and two EndTurns per run match full states and RNG. The +20 opening payload is the preceding ordered effect. |
 | RelicEffectDamageEnemyOnAscend | shared-path | The unchanged DamageOnFloorTransition owner deals 3 damage to a native enemy moved upward before PostAscension. The pinned 2.3.1 floor-transition-damage.mt2f receipt replays 22 movement boundaries, including rooted, immobile and friendly controls. The checker verifies individual paid inputs and the continuous policy after the test setup. Concurrent same-direction damage owners remain guarded. |
 | RelicEffectDamageEnemyOnDescend | shared-path | The second ordered effect of the unchanged DamageOnFloorTransition owner deals 3 damage to a native enemy moved downward before PostDescension. The pinned 2.3.1 floor-transition-damage.mt2f receipt compares the complete movement successor and recorded callback. The checker verifies individual paid inputs and the continuous policy after the test setup. Concurrent same-direction damage owners remain guarded. |
@@ -177,10 +177,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `f360012b2c94406a677c3930197b5122c88cf9fd31287725708a59e2f8e0b1f6`。
+- 人工审查索引 SHA-256: `cdcf1967ad6f12be67db4c25947830c8ce48bfcb814697176f90cccc4912cd28`。
 - Model: PDB 校验过的项目源码集合 `95e252cc617f87e59ff9da8369e9a080f9083f6be7e1961a78e782c2b3978b5f`。
-- Probe: PDB 校验过的项目源码集合 `3ded25d6e7a224f464b1dccfa454a0f5981212e341ee460b4ed42f167b5ae836`。
-- ModelChecks: PDB 校验过的项目源码集合 `8c0207c85625f9cb134f5951ec39d45c0f7e9ca32459c882a0efd40ad9be3599`。
+- Probe: PDB 校验过的项目源码集合 `b3424dd96d00852451c3d55d073b07eff7a94c7252b2f84d153f18bd4ac57467`。
+- ModelChecks: PDB 校验过的项目源码集合 `fe3d533d0bf4f7b10feb35b8f7d8cfed00362d66aa1bf3ecb4642634f5da8a9b`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 

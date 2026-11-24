@@ -1514,8 +1514,9 @@ Fecundity 的原版升级回调会把全额减费值改为目标卡当前的实�
 [受击扣金归档](../tests/compatibility/game-2.3.1/mechanics/lose-money-on-hit/three-physical-hits.mt2f)
 
 `MoreTreasureUnits` 通过原版第二环同源对照。待生成的寻宝单位由 1 增至 2，两次出生后依次降到 1 和 0。
-专项回归逐项匹配两次出生与对应随机流。该场整战仍有月相采集差异。
-[寻宝单位出生归档](../tests/compatibility/game-2.3.1/mechanics/more-treasure-units/two-collector-births.mt2f)
+补齐月相和导能采集后，原版胜局的 38 次出牌、7 次结束回合、16 条独立分支和两类候选检查均通过。
+专项对照匹配 11 个生成阶段，包含两次原版寻宝单位出生及对应随机流。
+[原版整战归档](../tests/compatibility/game-2.3.1/mechanics/more-treasure-units/native-settled-win.mt2f)
 
 `SkullCollectors` 在已验证的原版第 2、4、7 环路线分别替换三级寻宝单位。原版结算分别为
 10 攻 41 血、25 攻 83 血和 45 攻 125 血。完整出生后继、物理位置、寻宝计数和 Spawning RNG 全部匹配。
