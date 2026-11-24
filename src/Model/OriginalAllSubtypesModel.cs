@@ -6,13 +6,14 @@ namespace MonsterTrain2Poju.Model
     internal static class OriginalAllSubtypesModel
     {
         internal const string OwnerId = "3894bbe3-6ad6-42ed-9f63-6b47371b4583";
+        internal const string OwnerKey = "AllUnitsAllSubtypes";
         internal const string Effect = "RelicEffectMonstersAreAllSubtypes";
         private const string Horde = "SubtypesData_Horde";
         private const string None = "SubtypeData_None";
         private const string Pyre = "SubtypesData_Pyre";
 
         internal static bool IsOwner(CombatRelicState relic) => relic.DataId == OwnerId &&
-            relic.AssetKey == "AllUnitsAllSubtypes" && relic.IsCovenant == false && relic.EffectTypes is [Effect];
+            relic.AssetKey == OwnerKey && relic.IsCovenant == false && relic.EffectTypes is [Effect];
 
         internal static bool Active(CombatContext? context, bool deployment) => context?.Relics?.Any(relic =>
             IsOwner(relic) && (!deployment || relic.DisallowedInPlacementPhase == false)) == true;

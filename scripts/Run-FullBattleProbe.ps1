@@ -613,6 +613,7 @@ param(
     [switch] $OriginalPreventMonsterDamageWitness,
     [switch] $OriginalLoseMoneyOnHitWitness,
     [switch] $OriginalAllSubtypesWitness,
+    [switch] $OriginalAllSubtypesBattle,
     [switch] $OriginalSurgicalStrikeSubtypesWitness,
     [switch] $OriginalDoubleStatusEffectsWitness,
     [switch] $OriginalDoubleStatusEffectsBattle,
@@ -1411,7 +1412,7 @@ if ($OriginalSpellDamageMoveWitness) {
 if ($PlacementSummonBlockOnly -and -not $OriginalPlacementMutatorsWitness) {
     throw 'PlacementSummonBlockOnly requires OriginalPlacementMutatorsWitness.'
 }
-$originalMutatorArguments = @('OriginalLoseMoneyOnHitWitness', 'OriginalAllSubtypesWitness', 'OriginalSurgicalStrikeSubtypesWitness', 'OriginalDoubleStatusEffectsWitness',
+$originalMutatorArguments = @('OriginalLoseMoneyOnHitWitness', 'OriginalAllSubtypesWitness', 'OriginalAllSubtypesBattle', 'OriginalSurgicalStrikeSubtypesWitness', 'OriginalDoubleStatusEffectsWitness',
     'OriginalDoubleStatusEffectsBattle', 'OriginalLonelyRoomsBattle', 'OriginalShuffleUnitsWitness',
     'OriginalShuffleUnitsBattle', 'OriginalDoubleFriendlyHealthWitness', 'OriginalDoubleFriendlyHealthBattle',
     'OriginalBothSidesUnitsWitness', 'OriginalBothSidesUnitsBattle')
@@ -1421,7 +1422,7 @@ if ($ShuffleUnitsThreeHosts -and -not $OriginalShuffleUnitsWitness) {
 if ($BothSidesUnitsCardless -and -not $OriginalBothSidesUnitsWitness) {
     throw 'BothSidesUnitsCardless requires OriginalBothSidesUnitsWitness.'
 }
-$selectedOriginalMutatorTests = @($OriginalLoseMoneyOnHitWitness, $OriginalAllSubtypesWitness, $OriginalSurgicalStrikeSubtypesWitness, $OriginalDoubleStatusEffectsWitness,
+$selectedOriginalMutatorTests = @($OriginalLoseMoneyOnHitWitness, $OriginalAllSubtypesWitness, $OriginalAllSubtypesBattle, $OriginalSurgicalStrikeSubtypesWitness, $OriginalDoubleStatusEffectsWitness,
     $OriginalDoubleStatusEffectsBattle, $OriginalLonelyRoomsBattle, $OriginalShuffleUnitsWitness,
     $OriginalShuffleUnitsBattle, $OriginalDoubleFriendlyHealthWitness, $OriginalDoubleFriendlyHealthBattle,
     $OriginalBothSidesUnitsWitness, $OriginalBothSidesUnitsBattle).Where({ $_ })
@@ -1430,6 +1431,7 @@ if ($selectedOriginalMutatorTests.Count -gt 0) {
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if ($OriginalShuffleUnitsWitness) { $witnessArguments += 'ShuffleUnitsThreeHosts' }
     if ($OriginalBothSidesUnitsWitness) { $witnessArguments += 'BothSidesUnitsCardless' }
+    if ($OriginalAllSubtypesBattle) { $witnessArguments += 'OriginalIsolatedSpellIds' }
     if (-not $BinaryCapture -or $selectedOriginalMutatorTests.Count -ne 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
         throw 'Select one original mutator test with isolated binary capture.'
@@ -3180,6 +3182,9 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     if ($OriginalSkullCollectorsWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original SkullCollectors requires the pinned 2.3.1 game module.'
     }
+    if ($OriginalAllSubtypesBattle -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'Original AllUnitsAllSubtypes requires the pinned 2.3.1 game module.'
+    }
     if (($OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle) -and
         $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original DoubleStatusEffects requires the pinned 2.3.1 game module.'
@@ -3712,6 +3717,7 @@ $environment = @{
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_WITNESS = $(if ($OriginalPreventMonsterDamageWitness) { '1' } else { '0' })
     MT2_PROBE_LOSE_MONEY_ON_HIT = $(if ($OriginalLoseMoneyOnHitWitness) { '1' } else { '0' })
     MT2_PROBE_ALL_UNIT_SUBTYPES = $(if ($OriginalAllSubtypesWitness) { '1' } else { '0' })
+    MT2_PROBE_ALL_UNIT_SUBTYPES_BATTLE = $(if ($OriginalAllSubtypesBattle) { '1' } else { '0' })
     MT2_PROBE_SURGICAL_STRIKE_SUBTYPES = $(if ($OriginalSurgicalStrikeSubtypesWitness) { '1' } else { '0' })
     MT2_PROBE_DOUBLE_STATUS_EFFECTS = $(if ($OriginalDoubleStatusEffectsWitness) { '1' } else { '0' })
     MT2_PROBE_DOUBLE_STATUS_EFFECTS_BATTLE = $(if ($OriginalDoubleStatusEffectsBattle) { '1' } else { '0' })

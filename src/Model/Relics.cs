@@ -382,6 +382,8 @@ namespace MonsterTrain2Poju.Model
             if (relics == null) return null; // Legacy captures retained their external-effect guard.
             if (relics.Count(RelicBothSidesUnitsModel.Applies) > 1)
                 return "Duplicate original BothSidesUnitsAreStronger owner.";
+            if (relics.Count(OriginalAllSubtypesModel.IsOwner) > 1)
+                return "Duplicate original AllUnitsAllSubtypes owner.";
             foreach (CombatRelicState relic in relics)
             {
                 string? attackError = RelicStatusAttackModel.Validate(relic);
@@ -404,6 +406,8 @@ namespace MonsterTrain2Poju.Model
                     if (effect == StartingUnitDeckUpgradeModel.Effect && StartingUnitDeckUpgradeModel.IsOriginalOwner(relic)) continue;
                     if (effect == GoldRewardModel.MultiplierEffect && GoldRewardModel.IsOriginalMultiplier(relic) &&
                         relics.Count(owner => owner.DataId == relic.DataId) == 1) continue;
+                    if (effect == OriginalAllSubtypesModel.Effect && OriginalAllSubtypesModel.IsOwner(relic) &&
+                        relic.DisallowedInPlacementPhase == false) continue;
                     if (effect == RelicDeckPyreStatsModel.CardCopies && RelicDeckPyreStatsModel.IsOriginal(relic)) continue;
                     if (effect == RelicLateAttackModel.Effect) continue;
                     if (effect == RelicSpawnSilenceModel.Effect) continue;

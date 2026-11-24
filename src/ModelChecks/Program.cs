@@ -589,6 +589,11 @@ if (args.Length == 2 && args[0] == "--native-all-unit-subtypes-only")
     OriginalAllSubtypesChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-all-unit-subtypes-battle-only")
+{
+    OriginalAllSubtypesChecks.Battle(args[1]);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-surgical-strike-subtypes-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

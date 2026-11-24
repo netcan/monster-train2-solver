@@ -12,6 +12,23 @@ internal static class OriginalAllSubtypesChecks
     private sealed record MaskRow(string Phase, string Kind, string Mode, int SubjectId, CardUpgradeMaskRule Mask, bool Actual);
     private sealed record SpawnRow(string Phase, string Duration, string Key, int SubtypeCount, int AllCount);
 
+    internal static void Battle(string path)
+    {
+        using var document = ModelJson.ReadFixture(path);
+        FixtureValue root = document.RootElement;
+        var turns = root.GetProperty("Turns").EnumerateArray().ToArray();
+        Require(turns.Length >= 5, "The native mutator archive must reach a regular terminal battle.");
+        foreach (FixtureValue turn in turns)
+        {
+            var before = turn.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            var context = before.Spawn.Train.Context!;
+            Require(context.Relics?.Count(OriginalAllSubtypesModel.IsOwner) == 1 &&
+                OriginalAllSubtypesModel.Active(context, before.Spawn.Turn == 0) && RelicModel.Validate(context) == null,
+                "The exact AllUnitsAllSubtypes owner must be active from native deployment through each combat turn.");
+        }
+        SolverStageChecks.Native(path);
+    }
+
     internal static void Native(FixtureValue root)
     {
         FixtureValue owner = root.GetProperty("Owner");
@@ -34,9 +51,16 @@ internal static class OriginalAllSubtypesChecks
         Require(before.Spawn.Turn == 1 && active.Spawn.Turn == 1 && !Active("Before") && Active("Active") &&
             activeContext.Relics!.Count(OriginalAllSubtypesModel.IsOwner) == 1 &&
             activeContext.Relics!.Single(OriginalAllSubtypesModel.IsOwner).DisallowedInPlacementPhase == false &&
-            RelicModel.Validate(Context("Before")) == null && RelicModel.Validate(activeContext)?.Contains(OriginalAllSubtypesModel.Effect) == true &&
+            RelicModel.Validate(Context("Before")) == null && RelicModel.Validate(activeContext) == null &&
             root.GetProperty("Before").GetProperty("RngStreams").ContentEquals(root.GetProperty("Active").GetProperty("RngStreams")),
             "Native owner, settled decision, gameplay RNG or production admission differs.");
+        var exactOwner = activeContext.Relics!.Single(OriginalAllSubtypesModel.IsOwner);
+        Require(RelicModel.Validate([exactOwner, exactOwner]) != null &&
+            RelicModel.Validate([new CombatRelicState(exactOwner.DataId, "changed", exactOwner.EffectTypes,
+                isCovenant: false, disallowedInPlacementPhase: false)]) != null &&
+            RelicModel.Validate([new CombatRelicState(exactOwner.DataId, exactOwner.AssetKey, exactOwner.EffectTypes,
+                isCovenant: false, disallowedInPlacementPhase: true)]) != null,
+            "Duplicate, changed or deployment-disallowed all-subtypes owner was admitted.");
 
         ActorRow[] actors = root.GetProperty("Actors").Deserialize<ActorRow[]>()!;
         Require(actors.Select(row => (row.Phase, row.Role)).SequenceEqual(new[] {
@@ -85,12 +109,17 @@ internal static class OriginalAllSubtypesChecks
             CombatUnit original = Actor(row.Phase, row.ActorId);
             var deathTrigger = new CombatTrigger("OnDeath", false, false, false, 1, []);
             var triggerRule = new RelicCharacterTriggers(0, true, false, [deathTrigger], false, Fungus, subtypeIsNone: false);
-            var trigger = RelicCharacterTriggerModel.Apply(room, row.ActorId, triggerRule);
+            // This older component receipt predates the whole-battle capture gate.
+            var triggerRoom = new RoomCombatState(room.RoomIndex, room.Deployment, room.Units,
+                room.ExternalInteractions.Where(reason => reason != "Mutator effects" &&
+                    reason != $"Unmodeled relic effect {OriginalAllSubtypesModel.Effect} on {OriginalAllSubtypesModel.OwnerKey}.").ToArray(),
+                room.Context, room.Preview, room.ActiveCompanionBossIds);
+            var trigger = RelicCharacterTriggerModel.Apply(triggerRoom, row.ActorId, triggerRule);
             Require(health.Supported && health.State!.Units.Single(unit => unit.Id == row.ActorId).MaxHealth ==
                 (wildcard ? original.MaxHealth * 2 : original.MaxHealth), "Percentage stats did not use the native subtype query on birth.");
-            Require(wildcard ? trigger.UnsupportedReason?.Contains(OriginalAllSubtypesModel.Effect) == true :
-                trigger.Supported && trigger.State!.Units.Single(unit => unit.Id == row.ActorId).Triggers.Count == original.Triggers.Count,
-                "Trigger installation must reach room validation only when the native subtype query matches: " + trigger.UnsupportedReason);
+            Require(trigger.Supported && trigger.State!.Units.Single(unit => unit.Id == row.ActorId).Triggers.Count ==
+                original.Triggers.Count + (wildcard ? 1 : 0),
+                "Trigger installation did not use the native subtype query on birth: " + trigger.UnsupportedReason);
         }
 
         DeckRow[] deck = root.GetProperty("Deck").Deserialize<DeckRow[]>()!;

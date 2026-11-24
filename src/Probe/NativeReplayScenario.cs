@@ -625,6 +625,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalLonelyRoomsBattle.Acquire(save);
                     if (fullBattle && OriginalLoseMoneyOnHitWitness.Enabled && !OriginalLoseMoneyOnHitWitness.Acquired)
                         OriginalLoseMoneyOnHitWitness.Acquire(save);
+                    if (fullBattle && OriginalAllSubtypesWitness.FullBattle && !OriginalAllSubtypesWitness.BattleAcquired)
+                        OriginalAllSubtypesWitness.AcquireBeforeBattle(managers!);
                     if (fullBattle && (OriginalDoubleStatusEffectsWitness.Enabled || OriginalDoubleStatusEffectsWitness.FullBattle) &&
                         !OriginalDoubleStatusEffectsWitness.Acquired)
                         OriginalDoubleStatusEffectsWitness.Acquire(save);

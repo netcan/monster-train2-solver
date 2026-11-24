@@ -14,8 +14,8 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalAllSubtypesWitness
     {
         internal const string FileName = "all-unit-subtypes.mt2f";
-        private const string OwnerId = "3894bbe3-6ad6-42ed-9f63-6b47371b4583";
-        private const string OwnerKey = "AllUnitsAllSubtypes";
+        private const string OwnerId = OriginalAllSubtypesModel.OwnerId;
+        private const string OwnerKey = OriginalAllSubtypesModel.OwnerKey;
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
         private static readonly List<object> Actors = new List<object>();
         private static readonly List<object> Deck = new List<object>();
@@ -31,7 +31,19 @@ namespace MonsterTrain2Poju.Probe
         private static SubtypeData[]? actorQueries;
         private static bool started;
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ALL_UNIT_SUBTYPES") == "1";
+        internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_ALL_UNIT_SUBTYPES_BATTLE") == "1";
+        internal static bool BattleAcquired { get; private set; }
         internal static bool Completed { get; private set; }
+
+        internal static void AcquireBeforeBattle(AllGameManagers managers)
+        {
+            SaveManager save = managers.GetSaveManager();
+            if (save.GetCurrentDistance() != 0 || save.GetGameSequence() == SaveData.GameSequence.InBattle ||
+                save.InTestScenario || save.GetCovenants().Count != 0)
+                throw new InvalidOperationException("Expected original AllUnitsAllSubtypes setup before the isolated first battle.");
+            Acquire(managers);
+            BattleAcquired = true;
+        }
 
         internal static void Tick(FullBattleTrace trace, AllGameManagers managers, Action advanceTurn)
         {

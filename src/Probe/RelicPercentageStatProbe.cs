@@ -39,6 +39,9 @@ namespace MonsterTrain2Poju.Probe
         internal static bool SupportedMutators(AllGameManagers managers)
         {
             var save = managers.GetSaveManager();
+            if (save.GetCovenants().Count == 0 && save.GetMutators() is [var subtypeOwner] &&
+                BattleSpawnPointProbe.Enabled && CardBranchMaskProbe.Enabled && SupportsOriginalAllSubtypes(subtypeOwner))
+                return true;
             return save.GetCovenants().Count == 0 && save.GetMutators().Count > 0 &&
                 save.GetMutators().All(owner => OriginalStartRoomAttachmentScenario.SupportsInfernoMutator(owner, save) ||
                     StartingUnitDeckUpgradeProbe.Matches(owner) ||
@@ -87,6 +90,11 @@ namespace MonsterTrain2Poju.Probe
                         owner.GetEffects().Count == 1 && effect is RelicEffectSpawnMonsterOnTurnStart) &&
                     ((RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect)).GetEffectConditions().Count == 0));
         }
+
+        private static bool SupportsOriginalAllSubtypes(RelicState owner) =>
+            owner.GetRelicDataID() == OriginalAllSubtypesModel.OwnerId && owner.GetAssetName() == OriginalAllSubtypesModel.OwnerKey &&
+            !owner.DisallowedInPlacementPhase && owner.GetEffects() is [RelicEffectMonstersAreAllSubtypes effect] &&
+            ((RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect)).GetEffectConditions().Count == 0;
 
         private static bool SupportsEmbeddedRooms(RelicState owner) =>
             owner.GetRelicDataID() == RelicModel.AlwaysEmbeddedRoomsOwnerId &&
