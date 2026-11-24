@@ -9,16 +9,16 @@
 | 待办分类 | 类数 | 含目录引用 | 含类型声明 |
 | --- | ---: | ---: | ---: |
 | known-gap | 1 | 1 | 1 |
-| inspect-no-code-link | 6 | 6 | 6 |
-| inspect-inherited-code | 3 | 3 | 3 |
-| inspect-projection-normalization | 54 | 54 | 54 |
+| inspect-no-code-link | 5 | 5 | 5 |
+| inspect-inherited-code | 1 | 1 | 1 |
+| inspect-projection-normalization | 55 | 55 | 55 |
 | inspect-guard-links | 43 | 43 | 43 |
 | review-existing-code | 226 | 226 | 226 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 282 | 0 | 0 |
-| scoped-review-recorded | 112 | 108 | 108 |
+| scoped-review-recorded | 114 | 110 | 110 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 115 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 117 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -33,6 +33,8 @@
 | CardEffectAddStatusEffectNextMonster | known-gap | Native Apply queues AddSpawningStatusEffect. CreateMonsterState applies and clears it before authored starting statuses, and EndTurn clears pending values. The five catalog references are requiredCardEffects filters. The pinned 2.3.1 owner query scanned effect lists on 724 cards, 406 characters, 920 upgrades and 676 relic collection entries. It found zero authored effect entries in this scope. The equipment grant control found one original OnSpawn upgrade entry. Dynamic construction and runtime execution remain unverified. |
 | CardTraitJuice4 | known-gap | Shared 2/3/4 multiplier has five original upgrades, 180 native callback pairs and nine original casts. Source OnCardBeingUpgraded and next-draw dispatch have 540 relationship cases with repeats and 300 ordered pairs; six two-card draws verify deep copies, shared originals and short circuit. Original SoulHelper attachment of Mollis T3 to Cycle of Life records its sole modified trait and preserves +10 unit health before +32 Spikes and +12 OnCast Armor. The native win passed the complete chain, 16 branches, candidate frontiers and serial/parallel search. Two original paid Shelter casts at three Corruption add 6 and 60 Armor, with captured corruption scaling preceding Juice4 and the OnCast Armor addition. Both full successors and RNG match. The five original Juice upgrade payloads have no trait parameter cast effect; unsupported ordered shapes remain guarded. |
 | CardEffectAddBattleCard | shared-path | The original Railforged Unruly Scourge payload adds the single authored Scourge card to the hand after a same-floor enemy death. Two such generations match native effects. The original whole battle matches 33 plays, seven EndTurns and both candidate frontiers. This review covers that trigger and one-card pool. |
+| CardEffectAddStatusEffectPerFriendlyMissingHp | shared-path | Original Collector skill receives four exact Pain totals (5, 18, 28, 28), before the ordinary damage pipeline consumes the new stacks in the same skill. Seven native friendly-health queries include the Pyre. The unchanged paid sequence and serial and parallel search agree. |
+| CardEffectAddStatusEffectPerMissingHp | shared-path | Original Oil uses each occupant's own missing health to add Armor on the selected floor. Positive and full-health controls agree through three native per-target callbacks. All 28 paid inputs, seven turns and sixteen branches replay, with zero unsupported candidates in the checked search. |
 | CardEffectAddStatusEffectPerSelfAttack | shared-path | Original Dutiful Armor grants twelve Armor to each native target in six positive applications across three PostCombat callbacks. The settled whole battle matches 28 plays, five EndTurns, both frontiers and sixteen branches. |
 | CardEffectAddUpgradedCopy | shared-path | The original Fecundity upgrade on Train Steward consumes one Ember and produces a separate hand card with temporary successor cost plus one. The source retains its original permanent upgrade. The scoped paid-action check covers exact state, RNG, and the solver candidate. |
 | CardEffectAdjustRoomCapacity | shared-path | The original FavoredChild_2 boss lowers player capacity in three native applications and retains enemy capacity. Six bound checks, nine TestEffect calls and two oversize occupied states match. The first post-combat pair independently proves reduction before self OnFeed. |
@@ -152,27 +154,27 @@
 | RelicEffectBuffPyreForBossKill | inspect-no-code-link | 3 | 3 | 无直接链接 |
 | RelicEffectAddStartingUpgradeToUnitCards | inspect-no-code-link | 2 | 2 | 无直接链接 |
 | RelicEffectChangeGoldReward | inspect-no-code-link | 2 | 2 | 无直接链接 |
-| RelicEffectEndlessScalingOnSpawn | inspect-no-code-link | 1 | 1 | 无直接链接 |
 | RelicEffectModifyTrial | inspect-no-code-link | 1 | 1 | 无直接链接 |
 | RelicEffectReplaceChampion | inspect-no-code-link | 1 | 1 | 无直接链接 |
-| CardEffectAddStatusEffectPerMissingHp | inspect-inherited-code | 2 | 2 | [MonsterTrain2Poju.Model.CardJuiceModel+<>c.<SimpleUpgrade>b__12_2](../../src/Model/CardJuice.cs:51) |
 | CardEffectAddStatusToRoomScalingByCasterStatusCount | inspect-inherited-code | 2 | 2 | [MonsterTrain2Poju.Model.CardJuiceModel+<>c.<SimpleUpgrade>b__12_2](../../src/Model/CardJuice.cs:51) |
-| CardEffectAddStatusEffectPerFriendlyMissingHp | inspect-inherited-code | 1 | 1 | [MonsterTrain2Poju.Model.CardJuiceModel+<>c.<SimpleUpgrade>b__12_2](../../src/Model/CardJuice.cs:51) |
 | CardEffectAttachTrainRoomAttachment | inspect-projection-normalization | 34 | 34 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
 | CardEffectAttackWithUnit | inspect-projection-normalization | 13 | 13 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
 | CardEffectUnitAbilityTeleport | inspect-projection-normalization | 8 | 8 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
 | CardEffectMix | inspect-projection-normalization | 6 | 6 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
 | CardTraitUnpurgable | inspect-projection-normalization | 6 | 6 | [MonsterTrain2Poju.Probe.DamageScalingProbe.Known](../../src/Probe/DamageScalingProbe.cs:11) |
 | CardEffectChooseDiscard | inspect-projection-normalization | 5 | 5 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
+| CardEffectKill | inspect-projection-normalization | 4 | 7 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
+| CardEffectTransferAttackFromUnit | inspect-projection-normalization | 4 | 4 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
+| RoomStateCapacityModifier | inspect-projection-normalization | 4 | 4 | [MonsterTrain2Poju.Probe.BattleActionProbe+<>c.<CapacityAttachment>b__25_0](../../src/Probe/BattleActionProbe.cs:804) |
 
 ## 可重建输入
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `5d8ad474d5a9269811a018b96871228502bfe7adc56486366238c179b5018618`。
+- 人工审查索引 SHA-256: `f1b3e5f50f29cbc0cfc8e876ef85ded744960ed3002f24bd495a7d2bc786b2cb`。
 - Model: PDB 校验过的项目源码集合 `1a8d8a0148319c188b7073008806d8dfa6fe84a4a60912848779e60849a0bfe5`。
-- Probe: PDB 校验过的项目源码集合 `78c506d56115d8fa16862099dd86d2aff4f5e6e1e95b85b00f92710d85fd1f5c`。
-- ModelChecks: PDB 校验过的项目源码集合 `82310f7d5675befd6bcb3017985c3638ec2efc0ec8224bef6a565c7aa892767f`。
+- Probe: PDB 校验过的项目源码集合 `ee848828e29d115a03f32640f19340ec80d8888685b364e9ee3b7c81bfe0cc6a`。
+- ModelChecks: PDB 校验过的项目源码集合 `fa794c23af0cd291e86930e20b01af99b06cfc4cb56abfd3d0036b93d081721b`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
