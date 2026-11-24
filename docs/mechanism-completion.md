@@ -1426,7 +1426,9 @@ Zariel 的 Devotion 路线在法术支付并结算后读取当前等级。原版
 
 三阶原版 Silver 灵魂的薪火升级由 `SaveManager.BattleComplete` 在战斗终局快照之后调用，
 同一灵魂的额外奖励在战后生成。顾问识别原版灵魂和完整有序效果列表，并在下一场读取薪火的实际数值。
-该边界经过原版目录与调用链核对，三阶灵魂的实际战后升级仍待实机对照。
+Silver T1 用两份真实胜局后的隔离存档调用原版调度器。两份受控对照分别记录当前与最大生命各加 5，
+以及持久攻击加 5，各消耗一次战斗随机。更高阶和新版整局结算仍待实机复验。
+[原版 Silver T1 调度归档](../tests/compatibility/game-2.3.1/mechanics/silver-postbattle/manifest.tsv)
 
 原版 `ChampionReplacement` 在开局换冠军，`TimeForTrials` 在战斗介绍界面锁定试炼。
 同一原版种子的首战对照中，冠军由 Hornbreaker 换为 Rector Flicker。试炼开启并锁定后，

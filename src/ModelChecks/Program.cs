@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--original-silver-postbattle-only")
+{
+    using var health = ModelJson.ReadFixture(args[1]);
+    using var attack = ModelJson.ReadFixture(args[2]);
+    OriginalSilverPostBattleChecks.Pair(health.RootElement, attack.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--original-battle-setup-only")
 {
     using var stock = ModelJson.ReadFixture(args[1]);
