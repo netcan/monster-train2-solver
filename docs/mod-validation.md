@@ -19,6 +19,12 @@ The five scaled enemies and settled state matched the forecast. The Advisor publ
 remaining ten steps on turn one with the original search count.
 [First EndTurn](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-loop2-advisor-first-end-turn.mt2f)
 
+The Windows build also replayed 31 original inputs on the same isolated Ring 3 checkpoint.
+It won with 76 Pyre health and matched all 24 paid actions and seven EndTurns. The release
+journal kept Firebrand's explicit target as unit 2 with caster 3 on both uses. For both Savior
+uses it recorded Fel as caster 2 and left the selected target empty. The diagnostic change
+is in `369e5fc1`. The source battle is [the Ring 3 rolling archive](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring3.mt2f).
+
 On 2026-11-21 the current Windows build completed a rolling player-advisor battle in an isolated
 2.3.1 instance (seed 424242, one search worker, 1,000 ms per recommendation). The production
 advisor published 27 recommendations. The driver sent 18 card plays and seven EndTurn inputs
