@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
+using UnityEngine.UI;
 
 namespace MonsterTrain2Poju.Probe
 {
@@ -24,7 +25,13 @@ namespace MonsterTrain2Poju.Probe
             var items = (List<IDraftableUI>)elixirDraftItems.GetValue(mixChoiceScreen);
             string? guidance = pendingMixChoice?.Prompt(screenActive: true, items.Count);
             if (guidance == null) return false;
-            if (body.text != guidance) body.text = guidance;
+            if (body.text != guidance)
+            {
+                body.text = guidance;
+                LayoutRebuilder.ForceRebuildLayoutImmediate(body.rectTransform);
+                planScroll.StopMovement();
+                planScroll.verticalNormalizedPosition = 1;
+            }
             showingCardChoice = true;
             SetPending(true);
             return true;
