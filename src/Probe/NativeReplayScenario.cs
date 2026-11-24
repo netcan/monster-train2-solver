@@ -1371,7 +1371,19 @@ namespace MonsterTrain2Poju.Probe
                             () => AdvanceTurn(combat!, record: endlessScalingWholeBattle));
                         if (!endlessOpeningCaptured) return;
                     }
-                    if (endlessScalingWholeBattle)
+                    if (OriginalEndlessLoop2CorruptionWitness.Enabled)
+                    {
+                        if (!OriginalEndlessLoop2CorruptionWitness.TryChoose(trace, out pendingPlay, out var choices))
+                            Finish(true, "Original Endless Loop 2 paid Horde death captured.");
+                        else if (pendingPlay == null) AdvanceTurn(combat!, replayEndTurn: true, choices);
+                        else if (managers.GetRoomManager().GetSelectedRoom() != pendingPlay.RoomIndex)
+                        {
+                            save.StartCoroutine(managers.GetRoomManager().GetRoomUI().SetSelectedRoom(pendingPlay.RoomIndex));
+                            Enter(Stage.SelectingRoom, 20f);
+                        }
+                        else PlayPendingPolicyCard(managers, cards!);
+                    }
+                    else if (endlessScalingWholeBattle)
                     {
                         trace.CompleteEndTurn(RoomOutcome.Exchanged);
                         AdvanceTurn(combat!);
