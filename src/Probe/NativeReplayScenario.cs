@@ -781,6 +781,8 @@ namespace MonsterTrain2Poju.Probe
                 {
 #if DEVELOPMENT_PROBE
                     if (RollingAdviceScenario.DeploymentOnly) PlayerAdvisorProbe.PauseForFrozenPlan(beforeDeployment: true);
+                    if (fullBattle && OriginalEquilibriusDrawWitness.Enabled && !OriginalEquilibriusDrawWitness.Prepare(managers!))
+                        return;
                     if (fullBattle && OriginalUnrulyWitness.Enabled)
                     {
                         OriginalUnrulyWitness.Request(save, log);
@@ -1040,6 +1042,12 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && OriginalEquilibriusDrawWitness.Enabled)
+            {
+                if (OriginalEquilibriusDrawWitness.Tick(managers, () => AdvanceTurn(combat!, record: false)))
+                    Finish(true, "Original Equilibrius T3 positive draw captured.");
+                return;
+            }
             if (fullBattle && OriginalSpellDamageMoveWitness.Enabled)
             {
                 if (combat!.IsPlacementPhase)
