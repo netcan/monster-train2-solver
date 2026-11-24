@@ -83,22 +83,10 @@ namespace MonsterTrain2Poju.Probe
             SubtypeData rawFriendly = friendly.GetSubtypes().First(subtype => !subtype.IsNone);
             actorQueries = new[] { SubtypeData.None, rawFriendly, fungus, horde, champion, pyreSubtype };
 
-            MutatorData owner = save.GetAllGameData().FindMutatorData(OwnerId)
-                ?? throw new InvalidOperationException("Missing original AllUnitsAllSubtypes owner.");
-            if (owner.name != OwnerKey || owner.DisallowInDeploymentPhase || owner.GetEffects() is not [var effect] ||
-                effect.GetEffectClassName() != nameof(RelicEffectMonstersAreAllSubtypes) || effect.GetEffectConditions().Count != 0)
-                throw new InvalidOperationException("Original AllUnitsAllSubtypes owner data changed.");
-            RelicManager relics = managers.GetRelicManager();
-            if (relics.GetRelicEffect<RelicEffectMonstersAreAllSubtypes>() != null)
-                throw new InvalidOperationException("Baseline already contains the all-subtype effect.");
             using var masks = new QueryMasks(fungus, rawFriendly);
             Observe("Before", friendly, foe, pyre, deployed, masks, managers, trace);
             BattleTurnState before = trace.CaptureDecision();
-            save.AddMutator(owner);
-            if (save.GetMutators() is not [var native] || native.GetRelicDataID() != OwnerId ||
-                native.GetEffects() is not [RelicEffectMonstersAreAllSubtypes loaded] ||
-                !ReferenceEquals(relics.GetRelicEffect<RelicEffectMonstersAreAllSubtypes>(), loaded))
-                throw new InvalidOperationException("The original all-subtypes effect did not activate.");
+            RelicEffectData effect = Acquire(managers);
             Observe("Active", friendly, foe, pyre, deployed, masks, managers, trace);
             BattleTurnState active = trace.CaptureDecision();
             if (HalfHealthLifecycleCalibration.Difference(before.RngStreams, active.RngStreams) != null)
@@ -121,6 +109,24 @@ namespace MonsterTrain2Poju.Probe
                 archive.Write(stream);
                 Completed = true;
             }
+        }
+
+        internal static RelicEffectData Acquire(AllGameManagers managers)
+        {
+            SaveManager save = managers.GetSaveManager();
+            RelicManager relics = managers.GetRelicManager();
+            if (Application.version != "2.3.1" || typeof(RelicEffectMonstersAreAllSubtypes).Module.ModuleVersionId != Module ||
+                save.PreviewMode || save.GetMutators().Count != 0 || relics.GetRelicEffect<RelicEffectMonstersAreAllSubtypes>() != null ||
+                save.GetAllGameData().FindMutatorData(OwnerId) is not MutatorData owner || owner.name != OwnerKey ||
+                owner.DisallowInDeploymentPhase || owner.GetEffects() is not [var effect] ||
+                effect.GetEffectClassName() != nameof(RelicEffectMonstersAreAllSubtypes) || effect.GetEffectConditions().Count != 0)
+                throw new InvalidOperationException("Missing or changed original AllUnitsAllSubtypes owner or nonempty baseline.");
+            save.AddMutator(owner);
+            if (save.GetMutators() is not [var native] || native.GetRelicDataID() != OwnerId ||
+                native.GetEffects() is not [RelicEffectMonstersAreAllSubtypes loaded] ||
+                !ReferenceEquals(relics.GetRelicEffect<RelicEffectMonstersAreAllSubtypes>(), loaded))
+                throw new InvalidOperationException("The original all-subtypes effect did not activate.");
+            return effect;
         }
 
         private static void Observe(string phase, CharacterState friendly, CharacterState foe, CharacterState pyre,

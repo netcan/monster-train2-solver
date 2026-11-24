@@ -589,6 +589,12 @@ if (args.Length == 2 && args[0] == "--native-all-unit-subtypes-only")
     OriginalAllSubtypesChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-surgical-strike-subtypes-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    SurgicalStrikeSubtypeChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-prevent-monster-damage-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

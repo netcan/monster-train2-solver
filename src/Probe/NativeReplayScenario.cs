@@ -1554,6 +1554,12 @@ namespace MonsterTrain2Poju.Probe
                     }
                 }
             }
+            if (fullBattle && OriginalSurgicalStrikeSubtypesWitness.Enabled)
+            {
+                if (OriginalSurgicalStrikeSubtypesWitness.Tick(FullBattleTrace.Active!, managers, () => AdvanceTurn(combat!, record: false)))
+                    Finish(true, "Original Surgical Strike subtype kill controls captured.");
+                return;
+            }
             if (fullBattle && OriginalAllSubtypesWitness.Enabled)
             {
                 OriginalAllSubtypesWitness.Tick(FullBattleTrace.Active!, managers, () => AdvanceTurn(combat!, record: false));

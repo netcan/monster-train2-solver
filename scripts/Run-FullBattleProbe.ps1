@@ -613,6 +613,7 @@ param(
     [switch] $OriginalPreventMonsterDamageWitness,
     [switch] $OriginalLoseMoneyOnHitWitness,
     [switch] $OriginalAllSubtypesWitness,
+    [switch] $OriginalSurgicalStrikeSubtypesWitness,
     [switch] $OriginalDoubleStatusEffectsWitness,
     [switch] $OriginalDoubleStatusEffectsBattle,
     [switch] $OriginalLonelyRoomsBattle,
@@ -1410,7 +1411,7 @@ if ($OriginalSpellDamageMoveWitness) {
 if ($PlacementSummonBlockOnly -and -not $OriginalPlacementMutatorsWitness) {
     throw 'PlacementSummonBlockOnly requires OriginalPlacementMutatorsWitness.'
 }
-$originalMutatorArguments = @('OriginalLoseMoneyOnHitWitness', 'OriginalAllSubtypesWitness', 'OriginalDoubleStatusEffectsWitness',
+$originalMutatorArguments = @('OriginalLoseMoneyOnHitWitness', 'OriginalAllSubtypesWitness', 'OriginalSurgicalStrikeSubtypesWitness', 'OriginalDoubleStatusEffectsWitness',
     'OriginalDoubleStatusEffectsBattle', 'OriginalLonelyRoomsBattle', 'OriginalShuffleUnitsWitness',
     'OriginalShuffleUnitsBattle', 'OriginalDoubleFriendlyHealthWitness', 'OriginalDoubleFriendlyHealthBattle',
     'OriginalBothSidesUnitsWitness', 'OriginalBothSidesUnitsBattle')
@@ -1420,7 +1421,7 @@ if ($ShuffleUnitsThreeHosts -and -not $OriginalShuffleUnitsWitness) {
 if ($BothSidesUnitsCardless -and -not $OriginalBothSidesUnitsWitness) {
     throw 'BothSidesUnitsCardless requires OriginalBothSidesUnitsWitness.'
 }
-$selectedOriginalMutatorTests = @($OriginalLoseMoneyOnHitWitness, $OriginalAllSubtypesWitness, $OriginalDoubleStatusEffectsWitness,
+$selectedOriginalMutatorTests = @($OriginalLoseMoneyOnHitWitness, $OriginalAllSubtypesWitness, $OriginalSurgicalStrikeSubtypesWitness, $OriginalDoubleStatusEffectsWitness,
     $OriginalDoubleStatusEffectsBattle, $OriginalLonelyRoomsBattle, $OriginalShuffleUnitsWitness,
     $OriginalShuffleUnitsBattle, $OriginalDoubleFriendlyHealthWitness, $OriginalDoubleFriendlyHealthBattle,
     $OriginalBothSidesUnitsWitness, $OriginalBothSidesUnitsBattle).Where({ $_ })
@@ -3711,6 +3712,7 @@ $environment = @{
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_WITNESS = $(if ($OriginalPreventMonsterDamageWitness) { '1' } else { '0' })
     MT2_PROBE_LOSE_MONEY_ON_HIT = $(if ($OriginalLoseMoneyOnHitWitness) { '1' } else { '0' })
     MT2_PROBE_ALL_UNIT_SUBTYPES = $(if ($OriginalAllSubtypesWitness) { '1' } else { '0' })
+    MT2_PROBE_SURGICAL_STRIKE_SUBTYPES = $(if ($OriginalSurgicalStrikeSubtypesWitness) { '1' } else { '0' })
     MT2_PROBE_DOUBLE_STATUS_EFFECTS = $(if ($OriginalDoubleStatusEffectsWitness) { '1' } else { '0' })
     MT2_PROBE_DOUBLE_STATUS_EFFECTS_BATTLE = $(if ($OriginalDoubleStatusEffectsBattle) { '1' } else { '0' })
     MT2_PROBE_LONELY_ROOMS_BATTLE = $(if ($OriginalLonelyRoomsBattle) { '1' } else { '0' })
@@ -4935,6 +4937,16 @@ if ($OriginalAllSubtypesWitness) {
         throw "Original all-unit subtype query witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-ALL-UNIT-SUBTYPES PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalSurgicalStrikeSubtypesWitness) {
+    $capturePath = Join-Path $profile 'surgical-strike-subtypes.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Surgical Strike subtype kill controls captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original Surgical Strike subtype kill witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-SURGICAL-STRIKE-SUBTYPES PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalDoubleStatusEffectsWitness) {
