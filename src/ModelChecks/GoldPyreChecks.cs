@@ -62,6 +62,7 @@ internal static class GoldPyreChecks
         Require(multiplied.Context!.Gold == 20 && GoldRewardModel.Adjust(7, multiplier: 0.5f) == 5 &&
             State(GoldModel.Adjust(Train(Context(multiplier: 3f), pyre), 7)).Context!.Gold == 7,
             "The actual reward multiplier, native floor/round-five order or non-reward bypass differs.");
+        OriginalRewardOwners(context, pyre);
         Require(State(GoldModel.Adjust(Train(context.WithGold(int.MaxValue), pyre), 1)).Context!.Gold == 0,
             "Save's unchecked signed gold addition was replaced by a checked addition.");
         Require(!GoldModel.Set(Train(Context(multiplier: float.NaN), pyre), 5).Supported &&
@@ -96,6 +97,41 @@ internal static class GoldPyreChecks
         });
         Require(Serialize(root) == parent, "Parallel branches changed parent resource, RNG or unit history.");
         Console.WriteLine("GOLD-PYRE-CHECKS PASS: synchronous actual-unit refresh, zero/unchanged/clipped/preview gold, signed upgrades and retained status cache, notify conditions, reward multiplier, paid next draw, local and cross-room callbacks, legacy and 32 immutable branches.");
+    }
+
+    private static void OriginalRewardOwners(CombatContext context, CombatUnit pyre)
+    {
+        const string effect = GoldRewardModel.MultiplierEffect;
+        const string doubleId = "fee18e5b-e123-46c7-8fd3-0ea8f2cd47f1";
+        const string halfId = "717261f5-95d2-4524-9449-cfc6f8e98a74";
+        CombatRelicState doubled = new(doubleId, "DoubleGoldEarned", [effect], isCovenant: false, disallowedInPlacementPhase: false);
+        CombatRelicState halved = new(halfId, "HalfGoldEarned", [effect], isCovenant: false, disallowedInPlacementPhase: false);
+        (CombatRelicState[] Owners, float Multiplier, int Reward)[] scenarios =
+        [
+            ([doubled], 2f, 30),
+            ([halved], 0.5f, 5),
+            ([doubled, halved], 1f, 15)
+        ];
+        foreach (var scenario in scenarios)
+        {
+            string[] ids = scenario.Owners.Select(owner => owner.DataId).ToArray();
+            CombatContext captured = context.WithRelics(scenario.Owners).WithResources(Raw(scenario.Multiplier, mutators: ids));
+            TrainCombatState battle = Train(captured.WithGold(10), pyre);
+            Require(State(GoldModel.Adjust(battle, 14, isReward: true)).Context!.Gold == 10 + scenario.Reward &&
+                State(GoldModel.Adjust(battle, -3, isReward: true)).Context!.Gold == 7 &&
+                State(GoldModel.Adjust(battle, 14)).Context!.Gold == 24 && battle.Context!.Gold == 10,
+                "Original owner changed nonreward gold or applied the captured reward multiplier incorrectly.");
+            Require(!GoldModel.Adjust(Train(captured.WithResources(null), pyre), 14, isReward: true).Supported &&
+                !GoldModel.Adjust(Train(captured.WithResources(Raw(scenario.Multiplier)), pyre), 14, isReward: true).Supported &&
+                !GoldModel.Adjust(Train(captured.WithResources(Raw(3f, mutators: ids)), pyre), 14, isReward: true).Supported,
+                "Original gold owner accepted missing or inconsistent native rule state.");
+        }
+        Require(RelicModel.Validate([doubled, doubled]) != null &&
+            RelicModel.Validate([new("other-id", doubled.AssetKey, [effect], isCovenant: false, disallowedInPlacementPhase: false)]) != null &&
+            RelicModel.Validate([new(doubleId, "OtherGoldOwner", [effect], isCovenant: false, disallowedInPlacementPhase: false)]) != null &&
+            RelicModel.Validate([new(doubleId, doubled.AssetKey, [effect, RelicModel.Null], isCovenant: false, disallowedInPlacementPhase: false)]) != null &&
+            RelicModel.Validate([new(doubleId, doubled.AssetKey, [effect], isCovenant: false, disallowedInPlacementPhase: true)]) != null,
+            "Unknown or changed gold modifier owner bypassed roster validation.");
     }
 
     private static void PermanentAttackAdjustment(CombatContext context, CombatUnit pyre)
@@ -199,8 +235,8 @@ internal static class GoldPyreChecks
             "A maximum-health debuff's synchronous death reward failed to reach the Pyre on another floor through its wrapper.");
     }
 
-    private static BattleResourceState Raw(float multiplier = 1f, int modifiedAttack = 0) => new(3, 1, 5, 10, 10, "pyre", 20, 80, 0, modifiedAttack,
-        [10], [10], [], goldRewardMultiplier: multiplier);
+    private static BattleResourceState Raw(float multiplier = 1f, int modifiedAttack = 0, IReadOnlyList<string>? mutators = null) =>
+        new(3, 1, 5, 10, 10, "pyre", 20, 80, 0, modifiedAttack, [10], [10], mutators ?? [], goldRewardMultiplier: multiplier);
     private static CombatContext Context(IReadOnlyList<RelicConditionState>? conditions = null, float multiplier = 1f,
         int modifiedAttack = 0) => new(
         new([], [], [], UnityRng.Seed(13), 0, [], nextDrawUpgrades: [], nextUpgradeReferenceId: 1), UnityRng.Seed(13), 0, 1, 10,

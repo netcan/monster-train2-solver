@@ -776,7 +776,7 @@ namespace MonsterTrain2Poju.Probe
                             .GetValue(effect.GetCardEffect());
                         if (value < 0 && RelicProbe.UnsupportedTriggeredGoldCost(effect.GetSourceCardEffectData()))
                             interactions.Add("Conditional or random gold costs in a live character trigger");
-                        if (AllGameManagers.Instance!.GetSaveManager().GetAdjustedGoldAmount(value, isReward: true) != GoldRewardModel.Adjust(value))
+                        if (!RelicResourceProbe.MatchesNativeGoldReward(AllGameManagers.Instance!.GetSaveManager(), value))
                             interactions.Add("Modified gold reward rules");
                     }
                     var pool = new List<CardData>();

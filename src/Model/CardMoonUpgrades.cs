@@ -44,7 +44,7 @@ namespace MonsterTrain2Poju.Model
                 CombatRelicState? incompatible = context.Relics?.FirstOrDefault(relic => !CompatibleRelic(relic, context));
                 if (incompatible != null)
                 { error = "Uncalibrated moon hand-refresh relic: " + incompatible.AssetKey + "."; return source; }
-                if (RelicModel.Validate(context.Relics) is string relicError)
+                if ((RelicModel.Validate(context.Relics) ?? GoldRewardModel.Validate(context)) is string relicError)
                 { error = relicError; return source; }
                 foreach (RoomMoonPhaseRule rule in context.RoomCapacities?.SelectMany(room => room.Attachments ?? Array.Empty<RoomCapacityAttachmentState>())
                     .Select(attachment => attachment.MoonPhase).OfType<RoomMoonPhaseRule>() ?? Enumerable.Empty<RoomMoonPhaseRule>())
@@ -140,6 +140,7 @@ namespace MonsterTrain2Poju.Model
             // ordinary relic validator still checks their captured payloads.
             if (IndependentSoulSaviorRelic(relic)) return true;
             if (RelicModel.IsOriginalSilverPostBattleOwner(relic)) return true;
+            if (GoldRewardModel.IsOriginalMultiplier(relic)) return true;
             // The original Hoard reward observes Pyre damage and settles after
             // combat. It has no moon change or CardUpdated callback.
             if (relic.DataId == "26c9bc93-f5a6-439d-8239-14c22cbeb02e" &&

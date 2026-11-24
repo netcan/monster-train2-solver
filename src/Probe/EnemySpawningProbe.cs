@@ -204,7 +204,7 @@ namespace MonsterTrain2Poju.Probe
                 if (effect.GetUseIntRange() && !AbilityLifecycleProbe.Known(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectHeal" && effect.GetEffectStateName() is not ("CardEffectDamage" or "CardEffectPyreDamageIfNoPlayerUnits") && effect.GetEffectStateName() != "CardEffectAddStatusEffect" &&
                     !EnergyModel.IsNativeEffect(effect.GetEffectStateName()) && effect.GetEffectStateName() != "CardEffectDrawAdditionalNextTurn" && effect.GetEffectStateName() != "CardEffectAdjustRoomCapacity" && effect.GetEffectStateName() != "CardEffectAdjustForgePoints" && effect.GetEffectStateName() != RelicResourceModel.PermanentPyreAttackAdjustment) interactions.Add("Spawned random effect initialization");
                 if (effect.GetEffectStateName() == "CardEffectRewardGold" &&
-                    AllGameManagers.Instance!.GetSaveManager().GetAdjustedGoldAmount(effect.GetParamInt(), isReward: true) != GoldRewardModel.Adjust(effect.GetParamInt()))
+                    !RelicResourceProbe.MatchesNativeGoldReward(AllGameManagers.Instance!.GetSaveManager(), effect.GetParamInt()))
                     interactions.Add("Spawned modified gold reward rules");
                 if (effect.GetEffectStateName() == "CardEffectDespawnCharacter" && effect.GetParamInt() > 1)
                     interactions.Add("Native preview mutation of a delayed despawn counter");

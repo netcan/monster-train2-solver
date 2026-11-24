@@ -348,6 +348,7 @@ namespace MonsterTrain2Poju.Model
         internal static string? Validate(CombatContext? context) => ConduitModel.Validate(context) ?? Validate(context?.Relics) ??
             DominionDeckUpgradeModel.Validate(context) ??
             ValidateLonelyRooms(context) ?? RelicStartCombatAttachmentModel.Validate(context) ?? RelicShowtimeModel.Validate(context) ??
+            GoldRewardModel.Validate(context) ??
             (context?.Relics?.Any(relic => relic.EffectTypes.Contains(ModifyTriggerCount) || relic.EffectTypes.Contains(AddTrigger)) == true && context.TriggerCounts == null
                 ? "Missing native relic trigger count cache." : TriggerCountModel.Validate(context?.TriggerCounts)) ??
             (context?.Relics?.Any(relic => relic.EffectTypes.Contains(ModifyDragonsHoardCap)) == true &&
@@ -376,6 +377,8 @@ namespace MonsterTrain2Poju.Model
                     // BattleComplete and post-battle reward generation run after the combat terminal snapshot.
                     if (IsOriginalSilverPostBattleOwner(relic)) continue;
                     if (effect == DominionDeckUpgradeModel.Effect && DominionDeckUpgradeModel.IsOriginalOwner(relic)) continue;
+                    if (effect == GoldRewardModel.MultiplierEffect && GoldRewardModel.IsOriginalMultiplier(relic) &&
+                        relics.Count(owner => owner.DataId == relic.DataId) == 1) continue;
                     if (effect == RelicDeckPyreStatsModel.CardCopies && RelicDeckPyreStatsModel.IsOriginal(relic)) continue;
                     if (effect == RelicLateAttackModel.Effect) continue;
                     if (effect == RelicSpawnSilenceModel.Effect) continue;

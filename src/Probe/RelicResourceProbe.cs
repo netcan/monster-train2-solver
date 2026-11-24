@@ -81,6 +81,29 @@ namespace MonsterTrain2Poju.Probe
         internal static int? ReadLastKnownDeckCount(RelicEffectAddPyreAttackAndHealthPerCardInDeck effect) =>
             (int?)AccessTools.Field(typeof(RelicEffectAddPyreAttackAndHealthPerCardInDeck), "_lastKnownCardCount").GetValue(effect);
 
+        internal static bool SupportsGoldRewardMultiplier(RelicState owner) => owner is MutatorState &&
+            !owner.DisallowedInPlacementPhase && owner.GetEffects() is [RelicEffectChangeGoldReward effect] &&
+            GoldRewardModel.OriginalMultiplier(owner.GetRelicDataID(), owner.GetAssetName()) is float expected &&
+            effect.Value == expected &&
+            owner.GetSourceRelicData().GetEffects() is [var definition] && definition.GetEffectConditions().Count == 0;
+
+        internal static bool MatchesNativeGoldReward(SaveManager save, int amount)
+        {
+            try
+            {
+                return save.GetAdjustedGoldAmount(amount, isReward: true) ==
+                    GoldRewardModel.Adjust(amount, multiplier: ReadGoldRewardMultiplier(save));
+            }
+            catch (Exception ex) when (ex is OverflowException or ArgumentOutOfRangeException)
+            {
+                return false;
+            }
+        }
+
+        private static float ReadGoldRewardMultiplier(SaveManager save) =>
+            ((MutableRules)AccessTools.Field(typeof(SaveManager), "mutableRules").GetValue(save))
+                .GetRule(MutableRules.Condition.GoldRewardMultiplier, 1f);
+
         internal static BattleResourceState? CaptureResources(AllGameManagers managers)
         {
             SaveManager save = managers.GetSaveManager();
@@ -131,7 +154,7 @@ namespace MonsterTrain2Poju.Probe
                 !OriginalStartCombatHoardScenario.Enabled && !OriginalStartCombatHoardScenario.Acquired &&
                 !OriginalFirstCardCostScenario.Enabled &&
                 !grosMichelResourceObserved && !pileDrawResourceObserved && !corruptTraitResourceObserved &&
-                !Current(managers).Any(relic => relic.GetEffects().Any(effect =>
+                !Current(managers).Any(relic => SupportsGoldRewardMultiplier(relic) || relic.GetEffects().Any(effect =>
                     RelicResourceModel.IsEffect(effect.GetType().Name) ||
                     effect.GetType().Name is RelicFirstCardCostModel.Effect or RelicModel.ModifyDragonsHoardCap)) &&
                 !dragonHoardResourceObserved && !trainHealResourceObserved && !runCardResourceObserved && !goldRewardResourceObserved && !pyreAttackAbility && dominion == null)
@@ -157,9 +180,7 @@ namespace MonsterTrain2Poju.Probe
                 rawSave.GetTowerModifiedBaseAttack(),
                 ((int[])AccessTools.Field(typeof(PyreHeartData), "upgradeAttack").GetValue(pyre)).ToArray(),
                 ((int[])AccessTools.Field(typeof(PyreHeartData), "upgradeHP").GetValue(pyre)).ToArray(),
-                mutatorIds,
-                ((MutableRules)AccessTools.Field(typeof(SaveManager), "mutableRules").GetValue(save))
-                    .GetRule(MutableRules.Condition.GoldRewardMultiplier, 1f),
+                mutatorIds, ReadGoldRewardMultiplier(save),
                 baseFloorCapacity: balance.GetCharacterCapacityPerFloor(), dragonsHoardCap: save.GetDragonsHoardCap(),
                 towerHealingDisabled: save.GetRelicModifiedRules().GetTowerHealingDisabled(),
                 visibleDeckCount: save.GetVisibleDeckCount(), corruptionPerCorruptTrait: save.GetNumCorruptionAddedPerTraitCorrupt(),

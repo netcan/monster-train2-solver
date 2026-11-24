@@ -44,6 +44,7 @@ namespace MonsterTrain2Poju.Probe
                     DominionDeckUpgradeProbe.Matches(owner) ||
                     SupportsEmbeddedRooms(owner) ||
                     RelicProbe.SupportsStatusMultiplier(owner) ||
+                    RelicResourceProbe.SupportsGoldRewardMultiplier(owner) ||
                     BattleSpawnPointProbe.Enabled && RelicProbe.SupportsShuffleUnits(managers, owner) ||
                     BattleSpawnPointProbe.Enabled && SupportsLonelyRooms(owner, save) ||
                     SupportsUnhealed(owner) ||
