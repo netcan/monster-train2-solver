@@ -32,12 +32,13 @@ namespace MonsterTrain2Poju.Probe
         internal object? ObservedRunInput => nativeRunInput;
         internal (int Stages, int TrainPhases, int Spawns, int CardCycles) ObservedPhaseCounts =>
             (stages.Count, trainCombat.Records.Count, spawning.Records.Count, cardCycles.Records.Count);
-        internal object CaptureObservedPhases((int Stages, int TrainPhases, int Spawns, int CardCycles) start) => new
+        internal object CaptureObservedPhases((int Stages, int TrainPhases, int Spawns, int CardCycles) start,
+            (int Stages, int TrainPhases, int Spawns, int CardCycles) end) => new
         {
-            Stages = stages.Skip(start.Stages).ToArray(),
-            TrainPhases = trainCombat.Records.Skip(start.TrainPhases).ToArray(),
-            Spawns = spawning.Records.Skip(start.Spawns).ToArray(),
-            CardCycles = cardCycles.Records.Skip(start.CardCycles).ToArray()
+            Stages = stages.Skip(start.Stages).Take(end.Stages - start.Stages).ToArray(),
+            TrainPhases = trainCombat.Records.Skip(start.TrainPhases).Take(end.TrainPhases - start.TrainPhases).ToArray(),
+            Spawns = spawning.Records.Skip(start.Spawns).Take(end.Spawns - start.Spawns).ToArray(),
+            CardCycles = cardCycles.Records.Skip(start.CardCycles).Take(end.CardCycles - start.CardCycles).ToArray()
         };
 #endif
         private readonly Dictionary<CharacterState, int> identities = new Dictionary<CharacterState, int>();

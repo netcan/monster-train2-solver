@@ -1,5 +1,6 @@
 #if DEVELOPMENT_PROBE
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -19,10 +20,10 @@ namespace MonsterTrain2Poju.Probe
         private readonly string sourceSha256;
         private readonly int actionIndex;
         private readonly int turn;
-        private readonly bool includeEndTurn = Environment.GetEnvironmentVariable("MT2_PROBE_REGION_ALTERNATE_END_TURN") == "1";
+        private readonly int endTurnCount;
         private bool prefixVerified;
         private int prefixEndTurns;
-        private (int Stages, int TrainPhases, int Spawns, int CardCycles)? endTurnPhases;
+        private readonly List<(int Stages, int TrainPhases, int Spawns, int CardCycles)> endTurnStarts = new();
 
         internal static RegionRunAlternateObservation? Active =>
             Environment.GetEnvironmentVariable("MT2_PROBE_REGION_ALTERNATE_SOURCE") is { Length: > 0 } path
@@ -32,6 +33,13 @@ namespace MonsterTrain2Poju.Probe
 
         private RegionRunAlternateObservation(string path)
         {
+            endTurnCount = Environment.GetEnvironmentVariable("MT2_PROBE_REGION_ALTERNATE_END_TURN") switch
+            {
+                null or "" or "0" => 0,
+                "1" => 1,
+                "2" => 2,
+                _ => throw new InvalidOperationException("Expected zero, one or two RegionRun alternate EndTurns.")
+            };
             string[] values = (Environment.GetEnvironmentVariable("MT2_PROBE_REGION_ALTERNATE_ACTION") ?? "").Split(',');
             if (values.Length != 4 || values.Any(value => !int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out _)))
                 throw new InvalidOperationException("Expected the RegionRun alternate decision, card, room and target.");
@@ -79,10 +87,10 @@ namespace MonsterTrain2Poju.Probe
 
         internal bool RequestEndTurn(FullBattleTrace trace)
         {
-            if (!includeEndTurn || endTurnPhases.HasValue || SettledAction(trace) == null) return false;
-            if (trace.NativeWon.HasValue || trace.ObservedTurns.Count != prefixEndTurns)
+            if (endTurnStarts.Count == endTurnCount || SettledAction(trace) == null) return false;
+            if (trace.NativeWon.HasValue || trace.ObservedTurns.Count != prefixEndTurns + endTurnStarts.Count)
                 throw new InvalidOperationException("The paid RegionRun alternate did not leave a native EndTurn available.");
-            endTurnPhases = trace.ObservedPhaseCounts;
+            endTurnStarts.Add(trace.ObservedPhaseCounts);
             return true;
         }
 
@@ -101,13 +109,11 @@ namespace MonsterTrain2Poju.Probe
         internal bool WriteIfSettled(FullBattleTrace trace)
         {
             BattleActionProbe.Record? row = SettledAction(trace);
-            if (row == null || includeEndTurn && !endTurnPhases.HasValue) return false;
-            int expectedTurns = prefixEndTurns + (includeEndTurn ? 1 : 0);
-            if (trace.ObservedTurns.Count != expectedTurns)
+            if (row == null || endTurnStarts.Count < endTurnCount) return false;
+            if (trace.ObservedTurns.Count != prefixEndTurns + endTurnCount)
                 throw new InvalidOperationException("The native RegionRun alternate recorded an unexpected EndTurn count.");
-            BattleTurnProbe.Record? endTurn = includeEndTurn ? trace.ObservedTurns[prefixEndTurns] : null;
-            if (endTurn != null && (endTurn.Actual == null || endTurn.Before.Spawn.Turn != turn))
-                throw new InvalidOperationException("The native RegionRun alternate EndTurn did not settle at the requested turn.");
+            var endTurn = CaptureEndTurn(0);
+            var secondEndTurn = CaptureEndTurn(1);
             using var document = NativeFixtureCapture.Capture(new
             {
                 Schema = 1, Boundary = "NativeRegionRunAlternate", NativeCompleted = true,
@@ -116,14 +122,25 @@ namespace MonsterTrain2Poju.Probe
                 PrefixEndTurns = prefixEndTurns, NativeRunInput = trace.ObservedRunInput,
                 ReplacedAction = PlannerReplayScenario.Read<PlayCardAction>(source.GetProperty("Actions")[actionIndex].GetProperty("Action")),
                 row.Action, row.Before, row.Actual, row.ActualOutcome,
-                EndTurn = endTurn == null ? null : new { endTurn.Before, endTurn.Actual, endTurn.ActualOutcome, endTurn.RelentlessDecisions },
-                EndTurnPhases = endTurnPhases.HasValue ? trace.CaptureObservedPhases(endTurnPhases.Value) : null,
+                EndTurn = endTurn.Decision, EndTurnPhases = endTurn.Phases,
+                SecondEndTurn = secondEndTurn.Decision, SecondEndTurnPhases = secondEndTurn.Phases,
                 trace.CaptureFailures, trace.Pending
             });
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "region-run-alternate.mt2f");
             using var output = new FileStream(path, FileMode.CreateNew, FileAccess.Write);
             document.Write(output);
             return true;
+
+            (object? Decision, object? Phases) CaptureEndTurn(int index)
+            {
+                if (index >= endTurnCount) return (null, null);
+                var observed = trace.ObservedTurns[prefixEndTurns + index];
+                if (observed.Actual == null || observed.Before.Spawn.Turn != turn + index)
+                    throw new InvalidOperationException("The native RegionRun alternate EndTurn did not settle at the requested turn.");
+                var end = index + 1 < endTurnStarts.Count ? endTurnStarts[index + 1] : trace.ObservedPhaseCounts;
+                return (new { observed.Before, observed.Actual, observed.ActualOutcome, observed.RelentlessDecisions },
+                    trace.CaptureObservedPhases(endTurnStarts[index], end));
+            }
         }
 
         private void VerifyPrefix(FullBattleTrace trace)
