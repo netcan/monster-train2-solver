@@ -144,8 +144,12 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported(string.Join("; ", actionInteractions));
             if (train.Rooms.Any(room => room.ExternalInteractions.Count > 0))
             {
-                string? roomError = OuterBossDefinitions.HasLifemotherInfestedOwner(train.Context)
-                    ? TrainCombatModel.Validate(train, allowFirstHivemindCombat: true)
+                bool infested = OuterBossDefinitions.HasLifemotherInfestedOwner(train.Context);
+                bool scaledHivemind = train.Context.QueryFrame?.Turn == 3 &&
+                    train.Rooms.Any(room => room.RoomIndex == 0 && HivemindTurnUpgrade.IsObservedScaledWaveInteraction(train,
+                        string.Join("; ", room.ExternalInteractions)));
+                string? roomError = infested || scaledHivemind
+                    ? TrainCombatModel.Validate(train, allowFirstHivemindCombat: infested)
                     : string.Join("; ", train.Rooms.SelectMany(room => room.ExternalInteractions).Distinct());
                 if (roomError != null) return Unsupported(roomError);
             }
