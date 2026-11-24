@@ -2892,6 +2892,24 @@ function Get-OriginalSignature([string] $Root = $originalLogRoot) {
     return [string]::Join('|', [string[]] @($parts))
 }
 
+function Copy-ProbeBaseline([string] $Source, [string] $Destination) {
+    if ([IO.Directory]::Exists($Destination) -or [IO.File]::Exists($Destination)) {
+        throw "Probe profile already exists: $Destination"
+    }
+    $directory = [IO.DirectoryInfo]::new($Source)
+    $null = [IO.Directory]::CreateDirectory($Destination)
+    foreach ($entry in $directory.EnumerateFileSystemInfos()) {
+        $target = [IO.Path]::Combine($Destination, $entry.Name)
+        if ($entry.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+            Copy-Item -LiteralPath $entry.FullName -Destination $target -Recurse
+        } elseif ($entry -is [IO.DirectoryInfo]) {
+            Copy-ProbeBaseline $entry.FullName $target
+        } else {
+            [IO.File]::Copy($entry.FullName, $target, $false)
+        }
+    }
+}
+
 $workerLockPath = Join-Path $workspace ".probe-runs\native-worker-$NativeWorker.lock"
 $playerCheckPlugin = $null
 $playerConfigPath = $null
@@ -3115,7 +3133,7 @@ if ($InputProfile) {
     [pscustomobject]@{ InputProfile = $checkpoint; SHA256 = (Get-FileHash -LiteralPath $checkpointSave -Algorithm SHA256).Hash } |
         ConvertTo-Json | Set-Content -LiteralPath (Join-Path $profile 'native-checkpoint-input.json')
 } else {
-    Copy-Item -LiteralPath (Join-Path $workspace '.probe-baseline') -Destination $profile -Recurse
+    Copy-ProbeBaseline (Join-Path $workspace '.probe-baseline') $profile
 }
 $preferencesPath = Join-Path $profile 'preferences.json'
 if (Test-Path -LiteralPath $preferencesPath) {
