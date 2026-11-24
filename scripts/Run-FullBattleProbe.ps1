@@ -134,6 +134,7 @@ param(
     [switch] $RegionRunInput,
 
     [switch] $OriginalSilverPostBattle,
+    [ValidateRange(1, 3)] [int] $OriginalSilverTier = 1,
     [string] $RegionAlternateSource = '',
     [string] $RegionAlternate = '',
     [switch] $RegionAlternateEndTurn,
@@ -2874,8 +2875,11 @@ if ($OriginalSproutWitness -and (!$RegionRunInput -or $BattleDistance -ne 3 -or 
 if ($PSBoundParameters.ContainsKey('OriginalSproutTier') -and !$OriginalSproutWitness) {
     throw 'OriginalSproutTier requires OriginalSproutWitness.'
 }
+if ($PSBoundParameters.ContainsKey('OriginalSilverTier') -and !$OriginalSilverPostBattle) {
+    throw 'OriginalSilverTier requires OriginalSilverPostBattle.'
+}
 if ($OriginalSilverPostBattle) {
-    $silverArguments = @('OriginalSilverPostBattle', 'RegionRunInput', 'InputProfile', 'BattleDistance', 'BinaryCapture',
+    $silverArguments = @('OriginalSilverPostBattle', 'OriginalSilverTier', 'RegionRunInput', 'InputProfile', 'BattleDistance', 'BinaryCapture',
         'NativeWorker', 'GameSpeed', 'TimeoutSeconds', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (!$RegionRunInput -or !$InputProfile -or !$BinaryCapture -or $BattleDistance -lt 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $silverArguments }).Count) {
@@ -2883,7 +2887,7 @@ if ($OriginalSilverPostBattle) {
     }
 }
 if ($RegionRunInput) {
-    $regionArguments = @('RegionRunInput', 'OriginalSilverPostBattle', 'RegionAlternateSource', 'RegionAlternate', 'RegionAlternateEndTurn', 'RegionAlternateEndTurnCount', 'OriginalEquilibriusDrawWitness', 'OriginalSproutWitness', 'OriginalSproutTier', 'CampaignBattlePolicy', 'ObserveRegionPreviewScheduling', 'InputProfile', 'BattleDistance', 'Policy', 'BinaryCapture', 'NativeWorker',
+    $regionArguments = @('RegionRunInput', 'OriginalSilverPostBattle', 'OriginalSilverTier', 'RegionAlternateSource', 'RegionAlternate', 'RegionAlternateEndTurn', 'RegionAlternateEndTurnCount', 'OriginalEquilibriusDrawWitness', 'OriginalSproutWitness', 'OriginalSproutTier', 'CampaignBattlePolicy', 'ObserveRegionPreviewScheduling', 'InputProfile', 'BattleDistance', 'Policy', 'BinaryCapture', 'NativeWorker',
         'GameSpeed', 'TimeoutSeconds', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (!$InputProfile -or !$BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $regionArguments }).Count) {
         throw 'RegionRunInput requires a native Soul Savior BattleIntro checkpoint and binary capture.'
@@ -3276,7 +3280,7 @@ $environment = @{
     MT2_PROBE_CAPTURE_PROFILE = $(if ($ProfileCapture) { '1' } else { '0' })
     MT2_PROBE_RESUME_RUN = $(if ($InputProfile) { '1' } else { '0' })
     MT2_PROBE_REGION_RUN_INPUT = $(if ($RegionRunInput) { '1' } else { '0' })
-    MT2_PROBE_ORIGINAL_SILVER_POSTBATTLE = $(if ($OriginalSilverPostBattle) { '1' } else { '0' })
+    MT2_PROBE_ORIGINAL_SILVER_POSTBATTLE = $(if ($OriginalSilverPostBattle) { [string]$OriginalSilverTier } else { '0' })
     MT2_PROBE_REGION_ALTERNATE_SOURCE = $RegionAlternateSource
     MT2_PROBE_REGION_ALTERNATE_ACTION = $RegionAlternate
     MT2_PROBE_REGION_ALTERNATE_END_TURN = "$regionAlternateTurns"
@@ -4418,7 +4422,7 @@ if ($OriginalSilverPostBattle) {
         (Get-OriginalSignature) -cne $originalBefore -or (Get-OriginalSignature $checkpoint) -cne $regionInputSignature) {
         throw "Original Silver post-battle callback failed. Inspect $unityLog"
     }
-    Write-Output "NATIVE-SILVER-POSTBATTLE PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    Write-Output "NATIVE-SILVER-POSTBATTLE PASS tier=$OriginalSilverTier trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalSavageryDeckUpgrade) {
