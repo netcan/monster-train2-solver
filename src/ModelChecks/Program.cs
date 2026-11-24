@@ -12,6 +12,12 @@ if (args.Length == 1 && args[0] == "--original-embedded-room-model-only")
     RelicRoomAttachmentReplicationChecks.Run();
     return;
 }
+if (args.Length == 2 && args[0] == "--original-embedded-room-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalEmbeddedRoomChecks.Native(document.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-zariel-pain-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);
