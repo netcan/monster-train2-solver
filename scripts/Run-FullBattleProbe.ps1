@@ -602,6 +602,7 @@ param(
     [switch] $ShuffleUnitsThreeHosts,
     [switch] $OriginalDoubleFriendlyHealthWitness,
     [switch] $OriginalDoubleFriendlyHealthBattle,
+    [switch] $OriginalBothSidesUnitsWitness,
     [switch] $OriginalPreventMonsterDamageBattle,
     [switch] $OriginalSecondFloorEnemyOpening,
     [switch] $OriginalHealOnAscendWitness,
@@ -1106,13 +1107,13 @@ if ($PlacementSummonBlockOnly -and -not $OriginalPlacementMutatorsWitness) {
 }
 $originalMutatorArguments = @('OriginalLoseMoneyOnHitWitness', 'OriginalDoubleStatusEffectsWitness',
     'OriginalDoubleStatusEffectsBattle', 'OriginalLonelyRoomsBattle', 'OriginalShuffleUnitsWitness',
-    'OriginalDoubleFriendlyHealthWitness', 'OriginalDoubleFriendlyHealthBattle')
+    'OriginalDoubleFriendlyHealthWitness', 'OriginalDoubleFriendlyHealthBattle', 'OriginalBothSidesUnitsWitness')
 if ($ShuffleUnitsThreeHosts -and -not $OriginalShuffleUnitsWitness) {
     throw 'ShuffleUnitsThreeHosts requires OriginalShuffleUnitsWitness.'
 }
 $selectedOriginalMutatorTests = @($OriginalLoseMoneyOnHitWitness, $OriginalDoubleStatusEffectsWitness,
     $OriginalDoubleStatusEffectsBattle, $OriginalLonelyRoomsBattle, $OriginalShuffleUnitsWitness,
-    $OriginalDoubleFriendlyHealthWitness, $OriginalDoubleFriendlyHealthBattle).Where({ $_ })
+    $OriginalDoubleFriendlyHealthWitness, $OriginalDoubleFriendlyHealthBattle, $OriginalBothSidesUnitsWitness).Where({ $_ })
 if ($selectedOriginalMutatorTests.Count -gt 0) {
     $witnessArguments = $originalMutatorArguments + @('GameSpeed', 'NativeWorker', 'TimeoutSeconds',
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
@@ -2701,7 +2702,8 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     $OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness -or
     $OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle -or $OriginalHandAndEmberWitness -or $OriginalFecundityOnCast -or
     $OriginalHealOnAscendWitness -or $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle -or $OriginalLonelyRoomsBattle -or
-    $OriginalShuffleUnitsWitness -or $OriginalDoubleFriendlyHealthWitness -or $OriginalDoubleFriendlyHealthBattle) {
+    $OriginalShuffleUnitsWitness -or $OriginalDoubleFriendlyHealthWitness -or $OriginalDoubleFriendlyHealthBattle -or
+    $OriginalBothSidesUnitsWitness) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -2739,6 +2741,9 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     if (($OriginalDoubleFriendlyHealthWitness -or $OriginalDoubleFriendlyHealthBattle) -and
         $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original double-friendly-health birth requires the pinned 2.3.1 game module.'
+    }
+    if ($OriginalBothSidesUnitsWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'Original BothSidesUnitsAreStronger requires the pinned 2.3.1 game module.'
     }
     if (($OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original Pyre witness requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
@@ -3148,6 +3153,7 @@ $environment = @{
     MT2_PROBE_SHUFFLE_UNITS_THREE_HOSTS = $(if ($ShuffleUnitsThreeHosts) { '1' } else { '0' })
     MT2_PROBE_DOUBLE_FRIENDLY_HEALTH_WITNESS = $(if ($OriginalDoubleFriendlyHealthWitness) { '1' } else { '0' })
     MT2_PROBE_DOUBLE_FRIENDLY_HEALTH_BATTLE = $(if ($OriginalDoubleFriendlyHealthBattle) { '1' } else { '0' })
+    MT2_PROBE_BOTH_SIDES_UNITS_WITNESS = $(if ($OriginalBothSidesUnitsWitness) { '1' } else { '0' })
     MT2_PROBE_PYRE_ABILITY_COOLDOWN_WITNESS = $OriginalPyreAbilityCooldownWitness
     MT2_PROBE_ORIGINAL_PACT_DRAW = $(if ($OriginalPactDrawWitness) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_PACT_BATTLE = $(if ($OriginalPactDrawBattle) { '1' } else { '0' })
@@ -4172,6 +4178,16 @@ if ($OriginalDoubleFriendlyHealthWitness) {
         throw "Original double-friendly-health birth witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-DOUBLE-FRIENDLY-HEALTH PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalBothSidesUnitsWitness) {
+    $capturePath = Join-Path $profile 'both-sides-units.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original BothSidesUnitsAreStronger captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original BothSidesUnitsAreStronger witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-BOTH-SIDES-UNITS PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalSecondFloorEnemyOpening) {
