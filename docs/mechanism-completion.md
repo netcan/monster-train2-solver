@@ -1429,7 +1429,9 @@ Zariel 的 Devotion 路线在法术支付并结算后读取当前等级。原版
 该边界经过原版目录与调用链核对，三阶灵魂的实际战后升级仍待实机对照。
 
 原版 `ChampionReplacement` 在开局换冠军，`TimeForTrials` 在战斗介绍界面锁定试炼。
-顾问接收原版生成的牌组和试炼效果。调用点与精确持有者经过核对，两个修改器的整战仍待实机复放。
+同一原版种子的首战对照中，冠军由 Hornbreaker 换为 Rector Flicker。试炼开启并锁定后，
+顾问从原版部署读取敌方减抽牌效果，回合抽牌由 5 降至 4。两组冠军的部署候选通过检查。
+[原版开局对照](../tests/compatibility/game-2.3.1/mechanics/original-battle-setup/manifest.tsv)
 
 原版 Dominion 修改器在永久单位牌入库时读取有序升级池。原版 `MothersRemnant3Relic`
 复制付费部署的 Train Steward 后，副本获得一项永久升级，奖励随机流前进一次。

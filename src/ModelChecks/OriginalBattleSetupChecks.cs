@@ -32,7 +32,7 @@ internal static class OriginalBattleSetupChecks
                 Require(initialTrial.GetProperty(field).ContentEquals(witness.GetProperty("TrialBefore").GetProperty(field)) &&
                     initialTrial.GetProperty(field).ContentEquals(witness.GetProperty("TrialIntro").GetProperty(field)),
                     $"The pair changed the prefetched native trial {field}.");
-        Console.WriteLine("ORIGINAL-BATTLE-SETUP PASS: matched seed and native trial, original champion replacement deployed, trial forced and locked only with TimeForTrials.");
+        Console.WriteLine("ORIGINAL-BATTLE-SETUP PASS: matched seed and native trial, original replacement champion has legal deployment, forced trial is locked with four draws.");
     }
 
     private static void Validate(FixtureValue witness, string mode, string[] owners)
@@ -59,10 +59,11 @@ internal static class OriginalBattleSetupChecks
         CombatContext context = state.Spawn.Train.Context!;
         var relics = context.Relics ?? [];
         Require(state.Spawn.Turn == 0 && state.Spawn.Train.Rooms.Any(room => room.Deployment) &&
+            state.DrawPerTurn == (forced ? 4 : 5) &&
             relics.Where(relic => relic.DataId is RelicModel.ChampionReplacementId or RelicModel.ForceTrialId)
                 .Select(relic => relic.DataId).SequenceEqual(owners) &&
             relics.Where(relic => owners.Contains(relic.DataId)).All(RelicModel.IsOriginalBattleSetupOwner) &&
-            relics.Any(relic => relic.DataId == sin) == forced,
+            relics.Any(relic => relic.DataId == sin && relic.AssetKey == "Enemy_LowerDraw") == forced,
             $"The {mode} deployment did not retain the original setup owners and trial sin.");
         FixtureValue champion = witness.GetProperty("DeckChampion");
         int instance = champion.GetProperty("InstanceId").GetInt32();
@@ -77,6 +78,10 @@ internal static class OriginalBattleSetupChecks
             card.Permanent.Upgrades.Select(upgrade => upgrade.DataId).SequenceEqual(
                 champion.GetProperty("Upgrades").EnumerateArray().Select(item => item.GetString())),
             $"The {mode} champion does not match the original deployment card and its ordered upgrades.");
+        var candidates = BattleActionModel.EnumerateActions(state, instance, includeAbilities: false);
+        Require(!candidates.HasUnsupportedAttempts && candidates.SupportedActions.Count > 0,
+            $"The {mode} champion must have a modeled deployment: " +
+            string.Join(" | ", candidates.UnsupportedAttempts.Select(attempt => attempt.Reason).Distinct()));
     }
 
     private static bool HasId(string? value) => Guid.TryParseExact(value, "D", out Guid id) && id != Guid.Empty;
