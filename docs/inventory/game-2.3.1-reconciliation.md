@@ -10,15 +10,15 @@
 | --- | ---: | ---: | ---: |
 | known-gap | 1 | 1 | 1 |
 | inspect-no-code-link | 8 | 8 | 8 |
-| inspect-inherited-code | 7 | 7 | 7 |
+| inspect-inherited-code | 6 | 6 | 6 |
 | inspect-projection-normalization | 54 | 54 | 54 |
 | inspect-guard-links | 43 | 43 | 43 |
 | review-existing-code | 226 | 226 | 226 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 282 | 0 | 0 |
-| scoped-review-recorded | 106 | 102 | 102 |
+| scoped-review-recorded | 107 | 103 | 103 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 109 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 110 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -56,6 +56,7 @@
 | RelicEffectAddPyreAttackAndHealthPerCardInDeck | shared-path | All three original Thik tiers confirm exact deck-change successors, sixteen branches, complete recorded frontiers, and equal serial and parallel search and plan replay. Permanent addition and removal affect Pyre health by three, four, or five and attack by zero, zero, or two. Temporary purge supplies a zero delta. The T3 component also checks acquisition, raw saved HP carryover, and live health caps. Mixed relic combinations remain unwitnessed. |
 | RelicEffectAddRelicStartOfRun | input-only | Sealed native class implements StartOfRun ApplyEffect, which adds the configured relic through SaveManager. Battle input captures the resulting relic roster. No combat callback override in this class; start-of-run campaign handling and carried-owner validation remain separate. |
 | RelicEffectAddStatusEffectMultiplier | shared-path | The original DoubleStatusEffects owner doubles a paid SpikePotion application from ten to twenty; the full paid successor and gameplay RNG match. Seven original queries cover null targets, cooldown, permanent and deferred requests, and status transfers. Four native removals cover ordinary, enchantment and upgrade provenance including the negative sentinel. The witness uses the stock 200 percent descriptor. |
+| RelicEffectAddStatusEffectOnFirstSpawn | shared-path | The two original enemy blessings grant one or two Undying to the first admissible birth. Later candidates skip and the ordered AfterDraw callback clears the per-effect latch. Three native spawn successors and two consecutive complete EndTurns match for each tier. Actual grants advance Battle RNG once. |
 | RelicEffectAddStatusEffectOnSpawn | shared-path | Four pinned 2.3.1 archives replay 59 original birth boundaries and 32 independent branches per boundary. Positive checks include two Titan Skin and four Burst stacks on the Pyre, three Muted stacks on the eligible Chicot boss, friendly Armor, enemy Frostbite and first-unit Damage Shield with same-turn skips. The first-unit owner uses this class with a tracked condition. Other owner payloads require their own evidence. |
 | RelicEffectAddStatusEffectToTeamOnSpawn | shared-path | The unchanged HymnistsApplyValorOnSummon owner grants five Valor. The pinned 2.3.1 team-spawn archive records 33 positive same-room teammate deltas over 22 native birth boundaries. Full room and train states, queued and dispatched callbacks, and 32 independent branches per boundary pass. Other team effects and additional owner combinations require separate evidence. |
 | RelicEffectAddStatusOnUnitMovedUpDown | shared-path | The unchanged PyregelOnAscend_DH owner applies 2 Pyregel to an enemy before its native PostAscension callback. The pinned 2.3.1 pyregel-on-ascend.mt2f receipt replays 22 movement boundaries, including descending, friendly, rooted and immobile controls. The checker also verifies the continuous policy after the test setup. Other movement status payloads and mixed owners have separate evidence requirements. |
@@ -154,19 +155,19 @@
 | CardEffectDamagePerStatusEffect | inspect-inherited-code | 4 | 4 | [MonsterTrain2Poju.Model.CardSpareTriggerModel+<>c.<Validate>b__1_1](../../src/Model/CardSpareTriggers.cs:27) |
 | CardEffectAddStatusEffectPerMissingHp | inspect-inherited-code | 2 | 2 | [MonsterTrain2Poju.Model.CardJuiceModel+<>c.<SimpleUpgrade>b__12_2](../../src/Model/CardJuice.cs:51) |
 | CardEffectAddStatusToRoomScalingByCasterStatusCount | inspect-inherited-code | 2 | 2 | [MonsterTrain2Poju.Model.CardJuiceModel+<>c.<SimpleUpgrade>b__12_2](../../src/Model/CardJuice.cs:51) |
-| RelicEffectAddStatusEffectOnFirstSpawn | inspect-inherited-code | 2 | 2 | [MonsterTrain2Poju.Model.AdditionalCardBirthModel.CanApplyLocalSpawnStatus](../../src/Model/AdditionalCardBirth.cs:64) |
 | CardEffectDiscardHandAddStatusEffectPerCard | inspect-inherited-code | 1 | 6 | [MonsterTrain2Poju.Model.CardJuiceModel+<>c.<SimpleUpgrade>b__12_2](../../src/Model/CardJuice.cs:51) |
 | CardEffectAddStatusEffectPerFriendlyMissingHp | inspect-inherited-code | 1 | 1 | [MonsterTrain2Poju.Model.CardJuiceModel+<>c.<SimpleUpgrade>b__12_2](../../src/Model/CardJuice.cs:51) |
 | CardEffectDamagePerDevotionLevel | inspect-inherited-code | 1 | 1 | [MonsterTrain2Poju.Model.CardSpareTriggerModel+<>c.<Validate>b__1_1](../../src/Model/CardSpareTriggers.cs:27) |
+| CardEffectAttachTrainRoomAttachment | inspect-projection-normalization | 34 | 34 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
 
 ## 可重建输入
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `caa39e015b534d8973cb3debe3f54cd41b5eebd66446a410836a443daf7c0bf4`。
-- Model: PDB 校验过的项目源码集合 `ecfe4c6bba3c3e0234ae608423a7d6003dff00bf4e5e07c1293ef585893834cf`。
-- Probe: PDB 校验过的项目源码集合 `0df0602aab3154067f598cfa970c490fdb83acdb6baf0d699e86c5285a79cca9`。
-- ModelChecks: PDB 校验过的项目源码集合 `6509a1f84c1ad8d1a51af46442f81fc2710f115246f3ee9a7df9d1d282f4860b`。
+- 人工审查索引 SHA-256: `a79fcd1f6577b37832f3f1e7184dc12823b718a964f579125337b3feb6f096e2`。
+- Model: PDB 校验过的项目源码集合 `1ab4671e38f86ce94ee65e938b43047c873604f70401809651664bf1813e3276`。
+- Probe: PDB 校验过的项目源码集合 `68b2123efeec889e43fbd5895c8ff386b197b93d1dbeb566d18fe1a38cf4640c`。
+- ModelChecks: PDB 校验过的项目源码集合 `c50d9940eb947edf2e06b8792cdb50277b59e5ff5204d6a31d7552601733ce62`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
