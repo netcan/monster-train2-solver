@@ -37,6 +37,14 @@ units and RNG. The comparison matched reconstructed cards by pile position and u
 physical position, then checked the remaining state fields and the newly published advice.
 [Undo observation](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/native-undo-restored-first-turn.mt2f)
 
+The Windows package at source `ff8da324` was tested using the three DLLs extracted from
+the ZIP. The installed 2.3.1 build loaded the Advisor in an isolated profile, captured
+the original deployment, and reproduced the archived Undo observation byte for byte.
+`Check-SolverCompletion.ps1` passed after `45f11b7b` corrected the coverage index's
+mixed-version input. The package uses BepInEx 5 Mono.
+[Windows package](../results/mod-dist/PojuAdvisor-0.2.438-Windows-ff8da324.zip) ·
+[Solver stage log](../results/solver-completion-release-45f11b7b.log)
+
 On 2026-11-21 the current Windows build completed a rolling player-advisor battle in an isolated
 2.3.1 instance (seed 424242, one search worker, 1,000 ms per recommendation). The production
 advisor published 27 recommendations. The driver sent 18 card plays and seven EndTurn inputs
