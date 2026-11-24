@@ -107,6 +107,8 @@ namespace MonsterTrain2Poju.Probe
                 triggerEffects.Contains("CardEffectAdjustDragonsHoard") || triggerEffects.Contains("CardEffectRewardGoldPerDragonHoard") ||
                 unitTriggerEffects.Contains("CardEffectAdjustDragonsHoard") || unitTriggerEffects.Contains("CardEffectRewardGoldPerDragonHoard") ||
                 unitTriggerEffects.Contains("CardEffectAdjustDragonsHoardPerStatusEffect");
+            bool pyreAttackAbility = cards?.GetAllCards(new List<CardState>()).Any(card =>
+                card.GetSpawnCharacterData()?.GetUnitAbilityCardData()?.GetID() == CardSpellModel.PyreStewardAbilityId) == true;
             bool trainHealCards = cardEffects.Any(effect => effect.GetCardEffect() is CardEffectHealTrain or CardEffectHealPyrePerEmberCost) ||
                 triggerEffects.Contains("CardEffectHealTrain") || triggerEffects.Contains("CardEffectHealPyrePerEmberCost") ||
                 unitTriggerEffects.Contains("CardEffectHealTrain") || unitTriggerEffects.Contains("CardEffectPermanentlyAdjustMaxPyreHealth");
@@ -130,7 +132,7 @@ namespace MonsterTrain2Poju.Probe
                 !Current(managers).Any(relic => relic.GetEffects().Any(effect =>
                     RelicResourceModel.IsEffect(effect.GetType().Name) ||
                     effect.GetType().Name is RelicFirstCardCostModel.Effect or RelicModel.ModifyDragonsHoardCap)) &&
-                !dragonHoardResourceObserved && !trainHealResourceObserved && !runCardResourceObserved && !goldRewardResourceObserved)
+                !dragonHoardResourceObserved && !trainHealResourceObserved && !runCardResourceObserved && !goldRewardResourceObserved && !pyreAttackAbility)
                 return null;
             SaveManager save = managers.GetSaveManager();
             BalanceData balance = save.GetBalanceData();

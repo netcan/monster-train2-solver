@@ -21,6 +21,7 @@ namespace MonsterTrain2Poju.Probe
             "CardEffectAdjustRoomCapacity", "CardEffectAdjustRoomMaxCorruption", "CardEffectAdjustCorruption",
             "CardEffectAddPermanentCorruption", "CardEffectAddStatusToRoomScalingByCasterStatusCount", "CardEffectAddStatusEffectPerMissingHp",
             "CardEffectAddStatusEffectPerFriendlyMissingHp", "CardEffectDamagePerStatusEffect",
+            nameof(CardEffectDamagePerPyreAttack),
             "CardEffectSetMoonPhase", "CardEffectAdvanceMoonPhase", "CardEffectUpdateMoonPhaseResource",
             "CardEffectAdjustForgePoints", "CardEffectGainDevotionPoints", DiscardHandStatusModel.NativeEffect, "CardEffectDiscardHand", "CardEffectRandomDiscard", "CardEffectChooseDiscard", "CardEffectAddBattleCard", "CardEffectAddRunCard", "CardEffectAddBattleCardPerTarget",
             "CardEffectHeal", "CardEffectHealAndOverheal", "CardEffectHealAndDamageRelative", "CardEffectHealTrain", "CardEffectHealPyrePerEmberCost", "CardEffectSetHealth", UnitHealthPercentModel.NativeEffect, "CardEffectSacrifice", "CardEffectSacrificeOrFeed", "CardEffectKill", "CardEffectRecursion", "CardEffectBuffDamage", "CardEffectDebuffDamage",
@@ -436,6 +437,11 @@ namespace MonsterTrain2Poju.Probe
         private static CardActionEffect DescribeSpellEffect(CardData? data, CardEffectData effect, List<string> interactions,
             bool cardTrigger = false, bool captureBirthLifecycle = false)
         {
+            if (effect.GetEffectStateName() == nameof(CardEffectDamagePerPyreAttack) &&
+                (data?.GetID() != CardSpellModel.PyreStewardAbilityId || effect.GetTargetMode() != TargetMode.Room ||
+                 effect.GetTargetTeamType() != Team.Type.Heroes || effect.GetParamInt() != 1 ||
+                 effect.GetAdditionalParamInt() != 0 || effect.GetUseIntRange()))
+                interactions.Add("Unmodeled Pyre-attack damage effect definition");
             if (AbilityLifecycleProbe.Known(effect.GetEffectStateName())) return AbilityLifecycleProbe.Describe(effect);
             if (AbilityCooldownProbe.Known(effect.GetEffectStateName())) return AbilityCooldownProbe.Describe(effect, effect.GetParamInt(), effect.GetParamBool());
             if (effect.GetEffectStateName() == "CardEffectCraftSpike")
@@ -581,6 +587,7 @@ namespace MonsterTrain2Poju.Probe
                 effect.GetEffectStateName() == "CardEffectAddStatusEffectPerMissingHp" ? "AddStatusPerMissingHp" :
                 effect.GetEffectStateName() == "CardEffectAddStatusEffectPerFriendlyMissingHp" ? MissingHealthStatusModel.FriendlyEffect :
                 effect.GetEffectStateName() == "CardEffectDamagePerStatusEffect" ? MissingHealthStatusModel.CasterDamage :
+                effect.GetEffectStateName() == nameof(CardEffectDamagePerPyreAttack) ? CardSpellModel.PyreAttackDamage :
                 effect.GetEffectStateName() == "CardEffectMultiplyStatusEffect" ? "MultiplyStatus" :
                 effect.GetEffectStateName() == "CardEffectMultiplyAllPositiveStatusEffects" ? "MultiplyAllPositiveStatusEffects" :
                 effect.GetEffectStateName() == "CardEffectAdjustAllStatusEffects" ? "AdjustAllStatusEffects" :

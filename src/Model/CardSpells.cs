@@ -51,6 +51,9 @@ namespace MonsterTrain2Poju.Model
 
     public static class CardSpellModel
     {
+        internal const string PyreStewardAbilityId = "4f26edf3-6b37-4103-861f-3cdd7c7cf129";
+        internal const string PyreAttackDamage = "DamagePerPyreAttack";
+
         internal static string? UnisolatedUiRangeReason(BattleTurnState state) => !state.UiRngIsolated &&
             state.PlayRules?.Cards.Any(card => card.Effects.Concat(card.OnCastEffects).Concat(card.OnUnplayedNegativeEffects)
                 .Any(effect => QuantityTest(effect) && effect.Range != null && effect.Tests?.ShouldTest != false)) == true
@@ -1149,6 +1152,13 @@ namespace MonsterTrain2Poju.Model
                 int damageAttackerId = selfUnitId;
                 int damageOwnerCardId = sourceCardId;
                 int damageValue = effect.Value;
+                if (effect.Type == PyreAttackDamage)
+                {
+                    RoomCombatState? pyreRoom = state.Rooms.SingleOrDefault(room => room.Units.Any(unit => unit.IsPyre));
+                    CombatUnit? pyre = pyreRoom?.Units.Single(unit => unit.IsPyre);
+                    if (pyre == null) return UnsupportedTrain("The Pyre left the train before its attack could be queried.");
+                    damageValue = RelicResourceModel.AttackDamage(pyre, state.Context, pyreRoom);
+                }
                 if (effect.Type == MissingHealthStatusModel.CasterDamage)
                 {
                     CombatUnit? caster = state.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == selfUnitId);
@@ -2474,6 +2484,16 @@ namespace MonsterTrain2Poju.Model
             RoomCombatState? selected = source.Rooms.FirstOrDefault(room => room.RoomIndex == roomIndex);
             if (selected == null) return "The selected spell room does not exist.";
             if (source.Context == null) return "A spell requires shared battle context.";
+            if (effects.Any(effect => effect.Type == PyreAttackDamage))
+            {
+                if (!fullTrain || selfUnitId <= 0 || source.Context.FindCard(sourceCardId)?.DataId != PyreStewardAbilityId ||
+                    effects.Any(effect => effect.Type == PyreAttackDamage &&
+                        effect is not { Target: "Room", AllowEnemy: true, AllowPlayer: false, Value: 1, Range: null }))
+                    return "Pyre-attack damage requires the original Pyre Steward ability and its activating unit.";
+                if (source.Context.Resources == null ||
+                    source.Rooms.SelectMany(room => room.Units).Where(unit => unit.IsPyre).ToArray() is not [{ Modifiers: not null }])
+                    return "Pyre-attack damage requires captured live Pyre stats and the saved attack offset.";
+            }
             if (effects.Any(effect => effect.Type == "RandomDiscard"))
             {
                 if (effects.Any(effect => effect.Type == "RandomDiscard" && (effect.Value < 0 || effect.Range?.Min < 0)))
@@ -2957,7 +2977,7 @@ namespace MonsterTrain2Poju.Model
                         return "Replay requires captured OnSpawn history and a self target.";
                     continue;
                 }
-                if (effect.Type is "SwapStats" or "StatusNull" or "SacrificeOrFeed") continue;
+                if (effect.Type is "SwapStats" or "StatusNull" or "SacrificeOrFeed" or PyreAttackDamage) continue;
                 if (effect.Type == "SummonChoice")
                 {
                     if (effect.Target != "Room" || effect.SummonChoice?.CardlessStatus == null ||
@@ -3202,6 +3222,7 @@ namespace MonsterTrain2Poju.Model
                 case "ScheduleNextDrawUpgrade": return context != null && (Math.Abs(effect.RequiredGold) == 0 || context.Gold >= Math.Abs(effect.RequiredGold));
                 case DragThemDownModel.Effect:
                 case FloorDamageModel.Effect:
+                case PyreAttackDamage:
                 case "Damage": return effect.Value >= 0 && (effect.Range == null || effect.Range.Max > 0) &&
                     (effect.Target != "DropTargetCharacter" || count > 0);
                 case "DamagePerSourceAttack": return count > 0;
@@ -3345,7 +3366,7 @@ namespace MonsterTrain2Poju.Model
             effect.Type == "Draw" && effect.Target == "DrawPile" ||
             (effect.Type == "DrawType" || effect.Type == "ScheduleNextDrawUpgrade") &&
             (effect.Target == "DrawPile" || effect.Target == "Hand" || effect.Target == "LastDrawnCard");
-        private static bool IsDamage(CardActionEffect effect) => effect.Type is "Damage" or "DamageCurrentHealthPercent" || effect.Type == MissingHealthStatusModel.CasterDamage || effect.Type == DragThemDownModel.Effect || effect.Type == FloorDamageModel.Effect || effect.Type == "DamagePerSourceAttack";
+        private static bool IsDamage(CardActionEffect effect) => effect.Type is "Damage" or "DamageCurrentHealthPercent" or PyreAttackDamage || effect.Type == MissingHealthStatusModel.CasterDamage || effect.Type == DragThemDownModel.Effect || effect.Type == FloorDamageModel.Effect || effect.Type == "DamagePerSourceAttack";
         private static bool QuantityTest(CardActionEffect effect) => IsDamage(effect) && effect.Type is not (MissingHealthStatusModel.CasterDamage or "DamageCurrentHealthPercent") || effect.Type == "Draw";
         // RandomManager converts Battle to BattleTest while a native card hover
         // owns temporary copies. Tests and applications share that persistent stream.
