@@ -14,6 +14,8 @@ namespace MonsterTrain2Poju.Probe
         internal const string DataId = "57c1d696-f48d-48a3-9ac5-e868f3f669fe";
         internal const string AggressiveImpDataId = "5a8399dd-a958-4317-b814-de0e2972ca3d";
         internal const string WelderHelperDataId = "61d9f4f1-80f5-416b-bf22-1836925c8ccd";
+        internal const string CheeryDeathcapDataId = "97260e75-4e11-439e-8eda-cd961143fc12";
+        internal const string EnthusiasticFanDataId = "adaaaa9d-56a9-4a5f-a347-ee71d4767df5";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
@@ -45,13 +47,15 @@ namespace MonsterTrain2Poju.Probe
             Set(steward.GetSpawnCharacterData(), "triggers", new List<CharacterTriggerData> { trigger });
             foreach (CardState card in cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == steward.GetID())) card.Setup(steward, save);
             foreach (CardState card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);
-            CardIds = Enumerable.Range(0, 3).Select(_ => FullBattleTrace.Active!.CardId(cards.AddNewCard(all.FindCardData(DataId)!, CardPile.HandPile, false, false, animate: false))).ToArray();
+            CardState[] imps = Enumerable.Range(0, 3).Select(_ => cards.AddNewCard(all.FindCardData(DataId)!, CardPile.HandPile, false, false, animate: false)).ToArray();
+            CardIds = imps.Select(card => FullBattleTrace.Active!.CardId(card)).ToArray();
+            cards.MoveCardFromHandToTopOfDeck(imps[2]);
             SourceCardIds = Enumerable.Range(0, 2).Select(_ => FullBattleTrace.Active!.CardId(cards.AddNewCard(steward, CardPile.HandPile, false, false, animate: false)))
-                .Concat(new[] { AggressiveImpDataId, WelderHelperDataId }.Select(id =>
+                .Concat(new[] { AggressiveImpDataId, WelderHelperDataId, CheeryDeathcapDataId, EnthusiasticFanDataId }.Select(id =>
                     FullBattleTrace.Active!.CardId(cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false)))).ToArray();
             RecallCardId = FullBattleTrace.Active!.CardId(cards.AddNewCard(all.FindCardData(MagneticRelayScenario.DataId)!, CardPile.HandPile, false, false, animate: false));
             managers.GetPlayerManager().AddEnergy(12); Prepared = true;
-            log.LogInfo("TRANSCEND-IMP-PREPARED three original Transcend Imps, Fledgling Imp and Welder Helper: empty history, ordered gold/self upgrades, room Rage and front Armor, retained history after source recall; natural waves/boss retained.");
+            log.LogInfo("TRANSCEND-IMP-PREPARED original Rage, Armor, Decay and Sap sources; third Transcend Imp draws after natural turn-0 EndTurn and replays into original enemies.");
         }
         internal static PlayCardAction? Choose(BattleTurnState source, int[] imps, int[] units, int recall)
         {
@@ -59,7 +63,8 @@ namespace MonsterTrain2Poju.Probe
             bool Played(int id) => context.Statistics!.Value(id, "TimesPlayed", "ThisBattle") > 0;
             PlayCardAction? Play(int id, int room) => plays.FirstOrDefault(play => play.CardInstanceId == id && play.RoomIndex == room);
             if (!Played(imps[0])) return Play(imps[0], 1);
-            foreach (int id in units) if (!Played(id)) return Play(id, 0);
+            for (int index = 0; index < units.Length; index++)
+                if (!Played(units[index])) return Play(units[index], units.Length > 4 && index >= 2 ? 1 : 0);
             if (!Played(imps[1])) return Play(imps[1], 0);
             if (!Played(recall))
             {

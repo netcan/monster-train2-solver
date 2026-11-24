@@ -970,6 +970,11 @@ Transcend Imp 随后按原有顺序重放召唤历史，被召回的单位可重
 并行独立复放通过。
 [`transcend-imp-original-welder-front-armor.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/transcend-imp-original-welder-front-armor.mt2f)
 
+原版 Cheery Deathcap 和 Enthusiastic Fan 在空楼层触发后都保留在召唤历史中。下一回合
+在自然刷出敌人的楼层召唤 Transcend Imp，两名敌人各获得 7 层 Decay 和 3 层 Sap。
+10 次操作、5 次结束回合、两类候选、完整后继及随机流通过独立复放。
+[`transcend-imp-original-enemy-room-decay-sap.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/transcend-imp-original-enemy-room-decay-sap.mt2f)
+
 原版 Hallowed Halls 牺牲同层友军，并从预置耗尽堆重建六名升级单位。专项核对 Standby、
 站位和容量。5 次出牌、6 次结束回合及两类候选通过。
 [`hallowed-halls.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/hallowed-halls.mt2f)

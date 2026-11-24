@@ -32,33 +32,46 @@ namespace MonsterTrain2Poju.Model
     {
         private const string OriginalAggressiveImp = "5a8399dd-a958-4317-b814-de0e2972ca3d";
         private const string OriginalWelderHelper = "61d9f4f1-80f5-416b-bf22-1836925c8ccd";
+        private const string OriginalCheeryDeathcap = "97260e75-4e11-439e-8eda-cd961143fc12";
+        private const string OriginalEnthusiasticFan = "adaaaa9d-56a9-4a5f-a347-ee71d4767df5";
         internal static bool Calibrated(CombatEffect effect) =>
             effect.Type == "CardEffectRewardGold" && effect.Value >= 0 ||
             effect.UnitUpgrade is CardActionEffect upgrade && upgrade.Type == "UnitUpgrade" &&
             upgrade.Target == "Self" && !upgrade.ScaleUpgrade && upgrade.Range == null &&
             upgrade.Lifetime == "TemporaryUntilUnitDeath" && upgrade.Upgrade?.ExternalInteractions.Count == 0 &&
             (upgrade.Upgrade.TriggerUpgrades == null || upgrade.Upgrade.TriggerUpgrades.Count == 0) ||
-            FixedAggressiveImpRage(effect) || FixedWelderHelperArmor(effect);
+            FixedAggressiveImpRage(effect) || FixedWelderHelperArmor(effect) ||
+            FixedCheeryDeathcapDecay(effect) || FixedEnthusiasticFanSap(effect);
 
         private static bool FixedAggressiveImpRage(CombatEffect effect) =>
             FixedOriginalStatus(effect, "Room", 0, "buff", 5, 2);
         private static bool FixedWelderHelperArmor(CombatEffect effect) =>
             FixedOriginalStatus(effect, "FrontInRoom", 100, "armor", 20, 1);
+        private static bool FixedCheeryDeathcapDecay(CombatEffect effect) =>
+            FixedOriginalStatus(effect, "Room", 0, "decay", 7, 3, enemy: true);
+        private static bool FixedEnthusiasticFanSap(CombatEffect effect) =>
+            FixedOriginalStatus(effect, "Room", 0, "debuff", 3, 2, enemy: true);
 
-        // Only the two fixed stock OnSpawn payloads captured in the 2.3.1 card catalog.
+        private static bool OriginalStatusFromSource(CombatEffect effect, string dataId) =>
+            FixedAggressiveImpRage(effect) && dataId == OriginalAggressiveImp ||
+            FixedWelderHelperArmor(effect) && dataId == OriginalWelderHelper ||
+            FixedCheeryDeathcapDecay(effect) && dataId == OriginalCheeryDeathcap ||
+            FixedEnthusiasticFanSap(effect) && dataId == OriginalEnthusiasticFan;
+
+        // Only these fixed stock OnSpawn payloads captured in the 2.3.1 card catalog.
         private static bool FixedOriginalStatus(CombatEffect effect, string target, int chance,
-            string status, int stacks, int paramInt) =>
+            string status, int stacks, int paramInt, bool enemy = false) =>
             effect.Type == "CardEffectAddStatusEffect" && effect.Value == chance && effect.Counter == 0 &&
             effect.Count == 0 && effect.CardPool.Count == 0 && effect.Generation == null &&
             effect.UnitUpgrade == null && effect.Summon == null && effect.Enchantment == null &&
             effect.DamageStatusMultiplier == null && effect.BoxedPool == null &&
             effect.StatusScaling is { ActorStatus: null, MissingHealth: false, MagicPower: false,
                 IgnoreDualism: false, Subtype.Length: 0, HealthChoicePercent: null, HealthChoiceAbove: false } &&
-            effect.Action is { Type: "AddStatus", AllowEnemy: false,
-                AllowPlayer: true, Range: null, Statuses.Count: 1, Upgrade: null, Generation: null,
+            effect.Action is { Type: "AddStatus", Range: null, Statuses.Count: 1, Upgrade: null, Generation: null,
                 OnlyIfNoEnemies: false, UseSelectedRoom: false, CountStatusOnlyOnTargets: false,
                 DisallowStatusStackModifiers: false, IgnoreDualism: false } action &&
             action.Target == target && action.Value == chance &&
+            action.AllowEnemy == enemy && action.AllowPlayer != enemy &&
             action.Statuses[0] is { Stackable: true } payload && payload.Id == status &&
             payload.Stacks == stacks && payload.ParamInt == paramInt &&
             action.Tests is { ShouldTest: true, FailToCast: false, CancelSubsequent: false,
@@ -89,8 +102,7 @@ namespace MonsterTrain2Poju.Model
                             Array.Empty<CombatStatus>(), goldCostRequired: false));
                     else if (effect.UnitUpgrade is CardActionEffect upgrade)
                         effects.Add(upgrade);
-                    else if (FixedAggressiveImpRage(effect) && spawner.DataId == OriginalAggressiveImp ||
-                        FixedWelderHelperArmor(effect) && spawner.DataId == OriginalWelderHelper)
+                    else if (OriginalStatusFromSource(effect, spawner.DataId))
                         effects.Add(effect.Action!);
                     else return Unsupported("Uncalibrated or stateful cached trigger effect " + effect.Type);
                 }
