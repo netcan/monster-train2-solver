@@ -1432,6 +1432,12 @@ GrimFlight 验收程序已就绪，正向运行需要原版客户端确认 Punis
 [整战阶段报告](../results/recorded-chain-triage-20261125-042106-0de57402/report.tsv) ·
 [阶段求解日志](../results/solver-completion-20261125-aac6ea21.log)
 
+第 9 环原版隔离路线携带 `ExtraSpellUpgrades` 后，五体生成、四个 Relentless 阶段和付费击杀均与模型一致。
+两场胜局分别覆盖耗尽波次后的 Savagery 清场，以及底层 Entropy 的提前击杀。
+逐项核对完整状态、随机流及遗物保留，同一遗物的未知身份和附加战斗回调仍触发保护。
+[Relentless 归档](../tests/compatibility/game-2.3.1/mechanics/true-final-boss-spell-slot/relentless.mt2f) ·
+[Entropy 归档](../tests/compatibility/game-2.3.1/mechanics/true-final-boss-spell-slot/early-entropy.mt2f)
+
 2.3.1 原版 `DoubleStatusEffects` 已接入共享状态层数管线。原版 SpikePotion 支付 1 余烬，
 使火车乘务员获得 20 层尖刺，完整出牌后继和随机流通过复放。七项查询对照覆盖冷却、无目标、
 永久升级、延迟加法和转移来源。四项原版移除调用依次将尖刺从 20 变为 18、14、10、12，

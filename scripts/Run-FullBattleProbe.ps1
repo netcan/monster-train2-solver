@@ -82,6 +82,7 @@ param(
     [switch] $OriginalCaelShieldTrialIsolateRng,
     [switch] $OriginalCaelShieldTrialIsolateTestQueries,
     [switch] $OriginalTrueFinalBoss,
+    [switch] $TrueFinalBossSpellSlotRelic,
     [ValidateSet('', 'Health', 'Damage')][string] $TrueFinalBossAllyUpgrade = '',
     [ValidateSet('', 'Steward', 'Warrior', 'Animus', 'Avenger')][string] $TrueFinalBossOrdinaryAlly = '',
     [ValidateSet('', 'Health', 'Damage', 'Both')][string] $TrueFinalBossOrdinaryAllyUpgrade = '',
@@ -1754,6 +1755,9 @@ if ($OriginalTrueFinalBoss -and ($InputProfile -or $BattleDistance -ne 8 -or $Or
 }
 if ($OriginalTrueFinalBoss -and $OuterBossBirth) {
     throw 'OriginalTrueFinalBoss captures its five-body birth automatically; OuterBossBirth observes ordinary single-boss creation.'
+}
+if ($TrueFinalBossSpellSlotRelic -and (!$OriginalTrueFinalBoss -or !$BinaryCapture)) {
+    throw 'The original True Final Boss spell-slot relic witness requires binary capture on the original Ring 9 route.'
 }
 if ($TrueFinalBossLethalCombat) {
     if (-not $OriginalTrueFinalBoss -or $TrueFinalBossLethal -or $TrueFinalBossLethalAlly -or
@@ -3609,6 +3613,7 @@ $environment = @{
     MT2_PROBE_ORIGINAL_EARLY_TRIAL_FULL_BATTLE = $(if ($OriginalEarlyOuterBossTrialBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_CAEL_TRIAL_COVENANT = $OriginalCaelTrialCovenant.ToString([Globalization.CultureInfo]::InvariantCulture)
     MT2_PROBE_ORIGINAL_TRUE_FINAL_BOSS = $(if ($OriginalTrueFinalBoss) { '1' } else { '0' })
+    MT2_PROBE_TRUE_FINAL_BOSS_SPELL_SLOT_RELIC = $(if ($TrueFinalBossSpellSlotRelic) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_DORMANT = $(if ($TrueFinalBossDormantSavagery) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_RELENTLESS = $(if ($TrueFinalBossRelentless) { '1' } else { '0' })
     MT2_PROBE_TRUE_FINAL_BOSS_LETHAL = $(if ($TrueFinalBossLethal -or $TrueFinalBossLethalCombat) { '1' } else { '0' })
@@ -6290,6 +6295,15 @@ if ($TrueFinalBossMaximumEarlyEntropy) {
     @($trace.Turns).Count -ne $(if ($TrueFinalBossMaximumSacrifice) { 3 } else { 4 }) -or
     -not $trace.NativeWon -or -not $trace.TerminalEffectsSettled)) {
     throw 'Original TFB maximum-health battle did not finish its declared plays, EndTurns and native victory.'
+}
+if ($TrueFinalBossSpellSlotRelic) {
+    $owners = @($trace.Turns[0].Before.Spawn.Train.Context.Relics | Where-Object {
+        $_.DataId -ceq '60a7f580-0788-42f2-8896-cb8d22e849a5' -and $_.AssetKey -ceq 'ExtraSpellUpgrades' -and
+        @($_.EffectTypes).Count -eq 1 -and $_.EffectTypes[0] -ceq 'RelicEffectAddSpellUpgradeSlot'
+    })
+    if ($trace.GameModuleMvid -ne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or $owners.Count -ne 1) {
+        throw 'Missing the original spell-slot relic at the Ring 9 decision boundary.'
+    }
 }
 if ($Planner) {
     $plannerRuns = @($trace.PlannerRuns)

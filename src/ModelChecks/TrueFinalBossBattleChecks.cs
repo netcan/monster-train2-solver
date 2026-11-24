@@ -81,6 +81,74 @@ internal static class TrueFinalBossBattleChecks
         Console.WriteLine($"TRUE-FINAL-BOSS-COVENANT-WAVES PASS: {queries.Length} pure native stat previews, {definitions.Length} authored wave definitions and rejected spoofed origins.");
     }
 
+    internal static void SpellUpgradeSlotOwner(FixtureValue battle, FixtureValue donor)
+    {
+        foreach (FixtureValue archive in new[] { battle, donor })
+            TrueFinalBossChecks.Require(archive.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+                archive.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module,
+                "Spell-slot owner comparison requires original 2.3.1 archives.");
+        FixtureValue firstTurn = battle.GetProperty("Turns")[0];
+        var root = firstTurn.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var actual = firstTurn.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        var donorRoot = donor.GetProperty("Actions")[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        CombatRelicState owner = donorRoot.Spawn.Train.Context!.Relics!.Single(RelicModel.IsOriginalSpellUpgradeSlotOwner);
+        TrueFinalBossChecks.Require(root.Spawn is { Turn: 0, QueuedTrueFinalBoss: not null } &&
+            root.Spawn.Train.Context!.Relics!.All(relic => relic.EffectTypes.Count == 0), "Expected the original neutral deployment.");
+
+        BattleTurnState WithOwner(BattleTurnState state, CombatRelicState relic)
+        {
+            TrainCombatState train = state.Spawn.Train;
+            return TrueFinalBossLethalChecks.WithTrain(state, CardSpellModel.WithContext(train,
+                train.Context!.WithRelics([.. train.Context.Relics ?? [], relic])));
+        }
+        var source = WithOwner(root, owner);
+        string immutable = JsonSerializer.Serialize(source, ModelJson.Options);
+        BattleTurnResult baseline = BattleTurnModel.EndTurn(root);
+        BattleTurnResult after = BattleTurnModel.EndTurn(source);
+        TrueFinalBossChecks.Require(baseline.Supported && after.Supported && after.Outcome == baseline.Outcome,
+            after.UnsupportedReason ?? "The original spell-slot owner changed first-turn outcome.");
+        string? difference = ModelJson.Difference(BattleTurnChecks.Comparable(baseline.State!), BattleTurnChecks.Comparable(actual)) ??
+            ModelJson.Difference(BattleTurnChecks.Comparable(after.State!), BattleTurnChecks.Comparable(WithOwner(actual, owner)));
+        TrueFinalBossChecks.Require(difference == null && after.State!.Spawn.Train.Context!.Relics!.Count(RelicModel.IsOriginalSpellUpgradeSlotOwner) == 1 &&
+            JsonSerializer.Serialize(source, ModelJson.Options) == immutable,
+            "Combat successor, original owner retention or immutable deployment differs: " + difference);
+
+        var unknown = new CombatRelicState("uncalibrated-spell-slot-owner", owner.AssetKey, owner.EffectTypes,
+            isCovenant: false, disallowedInPlacementPhase: false);
+        var changed = new CombatRelicState(owner.DataId, owner.AssetKey, [.. owner.EffectTypes, RelicUnitTriggerCardGenerationModel.Effect],
+            isCovenant: false, disallowedInPlacementPhase: false);
+        TrueFinalBossChecks.Require(!BattleTurnModel.EndTurn(WithOwner(root, unknown)).Supported &&
+            !BattleTurnModel.EndTurn(WithOwner(root, changed)).Supported, "A changed or additional combat effect was admitted to boss birth.");
+        Console.WriteLine("TRUE-FINAL-BOSS-SPELL-SLOT-PAIR PASS: archived native deployment and exact native owner, first successor/RNG, owner retention, and unknown/active effect rejection.");
+    }
+
+    internal static void NativeSpellUpgradeSlotOwner(string relentlessPath, string terminalPath)
+    {
+        using var relentless = ModelJson.ReadFixture(relentlessPath);
+        using var terminal = ModelJson.ReadFixture(terminalPath);
+        foreach (FixtureValue archive in new[] { relentless.RootElement, terminal.RootElement })
+        {
+            TrueFinalBossChecks.Require(archive.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+                archive.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+                archive.GetProperty("NativeWon").GetBoolean() && archive.GetProperty("TerminalEffectsSettled").GetBoolean(),
+                "Expected a settled original 2.3.1 True Final Boss win.");
+            foreach (string counter in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
+                TrueFinalBossChecks.Require(archive.GetProperty(counter).GetInt32() == 0, "Native spell-slot capture has nonzero " + counter);
+            foreach (FixtureValue row in archive.GetProperty("Turns").EnumerateArray().Concat(archive.GetProperty("Actions").EnumerateArray()))
+            {
+                foreach (string boundary in new[] { "Before", "Actual" })
+                {
+                    var context = row.GetProperty(boundary).Deserialize<BattleTurnState>()!.Spawn.Train.Context!;
+                    TrueFinalBossChecks.Require(context.Relics!.Count(RelicModel.IsOriginalSpellUpgradeSlotOwner) == 1,
+                        "The exact spell-slot relic must remain present at every decision boundary.");
+                }
+            }
+        }
+        TrueFinalBossRelentlessChecks.Native(relentless.RootElement);
+        TrueFinalBossMaximumSacrificeChecks.EarlyEntropy(terminalPath);
+        Console.WriteLine("TRUE-FINAL-BOSS-SPELL-SLOT-NATIVE PASS: original owner persisted through exact birth, Relentless, and paid terminal damage in two original-game battles.");
+    }
+
     internal static void Native(FixtureValue root)
     {
         void Require(bool value, string message) => TrueFinalBossChecks.Require(value, message);

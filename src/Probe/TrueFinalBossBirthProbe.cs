@@ -32,6 +32,10 @@ namespace MonsterTrain2Poju.Probe
         {
             if (route != null) throw new InvalidOperationException("True-final-boss route was already selected.");
             TrueFinalBossCovenantScenario.Prepare(save);
+#if DEVELOPMENT_PROBE
+            if (Environment.GetEnvironmentVariable("MT2_PROBE_TRUE_FINAL_BOSS_SPELL_SLOT_RELIC") == "1")
+                AcquireOriginalSpellSlotRelic(save, log);
+#endif
             bool unlockedBefore = save.Cheats.ForceTFBUnlocked;
             int distanceBefore = save.GetCurrentDistance();
             object before = Rng();
@@ -45,6 +49,26 @@ namespace MonsterTrain2Poju.Probe
             log.LogInfo("TRUE-FINAL-BOSS-ROUTE native jump; unlock override=" + save.Cheats.ForceTFBUnlocked +
                 " distance=" + save.GetCurrentDistance() + " scenario=" + save.GetCurrentScenarioData()?.name);
         }
+
+#if DEVELOPMENT_PROBE
+        private static void AcquireOriginalSpellSlotRelic(SaveManager save, ManualLogSource log)
+        {
+            const string id = "60a7f580-0788-42f2-8896-cb8d22e849a5";
+            if (typeof(RelicState).Module.ModuleVersionId != new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d") ||
+                save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle ||
+                save.GetCollectedRelics().Any(owner => owner.GetRelicDataID() == id))
+                throw new InvalidOperationException("Expected the original Ring 9 route before boss initialization.");
+            var owner = save.GetAllGameData().GetAllCollectableRelicData().Single(relic => relic.GetID() == id);
+            var effect = owner.GetEffects().Single();
+            if (owner.name != "ExtraSpellUpgrades" || owner.DisallowInDeploymentPhase ||
+                !save.IsDlcAvailableWhenStartingRun(owner.GetRequiredDLC()) ||
+                effect.GetEffectClassName() != nameof(RelicEffectAddSpellUpgradeSlot) ||
+                effect.GetParamInt() != 0 || effect.GetParamInt2() != 0 || effect.GetEffectConditions().Count != 0)
+                throw new InvalidOperationException("The original spell-slot relic definition changed.");
+            save.AddRelic(owner);
+            log.LogInfo("TRUE-FINAL-BOSS-SPELL-SLOT-RELIC acquired unchanged " + owner.name + " " + id);
+        }
+#endif
 
         private static object Snapshot(HeroManager heroes)
         {

@@ -12,7 +12,7 @@ namespace MonsterTrain2Poju.Model
             StatisticQueryResult Reject(string reason) => new StatisticQueryResult(null, 0, reason);
             CardMaskDescriptor descriptor = card.MaskDescriptor!;
             if (descriptor.AuthoredCastEffects.Count > 0 ||
-                context.Relics?.Any(relic => relic.EffectTypes.Count > 0 && !IsOriginalSpellUpgradeSlotOwner(relic)) == true)
+                context.Relics?.Any(relic => relic.EffectTypes.Count > 0 && !RelicModel.IsOriginalSpellUpgradeSlotOwner(relic)) == true)
                 return Reject("Scaled discard draw with OnCast effects or relic owners requires native calibration.");
             CardTraitValue[] active = (CardExhaustModel.RefreshTraits(card).CombinedTraits ?? Array.Empty<CardTraitValue>()).Where(trait => trait.RuntimeType == Trait).ToArray();
             int index = descriptor.BaseTraits.ToList().FindIndex(trait => trait.RuntimeType == Trait);
@@ -43,9 +43,5 @@ namespace MonsterTrain2Poju.Model
              card.MaskDescriptor.PermanentReplacements.Any(rule => rule.NewRuntimeType == Trait) ||
              card.Permanent.Upgrades.Concat(card.Temporary.Upgrades).Any(upgrade => upgrade.Lifecycle?.AddedTraits.Any(trait => trait.RuntimeType == Trait) == true));
 
-        private static bool IsOriginalSpellUpgradeSlotOwner(CombatRelicState relic) =>
-            relic.DataId == "60a7f580-0788-42f2-8896-cb8d22e849a5" && relic.AssetKey == "ExtraSpellUpgrades" &&
-            relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false &&
-            relic.EffectTypes is ["RelicEffectAddSpellUpgradeSlot"];
     }
 }

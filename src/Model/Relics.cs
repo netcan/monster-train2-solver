@@ -183,6 +183,11 @@ namespace MonsterTrain2Poju.Model
 
     internal static class RelicModel
     {
+        internal static bool IsOriginalSpellUpgradeSlotOwner(CombatRelicState relic) =>
+            relic.DataId == "60a7f580-0788-42f2-8896-cb8d22e849a5" && relic.AssetKey == "ExtraSpellUpgrades" &&
+            relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false &&
+            relic.EffectTypes is ["RelicEffectAddSpellUpgradeSlot"];
+
         internal static bool IsOriginalAlliedDraftOwner(CombatRelicState relic) =>
             relic.DataId == "656861c9-a96d-4c99-988c-390b75e5d8d4" && relic.AssetKey == "AlliedClassRelic" &&
             relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false &&

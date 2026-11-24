@@ -57,6 +57,12 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Original Rail Spike with ExtraSpellUpgrades failed.' }
     dotnet $checks --battle-frontier-only $railSpike
     if ($LASTEXITCODE -ne 0) { throw 'Original Rail Spike with ExtraSpellUpgrades candidate frontier failed.' }
+    $bossSpellSlot = "$current/true-final-boss-spell-slot"
+    dotnet $checks --true-final-boss-spell-slot-native-only "$bossSpellSlot/relentless.mt2f" "$bossSpellSlot/early-entropy.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Original True Final Boss with ExtraSpellUpgrades failed.' }
+    dotnet $checks --true-final-boss-spell-slot-pair-only "$current/player-advisor-rolling/current-ring9-original-true-final-boss.mt2f" `
+        "$current/configured-opening-relics/native-card-play-damage-roster-isolated-rng.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'True Final Boss spell-slot relic guard controls failed.' }
     foreach ($rank in @('i', 'ii', 'iii')) {
         dotnet $checks --native-lazarus-devour-only "$current/lazarus-devour/native-devour-$rank.mt2f"
         if ($LASTEXITCODE -ne 0) { throw "Original Lazarus Devour ability failed at rank $rank." }

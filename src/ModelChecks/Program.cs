@@ -5022,6 +5022,19 @@ if (args.Length == 2 && args[0] == "--true-final-boss-battle-only")
     return;
 }
 
+if (args.Length == 3 && args[0] == "--true-final-boss-spell-slot-pair-only")
+{
+    using var battle = ModelJson.ReadFixture(args[1]);
+    using var donor = ModelJson.ReadFixture(args[2]);
+    TrueFinalBossBattleChecks.SpellUpgradeSlotOwner(battle.RootElement, donor.RootElement);
+    return;
+}
+if (args.Length == 3 && args[0] == "--true-final-boss-spell-slot-native-only")
+{
+    TrueFinalBossBattleChecks.NativeSpellUpgradeSlotOwner(args[1], args[2]);
+    return;
+}
+
 if (args.Length == 2 && args[0] is "--true-final-boss-preview-only" or "--true-final-boss-preview-rooms-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
