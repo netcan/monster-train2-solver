@@ -57,6 +57,67 @@ internal static class HivemindChecks
         }
     }
 
+    internal static void NativeSproutDeath(FixtureValue root)
+    {
+        int tier = root.GetProperty("Boundary").GetString() switch
+        {
+            "NativeSproutT2Hivemind" => 2,
+            "NativeSproutT3Hivemind" => 3,
+            _ => throw new InvalidDataException("Expected an original Sprout T2 or T3 witness.")
+        };
+        string permanentId = tier == 2 ? "110b42fe-b02e-45be-9782-96140d27a232" : "60fd575c-03f5-4885-aa6c-b2a7e6524d43";
+        int permanentAttack = tier == 2 ? 2 : 4;
+        int carrierId = Number(root, "CarrierUnitId");
+        FixtureValue kill = root.GetProperty("Kill");
+        FixtureValue receipt = kill.GetProperty("Deaths").EnumerateArray().Single();
+        FixtureValue prior = receipt.GetProperty("Before"), next = receipt.GetProperty("After");
+        CheckBuild(root);
+        Require(Number(root, "Schema") == 1 && Number(root, "CarrierRoom") == 0 && Number(receipt, "CarrierId") == carrierId &&
+                Number(receipt, "TriggerCount") == 1 && Number(kill, "Value") == permanentAttack &&
+                Number(prior, "ModifierAttack") == 6 && Number(next, "ModifierAttack") == 6 &&
+                Number(next, "TotalAttack") - Number(prior, "TotalAttack") == permanentAttack &&
+                new[] { "Battle", "BattleTest", "CardDraw" }.All(stream => prior.GetProperty(stream).ContentEquals(next.GetProperty(stream))),
+            "Original Sprout permanent attack callback differs.");
+
+        BattleTurnState beforeWave = Read(root, "Before");
+        BattleTurnResult wave = BattleTurnModel.EndTurn(beforeWave);
+        Require(wave.Supported && wave.Outcome == RoomOutcome.Exchanged, "Original Sprout wave failed: " + wave.UnsupportedReason);
+        Compare(wave.State!, root.GetProperty("Actual"), "Original Sprout scaled wave");
+
+        BattleTurnState beforeKill = Read(kill, "Before"), actual = Read(kill, "Actual");
+        PlayCardAction action = kill.GetProperty("Action").Deserialize<PlayCardAction>()!;
+        CombatUnit carrier = actual.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == carrierId);
+        CombatUnit origin = beforeKill.Spawn.Train.Rooms[0].Units.Single(unit => unit.Id == action.TargetUnitId);
+        Require(action.RoomIndex == 0 && action.TargetUnitId == Number(receipt, "DyingId") &&
+                origin.Health == 4 && origin.AssetKey == Hunter && origin.Status("hivemind")?.Stacks == 2 &&
+                actual.Spawn.Train.Rooms.SelectMany(room => room.Units).All(unit => unit.Id != origin.Id || unit.Health == 0) &&
+                beforeKill.Spawn.Train.Context?.FindCard(action.CardInstanceId)?.DataId == "87e45427-921e-45d3-b4c4-9c156a83cedf" &&
+                beforeKill.Energy - actual.Energy == 1 &&
+                carrier.Modifiers?.Upgrades.Single(upgrade => upgrade.DataId == permanentId).Stats.Damage == permanentAttack &&
+                actual.Spawn.Train.Context?.FindCard(carrier.SpawnerCardId)?.Permanent.Upgrades
+                    .Single(upgrade => upgrade.DataId == permanentId).Stats.Damage == permanentAttack,
+            "The original Hunter death or lasting carrier and spawner upgrade differs.");
+        string parent = JsonSerializer.Serialize(beforeKill, ModelJson.Options);
+        BattleActionResult played = BattleActionModel.PlayCard(beforeKill, action);
+        Require(played.Supported && played.Outcome == RoomOutcome.Exchanged, "Original Sprout paid removal failed: " + played.Reason);
+        Compare(played.State!, kill.GetProperty("Actual"), "Original Sprout paid Hunter removal");
+        Require(parent == JsonSerializer.Serialize(beforeKill, ModelJson.Options), "Sprout paid removal changed its parent.");
+        Console.WriteLine($"NATIVE-SPROUT-T{tier} PASS: independent scaled wave and paid Hunter death, +{permanentAttack} permanent attack, exact successor RNG.");
+
+        static BattleTurnState Read(FixtureValue value, string name) => value.GetProperty(name).Deserialize<BattleTurnState>()!;
+        static void Compare(BattleTurnState predicted, FixtureValue native, string boundary)
+        {
+            BattleTurnState actual = native.Deserialize<BattleTurnState>()!;
+            BattleTurnState observed = RecordedBattleChecks.RecordedBoundary(predicted, native, false, boundary, true);
+            Require(observed.RngStreams.Select(stream => (stream.Name, stream.Seed, stream.State))
+                .SequenceEqual(actual.RngStreams.Select(stream => (stream.Name, stream.Seed, stream.State))), boundary + " RNG differs.");
+        }
+        static void Require(bool condition, string reason)
+        {
+            if (!condition) throw new InvalidDataException(reason);
+        }
+    }
+
     internal static void ExportTurnComponent(string battlePath, string outputPath, int index = 0)
     {
         using var source = ModelJson.ReadFixture(battlePath);

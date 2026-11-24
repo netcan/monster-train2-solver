@@ -142,6 +142,15 @@ if (args.Length == 2 && args[0] == "--native-sprout-t1-only")
     HivemindChecks.NativeSproutT1(fixture.RootElement);
     return;
 }
+if (args.Length >= 2 && args[0] == "--native-sprout-death-only")
+{
+    foreach (string archive in args.Skip(1))
+    {
+        using var fixture = ModelJson.ReadFixture(archive);
+        HivemindChecks.NativeSproutDeath(fixture.RootElement);
+    }
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-hivemind-second-draw-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

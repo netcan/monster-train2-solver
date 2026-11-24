@@ -3885,8 +3885,9 @@ namespace MonsterTrain2Poju.Model
                 WorkingUnit? waitForRevival = null, bool maximumHealthSacrifice = false)
             {
                 if (target.DeathFinished) return;
-                if (target.Source.Status(HivemindTurnUpgrade.StatusId) != null &&
-                    !HivemindTurnUpgrade.IsObservedScaledWaveDeath(source, target.Source, sourceCardId) &&
+                bool hivemind = target.Source.Status(HivemindTurnUpgrade.StatusId) != null;
+                bool scaledDeath = hivemind && HivemindTurnUpgrade.IsObservedScaledWaveDeath(source, target.Source, sourceCardId);
+                if (hivemind && !scaledDeath &&
                     !HivemindTurnUpgrade.IsObservedInfestedHordeDeath(source, target.Source, sourceCardId) &&
                     !HivemindTurnUpgrade.IsObservedThirdFeedDeath(source, target.Source.Id, actor?.Source.Id) &&
                     !HivemindTurnUpgrade.IsObservedPyreHunterDeath(source, target.Source.Id, actor?.Source.IsPyre == true))
@@ -3940,6 +3941,7 @@ namespace MonsterTrain2Poju.Model
                         isSacrifice: target.Source.DeathState.IsSacrifice,
                         statisticsListenerOnce: target.Source.DeathState.StatisticsListenerOnce.HasValue ? false : (bool?)null)));
                 if (!UpdateEnchantments(target.Source.Id)) return;
+                if (!source.Preview && scaledDeath && !RefreshSproutAttackAfterHunterDeath()) return;
                 bool wonDuringDeathTrigger = false;
                 if (enqueueCharacterTrigger != null) enqueueCharacterTrigger(new QueuedCharacterTrigger(target.RoomIndex, target.Freeze(),
                     returnSpawnerAfterQueue: deferReturn || returnSpawnerAfterQueue, deferUntilRemoval: deferRemoval, harvestAfterDeath: !target.Despawned && !immediateHarvest,
@@ -3973,6 +3975,28 @@ namespace MonsterTrain2Poju.Model
                     if (!(stopAfterBossRemoval && terminalBossRemoval) && UpdateEnchantments() &&
                         !runningTriggerQueue && enqueueCharacterTrigger == null) DrainLocalTriggerQueue();
                 }
+            }
+
+            private bool RefreshSproutAttackAfterHunterDeath()
+            {
+                RoomCombatState current = CurrentRoom();
+                WorkingUnit? carrier = units.FirstOrDefault(unit => unit.Alive && unit.InRoom &&
+                    HivemindTurnUpgrade.IsObservedSproutCarrier(current, unit.Freeze()));
+                if (carrier == null) return true;
+                if (context?.Enchantments == null)
+                {
+                    unsupportedReason = "Missing observed Sprout attack state for the Hunter death callback.";
+                    return false;
+                }
+                int remaining = current.Units.Concat(context.Enchantments.Rooms.Where(room => room.RoomIndex != current.RoomIndex)
+                        .SelectMany(room => room.Units)).Where(unit => unit.Team == CombatTeam.Enemy && unit.Health > 0)
+                    .Sum(unit => unit.Status(HivemindTurnUpgrade.StatusId)?.Stacks ?? 0);
+                // The original room modifier updates the temporary attack before
+                // the existing physical death callback dispatches the permanent upgrade.
+                CombatUnit? updated = HivemindTurnUpgrade.RefreshSproutAttack(current, carrier.Freeze(), remaining, out string? error);
+                if (updated == null) { unsupportedReason = error; return false; }
+                carrier.Apply(updated);
+                return true;
             }
 
             private void RemovePhysicalPoint(WorkingUnit unit)
