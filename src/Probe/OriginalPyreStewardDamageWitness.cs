@@ -105,7 +105,8 @@ namespace MonsterTrain2Poju.Probe
             {
                 Schema = 1, Boundary, GameVersion = Application.version, GameModuleMvid = Module, Definition = definitionEvidence,
                 DeploymentBefore = deploymentBefore, DeploymentPlay = deploymentPlay, DeploymentAfter = deploymentAfter,
-                Before = beforeAbility, Action = activation, After = afterAbility, Scaling = scaling, DamageRequests
+                Before = beforeAbility, Action = activation, After = afterAbility, Scaling = scaling, DamageRequests,
+                SettledPyre = ObservePyre()
             });
             using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "pyre-steward-damage.mt2f"));
             document.Write(stream);
@@ -143,6 +144,15 @@ namespace MonsterTrain2Poju.Probe
         private static JArray BattleRng() => new JArray(new[] { RngId.Battle, RngId.BattleTest }
             .Select(id => JObject.FromObject(new { Id = id.ToString(), Words = RngCalibration.Words(RandomManager.GetState(id)) })));
 
+        private static object ObservePyre()
+        {
+            var managers = AllGameManagers.Instance!;
+            var save = managers.GetSaveManager();
+            var live = managers.GetRoomManager().GetPyreRoom().GetPyreHeart();
+            return new { SavedHealth = save.GetTowerHP(), LiveHealth = live.GetHP(), SavePreview = save.PreviewMode,
+                LivePreview = live.PreviewMode, DisplayedAttack = save.GetDisplayedPyreAttack() };
+        }
+
         private sealed class ScalingSample
         {
             public int AuthoredPyreAttack { get; set; }
@@ -152,6 +162,8 @@ namespace MonsterTrain2Poju.Probe
             public int[] Targets { get; set; } = Array.Empty<int>();
             public JArray BeforeRng { get; set; } = null!;
             public JArray? AfterRng { get; set; }
+            public object? PyreBefore { get; set; }
+            public object? PyreAfter { get; set; }
             public bool Completed { get; set; }
             public List<DamageRequest> Requests { get; } = new();
         }
@@ -165,6 +177,10 @@ namespace MonsterTrain2Poju.Probe
             public int HealthBefore { get; set; }
             public int? HealthAfter { get; set; }
             public bool Destroyed { get; set; }
+            public bool TargetPreview { get; set; }
+            public bool TargetsLivePyre { get; set; }
+            public object? PyreBefore { get; set; }
+            public object? PyreAfter { get; set; }
         }
 
         [HarmonyPatch(typeof(CardEffectDamagePerPyreAttack), nameof(CardEffectDamagePerPyreAttack.ApplyEffect))]
@@ -186,12 +202,13 @@ namespace MonsterTrain2Poju.Probe
                     AuthoredPyreAttack = save.GetActiveSavePyreCharacterData().GetPyreHeartData().GetAttack(),
                     BasePyreAttack = save.GetBasePyreAttack(), SavedAttackOffset = save.GetModifiedPyreBaseAttack(),
                     DisplayedPyreAttack = save.GetDisplayedPyreAttack(), Targets = parameters.targets.Select(trace.UnitId).ToArray(),
-                    BeforeRng = BattleRng()
+                    BeforeRng = BattleRng(), PyreBefore = ObservePyre()
                 };
                 observingScaledEffect = true;
                 try
                 {
                     while (native.MoveNext()) yield return native.Current;
+                    scaling.PyreAfter = ObservePyre();
                     scaling.AfterRng = BattleRng();
                     scaling.Completed = true;
                 }
@@ -214,7 +231,10 @@ namespace MonsterTrain2Poju.Probe
                 var request = new DamageRequest
                 {
                     TargetId = FullBattleTrace.Active!.UnitId(target), Team = target.GetTeamType().ToString(),
-                    RoomIndex = target.GetCurrentRoomIndex(), Amount = damage, HealthBefore = target.GetHP()
+                    RoomIndex = target.GetCurrentRoomIndex(), Amount = damage, HealthBefore = target.GetHP(),
+                    TargetPreview = target.PreviewMode,
+                    TargetsLivePyre = ReferenceEquals(target, AllGameManagers.Instance!.GetRoomManager().GetPyreRoom().GetPyreHeart()),
+                    PyreBefore = ObservePyre()
                 };
                 bool scaled = observingScaledEffect;
                 DamageRequests.Add(new { Scaled = scaled, Damage = request });
@@ -224,6 +244,7 @@ namespace MonsterTrain2Poju.Probe
                     while (native.MoveNext()) yield return native.Current;
                     request.Destroyed = target.IsDestroyed;
                     request.HealthAfter = request.Destroyed ? null : target.GetHP();
+                    request.PyreAfter = ObservePyre();
                 }
                 finally { (native as IDisposable)?.Dispose(); }
             }
