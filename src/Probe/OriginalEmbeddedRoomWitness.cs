@@ -73,12 +73,14 @@ namespace MonsterTrain2Poju.Probe
             }
 
             var after = trace.CaptureDecision();
+            var replacement = second!.GetEffectStates().Single();
             int[] floors = Enumerable.Range(0, rooms.GetNumRooms()).Where(index => !rooms.GetRoom(index).GetIsPyreRoom()).ToArray();
             var permissions = floors.Select(index => new
             {
                 Floor = index,
-                Allowed = cards.CanPlayHandCard(second!, index, null, null, null, out var reason),
-                Reason = reason.ToString()
+                Allowed = GameEffectHelper.TestEffect(replacement,
+                    new CardEffectParams { playedCard = second, selectedRoom = index }, managers.GetCoreManagers(), false),
+                Affordable = cards.CanPlayHandCard(second, index, null, null, null, out _)
             }).ToArray();
             var installed = floors.Select(index => new
             {
@@ -96,7 +98,7 @@ namespace MonsterTrain2Poju.Probe
             });
             using (Stream stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, FileName)))
                 document.Write(stream);
-            if (before!.Energy - after.Energy != cost || floors.Length != 3 || permissions.Any(item => item.Allowed) ||
+            if (before!.Energy - after.Energy != cost || floors.Length != 3 || permissions.Any(item => item.Allowed || !item.Affordable) ||
                 installed.Any(item => item.Count != 1 || item.Types is not ["Primary_Embedded"] ||
                     item.Capacity != before.Spawn.Train.Context!.RoomCapacities!.Single(room => room.RoomIndex == item.Floor).PlayerMaximum + 4))
                 throw new InvalidOperationException("The original attachment, replicated copies or embedded play gates did not settle.");
