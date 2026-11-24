@@ -8,7 +8,7 @@ try {
         'BepInEx/plugins/PojuAdvisor/Model.dll', 'BepInEx/plugins/PojuAdvisor/FixtureArchive.dll',
         'runtime/BepInEx_macos_universal_5.4.23.5.zip', 'install.command', 'Start-Poju.command', 'poju-common.sh',
         'README-中文.md', 'THIRD-PARTY-NOTICES.md', 'licenses/BepInEx-LICENSE.txt', 'BUILD.json', 'SHA256SUMS')
-    if (Compare-Object $expected @($archive.Entries.FullName)) { throw 'Unexpected or missing package contents.' }
+    if (Compare-Object -CaseSensitive $expected @($archive.Entries.FullName)) { throw 'Unexpected or missing package contents.' }
     if (@($archive.Entries.FullName | Sort-Object -Unique).Count -ne $expected.Count) { throw 'Duplicate ZIP entries.' }
     function Read-Entry([string] $Name) {
         $reader = [IO.StreamReader]::new($archive.GetEntry($Name).Open())
