@@ -975,6 +975,13 @@ Transcend Imp 随后按原有顺序重放召唤历史，被召回的单位可重
 10 次操作、5 次结束回合、两类候选、完整后继及随机流通过独立复放。
 [`transcend-imp-original-enemy-room-decay-sap.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/transcend-imp-original-enemy-room-decay-sap.mt2f)
 
+追加原版 Starter Imp 与 Unstable Infery 的固定伤害回放。下一回合在自然刷出敌人的
+楼层召唤超越小鬼，前排承受 16 点伤害，随后同层两名敌人各承受 10 点。前排的 25 点
+护甲耗尽，生命从 5 降至 4，后排生命从 125 降至 115。10 次操作、5 次结束回合、
+两类候选及 16 条独立分支通过完整状态和随机流对照。采集使用隔离工作进程的
+`-TranscendImp` 模式，进程环境设置 `MT2_PROBE_TRANSCEND_DAMAGE=1`。
+[`transcend-imp-original-front-room-damage.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/transcend-imp-original-front-room-damage.mt2f)
+
 原版 Hallowed Halls 牺牲同层友军，并从预置耗尽堆重建六名升级单位。专项核对 Standby、
 站位和容量。5 次出牌、6 次结束回合及两类候选通过。
 [`hallowed-halls.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/hallowed-halls.mt2f)

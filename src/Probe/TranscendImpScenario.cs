@@ -16,7 +16,10 @@ namespace MonsterTrain2Poju.Probe
         internal const string WelderHelperDataId = "61d9f4f1-80f5-416b-bf22-1836925c8ccd";
         internal const string CheeryDeathcapDataId = "97260e75-4e11-439e-8eda-cd961143fc12";
         internal const string EnthusiasticFanDataId = "adaaaa9d-56a9-4a5f-a347-ee71d4767df5";
+        internal const string StarterImpDataId = "d76be2d0-f851-4d43-bdc0-7c7a7779724f";
+        internal const string UnstableInferyDataId = "2955e19c-a7d7-4b6a-b447-b60a976628ae";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
+        private static bool OriginalDamage => Environment.GetEnvironmentVariable("MT2_PROBE_TRANSCEND_DAMAGE") == "1";
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
         internal static int[] SourceCardIds { get; private set; } = Array.Empty<int>();
@@ -50,12 +53,17 @@ namespace MonsterTrain2Poju.Probe
             CardState[] imps = Enumerable.Range(0, 3).Select(_ => cards.AddNewCard(all.FindCardData(DataId)!, CardPile.HandPile, false, false, animate: false)).ToArray();
             CardIds = imps.Select(card => FullBattleTrace.Active!.CardId(card)).ToArray();
             cards.MoveCardFromHandToTopOfDeck(imps[2]);
+            string[] stockSources = OriginalDamage
+                ? new[] { AggressiveImpDataId, WelderHelperDataId, StarterImpDataId, UnstableInferyDataId }
+                : new[] { AggressiveImpDataId, WelderHelperDataId, CheeryDeathcapDataId, EnthusiasticFanDataId };
             SourceCardIds = Enumerable.Range(0, 2).Select(_ => FullBattleTrace.Active!.CardId(cards.AddNewCard(steward, CardPile.HandPile, false, false, animate: false)))
-                .Concat(new[] { AggressiveImpDataId, WelderHelperDataId, CheeryDeathcapDataId, EnthusiasticFanDataId }.Select(id =>
+                .Concat(stockSources.Select(id =>
                     FullBattleTrace.Active!.CardId(cards.AddNewCard(all.FindCardData(id)!, CardPile.HandPile, false, false, animate: false)))).ToArray();
             RecallCardId = FullBattleTrace.Active!.CardId(cards.AddNewCard(all.FindCardData(MagneticRelayScenario.DataId)!, CardPile.HandPile, false, false, animate: false));
             managers.GetPlayerManager().AddEnergy(12); Prepared = true;
-            log.LogInfo("TRANSCEND-IMP-PREPARED original Rage, Armor, Decay and Sap sources; third Transcend Imp draws after natural turn-0 EndTurn and replays into original enemies.");
+            log.LogInfo("TRANSCEND-IMP-PREPARED original Rage, Armor, " +
+                (OriginalDamage ? "front and room Damage" : "Decay and Sap") +
+                " sources; third Transcend Imp draws after natural turn-0 EndTurn and replays into original enemies.");
         }
         internal static PlayCardAction? Choose(BattleTurnState source, int[] imps, int[] units, int recall)
         {
@@ -92,6 +100,8 @@ namespace MonsterTrain2Poju.Probe
                             type = "UncalibratedReplayGold";
                         return new CombatEffect(type, value, 0, "", effect.GetAdditionalParamInt(), Array.Empty<string>(), effect.GetParamBool2(),
                             unitUpgrade: UnitTriggerUpgradeProbe.Capture(effect, interactions), action: UnitTriggerActionProbe.Capture(effect),
+                            damageStatusMultiplier: type == "CardEffectDamage" && effect.GetUseStatusEffectStackMultiplier()
+                                ? effect.GetStatusEffectStackMultiplier() : null,
                             statusScaling: type == "CardEffectAddStatusEffect" ? UnitTriggerActionProbe.Scaling(effect) : null);
                     }).ToArray();
                     if (interactions.Count > 0) throw new NotSupportedException(string.Join("; ", interactions));

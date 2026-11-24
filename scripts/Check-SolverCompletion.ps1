@@ -51,6 +51,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Original Welder Helper Armor history replay failed.' }
     dotnet $checks --transcend-imp-only "$current/controlled-original-support-units/transcend-imp-original-enemy-room-decay-sap.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Original enemy room Decay and Sap history replay failed.' }
+    dotnet $checks --transcend-imp-only "$current/controlled-original-support-units/transcend-imp-original-front-room-damage.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Original front and room Damage history replay failed.' }
     $output = Join-Path '.probe-runs' ('solver-completion-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
     $null = New-Item -ItemType Directory -Path $output
     dotnet $tools solve-exact $original (Join-Path $output 'node-cutoff.mt2f') 1 30000 1

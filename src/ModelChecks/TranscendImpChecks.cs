@@ -9,6 +9,8 @@ internal static class TranscendImpChecks
     private const string WelderHelperDataId = "61d9f4f1-80f5-416b-bf22-1836925c8ccd";
     private const string CheeryDeathcapDataId = "97260e75-4e11-439e-8eda-cd961143fc12";
     private const string EnthusiasticFanDataId = "adaaaa9d-56a9-4a5f-a347-ee71d4767df5";
+    private const string StarterImpDataId = "d76be2d0-f851-4d43-bdc0-7c7a7779724f";
+    private const string UnstableInferyDataId = "2955e19c-a7d7-4b6a-b447-b60a976628ae";
     internal static PlayCardAction? Choose(BattleTurnState source, int[] imps, int[] units, int recall)
     {
         CombatContext context = source.Spawn.Train.Context!; var plays = BattleActionModel.EnumerateSupportedPlays(source);
@@ -35,7 +37,7 @@ internal static class TranscendImpChecks
         int[] sources = root.GetProperty("TranscendImpSourceCardIds").Deserialize<int[]>()!;
         Require(sources.Length is 2 or 3 or 4 or 6, "Unexpected original replay source count.");
         bool hasOriginalRage = sources.Length >= 3, hasOriginalArmor = sources.Length >= 4;
-        bool hasEnemyStatuses = sources.Length == 6;
+        bool hasEnemyStatuses = false, hasOriginalDamage = false;
         int index = 0;
         foreach (FixtureValue row in root.GetProperty("TranscendImpRecords").EnumerateArray())
         {
@@ -46,6 +48,14 @@ internal static class TranscendImpChecks
             string kind = row.GetProperty("Kind").GetString()!;
             BattleTriggerHistory history = before.Context!.TriggerCounts!.ReplayHistory!;
             Require(kind == "OnSpawn" && history.Batches.Count == (index == 0 ? 0 : sources.Length), "Missing empty/ordered positive history.");
+            if (index == 0 && sources.Length == 6)
+            {
+                string? fourth = before.Context.FindCard(sources[4])?.DataId;
+                string? fifth = before.Context.FindCard(sources[5])?.DataId;
+                hasEnemyStatuses = fourth == CheeryDeathcapDataId && fifth == EnthusiasticFanDataId;
+                hasOriginalDamage = fourth == StarterImpDataId && fifth == UnstableInferyDataId;
+                Require(hasEnemyStatuses || hasOriginalDamage, "Unknown original replay source pair.");
+            }
             if (index > 0 && hasOriginalRage)
             {
                 CombatEffect rage = history.Batches[2].Effects.Single();
@@ -85,6 +95,27 @@ internal static class TranscendImpChecks
                         new[] { sap.Action.Statuses[0].WithStacks(4) }))),
                     "Altered Decay or Sap stacks must remain unsupported.");
             }
+            if (index > 0 && hasOriginalDamage)
+            {
+                CombatEffect frontDamage = history.Batches[4].Effects.Single();
+                CombatEffect roomDamage = history.Batches[5].Effects.Single();
+                Require(before.Context.FindCard(sources[4])?.DataId == StarterImpDataId &&
+                    before.Context.FindCard(sources[5])?.DataId == UnstableInferyDataId &&
+                    history.Batches[4].SpawnerCardId == sources[4] &&
+                    history.Batches[5].SpawnerCardId == sources[5] &&
+                    frontDamage is { Type: "CardEffectDamage", Value: 16, DamageStatusMultiplier: null,
+                        Action: { Type: "Damage", Target: "FrontInRoom", Value: 16, Range: null } } &&
+                    roomDamage is { Type: "CardEffectDamage", Value: 10, DamageStatusMultiplier: null,
+                        Action: { Type: "Damage", Target: "Room", Value: 10, Range: null } } &&
+                    BattleTriggerReplayModel.Calibrated(frontDamage) && BattleTriggerReplayModel.Calibrated(roomDamage),
+                    "Missing original Starter Imp and Unstable Infery fixed Damage payloads.");
+                Require(!BattleTriggerReplayModel.Calibrated(frontDamage.WithActionValue(17)) &&
+                    !BattleTriggerReplayModel.Calibrated(roomDamage.WithActionValue(11)) &&
+                    !BattleTriggerReplayModel.Calibrated(frontDamage.WithAction(new CardActionEffect(
+                        "Damage", "Room", 16, true, false, Array.Empty<CombatStatus>(),
+                        tests: frontDamage.Action!.Tests, filters: frontDamage.Action.Filters))),
+                    "Changed Damage values or target mode must remain unsupported.");
+            }
             string parent = JsonSerializer.Serialize(before, ModelJson.Options);
             void Replay()
             {
@@ -120,7 +151,7 @@ internal static class TranscendImpChecks
                     CombatEffect armor = history.Batches[3].Effects.Single();
                     CardTargets front = CardTargetModel.Collect(before, room, armor.Action!, Array.Empty<int>());
                     Require(front.Supported && front.UnitIds.Count == 1, "Welder Helper replay needs one original friendly front target.");
-                    foreach (CombatUnit old in before.Rooms.SelectMany(item => item.Units))
+                    foreach (CombatUnit old in before.Rooms.SelectMany(item => item.Units).Where(unit => unit.Team == CombatTeam.Player))
                     {
                         CombatUnit next = after.Rooms.SelectMany(item => item.Units).Single(unit => unit.Id == old.Id);
                         int expected = old.Id == front.UnitIds[0] ? 20 : 0;
@@ -148,8 +179,31 @@ internal static class TranscendImpChecks
                             "Original enemy-room Decay or Sap affected the wrong unit.");
                     }
                 }
+                if (hasOriginalDamage)
+                {
+                    CombatUnit[] enemies = before.Rooms.Single(item => item.RoomIndex == room).Units
+                        .Where(unit => unit.Team == CombatTeam.Enemy && unit.Health > 0).ToArray();
+                    if (index == 1) Require(enemies.Length == 0, "Expected targetless first replay before natural enemy arrival.");
+                    else
+                    {
+                        CombatEffect frontDamage = history.Batches[4].Effects.Single();
+                        CombatEffect roomDamage = history.Batches[5].Effects.Single();
+                        CardTargets front = CardTargetModel.Collect(before, room, frontDamage.Action!, Array.Empty<int>());
+                        CardTargets all = CardTargetModel.Collect(before, room, roomDamage.Action!, Array.Empty<int>());
+                        CombatUnit shield = enemies.Single(unit => unit.AssetKey == "ShieldGuardT1_BasicNonAttack");
+                        CombatUnit boss = enemies.Single(unit => unit.AssetKey == "Boss_Level1_Basic");
+                        CombatUnit shieldAfter = after.Rooms.SelectMany(item => item.Units).Single(unit => unit.Id == shield.Id);
+                        CombatUnit bossAfter = after.Rooms.SelectMany(item => item.Units).Single(unit => unit.Id == boss.Id);
+                        Require(front.Supported && front.UnitIds.SequenceEqual(new[] { shield.Id }) &&
+                            all.Supported && all.UnitIds.Count == 2 && all.UnitIds.Contains(shield.Id) && all.UnitIds.Contains(boss.Id) &&
+                            shield.Health == 5 && shield.Status("armor")?.Stacks == 25 && boss.Health == 125 &&
+                            shieldAfter.Health == 4 && (shieldAfter.Status("armor")?.Stacks ?? 0) == 0 &&
+                            bossAfter.Health == 115,
+                            "Original front/room Damage missed natural enemies or Armor absorption.");
+                    }
+                }
                 if (index == 2) Require(before.Rooms.SelectMany(item => item.Units).All(unit => unit.SpawnerCardId != sources[0]) &&
-                    (hasEnemyStatuses ? before.Context.FindCard(sources[0]) != null :
+                    (hasEnemyStatuses || hasOriginalDamage ? before.Context.FindCard(sources[0]) != null :
                         before.Context.Cards.Hand.Any(card => card.InstanceId == sources[0])),
                     "Missing retained history after source recall.");
             }
@@ -163,6 +217,7 @@ internal static class TranscendImpChecks
             (hasOriginalRage ? ", original Fledgling Imp room Rage" : "") +
             (hasOriginalArmor ? ", original Welder Helper front Armor and Battle RNG" : "") +
             (hasEnemyStatuses ? ", original Cheery Deathcap Decay and Enthusiastic Fan Sap on natural enemies" : "") +
+            (hasOriginalDamage ? ", original Starter Imp front Damage and Unstable Infery room Damage on natural enemies" : "") +
             ", no recursive history growth, immutable parallel contexts and full action chains.");
     }
     private static void Equal<T>(T predicted, T actual, string label)
