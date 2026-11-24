@@ -218,19 +218,28 @@ namespace MonsterTrain2Poju.Model
             unit is { MaxHealth: 1530, Modifiers.DamageBuff: 10 } &&
             unit.RegisteredStatus(KillerStatusId) == null;
 
-        internal static bool IsScaledBossFeedOwner(RoomCombatState room, CombatUnit unit)
+        internal static bool IsScaledBossFeedOwner(RoomCombatState room, CombatUnit unit, bool replacingCache = false)
         {
             int? turn = room.Context?.QueryFrame?.Turn;
-            if (turn is not (>= 5 and <= 7) || room.RoomIndex != turn - 5 && !(turn == 7 && room.RoomIndex == 3) ||
-                !IsScaledCampaign(room.Context) ||
+            if (turn is not (>= 5 and <= 7) || !IsScaledCampaign(room.Context) ||
                 !IsScaledBossFeedTarget(unit) || unit.Status(StatusId) is not { Stacks: 3 or 6 or 9 } status ||
                 !IsOriginalStatusDefinition(status)) return false;
             IReadOnlyList<CardUpgradeModifier> upgrades = unit.Modifiers!.Upgrades;
             int cachedAttack = unit.BaseAttack - 22;
-            if (cachedAttack != (turn == 5 ? 0 : turn == 6 ? 21 : 9)) return false;
+            bool expectedFrame = (turn, room.RoomIndex, status.Stacks, cachedAttack) switch
+            {
+                (5, 0 or 1, 3, 0) => true,
+                (6, 1, 3, 0 or 21) or (6, 1, 6 or 9, 21) or (6, 2, 9, 21) => true,
+                (7, 2, 9, 21 or 9) or (7, 3, 9, 9) => true,
+                (7, 2, 9, 0) => replacingCache,
+                _ => false
+            };
+            if (!expectedFrame) return false;
             var feeds = upgrades.Where(upgrade => !IsAttackUpgrade(upgrade, cachedAttack)).ToArray();
-            return feeds.Length == 2 * (status.Stacks / 3) &&
-                (upgrades.Count == feeds.Length + 1 || turn == 5 && upgrades.Count == feeds.Length) &&
+            int settledFeeds = 2 * (status.Stacks / 3);
+            return feeds.Length == settledFeeds &&
+                (upgrades.Count == feeds.Length + 1 || upgrades.Count == feeds.Length &&
+                    (turn == 5 && room.RoomIndex == 0 || replacingCache && cachedAttack == 0)) &&
                 feeds.Where((_, index) => index % 2 == 0).All(IsFeedBuffUpgrade) &&
                 feeds.Where((_, index) => index % 2 == 1).All(IsFeedUpgrade);
         }
@@ -280,7 +289,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static bool HasScaledDraw(TrainCombatState source)
         {
-            if (source.Context?.QueryFrame?.Turn is not (>= 2 and <= 5) || !IsScaledCampaign(source.Context)) return false;
+            if (source.Context?.QueryFrame?.Turn is not (>= 2 and <= 7) || !IsScaledCampaign(source.Context)) return false;
+            if (source.Context.QueryFrame.Turn is 6 or 7) return HasScaledLateDraw(source, source.Context.QueryFrame.Turn.Value);
             CombatUnit[] units = source.Rooms.SelectMany(room => room.Units).ToArray();
             return units.Any(unit => IsScaledFirstWaveOwner(unit, source.Context) &&
                     unit.Modifiers!.Upgrades is [var upgrade] && IsAttackUpgrade(upgrade, 0)) &&
@@ -289,6 +299,23 @@ namespace MonsterTrain2Poju.Model
                         IsObservedSproutCarrier(room, unit)) &&
                     (unit.RegisteredStatus(StatusId) == null || IsScaledFirstWaveOwner(unit, source.Context) ||
                         IsScaledFeedRecipient(unit, source.Context.QueryFrame.Turn))));
+        }
+
+        private static bool HasScaledLateDraw(TrainCombatState source, int turn)
+        {
+            if (source.Rooms.Any(room => room.Preview || room.Units.Any(unit => unit.RegisteredStatus(KillerStatusId) != null)))
+                return false;
+            var owners = source.Rooms.SelectMany(room => room.Units.Where(unit => unit.Status(StatusId) != null)
+                .Select(unit => (Room: room, Unit: unit))).ToArray();
+            var boss = owners.Where(owner => IsScaledBossFeedOwner(owner.Room, owner.Unit)).ToArray();
+            if (boss is not [var holder] || holder.Room.RoomIndex != turn - 5 || holder.Unit.BaseAttack != (turn == 6 ? 22 : 43))
+                return false;
+            if (turn == 7) return owners.Length == 1;
+            return owners.Length == 5 && owners.Count(owner => owner.Unit.AssetKey == Infested &&
+                IsScaledFirstWaveOwner(owner.Unit, source.Context) && owner.Unit.Modifiers!.Upgrades is [var attack] &&
+                IsAttackUpgrade(attack, 26)) == 3 && owners.Count(owner => owner.Room.RoomIndex == 2 &&
+                IsScaledCarriedFeedOwner(owner.Unit, source.Context) && owner.Unit.Status(StatusId)?.Stacks == 12 &&
+                owner.Unit.Modifiers!.Upgrades.Any(upgrade => IsAttackUpgrade(upgrade, 26))) == 1;
         }
 
         internal static bool HasInfestedOpeningWave(IEnumerable<CombatUnit> units)

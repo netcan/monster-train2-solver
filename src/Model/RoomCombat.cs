@@ -1244,7 +1244,7 @@ namespace MonsterTrain2Poju.Model
                     HivemindTurnUpgrade.IsScaledFirstWaveBirth(unit, state.Context) ||
                     HivemindTurnUpgrade.IsScaledCarriedFeedOwner(unit, state.Context) ||
                     HivemindTurnUpgrade.IsScaledPreviewFeedRecipient(state, unit) ||
-                    HivemindTurnUpgrade.IsScaledBossFeedOwner(state, unit);
+                    HivemindTurnUpgrade.IsScaledBossFeedOwner(state, unit, replacingCache: allowFreshHivemind);
                 string? selfAttackError = UnitSelfAttackModel.Validate(state, unit);
                 string? roomResourceError = UnitRoomResourceModel.Validate(unit);
                 if (roomResourceError != null) return roomResourceError;
