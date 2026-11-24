@@ -900,6 +900,8 @@ namespace MonsterTrain2Poju.Probe
                     if (RollingAdviceScenario.DeploymentOnly) PlayerAdvisorProbe.PauseForFrozenPlan(beforeDeployment: true);
                     if (fullBattle && OriginalEquilibriusDrawWitness.Enabled && !OriginalEquilibriusDrawWitness.Prepare(managers!))
                         return;
+                    if (fullBattle && OriginalSaviorChampionWitness.Enabled && !OriginalSaviorChampionWitness.Prepared)
+                        OriginalSaviorChampionWitness.Prepare(save);
                     if (fullBattle && OriginalSproutWitness.Enabled && !OriginalSproutWitness.Acquired)
                         OriginalSproutWitness.Acquire(save);
                     if (fullBattle && OriginalUnrulyWitness.Enabled)
@@ -1501,6 +1503,13 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (OriginalPersistentMonsterHpWitness.Tick(FullBattleTrace.Active!, managers, log))
                     Finish(true, "Original persistent monster health component captured.");
+                return;
+            }
+            if (fullBattle && OriginalSaviorChampionWitness.Enabled)
+            {
+                if (OriginalSaviorChampionWitness.Tick(FullBattleTrace.Active!, managers, log,
+                    () => AdvanceTurn(combat!, record: false)))
+                    Finish(true, "Original Savior champion ability captured.");
                 return;
             }
             if (fullBattle && OriginalLoseMoneyOnHitWitness.Enabled)

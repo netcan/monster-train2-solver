@@ -480,6 +480,12 @@ if (args.Length == 2 && args[0] == "--native-persistent-monster-hp-only")
     PersistentMonsterHpChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-savior-champion-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalSaviorChampionChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-lose-money-on-hit-only")
 {
     LoseMoneyOnHitChecks.Native(args[1]);
