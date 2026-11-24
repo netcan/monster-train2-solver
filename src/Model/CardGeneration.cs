@@ -307,6 +307,18 @@ namespace MonsterTrain2Poju.Model
                 if (error != null && !(allowDeferredGraftedSpawnCard &&
                     error == "Unmodeled unit card statistics; Grafted equipment" &&
                     RelicCardGenerationModel.IsPartFactoryGraftedCard(candidate))) return Unsupported(error);
+                // The permanent deck notification runs before battle card modifiers and source copying.
+                if (rule.Permanent == true)
+                {
+                    error = DominionDeckUpgradeModel.Select(context, candidate, out var deckUpgrade, out var deckResources);
+                    if (error != null) return Unsupported(error);
+                    if (deckUpgrade != null)
+                    {
+                        context = context.WithResources(deckResources);
+                        permanent = permanent.WithPermanentUpgrade(deckUpgrade, false);
+                        RefreshUpgrades();
+                    }
+                }
                 if (context.Relics is { } creationRelics && creationRelics.Any(owner =>
                         owner.EffectTypes.Contains(RelicModel.BigMonstersEffect)) &&
                     creation.MaskDescriptor?.Definition.MainEffectNames.Contains("CardEffectSpawnMonster") != false)

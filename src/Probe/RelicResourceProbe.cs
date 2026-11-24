@@ -83,6 +83,8 @@ namespace MonsterTrain2Poju.Probe
 
         internal static BattleResourceState? CaptureResources(AllGameManagers managers)
         {
+            SaveManager save = managers.GetSaveManager();
+            DominionDeckUpgradeState? dominion = DominionDeckUpgradeProbe.Capture(save);
             // Relics can be acquired before battle creates the card manager.
             // Resource balance/save inputs already exist; there are no live cards
             // to inspect for Hoard or train-healing effects at that boundary.
@@ -132,9 +134,8 @@ namespace MonsterTrain2Poju.Probe
                 !Current(managers).Any(relic => relic.GetEffects().Any(effect =>
                     RelicResourceModel.IsEffect(effect.GetType().Name) ||
                     effect.GetType().Name is RelicFirstCardCostModel.Effect or RelicModel.ModifyDragonsHoardCap)) &&
-                !dragonHoardResourceObserved && !trainHealResourceObserved && !runCardResourceObserved && !goldRewardResourceObserved && !pyreAttackAbility)
+                !dragonHoardResourceObserved && !trainHealResourceObserved && !runCardResourceObserved && !goldRewardResourceObserved && !pyreAttackAbility && dominion == null)
                 return null;
-            SaveManager save = managers.GetSaveManager();
             BalanceData balance = save.GetBalanceData();
             CharacterData character = save.GetActiveSavePyreCharacterData();
             if (character == null) throw new InvalidOperationException("Missing native resource Pyre definition.");
@@ -162,7 +163,8 @@ namespace MonsterTrain2Poju.Probe
                 baseFloorCapacity: balance.GetCharacterCapacityPerFloor(), dragonsHoardCap: save.GetDragonsHoardCap(),
                 towerHealingDisabled: save.GetRelicModifiedRules().GetTowerHealingDisabled(),
                 visibleDeckCount: save.GetVisibleDeckCount(), corruptionPerCorruptTrait: save.GetNumCorruptionAddedPerTraitCorrupt(),
-                openingCapacitySettled: openingCapacitySettled, openingPyreDamageSettled: openingPyreDamageSettled);
+                openingCapacitySettled: openingCapacitySettled, openingPyreDamageSettled: openingPyreDamageSettled,
+                dominion: dominion);
         }
 
         internal static RelicResourceEffect Definition(IRelicEffect effect, int index, AllGameManagers managers)

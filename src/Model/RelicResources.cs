@@ -30,12 +30,15 @@ namespace MonsterTrain2Poju.Model
         public bool? OpeningCapacitySettled { get; }
         public bool? OpeningPyreDamageSettled { get; }
         public bool ShouldSerializeOpeningPyreDamageSettled() => OpeningPyreDamageSettled.HasValue;
+        public DominionDeckUpgradeState? Dominion { get; }
+        public bool ShouldSerializeDominion() => Dominion != null;
         public BattleResourceState(int baseEnergy, int deploymentExtraEnergy, int baseDraw, int maxEnergy, int maxHandSize,
             string pyreDataId, int pyreBaseAttack, int basePyreMaxHealth, int pyrePersistentDamage, int pyreModifiedBaseAttack,
             IReadOnlyList<int> upgradeAttack, IReadOnlyList<int> upgradeHealth, IReadOnlyList<string> mutatorIds,
             float goldRewardMultiplier = 1f, int? baseFloorCapacity = null, int? dragonsHoardCap = null,
             bool? towerHealingDisabled = null, int visibleDeckCount = 0, int? corruptionPerCorruptTrait = null,
-            bool? openingCapacitySettled = null, bool? openingPyreDamageSettled = null)
+            bool? openingCapacitySettled = null, bool? openingPyreDamageSettled = null,
+            DominionDeckUpgradeState? dominion = null)
         {
             BaseEnergy = baseEnergy; DeploymentExtraEnergy = deploymentExtraEnergy; BaseDraw = baseDraw;
             MaxEnergy = maxEnergy; MaxHandSize = maxHandSize; PyreDataId = pyreDataId; PyreBaseAttack = pyreBaseAttack;
@@ -49,21 +52,27 @@ namespace MonsterTrain2Poju.Model
             CorruptionPerCorruptTrait = corruptionPerCorruptTrait;
             OpeningCapacitySettled = openingCapacitySettled;
             OpeningPyreDamageSettled = openingPyreDamageSettled;
+            Dominion = dominion;
             UpgradeAttack = Array.AsReadOnly(upgradeAttack.ToArray()); UpgradeHealth = Array.AsReadOnly(upgradeHealth.ToArray());
             MutatorIds = Array.AsReadOnly(mutatorIds.ToArray());
         }
         internal BattleResourceState WithPyreModifiedBaseAttack(int value) => new(BaseEnergy, DeploymentExtraEnergy,
             BaseDraw, MaxEnergy, MaxHandSize, PyreDataId, PyreBaseAttack, BasePyreMaxHealth, PyrePersistentDamage,
             value, UpgradeAttack, UpgradeHealth, MutatorIds, GoldRewardMultiplier, BaseFloorCapacity, DragonsHoardCap,
-            TowerHealingDisabled, VisibleDeckCount, CorruptionPerCorruptTrait, OpeningCapacitySettled, OpeningPyreDamageSettled);
+            TowerHealingDisabled, VisibleDeckCount, CorruptionPerCorruptTrait, OpeningCapacitySettled, OpeningPyreDamageSettled, Dominion);
         internal BattleResourceState WithVisibleDeckCount(int value) => new(BaseEnergy, DeploymentExtraEnergy,
             BaseDraw, MaxEnergy, MaxHandSize, PyreDataId, PyreBaseAttack, BasePyreMaxHealth, PyrePersistentDamage,
             PyreModifiedBaseAttack, UpgradeAttack, UpgradeHealth, MutatorIds, GoldRewardMultiplier, BaseFloorCapacity,
-            DragonsHoardCap, TowerHealingDisabled, value, CorruptionPerCorruptTrait, OpeningCapacitySettled, OpeningPyreDamageSettled);
+            DragonsHoardCap, TowerHealingDisabled, value, CorruptionPerCorruptTrait, OpeningCapacitySettled, OpeningPyreDamageSettled, Dominion);
         internal BattleResourceState WithBasePyreMaxHealth(int value) => new(BaseEnergy, DeploymentExtraEnergy,
             BaseDraw, MaxEnergy, MaxHandSize, PyreDataId, PyreBaseAttack, value, PyrePersistentDamage,
             PyreModifiedBaseAttack, UpgradeAttack, UpgradeHealth, MutatorIds, GoldRewardMultiplier, BaseFloorCapacity,
-            DragonsHoardCap, TowerHealingDisabled, VisibleDeckCount, CorruptionPerCorruptTrait, OpeningCapacitySettled, OpeningPyreDamageSettled);
+            DragonsHoardCap, TowerHealingDisabled, VisibleDeckCount, CorruptionPerCorruptTrait, OpeningCapacitySettled, OpeningPyreDamageSettled, Dominion);
+        internal BattleResourceState WithDominion(DominionDeckUpgradeState value) => new(BaseEnergy, DeploymentExtraEnergy,
+            BaseDraw, MaxEnergy, MaxHandSize, PyreDataId, PyreBaseAttack, BasePyreMaxHealth, PyrePersistentDamage,
+            PyreModifiedBaseAttack, UpgradeAttack, UpgradeHealth, MutatorIds, GoldRewardMultiplier, BaseFloorCapacity,
+            DragonsHoardCap, TowerHealingDisabled, VisibleDeckCount, CorruptionPerCorruptTrait, OpeningCapacitySettled,
+            OpeningPyreDamageSettled, value);
     }
 
     public sealed class RelicPileStartTurnRule

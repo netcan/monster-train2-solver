@@ -10,6 +10,14 @@ namespace MonsterTrain2Poju.Model
         public int Seed { get; }
         public UnityRng State { get; }
         public BattleRngStream(string name, int seed, UnityRng state) { Name = name; Seed = seed; State = state; }
+
+        internal UnityRng StateIn(CombatContext context) => Name switch
+        {
+            "Battle" => context.BattleRng,
+            "CardDraw" => context.Cards.Rng,
+            "Rewards" => context.Resources?.Dominion?.RewardsRng ?? State,
+            _ => State
+        };
     }
     public sealed class CardPileState
     {
@@ -621,8 +629,7 @@ namespace MonsterTrain2Poju.Model
                 if (spawn.QueuedTrueFinalBoss != null)
                 {
                     var streams = source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
-                        stream.Name == "Battle" ? train.Context!.BattleRng : stream.Name == "CardDraw" ? train.Context!.Cards.Rng :
-                        stream.Name == "Spawning" ? spawn.Rng : stream.State)).ToArray();
+                        stream.Name == "Spawning" ? spawn.Rng : stream.StateIn(train.Context!))).ToArray();
                     var boundary = new BattleTurnState(WithTrain(spawn, train, turn, spawn.Rng), train.Context!.QueryFrame?.Energy ?? 0,
                         source.EnergyPerTurn, source.DrawPerTurn, train.Context.QueryFrame?.ForgePoints ?? source.ForgePoints,
                         train.Context.QueryFrame?.DragonsHoard ?? source.DragonsHoard, moon, streams, otherPiles,
@@ -683,8 +690,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     var streams = source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
                         stream.Name == "BossActions" && outerBossRng.HasValue ? outerBossRng.Value :
-                        stream.Name == "Battle" ? train.Context!.BattleRng : stream.Name == "CardDraw" ? train.Context!.Cards.Rng :
-                        stream.Name == "Spawning" ? spawn.Rng : stream.State)).ToArray();
+                        stream.Name == "Spawning" ? spawn.Rng : stream.StateIn(train.Context!))).ToArray();
                     var boundary = new BattleTurnState(spawn, train.Context!.QueryFrame?.Energy ?? 0, source.EnergyPerTurn,
                         source.DrawPerTurn, train.Context.QueryFrame?.ForgePoints ?? source.ForgePoints,
                         train.Context.QueryFrame?.DragonsHoard ?? source.DragonsHoard,
@@ -941,8 +947,8 @@ namespace MonsterTrain2Poju.Model
                     outputPlayRules = outputPlayRules?.WithCapacities(finalContext.RoomCapacities);
                 outputPlayRules = outputPlayRules?.WithGeneratedEquipment(finalContext);
                 BattleRngStream[] streams = source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
-                    stream.Name == "Battle" ? finalContext.BattleRng : stream.Name == "CardDraw" ? finalContext.Cards.Rng :
-                    stream.Name == "Spawning" ? spawn.Rng : stream.Name == "BossActions" && outerBossRng.HasValue ? outerBossRng.Value : stream.State)).ToArray();
+                    stream.Name == "Spawning" ? spawn.Rng : stream.Name == "BossActions" && outerBossRng.HasValue
+                        ? outerBossRng.Value : stream.StateIn(finalContext))).ToArray();
                 CardPileState[] piles = Terminal(outcome) && outcome != RoomOutcome.Stalemate &&
                     finalContext.KillCamActivated != false
                     ? otherPiles.Select(CardPileModel.Clear).ToArray()
@@ -986,8 +992,8 @@ namespace MonsterTrain2Poju.Model
             {
                 if (outputPlayRules == null || !outerBossRng.HasValue) return "Missing outer-boss birth rules or random stream.";
                 var streams = source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
-                    stream.Name == "BossActions" ? outerBossRng.Value : stream.Name == "Battle" ? train.Context!.BattleRng :
-                    stream.Name == "CardDraw" ? train.Context!.Cards.Rng : stream.Name == "Spawning" ? spawn.Rng : stream.State)).ToArray();
+                    stream.Name == "BossActions" ? outerBossRng.Value : stream.Name == "Spawning"
+                        ? spawn.Rng : stream.StateIn(train.Context!))).ToArray();
                 var boundary = new BattleTurnState(spawn, train.Context!.QueryFrame?.Energy ?? 0, source.EnergyPerTurn,
                     source.DrawPerTurn, train.Context.QueryFrame?.ForgePoints ?? source.ForgePoints,
                     train.Context.QueryFrame?.DragonsHoard ?? source.DragonsHoard,
@@ -1012,8 +1018,8 @@ namespace MonsterTrain2Poju.Model
                 train = WithContext(train, EnergyModel.SetPhase(train.Context!, preCombat ? "BossActionPreCombat" : "BossActionPostCombat"), spawn.Turn == 0);
                 spawn = WithTrain(spawn, train, spawn.Turn, spawn.Rng);
                 var streams = source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
-                    stream.Name == "BossActions" ? outerBossRng.Value : stream.Name == "Battle" ? train.Context!.BattleRng :
-                    stream.Name == "CardDraw" ? train.Context!.Cards.Rng : stream.Name == "Spawning" ? spawn.Rng : stream.State)).ToArray();
+                    stream.Name == "BossActions" ? outerBossRng.Value : stream.Name == "Spawning"
+                        ? spawn.Rng : stream.StateIn(train.Context!))).ToArray();
                 var boundary = new BattleTurnState(spawn, train.Context!.QueryFrame?.Energy ?? 0, source.EnergyPerTurn,
                     source.DrawPerTurn, train.Context.QueryFrame?.ForgePoints ?? source.ForgePoints,
                     train.Context.QueryFrame?.DragonsHoard ?? source.DragonsHoard,

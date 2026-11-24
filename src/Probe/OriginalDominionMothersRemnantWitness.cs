@@ -25,6 +25,7 @@ namespace MonsterTrain2Poju.Probe
         private static CardState[] deckBefore = Array.Empty<CardState>();
         private static string[] sourceUpgrades = Array.Empty<string>();
         private static PlayCardAction? action;
+        private static BattleTurnState? before;
         private static int energyBefore;
         private static RngSample? rngBefore;
         private static CallbackSample? callbackBefore, callbackAfter;
@@ -96,6 +97,7 @@ namespace MonsterTrain2Poju.Probe
                     throw new InvalidOperationException("Native Steward play failed its legal input test: " + error);
                 deckBefore = deck.ToArray();
                 energyBefore = managers.GetPlayerManager().GetEnergy();
+                before = trace.CaptureDecision();
                 rngBefore = new RngSample();
                 action = new PlayCardAction(trace.CardId(source), roomIndex, drop.GetIndexInRoom());
                 if (!cards.PlayCard(cards.GetHand().IndexOf(source), drop, ref error))
@@ -129,6 +131,7 @@ namespace MonsterTrain2Poju.Probe
                 Copy = new { Id = trace.CardId(copy), DataId = copy.GetCardDataID(), Upgrades = Upgrades(copy) },
                 DeckCountBefore = deckBefore.Length, DeckCountAfter = deck.Count,
                 EnergyBefore = energyBefore, EnergyAfter = energyAfter,
+                Before = before, Actual = trace.CaptureDecision(),
                 RngBefore = rngBefore, RngAfter = rngAfter, CallbackBefore = callbackBefore, CallbackAfter = callbackAfter,
                 AddedUpgrade = addedUpgrade
             });

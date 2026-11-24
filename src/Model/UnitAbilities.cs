@@ -218,7 +218,7 @@ namespace MonsterTrain2Poju.Model
                 source.EnergyPerTurn, source.DrawPerTurn, context.QueryFrame?.ForgePoints ?? source.ForgePoints, source.DragonsHoard,
                 context.QueryFrame?.MoonPhase == 1 ? "New" : context.QueryFrame?.MoonPhase == 2 ? "Full" : source.MoonPhase,
                 source.RngStreams.Select(stream => new BattleRngStream(stream.Name, stream.Seed,
-                    stream.Name == "Battle" ? context.BattleRng : stream.Name == "CardDraw" ? context.Cards.Rng : stream.State)).ToArray(),
+                    stream.StateIn(context))).ToArray(),
                 context.OtherPiles ?? source.OtherPiles, BattleTurnModel.AfterActionInteractions(source, context), source.PlayRules, source.BattlePreviewEnabled,
                 source.UiRngIsolated, source.CanonicalDecisionReferences, source.CanonicalPhysicalReferences,
                 train.Context?.QueryFrame?.SelectedRoomIndex ?? source.SelectedRoom,
