@@ -1654,6 +1654,8 @@ namespace MonsterTrain2Poju.Probe
                 OriginalAfterDrawSpawnPrepared = OriginalAfterDrawSpawnScenario.Prepared,
                 OriginalAfterDrawSpawnDefinition = OriginalAfterDrawSpawnScenario.Definition,
                 OriginalAfterDrawSpawnDefinitionAfter = OriginalAfterDrawSpawnScenario.CurrentDefinition,
+                OriginalAfterDrawSpawnDefinitions = OriginalAfterDrawSpawnScenario.Definitions,
+                OriginalAfterDrawSpawnDefinitionsAfter = OriginalAfterDrawSpawnScenario.CurrentDefinitions,
                 OriginalAfterDrawSpawnCallbacks = OriginalAfterDrawSpawnScenario.Enabled ? OriginalAfterDrawSpawnScenario.Callbacks : null,
                 OriginalHoldoverGrantPrepared = OriginalHoldoverGrantScenario.Prepared,
                 OriginalHoldoverGrantDefinition = OriginalHoldoverGrantScenario.Definition,

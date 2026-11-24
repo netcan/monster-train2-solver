@@ -3,36 +3,52 @@ using MonsterTrain2Poju.Model;
 
 internal static class AfterDrawSpawnChecks
 {
+    private const string CultLeader = "80ccdba4-3fa5-487a-8fdf-2dfea52f9541";
+    private const string Morsels = "84e8fb5f-ebfa-4ebd-99d5-607d5ff45d3b";
+
     internal static void Native(string path)
     {
         using var document = ModelJson.ReadFixture(path);
         var root = document.RootElement;
-        var definition = root.GetProperty("OriginalAfterDrawSpawnDefinition");
-        string? owner = definition.GetProperty("Id").GetString();
-        string[] expected = owner switch
-        {
-            "84e8fb5f-ebfa-4ebd-99d5-607d5ff45d3b" =>
-            ["854f3636-2b50-45eb-80af-cef27a99d8d6", "9d4e443d-77fb-485b-b5e4-24baa2f8957f", "cb9baba5-9b89-491c-b774-6bd7b00d4b35"],
-            "80ccdba4-3fa5-487a-8fdf-2dfea52f9541" => ["e8b1f88f-8628-48ea-84fd-0191ce2e88a0"],
-            _ => throw new InvalidOperationException("Unknown original after-draw spawn owner.")
-        };
+        var firstDefinition = root.GetProperty("OriginalAfterDrawSpawnDefinition");
+        bool mixed = root.TryGetProperty("OriginalAfterDrawSpawnDefinitions", out FixtureValue mixedDefinitions) &&
+            mixedDefinitions.ValueKind == FixtureKind.Array && mixedDefinitions.GetArrayLength() > 1;
+        FixtureValue[] definitions = mixed ? mixedDefinitions.EnumerateArray().ToArray() : [firstDefinition];
+        string[] owners = definitions.Select(definition => definition.GetProperty("Id").GetString()!).ToArray();
+        Require(!mixed || owners.SequenceEqual(new[] { CultLeader, Morsels }) &&
+            firstDefinition.ContentEquals(definitions[0]) &&
+            mixedDefinitions.ContentEquals(root.GetProperty("OriginalAfterDrawSpawnDefinitionsAfter")),
+            "The two original AfterDraw owners or their roster changed.");
         Require(root.GetProperty("OriginalAfterDrawSpawnPrepared").GetBoolean() &&
-            definition.GetProperty("Type").GetString() == "RelicEffectSpawnMonsterOnTurnStart" &&
-            !definition.GetProperty("PlacementExcluded").GetBoolean() && definition.GetProperty("Conditions").GetInt32() == 0 &&
-            definition.GetProperty("Roster").EnumerateArray().Select(unit => unit.GetString()).SequenceEqual(expected) &&
-            definition.ContentEquals(root.GetProperty("OriginalAfterDrawSpawnDefinitionAfter")),
+            firstDefinition.ContentEquals(root.GetProperty("OriginalAfterDrawSpawnDefinitionAfter")),
             "Missing unchanged original after-draw roster.");
+        var expected = definitions.ToDictionary(definition => definition.GetProperty("Id").GetString()!, ValidateDefinition);
 
         var callbacks = root.GetProperty("OriginalAfterDrawSpawnCallbacks").EnumerateArray().ToArray();
-        Require(callbacks.Length >= 2 && callbacks[0].GetProperty("Deployment").GetBoolean() &&
-            callbacks[0].GetProperty("Turn").GetInt32() == 0 && callbacks.Skip(1).All(row => !row.GetProperty("Deployment").GetBoolean()),
-            "Expected both deployment and regular after-draw callbacks.");
+        var callbackTurns = callbacks.GroupBy(row => row.GetProperty("Turn").GetInt32()).ToArray();
+        Require(callbackTurns.Length >= 2 && callbackTurns[0].Key == 0 && callbackTurns.All(turn =>
+            turn.Select(row => CallbackOwner(row, owners[0])).SequenceEqual(owners) &&
+            turn.All(row => row.GetProperty("Deployment").GetBoolean() == (turn.Key == 0))),
+            "Expected the original owner order in deployment and regular after-draw callbacks.");
+        if (mixed)
+        {
+            foreach (var turn in callbackTurns)
+            {
+                FixtureValue[] ordered = turn.ToArray();
+                var firstAfter = ordered[0].GetProperty("After").Deserialize<TrainCombatState>()!;
+                var secondBefore = ordered[1].GetProperty("Before").Deserialize<TrainCombatState>()!;
+                Require(firstAfter.Context!.BattleRng.Equals(secondBefore.Context!.BattleRng),
+                    "The second native owner did not inherit the first owner's Battle RNG.");
+            }
+        }
+
         int births = 0;
         bool fullFloorRetry = false, disabledFloorSkip = false;
         bool lonelyRooms = callbacks[0].GetProperty("Before").Deserialize<TrainCombatState>()!.Context!.Relics!
             .Any(RelicModel.IsOriginalLonelyRooms);
         foreach (var callback in callbacks)
         {
+            string owner = CallbackOwner(callback, owners[0]);
             var before = callback.GetProperty("Before").Deserialize<TrainCombatState>()!;
             var after = callback.GetProperty("After").Deserialize<TrainCombatState>()!;
             var roster = before.Context!.Relics!.Single(relic => relic.DataId == owner).ResourceEffects!
@@ -52,7 +68,7 @@ internal static class AfterDrawSpawnChecks
             Require(before.Context.SpawnPoints != null && after.Context!.SpawnPoints != null &&
                 !before.Context.BattleRng.Equals(after.Context.BattleRng), "The native callback missed its physical slots or battle RNG samples.");
             if (callback.GetProperty("Deployment").GetBoolean())
-                Require(born.Length == expected.Length, "The original complete roster must appear in deployment.");
+                Require(born.Length == expected[owner], "The original complete roster must appear in deployment.");
             if (lonelyRooms)
             {
                 int turn = callback.GetProperty("Turn").GetInt32();
@@ -86,11 +102,30 @@ internal static class AfterDrawSpawnChecks
             }
             births += born.Length;
         }
-        Require(births > expected.Length, "No later after-draw summon actually appeared.");
+        Require(births > expected.Values.Sum(), "No later after-draw summon actually appeared.");
         Require(!lonelyRooms || fullFloorRetry && disabledFloorSkip, "The Lonely Rooms archive must witness both retry and disabled-floor paths.");
         SolverStageChecks.Native(path);
-        Console.WriteLine($"AFTER-DRAW-SPAWN PASS owner={definition.GetProperty("Key").GetString()} callbacks={callbacks.Length} births={births}");
+        string keys = string.Join(",", definitions.Select(definition => definition.GetProperty("Key").GetString()));
+        Console.WriteLine($"AFTER-DRAW-SPAWN PASS owners={keys} callbacks={callbacks.Length} births={births}");
         if (lonelyRooms) Console.WriteLine("AFTER-DRAW-FLOOR-BOUNDARIES PASS: two full floors retried and empty disabled floor skipped.");
+    }
+
+    private static string CallbackOwner(FixtureValue callback, string legacyOwner) =>
+        callback.TryGetProperty("OwnerId", out FixtureValue owner) ? owner.GetString()! : legacyOwner;
+
+    private static int ValidateDefinition(FixtureValue definition)
+    {
+        string[] expected = definition.GetProperty("Id").GetString() switch
+        {
+            CultLeader => ["e8b1f88f-8628-48ea-84fd-0191ce2e88a0"],
+            Morsels => ["854f3636-2b50-45eb-80af-cef27a99d8d6", "9d4e443d-77fb-485b-b5e4-24baa2f8957f", "cb9baba5-9b89-491c-b774-6bd7b00d4b35"],
+            _ => throw new InvalidOperationException("Unknown original after-draw spawn owner.")
+        };
+        Require(definition.GetProperty("Type").GetString() == "RelicEffectSpawnMonsterOnTurnStart" &&
+            !definition.GetProperty("PlacementExcluded").GetBoolean() && definition.GetProperty("Conditions").GetInt32() == 0 &&
+            definition.GetProperty("Roster").EnumerateArray().Select(unit => unit.GetString()).SequenceEqual(expected),
+            "The original after-draw definition differs from its archived owner and roster.");
+        return expected.Length;
     }
 
     private static UnityRng Advance(UnityRng rng, int draws)

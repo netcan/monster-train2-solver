@@ -2,7 +2,9 @@
 
 ## 当前待完成
 
-- 2026-11-24：CultLeader 与 Lonely Rooms 的原版胜局覆盖了抽牌后召唤的满层重试和禁用楼层。首个普通回合重试两层满员楼层后，在空层召唤一名 Follower，消耗六次战斗随机数。第 5 回合跳过禁用的空层并耗尽其他候选，未召唤，消耗五次战斗随机数。1 次出牌、7 次结束回合、16 条独立分支、两类候选和串并行计划复放通过。混合召唤回调的顺序仍待对照。[原版整战归档](../tests/compatibility/game-2.3.1/mechanics/after-draw-spawn/cult-leader-lonely-rooms.mt2f)
+- 2026-11-24：CultLeader 与 Lonely Rooms 的原版胜局覆盖了抽牌后召唤的满层重试和禁用楼层。首个普通回合重试两层满员楼层后，在空层召唤一名 Follower，消耗六次战斗随机数。第 5 回合跳过禁用的空层并耗尽其他候选，未召唤，消耗五次战斗随机数。1 次出牌、7 次结束回合、16 条独立分支、两类候选和串并行计划复放通过。[满层整战归档](../tests/compatibility/game-2.3.1/mechanics/after-draw-spawn/cult-leader-lonely-rooms.mt2f)
+
+- 2026-11-24：CultLeader 与 Echoes Morsels 同场记录了 10 次有序回调和 20 次召唤。每回合 Morsels 接收 CultLeader 结算后的战斗随机状态。原版胜局的 3 次出牌、5 次结束回合、两类候选、16 条独立分支和串并行计划复放通过。[同场整战归档](../tests/compatibility/game-2.3.1/mechanics/after-draw-spawn/cult-leader-morsels.mt2f)
 
 - 2026-11-21：2.3.1 原版 Heavenfall 的满月升级复用逐层伤害。旧归档保留原版全塔伤害；新版核对实际安装的 OnCast 和 80 点敌方逐层伤害。新版胜局 15 次出牌、5 次 EndTurn、36 个房间阶段、9 个列车阶段，完整后继、16 条分支、录制候选与串并行计划通过。满月时一名敌人受到 80 点伤害，另一名 50 生命敌人死亡，友军与薪火生命保持原值。本场正向伤害发生在单层。隔离采样耗时 96.30 秒，归档 43,953 字节，入口为 `scripts/Check-Game231Heavenfall.ps1`。
 

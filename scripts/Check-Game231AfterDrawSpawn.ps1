@@ -1,7 +1,7 @@
 #requires -Version 7.4
 param(
     [switch]$SkipBuild,
-    [ValidateSet('cult-leader.mt2f', 'cult-leader-lonely-rooms.mt2f', 'morsels.mt2f')][string]$Fixture
+    [ValidateSet('cult-leader.mt2f', 'cult-leader-lonely-rooms.mt2f', 'cult-leader-morsels.mt2f', 'morsels.mt2f')][string]$Fixture
 )
 $ErrorActionPreference = 'Stop'
 $workspace = Split-Path $PSScriptRoot -Parent
@@ -11,7 +11,7 @@ if (-not $SkipBuild) {
 }
 $directory = Join-Path $workspace 'tests/compatibility/game-2.3.1/mechanics/after-draw-spawn'
 $manifest = @(Import-Csv -LiteralPath (Join-Path $directory 'manifest.tsv') -Delimiter "`t")
-if ((($manifest.path | Sort-Object) -join ',') -cne 'cult-leader-lonely-rooms.mt2f,cult-leader.mt2f,morsels.mt2f') {
+if ((($manifest.path | Sort-Object) -join ',') -cne 'cult-leader-lonely-rooms.mt2f,cult-leader-morsels.mt2f,cult-leader.mt2f,morsels.mt2f') {
     throw 'Unexpected after-draw spawn manifest.'
 }
 $checker = Join-Path $workspace 'src/ModelChecks/bin/Release/net8.0/ModelChecks.dll'

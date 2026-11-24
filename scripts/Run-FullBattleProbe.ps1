@@ -797,7 +797,7 @@ param(
     [switch] $OriginalThikDeckChange,
     [switch] $OriginalThikBattle,
     [ValidateRange(1, 3)][int] $OriginalThikTier = 3,
-    [ValidateSet('Morsels', 'CultLeader', 'CultLeaderLonelyRooms')][string] $OriginalAfterDrawSpawn,
+    [ValidateSet('Morsels', 'CultLeader', 'CultLeaderLonelyRooms', 'CultLeaderMorsels')][string] $OriginalAfterDrawSpawn,
     [switch] $OriginalHoldoverGrant,
     [switch] $OriginalCorruptedAngelsRelic,
     [ValidateSet('cost-first', 'cost-last')]
@@ -8486,6 +8486,7 @@ if ($OriginalAfterDrawSpawn) {
     if (-not $trace.OriginalAfterDrawSpawnPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or
         $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0 -or
         $spawnCallbacks.Count -lt 2 -or -not $spawnCallbacks[0].Deployment -or
+        @($spawnCallbacks | Where-Object { -not $_.Deployment }).Count -eq 0 -or
         @($spawnCallbacks | Where-Object { $null -eq $_.After }).Count -ne 0) {
         throw 'The original after-draw spawn did not settle in deployment and a later turn.'
     }

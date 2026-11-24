@@ -17,16 +17,19 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         private static string? Variant => Environment.GetEnvironmentVariable("MT2_PROBE_AFTER_DRAW_SPAWN");
         private static bool LonelyRooms => Variant == "CultLeaderLonelyRooms";
-        internal static bool Acquired => original != null;
+        internal static bool Acquired => originals.Length != 0;
         internal static bool Prepared { get; private set; }
-        internal static object? Definition { get; private set; }
-        internal static object? CurrentDefinition => original == null ? null : Describe(original);
+        internal static object? Definition => Definitions?.FirstOrDefault();
+        internal static object? CurrentDefinition => Acquired ? Describe(originals[0]) : null;
+        internal static object[]? Definitions { get; private set; }
+        internal static object[]? CurrentDefinitions => Acquired ? originals.Select(Describe).ToArray() : null;
         internal static readonly List<Callback> Callbacks = new();
-        private static MutatorData? original;
+        private static MutatorData[] originals = Array.Empty<MutatorData>();
         private static int[] defenders = Array.Empty<int>();
 
         internal sealed class Callback
         {
+            public string OwnerId { get; set; } = null!;
             public int Turn { get; set; }
             public bool Deployment { get; set; }
             public TrainCombatState Before { get; set; } = null!;
@@ -43,34 +46,44 @@ namespace MonsterTrain2Poju.Probe
 
         internal static void AcquireBeforeBattle(AllGameManagers managers, ManualLogSource log)
         {
-            if (original != null) return;
+            if (Acquired) return;
             var save = managers.GetSaveManager();
             if (save.PreviewMode || save.GetGameSequence() == SaveData.GameSequence.InBattle ||
                 save.GetMutators().Count != 0 || save.GetCovenants().Count != 0)
                 throw new InvalidOperationException("Original after-draw summons require an isolated first battle.");
-            string id = Variant switch
+            string[] ids = Variant switch
             {
-                "Morsels" => RelicResourceProbe.AfterDrawMorselsId,
-                "CultLeader" or "CultLeaderLonelyRooms" => RelicResourceProbe.AfterDrawCultLeaderId,
+                "Morsels" => [RelicResourceProbe.AfterDrawMorselsId],
+                "CultLeader" or "CultLeaderLonelyRooms" => [RelicResourceProbe.AfterDrawCultLeaderId],
+                "CultLeaderMorsels" => [RelicResourceProbe.AfterDrawCultLeaderId, RelicResourceProbe.AfterDrawMorselsId],
                 _ => throw new InvalidOperationException("Missing original after-draw summon variant.")
             };
-            var owner = SpawnStatusScalingMechanismBatch.Owners(save.GetAllGameData()).OfType<MutatorData>()
-                .Single(data => data.GetID() == id);
-            var effect = owner.GetEffects().Single();
-            if (owner.DisallowInDeploymentPhase || effect.GetEffectClassName() != nameof(RelicEffectSpawnMonsterOnTurnStart) ||
-                effect.GetEffectConditions().Count != 0 || effect.GetParamCharacters().Count != (Variant == "Morsels" ? 3 : 1))
-                throw new InvalidOperationException("Original after-draw summon definition changed.");
+            var candidates = SpawnStatusScalingMechanismBatch.Owners(save.GetAllGameData()).OfType<MutatorData>().ToArray();
+            var owners = ids.Select(id => candidates.Single(data => data.GetID() == id)).ToArray();
+            foreach (MutatorData owner in owners)
+            {
+                var effect = owner.GetEffects().Single();
+                int rosterSize = owner.GetID() == RelicResourceProbe.AfterDrawMorselsId ? 3 : 1;
+                if (owner.DisallowInDeploymentPhase || effect.GetEffectClassName() != nameof(RelicEffectSpawnMonsterOnTurnStart) ||
+                    effect.GetEffectConditions().Count != 0 || effect.GetParamCharacters().Count != rosterSize)
+                    throw new InvalidOperationException("Original after-draw summon definition changed.");
+            }
             if (LonelyRooms) OriginalLonelyRoomsBattle.Acquire(save);
-            original = owner;
-            Definition = Describe(owner);
-            save.AddMutator(owner);
-            log.LogInfo("ORIGINAL-AFTER-DRAW-SPAWN-ACQUIRED " + owner.name);
+            originals = owners;
+            Definitions = owners.Select(Describe).ToArray();
+            foreach (MutatorData owner in owners)
+            {
+                save.AddMutator(owner);
+                log.LogInfo("ORIGINAL-AFTER-DRAW-SPAWN-ACQUIRED " + owner.name);
+            }
         }
 
         internal static void Prepare(AllGameManagers managers, ManualLogSource log)
         {
             var combat = managers.GetCombatManager();
-            if (original == null || !combat.IsPlacementPhase || Callbacks.Count != 1 || Callbacks[0].After == null)
+            if (!Acquired || !combat.IsPlacementPhase ||
+                !Callbacks.Select(callback => callback.OwnerId).SequenceEqual(originals.Select(owner => owner.GetID())) ||
+                Callbacks.Any(callback => !callback.Deployment || callback.Turn != 0 || callback.After == null))
                 throw new InvalidOperationException("Original after-draw summons must settle before deployment input.");
             var trace = FullBattleTrace.Active!;
             defenders = OriginalRandomRoomCapacityScenario.CreateDeploymentControls(managers, LonelyRooms ? 1 : 3, 1)
@@ -106,15 +119,19 @@ namespace MonsterTrain2Poju.Probe
             private static void Postfix(RelicEffectSpawnMonsterOnTurnStart __instance, ref IEnumerator __result)
             {
                 var trace = FullBattleTrace.Active;
-                if (trace != null && original != null && __instance.GetRelicDataId() == original.GetID() &&
+                string ownerId = __instance.GetRelicDataId();
+                if (trace != null && originals.Any(owner => owner.GetID() == ownerId) &&
                     !AllGameManagers.Instance!.GetSaveManager().PreviewMode)
-                    __result = Observe(__result, trace, AllGameManagers.Instance.GetCombatManager());
+                    __result = Observe(__result, trace, AllGameManagers.Instance.GetCombatManager(), ownerId);
             }
         }
 
-        private static IEnumerator Observe(IEnumerator native, FullBattleTrace trace, CombatManager combat)
+        private static IEnumerator Observe(IEnumerator native, FullBattleTrace trace, CombatManager combat, string ownerId)
         {
-            var record = new Callback { Turn = combat.GetTurnCount(), Deployment = combat.IsPlacementPhase, Before = trace.CaptureTrain() };
+            var record = new Callback
+            {
+                OwnerId = ownerId, Turn = combat.GetTurnCount(), Deployment = combat.IsPlacementPhase, Before = trace.CaptureTrain()
+            };
             Callbacks.Add(record);
             try
             {
