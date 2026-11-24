@@ -32,7 +32,7 @@
 | CardEffectAddStatusEffectPerFriendlyMissingHp | shared-path | Original Collector skill receives four exact Pain totals (5, 18, 28, 28), before the ordinary damage pipeline consumes the new stacks in the same skill. Seven native friendly-health queries include the Pyre. The unchanged paid sequence and serial and parallel search agree. |
 | CardEffectAddStatusEffectPerMissingHp | shared-path | Original Oil uses each occupant's own missing health to add Armor on the selected floor. Positive and full-health controls agree through three native per-target callbacks. All 28 paid inputs, seven turns and sixteen branches replay, with zero unsupported candidates in the checked search. |
 | CardEffectAddStatusEffectPerSelfAttack | shared-path | Original Dutiful Armor grants twelve Armor to each native target in six positive applications across three PostCombat callbacks. The settled whole battle matches 28 plays, five EndTurns, both frontiers and sixteen branches. |
-| CardEffectAddStatusToRoomScalingByCasterStatusCount | shared-path | The pinned 2.3.1 catalog records Savior II as Self and Savior III as a friendly Room effect. Each grants Valor before the final effect reads the caster's Valor for Armor. Both prior-version original recordings still replay six paid actions and five EndTurns with 16 independent branches each. Fresh 2.3.1 paid execution of those two ranks is still open. |
+| CardEffectAddStatusToRoomScalingByCasterStatusCount | shared-path | Original paid 2.3.1 Savior II and III move Fel to the front, grant 15 Valor and use the resulting amount to grant 15 Armor. II affects Fel, III also affects the same-floor ally, and the other floor stays unchanged. Both settled successors and RNG match. Both older whole-battle recordings still replay six paid actions and five EndTurns each. |
 | CardEffectAddUpgradedCopy | shared-path | The original Fecundity upgrade on Train Steward consumes one Ember and produces a separate hand card with temporary successor cost plus one. The source retains its original permanent upgrade. The scoped paid-action check covers exact state, RNG, and the solver candidate. |
 | CardEffectAdjustRoomCapacity | shared-path | The original FavoredChild_2 boss lowers player capacity in three native applications and retains enemy capacity. Six bound checks, nine TestEffect calls and two oversize occupied states match. The first post-combat pair independently proves reduction before self OnFeed. |
 | CardEffectBump | shared-path | The exact Railforged attacker OnKill and its later Armor grant match bottom and cross-floor original exchanges. The destination shifted actors, Sacrificial Chamber entry, physical slots and RNG agree. Lifemother Reanimate supplies the corresponding settled whole battle. |
@@ -177,10 +177,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `fbfd2ba8bb655d077b47fee2d3656f8d901ec6d8a19cba01e44ee573a1e0ccfa`。
+- 人工审查索引 SHA-256: `f360012b2c94406a677c3930197b5122c88cf9fd31287725708a59e2f8e0b1f6`。
 - Model: PDB 校验过的项目源码集合 `95e252cc617f87e59ff9da8369e9a080f9083f6be7e1961a78e782c2b3978b5f`。
-- Probe: PDB 校验过的项目源码集合 `61a7f4b526e4c1a863469b9f637116de58566393d2015757d29d08597bf61cb6`。
-- ModelChecks: PDB 校验过的项目源码集合 `be33437805e64584b8a2b4f23da0de56c0f91b436ceeadb8a7b734414e2cf9e5`。
+- Probe: PDB 校验过的项目源码集合 `3ded25d6e7a224f464b1dccfa454a0f5981212e341ee460b4ed42f167b5ae836`。
+- ModelChecks: PDB 校验过的项目源码集合 `8c0207c85625f9cb134f5951ec39d45c0f7e9ca32459c882a0efd40ad9be3599`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
