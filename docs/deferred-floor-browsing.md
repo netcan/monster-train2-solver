@@ -29,6 +29,19 @@ count, a following advised input and complete suffix replay. Energy/RNG changes,
 manual reset and views during an in-flight search are also checked. Existing
 ready/in-flight floor rebasing and resource/cost/RNG rejection checks remain.
 
+If a search fails after browsing to a different floor, the session searches the
+latest complete snapshot. When the overlay has only recorded view callbacks, it
+captures that snapshot once after the native preview settles. An identical
+snapshot retains the original failure without starting another search. The
+concurrency check reproduces a failed search on the previous floor and verifies
+the new plan against the latest full snapshot.
+
+The updated player DLL also passed the ordinary floor-browse scenario on 2.3.1.
+Seven native switches, including one during search, required zero extra captures
+or searches. The full recorded battle finished with zero capture failures,
+mismatches or unsupported operations.
+[Native run log](../results/advisor-floor-browse-fault-recovery-native.log)
+
 The isolated player acceptance asserts zero overlay captures on all seven native
 wheel inputs, including one during search. For an already published route it
 also checks the advice object, publication count, text, status, color and scroll

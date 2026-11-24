@@ -67,7 +67,7 @@ namespace MonsterTrain2Poju.Model
         private BattleAdvice? reusable;
         private readonly List<SelectionAdviceReuse.Observation> reuseObservations = new List<SelectionAdviceReuse.Observation>();
         private int workerObservationCount;
-        private string? pendingKey, currentKey;
+        private string? pendingKey, currentKey, workerRootKey;
         private long generation, workerGeneration;
         private long observationVersion;
         private long searchCount;
@@ -253,10 +253,18 @@ namespace MonsterTrain2Poju.Model
                 catch (Exception error)
                 {
                     if (workerGeneration == generation && currentKey != null)
-                    { continuation = null; Error = error.Message; Status = BattleAdviceStatus.Unavailable; }
+                    {
+                        if (workerRootKey == currentKey)
+                        { continuation = null; Error = error.Message; Status = BattleAdviceStatus.Unavailable; }
+                        else
+                        {
+                            pending = observed;
+                            pendingKey = currentKey;
+                        }
+                    }
                 }
                 finally
-                { worker = null; cancellation!.Dispose(); cancellation = null; }
+                { worker = null; workerRootKey = null; cancellation!.Dispose(); cancellation = null; }
             }
             if (worker == null && pending != null)
             {
@@ -272,6 +280,7 @@ namespace MonsterTrain2Poju.Model
                 workerObservationCount = observations.Length;
                 pending = null; pendingKey = null;
                 workerGeneration = generation;
+                workerRootKey = key;
                 cancellation = new CancellationTokenSource();
                 CancellationToken token = cancellation.Token;
                 worker = Task.Run(() =>

@@ -385,6 +385,13 @@ namespace MonsterTrain2Poju.Probe
                     if (preview || LoadingScreen.IsWorking() || !Ready(managers) ||
                         Time.realtimeSinceStartup < selectionReadyAt) return;
                     observation = new AdvisorObservation(managers); selectionPending = false;
+                    if (session.Status == BattleAdviceStatus.Unavailable)
+                    {
+                        // Browsing only records view callbacks while a search is running.
+                        // A failed search needs one settled capture of the selected floor.
+                        browseOnly = false;
+                        captureNeeded = true;
+                    }
                 }
                 else InvalidateState(true, "gameplay-changed-during-browse");
             }

@@ -368,6 +368,47 @@ internal static class FloorBrowseAdviceChecks
             }
             finally { release.Set(); }
         }
+        BattleTurnState nextFloor = Select(root, (root.SelectedRoom + 1) % 3);
+        var originalAdvice = new BattleAdvice(root, original, plan, default, default, default, Stopwatch.GetTimestamp());
+        Require(SelectionAdviceReuse.TryRebase(originalAdvice, nextFloor, true, default, out var nextFloorPlan, out _),
+            "Fixture plan could not be verified from the next floor.");
+        using var failingEntered = new ManualResetEventSlim();
+        using var failingRelease = new ManualResetEventSlim();
+        int failureRecoveryCalls = 0;
+        bool cancelledDuringBrowse = false;
+        using (var session = new BattleAdviceSession((state, token) =>
+        {
+            failureRecoveryCalls++;
+            if (state.SelectedRoom == nextFloor.SelectedRoom) return nextFloorPlan;
+            failingEntered.Set();
+            if (!failingRelease.Wait(10000)) throw new TimeoutException();
+            cancelledDuringBrowse = token.IsCancellationRequested;
+            throw new InvalidOperationException("Search failed on the previous floor.");
+        }))
+        {
+            try
+            {
+                session.Observe(session.PrepareObservationAsync(root).GetAwaiter().GetResult());
+                Require(failingEntered.Wait(10000), "Worker did not start.");
+                long generation = session.Generation;
+                session.Observe(session.PrepareObservationAsync(nextFloor).GetAwaiter().GetResult());
+                failingRelease.Set();
+                Pump(session);
+                Require(!cancelledDuringBrowse && failureRecoveryCalls == 2 && session.Generation == generation && session.Error == null &&
+                    session.Current!.RootKey == Key(nextFloor),
+                    "A failed search from a previous floor displaced the current root.");
+                BattleAdviceSession.Verify(nextFloor, session.Current.Plan);
+
+                session.Invalidate();
+                session.Observe(root, original);
+                Pump(session, BattleAdviceStatus.Unavailable);
+                session.Observe(root, original);
+                Require(failureRecoveryCalls == 3 && session.Status == BattleAdviceStatus.Unavailable &&
+                    session.Error == "Search failed on the previous floor.",
+                    "Recapturing the failed root retried its search.");
+            }
+            finally { failingRelease.Set(); }
+        }
         BattleRngStream[] changedRng = root.RngStreams.Select((stream, index) => index == 0 ?
             new BattleRngStream(stream.Name, stream.Seed, new UnityRng(stream.State.S0 ^ 1, stream.State.S1,
                 stream.State.S2, stream.State.S3)) : stream).ToArray();
@@ -390,7 +431,7 @@ internal static class FloorBrowseAdviceChecks
                 "A resource, card cost or RNG change reused the floor-browsing line.");
         }
         Require(Key(root) == original, "Browsing mutated its source.");
-        Console.WriteLine("FLOOR-BROWSE PASS: nonwinning advice, ready/in-flight switches, exact live roots, independent replay, real inputs, resource/cost/RNG divergence and immutable captures.");
+        Console.WriteLine("FLOOR-BROWSE PASS: nonwinning advice, ready/in-flight switches, obsolete search failure recovery, exact live roots, independent replay, real inputs, resource/cost/RNG divergence and immutable captures.");
     }
 
     private static BattleTurnState Select(BattleTurnState root, int floor)
