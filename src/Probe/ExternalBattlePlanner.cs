@@ -62,9 +62,11 @@ namespace MonsterTrain2Poju.Probe
             WirePlan plan = PlannerReplayScenario.Read<WirePlan>(result.GetProperty("Plan"));
             elapsed.Stop();
             verified = new BattlePlanResult(plan.State, plan.Outcome,
-                plan.Steps.Select(step => new BattleSearchStep(step.Action, step.IsEndTurn)).ToArray(), plan.Score, plan.TurnsCompleted,
+                plan.Steps.Select(step => new BattleSearchStep(step.Action, step.IsEndTurn, step.RelentlessDecisions)).ToArray(),
+                plan.Score, plan.TurnsCompleted,
                 plan.ExpandedNodes, plan.DuplicateStates, plan.BeamPruned, elapsed.Elapsed, plan.TimedOut, plan.Cancelled,
-                plan.ReachedNodeLimit, plan.ReachedActionLimit, plan.CompletedHorizon, plan.UnsupportedAttempts, plan.PolicyBaselineScore);
+                plan.ReachedNodeLimit, plan.ReachedActionLimit, plan.CompletedHorizon, plan.UnsupportedAttempts, plan.PolicyBaselineScore,
+                requestedTurns: horizon);
             return verified;
         }
         internal void Verify(BattleTurnState root, BattlePlanResult plan)
@@ -75,8 +77,11 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("External planner changed the complete request state or RNG.");
             if (!destination.RootElement.ContentEquals(externalFinal))
                 throw new InvalidOperationException("External planner result changed during native-runtime decoding.");
+            bool terminal = plan.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
             if (!ReferenceEquals(verified, plan) || !plan.CompletedHorizon || plan.Cancelled || plan.Steps.Count == 0 ||
                 plan.ExpandedNodes > 256 || plan.TurnsCompleted > horizon ||
+                plan.TurnsCompleted != plan.Steps.Count(step => step.IsEndTurn) || !terminal && plan.TurnsCompleted != horizon ||
+                plan.Steps.Any(step => step.IsEndTurn != (step.Action == null)) ||
                 BattlePlanner.Evaluate(plan.State, plan.Outcome) != plan.Score)
                 throw new InvalidOperationException("External planner result identity, bounds or score differ.");
         }
