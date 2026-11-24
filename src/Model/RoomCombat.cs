@@ -5034,7 +5034,8 @@ namespace MonsterTrain2Poju.Model
                         .FirstOrDefault(room => room.RoomIndex == source.RoomIndex)?.Attachments ?? Array.Empty<RoomCapacityAttachmentState>())
                     {
                         RoomDeathEffectRule? rule = attachment.DeathEffect;
-                        if (rule == null || source.Deployment && rule.DisallowedInDeployment || !RoomDeathEffectModel.Matches(rule, unit.Freeze(), context)) continue;
+                        if (rule == null || source.Deployment && rule.DisallowedInDeployment ||
+                            !RoomDeathEffectModel.Matches(rule, unit.Freeze(), context, source.Deployment)) continue;
                         foreach (CardActionEffect effect in rule.Effects)
                             if (!ApplyTriggeredSpawnOrStatus(unit, effect, kind, fromRoomModifier: true)) return;
                     }

@@ -25,9 +25,9 @@ namespace MonsterTrain2Poju.Model
                 effect.Statuses[0].Id != "horde" || effect.Statuses[0].Stacks != 1 ||
                 effect.SpawnFallbackUnit?.AssetKey != "MonsterFunguy")
             ? "Uncalibrated room unit-death effect." : null;
-        internal static bool Matches(RoomDeathEffectRule rule, CombatUnit unit, CombatContext? context) =>
+        internal static bool Matches(RoomDeathEffectRule rule, CombatUnit unit, CombatContext? context, bool deployment) =>
             !unit.IsPyre && rule.Filters.All(filter => CardUpgradeMaskModel.FilterCharacter(filter,
                 new CardUpgradeMaskCharacter(unit.Subtypes, (unit.StatusRegistry ?? unit.Statuses).Select(status => status.Id).ToArray(), unit.Size),
-                context?.Relics?.Any(relic => relic.EffectTypes.Contains("RelicEffectMonstersAreAllSubtypes")) == true));
+                OriginalAllSubtypesModel.Active(context, deployment)));
     }
 }

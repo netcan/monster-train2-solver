@@ -33,7 +33,7 @@ namespace MonsterTrain2Poju.Model
             foreach (RoomCapacityAttachmentState attachment in room.Attachments)
             {
                 CombatUnit changed = state.Units.First(item => item.Id == unitId);
-                if (!Affected(changed, attachment, state.Context)) continue;
+                if (!Affected(changed, attachment, state)) continue;
                 if (attachment.CharacterUpgrades == null)
                 { error = "Room attachment birth synchronization requires captured character upgrades."; return null; }
                 if (changed.Modifiers == null)
@@ -73,7 +73,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     foreach (CombatUnit original in state.Units.ToArray())
                     {
-                        if (!Affected(original, removed, state.Context)) continue;
+                        if (!Affected(original, removed, state)) continue;
                         if (removed.CharacterUpgrades == null)
                             return Fail("Removing a room attachment requires its captured character upgrades.");
                         if (original.Modifiers == null)
@@ -90,7 +90,7 @@ namespace MonsterTrain2Poju.Model
                 {
                     foreach (CombatUnit original in state.Units.ToArray())
                     {
-                        if (!Affected(original, added, state.Context)) continue;
+                        if (!Affected(original, added, state)) continue;
                         if (added.CharacterUpgrades == null)
                             return Fail("Adding a room attachment requires its captured character upgrades.");
                         if (original.Modifiers == null)
@@ -107,8 +107,8 @@ namespace MonsterTrain2Poju.Model
                 {
                     var oldAttachment = previous?.Attachments?.SingleOrDefault();
                     var newAttachment = current?.Attachments?.SingleOrDefault();
-                    bool Updates(CombatUnit unit) => oldAttachment?.CharacterUpgrades?.Count > 0 && Affected(unit, oldAttachment, state.Context) ||
-                        newAttachment?.CharacterUpgrades?.Count > 0 && Affected(unit, newAttachment, state.Context);
+                    bool Updates(CombatUnit unit) => oldAttachment?.CharacterUpgrades?.Count > 0 && Affected(unit, oldAttachment, state) ||
+                        newAttachment?.CharacterUpgrades?.Count > 0 && Affected(unit, newAttachment, state);
                     var affected = state.Units.Where(unit => unit.MoonPhaseMask.HasValue && Updates(unit)).ToArray();
                     if (affected.Any(unit => unit.Triggers.Any(trigger => trigger.Kind is
                         "OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or "OnMoonshadeLost") ||
@@ -134,7 +134,7 @@ namespace MonsterTrain2Poju.Model
                         RoomCapacityAttachmentState? oldAttachment = previous?.Attachments?.SingleOrDefault();
                         RoomCapacityAttachmentState? newAttachment = current?.Attachments?.SingleOrDefault();
                         int mask = RoomMoonPhaseModel.Effective(state.Context, room.RoomIndex, phase);
-                        state = state.WithUnits(state.Units.Select(unit => (oldAttachment != null && Affected(unit, oldAttachment, state.Context) || newAttachment != null && Affected(unit, newAttachment, state.Context))
+                        state = state.WithUnits(state.Units.Select(unit => (oldAttachment != null && Affected(unit, oldAttachment, state) || newAttachment != null && Affected(unit, newAttachment, state))
                             ? unit.WithMoonPhaseMask(mask) : unit).ToArray());
                         moonChanged = true;
                     }
@@ -250,7 +250,7 @@ namespace MonsterTrain2Poju.Model
 
                 foreach (RoomCapacityAttachmentState added in newCapacity.Attachments ?? Array.Empty<RoomCapacityAttachmentState>())
                 {
-                    if (!Affected(currentUnit, added, state.Context) || IsApplied(currentUnit, added) ||
+                    if (!Affected(currentUnit, added, currentRoom) || IsApplied(currentUnit, added) ||
                         (oldCapacity.Attachments ?? Array.Empty<RoomCapacityAttachmentState>()).Any(item => SameAttachment(added, item))) continue;
                     if (added.CharacterUpgrades == null)
                         return Fail("Entering a room attachment requires its captured character upgrades.");
@@ -521,7 +521,7 @@ namespace MonsterTrain2Poju.Model
                     .FirstOrDefault(item => item.RoomIndex == room!.RoomIndex)?.Attachments ?? Array.Empty<RoomCapacityAttachmentState>())
                 {
                     bool remove = current.Status("untouchable") != null;
-                    if (remove ? !IsApplied(current, attachment) : !Affected(current, attachment, state.Context) || IsApplied(current, attachment)) continue;
+                    if (remove ? !IsApplied(current, attachment) : !Affected(current, attachment, room!) || IsApplied(current, attachment)) continue;
                     if (attachment.CharacterUpgrades is not { Count: 1 } ||
                         attachment.CharacterUpgrades[0] is not CardUpgradeModifier upgrade ||
                         !(attachment.AssetKey == "EnchantedChamber" && upgrade.DataId == "68d8696e-ec20-425e-b23d-8a0b9da0dfaf" && upgrade.Stats.Damage == 0 ||
@@ -627,13 +627,13 @@ namespace MonsterTrain2Poju.Model
             return true;
         }
 
-        private static bool Affected(CombatUnit unit, RoomCapacityAttachmentState attachment, CombatContext? context)
+        private static bool Affected(CombatUnit unit, RoomCapacityAttachmentState attachment, RoomCombatState state)
         {
             bool teamMatches = unit.Team == CombatTeam.Player ? attachment.AffectsMonsters : attachment.AffectsHeroes;
             if (!teamMatches || unit.Statuses.Any(status => status.Id == "untouchable" && status.Stacks > 0)) return false;
             if (attachment.CharacterFilters?.Any(filter => !CardUpgradeMaskModel.FilterCharacter(filter,
                 new CardUpgradeMaskCharacter(unit.Subtypes, Array.Empty<string>(), unit.Size),
-                context?.Relics?.Any(relic => relic.EffectTypes.Contains("RelicEffectMonstersAreAllSubtypes")) == true)) == true) return false;
+                OriginalAllSubtypesModel.Active(state.Context, state.Deployment))) == true) return false;
             if (!attachment.IgnoreBosses) return true;
             return unit.IsBoss == false;
         }

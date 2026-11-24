@@ -3415,8 +3415,8 @@ namespace MonsterTrain2Poju.Model
                 CombatUnit? target = state.Rooms.SelectMany(room => room.Units).FirstOrDefault(unit => unit.Id == targets.UnitIds.FirstOrDefault());
                 if (target == null) return 0;
                 var mask = new CardUpgradeMaskCharacter(target.Subtypes, (target.StatusRegistry ?? target.Statuses).Select(status => status.Id).ToArray(), target.Size);
-                return effect.UpgradeFilters.All(filter => CardUpgradeMaskModel.FilterCharacter(filter, mask,
-                    state.Context?.Relics?.Any(relic => relic.EffectTypes.Contains("RelicEffectMonstersAreAllSubtypes")) == true)) ? 1 : 0;
+                bool allSubtypes = OriginalAllSubtypesModel.Active(state.Context, state.Rooms.Any(room => room.Deployment));
+                return effect.UpgradeFilters.All(filter => CardUpgradeMaskModel.FilterCharacter(filter, mask, allSubtypes)) ? 1 : 0;
             }
             if (effect.Type == "ReturnUnit")
                 return state.Rooms.SelectMany(room => room.Units).Count(unit => targets.UnitIds.Contains(unit.Id) &&

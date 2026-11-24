@@ -17,6 +17,7 @@ namespace MonsterTrain2Poju.Model
             if (lifetime != "Permanent" && lifetime != "TemporaryUntilEndOfBattle")
                 return Unsupported("Unimplemented hand upgrade lifetime.");
             CombatContext context = source.Context;
+            bool allSubtypes = filters?.Count > 0 && OriginalAllSubtypesModel.Active(context, source.Deployment);
             foreach (CardToken token in context.Cards.Hand)
             {
                 CardInstanceState? card = context.FindCard(token.InstanceId);
@@ -28,7 +29,6 @@ namespace MonsterTrain2Poju.Model
                     CardUpgradeMaskCard mask;
                     try { mask = CardBranchMaskModel.Resolve(card); }
                     catch (InvalidOperationException error) { return Unsupported(error.Message); }
-                    bool allSubtypes = context.Relics?.Any(relic => relic.EffectTypes.Contains("RelicEffectMonstersAreAllSubtypes")) == true;
                     if (!filters.All(filter => CardUpgradeMaskModel.FilterCard(filter, mask, allSubtypes))) continue;
                 }
                 CardPlayRule? rule = definitions.Cards.FirstOrDefault(item => item.DataId == card.DataId);

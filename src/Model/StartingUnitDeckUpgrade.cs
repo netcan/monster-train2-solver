@@ -66,7 +66,7 @@ namespace MonsterTrain2Poju.Model
             if (added.MaskDescriptor?.Definition is not { } definition)
                 return "Permanent unit upgrade effects require the captured card mask.";
             if (definition.CardType != "Monster") return null;
-            bool allSubtypes = context.Relics.Any(owner => owner.EffectTypes.Contains("RelicEffectMonstersAreAllSubtypes"));
+            bool allSubtypes = OriginalAllSubtypesModel.Active(context, deployment: context.QueryFrame?.Turn == 0);
             foreach (CombatRelicState owner in context.Relics.Where(IsOriginalOwner))
             {
                 BattleResourceState resources = updated.Resources!;
