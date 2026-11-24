@@ -21,6 +21,18 @@ namespace MonsterTrain2Poju.Probe
                 required == null ? null : required.GetID(), required == null || save.GetHasMutator(required), data.GetEffectConditions().Count != 0,
                 (float)Field("percentModification"));
         }
+
+        internal static RelicPercentageStat CaptureUnhealed(RelicEffectModifyCharacterMaxHealthPercentage effect, int index)
+        {
+            var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect);
+            SubtypeData? subtype = data.GetParamCharacterSubtype();
+            float multiplier = (float)AccessTools.Field(typeof(RelicEffectModifyCharacterMaxHealthPercentage), "percentModification").GetValue(effect);
+            return new RelicPercentageStat(index, data.GetParamInt(), true, TeamName(data.GetParamSourceTeam()),
+                subtype == null || subtype.IsNone ? "" : subtype.Key, subtype?.IsPyre == true,
+                hasConditions: data.GetEffectConditions().Count != 0 ||
+                    data.GetParamTrigger() != CharacterTriggerData.Trigger.OnSpawn || effect.CanApplyInPreviewMode,
+                multiplier: multiplier);
+        }
         // Only a fully represented combat-only roster bypasses the old broad
         // mutator guard. Companion effects and mixed Covenant projections retain
         // their ordinary validation and calibration requirements.
@@ -31,6 +43,7 @@ namespace MonsterTrain2Poju.Probe
                 save.GetMutators().All(owner => OriginalStartRoomAttachmentScenario.SupportsInfernoMutator(owner, save) ||
                     RelicProbe.SupportsStatusMultiplier(owner) ||
                     BattleSpawnPointProbe.Enabled && SupportsLonelyRooms(owner, save) ||
+                    SupportsUnhealed(owner) ||
                     CardBranchMaskProbe.Enabled && SupportsHandOrEmber(owner, save) ||
                     owner.GetRelicDataID() == RelicUnitSpawnCountModel.DataId &&
                     owner.GetEffects() is [RelicEffectExtraSpawnsFirstUnitPerTurn] ||
@@ -74,6 +87,12 @@ namespace MonsterTrain2Poju.Probe
             owner.GetEffects() is [RelicEffectRoomMonsterCapacityModifier effect] &&
             effect.CapacityModifier == RelicModel.LonelyRoomsPlayerSlots &&
             save.GetMonstersNumSpawnPointsOverrideFromRelics() == RelicModel.LonelyRoomsPlayerSlots;
+
+        internal static bool SupportsUnhealed(RelicState owner) =>
+            owner.GetRelicDataID() == RelicPercentageStatModel.UnhealedOwnerId &&
+            owner.GetAssetName() == RelicPercentageStatModel.UnhealedOwnerKey && !owner.DisallowedInPlacementPhase &&
+            owner.GetEffects() is [RelicEffectModifyCharacterMaxHealthPercentage effect] &&
+            CaptureUnhealed(effect, 0) is { Percent: 100, SourceTeam: "Monsters", SubtypeKey: "", HasConditions: false, Multiplier: 2f };
 
         private static bool SupportsSoulSaviorStarterDeck(RelicState owner, SaveManager save) =>
             save.GetRunType() == RunType.RegionRun && owner.GetRelicDataID() == RelicModel.SoulSaviorStarterDeckId &&

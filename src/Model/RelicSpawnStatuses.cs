@@ -219,12 +219,15 @@ namespace MonsterTrain2Poju.Model
                         if (!onlyCovenants && !DrainYield()) return failed!;
                         continue;
                     }
-                    if (relic.EffectTypes[effectIndex] == RelicPercentageStatModel.Effect)
+                    if (relic.EffectTypes[effectIndex] is RelicPercentageStatModel.Effect or RelicPercentageStatModel.UnhealedEffect)
                     {
-                        RoomCombatResult applied = RelicPercentageStatModel.Apply(state, unitId,
-                            relic.PercentageStats!.Single(rule => rule.EffectIndex == effectIndex));
+                        RelicPercentageStat percentage = relic.PercentageStats!.Single(rule => rule.EffectIndex == effectIndex);
+                        RoomCombatResult applied = relic.EffectTypes[effectIndex] == RelicPercentageStatModel.UnhealedEffect
+                            ? RelicPercentageStatModel.ApplyUnhealedBirth(state, unitId, fromCardId, percentage)
+                            : RelicPercentageStatModel.Apply(state, unitId, percentage);
                         if (!applied.Supported) return applied;
-                        state = applied.State!;
+                        state = applied.State!; callbacks.AddRange(applied.PendingCallbacks); events.AddRange(applied.Events);
+                        if (applied.Outcome != RoomOutcome.Exchanged) outcome = applied.Outcome;
                         if (!onlyCovenants && !DrainYield()) return failed!;
                         continue;
                     }

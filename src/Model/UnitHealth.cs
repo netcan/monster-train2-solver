@@ -94,7 +94,13 @@ namespace MonsterTrain2Poju.Model
         {
             error = null;
             if (preview || lifetime == "TemporaryUntilUnitDeath" || target.SpawnerCardId <= 0) return context;
-            CardInstanceState? card = context?.FindCard(target.SpawnerCardId);
+            return RecordCardBuff(context, target.SpawnerCardId, amount, out error);
+        }
+
+        internal static CombatContext? RecordCardBuff(CombatContext? context, int cardId, int amount, out string? error)
+        {
+            error = null;
+            CardInstanceState? card = context?.FindCard(cardId);
             if (card == null) { error = "Missing maximum-health buff spawner card."; return context; }
             CardStatModifier old = card.Temporary.Offsets;
             var offsets = new CardStatModifier(old.Damage, checked(old.Health + amount), old.Cost, old.Heal, old.Size,

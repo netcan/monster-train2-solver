@@ -29,6 +29,17 @@ namespace MonsterTrain2Poju.Model
     internal static class RelicPercentageStatModel
     {
         internal const string Effect = "RelicEffectModifyCharacterAttackOrHealthPercentage";
+        internal const string UnhealedEffect = "RelicEffectModifyCharacterMaxHealthPercentage";
+        internal const string UnhealedOwnerId = "ca916209-1309-4e3f-985c-f09b87583f93";
+        internal const string UnhealedOwnerKey = "Echoes_DoubleFriendlyUnitHealthUnhealed";
+
+        internal static bool IsOriginalUnhealed(CombatRelicState relic) => relic is
+        {
+            DataId: UnhealedOwnerId, AssetKey: UnhealedOwnerKey, IsCovenant: false,
+            DisallowedInPlacementPhase: false, EffectTypes: [UnhealedEffect],
+            PercentageStats: [{ EffectIndex: 0, Percent: 100, Health: true, SourceTeam: "Monsters", SubtypeKey: "",
+                SubtypeIsPyre: false, RequiredMutatorId: null, RequiredMutatorPresent: true, HasConditions: false, Multiplier: 2f }]
+        };
         // Capture the initialized native float: Mono's intermediate precision
         // can differ from the offline .NET runtime for large source integers.
         internal static int Scale(int value, float multiplier) =>
@@ -47,7 +58,7 @@ namespace MonsterTrain2Poju.Model
         internal static string? Validate(CombatRelicState relic)
         {
             int[] indices = relic.EffectTypes.Select((type, index) => (type, index))
-                .Where(item => item.type == Effect).Select(item => item.index).ToArray();
+                .Where(item => item.type is Effect or UnhealedEffect).Select(item => item.index).ToArray();
             var rules = relic.PercentageStats;
             if (indices.Length == 0) return rules?.Count > 0 ? "Orphan percentage birth rules." : null;
             if (rules == null || !rules.Select(rule => rule.EffectIndex).OrderBy(index => index).SequenceEqual(indices))
@@ -58,6 +69,19 @@ namespace MonsterTrain2Poju.Model
                 rule.RequiredMutatorId == null && !rule.RequiredMutatorPresent))
                 return "Incomplete percentage birth filters.";
             return null;
+        }
+
+        internal static RoomCombatResult ApplyUnhealedBirth(RoomCombatState source, int unitId, int fromCardId,
+            RelicPercentageStat rule)
+        {
+            CombatUnit? unit = source.Units.FirstOrDefault(actor => actor.Id == unitId);
+            if (unit == null) return Fail("Missing unhealed percentage birth unit.");
+            if (source.Preview || fromCardId == 0 || unit.Team != CombatTeam.Player || unit.IsPyre ||
+                unit.Health <= 0 || unit.Status("cardless") != null) return Match(source);
+            int increment = Scale(unit.MaxHealth, rule.Multiplier!.Value) - unit.MaxHealth;
+            CombatContext? context = UnitHealthModel.RecordCardBuff(source.Context, fromCardId, increment, out string? error);
+            if (error != null) return Fail(error);
+            return UnitHealthModel.ApplyNative(source.WithContext(context), unitId, increment, heal: false);
         }
         internal static RoomCombatResult Apply(RoomCombatState source, int unitId, RelicPercentageStat rule)
         {

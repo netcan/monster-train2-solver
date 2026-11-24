@@ -476,6 +476,12 @@ namespace MonsterTrain2Poju.Model
                         if (IsOriginalLonelyRooms(relic) && relics.Count(IsOriginalLonelyRooms) == 1) continue;
                         return "Missing, changed or duplicate original LonelyRooms owner.";
                     }
+                    if (effect == RelicPercentageStatModel.UnhealedEffect)
+                    {
+                        if (RelicPercentageStatModel.IsOriginalUnhealed(relic) &&
+                            relics.Count(RelicPercentageStatModel.IsOriginalUnhealed) == 1) continue;
+                        return "Missing, changed or duplicate original unhealed percentage health owner.";
+                    }
                     if (effect == RelicSpellDamageMoveModel.Effect)
                     {
                         if (RelicSpellDamageMoveModel.IsOriginal(relic) && relics.Count(RelicSpellDamageMoveModel.IsOriginal) == 1)
