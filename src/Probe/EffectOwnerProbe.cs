@@ -40,6 +40,7 @@ namespace MonsterTrain2Poju.Probe
             var souls = definition.GetAllSoulDatas().Where(soul => soul.GetSoulCardUpgrade() != null).ToArray();
             var relics = RelicCatalogProbe.OriginalOwners(definition).ToArray();
             var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+            int championTrees = 0;
             JToken before = JToken.FromObject(trace.CaptureDecision());
             JObject rngBefore = RngStates();
             int frame = Time.frameCount;
@@ -47,6 +48,27 @@ namespace MonsterTrain2Poju.Probe
             {
                 Scan("Card", card, "Effects", null, card.GetEffects());
                 ScanCardTriggers("Card", card, "CardTriggers", card.GetCardTriggers());
+                int startingIndex = 0;
+                foreach (CardUpgradeData upgrade in card.GetUpgradeData())
+                    ScanUpgrade("CardStartingUpgrade", card, $"StartingUpgrades[{startingIndex++}].", upgrade);
+
+                CharacterData? character = card.GetSpawnCharacterData();
+                if (character?.IsChampion() != true) continue;
+                CardUpgradeTreeData? tree = ChampionUpgradeRewardData.GetUpgradeTree(character, definition.GetBalanceData());
+                if (tree == null) continue;
+                championTrees++;
+                int pathIndex = 0;
+                foreach (var path in tree.GetUpgradeTrees())
+                {
+                    int tierIndex = 0;
+                    foreach (CardUpgradeData upgrade in path.GetCardUpgrades())
+                    {
+                        if (upgrade != null)
+                            ScanUpgrade("ChampionRewardUpgrade", card, $"ChampionRewardPaths[{pathIndex}].Upgrades[{tierIndex}].", upgrade);
+                        tierIndex++;
+                    }
+                    pathIndex++;
+                }
             }
             foreach (CharacterData character in characters.OrderBy(character => character.GetID(), StringComparer.Ordinal))
             {
@@ -92,7 +114,7 @@ namespace MonsterTrain2Poju.Probe
                 GameVersion = Application.version, GameModuleMvid = typeof(CardEffectData).Assembly.ManifestModule.ModuleVersionId,
                 FrameBefore = frame, FrameAfter = Time.frameCount, RngBefore = rngBefore, RngAfter = rngAfter,
                 DecisionUnchanged = decisionUnchanged, Definitions = new { Cards = cards.Count, Characters = characters.Count,
-                    Upgrades = upgrades.Count, Relics = relics.Length, SoulUpgrades = souls.Length }, MatchCount = matchCount,
+                    Upgrades = upgrades.Count, Relics = relics.Length, SoulUpgrades = souls.Length, ChampionRewardTrees = championTrees }, MatchCount = matchCount,
                 MatchesTruncated = matchCount > maximumRows, MatchCounts = counts, Matches = matches
             });
             using var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, archiveName));
