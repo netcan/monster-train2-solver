@@ -7,6 +7,8 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class AdvisorForecastPresentation
     {
+        internal const string CurrentActionOnly = "仅建议当前操作 · 后续波次未验证";
+
         internal static string SearchScope(bool wholeBattle, int horizon) =>
             wholeBattle ? "整场搜索" : "未来 " + horizon + " 回合";
 

@@ -27,6 +27,8 @@ namespace MonsterTrain2Poju.Probe
         public string? DisplayText { get; set; }
         public bool DisplayTextTruncated { get; set; }
         public AdviceDiagnosticForecast? Forecast { get; set; }
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public AdviceDiagnosticStep? CurrentAction { get; set; }
         public AdviceDiagnosticInput? Input { get; set; }
     }
 

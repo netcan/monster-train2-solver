@@ -66,11 +66,17 @@ namespace MonsterTrain2Poju.Probe
                     if (step.IsEndTurn) turn++;
                     return snapshot;
                 }).ToArray();
-                int hp = advice.Plan.State.Spawn.Train.Rooms.SelectMany(room => room.Units)
-                    .Where(unit => unit.IsPyre).Select(unit => unit.Health).FirstOrDefault();
                 AdviceDiagnosticEntry entry = DiagnosticEntry(kind);
                 entry.DisplayText = ClipDiagnosticText(body.text, 32768);
                 entry.DisplayTextTruncated = body.text.Length > entry.DisplayText.Length;
+                if (advice.CurrentActionOnly)
+                {
+                    entry.CurrentAction = steps[0];
+                    journal.Record(entry);
+                    return;
+                }
+                int hp = advice.Plan.State.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                    .Where(unit => unit.IsPyre).Select(unit => unit.Health).FirstOrDefault();
                 entry.Forecast = new AdviceDiagnosticForecast
                 {
                     Outcome = advice.Plan.Outcome.ToString(), Terminal = AdvisorForecastPresentation.IsTerminal(advice.Plan.Outcome),

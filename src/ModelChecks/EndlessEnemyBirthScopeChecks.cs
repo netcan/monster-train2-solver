@@ -33,17 +33,19 @@ internal static class EndlessEnemyBirthScopeChecks
             captured.CanonicalPhysicalReferences, captured.SelectedRoom, captured.MoonPhaseTrackingActive);
         using var keys = new BattleStateKeys();
         string key = keys.Key(opening);
-        int stewardId = context.Cards.Hand.First(card => card.DataId == "d14a50f3-728d-43e1-87f0-ef1b013f6678").InstanceId;
-        PlayCardAction action = BattleActionModel.EnumerateSupportedPlays(opening, stewardId).FirstOrDefault()
-            ?? throw new InvalidOperationException("The original Train Steward lost its supported deployment.");
+        PlayCardAction action = context.Cards.Hand.Where(card => opening.PlayRules!.Cards.Any(rule =>
+                rule.DataId == card.DataId && rule.Effect == "SpawnMonster"))
+            .SelectMany(card => BattleActionModel.EnumerateSupportedPlays(opening, card.InstanceId)).FirstOrDefault()
+            ?? throw new InvalidOperationException("The original hand lost its supported unit deployment.");
         BattleActionResult placed = BattleActionModel.PlayCard(opening, action);
         Require(placed.Supported && placed.State!.Spawn.Train.Rooms.SelectMany(room => room.Units)
-            .Any(unit => unit.Team == CombatTeam.Player && unit.SpawnerCardId == stewardId),
+            .Any(unit => unit.Team == CombatTeam.Player && unit.SpawnerCardId == action.CardInstanceId),
             "Expected the original player birth to complete before the first unsupported wave.");
         BattleTurnResult end = BattleTurnModel.EndTurn(placed.State!);
         Require(!end.Supported && end.UnsupportedReason == RelicSpawnStatusModel.UnsupportedEndlessEnemyBirth,
             end.UnsupportedReason ?? "The new enemy wave must retain the original scaling guard.");
         Require(keys.Key(opening) == key, "The supported play or unsupported wave changed its immutable source.");
+        CheckCurrentAction(opening, captured, keys);
 
         CombatUnit hero = witness.GetProperty("FirstDecision").Deserialize<BattleTurnState>()!.Spawn.Train.Rooms
             .SelectMany(room => room.Units).First(unit => unit.Team == CombatTeam.Enemy);
@@ -60,7 +62,55 @@ internal static class EndlessEnemyBirthScopeChecks
             Require(covenant.Supported && !added.Supported && added.UnsupportedReason == RelicSpawnStatusModel.UnsupportedEndlessEnemyBirth,
                 "The enemy-birth guard must cover the native non-Covenant notification in live play and preview.");
         }
-        Console.WriteLine("ENDLESS-ENEMY-BIRTH-SCOPE PASS: original Steward deployment, scheduled and triggered enemy birth, preview, owner and immutable root.");
+        Console.WriteLine("ENDLESS-ENEMY-BIRTH-SCOPE PASS: original unit deployment, scheduled and triggered enemy birth, preview, owner and immutable root.");
+    }
+
+    private static void CheckCurrentAction(BattleTurnState opening, BattleTurnState legacy, BattleStateKeys keys)
+    {
+        var options = new BattlePlannerOptions(maxNodes: 24, maxTurns: 2, beamWidth: 4,
+            timeLimit: TimeSpan.FromSeconds(4), searchToBattleEnd: true, allowShorterHorizon: true);
+        BattlePlanResult blocked = ParallelBattlePlanner.Plan(opening, options, 1, CancellationToken.None);
+        Require(!blocked.CompletedHorizon && !blocked.UsedShorterHorizon && blocked.UnsupportedAttempts.Any(attempt =>
+            attempt.Action == null && attempt.Reason == RelicSpawnStatusModel.UnsupportedEndlessEnemyBirth),
+            "The actual planner should expose the original unsupported future enemy birth.");
+        int searched = 0;
+        using var session = new BattleAdviceSession((_, _) => { Interlocked.Increment(ref searched); return blocked; }, endlessActionFloor: 2);
+        string rootKey = keys.Key(opening);
+        session.Observe(opening, rootKey);
+        Wait(session);
+        BattleAdvice? advice = session.Current;
+        Require(advice is { CurrentActionOnly: true, Continuation: null } && advice.RootKey == rootKey &&
+            !advice.Plan.CompletedHorizon && !advice.Plan.UsedShorterHorizon && advice.Plan.TurnsCompleted == 0 &&
+            advice.Plan.Steps.Count == 1 && !advice.Plan.Steps[0].IsEndTurn,
+            session.Error ?? "Expected exactly one verified current operation with no turn or reusable forecast.");
+        BattleActionResult expected = BattleActionModel.PlayCard(opening, advice!.Plan.Steps[0].Action!);
+        Require(expected.Supported && keys.Key(expected.State!) == keys.Key(advice.Plan.State) && keys.Key(opening) == rootKey,
+            "The published action must independently reproduce the complete successor and preserve the captured root.");
+        session.InvalidateForInput();
+        Require(session.Current == null, "A native input must clear current-operation advice immediately.");
+        session.Observe(expected.State!, keys.Key(expected.State!));
+        Wait(session);
+        Require(searched == 2 && (session.Current == null || session.Current.RootKey == keys.Key(expected.State!)),
+            "The next native settlement must request fresh advice at its own root.");
+
+        using var unscoped = new BattleAdviceSession((_, _) => blocked);
+        unscoped.Observe(opening, rootKey);
+        Wait(unscoped);
+        Require(unscoped.Status == BattleAdviceStatus.Unavailable && unscoped.Current == null,
+            "Ordinary advice callers do not opt into the release-only fallback.");
+
+        using var unverified = new BattleAdviceSession((_, _) => blocked, endlessActionFloor: 2);
+        unverified.Observe(legacy, keys.Key(legacy));
+        Wait(unverified);
+        Require(unverified.Status == BattleAdviceStatus.Unavailable && unverified.Current == null,
+            "The search reason cannot publish an action on a root that still rejects all direct actions.");
+        Console.WriteLine("ENDLESS-CURRENT-ACTION PASS: exact current action, native input invalidation, fresh settlement, opt-in and unsupported-root controls.");
+
+        static void Wait(BattleAdviceSession adviceSession) => Require(SpinWait.SpinUntil(() =>
+        {
+            adviceSession.Poll();
+            return adviceSession.Status is BattleAdviceStatus.Ready or BattleAdviceStatus.Unavailable;
+        }, 10000), "Advice worker did not settle.");
     }
 
     private static void Require(bool condition, string message) => TrueFinalBossChecks.Require(condition, message);

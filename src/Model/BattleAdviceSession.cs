@@ -23,6 +23,7 @@ namespace MonsterTrain2Poju.Model
         public bool ReusedWinningContinuation { get; }
         public bool ReusedContinuation { get; }
         public bool ReusedSelection { get; }
+        public bool CurrentActionOnly { get; }
         internal VerifiedAdviceContinuation? Continuation { get; }
         internal Dictionary<string, SelectionAdviceReuse.Result> SelectionCache { get; }
         private readonly long requestedAt;
@@ -33,7 +34,8 @@ namespace MonsterTrain2Poju.Model
             TimeSpan captureElapsed, TimeSpan queueElapsed, TimeSpan verificationElapsed, long requestedAt,
             VerifiedAdviceContinuation? continuation = null, bool reusedWinningContinuation = false, bool reusedSelection = false,
             bool reusedContinuation = false, TimeSpan preparationElapsed = default,
-            Dictionary<string, SelectionAdviceReuse.Result>? selectionCache = null, TimeSpan reuseCheckElapsed = default)
+            Dictionary<string, SelectionAdviceReuse.Result>? selectionCache = null, TimeSpan reuseCheckElapsed = default,
+            bool currentActionOnly = false)
         {
             Root = root; RootKey = key; Plan = plan; CaptureElapsed = captureElapsed;
             PreparationElapsed = preparationElapsed;
@@ -42,6 +44,7 @@ namespace MonsterTrain2Poju.Model
             Continuation = continuation; ReusedWinningContinuation = reusedWinningContinuation;
             ReusedContinuation = reusedContinuation;
             ReusedSelection = reusedSelection;
+            CurrentActionOnly = currentActionOnly;
             SelectionCache = selectionCache ?? new Dictionary<string, SelectionAdviceReuse.Result>(StringComparer.Ordinal);
         }
     }
@@ -53,6 +56,7 @@ namespace MonsterTrain2Poju.Model
         private readonly Func<BattleTurnState, CancellationToken, BattlePlanResult> search;
         private readonly Action<BattleTurnState, BattlePlanResult> verify;
         private readonly bool retainPlans;
+        private readonly int? endlessActionFloor;
         private readonly object preparationOwner = new object();
         private VerifiedAdviceContinuation? continuation;
         private Task<BattleAdvice>? worker;
@@ -95,6 +99,11 @@ namespace MonsterTrain2Poju.Model
         internal bool MatchesCurrentRoot(BattleTurnState root)
         {
             if (Current == null) return false;
+            if (Current.CurrentActionOnly)
+            {
+                using var keys = new BattleStateKeys();
+                return reuseObservations.Count == 0 && keys.Key(root) == Current.RootKey;
+            }
             if (reuseObservations.Count == 0)
             { using var keys = new BattleStateKeys(); return keys.Key(root) == Current.RootKey ||
                     AbilityCacheAdviceReuse.Matches(Current.Root, root, keys); }
@@ -128,8 +137,8 @@ namespace MonsterTrain2Poju.Model
                     256, 3, 8, timeLimit: TimeSpan.FromSeconds(3)), maxSearchWorkers, token);
             }) { }
 
-        internal BattleAdviceSession(Func<BattleTurnState, CancellationToken, BattlePlanResult> search)
-            : this(search, Verify) { retainPlans = true; }
+        internal BattleAdviceSession(Func<BattleTurnState, CancellationToken, BattlePlanResult> search, int? endlessActionFloor = null)
+            : this(search, Verify) { retainPlans = true; this.endlessActionFloor = endlessActionFloor; }
 
         internal BattleAdviceSession(Func<BattleTurnState, CancellationToken, BattlePlanResult> search,
             Action<BattleTurnState, BattlePlanResult> verify)
@@ -175,7 +184,7 @@ namespace MonsterTrain2Poju.Model
             {
                 observationVersion++;
                 bool browsing = sameBattle ?? (observed != null && SelectionAdviceReuse.SameBattle(observed, state));
-                reusable = Current ?? reusable;
+                if (Current is { CurrentActionOnly: false }) reusable = Current;
                 if (!browsing) { generation++; cancellation?.Cancel(); }
                 if (reusable != null) reuseObservations.Add(new SelectionAdviceReuse.Observation(state));
                 currentKey = fullStateKey; observed = state;
@@ -203,7 +212,7 @@ namespace MonsterTrain2Poju.Model
             if (disposed) return;
             observationVersion++;
             if (!preserveContinuation) { continuation = null; reusable = null; reuseObservations.Clear(); }
-            else reusable = Current ?? reusable;
+            else if (Current is { CurrentActionOnly: false }) reusable = Current;
             if (reusable == null && continuation == null) reuseObservations.Clear();
             if (currentKey != null) generation++;
             currentKey = pendingKey = null; pending = null;
@@ -224,7 +233,9 @@ namespace MonsterTrain2Poju.Model
                     {
                         if (advice.RootKey == currentKey)
                         {
-                            Current = reusable = advice; continuation = advice.Continuation;
+                            Current = advice;
+                            reusable = advice.CurrentActionOnly ? null : advice;
+                            continuation = advice.Continuation;
                             // Starting or cancelling verification must not consume
                             // the anchor/history. Commit only this accepted prefix;
                             // later view callbacks still belong to the new root.
@@ -233,7 +244,7 @@ namespace MonsterTrain2Poju.Model
                         }
                         else
                         {
-                            reusable = advice;
+                            reusable = advice.CurrentActionOnly ? null : advice;
                             reuseObservations.RemoveRange(0, workerObservationCount);
                             pending = observed; pendingKey = currentKey;
                         }
@@ -268,6 +279,7 @@ namespace MonsterTrain2Poju.Model
                     TimeSpan queued = BattleAdvice.Since(requestedAt);
                     token.ThrowIfCancellationRequested();
                     BattlePlanResult plan = null!;
+                    bool currentActionOnly = false;
                     VerifiedAdviceContinuation? proof = null;
                     var verification = new Stopwatch();
                     verification.Start();
@@ -304,7 +316,13 @@ namespace MonsterTrain2Poju.Model
                         plan = search(root, token);
                         token.ThrowIfCancellationRequested();
                         verification.Start();
-                        if (retainPlans) proof = VerifyAndRetain(root, plan, true, token, verifiedRootKey: key);
+                        if (endlessActionFloor is int floor && TryEndlessAction(root, plan, floor, token) is { } fallback)
+                        {
+                            plan = fallback;
+                            currentActionOnly = true;
+                            VerifyAndRetain(root, plan, false, token, currentActionOnly: true);
+                        }
+                        else if (retainPlans) proof = VerifyAndRetain(root, plan, true, token, verifiedRootKey: key);
                         else { verify(root, plan); proof = null; }
                     }
                     verification.Stop();
@@ -313,7 +331,8 @@ namespace MonsterTrain2Poju.Model
                         proof, reusedWinningContinuation: matched?.IsWinning == true, reusedSelection: reusedSelection,
                         reusedContinuation: matched != null, preparationElapsed: preparationElapsed,
                         selectionCache: reusedSelection || matched != null && retained != null && matched.SamePosition(retained)
-                            ? candidate?.SelectionCache : null, reuseCheckElapsed: reuseCheckElapsed);
+                            ? candidate?.SelectionCache : null, reuseCheckElapsed: reuseCheckElapsed,
+                        currentActionOnly: currentActionOnly);
                 });
             }
         }
@@ -324,10 +343,39 @@ namespace MonsterTrain2Poju.Model
             candidate.Plan.Steps.Count == 1 && candidate.Plan.Steps[0].IsEndTurn &&
             root.Spawn.Turn > candidate.Root.Spawn.Turn;
 
-        private static VerifiedAdviceContinuation? VerifyAndRetain(BattleTurnState root, BattlePlanResult plan,
-            bool retain, CancellationToken token = default, string? verifiedRootKey = null)
+        private static BattlePlanResult? TryEndlessAction(BattleTurnState root, BattlePlanResult blocked, int floor, CancellationToken token)
         {
-            if (plan.Cancelled || (!plan.CompletedHorizon && !plan.UsedShorterHorizon) || plan.Steps.Count == 0)
+            if (blocked.Cancelled || blocked.CompletedHorizon || blocked.UsedShorterHorizon ||
+                !blocked.UnsupportedAttempts.Any(attempt => attempt.Action == null &&
+                    attempt.Reason == RelicSpawnStatusModel.UnsupportedEndlessEnemyBirth) ||
+                root.Spawn.Train.Context?.Relics?.Count(RelicModel.IsOriginalEndlessEnemyBirth) != 1) return null;
+
+            SupportedActionCandidate? candidate = BattleTacticalPolicy.Choose(root, out _, floor,
+                new BattleSearchWorkspace(), () => token.IsCancellationRequested);
+            if (candidate == null || !DirectCurrentAction(candidate.Action) || candidate.Result.Outcome != RoomOutcome.Exchanged)
+                return null;
+            token.ThrowIfCancellationRequested();
+            BattleTurnResult nextTurn = BattleTurnModel.EndTurn(candidate.Result.State!);
+            if (nextTurn.Supported || nextTurn.UnsupportedReason != RelicSpawnStatusModel.UnsupportedEndlessEnemyBirth)
+                return null;
+            return new BattlePlanResult(candidate.Result.State!, RoomOutcome.Exchanged,
+                [new BattleSearchStep(candidate.Action, false)], BattlePlanner.Evaluate(candidate.Result.State!, RoomOutcome.Exchanged),
+                0, blocked.ExpandedNodes, blocked.DuplicateStates, blocked.BeamPruned, blocked.Elapsed,
+                blocked.TimedOut, false, blocked.ReachedNodeLimit, blocked.ReachedActionLimit, false,
+                blocked.UnsupportedAttempts, null, maxSteps: 1, workerThreadIds: blocked.WorkerThreadIds,
+                searchMetrics: blocked.SearchMetrics, beamExpandedNodes: blocked.BeamExpandedNodes);
+        }
+
+        private static bool DirectCurrentAction(PlayCardAction? action) => action is
+            { CardInstanceId: > 0, Operation: null, RecursionSelections.Count: 0, MixSelections.Count: 0, SummonSelections.Count: 0 };
+
+        private static VerifiedAdviceContinuation? VerifyAndRetain(BattleTurnState root, BattlePlanResult plan,
+            bool retain, CancellationToken token = default, string? verifiedRootKey = null, bool currentActionOnly = false)
+        {
+            if (currentActionOnly && (plan.Steps.Count != 1 || plan.Steps[0].IsEndTurn ||
+                !DirectCurrentAction(plan.Steps[0].Action) || plan.Outcome != RoomOutcome.Exchanged))
+                throw new InvalidOperationException("Current-action advice requires one supported direct action.");
+            if (plan.Cancelled || (!currentActionOnly && !plan.CompletedHorizon && !plan.UsedShorterHorizon) || plan.Steps.Count == 0)
                 throw new InvalidOperationException("No complete verified continuation within the planning budget. turns=" +
                     plan.TurnsCompleted + " nodes=" + plan.ExpandedNodes + " elapsedMs=" + plan.Elapsed.TotalMilliseconds +
                     " reasons=" + string.Join("; ", plan.UnsupportedAttempts.Select(attempt => attempt.Reason)));

@@ -158,7 +158,8 @@ namespace MonsterTrain2Poju.Probe
                 session = new BattleAdviceSession((root, token) => ParallelBattlePlanner.Plan(root,
                     new BattlePlannerOptions(256, horizon, 8, timeLimit: TimeSpan.FromMilliseconds(Volatile.Read(ref timeLimitMs)),
                     preferredDeploymentRoom: floor, useTacticalSeed: tactical, allowShorterHorizon: playerSession || wholeBattle,
-                    searchToBattleEnd: wholeBattle, maxSteps: maxSteps, stopAtBestPyreHealth: stopAtBestPyreHealth), searchWorkers, token));
+                    searchToBattleEnd: wholeBattle, maxSteps: maxSteps, stopAtBestPyreHealth: stopAtBestPyreHealth), searchWorkers, token),
+                    endlessActionFloor: playerSession ? floor : null);
             else
             {
                 if (wholeBattle || searchWorkers != 1) throw new InvalidOperationException("Whole-battle/parallel search requires the in-process planner.");
@@ -305,7 +306,7 @@ namespace MonsterTrain2Poju.Probe
             if (statusLabel == null) return;
             if (pending) cardHover.Clear();
             statusLabel.text = pending ? tentativeSteps > 0 ? "临时步骤 · 待确认" : "正在核对后续步骤 · 原方案待确认" :
-                SearchScopeLabel;
+                displayed?.CurrentActionOnly == true ? AdvisorForecastPresentation.CurrentActionOnly : SearchScopeLabel;
             body.color = pending ? new Color(.65f, .72f, .78f) : new Color(.91f, .94f, .98f);
         }
 
@@ -702,7 +703,8 @@ namespace MonsterTrain2Poju.Probe
             int hp = plan.State.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.IsPyre).Select(unit => unit.Health).FirstOrDefault();
             int initialHp = advice.Root.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.IsPyre).Select(unit => unit.Health).FirstOrDefault();
             var text = new StringBuilder();
-            text.Append(tentative ? "临时步骤 · 结果与手牌位置待核对" :
+            text.Append(advice.CurrentActionOnly ? AdvisorForecastPresentation.CurrentActionOnly :
+                tentative ? "临时步骤 · 结果与手牌位置待核对" :
                 AdvisorForecastPresentation.Describe(plan.Outcome, plan.TurnsCompleted, initialHp, hp));
             if (!tentative && plan.UsedShorterHorizon && !plan.SearchedToBattleEnd)
                 text.Append("\n目标 ").Append(plan.RequestedTurns).Append(" 回合，预算内完成 ").Append(plan.TurnsCompleted).Append(" 回合");
@@ -792,6 +794,12 @@ namespace MonsterTrain2Poju.Probe
                 if (!tentative && action.ActivatorUnitId == 0 && cards.TryGetValue(action.CardInstanceId, out CardState hovered))
                     cardHover.AddEntry(start, text.Length, hovered);
             }
+            if (advice.CurrentActionOnly)
+            {
+                text.Append("\n\n");
+                AppendStep(plan.Steps[0], 0);
+                return text.ToString();
+            }
             if (showFullPlan)
             {
                 text.Append(AdvisorForecastPresentation.IsTerminal(plan.Outcome) ? "\n完整方案 · " : "\n部分方案 · ")
@@ -843,7 +851,7 @@ namespace MonsterTrain2Poju.Probe
                 log.LogInfo("POJU-INVALIDATE reason=" + reason + " generation=" + session.Generation);
             if (preserveContinuation) session.InvalidateForInput(); else session.Invalidate();
             captureError = null; captureNeeded = true; observed = false; selectionPending = false; browseOnly = false;
-            if (preserveContinuation && displayed != null) SetPending(true);
+            if (preserveContinuation && displayed is { CurrentActionOnly: false }) SetPending(true);
             else ShowMessage("正在核对局面…");
         }
         private static void NativeAction(bool preserveContinuation = true, string reason = "native-mutation")
@@ -1071,6 +1079,11 @@ namespace MonsterTrain2Poju.Probe
 
         private void MarkSelection()
         {
+            if (displayed?.CurrentActionOnly == true)
+            {
+                InvalidateState(true, "current-action-room-selection");
+                return;
+            }
             if (observed && !captureNeeded && (preparation != null || session.Status is BattleAdviceStatus.Ready or BattleAdviceStatus.Planning))
                 browseOnly = true;
             else { observationRevision++; captureNeeded = true; }
