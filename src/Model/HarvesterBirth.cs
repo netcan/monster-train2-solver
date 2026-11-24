@@ -2,12 +2,11 @@ using System.Linq;
 
 namespace MonsterTrain2Poju.Model
 {
-    // Original Ring 4 miniboss: lower the enemy tower, then retreat behind it.
-    // Admission stays narrow until other triggered movement has native evidence.
+    // The standard and Soul Savior Harvester births lower the enemy tower, then retreat behind it.
     internal static class HarvesterBirthModel
     {
         internal static bool IsTrigger(CombatUnit unit, CombatTrigger trigger) =>
-            unit.AssetKey == "Boss_Level4_Harvester" && unit.Team == CombatTeam.Enemy &&
+            unit.AssetKey is "Boss_Level4_Harvester" or "Boss_SoulSavior_R1_TrainBoss_Harvester" && unit.Team == CombatTeam.Enemy &&
             trigger.Kind == "OnSpawnNotFromCard" && !trigger.Once && trigger.FireCount == 1 &&
             trigger.Conditions == null && (trigger.Origin == null || trigger.Origin is { UpgradeId: "", EquipmentCardId: 0,
                 IsFromEquipment: false, OnlyIfEquipped: false }) && trigger.TriggerAtThreshold.GetValueOrDefault() == 0 &&
