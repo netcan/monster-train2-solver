@@ -293,6 +293,14 @@ namespace MonsterTrain2Poju.Probe
                     }
                     trace.Write();
 #if DEVELOPMENT_PROBE
+                    if (OriginalEndlessLoop2CorruptionWitness.CaptureTerminal)
+                    {
+                        bool defeated = OriginalEndlessLoop2CorruptionWitness.TerminalEndTurnArmed && trace.NativeWon == false &&
+                            trace.CaptureFailures == 0 && trace.PendingTurnIndex == null;
+                        Finish(defeated, defeated ? "Original Endless Loop 2 paid Horde death and defeat captured."
+                            : "The original Loop 2 battle did not end in defeat after the final recorded EndTurn.");
+                        return;
+                    }
                     if (OriginalUnrulyWitness.LifemotherInfested)
                     {
                         Finish(trace.CaptureFailures == 0 && trace.Pending == 0,
@@ -1367,9 +1375,11 @@ namespace MonsterTrain2Poju.Probe
                     FullBattleTrace trace = FullBattleTrace.Active!;
                     if (!endlessOpeningCaptured)
                     {
+                        bool recordLoop2Deployment = OriginalEndlessLoop2CorruptionWitness.CaptureTerminal;
                         endlessOpeningCaptured = OriginalEndlessEnemyScalingWitness.Tick(trace, combat!, log,
-                            () => AdvanceTurn(combat!, record: endlessScalingWholeBattle));
+                            () => AdvanceTurn(combat!, record: endlessScalingWholeBattle || recordLoop2Deployment));
                         if (!endlessOpeningCaptured) return;
+                        if (recordLoop2Deployment) trace.CompleteEndTurn(RoomOutcome.Exchanged);
                     }
                     if (OriginalEndlessLoop2CorruptionWitness.Enabled)
                     {

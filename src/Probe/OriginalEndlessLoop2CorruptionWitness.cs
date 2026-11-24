@@ -15,12 +15,20 @@ namespace MonsterTrain2Poju.Probe
     {
         private const string PlanVariable = "MT2_PROBE_ENDLESS_LOOP2_CORRUPTION_PLAN";
         internal static bool Enabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(PlanVariable));
+        internal static bool CaptureTerminal => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_LOOP2_CORRUPTION_TERMINAL") == "1";
+        internal static bool TerminalEndTurnArmed { get; private set; }
         private static readonly List<ReplayStep> Steps = new();
         private static BattleTurnState? root;
         private static int cursor;
 
         internal static bool TryChoose(FullBattleTrace trace, out PlayCardAction? action, out IReadOnlyList<RelentlessDecision>? choices)
         {
+            if (TerminalEndTurnArmed)
+            {
+                trace.CompleteEndTurn(RoomOutcome.Exchanged);
+                trace.Write();
+                throw new InvalidOperationException("The final Loop 2 EndTurn reached another decision instead of defeat.");
+            }
             if (cursor > 0 && Steps[cursor - 1].Input.IsEndTurn) trace.CompleteEndTurn(RoomOutcome.Exchanged);
             BattleTurnState actual = trace.CaptureDecision();
             if (root == null) Prepare(actual);
@@ -43,7 +51,8 @@ namespace MonsterTrain2Poju.Probe
             {
                 ValidateDeath(Steps[cursor - 2].Actual!, actual);
                 Write(null);
-                return false;
+                TerminalEndTurnArmed = CaptureTerminal;
+                return TerminalEndTurnArmed;
             }
             PlannerReplayScenario.Step next = Steps[cursor++].Input;
             action = next.Action; choices = next.RelentlessDecisions;
