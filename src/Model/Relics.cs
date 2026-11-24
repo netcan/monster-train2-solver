@@ -246,6 +246,15 @@ namespace MonsterTrain2Poju.Model
         internal const string DisableRoomPreview = "RelicEffectDisableRoomPreview";
         internal const string DisableRoomPreviewOwnerId = "d32fad27-7d66-4d6e-8db7-6f35bcba988c";
         internal const string DisableRoomPreviewOwnerKey = "NoCombatPreviews";
+        internal const string EndlessEnemyBirthEffect = "RelicEffectEndlessScalingOnSpawn";
+        internal const string EndlessEnemyBirthOwnerId = "b342ef1d-306b-4d40-aa9d-782bbae58af3";
+        internal const string EndlessEnemyBirthOwnerKey = "Enemy_EndlessScaling";
+
+        internal static bool IsOriginalEndlessEnemyBirth(CombatRelicState owner) => owner is
+        {
+            DataId: EndlessEnemyBirthOwnerId, AssetKey: EndlessEnemyBirthOwnerKey, IsCovenant: false,
+            DisallowedInPlacementPhase: false, EffectTypes: [EndlessEnemyBirthEffect]
+        };
         internal const string AlwaysEmbeddedRoomsEffect = "RelicEffectTrainRoomAttachmentsAlwaysEmbedded";
         internal const string AlwaysEmbeddedRoomsOwnerId = "c6f4df71-db09-4006-9d92-5035b78d1152";
         internal const string AlwaysEmbeddedRoomsOwnerKey = "Echoes_NoRoomOverriding";
@@ -372,6 +381,8 @@ namespace MonsterTrain2Poju.Model
                         relics.Count(RelicSecondFloorEnemyOpeningModel.IsOriginal) == 1) continue;
                     if (effect == AlwaysEmbeddedRoomsEffect && IsOriginalAlwaysEmbeddedRooms(relic) &&
                         relics.Count(IsOriginalAlwaysEmbeddedRooms) == 1) continue;
+                    if (effect == EndlessEnemyBirthEffect && IsOriginalEndlessEnemyBirth(relic) &&
+                        relics.Count(IsOriginalEndlessEnemyBirth) == 1) continue;
                     // Native IOverrideDraftRarityRelicEffect is consulted only by
                     // reward drafts. Its acquired deck is already in battle state.
                     if (effect == "RelicEffectOverrideCardDraftRarity") continue;

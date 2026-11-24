@@ -8,6 +8,12 @@ if (args.Length == 4 && args[0] == "--original-endless-first-wave-only")
     OriginalEndlessFirstWaveChecks.Native(transition.RootElement, natural.RootElement, controlled.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--endless-enemy-birth-scope-only")
+{
+    using var archive = ModelJson.ReadFixture(args[1]);
+    EndlessEnemyBirthScopeChecks.Run(archive.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-zariel-devotion-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

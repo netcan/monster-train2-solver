@@ -72,6 +72,8 @@ namespace MonsterTrain2Poju.Model
 
     public static class RelicSpawnStatusModel
     {
+        internal const string UnsupportedEndlessEnemyBirth = "Endless enemy birth requires a calibrated native scaling callback.";
+
         internal const string FirstSpawnEffect = "RelicEffectAddStatusEffectOnFirstSpawn";
 
         private static bool IsOriginalFirstSpawnRule(CombatRelicState relic, RelicSpawnStatus rule)
@@ -178,6 +180,11 @@ namespace MonsterTrain2Poju.Model
         {
             string? error = RelicModel.Validate(source.Context);
             if (error != null) return Fail(error);
+            // Native dispatches this owner only on enemy CharacterAdded. The
+            // notification can also be reached by a hero copied during a play.
+            if (!onlyCovenants && source.Context?.Relics?.Any(RelicModel.IsOriginalEndlessEnemyBirth) == true &&
+                source.Units.Any(unit => unit.Id == unitId && unit.Team == CombatTeam.Enemy))
+                return Fail(UnsupportedEndlessEnemyBirth);
             if (source.Context?.Relics == null || !source.Context.Relics.Any(relic => relic.SpawnStatuses?.Count > 0 ||
                 relic.EffectTypes.Contains(RelicPersistentMonsterHealthModel.Effect) ||
                 RelicSkullCollectorsModel.IsOriginal(relic) ||
