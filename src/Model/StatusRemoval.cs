@@ -27,12 +27,12 @@ namespace MonsterTrain2Poju.Model
         // This is the raw CharacterState API. Setting HP to zero does not dispatch a
         // death signal, exhaust the spawner or increment another physical death.
         internal static RoomCombatResult Remove(RoomCombatState source, int targetId, string id, int amount, int sourceCardId = 0,
-            string? fromEffectType = null, bool allowStackModifiers = true)
+            string? fromEffectType = null, bool allowStackModifiers = true, bool fromCardUpgrade = false)
         {
             id = id.ToLowerInvariant();
             CombatUnit? target = source.Units.FirstOrDefault(unit => unit.Id == targetId);
             if (target == null) return Unsupported("Missing status removal target.");
-            RoomCombatResult relicAdded = RelicStatusStackModel.OnStatusRemoved(source, targetId, id, amount, fromEffectType);
+            RoomCombatResult relicAdded = RelicStatusStackModel.OnStatusRemoved(source, targetId, id, ref amount, fromEffectType, fromCardUpgrade);
             if (!relicAdded.Supported) return relicAdded;
             source = relicAdded.State!;
             target = source.Units.FirstOrDefault(unit => unit.Id == targetId);

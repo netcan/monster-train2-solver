@@ -348,7 +348,8 @@ namespace MonsterTrain2Poju.Model
                         CombatUnit beforeStatus = Snapshot();
                         int maximum = (existing ?? target.RegisteredStatus(status.Id) ?? status).Stackable == false ? 1 : 9999;
                         int oldStacks = existing?.Stacks ?? 0;
-                        int stacks = remove ? (status.Stacks == -1 ? 0 : Math.Min(maximum, Math.Max(0, checked(oldStacks - status.Stacks)))) :
+                        int removal = remove ? RelicStatusStackModel.ScaleStatusRemoval(state.Context?.Relics, status.Stacks) : 0;
+                        int stacks = remove ? (removal == -1 ? 0 : Math.Min(maximum, Math.Max(0, checked(oldStacks - removal)))) :
                             Math.Min(maximum, Math.Max(0, checked(oldStacks + status.Stacks)));
                         statuses[status.Id] = (existing ?? target.RegisteredStatus(status.Id) ?? status).WithStacks(Math.Max(0, stacks));
                         if (removingStatus)

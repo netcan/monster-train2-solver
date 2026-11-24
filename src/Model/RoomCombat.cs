@@ -6878,7 +6878,7 @@ namespace MonsterTrain2Poju.Model
             private void RemoveStatus(WorkingUnit unit, string id, int count)
             {
                 var callbacks = new List<QueuedCharacterTrigger>();
-                RoomCombatResult relicAdded = RelicStatusStackModel.OnStatusRemoved(CurrentRoom(), unit.Source.Id, id, count, null);
+                RoomCombatResult relicAdded = RelicStatusStackModel.OnStatusRemoved(CurrentRoom(), unit.Source.Id, id, ref count, null);
                 if (!relicAdded.Supported) { unsupportedReason = relicAdded.UnsupportedReason; return; }
                 context = relicAdded.State!.Context;
                 foreach (CombatUnit changed in relicAdded.State.Units)

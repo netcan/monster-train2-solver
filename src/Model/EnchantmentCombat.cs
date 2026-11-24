@@ -479,7 +479,7 @@ namespace MonsterTrain2Poju.Model
                     state.Train.Context, actor.Preview, companionBossIds);
                 RoomCombatResult changed = request.Operation == "Add"
                     ? StatusApplicationModel.ApplyRetained(room, request.UnitId, rule.StatusPool.First(status => status.Id == request.StatusId).WithStacks(request.Count), 0)
-                    : StatusRemovalModel.Remove(room, request.UnitId, request.StatusId, request.Count);
+                    : StatusRemovalModel.Remove(room, request.UnitId, request.StatusId, request.Count, fromEffectType: request.EffectType);
                 if (!changed.Supported) { error = changed.UnsupportedReason; return false; }
                 CombatUnit? target = changed.State!.Units.FirstOrDefault(unit => unit.Id == request.UnitId);
                 if (target == null) target = changed.PendingCallbacks.LastOrDefault(item => item.Unit.Id == request.UnitId)?.Unit;

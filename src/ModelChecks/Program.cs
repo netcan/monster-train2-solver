@@ -9084,6 +9084,12 @@ if (args.Length == 2 && args[0] == "--original-room-status-spells-only")
     OriginalRoomStatusSpellsChecks.Check(document.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--original-double-status-effects-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalDoubleStatusEffectsChecks.Native(document.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-moon-status-magnitude-deployment-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

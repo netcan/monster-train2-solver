@@ -13,23 +13,29 @@ namespace MonsterTrain2Poju.Model
         public int AddCondition { get; }
         public string? TriggerStatusId { get; }
         public CombatStatus? AddedStatusDefinition { get; }
+        public int? MultiplierPercent { get; }
+        public bool ShouldSerializeMultiplierPercent() => MultiplierPercent.HasValue;
         public IReadOnlyList<RelicConditionState> Conditions { get; }
         public RelicStatusStacks(int effectIndex, string sourceTeam, string statusId, int additionalStacks,
             int addCondition, IReadOnlyList<RelicConditionState>? conditions = null,
-            string? triggerStatusId = null, CombatStatus? addedStatusDefinition = null)
+            string? triggerStatusId = null, CombatStatus? addedStatusDefinition = null, int? multiplierPercent = null)
         {
             EffectIndex = effectIndex; SourceTeam = sourceTeam; StatusId = statusId;
             AdditionalStacks = additionalStacks; AddCondition = addCondition;
             TriggerStatusId = triggerStatusId; AddedStatusDefinition = addedStatusDefinition;
+            MultiplierPercent = multiplierPercent;
             Conditions = Array.AsReadOnly((conditions ?? Array.Empty<RelicConditionState>()).ToArray());
         }
         internal RelicStatusStacks WithConditions(IReadOnlyList<RelicConditionState> conditions) =>
             new RelicStatusStacks(EffectIndex, SourceTeam, StatusId, AdditionalStacks, AddCondition, conditions,
-                TriggerStatusId, AddedStatusDefinition);
+                TriggerStatusId, AddedStatusDefinition, MultiplierPercent);
     }
 
     public static class RelicStatusStackModel
     {
+        internal const string MultiplierEffect = "RelicEffectAddStatusEffectMultiplier";
+        internal const string DoubleStatusEffectsId = "459c7ec3-9c35-4298-8873-bda051605210";
+
         private static readonly string[] RemovedStatusExclusions =
         { "CardEffectTransferAllStatusEffects", "CardEffectMultiplyStatusEffect", "CardEffectTransferAllStatusEffectsFromUnit" };
 
@@ -47,16 +53,29 @@ namespace MonsterTrain2Poju.Model
         internal static string? Validate(CombatRelicState relic)
         {
             int[] indices = relic.EffectTypes.Select((type, index) => new { type, index })
-                .Where(item => item.type == RelicModel.AddStatusOnApplied || item.type == RelicModel.AddStatusOnOtherStatusRemoved)
+                .Where(item => item.type == RelicModel.AddStatusOnApplied || item.type == RelicModel.AddStatusOnOtherStatusRemoved ||
+                    item.type == MultiplierEffect)
                 .Select(item => item.index).ToArray();
             if (!indices.SequenceEqual((relic.StatusStackAdditions ?? Array.Empty<RelicStatusStacks>()).Select(rule => rule.EffectIndex)))
                 return "Missing or unordered relic status-stack additions on " + relic.AssetKey + ".";
             foreach (RelicStatusStacks rule in relic.StatusStackAdditions ?? Array.Empty<RelicStatusStacks>())
+            {
+                if (relic.EffectTypes[rule.EffectIndex] == MultiplierEffect)
+                {
+                    if (relic is not { DataId: DoubleStatusEffectsId, AssetKey: "DoubleStatusEffects", IsCovenant: false,
+                        DisallowedInPlacementPhase: false, EffectTypes: [MultiplierEffect] } ||
+                        rule is not { MultiplierPercent: 200, SourceTeam: "None", StatusId: "", AdditionalStacks: 0,
+                            AddCondition: 0, TriggerStatusId: null, AddedStatusDefinition: null, Conditions.Count: 0 })
+                        return "Unmodeled relic status-stack multiplier on " + relic.AssetKey + ".";
+                    continue;
+                }
                 if (string.IsNullOrEmpty(rule.SourceTeam) || !RoomCombatModel.KnowsStatus(rule.StatusId) ||
+                    rule.MultiplierPercent.HasValue ||
                     (rule.TriggerStatusId == null) != (relic.EffectTypes[rule.EffectIndex] == RelicModel.AddStatusOnApplied) ||
                     rule.TriggerStatusId != null && (!RoomCombatModel.KnowsStatus(rule.TriggerStatusId) ||
                         rule.AddedStatusDefinition?.Id != rule.StatusId || rule.Conditions.Count != 0))
                     return "Unmodeled relic status-stack definition on " + relic.AssetKey + ".";
+            }
             return null;
         }
 
@@ -67,25 +86,51 @@ namespace MonsterTrain2Poju.Model
         // amount, while first-application tests see the unchanged target dictionary.
         public static int GetStacks(IReadOnlyList<CombatRelicState>? relics, string statusId, int incoming,
             CombatTeam? targetTeam, bool hasStatus, bool fromPermanentUpgrade = false, bool deferred = false,
-            string? fromEffectType = null)
+            string? fromEffectType = null, bool includeAdders = true)
         {
-            if (ExcludesAdders(fromEffectType)) return incoming;
-            int total = incoming;
+            int total = MultiplyStacks(relics, statusId, incoming);
+            if (!includeAdders || ExcludesAdders(fromEffectType)) return total;
             foreach (CombatRelicState relic in relics ?? Array.Empty<CombatRelicState>())
             foreach (RelicStatusStacks rule in relic.StatusStackAdditions ?? Array.Empty<RelicStatusStacks>())
             {
-                if (rule.TriggerStatusId != null) continue;
+                if (rule.TriggerStatusId != null || rule.MultiplierPercent.HasValue) continue;
                 if (rule.StatusId != statusId || targetTeam.HasValue && rule.SourceTeam != "None" &&
                     rule.SourceTeam != (targetTeam == CombatTeam.Player ? "Monsters" : "Heroes")) continue;
                 bool add = deferred ? fromPermanentUpgrade : !fromPermanentUpgrade &&
                     (rule.AddCondition == 1 ? total > 0 : rule.AddCondition == 2 ? targetTeam.HasValue && !hasStatus : true);
-                if (add) total = unchecked(total + rule.AdditionalStacks);
+                if (add) total = unchecked(total + MultiplyStacks(relics, statusId, rule.AdditionalStacks));
             }
             return total;
         }
 
+        private static int MultiplyStacks(IReadOnlyList<CombatRelicState>? relics, string statusId, int stacks)
+        {
+            if (statusId == "cooldown") return stacks;
+            foreach (CombatRelicState relic in relics ?? Array.Empty<CombatRelicState>())
+            foreach (RelicStatusStacks rule in relic.StatusStackAdditions ?? Array.Empty<RelicStatusStacks>())
+            {
+                if (rule.MultiplierPercent is not int percent) continue;
+                stacks = Math.Max(0, Scale(stacks, percent));
+            }
+            return stacks;
+        }
+
+        internal static int ScaleStatusRemoval(IReadOnlyList<CombatRelicState>? relics, int stacks)
+        {
+            foreach (CombatRelicState relic in relics ?? Array.Empty<CombatRelicState>())
+            foreach (RelicStatusStacks rule in relic.StatusStackAdditions ?? Array.Empty<RelicStatusStacks>())
+                if (rule.MultiplierPercent is int percent) stacks = Scale(stacks, percent);
+            return stacks;
+        }
+
+        private static int Scale(int stacks, int percent)
+        {
+            float scaled = stacks * (percent / 100f);
+            return scaled is >= 2147483648f or < -2147483648f ? int.MinValue : (int)scaled;
+        }
+
         internal static RoomCombatResult OnStatusRemoved(RoomCombatState source, int targetId, string statusId,
-            int requestedStacks, string? fromEffectType)
+            ref int requestedStacks, string? fromEffectType, bool fromCardUpgrade = false)
         {
             if (source.Context?.Relics == null) return new RoomCombatResult(source, RoomOutcome.Exchanged, 0, new List<CombatEvent>());
             RoomCombatState state = source;
@@ -96,6 +141,8 @@ namespace MonsterTrain2Poju.Model
                 if (error != null) return Unsupported(error);
                 foreach (RelicStatusStacks rule in relic.StatusStackAdditions ?? Array.Empty<RelicStatusStacks>())
                 {
+                    if ((fromCardUpgrade || fromEffectType == "CardEffectEnchant") && rule.MultiplierPercent is int percent)
+                        requestedStacks = Scale(requestedStacks, percent);
                     if (rule.TriggerStatusId != statusId || RemovedStatusExclusions.Contains(fromEffectType ?? "", StringComparer.Ordinal)) continue;
                     CombatUnit? target = state.Units.FirstOrDefault(unit => unit.Id == targetId);
                     if (target == null) return Unsupported("Missing status removal target.");
@@ -131,7 +178,7 @@ namespace MonsterTrain2Poju.Model
                 for (int ruleIndex = 0; ruleIndex < rules.Count; ruleIndex++)
                 {
                     RelicStatusStacks rule = context.Relics![relicIndex].StatusStackAdditions![ruleIndex];
-                    if (rule.TriggerStatusId != null) continue;
+                    if (rule.TriggerStatusId != null || rule.MultiplierPercent.HasValue) continue;
                     RelicConditionEvaluation checkedCondition = RelicConditionModel.Evaluate(context, rule.Conditions);
                     if (!checkedCondition.Supported) return new StatusScalingResult(null, 0, checkedCondition.UnsupportedReason);
                     context = checkedCondition.Context;

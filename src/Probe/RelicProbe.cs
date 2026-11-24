@@ -44,6 +44,20 @@ namespace MonsterTrain2Poju.Probe
             AccessTools.Method(typeof(RelicManager), "GetCurrentRelics").Invoke(managers.GetRelicManager(), new object[] { relics });
             return relics;
         }
+        internal static bool SupportsStatusMultiplier(RelicState owner) =>
+            owner.GetRelicDataID() == RelicStatusStackModel.DoubleStatusEffectsId &&
+            owner.GetAssetName() == "DoubleStatusEffects" && !owner.DisallowedInPlacementPhase &&
+            owner.GetEffects() is [var effect] && effect.GetType().Name == RelicStatusStackModel.MultiplierEffect &&
+            StatusMultiplier(effect, 0) is { MultiplierPercent: 200, SourceTeam: "None" };
+
+        private static RelicStatusStacks StatusMultiplier(IRelicEffect effect, int index)
+        {
+            var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect);
+            return new RelicStatusStacks(index, data.GetParamSourceTeam().ToString(), "", 0, 0,
+                multiplierPercent: data.GetEffectConditions().Count == 0 && (data.GetParamStatusEffects()?.Length ?? 0) == 0 &&
+                    effect.CanApplyInPreviewMode ? data.GetParamInt() : null);
+        }
+
         internal static CombatRelicState[] Capture(AllGameManagers managers)
         {
             // Includes hero blessings, covenants, mutators, Pyre artifacts and souls,
@@ -243,7 +257,10 @@ namespace MonsterTrain2Poju.Probe
                 var statusRemovedAdditions = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectAddStatusEffectOnOtherStatusRemoved)
                     .Select(item => StatusRemovedStacks(item.Effect, item.Index)).ToArray();
-                RelicStatusStacks[] statusStackRules = stackAdditions.Concat(statusRemovedAdditions)
+                var stackMultipliers = effects.Select((effect, index) => new { Effect = effect, Index = index })
+                    .Where(item => item.Effect.GetType().Name == RelicStatusStackModel.MultiplierEffect)
+                    .Select(item => StatusMultiplier(item.Effect, item.Index));
+                RelicStatusStacks[] statusStackRules = stackAdditions.Concat(statusRemovedAdditions).Concat(stackMultipliers)
                     .OrderBy(rule => rule.EffectIndex).ToArray();
                 var magnitudes = effects.Select((effect, index) => new { Effect = effect, Index = index })
                     .Where(item => item.Effect is RelicEffectModifyStatusMagnitude || item.Effect is IRebalanceValorRelicEffect)
