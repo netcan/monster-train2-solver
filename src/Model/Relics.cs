@@ -357,6 +357,8 @@ namespace MonsterTrain2Poju.Model
                     if (effect == CampaignPurgeGoldModel.CanioEffect && CampaignPurgeGoldModel.IsOriginalCombatNoOp(relic)) continue;
                     if (effect == RelicMoreTreasureUnitsModel.Effect && RelicMoreTreasureUnitsModel.IsOriginal(relic) &&
                         relics.Count(RelicMoreTreasureUnitsModel.IsOriginal) == 1) continue;
+                    if (effect == RelicSkullCollectorsModel.Effect && RelicSkullCollectorsModel.IsOriginal(relic) &&
+                        relics.Count(RelicSkullCollectorsModel.IsOriginal) == 1) continue;
                     if (effect == RelicSecondFloorEnemyOpeningModel.Effect && RelicSecondFloorEnemyOpeningModel.IsOriginal(relic) &&
                         relics.Count(RelicSecondFloorEnemyOpeningModel.IsOriginal) == 1) continue;
                     // Native IOverrideDraftRarityRelicEffect is consulted only by

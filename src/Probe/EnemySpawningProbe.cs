@@ -116,13 +116,16 @@ namespace MonsterTrain2Poju.Probe
             var spawned = (Dictionary<SpawnPatternData.SpecialCharacterType, int>)AccessTools.Field(
                 typeof(SpawnPatternData), "numSpecialCharactersSpawned").GetValue(pattern);
             var treasure = SpawnPatternData.SpecialCharacterType.Treasure;
+            var replacement = save.GetMutators() is [var skullOwner] && RelicSkullCollectorsProbe.Matches(save, skullOwner)
+                ? (RelicEffectSubstituteTreasureUnitOnSpawn)skullOwner.GetEffects()[0] : null;
             bool easy = save.GetCurrentDistance() < save.GetBalanceData().GetDistanceToBeginDifficultCollectorBehavior();
             uint[] rng = RngCalibration.Words(RandomManager.GetState(RngId.Spawning));
             return new EnemySpawnState(state, definitions, selectedGroups,
                 (int)AccessTools.Field(typeof(HeroManager), "spawnPatternPhase").GetValue(heroes),
                 pattern.GetIsLoopingScenario(), new UnityRng(rng[0], rng[1], rng[2], rng[3]), trace.NextUnitId,
                 (specials.TryGetValue(treasure, out CharacterData[] candidates) ? candidates : Array.Empty<CharacterData>())
-                    .Select(Definition).ToArray(), total[treasure] - spawned[treasure],
+                    .Select(candidate => replacement == null ? Definition(candidate) : RelicSkullCollectorsProbe.Project(candidate, replacement))
+                    .ToArray(), total[treasure] - spawned[treasure],
                 (bool)AccessTools.Field(typeof(HeroManager), "treasureAndTraitorCharactersEnabled").GetValue(heroes),
                 easy ? 1 : 2, easy ? 1 : 0, managers.GetCombatManager()!.GetTurnCount(), interactions,
                 canonicalDecisionReferences: canonicalReferences,

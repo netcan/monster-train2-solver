@@ -21,13 +21,18 @@ namespace MonsterTrain2Poju.Model
         public bool CompanionBoss { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
         public EnemyBirthStatAdjustment? BirthStats { get; }
+        public string? TreasureOriginalId { get; }
+        public bool ShouldSerializeTreasureOriginalId() => TreasureOriginalId != null;
         // Archive hydration uses the sole public constructor. Keep the older
         // entry point for the existing friend assemblies that capture units.
         internal EnemyDefinition(CombatUnit unit, bool ascends, bool loops, IReadOnlyList<string> externalInteractions, bool companionBoss = false)
             : this(unit, ascends, loops, externalInteractions, companionBoss, null) { }
         public EnemyDefinition(CombatUnit unit, bool ascends, bool loops, IReadOnlyList<string> externalInteractions, bool companionBoss,
-            EnemyBirthStatAdjustment? birthStats)
-        { Unit = unit; Ascends = ascends; Loops = loops; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray()); CompanionBoss = companionBoss; BirthStats = birthStats; }
+            EnemyBirthStatAdjustment? birthStats, string? treasureOriginalId = null)
+        {
+            Unit = unit; Ascends = ascends; Loops = loops; ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
+            CompanionBoss = companionBoss; BirthStats = birthStats; TreasureOriginalId = treasureOriginalId;
+        }
         internal CombatUnit Create(int id, bool applyBirthStats = true) => new CombatUnit(id, Unit.AssetKey, CombatTeam.Enemy,
             checked(Unit.BaseAttack + (applyBirthStats ? BirthStats?.Attack ?? 0 : 0)), checked(Unit.Health + (applyBirthStats ? BirthStats?.Health ?? 0 : 0)),
             checked(Unit.MaxHealth + (applyBirthStats ? BirthStats?.Health ?? 0 : 0)), Unit.CanAttack, false, Unit.EndsBattleOnDeath,
@@ -214,6 +219,8 @@ namespace MonsterTrain2Poju.Model
                         context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: eligible[floor.Value]));
                     RngDraw chosen = rng.Range(0, source.Treasures.Count); rng = chosen.State;
                     EnemyDefinition definition = source.Treasures[chosen.Value];
+                    if (!RelicSkullCollectorsModel.AllowsTreasure(context, definition))
+                        return Unsupported("Treasure birth requires its validated original SkullCollectors substitution.");
                     string? error = Validate(definition, context);
                     if (error != null) return Unsupported(error);
                     string? abilityError = AbilityLifecycleModel.SpawnError(definition.Unit, context);

@@ -140,6 +140,7 @@ namespace MonsterTrain2Poju.Model
             if (error != null) return Fail(error);
             if (source.Context?.Relics == null || !source.Context.Relics.Any(relic => relic.SpawnStatuses?.Count > 0 ||
                 relic.EffectTypes.Contains(RelicPersistentMonsterHealthModel.Effect) ||
+                RelicSkullCollectorsModel.IsOriginal(relic) ||
                 relic.EffectTypes.Contains(RelicPyreAbilityCooldownModel.Effect) ||
                 relic.EffectTypes.Contains(RelicPyreResurrectionModel.Effect) || relic.EffectTypes.Contains(RelicOccupiedFloorDrawModel.Effect) || relic.EffectTypes.Contains(RelicPileSpawnUpgradeModel.Effect) || relic.EffectTypes.Contains(RelicSpawnStatusScalingModel.Effect) ||
                 relic.PercentageStats?.Count > 0 || relic.CardModifiers?.Count > 0 || relic.CardAttackModifiers?.Count > 0 || relic.TriggerAdditions?.Any(rule => rule.Triggers.Count > 0) == true ||
@@ -239,6 +240,18 @@ namespace MonsterTrain2Poju.Model
                         if (!RelicBothSidesUnitsModel.HealthApplies(healthRecipient, fromCardId, effectIndex)) continue;
                         if (!DrainYield()) return failed!;
                         RoomCombatResult applied = RelicBothSidesUnitsModel.ApplyHealth(state, unitId, fromCardId);
+                        if (!applied.Supported) return applied;
+                        state = applied.State!; callbacks.AddRange(applied.PendingCallbacks); events.AddRange(applied.Events);
+                        if (applied.Outcome != RoomOutcome.Exchanged) outcome = applied.Outcome;
+                        if (!DrainYield()) return failed!;
+                        continue;
+                    }
+                    if (effectIndex == 1 && RelicSkullCollectorsModel.IsOriginal(relic) && fromCardId == 0 &&
+                        state.Units.Any(unit => unit.Id == unitId && RelicSkullCollectorsModel.IsTierOne(unit)))
+                    {
+                        if (!DrainYield()) return failed!;
+                        RoomCombatResult applied = UnitHealthModel.ApplyNative(state, unitId, RelicSkullCollectorsModel.HealthBonus,
+                            triggerOnHeal: false);
                         if (!applied.Supported) return applied;
                         state = applied.State!; callbacks.AddRange(applied.PendingCallbacks); events.AddRange(applied.Events);
                         if (applied.Outcome != RoomOutcome.Exchanged) outcome = applied.Outcome;
