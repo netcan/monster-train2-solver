@@ -1229,6 +1229,13 @@ namespace MonsterTrain2Poju.Probe
                     Finish(true, $"Original Zariel Tier {OriginalZarielPainWitness.TierLabel} pain damage captured.");
                 return;
             }
+            if (fullBattle && OriginalZarielDevotionWitness.Enabled)
+            {
+                if (OriginalZarielDevotionWitness.Tick(FullBattleTrace.Active!, managers, log,
+                    () => AdvanceTurn(combat!, record: false)))
+                    Finish(true, "Original Zariel Tier I Devotion damage captured.");
+                return;
+            }
             if (fullBattle && OriginalSecondFloorEnemyOpeningWitness.Enabled)
             {
                 if (combat!.GetTurnCount() == 0)
