@@ -182,7 +182,7 @@ internal static class EnemySpawningChecks
         int Text(string value) => builder.Add(FixtureKind.String, value);
     }
 
-    private static string Comparable(EnemySpawnState state) => JsonSerializer.Serialize(new
+    internal static string Comparable(EnemySpawnState state) => JsonSerializer.Serialize(new
     {
         Rooms = state.Train.Rooms.Select(room => new { room.RoomIndex, room.Units }).ToArray(),
         Movement = state.Train.Movement.OrderBy(rule => rule.UnitId).ToArray(), Context = BattleTurnChecks.ComparableContext(state.Train.Context),

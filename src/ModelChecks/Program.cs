@@ -369,6 +369,13 @@ if (args.Length is 2 or 3 && args[0] == "--native-more-treasure-units-only")
     MoreTreasureUnitsChecks.Native(args[1], args.Length == 3 ? args[2] : null);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--native-skull-collectors-only" &&
+    (args.Length == 2 || args[2] == "--observe-only"))
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    SkullCollectorsChecks.Native(fixture.RootElement, observeOnly: args.Length == 3);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-second-floor-enemy-opening-only")
 {
     SecondFloorEnemyOpeningChecks.Native(args[1]);
