@@ -10,15 +10,15 @@
 | --- | ---: | ---: | ---: |
 | known-gap | 1 | 1 | 1 |
 | inspect-no-code-link | 8 | 8 | 8 |
-| inspect-inherited-code | 8 | 8 | 8 |
+| inspect-inherited-code | 7 | 7 | 7 |
 | inspect-projection-normalization | 54 | 54 | 54 |
 | inspect-guard-links | 43 | 43 | 43 |
 | review-existing-code | 226 | 226 | 226 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 282 | 0 | 0 |
-| scoped-review-recorded | 105 | 101 | 101 |
+| scoped-review-recorded | 106 | 102 | 102 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 108 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 109 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -41,6 +41,7 @@
 | CardEffectDamage | shared-path | Native Damage normalizes to the shared Damage action; current PunishedSpike battle exercises repeated damage, armor, target death and full successors. Existing target/scaling/callback guards remain; not an audit of every contextual branch. |
 | CardEffectDamageByPercentRemainingHealth | shared-path | Original Beeziebub OnCast targets the Pyre, floors ten percent of actual remaining HP, and supplies no card damage attribution or trait scaling. Three isolated wins prove HP 80 to 72 and exact search successors. Randomized ranges, round-up and non-Pyre targets remain guarded. |
 | CardEffectDamageFloorByFloor | shared-path | Original current Heavenfall installs its native full-moon 80 enemy floor sweep and executes through the shared OnCast and floor-damage pipeline. The current win verifies both moon phases, full successors, sixteen branches, recorded frontiers and serial/parallel plan replay. The older native Moon archive still passes with its tower damage payload. This battle's positive damage targets occupy one floor. |
+| CardEffectDamagePerPyreAttack | shared-path | The original Pyre Steward ability requests damage in order 3, 45 and 45. Its two Slay heals return the Pyre from 77 to 79 to 80. Complete paid successor, gameplay RNG and preview allocation match. A model control exercises a saved plus-seven attack offset. The scope covers the unchanged authored room effect. |
 | CardEffectFloorRearrange | shared-path | The original Railforged Unruly SniperAdvance OnAttacking effect moves a living rear attacked actor to the front. A lone target keeps its position and the lethal control records no applied movement callback. The original whole battle matches 34 plays, seven EndTurns and both candidate frontiers. This review covers the exact living-target payload. |
 | CardEffectPlayUnitTrigger | shared-path | The exact original FavoredChild_2 post-combat payload queues one self OnFeed after room capacity decreases and applies three Rage. The component verifies the full queue result and RNG and rejects edited capacity. Other nested replay payloads retain their existing guards. |
 | CardEffectRewardGold | shared-path | Three physical hits on the original owner path give 2, 1, 0, and 0 gold across four states. Native actor damage and RNG match the shared signed-gold path. Changed conditional or random costs are rejected. |
@@ -162,10 +163,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `2911f75eedee4c0b0fbbe9dfbc9eed5db98b7ed48020b996c0bafe08bf367711`。
-- Model: PDB 校验过的项目源码集合 `eb84559634fe8a8dab1b3ce191b4708643cf7078c8ff988b4a2ac240444431ec`。
-- Probe: PDB 校验过的项目源码集合 `7fdc0c151cd3b1c0e718619a08d523756de8a5f70d3175017ba5bfa75aaa5864`。
-- ModelChecks: PDB 校验过的项目源码集合 `8f6be6eb7eff39f946fd0f5b77f7c55f986f1ae89f266bcc3c5c45b60109bf0f`。
+- 人工审查索引 SHA-256: `caa39e015b534d8973cb3debe3f54cd41b5eebd66446a410836a443daf7c0bf4`。
+- Model: PDB 校验过的项目源码集合 `ecfe4c6bba3c3e0234ae608423a7d6003dff00bf4e5e07c1293ef585893834cf`。
+- Probe: PDB 校验过的项目源码集合 `0df0602aab3154067f598cfa970c490fdb83acdb6baf0d699e86c5285a79cca9`。
+- ModelChecks: PDB 校验过的项目源码集合 `6509a1f84c1ad8d1a51af46442f81fc2710f115246f3ee9a7df9d1d282f4860b`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
