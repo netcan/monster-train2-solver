@@ -1196,7 +1196,7 @@ namespace MonsterTrain2Poju.Model
             bool scaledWavePhase = allowFreshHivemind || state.Context?.QueryFrame?.Turn is 2 or 3 ||
                 (!state.Preview && state.Context?.QueryFrame?.Turn == 1) ||
                 (state.Context?.QueryFrame?.Turn == 4 &&
-                    (state.Preview || state.Context.EnergyState?.Phase is "EndMonsterTurn" or "MonsterTurn"));
+                    (state.Preview || state.Context.EnergyState?.Phase is "HeroTurn" or "MonsterTurn" or "Combat" or "EndMonsterTurn"));
             int infestedDrawTurn = allowFreshHivemind && state.Context?.QueryFrame?.Turn is 2 or 3 &&
                 OuterBossDefinitions.HasLifemotherInfestedOwner(state.Context) ? state.Context.QueryFrame.Turn.Value : 0;
             bool infestedBossCombat = state.RoomIndex == 2 && state.Units.Any(unit =>

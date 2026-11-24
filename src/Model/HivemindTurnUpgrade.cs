@@ -562,11 +562,13 @@ namespace MonsterTrain2Poju.Model
                 ScaledFeedRoom(room) || room.Units.Any(unit => IsScaledRoomCombatDeath(room, unit)));
 
         internal static bool PublishesAtAscension(TrainCombatState train) =>
-            train.Context?.QueryFrame?.Turn is >= 1 and <= 3 && train.Rooms.All(room => !room.Preview) &&
+            (train.Context?.QueryFrame?.Turn is >= 1 and <= 3 ||
+                train.Context?.QueryFrame?.Turn == 4 && IsScaledCampaign(train.Context)) && train.Rooms.All(room => !room.Preview) &&
             train.Rooms.Any(room => room.ExternalInteractions.Any(IsKnownMarker)) &&
             train.Rooms.SelectMany(room => room.Units).All(unit => unit.RegisteredStatus("hivemindkiller") == null &&
                 (unit.Status(StatusId) == null || MatchesRoomMarker(Marker(unit), unit) ||
-                 IsScaledFirstWaveOwner(unit, train.Context) || IsScaledCampaign(train.Context) && IsScaledFeedRecipient(unit)));
+                 IsScaledFirstWaveOwner(unit, train.Context) || IsScaledCarriedFeedOwner(unit, train.Context) ||
+                 IsScaledCampaign(train.Context) && IsScaledFeedRecipient(unit)));
 
         internal static RoomCombatState PublishRoomMarkers(RoomCombatState room, bool infested = false)
         {
@@ -574,7 +576,8 @@ namespace MonsterTrain2Poju.Model
                 HeavyT2 + " room modifiers" or DeathHorde + " room modifiers" or OuterBossDefinitions.LifemotherInfested + " room modifiers";
             string[] markers = room.ExternalInteractions.Where(marker => !IsKnownMarker(marker) && !InfestedMarker(marker)).Concat(
                 room.Units.Where(unit => MatchesRoomMarker(Marker(unit), unit) || infested && IsInfestedCombatOwner(room, unit) ||
-                    IsScaledFirstWaveOwner(unit, room.Context) || IsScaledCampaign(room.Context) && IsScaledFeedRecipient(unit))
+                    IsScaledFirstWaveOwner(unit, room.Context) || IsScaledCarriedFeedOwner(unit, room.Context) ||
+                    IsScaledCampaign(room.Context) && IsScaledFeedRecipient(unit))
                     .Select(Marker)).Distinct().OrderBy(marker => marker, StringComparer.Ordinal).ToArray();
             return room.ExternalInteractions.SequenceEqual(markers) ? room :
                 new RoomCombatState(room.RoomIndex, room.Deployment, room.Units, markers, room.Context, room.Preview,
