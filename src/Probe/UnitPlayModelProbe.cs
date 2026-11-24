@@ -26,6 +26,7 @@ namespace MonsterTrain2Poju.Probe
         private int nextCardId = 1;
         internal int NextCardId => nextCardId;
         internal CardState[] KnownCards => new List<CardState>(cardIds.Keys).ToArray();
+        internal bool KnowsCardDefinition(string dataId) => cardIds.Keys.Any(card => card.GetCardDataID() == dataId);
         internal bool Knows(CardState card) => cardIds.ContainsKey(card);
         internal bool TryGetCardId(CardState card, out int id) => cardIds.TryGetValue(card, out id);
         private int nextUnitId = 1;

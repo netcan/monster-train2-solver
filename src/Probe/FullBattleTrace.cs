@@ -648,7 +648,7 @@ namespace MonsterTrain2Poju.Probe
             var context = new CombatContext(new CardCycleState(state.Hand, state.Draw, state.Discard,
                 new UnityRng(draw[0], draw[1], draw[2], draw[3]), state.DrawModifier, Array.Empty<string>(), bonusDraw,
                 TypedDrawProbe.CaptureQueue(cards), TypedDrawProbe.NextUpgradeReferenceId,
-                OriginalDiscardDrawScenario.Enabled ? cards.GetDrawingDeckCardsDisabledThisTurn() : (bool?)null),
+                CardCycleProbe.CaptureDrawBlocking(cards, projection)),
                 new UnityRng(battle[0], battle[1], battle[2], battle[3]), state.Gold, projection.NextCardId,
                 cards.GetMaxHandSize(), new[] { "armor", "valor", "pyregel", "relentless", "cooldown", "unit_ability", "unit_ability_available", "horde", "duality" }.Concat(relicCardlessBirth || OriginalOpeningMorselsScenario.Enabled || TriggeredSummonProbe.Enabled || TriggeredSummonProbe.HasPlayerBirths || UnitCloneScenario.Enabled || UnitCopyScenario.Enabled || HeroCopyScenario.Enabled || HasCopyUnitsCard(managers) ? new[] { "cardless" } : Array.Empty<string>()).Concat(new[] { "undying", "endless" })
                     .Concat(registry.Any(card => UnitGraftProbe.Known(card.DataId) || card.MaskDescriptor?.GraftedEquipment != null) ? new[] { "unit_grafted_equipment" } : Array.Empty<string>())

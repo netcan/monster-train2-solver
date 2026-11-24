@@ -12,6 +12,7 @@ namespace MonsterTrain2Poju.Probe
         private const string RosterPrefix = "original-opening-relic-roster:";
         internal const string PhaseName = "original-opening-phase-relics";
         private static readonly string Modifier = Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") ?? "";
+        private static readonly string? IsolatedSpellRelics = Environment.GetEnvironmentVariable("MT2_PROBE_ISOLATED_SPELL_RELICS");
         private static readonly string[] DrawIds = OriginalAfterDrawGenerationScenario.Ids.Take(3).ToArray();
         private static readonly (string Id, string UpgradeId)[] RoomOwners =
         {
@@ -21,7 +22,7 @@ namespace MonsterTrain2Poju.Probe
         };
         private static bool Phase => Modifier == PhaseName;
         private static bool Passive => OriginalOpeningPassiveRelicsScenario.Enabled;
-        private static bool Roster => Modifier.StartsWith(RosterPrefix, StringComparison.Ordinal);
+        private static bool Roster => IsolatedSpellRelics != null || Modifier.StartsWith(RosterPrefix, StringComparison.Ordinal);
         private static (string DataId, string AssetKey, bool DisallowedInPlacementPhase, string[] EffectTypes)[]? expectedRoster;
         private static bool rosterValidated;
         internal static bool Enabled => Passive || Phase || Roster || Modifier.StartsWith(Prefix, StringComparison.Ordinal);
@@ -44,7 +45,9 @@ namespace MonsterTrain2Poju.Probe
 
             string[] ids = Passive ? OriginalOpeningPassiveRelicsScenario.OwnerIds :
                 Phase ? RoomOwners.Select(owner => owner.Id).Concat(DrawIds).ToArray() :
-                Modifier.Substring((Roster ? RosterPrefix : Prefix).Length).Split(',');
+                (IsolatedSpellRelics ?? Modifier.Substring((Roster ? RosterPrefix : Prefix).Length)).Split(',');
+            if (IsolatedSpellRelics != null && OriginalSupportSpellsScenario.IsolatedIds == null)
+                throw new InvalidOperationException("The isolated spell relic roster requires original isolated spells.");
             if (ids.Any(id => !Guid.TryParseExact(id, "D", out Guid parsed) || parsed.ToString() != id) ||
                 ids.Distinct(StringComparer.Ordinal).Count() != ids.Length)
                 throw new InvalidOperationException("Expected distinct original collectible relic IDs.");
@@ -57,7 +60,8 @@ namespace MonsterTrain2Poju.Probe
                     throw new InvalidOperationException("Original collectible relic does not exist: " + id);
                 if (Roster)
                 {
-                    if (owned.Contains(id) || string.IsNullOrEmpty(relic.name) || !relic.GetEffects().Any())
+                    if (owned.Contains(id) || string.IsNullOrEmpty(relic.name) || !relic.GetEffects().Any() ||
+                        (IsolatedSpellRelics != null && !save.IsDlcAvailableWhenStartingRun(relic.GetRequiredDLC())))
                         throw new InvalidOperationException("Expected an unowned original collectible relic with effects: " + relic.name);
                     return (Relic: relic, StatusId: string.Empty);
                 }

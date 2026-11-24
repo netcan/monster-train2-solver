@@ -52,6 +52,11 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Original Echo Vault with Silver Increased Ember failed.' }
     dotnet $checks --battle-frontier-only $echoVaultSilver
     if ($LASTEXITCODE -ne 0) { throw 'Original Echo Vault with Silver Increased Ember candidate frontier failed.' }
+    $railSpike = "$current/controlled-original-resource-spells/awoken-rail-spike-spell-slot-relic.mt2f"
+    dotnet $checks --original-discard-draw-only $railSpike
+    if ($LASTEXITCODE -ne 0) { throw 'Original Rail Spike with ExtraSpellUpgrades failed.' }
+    dotnet $checks --battle-frontier-only $railSpike
+    if ($LASTEXITCODE -ne 0) { throw 'Original Rail Spike with ExtraSpellUpgrades candidate frontier failed.' }
     foreach ($rank in @('i', 'ii', 'iii')) {
         dotnet $checks --native-lazarus-devour-only "$current/lazarus-devour/native-devour-$rank.mt2f"
         if ($LASTEXITCODE -ne 0) { throw "Original Lazarus Devour ability failed at rank $rank." }

@@ -5,6 +5,9 @@ using MonsterTrain2Poju.Model;
 internal static class OriginalDiscardDrawChecks
 {
     private const string CardId = "a6a701f6-cb73-4880-b9b3-ed1abb3b23d4";
+    private const string SpellSlotOwnerId = "60a7f580-0788-42f2-8896-cb8d22e849a5";
+    private const string SpellSlotOwnerKey = "ExtraSpellUpgrades";
+    private const string SpellSlotEffect = "RelicEffectAddSpellUpgradeSlot";
     internal static PlayCardAction? Choose(BattleTurnState source, int[] ids)
     {
         int index = Enumerable.Range(0, ids.Length).Where(i => i != 2 && source.Spawn.Train.Context!.Statistics!.Value(ids[i], "TimesPlayed", "ThisBattle") == 0).DefaultIfEmpty(-1).First();
@@ -13,6 +16,11 @@ internal static class OriginalDiscardDrawChecks
     }
     internal static void Native(FixtureValue root)
     {
+        if (root.GetProperty("ModifierScenario").GetString() == "original-isolated-spells:" + CardId)
+        {
+            NativeWithSpellSlotOwner(root);
+            return;
+        }
         Require(root.GetProperty("OriginalDiscardDrawPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
             root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing completed original discard draw witness.");
         if (root.GetProperty("Mismatches").GetInt32() > 0)
@@ -74,6 +82,7 @@ internal static class OriginalDiscardDrawChecks
             if (!played) Require(Json(before) == Json(after), "Unplayed Rail Spike must neither draw nor block draws.");
             else
             {
+                VerifySpellSlotOwner(before, after, id, rules, predicted);
                 int count = before.Statistics!.PlayedCosts.Single(cost => cost.CardId == id).Cost;
                 Require(before.Cards.DeckDrawDisabledThisTurn == false && after.Cards.DeckDrawDisabledThisTurn == true && predicted.DrawnCardIds.Count == count,
                     "X discard must draw paid X cards before blocking, including zero X.");
@@ -111,6 +120,68 @@ internal static class OriginalDiscardDrawChecks
         RecordedBattleChecks.Native(root);
         Console.WriteLine("ORIGINAL-DISCARD-DRAW PASS: original Awoken's Rail Spike X three/zero/ten, full played/unplayed discard contexts, minus-one cost/plus-one X on drawn recipients, ordinary/typed draw blocking, next-turn reset, Consume, queue clearing, strict source/state guards and 16 immutable chains. Other scaling, caps, shuffle and relic combinations need separate witnesses.");
     }
+
+    private static void NativeWithSpellSlotOwner(FixtureValue root)
+    {
+        Require(root.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            root.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            root.GetProperty("OriginalSupportSpellsPrepared").GetBoolean() && root.GetProperty("NativeWon").GetBoolean() &&
+            root.GetProperty("TerminalEffectsSettled").GetBoolean(), "Missing pinned, settled original Rail Spike battle with a spell-slot owner.");
+        foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
+            Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
+
+        int paidPlays = 0;
+        foreach (FixtureValue row in root.GetProperty("Actions").EnumerateArray())
+        {
+            BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            PlayCardAction play = row.GetProperty("Action").Deserialize<PlayCardAction>()!;
+            CombatContext context = before.Spawn.Train.Context!;
+            if (context.FindCard(play.CardInstanceId)?.DataId != CardId) continue;
+
+            BattleTurnState actual = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            CombatContext after = actual.Spawn.Train.Context!;
+            Require(context.Relics?.Where(relic => relic.EffectTypes.Count > 0).ToArray() is [var owner] &&
+                owner.DataId == SpellSlotOwnerId && owner.AssetKey == SpellSlotOwnerKey && owner.IsCovenant == false &&
+                owner.DisallowedInPlacementPhase == false && owner.EffectTypes is [SpellSlotEffect] &&
+                Json(context.Relics) == Json(after.Relics), "Wrong original spell-slot owner at the paid play.");
+            int paid = before.Energy - actual.Energy;
+            bool paidDraw = root.GetProperty("CardCycles").EnumerateArray().Any(cycle =>
+                cycle.GetProperty("Kind").GetString() == "SpellDraw" && cycle.GetProperty("PlayedCardId").GetInt32() == play.CardInstanceId &&
+                cycle.GetProperty("HandSize").GetInt32() == paid && cycle.GetProperty("Difference").ValueKind == FixtureKind.Null);
+            Require(paid > 0 && paidDraw &&
+                context.Cards.DeckDrawDisabledThisTurn == false && after.Cards.DeckDrawDisabledThisTurn == true &&
+                actual.OtherPiles.Any(pile => pile.Name == "Exhausted" && pile.Cards.Any(token => token.InstanceId == play.CardInstanceId)),
+                "The native run lacks a positive paid Rail Spike draw-block and Consume boundary.");
+            paidPlays++;
+        }
+        Require(paidPlays == 1, "Expected exactly one original paid Rail Spike with the spell-slot owner.");
+        RecordedBattleChecks.Native(root);
+        Console.WriteLine("ORIGINAL-DISCARD-DRAW-SPELL-SLOT PASS: paid native Rail Spike, original campaign owner, exact decision replay and gameplay RNG.");
+    }
+
+    private static void VerifySpellSlotOwner(CombatContext before, CombatContext after, int id, BattlePlayRules rules, TypedDrawResult baseline)
+    {
+        CombatRelicState SlotOwner(string dataId, params string[] effects) =>
+            new(dataId, SpellSlotOwnerKey, effects, isCovenant: false, disallowedInPlacementPhase: false);
+        CombatContext WithOwner(CombatContext context, CombatRelicState owner) => context.WithRelics([.. context.Relics ?? [], owner]);
+
+        var owner = SlotOwner(SpellSlotOwnerId, SpellSlotEffect);
+        var mixed = WithOwner(before, owner);
+        string original = Json(mixed);
+        var actual = CardDiscardDrawModel.Discarded(mixed, mixed.FindCard(id)!, true, rules);
+        string? difference = actual.Supported ? ModelJson.Difference(Json(actual.Context), Json(WithOwner(after, owner))) : actual.UnsupportedReason;
+        Require(difference == null && actual.DrawnCardIds.SequenceEqual(baseline.DrawnCardIds) && Json(mixed) == original,
+            "Campaign spell-slot owner changed the native discard callback: " + difference);
+
+        foreach (var rejected in new[] { SlotOwner("unknown-owner", SpellSlotEffect),
+            SlotOwner(SpellSlotOwnerId, SpellSlotEffect, RelicUnitTriggerCardGenerationModel.Effect) })
+        {
+            var unsupported = WithOwner(before, rejected);
+            Require(!CardDiscardDrawModel.Count(unsupported, unsupported.FindCard(id)!, true).Supported,
+                "The spell-slot exception admitted a changed owner or an extra card effect.");
+        }
+    }
+
     private static string Json<T>(T value) => JsonSerializer.Serialize(value, ModelJson.Options);
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

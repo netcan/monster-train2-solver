@@ -310,6 +310,7 @@ param(
     [switch] $OriginalEchoVaultSilver,
     [switch] $OriginalHallowedHallsDraftRelic,
     [string[]] $OriginalIsolatedSpellIds = @(),
+    [string[]] $OriginalIsolatedSpellRelicIds = @(),
     [string[]] $OriginalIsolatedSpellUpgrades = @(),
     [string] $OriginalUnitAbilityId = '',
     [switch] $OriginalEquipmentCards,
@@ -2158,6 +2159,16 @@ if ($OriginalIsolatedSpellIds.Count -gt 0) {
         @($OriginalIsolatedSpellIds | Select-Object -Unique).Count -ne $OriginalIsolatedSpellIds.Count) { throw 'Isolated spell IDs must be one to thirty distinct native card UUIDs.' }
     $BranchCardMasks = $true; $Policy = 'units-spells-and-junk'
 }
+if ($PSBoundParameters.ContainsKey('OriginalIsolatedSpellRelicIds')) {
+    $OriginalIsolatedSpellRelicIds = @($OriginalIsolatedSpellRelicIds | ForEach-Object { $_ -split ',' } |
+        ForEach-Object { $_.Trim().ToLowerInvariant() })
+    if (!$PSBoundParameters.ContainsKey('OriginalIsolatedSpellIds') -or !$OriginalIsolatedSpellIds.Count -or !$BinaryCapture -or
+        $BattleDistance -ne 0 -or !$OriginalIsolatedSpellRelicIds.Count -or
+        @($OriginalIsolatedSpellRelicIds | Where-Object { $_ -notmatch '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' }).Count -or
+        @($OriginalIsolatedSpellRelicIds | Select-Object -Unique).Count -ne $OriginalIsolatedSpellRelicIds.Count) {
+        throw 'An isolated spell and relic composition requires original spell and relic UUIDs in a binary Ring 1 capture.'
+    }
+}
 if ($OriginalRearrangeSpells) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalMovementSpells) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalScaledDamage) { $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk' }
@@ -3108,7 +3119,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll'
     throw "Native worker $NativeWorker is not initialized; run scripts/Initialize-NativeWorker.ps1 -Worker $NativeWorker first."
 }
 if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorRestart -or $AdvisorUndo -or $AdvisorEndTurnConfirmation -or $AdvisorRejectedDeployment -or $AdvisorMixPrompt -or $AdvisorUnitMixPrompt -or $AdvisorSummonPrompt -or
-    $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth -or $OriginalFunguyDeckScalingDoubleUnits -or
+    $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalIsolatedSpellRelicIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth -or $OriginalFunguyDeckScalingDoubleUnits -or
     $OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness -or
     $OriginalPyreAbilityCooldownWitness -or $OriginalPyreStewardDamageWitness -or $OriginalZarielPainWitness -or $OriginalZarielDevotionWitness -or $OriginalEmbeddedRoomWitness -or $OriginalEndlessEnemyScalingWitness -or $EndlessEnemyScalingFactorBatch -or
     $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle -or $OriginalHandAndEmberWitness -or $OriginalFecundityOnCast -or
@@ -3208,7 +3219,7 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     if (($AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorRestart -or $AdvisorUndo -or $AdvisorEndTurnConfirmation -or $AdvisorRejectedDeployment -or $AdvisorMixPrompt -or $AdvisorUnitMixPrompt -or $AdvisorSummonPrompt) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "The player advisor observation requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
-    if (($OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+    if (($OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalIsolatedSpellRelicIds.Count -or $OriginalOpeningPassiveRelics) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original opening relics require the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
     if (($OriginalHallGraftedBirth -or $OriginalDoubleUnitsTriggeredSpawn) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
@@ -4059,6 +4070,7 @@ if ($OriginalHallGraftedBirth) {
     $environment['MT2_PROBE_DOUBLE_UNITS_SPAWN_OR_STATUS'] = $(if ($OriginalDoubleUnitsSpawnOrStatus) { '1' } else { '0' })
 }
 if ($OriginalIsolatedSpellIds.Count -gt 0) { $environment['MT2_PROBE_MODIFIERS'] = 'original-isolated-spells:' + ($OriginalIsolatedSpellIds -join ',') }
+if ($OriginalIsolatedSpellRelicIds.Count) { $environment['MT2_PROBE_ISOLATED_SPELL_RELICS'] = $OriginalIsolatedSpellRelicIds -join ',' }
 if ($OriginalEchoVaultSilver) { $environment['MT2_PROBE_ECHO_VAULT_SILVER'] = '1' }
 if ($OriginalHallowedHallsDraftRelic) { $environment['MT2_PROBE_HALLOWED_HALLS_DRAFT_RELIC'] = '1' }
 if ($OriginalIsolatedSpellUpgrades.Count -gt 0) {
@@ -8433,6 +8445,10 @@ if ($OriginalUnitAbilityId -and ($trace.OriginalUnitAbilityId -ne $OriginalUnitA
 if ($OriginalIsolatedSpellIds.Count -gt 0 -and ($trace.ModifierScenario -ne ('original-isolated-spells:' + ($OriginalIsolatedSpellIds -join ',')) -or
     -not $trace.OriginalSupportSpellsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne (4 + $OriginalIsolatedSpellIds.Count + $returnedCorruptRecastCount + $isolatedRoomAbilityCount))) {
     throw 'Isolated spell batch lacks three hosts, energy and every requested original spell play.'
+}
+if ($OriginalIsolatedSpellRelicIds.Count -gt 0 -and
+    ($trace.OriginalOpeningRelicRosterOwners.DataId -join ',') -cne ($OriginalIsolatedSpellRelicIds -join ',')) {
+    throw 'The isolated spell battle lacks its original relic roster at deployment.'
 }
 if ($OriginalHallowedHallsDraftRelic) {
     $cast = @($trace.Actions | Where-Object {

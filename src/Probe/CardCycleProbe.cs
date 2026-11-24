@@ -23,6 +23,10 @@ namespace MonsterTrain2Poju.Probe
         internal CardCycleProbe(ManualLogSource log, UnitPlayModelProbe projection)
         { this.log = log; this.projection = projection; active = this; }
 
+        internal static bool? CaptureDrawBlocking(CardManager cards, UnitPlayModelProbe projection) =>
+            OriginalDiscardDrawScenario.Enabled || projection.KnowsCardDefinition(OriginalDiscardDrawScenario.CardId)
+                ? cards.GetDrawingDeckCardsDisabledThisTurn() : (bool?)null;
+
         internal CardCycleState Capture(CardManager cards, string kind)
         {
             AllGameManagers managers = AllGameManagers.Instance!;
@@ -81,13 +85,14 @@ namespace MonsterTrain2Poju.Probe
                         modifier.GetType().Name != UnitRoomTriggerCountModel.Type && modifier is not RoomStateSpawnUnitOnUnitSpawnModifier && modifier is not RoomStateSentryAttackModifier && modifier is not RoomStateTroopUnitUpgradeModifier)))
                     interactions.Add("Room card-manager modifiers");
             }
-            if (cards.GetDrawingDeckCardsDisabledThisTurn() && !OriginalDiscardDrawScenario.Enabled) interactions.Add("Deck draw disabled");
+            bool? drawBlocking = CaptureDrawBlocking(cards, projection);
+            if (!drawBlocking.HasValue && cards.GetDrawingDeckCardsDisabledThisTurn()) interactions.Add("Deck draw disabled");
             uint[] words = RngCalibration.Words(RandomManager.GetState(RngId.CardDraw));
             return new CardCycleState(state.Hand, state.Draw, state.Discard,
                 new UnityRng(words[0], words[1], words[2], words[3]), state.DrawModifier,
                 interactions.Distinct().OrderBy(value => value, StringComparer.Ordinal).ToArray(), BonusDrawProbe.Capture(cards, FullBattleTrace.Active!),
                 TypedDrawProbe.CaptureQueue(cards), TypedDrawProbe.NextUpgradeReferenceId,
-                OriginalDiscardDrawScenario.Enabled ? cards.GetDrawingDeckCardsDisabledThisTurn() : (bool?)null);
+                drawBlocking);
         }
 
         private IEnumerator Wrap(IEnumerator native, CardManager cards, string kind, int handSize, bool applyPreDrawTraits = true)

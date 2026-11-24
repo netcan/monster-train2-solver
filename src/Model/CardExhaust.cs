@@ -54,11 +54,16 @@ namespace MonsterTrain2Poju.Model
         private static IReadOnlyList<CardTraitValue> BaseTraits(CardInstanceState card) => RefreshTraits(card).BaseTraits;
         public static bool HasConsume(CardInstanceState card) => RefreshTraits(card).CombinedTraits?.Any(trait => trait.RuntimeType == Trait) == true;
         internal static bool EphemeralDiscardPrecedesConsume(CardInstanceState card)
+            => DiscardTraitPrecedes(card, "CardTraitEphemeral", Trait);
+
+        internal static bool ConsumePrecedesScaledDiscardDraw(CardInstanceState card)
+            => DiscardTraitPrecedes(card, Trait, CardDiscardDrawModel.Trait);
+
+        private static bool DiscardTraitPrecedes(CardInstanceState card, string first, string second)
         {
             string[] traits = RefreshTraits(card).CombinedTraits!.Select(trait => trait.RuntimeType).ToArray();
-            int ephemeral = Array.IndexOf(traits, "CardTraitEphemeral");
-            int consume = Array.IndexOf(traits, Trait);
-            return ephemeral >= 0 && consume > ephemeral;
+            int firstIndex = Array.IndexOf(traits, first);
+            return firstIndex >= 0 && Array.IndexOf(traits, second) > firstIndex;
         }
         internal static string? PermanentUpgradeError(CardInstanceState card, CardUpgradeModifier upgrade)
         {

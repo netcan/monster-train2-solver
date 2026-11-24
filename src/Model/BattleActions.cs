@@ -1247,6 +1247,10 @@ namespace MonsterTrain2Poju.Model
             }
             if (terminal && context.Statistics != null && context.Statistics.DeckCards == null)
                 return Unsupported("Terminal card resolution requires permanent deck membership.");
+            if (consumedOnPlay && (context.OtherPiles == null || !piles.Any(pile => pile.Name == "Standby") ||
+                !piles.Any(pile => pile.Name == "Exhausted")))
+                return Unsupported("Consume requires captured standby and exhausted piles.");
+            bool consumeRouted = false;
             // Discard restores the resolving card after terminal clearing.
             if (!skipNaturalDiscard)
             {
@@ -1272,13 +1276,19 @@ namespace MonsterTrain2Poju.Model
                         train = payout.State!;
                         context = train.Context!;
                     }
-                    if (CardDiscardDrawModel.Present(energyCard) || CardPlayedDrawModel.Present(energyCard))
+                    bool scaledDiscardDraw = CardDiscardDrawModel.Present(energyCard);
+                    if (scaledDiscardDraw || CardPlayedDrawModel.Present(energyCard))
                     {
-                        // Earlier discard traits have already removed the played card before
-                        // its scaling draw runs. Keep the cards that this callback draws.
+                        // Earlier Consume removes the source before the draw can reshuffle the discard pile.
                         context = context.WithCards(new CardCycleState(hand, context.Cards.Draw, discard, context.Cards.Rng,
                             context.Cards.DrawModifier, context.Cards.ExternalInteractions, context.Cards.BonusDraw,
                             context.Cards.NextDrawUpgrades, context.Cards.NextUpgradeReferenceId, context.Cards.DeckDrawDisabledThisTurn)).WithOtherPiles(piles);
+                        if (consumedOnPlay && scaledDiscardDraw && CardExhaustModel.ConsumePrecedesScaledDiscardDraw(energyCard))
+                        {
+                            context = CardExhaustModel.MoveConsumedToStandby(context, card);
+                            piles = context.OtherPiles!.ToArray();
+                            consumeRouted = true;
+                        }
                         TypedDrawResult discardDraw = CardDiscardDrawModel.Discarded(context, energyCard, wasPlayed: true, source.PlayRules);
                         if (!discardDraw.Supported) return Unsupported(discardDraw.UnsupportedReason!);
                         TypedDrawResult playedDraw = CardPlayedDrawModel.Discarded(discardDraw.Context!, energyCard, wasPlayed: true, source.PlayRules);
@@ -1331,10 +1341,7 @@ namespace MonsterTrain2Poju.Model
             if (!skipNaturalDiscard) context = ConduitModel.Discarded(context, card.InstanceId);
             if (summonedEndless && !terminal && !consumedOnPlay)
                 context = UnitStandbyModel.ReturnEndless(context, card.InstanceId);
-            if (consumedOnPlay && (context.OtherPiles == null || !context.OtherPiles.Any(pile => pile.Name == "Standby") ||
-                !context.OtherPiles.Any(pile => pile.Name == "Exhausted")))
-                return Unsupported("Consume requires captured standby and exhausted piles.");
-            if (consumedOnPlay && !reverseCopyBeforeConsume)
+            if (consumedOnPlay && !consumeRouted && !reverseCopyBeforeConsume)
             {
                 // Ephemeral purges again from OnCardDiscarded after Consume moves
                 // the card to standby. That removes the pending standby return,
@@ -1364,7 +1371,7 @@ namespace MonsterTrain2Poju.Model
                         handCard.DamageScalingTraits?.Any(trait => trait.Query.Type == "SubtypeInDeck") == true))
                     context = context.WithStatistics(context.Statistics.RefreshOwnedCards(context.CardInstances.Select(instance => instance.InstanceId)));
             }
-            if (consumedOnPlay && reverseCopyBeforeConsume)
+            if (consumedOnPlay && !consumeRouted && reverseCopyBeforeConsume)
                 context = CardExhaustModel.MoveConsumedToStandby(context, card);
             if (consumedOnPlay)
             {

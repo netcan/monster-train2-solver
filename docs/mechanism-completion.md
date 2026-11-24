@@ -802,6 +802,11 @@ Spell Weakness、Unstable、Pyregel，以及伤害顺序和下一回合抽牌。
 11 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`awoken-rail-spike.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/awoken-rail-spike.mt2f)
 
+持有原版 `ExtraSpellUpgrades` 时，Awoken’s Rail Spike 支付 4 余烬。Consume 先将来源牌移出弃牌堆，
+抽牌回调随后只取出剩余的一张牌，牌序随机流保持原值，并设定当回合禁抽。
+2.3.1 原版胜局的 5 次出牌、5 次结束回合、16 条独立分支和出牌候选通过。
+[`awoken-rail-spike-spell-slot-relic.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/awoken-rail-spike-spell-slot-relic.mt2f)
+
 原版 Card Draw Potion 支付 1 余烬并进入消耗牌堆。下回合原版抽 8 张牌，额外抽牌修正随后归零。
 `--original-card-draw-potion-only` 核对这条机制及 16 条独立分支。3 次出牌、5 次结束回合和两类候选检查通过。
 [`card-draw-potion.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-resource-spells/card-draw-potion.mt2f)
