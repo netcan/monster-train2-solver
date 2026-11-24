@@ -50,6 +50,12 @@ EndTurn、93 房间／13 列车阶段，采集失败／差异／未支持／待�
 整场／分支／串并行搜索回归也通过。ModelChecks、Probe、Advisor 三个
 Release 构建通过。
 
+2.3.1 的隔离实机对照使用拥有原版升级的 Fel。Savior II 和 III 的付费技能都使 Fel 调整至前排，
+先获得 15 点 Valor，再为自己获得 15 点 Armor。III 还给同层友军 15 点 Armor，两档均未改变异层友军的 Armor。
+完整结算和随机流通过定向复放。
+[Savior II](../tests/compatibility/game-2.3.1/mechanics/savior-champion/native-savior-ii.mt2f) ·
+[Savior III](../tests/compatibility/game-2.3.1/mechanics/savior-champion/native-savior-iii.mt2f)
+
 二进制证据位于 `tests/compatibility/game-2.3.1/mechanics/missing-health-status/`，
 复验入口：
 
