@@ -130,5 +130,49 @@ internal static class ParallelPlannerChecks
         Console.WriteLine("PARALLEL-PLANNER PASS: whole-battle win, independent full-state/RNG replay, separate threads, shared nodes, partial step cap, time and cancellation.");
     }
 
+    internal static void ShorterFallback(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            !fixture.GetProperty("NativeWon").GetBoolean(), "Expected the original 2.3.1 Ring 5 defeat archive.");
+        var root = fixture.GetProperty("Turns")[6].GetProperty("Before").Deserialize<BattleTurnState>()!;
+        Require(root.Spawn.Turn == 6 && root.Spawn.Phase >= root.Spawn.Waves.Count && !root.Spawn.Looping &&
+            root.Spawn.QueuedOuterBoss == null && root.Spawn.QueuedTrueFinalBoss == null,
+            "Expected the late battle root for the exact parallel worker.");
+        using var keys = new BattleStateKeys();
+        string rootKey = keys.Key(root);
+        BattlePlannerOptions Options(int nodes, bool allowShorter = true) => new(nodes, beamWidth: 8,
+            timeLimit: TimeSpan.FromSeconds(10), allowShorterHorizon: allowShorter, searchToBattleEnd: true);
+
+        var alternate = ParallelBattlePlanner.ExploreTerminalRoutes(root, Options(2), null, CancellationToken.None);
+        VerifyPrefix(alternate, budget: 2);
+        if (Environment.ProcessorCount >= 3)
+        {
+            var portfolio = ParallelBattlePlanner.Plan(root, Options(4));
+            Require(portfolio.SearchWorkers == 2 && keys.Key(portfolio.State) == keys.Key(alternate.State),
+                "The normal two-worker portfolio discarded the exact worker's longer verified prefix.");
+            VerifyPrefix(portfolio, budget: 4);
+        }
+        var strict = ParallelBattlePlanner.ExploreTerminalRoutes(root, Options(2, allowShorter: false), null, CancellationToken.None);
+        Require(strict.ReachedNodeLimit && !strict.CompletedHorizon && !strict.UsedShorterHorizon && strict.Steps.Count == 0,
+            "A strict exact worker published a shorter forecast.");
+        var cancelled = ParallelBattlePlanner.ExploreTerminalRoutes(root, Options(2), null, new CancellationToken(true));
+        Require(cancelled.Cancelled && !cancelled.UsedShorterHorizon && cancelled.Steps.Count == 0,
+            "A cancelled exact worker published a shorter forecast.");
+        Require(keys.Key(root) == rootKey, "The exact forecast mutated its native root.");
+        Console.WriteLine("PARALLEL-SHORTER-FALLBACK PASS: two verified EndTurns from the original Ring 5 root, complete state/RNG, strict and cancelled exclusions.");
+
+        void VerifyPrefix(BattlePlanResult forecast, int budget)
+        {
+            Require(forecast.ReachedNodeLimit && !forecast.Cancelled && forecast.ExpandedNodes <= budget &&
+                forecast.UsedShorterHorizon && !forecast.CompletedHorizon && forecast.SearchedToBattleEnd &&
+                forecast.Outcome == RoomOutcome.Exchanged && forecast.TurnsCompleted == 2 &&
+                forecast.Steps.Count == 2 && forecast.Steps.All(step => step.IsEndTurn),
+                "The node cutoff must retain both settled EndTurns as a shorter forecast.");
+            BattleAdviceSession.Verify(root, forecast);
+            Require(forecast.Score == BattlePlanner.Evaluate(forecast.State, forecast.Outcome),
+                "The shorter forecast's score differs from its verified successor.");
+        }
+    }
+
     private static void Require(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
 }

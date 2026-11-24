@@ -5745,6 +5745,13 @@ if (args.Length == 2 && args[0] == "--parallel-planner-only")
     return;
 }
 
+if (args.Length == 2 && args[0] == "--parallel-shorter-fallback-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    ParallelPlannerChecks.ShorterFallback(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 3 && args[0] == "--parallel-planner-pair-only")
 {
     using var source = ModelJson.ReadFixture(args[1]);

@@ -96,7 +96,7 @@ namespace MonsterTrain2Poju.Model
                 results.Sum(result => result.BeamExpandedNodes));
         }
 
-        private static BattlePlanResult ExploreTerminalRoutes(BattleTurnState source, BattlePlannerOptions options,
+        internal static BattlePlanResult ExploreTerminalRoutes(BattleTurnState source, BattlePlannerOptions options,
             BattleEarlyStop? earlyStop, CancellationToken cancellationToken)
         {
             ExactBattleResult exact = ExactBattleSolver.MinimizeCore(source, null,
@@ -104,12 +104,16 @@ namespace MonsterTrain2Poju.Model
                 maxSteps: options.MaxSteps, maxActionsPerTurn: options.MaxActionsPerTurn, earlyStop: earlyStop,
                 useAdvisorOrdering: true);
             bool complete = exact.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate;
-            return new BattlePlanResult(complete ? exact.State : source, complete ? exact.Outcome : RoomOutcome.Exchanged,
-                complete ? exact.Steps : Array.Empty<BattleSearchStep>(),
-                complete ? exact.Score : BattlePlanner.Evaluate(source, RoomOutcome.Exchanged),
-                complete ? exact.Steps.Count(step => step.IsEndTurn) : 0, exact.ExpandedNodes, exact.DuplicateStates,
+            // The exact search retains the last completed turn at a cutoff.
+            bool shorter = options.AllowShorterHorizon && !exact.Cancelled && exact.Outcome == RoomOutcome.Exchanged &&
+                (exact.TimedOut || exact.ReachedNodeLimit || exact.ReachedStepLimit) && exact.Steps.LastOrDefault()?.IsEndTurn == true;
+            bool hasForecast = complete || shorter;
+            return new BattlePlanResult(hasForecast ? exact.State : source, hasForecast ? exact.Outcome : RoomOutcome.Exchanged,
+                hasForecast ? exact.Steps : Array.Empty<BattleSearchStep>(),
+                hasForecast ? exact.Score : BattlePlanner.Evaluate(source, RoomOutcome.Exchanged),
+                hasForecast ? exact.Steps.Count(step => step.IsEndTurn) : 0, exact.ExpandedNodes, exact.DuplicateStates,
                 0, exact.Elapsed, exact.TimedOut, exact.Cancelled, exact.ReachedNodeLimit, exact.ReachedActionLimit, complete,
-                exact.UnsupportedAttempts, null, requestedTurns: options.MaxSteps + 1, searchedToBattleEnd: true,
+                exact.UnsupportedAttempts, null, requestedTurns: options.MaxSteps + 1, usedShorterHorizon: shorter, searchedToBattleEnd: true,
                 stepLimit: exact.ReachedStepLimit, maxSteps: options.MaxSteps, searchMetrics: exact.SearchMetrics,
                 stoppedEarly: exact.StoppedEarly, pyreHealthUpperBound: earlyStop?.PyreHealthUpperBound);
         }
