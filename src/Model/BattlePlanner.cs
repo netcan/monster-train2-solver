@@ -185,6 +185,7 @@ namespace MonsterTrain2Poju.Model
                 return cancelled || timedOut || nodeLimit || earlyStop?.Reached == true;
             }
             bool StopTransitions() => cancellationToken.IsCancellationRequested || timeLimitReached() || earlyStop?.Reached == true;
+            bool StopFirstTurnFallback() => cancellationToken.IsCancellationRequested || earlyStop?.Reached == true;
             double Score(BattleTurnState state, RoomOutcome outcome)
             {
                 double value = evaluate(state, outcome);
@@ -223,15 +224,16 @@ namespace MonsterTrain2Poju.Model
                 return new Node(state, outcome, steps, parent.Turns + (step.IsEndTurn ? 1 : 0),
                     step.IsEndTurn ? 0 : parent.Actions + 1, Score(state, outcome));
             }
-            IReadOnlyList<BattleEndTurnCandidate> EndTurns(BattleTurnState state)
+            IReadOnlyList<BattleEndTurnCandidate> EndTurns(BattleTurnState state, bool finishFirstTurn = false)
             {
                 BattleEndTurnFrontier ends = BattleEndTurnModel.Enumerate(state, Math.Max(0, options.MaxNodes - nodes),
-                    StopTransitions, choices => workspace.EndTurn(state, choices));
+                    StopTransitions, choices => workspace.EndTurn(state, choices),
+                    finishFirstTurn ? StopFirstTurnFallback : null);
                 nodes += ends.ChoiceNodes; nodeLimit |= ends.ReachedNodeLimit;
                 foreach (UnsupportedActionAttempt attempt in ends.UnsupportedAttempts) Unsupported(attempt);
                 return ends.Candidates;
             }
-            BattleEndTurnCandidate? BestEndTurn(BattleTurnState state) => EndTurns(state)
+            BattleEndTurnCandidate? BestEndTurn(BattleTurnState state, bool finishFirstTurn = false) => EndTurns(state, finishFirstTurn)
                 .OrderBy(end => Score(end.Result.State!, end.Result.Outcome))
                 .ThenBy(end => PositionCost(end.Result.State!, end.Result.Outcome)).FirstOrDefault();
 
@@ -245,7 +247,7 @@ namespace MonsterTrain2Poju.Model
                     (!Stop() || finishFirstTurn && baseline.Turns == 0 && !cancelled && !nodeLimit && earlyStop?.Reached != true))
                 {
                     nodes++;
-                    BattleEndTurnCandidate? ended = BestEndTurn(baseline.State);
+                    BattleEndTurnCandidate? ended = BestEndTurn(baseline.State, finishFirstTurn && baseline.Turns == 0);
                     if (ended == null) break;
                     baseline = Child(baseline, ended.Result.State!, ended.Result.Outcome, ended.Step);
                     Consider(baseline);

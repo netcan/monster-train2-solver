@@ -211,13 +211,10 @@ namespace MonsterTrain2Poju.Model
 
             void ExpandEndTurns(Node node)
             {
-                if (useAdvisorOrdering && CheckStop()) return;
                 BattleEndTurnFrontier ends = BattleEndTurnModel.Enumerate(node.State, Math.Max(0, options.MaxNodes - nodes),
-                    () => cancellationToken.IsCancellationRequested || deadlineReached() || earlyStop?.Reached == true,
-                    choices => workspace.EndTurn(node.State, choices));
+                    CheckStop, choices => workspace.EndTurn(node.State, choices));
                 nodes += ends.ChoiceNodes; limited |= ends.ReachedNodeLimit;
-                cancelled |= cancellationToken.IsCancellationRequested;
-                timedOut |= deadlineReached();
+                CheckStop();
                 unsupported.AddRange(ends.UnsupportedAttempts);
                 foreach (BattleEndTurnCandidate end in ends.Candidates.Reverse())
                     pending.Push((new Node(end.Result.State!, end.Result.Outcome, node, end.Step, node.Turns + 1), Expansion.Full));

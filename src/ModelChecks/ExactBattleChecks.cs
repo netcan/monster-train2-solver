@@ -147,6 +147,12 @@ internal static class ExactBattleChecks
         Require(unsupported.UnsupportedAttempts.Count > 0 && !unsupported.ExhaustedEnumeratedFrontier &&
             !unsupported.CertifiedTerminalOptimal && !unsupported.CertifiedHorizonOptimal,
             "Missing action definitions incorrectly produced a certificate.");
+        int deadlineChecks = 0;
+        var beforeEndTurn = ExactBattleSolver.MinimizeCore(root!, null, new ExactBattleOptions(64),
+            CancellationToken.None, () => ++deadlineChecks > 1);
+        Require(beforeEndTurn.TimedOut && beforeEndTurn.SearchMetrics.EndTurnRequests == 0 &&
+            beforeEndTurn.Steps.Count == 0 && !beforeEndTurn.ExhaustedEnumeratedFrontier,
+            "The exact solver started a native EndTurn after the deadline.");
         // A recorded earlier decision requires additional work after one shared
         // expansion. A node-limited witness must never acquire a certificate.
         var earlier = turns[0].GetProperty("Before").Deserialize<BattleTurnState>()!;
@@ -167,7 +173,7 @@ internal static class ExactBattleChecks
             // These recorded EndTurns resolve directly. Expire the budget at
             // the first check after the root expansion resolves its successors.
             var expired = ExactBattleSolver.MinimizeCore(source, null, new ExactBattleOptions(64, turnHorizon: horizon),
-                CancellationToken.None, () => ++checks > 1);
+                CancellationToken.None, () => ++checks > 2);
             Require(expired.TimedOut && !expired.Cancelled && expired.ExpandedNodes == 1 &&
                 expired.Outcome == expected && expired.Steps.Count == 1 && expired.Steps[0].IsEndTurn &&
                 expired.TerminalLeaves == terminalLeaves && expired.HorizonLeaves == horizonLeaves &&

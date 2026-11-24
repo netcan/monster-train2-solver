@@ -37,7 +37,8 @@ namespace MonsterTrain2Poju.Model
                 choices => BattleTurnModel.EndTurn(source, choices));
 
         internal static BattleEndTurnFrontier Enumerate(BattleTurnState source, int maxChoiceNodes,
-            Func<bool>? shouldStop, Func<IReadOnlyList<RelentlessDecision>, BattleTurnResult> simulate)
+            Func<bool>? shouldStop, Func<IReadOnlyList<RelentlessDecision>, BattleTurnResult> simulate,
+            Func<bool>? shouldStopBeforeFirstAttempt = null)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (maxChoiceNodes < 0) throw new ArgumentOutOfRangeException(nameof(maxChoiceNodes));
@@ -45,6 +46,8 @@ namespace MonsterTrain2Poju.Model
             var unsupported = new List<UnsupportedActionAttempt>();
             var pending = new Stack<RelentlessDecision[]>();
             int nodes = 0; bool interrupted = false;
+            if ((shouldStopBeforeFirstAttempt ?? shouldStop)?.Invoke() == true)
+                return new BattleEndTurnFrontier(candidates, unsupported, nodes, false, true);
             Observe(Array.Empty<RelentlessDecision>(), simulate(Array.Empty<RelentlessDecision>()));
             while (pending.Count > 0 && nodes < maxChoiceNodes)
             {
