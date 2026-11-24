@@ -22,6 +22,10 @@ namespace MonsterTrain2Poju.Model
     {
         public static RelicBirthResult CharacterAdded(TrainCombatState source, int unitId, int fromCardId, bool onlyCovenants,
             bool deferCallbacks, IReadOnlyList<UnitCloneCallback> queued)
+            => CharacterAdded(source, unitId, fromCardId, onlyCovenants, deferCallbacks, queued, null);
+
+        internal static RelicBirthResult CharacterAdded(TrainCombatState source, int unitId, int fromCardId, bool onlyCovenants,
+            bool deferCallbacks, IReadOnlyList<UnitCloneCallback> queued, EndlessEnemyBirthStats? endlessBirth)
         {
             TrainCombatState state = source;
             var events = new List<CombatEvent>(); var dispatched = new List<UnitCloneCallback>();
@@ -41,7 +45,7 @@ namespace MonsterTrain2Poju.Model
                     exclusiveTriggerStateId: item.ExclusiveTriggerStateId));
             }
             RoomCombatResult result = RelicSpawnStatusModel.CharacterAddedWithPending(room, unitId, fromCardId, onlyCovenants,
-                deferCallbacks ? null : Drain, pending);
+                deferCallbacks ? null : Drain, pending, endlessBirth);
             if (!result.Supported) return Fail(result.UnsupportedReason!);
             Import(result.State!); events.AddRange(result.Events);
             if (!onlyCovenants && state.Context?.Relics?.Any(relic => relic.SummonDamageRules?.Count > 0) == true)

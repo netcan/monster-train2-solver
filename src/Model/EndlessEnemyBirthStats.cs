@@ -28,11 +28,14 @@ namespace MonsterTrain2Poju.Model
         internal CombatUnit? Apply(CombatUnit actor)
         {
             bool statusShape = IsStatusShape(actor);
-            if (actor.SpawnerCardId > 0 || !SupportedShape(actor) || statusShape != (StatusScaling != null) ||
+            bool outerBoss = actor.BumpRules?.OuterBoss == true;
+            if (actor.SpawnerCardId > 0 ||
+                (outerBoss ? !OuterBossInstantiationModel.IsOriginalArkionPushBirth(actor) || actor.Statuses.Count != 0 : !SupportedShape(actor)) ||
+                statusShape != (StatusScaling != null) ||
                 actor.BaseAttack != InitialAttack || actor.Health != InitialHealth || actor.MaxHealth != InitialHealth ||
                 actor.Modifiers is not { AttackDamageAdded: 0, DamageBuff: 0 } modifiers ||
                 modifiers.AttackDamage != InitialAttack || Attack < 0 || Health < 1 ||
-                (statusShape ? 0 : actor.Triggers.Sum(trigger => trigger.Effects.Count)) != EffectValues.Count ||
+                (statusShape || outerBoss ? 0 : actor.Triggers.Sum(trigger => trigger.Effects.Count)) != EffectValues.Count ||
                 EffectValues.Any(value => value < 0))
                 return null;
 

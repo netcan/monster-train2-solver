@@ -9,7 +9,7 @@ namespace MonsterTrain2Poju.Probe
     {
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
 
-        internal static Func<CharacterData, CombatUnit, EndlessEnemyBirthStats?>? Capture(AllGameManagers managers)
+        internal static Func<CharacterData, CombatUnit, EndlessEnemyBirthStats?>? Capture(AllGameManagers managers, bool outerBoss = false)
         {
             SaveManager save = managers.GetSaveManager();
             if (!save.IsEndlessRun || typeof(CharacterState).Module.ModuleVersionId != Module ||
@@ -20,6 +20,8 @@ namespace MonsterTrain2Poju.Probe
             int distance = run.GetCurrentDistance();
             int runLength = save.GetRunLength();
             if (loop is < 1 or > 3 || runLength != 8 || distance < 0 || distance >= runLength)
+                return null;
+            if (outerBoss && (loop != 1 || distance != 2 || save.GetCurrentScenarioData()?.name != "TestEndless_Level3Battle1"))
                 return null;
 
             var relics = RelicProbe.Current(managers);
@@ -50,6 +52,18 @@ namespace MonsterTrain2Poju.Probe
 
             return (data, raw) =>
             {
+                if (outerBoss)
+                {
+                    if (!data.IsOuterTrainBoss() || !OuterBossInstantiationModel.IsOriginalArkionPushBirth(raw) ||
+                        data.GetStartingStatusEffects().Length != 0 || data.GetTriggers() is not [var trigger] ||
+                        trigger.GetEffects() is not [var action] || action.GetParamStatusEffectStackData() is not [{ statusId: "dazed", count: 2 }] ||
+                        managers.GetStatusEffectManager().GetStatusEffectDataById("dazed")?.ScalesInEndless() != false)
+                        return null;
+                    var bossBaseline = data.GetEndlessBaselineStats();
+                    if (!bossBaseline.HasAttack() || !bossBaseline.HasHealth()) return null;
+                    return new EndlessEnemyBirthStats(raw.BaseAttack, raw.Health, Mathf.CeilToInt(bossBaseline.GetAttack() * attack),
+                        Mathf.CeilToInt(bossBaseline.GetHealth() * health), Array.Empty<int>());
+                }
                 var baseline = data.GetEndlessBaselineStats();
                 bool statusShape = EndlessEnemyBirthStats.IsStatusShape(raw);
                 if (!baseline.HasHealth() || data.IsOuterTrainBoss() || !EndlessEnemyBirthStats.SupportedShape(raw) ||

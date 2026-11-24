@@ -14,12 +14,15 @@ namespace MonsterTrain2Poju.Model
         public EnemyMovement CreatedMovement { get; }
         public IReadOnlyList<string> ExternalInteractions { get; }
         public EnemyBirthStatAdjustment? BirthStats { get; }
+        public EndlessEnemyBirthStats? EndlessBirth { get; }
+        public bool ShouldSerializeEndlessBirth() => EndlessBirth != null;
         public OuterBossCreationState(BattleTurnState battle, CombatUnit createdUnit, OuterBossProgress createdBoss,
-            IReadOnlyList<string> externalInteractions, EnemyMovement createdMovement, EnemyBirthStatAdjustment? birthStats = null)
+            IReadOnlyList<string> externalInteractions, EnemyMovement createdMovement, EnemyBirthStatAdjustment? birthStats = null,
+            EndlessEnemyBirthStats? endlessBirth = null)
         {
             Battle = battle; CreatedUnit = createdUnit; CreatedBoss = createdBoss;
             CreatedMovement = createdMovement;
-            BirthStats = birthStats;
+            BirthStats = birthStats; EndlessBirth = endlessBirth;
             ExternalInteractions = Array.AsReadOnly(externalInteractions.ToArray());
         }
     }
@@ -130,7 +133,7 @@ namespace MonsterTrain2Poju.Model
                     room.Preview, room.ActiveCompanionBossIds)).ToArray(), movement, train.EnemySlotsPerRoom, context);
             var pending = covenants.PendingCallbacks.ToList();
             RelicBirthResult notifications = RelicBirthModel.CharacterAdded(train, unit.Id, 0, false,
-                deferCallbacks: false, pending.Select(UnitCloneCallback.From).ToArray());
+                deferCallbacks: false, pending.Select(UnitCloneCallback.From).ToArray(), source.EndlessBirth);
             if (!notifications.Supported) return Fail(notifications.UnsupportedReason!);
             train = EnchantmentWorldModel.Rebase(notifications.State!);
             pending.Clear();

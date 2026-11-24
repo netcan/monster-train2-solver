@@ -49,7 +49,7 @@ namespace MonsterTrain2Poju.Model
                 _ => false
             };
         }
-        private static bool CalibratedPushMoon(CombatUnit unit) =>
+        internal static bool IsOriginalArkionPushBirth(CombatUnit unit) =>
             unit is { AssetKey: "Boss_Level3_Arkion_PushAttack", BaseAttack: 13, Attack: 13,
                 Health: 425, MaxHealth: 425, Triggers.Count: 1 } &&
             unit.Triggers[0] is { Kind: "OnAttackingBeforeDamage", Once: false, HasTriggered: false, IgnoreSilence: false,
@@ -114,7 +114,7 @@ namespace MonsterTrain2Poju.Model
             bool dutifulFullMoon = moon == 2 && battle.MoonPhase == "Full" && CalibratedDutiful(actor.Unit);
             bool fullMoon = moon == 2 &&
                 (actor.Unit.AssetKey is "Boss_Level3_Fleshweaver_Corruption" or "Boss_Level6_AngelDuo_Entropic_Variant1_ResolveHealth" or
-                    "Boss_Level3_Arkion_SiphonRage" or "Boss_Level6_Cael_DamageShield" || CalibratedLifestealMoon(actor.Unit) || CalibratedPushMoon(actor.Unit) ||
+                    "Boss_Level3_Arkion_SiphonRage" or "Boss_Level6_Cael_DamageShield" || CalibratedLifestealMoon(actor.Unit) || IsOriginalArkionPushBirth(actor.Unit) ||
                     OuterBossDefinitions.CalibratedAngelDuoTrialFullMoon(actor.Unit, train.Context) ||
                     actor.Unit is { AssetKey: "Boss_Level6_AngelDuo_Entropic_Variant3_HarvestHealth", BaseAttack: 11, Attack: 11,
                         Health: 1250, MaxHealth: 1250 } ||
@@ -215,7 +215,7 @@ namespace MonsterTrain2Poju.Model
             }
             return new OuterBossInstantiationResult(new OuterBossCreationState(next, created,
                 boss.WithIdentity(allocation.UnitId), birthInteractions,
-                new EnemyMovement(allocation.UnitId, 1, actor.Ascends, actor.Loops, actor.CompanionBoss), actor.BirthStats));
+                new EnemyMovement(allocation.UnitId, 1, actor.Ascends, actor.Loops, actor.CompanionBoss), actor.BirthStats, actor.EndlessBirth));
         }
     }
 }

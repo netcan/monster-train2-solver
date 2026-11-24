@@ -57,8 +57,10 @@ namespace MonsterTrain2Poju.Probe
                 interactions.Add("Outer-boss creation substitutions require separate calibration.");
             if (data.GetRoomModifiersData().Count > 0)
                 interactions.Add("Outer-boss creation room modifiers require separate calibration.");
+            var endlessBirth = EndlessEnemyBirthStatsProbe.Capture(managers, outerBoss: true)?.Invoke(data, actor.Unit);
             return new OuterBossSpawnDefinition(new EnemyDefinition(actor.Unit, actor.Ascends, actor.Loops,
-                interactions, actor.CompanionBoss, covenantsSupported ? CovenantBirthStatProbe.Capture(data) : null), OuterBossPhaseProbe.Definition(data));
+                interactions, actor.CompanionBoss, covenantsSupported ? CovenantBirthStatProbe.Capture(data) : null,
+                endlessBirth: endlessBirth), OuterBossPhaseProbe.Definition(data));
         }
         private static bool Capturing => Enabled && FullBattleTrace.Active != null && !AllGameManagers.Instance.GetSaveManager().PreviewMode;
         private static IEnumerator ObserveBirth(IEnumerator native)
@@ -110,7 +112,7 @@ namespace MonsterTrain2Poju.Probe
                     row.Before = new OuterBossCreationState(FullBattleTrace.Active.CaptureDecision(true, true), unit,
                         OuterBossPhaseProbe.CaptureProgress(row.Created), interactions,
                         new EnemyMovement(unit.Id, 1, row.Created.GetAscendsTrainAutomatically(), row.Created.GetLoopsBetweenTrainFloors(), row.Created.IsCompanionBoss()),
-                        row.Template?.Actor.BirthStats);
+                        row.Template?.Actor.BirthStats, row.Template?.Actor.EndlessBirth);
                 }
                 catch (Exception error) { Errors.Add(error.ToString()); }
             }
