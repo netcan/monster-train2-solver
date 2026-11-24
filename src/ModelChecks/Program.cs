@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--original-zariel-pain-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalZarielPainChecks.Native(document.RootElement);
+    return;
+}
 if (args.Length is 2 or 3 && args[0] == "--original-fecundity-oncast-only" &&
     (args.Length == 2 || args[2] == "--observe-only"))
 {
