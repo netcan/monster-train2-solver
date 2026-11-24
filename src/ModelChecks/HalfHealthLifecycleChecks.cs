@@ -44,8 +44,12 @@ internal static class HalfHealthLifecycleChecks
             int id = sample.GetProperty("ActorId").GetInt32();
             Require(RoomCombatModel.Validate(before) == null,
                 "Calibrated half-health battle scheduling was rejected.");
-            Require(!UnitHealthModel.Apply(before, id, 99999, debuff: true).Supported,
-                "Lethal maximum-health sacrifice/revival lost its native calibration guard.");
+            var uncapturedPreview = new RoomCombatState(before.RoomIndex, before.Deployment, before.Units,
+                before.ExternalInteractions, before.Context, preview: true, activeCompanionBossIds: before.ActiveCompanionBossIds);
+            RoomCombatResult lethalPreview = UnitHealthModel.Apply(uncapturedPreview, id, 99999, debuff: true);
+            Require(!lethalPreview.Supported &&
+                lethalPreview.UnsupportedReason == "Half-health lethal maximum-health previews require captured temporary card-hover copies.",
+                "Lethal maximum-health preview without temporary card-hover copies lost its calibration guard.");
         }
         Parallel.For(0, 32, _ => { foreach (FixtureValue sample in samples) Verify(sample); });
         Console.WriteLine("HALF-HEALTH-LIFECYCLE PASS: 13 complete native damage/heal successors and dispatch payloads; zero/blocked/clipped controls, OnHit/OnHeal ordering, nested gain/loss effects, parent immutability and 32 parallel branches. Lethal damage, maximum-health sacrifice/revival and whole-battle scheduling have separate native acceptance.");
