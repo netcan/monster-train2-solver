@@ -64,17 +64,26 @@ namespace MonsterTrain2Poju.Model
             (unit.Modifiers!.Upgrades.Count == 0 || IsScaledFirstWaveOwner(unit, context));
 
         internal static bool IsObservedScaledWaveDeath(RoomCombatState room, CombatUnit unit, int sourceCardId) =>
-            room is { RoomIndex: 0, Preview: false } && room.Context?.QueryFrame?.Turn == 2 &&
-            room.Context.FindCard(sourceCardId)?.DataId == "87e45427-921e-45d3-b4c4-9c156a83cedf" &&
-            unit.AssetKey == Hunter && IsScaledFirstWaveOwner(unit, room.Context) &&
-            unit.Modifiers!.Upgrades is [var upgrade] && IsAttackUpgrade(upgrade, 8) &&
-            room.Units.Any(survivor => survivor.Id != unit.Id && survivor.AssetKey == Hunter &&
-                IsScaledFirstWaveOwner(survivor, room.Context));
+            (sourceCardId == 0 && unit.RegisteredStatus("hivemindkiller") == null &&
+                room.Units.Any(owner => owner.Id == unit.Id && IsScaledRoomCombatDeath(room, owner))) ||
+            (room is { RoomIndex: 0, Preview: false } && room.Context?.QueryFrame?.Turn == 2 &&
+                room.Context.FindCard(sourceCardId)?.DataId == "87e45427-921e-45d3-b4c4-9c156a83cedf" &&
+                unit.AssetKey == Hunter && IsScaledFirstWaveOwner(unit, room.Context) &&
+                unit.Modifiers!.Upgrades is [var upgrade] && IsAttackUpgrade(upgrade, 8) &&
+                room.Units.Any(survivor => survivor.Id != unit.Id && survivor.AssetKey == Hunter &&
+                    IsScaledFirstWaveOwner(survivor, room.Context)));
+
+        internal static bool IsScaledRoomCombatDeath(RoomCombatState room, CombatUnit unit) =>
+            room.RoomIndex == 1 && room.Context?.QueryFrame?.Turn == 3 &&
+            room.ExternalInteractions.Contains(Marker(unit)) &&
+            (unit.AssetKey == Hunter && IsScaledFirstWaveOwner(unit, room.Context) ||
+                IsScaledCarriedFeedOwner(unit, room.Context) && unit.Status(StatusId)?.Stacks == 6) &&
+            unit.Modifiers!.Upgrades.Any(upgrade => IsAttackUpgrade(upgrade, 18));
 
         internal static bool IsObservedScaledWaveInteraction(TrainCombatState train, string interaction)
         {
             if (interaction is not (Infested + " room modifiers" or Hunter + " room modifiers" or
-                Infested + " room modifiers; " + Hunter + " room modifiers") || train.Context?.QueryFrame?.Turn != 2)
+                Infested + " room modifiers; " + Hunter + " room modifiers") || train.Context?.QueryFrame?.Turn is not (2 or 3))
                 return false;
 
             return train.Rooms.Any(room => room.RoomIndex == 0 && !room.Preview &&

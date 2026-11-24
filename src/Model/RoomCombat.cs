@@ -5500,9 +5500,22 @@ namespace MonsterTrain2Poju.Model
                 return true;
             }
 
-            private RoomCombatState UpgradeRoom(WorkingUnit target) => new RoomCombatState(source.RoomIndex, source.Deployment,
-                units.Where(unit => unit.Alive && unit.InRoom || unit == target).Select(unit => unit.Freeze()).ToArray(),
-                source.ExternalInteractions, context, source.Preview, CompanionBossSnapshot());
+            private RoomCombatState UpgradeRoom(WorkingUnit target)
+            {
+                CombatUnit[] visible = units.Where(unit => unit.Alive && unit.InRoom || unit == target)
+                    .Select(unit => unit.Freeze()).ToArray();
+                // The nested upgrade runs while a dying actor is already absent from the visible room.
+                IReadOnlyList<string> interactions = source.ExternalInteractions;
+                if (source.RoomIndex == 1 && source.Context?.QueryFrame?.Turn == 3 &&
+                    interactions.Any(HivemindTurnUpgrade.IsKnownMarker))
+                    interactions = interactions.Where(marker =>
+                        !source.Units.Any(unit => HivemindTurnUpgrade.Marker(unit) == marker &&
+                            HivemindTurnUpgrade.IsScaledRoomCombatDeath(source, unit) &&
+                            units.Any(working => working.Source.Id == unit.Id && !working.Alive)) ||
+                        visible.Any(unit => HivemindTurnUpgrade.Marker(unit) == marker)).ToArray();
+                return new RoomCombatState(source.RoomIndex, source.Deployment, visible, interactions, context, source.Preview,
+                    CompanionBossSnapshot());
+            }
 
             private bool ApplyUpgrade(WorkingUnit target, CardUpgradeModifier upgrade, string lifetime, bool remove,
                 int? roomCapacity, int sourceCardId, string? kind, bool directApi = false,
