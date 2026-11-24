@@ -25,13 +25,13 @@ namespace MonsterTrain2Poju.Model
             (Health != "Damaged" || health != maxHealth) && (Health != "Undamaged" || health >= maxHealth);
 
         internal string? Validate() => new[] { "Both", "Damaged", "Undamaged" }.Contains(Health) ? null : "Unknown target health filter.";
-        internal bool Matches(CombatUnit unit, bool dropOverride, out string? error)
+        internal bool Matches(CombatUnit unit, bool dropOverride, bool allSubtypes, out string? error)
         {
             error = null;
             if (dropOverride)
             {
                 // CheckTargetsOverride bypasses health/status filters and tests BOTH subtype lists.
-                if (!SubtypeMatches(unit, Subtype) || ExcludedSubtypes.Any(subtype => subtype.Length > 0 && SubtypeMatches(unit, subtype))) return false;
+                if (!SubtypeMatches(Subtype) || ExcludedSubtypes.Any(subtype => subtype.Length > 0 && SubtypeMatches(subtype))) return false;
             }
             else
             {
@@ -47,11 +47,13 @@ namespace MonsterTrain2Poju.Model
             if (!dropOverride)
             {
                 // Native returns here for a required subtype, skipping excluded subtype checks.
-                if (Subtype.Length > 0) return SubtypeMatches(unit, Subtype);
-                if (ExcludedSubtypes.Any(subtype => SubtypeMatches(unit, subtype))) return false;
+                if (Subtype.Length > 0) return SubtypeMatches(Subtype);
+                if (ExcludedSubtypes.Any(SubtypeMatches)) return false;
             }
             return true;
+
+            bool SubtypeMatches(string subtype) => allSubtypes ? OriginalAllSubtypesModel.MatchesCharacter(unit, subtype) :
+                subtype.Length == 0 ? !unit.IsPyre : unit.Subtypes.Contains(subtype);
         }
-        private static bool SubtypeMatches(CombatUnit unit, string subtype) => subtype.Length == 0 ? !unit.IsPyre : unit.Subtypes.Contains(subtype);
     }
 }

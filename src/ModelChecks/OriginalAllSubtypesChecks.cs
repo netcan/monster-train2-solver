@@ -59,6 +59,22 @@ internal static class OriginalAllSubtypesChecks
         Require(actors[0].ActorId == actors[3].ActorId && actors[3].ActorId == actors[6].ActorId &&
             !actors[0].Queried.Single(query => query.Key == Fungus).Actual && actors[6].Queried.Single(query => query.Key == Fungus).Actual &&
             !actors[6].Queried.Single(query => query.Key == Horde).Actual, "Missing dying ordinary-monster wildcard or original Horde control.");
+        foreach (ActorRow row in actors.Where(row => row.Role == "Friendly" && row.Alive))
+        {
+            TrainCombatState train = (row.Phase == "Before" ? before : active).Spawn.Train;
+            RoomCombatState room = train.Rooms.Single(floor => floor.Units.Any(unit => unit.Id == row.ActorId));
+            int position = Array.FindIndex(room.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray(), unit => unit.Id == row.ActorId);
+            bool wildcard = row.Queried.Single(query => query.Key == Fungus).Actual;
+            CardActionEffect Effect(string mode, string required, IReadOnlyList<string> excluded) => new("Damage", mode,
+                1, true, true, [], filters: new CardTargetFilters("Both", [], [], false, required, excluded));
+            var requiredFungus = CardTargetModel.Collect(room, Effect("DropTargetCharacter", Fungus, []), [], CombatTeam.Player, position);
+            var excludedFungus = CardTargetModel.Collect(train, room.RoomIndex, Effect("Tower", "", [Fungus]), []);
+            var requiredHorde = CardTargetModel.Collect(room, Effect("Room", Horde, []), []);
+            Require(requiredFungus.Supported && requiredFungus.UnitIds.Contains(row.ActorId) == wildcard &&
+                excludedFungus.Supported && excludedFungus.UnitIds.Contains(row.ActorId) != wildcard &&
+                requiredHorde.Supported && !requiredHorde.UnitIds.Contains(row.ActorId),
+                "Drop, tower, and room filters must apply the captured native character subtype matching.");
+        }
 
         DeckRow[] deck = root.GetProperty("Deck").Deserialize<DeckRow[]>()!;
         Require(deck.Length == 10 && deck.Select(row => (row.Phase, row.Key)).Distinct().Count() == 10, "Missing paired deck results.");

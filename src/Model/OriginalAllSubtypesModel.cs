@@ -9,12 +9,16 @@ namespace MonsterTrain2Poju.Model
         internal const string Effect = "RelicEffectMonstersAreAllSubtypes";
         private const string Horde = "SubtypesData_Horde";
         private const string None = "SubtypeData_None";
+        private const string Pyre = "SubtypesData_Pyre";
 
         internal static bool IsOwner(CombatRelicState relic) => relic.DataId == OwnerId &&
             relic.AssetKey == "AllUnitsAllSubtypes" && relic.IsCovenant == false && relic.EffectTypes is [Effect];
 
-        internal static bool Active(CombatContext context, bool deployment) => context.Relics?.Any(relic =>
+        internal static bool Active(CombatContext? context, bool deployment) => context?.Relics?.Any(relic =>
             IsOwner(relic) && (!deployment || relic.DisallowedInPlacementPhase == false)) == true;
+
+        internal static bool MatchesCharacter(CombatUnit unit, string subtype) =>
+            MatchesCharacter(unit.Team, unit.IsPyre, unit.Subtypes, subtype, subtype == Pyre, allSubtypes: true);
 
         internal static bool MatchesCharacter(CombatTeam team, bool isPyre, IReadOnlyList<string> rawSubtypes,
             string? subtype, bool pyreSubtype, bool allSubtypes)
