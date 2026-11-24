@@ -294,7 +294,8 @@ namespace MonsterTrain2Poju.Probe
             RectTransform refresh = (RectTransform)panel.transform.Find("重新计算");
             refresh.anchoredPosition = new Vector2(18, expanded ? -570 : -315);
             planLabel.text = expanded ? "收起方案" : "完整方案";
-            if (displayed != null && !showingCardChoice) body.text = DescribeAdvice(displayed, tentativeSteps);
+            if (displayed != null && !showingCardChoice && pendingMixChoice == null)
+                body.text = DescribeAdvice(displayed, tentativeSteps);
             planScroll.verticalNormalizedPosition = 1;
             if (displayed != null && tentativeSteps == 0 && !showingCardChoice) RecordDiagnosticView("view");
         }
@@ -313,6 +314,7 @@ namespace MonsterTrain2Poju.Probe
             displayed = null;
             tentativeSteps = 0;
             pendingCardChoice = null;
+            ClearMixChoice();
             showingCardChoice = false;
             cardHover.Entries.Clear(); cardHover.Clear();
             SetPending(false);
@@ -326,7 +328,8 @@ namespace MonsterTrain2Poju.Probe
             return save != null && combat != null && cards != null && !LoadingScreen.IsWorking() && !save.PreviewMode &&
                 !PreviewRngIsolation.Active && !DevotionProbe.IsDevoteInProgress &&
                 !(managers.GetHandUI()?.IsHandSelectionActive() ?? false) && save.GetGameSequence() == SaveData.GameSequence.InBattle &&
-                !managers.GetScreenManager().GetScreenActive(ScreenName.Dialog) && CardAnimationSettlement.Ready() &&
+                !managers.GetScreenManager().GetScreenActive(ScreenName.Dialog) &&
+                !managers.GetScreenManager().GetScreenActive(ScreenName.Elixir) && CardAnimationSettlement.Ready() &&
                 NativeEffectSettlement.Ready(combat) && combat.ShouldShowEndTurnButton() && NativeDecisionReadiness.CardsDrawn(combat) && !combat.IsRunningTriggerQueue &&
                 (!save.GetBattlePreviewEnabled() || !(bool)combatChanged.GetValue(combat)) &&
                 !managers.GetReplayManager().IsCardPlaying() && !(managers.GetHandUI()?.AreAnyCardsAnimating() ?? false);
@@ -357,6 +360,16 @@ namespace MonsterTrain2Poju.Probe
             }
             Keyboard();
             AllGameManagers? managers = AllGameManagers.Instance;
+            if (pendingMixChoice != null && managers != null)
+            {
+                if (!paused && !HiddenPause && managers.GetSaveManager()?.GetGameSequence() == SaveData.GameSequence.InBattle &&
+                    !managers.GetSaveManager().PreviewMode && !PreviewRngIsolation.Active && ShowPendingMixChoice(managers)) return;
+                if (showingCardChoice)
+                {
+                    showingCardChoice = false;
+                    body.text = "正在核对局面…";
+                }
+            }
             // Selection previews may use the native loading/animation counter.
             // Keep the verified publication untouched while only this view is
             // changing. Actual inputs/mutations and cheap gameplay changes wake
@@ -485,6 +498,7 @@ namespace MonsterTrain2Poju.Probe
                     var capture = Stopwatch.StartNew();
                     BattleTurnState root = CaptureReadOnly(managers);
                     pendingCardChoice = null;
+                    ClearMixChoice();
                     lastCapture = root;
                     capture.Stop();
                     LastCaptureMs = capture.Elapsed.TotalMilliseconds; TotalCaptureMs += LastCaptureMs;
@@ -839,7 +853,8 @@ namespace MonsterTrain2Poju.Probe
         }
         internal static void InstallAdvisorPatches(Harmony harmony)
         {
-            foreach (Type patch in new[] { typeof(CardPlayedPatch), typeof(EndTurnPatch), typeof(EndTurnRecordedPatch), typeof(UndoPatch), typeof(RestartPatch), typeof(SelectionPatch), typeof(MutationPatch) })
+            foreach (Type patch in new[] { typeof(CardPlayedPatch), typeof(EndTurnPatch), typeof(EndTurnRecordedPatch), typeof(UndoPatch), typeof(RestartPatch), typeof(SelectionPatch), typeof(MutationPatch),
+                typeof(ElixirDraftSetupPatch), typeof(ElixirDraftApplyPatch), typeof(ElixirDraftSkipPatch) })
                 harmony.CreateClassProcessor(patch).Patch();
         }
         private sealed class CardInputState
@@ -850,6 +865,7 @@ namespace MonsterTrain2Poju.Probe
             internal bool DirectHandPlay;
             internal bool Matches;
             internal CardRecursionSelection? CardChoice;
+            internal AdvisorMixChoice? MixChoice;
         }
 
         private CardInputState PrepareCardInput(CardState card, CharacterState selfTarget, SpawnPoint drop,
@@ -877,6 +893,9 @@ namespace MonsterTrain2Poju.Probe
             if (planned != null && planned.RecursionSelections.Count == 1 && planned.MixSelections.Count == 0 &&
                 planned.SummonSelections.Count == 0 && planned.RecursionSelections[0].CardInstanceIds.Count > 0)
                 input.CardChoice = planned.RecursionSelections[0];
+            if (planned != null && planned.MixSelections.Count > 0 && planned.RecursionSelections.Count == 0 &&
+                planned.SummonSelections.Count == 0)
+                input.MixChoice = new AdvisorMixChoice(planned);
             return input;
         }
 
@@ -928,9 +947,18 @@ namespace MonsterTrain2Poju.Probe
             if (accepted && input.Diagnostic != null) journal?.Record(input.Diagnostic);
             if (!input.DirectHandPlay || !accepted) return;
             pendingCardChoice = null;
+            ClearMixChoice();
             if (input.Advice == null || !ReferenceEquals(displayed, input.Advice) || tentativeSteps != input.Offset ||
-                (!input.Matches && input.CardChoice == null))
+                (!input.Matches && input.CardChoice == null && input.MixChoice == null))
             { ShowMessage("正在核对局面…"); return; }
+            if (input.MixChoice != null)
+            {
+                pendingMixChoice = input.MixChoice;
+                cardHover.Entries.Clear();
+                body.text = "正在核对局面…";
+                SetPending(true);
+                return;
+            }
             if (input.CardChoice != null)
             {
                 pendingCardChoice = input.CardChoice;
@@ -975,7 +1003,7 @@ namespace MonsterTrain2Poju.Probe
         {
             private static void Prefix()
             {
-                if (Active != null && !Active.capturing && (Active.tentativeSteps > 0 || Active.pendingCardChoice != null) &&
+                if (Active != null && !Active.capturing && (Active.tentativeSteps > 0 || Active.pendingCardChoice != null || Active.pendingMixChoice != null) &&
                     AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false && !PreviewRngIsolation.Active)
                     Active.ShowMessage("正在核对局面…");
                 NativeAction(reason: "end-turn");

@@ -35,11 +35,13 @@ namespace MonsterTrain2Poju.Probe
             var summonChoices = action.SummonSelections.Select(choice =>
                 (choice.EffectIndex, Label: "选择 " + summonName(choice.CardDataId)));
             var draftChoices = action.MixSelections.OrderBy(choice => choice.EffectIndex).ThenBy(choice => choice.MixNumber)
-                .Select((choice, index) => (choice.EffectIndex,
-                    Label: "第 " + (index + 1) + " 次备选中选第 " + (choice.ChoiceIndex + 1) + " 项"));
+                .Select((choice, index) => (choice.EffectIndex, Label: MixChoice(index, choice.ChoiceIndex)));
             return string.Concat(cardChoices.Concat(summonChoices).Concat(draftChoices)
                 .OrderBy(choice => choice.EffectIndex).Select(choice => " · " + choice.Label));
         }
+
+        internal static string MixChoice(int draftIndex, int choiceIndex) =>
+            "第 " + (draftIndex + 1) + " 次备选中选第 " + (choiceIndex + 1) + " 项";
 
         internal static string ChoiceCard(string title, bool duplicate, string? position, string? upgrades) =>
             !duplicate ? title : title + "（" + string.Join("，", new[] { position, upgrades }
@@ -53,5 +55,34 @@ namespace MonsterTrain2Poju.Probe
         internal static string EndTurn(BattleSearchStep step) => "结束回合" +
             (step.RelentlessDecisions?.Count > 0 ? "；" + string.Join("；", step.RelentlessDecisions.Select(choice =>
                 "第 " + (choice.RoomIndex + 1) + " 层第 " + choice.CompletedRounds + " 轮" + (choice.Continue ? "继续" : "放弃"))) : "");
+    }
+
+    internal sealed class AdvisorMixChoice
+    {
+        private readonly ElixirMixSelection[] ordered;
+        private int index;
+        private bool open;
+
+        internal AdvisorMixChoice(PlayCardAction action) => ordered = action.MixSelections
+            .OrderBy(choice => choice.EffectIndex).ThenBy(choice => choice.MixNumber).ToArray();
+
+        internal bool Open()
+        {
+            if (open || index >= ordered.Length) return false;
+            open = true;
+            return true;
+        }
+
+        internal string? Prompt(bool screenActive, int offerCount) => open && screenActive &&
+            ordered[index].ChoiceIndex >= 0 && ordered[index].ChoiceIndex < offerCount
+            ? AdvisorForecastPresentation.MixChoice(index, ordered[index].ChoiceIndex) : null;
+
+        internal bool Choose(int actualIndex)
+        {
+            if (!open) return false;
+            open = false;
+            index = actualIndex >= 0 && actualIndex == ordered[index].ChoiceIndex ? index + 1 : ordered.Length;
+            return index < ordered.Length;
+        }
     }
 }
