@@ -3031,7 +3031,12 @@ if ($InputProfile) {
     }
     $checkpointSave = Join-Path $checkpoint $(if ($RegionRunInput) { 'saves/save-regionRun.json' } else { 'saves/save-singlePlayer.json' })
     $checkpointData = Get-Content -LiteralPath $checkpointSave -Raw | ConvertFrom-Json
-    if ($checkpointData.gameSequence -ne 6 -or $checkpointData.runState.distance -ne $BattleDistance) {
+    $nativeEndlessDestination = $OriginalEndlessEnemyScalingWitness -and $checkpointData.gameSequence -eq 3 -and
+        $checkpointData.runState.loopIndex -eq 1 -and $checkpointData.runState.numBattlesCompleted -gt 0 -and
+        $checkpointData.wasDevCheatUsed -eq $false -and
+        (Test-Path -LiteralPath (Join-Path $checkpoint 'native-endless-transition.mt2f') -PathType Leaf)
+    if (($checkpointData.gameSequence -ne 6 -and !$nativeEndlessDestination) -or
+        $checkpointData.runState.distance -ne $BattleDistance) {
         throw 'InputProfile must be a native BattleIntro checkpoint at BattleDistance.'
     }
     if ($OriginalEndlessEnemyScalingWitness) {

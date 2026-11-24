@@ -365,8 +365,15 @@ namespace MonsterTrain2Poju.Probe
                     RunType runType = Environment.GetEnvironmentVariable("MT2_PROBE_REGION_RUN_INPUT") == "1"
                         ? RunType.RegionRun : RunType.Class;
                     save.SetActiveRunType(runType);
+                    bool canOpenBattle = save.GetGameSequence() == SaveData.GameSequence.BattleIntro;
+#if DEVELOPMENT_PROBE
+                    canOpenBattle |= OriginalEndlessEnemyScalingWitness.Enabled &&
+                        save.GetGameSequence() == SaveData.GameSequence.DestinationReached && save.IsEndlessRun &&
+                        save.GetRunType() == RunType.Class && !save.InTestScenario && !SaveManager.WasDevCheatUsed &&
+                        save.GetRunState().GetLoopIndex() == 1 && save.GetRunState().GetNumBattlesCompleted() > 0;
+#endif
                     if (!save.HasRun(runType) || save.GetCurrentDistance() != targetDistance ||
-                        save.GetGameSequence() != SaveData.GameSequence.BattleIntro)
+                        !canOpenBattle)
                         throw new InvalidOperationException("A resumed battle requires a matching native BattleIntro checkpoint.");
                     if (runType == RunType.RegionRun && (!save.IsDlcInstalled(DLC.Railforged) || save.InTestScenario || SaveManager.WasDevCheatUsed))
                         throw new InvalidOperationException("Expected the installed original Soul Savior campaign.");
