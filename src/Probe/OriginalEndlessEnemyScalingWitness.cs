@@ -33,8 +33,9 @@ namespace MonsterTrain2Poju.Probe
         private static readonly List<Wave> Waves = new List<Wave>();
         private static Wave? activeWave;
 
-        internal static void CaptureFactorBatch(AllGameData gameData)
+        internal static void CaptureFactorBatch(AllGameManagers managers)
         {
+            var gameData = managers.GetAllGameData();
             var balance = gameData.GetBalanceData();
             var owner = balance.GetEndlessScalingSins();
             int runLength = balance.GetRunData(forFtue: false, forEndless: true, forRegionRun: false).GetNumDistances();
@@ -61,8 +62,7 @@ namespace MonsterTrain2Poju.Probe
                                Heal = scaling.GetCardEffectHealScaling(loop, distance, runLength),
                                Damage = scaling.GetCardEffectDamageScaling(loop, distance, runLength)
                            }).ToArray();
-            // This accessor exists on the pinned client, while Probe also builds against older references.
-            var statusData = (StatusEffectsData)AccessTools.Method(typeof(AllGameData), "GetAllStatusEffectsData").Invoke(gameData, null);
+            var statusData = managers.GetStatusEffectManager().GetAllStatusEffectsData();
             var statuses = statusData.GetStatusEffectData()
                 .Select(data => new { Id = data.GetStatusId(), ScalesInEndless = data.ScalesInEndless() })
                 .OrderBy(data => data.Id, StringComparer.Ordinal).ToArray();

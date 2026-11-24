@@ -383,7 +383,7 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                 if (OriginalEndlessEnemyScalingWitness.FactorBatch)
                 {
-                    OriginalEndlessEnemyScalingWitness.CaptureFactorBatch(save.GetAllGameData());
+                    OriginalEndlessEnemyScalingWitness.CaptureFactorBatch(managers!);
                     Finish(true, "Original Endless scaling factor queries captured.");
                     return;
                 }
