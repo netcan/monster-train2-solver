@@ -36,7 +36,7 @@ namespace MonsterTrain2Poju.Model
             => HasOriginalFirstWavePair(units) || HasInfestedOpeningWave(units);
 
         internal static bool HasScaledWave(EnemySpawnState source, IReadOnlyList<EnemyDefinition> definitions) =>
-            source.Turn is 1 or 2 && source.Phase == source.Turn && IsScaledCampaign(source.Train.Context) &&
+            source.Turn is >= 1 and <= 3 && source.Phase == source.Turn && IsScaledCampaign(source.Train.Context) &&
             definitions.Any(entry => entry.Unit.Status(StatusId) != null) &&
             definitions.All(entry => entry.Unit.RegisteredStatus("hivemindkiller") == null &&
                 (entry.Unit.RegisteredStatus(StatusId) == null || entry.Unit.Status(StatusId) is CombatStatus status &&
@@ -107,10 +107,11 @@ namespace MonsterTrain2Poju.Model
             (unit.AssetKey == Hunter && unit.MaxHealth == 4 && unit.Triggers is [{ Kind: "OnKill" }] ||
              unit.AssetKey == Infested && unit.MaxHealth == 38 && unit.Triggers is [{ Kind: "OnKill" }, { Kind: "OnEaten" }]) &&
             (unit.Modifiers!.Upgrades.Count == 0 || unit.Modifiers.Upgrades is [var upgrade] &&
-                (IsAttackUpgrade(upgrade, 0) || IsAttackUpgrade(upgrade, 8) || IsAttackUpgrade(upgrade, 18)));
+                (IsAttackUpgrade(upgrade, 0) || IsAttackUpgrade(upgrade, 8) || IsAttackUpgrade(upgrade, 18) ||
+                 context?.QueryFrame?.Turn == 4 && IsAttackUpgrade(upgrade, 17)));
 
         internal static bool IsScaledFirstWaveBirth(CombatUnit unit, CombatContext? context) =>
-            context?.QueryFrame?.Turn is 1 or 2 && IsScaledCampaign(context) && unit.Status(StatusId) is { Stacks: 1 or 2 } status &&
+            context?.QueryFrame?.Turn is >= 1 and <= 3 && IsScaledCampaign(context) && unit.Status(StatusId) is { Stacks: 1 or 2 } status &&
             IsOriginalStatus(unit, status.WithStacks(1)) && unit.RegisteredStatus("hivemindkiller") == null &&
             (unit.AssetKey == Hunter && unit.MaxHealth is >= 3 and <= 4 ||
              unit.AssetKey == Infested && unit.MaxHealth is >= 30 and <= 38) &&
@@ -171,16 +172,18 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static bool IsScaledCarriedFeedOwner(CombatUnit unit, CombatContext? context) =>
-            context?.QueryFrame?.Turn is 2 or 3 && IsScaledCampaign(context) && IsScaledFeedRecipient(unit);
+            context?.QueryFrame?.Turn is >= 2 and <= 4 && IsScaledCampaign(context) &&
+            IsScaledFeedRecipient(unit, allowRefreshedTurnFour: context.QueryFrame.Turn == 4);
 
-        private static bool IsScaledFeedRecipient(CombatUnit unit) =>
+        private static bool IsScaledFeedRecipient(CombatUnit unit, bool allowRefreshedTurnFour = false) =>
             unit is { AssetKey: Heavy, MaxHealth: 75 } &&
             IsFeedRecipient(unit) && unit.RegisteredStatus("hivemindkiller") == null &&
             unit.Status(StatusId) is { Stacks: 3 or 6 or 9 or 12, ParamInt: 1 } status &&
             unit.Modifiers!.Upgrades.Count(IsFeedUpgrade) == status.Stacks / 3 &&
             unit.Modifiers.Upgrades.Count(upgrade => IsAttackUpgrade(upgrade, unit.BaseAttack - 12)) <= 1 &&
             unit.Modifiers.Upgrades.All(upgrade => IsFeedUpgrade(upgrade) ||
-                upgrade.Stats.Damage is 0 or 18 && IsAttackUpgrade(upgrade, unit.BaseAttack - 12));
+                (upgrade.Stats.Damage is 0 or 18 || allowRefreshedTurnFour && upgrade.Stats.Damage == 17) &&
+                IsAttackUpgrade(upgrade, unit.BaseAttack - 12));
 
         internal static CombatUnit? RegisterScaledWaveOwner(RoomCombatState room, CombatUnit unit, out string? error)
         {
@@ -192,7 +195,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static bool HasScaledDraw(TrainCombatState source)
         {
-            if (source.Context?.QueryFrame?.Turn is not (2 or 3) || !IsScaledCampaign(source.Context)) return false;
+            if (source.Context?.QueryFrame?.Turn is not (>= 2 and <= 4) || !IsScaledCampaign(source.Context)) return false;
             CombatUnit[] units = source.Rooms.SelectMany(room => room.Units).ToArray();
             return units.Any(unit => IsScaledFirstWaveOwner(unit, source.Context) &&
                     unit.Modifiers!.Upgrades is [var upgrade] && IsAttackUpgrade(upgrade, 0)) &&
