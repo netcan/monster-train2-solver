@@ -982,7 +982,7 @@ namespace MonsterTrain2Poju.Probe
             if (stage != Stage.Replaying && stage != Stage.Restarting && screen.GetTopScreen() == ScreenName.Dialog)
             {
 #if DEVELOPMENT_PROBE
-                if (RollingAdviceScenario.DeploymentOnly && stage == Stage.Battle) return;
+                if ((RollingAdviceScenario.DeploymentOnly || PlayerAdvisorProbe.ObserveEndlessLoop2) && stage == Stage.Battle) return;
 #endif
                 DialogScreen? dialog = screen.GetScreen(ScreenName.Dialog) as DialogScreen;
                 if (dialog != null && ReplayRelentlessChoices.TryHandle(dialog, log)) return;
@@ -1370,6 +1370,12 @@ namespace MonsterTrain2Poju.Probe
             }
             if (fullBattle && OriginalEndlessEnemyScalingWitness.Enabled)
             {
+                if (PlayerAdvisorProbe.ObserveEndlessLoop2)
+                {
+                    if (PlayerAdvisorProbe.TryCaptureEndlessLoop2(managers, FullBattleTrace.Active!))
+                        Finish(true, "Player Advisor displayed the original Endless Loop 2 deployment without battle inputs.");
+                    return;
+                }
                 if (!OriginalEndlessEnemyScalingWitness.AllWaves)
                 {
                     FullBattleTrace trace = FullBattleTrace.Active!;

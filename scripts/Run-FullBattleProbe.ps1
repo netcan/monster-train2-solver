@@ -642,6 +642,7 @@ param(
     [switch] $EndlessEnemyScalingWholeBattle,
     [switch] $EndlessEnemyScalingControlledNextRing,
     [switch] $EndlessEnemyScalingControlledLoop2,
+    [switch] $EndlessLoop2AdvisorObservation,
     [string] $EndlessEnemyScalingLoop2CorruptionPlan = '',
     [switch] $EndlessEnemyScalingLoop2CorruptionTerminal,
     [ValidateRange(1, 2)] [int] $EndlessEnemyScalingControlledDistance = 1,
@@ -1132,6 +1133,12 @@ if ($EndlessEnemyScalingControlledLoop2 -and (!$OriginalEndlessEnemyScalingWitne
     $EndlessEnemyScalingAllWaves -or $EndlessEnemyScalingWholeBattle -or $EndlessEnemyScalingControlledNextRing)) {
     throw 'EndlessEnemyScalingControlledLoop2 requires the original post-victory InputProfile and the single-wave Endless witness at BattleDistance 0.'
 }
+if ($EndlessLoop2AdvisorObservation) {
+    if (!$EndlessEnemyScalingControlledLoop2 -or $EndlessEnemyScalingLoop2CorruptionPlan) {
+        throw 'EndlessLoop2AdvisorObservation requires the controlled Loop 2 opening without a paid replay.'
+    }
+    $PlayerAdvisor = $true
+}
 if ($EndlessEnemyScalingLoop2CorruptionPlan) {
     if (!$EndlessEnemyScalingControlledLoop2) {
         throw 'EndlessEnemyScalingLoop2CorruptionPlan requires EndlessEnemyScalingControlledLoop2.'
@@ -1153,7 +1160,8 @@ if ($EndlessEnemyScalingAllWaves -and (!$OriginalEndlessEnemyScalingWitness -or 
 if ($OriginalEndlessEnemyScalingWitness) {
     $witnessArguments = @('OriginalEndlessEnemyScalingWitness', 'EndlessEnemyScalingAllWaves', 'EndlessEnemyScalingWholeBattle',
         'EndlessEnemyScalingControlledNextRing', 'EndlessEnemyScalingControlledLoop2', 'EndlessEnemyScalingControlledDistance',
-        'EndlessEnemyScalingLoop2CorruptionPlan', 'EndlessEnemyScalingLoop2CorruptionTerminal', 'InputProfile', 'BattleDistance', 'Seed',
+        'EndlessEnemyScalingLoop2CorruptionPlan', 'EndlessEnemyScalingLoop2CorruptionTerminal', 'EndlessLoop2AdvisorObservation',
+        'InputProfile', 'BattleDistance', 'Seed',
         'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild',
         'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if ($EndlessEnemyScalingControlledNextRing -and $EndlessEnemyScalingControlledDistance -eq 2 -and $OuterBossBirth -and $OuterBossTurns) {
@@ -1463,7 +1471,7 @@ if ($PlayerAdvisor) {
     if ($Advisor -or $DotNetPlanner) {
         throw 'PlayerAdvisor uses the real in-process player overlay without a development advisor.'
     }
-    $Planner = -not [bool]$RollingAdvice
+    $Planner = !$RollingAdvice -and !$EndlessLoop2AdvisorObservation
     # Observe the same native mechanisms in the independent development trace.
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
@@ -3458,6 +3466,7 @@ $environment = @{
     MT2_PROBE_ENDLESS_ENEMY_SCALING_WHOLE_BATTLE = $(if ($EndlessEnemyScalingWholeBattle) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_CONTROLLED_NEXT_RING = $(if ($EndlessEnemyScalingControlledNextRing) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_CONTROLLED_LOOP2 = $(if ($EndlessEnemyScalingControlledLoop2) { '1' } else { '0' })
+    MT2_PROBE_ENDLESS_LOOP2_ADVISOR_OBSERVATION = $(if ($EndlessLoop2AdvisorObservation) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_LOOP2_CORRUPTION_PLAN = $EndlessEnemyScalingLoop2CorruptionPlan
     MT2_PROBE_ENDLESS_LOOP2_CORRUPTION_TERMINAL = $(if ($EndlessEnemyScalingLoop2CorruptionTerminal) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_CONTROLLED_DISTANCE = "$EndlessEnemyScalingControlledDistance"
@@ -4725,6 +4734,41 @@ if ($EndlessEnemyScalingFactorBatch) {
         throw "Original Endless scaling factor batch failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-ENDLESS-ENEMY-SCALING-FACTORS PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($EndlessLoop2AdvisorObservation) {
+    $capturePath = Join-Path $profile 'endless-loop2-advisor-observation.mt2f'
+    $screenshot = Join-Path $profile 'advisor-ready.png'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $screenshot -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -SimpleMatch 'DEPTH-PASS Player Advisor displayed the original Endless Loop 2 deployment without battle inputs.' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore -or (Get-OriginalSignature $checkpoint) -cne $endlessInputSignature) {
+        throw "Original Endless Loop 2 Advisor observation failed. Inspect $unityLog"
+    }
+    Add-Type -Path (Join-Path $nativeBuildWorkspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $document = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
+    try {
+        $capture = $document.RootElement
+        if ($capture.GetProperty('Schema').GetInt32() -ne 1 -or
+            $capture.GetProperty('EvidenceKind').GetString() -cne 'NativeEndlessLoop2AdvisorObservation' -or
+            $capture.GetProperty('GameVersion').GetString() -cne '2.3.1' -or
+            [Guid]$capture.GetProperty('GameModuleMvid').GetString() -ne $nativeModule -or
+            $capture.GetProperty('Loop').GetInt32() -ne 2 -or $capture.GetProperty('Distance').GetInt32() -ne 0 -or
+            $capture.GetProperty('Root').GetProperty('Spawn').GetProperty('Turn').GetInt32() -ne 0 -or
+            $capture.GetProperty('Assembly').GetString() -cne 'MonsterTrain2Poju.Advisor' -or
+            $capture.GetProperty('Steps').GetInt32() -lt 1 -or $capture.GetProperty('Publications').GetInt32() -lt 1 -or
+            $capture.GetProperty('PublicationRootChecks').GetInt32() -lt 1 -or $capture.GetProperty('PurityFailures').GetInt32() -ne 0 -or
+            $capture.GetProperty('PanelVertices').GetInt32() -lt 1 -or $capture.GetProperty('PanelPixels').GetInt32() -lt 1000 -or
+            $capture.GetProperty('CardInputs').GetInt32() -ne 0 -or $capture.GetProperty('EndTurnInputs').GetInt32() -ne 0 -or
+            !$capture.GetProperty('OpeningStateAndGameplayRngUnchanged').GetBoolean() -or !$capture.GetProperty('RenderStateAndRngUnchanged').GetBoolean()) {
+            throw 'Expected a rendered standalone Advisor publication from the original Loop 2 deployment with zero battle inputs and unchanged state and RNG.'
+        }
+        $forecast = if ($capture.GetProperty('CurrentActionOnly').GetBoolean()) { 'first-action' }
+            elseif ($capture.GetProperty('Terminal').GetBoolean()) { 'complete' }
+            else { 'partial' }
+        Write-Output "NATIVE-ENDLESS-LOOP2-ADVISOR PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash) screenshot=$screenshot forecast=$forecast"
+    }
+    finally { $document.Dispose() }
     return
 }
 if ($OriginalEndlessEnemyScalingWitness) {

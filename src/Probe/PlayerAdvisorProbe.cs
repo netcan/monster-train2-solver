@@ -19,6 +19,8 @@ namespace MonsterTrain2Poju.Probe
     internal static class PlayerAdvisorProbe
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_PLAYER_ADVISOR") == "1";
+        internal static bool ObserveEndlessLoop2 => Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_LOOP2_ADVISOR_OBSERVATION") == "1";
+        private static string? loop2DeploymentStamp;
         private static object? advisor;
         private static Type? type;
         private static int phase, boundaryFrame, captureCount, publicationCount;
@@ -271,6 +273,68 @@ namespace MonsterTrain2Poju.Probe
                 Get<int>("Captures") == 1 && Get<int>("Failures") == 0 && Get<int>("PurityFailures") == 0,
                 "deployment observation is missing one pure initial player capture");
             return root;
+        }
+
+        internal static bool TryCaptureEndlessLoop2(AllGameManagers managers, FullBattleTrace trace)
+        {
+            Resolve();
+            SaveManager save = managers.GetSaveManager();
+            CombatManager combat = managers.GetCombatManager();
+            int loop = save.GetRunState().GetLoopIndex();
+            int distance = save.GetCurrentDistance();
+            Require(loop == 2 && distance == 0 && combat.IsPlacementPhase && combat.GetTurnCount() == 0 &&
+                CheckNoBattleInputs(), "Loop 2 observation requires the original deployment with zero battle inputs");
+            string Stamp(bool presentationRng) => TwoTurnScenario.CaptureSnapshot("loop2-advisor", managers, save, combat,
+                managers.GetCardManager(), log!, writeLog: false, includePresentationRng: presentationRng) +
+                " room=" + managers.GetRoomManager().GetSelectedRoom();
+            string gameplayStamp = Stamp(presentationRng: false);
+            loop2DeploymentStamp ??= gameplayStamp;
+            Require(loop2DeploymentStamp == gameplayStamp, "native deployment or gameplay RNG changed while waiting for advice");
+            Require(Get<int>("PurityFailures") == 0 && Get<int>("Failures") == 0, "production Advisor capture failed");
+
+            BattleAdviceSession session = Field<BattleAdviceSession>("session");
+            if (!PublicationSettled(session)) return false;
+            string renderStamp = Stamp(presentationRng: true);
+            UnityEngine.Random.State unityRng = UnityEngine.Random.state;
+            BattleTurnState root = Capture();
+            Require(session.MatchesCurrentRoot(root) && (bool)Call("ReadyFor", root)!, "displayed advice does not match its live native root");
+            BattleAdvice advice = Advice;
+            BattleSearchStep first = advice.Plan.Steps.FirstOrDefault() ??
+                throw new InvalidOperationException("Expected a published Loop 2 recommendation.");
+            bool terminal = AdvisorForecastPresentation.IsTerminal(advice.Plan.Outcome);
+            string forecast = advice.CurrentActionOnly ? AdvisorForecastPresentation.CurrentActionOnly :
+                AdvisorForecastPresentation.Describe(advice.Plan.Outcome, advice.Plan.TurnsCompleted,
+                    PyreHealth(root), PyreHealth(advice.Plan.State));
+            Text body = Field<Text>("body");
+            string actionText = first.IsEndTurn ? "结束回合" : "第 " + (first.Action!.RoomIndex + 1) + " 层";
+            Require(body.isActiveAndEnabled && body.text.StartsWith(forecast, StringComparison.Ordinal) && body.text.Contains(actionText),
+                "Loop 2 recommendation or its forecast scope is missing from the production panel");
+            Call("CapturePanel");
+            Require(renderStamp == Stamp(presentationRng: true) && unityRng.Equals(UnityEngine.Random.state) && CheckNoBattleInputs(),
+                "observing and rendering the panel changed battle state, RNG or input counts");
+
+            using var document = MonsterTrain2Poju.Capture.NativeFixtureCapture.Capture(new
+            {
+                Schema = 1, EvidenceKind = "NativeEndlessLoop2AdvisorObservation",
+                GameVersion = Application.version, GameModuleMvid = typeof(CardState).Module.ModuleVersionId,
+                Scenario = save.GetCurrentScenarioData()?.name, Loop = loop, Distance = distance,
+                Assembly = type!.Assembly.GetName().Name, Version = type.Assembly.GetName().Version?.ToString(),
+                Root = root, advice.RootKey, First = first, Steps = advice.Plan.Steps.Count, advice.Plan.Outcome,
+                Terminal = terminal, advice.CurrentActionOnly, PanelText = body.text, PanelVertices = Get<int>("PanelVertices"),
+                PanelPixels = Get<int>("PanelPixels"), Publications = Get<int>("Published"),
+                PublicationRootChecks = Get<int>("PublicationRootChecks"), PurityFailures = Get<int>("PurityFailures"),
+                CardInputs = trace.ObservedActionCount, EndTurnInputs = trace.ObservedTurns.Count,
+                OpeningStateAndGameplayRngUnchanged = true, RenderStateAndRngUnchanged = true
+            });
+            using var output = System.IO.File.Create(System.IO.Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                "endless-loop2-advisor-observation.mt2f"));
+            document.Write(output);
+            return true;
+
+            bool CheckNoBattleInputs() => trace.ObservedActionCount == 0 && trace.ObservedTurns.Count == 0 &&
+                Get<long>("DiagnosticCardInputs") == 0;
+            int PyreHealth(BattleTurnState state) => state.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .Where(unit => unit.IsPyre).Select(unit => unit.Health).FirstOrDefault();
         }
 
         internal static long ResumeAfterFrozenPrefix()
@@ -808,9 +872,8 @@ namespace MonsterTrain2Poju.Probe
                 GenerationBefore = generation, GenerationAfter = session.Generation };
         }
 
-        private static bool Ready()
+        private static bool PublicationSettled(BattleAdviceSession session)
         {
-            BattleAdviceSession session = Field<BattleAdviceSession>("session");
             Require(session.Status != BattleAdviceStatus.Unavailable, "player advice unavailable: " + session.Error);
             if (CurrentIsNull()) return false;
             // Retained advice stays readable while the next observation is being
@@ -821,6 +884,13 @@ namespace MonsterTrain2Poju.Probe
                 !ReferenceEquals(Field<BattleAdvice?>("displayed"), session.Current) ||
                 Time.frameCount <= Field<int>("displayFrame") + 1)
             { pendingPublicationWaits++; return false; }
+            return true;
+        }
+
+        private static bool Ready()
+        {
+            BattleAdviceSession session = Field<BattleAdviceSession>("session");
+            if (!PublicationSettled(session)) return false;
             // Both assemblies allocate their own capture identities. Compare
             // the player publication with a fresh native capture in its own
             // identity space; translate chosen inputs by native object identity.
