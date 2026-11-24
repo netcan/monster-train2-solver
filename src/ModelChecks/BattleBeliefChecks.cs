@@ -44,6 +44,9 @@ internal static class BattleBeliefChecks
         var wrongScore = new BattleBeliefPolicy(plan.Policy.Action, plan.Policy.IsEndTurn, false,
             plan.Policy.ExpectedScore + 1, true, plan.Policy.AllTerminal, plan.Policy.Branches);
         RejectPolicy(wrongScore, "Large terminal-score scale hid a one-health expected-value error.");
+        var ambiguousEndTurn = new BattleBeliefPolicy(new PlayCardAction(1, 0), true, false,
+            plan.Policy.ExpectedScore, true, plan.Policy.AllTerminal, plan.Policy.Branches);
+        RejectPolicy(ambiguousEndTurn, "Replay silently ignored the card action attached to an EndTurn.", horizon: 2);
         foreach (double nonfinite in new[] { double.PositiveInfinity, double.NegativeInfinity, double.NaN })
         {
             var leaf = new BattleBeliefPolicy(null, false, true, nonfinite, true, false, []);
@@ -83,11 +86,25 @@ internal static class BattleBeliefChecks
         Require(expired.TimedOut && expired.Policy.IsLeaf && !expired.Policy.CompletedHorizon && !expired.Policy.AllTerminal &&
             !expired.CertifiedFiniteHorizonOptimal, "Belief time cutoff certified a result.");
         BattleBeliefReplay.Verify(belief, expired.Policy, decisionHorizon: 3);
+        var leafWithBranches = new BattleBeliefPolicy(null, false, true, expired.Policy.ExpectedScore, false, false,
+            plan.Policy.Branches);
+        RejectPolicy(leafWithBranches, "Replay silently ignored the branches attached to a leaf.", horizon: 3);
+        var leafWithAction = new BattleBeliefPolicy(new PlayCardAction(1, 0), false, true,
+            expired.Policy.ExpectedScore, false, false, []);
+        RejectPolicy(leafWithAction, "Replay silently ignored the card action attached to a leaf.", horizon: 3);
         var falseTerminal = new BattleBeliefPolicy(null, false, true, expired.Policy.ExpectedScore, false, true, []);
         RejectPolicy(falseTerminal, "Replay accepted a false terminal claim.");
         var falseHorizon = new BattleBeliefPolicy(null, false, true, expired.Policy.ExpectedScore, true, false, []);
         RejectPolicy(falseHorizon, "Replay accepted a premature horizon claim.", horizon: 3);
         RejectPolicy(plan.Policy, "Replay accepted an action beyond the declared horizon.", horizon: 0);
+
+        var otherVisibleRoot = roots.First(state => observed.Key(state) != observed.Key(root));
+        var mixedObservations = new BattleBelief([new BattleBeliefWorld(root, 1), new BattleBeliefWorld(otherVisibleRoot, 1)],
+            true, "DifferentVisibleNativeTurns");
+        var mixedScore = mixedObservations.Worlds.Sum(world => world.Weight * BattlePlanner.Evaluate(world.State, world.Outcome));
+        var mixedLeaf = new BattleBeliefPolicy(null, false, true, mixedScore, true, false, []);
+        RejectPolicy(mixedLeaf, "Replay accepted different initial visible observations as a single belief.", horizon: 0,
+            source: mixedObservations);
 
         var terminalState = turns[^1].GetProperty("Actual").Deserialize<BattleTurnState>()!;
         var terminalOutcome = turns[^1].GetProperty("ActualOutcome").Deserialize<RoomOutcome>();

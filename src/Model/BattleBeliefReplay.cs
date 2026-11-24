@@ -30,6 +30,8 @@ namespace MonsterTrain2Poju.Model
         {
             evaluate ??= BattlePlanner.Evaluate;
             using var observations = new BattleObservationKeys(); using var stateKeys = new BattleStateKeys();
+            if (belief.Worlds.Select(world => observations.Key(world.State, world.Outcome)).Distinct().Count() != 1)
+                throw new InvalidOperationException("Initial hypotheses must have the same visible observation.");
             var totals = new Dictionary<BattleBeliefPolicy,
                 (CompensatedSum Mass, CompensatedSum Value, bool HasNonterminal, bool StoppedBeforeHorizon)>();
             var masses = new Dictionary<BattleBeliefPolicy, Dictionary<string, double>>();
@@ -46,7 +48,14 @@ namespace MonsterTrain2Poju.Model
                 while (true)
                 {
                     path.Add(node);
-                    if (node.IsLeaf) break;
+                    if (node.IsLeaf)
+                    {
+                        if (node.IsEndTurn || node.Action != null || node.Branches.Count != 0)
+                            throw new InvalidOperationException("Policy leaf contains an action or observation branches.");
+                        break;
+                    }
+                    if (node.IsEndTurn && node.Action != null)
+                        throw new InvalidOperationException("Policy EndTurn also contains a card action.");
                     if (Terminal(outcome)) throw new InvalidOperationException("Policy takes an action after a terminal outcome.");
                     if (path.Count - 1 >= decisionHorizon)
                         throw new InvalidOperationException("Policy takes an action beyond its decision horizon.");
