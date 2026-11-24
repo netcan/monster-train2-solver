@@ -81,6 +81,7 @@ namespace MonsterTrain2Poju.Probe
         private readonly bool endlessScalingWholeBattle = Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_WHOLE_BATTLE") == "1";
         private bool endlessWavesCaptured;
         private bool endlessOpeningCaptured;
+        private bool endlessAdvisorHandoffCaptured, endlessAdvisorSelectingFloor;
 #endif
 
         internal NativeReplayScenario(ManualLogSource log)
@@ -983,6 +984,8 @@ namespace MonsterTrain2Poju.Probe
             {
 #if DEVELOPMENT_PROBE
                 if ((RollingAdviceScenario.DeploymentOnly || PlayerAdvisorProbe.ObserveEndlessLoop2) && stage == Stage.Battle) return;
+                if (PlayerAdvisorProbe.ObserveEndlessLoop2FirstEndTurn && stage == Stage.WaitingTurn)
+                    throw new InvalidOperationException("The original Loop 2 first EndTurn opened an unexpected dialog.");
 #endif
                 DialogScreen? dialog = screen.GetScreen(ScreenName.Dialog) as DialogScreen;
                 if (dialog != null && ReplayRelentlessChoices.TryHandle(dialog, log)) return;
@@ -1131,6 +1134,16 @@ namespace MonsterTrain2Poju.Probe
                         return;
                     }
                     PreviewSchedulingProbe.Observe("RoomSelectionReady");
+#if DEVELOPMENT_PROBE
+                    if (endlessAdvisorSelectingFloor)
+                    {
+                        endlessAdvisorSelectingFloor = false;
+                        PlayerAdvisorProbe.RecordEndlessLoop2FloorSelection(wanted);
+                        pendingPlay = null;
+                        Enter(Stage.Battle, 60f);
+                        return;
+                    }
+#endif
                     if (pendingPlay != null) PlayPendingPolicyCard(managers, cards!);
                     else PlayConfiguredCard(cards!);
                 }
@@ -1373,10 +1386,48 @@ namespace MonsterTrain2Poju.Probe
                 if (PlayerAdvisorProbe.ObserveEndlessLoop2)
                 {
                     FullBattleTrace observation = FullBattleTrace.Active!;
-                    if (PlayerAdvisorProbe.EndlessLoop2HandoffStarted)
+                    if (endlessAdvisorHandoffCaptured)
+                    {
+                        if (observation.ObservedTurns.Count > 0)
+                        {
+                            observation.CompleteEndTurn(RoomOutcome.Exchanged);
+                            if (PlayerAdvisorProbe.TryCaptureEndlessLoop2FirstEndTurn(managers, observation))
+                                Finish(true, "Player Advisor retained the original Endless Loop 2 suffix through the first EndTurn.");
+                        }
+                        else if (PlayerAdvisorProbe.TryGetEndlessLoop2FirstTurnStep(observation, out var next))
+                        {
+                            if (next!.IsEndTurn)
+                            {
+                                if (next.RelentlessDecisions?.Count > 0)
+                                    throw new InvalidOperationException("Expected no Relentless choices in the first Loop 2 wave.");
+                                AdvanceTurn(combat!);
+                            }
+                            else
+                            {
+                                var action = next.Action!;
+                                if (action.Operation != null || action.ActivatorUnitId != 0 || action.ActivatorRoomIndex != null ||
+                                    action.RecursionSelections.Count != 0 || action.MixSelections.Count != 0 || action.SummonSelections.Count != 0)
+                                    throw new InvalidOperationException("The first Loop 2 turn requires a direct advised hand play.");
+                                pendingPlay = PlayerAdvisorProbe.NativeAction(action);
+                                RoomManager rooms = managers.GetRoomManager();
+                                if (rooms.GetSelectedRoom() != action.RoomIndex)
+                                {
+                                    endlessAdvisorSelectingFloor = true;
+                                    save.StartCoroutine(rooms.GetRoomUI().SetSelectedRoom(action.RoomIndex));
+                                    Enter(Stage.SelectingRoom, 20f);
+                                }
+                                else PlayPendingPolicyCard(managers, cards!);
+                            }
+                        }
+                    }
+                    else if (PlayerAdvisorProbe.EndlessLoop2HandoffStarted)
                     {
                         if (PlayerAdvisorProbe.TryCaptureEndlessLoop2Handoff(managers, observation))
-                            Finish(true, "Player Advisor verified the original Endless Loop 2 suffix after one native card.");
+                        {
+                            endlessAdvisorHandoffCaptured = PlayerAdvisorProbe.ObserveEndlessLoop2FirstEndTurn;
+                            if (!endlessAdvisorHandoffCaptured)
+                                Finish(true, "Player Advisor verified the original Endless Loop 2 suffix after one native card.");
+                        }
                     }
                     else if (PlayerAdvisorProbe.TryCaptureEndlessLoop2(managers, observation))
                     {

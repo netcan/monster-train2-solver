@@ -21,12 +21,14 @@ namespace MonsterTrain2Poju.Probe
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_PLAYER_ADVISOR") == "1";
         internal static bool ObserveEndlessLoop2 => Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_LOOP2_ADVISOR_OBSERVATION") == "1";
         internal static bool ObserveEndlessLoop2Handoff => Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_LOOP2_ADVISOR_HANDOFF") == "1";
+        internal static bool ObserveEndlessLoop2FirstEndTurn => Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_LOOP2_ADVISOR_FIRST_END_TURN") == "1";
         internal static bool EndlessLoop2HandoffStarted => loop2OriginalAdvice != null;
         private static string? loop2DeploymentStamp;
         private static BattleAdvice? loop2OriginalAdvice;
         private static long loop2OriginalGeneration, loop2OriginalSearches;
         private static int loop2OriginalPublications;
         private static string? loop2TentativePanel, loop2TentativeStatus;
+        private static readonly List<int> loop2FloorSelections = new();
         private static object? advisor;
         private static Type? type;
         private static int phase, boundaryFrame, captureCount, publicationCount;
@@ -435,6 +437,76 @@ namespace MonsterTrain2Poju.Probe
             });
             using var output = System.IO.File.Create(System.IO.Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
                 "endless-loop2-advisor-handoff.mt2f"));
+            document.Write(output);
+            return true;
+        }
+
+        internal static void RecordEndlessLoop2FloorSelection(int room) => loop2FloorSelections.Add(room);
+
+        internal static bool TryGetEndlessLoop2FirstTurnStep(FullBattleTrace trace, out BattleSearchStep? next)
+        {
+            next = null;
+            Require(SearchCount == loop2OriginalSearches && Get<int>("Failures") == 0 && Get<int>("PurityFailures") == 0,
+                "the Loop 2 Advisor searched again or failed before the first turn boundary");
+            BattleAdviceSession session = Field<BattleAdviceSession>("session");
+            if (!PublicationSettled(session)) return false;
+            BattleTurnState root = Capture();
+            BattleAdvice original = loop2OriginalAdvice!;
+            BattleAdvice current = Advice;
+            int consumed = trace.ObservedActionCount + trace.ObservedTurns.Count;
+            Require(session.MatchesCurrentRoot(root) && (bool)Call("ReadyFor", root)! && current.Plan.Steps.Count > 0 &&
+                JToken.DeepEquals(JArray.FromObject(original.Plan.Steps.Skip(consumed)), JArray.FromObject(current.Plan.Steps)),
+                "the live Loop 2 publication changed the original suffix");
+            next = current.Plan.Steps[0];
+            return true;
+        }
+
+        internal static bool TryCaptureEndlessLoop2FirstEndTurn(AllGameManagers managers, FullBattleTrace trace)
+        {
+            if (!TryGetEndlessLoop2FirstTurnStep(trace, out _)) return false;
+            int paid = trace.ObservedActionCount;
+            BattleTurnProbe.Record turn = trace.ObservedTurns.Single();
+            BattleAdvice original = loop2OriginalAdvice!;
+            BattleAdvice final = Advice;
+            BattleTurnState native = Capture();
+            var enemyWave = native.Spawn.Train.Rooms.SelectMany(room => room.Units).Where(unit => unit.Team == CombatTeam.Enemy).ToArray();
+            Require(paid > 0 && Get<long>("DiagnosticCardInputs") == paid &&
+                trace.ObservedActions.All(action => action.Actual != null && action.Predicted.Supported && action.Difference == null &&
+                    action.ActualOutcome == RoomOutcome.Exchanged) &&
+                turn.Actual?.Spawn.Turn == 1 && turn.Before.Spawn.Turn == 0 && turn.Predicted.Supported && turn.Difference == null &&
+                turn.ActualOutcome == RoomOutcome.Exchanged && original.Plan.Steps[paid].IsEndTurn &&
+                final.ReusedContinuation && GetGeneration() > loop2OriginalGeneration && native.Spawn.Turn == 1 && native.Spawn.Phase == 1 &&
+                enemyWave.Length == 5 && enemyWave.Count(unit => unit.AssetKey == EndlessEnemyBirthStats.CorruptionHorde) == 2,
+                "the first original Loop 2 wave did not settle and retain the Advisor suffix");
+            using var keys = new BattleStateKeys();
+            string nativeKey = keys.Key(native);
+            Require(nativeKey == final.RootKey && keys.Key(final.Root) == nativeKey, "the retained plan has a stale wave root");
+            Text body = Field<Text>("body");
+            Require(body.isActiveAndEnabled && Field<int>("tentativeSteps") == 0, "the retained first-wave advice is missing from the panel");
+            string Stamp() => TwoTurnScenario.CaptureSnapshot("loop2-wave-advice", managers, managers.GetSaveManager(),
+                managers.GetCombatManager(), managers.GetCardManager(), log!, writeLog: false, includePresentationRng: true);
+            string beforeRender = Stamp();
+            UnityEngine.Random.State unityRng = UnityEngine.Random.state;
+            Call("CapturePanel");
+            Require(beforeRender == Stamp() && unityRng.Equals(UnityEngine.Random.state), "rendering the first-wave advice changed state or RNG");
+
+            SaveManager save = managers.GetSaveManager();
+            using var document = MonsterTrain2Poju.Capture.NativeFixtureCapture.Capture(new
+            {
+                Schema = 1, EvidenceKind = "NativeEndlessLoop2AdvisorFirstEndTurn",
+                GameVersion = Application.version, GameModuleMvid = typeof(CardState).Module.ModuleVersionId,
+                Scenario = save.GetCurrentScenarioData()?.name, Loop = save.GetRunState().GetLoopIndex(), Distance = save.GetCurrentDistance(),
+                Assembly = type!.Assembly.GetName().Name, Version = type.Assembly.GetName().Version?.ToString(),
+                OriginalRoot = original.Root, OriginalRootKey = original.RootKey, OriginalSteps = original.Plan.Steps,
+                OriginalGeneration = loop2OriginalGeneration, OriginalSearches = loop2OriginalSearches, OriginalPublications = loop2OriginalPublications,
+                Actions = trace.ObservedActions, Turn = turn, FloorSelections = loop2FloorSelections, EnemyWave = enemyWave,
+                AcceptedCardInputs = Get<long>("DiagnosticCardInputs"), EndTurnInputs = trace.ObservedTurns.Count,
+                FinalRoot = native, FinalPublishedRoot = final.Root, FinalRootKey = nativeKey, FinalSteps = final.Plan.Steps,
+                FinalPanelText = body.text, FinalGeneration = GetGeneration(), FinalSearches = SearchCount,
+                FinalPublications = PublicationCount, final.ReusedContinuation, PurityFailures = Get<int>("PurityFailures")
+            });
+            using var output = System.IO.File.Create(System.IO.Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                "endless-loop2-advisor-first-end-turn.mt2f"));
             document.Write(output);
             return true;
         }

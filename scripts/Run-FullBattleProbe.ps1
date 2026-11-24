@@ -644,6 +644,7 @@ param(
     [switch] $EndlessEnemyScalingControlledLoop2,
     [switch] $EndlessLoop2AdvisorObservation,
     [switch] $EndlessLoop2AdvisorHandoff,
+    [switch] $EndlessLoop2AdvisorFirstEndTurn,
     [string] $EndlessEnemyScalingLoop2CorruptionPlan = '',
     [switch] $EndlessEnemyScalingLoop2CorruptionTerminal,
     [ValidateRange(1, 2)] [int] $EndlessEnemyScalingControlledDistance = 1,
@@ -1134,6 +1135,7 @@ if ($EndlessEnemyScalingControlledLoop2 -and (!$OriginalEndlessEnemyScalingWitne
     $EndlessEnemyScalingAllWaves -or $EndlessEnemyScalingWholeBattle -or $EndlessEnemyScalingControlledNextRing)) {
     throw 'EndlessEnemyScalingControlledLoop2 requires the original post-victory InputProfile and the single-wave Endless witness at BattleDistance 0.'
 }
+if ($EndlessLoop2AdvisorFirstEndTurn) { $EndlessLoop2AdvisorHandoff = $true }
 if ($EndlessLoop2AdvisorHandoff) { $EndlessLoop2AdvisorObservation = $true }
 if ($EndlessLoop2AdvisorObservation) {
     if (!$EndlessEnemyScalingControlledLoop2 -or $EndlessEnemyScalingLoop2CorruptionPlan) {
@@ -1163,7 +1165,7 @@ if ($OriginalEndlessEnemyScalingWitness) {
     $witnessArguments = @('OriginalEndlessEnemyScalingWitness', 'EndlessEnemyScalingAllWaves', 'EndlessEnemyScalingWholeBattle',
         'EndlessEnemyScalingControlledNextRing', 'EndlessEnemyScalingControlledLoop2', 'EndlessEnemyScalingControlledDistance',
         'EndlessEnemyScalingLoop2CorruptionPlan', 'EndlessEnemyScalingLoop2CorruptionTerminal',
-        'EndlessLoop2AdvisorObservation', 'EndlessLoop2AdvisorHandoff',
+        'EndlessLoop2AdvisorObservation', 'EndlessLoop2AdvisorHandoff', 'EndlessLoop2AdvisorFirstEndTurn',
         'InputProfile', 'BattleDistance', 'Seed',
         'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild',
         'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
@@ -3471,6 +3473,7 @@ $environment = @{
     MT2_PROBE_ENDLESS_ENEMY_SCALING_CONTROLLED_LOOP2 = $(if ($EndlessEnemyScalingControlledLoop2) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_LOOP2_ADVISOR_OBSERVATION = $(if ($EndlessLoop2AdvisorObservation) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_LOOP2_ADVISOR_HANDOFF = $(if ($EndlessLoop2AdvisorHandoff) { '1' } else { '0' })
+    MT2_PROBE_ENDLESS_LOOP2_ADVISOR_FIRST_END_TURN = $(if ($EndlessLoop2AdvisorFirstEndTurn) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_LOOP2_CORRUPTION_PLAN = $EndlessEnemyScalingLoop2CorruptionPlan
     MT2_PROBE_ENDLESS_LOOP2_CORRUPTION_TERMINAL = $(if ($EndlessEnemyScalingLoop2CorruptionTerminal) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_CONTROLLED_DISTANCE = "$EndlessEnemyScalingControlledDistance"
@@ -4741,9 +4744,12 @@ if ($EndlessEnemyScalingFactorBatch) {
     return
 }
 if ($EndlessLoop2AdvisorObservation) {
-    $captureName = if ($EndlessLoop2AdvisorHandoff) { 'endless-loop2-advisor-handoff.mt2f' } else { 'endless-loop2-advisor-observation.mt2f' }
+    $captureName = if ($EndlessLoop2AdvisorFirstEndTurn) { 'endless-loop2-advisor-first-end-turn.mt2f' }
+        elseif ($EndlessLoop2AdvisorHandoff) { 'endless-loop2-advisor-handoff.mt2f' }
+        else { 'endless-loop2-advisor-observation.mt2f' }
     $capturePath = Join-Path $profile $captureName
-    $marker = if ($EndlessLoop2AdvisorHandoff) { 'Player Advisor verified the original Endless Loop 2 suffix after one native card.' }
+    $marker = if ($EndlessLoop2AdvisorFirstEndTurn) { 'Player Advisor retained the original Endless Loop 2 suffix through the first EndTurn.' }
+        elseif ($EndlessLoop2AdvisorHandoff) { 'Player Advisor verified the original Endless Loop 2 suffix after one native card.' }
         else { 'Player Advisor displayed the original Endless Loop 2 deployment without battle inputs.' }
     $screenshot = Join-Path $profile 'advisor-ready.png'
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
@@ -4756,6 +4762,25 @@ if ($EndlessLoop2AdvisorObservation) {
     $document = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
     try {
         $capture = $document.RootElement
+        if ($EndlessLoop2AdvisorFirstEndTurn) {
+            $paid = $capture.GetProperty('AcceptedCardInputs').GetInt64()
+            if ($capture.GetProperty('Schema').GetInt32() -ne 1 -or
+                $capture.GetProperty('EvidenceKind').GetString() -cne 'NativeEndlessLoop2AdvisorFirstEndTurn' -or
+                $capture.GetProperty('GameVersion').GetString() -cne '2.3.1' -or
+                [Guid]$capture.GetProperty('GameModuleMvid').GetString() -ne $nativeModule -or
+                $capture.GetProperty('Loop').GetInt32() -ne 2 -or $capture.GetProperty('Distance').GetInt32() -ne 0 -or
+                $capture.GetProperty('Assembly').GetString() -cne 'MonsterTrain2Poju.Advisor' -or
+                $paid -lt 1 -or $capture.GetProperty('Actions').GetArrayLength() -ne $paid -or
+                $capture.GetProperty('EndTurnInputs').GetInt32() -ne 1 -or $capture.GetProperty('EnemyWave').GetArrayLength() -ne 5 -or
+                $capture.GetProperty('FinalRoot').GetProperty('Spawn').GetProperty('Turn').GetInt32() -ne 1 -or
+                !$capture.GetProperty('ReusedContinuation').GetBoolean() -or $capture.GetProperty('PurityFailures').GetInt32() -ne 0 -or
+                $capture.GetProperty('OriginalSearches').GetInt64() -ne $capture.GetProperty('FinalSearches').GetInt64() -or
+                $capture.GetProperty('FinalSteps').GetArrayLength() -ne $capture.GetProperty('OriginalSteps').GetArrayLength() - $paid - 1) {
+                throw 'Expected the first scaled wave and retained original Loop 2 Advisor suffix after one EndTurn.'
+            }
+            Write-Output "NATIVE-ENDLESS-LOOP2-ADVISOR-FIRST-END-TURN PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash) screenshot=$screenshot"
+            return
+        }
         if ($EndlessLoop2AdvisorHandoff) {
             if ($capture.GetProperty('Schema').GetInt32() -ne 1 -or
                 $capture.GetProperty('EvidenceKind').GetString() -cne 'NativeEndlessLoop2AdvisorHandoff' -or
