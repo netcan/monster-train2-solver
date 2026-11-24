@@ -669,6 +669,7 @@ param(
     [string] $OriginalGoldRewardMultiplier = '',
 
     [switch] $OriginalSavageryDeckUpgrade,
+    [switch] $OriginalSavageryChampionCombat,
     [switch] $CampaignDraftCalibration,
     [switch] $CampaignPostBattleCalibration,
     [switch] $CampaignBattleResourceCalibration,
@@ -975,13 +976,17 @@ if ($OriginalGoldRewardMultiplier) {
     }
     $Policy = 'units-spells-and-junk'
 }
+if ($OriginalSavageryChampionCombat -and !$OriginalSavageryDeckUpgrade) {
+    throw 'OriginalSavageryChampionCombat requires OriginalSavageryDeckUpgrade.'
+}
 if ($OriginalSavageryDeckUpgrade) {
     $BranchCardMasks = $true
-    $allowed = @('OriginalSavageryDeckUpgrade', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot',
+    $allowed = @('OriginalSavageryDeckUpgrade', 'OriginalSavageryChampionCombat', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot',
         'SkipBuild', 'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
         throw 'Original Savagery deck upgrade requires an isolated stock opening and binary capture.'
     }
+    if ($OriginalSavageryChampionCombat) { $PhysicalSpawnPoints = $true }
     $Policy = 'units-spells-and-junk'
 }
 if ($OriginalEntropyDrawWitness) {
@@ -3427,6 +3432,7 @@ $environment = @{
     MT2_PROBE_LATE_ATTACK_BATCH = $(if ($LateAttackMechanism) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_RELICS = $(if ($CampaignRelicCalibration) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_SAVAGERY_DECK_UPGRADE = $(if ($OriginalSavageryDeckUpgrade) { '1' } else { '0' })
+    MT2_PROBE_ORIGINAL_SAVAGERY_COMBAT = $(if ($OriginalSavageryChampionCombat) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_GOLD_MULTIPLIER = $(if ($OriginalGoldRewardMultiplier -eq 'Double') { 'Double' } elseif ($OriginalGoldRewardMultiplier) { 'Half' } else { '' })
     MT2_PROBE_CAMPAIGN_DRAFTS = $(if ($CampaignDraftCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_POST_BATTLE = $(if ($CampaignPostBattleCalibration) { '1' } else { '0' })
@@ -4360,12 +4366,21 @@ if ($CapturePlayerDeploymentOnly) {
 }
 if ($OriginalSavageryDeckUpgrade) {
     $capturePath = Join-Path $profile 'original-savagery-deck-upgrade.mt2f'
+    $combatPath = Join-Path $profile 'original-savagery-champion-combat.mt2f'
+    $marker = if ($OriginalSavageryChampionCombat) { 'DEPTH-PASS Original Savagery champion combat captured.' }
+        else { 'DEPTH-PASS Original Savagery deck upgrades captured.' }
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
-        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Savagery deck upgrades captured' -Quiet) -or
+        ($OriginalSavageryChampionCombat -and -not (Test-Path -LiteralPath $combatPath -PathType Leaf)) -or
+        -not (Select-String -LiteralPath $unityLog -SimpleMatch $marker -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore) {
         throw "Original Savagery deck upgrade failed. Inspect $unityLog"
     }
-    Write-Output "NATIVE-SAVAGERY-DECK-UPGRADE PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    if ($OriginalSavageryChampionCombat) {
+        Write-Output "NATIVE-SAVAGERY-CHAMPION-COMBAT PASS trace=$combatPath sha256=$((Get-FileHash -LiteralPath $combatPath -Algorithm SHA256).Hash) deckTrace=$capturePath"
+    }
+    else {
+        Write-Output "NATIVE-SAVAGERY-DECK-UPGRADE PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    }
     return
 }
 if ($OriginalGoldRewardMultiplier) {

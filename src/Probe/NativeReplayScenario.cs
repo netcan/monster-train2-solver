@@ -944,9 +944,16 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                     if (fullBattle && CampaignRelicCalibration.SavageryEnabled)
                     {
-                        CampaignRelicCalibration.CaptureSavagery(managers!);
-                        Finish(true, "Original Savagery deck upgrades captured.");
-                        return;
+                        if (OriginalSavageryCombatWitness.Enabled)
+                        {
+                            if (!OriginalSavageryCombatWitness.Prepared) OriginalSavageryCombatWitness.Prepare(managers!);
+                        }
+                        else
+                        {
+                            CampaignRelicCalibration.CaptureSavagery(managers!);
+                            Finish(true, "Original Savagery deck upgrades captured.");
+                            return;
+                        }
                     }
                     if (fullBattle && OriginalEndlessEnemyScalingWitness.Enabled) OriginalEndlessEnemyScalingWitness.Arm(save);
 #endif
@@ -1154,6 +1161,12 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && OriginalSavageryCombatWitness.Enabled)
+            {
+                if (OriginalSavageryCombatWitness.Tick(FullBattleTrace.Active!, managers))
+                    Finish(true, "Original Savagery champion combat captured.");
+                return;
+            }
             if (fullBattle && CampaignRelicCalibration.GoldMultiplierEnabled)
             {
                 CampaignRelicCalibration.CaptureGoldMultiplier(managers);
