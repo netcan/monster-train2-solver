@@ -549,6 +549,11 @@ namespace MonsterTrain2Poju.Probe
                     if (fullBattle && (OriginalDoubleFriendlyHealthWitness.Enabled || OriginalDoubleFriendlyHealthWitness.FullBattle) &&
                         !OriginalDoubleFriendlyHealthWitness.Acquired)
                         OriginalDoubleFriendlyHealthWitness.Acquire(save);
+                    if (fullBattle && OriginalEmbeddedRoomWitness.Enabled && !OriginalEmbeddedRoomWitness.Acquired)
+                    {
+                        OriginalEmbeddedRoomWitness.Acquire(save);
+                        OriginalFirstRoomAttachmentScenario.AcquireBeforeBattle(managers!, log);
+                    }
                     if (fullBattle && (OriginalBothSidesUnitsWitness.Enabled || OriginalBothSidesUnitsWitness.FullBattle) &&
                         !OriginalBothSidesUnitsWitness.Acquired)
                         OriginalBothSidesUnitsWitness.Acquire(save);
@@ -1234,6 +1239,12 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalZarielDevotionWitness.Tick(FullBattleTrace.Active!, managers, log,
                     () => AdvanceTurn(combat!, record: false)))
                     Finish(true, "Original Zariel Tier I Devotion damage captured.");
+                return;
+            }
+            if (fullBattle && OriginalEmbeddedRoomWitness.Enabled)
+            {
+                if (OriginalEmbeddedRoomWitness.Tick(FullBattleTrace.Active!, managers))
+                    Finish(true, "Original embedded room attachment captured.");
                 return;
             }
             if (fullBattle && OriginalSecondFloorEnemyOpeningWitness.Enabled)
