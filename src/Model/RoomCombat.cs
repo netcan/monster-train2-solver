@@ -2039,6 +2039,7 @@ namespace MonsterTrain2Poju.Model
             private bool plainSpellDamage;
             private bool triggeredCommand;
             private bool ordinaryPyreAttack;
+            private int observedPyrePreviewVictimId;
             private readonly Func<RoomCombatState, RoomCombatResult>? finishDamageQueue;
             private readonly Func<RoomCombatResult, RoomCombatResult>? settleDamageCallbacks;
             private readonly Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre;
@@ -3123,6 +3124,11 @@ namespace MonsterTrain2Poju.Model
                 preview.holdPreviewTriggerQueue = runningTriggerQueue;
                 preview.triggeredCommand = triggeredCommand;
                 preview.ordinaryPyreAttack = ordinaryPyreAttack;
+                // The temporary victim can already have zero HP. Authenticate its owner in the enclosing room.
+                if (ordinaryPyreAttack && actor.Source.IsPyre && source.Units.Any(unit => unit.Id == target.Source.Id &&
+                    HivemindTurnUpgrade.IsScaledTurnFivePyreVictim(source, unit) &&
+                    source.ExternalInteractions.Contains(HivemindTurnUpgrade.Marker(unit))))
+                    preview.observedPyrePreviewVictimId = target.Source.Id;
                 preview.Damage(preview.units.Single(unit => unit.Source.Id == actor.Source.Id),
                     preview.units.Single(unit => unit.Source.Id == target.Source.Id), actor.Attack, "Attack");
                 if (originalWorld?.AutomaticLifecycle == true) preview.DrainLocalTriggerQueue();
@@ -3888,7 +3894,10 @@ namespace MonsterTrain2Poju.Model
             {
                 if (target.DeathFinished) return;
                 bool hivemind = target.Source.Status(HivemindTurnUpgrade.StatusId) != null;
-                bool scaledDeath = hivemind && HivemindTurnUpgrade.IsObservedScaledWaveDeath(source, target.Source, sourceCardId);
+                bool observedPyrePreviewDeath = source.Preview && sourceCardId == 0 && actor?.Source.IsPyre == true &&
+                    observedPyrePreviewVictimId != 0 && observedPyrePreviewVictimId == target.Source.Id;
+                bool scaledDeath = hivemind && (observedPyrePreviewDeath ||
+                    HivemindTurnUpgrade.IsObservedScaledWaveDeath(source, target.Source, sourceCardId));
                 if (hivemind && !scaledDeath &&
                     !HivemindTurnUpgrade.IsObservedInfestedHordeDeath(source, target.Source, sourceCardId) &&
                     !HivemindTurnUpgrade.IsObservedThirdFeedDeath(source, target.Source.Id, actor?.Source.Id) &&
