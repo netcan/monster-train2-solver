@@ -32,7 +32,8 @@ namespace MonsterTrain2Poju.Probe
             {
                 Schema = 1, Boundary = "RegionPreviewScheduling", GameVersion = UnityEngine.Application.version,
                 GameModuleMvid = typeof(CardState).Module.ModuleVersionId,
-                Scheduling = PreviewSchedulingProbe.Records, Ranges = regionRanges
+                Scheduling = PreviewSchedulingProbe.Records, Ranges = regionRanges,
+                HivemindFeeds = OriginalHivemindProbe.RegionFeedCallbacks
             });
             using var file = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
                 "region-preview-scheduling.mt2f"));

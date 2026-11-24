@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using HarmonyLib;
 
 namespace MonsterTrain2Poju.Probe
@@ -11,7 +12,9 @@ namespace MonsterTrain2Poju.Probe
     {
         private const string Status = "hivemind";
         private const string Upgrade = "RoomStateHivemindModifierUpgrade";
+        private const string FeedUpgrade = "661fb64c-20d2-484c-8c30-309931b8148c";
         internal static readonly List<Callback> Records = new();
+        internal static readonly List<FeedCallback> RegionFeedCallbacks = new();
         private static bool Enabled => OriginalUnrulyWitness.IndulgentTitanskin || OriginalUnrulyWitness.IndulgentTrampleCasting ||
             OriginalUnrulyWitness.LifemotherInfested;
 
@@ -24,6 +27,17 @@ namespace MonsterTrain2Poju.Probe
             public bool Preview { get; set; }
             public string PrimaryStage { get; set; } = "";
             public string[] AdditionalStages { get; set; } = Array.Empty<string>();
+            public object? Before { get; set; }
+            public object? After { get; set; }
+            public bool Completed { get; set; }
+        }
+
+        internal sealed class FeedCallback
+        {
+            public int Turn { get; set; }
+            public int ActionCount { get; set; }
+            public bool Preview { get; set; }
+            public object? Source { get; set; }
             public object? Before { get; set; }
             public object? After { get; set; }
             public bool Completed { get; set; }
@@ -124,6 +138,64 @@ namespace MonsterTrain2Poju.Probe
                     !affectedCharacter.GetRoomStateModifiers().Any(modifier => ReferenceEquals(modifier, __instance)))
                     return;
                 Observe("OwnerStatusChanged", affectedCharacter, ref __result);
+            }
+        }
+
+        [HarmonyPatch]
+        private static class RegionFeedPatch
+        {
+            private static bool Prepare() => BattleTestRngProbe.RegionPreviewEnabled;
+            private static MethodBase TargetMethod() => AccessTools.Method(typeof(CardEffectAddTempCardUpgradeToUnits),
+                nameof(CardEffectAddTempCardUpgradeToUnits.ApplyEffect));
+
+            private static void Postfix(object __instance, CardEffectState cardEffectState, CardEffectParams cardEffectParams,
+                ref IEnumerator __result)
+            {
+                if (__instance is not CardEffectAddTempCardUpgradeToUnits || FullBattleTrace.Active is not FullBattleTrace trace ||
+                    cardEffectState.GetSourceCardEffectData().GetParamCardUpgradeData()?.GetID() != FeedUpgrade ||
+                    AllGameManagers.Instance is not AllGameManagers managers ||
+                    managers.GetSaveManager().GetCurrentScenarioData()?.name != "SoulSavior_R2_Battle_TroopBuffFeed")
+                    return;
+                int turn = managers.GetCombatManager().GetTurnCount();
+                if (turn is not (2 or 3)) return;
+                __result = ObserveFeed(__result, trace, managers, turn, cardEffectParams);
+            }
+
+            private static IEnumerator ObserveFeed(IEnumerator native, FullBattleTrace trace, AllGameManagers managers,
+                int turn, CardEffectParams parameters)
+            {
+                var targets = parameters.targets.ToArray();
+                var row = new FeedCallback
+                {
+                    Turn = turn, ActionCount = trace.ObservedActionCount, Preview = managers.GetSaveManager().PreviewMode,
+                    Source = parameters.selfTarget == null ? null : Actor(parameters.selfTarget), Before = SnapshotFeed()
+                };
+                RegionFeedCallbacks.Add(row);
+                try { while (native.MoveNext()) yield return native.Current; row.Completed = true; }
+                finally
+                {
+                    (native as IDisposable)?.Dispose();
+                    row.After = SnapshotFeed();
+                }
+
+                object SnapshotFeed() => new
+                {
+                    Targets = targets.Select(Actor).ToArray(),
+                    Battle = RngCalibration.Words(RandomManager.GetState(RngId.Battle)),
+                    BattleTest = RngCalibration.Words(RandomManager.GetState(RngId.BattleTest))
+                };
+                object Actor(CharacterState unit)
+                {
+                    using var allowDestroyed = new CharacterState.SetAllowDestroyedAccessHelper(unit, onlyIfDestroyed: true);
+                    return new
+                    {
+                        UnitId = trace.TryGetUnitId(unit, out int id) ? id : 0,
+                        Key = unit.GetSourceCharacterData().GetAssetKey(), Room = unit.GetCurrentRoom()?.GetRoomIndex(),
+                        Health = unit.GetHP(), Stacks = unit.GetStatusEffectStacks(Status),
+                        AttackModifiers = unit.GetAppliedCardUpgrades().Where(upgrade => upgrade.GetCardUpgradeDataId() == Upgrade)
+                            .Select(upgrade => upgrade.GetAttackDamage()).ToArray()
+                    };
+                }
             }
         }
     }
