@@ -15,12 +15,19 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalZarielPainWitness
     {
         private const string ChampionId = "d10bb18c-49e9-4895-a1c5-e4ecebbf61a0";
-        private const string UpgradeId = "dd5e71e2-6e0d-44fc-a6d9-00fee69cf093";
-        private const string AbilityId = "26aafce5-a9c7-4244-84f2-b24b99a92f87";
         private const string Boundary = "OriginalZarielPain";
         private const int StartingPain = 10;
+        private const string ShieldGuard = "ShieldGuardT1_BasicNonAttack";
+        private static readonly (string Label, string UpgradeId, string UpgradeKey, string AbilityId, string AbilityKey, int HealthBonus, int DamagePerPain)[] Ranks =
+        {
+            ("I", "dd5e71e2-6e0d-44fc-a6d9-00fee69cf093", "Punished2Path3a", "26aafce5-a9c7-4244-84f2-b24b99a92f87", "ZarielPainAbility", 10, 1),
+            ("II", "63cc5b53-8269-49bf-8966-4621fe81cf34", "Punished2Path3b", "1638d032-3ec9-402c-85ce-195aaf56e17d", "ZarielPainAbility2", 30, 2),
+            ("III", "1b2f3a61-a56b-4769-8048-fe3bede6c6c8", "Punished2Path3c", "ec73275b-2578-4e2b-babb-ced3b23886c3", "ZarielPainAbility3", 50, 3)
+        };
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ZARIEL_PAIN_WITNESS") == "1";
+        private static readonly int Tier = int.TryParse(Environment.GetEnvironmentVariable("MT2_PROBE_ZARIEL_PAIN_WITNESS"), out int tier) ? tier : 0;
+        internal static bool Enabled => Tier >= 1 && Tier <= Ranks.Length;
+        internal static string TierLabel => Ranks[Tier - 1].Label;
         private static CardState? champion, ability;
         private static object? authored;
         private static bool turnAdvanced;
@@ -70,18 +77,23 @@ namespace MonsterTrain2Poju.Probe
             List<CharacterState> actors = new List<CharacterState>();
             room.AddCharactersToList(actors, Team.Type.Monsters);
             CharacterState zariel = actors.Single(unit => ReferenceEquals(unit.GetSpawnerCard(), champion));
+            var rank = Ranks[Tier - 1];
             if (before == null)
             {
                 int pain = zariel.GetStatusEffectStacks("pain");
                 ability = zariel.GetUnitAbilityCardState();
-                log.LogInfo($"ORIGINAL-ZARIEL-PAIN READY card={trace.CardId(champion)} health={zariel.GetHP()}/{zariel.GetMaxHP()} pain={pain} ability={ability?.GetCardDataID()}");
-                if (pain != StartingPain ||
-                    ability?.GetCardDataID() != AbilityId || !zariel.CanActivateUnitAbility() || !zariel.CanTargetUnitAbilityInRoom(0))
-                    throw new InvalidOperationException("Expected the original starting Pain and available Tier I ability.");
+                log.LogInfo($"ORIGINAL-ZARIEL-PAIN READY tier={Tier} card={trace.CardId(champion)} health={zariel.GetHP()}/{zariel.GetMaxHP()} " +
+                    $"pain={pain} ability={ability?.GetCardDataID()}");
+                if (pain != StartingPain || zariel.GetHP() != 30 + rank.HealthBonus || zariel.GetMaxHP() != zariel.GetHP() ||
+                    ability?.GetCardDataID() != rank.AbilityId || !zariel.CanActivateUnitAbility() || !zariel.CanTargetUnitAbilityInRoom(0))
+                    throw new InvalidOperationException($"Expected the original starting health, Pain and available Tier {TierLabel} ability.");
                 var enemies = new List<CharacterState>();
                 room.AddCharactersToList(enemies, Team.Type.Heroes);
-                var target = enemies.FirstOrDefault(item => item.IsAlive && item.GetSpawnPoint() != null)
-                    ?? throw new InvalidOperationException("Expected a living original first-wave target.");
+                var target = enemies.SingleOrDefault(item => item.IsAlive && item.GetSpawnPoint() != null &&
+                    item.GetSourceCharacterData().name == ShieldGuard)
+                    ?? throw new InvalidOperationException("Expected the original first-wave Shield Guard.");
+                if (target.GetHP() != 5 || target.GetStatusEffectStacks("armor") != 25)
+                    throw new InvalidOperationException("The original first-wave Shield Guard's health or Armor changed.");
                 before = trace.CaptureDecision();
                 action = new PlayCardAction(trace.CardId(ability), 0, targetUnitId: trace.UnitId(target), activatorUnitId: trace.UnitId(zariel));
                 if (!cards.PlayAnyCard(ability, out var error, zariel, target.GetSpawnPoint(), ignoreCost: false,
@@ -93,9 +105,10 @@ namespace MonsterTrain2Poju.Probe
             BattleTurnState after = trace.CaptureDecision();
             int paidCost = ability!.GetLastPlayedCost();
             bool paid = paidCost == 0 && before.Energy == after.Energy;
-            bool observedScaling = sample is { Completed: true, Coefficient: 1, Pain: StartingPain } &&
+            bool observedScaling = sample is { Completed: true, Pain: StartingPain } &&
+                sample.Coefficient == rank.DamagePerPain &&
                 sample.ActorId == action!.ActivatorUnitId && sample.TargetId == action.TargetUnitId &&
-                sample.Requested == sample.Pain;
+                sample.Requested == sample.Pain * rank.DamagePerPain;
             bool observedDamage = sample is { Completed: true, Requested: int requested } &&
                 sample.TargetArmorAfter == Math.Max(0, sample.TargetArmorBefore - requested) &&
                 sample.TargetHealthAfter == Math.Max(0, sample.TargetHealthBefore - Math.Max(0, requested - sample.TargetArmorBefore));
@@ -103,17 +116,17 @@ namespace MonsterTrain2Poju.Probe
             {
                 Schema = 1, Boundary, GameVersion = Application.version, GameModuleMvid = Module,
                 Authored = authored, DeploymentBefore = beforeDeployment, Deployment = deployment, DeploymentAfter = afterDeployment,
-                StartingPain, PaidCost = paidCost, Paid = paid, ObservedScaling = observedScaling, ObservedDamage = observedDamage,
+                Tier, StartingPain, PaidCost = paidCost, Paid = paid, ObservedScaling = observedScaling, ObservedDamage = observedDamage,
                 Before = before, Action = action, After = after, Damage = sample
             });
-            using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "zariel-pain-tier1.mt2f")))
+            using (var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, $"zariel-pain-tier{Tier}.mt2f")))
                 document.Write(stream);
             log.LogInfo($"ORIGINAL-ZARIEL-PAIN OBSERVED complete={sample?.Completed} actor={sample?.ActorId}/{action?.ActivatorUnitId} " +
                 $"target={sample?.TargetId}/{action?.TargetUnitId} pain={sample?.Pain} coefficient={sample?.Coefficient} " +
                 $"damage={sample?.Requested} hp={sample?.TargetHealthBefore}->{sample?.TargetHealthAfter} " +
                 $"armor={sample?.TargetArmorBefore}->{sample?.TargetArmorAfter} cost={paidCost} energy={before.Energy}->{after.Energy}");
             if (!paid || !observedScaling || !observedDamage)
-                throw new InvalidOperationException($"Original Zariel Tier I settlement differed: paid={paid}, scaling={observedScaling}, damage={observedDamage}.");
+                throw new InvalidOperationException($"Original Zariel Tier {TierLabel} settlement differed: paid={paid}, scaling={observedScaling}, damage={observedDamage}.");
             return true;
         }
 
@@ -122,35 +135,39 @@ namespace MonsterTrain2Poju.Probe
             var save = managers.GetSaveManager();
             var cards = managers.GetCardManager();
             var all = managers.GetAllGameData();
+            var expected = Ranks[Tier - 1];
             CardData definition = all.FindCardData(ChampionId) ?? throw new InvalidOperationException("Original PunishedChamp2 was missing.");
-            CardUpgradeData rank = all.FindCardUpgradeData(UpgradeId) ?? throw new InvalidOperationException("Original Zariel Tier I upgrade was missing.");
+            CardUpgradeData rank = all.FindCardUpgradeData(expected.UpgradeId)
+                ?? throw new InvalidOperationException($"Original Zariel Tier {TierLabel} upgrade was missing.");
             CardData skill = rank.GetUnitAbilityUpgrade();
             var effects = skill.GetEffects();
             if (definition.name != "PunishedChamp2" || definition.GetSpawnCharacterData()?.IsChampion() != true ||
-                rank.name != "Punished2Path3a" || skill.GetID() != AbilityId || skill.name != "ZarielPainAbility" ||
-                !skill.IsUnitAbility() || skill.GetCost() != 0 || effects is not [var damage] ||
+                rank.name != expected.UpgradeKey || skill.GetID() != expected.AbilityId || skill.name != expected.AbilityKey ||
+                !skill.IsUnitAbility() || skill.GetCost() != 0 || skill.GetCooldownAtSpawn() != 0 ||
+                skill.GetCooldownAfterActivated() != 1 || effects is not [var damage] ||
                 damage.GetEffectStateName() != nameof(CardEffectDamagePerStatusEffect) ||
                 damage.GetTargetMode() != TargetMode.DropTargetCharacter || damage.GetTargetTeamType() != Team.Type.Heroes ||
-                damage.GetParamInt() != 1 || damage.GetUseIntRange() ||
+                damage.GetParamInt() != expected.DamagePerPain || damage.GetUseIntRange() ||
                 damage.GetParamStatusEffects() is not [{ statusId: "pain", count: 1 }] ||
                 rank.GetCharacterTriggerUpgrades() is not [var trigger] || trigger.GetTrigger() != CharacterTriggerData.Trigger.OnBloodshed ||
                 !trigger.GetEffects().Any(effect => effect.GetEffectStateName() == FriendlyDamageStatusModel.NativeEffect))
-                throw new InvalidOperationException("The original Zariel Tier I payload changed.");
+                throw new InvalidOperationException($"The original Zariel Tier {TierLabel} payload changed.");
             CardUpgradeData extra = damage.GetParamCardUpgradeData();
             var extraState = new CardUpgradeState();
             extraState.Setup(extra ?? throw new InvalidOperationException("The original damage effect lost its auxiliary upgrade parameter."));
             var state = new CardUpgradeState();
             state.Setup(rank);
             var startingStatuses = state.GetStatusEffectUpgrades();
-            if (startingStatuses.Count != 1 || startingStatuses[0].statusId != "pain" || startingStatuses[0].count != StartingPain)
-                throw new InvalidOperationException("The original Zariel Tier I starting Pain changed.");
+            if (state.GetAdditionalHP() != expected.HealthBonus || startingStatuses.Count != 1 ||
+                startingStatuses[0].statusId != "pain" || startingStatuses[0].count != StartingPain)
+                throw new InvalidOperationException($"The original Zariel Tier {TierLabel} health upgrade or starting Pain changed.");
             var card = cards.GetHand().FirstOrDefault(item => item.GetCardDataID() == ChampionId) ??
                 cards.AddNewCard(definition, CardPile.HandPile, false, false, animate: false)
                 ?? throw new InvalidOperationException("Original Zariel could not enter the placement hand.");
             card.ApplyPermanentUpgrade(state, save);
             authored = new
             {
-                ChampionId, UpgradeId, AbilityId, Champion = definition.name, Upgrade = rank.name, Ability = skill.name,
+                ChampionId, expected.UpgradeId, expected.AbilityId, Champion = definition.name, Upgrade = rank.name, Ability = skill.name,
                 Cost = skill.GetCost(), CooldownAtSpawn = skill.GetCooldownAtSpawn(), CooldownAfterUse = skill.GetCooldownAfterActivated(),
                 UpgradePayload = CardUpgradeLifecycleProbe.Definition(state), AuxiliaryDamageUpgrade = CardUpgradeLifecycleProbe.Definition(extraState),
                 Damage = RuleCatalogProbe.Effect(damage), Bloodshed = trigger.GetEffects().Select(RuleCatalogProbe.Effect).ToArray()

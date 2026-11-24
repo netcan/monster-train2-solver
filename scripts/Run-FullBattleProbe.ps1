@@ -626,6 +626,7 @@ param(
     [string] $OriginalPyreAbilityCooldownWitness = '',
     [switch] $OriginalPyreStewardDamageWitness,
     [switch] $OriginalZarielPainWitness,
+    [ValidateRange(1, 3)] [int] $OriginalZarielPainTier = 1,
     [switch] $OriginalPactDrawWitness,
     [switch] $OriginalEntropyDrawWitness,
     [switch] $OriginalPactDrawBattle,
@@ -1015,11 +1016,14 @@ if ($OriginalPyreStewardDamageWitness) {
     $PhysicalSpawnPoints = $true
     $Policy = 'units-spells-and-junk'
 }
+if ($PSBoundParameters.ContainsKey('OriginalZarielPainTier') -and !$OriginalZarielPainWitness) {
+    throw 'OriginalZarielPainTier requires OriginalZarielPainWitness.'
+}
 if ($OriginalZarielPainWitness) {
-    $witnessArguments = @('OriginalZarielPainWitness', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+    $witnessArguments = @('OriginalZarielPainWitness', 'OriginalZarielPainTier', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
-        throw 'Original Zariel Tier I pain damage requires an isolated opening battle and binary capture.'
+        throw 'Original Zariel pain damage requires an isolated opening battle and binary capture.'
     }
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
@@ -3224,7 +3228,7 @@ $environment = @{
     MT2_PROBE_BOTH_SIDES_UNITS_CARDLESS = $(if ($BothSidesUnitsCardless) { '1' } else { '0' })
     MT2_PROBE_PYRE_ABILITY_COOLDOWN_WITNESS = $OriginalPyreAbilityCooldownWitness
     MT2_PROBE_PYRE_STEWARD_DAMAGE = $(if ($OriginalPyreStewardDamageWitness) { '1' } else { '0' })
-    MT2_PROBE_ZARIEL_PAIN_WITNESS = $(if ($OriginalZarielPainWitness) { '1' } else { '0' })
+    MT2_PROBE_ZARIEL_PAIN_WITNESS = $(if ($OriginalZarielPainWitness) { $OriginalZarielPainTier.ToString() } else { '0' })
     MT2_PROBE_ORIGINAL_PACT_DRAW = $(if ($OriginalPactDrawWitness) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_PACT_BATTLE = $(if ($OriginalPactDrawBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_ENTROPY_DRAW = $(if ($OriginalEntropyDrawWitness) { '1' } else { '0' })
@@ -4396,11 +4400,12 @@ if ($OriginalPyreStewardDamageWitness) {
     return
 }
 if ($OriginalZarielPainWitness) {
-    $capturePath = Join-Path $profile 'zariel-pain-tier1.mt2f'
+    $tierLabel = @('I', 'II', 'III')[$OriginalZarielPainTier - 1]
+    $capturePath = Join-Path $profile "zariel-pain-tier$OriginalZarielPainTier.mt2f"
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
-        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Zariel Tier I pain damage captured' -Quiet) -or
+        -not (Select-String -LiteralPath $unityLog -SimpleMatch "DEPTH-PASS Original Zariel Tier $tierLabel pain damage captured." -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore) {
-        throw "Original Zariel damage witness failed. Inspect $unityLog"
+        throw "Original Zariel Tier $tierLabel damage witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-ZARIEL-PAIN PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return

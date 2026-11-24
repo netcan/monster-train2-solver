@@ -1226,7 +1226,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (OriginalZarielPainWitness.Tick(FullBattleTrace.Active!, managers, log,
                     () => AdvanceTurn(combat!, record: false)))
-                    Finish(true, "Original Zariel Tier I pain damage captured.");
+                    Finish(true, $"Original Zariel Tier {OriginalZarielPainWitness.TierLabel} pain damage captured.");
                 return;
             }
             if (fullBattle && OriginalSecondFloorEnemyOpeningWitness.Enabled)
