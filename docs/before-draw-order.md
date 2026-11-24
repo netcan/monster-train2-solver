@@ -56,10 +56,20 @@ ApplyOnTurnStartRelicEffects，在 PreCombat 角色回调后、Boss 动作之前
 阶段验收全部通过，覆盖 190 次出牌与 52 次 EndTurn，八项检查累计耗时 505.17 秒。
 每场均通过完整后继、16 条分支、录制候选、串并行根搜索和计划复放。
 
+## 玩家版顾问验收
+
+两种遗物顺序各在隔离原版重新运行一次。完成六次部署控制后，发布版顾问分别
+从 4 和 3 余烬的第一回合局面发布建议。三名冠军均已治满。每场验证 13 步
+冻结建议的原版输入与完整后继，共 16 次出牌、5 次结束回合并获胜。采集失败、
+差异、未支持和待完成计数均为零。
+[原版顾问归档及校验值](../tests/compatibility/game-2.3.1/mechanics/before-draw-order/player-advisor/manifest.tsv)
+
 ```powershell
 pwsh -NoProfile -File scripts/Check-Game231BeforeDrawOrder.ps1
 # 日常只校验固定原生反例、两个顺序和不可变分支
 pwsh -NoProfile -File scripts/Check-Game231BeforeDrawOrder.ps1 -SkipBuild -ComponentOnly
+# 复放两个玩家版顾问归档
+pwsh -NoProfile -File scripts/Check-Game231BeforeDrawOrder.ps1 -SkipBuild -PlayerAdvisor
 ```
 
 复杂嵌套出生／死亡竞争、所有条件混用、不同原生回调的全部排列，以及未建模

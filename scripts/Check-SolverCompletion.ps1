@@ -45,6 +45,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Original unit ability Mix prompt matching failed.' }
     dotnet $checks --player-advisor-unit-mix-prompt-only "$current/player-advisor-mix/native-unit-prompt.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Original unit ability Mix prompt acceptance failed.' }
+    pwsh -NoProfile -File (Join-Path $PSScriptRoot 'Check-Game231BeforeDrawOrder.ps1') -SkipBuild -PlayerAdvisor
+    if ($LASTEXITCODE -ne 0) { throw 'Ordered before-draw player advice acceptance failed.' }
     dotnet $checks --transcend-imp-only "$current/controlled-original-support-units/transcend-imp-original-fledgling-rage.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Original Fledgling Imp Rage history replay failed.' }
     dotnet $checks --transcend-imp-only "$current/controlled-original-support-units/transcend-imp-original-welder-front-armor.mt2f"

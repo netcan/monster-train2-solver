@@ -18,8 +18,10 @@ internal static class BeforeDrawOrderChecks
         var definitions = root.GetProperty("BeforeDrawOrderDefinition").EnumerateArray().ToArray();
         Require(definitions.Length == 2 && definitions.Select(row => row.GetProperty("Id").GetString()).SequenceEqual(
             healFirst ? new[] { HealOwner, EnergyOwner } : new[] { EnergyOwner, HealOwner }), "Original owner order was not preserved.");
+        bool playerAdvice = root.TryGetProperty("PlayerAdvisor", out var playerEvidence) && playerEvidence.ValueKind == FixtureKind.Object;
         var actions = root.GetProperty("Actions").EnumerateArray().ToArray();
-        Require(actions.Length == 6 && actions.All(action => action.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() == 0),
+        Require(actions.Length >= 6 && (playerAdvice || actions.Length == 6) && actions.Take(6)
+            .All(action => action.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32() == 0),
             "Ordering controls must wound all three champions during deployment.");
         var first = root.GetProperty("Turns").EnumerateArray().First();
         var before = first.GetProperty("Before").Deserialize<BattleTurnState>()!;
@@ -36,6 +38,39 @@ internal static class BeforeDrawOrderChecks
         Require(healing.GetProperty("Passed").GetBoolean() && healing.GetProperty("Before").GetProperty("Energy").GetInt32() == (healFirst ? 3 : 4) &&
             healing.GetProperty("After").GetProperty("Actors").EnumerateArray().All(actor => actor.GetProperty("Health").GetInt32() == actor.GetProperty("Maximum").GetInt32()),
             "Native heal callback did not see its correct incoming energy or complete healing.");
+        if (playerAdvice)
+        {
+            var runs = root.GetProperty("PlannerRuns").EnumerateArray().ToArray();
+            Require(runs.Length == 1, "Real player advisor did not capture one frozen recommendation.");
+            var run = runs[0];
+            var planRoot = run.GetProperty("Root").Deserialize<BattleTurnState>()!;
+            var steps = run.GetProperty("Steps").EnumerateArray().ToArray();
+            var expected = run.GetProperty("Expected").EnumerateArray().ToArray();
+            var observed = run.GetProperty("Actual").EnumerateArray().ToArray();
+            var champions = planRoot.Spawn.Train.Rooms.SelectMany(room => room.Units)
+                .Where(unit => unit.Team == CombatTeam.Player && !unit.IsPyre).ToArray();
+            Require(run.GetProperty("Mode").GetString() == "search" && run.GetProperty("Completed").GetBoolean() &&
+                run.GetProperty("Difference").ValueKind == FixtureKind.Null && steps.Length > 0 &&
+                expected.Length == steps.Length && observed.Length == steps.Length &&
+                planRoot.Spawn.Turn == 1 && planRoot.Energy == actual.Energy && champions.Length == 3 &&
+                champions.All(unit => unit.Health == unit.MaxHealth && unit.Subtypes.Contains(RelicStartTurnHealModel.ChampionSubtype)),
+                "Real player advisor lacked the ordered native first-turn root or a completed plan.");
+            var overlay = playerEvidence.GetProperty("Overlay");
+            Require(playerEvidence.GetProperty("Assembly").GetString() == "MonsterTrain2Poju.Advisor" &&
+                playerEvidence.GetProperty("InteractionsPassed").GetBoolean() &&
+                playerEvidence.GetProperty("IdlePassed").GetBoolean() &&
+                playerEvidence.GetProperty("PlanPreviewPassed").GetBoolean() &&
+                overlay.GetProperty("PublicationRootChecks").GetInt32() > 0 &&
+                overlay.GetProperty("Publications").EnumerateArray().Any(row => row.GetProperty("Turn").GetInt32() == 1) &&
+                overlay.GetProperty("Published").GetInt32() >= 4 && overlay.GetProperty("Invalidations").GetInt32() >= 3 &&
+                overlay.GetProperty("PanelVertices").GetInt32() > 0 && overlay.GetProperty("PanelPixels").GetInt32() >= 1000 &&
+                overlay.GetProperty("PurityFailures").GetInt32() == 0 && overlay.GetProperty("Failures").GetInt32() == 0,
+                "Real player advice was not published at the current root.");
+            for (int index = 0; index < steps.Length; index++)
+                Require(BattleTurnChecks.Comparable(expected[index].Deserialize<BattleTurnState>()!) ==
+                    BattleTurnChecks.Comparable(observed[index].Deserialize<BattleTurnState>()!),
+                    $"Real player advice differs from native after step {index + 1}.");
+        }
         VerifyPair(before);
         if (componentOnly)
         {

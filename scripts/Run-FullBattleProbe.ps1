@@ -2099,7 +2099,9 @@ if ($SpawnStatusScalingMechanism) {
     $Policy = 'units-spells-and-junk'
 }
 if ($BeforeDrawOrdering) {
-    if ($PlayerAdvisor) { throw 'Before-draw ordering requires an isolated worker.' }
+    if ($PlayerAdvisor -and ($PlannerTurn -ne 1 -or $RollingAdvice -or $PlannerInput -or -not $BinaryCapture)) {
+        throw 'Before-draw player advice requires a binary frozen plan beginning on turn 1.'
+    }
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true
     $SettleCardAnimations = $true; $SettleDeathDissolves = $true
     $Policy = 'units-spells-and-junk'
@@ -7884,9 +7886,28 @@ if ($SpawnStatusScalingMechanism -and (-not $trace.SpawnStatusScalingPrepared -o
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
     throw 'Birth status scaling lack three controls, settled victory or exact successors.'
 }
-if ($BeforeDrawOrdering -and (-not $trace.BeforeDrawOrderPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 6 -or
+if ($BeforeDrawOrdering -and (-not $trace.BeforeDrawOrderPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or
+    @($trace.Actions).Count -lt 6 -or @($trace.Actions | Select-Object -First 6 | Where-Object { $_.Before.Spawn.Turn -ne 0 }).Count -ne 0 -or
+    (-not $PlayerAdvisor -and @($trace.Actions).Count -ne 6) -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
     throw 'Before-draw ordering lacks six controls, settled victory or exact successors.'
+}
+if ($BeforeDrawOrdering -and $PlayerAdvisor) {
+    $firstTurn = @($trace.Turns)[0]
+    $planRun = @($trace.PlannerRuns)[0]
+    $planRoot = $planRun.Root
+    $expectedEnergy = if ($BeforeDrawOrder -eq 'heal-first') { 3 } else { 4 }
+    $champions = @($planRoot.Spawn.Train.Rooms | ForEach-Object { $_.Units } |
+        Where-Object { $_.Subtypes -contains 'SubtypesData_Champion_83f21cbe-9d9b-4566-a2c3-ca559ab8ff34' })
+    if ($trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -cne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+        $trace.BeforeDrawOrderHealFirst -ne ($BeforeDrawOrder -eq 'heal-first') -or
+        $null -eq $firstTurn -or $null -eq $planRoot -or $firstTurn.Actual.Spawn.Turn -ne 1 -or
+        $planRoot.Spawn.Turn -ne 1 -or $firstTurn.Actual.Energy -ne $expectedEnergy -or
+        $planRoot.Energy -ne $expectedEnergy -or $champions.Count -ne 3 -or
+        @($champions | Where-Object { $_.Health -ne $_.MaxHealth }).Count -ne 0) {
+        throw 'Real player advisor did not receive the native ordered first-turn root.'
+    }
+    Write-Output "BEFORE-DRAW-PLAYER-ROOT PASS order=$BeforeDrawOrder energy=$expectedEnergy champions=$($champions.Count) planSteps=$(@($planRun.Steps).Count)"
 }
 if (($OccupiedFloorDrawMechanism -or $RelentlessDrawMechanism) -and (-not $trace.OccupiedFloorDrawPrepared -or -not $trace.TerminalEffectsSettled -or -not $trace.NativeWon -or @($trace.Actions).Count -ne $(if ($RelentlessDrawMechanism -and $RelentlessDrawTier -eq 3) { 10 } else { 4 }) -or
     $trace.CaptureFailures -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or $trace.Pending -ne 0)) {
