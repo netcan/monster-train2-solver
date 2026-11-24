@@ -9176,6 +9176,12 @@ if (args.Length == 2 && args[0] == "--recorded-chain-diagnose")
     Console.WriteLine("RECORDED-CHAIN-DIAGNOSTIC: capture counters are not acceptance checks; require a fresh passing native capture before curation.");
     return;
 }
+if (args.Length == 2 && args[0] == "--recorded-decision-diagnose")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    if (!RecordedBattleChecks.DiagnoseDecisions(document.RootElement)) Environment.ExitCode = 1;
+    return;
+}
 if (args.Length == 2 && args[0] == "--choose-discard-only")
 {
     using var choiceDocument = ModelJson.ReadFixture(args[1]);

@@ -14,6 +14,65 @@ internal static class RecordedBattleChecks
     internal static void ReplayOnce(FixtureValue root, int firstTurn = 0, int lastTurn = int.MaxValue) =>
         Replay(root, firstTurn, null, branches: 0, lastTurn: lastTurn);
 
+    internal static bool DiagnoseDecisions(FixtureValue root)
+    {
+        FixtureValue actions = root.GetProperty("Actions"), turns = root.GetProperty("Turns");
+        Require(actions.GetArrayLength() + turns.GetArrayLength() > 0, "Recorded battle contains no actions or EndTurns.");
+        bool trackPreviewPosition = TracksPreviewPosition(root);
+        var failures = new List<(string Status, string Reason, bool EndTurn, int Index, int Turn)>();
+        foreach (FixtureValue action in actions.EnumerateArray()) Check(action, endTurn: false);
+        foreach (FixtureValue turn in turns.EnumerateArray()) Check(turn, endTurn: true);
+
+        foreach (var group in failures.GroupBy(failure => (failure.Status, failure.Reason))
+            .OrderByDescending(group => group.Count()).ThenBy(group => group.Key.Reason, StringComparer.Ordinal))
+        {
+            var first = group.OrderBy(failure => failure.Turn).ThenBy(failure => failure.EndTurn)
+                .ThenBy(failure => failure.Index).First();
+            int endTurns = group.Count(failure => failure.EndTurn);
+            Console.WriteLine($"RECORDED-DECISION {group.Key.Status} plays={group.Count() - endTurns} endTurns={endTurns} " +
+                $"first={(first.EndTurn ? "endTurn" : "play")}[{first.Index}] turn={first.Turn} reason={group.Key.Reason}");
+        }
+        int unsupported = failures.Count(failure => failure.Status == "UNSUPPORTED");
+        int matched = actions.GetArrayLength() + turns.GetArrayLength() - failures.Count;
+        Console.WriteLine($"RECORDED-DECISION-RESULT plays={actions.GetArrayLength()} endTurns={turns.GetArrayLength()} " +
+            $"matched={matched} unsupported={unsupported} mismatched={failures.Count - unsupported}");
+        return failures.Count == 0;
+
+        void Check(FixtureValue row, bool endTurn)
+        {
+            BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            BattleTurnState? predicted;
+            RoomOutcome outcome;
+            string? unsupportedReason;
+            if (endTurn)
+            {
+                BattleTurnResult result = BattleTurnModel.EndTurn(before, Decisions(row));
+                (predicted, outcome, unsupportedReason) = (result.State, result.Outcome, result.UnsupportedReason);
+            }
+            else
+            {
+                BattleActionResult result = BattleActionModel.PlayCard(before, row.GetProperty("Action").Deserialize<PlayCardAction>()!);
+                (predicted, outcome, unsupportedReason) = (result.State, result.Outcome, result.Reason);
+            }
+
+            void Report(string status, string reason) =>
+                failures.Add((status, reason, endTurn, row.GetProperty("Index").GetInt32(), before.Spawn.Turn));
+            if (predicted == null)
+            {
+                Report("UNSUPPORTED", unsupportedReason ?? "No modeled successor.");
+                return;
+            }
+            RoomOutcome actual = row.GetProperty("ActualOutcome").Deserialize<RoomOutcome>();
+            if (outcome != actual)
+            {
+                Report("MISMATCH", $"Outcome {outcome} != {actual}.");
+                return;
+            }
+            try { RecordedBoundary(predicted, row.GetProperty("Actual"), Terminal(outcome), "Successor", trackPreviewPosition); }
+            catch (InvalidOperationException error) { Report("MISMATCH", error.Message); }
+        }
+    }
+
     internal static bool SameFields(FixtureValue before, FixtureValue after, params string[] exceptions)
     {
         var previous = before.EnumerateObject().Where(field => !exceptions.Contains(field.Name)).ToArray();
@@ -36,9 +95,7 @@ internal static class RecordedBattleChecks
             int turn = DecisionTurn(row);
             return turn >= firstTurn && turn <= lastTurn;
         }
-        bool trackPreviewPosition = root.TryGetProperty("NativeRunInput", out FixtureValue run) &&
-            run.ValueKind == FixtureKind.Object && run.TryGetProperty("RunType", out FixtureValue runType) &&
-            runType.GetString() == "RegionRun";
+        bool trackPreviewPosition = TracksPreviewPosition(root);
         Require(actions.Length > 0 || turns.Length > 0, "Recorded battle contains no actions or EndTurns.");
         BattleTurnState initial = (actions.Length > 0 ? actions[0] : turns[0])
             .GetProperty("Before").Deserialize<BattleTurnState>()!;
@@ -80,6 +137,8 @@ internal static class RecordedBattleChecks
         return (actions.Length, turns.Length);
     }
     internal static int DecisionTurn(FixtureValue row) => row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32();
+    private static bool TracksPreviewPosition(FixtureValue root) => root.TryGetProperty("NativeRunInput", out FixtureValue run) &&
+        run.ValueKind == FixtureKind.Object && run.TryGetProperty("RunType", out FixtureValue runType) && runType.GetString() == "RegionRun";
     private static bool Terminal(RoomOutcome outcome) => outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
     internal static RelentlessDecision[]? Decisions(FixtureValue row) => row.TryGetProperty("RelentlessDecisions", out var choices) &&
         choices.ValueKind != FixtureKind.Null ? choices.Deserialize<RelentlessDecision[]>() : null;

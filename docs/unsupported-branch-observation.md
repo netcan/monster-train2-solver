@@ -1,5 +1,18 @@
 # Observe a rejected native branch
 
+For an existing full-battle capture, replay every recorded decision independently
+before selecting a branch to observe again.
+
+```powershell
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --recorded-decision-diagnose <full-battle.mt2f>
+```
+
+The command starts each decision from its native `Before` state and compares the
+modeled successor with `Actual`. It groups unsupported decisions and state
+differences by reason, reports the earliest affected input for each, and returns
+exit code 1 when any decision fails. Use `--recorded-chain-diagnose` on the same
+archive to verify continuity once those gaps are resolved.
+
 `FixtureTools extract-unsupported-branch <full-battle.mt2f> <request.mt2f> '<exact reason>'`
 reuses recorded forecasts and actual input successors, including the last successor
 where the advisor stopped. It can select either a rejected card play or an EndTurn.
