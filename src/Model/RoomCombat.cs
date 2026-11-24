@@ -7218,10 +7218,18 @@ namespace MonsterTrain2Poju.Model
                 var removedIds = new HashSet<int>(units.Where(unit => !unit.Alive || unit.Removed || unit.Despawned).Select(unit => unit.Source.Id));
                 if (battleWon && !source.Preview && context?.SpawnPoints is BattleSpawnPoints terminalPoints)
                 {
+                    // The paid-card death queue still owns its final ordinary
+                    // boss removal and centers the surviving room occupants.
+                    WorkingUnit? queuedInnerBoss = nativeCardDamage && centerDamageDeaths && deferredDamageDeaths.Count == 1
+                        ? deferredDamageDeaths[0].Unit : null;
+                    if (queuedInnerBoss != null && (!IsTerminalBossDeath(queuedInnerBoss) ||
+                        terminalPoints.Units.SingleOrDefault(point => point.UnitId == queuedInnerBoss.Source.Id) is not
+                            { OuterBoss: false, Current: { PreviewCopyId: null, OuterBossAnchor: false } }))
+                        queuedInnerBoss = null;
                     // Victory can stop the death batch after the first companion.
                     // Terminal captures retire the other dead enemy's logical slot,
                     // including outside Boss anchors, without running its callbacks.
-                    var retiredEnemies = units.Where(unit => !unit.Alive && unit.Source.Team == CombatTeam.Enemy)
+                    var retiredEnemies = units.Where(unit => !unit.Alive && unit.Source.Team == CombatTeam.Enemy && unit != queuedInnerBoss)
                         .Select(unit => unit.Source.Id).ToHashSet();
                     // The original inner Reanimate is already physically
                     // removed after the final Undying life. Its room centering
