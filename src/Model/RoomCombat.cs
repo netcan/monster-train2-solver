@@ -1193,6 +1193,8 @@ namespace MonsterTrain2Poju.Model
             bool infestedWaveCombat = HivemindTurnUpgrade.IsInfestedOpeningCombat(state);
             bool infestedCombat = allowInfestedTerminalAscension || HivemindTurnUpgrade.IsInfestedTerminalPyre(state) ||
                 HivemindTurnUpgrade.IsInfestedOrdinaryRoom(state);
+            bool scaledWavePhase = allowFreshHivemind || state.Context?.QueryFrame?.Turn == 2 ||
+                !state.Preview && state.Context?.QueryFrame?.Turn == 1;
             int infestedDrawTurn = allowFreshHivemind && state.Context?.QueryFrame?.Turn is 2 or 3 &&
                 OuterBossDefinitions.HasLifemotherInfestedOwner(state.Context) ? state.Context.QueryFrame.Turn.Value : 0;
             bool infestedBossCombat = state.RoomIndex == 2 && state.Units.Any(unit =>
@@ -1207,7 +1209,9 @@ namespace MonsterTrain2Poju.Model
                 !(infestedCombat && state.Units.Any(unit => HivemindTurnUpgrade.Marker(unit) == item &&
                     HivemindTurnUpgrade.IsInfestedCombatOwner(state, unit))) &&
                 !(infestedDrawTurn > 0 && state.Units.Any(unit => HivemindTurnUpgrade.Marker(unit) == item &&
-                    HivemindTurnUpgrade.IsInfestedDrawOwner(unit, infestedDrawTurn, afterRemoval: false, state.Context)))).ToArray();
+                    HivemindTurnUpgrade.IsInfestedDrawOwner(unit, infestedDrawTurn, afterRemoval: false, state.Context))) &&
+                !(scaledWavePhase && state.Units.Any(unit =>
+                    HivemindTurnUpgrade.Marker(unit) == item && HivemindTurnUpgrade.IsScaledFirstWaveOwner(unit, state.Context)))).ToArray();
             if (interactions.Length > 0) return string.Join("; ", interactions);
             foreach (CardInstanceState instance in state.Context?.CardInstances ?? Array.Empty<CardInstanceState>())
             {
@@ -1228,6 +1232,9 @@ namespace MonsterTrain2Poju.Model
                 bool infestedDrawOwner = infestedDrawTurn > 0 &&
                     HivemindTurnUpgrade.IsInfestedDrawOwner(unit, infestedDrawTurn, afterRemoval: true, state.Context);
                 bool infestedCombatOwner = infestedCombat && HivemindTurnUpgrade.IsInfestedCombatOwner(state, unit);
+                bool scaledWaveOwner = scaledWavePhase &&
+                    HivemindTurnUpgrade.IsScaledFirstWaveOwner(unit, state.Context) || !state.Preview &&
+                    HivemindTurnUpgrade.IsScaledFirstWaveBirth(unit, state.Context) || HivemindTurnUpgrade.IsScaledFirstFeedRecipient(state, unit);
                 string? selfAttackError = UnitSelfAttackModel.Validate(state, unit);
                 string? roomResourceError = UnitRoomResourceModel.Validate(unit);
                 if (roomResourceError != null) return roomResourceError;
@@ -1288,7 +1295,7 @@ namespace MonsterTrain2Poju.Model
                         !((allowFreshHivemind && status.Id == HivemindTurnUpgrade.StatusId &&
                             (HivemindTurnUpgrade.IsWaitingSecondWaveOwner(unit, status) ||
                              HivemindTurnUpgrade.IsInfestedOpeningOwner(unit, status))) ||
-                            ((observedHivemindCombat || infestedDrawOwner || infestedCombatOwner ||
+                            ((observedHivemindCombat || infestedDrawOwner || infestedCombatOwner || scaledWaveOwner ||
                                 infestedWaveCombat && HivemindTurnUpgrade.IsInfestedWaveCombatOwner(unit, state.Context) ||
                                 infestedBossCombat && allowFirstHivemindCombat && HivemindTurnUpgrade.IsInfestedFirstBossMarkerOwner(state, unit)) &&
                                 status.Id == HivemindTurnUpgrade.StatusId)) && !(status.Id == "pyrebane" &&

@@ -132,7 +132,7 @@ namespace MonsterTrain2Poju.Model
             if (identityError != null) return Unsupported(identityError);
             RoomOutcome outcome = RoomOutcome.Cleared;
             int pyre = rooms.Length - 1;
-            bool firstWaveHivemind = false, secondWaveHivemind = false, infestedWave = false;
+            bool firstWaveHivemind = false, secondWaveHivemind = false, infestedWave = false, scaledWave = false;
             if (source.Looping || phase < source.Waves.Count)
             {
                 int waveIndex = phase % source.Waves.Count;
@@ -156,13 +156,14 @@ namespace MonsterTrain2Poju.Model
                     definitions.Any(entry => entry.Unit.Status(HivemindTurnUpgrade.StatusId) is CombatStatus status &&
                         HivemindTurnUpgrade.IsOriginalFreshOwner(entry.Unit, status));
                 infestedWave = HivemindTurnUpgrade.IsInfestedWaveSpawn(source, definitions);
+                scaledWave = HivemindTurnUpgrade.HasScaledFirstWave(source, definitions);
                 if (definitions.Count > 0 && context?.QueryFrame?.SelectedRoomIndex != null)
                     context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: 0));
                 bool enteredPyre = false;
                 var entered = new List<int>();
                 foreach (EnemyDefinition definition in definitions.Reverse())
                 {
-                    string? error = Validate(definition, context, allowFreshHivemind: firstWaveHivemind || secondWaveHivemind || infestedWave);
+                    string? error = Validate(definition, context, allowFreshHivemind: firstWaveHivemind || secondWaveHivemind || infestedWave || scaledWave);
                     if (error != null) return Unsupported(error);
                     int roomIndex = 0;
                     while (roomIndex <= pyre && rooms[roomIndex].Count(unit => unit.Team == CombatTeam.Enemy)
@@ -397,6 +398,16 @@ namespace MonsterTrain2Poju.Model
                     rooms[index], original.ExternalInteractions, context, original.Preview, original.ActiveCompanionBossIds), unitId, 0, false);
                 if (!relics.Supported) return relics.UnsupportedReason;
                 ImportRoom(EnchantmentWorldModel.Sync(relics.State!)); callbacks.AddRange(relics.PendingCallbacks);
+                int actorIndex = rooms[index].FindIndex(actor => actor.Id == unitId);
+                if (scaledWave && actorIndex >= 0 && rooms[index][actorIndex].Status(HivemindTurnUpgrade.StatusId) != null)
+                {
+                    var frame = new RoomCombatState(index, original.Deployment, rooms[index], original.ExternalInteractions,
+                        context, original.Preview, original.ActiveCompanionBossIds);
+                    CombatUnit? registered = HivemindTurnUpgrade.RegisterScaledWaveOwner(frame, rooms[index][actorIndex], out string? markerError);
+                    if (registered == null) return markerError;
+                    ImportRoom(EnchantmentWorldModel.Sync(frame.WithUnits(rooms[index].Select(actor =>
+                        actor.Id == unitId ? registered : actor).ToArray())));
+                }
                 TrainCombatState addedTrain = new TrainCombatState(source.Train.Rooms.Select((room, position) =>
                     new RoomCombatState(position, room.Deployment, rooms[position], room.ExternalInteractions, context,
                         room.Preview, room.ActiveCompanionBossIds)).ToArray(), movement, source.Train.EnemySlotsPerRoom, context);
@@ -422,11 +433,12 @@ namespace MonsterTrain2Poju.Model
             EnemySpawnResult Finish()
             {
                 RoomCombatState[] states = source.Train.Rooms.Select((room, index) => new RoomCombatState(index,
-                    room.Deployment, rooms[index], firstWaveHivemind || secondWaveHivemind || infestedWave
+                    room.Deployment, rooms[index], firstWaveHivemind || secondWaveHivemind || infestedWave || scaledWave
                         ? room.ExternalInteractions.Where(marker => !HivemindTurnUpgrade.IsKnownMarker(marker))
                             .Concat(rooms[index].Where(unit => unit.Status(HivemindTurnUpgrade.StatusId) is CombatStatus status &&
                                 (HivemindTurnUpgrade.IsWaitingSecondWaveOwner(unit, status) || (firstWaveHivemind || infestedWave) &&
-                                 HivemindTurnUpgrade.IsInfestedOpeningOwner(unit, status))).Select(HivemindTurnUpgrade.Marker))
+                                 HivemindTurnUpgrade.IsInfestedOpeningOwner(unit, status) || scaledWave &&
+                                 HivemindTurnUpgrade.IsScaledFirstWaveOwner(unit, context))).Select(HivemindTurnUpgrade.Marker))
                             .Distinct().OrderBy(marker => marker, StringComparer.Ordinal).ToArray()
                         : room.ExternalInteractions, context, room.Preview,
                     room.ActiveCompanionBossIds)).ToArray();

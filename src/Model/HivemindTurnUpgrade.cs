@@ -31,6 +31,65 @@ namespace MonsterTrain2Poju.Model
         internal static bool HasOriginalFirstWave(IEnumerable<CombatUnit> units)
             => HasOriginalFirstWavePair(units) || HasInfestedOpeningWave(units);
 
+        internal static bool HasScaledFirstWave(EnemySpawnState source, IReadOnlyList<EnemyDefinition> definitions) =>
+            source.Turn == 1 && source.Phase == 1 && IsScaledCampaign(source.Train.Context) &&
+            definitions.Count(entry => entry.Unit.AssetKey == Hunter && entry.Unit.Status(StatusId) is CombatStatus status && IsOriginalFreshOwner(entry.Unit, status)) == 2 &&
+            definitions.Count(entry => entry.Unit.AssetKey == Infested && entry.Unit.Status(StatusId) is CombatStatus status && IsOriginalFreshOwner(entry.Unit, status)) == 2 &&
+            definitions.Count(unit => unit.Unit.RegisteredStatus(StatusId) != null) == 4 &&
+            definitions.All(unit => unit.Unit.RegisteredStatus("hivemindkiller") == null) &&
+            source.Train.Rooms.SelectMany(room => room.Units).All(unit =>
+                unit.RegisteredStatus(StatusId) == null && unit.RegisteredStatus("hivemindkiller") == null);
+
+        private static bool IsScaledCampaign(CombatContext? context) => context?.Relics?.Any(relic =>
+            relic is { DataId: "f2c1e86b-ac5c-474f-8c3a-ebee76981fb8", AssetKey: "SoulSavior_DifficultyTier2" } &&
+            relic.EffectTypes.Count == 12 && relic.EffectTypes.Take(11).All(type => type == RelicPercentageStatModel.Effect) &&
+            relic.EffectTypes[11] == RelicSpawnStatusScalingModel.Effect) == true &&
+            context.Relics.Any(relic => relic is { DataId: "36dc3689-be84-4a01-8bb1-e69c38d78208",
+                AssetKey: "SoulSavior_Region1Complete_3", EffectTypes: [RelicModel.AddTrigger] });
+
+        internal static bool IsScaledFirstWaveOwner(CombatUnit unit, CombatContext? context) =>
+            IsScaledCampaign(context) && unit.Status(StatusId) is { Stacks: 2 } status &&
+            IsOriginalStatus(unit, status.WithStacks(1)) && unit.RegisteredStatus("hivemindkiller") == null &&
+            (unit.AssetKey == Hunter && unit.MaxHealth == 4 && unit.Triggers is [{ Kind: "OnKill" }] ||
+             unit.AssetKey == Infested && unit.MaxHealth == 38 && unit.Triggers is [{ Kind: "OnKill" }, { Kind: "OnEaten" }]) &&
+            (unit.Modifiers!.Upgrades.Count == 0 || unit.Modifiers.Upgrades is [var upgrade] &&
+                (IsAttackUpgrade(upgrade, 0) || IsAttackUpgrade(upgrade, 8)));
+
+        internal static bool IsScaledFirstWaveBirth(CombatUnit unit, CombatContext? context) =>
+            context?.QueryFrame?.Turn == 1 && IsScaledCampaign(context) && unit.Status(StatusId) is { Stacks: 1 or 2 } status &&
+            IsOriginalStatus(unit, status.WithStacks(1)) && unit.RegisteredStatus("hivemindkiller") == null &&
+            (unit.AssetKey == Hunter && unit.MaxHealth is >= 3 and <= 4 ||
+             unit.AssetKey == Infested && unit.MaxHealth is >= 30 and <= 38) &&
+            (unit.Modifiers!.Upgrades.Count == 0 || IsScaledFirstWaveOwner(unit, context));
+
+        private static bool ScaledFirstFeedPreview(RoomCombatState room) => room is { RoomIndex: 0, Preview: true } &&
+            room.Context?.QueryFrame?.Turn == 2 && IsScaledCampaign(room.Context);
+
+        internal static bool IsScaledFirstFeedRecipient(RoomCombatState room, CombatUnit unit) =>
+            ScaledFirstFeedPreview(room) && unit is { AssetKey: Heavy, BaseAttack: 12, MaxHealth: 75 } &&
+            IsFeedRecipient(unit) && unit.RegisteredStatus("hivemindkiller") == null &&
+            unit.Status(StatusId) is { Stacks: 3 or 6, ParamInt: 1 } status &&
+            unit.Modifiers!.Upgrades.Count(IsFeedUpgrade) == status.Stacks / 3 &&
+            unit.Modifiers.Upgrades.Count(upgrade => IsAttackUpgrade(upgrade, 0)) <= 1 &&
+            unit.Modifiers.Upgrades.All(upgrade => IsFeedUpgrade(upgrade) || IsAttackUpgrade(upgrade, 0));
+
+        internal static CombatUnit? RegisterScaledWaveOwner(RoomCombatState room, CombatUnit unit, out string? error)
+        {
+            if (IsScaledFirstWaveOwner(unit, room.Context) && unit.Modifiers!.Upgrades.Count == 0)
+                return ApplyUnit(room, room.Context, unit, AttackUpgrade(0), remove: false, out error);
+            error = "Missing observed native Hivemind wave birth.";
+            return null;
+        }
+
+        internal static bool HasScaledFirstDraw(TrainCombatState source) => source.Context?.QueryFrame?.Turn == 2 &&
+            source.Rooms.SelectMany(room => room.Units).Where(unit => unit.RegisteredStatus(StatusId) != null ||
+                unit.RegisteredStatus("hivemindkiller") != null).ToArray() is [var first, var second, var third, var fourth] &&
+            new[] { first, second, third, fourth }.All(unit => IsScaledFirstWaveOwner(unit, source.Context) &&
+                unit.Modifiers!.Upgrades is [var upgrade] && IsAttackUpgrade(upgrade, 0));
+
+        internal static TrainCombatState? ApplyScaledFirstDraw(TrainCombatState source, out string? error) =>
+            ApplyObservedRefresh(source, out error);
+
         internal static bool HasInfestedOpeningWave(IEnumerable<CombatUnit> units)
         {
             CombatUnit[] owners = units.Where(unit => unit.RegisteredStatus(StatusId) != null ||
@@ -686,6 +745,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static bool IsObservedFeedUpgrade(RoomCombatState room, CombatUnit unit, CardUpgradeModifier upgrade, string? kind) =>
             IsObservedInfestedFeedUpgrade(room, unit, upgrade, kind) || kind == "OnEaten" && IsFeedUpgrade(upgrade) && (
+                ScaledFirstFeedPreview(room) && unit is { AssetKey: Heavy, BaseAttack: 12, MaxHealth: 75 } &&
+                    IsFeedRecipient(unit) && (unit.RegisteredStatus(StatusId) == null || IsScaledFirstFeedRecipient(room, unit)) ||
                 IsFirstCombat(room) && unit.AssetKey == Heavy && IsFeedRecipient(unit) && unit.RegisteredStatus(StatusId) == null ||
                 IsSecondCombat(room) && IsFeedRecipient(unit) && (unit.AssetKey == Heavy && unit.Status(StatusId)?.Stacks == 3 ||
                     unit.AssetKey == Zealot && unit.RegisteredStatus(StatusId) == null) ||
@@ -695,6 +756,8 @@ namespace MonsterTrain2Poju.Model
                     room.RoomIndex == 2 && unit.AssetKey == Heavy && NativeFedUpgrade(unit, 6, 13)));
 
         internal static bool IsObservedCombatUpgrade(RoomCombatState room, CardUpgradeModifier upgrade, string? kind) =>
+            (kind == "OnStatusEffectChanged" && ScaledFirstFeedPreview(room) && IsAttackUpgrade(upgrade, 0) &&
+                room.Units.Any(unit => IsScaledFirstFeedRecipient(room, unit))) ||
             (IsFirstCombat(room) || IsSecondCombat(room) || IsThirdCombat(room)) &&
             ((kind == "OnEaten" && (IsFeedUpgrade(upgrade) || IsThirdCombat(room) &&
                 room.RoomIndex == 0 && upgrade.DataId == FeedBuffUpgrade &&
@@ -738,7 +801,7 @@ namespace MonsterTrain2Poju.Model
                  IsObservedHordeRecipient(unit, room.Context) && unit.Status(StatusId) != null ||
              IsFirstCombat(room) && IsFedPreviewRecipient(unit) ||
              IsSecondCombat(room) && unit.AssetKey == Zealot && IsFedSecondPreviewRecipient(unit) ||
-             IsThirdCombat(room) && room.RoomIndex == 0 && IsThirdNewHeavy(unit)) &&
+             IsThirdCombat(room) && room.RoomIndex == 0 && IsThirdNewHeavy(unit) || IsScaledFirstFeedRecipient(room, unit)) &&
             !unit.Modifiers!.Upgrades.Any(upgrade => upgrade.DataId == UpgradeId);
 
         // This first ordinary turn projects the native attack-only upgrade
