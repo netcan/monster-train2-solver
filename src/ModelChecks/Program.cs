@@ -9216,6 +9216,12 @@ if (args.Length == 2 && args[0] == "--recorded-decision-diagnose")
     if (!RecordedBattleChecks.DiagnoseDecisions(document.RootElement)) Environment.ExitCode = 1;
     return;
 }
+if (args.Length == 2 && args[0] == "--recorded-frontier-diagnose")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    if (!BattleSearchChecks.DiagnoseRecordedFrontiers(document.RootElement, choiceBudget: 64)) Environment.ExitCode = 1;
+    return;
+}
 if (args.Length == 2 && args[0] == "--choose-discard-only")
 {
     using var choiceDocument = ModelJson.ReadFixture(args[1]);

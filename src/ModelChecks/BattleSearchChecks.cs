@@ -24,6 +24,39 @@ internal static class BattleSearchChecks
         Console.WriteLine("NATIVE-FRONTIER-DIAGNOSTICS PASS: " + index + " decisions, zero unsupported attempts.");
     }
 
+    internal static bool DiagnoseRecordedFrontiers(FixtureValue fixture, int choiceBudget)
+    {
+        var attempts = new List<(string Kind, int Index, int Turn, string Reason, PlayCardAction? Action)>();
+        FixtureValue plays = fixture.GetProperty("Actions");
+        FixtureValue turns = fixture.GetProperty("Turns");
+        for (int index = 0; index < plays.GetArrayLength(); index++)
+        {
+            BattleTurnState before = plays[index].GetProperty("Before").Deserialize<BattleTurnState>()!;
+            var frontier = BattleActionModel.EnumerateActions(before);
+            attempts.AddRange(frontier.UnsupportedAttempts.Select(attempt =>
+                ("play", index, before.Spawn.Turn, attempt.Reason, attempt.Action)));
+        }
+        for (int index = 0; index < turns.GetArrayLength(); index++)
+        {
+            BattleTurnState before = turns[index].GetProperty("Before").Deserialize<BattleTurnState>()!;
+            var frontier = BattleEndTurnModel.Enumerate(before, choiceBudget);
+            attempts.AddRange(frontier.UnsupportedAttempts.Select(attempt =>
+                ("endTurn", index, before.Spawn.Turn, attempt.Reason, attempt.Action)));
+            if (frontier.ReachedNodeLimit)
+                attempts.Add(("endTurn", index, before.Spawn.Turn, $"Reached the choice budget of {choiceBudget}.", null));
+        }
+        foreach (var group in attempts.GroupBy(attempt => attempt.Reason).OrderByDescending(group => group.Count()))
+        {
+            var first = group.First();
+            string action = first.Action == null ? "" : " action=" + JsonSerializer.Serialize(first.Action, ModelJson.Options);
+            string roots = string.Join(",", group.Select(attempt => $"{attempt.Kind}[{attempt.Index}]").Distinct());
+            Console.WriteLine($"RECORDED-FRONTIER UNSUPPORTED count={group.Count()} firstTurn={first.Turn} roots={roots} reason={group.Key}{action}");
+        }
+        Console.WriteLine($"RECORDED-FRONTIER-RESULT plays={plays.GetArrayLength()} endTurns={turns.GetArrayLength()} " +
+            $"unsupported={attempts.Count} affectedRoots={attempts.Select(attempt => (attempt.Kind, attempt.Index)).Distinct().Count()}");
+        return attempts.Count == 0;
+    }
+
     internal static void RollingFrontiers(FixtureValue fixture, int choiceBudget, int? decisionIndex = null)
     {
         Require(choiceBudget > 0, "The EndTurn choice budget must be positive.");
