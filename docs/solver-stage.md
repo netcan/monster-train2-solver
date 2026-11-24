@@ -722,3 +722,7 @@ Dutiful Child 自然胜局通过 39 次出牌或技能、7 次结束回合及出
 发布版顾问在隔离的 2.3.1 原版战斗中显示了 Secret Ingredient 调配弹窗的第一项建议。
 原版确认后提示立即消失，独立复放核对了完整付费后继、随机流和下一条建议的起点。
 [原版调配记录](../tests/compatibility/game-2.3.1/mechanics/player-advisor-mix/native-prompt.mt2f)
+
+GrimFlight 的召唤建议按施法者、技能卡和物理落点关联到原版弹窗，再按定义匹配唯一选项。
+12 次召唤的原版归档通过离线复放，覆盖落点不符、选项缺失、重复和重排。发布版实际弹窗待实机验证。
+[原版召唤对照](../tests/compatibility/game-2.3.1/mechanics/summon-choice-battle/battle.mt2f)
