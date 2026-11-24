@@ -58,3 +58,8 @@ pwsh -File scripts/Run-CampaignProgress.ps1 -RegionRun -StopBeforeRing 4 -Native
 连续回放按原版采样时序补跑了结束回合前的预览，16 条独立分支和两类候选均通过。
 归档保留首次采样时旧模型的 37 项未支持计数，当前模型的复验使用同一份二进制。
 [普通战斗胜局](../tests/compatibility/game-2.3.1/mechanics/region-run-harvester/native-win.mt2f)
+
+第二地区 `SoulSavior_R2_Battle_TroopBuffFeed` 的原版战斗以薪火生命耗尽结算。
+同一二进制归档从开局连续复放 42 次出牌或技能和 8 次结束回合，完整后继、随机流、16 条独立分支均匹配。
+全部已录决策点的出牌与结束回合候选通过严格检查。复验保留首次采样时旧模型的 65 项未支持计数。
+[第二地区败局](../tests/compatibility/game-2.3.1/mechanics/region-run-titanskin/native-defeat.mt2f)
