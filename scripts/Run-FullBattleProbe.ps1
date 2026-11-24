@@ -1078,8 +1078,10 @@ if ($EndlessEnemyScalingFactorBatch) {
         throw 'EndlessEnemyScalingFactorBatch requires isolated main-menu binary capture and no campaign inputs.'
     }
 }
-if ($EndlessEnemyScalingWholeBattle -and !$EndlessEnemyScalingAllWaves) {
-    throw 'EndlessEnemyScalingWholeBattle requires EndlessEnemyScalingAllWaves.'
+$controlledEndlessWholeBattle = $EndlessEnemyScalingWholeBattle -and $EndlessEnemyScalingControlledNextRing -and
+    $EndlessEnemyScalingControlledDistance -eq 2 -and $OuterBossBirth -and $OuterBossTurns
+if ($EndlessEnemyScalingWholeBattle -and !$EndlessEnemyScalingAllWaves -and !$controlledEndlessWholeBattle) {
+    throw 'EndlessEnemyScalingWholeBattle requires EndlessEnemyScalingAllWaves or controlled Ring 3 with OuterBossBirth and OuterBossTurns.'
 }
 if ($PSBoundParameters.ContainsKey('EndlessEnemyScalingControlledDistance') -and !$EndlessEnemyScalingControlledNextRing) {
     throw 'EndlessEnemyScalingControlledDistance requires EndlessEnemyScalingControlledNextRing.'
@@ -4618,7 +4620,8 @@ if ($OriginalEndlessEnemyScalingWitness) {
     $captureName = if ($EndlessEnemyScalingAllWaves) { 'endless-enemy-scaling-waves.mt2f' }
         elseif ($EndlessEnemyScalingControlledNextRing) { 'endless-enemy-scaling-controlled-next-ring.mt2f' }
         else { 'endless-enemy-scaling.mt2f' }
-    $captureMarker = if ($EndlessEnemyScalingWholeBattle) { 'Original Endless enemy scaling terminal settlement captured.' }
+    $captureMarker = if ($controlledEndlessWholeBattle) { 'Original Endless Arkion no-card terminal settlement captured.' }
+        elseif ($EndlessEnemyScalingWholeBattle) { 'Original Endless enemy scaling terminal settlement captured.' }
         elseif ($EndlessEnemyScalingAllWaves) { 'Original Endless enemy scaling waves captured.' }
         else { 'Original Endless enemy scaling captured.' }
     $capturePath = Join-Path $profile $captureName
@@ -4642,6 +4645,9 @@ if ($OriginalEndlessEnemyScalingWitness) {
         else {
             Write-Output "NATIVE-ENDLESS-ENEMY-SCALING-WAVES PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash) $($summary.Line)"
         }
+    }
+    elseif ($controlledEndlessWholeBattle) {
+        Write-Output "NATIVE-ENDLESS-ARKION-TERMINAL PASS trace=$wholeBattlePath sha256=$((Get-FileHash -LiteralPath $wholeBattlePath -Algorithm SHA256).Hash) openingTrace=$capturePath outerBossTrace=$outerBossPath"
     }
     elseif ($EndlessEnemyScalingControlledNextRing) {
         Write-Output "NATIVE-ENDLESS-ENEMY-SCALING-CONTROLLED-NEXT-RING PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"

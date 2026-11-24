@@ -80,6 +80,7 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
         private readonly bool endlessScalingWholeBattle = Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_WHOLE_BATTLE") == "1";
         private bool endlessWavesCaptured;
+        private bool endlessOpeningCaptured;
 #endif
 
         internal NativeReplayScenario(ManualLogSource log)
@@ -207,6 +208,19 @@ namespace MonsterTrain2Poju.Probe
                 try
                 {
 #if DEVELOPMENT_PROBE
+                    if (OriginalEndlessEnemyScalingWitness.Enabled && endlessScalingWholeBattle && !OriginalEndlessEnemyScalingWitness.AllWaves)
+                    {
+                        if (!CardAnimationSettlement.Ready())
+                        {
+                            if (Time.realtimeSinceStartup > deadline) Finish(false, "Terminal card animations did not settle before capture.");
+                            return;
+                        }
+                        trace.Write();
+                        Finish(endlessOpeningCaptured, endlessOpeningCaptured
+                            ? "Original Endless Arkion no-card terminal settlement captured."
+                            : "The original Endless battle ended before the Arkion opening receipt was captured.");
+                        return;
+                    }
                     if (OriginalEndlessEnemyScalingWitness.AllWaves)
                     {
                         if (endlessScalingWholeBattle && !CardAnimationSettlement.Ready())
@@ -1316,9 +1330,19 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (!OriginalEndlessEnemyScalingWitness.AllWaves)
                 {
-                    if (OriginalEndlessEnemyScalingWitness.Tick(FullBattleTrace.Active!, combat!, log,
-                        () => AdvanceTurn(combat!, record: false)))
-                        Finish(true, "Original Endless enemy scaling captured.");
+                    FullBattleTrace trace = FullBattleTrace.Active!;
+                    if (!endlessOpeningCaptured)
+                    {
+                        endlessOpeningCaptured = OriginalEndlessEnemyScalingWitness.Tick(trace, combat!, log,
+                            () => AdvanceTurn(combat!, record: endlessScalingWholeBattle));
+                        if (!endlessOpeningCaptured) return;
+                    }
+                    if (endlessScalingWholeBattle)
+                    {
+                        trace.CompleteEndTurn(RoomOutcome.Exchanged);
+                        AdvanceTurn(combat!);
+                    }
+                    else Finish(true, "Original Endless enemy scaling captured.");
                     return;
                 }
                 if (!endlessWavesCaptured && OriginalEndlessEnemyScalingWitness.ObserveWaveDecision(FullBattleTrace.Active!, log))
