@@ -1053,7 +1053,7 @@ namespace MonsterTrain2Poju.Probe
             if (fullBattle && OriginalSproutWitness.Enabled)
             {
                 if (OriginalSproutWitness.Tick(FullBattleTrace.Active!, managers, () => AdvanceTurn(combat!, record: false)))
-                    Finish(true, "Original SproutT1 Hivemind callback captured.");
+                    Finish(true, $"Original SproutT{OriginalSproutWitness.Tier} Hivemind callback captured.");
                 return;
             }
             if (fullBattle && OriginalSpellDamageMoveWitness.Enabled)

@@ -132,6 +132,7 @@ param(
     [switch] $RegionRunInput,
     [switch] $OriginalEquilibriusDrawWitness,
     [switch] $OriginalSproutWitness,
+    [ValidateRange(1, 3)] [int] $OriginalSproutTier = 1,
     [switch] $CampaignBattlePolicy,
     [switch] $ObserveRegionPreviewScheduling,
     [string] $PrimaryClan = '',
@@ -2635,8 +2636,11 @@ if ($OriginalSproutWitness -and (!$RegionRunInput -or $BattleDistance -ne 3 -or 
         $ObserveRegionPreviewScheduling -or $OriginalEquilibriusDrawWitness)) {
     throw 'OriginalSproutWitness requires the native RegionRun distance-three input and isolated callback capture.'
 }
+if ($PSBoundParameters.ContainsKey('OriginalSproutTier') -and !$OriginalSproutWitness) {
+    throw 'OriginalSproutTier requires OriginalSproutWitness.'
+}
 if ($RegionRunInput) {
-    $regionArguments = @('RegionRunInput', 'OriginalEquilibriusDrawWitness', 'OriginalSproutWitness', 'CampaignBattlePolicy', 'ObserveRegionPreviewScheduling', 'InputProfile', 'BattleDistance', 'Policy', 'BinaryCapture', 'NativeWorker',
+    $regionArguments = @('RegionRunInput', 'OriginalEquilibriusDrawWitness', 'OriginalSproutWitness', 'OriginalSproutTier', 'CampaignBattlePolicy', 'ObserveRegionPreviewScheduling', 'InputProfile', 'BattleDistance', 'Policy', 'BinaryCapture', 'NativeWorker',
         'GameSpeed', 'TimeoutSeconds', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (!$InputProfile -or !$BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $regionArguments }).Count) {
         throw 'RegionRunInput requires a native Soul Savior BattleIntro checkpoint and binary capture.'
@@ -2938,7 +2942,7 @@ $environment = @{
     MT2_PROBE_RESUME_RUN = $(if ($InputProfile) { '1' } else { '0' })
     MT2_PROBE_REGION_RUN_INPUT = $(if ($RegionRunInput) { '1' } else { '0' })
     MT2_PROBE_EQUILIBRIUS_DRAW = $(if ($OriginalEquilibriusDrawWitness) { '1' } else { '0' })
-    MT2_PROBE_SPROUT_WITNESS = $(if ($OriginalSproutWitness) { '1' } else { '0' })
+    MT2_PROBE_SPROUT_WITNESS = $(if ($OriginalSproutWitness) { $OriginalSproutTier.ToString() } else { '0' })
     MT2_PROBE_CAMPAIGN_BATTLE_POLICY = $(if ($CampaignBattlePolicy) { '1' } else { '0' })
     MT2_PROBE_REGION_PREVIEW_SCHEDULING = $(if ($ObserveRegionPreviewScheduling) { '1' } else { '0' })
     MT2_PROBE_PRIMARY_CLAN = $PrimaryClan
@@ -3973,13 +3977,13 @@ Wait-NativeBattleExit -Process $process -Timer $nativeTimer -UnityLog $unityLog 
 $nativeTimer.Stop()
 Write-Output "FULL-BATTLE-TIMING speed=$GameSpeed elapsedSeconds=$($nativeTimer.Elapsed.TotalSeconds.ToString('F2', [Globalization.CultureInfo]::InvariantCulture))"
 if ($OriginalSproutWitness) {
-    $capturePath = Join-Path $profile 'sprout-t1-hivemind.mt2f'
+    $capturePath = Join-Path $profile "sprout-t$OriginalSproutTier-hivemind.mt2f"
     if ($process.ExitCode -ne 0 -or !(Test-Path -LiteralPath $capturePath -PathType Leaf) -or
-        !(Select-String -LiteralPath $unityLog -SimpleMatch 'DEPTH-PASS Original SproutT1 Hivemind callback captured.' -Quiet) -or
+        !(Select-String -LiteralPath $unityLog -SimpleMatch "DEPTH-PASS Original SproutT$OriginalSproutTier Hivemind callback captured." -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore -or (Get-OriginalSignature $checkpoint) -cne $regionInputSignature) {
-        throw "Original SproutT1 Hivemind callback capture failed. Inspect $unityLog"
+        throw "Original SproutT$OriginalSproutTier Hivemind callback capture failed. Inspect $unityLog"
     }
-    Write-Output "NATIVE-SPROUT-T1-HIVEMIND PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath).Hash)"
+    Write-Output "NATIVE-SPROUT-T$OriginalSproutTier-HIVEMIND PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath).Hash)"
     return
 }
 if ($OriginalEquilibriusDrawWitness) {
