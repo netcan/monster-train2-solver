@@ -63,6 +63,14 @@ try {
     dotnet $checks --true-final-boss-spell-slot-pair-only "$current/player-advisor-rolling/current-ring9-original-true-final-boss.mt2f" `
         "$current/configured-opening-relics/native-card-play-damage-roster-isolated-rng.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'True Final Boss spell-slot relic guard controls failed.' }
+    $campaignOnly = "$current/campaign-only-combat-relics"
+    foreach ($case in @('hallowed-halls', 'awoken-rail-spike')) {
+        dotnet $checks --hallowed-halls-draft-relic-only "$campaignOnly/$case.mt2f" `
+            "$current/configured-opening-relics/native-draft-and-deck-owners.mt2f"
+        if ($LASTEXITCODE -ne 0) { throw "Original combat with both campaign-only relics failed for $case." }
+    }
+    dotnet $checks --original-support-spells-only "$campaignOnly/echo-vault.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Original Echo Vault with both campaign-only relics failed.' }
     foreach ($rank in @('i', 'ii', 'iii')) {
         dotnet $checks --native-lazarus-devour-only "$current/lazarus-devour/native-devour-$rank.mt2f"
         if ($LASTEXITCODE -ne 0) { throw "Original Lazarus Devour ability failed at rank $rank." }

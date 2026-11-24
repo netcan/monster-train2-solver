@@ -1438,6 +1438,11 @@ GrimFlight 验收程序已就绪，正向运行需要原版客户端确认 Punis
 [Relentless 归档](../tests/compatibility/game-2.3.1/mechanics/true-final-boss-spell-slot/relentless.mt2f) ·
 [Entropy 归档](../tests/compatibility/game-2.3.1/mechanics/true-final-boss-spell-slot/early-entropy.mt2f)
 
+`AlliedClassRelic` 和 `ExtraSpellUpgrades` 的原版效果只参与战后选牌及升级槽查询。
+两件遗物同场时，Hallowed Halls、Awoken’s Rail Spike、Echo Vault 各有一场原版胜局通过专项复放。
+Hallowed Halls 和 Rail Spike 同在一场的单独诊断记录到了复活期间的原版统计刷新差异，待核对回调顺序。
+[三场独立归档](../tests/compatibility/game-2.3.1/mechanics/campaign-only-combat-relics/manifest.tsv)
+
 2.3.1 原版 `DoubleStatusEffects` 已接入共享状态层数管线。原版 SpikePotion 支付 1 余烬，
 使火车乘务员获得 20 层尖刺，完整出牌后继和随机流通过复放。七项查询对照覆盖冷却、无目标、
 永久升级、延迟加法和转移来源。四项原版移除调用依次将尖刺从 20 变为 18、14、10、12，

@@ -16,7 +16,7 @@ namespace MonsterTrain2Poju.Model
                 !train.Rooms.All(TrueFinalBossCombatModel.Supports) ||
                 train.Context.Relics?.Any(relic => relic.IsCovenant == true
                     ? !TrueFinalBossCovenantModel.KnownOwner(relic)
-                    : relic.EffectTypes.Count > 0 && !RelicModel.IsOriginalSpellUpgradeSlotOwner(relic)) == true ||
+                    : RelicModel.HasCombatEffects(relic)) == true ||
                 train.Rooms.SelectMany(room => room.Units).Any(unit => !unit.IsPyre &&
                     (!train.Context.LifeLinks!.Actors.Any(actor => actor.Id == unit.Id) || unit.EquipmentCards.Count > 0 ||
                         unit.Modifiers?.Upgrades.Count > 0 || unit.Triggers.Any(trigger => trigger.Kind is not ("OnSpawn" or "PostCombat" or "OnTrainRoomLoop")) ||

@@ -191,7 +191,11 @@ namespace MonsterTrain2Poju.Model
         internal static bool IsOriginalAlliedDraftOwner(CombatRelicState relic) =>
             relic.DataId == "656861c9-a96d-4c99-988c-390b75e5d8d4" && relic.AssetKey == "AlliedClassRelic" &&
             relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false &&
-            relic.EffectTypes.Count == 1 && relic.EffectTypes[0] == "RelicEffectOverrideCardDraftClassType";
+            relic.EffectTypes is ["RelicEffectOverrideCardDraftClassType"];
+
+        // These original owners only change campaign draft options or upgrade slot limits.
+        internal static bool HasCombatEffects(CombatRelicState relic) => relic.EffectTypes.Count > 0 &&
+            !IsOriginalAlliedDraftOwner(relic) && !IsOriginalSpellUpgradeSlotOwner(relic);
 
         internal const string AbilityIncant = "RelicEffectIncantTriggeredByUnitAbilities";
         internal const string ModifyTriggerCount = "RelicEffectModifyTriggerCount";

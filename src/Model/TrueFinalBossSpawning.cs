@@ -123,7 +123,7 @@ namespace MonsterTrain2Poju.Model
                 captured?.SpawnPoints == null || captured.LifeLinks != null || captured.Enchantments?.AutomaticLifecycle != true ||
                 captured.Enchantments.RetainedUnits.Count != 0 || captured.Enchantments.EnchanterIds.Count != 0 ||
                 captured.Relics?.Any(relic => relic.IsCovenant == true ? !covenantBirth :
-                    relic.EffectTypes.Count > 0 && !RelicModel.IsOriginalSpellUpgradeSlotOwner(relic)) == true ||
+                    RelicModel.HasCombatEffects(relic)) == true ||
                 old.OuterBoss != null || old.QueuedOuterBoss != null)
                 return Fail("True-final-boss birth requires the calibrated fresh five-actor route, enabled floors and relic context.");
             for (int index = 0; index < 5; index++)

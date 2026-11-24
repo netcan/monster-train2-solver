@@ -33,7 +33,7 @@ namespace MonsterTrain2Poju.Model
                 unit.Statuses.All(status => status.Id is "buff" or "immobile" or "lifelink" or "pyrebound" or "spell shield" or "pyrebane" or "trample")) &&
                 source.Context!.Relics?.Any(relic => relic.IsCovenant == true
                     ? !TrueFinalBossCovenantModel.KnownOwner(relic)
-                    : relic.EffectTypes.Count > 0 && !RelicModel.IsOriginalSpellUpgradeSlotOwner(relic)) != true &&
+                    : RelicModel.HasCombatEffects(relic)) != true &&
                 source.Units.Any(unit => unit.Id == targetId && assets.Contains(unit.AssetKey) && (unit.Health == 1 || earlyEntropy) &&
                     (!source.Preview || source.RoomIndex == 3 && unit.AssetKey == "Boss_Level9_Dominion_V2" ||
                         source.RoomIndex == 0 && unit.AssetKey == "Boss_Level9_Entropy_Bot_V2" &&

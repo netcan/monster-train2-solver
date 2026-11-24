@@ -34,7 +34,7 @@ namespace MonsterTrain2Poju.Model
             bool justCauseEcho = echo && EchoJustCauseModel.Known(card, raw.Effects) && EchoJuiceSpikeModel.KnownRelics(context);
             bool remnantPactEcho = echo && EchoRemnantPactModel.Known(card, raw.Effects) && EchoJuiceSpikeModel.KnownRelics(context);
             if (!juiceEcho && raw.OnCastEffects.Count > 0 || raw.OnUnplayedNegativeEffects.Count > 0 || !waxenEcho && !juiceEcho && !justCauseEcho && !remnantPactEcho &&
-                (context.Relics?.Any(relic => relic.EffectTypes.Count > 0 &&
+                (context.Relics?.Any(relic => RelicModel.HasCombatEffects(relic) &&
                     !(echo && RoomEchoModel.PassiveSilverIncreasedEmber(relic))) == true || CardBranchMaskModel.Resolve(card).Traits.Any(trait =>
                     trait is not (TreasureTrait or "CardTraitStrongerMagicPower" or "CardTraitFreeze"))))
                 return Unsupported("Indirect Treasure casting with additional relic or card callbacks requires native calibration.");

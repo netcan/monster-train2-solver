@@ -12,7 +12,7 @@ namespace MonsterTrain2Poju.Model
             StatisticQueryResult Reject(string reason) => new StatisticQueryResult(null, 0, reason);
             CardMaskDescriptor descriptor = card.MaskDescriptor!;
             if (descriptor.AuthoredCastEffects.Count > 0 ||
-                context.Relics?.Any(relic => relic.EffectTypes.Count > 0 && !RelicModel.IsOriginalSpellUpgradeSlotOwner(relic)) == true)
+                context.Relics?.Any(RelicModel.HasCombatEffects) == true)
                 return Reject("Scaled discard draw with OnCast effects or relic owners requires native calibration.");
             CardTraitValue[] active = (CardExhaustModel.RefreshTraits(card).CombinedTraits ?? Array.Empty<CardTraitValue>()).Where(trait => trait.RuntimeType == Trait).ToArray();
             int index = descriptor.BaseTraits.ToList().FindIndex(trait => trait.RuntimeType == Trait);
