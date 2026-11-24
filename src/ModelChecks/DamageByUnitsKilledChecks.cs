@@ -8,6 +8,8 @@ internal static class DamageByUnitsKilledChecks
         const string spellId = "d9c0c510-ccb5-4a89-9f3b-99799e765540";
         bool forwardsSource = fixture.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version;
         int matched = 0;
+        int wildcardChampionCasts = 0;
+        int wildcardMixedCasts = 0;
         foreach (FixtureValue entry in fixture.GetProperty("Actions").EnumerateArray())
         {
             BattleTurnState before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
@@ -23,6 +25,30 @@ internal static class DamageByUnitsKilledChecks
             BattleActionResult result = BattleActionModel.PlayCard(before, action);
             BattleTurnState actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
             RoomCombatState after = actual.Spawn.Train.Rooms.Single(item => item.RoomIndex == action.RoomIndex);
+            if (OriginalAllSubtypesModel.Active(before.Spawn.Train.Context, room.Deployment))
+            {
+                Require(result.Supported && ModelJson.Difference(BattleTurnChecks.Comparable(result.State!),
+                    BattleTurnChecks.Comparable(actual)) == null, "Shardtail wildcard cast differs from the native successor.");
+                CombatUnit? champion = room.Units.SingleOrDefault(unit => unit.Modifiers?.IsChampion == true);
+                CombatUnit[] nonChampions = room.Units.Where(unit => unit.Team == CombatTeam.Player && unit.Id != champion?.Id).ToArray();
+                Require(nonChampions.Any(unit => !imps.Contains(unit.Id)) &&
+                    nonChampions.All(unit => after.Units.All(retained => retained.Id != unit.Id)) &&
+                    heroes.Length > 0 && after.Units.All(unit => !heroes.Contains(unit.Id)),
+                    "The original wildcard must sacrifice a non-Imp and damage the enemies.");
+                if (champion != null)
+                {
+                    Require(nonChampions.Length == 1 && imps.Length == 0 && heroes.Length == 2 &&
+                        after.Units.Any(unit => unit.Id == champion.Id), "The original wildcard must preserve the champion.");
+                    wildcardChampionCasts++;
+                }
+                else
+                {
+                    Require(nonChampions.Length == 2 && imps.Length == 1, "Expected a native Imp and non-Imp sacrifice together.");
+                    wildcardMixedCasts++;
+                }
+                matched++;
+                continue;
+            }
             Require(result.Supported && imps.Length > 0 && heroes.Length > 0 &&
                 imps.All(id => after.Units.All(unit => unit.Id != id)) &&
                 heroes.Any(id => room.Units.Single(unit => unit.Id == id).Health >
@@ -56,6 +82,8 @@ internal static class DamageByUnitsKilledChecks
             matched++;
         }
         Require(matched > 0, "No original Shardtail action was captured.");
+        Require(wildcardChampionCasts + wildcardMixedCasts == 0 || (wildcardChampionCasts, wildcardMixedCasts) == (1, 1),
+            "Missing original wildcard champion and mixed-Imp controls.");
         Console.WriteLine("NATIVE-DAMAGE-BY-UNITS-KILLED PASS: " + matched + " original Shardtail actions matched.");
     }
 

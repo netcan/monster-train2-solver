@@ -40,11 +40,21 @@ namespace MonsterTrain2Poju.Probe
 
         internal static PlayCardAction? Choose(BattleTurnState source)
         {
-            CardToken? imp = source.Spawn.Train.Context!.Cards.Hand.FirstOrDefault(card => card.DataId == ImpCardId);
+            CombatContext context = source.Spawn.Train.Context!;
+            RoomCombatState floor = source.Spawn.Train.Rooms.Single(item => item.RoomIndex == 0);
+            CardToken? imp = context.Cards.Hand.FirstOrDefault(card => card.DataId == ImpCardId);
             if (imp != null)
             {
-                RoomCombatState floor = source.Spawn.Train.Rooms.Single(item => item.RoomIndex == 0);
                 int friendlyCount = floor.Units.Count(unit => unit.Team == CombatTeam.Player && !unit.IsPyre);
+                if (floor.Deployment && OriginalAllSubtypesModel.Active(context, deployment: true) && friendlyCount < 2)
+                {
+                    bool needChampion = floor.Units.All(unit => unit.Modifiers?.IsChampion != true);
+                    PlayCardAction? control = BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(action =>
+                        action.RoomIndex == 0 && action.CardInstanceId != imp.InstanceId && context.FindCard(action.CardInstanceId) is { } candidate &&
+                        source.PlayRules!.Cards.Any(rule => rule.DataId == candidate.DataId && rule.SpawnUnit is { } unit &&
+                            (unit.Modifiers?.IsChampion == true) == needChampion));
+                    if (control != null) return control;
+                }
                 if (friendlyCount == 0)
                 {
                     PlayCardAction? defender = BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(action =>
@@ -61,10 +71,9 @@ namespace MonsterTrain2Poju.Probe
                     LogCandidate(result, "summon");
                 }
             }
-            RoomCombatState room = source.Spawn.Train.Rooms.Single(item => item.RoomIndex == 0);
-            bool hasImp = room.Units.Any(unit => unit.Team == CombatTeam.Player && unit.Subtypes.Contains(ImpSubtype));
-            bool hasEnemy = room.Units.Any(unit => unit.Team == CombatTeam.Enemy);
-            CardToken? spell = source.Spawn.Train.Context.Cards.Hand.FirstOrDefault(card => card.DataId == SpellCardId);
+            bool hasImp = floor.Units.Any(unit => unit.Team == CombatTeam.Player && unit.Subtypes.Contains(ImpSubtype));
+            bool hasEnemy = floor.Units.Any(unit => unit.Team == CombatTeam.Enemy);
+            CardToken? spell = context.Cards.Hand.FirstOrDefault(card => card.DataId == SpellCardId);
             if (spell != null && hasImp && hasEnemy)
             {
                 var action = new PlayCardAction(spell.InstanceId, 0);
