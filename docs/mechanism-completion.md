@@ -1326,6 +1326,11 @@ pwsh -NoProfile -File scripts/Get-MechanismInventory.ps1 -SkipBuild -Check
 和 7 次结束回合均匹配，两类决策起点的候选枚举均通过严格检查。
 [原版整战归档](../tests/compatibility/game-2.3.1/mechanics/double-status-effects/native-win.mt2f)
 
+原版 `LonelyRooms` 在各楼层建立物理槽位时将玩家槽位上限设为 1。分支复用原版快照中的槽位及占用，
+并按各楼层独立记录的容量规则判定出牌。原版胜局的 21 次出牌、7 次结束回合和两类候选枚举均匹配，
+结算时薪火剩余 58 HP。
+[原版整战归档](../tests/compatibility/game-2.3.1/mechanics/lonely-rooms/native-win.mt2f)
+
 Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者共筛出 58 张，六次抽牌后
 实际生成和随机状态均与模型一致。原版胜局的五次出牌、七次 EndTurn 和十六条独立分支
 通过，旧版 348 张卡池也通过专项回归。隔离实例尚无法启用 Punished DLC，
