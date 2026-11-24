@@ -45,6 +45,14 @@ mixed-version input. The package uses BepInEx 5 Mono.
 [Windows package](../results/mod-dist/PojuAdvisor-0.2.438-Windows-ff8da324.zip) ·
 [Solver stage log](../results/solver-completion-release-45f11b7b.log)
 
+The Windows package at source `393a6872` passed isolated 2.3.1 acceptance using the
+three DLLs extracted from the ZIP. The original Spikedriver Factory prompt appeared,
+cleared after confirmation, and reached a fresh publication. Independent replay
+matched the paid successor and the next plan. The ZIP contains the three Advisor
+DLLs, build metadata, and installation notes.
+[Windows package](../results/mod-dist/PojuAdvisor-0.2.438-Windows-393a6872.zip) ·
+[Native run log](../results/windows-393a6872-package-mix.log)
+
 On 2026-11-21 the current Windows build completed a rolling player-advisor battle in an isolated
 2.3.1 instance (seed 424242, one search worker, 1,000 ms per recommendation). The production
 advisor published 27 recommendations. The driver sent 18 card plays and seven EndTurn inputs
