@@ -574,6 +574,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalSpellDamageMoveWitness.Acquire(save);
                     if (fullBattle && OriginalPlacementMutatorsWitness.Enabled && !OriginalPlacementMutatorsWitness.Acquired)
                         OriginalPlacementMutatorsWitness.Acquire(save);
+                    if (fullBattle && OriginalDominionMothersRemnantWitness.Enabled && !OriginalDominionMothersRemnantWitness.Acquired)
+                        OriginalDominionMothersRemnantWitness.Acquire(save);
                     if (fullBattle && (OriginalRandomSpellTargetsWitness.Enabled || OriginalRandomSpellTargetsWitness.FullBattle ||
                         OriginalRandomJustCauseWitness.Enabled) &&
                         !OriginalRandomSpellTargetsWitness.Acquired)
@@ -1178,6 +1180,12 @@ namespace MonsterTrain2Poju.Probe
                     save.MarkOneTimeMessageComplete(OneTimeMessage.EndTurnWithoutPlayingChampion);
                     AdvanceTurn(combat!, record: false);
                 }
+                return;
+            }
+            if (fullBattle && OriginalDominionMothersRemnantWitness.Enabled)
+            {
+                if (OriginalDominionMothersRemnantWitness.Tick(FullBattleTrace.Active!, managers))
+                    Finish(true, "Original Dominion paid MothersRemnant copy captured.");
                 return;
             }
             if (fullBattle && OriginalHandAndEmberWitness.Enabled)

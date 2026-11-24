@@ -794,6 +794,8 @@ param(
     [switch] $OriginalCopyFirstConsumePlayed,
     [switch] $OriginalCopyConsumedCard,
     [switch] $OriginalMothersRemnant3Relic,
+
+    [switch] $OriginalDominionMothersRemnantWitness,
     [switch] $OriginalTribouletRelic,
     [switch] $OriginalCooldownOnDamageRelic,
     [switch] $OriginalDeckTurnDrawRelic,
@@ -2105,6 +2107,15 @@ if ($OriginalCheaperSpellCost) { $BranchCardMasks = $true; $Policy = 'units-spel
 if ($OriginalFirstCardCost) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalRebalanceValor) { $BranchCardMasks = $true; $Policy = 'units-and-junk' }
 if ($OriginalCardDrawOnCardPlay) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalDominionMothersRemnantWitness) {
+    $witnessArguments = @('OriginalDominionMothersRemnantWitness', 'BinaryCapture', 'NativeWorker',
+        'NativeBuildRoot', 'SkipBuild', 'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count) {
+        throw 'Original Dominion paid-copy witness requires an isolated stock opening and binary capture.'
+    }
+    $OriginalMothersRemnant3Relic = $true
+    $PhysicalSpawnPoints = $true
+}
 if ($OriginalCopyFirstSpellPlayed -or $OriginalCopyFirstConsumePlayed -or $OriginalCopyConsumedCard -or $OriginalMothersRemnant3Relic -or $OriginalTribouletRelic -or $OriginalCooldownOnDamageRelic -or $OriginalMonsterSpellTargeting) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
 if ($OriginalFunguyDeckScalingDoubleUnits) {
     if (-not $BinaryCapture -or $InputProfile) { throw 'Original Funguy deck scaling with DoubleUnits requires a fresh binary capture.' }
@@ -2822,7 +2833,7 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle -or $OriginalHandAndEmberWitness -or $OriginalFecundityOnCast -or
     $OriginalHealOnAscendWitness -or $OriginalFrontReanimationWitness -or $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle -or $OriginalLonelyRoomsBattle -or
     $OriginalShuffleUnitsWitness -or $OriginalShuffleUnitsBattle -or $OriginalDoubleFriendlyHealthWitness -or $OriginalDoubleFriendlyHealthBattle -or
-    $OriginalBothSidesUnitsWitness -or $OriginalBothSidesUnitsBattle -or $OriginalSkullCollectorsWitness) {
+    $OriginalBothSidesUnitsWitness -or $OriginalBothSidesUnitsBattle -or $OriginalSkullCollectorsWitness -or $OriginalDominionMothersRemnantWitness) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -2834,6 +2845,9 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     } finally { $nativeDllStream.Dispose() }
     if ($RegionRunInput -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'RegionRunInput requires the pinned 2.3.1 native module.'
+    }
+    if ($OriginalDominionMothersRemnantWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'Original Dominion paid-copy witness requires the pinned 2.3.1 native module.'
     }
     if (($OriginalThikDeckChange -or $OriginalThikBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original Thik capture requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
@@ -3932,6 +3946,7 @@ if ($OriginalCopyFirstSpellPlayed) { $environment['MT2_PROBE_MODIFIERS'] = 'orig
 if ($OriginalCopyFirstConsumePlayed) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-first-consume-played' }
 if ($OriginalCopyConsumedCard) { $environment['MT2_PROBE_MODIFIERS'] = 'original-copy-consumed-card' }
 if ($OriginalMothersRemnant3Relic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-mothers-remnant3' }
+if ($OriginalDominionMothersRemnantWitness) { $environment['MT2_PROBE_DOMINION_MOTHERS_REMNANT'] = '1' }
 if ($OriginalTribouletRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-balatro-event-triboulet' }
 if ($OriginalCooldownOnDamageRelic) { $environment['MT2_PROBE_MODIFIERS'] = 'original-cooldown-on-damage-dh' }
 if ($OriginalMonsterSpellTargeting) { $environment['MT2_PROBE_MODIFIERS'] = 'original-monster-spell-targeting' }
@@ -4305,6 +4320,16 @@ if ($CapturePlayerDeploymentOnly) {
     [pscustomobject]@{ Profile=$profile; NativeDeploymentCaptured=$true; InputProfileUnchanged=$true;
         OriginalFilesUnchanged=$true; Trace=$capturePath; SHA256=(Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash } |
         ConvertTo-Json
+    return
+}
+if ($OriginalDominionMothersRemnantWitness) {
+    $capturePath = Join-Path $profile 'dominion-mothers-remnant.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Dominion paid MothersRemnant copy captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original Dominion paid-copy witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-DOMINION-MOTHERS-REMNANT PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalPersistentMonsterHpWitness) {
