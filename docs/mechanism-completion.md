@@ -1387,6 +1387,11 @@ Zariel 的 Devotion 路线在法术支付并结算后读取当前等级。原版
 三个普通楼层各增加 4 点容量并留下一个固化房间。完整付费后继、随机流和三个楼层的替换判定一致。
 [原版房间固化对照](../tests/compatibility/game-2.3.1/mechanics/embedded-room/native-placement.mt2f)
 
+隔离实例通过原版无尽循环入口进入第 1 轮，记录了首波三个原版敌军的出生回调。
+两名重装敌人由 3 攻、90 血变为 5 攻、120 血，侍僧由 0 攻、30 血变为 0 攻、120 血。
+记录包含六个原版倍率和回调顺序。正式战役胜利后进入无尽、后续波次预测仍待验证。
+[受控无尽首波对照](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-first-wave.mt2f)
+
 Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者共筛出 58 张，六次抽牌后
 实际生成和随机状态均与模型一致。原版胜局的五次出牌、七次 EndTurn 和十六条独立分支
 通过，旧版 348 张卡池也通过专项回归。隔离实例尚无法启用 Punished DLC，
