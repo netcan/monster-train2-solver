@@ -14,6 +14,11 @@ settlement. The total search count stayed at one.
 [Deployment observation](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-loop2-advisor.mt2f) ·
 [Matching deployment](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-loop2-advisor-handoff.mt2f)
 
+A separate live run followed the published plan through six deployments and the first EndTurn.
+The five scaled enemies and settled state matched the forecast. The Advisor published the exact
+remaining ten steps on turn one with the original search count.
+[First EndTurn](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-loop2-advisor-first-end-turn.mt2f)
+
 On 2026-11-21 the current Windows build completed a rolling player-advisor battle in an isolated
 2.3.1 instance (seed 424242, one search worker, 1,000 ms per recommendation). The production
 advisor published 27 recommendations. The driver sent 18 card plays and seven EndTurn inputs

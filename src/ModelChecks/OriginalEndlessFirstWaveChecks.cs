@@ -3,6 +3,56 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalEndlessFirstWaveChecks
 {
+    internal static void Loop2AdvisorFirstEndTurn(FixtureValue receipt)
+    {
+        Require(Text(receipt, "GameVersion") == Game231FixtureCatalog.Version && Text(receipt, "GameModuleMvid") == Game231FixtureCatalog.Module &&
+            Text(receipt, "EvidenceKind") == "NativeEndlessLoop2AdvisorFirstEndTurn" &&
+            Text(receipt, "Assembly") == "MonsterTrain2Poju.Advisor" && Text(receipt, "Scenario") == "TestEndless_Level1Battle1" &&
+            Number(receipt, "Loop") == 2 && Number(receipt, "Distance") == 0 && Number(receipt, "EndTurnInputs") == 1 &&
+            Number(receipt, "PurityFailures") == 0 && Flag(receipt, "ReusedContinuation") &&
+            receipt.GetProperty("FinalSearches").GetInt64() == receipt.GetProperty("OriginalSearches").GetInt64(),
+            "Expected a native deployment EndTurn and a retained player plan without another search.");
+
+        var actions = receipt.GetProperty("Actions").EnumerateArray().ToArray();
+        var oldSteps = receipt.GetProperty("OriginalSteps").EnumerateArray().ToArray();
+        var newSteps = receipt.GetProperty("FinalSteps").EnumerateArray().ToArray();
+        Require(actions.Length > 0 && actions.Length == Number(receipt, "AcceptedCardInputs") &&
+            oldSteps.Length > actions.Length + 1 && oldSteps.Take(actions.Length).All(step => !Flag(step, "IsEndTurn")) &&
+            Flag(oldSteps[actions.Length], "IsEndTurn") && newSteps.Length == oldSteps.Length - actions.Length - 1 &&
+            oldSteps.Skip(actions.Length + 1).Zip(newSteps).All(pair => pair.First.ContentEquals(pair.Second)),
+            "The published plan must retain its exact nonempty suffix after the first EndTurn.");
+        foreach (FixtureValue row in actions)
+        {
+            var before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            var input = row.GetProperty("Action").Deserialize<PlayCardAction>()!;
+            BattleActionResult play = BattleActionModel.PlayCard(before, input);
+            Require(play.Supported && play.Outcome == row.GetProperty("ActualOutcome").Deserialize<RoomOutcome>() &&
+                row.GetProperty("Difference").ValueKind == FixtureKind.Null, play.Reason ?? "Expected exact paid deployment.");
+            RecordedBattleChecks.RecordedBoundary(play.State!, row.GetProperty("Actual"), terminal: false,
+                "Endless player deployment", trackPreviewPosition: true);
+        }
+        var turn = receipt.GetProperty("Turn");
+        var deployment = turn.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        BattleTurnResult advanced = BattleTurnModel.EndTurn(deployment, RecordedBattleChecks.Decisions(turn));
+        Require(advanced.Supported && advanced.Outcome == turn.GetProperty("ActualOutcome").Deserialize<RoomOutcome>() &&
+            turn.GetProperty("Difference").ValueKind == FixtureKind.Null, advanced.UnsupportedReason ?? "Expected the original deployment exchange.");
+        RecordedBattleChecks.RecordedBoundary(advanced.State!, turn.GetProperty("Actual"), terminal: false,
+            "Endless player first wave", trackPreviewPosition: true);
+
+        var initial = receipt.GetProperty("OriginalRoot").Deserialize<BattleTurnState>()!;
+        var final = receipt.GetProperty("FinalRoot").Deserialize<BattleTurnState>()!;
+        var published = receipt.GetProperty("FinalPublishedRoot").Deserialize<BattleTurnState>()!;
+        using var keys = new BattleStateKeys();
+        var wave = receipt.GetProperty("EnemyWave").Deserialize<CombatUnit[]>()!;
+        Require(initial.Spawn.Turn == 0 && final.Spawn.Turn == 1 && keys.Key(final) == keys.Key(published) &&
+            !string.IsNullOrEmpty(Text(receipt, "FinalPanelText")) && wave.Length == 5 &&
+            wave.Count(actor => actor is { AssetKey: "AttackerT1_Spearman", Attack: 40, Health: 60 }) == 2 &&
+            wave.Count(actor => actor is { AssetKey: "HordeT2_DeathAddsCorruption", Attack: 24, Health: 60 }) == 2 &&
+            wave.Count(actor => actor is { AssetKey: "HeavyT1_LoseHealthOnMove_Chosen", Attack: 32, Health: 1867 }) == 1,
+            "Expected the live published first-turn state and all five original scaled enemies.");
+        Console.WriteLine($"NATIVE-ENDLESS-LOOP2-ADVISOR-FIRST-END-TURN PASS: {actions.Length} paid cards, one EndTurn and {newSteps.Length} retained steps without another search.");
+    }
+
     internal static void Loop2AdvisorHandoff(FixtureValue receipt)
     {
         Require(Text(receipt, "GameVersion") == Game231FixtureCatalog.Version && Text(receipt, "GameModuleMvid") == Game231FixtureCatalog.Module &&
