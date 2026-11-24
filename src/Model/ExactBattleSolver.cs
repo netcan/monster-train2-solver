@@ -92,7 +92,6 @@ namespace MonsterTrain2Poju.Model
             bool cancelled = false, timedOut = false, limited = false;
             bool actionLimit = false, stepLimit = false, stoppedEarly = false;
             var unsupported = new List<UnsupportedActionAttempt>();
-            Func<bool>? stopActions = useAdvisorOrdering ? CheckStop : null;
             bool openingDefense = useAdvisorOrdering;
             while (pending.Count > 0)
             {
@@ -133,7 +132,7 @@ namespace MonsterTrain2Poju.Model
                 if (node.Actions >= maxActionsPerTurn) actionLimit = true;
                 else
                 {
-                    var frontier = BattleActionModel.EnumerateActions(node.State, null, true, workspace, stopActions);
+                    var frontier = BattleActionModel.EnumerateActions(node.State, null, true, workspace, CheckStop);
                     unsupported.AddRange(frontier.UnsupportedAttempts);
                     IEnumerable<SupportedActionCandidate> candidates = useAdvisorOrdering ? frontier.SupportedCandidates
                         .OrderByDescending(candidate => FrontlineProtection(candidate.Result.State!)) : frontier.SupportedCandidates;

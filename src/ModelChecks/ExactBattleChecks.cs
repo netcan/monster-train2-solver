@@ -23,6 +23,13 @@ internal static class ExactBattleChecks
             "The Tenacious suffix must contain two consecutive native EndTurns without intervening plays.");
         int[] legalPlays = [LegalPlays(root), LegalPlays(turns[1].GetProperty("Before").Deserialize<BattleTurnState>()!)];
         Require(legalPlays.All(count => count >= 2), "Both native turns must have multiple supported plays.");
+        int actionChecks = 0;
+        var interruptedActions = ExactBattleSolver.MinimizeCore(root, null, new ExactBattleOptions(64),
+            CancellationToken.None, () => ++actionChecks > 2);
+        Require(interruptedActions.TimedOut && !interruptedActions.ExhaustedEnumeratedFrontier &&
+            interruptedActions.ExpandedNodes == 1 && interruptedActions.SearchMetrics.CandidateRequests == 1 &&
+            interruptedActions.SearchMetrics.EndTurnRequests == 0,
+            "The exact solver continued the native card frontier after the deadline.");
         RecordedBattleChecks.ReplayOnce(fixture, firstTurn);
 
         string parent = Json(root);
@@ -148,8 +155,9 @@ internal static class ExactBattleChecks
             !unsupported.CertifiedTerminalOptimal && !unsupported.CertifiedHorizonOptimal,
             "Missing action definitions incorrectly produced a certificate.");
         int deadlineChecks = 0;
+        int endTurnStart = CountActionChecks(root!) + 1;
         var beforeEndTurn = ExactBattleSolver.MinimizeCore(root!, null, new ExactBattleOptions(64),
-            CancellationToken.None, () => ++deadlineChecks > 1);
+            CancellationToken.None, () => ++deadlineChecks > endTurnStart);
         Require(beforeEndTurn.TimedOut && beforeEndTurn.SearchMetrics.EndTurnRequests == 0 &&
             beforeEndTurn.Steps.Count == 0 && !beforeEndTurn.ExhaustedEnumeratedFrontier,
             "The exact solver started a native EndTurn after the deadline.");
@@ -172,8 +180,9 @@ internal static class ExactBattleChecks
             int checks = 0;
             // These recorded EndTurns resolve directly. Expire the budget at
             // the first check after the root expansion resolves its successors.
+            int endTurnCompleted = CountActionChecks(source) + 2;
             var expired = ExactBattleSolver.MinimizeCore(source, null, new ExactBattleOptions(64, turnHorizon: horizon),
-                CancellationToken.None, () => ++checks > 2);
+                CancellationToken.None, () => ++checks > endTurnCompleted);
             Require(expired.TimedOut && !expired.Cancelled && expired.ExpandedNodes == 1 &&
                 expired.Outcome == expected && expired.Steps.Count == 1 && expired.Steps[0].IsEndTurn &&
                 expired.TerminalLeaves == terminalLeaves && expired.HorizonLeaves == horizonLeaves &&
@@ -186,6 +195,17 @@ internal static class ExactBattleChecks
             }
             var replay = BattlePlannerChecks.Replay(source, expired.Steps, out var outcome);
             Require(outcome == expected && Json(replay) == Json(expired.State), "Exact cutoff result failed complete-state replay.");
+        }
+
+        static int CountActionChecks(BattleTurnState source)
+        {
+            int checks = 0;
+            BattleActionModel.EnumerateActions(source, null, true, new BattleSearchWorkspace(enabled: false), () =>
+            {
+                checks++;
+                return false;
+            });
+            return checks;
         }
 
         static void CheckPartialBoundary(BattleTurnState source, ExactBattleResult result)
