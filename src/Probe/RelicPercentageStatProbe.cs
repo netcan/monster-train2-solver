@@ -30,6 +30,7 @@ namespace MonsterTrain2Poju.Probe
             return save.GetCovenants().Count == 0 && save.GetMutators().Count > 0 &&
                 save.GetMutators().All(owner => OriginalStartRoomAttachmentScenario.SupportsInfernoMutator(owner, save) ||
                     RelicProbe.SupportsStatusMultiplier(owner) ||
+                    BattleSpawnPointProbe.Enabled && SupportsLonelyRooms(owner, save) ||
                     CardBranchMaskProbe.Enabled && SupportsHandOrEmber(owner, save) ||
                     owner.GetRelicDataID() == RelicUnitSpawnCountModel.DataId &&
                     owner.GetEffects() is [RelicEffectExtraSpawnsFirstUnitPerTurn] ||
@@ -66,6 +67,13 @@ namespace MonsterTrain2Poju.Probe
                         owner.GetEffects().Count == 1 && effect is RelicEffectSpawnMonsterOnTurnStart) &&
                     ((RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect)).GetEffectConditions().Count == 0));
         }
+
+        internal static bool SupportsLonelyRooms(RelicState owner, SaveManager save) =>
+            owner.GetRelicDataID() == RelicModel.LonelyRoomsOwnerId &&
+            owner.GetAssetName() == RelicModel.LonelyRoomsOwnerKey && !owner.DisallowedInPlacementPhase &&
+            owner.GetEffects() is [RelicEffectRoomMonsterCapacityModifier effect] &&
+            effect.CapacityModifier == RelicModel.LonelyRoomsPlayerSlots &&
+            save.GetMonstersNumSpawnPointsOverrideFromRelics() == RelicModel.LonelyRoomsPlayerSlots;
 
         private static bool SupportsSoulSaviorStarterDeck(RelicState owner, SaveManager save) =>
             save.GetRunType() == RunType.RegionRun && owner.GetRelicDataID() == RelicModel.SoulSaviorStarterDeckId &&

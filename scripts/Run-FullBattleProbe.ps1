@@ -597,6 +597,7 @@ param(
     [switch] $OriginalLoseMoneyOnHitWitness,
     [switch] $OriginalDoubleStatusEffectsWitness,
     [switch] $OriginalDoubleStatusEffectsBattle,
+    [switch] $OriginalLonelyRoomsBattle,
     [switch] $OriginalPreventMonsterDamageBattle,
     [switch] $OriginalSecondFloorEnemyOpening,
     [switch] $OriginalHealOnAscendWitness,
@@ -1099,11 +1100,11 @@ if ($OriginalSpellDamageMoveWitness) {
 if ($PlacementSummonBlockOnly -and -not $OriginalPlacementMutatorsWitness) {
     throw 'PlacementSummonBlockOnly requires OriginalPlacementMutatorsWitness.'
 }
-if ($OriginalLoseMoneyOnHitWitness -or $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle) {
+if ($OriginalLoseMoneyOnHitWitness -or $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle -or $OriginalLonelyRoomsBattle) {
     $witnessArguments = @('OriginalLoseMoneyOnHitWitness', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
-        'OriginalDoubleStatusEffectsWitness', 'OriginalDoubleStatusEffectsBattle', 'BinaryCapture', 'NativeBuildRoot',
+        'OriginalDoubleStatusEffectsWitness', 'OriginalDoubleStatusEffectsBattle', 'OriginalLonelyRoomsBattle', 'BinaryCapture', 'NativeBuildRoot',
         'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
-    $selected = @($OriginalLoseMoneyOnHitWitness, $OriginalDoubleStatusEffectsWitness, $OriginalDoubleStatusEffectsBattle).Where({ $_ })
+    $selected = @($OriginalLoseMoneyOnHitWitness, $OriginalDoubleStatusEffectsWitness, $OriginalDoubleStatusEffectsBattle, $OriginalLonelyRoomsBattle).Where({ $_ })
     if (-not $BinaryCapture -or $selected.Count -ne 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
         throw 'Select one original mutator test with isolated binary capture.'
@@ -2683,7 +2684,7 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth -or $OriginalFunguyDeckScalingDoubleUnits -or
     $OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness -or
     $OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle -or $OriginalHandAndEmberWitness -or $OriginalFecundityOnCast -or
-    $OriginalHealOnAscendWitness -or $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle) {
+    $OriginalHealOnAscendWitness -or $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle -or $OriginalLonelyRoomsBattle) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -2711,6 +2712,9 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     if (($OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle) -and
         $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original DoubleStatusEffects requires the pinned 2.3.1 game module.'
+    }
+    if ($OriginalLonelyRoomsBattle -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'Original LonelyRooms requires the pinned 2.3.1 game module.'
     }
     if (($OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original Pyre witness requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
@@ -3115,6 +3119,7 @@ $environment = @{
     MT2_PROBE_LOSE_MONEY_ON_HIT = $(if ($OriginalLoseMoneyOnHitWitness) { '1' } else { '0' })
     MT2_PROBE_DOUBLE_STATUS_EFFECTS = $(if ($OriginalDoubleStatusEffectsWitness) { '1' } else { '0' })
     MT2_PROBE_DOUBLE_STATUS_EFFECTS_BATTLE = $(if ($OriginalDoubleStatusEffectsBattle) { '1' } else { '0' })
+    MT2_PROBE_LONELY_ROOMS_BATTLE = $(if ($OriginalLonelyRoomsBattle) { '1' } else { '0' })
     MT2_PROBE_PYRE_ABILITY_COOLDOWN_WITNESS = $OriginalPyreAbilityCooldownWitness
     MT2_PROBE_ORIGINAL_PACT_DRAW = $(if ($OriginalPactDrawWitness) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_PACT_BATTLE = $(if ($OriginalPactDrawBattle) { '1' } else { '0' })
@@ -5372,6 +5377,21 @@ if ($OriginalDoubleStatusEffectsBattle) {
         ($owners[0].EffectTypes -join ',') -cne 'RelicEffectAddStatusEffectMultiplier' -or
         $rules.Count -ne 1 -or $rules[0].EffectIndex -ne 0 -or $rules[0].MultiplierPercent -ne 200) {
         throw "The full battle did not capture the original DoubleStatusEffects owner. Inspect $tracePath and $unityLog"
+    }
+}
+if ($OriginalLonelyRoomsBattle) {
+    $battleContext = $trace.Turns[0].Before.Spawn.Train.Context
+    $owners = @($battleContext.Relics | Where-Object DataId -ceq '2b03086c-4fdb-4d08-806c-99c307de3085')
+    $battleFloors = @($battleContext.RoomCapacities | Where-Object { -not $_.IsPyre })
+    $players = @($battleContext.SpawnPoints.Groups | Where-Object {
+        $_.Team -eq 1 -and $null -eq $_.PreviewCopyId -and $_.RoomIndex -in $battleFloors.RoomIndex
+    })
+    if ($trace.GameVersion -cne '2.3.1' -or $trace.GameModuleMvid -ne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+        $owners.Count -ne 1 -or $owners[0].AssetKey -cne 'LonelyRooms' -or
+        ($owners[0].EffectTypes -join ',') -cne 'RelicEffectRoomMonsterCapacityModifier' -or
+        $battleFloors.Count -ne 3 -or $players.Count -ne 3 -or
+        @($players | Where-Object { $_.InnerCount -ne 1 -or $_.GroupCount -ne 1 }).Count -gt 0) {
+        throw "The battle did not capture the original LonelyRooms slots. Inspect $tracePath and $unityLog"
     }
 }
 if ($OriginalMoreTreasureUnitsBattle) {

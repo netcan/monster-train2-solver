@@ -255,6 +255,28 @@ namespace MonsterTrain2Poju.Model
             owner.IsCovenant == false && owner.DisallowedInPlacementPhase == false &&
             owner.EffectTypes.Count == 1 && owner.EffectTypes[0] == BigMonstersEffect;
 
+        internal const string LonelyRoomsEffect = "RelicEffectRoomMonsterCapacityModifier";
+        internal const string LonelyRoomsOwnerId = "2b03086c-4fdb-4d08-806c-99c307de3085";
+        internal const string LonelyRoomsOwnerKey = "LonelyRooms";
+        internal const int LonelyRoomsPlayerSlots = 1;
+
+        internal static bool IsOriginalLonelyRooms(CombatRelicState owner) => owner is
+        {
+            DataId: LonelyRoomsOwnerId, AssetKey: LonelyRoomsOwnerKey, IsCovenant: false,
+            DisallowedInPlacementPhase: false, EffectTypes: [LonelyRoomsEffect]
+        };
+
+        private static string? ValidateLonelyRooms(CombatContext? context)
+        {
+            if (context?.Relics?.Any(IsOriginalLonelyRooms) != true) return null;
+            if (context.RoomCapacities == null || context.SpawnPoints == null ||
+                !context.RoomCapacities.Any(room => !room.IsPyre) || context.RoomCapacities.Any(room => !room.IsPyre &&
+                    context.SpawnPoints.Group(room.RoomIndex, CombatTeam.Player) is not
+                        { InnerCount: LonelyRoomsPlayerSlots, GroupCount: LonelyRoomsPlayerSlots }))
+                return "Missing settled native LonelyRooms player spawn points.";
+            return null;
+        }
+
         internal const string DeploymentSummonBlock = "RelicEffectBlockRoomSummon";
         internal const string DeploymentSummonBlockOwnerId = "cdd8f536-acb4-4f82-a2f3-fc2a593af09b";
         internal const string DeploymentSummonBlockOwnerKey = "Echoes_DeployOnlyToTopFloor";
@@ -298,7 +320,7 @@ namespace MonsterTrain2Poju.Model
         internal static bool AbilitiesTriggerIncant(CombatContext? context) =>
             context?.Relics?.Any(relic => relic.EffectTypes.Contains(AbilityIncant)) == true;
         internal static string? Validate(CombatContext? context) => ConduitModel.Validate(context) ?? Validate(context?.Relics) ??
-            RelicStartCombatAttachmentModel.Validate(context) ?? RelicShowtimeModel.Validate(context) ??
+            ValidateLonelyRooms(context) ?? RelicStartCombatAttachmentModel.Validate(context) ?? RelicShowtimeModel.Validate(context) ??
             (context?.Relics?.Any(relic => relic.EffectTypes.Contains(ModifyTriggerCount) || relic.EffectTypes.Contains(AddTrigger)) == true && context.TriggerCounts == null
                 ? "Missing native relic trigger count cache." : TriggerCountModel.Validate(context?.TriggerCounts)) ??
             (context?.Relics?.Any(relic => relic.EffectTypes.Contains(ModifyDragonsHoardCap)) == true &&
@@ -448,6 +470,11 @@ namespace MonsterTrain2Poju.Model
                     {
                         if (IsOriginalBigMonsters(relic) && relics.Count(IsOriginalBigMonsters) == 1) continue;
                         return "Missing, changed or duplicate original BigMonsters owner.";
+                    }
+                    if (effect == LonelyRoomsEffect)
+                    {
+                        if (IsOriginalLonelyRooms(relic) && relics.Count(IsOriginalLonelyRooms) == 1) continue;
+                        return "Missing, changed or duplicate original LonelyRooms owner.";
                     }
                     if (effect == RelicSpellDamageMoveModel.Effect)
                     {

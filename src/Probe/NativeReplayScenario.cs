@@ -532,6 +532,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalRandomSpellTargetsWitness.Acquire(save);
                     if (fullBattle && OriginalPreventMonsterDamageWitness.FullBattle && !OriginalPreventMonsterDamageWitness.Acquired)
                         OriginalPreventMonsterDamageWitness.Acquire(save);
+                    if (fullBattle && OriginalLonelyRoomsBattle.Enabled && !OriginalLonelyRoomsBattle.Acquired)
+                        OriginalLonelyRoomsBattle.Acquire(save);
                     if (fullBattle && OriginalLoseMoneyOnHitWitness.Enabled && !OriginalLoseMoneyOnHitWitness.Acquired)
                         OriginalLoseMoneyOnHitWitness.Acquire(save);
                     if (fullBattle && (OriginalDoubleStatusEffectsWitness.Enabled || OriginalDoubleStatusEffectsWitness.FullBattle) &&
