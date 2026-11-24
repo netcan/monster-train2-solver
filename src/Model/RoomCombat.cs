@@ -1195,7 +1195,7 @@ namespace MonsterTrain2Poju.Model
                 HivemindTurnUpgrade.IsInfestedOrdinaryRoom(state);
             bool scaledWavePhase = allowFreshHivemind || state.Context?.QueryFrame?.Turn is 2 or 3 ||
                 (!state.Preview && state.Context?.QueryFrame?.Turn == 1) ||
-                (state.Context?.QueryFrame?.Turn is 4 or 5 &&
+                (state.Context?.QueryFrame?.Turn is >= 4 and <= 7 &&
                     (state.Preview || state.Context.EnergyState?.Phase is "HeroTurn" or "MonsterTurn" or "Combat" or "EndMonsterTurn"));
             int infestedDrawTurn = allowFreshHivemind && state.Context?.QueryFrame?.Turn is 2 or 3 &&
                 OuterBossDefinitions.HasLifemotherInfestedOwner(state.Context) ? state.Context.QueryFrame.Turn.Value : 0;
