@@ -32,26 +32,38 @@ internal static class SkullCollectorsChecks
             effect.GetProperty("Team").GetString()!, effect.GetProperty("Target").GetString()!,
             effect.GetProperty("Subtype").GetString()!)).ToArray();
         string[] subtypes = [RelicSkullCollectorsModel.TierOne, "SubtypesData_TreasureCollectorT2", "SubtypesData_TreasureCollectorT3"];
+        int[] healthBonuses = [30, 60, 90];
+        int[] attackBonuses = [5, 15, 30];
         var expectedEffects = new[] { (RelicSkullCollectorsModel.Effect, 0, "None", "Room", "SubtypeData_None") }
-            .Concat(new[] { 30, 60, 90 }.Select((amount, index) => (RelicModel.ModifyCharacterMaxHealth, amount, "Heroes", "Room", subtypes[index])))
-            .Concat(new[] { 5, 15, 30 }.Select((amount, index) => (RelicModel.ModifyCharacterAttackDamage, amount, "Heroes", "Room", subtypes[index])));
+            .Concat(healthBonuses.Select((amount, index) => (RelicModel.ModifyCharacterMaxHealth, amount, "Heroes", "Room", subtypes[index])))
+            .Concat(attackBonuses.Select((amount, index) => (RelicModel.ModifyCharacterAttackDamage, amount, "Heroes", "Room", subtypes[index])));
         Require(effects.SequenceEqual(expectedEffects), "The ordered original treasure callbacks differ.");
 
         FixtureValue birth = witness.GetProperty("Birth");
         int actorId = birth.GetProperty("ActorId").GetInt32();
-        var original = tiers[0].Before;
-        var replacement = tiers[0].After;
-        Require(Character(birth.GetProperty("Original")) == original && Character(birth.GetProperty("ActorOriginal")) == original &&
+        var original = Character(birth.GetProperty("Original"));
+        int tier = Array.FindIndex(tiers, mapping => mapping.Before == original);
+        Require(tier >= 0, "The observed collector's original definition is outside the pinned substitution table.");
+        var replacement = tiers[tier].After;
+        Require(Character(birth.GetProperty("ActorOriginal")) == original &&
             Character(birth.GetProperty("Requested")) == replacement && Character(birth.GetProperty("Used")) == replacement &&
             Character(birth.GetProperty("ActorSource")) == replacement, "Native collector definition provenance differs.");
+        // Original Ring 2, 4 and 7 receipts, respectively. Floors and points are zero-based.
+        (int Turn, int First, int Floor, int Point) placement = tier switch
+        {
+            0 => (1, 1, 2, 0),
+            1 => (2, 0, 1, 2),
+            _ => (2, 0, 0, 3)
+        };
 
         FixtureValue spawn = witness.GetProperty("Spawn");
         EnemySpawnState before = spawn.GetProperty("Before").Deserialize<EnemySpawnState>()!;
         EnemySpawnState actual = spawn.GetProperty("Actual").Deserialize<EnemySpawnState>()!;
         EnemySpawnState decision = witness.GetProperty("FirstDecision").Deserialize<BattleTurnState>()!.Spawn;
         EnemyDefinition definition = before.Treasures.Single();
-        Require(spawn.GetProperty("IncludeTreasure").GetBoolean() && before.TreasureEnabled && before.Turn == 1 && actual.Turn == 1 &&
-            decision.Turn == 2 && before.Phase == 1 && actual.Phase == 2 && actual.Phase == decision.Phase &&
+        Require(spawn.GetProperty("IncludeTreasure").GetBoolean() && before.TreasureEnabled && before.Turn == placement.Turn &&
+            actual.Turn == before.Turn && decision.Turn == before.Turn + 1 && before.Phase == placement.Turn &&
+            actual.Phase == before.Phase + 1 && actual.Phase == decision.Phase &&
             before.TreasuresRemaining == 1 && actual.TreasuresRemaining == 0 && decision.TreasuresRemaining == 0 &&
             before.Train.Context!.Relics!.Count(RelicSkullCollectorsModel.IsOriginal) == 1 &&
             before.Train.Rooms.SelectMany(room => room.Units).All(unit => unit.Id != actorId) &&
@@ -62,26 +74,38 @@ internal static class SkullCollectorsChecks
             definition.TreasureOriginalId == (observeOnly ? null : original.Id), "The captured treasure pool or source identifier differs.");
         foreach (EnemySpawnState state in new[] { actual, decision })
         {
-            CombatUnit actor = state.Train.Rooms.Single(room => room.RoomIndex == 2).Units.Single(unit => unit.Id == actorId);
-            Require(RelicSkullCollectorsModel.IsTierOne(actor) && actor.Size == replacement.Size &&
-                actor.Attack == replacement.Attack + RelicSkullCollectorsModel.AttackBonus &&
-                actor.Health == replacement.Health + RelicSkullCollectorsModel.HealthBonus && actor.MaxHealth == actor.Health &&
+            CombatUnit actor = state.Train.Rooms.Single(room => room.RoomIndex == placement.Floor).Units.Single(unit => unit.Id == actorId);
+            Require(actor.AssetKey == replacement.Key && actor.Team == CombatTeam.Enemy && actor.Subtypes.Contains(subtypes[tier]) &&
+                actor.Size == replacement.Size && actor.Modifiers is { IsClone: false } modifiers &&
+                modifiers.AttackDamage == replacement.Attack && modifiers.DamageBuff == attackBonuses[tier] &&
+                actor.Attack == replacement.Attack + attackBonuses[tier] &&
+                actor.Health == replacement.Health + healthBonuses[tier] && actor.MaxHealth == actor.Health &&
+                actor.Status("rooted") == null &&
                 state.Train.Movement.Single(move => move.UnitId == actorId) is { Speed: 1, Ascends: false, Loops: false, CompanionBoss: false } &&
-                state.Train.Context!.SpawnPoints!.SelectedGroup(2, CombatTeam.Enemy)!.Occupants[0] == actorId,
-                "The settled Tier I collector's stats, movement or physical slot differs.");
+                state.Train.Context!.SpawnPoints!.SelectedGroup(placement.Floor, CombatTeam.Enemy)!.Occupants[placement.Point] == actorId,
+                "The settled collector's stats, movement or physical slot differs.");
         }
 
         RngDraw wave = before.Rng.Range(0, before.Waves[before.Phase].Candidates.Count);
-        RngDraw floor = wave.State.Range(0, 2);
+        int[] eligibleFloors = actual.Train.Rooms
+            .Where(room => !room.Units.Any(unit => unit.IsPyre) && room.RoomIndex >= placement.First &&
+                room.Units.Count(unit => unit.Team == CombatTeam.Enemy && unit.Id != actorId) < before.Train.EnemySlotsPerRoom)
+            .Select(room => room.RoomIndex).ToArray();
+        Require(eligibleFloors.SequenceEqual(Enumerable.Range(placement.First, 3 - placement.First)),
+            "The original stock spawn did not leave every eligible floor open.");
+        RngDraw floor = wave.State.Range(0, eligibleFloors.Length);
         RngDraw collector = floor.State.Range(0, before.Treasures.Count);
-        Require(before.FirstTreasureRoom == 1 && before.SelectedGroups[before.Phase] == -1 &&
-            wave.Value == 0 && actual.SelectedGroups[before.Phase] == wave.Value && floor.Value == 1 && collector.Value == 0 &&
+        Require(before.FirstTreasureRoom == placement.First && before.SelectedGroups[before.Phase] == -1 &&
+            wave.Value == 0 && actual.SelectedGroups[before.Phase] == wave.Value && eligibleFloors[floor.Value] == placement.Floor &&
+            collector.Value == 0 &&
             collector.State.Equals(actual.Rng), "The native wave, eligible floor and collector RNG sequence differs.");
 
         if (observeOnly)
         {
-            Require(before.ExternalInteractions.Contains("Spawn mutators") &&
-                before.ExternalInteractions.Any(reason => reason.Contains(RelicSkullCollectorsModel.Effect, StringComparison.Ordinal)),
+            string[] historicalGuards = tier == 0
+                ? [$"Unmodeled relic effect {RelicSkullCollectorsModel.Effect} on SkullCollectors.", "Spawn mutators"]
+                : ["Spawn mutators"];
+            Require(before.ExternalInteractions.SequenceEqual(historicalGuards) && actual.ExternalInteractions.SequenceEqual(historicalGuards),
                 "Expected the historical unsupported projection in observation-only mode.");
         }
         else
@@ -96,7 +120,8 @@ internal static class SkullCollectorsChecks
                 throw new InvalidOperationException($"The projected original collector successor differs: {ModelJson.Difference(predicted, observed)}");
             Require(JsonSerializer.Serialize(before) == parent, "The collector spawn mutated its recorded parent.");
         }
-        Console.WriteLine($"NATIVE-SKULL-COLLECTORS PASS. Tier I provenance, 10 attack, 41 health, exact Spawning RNG and {(observeOnly ? "historical observation" : "complete spawned successor")}.");
+        Console.WriteLine($"NATIVE-SKULL-COLLECTORS PASS. Tier {tier + 1} provenance, {replacement.Attack + attackBonuses[tier]} attack, " +
+            $"{replacement.Health + healthBonuses[tier]} health, exact Spawning RNG and {(observeOnly ? "historical observation" : "complete spawned successor")}.");
     }
 
     private static (string Id, string Key, int Attack, int Health, int Size) Character(FixtureValue row) =>

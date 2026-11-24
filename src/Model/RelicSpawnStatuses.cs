@@ -246,12 +246,15 @@ namespace MonsterTrain2Poju.Model
                         if (!DrainYield()) return failed!;
                         continue;
                     }
-                    if (effectIndex == 1 && RelicSkullCollectorsModel.IsOriginal(relic) && fromCardId == 0 &&
-                        state.Units.Any(unit => unit.Id == unitId && RelicSkullCollectorsModel.IsTierOne(unit)))
+                    if (relic.EffectTypes[effectIndex] == RelicModel.ModifyCharacterMaxHealth &&
+                        RelicSkullCollectorsModel.IsOriginal(relic) && fromCardId == 0)
                     {
+                        CombatUnit? recipient = state.Units.FirstOrDefault(unit => unit.Id == unitId);
+                        if (recipient == null) return Fail("Original SkullCollectors birth requires a retained actor.");
+                        int healthBonus = RelicSkullCollectorsModel.HealthBonusFor(recipient, effectIndex);
+                        if (healthBonus == 0) continue;
                         if (!DrainYield()) return failed!;
-                        RoomCombatResult applied = UnitHealthModel.ApplyNative(state, unitId, RelicSkullCollectorsModel.HealthBonus,
-                            triggerOnHeal: false);
+                        RoomCombatResult applied = UnitHealthModel.ApplyNative(state, unitId, healthBonus, triggerOnHeal: false);
                         if (!applied.Supported) return applied;
                         state = applied.State!; callbacks.AddRange(applied.PendingCallbacks); events.AddRange(applied.Events);
                         if (applied.Outcome != RoomOutcome.Exchanged) outcome = applied.Outcome;

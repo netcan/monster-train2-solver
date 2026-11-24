@@ -124,7 +124,8 @@ namespace MonsterTrain2Poju.Probe
                 (int)AccessTools.Field(typeof(HeroManager), "spawnPatternPhase").GetValue(heroes),
                 pattern.GetIsLoopingScenario(), new UnityRng(rng[0], rng[1], rng[2], rng[3]), trace.NextUnitId,
                 (specials.TryGetValue(treasure, out CharacterData[] candidates) ? candidates : Array.Empty<CharacterData>())
-                    .Select(candidate => replacement == null ? Definition(candidate) : RelicSkullCollectorsProbe.Project(candidate, replacement))
+                    .Select(candidate => replacement == null ? Definition(candidate) :
+                        RelicSkullCollectorsProbe.Project(candidate, replacement, save.GetCurrentDistance()))
                     .ToArray(), total[treasure] - spawned[treasure],
                 (bool)AccessTools.Field(typeof(HeroManager), "treasureAndTraitorCharactersEnabled").GetValue(heroes),
                 easy ? 1 : 2, easy ? 1 : 0, managers.GetCombatManager()!.GetTurnCount(), interactions,

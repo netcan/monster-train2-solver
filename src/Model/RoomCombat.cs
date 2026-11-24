@@ -5112,12 +5112,13 @@ namespace MonsterTrain2Poju.Model
                         continue;
                     }
                     if (relic.EffectTypes[effectIndex] == RelicModel.ModifyCharacterAttackDamage && kind == "OnSpawn" &&
-                        unit.Alive && effectIndex == 4 && RelicSkullCollectorsModel.IsOriginal(relic) &&
-                        RelicSkullCollectorsModel.IsTierOne(unit.Source))
+                        unit.Alive && RelicSkullCollectorsModel.IsOriginal(relic))
                     {
+                        int attackBonus = RelicSkullCollectorsModel.AttackBonusFor(unit.Source, effectIndex);
+                        if (attackBonus == 0) continue;
                         CombatUnit actor = unit.Freeze();
                         UnitModifiers stats = actor.Modifiers!;
-                        unit.Apply(actor.WithModifiers(stats.WithDamageBuff(checked(stats.DamageBuff + RelicSkullCollectorsModel.AttackBonus)))
+                        unit.Apply(actor.WithModifiers(stats.WithDamageBuff(checked(stats.DamageBuff + attackBonus)))
                             .WithRawAttack(stats.AttackDamage));
                         continue;
                     }
