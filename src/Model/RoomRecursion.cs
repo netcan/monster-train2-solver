@@ -17,7 +17,7 @@ namespace MonsterTrain2Poju.Model
                 return Fail("Room recursion requires physical spawn points, a complete birth catalog and primary execution.");
             if (effect.Recursion?.SelectionMode != "RandomToRoomUntilCapacityFull" || effect.Recursion.CardType != "Monster")
                 return Fail("Room recursion requires the calibrated random-to-capacity Monster selection.");
-            if (context.Relics?.Any(RelicModel.HasCombatEffects) == true)
+            if (context.Relics?.Any(relic => RelicModel.HasCombatEffects(relic) && !OriginalAllSubtypesModel.IsOwner(relic)) == true)
                 return Fail("Room recursion with relic birth and discard callbacks requires native calibration.");
             IReadOnlyList<int> eligible = CardRecursionModel.EligibleCards(context.Cards, context.OtherPiles,
                 effect, definitions, sourceCardId, out string? error, context.CardRegistry,

@@ -28,6 +28,21 @@ internal static class OriginalAllSubtypesChecks
         }
         if (root.GetProperty("OriginalKillCopyPrepared").GetBoolean())
             OriginalKillCopyChecks.Native(root, allSubtypes: true);
+        if (root.GetProperty("OriginalSupportSpellsPrepared").GetBoolean())
+        {
+            const string hallowedHalls = "c6484604-b077-43ce-84a4-0179d2f36352";
+            var cast = root.GetProperty("Actions").EnumerateArray().Select(row => (
+                Action: row.GetProperty("Action").Deserialize<PlayCardAction>()!,
+                Before: row.GetProperty("Before").Deserialize<BattleTurnState>()!,
+                After: row.GetProperty("Actual").Deserialize<BattleTurnState>()!)).Single(row =>
+                    row.Before.Spawn.Train.Context!.FindCard(row.Action.CardInstanceId)?.DataId == hallowedHalls);
+            var before = cast.Before.Spawn.Train.Rooms.Single(room => room.RoomIndex == cast.Action.RoomIndex);
+            var after = cast.After.Spawn.Train.Rooms.Single(room => room.RoomIndex == cast.Action.RoomIndex);
+            Require(OriginalAllSubtypesModel.Active(before.Context, before.Deployment) &&
+                after.Units.Count(unit => unit.Team == CombatTeam.Player && unit.Health > 0 &&
+                    before.Units.All(previous => previous.Id != unit.Id)) == 6,
+                "Original Hallowed Halls must revive six friendlies while the original subtype mutator is active.");
+        }
         SolverStageChecks.Native(path);
     }
 
