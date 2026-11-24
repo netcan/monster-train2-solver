@@ -91,6 +91,13 @@ try {
     $loseMoneyOnHit = "$current/lose-money-on-hit/native-battle.mt2f"
     dotnet $checks --native-lose-money-on-hit-battle-only $loseMoneyOnHit
     if ($LASTEXITCODE -ne 0) { throw 'Original LoseMoneyOnHit battle failed.' }
+    foreach ($tier in @('tier2', 'tier3')) {
+        $reanimation = "$current/front-reanimation/native-$tier"
+        dotnet $checks --native-front-reanimation-only "${reanimation}-settled.mt2f" --whole-turns
+        if ($LASTEXITCODE -ne 0) { throw "Original front reanimation opening failed for $tier." }
+        dotnet $checks --solver-stage-case-only "${reanimation}-battle.mt2f"
+        if ($LASTEXITCODE -ne 0) { throw "Original front reanimation battle failed for $tier." }
+    }
     foreach ($rank in @('i', 'ii', 'iii')) {
         dotnet $checks --native-lazarus-devour-only "$current/lazarus-devour/native-devour-$rank.mt2f"
         if ($LASTEXITCODE -ne 0) { throw "Original Lazarus Devour ability failed at rank $rank." }

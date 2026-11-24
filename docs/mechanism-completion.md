@@ -1528,6 +1528,10 @@ Hallowed Halls 同场原版胜局另验证了六名友军复活，5 次出牌、
 [一层复生对照](../tests/compatibility/game-2.3.1/mechanics/front-reanimation/native-tier2-settled.mt2f) ·
 [两层复生对照](../tests/compatibility/game-2.3.1/mechanics/front-reanimation/native-tier3-settled.mt2f)
 
+两档也分别完成第二环原版胜局，每场 20 次出牌、6 次结束回合。完整状态、随机流、两类录制候选、16 条独立分支及串并行计划复放均通过。三阶战斗的终局法术击杀首领后，顾问保留原版死亡回调的结算顺序，幸存敌人从第二格移到第一格。
+[一层复生整战](../tests/compatibility/game-2.3.1/mechanics/front-reanimation/native-tier2-battle.mt2f) ·
+[两层复生整战](../tests/compatibility/game-2.3.1/mechanics/front-reanimation/native-tier3-battle.mt2f)
+
 原版 Zariel 的三档技能从 10 层 Pain 分别获得 10、20、30 点伤害。目标初始为 25 护甲、5 生命。
 前两档结算后护甲分别剩 15、5，第三档结算时目标移出战场。三档部署与技能后继均通过精确复放，技能各消耗 0 余烬并进入 1 回合冷却。
 [一档对照](../tests/compatibility/game-2.3.1/mechanics/zariel-pain/native-tier1-observation.mt2f) ·
