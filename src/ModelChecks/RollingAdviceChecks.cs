@@ -424,6 +424,51 @@ internal static class RollingAdviceChecks
                 "Native prefix handoff changed mode at decision " + index);
         return count;
     }
+    internal static void Presentation(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            fixture.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            fixture.GetProperty("NativeWon").GetBoolean() && fixture.GetProperty("TerminalEffectsSettled").GetBoolean(),
+            "Expected a settled original 2.3.1 Advisor presentation victory.");
+        FixtureValue advisor = fixture.GetProperty("PlayerAdvisor");
+        Require(advisor.GetProperty("Assembly").GetString() == "MonsterTrain2Poju.Advisor" &&
+            advisor.GetProperty("InteractionsPassed").GetBoolean() && advisor.GetProperty("IdlePassed").GetBoolean() &&
+            advisor.GetProperty("PlanPreviewPassed").GetBoolean(), "Archived release Advisor interactions did not pass.");
+        Require(advisor.TryGetProperty("Presentation", out FixtureValue presentation) &&
+            presentation.ValueKind == FixtureKind.Object, "Missing native Advisor presentation measurements.");
+        Require(presentation.GetProperty("RetainedInputs").GetInt32() > 0 &&
+            presentation.GetProperty("PendingFrames").GetInt32() > 0 &&
+            presentation.GetProperty("ReusedPublications").GetInt32() > 0 &&
+            presentation.GetProperty("ScrolledPublications").GetInt32() > 0 &&
+            presentation.GetProperty("Resets").GetInt32() > 0 &&
+            presentation.GetProperty("BudgetChanges").GetInt32() >= 4 &&
+            presentation.GetProperty("CollapsedTurnResets").GetInt32() > 0 &&
+            presentation.GetProperty("CardIdentityChecks").GetInt32() >= 4 &&
+            presentation.GetProperty("CardHoverChecks").GetInt32() >= 5 &&
+            presentation.GetProperty("ForecastScopeChecks").GetInt32() >= 7,
+            "Archived Advisor lacks retained text, scroll, reset, identity, hover or forecast-scope evidence.");
+        FixtureValue browse = advisor.GetProperty("FloorBrowse");
+        const int switches = 7;
+        Require(browse.GetProperty("Passed").GetBoolean() && browse.GetProperty("DuringSearch").GetBoolean() &&
+            browse.GetProperty("WheelInput").GetBoolean() && browse.GetProperty("Switches").GetInt32() == switches &&
+            browse.GetProperty("CaptureFreeSwitches").GetInt32() == switches,
+            "The archived Advisor did not preserve capture-free native wheel browsing.");
+        double[] switchMs = browse.GetProperty("SwitchMilliseconds").Deserialize<double[]>()!;
+        Require(switchMs.Length == switches && switchMs.All(duration => double.IsFinite(duration) && duration >= 0),
+            "Invalid archived floor-switch measurements.");
+        FixtureValue overlay = advisor.GetProperty("Overlay");
+        int published = overlay.GetProperty("Published").GetInt32();
+        Require(published >= 4 && overlay.GetProperty("Publications").GetArrayLength() == published &&
+            overlay.GetProperty("PublicationRootChecks").GetInt32() == published &&
+            overlay.GetProperty("BrowseSelections").GetInt32() >= switches &&
+            overlay.GetProperty("Failures").GetInt32() == 0 && overlay.GetProperty("PurityFailures").GetInt32() == 0,
+            "Archived Advisor publications lack exact native root checks or purity.");
+        Native(fixture);
+        Console.WriteLine($"PLAYER-ADVISOR-PRESENTATION PASS publications={published} retainedInputs={presentation.GetProperty("RetainedInputs").GetInt32()} " +
+            $"pendingFrames={presentation.GetProperty("PendingFrames").GetInt32()} scrolledPublications={presentation.GetProperty("ScrolledPublications").GetInt32()} " +
+            $"captureFreeWheelSwitches={switches} inFlightSwitchMs={switchMs[0]:F1} laterSwitchMs={switchMs.Skip(1).Min():F1}–{switchMs.Skip(1).Max():F1}");
+    }
+
     internal static void Native(FixtureValue fixture, bool conduitCalibration = false, string? calibration = null)
     {
         Accepted(fixture, conduitCalibration, calibration);
