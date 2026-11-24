@@ -153,12 +153,14 @@ namespace MonsterTrain2Poju.Model
             (room is { RoomIndex: 2, Preview: false } && room.Context?.QueryFrame?.Turn == 4 &&
                 room.Context.FindCard(sourceCardId)?.DataId == "8de281af-ab9a-4d3d-ac5f-89cd43ff6c84" &&
                 IsScaledRoomCombatDeath(room, unit)) ||
-            (room is { RoomIndex: 0, Preview: false } && room.Context?.QueryFrame?.Turn == 2 &&
+            (room is { RoomIndex: 0, Preview: false } && room.Context?.QueryFrame?.Turn is 2 or 5 &&
                 room.Context.FindCard(sourceCardId)?.DataId == "87e45427-921e-45d3-b4c4-9c156a83cedf" &&
                 unit.AssetKey == Hunter && IsScaledFirstWaveOwner(unit, room.Context) &&
-                unit.Modifiers!.Upgrades is [var upgrade] && IsAttackUpgrade(upgrade, 8) &&
-                room.Units.Any(survivor => survivor.Id != unit.Id && survivor.AssetKey == Hunter &&
-                    IsScaledFirstWaveOwner(survivor, room.Context)));
+                unit.Modifiers!.Upgrades is [var upgrade] &&
+                (room.Context.QueryFrame.Turn == 2 && IsAttackUpgrade(upgrade, 8) &&
+                    room.Units.Any(survivor => survivor.Id != unit.Id && survivor.AssetKey == Hunter &&
+                        IsScaledFirstWaveOwner(survivor, room.Context)) ||
+                 room.Context.QueryFrame.Turn == 5 && IsAttackUpgrade(upgrade, 26)));
 
         internal static bool IsScaledRoomCombatDeath(RoomCombatState room, CombatUnit unit) =>
             room.ExternalInteractions.Contains(Marker(unit)) &&
