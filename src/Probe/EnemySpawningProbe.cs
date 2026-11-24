@@ -271,6 +271,9 @@ namespace MonsterTrain2Poju.Probe
             try
             {
                 record.Actual = Capture();
+#if DEVELOPMENT_PROBE
+                if (OriginalSkullCollectorsWitness.Enabled) OriginalSkullCollectorsWitness.ObserveSpawn(record);
+#endif
                 if (record.Predicted.Supported)
                 {
                     record.Difference = JToken.DeepEquals(Comparable(record.Predicted.State!), Comparable(record.Actual))
@@ -315,11 +318,20 @@ namespace MonsterTrain2Poju.Probe
         [HarmonyPatch(typeof(HeroManager), "CreateHeroState")]
         private static class IdentityPatch
         {
-            private static void Prefix(ref Action<CharacterState, CharacterData> afterCharacterCreated)
+            private static void Prefix(CharacterData heroData, bool isTreasureHero, CharacterData? originalCharacterData,
+                ref Action<CharacterState, CharacterData> afterCharacterCreated)
             {
                 if (active == null || AllGameManagers.Instance!.GetSaveManager().PreviewMode) return;
                 Action<CharacterState, CharacterData> callback = afterCharacterCreated;
-                afterCharacterCreated = (unit, data) => { active.trace.UnitId(unit); callback?.Invoke(unit, data); };
+                afterCharacterCreated = (unit, data) =>
+                {
+                    int id = active.trace.UnitId(unit);
+#if DEVELOPMENT_PROBE
+                    if (isTreasureHero && OriginalSkullCollectorsWitness.Enabled)
+                        OriginalSkullCollectorsWitness.ObserveCreation(id, heroData, originalCharacterData, unit, data);
+#endif
+                    callback?.Invoke(unit, data);
+                };
             }
         }
     }

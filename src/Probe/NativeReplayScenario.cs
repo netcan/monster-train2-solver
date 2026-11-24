@@ -832,6 +832,8 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                     if (fullBattle && MoreTreasureUnitsProbe.Enabled && !MoreTreasureUnitsProbe.Acquired)
                         MoreTreasureUnitsProbe.Acquire(save);
+                    if (fullBattle && OriginalSkullCollectorsWitness.Enabled && !OriginalSkullCollectorsWitness.Acquired)
+                        OriginalSkullCollectorsWitness.Acquire(save);
 #endif
                     if (fullBattle && OriginalStartRoomAttachmentScenario.InstalledInferno && !OriginalStartRoomAttachmentScenario.Acquired)
                         OriginalStartRoomAttachmentScenario.AcquireBeforeBattle(managers!, log);
@@ -1197,6 +1199,13 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (OriginalHealOnAscendWitness.Tick(FullBattleTrace.Active!, managers, () => AdvanceTurn(combat!, record: false)))
                     Finish(true, "Original Ascend healing trial captured.");
+                return;
+            }
+            if (fullBattle && OriginalSkullCollectorsWitness.Enabled)
+            {
+                if (OriginalSkullCollectorsWitness.Tick(FullBattleTrace.Active!, managers, log,
+                    () => AdvanceTurn(combat!, record: false)))
+                    Finish(true, "Original SkullCollectors first treasure birth captured.");
                 return;
             }
             if (fullBattle && OriginalSecondFloorEnemyOpeningWitness.Enabled)

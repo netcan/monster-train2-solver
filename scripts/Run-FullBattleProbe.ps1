@@ -612,6 +612,7 @@ param(
     [switch] $OriginalRandomizedWavesBattle,
     [switch] $OriginalDisabledRoomPreviewBattle,
     [switch] $OriginalMoreTreasureUnitsBattle,
+    [switch] $OriginalSkullCollectorsWitness,
     [ValidateSet('Combined', 'Stock', 'Ephemeral')]
     [string] $OriginalHandAndEmberWitness = '',
     [switch] $OriginalPlacementMutatorsWitness,
@@ -1027,13 +1028,14 @@ if ($OriginalPersistentMonsterHpWitness -or $OriginalPersistentMonsterHpBattle) 
     $PhysicalSpawnPoints = $true
     $Policy = 'units-spells-and-junk'
 }
-if ($OriginalMoreTreasureUnitsBattle) {
-    $treasureArguments = @('OriginalMoreTreasureUnitsBattle', 'InputProfile', 'BattleDistance',
+if ($OriginalMoreTreasureUnitsBattle -or $OriginalSkullCollectorsWitness) {
+    $treasureArguments = @('OriginalMoreTreasureUnitsBattle', 'OriginalSkullCollectorsWitness', 'InputProfile', 'BattleDistance',
         'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild',
         'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne 1 -or
+        ($OriginalMoreTreasureUnitsBattle -and $OriginalSkullCollectorsWitness) -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $treasureArguments }).Count) {
-        throw 'MoreTreasureUnits requires an original Ring 2 checkpoint and binary capture.'
+        throw 'Select one original treasure test with a Ring 2 checkpoint and binary capture.'
     }
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
@@ -2712,7 +2714,7 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     $OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle -or $OriginalHandAndEmberWitness -or $OriginalFecundityOnCast -or
     $OriginalHealOnAscendWitness -or $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle -or $OriginalLonelyRoomsBattle -or
     $OriginalShuffleUnitsWitness -or $OriginalShuffleUnitsBattle -or $OriginalDoubleFriendlyHealthWitness -or $OriginalDoubleFriendlyHealthBattle -or
-    $OriginalBothSidesUnitsWitness -or $OriginalBothSidesUnitsBattle) {
+    $OriginalBothSidesUnitsWitness -or $OriginalBothSidesUnitsBattle -or $OriginalSkullCollectorsWitness) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -2736,6 +2738,9 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     }
     if ($OriginalHealOnAscendWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original Ascend healing trial requires the pinned 2.3.1 game module.'
+    }
+    if ($OriginalSkullCollectorsWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'Original SkullCollectors requires the pinned 2.3.1 game module.'
     }
     if (($OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle) -and
         $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
@@ -2946,11 +2951,11 @@ if ($InputProfile) {
         }
         $waveInputSignature = Get-OriginalSignature $checkpoint
     }
-    if ($OriginalMoreTreasureUnitsBattle) {
+    if ($OriginalMoreTreasureUnitsBattle -or $OriginalSkullCollectorsWitness) {
         if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
             $checkpointData.wasDevCheatUsed -ne $false -or $checkpointData.runState.numBattlesCompleted -ne 1 -or
             $checkpointData.startingConditions.ascensionLevel -ne 0) {
-            throw 'MoreTreasureUnits requires a standard original Rank 0 Ring 2 checkpoint.'
+            throw 'The original treasure test requires a standard Rank 0 Ring 2 checkpoint.'
         }
         $treasureInputSignature = Get-OriginalSignature $checkpoint
     }
@@ -3179,6 +3184,7 @@ $environment = @{
     MT2_PROBE_HEAL_ON_ASCEND = $(if ($OriginalHealOnAscendWitness) { '1' } else { '0' })
     MT2_PROBE_DISABLED_ROOM_PREVIEW = $(if ($OriginalDisabledRoomPreviewBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_MORE_TREASURE_UNITS = $(if ($OriginalMoreTreasureUnitsBattle) { '1' } else { '0' })
+    MT2_PROBE_SKULL_COLLECTORS = $(if ($OriginalSkullCollectorsWitness) { '1' } else { '0' })
     MT2_PROBE_HAND_AND_EMBER_WITNESS = $OriginalHandAndEmberWitness
     MT2_PROBE_PLACEMENT_MUTATORS_WITNESS = $(if ($PlacementSummonBlockOnly) { 'block' } elseif ($OriginalPlacementMutatorsWitness) { '1' } else { '0' })
     MT2_PROBE_BIG_MONSTERS_CREATION = $(if ($OriginalBigMonstersCreationWitness) { '1' } else { '0' })
@@ -4181,6 +4187,16 @@ if ($OriginalShuffleUnitsWitness) {
         throw "Original ShuffleUnits witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-SHUFFLE-UNITS PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalSkullCollectorsWitness) {
+    $capturePath = Join-Path $profile 'skull-collectors.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original SkullCollectors first treasure birth captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore -or (Get-OriginalSignature $checkpoint) -cne $treasureInputSignature) {
+        throw "Original SkullCollectors witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-SKULL-COLLECTORS PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalDoubleFriendlyHealthWitness) {
