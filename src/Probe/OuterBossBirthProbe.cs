@@ -19,6 +19,10 @@ namespace MonsterTrain2Poju.Probe
             public OuterBossCreationState? Before { get; set; }
             public OuterBossPhaseState? Actual { get; set; }
             public bool NativeReturned { get; set; }
+#if DEVELOPMENT_PROBE
+            public object? EndlessScaling { get; set; }
+            public bool ShouldSerializeEndlessScaling() => EndlessScaling != null;
+#endif
             internal CharacterState? Created;
             internal CombatUnit? Definition;
             internal OuterBossSpawnDefinition? Template;
@@ -26,6 +30,17 @@ namespace MonsterTrain2Poju.Probe
         private static readonly List<Record> Records = new List<Record>();
         private static readonly List<string> Errors = new List<string>();
         private static Record? pending;
+#if DEVELOPMENT_PROBE
+        internal static void ObserveEndlessScaling(CharacterState actor, object callback)
+        {
+            Record? row = pending;
+            if (row == null || row.Created != actor || row.EndlessScaling != null)
+                throw new InvalidOperationException("The native Endless outer-boss scaling callback did not match its active birth.");
+            row.EndlessScaling = callback;
+        }
+
+        internal static bool HasEndlessScaling => Records.Count == 1 && Records[0].EndlessScaling != null;
+#endif
         internal static CombatUnit? CreatedDefinition => pending?.Definition ?? pending?.Template?.Actor.Unit;
         internal static OuterBossSpawnDefinition Definition(CharacterData data)
         {

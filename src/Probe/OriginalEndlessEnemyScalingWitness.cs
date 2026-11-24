@@ -27,6 +27,7 @@ namespace MonsterTrain2Poju.Probe
         private static bool ControlledNextRing => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_CONTROLLED_NEXT_RING") == "1";
         private static int ControlledDistance => int.Parse(
             Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_CONTROLLED_DISTANCE") ?? "1", CultureInfo.InvariantCulture);
+        private static bool ObserveOuterBoss => ControlledNextRing && ControlledDistance == 2 && OuterBossBirthProbe.Enabled;
         internal static bool ControlledFirstLoop { get; private set; }
         private static bool controlledAdvanceApplied;
         private static object? scenario;
@@ -203,6 +204,12 @@ namespace MonsterTrain2Poju.Probe
                 document.Write(output);
             if (waveBirths.Count == 0 || waveBirths.Any(birth => birth.After == null))
                 throw new InvalidOperationException("The original first enemy wave did not complete an Endless birth callback.");
+            if (ObserveOuterBoss)
+            {
+                OuterBossBirthProbe.Write(log);
+                if (!OuterBossBirthProbe.HasEndlessScaling)
+                    throw new InvalidOperationException("The original outer-boss birth did not record its Endless scaling callback.");
+            }
             if (ControlledNextRing)
                 log.LogInfo($"ENDLESS-ENEMY-SCALING-CONTROLLED-NEXT-RING OBSERVED loop=1 distance={ControlledDistance} callbacks={waveBirths.Count} first={waveBirths[0].AssetKey}");
             else log.LogInfo($"ENDLESS-ENEMY-SCALING OBSERVED original callbacks={Births.Count} first={Births[0].AssetKey}");
@@ -366,6 +373,7 @@ namespace MonsterTrain2Poju.Probe
                 {
                     while (native.MoveNext()) yield return native.Current;
                     birth.After = ReadState();
+                    if (ObserveOuterBoss && actor.IsOuterTrainBoss()) OuterBossBirthProbe.ObserveEndlessScaling(actor, birth);
                 }
                 finally { (native as IDisposable)?.Dispose(); }
             }

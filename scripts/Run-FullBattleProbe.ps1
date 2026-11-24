@@ -1085,6 +1085,9 @@ if ($OriginalEndlessEnemyScalingWitness) {
         'EndlessEnemyScalingControlledNextRing', 'EndlessEnemyScalingControlledDistance', 'InputProfile', 'BattleDistance', 'Seed',
         'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild',
         'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if ($EndlessEnemyScalingControlledNextRing -and $EndlessEnemyScalingControlledDistance -eq 2 -and $OuterBossBirth -and $OuterBossTurns) {
+        $witnessArguments += @('OuterBossBirth', 'OuterBossTurns')
+    }
     if (-not $BinaryCapture -or (!$InputProfile -and $BattleDistance -ne 0) -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
         throw 'Original Endless scaling requires a first-loop opening or an original Endless BattleIntro checkpoint.'
@@ -4594,9 +4597,11 @@ if ($OriginalEndlessEnemyScalingWitness) {
         else { 'Original Endless enemy scaling captured.' }
     $capturePath = Join-Path $profile $captureName
     $wholeBattlePath = Join-Path $profile 'full-battle.mt2f'
+    $outerBossPath = Join-Path $profile 'outer-boss-birth-calibration.mt2f'
     $controlledMarker = "ENDLESS-ENEMY-SCALING-CONTROLLED-NEXT-RING OBSERVED loop=1 distance=$EndlessEnemyScalingControlledDistance"
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
         ($EndlessEnemyScalingWholeBattle -and -not (Test-Path -LiteralPath $wholeBattlePath -PathType Leaf)) -or
+        ($OuterBossBirth -and -not (Test-Path -LiteralPath $outerBossPath -PathType Leaf)) -or
         ($EndlessEnemyScalingControlledNextRing -and -not (Select-String -LiteralPath $unityLog -SimpleMatch $controlledMarker -Quiet)) -or
         -not (Select-String -LiteralPath $unityLog -SimpleMatch "DEPTH-PASS $captureMarker" -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore -or
