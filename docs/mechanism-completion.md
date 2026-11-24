@@ -1215,6 +1215,12 @@ Warborne 三个原版来源／2,304 条原生回调及同量不可变后继、16
 可用 `Run-FullBattleProbe.ps1 -EffectOwnerType <类名> -Policy no-cards -BinaryCapture`
 复查，并可加载原版战前档。动态构造和晚期调用仍需要战斗记录来确认。
 
+2026-11-24 同一原版进程批量查询三个类，并多检查 71 个灵魂升级。`CardEffectDamagePerTargetAttack`
+找到 Little Fade 三档原版死亡触发升级。`CardEffectDamageWithTrample` 在已扫描的定义效果表中为零。
+正对照 `CardEffectDamageByPercentRemainingHealth` 在三个 Beeziebub 灵魂与其升级目录各命中一次，
+回调均指向薪火。决策状态、帧号和随机流在各次查询中保持一致。批量调用的类名用逗号分隔。
+[批量查询归档](../tests/compatibility/game-2.3.1/mechanics/effect-owner-query/manifest.tsv)
+
 2026-11-15 新增[出生状态层数缩放](spawn-status-scaling-mechanism.md)：
 四个原版来源、54 组配置、2,592 次原生出生回调通过，约 0.343 秒；区分按
 原始定义追加与运行时触发器重复缩放，并修正附魔采集丢失运行时参数的问题。
