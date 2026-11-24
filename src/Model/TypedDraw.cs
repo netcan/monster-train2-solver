@@ -33,6 +33,8 @@ namespace MonsterTrain2Poju.Model
                 return Unsupported(string.Join("; ", source.Cards.ExternalInteractions));
             if (source.MaxHandSize < 0 || source.Cards.Hand.Count > source.MaxHandSize)
                 return Unsupported("Invalid typed-draw hand size.");
+            bool allSubtypes = rule.PrimaryFilter != null &&
+                OriginalAllSubtypesModel.Active(source, deployment: source.QueryFrame?.Turn == 0);
             CombatContext context = source;
             var drawn = new List<int>();
             var candidates = source.Cards.Discard.Concat(source.Cards.Draw).Reverse().ToArray();
@@ -57,7 +59,7 @@ namespace MonsterTrain2Poju.Model
                     {
                         if (card?.MaskDescriptor == null)
                         { error = "Filtered typed draw requires branch-owned card metadata."; break; }
-                        if (!CardUpgradeMaskModel.FilterCard(filter, CardBranchMaskModel.Resolve(card))) continue;
+                        if (!CardUpgradeMaskModel.FilterCard(filter, CardBranchMaskModel.Resolve(card), allSubtypes)) continue;
                     }
                     else
                     {

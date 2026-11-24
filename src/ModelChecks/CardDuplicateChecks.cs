@@ -99,8 +99,33 @@ internal static class CardDuplicateChecks
         }
         Require(copies == 2, "Missing two unchanged original copy-spell casts.");
         RecordedBattleChecks.Native(root);
+        CheckSubtypeFilter();
         Console.WriteLine("CARD-DUPLICATE PASS: two original " + (stardust ? "Stardust Invocation" : "Mass Production") + " full-hand casts, one copy per cast, native mask/optional upgrade, permanent+temporary inheritance, self-only negative Test and 16 immutable full-context branches.");
     }
+
+    private static void CheckSubtypeFilter()
+    {
+        var owner = new CombatRelicState(OriginalAllSubtypesModel.OwnerId, "AllUnitsAllSubtypes", [OriginalAllSubtypesModel.Effect],
+            isCovenant: false, disallowedInPlacementPhase: true);
+        var rng = UnityRng.Seed(121);
+        var definition = new CardMaskDefinition("unit", "Monster", "Common", true, true, true,
+            [], [], [], [], null, false, 1, 0, false, false, false, isChampionCard: false);
+        var card = new CardInstanceState(1, definition.DataId, CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, [],
+            maskDescriptor: new(definition, 1, [], []), canBeCopied: true);
+        var piles = new CardCycleState([new(1, definition.DataId)], [], [], rng, 0, []);
+        var effect = new CardActionEffect("DuplicateCard", "Room", 1, false, false, [],
+            cardFilter: new(subtypes: new(required: ["required-subtype"])));
+        IReadOnlyList<int> EligibleCards(int turn, params CombatRelicState[] relics)
+        {
+            var context = new CombatContext(piles, rng, 0, 2, 10, cardInstances: [card], queryFrame: new(turn: turn), relics: relics);
+            var eligible = CardDuplicateModel.EligibleCards(context, effect, 0, out string? error);
+            Require(error == null, "Unexpected hand duplication filter error: " + error);
+            return eligible;
+        }
+        Require(EligibleCards(1).Count == 0 && EligibleCards(0, owner).Count == 0 && EligibleCards(1, owner).SequenceEqual([1]),
+            "Hand duplication did not use the phase-active all-subtypes owner.");
+    }
+
     private static void Equal<T>(T predicted, T actual, string label)
     {
         string? difference = ModelJson.Difference(JsonSerializer.Serialize(predicted, ModelJson.Options), JsonSerializer.Serialize(actual, ModelJson.Options));

@@ -10,6 +10,8 @@ namespace MonsterTrain2Poju.Model
             int sourceCardId, out string? error)
         {
             error = null;
+            bool allSubtypes = effect.CardFilter != null &&
+                OriginalAllSubtypesModel.Active(context, deployment: context.QueryFrame?.Turn == 0);
             var result = new List<int>();
             foreach (CardToken token in context.Cards.Hand)
             {
@@ -20,7 +22,7 @@ namespace MonsterTrain2Poju.Model
                 try
                 {
                     if (card.MaskDescriptor.Definition.IsChampionCard.Value ||
-                        effect.CardFilter != null && !CardUpgradeMaskModel.FilterCard(effect.CardFilter, CardBranchMaskModel.Resolve(card))) continue;
+                        effect.CardFilter != null && !CardUpgradeMaskModel.FilterCard(effect.CardFilter, CardBranchMaskModel.Resolve(card), allSubtypes)) continue;
                     if (card.CanBeCopied.Value) result.Add(token.InstanceId);
                 }
                 catch (InvalidOperationException failure) { error = failure.Message; return Array.Empty<int>(); }

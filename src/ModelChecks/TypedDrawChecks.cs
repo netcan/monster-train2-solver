@@ -38,6 +38,16 @@ internal static class TypedDrawChecks
         var noEquipment = new CardUpgradeMaskRule(cardType: "Equipment");
         var fallback = TypedDrawModel.Draw(root, new("Monster", noEquipment, spells), 2, 1, definitions);
         Require(fallback.Supported && fallback.DrawnCardIds.SequenceEqual([3, 5]), "Secondary typed-draw mask did not run after zero primary matches.");
+        var allSubtypes = new CombatRelicState(OriginalAllSubtypesModel.OwnerId, "AllUnitsAllSubtypes", [OriginalAllSubtypesModel.Effect],
+            isCovenant: false, disallowedInPlacementPhase: true);
+        var subtypeFilter = new CardUpgradeMaskRule(cardType: "Monster", subtypes: new(required: ["required-subtype"]));
+        var filtered = new TypedDrawRule("Monster", subtypeFilter, spells);
+        var deploymentFiltered = TypedDrawModel.Draw(root.WithRelics([allSubtypes]).WithQueryFrame(new(turn: 0)), filtered, 2, 1, definitions);
+        var turnFiltered = TypedDrawModel.Draw(root.WithRelics([allSubtypes]).WithQueryFrame(new(turn: 1)), filtered, 2, 1, definitions);
+        Require(deploymentFiltered.Supported && deploymentFiltered.DrawnCardIds.SequenceEqual([3, 5]) &&
+            turnFiltered.Supported && turnFiltered.DrawnCardIds.SequenceEqual([4, 2]) &&
+            turnFiltered.Context!.BattleRng.Equals(rng) && turnFiltered.Context.Cards.Rng.Equals(rng),
+            "Typed-draw mask did not use the phase-active all-subtypes owner or changed draw order/RNG.");
         var primary = TypedDrawModel.Draw(root, new("Monster", spells, new(cardType: "Monster")), 4, 1, definitions);
         Require(primary.Supported && primary.DrawnCardIds.SequenceEqual([3, 5]), "A nonempty primary result incorrectly filled the shortfall from secondary.");
         var full = TypedDrawModel.Draw(Context(piles, 1), new("Monster", spells, new(cardType: "Monster")), 4, 1, definitions);
