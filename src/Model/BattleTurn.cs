@@ -145,7 +145,7 @@ namespace MonsterTrain2Poju.Model
             if (train.Rooms.Any(room => room.ExternalInteractions.Count > 0))
             {
                 bool infested = OuterBossDefinitions.HasLifemotherInfestedOwner(train.Context);
-                bool scaledHivemind = train.Context.QueryFrame?.Turn == 3 &&
+                bool scaledHivemind = train.Context.QueryFrame?.Turn is 3 or 4 &&
                     train.Rooms.Any(room => room.RoomIndex == 0 && HivemindTurnUpgrade.IsObservedScaledWaveInteraction(train,
                         string.Join("; ", room.ExternalInteractions)));
                 string? roomError = infested || scaledHivemind
