@@ -424,6 +424,13 @@ namespace MonsterTrain2Poju.Probe
                 if (!LoadingScreen.IsWorking() && expectedRunType &&
                     save.GetGameSequence() == SaveData.GameSequence.DestinationReached)
                 {
+#if DEVELOPMENT_PROBE
+                    if (fullBattle && OriginalEndlessEnemyScalingWitness.Enabled)
+                    {
+                        OriginalEndlessEnemyScalingWitness.BeginFirstLoop(managers!, log);
+                        battleRoutePrepared = true;
+                    }
+#endif
                     Enter(Stage.NaturalMap, 120f);
                 }
                 return;
@@ -433,7 +440,11 @@ namespace MonsterTrain2Poju.Probe
                 // The native TFB map sequence loads its intro directly while
                 // retaining DestinationReached until the fight button is used.
                 if (save.GetGameSequence() == SaveData.GameSequence.BattleIntro ||
-                    TrueFinalBossBirthProbe.RouteEnabled && screen.GetScreenActive(ScreenName.BattleIntro))
+                    (TrueFinalBossBirthProbe.RouteEnabled
+#if DEVELOPMENT_PROBE
+                        || OriginalEndlessEnemyScalingWitness.Enabled
+#endif
+                    ) && screen.GetScreenActive(ScreenName.BattleIntro))
                 {
                     Enter(Stage.NaturalIntro, 120f);
                     return;
@@ -877,6 +888,9 @@ namespace MonsterTrain2Poju.Probe
                     if (fullBattle && OriginalPyreAbilityCooldownWitness.Enabled && !OriginalPyreAbilityCooldownWitness.Prepared)
                         OriginalPyreAbilityCooldownWitness.Prepare(save);
 #endif
+#if DEVELOPMENT_PROBE
+                    if (fullBattle && OriginalEndlessEnemyScalingWitness.Enabled) OriginalEndlessEnemyScalingWitness.Arm(save);
+#endif
                     if (ReplayManager.TryClickButton(intro.GetFightButton())) Enter(Stage.Battle, 120f);
                 }
                 return;
@@ -1245,6 +1259,13 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (OriginalEmbeddedRoomWitness.Tick(FullBattleTrace.Active!, managers))
                     Finish(true, "Original embedded room attachment captured.");
+                return;
+            }
+            if (fullBattle && OriginalEndlessEnemyScalingWitness.Enabled)
+            {
+                if (OriginalEndlessEnemyScalingWitness.Tick(FullBattleTrace.Active!, combat!, log,
+                    () => AdvanceTurn(combat!, record: false)))
+                    Finish(true, "Original Endless enemy scaling captured.");
                 return;
             }
             if (fullBattle && OriginalSecondFloorEnemyOpeningWitness.Enabled)

@@ -630,6 +630,7 @@ param(
     [ValidateRange(1, 3)] [int] $OriginalZarielPainTier = 1,
     [switch] $OriginalZarielDevotionWitness,
     [switch] $OriginalEmbeddedRoomWitness,
+    [switch] $OriginalEndlessEnemyScalingWitness,
     [switch] $OriginalPactDrawWitness,
     [switch] $OriginalEntropyDrawWitness,
     [switch] $OriginalPactDrawBattle,
@@ -1047,6 +1048,18 @@ if ($OriginalEmbeddedRoomWitness) {
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
         throw 'Original embedded rooms require an isolated opening battle and binary capture.'
+    }
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($OriginalEndlessEnemyScalingWitness) {
+    $witnessArguments = @('OriginalEndlessEnemyScalingWitness', 'InputProfile', 'BattleDistance', 'Seed',
+        'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild',
+        'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not $BinaryCapture -or (!$InputProfile -and $BattleDistance -ne 0) -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
+        throw 'Original Endless scaling requires a first-loop opening or an original Endless BattleIntro checkpoint.'
     }
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
@@ -2779,7 +2792,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll'
 if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorMixPrompt -or
     $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth -or $OriginalFunguyDeckScalingDoubleUnits -or
     $OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness -or
-    $OriginalPyreAbilityCooldownWitness -or $OriginalPyreStewardDamageWitness -or $OriginalZarielPainWitness -or $OriginalZarielDevotionWitness -or $OriginalEmbeddedRoomWitness -or
+    $OriginalPyreAbilityCooldownWitness -or $OriginalPyreStewardDamageWitness -or $OriginalZarielPainWitness -or $OriginalZarielDevotionWitness -or $OriginalEmbeddedRoomWitness -or $OriginalEndlessEnemyScalingWitness -or
     $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle -or $OriginalHandAndEmberWitness -or $OriginalFecundityOnCast -or
     $OriginalHealOnAscendWitness -or $OriginalFrontReanimationWitness -or $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle -or $OriginalLonelyRoomsBattle -or
     $OriginalShuffleUnitsWitness -or $OriginalShuffleUnitsBattle -or $OriginalDoubleFriendlyHealthWitness -or $OriginalDoubleFriendlyHealthBattle -or
@@ -2841,6 +2854,9 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     }
     if ($OriginalEmbeddedRoomWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original embedded rooms require the pinned 2.3.1 game module.'
+    }
+    if ($OriginalEndlessEnemyScalingWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'Original Endless scaling requires the pinned 2.3.1 game module.'
     }
     if (($OriginalPactDrawWitness -or $OriginalPactDrawBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original Pact draw requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
@@ -2999,6 +3015,12 @@ if ($InputProfile) {
     $checkpointData = Get-Content -LiteralPath $checkpointSave -Raw | ConvertFrom-Json
     if ($checkpointData.gameSequence -ne 6 -or $checkpointData.runState.distance -ne $BattleDistance) {
         throw 'InputProfile must be a native BattleIntro checkpoint at BattleDistance.'
+    }
+    if ($OriginalEndlessEnemyScalingWitness) {
+        if ($checkpointData.runType -cne 'Class' -or !$checkpointData.isEndless -or $checkpointData.isRegionRun) {
+            throw 'Original Endless scaling InputProfile requires a native Class Endless checkpoint.'
+        }
+        $endlessInputSignature = Get-OriginalSignature $checkpoint
     }
     if ($RegionRunInput) {
         if ($checkpointData.runType -cne 'RegionRun' -or $checkpointData.isEndless -or $checkpointData.wasDevCheatUsed -ne $false) {
@@ -3268,6 +3290,7 @@ $environment = @{
     MT2_PROBE_ZARIEL_PAIN_WITNESS = $(if ($OriginalZarielPainWitness) { $OriginalZarielPainTier.ToString() } else { '0' })
     MT2_PROBE_ZARIEL_DEVOTION_WITNESS = $(if ($OriginalZarielDevotionWitness) { '1' } else { '0' })
     MT2_PROBE_EMBEDDED_ROOM_WITNESS = $(if ($OriginalEmbeddedRoomWitness) { '1' } else { '0' })
+    MT2_PROBE_ENDLESS_ENEMY_SCALING_WITNESS = $(if ($OriginalEndlessEnemyScalingWitness) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_PACT_DRAW = $(if ($OriginalPactDrawWitness) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_PACT_BATTLE = $(if ($OriginalPactDrawBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_ENTROPY_DRAW = $(if ($OriginalEntropyDrawWitness) { '1' } else { '0' })
@@ -4468,6 +4491,17 @@ if ($OriginalEmbeddedRoomWitness) {
         throw "Original embedded room attachment witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-EMBEDDED-ROOM PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalEndlessEnemyScalingWitness) {
+    $capturePath = Join-Path $profile 'endless-enemy-scaling.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -SimpleMatch 'DEPTH-PASS Original Endless enemy scaling captured.' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore -or
+        ($InputProfile -and (Get-OriginalSignature $checkpoint) -cne $endlessInputSignature)) {
+        throw "Original Endless enemy scaling witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-ENDLESS-ENEMY-SCALING PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalHandAndEmberWitness) {
