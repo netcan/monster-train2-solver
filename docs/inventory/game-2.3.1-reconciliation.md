@@ -148,7 +148,7 @@
 | RoomStateAddEffectPostCombatModifier | shared-path | The original Showtime T3 room records four front-only attack and maximum-health upgrades on floor one, with rear controls. The showtime/tier3.mt2f archive passes the complete successor and stage checks with --showtime-only. Other post-combat payloads have individual calibration. |
 | RoomStateAddEffectPreCombatModifier | shared-path | Unchanged Echoes Inferno installs the original Inferno Room on all three battle floors. The installed-inferno-rooms/battle.mt2f archive records an exact 50-damage enemy hit on floor zero and passes --installed-inferno-rooms-only. Other target and owner payloads require their own evidence. |
 | RoomStateHivemindModifier | shared-path | Original phase receipts cover publication for new owners, preserving the existing attack modifier before next draw, transfer of active room markers during ascent and casting movement, and cleanup when a holder dies. The complete Infested routes and both candidate sets are checked. |
-| RoomStateSelfDamagePerMissingHp | shared-path | The definition-driven native query matrix includes the original coefficient-one ZealotsHalo and coefficient-two Savagery, room position requirements and integer boundaries. Savagery deck attachment matches the native upgrade payload. The paid champion combat lifecycle uses a separate witness. |
+| RoomStateSelfDamagePerMissingHp | shared-path | The native query matrix includes original coefficient-one ZealotsHalo and coefficient-two Savagery, room position requirements and integer boundaries. The upgraded Fel's paid deployment and candidates match the native battle state. A controlled 3 HP difference gives 6 extra stat attack with unchanged RNG. |
 | RoomStateSpawnUnitOnUnitSpawnModifier | shared-path | The original Hall of Mirrors copies a paid Twisted Assistant with one unmodified graft. The hall-grafted-birth/predicted-birth.mt2f archive passes --native-hall-grafted-birth-only for ordered callbacks, distinct graft ownership, physical slots, Battle and Draw RNG, and EndTurn at the observed root. Triggered or generated births have separate call sites. |
 | StatusEffectBurstState | shared-path | Original Dutiful Burst has three native PostCombat grants and seven native consumptions. Its settled whole battle matches 23 plays, four EndTurns, both frontiers and sixteen branches. Combined extra-attack sources retain separate guards. |
 | StatusEffectHivemindState | shared-path | Original Indulgent and Infested settled encounters include after-draw attack refresh, durable floor markers, feed, and the original Horde OnDeath grant through both a spell and an ability. The typed fixtures check the original parent and complete successors, including Battle and BattleTest RNG. Other native Hivemind and HivemindKiller paths retain their own scopes. |
@@ -177,10 +177,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `4dad2c23168fa512d347ce7ba2423af821bdb725648461f71877cd1a04e99675`。
+- 人工审查索引 SHA-256: `949040a684d11a2217a868466e86ce553fd3dc191c4ce0533a1839d9aae23d92`。
 - Model: PDB 校验过的项目源码集合 `6140fffd97b90f9f22da098d6a2aeabcd291139bf858d5382021c5180d6a6a87`。
-- Probe: PDB 校验过的项目源码集合 `005abc1abb1b75f5801cdfbbd9c05cc20356d9f1c3ac1e5ba7ea5b7a77a8bc2d`。
-- ModelChecks: PDB 校验过的项目源码集合 `d9db174e54a3dd396f00fd2a9b123b353257d5852131d83bbef8fdb78457e5b1`。
+- Probe: PDB 校验过的项目源码集合 `d72d540fa46943086cbfca4437cd793434f4635ce43de012fffa1fd3b8eebb38`。
+- ModelChecks: PDB 校验过的项目源码集合 `424fdef369bb81444edd34db01e4a2107eecf275f5c4befc572f3771ef43b515`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
