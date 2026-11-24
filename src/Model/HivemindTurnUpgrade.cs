@@ -215,7 +215,7 @@ namespace MonsterTrain2Poju.Model
             {
                 string[] markers = interaction.Split(new[] { "; " }, StringSplitOptions.None);
                 if (!markers.All(IsKnownMarker)) return false;
-                return train.Rooms.Any(room => room.RoomIndex == turn - 5 && !room.Preview &&
+                return train.Rooms.Any(room => !room.Preview &&
                     room.Units.Any(unit => IsScaledBossFeedOwner(room, unit)) &&
                     string.Join("; ", room.ExternalInteractions.Where(markers.Contains)) == interaction &&
                     markers.All(marker => room.Units.Any(unit => Marker(unit) == marker &&
