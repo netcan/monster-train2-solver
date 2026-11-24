@@ -35,7 +35,7 @@ namespace MonsterTrain2Poju.Model
             => HasOriginalFirstWavePair(units) || HasInfestedOpeningWave(units);
 
         internal static bool HasScaledWave(EnemySpawnState source, IReadOnlyList<EnemyDefinition> definitions) =>
-            source.Turn is >= 1 and <= 3 && source.Phase == source.Turn && IsScaledCampaign(source.Train.Context) &&
+            source.Turn is >= 1 and <= 4 && source.Phase == source.Turn && IsScaledCampaign(source.Train.Context) &&
             definitions.Any(entry => entry.Unit.Status(StatusId) != null) &&
             definitions.All(entry => entry.Unit.RegisteredStatus("hivemindkiller") == null &&
                 (entry.Unit.RegisteredStatus(StatusId) == null || entry.Unit.Status(StatusId) is CombatStatus status &&
@@ -43,7 +43,7 @@ namespace MonsterTrain2Poju.Model
             source.Train.Rooms.All(room => room.Units.All(unit =>
                 (unit.RegisteredStatus(KillerStatusId) == null || source.Turn == 1 && IsObservedSproutCarrier(room, unit)) &&
                 (unit.RegisteredStatus(StatusId) == null || IsScaledFirstWaveOwner(unit, source.Train.Context) ||
-                    IsScaledFeedRecipient(unit))));
+                    IsScaledFeedRecipient(unit, source.Turn))));
 
         internal static bool IsSproutOwner(CombatRelicState relic) => SproutTier(relic) > 0;
 
@@ -136,10 +136,11 @@ namespace MonsterTrain2Poju.Model
              unit.AssetKey == Infested && unit.MaxHealth == 38 && unit.Triggers is [{ Kind: "OnKill" }, { Kind: "OnEaten" }]) &&
             (unit.Modifiers!.Upgrades.Count == 0 || unit.Modifiers.Upgrades is [var upgrade] &&
                 (IsAttackUpgrade(upgrade, 0) || IsAttackUpgrade(upgrade, 8) || IsAttackUpgrade(upgrade, 18) ||
-                 context?.QueryFrame?.Turn == 4 && IsAttackUpgrade(upgrade, 17)));
+                 context?.QueryFrame?.Turn is 4 or 5 && IsAttackUpgrade(upgrade, 17) ||
+                 context?.QueryFrame?.Turn == 5 && IsAttackUpgrade(upgrade, 26)));
 
         internal static bool IsScaledFirstWaveBirth(CombatUnit unit, CombatContext? context) =>
-            context?.QueryFrame?.Turn is >= 1 and <= 3 && IsScaledCampaign(context) && unit.Status(StatusId) is { Stacks: 1 or 2 } status &&
+            context?.QueryFrame?.Turn is >= 1 and <= 4 && IsScaledCampaign(context) && unit.Status(StatusId) is { Stacks: 1 or 2 } status &&
             IsOriginalStatus(unit, status.WithStacks(1)) && unit.RegisteredStatus("hivemindkiller") == null &&
             (unit.AssetKey == Hunter && unit.MaxHealth is >= 3 and <= 4 ||
              unit.AssetKey == Infested && unit.MaxHealth is >= 30 and <= 38) &&
@@ -187,7 +188,7 @@ namespace MonsterTrain2Poju.Model
              room.RoomIndex is 0 or 1 && room.Context?.QueryFrame?.Turn == 4);
 
         internal static bool IsScaledFirstFeedRecipient(RoomCombatState room, CombatUnit unit) =>
-            ScaledFeedRoom(room) && IsScaledFeedRecipient(unit, allowRefreshedTurnFour: room.Context?.QueryFrame?.Turn == 4);
+            ScaledFeedRoom(room) && IsScaledFeedRecipient(unit, room.Context?.QueryFrame?.Turn);
 
         internal static bool IsScaledPreviewFeedRecipient(RoomCombatState room, CombatUnit unit)
         {
@@ -210,17 +211,18 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static bool IsScaledCarriedFeedOwner(CombatUnit unit, CombatContext? context) =>
-            context?.QueryFrame?.Turn is >= 2 and <= 4 && IsScaledCampaign(context) &&
-            IsScaledFeedRecipient(unit, allowRefreshedTurnFour: context.QueryFrame.Turn == 4);
+            context?.QueryFrame?.Turn is >= 2 and <= 5 && IsScaledCampaign(context) &&
+            IsScaledFeedRecipient(unit, context.QueryFrame.Turn);
 
-        private static bool IsScaledFeedRecipient(CombatUnit unit, bool allowRefreshedTurnFour = false) =>
+        private static bool IsScaledFeedRecipient(CombatUnit unit, int? observedTurn = null) =>
             unit is { AssetKey: Heavy, MaxHealth: 75 } &&
             IsFeedRecipient(unit) && unit.RegisteredStatus("hivemindkiller") == null &&
             unit.Status(StatusId) is { Stacks: 3 or 6 or 9 or 12, ParamInt: 1 } status &&
             unit.Modifiers!.Upgrades.Count(IsFeedUpgrade) == status.Stacks / 3 &&
             unit.Modifiers.Upgrades.Count(upgrade => IsAttackUpgrade(upgrade, unit.BaseAttack - 12)) <= 1 &&
             unit.Modifiers.Upgrades.All(upgrade => IsFeedUpgrade(upgrade) ||
-                (upgrade.Stats.Damage is 0 or 18 || allowRefreshedTurnFour && upgrade.Stats.Damage == 17) &&
+                (upgrade.Stats.Damage is 0 or 18 || observedTurn is 4 or 5 && upgrade.Stats.Damage == 17 ||
+                    observedTurn == 5 && upgrade.Stats.Damage == 26) &&
                 IsAttackUpgrade(upgrade, unit.BaseAttack - 12));
 
         internal static CombatUnit? RegisterScaledWaveOwner(RoomCombatState room, CombatUnit unit, out string? error)
@@ -233,14 +235,15 @@ namespace MonsterTrain2Poju.Model
 
         internal static bool HasScaledDraw(TrainCombatState source)
         {
-            if (source.Context?.QueryFrame?.Turn is not (>= 2 and <= 4) || !IsScaledCampaign(source.Context)) return false;
+            if (source.Context?.QueryFrame?.Turn is not (>= 2 and <= 5) || !IsScaledCampaign(source.Context)) return false;
             CombatUnit[] units = source.Rooms.SelectMany(room => room.Units).ToArray();
             return units.Any(unit => IsScaledFirstWaveOwner(unit, source.Context) &&
                     unit.Modifiers!.Upgrades is [var upgrade] && IsAttackUpgrade(upgrade, 0)) &&
                 source.Rooms.All(room => room.Units.All(unit =>
                     (unit.RegisteredStatus(KillerStatusId) == null || source.Context.QueryFrame.Turn == 2 &&
                         IsObservedSproutCarrier(room, unit)) &&
-                    (unit.RegisteredStatus(StatusId) == null || IsScaledFirstWaveOwner(unit, source.Context) || IsScaledFeedRecipient(unit))));
+                    (unit.RegisteredStatus(StatusId) == null || IsScaledFirstWaveOwner(unit, source.Context) ||
+                        IsScaledFeedRecipient(unit, source.Context.QueryFrame.Turn))));
         }
 
         internal static bool HasInfestedOpeningWave(IEnumerable<CombatUnit> units)
