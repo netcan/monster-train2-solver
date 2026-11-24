@@ -1359,6 +1359,10 @@ pwsh -NoProfile -File scripts/Get-MechanismInventory.ps1 -SkipBuild -Check
 再各加 5 点攻击，最终为 13 攻。完整出牌后继和随机流匹配。
 [无卡出生对照](../tests/compatibility/game-2.3.1/mechanics/both-sides-units/native-cardless-funguy.mt2f)
 
+原版 Pyre Steward 技能先对薪火造成 3 点伤害，再按薪火实际显示攻击对同层两名敌人各造成 45 点伤害。
+两次击杀治疗将薪火生命从 77 依次恢复至 79、80。模拟在延迟死亡回调前保留跨层治疗，完整技能后继和随机流与原版一致。
+[技能专项归档](../tests/compatibility/game-2.3.1/mechanics/pyre-steward-damage/native-first-activation.mt2f)
+
 Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者共筛出 58 张，六次抽牌后
 实际生成和随机状态均与模型一致。原版胜局的五次出牌、七次 EndTurn 和十六条独立分支
 通过，旧版 348 张卡池也通过专项回归。隔离实例尚无法启用 Punished DLC，
