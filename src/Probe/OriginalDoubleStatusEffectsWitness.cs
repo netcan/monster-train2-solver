@@ -21,6 +21,7 @@ namespace MonsterTrain2Poju.Probe
         private const string Status = "spikes";
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_DOUBLE_STATUS_EFFECTS") == "1";
+        internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_DOUBLE_STATUS_EFFECTS_BATTLE") == "1";
         private static object? ownerDefinition;
         internal static bool Acquired => ownerDefinition != null;
         private static CardState? steward;
