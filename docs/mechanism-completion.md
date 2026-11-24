@@ -1441,6 +1441,10 @@ Silver T1、T2、T3 分别用两份真实胜局后的隔离存档调用原版调
 分别增加 5、7、10 点当前与最大生命或持久攻击。每次有效调用消耗一次战斗随机。
 [原版 Silver 调度归档](../tests/compatibility/game-2.3.1/mechanics/silver-postbattle/manifest.tsv)
 
+含 Silver T1 的原版序章实际获胜。原版战后流程调用一次遗物，薪火从 50/50 升到 55/55，
+该数值随原版战役流程保存并带入下一场战前界面。
+[原版胜局交接归档](../tests/compatibility/game-2.3.1/mechanics/silver-postbattle/native-tier1-prologue-handoff.mt2f)
+
 原版 `ChampionReplacement` 在开局换冠军，`TimeForTrials` 在战斗介绍界面锁定试炼。
 同一原版种子的首战对照中，冠军由 Hornbreaker 换为 Rector Flicker。试炼开启并锁定后，
 顾问从原版部署读取敌方减抽牌效果，回合抽牌由 5 降至 4。两组冠军的部署候选通过检查。

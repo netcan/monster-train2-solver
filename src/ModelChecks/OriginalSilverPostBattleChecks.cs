@@ -3,6 +3,39 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalSilverPostBattleChecks
 {
+    internal static void Natural(FixtureValue entry)
+    {
+        var owner = entry.GetProperty("Owner");
+        var relic = new CombatRelicState(Text(owner, "Id")!, Text(owner, "Key")!,
+            owner.GetProperty("Effects").EnumerateArray().Select(effect => effect.GetString()!).ToArray(),
+            isCovenant: false, disallowedInPlacementPhase: false);
+        var callbacks = entry.GetProperty("CallbackScenarioIds");
+        Require(Text(entry, "GameVersion") == Game231FixtureCatalog.Version && Text(entry, "GameModuleMvid") == Game231FixtureCatalog.Module &&
+            Text(entry, "Boundary") == "OriginalSilverNaturalPostBattle" && relic.AssetKey == "SilverT1" &&
+            RelicModel.IsOriginalSilverPostBattleOwner(relic) && entry.GetProperty("Won").GetBoolean() &&
+            Number(entry, "BattleCompletions") == 1 && callbacks.GetArrayLength() == 1 &&
+            callbacks[0].GetString() == Text(entry, "CompletedScenarioId") &&
+            Text(entry, "CompletedScenario") == "SoulSavior_R0_Battle_Morsels" &&
+            Text(entry, "NextScenario") == "SoulSavior_R1_Battle_HealOnShiftHeavy" && Number(entry, "NextDistance") == 1,
+            "Expected one Silver callback from the actual prologue victory and the next original battle intro.");
+        var before = entry.GetProperty("BeforeCallback");
+        var after = entry.GetProperty("AfterCallback");
+        var next = entry.GetProperty("NextIntro");
+        FixtureValue rngBefore = before.GetProperty("Rng"), rngAfter = after.GetProperty("Rng");
+        RngDraw draw = Rng(rngBefore.GetProperty("Battle")).Range(0, 2);
+        Require(draw.Value == 1 && Rng(rngAfter.GetProperty("Battle")).Equals(draw.State) &&
+            rngBefore.EnumerateObject().Where(stream => stream.Name != "Battle").All(stream =>
+                stream.Value.ContentEquals(rngAfter.GetProperty(stream.Name))), "Silver must advance only Battle RNG during its callback.");
+        Require(Text(entry, "Outcome") == "CurrentAndMaxHealth" &&
+            Number(before, "Health") == 50 && Number(before, "Maximum") == 50 &&
+            Number(after, "Health") == 55 && Number(after, "Maximum") == 55 &&
+            new[] { "Health", "Maximum", "PersistentAttack", "ModifiedBaseAttack" }.All(field =>
+                after.GetProperty(field).ContentEquals(next.GetProperty(field))) &&
+            Number(entry, "SavedPersistentAttack") == Number(next, "PersistentAttack"),
+            "Expected the 50-to-55 Pyre HP change to persist through the original next intro.");
+        Console.WriteLine("ORIGINAL-SILVER-NATURAL PASS: one native callback after prologue victory; 55/55 Pyre reaches the next battle intro.");
+    }
+
     internal static void Pair(FixtureValue health, FixtureValue attack)
     {
         var healthOwner = Check(health, distance: 1, attack: false);
