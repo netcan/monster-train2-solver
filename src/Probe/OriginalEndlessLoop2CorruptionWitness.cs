@@ -14,6 +14,7 @@ namespace MonsterTrain2Poju.Probe
     internal static class OriginalEndlessLoop2CorruptionWitness
     {
         private const string PlanVariable = "MT2_PROBE_ENDLESS_LOOP2_CORRUPTION_PLAN";
+        private const string Boundary = "OriginalEndlessLoop2PaidHordeDeath";
         internal static bool Enabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(PlanVariable));
         internal static bool CaptureTerminal => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_LOOP2_CORRUPTION_TERMINAL") == "1";
         internal static bool TerminalEndTurnArmed { get; private set; }
@@ -63,20 +64,35 @@ namespace MonsterTrain2Poju.Probe
         {
             using var document = FixtureDocument.Read(Environment.GetEnvironmentVariable(PlanVariable)!);
             FixtureValue archive = document.RootElement;
+            bool recorded = archive.TryGetProperty("Boundary", out var boundary);
+            if (recorded && (boundary.GetString() != Boundary || archive.GetProperty("Schema").GetInt32() != 1 ||
+                archive.GetProperty("GameVersion").GetString() != "2.3.1" ||
+                !Guid.TryParse(archive.GetProperty("GameModuleMvid").GetString(), out Guid module) ||
+                module != typeof(CharacterState).Module.ModuleVersionId ||
+                archive.GetProperty("Difference").ValueKind != FixtureKind.Null))
+                throw new InvalidOperationException("Expected a settled 2.3.1 Loop 2 Horde death receipt.");
+            if (!recorded && archive.GetProperty("EvidenceKind").GetString() != "ModelRootPrediction")
+                throw new InvalidOperationException("Expected the frozen Loop 2 model plan.");
+
             var frozen = PlannerReplayScenario.Read<BattleTurnState>(archive.GetProperty("Root"));
-            FixtureValue plan = archive.GetProperty("Plan");
-            var inputs = plan.GetProperty("Steps").EnumerateArray().Select(PlannerReplayScenario.Read<PlannerReplayScenario.Step>).ToList();
-            if (archive.GetProperty("EvidenceKind").GetString() != "ModelRootPrediction" || actual.Spawn.Turn != 1 ||
-                inputs.Count != 14 || inputs.Count(input => input.IsEndTurn) != 2 ||
+            FixtureValue plan = recorded ? archive : archive.GetProperty("Plan");
+            var rows = plan.GetProperty("Steps").EnumerateArray().ToArray();
+            var inputs = rows.Select(row => PlannerReplayScenario.Read<PlannerReplayScenario.Step>(
+                recorded ? row.GetProperty("Input") : row)).ToArray();
+            if (actual.Spawn.Turn != 1 || inputs.Length != (recorded ? 16 : 14) || inputs.Count(input => input.IsEndTurn) != 2 ||
                 !JToken.DeepEquals(BattleTurnProbe.Comparable(frozen), BattleTurnProbe.Comparable(actual)))
                 throw new InvalidOperationException("The frozen Loop 2 plan does not match the original first-wave decision.");
             root = actual;
             foreach (var input in inputs) Add(input);
-            var planned = PlannerReplayScenario.Read<BattleTurnState>(plan.GetProperty("State"));
+            var planned = PlannerReplayScenario.Read<BattleTurnState>(
+                recorded ? rows.Last().GetProperty("Expected") : plan.GetProperty("State"));
             if (!JToken.DeepEquals(BattleTurnProbe.Comparable(Steps.Last().Expected), BattleTurnProbe.Comparable(planned)))
                 throw new InvalidOperationException("The frozen Loop 2 inputs do not reproduce the recorded forecast.");
-            Add(new PlannerReplayScenario.Step { Action = new PlayCardAction(3, 1, playerPosition: 0) });
-            Add(new PlannerReplayScenario.Step { Action = new PlayCardAction(10, 1, targetUnitId: 8) });
+            if (!recorded)
+            {
+                Add(new PlannerReplayScenario.Step { Action = new PlayCardAction(3, 1, playerPosition: 0) });
+                Add(new PlannerReplayScenario.Step { Action = new PlayCardAction(10, 1, targetUnitId: 8) });
+            }
             ValidateDeath(Steps[Steps.Count - 2].Expected, Steps.Last().Expected);
 
             void Add(PlannerReplayScenario.Step input)
@@ -116,7 +132,7 @@ namespace MonsterTrain2Poju.Probe
         {
             using var archive = NativeFixtureCapture.Capture(new
             {
-                Schema = 1, Boundary = "OriginalEndlessLoop2PaidHordeDeath", GameVersion = Application.version,
+                Schema = 1, Boundary, GameVersion = Application.version,
                 GameModuleMvid = typeof(CharacterState).Module.ModuleVersionId, Root = root, Steps, Difference = difference
             });
             using var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "endless-loop2-paid-horde-death.mt2f"));

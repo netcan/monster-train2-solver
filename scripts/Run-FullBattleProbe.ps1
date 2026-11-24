@@ -1138,6 +1138,11 @@ if ($EndlessEnemyScalingLoop2CorruptionPlan) {
     }
     $EndlessEnemyScalingLoop2CorruptionPlan = (Resolve-Path -LiteralPath $EndlessEnemyScalingLoop2CorruptionPlan -ErrorAction Stop).ProviderPath
     $loop2PlanHash = (Get-FileHash -LiteralPath $EndlessEnemyScalingLoop2CorruptionPlan -Algorithm SHA256 -ErrorAction Stop).Hash
+    if ($loop2PlanHash -notin @(
+        '163D132985A1934E1CC0FA6E7759F9FF9AFFDE358235A25F00C117D12BEC55C0',
+        '1A1913655B8714B3480B7955B172C51EAFDD08726D59AC86A6DA4F0718E4119E')) {
+        throw 'Use the original Loop 2 frozen plan or the checked-in 2.3.1 Horde death receipt.'
+    }
 }
 if ($EndlessEnemyScalingLoop2CorruptionTerminal -and !$EndlessEnemyScalingLoop2CorruptionPlan) {
     throw 'EndlessEnemyScalingLoop2CorruptionTerminal requires EndlessEnemyScalingLoop2CorruptionPlan.'
