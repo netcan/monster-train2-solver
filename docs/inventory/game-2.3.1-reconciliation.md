@@ -9,16 +9,16 @@
 | 待办分类 | 类数 | 含目录引用 | 含类型声明 |
 | --- | ---: | ---: | ---: |
 | known-gap | 1 | 1 | 1 |
-| inspect-no-code-link | 8 | 8 | 8 |
-| inspect-inherited-code | 5 | 5 | 5 |
+| inspect-no-code-link | 6 | 6 | 6 |
+| inspect-inherited-code | 3 | 3 | 3 |
 | inspect-projection-normalization | 54 | 54 | 54 |
 | inspect-guard-links | 43 | 43 | 43 |
 | review-existing-code | 226 | 226 | 226 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 282 | 0 | 0 |
-| scoped-review-recorded | 108 | 104 | 104 |
+| scoped-review-recorded | 112 | 108 | 108 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 111 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 115 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -41,8 +41,10 @@
 | CardEffectDamage | shared-path | Native Damage normalizes to the shared Damage action; current PunishedSpike battle exercises repeated damage, armor, target death and full successors. Existing target/scaling/callback guards remain; not an audit of every contextual branch. |
 | CardEffectDamageByPercentRemainingHealth | shared-path | Original Beeziebub OnCast targets the Pyre, floors ten percent of actual remaining HP, and supplies no card damage attribution or trait scaling. Three isolated wins prove HP 80 to 72 and exact search successors. Randomized ranges, round-up and non-Pyre targets remain guarded. |
 | CardEffectDamageFloorByFloor | shared-path | Original current Heavenfall installs its native full-moon 80 enemy floor sweep and executes through the shared OnCast and floor-damage pipeline. The current win verifies both moon phases, full successors, sixteen branches, recorded frontiers and serial/parallel plan replay. The older native Moon archive still passes with its tower damage payload. This battle's positive damage targets occupy one floor. |
+| CardEffectDamagePerDevotionLevel | shared-path | The three original fixed Zariel spell-play ranks include base damage at coefficients 6, 8 and 10. The Tier I fixture confirms paid Venerate awards level 1 before Zariel requests 12 on the front enemy, with Zariel's spawner as source. Complete deployment and paid successors match. Other target or scaling shapes and card OnSpare remain guarded. |
 | CardEffectDamagePerPyreAttack | shared-path | The original Pyre Steward ability requests damage in order 3, 45 and 45. Its two Slay heals return the Pyre from 77 to 79 to 80. Complete paid successor, gameplay RNG and preview allocation match. A model control exercises a saved plus-seven attack offset. The scope covers the unchanged authored room effect. |
 | CardEffectDamagePerStatusEffect | shared-path | The original Zariel ability ranks read ten Pain and request 10, 20 and 30 damage through the existing caster status and Armor pipeline. The high rank kills and removes the armored target. The complete paid and deployment successors match for all three ranks, including zero Ember, one cooldown and the captured RNG. |
+| CardEffectDiscardHandAddStatusEffectPerCard | shared-path | Original Wicked Fervor gives fifteen Zeal after three paid hand discards. The same battle covers zero eligible discards and leaves Persistent, Infusion and the played card out of the discard set. The full chain and sixteen independent branches preserve pile order, status stacks and RNG. |
 | CardEffectFloorRearrange | shared-path | The original Railforged Unruly SniperAdvance OnAttacking effect moves a living rear attacked actor to the front. A lone target keeps its position and the lethal control records no applied movement callback. The original whole battle matches 34 plays, seven EndTurns and both candidate frontiers. This review covers the exact living-target payload. |
 | CardEffectPlayUnitTrigger | shared-path | The exact original FavoredChild_2 post-combat payload queues one self OnFeed after room capacity decreases and applies three Rage. The component verifies the full queue result and RNG and rejects edited capacity. Other nested replay payloads retain their existing guards. |
 | CardEffectRewardGold | shared-path | Three physical hits on the original owner path give 2, 1, 0, and 0 gold across four states. Native actor damage and RNG match the shared signed-gold path. Changed conditional or random costs are rejected. |
@@ -121,6 +123,7 @@
 | RelicEffectPurgeChampion | input-only | Native SaveManager.SetupRun invokes ApplyStartOfRunRelicEffects and RelicManager.ApplyPurgeCardsEffects, which removes the champion from the permanent starter deck before capture. |
 | RelicEffectPurgeStarterDeck | campaign-only | The exact Soul Savior owner purges and fills the starter deck during original run setup. The natural Dutiful Child win uses the captured resulting deck and passes 39 action and seven EndTurn comparisons with both candidate frontiers. |
 | RelicEffectPurgeStarterDeckMatchingFilter | input-only | Native SaveManager.SetupRun reaches RelicManager.ApplyPurgeCardsEffects, which filters permanent starter cards before later battle inputs are captured. |
+| RelicEffectPurify | input-only | GrantableRewardData.ShouldOpenDeckScreen and DeckScreen.SetupRelicDataModes consume the PurifyingFlameEnhancer marker. DeckScreen.DoCardPurify replaces the selected non-champion unit card in the run deck, along with its purification flag and upgrade. The original purified-card-deployment archive separately checks the downstream paid battle successor and RNG. |
 | RelicEffectRandomizeWaveOrder | shared-path | The original opening mutator resolves its permutation before deployment. Eleven native spawning stages cover a first-wave exchange and the authored final pair. A distinct original permutation with unchanged order passes the full 18-action and six-EndTurn chain with both candidate frontiers. |
 | RelicEffectRemoveSpellUpgradeSlot | input-only | Native BalanceData.GetUpgradeSlots reduces spell slots by one for OneUpgradeSlot. CardUI.UpdateCardLayout reads the result for display and DeckScreen.FilterCards reads it for upgrade eligibility. |
 | RelicEffectRemoveStatusEffectOnSpawn | shared-path | The unchanged EggHatchRemoval owner orders Hatch removal before adding 30 Armor to the eligible Egg. Two positive births in the pinned 2.3.1 archive remove three Hatch and gain 35 Armor including five from SpawnWithArmor. All 12 recorded births and 32 independent branches per boundary match. The scene provides controlled Egg carriers and preserves the original relic definitions. |
@@ -133,6 +136,7 @@
 | RelicEffectSubstituteTreasureUnitOnSpawn | shared-path | The three original Class routes fix the collector tier at Rings 2, 4 and 7. The indexed candidate projection retains native substitution provenance. Exact spawned successors cover each tier's attributes, physical slot, treasure counter and Spawning RNG. |
 | RelicEffectSuppressHandDiscard | shared-path | The original HandDoesntDiscard custom run and same-seed stock control both discard during deployment. On the next ordinary turn the owner keeps two unplayed cards in order after three new draws. The two paid actions and four EndTurns match complete successors and RNG. Combined Ephemeral cleanup requires its own witness. |
 | RelicEffectTowerDamageDealtModified | shared-path | The exact original seven-effect owner adds ten to the shared Pyre attack query. The authored base 45, native query 55 and refreshed combat attack 55 match during deployment and turn one. The original whole battle passes 21 plays, seven EndTurns and both frontiers. The scope covers this owner's unconditional Pyre effect. |
+| RelicEffectTrainRoomAttachmentsAlwaysEmbedded | shared-path | A paid original attachment and the first-room replication relic install one embedded attachment and four extra capacity on each of three floors. Full successor and RNG match. The original effect test and model both reject subsequent primary replacement on all three floors. |
 | RelicEffectUpgradeCardOnPurchasingUpgrade | input-only | Native DeckScreen.SetupRelicDataModes uses RelicManager.GetAdditionalCardUpgrades for Merchant or StoryEvent screens. The resulting permanent modifiers are captured on cards entering battle. |
 | RoomStateAddEffectPostCombatModifier | shared-path | The original Showtime T3 room records four front-only attack and maximum-health upgrades on floor one, with rear controls. The showtime/tier3.mt2f archive passes the complete successor and stage checks with --showtime-only. Other post-combat payloads have individual calibration. |
 | RoomStateAddEffectPreCombatModifier | shared-path | Unchanged Echoes Inferno installs the original Inferno Room on all three battle floors. The installed-inferno-rooms/battle.mt2f archive records an exact 50-damage enemy hit on floor zero and passes --installed-inferno-rooms-only. Other target and owner payloads require their own evidence. |
@@ -150,25 +154,25 @@
 | RelicEffectChangeGoldReward | inspect-no-code-link | 2 | 2 | 无直接链接 |
 | RelicEffectEndlessScalingOnSpawn | inspect-no-code-link | 1 | 1 | 无直接链接 |
 | RelicEffectModifyTrial | inspect-no-code-link | 1 | 1 | 无直接链接 |
-| RelicEffectPurify | inspect-no-code-link | 1 | 1 | 无直接链接 |
 | RelicEffectReplaceChampion | inspect-no-code-link | 1 | 1 | 无直接链接 |
-| RelicEffectTrainRoomAttachmentsAlwaysEmbedded | inspect-no-code-link | 1 | 1 | 无直接链接 |
 | CardEffectAddStatusEffectPerMissingHp | inspect-inherited-code | 2 | 2 | [MonsterTrain2Poju.Model.CardJuiceModel+<>c.<SimpleUpgrade>b__12_2](../../src/Model/CardJuice.cs:51) |
 | CardEffectAddStatusToRoomScalingByCasterStatusCount | inspect-inherited-code | 2 | 2 | [MonsterTrain2Poju.Model.CardJuiceModel+<>c.<SimpleUpgrade>b__12_2](../../src/Model/CardJuice.cs:51) |
-| CardEffectDiscardHandAddStatusEffectPerCard | inspect-inherited-code | 1 | 6 | [MonsterTrain2Poju.Model.CardJuiceModel+<>c.<SimpleUpgrade>b__12_2](../../src/Model/CardJuice.cs:51) |
 | CardEffectAddStatusEffectPerFriendlyMissingHp | inspect-inherited-code | 1 | 1 | [MonsterTrain2Poju.Model.CardJuiceModel+<>c.<SimpleUpgrade>b__12_2](../../src/Model/CardJuice.cs:51) |
-| CardEffectDamagePerDevotionLevel | inspect-inherited-code | 1 | 1 | [MonsterTrain2Poju.Model.CardSpareTriggerModel+<>c.<Validate>b__1_1](../../src/Model/CardSpareTriggers.cs:27) |
 | CardEffectAttachTrainRoomAttachment | inspect-projection-normalization | 34 | 34 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
 | CardEffectAttackWithUnit | inspect-projection-normalization | 13 | 13 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
+| CardEffectUnitAbilityTeleport | inspect-projection-normalization | 8 | 8 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
+| CardEffectMix | inspect-projection-normalization | 6 | 6 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
+| CardTraitUnpurgable | inspect-projection-normalization | 6 | 6 | [MonsterTrain2Poju.Probe.DamageScalingProbe.Known](../../src/Probe/DamageScalingProbe.cs:11) |
+| CardEffectChooseDiscard | inspect-projection-normalization | 5 | 5 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
 
 ## 可重建输入
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `c15500a130584c3e8bdf01d75c197ed3e772e44ae0513e3944aa3c5282e16f76`。
-- Model: PDB 校验过的项目源码集合 `1ab4671e38f86ce94ee65e938b43047c873604f70401809651664bf1813e3276`。
-- Probe: PDB 校验过的项目源码集合 `5b8bdecd7a363cbd3d2455aedf76fd3e25fb8b5c947925e462a5e079e46c081c`。
-- ModelChecks: PDB 校验过的项目源码集合 `a9d7d87e2220024d8dcfd89917c4b8504b9390aa61a4b21691d8ea8339bccd09`。
+- 人工审查索引 SHA-256: `5d8ad474d5a9269811a018b96871228502bfe7adc56486366238c179b5018618`。
+- Model: PDB 校验过的项目源码集合 `1a8d8a0148319c188b7073008806d8dfa6fe84a4a60912848779e60849a0bfe5`。
+- Probe: PDB 校验过的项目源码集合 `78c506d56115d8fa16862099dd86d2aff4f5e6e1e95b85b00f92710d85fd1f5c`。
+- ModelChecks: PDB 校验过的项目源码集合 `82310f7d5675befd6bcb3017985c3638ec2efc0ec8224bef6a565c7aa892767f`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 

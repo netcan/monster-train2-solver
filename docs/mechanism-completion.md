@@ -1316,6 +1316,10 @@ pwsh -NoProfile -File scripts/Get-MechanismInventory.ps1 -SkipBuild -Check
 
 ## 固定验收关口
 
+2026-11-24 的阶段回归通过 483 场已结算战斗，含 464 场连续复放和 19 场经过验证的分段复放。
+共核对 7,519 次出牌或技能和 2,884 次结束回合，差异为 0。另有 228 项登记是组件归档或未结算样本。
+固定的八场搜索验收也全部通过，覆盖 190 次出牌或技能、52 次结束回合及串并行计划复放。
+
 2.3.1 原版 `DoubleStatusEffects` 已接入共享状态层数管线。原版 SpikePotion 支付 1 余烬，
 使火车乘务员获得 20 层尖刺，完整出牌后继和随机流通过复放。七项查询对照覆盖冷却、无目标、
 永久升级、延迟加法和转移来源。四项原版移除调用依次将尖刺从 20 变为 18、14、10、12，
@@ -1373,6 +1377,15 @@ pwsh -NoProfile -File scripts/Get-MechanismInventory.ps1 -SkipBuild -Check
 [一档对照](../tests/compatibility/game-2.3.1/mechanics/zariel-pain/native-tier1-observation.mt2f) ·
 [二档对照](../tests/compatibility/game-2.3.1/mechanics/zariel-pain/native-tier2-observation.mt2f) ·
 [三档对照](../tests/compatibility/game-2.3.1/mechanics/zariel-pain/native-tier3-observation.mt2f)
+
+Zariel 的 Devotion 路线在法术支付并结算后读取当前等级。原版一档由 Venerate 先升到 1 级，
+再对前排造成 12 点伤害，护甲从 25 降至 13，生命保持 5，伤害来源是 Zariel 的部署卡。
+部署和付费施法的完整后继、随机流均通过精确复放。三档共用同一路径，原版定义系数为 6、8、10。
+[原版一档对照](../tests/compatibility/game-2.3.1/mechanics/zariel-devotion/native-tier1.mt2f)
+
+原版 `Echoes_NoRoomOverriding` 会将安装的主房间固化。一次付费触发原版房间复制遗物，
+三个普通楼层各增加 4 点容量并留下一个固化房间。完整付费后继、随机流和三个楼层的替换判定一致。
+[原版房间固化对照](../tests/compatibility/game-2.3.1/mechanics/embedded-room/native-placement.mt2f)
 
 Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者共筛出 58 张，六次抽牌后
 实际生成和随机状态均与模型一致。原版胜局的五次出牌、七次 EndTurn 和十六条独立分支
