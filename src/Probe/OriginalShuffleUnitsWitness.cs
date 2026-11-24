@@ -21,6 +21,7 @@ namespace MonsterTrain2Poju.Probe
         private const int Floor = 2;
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_SHUFFLE_UNITS_WITNESS") == "1";
+        internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_SHUFFLE_UNITS_BATTLE") == "1";
         internal static bool ThreeHosts => Environment.GetEnvironmentVariable("MT2_PROBE_SHUFFLE_UNITS_THREE_HOSTS") == "1";
         private static int RequiredHosts => ThreeHosts ? 3 : 2;
         private static RelicEffectShuffleUnitsEndOfTurn? effect;
