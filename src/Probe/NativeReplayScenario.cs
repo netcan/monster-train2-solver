@@ -549,7 +549,8 @@ namespace MonsterTrain2Poju.Probe
                     if (fullBattle && (OriginalDoubleFriendlyHealthWitness.Enabled || OriginalDoubleFriendlyHealthWitness.FullBattle) &&
                         !OriginalDoubleFriendlyHealthWitness.Acquired)
                         OriginalDoubleFriendlyHealthWitness.Acquire(save);
-                    if (fullBattle && OriginalBothSidesUnitsWitness.Enabled && !OriginalBothSidesUnitsWitness.Acquired)
+                    if (fullBattle && (OriginalBothSidesUnitsWitness.Enabled || OriginalBothSidesUnitsWitness.FullBattle) &&
+                        !OriginalBothSidesUnitsWitness.Acquired)
                         OriginalBothSidesUnitsWitness.Acquire(save);
                     if (fullBattle && (OriginalPersistentMonsterHpWitness.Enabled || OriginalPersistentMonsterHpWitness.FullBattle) &&
                         !OriginalPersistentMonsterHpWitness.Acquired)

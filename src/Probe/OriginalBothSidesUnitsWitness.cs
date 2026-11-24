@@ -30,6 +30,7 @@ namespace MonsterTrain2Poju.Probe
             (nameof(RelicEffectTowerDamageDealtModified), "Monsters", "OnSpawn", 10, "Monster")
         };
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_BOTH_SIDES_UNITS_WITNESS") == "1";
+        internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_BOTH_SIDES_UNITS_BATTLE") == "1";
         internal static bool Acquired => ownerDefinition != null;
         private static object? ownerDefinition;
         private static readonly Dictionary<IRelicEffect, int> Installed = new();
