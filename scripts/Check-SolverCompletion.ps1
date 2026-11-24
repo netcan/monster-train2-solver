@@ -55,12 +55,17 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Original front and room Damage history replay failed.' }
     $output = Join-Path '.probe-runs' ('solver-completion-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
     $null = New-Item -ItemType Directory -Path $output
-    dotnet $tools solve-exact $original (Join-Path $output 'node-cutoff.mt2f') 1 30000 1
-    if ($LASTEXITCODE -ne 0) { throw 'Exact-search CLI export/independent replay failed.' }
+    $nodeCutoff = Join-Path $output 'node-cutoff.mt2f'
+    dotnet $tools solve-exact $original $nodeCutoff 1 30000 1
+    if ($LASTEXITCODE -ne 0) { throw 'Exact-search CLI export failed.' }
+    dotnet $tools verify-exact $nodeCutoff
+    if ($LASTEXITCODE -ne 0) { throw 'Fresh-process exact-search cutoff replay failed.' }
     $relentless = "$current/relentless-battle/abandon.mt2f"
     $exactRelentless = Join-Path $output 'relentless-choices.mt2f'
     dotnet $tools solve-exact $relentless $exactRelentless 200 12000 2
     if ($LASTEXITCODE -ne 0) { throw 'Exact-search CLI failed to replay its Relentless choices.' }
+    dotnet $tools verify-exact $exactRelentless
+    if ($LASTEXITCODE -ne 0) { throw 'Fresh-process exact-search Relentless replay failed.' }
     Add-Type -Path (Join-Path (Split-Path $tools) 'FixtureArchive.dll')
     $exactDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read((Resolve-Path -LiteralPath $exactRelentless).Path)
     try {

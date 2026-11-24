@@ -79,6 +79,10 @@ else if (args.Length is 5 or 6 && args[0] == "solve-exact")
 {
     ExactBattleCommands.Run(args[1], args[2], int.Parse(args[3]), int.Parse(args[4]), args.Length == 6 ? int.Parse(args[5]) : null);
 }
+else if (args.Length == 2 && args[0] == "verify-exact")
+{
+    ExactBattleCommands.Verify(args[1]);
+}
 else if (args.Length == 3 && args[0] == "plan-once")
 {
     OfflineBattleSearch.Single(args[1], args[2]);
@@ -384,7 +388,7 @@ else
     Console.Error.WriteLine("Opening roster investigation: deployment-order-roster-strength also samples one starting unit replacement or omission with the same arguments; the selected opening roster ends before the strength rollout.");
     Console.Error.WriteLine("Bounded three-input investigation: improve-triples <native.mt2f> <verified-prediction.mt2f> <new-output.mt2f> <milliseconds> <passes> <start-decision> <second-action-width:1..32> <third-action-width:1..16> <candidates-per-decision:1..256>; model prediction only.");
     Console.Error.WriteLine("Predicted counterexample: refine-prediction <native.mt2f> <verified-prediction.mt2f> <new-winning-output.mt2f> <milliseconds> [start-decision] [last-decision]; validates native input hash/root and independently replays the baseline before exploring.");
-    Console.Error.WriteLine("Search: solve-exact <input.mt2f> <new-output.mt2f> <max-nodes> <milliseconds> [EndTurn-horizon] | plan-belief <input.mt2f> <new-output.mt2f> <max-worlds> <decisions> <max-nodes> <milliseconds> [native-Turns-index] | verify-belief <policy.mt2f>");
+    Console.Error.WriteLine("Search: solve-exact <input.mt2f> <new-output.mt2f> <max-nodes> <milliseconds> [EndTurn-horizon] | verify-exact <prediction.mt2f> | plan-belief <input.mt2f> <new-output.mt2f> <max-worlds> <decisions> <max-nodes> <milliseconds> [native-Turns-index] | verify-belief <policy.mt2f>");
     Console.Error.WriteLine("Usage: FixtureTools plan-once <request.mt2f> <output.mt2f> | plan-battle <native.mt2f> <output.mt2f> <horizon> <milliseconds-per-decision> <deployment-room> [--tactical] [--player-continuation] | policy-battle <native.mt2f> <output.mt2f> <deployment-room> [--strength] | freeze-actions <native.mt2f> <actions.json or -> <output.mt2f> | verify-offline-plan <prediction.mt2f> | verify-offline-native <prediction.mt2f> <fresh-native.mt2f> | card-inventory <workspace> [--check] | card-inventory-current <workspace> [--check] | relic-inventory-current <workspace> <output.tsv> [--check] | pack <legacy.json[.gz]> <output.mt2f> | bundle-native <baseline.mt2f> <owned.mt2f> <output.mt2f> | verify <legacy> <archive> | compare-values <diagnostic.json> <native.mt2f> | benchmark-capture <fixture.mt2f> <output-directory> | pack-directory <source-dir> <output-dir> | compare-speeds <normal.mt2f> <accelerated.mt2f>");
     return 2;
 }
