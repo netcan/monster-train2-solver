@@ -81,12 +81,12 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Original AllUnitsAllSubtypes Surgical Strike battle failed.' }
     dotnet $checks --native-all-unit-subtypes-battle-only "$current/all-unit-subtypes/native-hallowed-halls-battle.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Original AllUnitsAllSubtypes Hallowed Halls battle failed.' }
-    foreach ($rankOne in @('native-rank-one', 'native-rank-one-all-subtypes')) {
-        $shardtailSacrifice = "$current/shardtail-sacrifice/$rankOne.mt2f"
+    foreach ($shardtailCase in @('native-rank-one', 'native-rank-one-all-subtypes', 'native-higher-ranks')) {
+        $shardtailSacrifice = "$current/shardtail-sacrifice/$shardtailCase.mt2f"
         dotnet $checks --damage-by-units-killed-only $shardtailSacrifice
-        if ($LASTEXITCODE -ne 0) { throw "Original Shardtail damage checks failed for $rankOne." }
+        if ($LASTEXITCODE -ne 0) { throw "Original Shardtail damage checks failed for $shardtailCase." }
         dotnet $checks --solver-stage-case-only $shardtailSacrifice
-        if ($LASTEXITCODE -ne 0) { throw "Original Shardtail battle failed for $rankOne." }
+        if ($LASTEXITCODE -ne 0) { throw "Original Shardtail battle failed for $shardtailCase." }
     }
     foreach ($rank in @('i', 'ii', 'iii')) {
         dotnet $checks --native-lazarus-devour-only "$current/lazarus-devour/native-devour-$rank.mt2f"

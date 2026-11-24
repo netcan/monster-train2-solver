@@ -383,6 +383,7 @@ param(
     [switch] $OriginalPyreshot,
     [switch] $OriginalRetch,
     [switch] $DamageByUnitsKilled,
+    [switch] $DamageByUnitsKilledHigherRanks,
     [switch] $TransferAttack,
     [switch] $BrainTransfer,
     [switch] $FrostChanneling,
@@ -3000,6 +3001,14 @@ if ($cardRecursionModes.Count -gt 1) { throw 'Choose one CardRecursion scenario.
 if ($SacrificeEffects) { $Policy = 'units-spells-and-junk' }
 if ($SetHealth) { $Policy = 'units-spells-and-junk' }
 if ($SoldierOfFortune) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($DamageByUnitsKilledHigherRanks) {
+    if (-not $BinaryCapture -or $InputProfile -or $BattleDistance -ne 0) {
+        throw 'DamageByUnitsKilledHigherRanks requires a fresh original battle and binary capture.'
+    }
+    $DamageByUnitsKilled = $true
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+}
 if ($DamageByUnitsKilled) { $Policy = 'units-spells-and-junk' }
 if ($TransferAttack) { $Policy = 'units-spells-and-junk' }
 if ($BrainTransfer) { $Policy = 'units-spells-and-junk' }
@@ -3141,7 +3150,8 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     $PersistentMonsterHpCampaignContinuation -or $OriginalPersistentMonsterHpReload -or
     $OriginalDominionMothersRemnantWitness -or $OriginalGoldRewardMultiplier -or $OriginalSavageryDeckUpgrade -or $OriginalBattleSetupWitness -or
     $OriginalSaviorChampionRank -or $OriginalLazarusDevourRank -or $OriginalGluttonOnFeedWitness -or $OriginalBlightedTotemWitness -or $OriginalStardustHealDrawWitness -or
-    $OriginalLittleFadeCostWitness -or $OriginalLittleFadeBuffFriendlyWitness -or $OriginalLittleFadePermanentSpikesWitness) {
+    $OriginalLittleFadeCostWitness -or $OriginalLittleFadeBuffFriendlyWitness -or $OriginalLittleFadePermanentSpikesWitness -or
+    $DamageByUnitsKilledHigherRanks) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -3188,6 +3198,9 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     }
     if ($OriginalAllSubtypesBattle -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original AllUnitsAllSubtypes requires the pinned 2.3.1 game module.'
+    }
+    if ($DamageByUnitsKilledHigherRanks -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'DamageByUnitsKilledHigherRanks requires the pinned 2.3.1 game module.'
     }
     if (($OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle) -and
         $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
@@ -4216,7 +4229,9 @@ if ($OriginalMineCollapse) { $environment['MT2_PROBE_MODIFIERS'] = 'original-min
 if ($OriginalImpOlate) { $environment['MT2_PROBE_MODIFIERS'] = 'original-imp-olate' }
 if ($OriginalPyreshot) { $environment['MT2_PROBE_MODIFIERS'] = 'original-pyreshot' }
 if ($OriginalRetch) { $environment['MT2_PROBE_MODIFIERS'] = 'original-retch' }
-if ($DamageByUnitsKilled) { $environment['MT2_PROBE_MODIFIERS'] = 'damage-by-units-killed' }
+if ($DamageByUnitsKilled) {
+    $environment['MT2_PROBE_MODIFIERS'] = if ($DamageByUnitsKilledHigherRanks) { 'damage-by-units-killed-higher-ranks' } else { 'damage-by-units-killed' }
+}
 if ($TransferAttack) { $environment['MT2_PROBE_MODIFIERS'] = 'transfer-attack' }
 if ($BrainTransfer) { $environment['MT2_PROBE_MODIFIERS'] = 'brain-transfer' }
 if ($FrostChanneling) { $environment['MT2_PROBE_MODIFIERS'] = 'frost-channeling' }
@@ -10295,12 +10310,15 @@ $transferAbilityCoverage = -not $TransferAttackAbility -or @($transferAbilityAct
         @($afterSpawner.Temporary.Upgrades).Count -eq @($beforeSpawner.Temporary.Upgrades).Count + 1 -and
         -not $entry.Difference -and $entry.Predicted.Supported
 }).Count -gt 0
+$damageByUnitsKilledCardIds = if ($DamageByUnitsKilledHigherRanks) {
+    @('fb0d1638-347d-4b4a-98c9-96bff42a968e', 'c807999e-f9b9-423e-9af1-d52666127082')
+} else { @('d9c0c510-ccb5-4a89-9f3b-99799e765540') }
 $damageByUnitsKilledActions = @($trace.Actions | Where-Object {
     $entry = $_
     $playedCard = $entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId
-    $playedCard.DataId -eq 'd9c0c510-ccb5-4a89-9f3b-99799e765540'
+    $playedCard.DataId -in $damageByUnitsKilledCardIds
 })
-$damageByUnitsKilledCoverage = -not $DamageByUnitsKilled -or @($damageByUnitsKilledActions | Where-Object {
+$damageByUnitsKilledMatchedIds = @($damageByUnitsKilledActions | Where-Object {
     $entry = $_
     $beforeRoom = $entry.Before.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $entry.Action.RoomIndex
     $afterRoom = $entry.Actual.Spawn.Train.Rooms | Where-Object RoomIndex -EQ $entry.Action.RoomIndex
@@ -10317,7 +10335,12 @@ $damageByUnitsKilledCoverage = -not $DamageByUnitsKilled -or @($damageByUnitsKil
         @($afterRoom.Units | Where-Object Id -EQ $imp.Id).Count -eq 0
     }).Count -eq $imps.Count -and $enemyDamage.Count -gt 0 -and
         -not $entry.Difference -and $entry.Predicted.Supported
-}).Count -gt 0
+} | ForEach-Object {
+    $entry = $_
+    ($entry.Before.Spawn.Train.Context.Cards.Hand | Where-Object InstanceId -EQ $entry.Action.CardInstanceId).DataId
+} | Sort-Object -Unique)
+$damageByUnitsKilledCoverage = -not $DamageByUnitsKilled -or
+    $damageByUnitsKilledMatchedIds.Count -eq $damageByUnitsKilledCardIds.Count
 $cardEffectKillActions = @($trace.Actions | Where-Object {
     $actionEntry = $_
     $playedCard = $actionEntry.Before.Spawn.Train.Context.Cards.Hand |

@@ -8,9 +8,16 @@ namespace MonsterTrain2Poju.Probe
 {
     internal static class DamageByUnitsKilledScenario
     {
+        internal const string Name = "damage-by-units-killed";
+        internal const string HigherRanksName = "damage-by-units-killed-higher-ranks";
         internal const string ImpCardId = "d76be2d0-f851-4d43-bdc0-7c7a7779724f";
         internal const string SpellCardId = "d9c0c510-ccb5-4a89-9f3b-99799e765540";
+        private const string RankTwoId = "fb0d1638-347d-4b4a-98c9-96bff42a968e";
+        private const string RankThreeId = "c807999e-f9b9-423e-9af1-d52666127082";
         private const string ImpSubtype = "SubtypesData_Imp_0f9b989f-15b5-4b16-8378-5d8ed8691e7c";
+        private static readonly string[] HigherRankCards = { RankTwoId, RankThreeId };
+        private static bool HigherRanks => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == HigherRanksName;
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") is Name or HigherRanksName;
         private static ManualLogSource? logger;
         private static bool candidateLogged;
 
@@ -19,7 +26,9 @@ namespace MonsterTrain2Poju.Probe
             logger = log;
             candidateLogged = false;
             CardManager cards = managers.GetCardManager()!;
-            foreach ((string id, CardPile pile) in new[] { (ImpCardId, CardPile.HandPile), (SpellCardId, CardPile.DeckPileTop) })
+            string[] spellIds = HigherRanks ? HigherRankCards : new[] { SpellCardId };
+            foreach ((string id, CardPile pile) in spellIds.Select(_ => (ImpCardId, CardPile.HandPile))
+                .Concat(spellIds.Reverse().Select(id => (id, CardPile.DeckPileTop))))
             {
                 CardData definition = managers.GetSaveManager().GetAllGameData().FindCardData(id) ??
                     throw new InvalidOperationException("Damage-by-killed-units fixture requires original Imp and Shardtail cards.");
@@ -30,16 +39,17 @@ namespace MonsterTrain2Poju.Probe
                     throw new InvalidOperationException("Damage-by-killed-units fixture could not place original card in its pile: " + id);
             }
             List<CardState> draw = cards.GetDrawPile();
-            foreach (CardState card in draw.Where(card => card.GetCardDataID() != SpellCardId).ToArray())
+            foreach (CardState card in draw.Where(card => !spellIds.Contains(card.GetCardDataID())).ToArray())
             {
                 draw.Remove(card);
                 cards.GetExhaustedPile().Add(card);
             }
-            log.LogInfo("DAMAGE-BY-UNITS-KILLED-PREPARED native StarterImp and ShardtailSacrificeImps1");
+            log.LogInfo("DAMAGE-BY-UNITS-KILLED-PREPARED native StarterImp and original spell IDs " + string.Join(",", spellIds));
         }
 
         internal static PlayCardAction? Choose(BattleTurnState source)
         {
+            if (HigherRanks) return ChooseHigherRanks(source);
             CombatContext context = source.Spawn.Train.Context!;
             RoomCombatState floor = source.Spawn.Train.Rooms.Single(item => item.RoomIndex == 0);
             CardToken? imp = context.Cards.Hand.FirstOrDefault(card => card.DataId == ImpCardId);
@@ -82,6 +92,42 @@ namespace MonsterTrain2Poju.Probe
                 LogCandidate(result, "spell");
             }
             return BattleActionModel.ChooseUnitSpellAndJunkPlay(source);
+        }
+
+        private static PlayCardAction? ChooseHigherRanks(BattleTurnState source)
+        {
+            CombatContext context = source.Spawn.Train.Context!;
+            CardToken? imp = context.Cards.Hand.FirstOrDefault(card => card.DataId == ImpCardId);
+            for (int index = 0; index < HigherRankCards.Length; index++)
+            {
+                string spellId = HigherRankCards[index];
+                RoomCombatState floor = source.Spawn.Train.Rooms.Single(room => room.RoomIndex == index);
+                CardToken? spell = context.Cards.Hand.FirstOrDefault(card => card.DataId == spellId);
+                bool hasImp = floor.Units.Any(unit => unit.Team == CombatTeam.Player && unit.Subtypes.Contains(ImpSubtype));
+                if (!hasImp && imp != null)
+                {
+                    int friendlyCount = floor.Units.Count(unit => unit.Team == CombatTeam.Player);
+                    if (friendlyCount == 0)
+                    {
+                        PlayCardAction? defender = BattleActionModel.EnumerateSupportedPlays(source).FirstOrDefault(action =>
+                            action.RoomIndex == index && action.CardInstanceId != imp.InstanceId &&
+                            context.FindCard(action.CardInstanceId) is { } card &&
+                            source.PlayRules!.Cards.Any(rule => rule.DataId == card.DataId && rule.SpawnUnit != null));
+                        if (defender != null) return defender;
+                    }
+                    var summon = new PlayCardAction(imp.InstanceId, index, playerPosition: friendlyCount);
+                    BattleActionResult summonResult = BattleActionModel.PlayCard(source, summon);
+                    if (summonResult.Supported) return summon;
+                    LogCandidate(summonResult, "summon");
+                }
+                if (spell == null || !hasImp || !floor.Units.Any(unit => unit.Team == CombatTeam.Enemy)) continue;
+                var cast = new PlayCardAction(spell.InstanceId, index);
+                BattleActionResult castResult = BattleActionModel.PlayCard(source, cast);
+                if (castResult.Supported) return cast;
+                LogCandidate(castResult, "spell");
+            }
+            return BattleActionModel.ChooseUnitSpellAndJunkPlay(source, card =>
+                card.DataId != ImpCardId && !HigherRankCards.Contains(card.DataId));
         }
 
         private static void LogCandidate(BattleActionResult result, string phase)

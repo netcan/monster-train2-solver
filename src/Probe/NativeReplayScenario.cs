@@ -3306,7 +3306,7 @@ namespace MonsterTrain2Poju.Probe
                 numericModifiersPrepared = true;
                 CardDuplicateScenario.Prepare(managers, log);
             }
-            if (fullBattle && !numericModifiersPrepared && modifierScenario == "damage-by-units-killed")
+            if (fullBattle && !numericModifiersPrepared && DamageByUnitsKilledScenario.Enabled)
             {
                 if (combat!.GetTurnCount() != 0) throw new InvalidOperationException("Damage-by-units-killed fixture must start on deployment turn.");
                 numericModifiersPrepared = true;
@@ -4792,7 +4792,7 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalPyreshotScenario.Enabled) pendingPlay = OriginalPyreshotScenario.Choose(decision, OriginalPyreshotScenario.CardIds);
                 if (OriginalRetchScenario.Enabled) pendingPlay = OriginalRetchScenario.Choose(decision, OriginalRetchScenario.CardIds);
                 if (CardDuplicateScenario.Enabled) pendingPlay = CardDuplicateScenario.Choose(decision, CardDuplicateScenario.CardIds, CardDuplicateScenario.RecipientCardId);
-                if (modifierScenario == "damage-by-units-killed") pendingPlay = DamageByUnitsKilledScenario.Choose(decision);
+                if (DamageByUnitsKilledScenario.Enabled) pendingPlay = DamageByUnitsKilledScenario.Choose(decision);
                 if (modifierScenario == TransferAttackScenario.Name) pendingPlay = TransferAttackScenario.Choose(decision);
                 if (modifierScenario == BrainTransferScenario.Name) pendingPlay = BrainTransferScenario.Choose(decision);
                 if (modifierScenario == FrostChannelingScenario.Name) pendingPlay = FrostChannelingScenario.Choose(decision);
