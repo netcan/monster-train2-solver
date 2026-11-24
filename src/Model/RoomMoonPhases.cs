@@ -122,16 +122,33 @@ namespace MonsterTrain2Poju.Model
                 room.Attachments ?? Array.Empty<RoomCapacityAttachmentState>()).Select(attachment => attachment.MoonPhase)
                 ?? Enumerable.Empty<RoomMoonPhaseRule?>())
                 if (rule != null && Validate(rule) is string ruleError) return ruleError;
-            var callbacks = source.Rooms.SelectMany(room => room.Units).SelectMany(unit => unit.Triggers)
-                .Where(trigger => trigger.Kind is "OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or "OnMoonshadeLost" ||
-                    includePhaseShift && trigger.Kind == "OnMoonPhaseShift");
-            if (callbacks.SelectMany(trigger => trigger.Effects).Any(effect => effect.Type is not
-                    ("CardEffectAddTempCardUpgradeToUnits" or "CardEffectRemoveTempUpgradeFromUnit")))
+            var callbacks = source.Rooms.SelectMany(room => room.Units)
+                .SelectMany(unit => unit.Triggers.Select(trigger => (Unit: unit, Trigger: trigger)))
+                .Where(item => item.Trigger.Kind is "OnMoonLit" or "OnMoonlitLost" or "OnMoonShade" or "OnMoonshadeLost" ||
+                    includePhaseShift && item.Trigger.Kind == "OnMoonPhaseShift");
+            if (callbacks.Any(item => item.Trigger.Effects.Any(effect => effect.Type is not
+                    ("CardEffectAddTempCardUpgradeToUnits" or "CardEffectRemoveTempUpgradeFromUnit")) &&
+                !CalibratedCyclestaffShift(source.Context, item.Unit, item.Trigger)))
                 return "Room moon callback payload requires independent native calibration.";
             if (source.Rooms.SelectMany(room => room.Units).Any(unit => unit.Health > 0 && !unit.IsPyre && !unit.MoonPhaseMask.HasValue))
                 return "Room moon callbacks require captured prior understanding masks.";
             return callbacks.Any() ? TrainCombatModel.Validate(source) : null;
         }
+
+        private static bool CalibratedCyclestaffShift(CombatContext? context, CombatUnit unit, CombatTrigger trigger)
+        {
+            const string staffId = "f8b6af14-e819-4bac-94c3-51babb939be9";
+            return trigger is { Kind: "OnMoonPhaseShift", Once: false, IgnoreSilence: false, FireCount: 1,
+                Origin: { UpgradeId: staffId, EquipmentCardId: > 0, IsFromEquipment: true, OnlyIfEquipped: false } origin,
+                Effects: [{ Type: "CardEffectBuffEquipment", UnitUpgrade: { Type: "BuffEquipment", Target: "Self", Value: 0,
+                    Range: null, Lifetime: "TemporaryUntilUnitDeath", ScaleUpgrade: false,
+                    Upgrade: { DataId: "674d8fc6-81b8-4f3a-b0c1-0392df7f0ced", AssetKey: "LunaCyclestaff_EquipUpgrade",
+                        Stats: { Damage: 1, Health: 0, Cost: 0, Heal: 0, Size: 0, XCost: 0, EquipmentLimit: 0, UpgradeSlotCount: 0 },
+                        Statuses.Count: 0, TriggerUpgrades: null, AbilityUpgrade: null, ExternalInteractions.Count: 0 } } }] } &&
+                unit.EquipmentCards?.Contains(origin.EquipmentCardId) == true &&
+                context?.FindCard(origin.EquipmentCardId) is { DataId: staffId } card && card.EquippedUnitId == unit.Id;
+        }
+
         internal static MoonPhaseTransitionResult ApplyUnderstanding(TrainCombatState before, TrainCombatState state, bool phaseShift)
         {
             var previous = before.Rooms.SelectMany(room => room.Units).ToDictionary(unit => unit.Id);
