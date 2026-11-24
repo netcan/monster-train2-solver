@@ -16,9 +16,13 @@ namespace MonsterTrain2Poju.Probe
     {
         private const string OwnerId = "afcb1af2-64f5-4887-9f7b-7e509e326604";
         private const string OwnerKey = "ShuffleUnits";
+        private const string SpearSteward = "38e70e6a-20f3-4e36-8d31-c5110be07f87";
+        private const string Dreg = "63a48bad-07da-4687-bfef-2f7c6653af5e";
         private const int Floor = 2;
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_SHUFFLE_UNITS_WITNESS") == "1";
+        internal static bool ThreeHosts => Environment.GetEnvironmentVariable("MT2_PROBE_SHUFFLE_UNITS_THREE_HOSTS") == "1";
+        private static int RequiredHosts => ThreeHosts ? 3 : 2;
         private static RelicEffectShuffleUnitsEndOfTurn? effect;
         internal static bool Acquired => effect != null;
         private static int deploymentPlays;
@@ -63,21 +67,13 @@ namespace MonsterTrain2Poju.Probe
                     save.StartCoroutine(rooms.GetRoomUI().SetSelectedRoom(Floor));
                     return false;
                 }
-                if (deploymentPlays < 2)
+                if (deploymentPlays < RequiredHosts)
                 {
-                    var cards = managers.GetCardManager();
-                    var drop = rooms.GetRoom(Floor).GetFirstEmptyMonsterPoint()
-                        ?? throw new InvalidOperationException("No native placement point for an upper-floor host.");
-                    var hand = cards.GetHand();
-                    foreach (var card in hand.Where(card => card.GetCardType() == CardType.Monster))
-                    {
-                        if (!cards.CanPlayHandCard(card, Floor, drop, null, null, out var error)) continue;
-                        if (!cards.PlayCard(hand.IndexOf(card), drop, ref error))
-                            throw new InvalidOperationException("Original host placement was rejected: " + error);
-                        deploymentPlays++;
-                        return false;
-                    }
-                    throw new InvalidOperationException("No original monster card can fill the next host position.");
+                    var originalCard = ThreeHosts ? deploymentPlays == 0 ? SpearSteward : Dreg : null;
+                    if (!TryPlaceHost(managers, originalCard))
+                        throw new InvalidOperationException("No original monster card can fill the next host position.");
+                    deploymentPlays++;
+                    return false;
                 }
                 deploymentBefore = trace.CaptureDecision();
                 advanceTurn();
@@ -85,9 +81,9 @@ namespace MonsterTrain2Poju.Probe
             }
             if (before == null)
             {
-                if (deploymentBefore == null || combat.GetTurnCount() != 1 ||
-                    CaptureRoster(rooms.GetRoom(Floor)).Count(unit => unit.Team == "Monsters" && unit.Movable) != 2)
-                    throw new InvalidOperationException("Expected two original movable hosts at the first ordinary decision.");
+                int count = CaptureRoster(rooms.GetRoom(Floor)).Count(unit => unit.Team == "Monsters" && unit.Movable);
+                if (deploymentBefore == null || combat.GetTurnCount() != 1 || count != RequiredHosts)
+                    throw new InvalidOperationException("Expected " + RequiredHosts + " original movable hosts at the first ordinary decision.");
                 before = trace.CaptureDecision();
                 advanceTurn();
                 return false;
@@ -98,19 +94,37 @@ namespace MonsterTrain2Poju.Probe
             if (Applications.Any(row => !row.Preview && row.Turn == 0) ||
                 positive == null || positive.After == null || positive.RngAfter == null ||
                 positive.RngBefore.SequenceEqual(positive.RngAfter) ||
-                !MovedHosts(positive))
+                !(ThreeHosts ? MovedThreeHosts(positive) : MovedHosts(positive)))
                 throw new InvalidOperationException("Expected original upper-floor hosts to change physical points, advance Battle RNG and dispatch Shift.");
             using var archive = NativeFixtureCapture.Capture(new
             {
-                Schema = 1, Boundary = "OriginalShuffleUnits", GameVersion = UnityEngine.Application.version, GameModuleMvid = Module,
+                Schema = ThreeHosts ? 2 : 1, Boundary = "OriginalShuffleUnits", GameVersion = UnityEngine.Application.version, GameModuleMvid = Module,
                 Owner = new { Id = OwnerId, AssetKey = OwnerKey, EffectType = effect!.GetType().Name,
                     DisallowedInPlacementPhase = true, effect.CanApplyInPreviewMode },
                 DeploymentBefore = deploymentBefore, Before = before, After = trace.CaptureDecision(), Tests, Applications
             });
-            using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "shuffle-units.mt2f"));
+            using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                ThreeHosts ? "shuffle-units-three-hosts.mt2f" : "shuffle-units.mt2f"));
             archive.Write(stream);
             log.LogInfo("ORIGINAL-SHUFFLE-UNITS OBSERVED room=" + positive.Room + " callbacks=" + positive.Callbacks.Count);
             return true;
+        }
+
+        private static bool TryPlaceHost(AllGameManagers managers, string? originalCard)
+        {
+            var cards = managers.GetCardManager();
+            var drop = managers.GetRoomManager().GetRoom(Floor).GetFirstEmptyMonsterPoint();
+            if (drop == null) return false;
+            var hand = cards.GetHand();
+            foreach (var card in hand.Where(card => card.GetCardType() == CardType.Monster &&
+                (originalCard == null || card.GetCardDataID() == originalCard)))
+            {
+                if (!cards.CanPlayHandCard(card, Floor, drop, null, null, out var error)) continue;
+                if (!cards.PlayCard(hand.IndexOf(card), drop, ref error))
+                    throw new InvalidOperationException("Original host placement was rejected: " + error);
+                return true;
+            }
+            return false;
         }
 
         private static bool MovedHosts(Application row)
@@ -124,6 +138,16 @@ namespace MonsterTrain2Poju.Probe
         }
 
         private static uint[] BattleRng() => RngCalibration.Words(RandomManager.GetState(RngId.Battle));
+
+        private static bool MovedThreeHosts(Application row)
+        {
+            var original = row.Before.Where(unit => unit.Team == "Monsters" && unit.Movable).ToArray();
+            var actual = row.After!.Where(unit => unit.Team == "Monsters" && unit.Movable).ToArray();
+            return original.Length == 3 && actual.Length == 3 && original.Any(unit =>
+                actual.Any(next => next.Actor == unit.Actor && next.Point != unit.Point)) &&
+                original.All(unit => row.Callbacks.Any(callback => callback.Kind == "ShiftCharacterTrigger" && callback.Actor == unit.Actor)) &&
+                row.RangeCount >= 2 && row.PointCount >= 4;
+        }
 
         private sealed class Unit
         {
@@ -157,6 +181,10 @@ namespace MonsterTrain2Poju.Probe
             public uint[] RngBefore { get; set; } = null!;
             public uint[]? RngAfter { get; set; }
             public List<Callback> Callbacks { get; } = new();
+            public List<object> Events { get; } = new();
+            public bool ShouldSerializeEvents() => ThreeHosts;
+            internal int RangeCount { get; set; }
+            internal int PointCount { get; set; }
         }
 
         private static Unit[] CaptureRoster(RoomState room)
@@ -225,8 +253,57 @@ namespace MonsterTrain2Poju.Probe
         {
             if (active == null || actor.GetCurrentRoomIndex() != active.Room ||
                 AllGameManagers.Instance!.GetSaveManager().PreviewMode != active.Preview) return;
-            active.Callbacks.Add(new Callback(kind, FullBattleTrace.Active!.UnitId(actor), actor.GetSpawnPoint()?.GetIndexInRoom()));
+            var callback = new Callback(kind, FullBattleTrace.Active!.UnitId(actor), actor.GetSpawnPoint()?.GetIndexInRoom());
+            active.Callbacks.Add(callback);
+            if (ThreeHosts) active.Events.Add(callback);
         }
+
+        [HarmonyPatch(typeof(RandomManager), nameof(RandomManager.Range), new[] { typeof(int), typeof(int), typeof(RngId) })]
+        private static class RangePatch
+        {
+            private static bool Prepare() => Enabled && ThreeHosts;
+            private static void Prefix(RngId rngId, out uint[]? __state) => __state =
+                rngId == RngId.Battle && DetailedApplication() != null ? BattleRng() : null;
+
+            private static void Postfix(int min, int max, int __result, uint[]? __state)
+            {
+                if (__state == null) return;
+                active!.RangeCount++;
+                active.Events.Add(new
+                {
+                    Kind = "BattleRange", Min = min, Max = max, Result = __result, Before = __state, After = BattleRng()
+                });
+            }
+        }
+
+        [HarmonyPatch(typeof(CharacterState), nameof(CharacterState.SetSpawnPoint), new[] { typeof(SpawnPoint), typeof(bool),
+            typeof(bool), typeof(Action), typeof(float) })]
+        private static class PointPatch
+        {
+            private static bool Prepare() => Enabled && ThreeHosts;
+            private static void Prefix(CharacterState __instance, SpawnPoint setSpawnPoint, bool animate, out int? __state)
+            {
+                __state = null;
+                var row = DetailedApplication();
+                if (row == null || !animate || setSpawnPoint == null || __instance.GetCurrentRoomIndex() != row.Room ||
+                    setSpawnPoint.GetRoomOwner().OrNull()?.GetRoomIndex() != row.Room) return;
+                __state = __instance.GetSpawnPoint()?.GetIndexInRoom();
+            }
+
+            private static void Postfix(CharacterState __instance, int? __state)
+            {
+                if (!__state.HasValue) return;
+                active!.PointCount++;
+                active.Events.Add(new
+                {
+                    Kind = "SetSpawnPoint", Actor = FullBattleTrace.Active!.UnitId(__instance), BeforePoint = __state.Value,
+                    AfterPoint = __instance.GetSpawnPoint()?.GetIndexInRoom()
+                });
+            }
+        }
+
+        private static Application? DetailedApplication() =>
+            active != null && AllGameManagers.Instance!.GetSaveManager().PreviewMode == active.Preview ? active : null;
 
         [HarmonyPatch(typeof(RelicManager), nameof(RelicManager.CharacterFloorRearranged))]
         private static class RearrangedPatch

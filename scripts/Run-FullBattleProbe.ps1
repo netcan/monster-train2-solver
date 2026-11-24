@@ -599,6 +599,7 @@ param(
     [switch] $OriginalDoubleStatusEffectsBattle,
     [switch] $OriginalLonelyRoomsBattle,
     [switch] $OriginalShuffleUnitsWitness,
+    [switch] $ShuffleUnitsThreeHosts,
     [switch] $OriginalDoubleFriendlyHealthWitness,
     [switch] $OriginalDoubleFriendlyHealthBattle,
     [switch] $OriginalPreventMonsterDamageBattle,
@@ -1106,12 +1107,16 @@ if ($PlacementSummonBlockOnly -and -not $OriginalPlacementMutatorsWitness) {
 $originalMutatorArguments = @('OriginalLoseMoneyOnHitWitness', 'OriginalDoubleStatusEffectsWitness',
     'OriginalDoubleStatusEffectsBattle', 'OriginalLonelyRoomsBattle', 'OriginalShuffleUnitsWitness',
     'OriginalDoubleFriendlyHealthWitness', 'OriginalDoubleFriendlyHealthBattle')
+if ($ShuffleUnitsThreeHosts -and -not $OriginalShuffleUnitsWitness) {
+    throw 'ShuffleUnitsThreeHosts requires OriginalShuffleUnitsWitness.'
+}
 $selectedOriginalMutatorTests = @($OriginalLoseMoneyOnHitWitness, $OriginalDoubleStatusEffectsWitness,
     $OriginalDoubleStatusEffectsBattle, $OriginalLonelyRoomsBattle, $OriginalShuffleUnitsWitness,
     $OriginalDoubleFriendlyHealthWitness, $OriginalDoubleFriendlyHealthBattle).Where({ $_ })
 if ($selectedOriginalMutatorTests.Count -gt 0) {
     $witnessArguments = $originalMutatorArguments + @('GameSpeed', 'NativeWorker', 'TimeoutSeconds',
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if ($OriginalShuffleUnitsWitness) { $witnessArguments += 'ShuffleUnitsThreeHosts' }
     if (-not $BinaryCapture -or $selectedOriginalMutatorTests.Count -ne 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
         throw 'Select one original mutator test with isolated binary capture.'
@@ -1119,6 +1124,10 @@ if ($selectedOriginalMutatorTests.Count -gt 0) {
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
     $Policy = 'units-spells-and-junk'
+    if ($ShuffleUnitsThreeHosts) {
+        $PrimaryClan = 'LunaCoven'
+        $SecondaryClan = 'Remnant'
+    }
 }
 if ($OriginalPreventMonsterDamageWitness -or $OriginalPreventMonsterDamageBattle) {
     $witnessArguments = @('OriginalPreventMonsterDamageWitness', 'OriginalPreventMonsterDamageBattle', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
@@ -3136,6 +3145,7 @@ $environment = @{
     MT2_PROBE_DOUBLE_STATUS_EFFECTS_BATTLE = $(if ($OriginalDoubleStatusEffectsBattle) { '1' } else { '0' })
     MT2_PROBE_LONELY_ROOMS_BATTLE = $(if ($OriginalLonelyRoomsBattle) { '1' } else { '0' })
     MT2_PROBE_SHUFFLE_UNITS_WITNESS = $(if ($OriginalShuffleUnitsWitness) { '1' } else { '0' })
+    MT2_PROBE_SHUFFLE_UNITS_THREE_HOSTS = $(if ($ShuffleUnitsThreeHosts) { '1' } else { '0' })
     MT2_PROBE_DOUBLE_FRIENDLY_HEALTH_WITNESS = $(if ($OriginalDoubleFriendlyHealthWitness) { '1' } else { '0' })
     MT2_PROBE_DOUBLE_FRIENDLY_HEALTH_BATTLE = $(if ($OriginalDoubleFriendlyHealthBattle) { '1' } else { '0' })
     MT2_PROBE_PYRE_ABILITY_COOLDOWN_WITNESS = $OriginalPyreAbilityCooldownWitness
@@ -4145,7 +4155,7 @@ if ($OriginalDoubleStatusEffectsWitness) {
     return
 }
 if ($OriginalShuffleUnitsWitness) {
-    $capturePath = Join-Path $profile 'shuffle-units.mt2f'
+    $capturePath = Join-Path $profile $(if ($ShuffleUnitsThreeHosts) { 'shuffle-units-three-hosts.mt2f' } else { 'shuffle-units.mt2f' })
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original ShuffleUnits component captured' -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore) {

@@ -540,7 +540,11 @@ namespace MonsterTrain2Poju.Probe
                         !OriginalDoubleStatusEffectsWitness.Acquired)
                         OriginalDoubleStatusEffectsWitness.Acquire(save);
                     if (fullBattle && OriginalShuffleUnitsWitness.Enabled && !OriginalShuffleUnitsWitness.Acquired)
+                    {
+                        if (OriginalShuffleUnitsWitness.ThreeHosts)
+                            OriginalDeployableRelicScenario.AcquireBeforeBattle(managers!, log);
                         OriginalShuffleUnitsWitness.Acquire(save);
+                    }
                     if (fullBattle && (OriginalDoubleFriendlyHealthWitness.Enabled || OriginalDoubleFriendlyHealthWitness.FullBattle) &&
                         !OriginalDoubleFriendlyHealthWitness.Acquired)
                         OriginalDoubleFriendlyHealthWitness.Acquire(save);
