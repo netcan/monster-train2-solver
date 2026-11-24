@@ -9,16 +9,16 @@
 | 待办分类 | 类数 | 含目录引用 | 含类型声明 |
 | --- | ---: | ---: | ---: |
 | known-gap | 1 | 1 | 1 |
-| inspect-no-code-link | 26 | 26 | 26 |
+| inspect-no-code-link | 25 | 25 | 25 |
 | inspect-inherited-code | 8 | 8 | 8 |
 | inspect-projection-normalization | 54 | 54 | 54 |
 | inspect-guard-links | 43 | 43 | 43 |
-| review-existing-code | 227 | 227 | 227 |
+| review-existing-code | 226 | 226 | 226 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 282 | 0 | 0 |
-| scoped-review-recorded | 86 | 82 | 82 |
+| scoped-review-recorded | 88 | 84 | 84 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 89 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 91 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -110,8 +110,10 @@
 | RelicEffectRoomMonsterCapacityModifier | input-only | The original LonelyRooms mutator changes physical player slots before the battle starts. The per-floor native slot limit and separate capacity are captured as input. All 21 plays, seven EndTurns and both strict frontiers match the original win. |
 | RelicEffectScaleStatusApplicationsOnSpawn | shared-path | Shared initialized birth rule preserves actual enemy-only/inverted required-mutator gate, original-definition positive starting additions, ordered exact-type runtime trigger scaling and immutable source/target metadata; enchant capture reads runtime parameters. Four original sources/54 configurations/2592 native callbacks in detached objects; starting AddStatus requests intercepted, not applied there. Unchanged original endless RunDistance4 owner acquired before Pyre setup, authored enemy status/trigger and defender controls; native full win/four zero, 16 branches/frontiers/serial-parallel root search. Other source companions, complex status callback competition, mixed Covenants, scaled enchant gameplay lifecycle and complete hover query remain outside certification. |
 | RelicEffectShowtime | shared-path | Three unchanged original souls apply their hidden floor attachment once before deployment. Settled capacities 5 to 8/8/10 admit a size-six pair and route the original front-only upgrade after room combat. Two/two/four positive repetitions, rear unit unaffected, and full-capacity no-op agree across full native wins, exact successors, 16 branches, frontiers and serial/parallel plans. Native RNG selects the opening room. Other floor seeds and mixed room attachments remain outside this evidence. |
+| RelicEffectShuffleUnitsEndOfTurn | shared-path | Original two-unit and three-unit captures compare deployment and the first ordinary EndTurn, per-team Battle RNG, positions and ordered callbacks. After a shuffle the native room refresh compacts both teams. The original whole battle matches 18 plays, six EndTurns, 49 room stages, 11 train stages and both frontiers. Additional turn-end or floor-rearrangement relic callbacks retain the compatibility guard. |
 | RelicEffectSpawnMonsterOnTurnStart | shared-path | Both original mutators use the ordered after-draw callback. The current native wins record five Follower births and fifteen Morsel births, including the settled deployment callbacks, physical groups and Battle RNG. Exact successors, sixteen branches, all recorded frontiers and equal serial and parallel search and plan replay pass. Full or disabled floor retries and mixed birth callbacks still need native stress evidence. |
 | RelicEffectSuppressHandDiscard | shared-path | The original HandDoesntDiscard custom run and same-seed stock control both discard during deployment. On the next ordinary turn the owner keeps two unplayed cards in order after three new draws. The two paid actions and four EndTurns match complete successors and RNG. Combined Ephemeral cleanup requires its own witness. |
+| RelicEffectTowerDamageDealtModified | shared-path | The exact original seven-effect owner adds ten to the shared Pyre attack query. The authored base 45, native query 55 and refreshed combat attack 55 match during deployment and turn one. The original whole battle passes 21 plays, seven EndTurns and both frontiers. The scope covers this owner's unconditional Pyre effect. |
 | RoomStateAddEffectPostCombatModifier | shared-path | The original Showtime T3 room records four front-only attack and maximum-health upgrades on floor one, with rear controls. The showtime/tier3.mt2f archive passes the complete successor and stage checks with --showtime-only. Other post-combat payloads have individual calibration. |
 | RoomStateAddEffectPreCombatModifier | shared-path | Unchanged Echoes Inferno installs the original Inferno Room on all three battle floors. The installed-inferno-rooms/battle.mt2f archive records an exact 50-damage enemy hit on floor zero and passes --installed-inferno-rooms-only. Other target and owner payloads require their own evidence. |
 | RoomStateHivemindModifier | shared-path | Original phase receipts cover publication for new owners, preserving the existing attack modifier before next draw, transfer of active room markers during ascent and casting movement, and cleanup when a holder dies. The complete Infested routes and both candidate sets are checked. |
@@ -143,10 +145,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `696af6baaa2192e772d6fdf90f56882425ebf40e94b03ade14c74beabb9a2b72`。
-- Model: PDB 校验过的项目源码集合 `fa61d15bd522ee19779d18f2554d3dfe7954f411a352af79b0f7b5e9eab166cd`。
-- Probe: PDB 校验过的项目源码集合 `09fa8f1717f8a30df0de87e7c2e6b9e67fa78202bbc3b3e4c1470cc8751f8b51`。
-- ModelChecks: PDB 校验过的项目源码集合 `2d394cd39c890f3ae99baaeac340210f57a691517c94aef6183b1cc21f91063e`。
+- 人工审查索引 SHA-256: `9d6c75a6d6f4c4ceb365d125af9713c509810e9ff72614baa645a1d91c059214`。
+- Model: PDB 校验过的项目源码集合 `0a7795333de7efb16139cca6ffe0edcb1e56eea626418ee911ae52453b952e84`。
+- Probe: PDB 校验过的项目源码集合 `2c0adb6f25f58d5438fad8f9a5a973e0979d1e7e2fc46d807910534b90d51927`。
+- ModelChecks: PDB 校验过的项目源码集合 `839d5e1aa25037b0abbc252ac3616cc2ba5c856cc88534a6ff0b744f46d4c9c1`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
