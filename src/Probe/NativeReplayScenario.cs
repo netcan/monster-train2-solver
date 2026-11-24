@@ -539,6 +539,8 @@ namespace MonsterTrain2Poju.Probe
                     if (fullBattle && (OriginalDoubleStatusEffectsWitness.Enabled || OriginalDoubleStatusEffectsWitness.FullBattle) &&
                         !OriginalDoubleStatusEffectsWitness.Acquired)
                         OriginalDoubleStatusEffectsWitness.Acquire(save);
+                    if (fullBattle && OriginalShuffleUnitsWitness.Enabled && !OriginalShuffleUnitsWitness.Acquired)
+                        OriginalShuffleUnitsWitness.Acquire(save);
                     if (fullBattle && (OriginalPersistentMonsterHpWitness.Enabled || OriginalPersistentMonsterHpWitness.FullBattle) &&
                         !OriginalPersistentMonsterHpWitness.Acquired)
                         OriginalPersistentMonsterHpWitness.Acquire(save);
@@ -1221,6 +1223,13 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalDoubleStatusEffectsWitness.Tick(FullBattleTrace.Active!, managers, log,
                     () => AdvanceTurn(combat!, record: false)))
                     Finish(true, "Original DoubleStatusEffects component captured.");
+                return;
+            }
+            if (fullBattle && OriginalShuffleUnitsWitness.Enabled)
+            {
+                if (OriginalShuffleUnitsWitness.Tick(FullBattleTrace.Active!, managers, log,
+                    () => AdvanceTurn(combat!, record: false)))
+                    Finish(true, "Original ShuffleUnits component captured.");
                 return;
             }
             if (fullBattle && OriginalPreventMonsterDamageWitness.Enabled)
