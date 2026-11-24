@@ -118,7 +118,7 @@ namespace MonsterTrain2Poju.Model
             if (amount == 0) return source;
             if (effect.CardFilter != null)
             {
-                bool accepted = CardUpgradeMaskModel.FilterCard(effect.CardFilter, CardBranchMaskModel.Resolve(source));
+                bool accepted = CardUpgradeMaskModel.FilterCard(effect.CardFilter, CardBranchMaskModel.Resolve(source), allSubtypes);
                 filters = new[] { new RelicCardFilterResult(effect.CardFilter.AssetKey, accepted) };
                 if (!accepted) return source;
             }
@@ -161,7 +161,8 @@ namespace MonsterTrain2Poju.Model
                 if (!actor.Modifiers.IsChampion.HasValue) return Fail("Champion-excluding cardless relic attack requires captured champion classification.");
                 if (actor.Modifiers.IsChampion.Value) return Match(source);
             }
-            if (effect.CharacterSubtypeKey.Length > 0 && !actor.Subtypes.Contains(effect.CharacterSubtypeKey, StringComparer.Ordinal))
+            if (effect.CharacterSubtypeKey.Length > 0 && !OriginalAllSubtypesModel.MatchesCharacter(actor,
+                    effect.CharacterSubtypeKey, OriginalAllSubtypesModel.Active(source.Context, source.Deployment)))
                 return Match(source);
             if (!actor.Modifiers.DamageBuffFromStatusEffects.HasValue && source.Context?.Relics?.Any(relic => relic.StatusAttackModifiers?.Count > 0) == true)
                 return Fail("Cardless relic attack requires captured native status-derived attack damage.");

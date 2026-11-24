@@ -49,13 +49,13 @@ namespace MonsterTrain2Poju.Model
                 Array.Empty<UnitCloneBoundary>(), Array.Empty<RoomCombatModel.QueuedCharacterTrigger>());
             bool allowHallGraft = paidGraftSource && OriginalMirrorsOnly(room) &&
                 source.Context.RoomCapacities!.Single(capacity => capacity.RoomIndex == room.RoomIndex).Attachments!.Count == 1;
+            bool allSubtypes = OriginalAllSubtypesModel.Active(source.Context, room.Deployment);
             foreach (var modifier in modifiers)
             {
                 string subtype = modifier.Subtype;
                 if (modifier.OwnerId > 0 && !result.State!.Rooms.SelectMany(room => room.Units).Any(unit =>
                     unit.Id == modifier.OwnerId && unit.Health > 0 && unit.DeathState?.IsDestroyed != true)) continue;
-                if (subtype.Length > 0 && !born.Subtypes.Contains(subtype) && source.Context.Relics?.Any(relic =>
-                    relic.EffectTypes.Contains("RelicEffectMonstersAreAllSubtypes")) != true) continue;
+                if (subtype.Length > 0 && !OriginalAllSubtypesModel.MatchesCharacter(born, subtype, allSubtypes)) continue;
                 UnitCloneResult copied = CopyOnce(result.State!, unitId, catalog, allowHallGraft);
                 if (!copied.Supported) return copied;
                 result = new UnitCloneResult(copied.State, copied.UnitId, copied.Outcome == RoomOutcome.Exchanged ? result.Outcome : copied.Outcome,
