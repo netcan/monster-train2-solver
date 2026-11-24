@@ -77,6 +77,10 @@ namespace MonsterTrain2Poju.Probe
         private PlayCardAction? pendingPlay;
         private bool damagePerHpAbilityInputPrepared;
         private bool battleRoutePrepared;
+#if DEVELOPMENT_PROBE
+        private readonly bool endlessScalingWholeBattle = Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_WHOLE_BATTLE") == "1";
+        private bool endlessWavesCaptured;
+#endif
 
         internal NativeReplayScenario(ManualLogSource log)
         {
@@ -205,8 +209,20 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                     if (OriginalEndlessEnemyScalingWitness.AllWaves)
                     {
+                        if (endlessScalingWholeBattle && !CardAnimationSettlement.Ready())
+                        {
+                            if (Time.realtimeSinceStartup > deadline) Finish(false, "Terminal card animations did not settle before capture.");
+                            return;
+                        }
                         OriginalEndlessEnemyScalingWitness.WriteWaves(log, trace.NativeWon);
-                        Finish(true, "Original Endless enemy scaling waves captured.");
+                        if (endlessScalingWholeBattle)
+                        {
+                            trace.Write();
+                            Finish(endlessWavesCaptured, endlessWavesCaptured
+                                ? "Original Endless enemy scaling terminal settlement captured."
+                                : "The original Endless battle ended before all six wave decisions settled.");
+                        }
+                        else Finish(true, "Original Endless enemy scaling waves captured.");
                         return;
                     }
                     if (RegionRunAlternateObservation.Active is RegionRunAlternateObservation alternate)
@@ -1283,10 +1299,14 @@ namespace MonsterTrain2Poju.Probe
                         Finish(true, "Original Endless enemy scaling captured.");
                     return;
                 }
-                if (OriginalEndlessEnemyScalingWitness.ObserveWaveDecision(FullBattleTrace.Active!, log))
+                if (!endlessWavesCaptured && OriginalEndlessEnemyScalingWitness.ObserveWaveDecision(FullBattleTrace.Active!, log))
                 {
-                    Finish(true, "Original Endless enemy scaling waves captured.");
-                    return;
+                    endlessWavesCaptured = true;
+                    if (!endlessScalingWholeBattle)
+                    {
+                        Finish(true, "Original Endless enemy scaling waves captured.");
+                        return;
+                    }
                 }
             }
             if (fullBattle && OriginalSecondFloorEnemyOpeningWitness.Enabled)

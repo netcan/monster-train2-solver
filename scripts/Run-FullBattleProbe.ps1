@@ -632,6 +632,7 @@ param(
     [switch] $OriginalEmbeddedRoomWitness,
     [switch] $OriginalEndlessEnemyScalingWitness,
     [switch] $EndlessEnemyScalingAllWaves,
+    [switch] $EndlessEnemyScalingWholeBattle,
     [switch] $OriginalPactDrawWitness,
     [switch] $OriginalEntropyDrawWitness,
     [switch] $OriginalPactDrawBattle,
@@ -1054,11 +1055,14 @@ if ($OriginalEmbeddedRoomWitness) {
     $PhysicalSpawnPoints = $true
     $Policy = 'units-spells-and-junk'
 }
+if ($EndlessEnemyScalingWholeBattle -and !$EndlessEnemyScalingAllWaves) {
+    throw 'EndlessEnemyScalingWholeBattle requires EndlessEnemyScalingAllWaves.'
+}
 if ($EndlessEnemyScalingAllWaves -and (!$OriginalEndlessEnemyScalingWitness -or !$InputProfile -or $BattleDistance -ne 0)) {
     throw 'The Endless waves witness requires OriginalEndlessEnemyScalingWitness and the original post-victory InputProfile at BattleDistance 0.'
 }
 if ($OriginalEndlessEnemyScalingWitness) {
-    $witnessArguments = @('OriginalEndlessEnemyScalingWitness', 'EndlessEnemyScalingAllWaves', 'InputProfile', 'BattleDistance', 'Seed',
+    $witnessArguments = @('OriginalEndlessEnemyScalingWitness', 'EndlessEnemyScalingAllWaves', 'EndlessEnemyScalingWholeBattle', 'InputProfile', 'BattleDistance', 'Seed',
         'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild',
         'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (-not $BinaryCapture -or (!$InputProfile -and $BattleDistance -ne 0) -or
@@ -3322,6 +3326,7 @@ $environment = @{
     MT2_PROBE_EMBEDDED_ROOM_WITNESS = $(if ($OriginalEmbeddedRoomWitness) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_WITNESS = $(if ($OriginalEndlessEnemyScalingWitness) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_ALL_WAVES = $(if ($EndlessEnemyScalingAllWaves) { '1' } else { '0' })
+    MT2_PROBE_ENDLESS_ENEMY_SCALING_WHOLE_BATTLE = $(if ($EndlessEnemyScalingWholeBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_PACT_DRAW = $(if ($OriginalPactDrawWitness) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_PACT_BATTLE = $(if ($OriginalPactDrawBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_ENTROPY_DRAW = $(if ($OriginalEntropyDrawWitness) { '1' } else { '0' })
@@ -4526,9 +4531,13 @@ if ($OriginalEmbeddedRoomWitness) {
 }
 if ($OriginalEndlessEnemyScalingWitness) {
     $captureName = if ($EndlessEnemyScalingAllWaves) { 'endless-enemy-scaling-waves.mt2f' } else { 'endless-enemy-scaling.mt2f' }
-    $captureMarker = if ($EndlessEnemyScalingAllWaves) { 'Original Endless enemy scaling waves captured.' } else { 'Original Endless enemy scaling captured.' }
+    $captureMarker = if ($EndlessEnemyScalingWholeBattle) { 'Original Endless enemy scaling terminal settlement captured.' }
+        elseif ($EndlessEnemyScalingAllWaves) { 'Original Endless enemy scaling waves captured.' }
+        else { 'Original Endless enemy scaling captured.' }
     $capturePath = Join-Path $profile $captureName
+    $wholeBattlePath = Join-Path $profile 'full-battle.mt2f'
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        ($EndlessEnemyScalingWholeBattle -and -not (Test-Path -LiteralPath $wholeBattlePath -PathType Leaf)) -or
         -not (Select-String -LiteralPath $unityLog -SimpleMatch "DEPTH-PASS $captureMarker" -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore -or
         ($InputProfile -and (Get-OriginalSignature $checkpoint) -cne $endlessInputSignature)) {
@@ -4536,7 +4545,12 @@ if ($OriginalEndlessEnemyScalingWitness) {
     }
     if ($EndlessEnemyScalingAllWaves) {
         $summary = Select-String -LiteralPath $unityLog -SimpleMatch 'ENDLESS-ENEMY-SCALING-WAVES OBSERVED' | Select-Object -Last 1
-        Write-Output "NATIVE-ENDLESS-ENEMY-SCALING-WAVES PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash) $($summary.Line)"
+        if ($EndlessEnemyScalingWholeBattle) {
+            Write-Output "NATIVE-ENDLESS-ENEMY-SCALING-TERMINAL PASS trace=$wholeBattlePath sha256=$((Get-FileHash -LiteralPath $wholeBattlePath -Algorithm SHA256).Hash) waveTrace=$capturePath $($summary.Line)"
+        }
+        else {
+            Write-Output "NATIVE-ENDLESS-ENEMY-SCALING-WAVES PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash) $($summary.Line)"
+        }
     }
     else {
         Write-Output "NATIVE-ENDLESS-ENEMY-SCALING PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
