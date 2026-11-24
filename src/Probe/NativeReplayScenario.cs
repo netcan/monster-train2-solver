@@ -541,6 +541,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalDoubleStatusEffectsWitness.Acquire(save);
                     if (fullBattle && OriginalShuffleUnitsWitness.Enabled && !OriginalShuffleUnitsWitness.Acquired)
                         OriginalShuffleUnitsWitness.Acquire(save);
+                    if (fullBattle && OriginalDoubleFriendlyHealthWitness.Enabled && !OriginalDoubleFriendlyHealthWitness.Acquired)
+                        OriginalDoubleFriendlyHealthWitness.Acquire(save);
                     if (fullBattle && (OriginalPersistentMonsterHpWitness.Enabled || OriginalPersistentMonsterHpWitness.FullBattle) &&
                         !OriginalPersistentMonsterHpWitness.Acquired)
                         OriginalPersistentMonsterHpWitness.Acquire(save);
@@ -1230,6 +1232,12 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalShuffleUnitsWitness.Tick(FullBattleTrace.Active!, managers, log,
                     () => AdvanceTurn(combat!, record: false)))
                     Finish(true, "Original ShuffleUnits component captured.");
+                return;
+            }
+            if (fullBattle && OriginalDoubleFriendlyHealthWitness.Enabled)
+            {
+                if (OriginalDoubleFriendlyHealthWitness.Tick(FullBattleTrace.Active!, managers, log))
+                    Finish(true, "Original double-friendly-health birth captured.");
                 return;
             }
             if (fullBattle && OriginalPreventMonsterDamageWitness.Enabled)
