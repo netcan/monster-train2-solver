@@ -1689,6 +1689,10 @@ Fecundity 的原版升级回调会把全额减费值改为目标卡当前的实�
 9 次出牌、7 次结束回合、两类候选、16 条独立分支和串并行计划复放均通过。
 [Shardtail 突变整战](../tests/compatibility/game-2.3.1/mechanics/shardtail-sacrifice/native-rank-one-all-subtypes.mt2f)
 
+二、三阶分别按每只 Imp 40 和 60 点的原版参数结算。同一场原版胜局录到两阶的致死伤害、击杀归属及普通友军保留。
+10 次出牌、7 次结束回合、两类候选、16 条独立分支和串并行计划复放均通过。
+[Shardtail 高阶整战](../tests/compatibility/game-2.3.1/mechanics/shardtail-sacrifice/native-higher-ranks.mt2f)
+
 ## 自动化与测试成本
 
 从仓库根目录运行下列命令，按已登记的原版战斗生成待采集卡牌清单。

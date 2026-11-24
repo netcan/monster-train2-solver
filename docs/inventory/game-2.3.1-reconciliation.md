@@ -43,7 +43,7 @@
 | CardEffectCopyUnits | shared-path | The pinned Railforged Unruly component rejects copying the boss when it is alone and copies the original Decoy once it exists. Ordered tests and applications, physical slots, full successors and RNG match. The recorded original Unruly battle also verifies initial birth, room selection, Relentless and terminal scheduling across 33 plays, seven EndTurns, both candidate frontiers and 16 independent branches. This review covers the original Unruly callback and scheduler. |
 | CardEffectDamage | shared-path | Native Damage normalizes to the shared Damage action; current PunishedSpike battle exercises repeated damage, armor, target death and full successors. Existing target/scaling/callback guards remain; not an audit of every contextual branch. |
 | CardEffectDamageByPercentRemainingHealth | shared-path | The reference inventory counts four filters. The original BeeziebubT1, BeeziebubT2 and BeeziebubT3 definitions supply the executing OnCast through SoulData.GetSoulCardUpgrade. Three pinned 2.3.1 wins prove Pyre HP 80 to 72, no card damage attribution or trait scaling, and exact search successors. Randomized ranges, round-up and non-Pyre targets remain guarded. |
-| CardEffectDamageByUnitsKilled | shared-path | The effect sacrifices eligible units before applying the fixed room damage. The original 2.3.1 Shardtail rank I battle verifies damage attribution, piercing through 25 Armor and two source-card kills. The all-subtypes battle verifies champion exclusion and the combined sacrifice of an Imp and a non-Imp. Both battles match the recorded successors and candidate checks. The 2.2.1 cast keeps its original attribution contract. Rank II and III await their own paid receipts. |
+| CardEffectDamageByUnitsKilled | shared-path | The effect sacrifices eligible units before applying the fixed room damage. The original 2.3.1 Shardtail rank I battle verifies damage attribution, piercing through 25 Armor and two source-card kills. The all-subtypes battle verifies champion exclusion and the combined sacrifice of an Imp and a non-Imp. A third full battle covers the 40 and 60 rank payloads at lethal thresholds and keeps a nearby non-Imp alive. All three match the recorded successors and candidate checks. The 2.2.1 cast keeps its original attribution contract. |
 | CardEffectDamageFloorByFloor | shared-path | Original current Heavenfall installs its native full-moon 80 enemy floor sweep and executes through the shared OnCast and floor-damage pipeline. The current win verifies both moon phases, full successors, sixteen branches, recorded frontiers and serial/parallel plan replay. The older native Moon archive still passes with its tower damage payload. This battle's positive damage targets occupy one floor. |
 | CardEffectDamagePerDevotionLevel | shared-path | The three original fixed Zariel spell-play ranks include base damage at coefficients 6, 8 and 10. The Tier I fixture confirms paid Venerate awards level 1 before Zariel requests 12 on the front enemy, with Zariel's spawner as source. Complete deployment and paid successors match. Other target or scaling shapes and card OnSpare remain guarded. |
 | CardEffectDamagePerPyreAttack | shared-path | The original Pyre Steward ability requests damage in order 3, 45 and 45. Its two Slay heals return the Pyre from 77 to 79 to 80. Complete paid successor, gameplay RNG and preview allocation match. A model control exercises a saved plus-seven attack offset. The scope covers the unchanged authored room effect. |
@@ -194,10 +194,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `c165e82df020593488ae45c849ed1571d8ce189243f453b1d9f7278f29b4c1cc`。
+- 人工审查索引 SHA-256: `f7a24c52d528bd2034c2c20fc982c54b3ee34d8dfe8d852384e83205e8a1b55b`。
 - Model: PDB 校验过的项目源码集合 `b6bf0b7d29e74e64e37f5c09e73949a424730a74525c458084791d97a336e467`。
-- Probe: PDB 校验过的项目源码集合 `6940fc2ebce6fae00acff2e59ab06941c70d96d571cac8df2f648ee67a611826`。
-- ModelChecks: PDB 校验过的项目源码集合 `0de6ef048099e1740c40eee8ad3e1cb0939c16a636dbdfc6a5a2df6037478ab5`。
+- Probe: PDB 校验过的项目源码集合 `b0f2a64485eb9dc91cf7bcacd9b471d8f6e97764c284f425e7e17eeea2bdc1b7`。
+- ModelChecks: PDB 校验过的项目源码集合 `db0efce2961013e1448c948a6604af6ff5fc9d2da10a669e41a6e6348f200fcf`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
