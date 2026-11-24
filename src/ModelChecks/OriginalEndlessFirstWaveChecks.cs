@@ -3,6 +3,53 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalEndlessFirstWaveChecks
 {
+    internal static void Loop2HordeDeath(FixtureValue opening, FixtureValue receipt)
+    {
+        Require(Text(receipt, "GameVersion") == Game231FixtureCatalog.Version &&
+            Text(receipt, "GameModuleMvid") == Game231FixtureCatalog.Module &&
+            Text(receipt, "Boundary") == "OriginalEndlessLoop2PaidHordeDeath" &&
+            receipt.GetProperty("Difference").ValueKind == FixtureKind.Null &&
+            Text(opening, "Boundary") == "OriginalEndlessEnemyScalingControlledLoop2",
+            "Expected the original Loop 2 paid Corruption receipt and its first wave.");
+        var root = opening.GetProperty("FirstDecision").Deserialize<BattleTurnState>()!;
+        BattleTurnState state = RecordedBattleChecks.RecordedBoundary(root, receipt.GetProperty("Root"),
+            terminal: false, "Loop 2 opening", trackPreviewPosition: true);
+        FixtureValue[] rows = receipt.GetProperty("Steps").EnumerateArray().ToArray();
+        Require(rows.Length == 16 && rows.Count(row => Flag(row.GetProperty("Input"), "IsEndTurn")) == 2,
+            "Expected the sixteen native inputs and two EndTurns.");
+        foreach ((FixtureValue row, int index) in rows.Select((row, index) => (row, index)))
+        {
+            FixtureValue input = row.GetProperty("Input");
+            BattleTurnState? result;
+            if (Flag(input, "IsEndTurn"))
+            {
+                IReadOnlyList<RelentlessDecision>? choices = input.TryGetProperty("RelentlessDecisions", out var decisions) &&
+                    decisions.ValueKind != FixtureKind.Null ? decisions.Deserialize<IReadOnlyList<RelentlessDecision>>() : null;
+                BattleTurnResult turn = BattleTurnModel.EndTurn(state, choices);
+                Require(turn.Supported && turn.Outcome == RoomOutcome.Exchanged, turn.UnsupportedReason ?? "Expected a settled Loop 2 exchange.");
+                result = turn.State;
+            }
+            else
+            {
+                PlayCardAction action = input.GetProperty("Action").Deserialize<PlayCardAction>()!;
+                BattleActionResult play = BattleActionModel.PlayCard(state, action);
+                Require(play.Supported && play.Outcome == RoomOutcome.Exchanged, play.Reason ?? "Expected a settled Loop 2 card play.");
+                result = play.State;
+                if (index == rows.Length - 1)
+                    Require(state.Spawn.Turn == 3 && action.CardInstanceId == 10 && action.TargetUnitId == 8 &&
+                        state.Spawn.Train.Rooms[1].Units.Any(actor => actor is { Id: 8, AssetKey: "HordeT2_DeathAddsCorruption", Health: 3 }) &&
+                        state.Spawn.Train.Rooms[1].Units.Single(actor => actor.Id == 18).Status("corruption") == null,
+                        "The last original paid input must kill the three-HP Horde.");
+            }
+            RecordedBattleChecks.RecordedBoundary(result!, row.GetProperty("Expected"), terminal: false, $"Loop 2 forecast {index + 1}", trackPreviewPosition: true);
+            state = RecordedBattleChecks.RecordedBoundary(result!, row.GetProperty("Actual"), terminal: false, $"Loop 2 native input {index + 1}", trackPreviewPosition: true);
+        }
+        Require(state.Spawn.Train.Rooms.SelectMany(room => room.Units).All(actor => actor.Id != 8) &&
+            state.Spawn.Train.Rooms[1].Units.Single(actor => actor.Id == 18).Status("corruption")?.Stacks == 15,
+            "The original Horde death must grant fifteen Corruption to the front player unit.");
+        Console.WriteLine("NATIVE-ENDLESS-LOOP2-HORDE-DEATH PASS: 14 paid actions, two EndTurns and the original 15-stack death callback.");
+    }
+
     internal static void ArkionTerminal(FixtureValue archive)
     {
         FixtureValue run = archive.GetProperty("NativeRunInput");

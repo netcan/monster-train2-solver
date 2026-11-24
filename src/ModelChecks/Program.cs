@@ -1,5 +1,12 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 3 && args[0] == "--original-endless-loop2-horde-death-only")
+{
+    using var opening = ModelJson.ReadFixture(args[1]);
+    using var death = ModelJson.ReadFixture(args[2]);
+    OriginalEndlessFirstWaveChecks.Loop2HordeDeath(opening.RootElement, death.RootElement);
+    return;
+}
 if (args.Length == 3 && args[0] == "--original-silver-postbattle-only")
 {
     using var health = ModelJson.ReadFixture(args[1]);

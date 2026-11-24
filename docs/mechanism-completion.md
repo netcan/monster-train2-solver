@@ -1424,6 +1424,10 @@ Zariel 的 Devotion 路线在法术支付并结算后读取当前等级。原版
 其 1 层多重攻击与出生回调随机流一致。
 [第 2 轮首波归档](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-loop2-first-wave.mt2f)
 
+同一第 2 轮首环完成 14 次真实出牌和 2 次 EndTurn。第 3 回合的 Torch 击杀剩 3 生命的 Horde，
+同层前排 Shardsoul Carver 获得 15 层腐化。16 个完整结算快照与模型逐项匹配。
+[第 2 轮付费击杀归档](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-loop2-horde-death.mt2f)
+
 三阶原版 Silver 灵魂的薪火升级由 `SaveManager.BattleComplete` 在战斗终局快照之后调用，
 同一灵魂的额外奖励在战后生成。顾问识别原版灵魂和完整有序效果列表，并在下一场读取薪火的实际数值。
 Silver T1 用两份真实胜局后的隔离存档调用原版调度器。两份受控对照分别记录当前与最大生命各加 5，
