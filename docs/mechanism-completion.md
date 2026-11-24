@@ -1393,10 +1393,12 @@ Zariel 的 Devotion 路线在法术支付并结算后读取当前等级。原版
 同样的三个出生回调、六个原版倍率和回调前后随机流逐项通过。顾问通过读取原版倍率和角色基准值，
 对同一原版首波重现了完整部署结束回合，还匹配了扩大的战后伤害、增益和治疗。超出已校准的出生类型会截断预测。
 同一战斗的六个已录制结束回合全部通过独立复放，共有 21 次有序出生回调。最后一波首领由 7 攻、125 生命变为 20 攻、2,250 生命，原版保留 1 层无情。
+从部署一直录到战败结算，36 次出牌、9 次结束回合、16 条独立分支及两类候选枚举均通过，采样四项计数为零。
 [原版胜利入口](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-victory-transition.mt2f) ·
 [原版无尽首波](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-victory-first-wave.mt2f) ·
 [原版首波预测对照](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-victory-projected-first-wave.mt2f) ·
 [原版六波预测对照](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-victory-six-waves.mt2f) ·
+[原版首战至终局](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-victory-origin-defeat.mt2f) ·
 [受控无尽首波](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-first-wave.mt2f)
 
 Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者共筛出 58 张，六次抽牌后
