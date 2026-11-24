@@ -355,7 +355,7 @@ namespace MonsterTrain2Poju.Model
         internal static bool AbilitiesTriggerIncant(CombatContext? context) =>
             context?.Relics?.Any(relic => relic.EffectTypes.Contains(AbilityIncant)) == true;
         internal static string? Validate(CombatContext? context) => ConduitModel.Validate(context) ?? Validate(context?.Relics) ??
-            DominionDeckUpgradeModel.Validate(context) ??
+            StartingUnitDeckUpgradeModel.Validate(context) ??
             ValidateLonelyRooms(context) ?? RelicStartCombatAttachmentModel.Validate(context) ?? RelicShowtimeModel.Validate(context) ??
             GoldRewardModel.Validate(context) ??
             (context?.Relics?.Any(relic => relic.EffectTypes.Contains(ModifyTriggerCount) || relic.EffectTypes.Contains(AddTrigger)) == true && context.TriggerCounts == null
@@ -387,7 +387,7 @@ namespace MonsterTrain2Poju.Model
                     if (IsOriginalSilverPostBattleOwner(relic)) continue;
                     // The initial deck and active trial effects are already in the battle snapshot.
                     if (IsOriginalBattleSetupOwner(relic)) continue;
-                    if (effect == DominionDeckUpgradeModel.Effect && DominionDeckUpgradeModel.IsOriginalOwner(relic)) continue;
+                    if (effect == StartingUnitDeckUpgradeModel.Effect && StartingUnitDeckUpgradeModel.IsOriginalOwner(relic)) continue;
                     if (effect == GoldRewardModel.MultiplierEffect && GoldRewardModel.IsOriginalMultiplier(relic) &&
                         relics.Count(owner => owner.DataId == relic.DataId) == 1) continue;
                     if (effect == RelicDeckPyreStatsModel.CardCopies && RelicDeckPyreStatsModel.IsOriginal(relic)) continue;

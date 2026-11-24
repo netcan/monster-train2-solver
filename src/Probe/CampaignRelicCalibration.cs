@@ -189,6 +189,9 @@ namespace MonsterTrain2Poju.Probe
             string[] appended = owned[0].Upgrades.Skip(baseline[0].Upgrades.Length).ToArray();
             bool allChoicesAppended = originalPool.All(choice => choice.Effects is [{ CardType: "Monster", UpgradeId: not null }]) &&
                 appended.SequenceEqual(originalPool.Select(choice => choice.Effects[0].UpgradeId));
+            BattleResourceState resources = RelicResourceProbe.CaptureResources(managers)
+                ?? throw new InvalidOperationException("Missing captured Savagery resources.");
+            if (resources.Savagery == null) throw new InvalidOperationException("Missing the projected original Savagery pool.");
 
             using var document = NativeFixtureCapture.Capture(new
             {
@@ -197,6 +200,7 @@ namespace MonsterTrain2Poju.Probe
                 Owner = new { Id = active.GetRelicDataID(), Key = active.GetAssetName(), Effect = effect.GetEffectClassName(),
                     Filter = filter.name, Selection = UnitEnhancerPoolSelection.SelectAll.ToString() },
                 OriginalPool = originalPool, AppendedChampionUpgradeIds = appended, AllPoolChoicesAppended = allChoicesAppended,
+                Resources = resources,
                 DeckCountBefore = originalDeck.Length, DeckCountAfter = save.GetDeckState().Count,
                 BeforeAcquireRng = beforeAcquireRng, AfterAcquireRng = afterAcquireRng,
                 Cards = definitions.Select((definition, index) => new
@@ -204,6 +208,8 @@ namespace MonsterTrain2Poju.Probe
                     Id = definition.GetID(), Key = definition.name, Type = definition.GetCardType().ToString(),
                     Champion = sources[index].IsChampionCard(),
                     BaselineUpgrades = baseline[index].Upgrades, OwnedUpgrades = owned[index].Upgrades,
+                    CardMask = CardBranchMaskProbe.Creation(definition, canScaleWithMagicPower: false),
+                    BaselineModifiers = baseline[index].Modifiers, OwnedModifiers = owned[index].Modifiers,
                     BaselineRngBefore = baseline[index].Before, BaselineRngAfter = baseline[index].After,
                     OwnedRngBefore = owned[index].Before, OwnedRngAfter = owned[index].After
                 }).ToArray()
@@ -212,7 +218,7 @@ namespace MonsterTrain2Poju.Probe
                 "original-savagery-deck-upgrade.mt2f"));
             document.Write(stream);
 
-            (string[] Upgrades, JObject Before, JObject After) AddCard(CardData definition)
+            (string[] Upgrades, CardUpgradeModifier[] Modifiers, JObject Before, JObject After) AddCard(CardData definition)
             {
                 int count = save.GetDeckState().Count;
                 JObject before = RngStates();
@@ -221,7 +227,8 @@ namespace MonsterTrain2Poju.Probe
                 if (save.GetDeckState().Count != count + 1 || !ReferenceEquals(save.GetDeckState().Last(), added) ||
                     added.GetCardDataID() != definition.GetID())
                     throw new InvalidOperationException("The native deck did not gain the exact original card.");
-                return (Upgrades(added), before, after);
+                var modifiers = added.GetCardStateModifiers().GetCardUpgrades().Select(CardModifierProbe.Upgrade).ToArray();
+                return (Upgrades(added), modifiers, before, after);
             }
 
             static string[] Upgrades(CardState card) => card.GetCardStateModifiers().GetCardUpgrades()

@@ -31,7 +31,7 @@ namespace MonsterTrain2Poju.Model
             foreach (UnitSelfAttackRule rule in rules)
             {
                 if (!Known(rule.Type) || rule.Divisor <= 0 ||
-                    rule.Type == MissingHealth && (rule.Coefficient != 1 || rule.Divisor != 1 || rule.StatusId.Length != 0) ||
+                    rule.Type == MissingHealth && (rule.Coefficient is not (1 or 2) || rule.Divisor != 1 || rule.StatusId.Length != 0) ||
                     rule.Type == FriendlyMissingHealth && rule.StatusId.Length != 0 ||
                     rule.Type == "RoomStateSelfDamagePerStatusEffectStack" && rule.StatusId.Length == 0)
                     return "Unsupported self attack modifier definition.";
@@ -76,9 +76,13 @@ namespace MonsterTrain2Poju.Model
 
     internal static class UnitSelfAttackUpgradeModel
     {
+        internal static bool IsOriginalSavageryUpgrade(string id, string asset) =>
+            id == "ea3192c8-1973-4f0c-b25a-9793b2a64c82" && asset == "UnitUpgradeTitanSavageryAtkPerHP";
+
         internal static string? Validate(CardUpgradeModifier upgrade) => upgrade.SelfAttackRules?.Any(rule =>
             rule.StatusId.Length != 0 || (rule.Type == UnitSelfAttackModel.FriendlyMissingHealth
-                ? rule.Divisor <= 0 : rule.Type != UnitSelfAttackModel.MissingHealth || rule.Coefficient != 1 || rule.Divisor != 1)) == true
+                ? rule.Divisor <= 0 : rule.Type != UnitSelfAttackModel.MissingHealth || rule.Divisor != 1 ||
+                    rule.Coefficient != 1 && (rule.Coefficient != 2 || !IsOriginalSavageryUpgrade(upgrade.DataId, upgrade.AssetKey)))) == true
             ? "Uncalibrated upgrade self attack modifier." : null;
 
         internal static IReadOnlyList<UnitSelfAttackRule>? BirthRules(IReadOnlyList<UnitSelfAttackRule>? original,

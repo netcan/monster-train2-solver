@@ -1,14 +1,59 @@
+using System.Text.Json;
 using MonsterTrain2Poju.Fixtures;
 using MonsterTrain2Poju.Model;
 
 internal static class OriginalDominionDeckUpgradeChecks
 {
+    internal static void Savagery(FixtureValue witness)
+    {
+        FixtureValue owner = witness.GetProperty("Owner");
+        Require(Text(witness, "GameVersion") == Game231FixtureCatalog.Version &&
+            Text(witness, "GameModuleMvid") == Game231FixtureCatalog.Module &&
+            Text(witness, "Boundary") == "OriginalSavageryChampionDeckUpgrade" &&
+            Text(owner, "Id") == StartingUnitDeckUpgradeModel.SavageryId && Text(owner, "Key") == StartingUnitDeckUpgradeModel.SavageryKey &&
+            Text(owner, "Effect") == StartingUnitDeckUpgradeModel.Effect && Text(owner, "Selection") == "SelectAll" &&
+            Text(owner, "Filter") == "OnlyChampions" && witness.GetProperty("AllPoolChoicesAppended").GetBoolean(),
+            "Expected the original Savagery champion-only ordered upgrade pool.");
+        var resources = witness.GetProperty("Resources").Deserialize<BattleResourceState>()!;
+        var relic = new CombatRelicState(Text(owner, "Id")!, Text(owner, "Key")!, [Text(owner, "Effect")!],
+            isCovenant: false, disallowedInPlacementPhase: false);
+        var context = new CombatContext(new CardCycleState([], [], [], default, 0, []), default, 0, 0, 10,
+            relics: [relic], resources: resources);
+        Require(StartingUnitDeckUpgradeModel.Validate(context) == null && resources.Savagery?.RewardsRng == null &&
+            resources.Savagery!.Choices.Select(choice => choice.DataId).SequenceEqual(witness.GetProperty("OriginalPool").EnumerateArray()
+                .Select(row => Text(row.GetProperty("Effects")[0], "UpgradeId"))) &&
+            StartingUnitDeckUpgradeModel.Validate(context.WithResources(null)) != null &&
+            witness.GetProperty("BeforeAcquireRng").ContentEquals(witness.GetProperty("AfterAcquireRng")),
+            "The captured Savagery pool must match the original ordered choices and require no RNG.");
+        FixtureValue[] cards = witness.GetProperty("Cards").EnumerateArray().ToArray();
+        Require(cards.Length == 3 && cards.Select(row => Text(row, "Type")).SequenceEqual(new[] { "Monster", "Monster", "Spell" }) &&
+            cards.Select(row => row.GetProperty("Champion").GetBoolean()).SequenceEqual(new[] { true, false, false }),
+            "Missing native champion, ordinary unit or spell control.");
+        foreach (FixtureValue row in cards)
+        {
+            var mask = row.GetProperty("CardMask").Deserialize<CardMaskDescriptor>()!;
+            var initial = new CardModifiers(CardModifiers.Empty().Offsets,
+                row.GetProperty("BaselineModifiers").Deserialize<CardUpgradeModifier[]>()!, persistentHealth: 0, externalInteractions: []);
+            var candidate = new CardInstanceState(1, Text(row, "Id")!, initial, CardModifiers.Empty(), 0, 0, 0, [], maskDescriptor: mask);
+            string? error = StartingUnitDeckUpgradeModel.Apply(context, candidate, out var upgraded, out var updated);
+            Require(error == null, error ?? "Unable to apply the original Savagery pool.");
+            var actual = row.GetProperty("OwnedModifiers").Deserialize<CardUpgradeModifier[]>()!;
+            string? difference = ModelJson.Difference(JsonSerializer.Serialize(upgraded.Permanent.Upgrades, ModelJson.Options),
+                JsonSerializer.Serialize(actual, ModelJson.Options));
+            Require(ReferenceEquals(context, updated) && difference == null &&
+                row.GetProperty("OwnedRngBefore").ContentEquals(row.GetProperty("OwnedRngAfter")) &&
+                row.GetProperty("BaselineRngBefore").ContentEquals(row.GetProperty("BaselineRngAfter")),
+                "Native Savagery upgrades or deterministic RNG differ: " + difference);
+        }
+        Console.WriteLine("NATIVE-SAVAGERY-DECK-UPGRADE CHECK PASS: three ordered champion upgrades, two ineligible controls, unchanged RNG.");
+    }
+
     internal static void Native(FixtureValue witness)
     {
         Require(Text(witness, "GameVersion") == Game231FixtureCatalog.Version &&
             Text(witness, "GameModuleMvid") == Game231FixtureCatalog.Module &&
             Text(witness, "Boundary") == "OriginalPaidDominionMothersRemnant" &&
-            Text(witness, "OwnerId") == DominionDeckUpgradeModel.OwnerId &&
+            Text(witness, "OwnerId") == StartingUnitDeckUpgradeModel.DominionId &&
             Text(witness, "MotherId") == RelicCopyCardOnCardPlayModel.MothersRemnant3Id,
             "Expected the pinned original paid unit copy.");
         FixtureValue callbackBefore = witness.GetProperty("CallbackBefore"), callbackAfter = witness.GetProperty("CallbackAfter");

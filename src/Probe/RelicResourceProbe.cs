@@ -107,7 +107,8 @@ namespace MonsterTrain2Poju.Probe
         internal static BattleResourceState? CaptureResources(AllGameManagers managers)
         {
             SaveManager save = managers.GetSaveManager();
-            DominionDeckUpgradeState? dominion = DominionDeckUpgradeProbe.Capture(save);
+            var dominion = StartingUnitDeckUpgradeProbe.Capture(save, StartingUnitDeckUpgradeModel.DominionId);
+            var savagery = StartingUnitDeckUpgradeProbe.Capture(save, StartingUnitDeckUpgradeModel.SavageryId);
             // Relics can be acquired before battle creates the card manager.
             // Resource balance/save inputs already exist; there are no live cards
             // to inspect for Hoard or train-healing effects at that boundary.
@@ -157,7 +158,8 @@ namespace MonsterTrain2Poju.Probe
                 !Current(managers).Any(relic => SupportsGoldRewardMultiplier(relic) || relic.GetEffects().Any(effect =>
                     RelicResourceModel.IsEffect(effect.GetType().Name) ||
                     effect.GetType().Name is RelicFirstCardCostModel.Effect or RelicModel.ModifyDragonsHoardCap)) &&
-                !dragonHoardResourceObserved && !trainHealResourceObserved && !runCardResourceObserved && !goldRewardResourceObserved && !pyreAttackAbility && dominion == null)
+                !dragonHoardResourceObserved && !trainHealResourceObserved && !runCardResourceObserved && !goldRewardResourceObserved && !pyreAttackAbility &&
+                dominion == null && savagery == null)
                 return null;
             BalanceData balance = save.GetBalanceData();
             CharacterData character = save.GetActiveSavePyreCharacterData();
@@ -185,7 +187,7 @@ namespace MonsterTrain2Poju.Probe
                 towerHealingDisabled: save.GetRelicModifiedRules().GetTowerHealingDisabled(),
                 visibleDeckCount: save.GetVisibleDeckCount(), corruptionPerCorruptTrait: save.GetNumCorruptionAddedPerTraitCorrupt(),
                 openingCapacitySettled: openingCapacitySettled, openingPyreDamageSettled: openingPyreDamageSettled,
-                dominion: dominion);
+                dominion: dominion, savagery: savagery);
         }
 
         internal static RelicResourceEffect Definition(IRelicEffect effect, int index, AllGameManagers managers)

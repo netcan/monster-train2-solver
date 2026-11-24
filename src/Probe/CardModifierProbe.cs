@@ -294,7 +294,8 @@ namespace MonsterTrain2Poju.Probe
                 if (upgradeDepth > 16) interactions.Add("Recursive upgrade trigger definitions");
                 else triggers = upgrade.GetTriggerUpgrades().Select(trigger => EnemySpawningProbe.TriggerDefinition(trigger, interactions)).ToArray();
             }
-            UnitSelfAttackRule[]? selfAttackRules = !roomAttachmentUnitUpgrade && UnitSelfAttackProbe.KnownUpgrade(upgrade.GetRoomModifierUpgrades())
+            UnitSelfAttackRule[]? selfAttackRules = !roomAttachmentUnitUpgrade && UnitSelfAttackProbe.KnownUpgrade(
+                upgrade.GetRoomModifierUpgrades(), upgrade.GetCardUpgradeDataId(), upgrade.GetAssetName())
                 ? UnitSelfAttackProbe.Rules(upgrade.GetRoomModifierUpgrades()) : null;
             if (!roomAttachmentUnitUpgrade && upgrade.GetRoomModifierUpgrades().Count > 0)
             {

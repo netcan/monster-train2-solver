@@ -18,11 +18,13 @@ namespace MonsterTrain2Poju.Probe
             public AttackQuery[] Attacks { get; set; } = Array.Empty<AttackQuery>();
         }
         internal static readonly List<Record> Records = new List<Record>();
-        internal static bool KnownUpgrade(IEnumerable<RoomModifierData> definitions)
+        internal static bool KnownUpgrade(IEnumerable<RoomModifierData> definitions, string upgradeId, string upgradeKey)
         {
             var values = definitions.ToArray();
             return values.Length == 1 && !values[0].DisallowedInDeploymentPhase &&
-                (values[0].GetRoomStateModifierClassName() == UnitSelfAttackModel.MissingHealth && values[0].GetParamInt() == 1 ||
+                (values[0].GetRoomStateModifierClassName() == UnitSelfAttackModel.MissingHealth &&
+                    (values[0].GetParamInt() == 1 || values[0].GetParamInt() == 2 &&
+                        UnitSelfAttackUpgradeModel.IsOriginalSavageryUpgrade(upgradeId, upgradeKey)) ||
                  values[0].GetRoomStateModifierClassName() == UnitSelfAttackModel.FriendlyMissingHealth);
         }
         internal static void Observe(RoomCombatState room, IReadOnlyList<CharacterState> characters, FullBattleTrace trace)

@@ -310,12 +310,12 @@ namespace MonsterTrain2Poju.Model
                 // The permanent deck notification runs before battle card modifiers and source copying.
                 if (rule.Permanent == true)
                 {
-                    error = DominionDeckUpgradeModel.Select(context, candidate, out var deckUpgrade, out var deckResources);
+                    error = StartingUnitDeckUpgradeModel.Apply(context, candidate, out var upgraded, out var updated);
                     if (error != null) return Unsupported(error);
-                    if (deckUpgrade != null)
+                    if (!ReferenceEquals(upgraded, candidate))
                     {
-                        context = context.WithResources(deckResources);
-                        permanent = permanent.WithPermanentUpgrade(deckUpgrade, false);
+                        context = updated;
+                        permanent = upgraded.Permanent;
                         RefreshUpgrades();
                     }
                 }

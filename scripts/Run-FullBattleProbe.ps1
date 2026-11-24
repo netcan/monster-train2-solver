@@ -976,6 +976,7 @@ if ($OriginalGoldRewardMultiplier) {
     $Policy = 'units-spells-and-junk'
 }
 if ($OriginalSavageryDeckUpgrade) {
+    $BranchCardMasks = $true
     $allowed = @('OriginalSavageryDeckUpgrade', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot',
         'SkipBuild', 'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
