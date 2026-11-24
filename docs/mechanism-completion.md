@@ -1344,9 +1344,10 @@ pwsh -NoProfile -File scripts/Get-MechanismInventory.ps1 -SkipBuild -Check
 [双单位对照](../tests/compatibility/game-2.3.1/mechanics/shuffle-units/native-first-turn-projected.mt2f) ·
 [三单位对照](../tests/compatibility/game-2.3.1/mechanics/shuffle-units/native-three-hosts.mt2f)
 
-原版胜局的 18 次出牌、6 次结束回合及两类候选枚举已按完整决策快照复验，结算时薪火剩余 80 HP。
-原始采集另保留第 3 回合中层一次房间中途快照的差异，涉及友军换位期间对面幸存者的物理槽位。
-[原版整战归档](../tests/compatibility/game-2.3.1/mechanics/shuffle-units/native-win.mt2f)
+第 3 回合中层的原版记录显示，友军换位后也会整理敌方的空槽。模型在位移回调前整理两队槽位，
+随后重新录制原版胜局。18 次出牌、6 次结束回合、49 个房间阶段和 11 个列车阶段均匹配，
+两类候选枚举通过严格检查，结算时薪火剩余 80 HP。
+[原版整战归档](../tests/compatibility/game-2.3.1/mechanics/shuffle-units/native-settled-win.mt2f)
 
 Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者共筛出 58 张，六次抽牌后
 实际生成和随机状态均与模型一致。原版胜局的五次出牌、七次 EndTurn 和十六条独立分支
