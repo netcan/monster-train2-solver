@@ -3069,9 +3069,10 @@ namespace MonsterTrain2Poju.Model
             {
                 if (source.Preview || context?.Statistics == null || !units.Any(unit => unit.Alive && unit.InRoom &&
                     (unit.Source.IsPyre || unit.Source.IsBoss == true || unit.Source.IsBoss == null && unit.Source.EndsBattleOnDeath))) return;
-                var copied = new RoomCombatState(source.RoomIndex, source.Deployment, units.Where(unit =>
-                    !externalTurnActorIds.Contains(unit.Source.Id)).Select(unit => unit.Freeze()).ToArray(),
-                    source.ExternalInteractions, context.SpawnPoints == null ? context :
+                CombatUnit[] localUnits = units.Where(unit => !externalTurnActorIds.Contains(unit.Source.Id))
+                    .Select(unit => unit.Freeze()).ToArray();
+                var copied = new RoomCombatState(source.RoomIndex, source.Deployment, localUnits,
+                    InteractionsAfterLocalCasualties(localUnits), context.SpawnPoints == null ? context :
                         context.WithSpawnPoints(context.SpawnPoints.BeginPreview()), preview: true,
                     activeCompanionBossIds: CompanionBossSnapshot());
                 EnchantmentWorld? originalWorld = context.Enchantments;
@@ -3098,10 +3099,11 @@ namespace MonsterTrain2Poju.Model
                     EnchantmentWorld preparedWorld = EnchantmentWorld.From(prepared, true);
                     CombatContext testContext = context.WithEnchantments(preparedWorld);
                     if (testContext.SpawnPoints != null) testContext = testContext.WithSpawnPoints(testContext.SpawnPoints.BeginPreview());
-                    copied = new RoomCombatState(copied.RoomIndex, copied.Deployment, units.Where(unit => unit.InRoom && !unit.Removed &&
+                    localUnits = units.Where(unit => unit.InRoom && !unit.Removed &&
                         !externalTurnActorIds.Contains(unit.Source.Id))
-                        .Select(unit => EnchantmentWorldModel.RestorePreviewEffects(unit.Freeze(), preparedWorld, false)).ToArray(),
-                        copied.ExternalInteractions, testContext, true, CompanionBossSnapshot());
+                        .Select(unit => EnchantmentWorldModel.RestorePreviewEffects(unit.Freeze(), preparedWorld, false)).ToArray();
+                    copied = new RoomCombatState(copied.RoomIndex, copied.Deployment, localUnits,
+                        InteractionsAfterLocalCasualties(localUnits), testContext, true, CompanionBossSnapshot());
                     var train = new TrainCombatState(prepared.Train.Rooms.Select(room => room.RoomIndex == source.RoomIndex ? copied : room).ToArray(),
                         originalWorld.Movement, originalWorld.EnemySlotsPerRoom, testContext);
                     train = EnchantmentWorldModel.Rebase(train, preview: true, testRng: context.IsolatedBattlePreview == true ? context.BattleRng : originalWorld.TestRng);
@@ -5556,7 +5558,13 @@ namespace MonsterTrain2Poju.Model
             {
                 CombatUnit[] visible = units.Where(unit => unit.Alive && unit.InRoom || unit == target)
                     .Select(unit => unit.Freeze()).ToArray();
-                // The nested upgrade runs while a dying actor is already absent from the visible room.
+                return new RoomCombatState(source.RoomIndex, source.Deployment, visible, InteractionsAfterLocalCasualties(visible),
+                    context, source.Preview, CompanionBossSnapshot());
+            }
+
+            private IReadOnlyList<string> InteractionsAfterLocalCasualties(IReadOnlyList<CombatUnit> visible)
+            {
+                // A locally removed owner can be absent from a nested combat snapshot before the enclosing room settles.
                 IReadOnlyList<string> interactions = source.ExternalInteractions;
                 if (interactions.Any(HivemindTurnUpgrade.IsKnownMarker))
                     interactions = interactions.Where(marker =>
@@ -5564,8 +5572,7 @@ namespace MonsterTrain2Poju.Model
                             HivemindTurnUpgrade.IsScaledRoomCombatDeath(source, unit) &&
                             units.Any(working => working.Source.Id == unit.Id && !working.Alive)) ||
                         visible.Any(unit => HivemindTurnUpgrade.Marker(unit) == marker)).ToArray();
-                return new RoomCombatState(source.RoomIndex, source.Deployment, visible, interactions, context, source.Preview,
-                    CompanionBossSnapshot());
+                return interactions;
             }
 
             private bool ApplyUpgrade(WorkingUnit target, CardUpgradeModifier upgrade, string lifetime, bool remove,
