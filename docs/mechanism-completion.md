@@ -1322,6 +1322,10 @@ pwsh -NoProfile -File scripts/Get-MechanismInventory.ps1 -SkipBuild -Check
 其中最后一次以卡牌升级为来源，传入 `-1`。
 [原版专项归档](../tests/compatibility/game-2.3.1/mechanics/double-status-effects/native-spike-and-removal.mt2f)
 
+同一变异器启用后，常规出牌策略在原版完成整场胜局，结算时薪火剩余 72 HP。连续复放的 20 次出牌
+和 7 次结束回合均匹配，两类决策起点的候选枚举均通过严格检查。
+[原版整战归档](../tests/compatibility/game-2.3.1/mechanics/double-status-effects/native-win.mt2f)
+
 Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者共筛出 58 张，六次抽牌后
 实际生成和随机状态均与模型一致。原版胜局的五次出牌、七次 EndTurn 和十六条独立分支
 通过，旧版 348 张卡池也通过专项回归。隔离实例尚无法启用 Punished DLC，
