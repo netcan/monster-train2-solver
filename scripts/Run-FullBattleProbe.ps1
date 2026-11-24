@@ -631,6 +631,7 @@ param(
     [switch] $OriginalZarielDevotionWitness,
     [switch] $OriginalEmbeddedRoomWitness,
     [switch] $OriginalEndlessEnemyScalingWitness,
+    [switch] $EndlessEnemyScalingFactorBatch,
     [switch] $EndlessEnemyScalingAllWaves,
     [switch] $EndlessEnemyScalingWholeBattle,
     [switch] $EndlessEnemyScalingControlledNextRing,
@@ -1055,6 +1056,13 @@ if ($OriginalEmbeddedRoomWitness) {
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
     $Policy = 'units-spells-and-junk'
+}
+if ($EndlessEnemyScalingFactorBatch) {
+    $factorArguments = @('EndlessEnemyScalingFactorBatch', 'BinaryCapture', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+        'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (!$BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $factorArguments }).Count -gt 0) {
+        throw 'EndlessEnemyScalingFactorBatch requires isolated main-menu binary capture and no campaign inputs.'
+    }
 }
 if ($EndlessEnemyScalingWholeBattle -and !$EndlessEnemyScalingAllWaves) {
     throw 'EndlessEnemyScalingWholeBattle requires EndlessEnemyScalingAllWaves.'
@@ -2806,7 +2814,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll'
 if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorMixPrompt -or
     $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth -or $OriginalFunguyDeckScalingDoubleUnits -or
     $OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness -or
-    $OriginalPyreAbilityCooldownWitness -or $OriginalPyreStewardDamageWitness -or $OriginalZarielPainWitness -or $OriginalZarielDevotionWitness -or $OriginalEmbeddedRoomWitness -or $OriginalEndlessEnemyScalingWitness -or
+    $OriginalPyreAbilityCooldownWitness -or $OriginalPyreStewardDamageWitness -or $OriginalZarielPainWitness -or $OriginalZarielDevotionWitness -or $OriginalEmbeddedRoomWitness -or $OriginalEndlessEnemyScalingWitness -or $EndlessEnemyScalingFactorBatch -or
     $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle -or $OriginalHandAndEmberWitness -or $OriginalFecundityOnCast -or
     $OriginalHealOnAscendWitness -or $OriginalFrontReanimationWitness -or $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle -or $OriginalLonelyRoomsBattle -or
     $OriginalShuffleUnitsWitness -or $OriginalShuffleUnitsBattle -or $OriginalDoubleFriendlyHealthWitness -or $OriginalDoubleFriendlyHealthBattle -or
@@ -2869,7 +2877,7 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     if ($OriginalEmbeddedRoomWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original embedded rooms require the pinned 2.3.1 game module.'
     }
-    if ($OriginalEndlessEnemyScalingWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+    if (($OriginalEndlessEnemyScalingWitness -or $EndlessEnemyScalingFactorBatch) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original Endless scaling requires the pinned 2.3.1 game module.'
     }
     if (($OriginalPactDrawWitness -or $OriginalPactDrawBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
@@ -3331,6 +3339,7 @@ $environment = @{
     MT2_PROBE_ZARIEL_DEVOTION_WITNESS = $(if ($OriginalZarielDevotionWitness) { '1' } else { '0' })
     MT2_PROBE_EMBEDDED_ROOM_WITNESS = $(if ($OriginalEmbeddedRoomWitness) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_WITNESS = $(if ($OriginalEndlessEnemyScalingWitness) { '1' } else { '0' })
+    MT2_PROBE_ENDLESS_ENEMY_SCALING_FACTOR_BATCH = $(if ($EndlessEnemyScalingFactorBatch) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_ALL_WAVES = $(if ($EndlessEnemyScalingAllWaves) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_WHOLE_BATTLE = $(if ($EndlessEnemyScalingWholeBattle) { '1' } else { '0' })
     MT2_PROBE_ENDLESS_ENEMY_SCALING_CONTROLLED_NEXT_RING = $(if ($EndlessEnemyScalingControlledNextRing) { '1' } else { '0' })
@@ -4534,6 +4543,16 @@ if ($OriginalEmbeddedRoomWitness) {
         throw "Original embedded room attachment witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-EMBEDDED-ROOM PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($EndlessEnemyScalingFactorBatch) {
+    $capturePath = Join-Path $profile 'endless-enemy-scaling-factors.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -SimpleMatch 'DEPTH-PASS Original Endless scaling factor queries captured.' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original Endless scaling factor batch failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-ENDLESS-ENEMY-SCALING-FACTORS PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalEndlessEnemyScalingWitness) {

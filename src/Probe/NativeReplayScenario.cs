@@ -380,6 +380,14 @@ namespace MonsterTrain2Poju.Probe
                     }
                     return;
                 }
+#if DEVELOPMENT_PROBE
+                if (OriginalEndlessEnemyScalingWitness.FactorBatch)
+                {
+                    OriginalEndlessEnemyScalingWitness.CaptureFactorBatch(save.GetAllGameData());
+                    Finish(true, "Original Endless scaling factor queries captured.");
+                    return;
+                }
+#endif
                 CheatManager.SetupConsoleCommands(save, screen);
                 if (Environment.GetEnvironmentVariable("MT2_PROBE_RESUME_RUN") == "1")
                 {

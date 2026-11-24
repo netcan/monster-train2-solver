@@ -22,6 +22,7 @@ namespace MonsterTrain2Poju.Probe
         private const int ScheduledWaveCount = 6;
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_WITNESS") == "1";
+        internal static bool FactorBatch => Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_FACTOR_BATCH") == "1";
         internal static bool AllWaves => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_ALL_WAVES") == "1";
         private static bool ControlledNextRing => Enabled && Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_ENEMY_SCALING_CONTROLLED_NEXT_RING") == "1";
         internal static bool ControlledFirstLoop { get; private set; }
@@ -31,6 +32,75 @@ namespace MonsterTrain2Poju.Probe
         private static readonly List<Birth> Births = new List<Birth>();
         private static readonly List<Wave> Waves = new List<Wave>();
         private static Wave? activeWave;
+
+        internal static void CaptureFactorBatch(AllGameData gameData)
+        {
+            var balance = gameData.GetBalanceData();
+            var owner = balance.GetEndlessScalingSins();
+            int runLength = balance.GetRunData(forFtue: false, forEndless: true, forRegionRun: false).GetNumDistances();
+            if (Application.version != "2.3.1" || typeof(CharacterState).Module.ModuleVersionId != Module || runLength != 8 ||
+                owner?.GetID() != OwnerId || owner.name != OwnerKey || owner.GetEffects() is not [var effect] ||
+                effect.GetEffectClassName() != nameof(RelicEffectEndlessScalingOnSpawn))
+                throw new InvalidOperationException("The Endless factor batch requires the pinned original balance data and eight-battle route.");
+
+            Dictionary<string, uint[]> ReadRng() => Enum.GetValues(typeof(RngId)).Cast<RngId>()
+                .Where(id => id != RngId.NonDeterministic && id != RngId.Chatter)
+                .ToDictionary(id => id.ToString(), id => RngCalibration.Words(RandomManager.GetState(id)));
+            var rngBefore = ReadRng();
+            int frame = Time.frameCount;
+            var scaling = balance.GetEndlessScalingData();
+            var factors = (from loop in Enumerable.Range(1, 3)
+                           from distance in Enumerable.Range(0, runLength)
+                           select new
+                           {
+                               Loop = loop, Distance = distance,
+                               Attack = scaling.GetAttackScaling(loop, distance, runLength),
+                               Health = scaling.GetHealthScaling(loop, distance, runLength),
+                               Status = scaling.GetStatusScaling(loop, distance, runLength),
+                               BuffDamage = scaling.GetCardEffectBuffDamageScaling(loop, distance, runLength),
+                               Heal = scaling.GetCardEffectHealScaling(loop, distance, runLength),
+                               Damage = scaling.GetCardEffectDamageScaling(loop, distance, runLength)
+                           }).ToArray();
+            // This accessor exists on the pinned client, while Probe also builds against older references.
+            var statusData = (StatusEffectsData)AccessTools.Method(typeof(AllGameData), "GetAllStatusEffectsData").Invoke(gameData, null);
+            var statuses = statusData.GetStatusEffectData()
+                .Select(data => new { Id = data.GetStatusId(), ScalesInEndless = data.ScalesInEndless() })
+                .OrderBy(data => data.Id, StringComparer.Ordinal).ToArray();
+            var scalable = statuses.Where(data => data.ScalesInEndless).Select(data => data.Id).ToHashSet();
+            var characters = gameData.GetAllCharacterData();
+            var startingStatuses = characters.SelectMany(character => character.GetStartingStatusEffects())
+                .Where(status => scalable.Contains(status.statusId)).ToArray();
+            var types = new[] { nameof(CardEffectDamage), nameof(CardEffectHeal), nameof(CardEffectBuffDamage),
+                nameof(CardEffectAddStatusEffect), nameof(CardEffectEnchant) };
+            var payloads = characters.SelectMany(character => character.GetTriggers()).SelectMany(trigger => trigger.GetEffects())
+                .Where(data => types.Contains(data.GetEffectStateName())).GroupBy(data => data.GetEffectStateName())
+                .OrderBy(group => group.Key, StringComparer.Ordinal).Select(group =>
+                {
+                    var eligibleStatuses = group.SelectMany(data => data.GetParamStatusEffectStackData() ?? Array.Empty<StatusEffectStackData>())
+                        .Where(status => scalable.Contains(status.statusId)).ToArray();
+                    return new
+                    {
+                        Type = group.Key, Definitions = group.Count(), PositiveInts = group.Count(data => data.GetParamInt() > 0),
+                        ZeroInts = group.Count(data => data.GetParamInt() == 0),
+                        PositiveEligibleStatuses = eligibleStatuses.Count(status => status.count > 0),
+                        ZeroEligibleStatuses = eligibleStatuses.Count(status => status.count == 0)
+                    };
+                }).ToArray();
+            var rngAfter = ReadRng();
+            if (frame != Time.frameCount || rngBefore.Any(pair => !pair.Value.SequenceEqual(rngAfter[pair.Key])))
+                throw new InvalidOperationException("The Endless factor queries changed frame or deterministic RNG state.");
+
+            using var document = NativeFixtureCapture.Capture(new
+            {
+                Schema = 1, Boundary = "OriginalEndlessEnemyScalingFactors", GameVersion = Application.version, GameModuleMvid = Module,
+                OwnerId, OwnerKey, RunLength = runLength, ExcludedSubtypes = effect.GetParamExcludeCharacterSubtypes().Select(subtype => subtype.Key).ToArray(),
+                Factors = factors, StatusEligibility = statuses, AuthoredTriggerPayloads = payloads,
+                AuthoredStartingStacks = new { Positive = startingStatuses.Count(status => status.count > 0), Zero = startingStatuses.Count(status => status.count == 0) },
+                RngBefore = rngBefore, RngAfter = rngAfter
+            });
+            using var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "endless-enemy-scaling-factors.mt2f"));
+            document.Write(output);
+        }
 
         internal static void BeginFirstLoop(AllGameManagers managers, ManualLogSource log)
         {
