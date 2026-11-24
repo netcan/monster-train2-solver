@@ -70,8 +70,8 @@ pwsh -NoProfile -File scripts/Check-Game231SummonChoiceBattle.ps1 -SkipBuild -Re
 `-ModelChecker <ModelChecks.dll>` 配合 `-SkipBuild` 可验隔离构建，运行中不替换
 正在被测的二进制。报告和日志不加入 Git，二进制原生证据继续由清单引用。
 
-确定性搜索导出可用 FixtureTools 的 `verify-exact <prediction.mt2f>` 在新进程
-复放。检查从归档根局面执行保存的出牌、结束回合和 Relentless 选择，核对终态、
+确定性搜索导出可用 FixtureTools 的 `verify-exact <prediction.mt2f>` 在新的
+.NET 8 进程复放。检查从归档根局面执行保存的出牌、结束回合和 Relentless 选择，核对终态、
 全部随机流、分数与两端状态键。求解验收入口对节点预算截断和 Relentless 导出
 各执行一次此项复放。
 
