@@ -227,13 +227,16 @@ namespace MonsterTrain2Poju.Model
              (room.RoomIndex == 0 || room is { RoomIndex: 1, Preview: true }) && room.Context?.QueryFrame?.Turn == 3 ||
              room.RoomIndex is 0 or 1 && room.Context?.QueryFrame?.Turn == 4 ||
              room.RoomIndex == 1 && room.Context?.QueryFrame?.Turn == 5 ||
-             room is { RoomIndex: 2, Preview: true } && room.Context?.QueryFrame?.Turn is 5 or 6 && NoCapturedKiller(room));
+             room.RoomIndex == 2 && (room.Context?.QueryFrame?.Turn == 6 ||
+                room.Preview && room.Context?.QueryFrame?.Turn == 5) && NoCapturedKiller(room));
 
         internal static bool IsScaledFirstFeedRecipient(RoomCombatState room, CombatUnit unit) =>
             ScaledFeedRoom(room) && IsScaledFeedRecipient(unit, room.Context?.QueryFrame?.Turn);
 
         private static bool IsScaledBossFeedingRoom(RoomCombatState room) =>
-            (room.Context?.QueryFrame?.Turn, room.RoomIndex) is (5, 0) or (6, 1) && IsScaledCampaign(room.Context);
+            ((room.Context?.QueryFrame?.Turn, room.RoomIndex) is (5, 0) or (6, 1) ||
+             room is { RoomIndex: 2, Preview: true } && room.Context?.QueryFrame?.Turn == 7) &&
+            IsScaledCampaign(room.Context);
 
         private static bool IsScaledBossFeedTarget(CombatUnit unit) => RelicModel.IsObservedSoulSaviorBossStatTarget(unit) &&
             unit is { MaxHealth: 1530, Modifiers.DamageBuff: 10 } &&
@@ -243,32 +246,25 @@ namespace MonsterTrain2Poju.Model
         {
             int? turn = room.Context?.QueryFrame?.Turn;
             if (turn is not (>= 5 and <= 7) || !IsScaledCampaign(room.Context) ||
-                !IsScaledBossFeedTarget(unit) || unit.Status(StatusId) is not { Stacks: 3 or 6 or 9 } status ||
+                !IsScaledBossFeedTarget(unit) || unit.Status(StatusId) is not { Stacks: 3 or 6 or 9 or 12 or 15 } status ||
                 !IsOriginalStatusDefinition(status)) return false;
             IReadOnlyList<CardUpgradeModifier> upgrades = unit.Modifiers!.Upgrades;
             int cachedAttack = unit.BaseAttack - 22;
             bool expectedFrame = (turn, room.RoomIndex, status.Stacks, cachedAttack) switch
             {
                 (5, 0 or 1, 3 or 6 or 9, 0) => true,
-                (6, 1, 3 or 6 or 9, >= 0) or (6, 2, 3 or 6 or 9, > 0) => true,
-                (7, 2 or 3, 3 or 6 or 9, > 0) => true,
-                (7, 2, 3 or 6 or 9, 0) => replacingCache,
+                (6, 1, <= 12, >= 0) or (6, 2, <= 12, > 0) => true,
+                (7, 2, 15, > 0) => room.Preview,
+                (7, 2 or 3, <= 12, > 0) => true,
+                (7, 2, <= 12, 0) => replacingCache,
                 _ => false
             };
             if (!expectedFrame) return false;
             var feeds = upgrades.Where(upgrade => !IsAttackUpgrade(upgrade, cachedAttack)).ToArray();
-            int settledFeeds = 2 * (status.Stacks / 3);
-            bool pendingFeed = (turn, room.RoomIndex, status.Stacks, cachedAttack) switch
-            {
-                (5, 0, 3 or 6, 0) => true,
-                (6, 1, 3 or 6, > 0) => true,
-                _ => false
-            };
-            return (feeds.Length == settledFeeds || pendingFeed && feeds.Length == settledFeeds + 1) &&
+            return feeds.Count(IsFeedUpgrade) * 3 == status.Stacks &&
                 (upgrades.Count == feeds.Length + 1 || upgrades.Count == feeds.Length &&
-                    (turn == 5 && room.RoomIndex == 0 && status.Stacks == 3 || replacingCache && cachedAttack == 0)) &&
-                feeds.Where((_, index) => index % 2 == 0).All(IsFeedBuffUpgrade) &&
-                feeds.Where((_, index) => index % 2 == 1).All(IsFeedUpgrade);
+                    (turn == 5 && room.RoomIndex == 0 || replacingCache && cachedAttack == 0)) &&
+                feeds.All(upgrade => IsFeedUpgrade(upgrade) || IsFeedBuffUpgrade(upgrade));
         }
 
         internal static bool IsScaledPreviewFeedRecipient(RoomCombatState room, CombatUnit unit)
@@ -1050,13 +1046,11 @@ namespace MonsterTrain2Poju.Model
         private static bool IsObservedScaledBossFeedUpgrade(RoomCombatState room, CombatUnit unit)
         {
             if (!IsScaledBossFeedingRoom(room) || !IsScaledBossFeedTarget(unit)) return false;
-            if (room.Context?.QueryFrame?.Turn == 5)
-                return unit.BaseAttack == 22 &&
-                    (unit.RegisteredStatus(StatusId) == null && unit.Modifiers!.Upgrades is [var buffs] && IsFeedBuffUpgrade(buffs) ||
-                     unit.Status(StatusId) is { Stacks: 3 or 6 } initialStatus && IsScaledBossFeedOwner(room, unit) &&
-                        unit.Modifiers!.Upgrades.Count(IsFeedBuffUpgrade) == initialStatus.Stacks / 3 + 1);
-            return unit.BaseAttack > 22 && unit.Status(StatusId) is { Stacks: 3 or 6 } status &&
-                IsScaledBossFeedOwner(room, unit) && unit.Modifiers!.Upgrades.Count(IsFeedBuffUpgrade) == status.Stacks / 3 + 1;
+            if (room.Context?.QueryFrame?.Turn == 5 && unit.BaseAttack == 22 && unit.RegisteredStatus(StatusId) == null)
+                return unit.Modifiers!.Upgrades.All(IsFeedBuffUpgrade);
+            // The two authored foods grant independent upgrades. Their relative order depends on the occupants.
+            int maxStacks = room.Context?.QueryFrame?.Turn switch { 5 => 9, 6 => 12, _ => 15 };
+            return unit.Status(StatusId) is { } status && status.Stacks < maxStacks && IsScaledBossFeedOwner(room, unit);
         }
 
         internal static bool IsObservedCombatUpgrade(RoomCombatState room, CardUpgradeModifier upgrade, string? kind) =>

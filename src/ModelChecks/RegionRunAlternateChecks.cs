@@ -36,22 +36,43 @@ internal static class RegionRunAlternateChecks
             played.Reason ?? "The alternate paid action outcome differs.");
         BattleTurnState after = RecordedBattleChecks.RecordedBoundary(played.State!, witness.GetProperty("Actual"),
             terminal: false, "After alternate play", trackPreviewPosition: true);
-        FixtureValue turn = witness.GetProperty("EndTurn");
-        BattleTurnState turnRoot = RecordedBattleChecks.RecordedBoundary(after, turn.GetProperty("Before"),
+        BattleTurnState next = ReplayEndTurn(after, witness.GetProperty("EndTurn"));
+        if (action is { RoomIndex: 2, TargetUnitId: 19 })
+        {
+            CheckHivemind(next, turn: 6, holders: 7, total: 29, bossStacks: 3);
+        }
+        else
+        {
+            Require(action is { RoomIndex: 1, TargetUnitId: 27 }, "Unexpected original alternate target.");
+            CheckHivemind(next, turn: 6, holders: 6, total: 23, bossStacks: 6);
+            next = ReplayEndTurn(next, witness.GetProperty("SecondEndTurn"));
+            CheckHivemind(next, turn: 7, holders: 3, total: 16, bossStacks: 12);
+        }
+        Console.WriteLine($"NATIVE-REGION-ALTERNATE PASS room={action.RoomIndex} target={action.TargetUnitId} " +
+            $"turn={next.Spawn.Turn}: exact continuous paid action, EndTurn successors, owner caches, and RNG.");
+    }
+
+    private static BattleTurnState ReplayEndTurn(BattleTurnState previous, FixtureValue turn)
+    {
+        BattleTurnState turnRoot = RecordedBattleChecks.RecordedBoundary(previous, turn.GetProperty("Before"),
             terminal: false, "Before alternate EndTurn", trackPreviewPosition: true);
         BattleTurnResult ended = BattleTurnModel.EndTurn(turnRoot, RecordedBattleChecks.Decisions(turn));
         Require(ended.Supported && ended.Outcome == turn.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(),
             ended.UnsupportedReason ?? "The alternate EndTurn outcome differs.");
-        var next = RecordedBattleChecks.RecordedBoundary(ended.State!, turn.GetProperty("Actual"),
+        return RecordedBattleChecks.RecordedBoundary(ended.State!, turn.GetProperty("Actual"),
             terminal: false, "After alternate EndTurn", trackPreviewPosition: true);
-        var owners = next.Spawn.Train.Rooms.SelectMany(room => room.Units)
+    }
+
+    private static void CheckHivemind(BattleTurnState state, int turn, int holders, int total, int bossStacks)
+    {
+        var owners = state.Spawn.Train.Rooms.SelectMany(room => room.Units)
             .Where(unit => unit.Statuses.Any(status => status.Id == "hivemind")).ToArray();
-        Require(next.Spawn.Turn == 6 && owners.Length == 7 &&
-            owners.Sum(unit => unit.Statuses.Single(status => status.Id == "hivemind").Stacks) == 29 &&
+        Require(state.Spawn.Turn == turn && owners.Length == holders &&
+            owners.Sum(unit => unit.Statuses.Single(status => status.Id == "hivemind").Stacks) == total &&
+            owners.Single(unit => unit.IsBoss == true).Statuses.Single(status => status.Id == "hivemind").Stacks == bossStacks &&
             owners.All(unit => unit.Modifiers?.Upgrades.SingleOrDefault(upgrade =>
-                upgrade.DataId == "RoomStateHivemindModifierUpgrade")?.Stats.Damage == 29),
-            "Expected the original seven surviving holders with a refreshed +29 cache.");
-        Console.WriteLine("NATIVE-REGION-ALTERNATE PASS: exact paid action, EndTurn, next-turn seven owners at +29, and RNG.");
+                upgrade.DataId == "RoomStateHivemindModifierUpgrade")?.Stats.Damage == total),
+            $"Expected turn {turn} with {holders} original holders at +{total} and boss Hivemind {bossStacks}.");
     }
 
     private static void Require(bool condition, string message)
