@@ -8,14 +8,14 @@
 
 | 待办分类 | 类数 | 含目录引用 | 含类型声明 |
 | --- | ---: | ---: | ---: |
-| inspect-projection-normalization | 53 | 53 | 53 |
+| inspect-projection-normalization | 49 | 49 | 49 |
 | inspect-guard-links | 42 | 42 | 42 |
-| review-existing-code | 226 | 226 | 226 |
+| review-existing-code | 225 | 225 | 225 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 282 | 0 | 0 |
-| scoped-review-recorded | 124 | 120 | 120 |
+| scoped-review-recorded | 129 | 125 | 125 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 131 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 136 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -35,7 +35,9 @@
 | CardEffectAddStatusToRoomScalingByCasterStatusCount | shared-path | Original paid 2.3.1 Savior II and III move Fel to the front, grant 15 Valor and use the resulting amount to grant 15 Armor. II affects Fel, III also affects the same-floor ally, and the other floor stays unchanged. Both settled successors and RNG match. Both older whole-battle recordings still replay six paid actions and five EndTurns each. |
 | CardEffectAddUpgradedCopy | shared-path | The original Fecundity upgrade on Train Steward consumes one Ember and produces a separate hand card with temporary successor cost plus one. The source retains its original permanent upgrade. The scoped paid-action check covers exact state, RNG, and the solver candidate. |
 | CardEffectAdjustRoomCapacity | shared-path | The original FavoredChild_2 boss lowers player capacity in three native applications and retains enemy capacity. Six bound checks, nine TestEffect calls and two oversize occupied states match. The first post-combat pair independently proves reduction before self OnFeed. |
+| CardEffectAttackWithUnit | shared-path | The native effect checks equipment when authored and commands attacks on the target floor or selected floor as configured. In spell-commanded-attack-centering.mt2f, Minds of Their Own kills the front enemy through an equipped ally and centers the survivor. Pyreshot commands the Pyre from the selected floor and removes that survivor. Seven plays, five EndTurns, 16 independent branches and both recorded candidate frontiers match full successors and RNG. Other attack-prevention and repeated-command combinations remain outside this witness. |
 | CardEffectBump | shared-path | The exact Railforged attacker OnKill and its later Armor grant match bottom and cross-floor original exchanges. The destination shifted actors, Sacrificial Chamber entry, physical slots and RNG agree. Lifemother Reanimate supplies the corresponding settled whole battle. |
+| CardEffectChooseDiscard | shared-path | The native Test and hand dialog use the authored eligibility condition, and native preview skips applying the dialog effect. OriginalOfferingTokenChecks.Native verifies that the unmodified zero-cost Offering Token draws one card before discarding the selected Train Steward, with the original Ephemeral-copy exclusion and unchanged Ember. Offering-token.mt2f matches two plays, five EndTurns, full state and RNG and 16 independent branches. This witness covers ordinary discard and leaves Smelt, Consume and replacement draws to their separate tests. |
 | CardEffectCopyUnits | shared-path | The pinned Railforged Unruly component rejects copying the boss when it is alone and copies the original Decoy once it exists. Ordered tests and applications, physical slots, full successors and RNG match. The recorded original Unruly battle also verifies initial birth, room selection, Relentless and terminal scheduling across 33 plays, seven EndTurns, both candidate frontiers and 16 independent branches. This review covers the original Unruly callback and scheduler. |
 | CardEffectDamage | shared-path | Native Damage normalizes to the shared Damage action; current PunishedSpike battle exercises repeated damage, armor, target death and full successors. Existing target/scaling/callback guards remain; not an audit of every contextual branch. |
 | CardEffectDamageByPercentRemainingHealth | shared-path | The reference inventory counts four filters. The original BeeziebubT1, BeeziebubT2 and BeeziebubT3 definitions supply the executing OnCast through SoulData.GetSoulCardUpgrade. Three pinned 2.3.1 wins prove Pyre HP 80 to 72, no card damage attribution or trait scaling, and exact search successors. Randomized ranges, round-up and non-Pyre targets remain guarded. |
@@ -47,9 +49,12 @@
 | CardEffectDamageWithTrample | input-only | All four catalog references are filters on DrawSpellOnDeployment and RedHot T1 through T3. The pinned getter query found zero configured effects across cards, characters, upgrades, relics and seventy-one soul upgrades. Dynamic construction and unvisited upgrade paths remain outside this audit. |
 | CardEffectDiscardHandAddStatusEffectPerCard | shared-path | Original Wicked Fervor gives fifteen Zeal after three paid hand discards. The same battle covers zero eligible discards and leaves Persistent, Infusion and the played card out of the discard set. The full chain and sixteen independent branches preserve pile order, status stacks and RNG. |
 | CardEffectFloorRearrange | shared-path | The original Railforged Unruly SniperAdvance OnAttacking effect moves a living rear attacked actor to the front. A lone target keeps its position and the lethal control records no applied movement callback. The original whole battle matches 34 plays, seven EndTurns and both candidate frontiers. This review covers the exact living-target payload. |
+| CardEffectKill | shared-path | The native effect tests the authored targets and routes each accepted target through Sacrifice with card attribution and death triggers. On the original Hallowed Halls action in hallowed-halls.mt2f, the chosen room's existing unit dies before the following Recursion effect creates six reformed units. Five plays, six EndTurns, 16 independent branches and both recorded candidate frontiers match full successors and RNG. This witness covers the room-targeted authored payload. |
 | CardEffectPlayUnitTrigger | shared-path | The exact original FavoredChild_2 post-combat payload queues one self OnFeed after room capacity decreases and applies three Rage. The component verifies the full queue result and RNG and rejects edited capacity. Other nested replay payloads retain their existing guards. |
+| CardEffectReplayTrigger | shared-path | Original Transcend Imp replays cached successful OnSpawn effects in order using the newly spawned self and its room. Four native battles verify empty history, retained history after source recall, gold, fixed temporary self upgrades, Fledgling Imp room Rage, Welder Helper front Armor with its Battle RNG advance, and original enemy-room Decay and Sap both before and after the natural enemy wave arrives. All recorded successors, candidate frontiers and independent branches pass. Effect payload support follows the calibrated history guards. |
 | CardEffectRewardGold | shared-path | Three physical hits on the original owner path give 2, 1, 0, and 0 gold across four states. Native actor damage and RNG match the shared signed-gold path. Changed conditional or random costs are rejected. |
 | CardEffectSpawnHeroIfNoOtherHeroUnits | shared-path | The pinned Railforged Unruly component spawns one original Decoy in the next physical slot when only the boss remains. With that Decoy present, the fallback test fails and the earlier copy applies. Component successors and RNG match. The separate original Unruly battle verifies initial birth, room selection, Relentless and terminal scheduling across 33 plays, seven EndTurns, both candidate frontiers and 16 independent branches. |
+| CardEffectUnitAbilityTeleport | shared-path | The original effect distinguishes a cross-floor move from an in-room rearrangement using the physical ability drop. The controlled original GrimFlight recordings show the caster moves before the following same-floor subtype and summon checks. The pinned selection-search check expands the complete native root frontier, agrees serially and in parallel, and replays the returned fragment selection with unchanged parent and exact RNG. The stock platform entitlement and released modal remain separate acceptance boundaries. |
 | CardTraitAddMagicPowerToAttackDamage | input-only | The five pinned owners are ChanceRetreatEnemiesOnSpawn, EquippedUnitsGainArmor, SingleToTeamMonsterSpellTargeting, StartOfTurnAddFunguysPerDeckSize and LessDeployEmberMoreOtherEmber. Their effect classes and native base do not read either trait parameter. The trait has a damage callback when attached. The audited rows provide no attachment or dispatch evidence. |
 | CardTraitAllowUpgradeOnCardType | input-only | The pinned references are SourceTrait and TargetTrait on AvariceOnSummon AddTrigger and SpellDuplicator CardDuplicator. Neither effect implementation nor their native base reads those fields. The trait has an upgrade callback when attached. The audited rows provide no attachment or dispatch evidence. |
 | CardTraitDrawOnPlay | shared-path | Three unchanged original soul upgrades attached through native SoulHelper. Played discard draws 3/3/5 and the two higher tiers install the captured next-draw upgrade on actual cards. Full wins, exact successors, sixteen branches, frontiers and equal serial/parallel search and replay pass. Other carriers and mixed discard traits remain outside this evidence. |
@@ -163,12 +168,8 @@
 | 原生类 | 队列 | 声明引用 | 全部引用 | 模型／探针示例 |
 | --- | --- | ---: | ---: | --- |
 | CardEffectAttachTrainRoomAttachment | inspect-projection-normalization | 34 | 34 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
-| CardEffectAttackWithUnit | inspect-projection-normalization | 13 | 13 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
-| CardEffectUnitAbilityTeleport | inspect-projection-normalization | 8 | 8 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
 | CardEffectMix | inspect-projection-normalization | 6 | 6 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
 | CardTraitUnpurgable | inspect-projection-normalization | 6 | 6 | [MonsterTrain2Poju.Probe.DamageScalingProbe.Known](../../src/Probe/DamageScalingProbe.cs:11) |
-| CardEffectChooseDiscard | inspect-projection-normalization | 5 | 5 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
-| CardEffectKill | inspect-projection-normalization | 4 | 7 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
 | CardEffectTransferAttackFromUnit | inspect-projection-normalization | 4 | 4 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
 | RoomStateCapacityModifier | inspect-projection-normalization | 4 | 4 | [MonsterTrain2Poju.Probe.BattleActionProbe+<>c.<CapacityAttachment>b__25_0](../../src/Probe/BattleActionProbe.cs:804) |
 | CardEffectDamageByUnitsKilled | inspect-projection-normalization | 3 | 7 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
@@ -177,15 +178,19 @@
 | CardEffectRandomDiscard | inspect-projection-normalization | 3 | 3 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
 | CardEffectSetMoonPhase | inspect-projection-normalization | 3 | 3 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
 | CardEffectAddStatusEffectNull | inspect-projection-normalization | 2 | 7 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
+| CardEffectDuplicateCardInHand | inspect-projection-normalization | 2 | 2 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
+| CardEffectFreezeCard | inspect-projection-normalization | 2 | 2 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
+| CardEffectUpdateMoonPhaseResource | inspect-projection-normalization | 2 | 2 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
+| CardTraitScalingUpgradeUnitHealth | inspect-projection-normalization | 2 | 2 | [MonsterTrain2Poju.Probe.DyingHordeUpgradeScenario+<>c.<Prepare>b__6_0](../../src/Probe/DyingHordeUpgradeScenario.cs:21) |
 
 ## 可重建输入
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `ad599f3d53335b00404cd021f70e9843fc262aa5bb4e63f7572c2b9ae2f95e35`。
-- Model: PDB 校验过的项目源码集合 `95e252cc617f87e59ff9da8369e9a080f9083f6be7e1961a78e782c2b3978b5f`。
-- Probe: PDB 校验过的项目源码集合 `473abfb6561de7ec756019bad3eaee1ec93010f7639e5bc8627394eb02080fdc`。
-- ModelChecks: PDB 校验过的项目源码集合 `4b26c83f395e2da389e30fa9c8a826775a642a20654eb098288ab22b0bb8d533`。
+- 人工审查索引 SHA-256: `750020759da20a0cb47a45e3c3db4e8630f0caa529e110d2bb0b23774b1f6e38`。
+- Model: PDB 校验过的项目源码集合 `71dc6eac63ed5aff4756ccd18a888c178d0aa444dfe859870896dfcccf374895`。
+- Probe: PDB 校验过的项目源码集合 `0c68ac5f9a71eab8b23c8b176ee80509137d93bb0736dc3fcbaae4d09f4fc14f`。
+- ModelChecks: PDB 校验过的项目源码集合 `8e1a8a4043690f76e8e9d202fd6ab6dc24c0459f6cc05f1a539404439599706c`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
