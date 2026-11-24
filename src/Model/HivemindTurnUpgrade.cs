@@ -221,7 +221,8 @@ namespace MonsterTrain2Poju.Model
         internal static bool IsScaledBossFeedOwner(RoomCombatState room, CombatUnit unit)
         {
             int? turn = room.Context?.QueryFrame?.Turn;
-            if (turn is not (>= 5 and <= 7) || room.RoomIndex != turn - 5 || !IsScaledCampaign(room.Context) ||
+            if (turn is not (>= 5 and <= 7) || room.RoomIndex != turn - 5 && !(turn == 7 && room.RoomIndex == 3) ||
+                !IsScaledCampaign(room.Context) ||
                 !IsScaledBossFeedTarget(unit) || unit.Status(StatusId) is not { Stacks: 3 or 6 or 9 } status ||
                 !IsOriginalStatusDefinition(status)) return false;
             IReadOnlyList<CardUpgradeModifier> upgrades = unit.Modifiers!.Upgrades;
@@ -642,12 +643,12 @@ namespace MonsterTrain2Poju.Model
 
         internal static bool PublishesAtAscension(TrainCombatState train) =>
             (train.Context?.QueryFrame?.Turn is >= 1 and <= 3 ||
-                train.Context?.QueryFrame?.Turn == 4 && IsScaledCampaign(train.Context)) && train.Rooms.All(room => !room.Preview) &&
+                train.Context?.QueryFrame?.Turn is 4 or 7 && IsScaledCampaign(train.Context)) && train.Rooms.All(room => !room.Preview) &&
             train.Rooms.Any(room => room.ExternalInteractions.Any(IsKnownMarker)) &&
-            train.Rooms.SelectMany(room => room.Units).All(unit => unit.RegisteredStatus("hivemindkiller") == null &&
+            train.Rooms.All(room => room.Units.All(unit => unit.RegisteredStatus("hivemindkiller") == null &&
                 (unit.Status(StatusId) == null || MatchesRoomMarker(Marker(unit), unit) ||
                  IsScaledFirstWaveOwner(unit, train.Context) || IsScaledCarriedFeedOwner(unit, train.Context) ||
-                 IsScaledCampaign(train.Context) && IsScaledFeedRecipient(unit)));
+                 IsScaledCampaign(train.Context) && IsScaledFeedRecipient(unit) || IsScaledBossFeedOwner(room, unit))));
 
         internal static RoomCombatState PublishRoomMarkers(RoomCombatState room, bool infested = false)
         {
