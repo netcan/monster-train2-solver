@@ -1193,7 +1193,7 @@ namespace MonsterTrain2Poju.Model
             bool infestedWaveCombat = HivemindTurnUpgrade.IsInfestedOpeningCombat(state);
             bool infestedCombat = allowInfestedTerminalAscension || HivemindTurnUpgrade.IsInfestedTerminalPyre(state) ||
                 HivemindTurnUpgrade.IsInfestedOrdinaryRoom(state);
-            bool scaledWavePhase = allowFreshHivemind || state.Context?.QueryFrame?.Turn == 2 ||
+            bool scaledWavePhase = allowFreshHivemind || state.Context?.QueryFrame?.Turn is 2 or 3 ||
                 !state.Preview && state.Context?.QueryFrame?.Turn == 1;
             int infestedDrawTurn = allowFreshHivemind && state.Context?.QueryFrame?.Turn is 2 or 3 &&
                 OuterBossDefinitions.HasLifemotherInfestedOwner(state.Context) ? state.Context.QueryFrame.Turn.Value : 0;
@@ -1211,7 +1211,8 @@ namespace MonsterTrain2Poju.Model
                 !(infestedDrawTurn > 0 && state.Units.Any(unit => HivemindTurnUpgrade.Marker(unit) == item &&
                     HivemindTurnUpgrade.IsInfestedDrawOwner(unit, infestedDrawTurn, afterRemoval: false, state.Context))) &&
                 !(scaledWavePhase && state.Units.Any(unit =>
-                    HivemindTurnUpgrade.Marker(unit) == item && HivemindTurnUpgrade.IsScaledFirstWaveOwner(unit, state.Context)))).ToArray();
+                    HivemindTurnUpgrade.Marker(unit) == item && (HivemindTurnUpgrade.IsScaledFirstWaveOwner(unit, state.Context) ||
+                        HivemindTurnUpgrade.IsScaledCarriedFeedOwner(unit, state.Context))))).ToArray();
             if (interactions.Length > 0) return string.Join("; ", interactions);
             foreach (CardInstanceState instance in state.Context?.CardInstances ?? Array.Empty<CardInstanceState>())
             {
@@ -1234,7 +1235,8 @@ namespace MonsterTrain2Poju.Model
                 bool infestedCombatOwner = infestedCombat && HivemindTurnUpgrade.IsInfestedCombatOwner(state, unit);
                 bool scaledWaveOwner = scaledWavePhase &&
                     HivemindTurnUpgrade.IsScaledFirstWaveOwner(unit, state.Context) || !state.Preview &&
-                    HivemindTurnUpgrade.IsScaledFirstWaveBirth(unit, state.Context) || HivemindTurnUpgrade.IsScaledFirstFeedRecipient(state, unit);
+                    HivemindTurnUpgrade.IsScaledFirstWaveBirth(unit, state.Context) ||
+                    HivemindTurnUpgrade.IsScaledCarriedFeedOwner(unit, state.Context);
                 string? selfAttackError = UnitSelfAttackModel.Validate(state, unit);
                 string? roomResourceError = UnitRoomResourceModel.Validate(unit);
                 if (roomResourceError != null) return roomResourceError;

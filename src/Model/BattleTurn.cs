@@ -665,7 +665,7 @@ namespace MonsterTrain2Poju.Model
             bool secondWaveHivemind = turn == 2 && HivemindTurnUpgrade.HasSecondWave(train);
             bool thirdWaveHivemind = turn == 3 && HivemindTurnUpgrade.HasThirdWave(train);
             bool infestedDraw = turn is 2 or 3 && HivemindTurnUpgrade.HasInfestedDraw(train);
-            bool scaledHivemindDraw = HivemindTurnUpgrade.HasScaledFirstDraw(train);
+            bool scaledHivemindDraw = HivemindTurnUpgrade.HasScaledDraw(train);
             // Native queues each team's PreCombat after spawning/rollover, before energy and draw.
             foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
             {
@@ -885,7 +885,7 @@ namespace MonsterTrain2Poju.Model
             }
             if (scaledHivemindDraw)
             {
-                TrainCombatState? refreshed = HivemindTurnUpgrade.ApplyScaledFirstDraw(train, out string? hivemindError);
+                TrainCombatState? refreshed = HivemindTurnUpgrade.ApplyObservedRefresh(train, out string? hivemindError);
                 if (refreshed == null) return Unsupported(hivemindError!);
                 train = refreshed;
             }

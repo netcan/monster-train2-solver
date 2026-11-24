@@ -156,7 +156,7 @@ namespace MonsterTrain2Poju.Model
                     definitions.Any(entry => entry.Unit.Status(HivemindTurnUpgrade.StatusId) is CombatStatus status &&
                         HivemindTurnUpgrade.IsOriginalFreshOwner(entry.Unit, status));
                 infestedWave = HivemindTurnUpgrade.IsInfestedWaveSpawn(source, definitions);
-                scaledWave = HivemindTurnUpgrade.HasScaledFirstWave(source, definitions);
+                scaledWave = HivemindTurnUpgrade.HasScaledWave(source, definitions);
                 if (definitions.Count > 0 && context?.QueryFrame?.SelectedRoomIndex != null)
                     context = context.WithQueryFrame(context.QueryFrame.With(selectedRoomIndex: 0));
                 bool enteredPyre = false;
@@ -438,7 +438,8 @@ namespace MonsterTrain2Poju.Model
                             .Concat(rooms[index].Where(unit => unit.Status(HivemindTurnUpgrade.StatusId) is CombatStatus status &&
                                 (HivemindTurnUpgrade.IsWaitingSecondWaveOwner(unit, status) || (firstWaveHivemind || infestedWave) &&
                                  HivemindTurnUpgrade.IsInfestedOpeningOwner(unit, status) || scaledWave &&
-                                 HivemindTurnUpgrade.IsScaledFirstWaveOwner(unit, context))).Select(HivemindTurnUpgrade.Marker))
+                                 (HivemindTurnUpgrade.IsScaledFirstWaveOwner(unit, context) ||
+                                  HivemindTurnUpgrade.IsScaledCarriedFeedOwner(unit, context)))).Select(HivemindTurnUpgrade.Marker))
                             .Distinct().OrderBy(marker => marker, StringComparer.Ordinal).ToArray()
                         : room.ExternalInteractions, context, room.Preview,
                     room.ActiveCompanionBossIds)).ToArray();
