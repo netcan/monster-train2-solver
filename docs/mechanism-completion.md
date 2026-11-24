@@ -1678,6 +1678,17 @@ Fecundity 的原版升级回调会把全额减费值改为目标卡当前的实�
 第二波在底层生成、寻宝单位生成及出生随机流的重置。支持范围由该开局的原版状态约束。
 [第二层开局归档](../tests/compatibility/game-2.3.1/mechanics/second-floor-enemy-opening/first-decision.mt2f)
 
+同一原版第二环存档完成了胜局。17 次出牌和 4 次结束回合匹配完整后继，两类候选、16 条独立分支和串并行计划复放通过。
+[第二层开局整战](../tests/compatibility/game-2.3.1/mechanics/second-floor-enemy-opening/native-battle.mt2f)
+
+2.3.1 的一阶 Shardtail Sacrifice Imps 会把来源牌传给伤害结算。恢复这项投影后，20 点伤害穿过护卫的 25 层护甲，
+两名敌人的击杀均记到来源牌。原版胜局的 8 次出牌、7 次结束回合和两类候选均通过。
+[Shardtail 整战](../tests/compatibility/game-2.3.1/mechanics/shardtail-sacrifice/native-rank-one.mt2f)
+
+启用全种族突变后，第一发献祭非 Imp 友军并保留冠军，第二发同时献祭 Imp 和非 Imp 友军。
+9 次出牌、7 次结束回合、两类候选、16 条独立分支和串并行计划复放均通过。
+[Shardtail 突变整战](../tests/compatibility/game-2.3.1/mechanics/shardtail-sacrifice/native-rank-one-all-subtypes.mt2f)
+
 ## 自动化与测试成本
 
 从仓库根目录运行下列命令，按已登记的原版战斗生成待采集卡牌清单。
