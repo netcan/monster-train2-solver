@@ -43,6 +43,12 @@ exact battle state and RNG. The next End Turn produced one journal entry, retire
 and published a new verified decision on turn one. Independent replay matched the entire successor.
 [End Turn observation](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/native-end-turn-confirmation.mt2f)
 
+In a separate original placement test, the game rejected a unit drop on an enemy position.
+The Advisor kept the published advice and search generation at rejection. The settled decision and
+RNG matched the opening, with no additional search or recorded play. A legal paid deployment still
+retired its prior advice in the native Restart Battle test.
+[Rejected deployment observation](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/native-rejected-deployment.mt2f)
+
 The Windows package at source `ff8da324` was tested using the three DLLs extracted from
 the ZIP. The installed 2.3.1 build loaded the Advisor in an isolated profile, captured
 the original deployment, and reproduced the archived Undo observation byte for byte.

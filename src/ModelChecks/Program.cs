@@ -524,6 +524,12 @@ if (args.Length == 2 && args[0] == "--native-advisor-end-turn-only")
     NativeAdvisorEndTurnChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-advisor-rejected-deployment-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    NativeAdvisorRejectedDeploymentChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-little-fade-endless-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

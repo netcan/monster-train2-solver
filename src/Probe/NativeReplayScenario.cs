@@ -1227,6 +1227,12 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && PlayerAdvisorProbe.ObserveRejectedDeployment)
+            {
+                if (PlayerAdvisorProbe.TryCaptureRejectedDeployment(managers, FullBattleTrace.Active!))
+                    Finish(true, PlayerAdvisorProbe.RejectedDeploymentPass);
+                return;
+            }
             if (fullBattle && PlayerAdvisorProbe.ObserveEndTurnConfirmation)
             {
                 if (PlayerAdvisorProbe.TryCaptureEndTurnConfirmation(managers, FullBattleTrace.Active!))

@@ -1039,10 +1039,10 @@ namespace MonsterTrain2Poju.Probe
                 try { __state = Active?.PrepareCardInput(cardState, selfTarget, dropLocation, fromDirectPlay,
                     characterThatActivatedAbility, roomThatActivatedAbility, roomIndexOverride); }
                 catch (Exception error) { Active?.log.LogWarning("POJU-TENTATIVE-INPUT " + error.Message); }
-                NativeAction(reason: "card-play");
             }
             private static void Postfix(bool __result, CardInputState? __state)
             {
+                if (__result) NativeAction(reason: "card-play");
                 try { Active?.CompleteCardInput(__result, __state); }
                 catch (Exception error) { Active?.ShowMessage("正在核对局面…"); Active?.log.LogWarning("POJU-TENTATIVE-DISPLAY " + error.Message); }
             }

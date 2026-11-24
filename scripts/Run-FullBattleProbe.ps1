@@ -23,6 +23,7 @@ param(
     [switch] $AdvisorRestart,
     [switch] $AdvisorUndo,
     [switch] $AdvisorEndTurnConfirmation,
+    [switch] $AdvisorRejectedDeployment,
     [switch] $AdvisorMixPrompt,
     [switch] $AdvisorUnitMixPrompt,
     [switch] $AdvisorSummonPrompt,
@@ -1493,14 +1494,14 @@ if ($AdvisorOffRoute -or $AdvisorRapidContinuation) {
         throw 'AdvisorOffRoute and AdvisorRapidContinuation each need a fresh binary PlayerAdvisor rolling test without scenario controls.'
     }
 }
-if ($AdvisorRestart -or $AdvisorUndo -or $AdvisorEndTurnConfirmation) {
-    $allowed = @('AdvisorRestart', 'AdvisorUndo', 'AdvisorEndTurnConfirmation', 'PlayerAdvisor', 'RollingAdvice', 'BinaryCapture', 'InputProfile',
+if ($AdvisorRestart -or $AdvisorUndo -or $AdvisorEndTurnConfirmation -or $AdvisorRejectedDeployment) {
+    $allowed = @('AdvisorRestart', 'AdvisorUndo', 'AdvisorEndTurnConfirmation', 'AdvisorRejectedDeployment', 'PlayerAdvisor', 'RollingAdvice', 'BinaryCapture', 'InputProfile',
         'PlannerWholeBattle', 'PlannerSearchWorkers', 'PlannerTimeLimitMs', 'GameSpeed',
         'NativeWorker', 'NativeBuildRoot', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
-    if (@($AdvisorRestart, $AdvisorUndo, $AdvisorEndTurnConfirmation | Where-Object { $_ }).Count -ne 1 -or
+    if (@($AdvisorRestart, $AdvisorUndo, $AdvisorEndTurnConfirmation, $AdvisorRejectedDeployment | Where-Object { $_ }).Count -ne 1 -or
         -not ($PlayerAdvisor -and $RollingAdvice -and $BinaryCapture -and $InputProfile) -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
-        throw 'Select one of AdvisorRestart, AdvisorUndo or AdvisorEndTurnConfirmation with a stock Ring 1 InputProfile and binary PlayerAdvisor rolling mode.'
+        throw 'Select one of AdvisorRestart, AdvisorUndo, AdvisorEndTurnConfirmation or AdvisorRejectedDeployment with a stock Ring 1 InputProfile and binary PlayerAdvisor rolling mode.'
     }
     $Policy = 'units-spells-and-junk'
 }
@@ -3090,7 +3091,7 @@ $gameRoot = Join-Path $workspace $(if ($NativeWorker -gt 1) { ".sandbox-game-wor
 if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll') -PathType Leaf)) {
     throw "Native worker $NativeWorker is not initialized; run scripts/Initialize-NativeWorker.ps1 -Worker $NativeWorker first."
 }
-if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorRestart -or $AdvisorUndo -or $AdvisorEndTurnConfirmation -or $AdvisorMixPrompt -or $AdvisorUnitMixPrompt -or $AdvisorSummonPrompt -or
+if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorRestart -or $AdvisorUndo -or $AdvisorEndTurnConfirmation -or $AdvisorRejectedDeployment -or $AdvisorMixPrompt -or $AdvisorUnitMixPrompt -or $AdvisorSummonPrompt -or
     $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth -or $OriginalFunguyDeckScalingDoubleUnits -or
     $OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness -or
     $OriginalPyreAbilityCooldownWitness -or $OriginalPyreStewardDamageWitness -or $OriginalZarielPainWitness -or $OriginalZarielDevotionWitness -or $OriginalEmbeddedRoomWitness -or $OriginalEndlessEnemyScalingWitness -or $EndlessEnemyScalingFactorBatch -or
@@ -3188,7 +3189,7 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     if ($OriginalEntropyDrawWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original Entropy draw requires the pinned 2.3.1 game module.'
     }
-    if (($AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorRestart -or $AdvisorUndo -or $AdvisorEndTurnConfirmation -or $AdvisorMixPrompt -or $AdvisorUnitMixPrompt -or $AdvisorSummonPrompt) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+    if (($AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorRestart -or $AdvisorUndo -or $AdvisorEndTurnConfirmation -or $AdvisorRejectedDeployment -or $AdvisorMixPrompt -or $AdvisorUnitMixPrompt -or $AdvisorSummonPrompt) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "The player advisor observation requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
     if (($OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
@@ -3459,7 +3460,7 @@ if ($InputProfile) {
         throw 'Original opening cohorts require a standard native first-battle checkpoint.'
     }
     if ($CapturePlayerDeploymentOnly) { $deploymentInputSignature = Get-OriginalSignature $checkpoint }
-    if ($AdvisorRestart -or $AdvisorUndo -or $AdvisorEndTurnConfirmation) {
+    if ($AdvisorRestart -or $AdvisorUndo -or $AdvisorEndTurnConfirmation -or $AdvisorRejectedDeployment) {
         if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or $checkpointData.wasDevCheatUsed -ne $false) {
             throw 'Advisor restoration requires an unmodified standard Class checkpoint.'
         }
@@ -3633,6 +3634,7 @@ $environment = @{
     MT2_PROBE_ADVISOR_RESTART = $(if ($AdvisorRestart) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_UNDO = $(if ($AdvisorUndo) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_END_TURN_CONFIRMATION = $(if ($AdvisorEndTurnConfirmation) { '1' } else { '0' })
+    MT2_PROBE_ADVISOR_REJECTED_DEPLOYMENT = $(if ($AdvisorRejectedDeployment) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_MIX_PROMPT = $(if ($AdvisorUnitMixPrompt) { 'unit' } elseif ($AdvisorMixPrompt) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_SUMMON_PROMPT = $(if ($AdvisorSummonPrompt) { '1' } else { '0' })
     MT2_ADVISOR_SCREENSHOT = $(if ($Advisor) { '1' } else { '0' })
@@ -4662,12 +4664,14 @@ if ($AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorMixPrompt -or $Ad
         Trace=$capturePath; SHA256=(Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash } | ConvertTo-Json
     return
 }
-if ($AdvisorRestart -or $AdvisorUndo -or $AdvisorEndTurnConfirmation) {
+if ($AdvisorRestart -or $AdvisorUndo -or $AdvisorEndTurnConfirmation -or $AdvisorRejectedDeployment) {
     $captureName = if ($AdvisorUndo) { 'player-advisor-undo.mt2f' }
         elseif ($AdvisorEndTurnConfirmation) { 'player-advisor-end-turn-confirmation.mt2f' }
+        elseif ($AdvisorRejectedDeployment) { 'player-advisor-rejected-deployment.mt2f' }
         else { 'player-advisor-restart.mt2f' }
     $marker = if ($AdvisorUndo) { 'Player Advisor restored original turn after undo.' }
         elseif ($AdvisorEndTurnConfirmation) { 'Player Advisor preserved advice after canceled end turn and observed accepted end turn.' }
+        elseif ($AdvisorRejectedDeployment) { 'Player Advisor preserved its search after a rejected native deployment.' }
         else { 'Player Advisor restored original deployment after restart.' }
     $capturePath = Join-Path $profile $captureName
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
