@@ -1406,6 +1406,11 @@ Zariel 的 Devotion 路线在法术支付并结算后读取当前等级。原版
 遗物将后排追猎者移到前排，房间名单、物理槽位、附魔目标及随机流均与原版一致。
 [第 2 环受控原版对照](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-ring2-first-wave.mt2f)
 
+无尽第 3 环受控首波复放覆盖三名常规敌人与外侧 Boss Arkion。Arkion 在顶层出生后结算为
+40 攻击、6250 生命，推位参数保持 1。原版出生前后、初始行动、随机流和部署结束后的完整状态均匹配。
+[第 3 环首波](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-ring3-first-wave.mt2f) ·
+[Arkion 出生](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-ring3-arkion-birth.mt2f)
+
 主菜单的原版查询批量记录无尽前 3 轮共 24 个环位，每个环位核对攻击、生命、状态、增益、治疗和伤害六个倍率。
 90 种状态中有 26 种带无尽缩放资格，查询前后确定性随机流一致。
 [原版倍率归档](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-balance-factors.mt2f)

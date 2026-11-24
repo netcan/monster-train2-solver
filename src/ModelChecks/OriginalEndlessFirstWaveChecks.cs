@@ -73,14 +73,14 @@ internal static class OriginalEndlessFirstWaveChecks
         Console.WriteLine("NATIVE-ENDLESS-FIRST-WAVE PASS: original victory transition, six factor queries, three births and unchanged callback RNG.");
     }
 
-    internal static void Forecast(FixtureValue archive)
+    internal static void Forecast(FixtureValue archive, FixtureValue? outerBirth = null)
     {
         FixtureValue scenario = archive.GetProperty("Scenario");
         string? boundary = Text(archive, "Boundary");
         Require(Text(archive, "GameModuleMvid") == Game231FixtureCatalog.Module &&
             !Flag(scenario, "ControlledFirstLoop") && Number(scenario, "Loop") == 1 &&
             (boundary == "OriginalEndlessEnemyScaling" && Number(scenario, "Distance") == 0 ||
-                boundary == "OriginalEndlessEnemyScalingControlledNextRing" && Number(scenario, "Distance") == 1),
+                boundary == "OriginalEndlessEnemyScalingControlledNextRing" && Number(scenario, "Distance") is 1 or 2),
             "Expected one of the pinned original Endless opening waves.");
         BattleTurnState deployment = archive.GetProperty("Deployment").Deserialize<BattleTurnState>()!;
         BattleTurnResult advanced = BattleTurnModel.EndTurn(deployment);
@@ -98,6 +98,30 @@ internal static class OriginalEndlessFirstWaveChecks
             Require(enchanter.Health == 600 && enchanter.Status("armor")?.Stacks == 240 &&
                 enchanter.Status("titanskin")?.Stacks == 30 && enemies.Count(actor => actor.Status("titanskin")?.Stacks == 10) == 3,
                 "Original starting statuses and aura recipients must match.");
+        }
+        if (Number(scenario, "Distance") == 2)
+        {
+            var births = archive.GetProperty("Births").EnumerateArray().ToArray();
+            Require(births.Select(row => (Text(row, "AssetKey"), Number(row.GetProperty("After"), "Attack"),
+                Number(row.GetProperty("After"), "Health"))).SequenceEqual(new[] {
+                    ("HeavyT1_Basic", 10, 250), ("ClericT1_OminousAcolyte", 0, 20), ("ClericT3_IncantAttack_Chosen", 0, 600)
+                }) && births.All(row => row.GetProperty("Before").GetProperty("Rng").ContentEquals(
+                    row.GetProperty("After").GetProperty("Rng"))), "Expected the three original Ring 3 births and unchanged callback RNG.");
+            OuterBossProgress? boss = advanced.State!.Spawn.OuterBoss;
+            CombatUnit? actor = advanced.State.Spawn.Train.Rooms.SelectMany(room => room.Units).SingleOrDefault(unit => unit.Id == boss?.UnitId);
+            Require(boss is { AssetKey: "Boss_Level3_Arkion_PushAttack", Room: 2 } &&
+                actor is { Attack: 40, Health: 6250, MaxHealth: 6250 }, "The original Endless Arkion birth must settle at 40 attack and 6250 HP.");
+            if (outerBirth is { } nativeBoss)
+            {
+                OuterBossBirthChecks.Native(nativeBoss, Game231FixtureCatalog.Module);
+                FixtureValue scale = nativeBoss.GetProperty("Births")[0].GetProperty("EndlessScaling");
+                FixtureValue before = scale.GetProperty("Before"), after = scale.GetProperty("After");
+                Require(Text(scale, "AssetKey") == boss!.AssetKey && Number(scale, "BaselineAttack") == 25 &&
+                    Number(scale, "BaselineHealth") == 2500 && Number(before, "Attack") == 13 && Number(before, "Health") == 425 &&
+                    Number(after, "Attack") == actor!.Attack && Number(after, "Health") == actor.Health &&
+                    before.GetProperty("Rng").ContentEquals(after.GetProperty("Rng")),
+                    "The live Arkion callback must record the ordered before/after stats and unchanged RNG.");
+            }
         }
         Console.WriteLine("NATIVE-ENDLESS-FORECAST PASS: complete deployment successor and original first-wave RNG.");
     }

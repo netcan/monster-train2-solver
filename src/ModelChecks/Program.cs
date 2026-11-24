@@ -20,10 +20,11 @@ if (args.Length == 4 && args[0] == "--original-endless-first-wave-only")
     OriginalEndlessFirstWaveChecks.Native(transition.RootElement, natural.RootElement, controlled.RootElement);
     return;
 }
-if (args.Length == 2 && args[0] == "--original-endless-forecast-only")
+if (args.Length is 2 or 3 && args[0] == "--original-endless-forecast-only")
 {
     using var archive = ModelJson.ReadFixture(args[1]);
-    OriginalEndlessFirstWaveChecks.Forecast(archive.RootElement);
+    using var boss = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    OriginalEndlessFirstWaveChecks.Forecast(archive.RootElement, boss?.RootElement);
     return;
 }
 if (args.Length == 2 && args[0] == "--original-endless-waves-only")
