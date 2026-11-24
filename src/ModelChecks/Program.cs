@@ -500,6 +500,12 @@ if (args.Length == 2 && args[0] == "--native-lazarus-devour-only")
     OriginalLazarusDevourChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-glutton-onfeed-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalGluttonOnFeedChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] is "--native-advisor-restart-only" or "--native-advisor-undo-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

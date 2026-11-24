@@ -666,6 +666,11 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 在隔离手牌加入一张原版助手。三个等级的合法目标、结算后继和随机流均通过精确复放。
 [Devour 原版归档](../tests/compatibility/game-2.3.1/mechanics/lazarus-devour/manifest.tsv)
 
+原版 MonsterGlutton 受火把伤害后以 47/50 生命进食。原版 Morsel Miner 和 Feast 将生命结算到
+59/59，同层自然出场的 Shield Guard 护甲从 25 降至 5，Miner 的来源卡进入 Eaten。三次原版操作
+的完整后继和随机流一致，求解器也枚举到了这三步。测试将未修改的原版卡加入隔离手牌后付费执行。
+[MonsterGlutton 进食归档](../tests/compatibility/game-2.3.1/mechanics/glutton-onfeed/native-glutton-onfeed.mt2f)
+
 原版 Starter Frostbite Discard 零费对敌方前排施加 8 层霜寒，并从合格手牌中随机弃一张。
 2 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`starter-frostbite-discard.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/starter-frostbite-discard.mt2f)
