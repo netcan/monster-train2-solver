@@ -103,6 +103,11 @@ namespace MonsterTrain2Poju.Probe
         internal static void Write(ManualLogSource log)
         {
             if (!Enabled) return;
+            if (Records.Count == 0 && Errors.Count == 0 && Environment.GetEnvironmentVariable("MT2_PROBE_REGION_RUN_INPUT") == "1" &&
+                AllGameManagers.Instance?.GetHeroManager() is HeroManager heroes &&
+                AccessTools.Field(typeof(HeroManager), "spawnPattern").GetValue(heroes) is SpawnPatternData pattern &&
+                pattern.GetBossType() == SpawnPatternData.BossType.None)
+                return;
             using (var document = NativeFixtureCapture.Capture(new { Schema = 1, GameModuleMvid = typeof(CardState).Assembly.ManifestModule.ModuleVersionId,
                 Boundary = "AfterCreateHeroStateBeforeInitialBossAction", Births = Records, Errors }))
             using (var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "outer-boss-birth-calibration.mt2f"))) document.Write(output);
