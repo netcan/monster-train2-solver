@@ -42,6 +42,7 @@ namespace MonsterTrain2Poju.Probe
             return save.GetCovenants().Count == 0 && save.GetMutators().Count > 0 &&
                 save.GetMutators().All(owner => OriginalStartRoomAttachmentScenario.SupportsInfernoMutator(owner, save) ||
                     RelicProbe.SupportsStatusMultiplier(owner) ||
+                    BattleSpawnPointProbe.Enabled && RelicProbe.SupportsShuffleUnits(managers, owner) ||
                     BattleSpawnPointProbe.Enabled && SupportsLonelyRooms(owner, save) ||
                     SupportsUnhealed(owner) ||
                     CardBranchMaskProbe.Enabled && SupportsHandOrEmber(owner, save) ||

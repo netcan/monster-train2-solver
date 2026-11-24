@@ -2322,6 +2322,8 @@ namespace MonsterTrain2Poju.Model
                 if (enqueueCharacterTrigger == null && !runningTriggerQueue) DrainLocalTriggerQueue();
                 Clear(true);
                 if (!source.Preview && context != null && !battleWon) RunRoomPostCombatEffects();
+                if (!source.Preview && !source.Deployment && !battleWon && unsupportedReason == null &&
+                    RelicShuffleUnitsModel.Active(context)) RunRelicShuffleUnits();
                 if (context != null && !battleWon && !units.Any(unit => unit.Source.IsPyre && !unit.Alive))
                     RunEndTurnHealthRelics();
                 if (unsupportedReason != null) return Finish(RoomOutcome.Unsupported);
@@ -2347,6 +2349,62 @@ namespace MonsterTrain2Poju.Model
                 }
                 return Finish(battleWon ? RoomOutcome.BattleWon : units.Any(unit => unit.Source.IsPyre && !unit.Alive)
                     ? RoomOutcome.PlayerDefeated : RoomOutcome.Cleared);
+            }
+
+            private void RunRelicShuffleUnits()
+            {
+                foreach (CombatTeam team in new[] { CombatTeam.Player, CombatTeam.Enemy })
+                {
+                    RoomCombatState room = CurrentRoom();
+                    BattleSpawnPoints? physical = context!.SpawnPoints;
+                    WorkingUnit[] movable = units.Where(unit => unit.Alive && unit.InRoom && !unit.Destroyed &&
+                        unit.Source.Team == team && !unit.Source.IsPyre && !unit.Has("immobile") &&
+                        physical?.Units.FirstOrDefault(point => point.UnitId == unit.Source.Id)?.OuterBoss != true).ToArray();
+                    if (movable.Length < 2) continue;
+                    if (movable.Length != 2 || physical == null || physical.ActiveCopies.Count != 0 ||
+                        context.Relics!.Any(owner => owner.EffectTypes.Any(type => type == RelicEndTurnHealthModel.Effect ||
+                            type == RelicOccupiedFloorDrawModel.Effect || type == RelicFreezeHandUpgradeModel.Effect)))
+                    {
+                        unsupportedReason = "ShuffleUnits requires a calibrated same-team pair with primary physical points.";
+                        return;
+                    }
+                    SpawnPointGroupState? group = physical.SelectedGroup(source.RoomIndex, team);
+                    int first = group?.Occupants.ToList().IndexOf(movable[0].Source.Id) ?? -1;
+                    int second = group?.Occupants.ToList().IndexOf(movable[1].Source.Id) ?? -1;
+                    if (first < 0 || second < 0 || first == second)
+                    {
+                        unsupportedReason = "ShuffleUnits could not resolve both original physical slots.";
+                        return;
+                    }
+                    if (first > second) (movable[0], movable[1]) = (movable[1], movable[0]);
+
+                    UnityRng rng = context.BattleRng;
+                    if (rng.Equals(default))
+                    {
+                        unsupportedReason = "ShuffleUnits requires a valid captured Battle RNG state.";
+                        return;
+                    }
+                    RngDraw draw;
+                    do
+                    {
+                        draw = rng.Range(0, movable.Length);
+                        rng = draw.State;
+                    } while (draw.Value == 0);
+
+                    BattleSpawnPointResult swapped = BattleSpawnPointModel.Apply(physical, room, "Swap", team,
+                        index: first, targetIndex: second);
+                    if (!swapped.Supported) { unsupportedReason = swapped.Error; return; }
+                    context = context.WithBattleRng(rng).WithSpawnPoints(swapped.State!);
+                    OrderPhysicalUnits();
+                    context = ConduitModel.Order(context, source.RoomIndex, CurrentRoom().Units);
+                    SelectNotificationRoom(source.RoomIndex);
+                    if (unsupportedReason != null) return;
+                    foreach (WorkingUnit actor in movable)
+                    {
+                        FireTriggers(actor, "OnShift");
+                        if (unsupportedReason != null || battleWon) return;
+                    }
+                }
             }
 
             private void RunEndTurnHealthRelics()

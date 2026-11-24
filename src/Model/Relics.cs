@@ -482,6 +482,11 @@ namespace MonsterTrain2Poju.Model
                             relics.Count(RelicPercentageStatModel.IsOriginalUnhealed) == 1) continue;
                         return "Missing, changed or duplicate original unhealed percentage health owner.";
                     }
+                    if (effect == RelicShuffleUnitsModel.Effect)
+                    {
+                        if (RelicShuffleUnitsModel.IsOriginal(relic) && relics.Count(RelicShuffleUnitsModel.IsOriginal) == 1) continue;
+                        return "Missing, changed or duplicate original ShuffleUnits owner.";
+                    }
                     if (effect == RelicSpellDamageMoveModel.Effect)
                     {
                         if (RelicSpellDamageMoveModel.IsOriginal(relic) && relics.Count(RelicSpellDamageMoveModel.IsOriginal) == 1)

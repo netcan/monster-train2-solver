@@ -50,6 +50,18 @@ namespace MonsterTrain2Poju.Probe
             owner.GetEffects() is [var effect] && effect.GetType().Name == RelicStatusStackModel.MultiplierEffect &&
             StatusMultiplier(effect, 0) is { MultiplierPercent: 200, SourceTeam: "None" };
 
+        internal static bool SupportsShuffleUnits(AllGameManagers managers, RelicState owner)
+        {
+            if (owner.GetRelicDataID() != RelicShuffleUnitsModel.OwnerId ||
+                owner.GetAssetName() != RelicShuffleUnitsModel.OwnerKey || !owner.DisallowedInPlacementPhase ||
+                owner.GetEffects() is not [RelicEffectShuffleUnitsEndOfTurn effect] || effect.CanApplyInPreviewMode)
+                return false;
+            var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect);
+            return data.GetEffectConditions().Count == 0 && data.GetTargetMode() == TargetMode.Room &&
+                data.GetParamSourceTeam() == Team.Type.None && Current(managers).All(other => other.GetEffects().All(candidate =>
+                    ReferenceEquals(candidate, effect) || candidate is not (ITurnPhaseEndOfTurnRelicEffect or IFloorRearrangeRelicEffect)));
+        }
+
         private static RelicStatusStacks StatusMultiplier(IRelicEffect effect, int index)
         {
             var data = (RelicEffectData)AccessTools.Field(typeof(RelicEffectBase), "_srcRelicEffectData").GetValue(effect);
