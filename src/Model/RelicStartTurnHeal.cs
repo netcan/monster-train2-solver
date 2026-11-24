@@ -65,10 +65,11 @@ namespace MonsterTrain2Poju.Model
                     if (onlyEffect.HasValue && rule.EffectIndex != onlyEffect) continue;
                     int callbackNumber = turn;
                     if (rule.MaxTurns == 0 || callbackNumber < 1 || callbackNumber > rule.MaxTurns) continue;
+                    bool allSubtypes = OriginalAllSubtypesModel.Active(state.Context, placement);
                     // Native TargetMode.Tower spans all player floors despite roomIndex being populated.
                     var targets = state.Rooms.SelectMany(room => room.Units
                         .Where(unit => unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0 &&
-                            unit.Subtypes.Contains(rule.RequiredSubtype!))
+                            OriginalAllSubtypesModel.MatchesCharacter(unit, rule.RequiredSubtype!, allSubtypes))
                         .Select(unit => (room.RoomIndex, unit.Id))).ToArray();
                     foreach ((int roomIndex, int targetId) in targets)
                     {

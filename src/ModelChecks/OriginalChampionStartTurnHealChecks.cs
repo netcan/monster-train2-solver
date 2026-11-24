@@ -101,6 +101,15 @@ internal static class OriginalChampionStartTurnHealChecks
         Require(placement.Supported && Same(placement.State!, positive.Before),
             "Placement-phase exclusion changed the healing state.");
 
+        var allSubtypes = new CombatRelicState(OriginalAllSubtypesModel.OwnerId, OriginalAllSubtypesModel.OwnerKey,
+            [OriginalAllSubtypesModel.Effect], isCovenant: false, disallowedInPlacementPhase: false);
+        CombatContext before = positive.Before.Context!;
+        TrainCombatState combined = WithContext(positive.Before, before.WithRelics(before.Relics!.Append(allSubtypes).ToArray()));
+        RelicStartTurnHealResult combinedHeal = RelicStartTurnHealModel.Apply(combined, positive.Turn, positive.SelectedRoom);
+        Require(combinedHeal.Supported && CardUnit(combinedHeal.State!, cards[1]).Health == peerBefore.MaxHealth &&
+            combinedHeal.State!.Context!.BattleRng.Equals(before.BattleRng),
+            "The all-subtypes owner did not admit the native wounded non-Champion control.");
+
         TrainCombatState capped = WithMaxTurns(positive.Before, 1);
         RelicStartTurnHealResult afterCap = RelicStartTurnHealModel.Apply(capped, positive.Turn + 1, positive.SelectedRoom);
         Require(afterCap.Supported && Same(afterCap.State!, capped),
