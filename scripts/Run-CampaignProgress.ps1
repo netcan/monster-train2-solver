@@ -10,6 +10,7 @@ param(
     [string] $NewRunFromProfile = '',
     [string] $BattleReplay = '',
     [switch] $RegionRun,
+    [switch] $ObserveSilverT1PostBattle,
     [switch] $CompleteDefeat,
     [switch] $ObserveEndlessAfterVictory,
     [string[]] $ExcludeUpgradeTrait = @(),
@@ -39,6 +40,14 @@ if ($CaptureBeforeMap -and ($StopBeforeRing -lt 2 -or $StoryProgressionOnly -or 
     throw 'CaptureBeforeMap requires campaign progression after a battle victory.'
 }
 $explicitStartingCovenant = $PSBoundParameters.ContainsKey('StartingCovenantLevel')
+if ($ObserveSilverT1PostBattle) {
+    $silverArguments = @('ObserveSilverT1PostBattle', 'RegionRun', 'StopBeforeRing', 'InputProfile', 'NativeWorker',
+        'TimeoutSeconds', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (!$RegionRun -or !$InputProfile -or $StopBeforeRing -ne 2 -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $silverArguments }).Count) {
+        throw 'SilverT1 post-battle observation requires an isolated RegionRun prologue input and StopBeforeRing 2.'
+    }
+}
 if ($RegionRun -and ($BattleReplay -or $StoryProgressionOnly -or $CaptureBeforeMap -or $MapBranch -or
     $PrimaryClan -or $SecondaryClan -or $explicitStartingCovenant)) {
     throw 'RegionRun uses the native Soul Savior setup choices and battle checkpoints.'
@@ -99,6 +108,10 @@ if ($RegionRun) {
         ($InputProfile -and ($regionSave.gameSequence -ne 6 -or $null -eq $regionSave.runState)) -or
         (-not $InputProfile -and $regionSave.gameSequence -ne 0)) {
         throw 'Expected an idle native RegionRun save or a RegionRun BattleIntro checkpoint.'
+    }
+    if ($ObserveSilverT1PostBattle -and ($regionSave.runState.distance -ne 0 -or
+        $regionSave.runState.numBattlesCompleted -ne 0 -or $regionSave.startingConditions.seed -ne 424242)) {
+        throw 'SilverT1 post-battle observation requires the untouched seed 424242 prologue checkpoint.'
     }
     if ($InputProfile -and $StopBeforeRing -lt ([int]$regionSave.runState.numBattlesCompleted + 1)) {
         throw 'The requested battle has already been completed in the RegionRun checkpoint.'
@@ -193,6 +206,7 @@ $inputSaveHash = (Get-FileHash -LiteralPath $savePath -Algorithm SHA256).Hash
 $inputMetagameHash = (Get-FileHash -LiteralPath (Join-Path $source 'metagameSave.json') -Algorithm SHA256).Hash
 [pscustomobject]@{ InputProfile = $source; InputSaveSHA256 = $inputSaveHash; InputMetagameSHA256 = $inputMetagameHash;
     NewRunFromProfile = [bool]$NewRunFromProfile; RegionRun = [bool]$RegionRun;
+    ObserveSilverT1PostBattle = [bool]$ObserveSilverT1PostBattle;
     StopBeforeRing = $StopBeforeRing; Seed = $Seed; NativeWorker = $NativeWorker; ExcludeUpgradeTrait = $ExcludeUpgradeTrait;
     PrimaryClan = $PrimaryClan; SecondaryClan = $SecondaryClan; StartingCovenantLevel = $StartingCovenantLevel;
     ExplicitStartingCovenant = $explicitStartingCovenant;
@@ -256,6 +270,7 @@ $settings = @{
     MT2_PROBE_PRIMARY_CLAN = $PrimaryClan; MT2_PROBE_SECONDARY_CLAN = $SecondaryClan
     MT2_PROBE_CAMPAIGN_STOP_RING = "$StopBeforeRing"; MT2_PROBE_SETTLE_CARD_ANIMATIONS = '1'
     MT2_PROBE_CAMPAIGN_REGION = $(if ($RegionRun) { '1' } else { '0' })
+    MT2_PROBE_CAMPAIGN_SILVER_T1 = $(if ($ObserveSilverT1PostBattle) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_STORY_ONLY = $(if ($StoryProgressionOnly) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_EXCLUDED_UPGRADE_TRAITS = ($ExcludeUpgradeTrait -join ';')
     MT2_PROBE_CAMPAIGN_SKIP_MERCHANT_PURCHASES = $(if ($SkipMerchantPurchases) { '1' } else { '0' })
@@ -352,6 +367,14 @@ if ($RegionRun -and $passed) {
     }
 }
 $runOutcome = @($audit | Where-Object kind -EQ 'run-outcome')
+$silverEvidence = $null
+if ($ObserveSilverT1PostBattle -and $passed) {
+    $path = Join-Path $profile 'original-silver-natural-postbattle.mt2f'
+    $victories = @($audit | Where-Object { $_.kind -eq 'battle-outcome' -and $_.data.won })
+    $passed = $victories.Count -eq 1 -and (Test-Path -LiteralPath $path -PathType Leaf) -and
+        @($snapshot.souls | Where-Object relicDataID -CEQ '50198df9-788c-4618-942a-57361c585a57').Count -eq 1
+    if ($passed) { $silverEvidence = $path }
+}
 $endlessEvidence = $null
 if ($ObserveEndlessAfterVictory -and $passed) {
     $path = Join-Path $profile 'native-endless-transition.mt2f'
@@ -456,6 +479,7 @@ $summary = [pscustomobject]@{ Profile = $profile; NativePassed = $passed; ExitCo
     OriginalFilesUnchanged = $unchanged; Events = $audit.Count; BattlesWon = @($audit | Where-Object { $_.kind -eq 'battle-outcome' -and $_.data.won }).Count;
     FinalSaveSHA256 = $(if (Test-Path -LiteralPath $savePath) { (Get-FileHash -LiteralPath $savePath -Algorithm SHA256).Hash } else { $null }) }
 if ($ObserveEndlessAfterVictory) { $summary | Add-Member -NotePropertyName NativeEndlessTransition -NotePropertyValue $endlessEvidence }
+if ($ObserveSilverT1PostBattle) { $summary | Add-Member -NotePropertyName NativeSilverT1PostBattle -NotePropertyValue $silverEvidence }
 $summary | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $profile 'campaign-summary.json')
 $summary | ConvertTo-Json -Compress
 if (-not $passed) { throw "Native campaign did not complete: $profile" }

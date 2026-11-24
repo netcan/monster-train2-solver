@@ -521,7 +521,13 @@ namespace MonsterTrain2Poju.Probe
                 }
                 if (ring >= stopRing) { Finish(true, "Native campaign checkpoint ready before ring " + ring); return; }
                 if ((bool)AccessTools.Field(typeof(BattleIntroScreen), "isFightButtonAvailable").GetValue(intro))
+                {
+#if DEVELOPMENT_PROBE
+                    if (OriginalSilverPostBattleWitness.NaturalEnabled)
+                        OriginalSilverPostBattleWitness.AttachBeforePrologue(save, m!.GetRelicManager());
+#endif
                     Click(intro.GetFightButton(), "fight");
+                }
                 return;
             }
             if (save.GetGameSequence() == SaveData.GameSequence.InBattle) PlayBattle(m!, save);
@@ -852,6 +858,10 @@ namespace MonsterTrain2Poju.Probe
             SaveManager save = AllGameManagers.Instance.GetSaveManager();
             if (regionRun)
             {
+#if DEVELOPMENT_PROBE
+                if (ring == 2 && OriginalSilverPostBattleWitness.NaturalEnabled)
+                    OriginalSilverPostBattleWitness.WriteNextIntro(save, destination, hash);
+#endif
                 Record("checkpoint", new { ring, profile = destination, sha256 = hash, runType = save.GetRunType().ToString(),
                     distance = save.GetCurrentDistance(), scenario = save.GetCurrentScenarioData().name,
                     battles = save.GetRunState().GetNumBattlesCompleted() });
