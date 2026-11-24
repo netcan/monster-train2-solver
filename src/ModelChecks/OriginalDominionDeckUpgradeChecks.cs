@@ -4,6 +4,38 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalDominionDeckUpgradeChecks
 {
+    internal static void SavageryCombat(FixtureValue witness)
+    {
+        Require(Text(witness, "GameVersion") == Game231FixtureCatalog.Version &&
+            Text(witness, "GameModuleMvid") == Game231FixtureCatalog.Module &&
+            Text(witness, "Boundary") == "OriginalSavageryChampionCombat", "Expected the original Savagery champion combat capture.");
+        var root = witness.GetProperty("DeploymentBefore").Deserialize<BattleTurnState>()!;
+        var action = witness.GetProperty("Deployment").Deserialize<PlayCardAction>()!;
+        var played = BattleActionModel.PlayCard(root, action);
+        Require(played.Supported, played.Reason ?? "Expected supported original Savagery champion deployment.");
+        BattleTurnState deployed = RecordedBattleChecks.RecordedBoundary(played.State!, witness.GetProperty("DeploymentAfter"),
+            terminal: false, "original Savagery champion deployment", trackPreviewPosition: true);
+        int id = witness.GetProperty("unitId").GetInt32();
+        int lost = witness.GetProperty("ControlledMissingHealth").GetInt32();
+        CombatUnit Champion(BattleTurnState state) => state.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(actor => actor.Id == id);
+        CombatUnit healthy = Champion(deployed);
+        var afterWound = witness.GetProperty("AfterWound").Deserialize<BattleTurnState>()!;
+        CombatUnit wounded = Champion(afterWound);
+        FixtureValue before = witness.GetProperty("Healthy"), after = witness.GetProperty("Wounded");
+        int beforeBonus = UnitSelfAttackModel.Additional(healthy, deployed.Spawn.Train.Context);
+        int afterBonus = UnitSelfAttackModel.Additional(wounded, afterWound.Spawn.Train.Context);
+        Require(lost == 3 && healthy.SpawnerCardId == action.CardInstanceId && healthy.Health == healthy.MaxHealth &&
+            wounded.Health == healthy.Health - lost && wounded.MaxHealth == healthy.MaxHealth &&
+            beforeBonus == before.GetProperty("StatsBonus").GetInt32() && afterBonus == after.GetProperty("StatsBonus").GetInt32() &&
+            after.GetProperty("Attack").GetInt32() - before.GetProperty("Attack").GetInt32() == afterBonus - beforeBonus &&
+            before.GetProperty("CombatBonus").GetInt32() == 0 && after.GetProperty("CombatBonus").GetInt32() == 0 &&
+            before.GetProperty("Rng").ContentEquals(after.GetProperty("Rng")), "Expected +6 native attack after the 3 HP control and unchanged RNG.");
+        var candidates = BattleActionModel.EnumerateActions(root, action.CardInstanceId, includeAbilities: false);
+        Require(!candidates.HasUnsupportedAttempts && candidates.SupportedActions.Any(candidate => candidate.RoomIndex == action.RoomIndex),
+            "The original Savagery champion deployment must be available to the search.");
+        Console.WriteLine("NATIVE-SAVAGERY-COMBAT PASS: exact paid champion deployment, +6 attack after a controlled 3 HP wound, unchanged callback RNG.");
+    }
+
     internal static void Savagery(FixtureValue witness)
     {
         FixtureValue owner = witness.GetProperty("Owner");

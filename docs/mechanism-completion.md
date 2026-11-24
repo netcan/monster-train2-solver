@@ -1432,8 +1432,10 @@ Zariel 的 Devotion 路线在法术支付并结算后读取当前等级。原版
 [原版永久副本归档](../tests/compatibility/game-2.3.1/mechanics/dominion-deck-upgrade/native-paid-copy.mt2f)
 
 原版 Savagery 在冠军永久入库时按原版升级池顺序应用三项升级。普通单位和法术的对照无升级，
-三次入库的随机流一致。共用入库规则和升级数据通过定向复放，战斗中的冠军失血增攻另行实测。
-[原版 Savagery 入库归档](../tests/compatibility/game-2.3.1/mechanics/dominion-deck-upgrade/native-savagery-deck-entry.mt2f)
+三次入库的随机流一致。完成三项升级的 Fel 经原版付费部署，完整后继与候选通过定向复放。
+在独立的 3 点失血对照中，攻击查询增加 6，战斗随机流一致。
+[原版 Savagery 入库归档](../tests/compatibility/game-2.3.1/mechanics/dominion-deck-upgrade/native-savagery-deck-entry.mt2f) ·
+[原版付费部署归档](../tests/compatibility/game-2.3.1/mechanics/dominion-deck-upgrade/native-savagery-paid-champion.mt2f)
 
 原版 `DoubleGoldEarned` 和 `HalfGoldEarned` 分别把同一档 250 金奖励结算为 500 金和 125 金。
 两档均按原价扣除 3 金，奖励与支出过程的确定性随机流保持一致。

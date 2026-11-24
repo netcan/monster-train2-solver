@@ -1,5 +1,11 @@
 using System.Collections.Concurrent;
 using MonsterTrain2Poju.Model;
+if (args.Length == 2 && args[0] == "--original-savagery-combat-only")
+{
+    using var archive = ModelJson.ReadFixture(args[1]);
+    OriginalDominionDeckUpgradeChecks.SavageryCombat(archive.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-savagery-deck-upgrade-only")
 {
     using var archive = ModelJson.ReadFixture(args[1]);
