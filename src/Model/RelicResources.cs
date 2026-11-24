@@ -366,7 +366,7 @@ namespace MonsterTrain2Poju.Model
             type == RelicTurnDrawModel.FullHealth || type == RelicRelentlessDrawModel.Effect || type == RelicTurnDrawModel.Opening || type == RelicDeckTurnDrawModel.Effect || type == RelicOccupiedFloorDrawModel.Effect ||
             type == RelicCardPlayDamageModel.Effect || type == RelicConsumeDamageModel.Effect || RelicFriendlyTriggerDamageModel.IsEffect(type) || type == RelicHealDamageModel.Effect || type == RelicUnitSpawnEffectModel.Effect ||
             RelicUnitResourceModel.IsEffect(type) || RelicCardDrawOnHealModel.IsEffect(type) || type == RelicDevotionOnDamageModel.Effect || type == RelicRandomDrawCostModel.Effect || type == RelicSuppressExhaustModel.Effect || type == RelicEndTurnHealthModel.Effect || type == RelicCardTypeSequenceModel.Effect || type == RelicPactDrawModel.Effect ||
-            RelicUnitTriggerCardGenerationModel.IsEffect(type) ||
+            RelicUnitTriggerCardGenerationModel.IsEffect(type) || type == RelicAscensionHealModel.Effect ||
             RelicOpeningDrawModel.IsEffect(type) || IsOpeningCorruption(type) || type == PileStartTurn || type == StartTurnHeal ||
             type == StartTurnRoomEffect || type == PostOpeningDiscardReplacement || type == RelicSingleFloorCapacityModel.Effect ||
             RelicOpeningCapacityModel.IsEffect(type) || type == RelicGoldMagicPowerModel.Effect || type == RelicTurnEndBumpModel.Effect || type == RelicOpeningPyreDamageModel.Effect || type == RelicMooncycleRoomEffectModel.Effect || type == RelicDeckPyreStatsModel.Effect || type == RelicUnitSpawnCountModel.Effect;
@@ -383,6 +383,8 @@ namespace MonsterTrain2Poju.Model
             foreach (RelicResourceEffect rule in rules)
             {
                 if (rule.Type != relic.EffectTypes[rule.EffectIndex]) return "Relic resource runtime type differs from its effect index.";
+                if (rule.Type == RelicAscensionHealModel.Effect && RelicAscensionHealModel.Validate(relic, rule) is string ascendError)
+                    return ascendError;
                 if (rule.Type == RelicUnitSpawnCountModel.Effect)
                 {
                     string? spawnCountError = RelicUnitSpawnCountModel.Validate(relic, rule);

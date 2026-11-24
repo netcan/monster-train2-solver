@@ -651,6 +651,13 @@ namespace MonsterTrain2Poju.Probe
                 amount = data.GetParamInt();
             else if (effect is RelicEffectAddGoldOnExhaust)
                 amount = data.GetParamInt();
+            else if (effect is RelicEffectHealEnemyOnAscend)
+            {
+                if (data.GetParamExcludeCharacterSubtypes().Select(subtype => subtype.Key).ToArray() is not
+                    [RelicAscensionHealModel.Boss, RelicAscensionHealModel.TreasureCollector])
+                    throw new InvalidOperationException("The original Ascend trial healing exclusions changed.");
+                amount = data.GetParamInt();
+            }
             else if (effect is RelicEffectEnergyOnCorruptRestrictedPlayed)
                 amount = (int)AccessTools.Field(effect.GetType(), "energyChange").GetValue(effect);
             else if (effect is RelicEffectCorruptionOnCorruptRestrictedPlayed)

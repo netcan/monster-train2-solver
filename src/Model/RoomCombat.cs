@@ -4981,6 +4981,15 @@ namespace MonsterTrain2Poju.Model
                             context = RelicPersistentMonsterHealthModel.Record(context!, unit.Source, kind == "OnDeath" ? 0 : unit.Health);
                         continue;
                     }
+                    if (relic.EffectTypes[effectIndex] == RelicAscensionHealModel.Effect)
+                    {
+                        if (kind != "PostAscension" || !unit.Alive || !RelicAscensionHealModel.Eligible(unit.Source)) continue;
+                        var heal = relic.ResourceEffects!.Single(effect => effect.EffectIndex == effectIndex);
+                        if (!source.Preview || heal.CanApplyInPreviewMode)
+                            Heal(unit, heal.Amount, "RelicAscensionHeal");
+                        if (unsupportedReason != null) return false;
+                        continue;
+                    }
                     if (relic.EffectTypes[effectIndex] == RelicDecayDeathModel.Effect)
                     {
                         if (!RelicDecayDeathModel.Test(unit.Freeze(), kind, paramInt2)) continue;

@@ -9075,6 +9075,12 @@ if (args.Length == 2 && args[0] is "--original-status-magnitude-witness-only" or
     OriginalStatusMagnitudeWitnessChecks.Check(document.RootElement, moon: args[0] == "--original-moon-status-magnitude-witness-only");
     return;
 }
+if (args.Length == 2 && args[0] == "--original-heal-on-ascend-only")
+{
+    using var document = ModelJson.ReadFixture(args[1]);
+    OriginalHealOnAscendChecks.Check(document.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-magnitude-relics-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);
