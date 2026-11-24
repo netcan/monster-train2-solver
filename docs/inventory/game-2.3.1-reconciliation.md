@@ -8,15 +8,14 @@
 
 | 待办分类 | 类数 | 含目录引用 | 含类型声明 |
 | --- | ---: | ---: | ---: |
-| inspect-inherited-code | 1 | 1 | 1 |
 | inspect-projection-normalization | 53 | 53 | 53 |
 | inspect-guard-links | 42 | 42 | 42 |
 | review-existing-code | 226 | 226 | 226 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 282 | 0 | 0 |
-| scoped-review-recorded | 123 | 119 | 119 |
+| scoped-review-recorded | 124 | 120 | 120 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 125 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 126 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -33,6 +32,7 @@
 | CardEffectAddStatusEffectPerFriendlyMissingHp | shared-path | Original Collector skill receives four exact Pain totals (5, 18, 28, 28), before the ordinary damage pipeline consumes the new stacks in the same skill. Seven native friendly-health queries include the Pyre. The unchanged paid sequence and serial and parallel search agree. |
 | CardEffectAddStatusEffectPerMissingHp | shared-path | Original Oil uses each occupant's own missing health to add Armor on the selected floor. Positive and full-health controls agree through three native per-target callbacks. All 28 paid inputs, seven turns and sixteen branches replay, with zero unsupported candidates in the checked search. |
 | CardEffectAddStatusEffectPerSelfAttack | shared-path | Original Dutiful Armor grants twelve Armor to each native target in six positive applications across three PostCombat callbacks. The settled whole battle matches 28 plays, five EndTurns, both frontiers and sixteen branches. |
+| CardEffectAddStatusToRoomScalingByCasterStatusCount | shared-path | The pinned 2.3.1 catalog records Savior II as Self and Savior III as a friendly Room effect. Each grants Valor before the final effect reads the caster's Valor for Armor. Both prior-version original recordings still replay six paid actions and five EndTurns with 16 independent branches each. Fresh 2.3.1 paid execution of those two ranks is still open. |
 | CardEffectAddUpgradedCopy | shared-path | The original Fecundity upgrade on Train Steward consumes one Ember and produces a separate hand card with temporary successor cost plus one. The source retains its original permanent upgrade. The scoped paid-action check covers exact state, RNG, and the solver candidate. |
 | CardEffectAdjustRoomCapacity | shared-path | The original FavoredChild_2 boss lowers player capacity in three native applications and retains enemy capacity. Six bound checks, nine TestEffect calls and two oversize occupied states match. The first post-combat pair independently proves reduction before self OnFeed. |
 | CardEffectBump | shared-path | The exact Railforged attacker OnKill and its later Armor grant match bottom and cross-floor original exchanges. The destination shifted actors, Sacrificial Chamber entry, physical slots and RNG agree. Lifemother Reanimate supplies the corresponding settled whole battle. |
@@ -92,7 +92,7 @@
 | RelicEffectDamagePyreOnMerchantPurchase | input-only | Native MerchantScreen.TryPurchase and merchant reward completion call ApplyPyreDamageForMerchantPurchaseIfNecessary. The HP change and its relic notifications settle during the purchase. A later battle reads the resulting health and relic state. |
 | RelicEffectDisableRoomPreview | shared-path | The pinned NoCombatPreviews mutator disables the native room forecast across all recorded decision states. The original win matches 21 plays, seven EndTurns, both candidate frontiers and 16 independent branches. Verified by --native-disabled-room-preview-only and the recorded battle checks. |
 | RelicEffectDrawCardAfterEachClanPlayed | shared-path | Pinned two-round control verifies seven paid cards, first distinct clan pairing each turn, no repeat bonus and two native resets. The unchanged opening win matches 39 plays, seven EndTurns and both candidate frontiers. |
-| RelicEffectEndlessScalingOnSpawn | shared-path | Original victory and controlled first-ring entries reach the same opening wave. Six EndTurns match 21 ordered first-ring births. The first-ring loss replays 36 plays and nine EndTurns. Controlled Ring 2 covers Armor, Titanskin, aura and spawn ordering. Controlled Ring 3 verifies Arkion placement at 40 attack and 6250 HP, and four EndTurns to native defeat with 16 branches. Native queries cover 24 balance points. Other actor shapes and original later-loop battle behavior remain to be verified. |
+| RelicEffectEndlessScalingOnSpawn | shared-path | Original victory and controlled first-ring entries reach the same opening wave. Six EndTurns match 21 ordered first-ring births. The first-ring loss replays 36 plays and nine EndTurns. Controlled Ring 2 covers Armor, Titanskin, aura and spawn ordering. Controlled Ring 3 verifies Arkion placement and four EndTurns to native defeat with 16 branches. The controlled native Loop 2 entry verifies five births including Horde death Corruption and the heavy enemy's damage and buff payloads. Native queries cover 24 balance points. |
 | RelicEffectExtraSpawnsFirstUnitPerTurn | shared-path | Original DoubleUnits queries match across deployment, ordinary turns, a triggered hatch and deck-scaled Funguy. Additional grafted Hall births, first-unit shield and room Armor each have a pinned original control. The checked consumers preserve native allocation order and RNG. |
 | RelicEffectForceBonusEnemyCovenant | shared-path | The unchanged RandomizeWaveOrder mutator supplies the pinned Covenant02_BattlesNewEnemies definition. Native group resolution and spawning match for the scoped Rank 0 owner. Mixed or changed Covenant configurations retain guards. |
 | RelicEffectGrantRewardStartOfRun | input-only | Native SaveManager.SetupRun invokes ApplyStartOfRunRelicEffects and RelicManager.ApplyStartOfRunCardEffects, which copies these entries into the opening reward queue. The settled battle uses the resulting deck and run resources. |
@@ -119,7 +119,7 @@
 | RelicEffectModifyRandomRoomCapacityAfterBattle | input-only | Capture settled native capacities after the opening callback. Original Bogwurm is naturally selected and the unchanged catalog Life artifact is attached in an isolated control. Capacity bonuses +2/0/+1 and the Life static -1 enter actual deployment legality, with an oversized legal summon and unchanged-floor denial. Original wins, exact successors, 16 branches, frontiers and serial/parallel plans pass. Campaign reward mutation remains native. |
 | RelicEffectModifyStatusMagnitude | shared-path | Four unchanged collectible owners for Rage, Spikes, Regen and Mageblade each returned a positive native combat query. Five original plays and the first exchange matched complete successors and RNG. Removing each owner from its query input removed only its contribution. Separate neutral and active moon native witnesses match five plays and the first ordinary exchange each. The active case preserves Selene phase masks and Sweep cleanup. The active deployment EndTurn and raw ascent also match. The raw combat snapshot differs only by the phase enum and its room mirrors. Other status modifier payloads remain open. |
 | RelicEffectModifyTargetsRandom | shared-path | Original targetless cast, unchanged Exhaust selector, and RandomInRoom rearrangement retain native RNG, physical ordering and the subsequent same-target Valor. The unchanged Banished and Hellhorned opening win matches 18 plays, seven EndTurns and both candidate frontiers. |
-| RelicEffectModifyTrial | input-only | The sole original TimeForTrials effect is read by BattleIntroScreen while locking and setting the trial. The captured battle contains its active trial effects and ordinary combat validation still checks their behavior. |
+| RelicEffectModifyTrial | input-only | BattleIntroScreen locks and enables the shared native trial only with TimeForTrials. The original paired deployment has Enemy_LowerDraw active and shows four draws, compared with five on the stock input. |
 | RelicEffectModifyUnitAbilityCooldown | shared-path | Original Time Pyre birth changes after-use cooldown from 99 to 2 only with the Echoes owner. Two paid activations with the owner verify the 2 to 1 to 0 to 2 cooldown sequence. The stock control removes the ability until the battle ends. Three activations and four EndTurns match full state and RNG. |
 | RelicEffectMultiplyAttackLate | shared-path | Shared parameter-driven late multiplier preserves manager order, champion filtering, captured native Pyre exemption and raw snapshots. Pinned one original owner; 640 native queries, 80 products, 640 actual attacks plus 7728 percentage query/birth pairs with nonneutral late. Unchanged half-attack plus double-enemy-health native win; full successors, 16 branches/frontiers and serial/parallel root search. Actual status callback interactions, all other owner combinations and mixed Covenants are not fully certified. |
 | RelicEffectPayCardCostWithPyreHealth | shared-path | The pinned preview-isolation witness checks affordable Ember, a four-health nonlethal Pyre payment, X-cost and one native OnHit callback. 31 plays and six EndTurns match independently. The prepared control cards are inserted at turn one. |
@@ -134,7 +134,7 @@
 | RelicEffectRemoveSpellUpgradeSlot | input-only | Native BalanceData.GetUpgradeSlots reduces spell slots by one for OneUpgradeSlot. CardUI.UpdateCardLayout reads the result for display and DeckScreen.FilterCards reads it for upgrade eligibility. |
 | RelicEffectRemoveStatusEffectOnSpawn | shared-path | The unchanged EggHatchRemoval owner orders Hatch removal before adding 30 Armor to the eligible Egg. Two positive births in the pinned 2.3.1 archive remove three Hatch and gain 35 Armor including five from SpawnWithArmor. All 12 recorded births and 32 independent branches per boundary match. The scene provides controlled Egg carriers and preserves the original relic definitions. |
 | RelicEffectRemoveUnitUpgradeSlot | input-only | Native BalanceData.GetUpgradeSlots reduces unit slots by one for OneUpgradeSlot. CardUI.UpdateCardLayout reads the result for display and DeckScreen.FilterCards reads it for upgrade eligibility. |
-| RelicEffectReplaceChampion | input-only | The sole original ChampionReplacement effect is dispatched by ApplyStartOfRunRelicEffects while building the starter deck. The actual chosen champion card and its upgrades are in the combat input. |
+| RelicEffectReplaceChampion | input-only | ApplyStartOfRunRelicEffects replaces the starter champion with an original one from another class. The stock and modified native input pair confirms the original identities, matching deck and hand upgrade state, and modeled deployment candidates. |
 | RelicEffectRoomMonsterCapacityModifier | input-only | The original LonelyRooms mutator changes physical player slots before the battle starts. The per-floor native slot limit and separate capacity are captured as input. All 21 plays, seven EndTurns and both strict frontiers match the original win. |
 | RelicEffectScaleStatusApplicationsOnSpawn | shared-path | Shared initialized birth rule preserves actual enemy-only/inverted required-mutator gate, original-definition positive starting additions, ordered exact-type runtime trigger scaling and immutable source/target metadata; enchant capture reads runtime parameters. Four original sources/54 configurations/2592 native callbacks in detached objects; starting AddStatus requests intercepted, not applied there. Unchanged original endless RunDistance4 owner acquired before Pyre setup, authored enemy status/trigger and defender controls; native full win/four zero, 16 branches/frontiers/serial-parallel root search. Other source companions, complex status callback competition, mixed Covenants, scaled enchant gameplay lifecycle and complete hover query remain outside certification. |
 | RelicEffectShowtime | shared-path | Three unchanged original souls apply their hidden floor attachment once before deployment. Settled capacities 5 to 8/8/10 admit a size-six pair and route the original front-only upgrade after room combat. Two/two/four positive repetitions, rear unit unaffected, and full-capacity no-op agree across full native wins, exact successors, 16 branches, frontiers and serial/parallel plans. Native RNG selects the opening room. Other floor seeds and mixed room attachments remain outside this evidence. |
@@ -157,7 +157,6 @@
 
 | 原生类 | 队列 | 声明引用 | 全部引用 | 模型／探针示例 |
 | --- | --- | ---: | ---: | --- |
-| CardEffectAddStatusToRoomScalingByCasterStatusCount | inspect-inherited-code | 2 | 2 | [MonsterTrain2Poju.Model.CardJuiceModel+<>c.<SimpleUpgrade>b__12_2](../../src/Model/CardJuice.cs:51) |
 | CardEffectAttachTrainRoomAttachment | inspect-projection-normalization | 34 | 34 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
 | CardEffectAttackWithUnit | inspect-projection-normalization | 13 | 13 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
 | CardEffectUnitAbilityTeleport | inspect-projection-normalization | 8 | 8 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
@@ -172,15 +171,16 @@
 | CardEffectChooseMonsterToSpawnInBack | inspect-projection-normalization | 3 | 3 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
 | CardEffectRandomDiscard | inspect-projection-normalization | 3 | 3 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
 | CardEffectSetMoonPhase | inspect-projection-normalization | 3 | 3 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
+| CardEffectAddStatusEffectNull | inspect-projection-normalization | 2 | 7 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
 
 ## 可重建输入
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `949040a684d11a2217a868466e86ce553fd3dc191c4ce0533a1839d9aae23d92`。
-- Model: PDB 校验过的项目源码集合 `6140fffd97b90f9f22da098d6a2aeabcd291139bf858d5382021c5180d6a6a87`。
-- Probe: PDB 校验过的项目源码集合 `d72d540fa46943086cbfca4437cd793434f4635ce43de012fffa1fd3b8eebb38`。
-- ModelChecks: PDB 校验过的项目源码集合 `424fdef369bb81444edd34db01e4a2107eecf275f5c4befc572f3771ef43b515`。
+- 人工审查索引 SHA-256: `eb54f1e7ca580bc19f583d5bb64402172ab811e2da55997eabf3df3ae49fdc67`。
+- Model: PDB 校验过的项目源码集合 `95e252cc617f87e59ff9da8369e9a080f9083f6be7e1961a78e782c2b3978b5f`。
+- Probe: PDB 校验过的项目源码集合 `72e0b5c3d798de99765cee5d1a1e83ead85308718d3411c4901d4c40791fad48`。
+- ModelChecks: PDB 校验过的项目源码集合 `45a30ef1b4a950476ccb2f6b0eab8305a83e35d1cc14bac8d3c4fbf763c2def8`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
