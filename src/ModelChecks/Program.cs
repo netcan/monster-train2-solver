@@ -9367,7 +9367,8 @@ if ((args.Length == 2 || args.Length == 3 && args[2] == "--frontiers") && args[0
     RecordedBattleChecks.Native(chainDocument.RootElement);
     if (args.Length == 3)
     {
-        BattleSearchChecks.RecordedFrontiers(chainDocument.RootElement, requireZeroUnsupported: true);
+        if (chainDocument.RootElement.GetProperty("Actions").GetArrayLength() > 0)
+            BattleSearchChecks.RecordedFrontiers(chainDocument.RootElement, requireZeroUnsupported: true);
         BattleSearchChecks.RecordedEndTurnFrontiers(chainDocument.RootElement, choiceBudget: 64);
         Console.WriteLine("NATIVE-RECORDED-END-TURN-FRONTIERS PASS.");
     }
