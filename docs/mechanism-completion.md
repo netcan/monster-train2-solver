@@ -1476,6 +1476,9 @@ Hallowed Halls 同场原版胜局另验证了六名友军复活，5 次出牌、
 [整战阶段报告](../results/recorded-chain-triage-20261125-070233-829edafb/report.tsv) ·
 [阶段求解日志](../results/solver-completion-67b9088c-20261125.log)
 
+顾问界面阶段验收可直接复用 2.3.1 原版首战归档。检查器复放 28 次战斗输入，核对 30 次建议发布，以及待确认时的建议保留、滚动、重置、预算切换和七次无需重新采集的楼层切换。
+[原版首战归档](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring1-presentation-after-allocation.mt2f)
+
 2.3.1 原版 `DoubleStatusEffects` 已接入共享状态层数管线。原版 SpikePotion 支付 1 余烬，
 使火车乘务员获得 20 层尖刺，完整出牌后继和随机流通过复放。七项查询对照覆盖冷却、无目标、
 永久升级、延迟加法和转移来源。四项原版移除调用依次将尖刺从 20 变为 18、14、10、12，

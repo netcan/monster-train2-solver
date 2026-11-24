@@ -127,6 +127,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Native EndTurn confirmation advice acceptance failed.' }
     dotnet $checks --native-advisor-rejected-deployment-only "$current/player-advisor-rolling/native-rejected-deployment.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Native rejected deployment advice acceptance failed.' }
+    dotnet $checks --player-advisor-presentation-only "$current/player-advisor-rolling/current-ring1-presentation-after-allocation.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Native advisor presentation acceptance failed.' }
     $persistentHealth = "$current/persistent-monster-health/campaign"
     dotnet $checks --native-persistent-monster-hp-campaign-only "$persistentHealth/campaign-battle-replay.mt2f" `
         "$persistentHealth/persistent-monster-hp-campaign-checkpoint.mt2f" "$persistentHealth/persistent-monster-hp-campaign-reload.mt2f"
