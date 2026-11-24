@@ -8,16 +8,15 @@
 
 | 待办分类 | 类数 | 含目录引用 | 含类型声明 |
 | --- | ---: | ---: | ---: |
-| known-gap | 1 | 1 | 1 |
 | inspect-inherited-code | 1 | 1 | 1 |
 | inspect-projection-normalization | 53 | 53 | 53 |
 | inspect-guard-links | 42 | 42 | 42 |
-| review-existing-code | 227 | 227 | 227 |
+| review-existing-code | 226 | 226 | 226 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 282 | 0 | 0 |
-| scoped-review-recorded | 121 | 117 | 117 |
+| scoped-review-recorded | 123 | 119 | 119 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 124 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 125 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -30,7 +29,6 @@
 | 原生类 | 结论 | 边界 |
 | --- | --- | --- |
 | CardEffectAddStatusEffectNextMonster | known-gap | Native Apply queues AddSpawningStatusEffect. CreateMonsterState applies and clears it before authored starting statuses, and EndTurn clears pending values. The five catalog references are requiredCardEffects filters. The pinned 2.3.1 owner query scanned effect lists on 724 cards, 406 characters, 920 upgrades and 676 relic collection entries. It found zero authored effect entries in this scope. The equipment grant control found one original OnSpawn upgrade entry. Dynamic construction and runtime execution remain unverified. |
-| RelicEffectAddStartingUpgradeToUnitCards | known-gap | Original Dominion with MothersRemnant3 paid Train Steward deployment adds one permanent copy upgrade and advances only Rewards RNG once. The complete successor and 16 independent branches match. The separate Savagery champion-only owner remains guarded pending a native permanent-champion boundary check. |
 | CardEffectAddBattleCard | shared-path | The original Railforged Unruly Scourge payload adds the single authored Scourge card to the hand after a same-floor enemy death. Two such generations match native effects. The original whole battle matches 33 plays, seven EndTurns and both candidate frontiers. This review covers that trigger and one-card pool. |
 | CardEffectAddStatusEffectPerFriendlyMissingHp | shared-path | Original Collector skill receives four exact Pain totals (5, 18, 28, 28), before the ordinary damage pipeline consumes the new stacks in the same skill. Seven native friendly-health queries include the Pyre. The unchanged paid sequence and serial and parallel search agree. |
 | CardEffectAddStatusEffectPerMissingHp | shared-path | Original Oil uses each occupant's own missing health to add Armor on the selected floor. Positive and full-health controls agree through three native per-target callbacks. All 28 paid inputs, seven turns and sixteen branches replay, with zero unsupported candidates in the checked search. |
@@ -61,6 +59,7 @@
 | RelicEffectAddPostBattleRewardOnBossDeath | input-only | The exact three original Silver souls have a post-battle reward effect after the Pyre modification in their effect lists. SaveManager.GeneratePostBattleRewards is the native consumer, after the battle snapshot. |
 | RelicEffectAddPyreAttackAndHealthPerCardInDeck | shared-path | All three original Thik tiers confirm exact deck-change successors, sixteen branches, complete recorded frontiers, and equal serial and parallel search and plan replay. Permanent addition and removal affect Pyre health by three, four, or five and attack by zero, zero, or two. Temporary purge supplies a zero delta. The T3 component also checks acquisition, raw saved HP carryover, and live health caps. Mixed relic combinations remain unwitnessed. |
 | RelicEffectAddRelicStartOfRun | input-only | Sealed native class implements StartOfRun ApplyEffect, which adds the configured relic through SaveManager. Battle input captures the resulting relic roster. No combat callback override in this class; start-of-run campaign handling and carried-owner validation remain separate. |
+| RelicEffectAddStartingUpgradeToUnitCards | shared-path | Original Dominion with MothersRemnant3 paid Train Steward deployment adds one permanent upgrade to the copy and advances only Rewards RNG once. The complete successor and 16 independent branches match. Original Savagery appends all three upgrades in order when the champion enters the permanent deck. A non-champion unit and a spell stay unchanged, and all deterministic streams match. |
 | RelicEffectAddStatusEffectMultiplier | shared-path | The original DoubleStatusEffects owner doubles a paid SpikePotion application from ten to twenty; the full paid successor and gameplay RNG match. Seven original queries cover null targets, cooldown, permanent and deferred requests, and status transfers. Four native removals cover ordinary, enchantment and upgrade provenance including the negative sentinel. The witness uses the stock 200 percent descriptor. |
 | RelicEffectAddStatusEffectOnFirstSpawn | shared-path | The two original enemy blessings grant one or two Undying to the first admissible birth. Later candidates skip and the ordered AfterDraw callback clears the per-effect latch. Three native spawn successors and two consecutive complete EndTurns match for each tier. Actual grants advance Battle RNG once. |
 | RelicEffectAddStatusEffectOnSpawn | shared-path | Four pinned 2.3.1 archives replay 59 original birth boundaries and 32 independent branches per boundary. Positive checks include two Titan Skin and four Burst stacks on the Pyre, three Muted stacks on the eligible Chicot boss, friendly Armor, enemy Frostbite and first-unit Damage Shield with same-turn skips. The first-unit owner uses this class with a tracked condition. Other owner payloads require their own evidence. |
@@ -93,7 +92,7 @@
 | RelicEffectDamagePyreOnMerchantPurchase | input-only | Native MerchantScreen.TryPurchase and merchant reward completion call ApplyPyreDamageForMerchantPurchaseIfNecessary. The HP change and its relic notifications settle during the purchase. A later battle reads the resulting health and relic state. |
 | RelicEffectDisableRoomPreview | shared-path | The pinned NoCombatPreviews mutator disables the native room forecast across all recorded decision states. The original win matches 21 plays, seven EndTurns, both candidate frontiers and 16 independent branches. Verified by --native-disabled-room-preview-only and the recorded battle checks. |
 | RelicEffectDrawCardAfterEachClanPlayed | shared-path | Pinned two-round control verifies seven paid cards, first distinct clan pairing each turn, no repeat bonus and two native resets. The unchanged opening win matches 39 plays, seven EndTurns and both candidate frontiers. |
-| RelicEffectEndlessScalingOnSpawn | shared-path | Original victory and controlled first-ring entries reach the same opening wave. Six EndTurns match 21 ordered first-ring births. The original loss replays 36 plays, nine EndTurns and both frontiers. Controlled Ring 2 covers starting Armor, Titanskin, aura and spawn ordering. Controlled Ring 3 verifies three ordinary births and complete Arkion instantiation and placement at 40 attack and 6250 HP. Native queries cover 24 balance points. Other actor shapes and original later-loop battle behavior remain to be verified. |
+| RelicEffectEndlessScalingOnSpawn | shared-path | Original victory and controlled first-ring entries reach the same opening wave. Six EndTurns match 21 ordered first-ring births. The first-ring loss replays 36 plays and nine EndTurns. Controlled Ring 2 covers Armor, Titanskin, aura and spawn ordering. Controlled Ring 3 verifies Arkion placement at 40 attack and 6250 HP, and four EndTurns to native defeat with 16 branches. Native queries cover 24 balance points. Other actor shapes and original later-loop battle behavior remain to be verified. |
 | RelicEffectExtraSpawnsFirstUnitPerTurn | shared-path | Original DoubleUnits queries match across deployment, ordinary turns, a triggered hatch and deck-scaled Funguy. Additional grafted Hall births, first-unit shield and room Armor each have a pinned original control. The checked consumers preserve native allocation order and RNG. |
 | RelicEffectForceBonusEnemyCovenant | shared-path | The unchanged RandomizeWaveOrder mutator supplies the pinned Covenant02_BattlesNewEnemies definition. Native group resolution and spawning match for the scoped Rank 0 owner. Mixed or changed Covenant configurations retain guards. |
 | RelicEffectGrantRewardStartOfRun | input-only | Native SaveManager.SetupRun invokes ApplyStartOfRunRelicEffects and RelicManager.ApplyStartOfRunCardEffects, which copies these entries into the opening reward queue. The settled battle uses the resulting deck and run resources. |
@@ -149,6 +148,7 @@
 | RoomStateAddEffectPostCombatModifier | shared-path | The original Showtime T3 room records four front-only attack and maximum-health upgrades on floor one, with rear controls. The showtime/tier3.mt2f archive passes the complete successor and stage checks with --showtime-only. Other post-combat payloads have individual calibration. |
 | RoomStateAddEffectPreCombatModifier | shared-path | Unchanged Echoes Inferno installs the original Inferno Room on all three battle floors. The installed-inferno-rooms/battle.mt2f archive records an exact 50-damage enemy hit on floor zero and passes --installed-inferno-rooms-only. Other target and owner payloads require their own evidence. |
 | RoomStateHivemindModifier | shared-path | Original phase receipts cover publication for new owners, preserving the existing attack modifier before next draw, transfer of active room markers during ascent and casting movement, and cleanup when a holder dies. The complete Infested routes and both candidate sets are checked. |
+| RoomStateSelfDamagePerMissingHp | shared-path | The definition-driven native query matrix includes the original coefficient-one ZealotsHalo and coefficient-two Savagery, room position requirements and integer boundaries. Savagery deck attachment matches the native upgrade payload. The paid champion combat lifecycle uses a separate witness. |
 | RoomStateSpawnUnitOnUnitSpawnModifier | shared-path | The original Hall of Mirrors copies a paid Twisted Assistant with one unmodified graft. The hall-grafted-birth/predicted-birth.mt2f archive passes --native-hall-grafted-birth-only for ordered callbacks, distinct graft ownership, physical slots, Battle and Draw RNG, and EndTurn at the observed root. Triggered or generated births have separate call sites. |
 | StatusEffectBurstState | shared-path | Original Dutiful Burst has three native PostCombat grants and seven native consumptions. Its settled whole battle matches 23 plays, four EndTurns, both frontiers and sixteen branches. Combined extra-attack sources retain separate guards. |
 | StatusEffectHivemindState | shared-path | Original Indulgent and Infested settled encounters include after-draw attack refresh, durable floor markers, feed, and the original Horde OnDeath grant through both a spell and an ability. The typed fixtures check the original parent and complete successors, including Battle and BattleTest RNG. Other native Hivemind and HivemindKiller paths retain their own scopes. |
@@ -177,10 +177,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `aca41d8fd6e67cdd9a8f0d9a0b4cbc494ee75a26f37d540e9f4a7457a7502e82`。
-- Model: PDB 校验过的项目源码集合 `e86f5b7babc1b612edb6afcfb18e044b53ec61c38f4c85c37eccf72dc4d33a6e`。
-- Probe: PDB 校验过的项目源码集合 `d78874505eb618c2fd19475085fcf7e0547f71304625ec837a1b57cd6ce60630`。
-- ModelChecks: PDB 校验过的项目源码集合 `930dea0bf7db44fd270963dca30e4d337c3eca52058ec01b5dc4ec32af9cb09b`。
+- 人工审查索引 SHA-256: `4dad2c23168fa512d347ce7ba2423af821bdb725648461f71877cd1a04e99675`。
+- Model: PDB 校验过的项目源码集合 `6140fffd97b90f9f22da098d6a2aeabcd291139bf858d5382021c5180d6a6a87`。
+- Probe: PDB 校验过的项目源码集合 `005abc1abb1b75f5801cdfbbd9c05cc20356d9f1c3ac1e5ba7ea5b7a77a8bc2d`。
+- ModelChecks: PDB 校验过的项目源码集合 `d9db174e54a3dd396f00fd2a9b123b353257d5852131d83bbef8fdb78457e5b1`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
