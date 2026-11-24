@@ -9,16 +9,16 @@
 | 待办分类 | 类数 | 含目录引用 | 含类型声明 |
 | --- | ---: | ---: | ---: |
 | known-gap | 1 | 1 | 1 |
-| inspect-no-code-link | 29 | 29 | 29 |
+| inspect-no-code-link | 26 | 26 | 26 |
 | inspect-inherited-code | 8 | 8 | 8 |
 | inspect-projection-normalization | 54 | 54 | 54 |
 | inspect-guard-links | 43 | 43 | 43 |
-| review-existing-code | 226 | 226 | 226 |
+| review-existing-code | 227 | 227 | 227 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 282 | 0 | 0 |
-| scoped-review-recorded | 84 | 80 | 80 |
+| scoped-review-recorded | 86 | 82 | 82 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 87 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 89 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -84,6 +84,7 @@
 | RelicEffectIncreasePyreAttack | shared-path | The original BossEmber, BossEmber2 and BossEmberDH owners use their native table-indexed amounts in the pinned 2.3.1 opening resource battle. The checker isolates each attack contribution, verifies the initialized Pyre and replays native Pyre combat. The scope is the captured enhancement tables and combat conditions. |
 | RelicEffectIncreasePyreHealth | shared-path | The original BossEmber, BossEmber2 and BossEmberDH owners use their native table-indexed amounts in the pinned 2.3.1 opening resource battle. The checker isolates each maximum-health contribution and verifies initialized Pyre health and maximum health. The battle ends in a native win at 123 Pyre health. Campaign lifecycle boundaries have separate evidence. |
 | RelicEffectModifyCharacterAttackOrHealthPercentage | shared-path | Shared ID-independent birth/query rules capture initialized native float, team/subtype/required-mutator filters and ordered raw attack/health setters. Six original owners/56 effects, 138 configurations and 7728 query/birth pairs; unchanged double-health mutator full native win, 16 branches/frontiers/root search. Other owners companion effects, mixed Covenant projections and conditional effects remain outside this integration. A later shared late-attack integration adds nonneutral percentage birth matrices and a combined unchanged two-mutator full native battle. |
+| RelicEffectModifyCharacterMaxHealthPercentage | shared-path | The original 100 percent friendly-health owner leaves the Train Steward at 25 current HP, raises maximum HP to 50 and adds 25 temporary health to the source card. The observed birth callback leaves Battle and BattleTest RNG unchanged. The complete paid successor and search candidates match for the original first deployment. |
 | RelicEffectModifyDragonsHoardEndOfBattle | campaign-only | Sealed combat callbacks only remember private Pyre damage; campaign rewards have current OnPunish and legacy OnHit calibration. Natural seed20261115 Ring1 carried original owner across 21 inputs/42 full states, default3s budget, Pyre80 native win and independent forecasts/state/RNG. No independent frozen native pair or later rings claimed. |
 | RelicEffectModifyEnergy | shared-path | The pinned 2.3.1 opening resource battle replays six ordinary Ember effects in an eight-owner opening cohort, including Leaky Pen's negative modifier. The checker compares ordered values, zero clamping, completion notifications and individual effect ablations at native Ember query boundaries. This evidence covers the captured battle timing and payloads. |
 | RelicEffectModifyEnergyDuringDeployment | shared-path | The pinned 2.3.1 opening resource battle replays six deployment Ember effects, including both extra and reduced deployment Ember. The checker verifies ordered modifiers, owner attribution and the deployment completion behavior alongside ordinary combat Ember controls. This evidence covers the captured deployment timing and payloads. |
@@ -106,6 +107,7 @@
 | RelicEffectPurgeStarterDeck | campaign-only | The exact Soul Savior owner purges and fills the starter deck during original run setup. The natural Dutiful Child win uses the captured resulting deck and passes 39 action and seven EndTurn comparisons with both candidate frontiers. |
 | RelicEffectRandomizeWaveOrder | shared-path | The original opening mutator resolves its permutation before deployment. Eleven native spawning stages cover a first-wave exchange and the authored final pair. A distinct original permutation with unchanged order passes the full 18-action and six-EndTurn chain with both candidate frontiers. |
 | RelicEffectRemoveStatusEffectOnSpawn | shared-path | The unchanged EggHatchRemoval owner orders Hatch removal before adding 30 Armor to the eligible Egg. Two positive births in the pinned 2.3.1 archive remove three Hatch and gain 35 Armor including five from SpawnWithArmor. All 12 recorded births and 32 independent branches per boundary match. The scene provides controlled Egg carriers and preserves the original relic definitions. |
+| RelicEffectRoomMonsterCapacityModifier | input-only | The original LonelyRooms mutator changes physical player slots before the battle starts. The per-floor native slot limit and separate capacity are captured as input. All 21 plays, seven EndTurns and both strict frontiers match the original win. |
 | RelicEffectScaleStatusApplicationsOnSpawn | shared-path | Shared initialized birth rule preserves actual enemy-only/inverted required-mutator gate, original-definition positive starting additions, ordered exact-type runtime trigger scaling and immutable source/target metadata; enchant capture reads runtime parameters. Four original sources/54 configurations/2592 native callbacks in detached objects; starting AddStatus requests intercepted, not applied there. Unchanged original endless RunDistance4 owner acquired before Pyre setup, authored enemy status/trigger and defender controls; native full win/four zero, 16 branches/frontiers/serial-parallel root search. Other source companions, complex status callback competition, mixed Covenants, scaled enchant gameplay lifecycle and complete hover query remain outside certification. |
 | RelicEffectShowtime | shared-path | Three unchanged original souls apply their hidden floor attachment once before deployment. Settled capacities 5 to 8/8/10 admit a size-six pair and route the original front-only upgrade after room combat. Two/two/four positive repetitions, rear unit unaffected, and full-capacity no-op agree across full native wins, exact successors, 16 branches, frontiers and serial/parallel plans. Native RNG selects the opening room. Other floor seeds and mixed room attachments remain outside this evidence. |
 | RelicEffectSpawnMonsterOnTurnStart | shared-path | Both original mutators use the ordered after-draw callback. The current native wins record five Follower births and fifteen Morsel births, including the settled deployment callbacks, physical groups and Battle RNG. Exact successors, sixteen branches, all recorded frontiers and equal serial and parallel search and plan replay pass. Full or disabled floor retries and mixed birth callbacks still need native stress evidence. |
@@ -141,10 +143,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `fc647a0fb7fe882a3b56f740d1ef899639c796278f926887c06270cdcb20aa94`。
-- Model: PDB 校验过的项目源码集合 `d5d8575b9be5de67da038bf130ea7cba162d92945c90b7d36ae50a5d2232c68b`。
-- Probe: PDB 校验过的项目源码集合 `d86af412b12951f75deae2473fc47d9339f5d50b152eb75b4e31554b7d67a5c5`。
-- ModelChecks: PDB 校验过的项目源码集合 `5baf01d3c457e07f444978fb6d0eb83a52c534565555d2fee11130200d634908`。
+- 人工审查索引 SHA-256: `696af6baaa2192e772d6fdf90f56882425ebf40e94b03ade14c74beabb9a2b72`。
+- Model: PDB 校验过的项目源码集合 `fa61d15bd522ee19779d18f2554d3dfe7954f411a352af79b0f7b5e9eab166cd`。
+- Probe: PDB 校验过的项目源码集合 `09fa8f1717f8a30df0de87e7c2e6b9e67fa78202bbc3b3e4c1470cc8751f8b51`。
+- ModelChecks: PDB 校验过的项目源码集合 `2d394cd39c890f3ae99baaeac340210f57a691517c94aef6183b1cc21f91063e`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
