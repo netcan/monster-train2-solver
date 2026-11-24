@@ -3892,6 +3892,11 @@ namespace MonsterTrain2Poju.Probe
                 BattleTurnState root = FullBattleTrace.Active!.CaptureDecision();
                 if (RollingAdviceScenario.AwaitingAdvice(root)) return;
 #if DEVELOPMENT_PROBE
+                if (RollingAdviceScenario.WriteRapidContinuationObservation())
+                {
+                    Finish(true, "Player advisor verified its suffix after two rapid native inputs.");
+                    return;
+                }
                 if (RollingAdviceScenario.WriteOffRouteObservation())
                 {
                     Finish(true, "Player advisor replaced its forecast after one off-route native input.");

@@ -95,6 +95,8 @@ namespace MonsterTrain2Poju.Probe
         internal static BattleAdvice Advice => Get<BattleAdvice>("CurrentAdvice");
         internal static long SearchCount => Get<long>("Searches");
         internal static bool OffRouteInputInvalidated { get; private set; }
+        internal static bool RapidSecondAcceptedWhileBlocked { get; private set; }
+        internal static int PublicationCount => Get<int>("Published");
         internal static BattleAdvisorOverlay.Publication LatestTiming =>
             JArray.FromObject(Get<object>("Publications")).Last!.ToObject<BattleAdvisorOverlay.Publication>()!;
         internal static object? Evidence => !Enabled ? null : new
@@ -164,6 +166,21 @@ namespace MonsterTrain2Poju.Probe
             if (RollingAdviceScenario.OffRouteEnabled)
                 new Harmony("netcan.poju.off-route-acceptance").Patch(AccessTools.Method(type, "CompleteCardInput"),
                     postfix: new HarmonyMethod(typeof(PlayerAdvisorProbe), nameof(ObserveOffRouteInput)));
+            if (AdvisorRapidContinuationProbe.Enabled)
+            {
+                var harmony = new Harmony("netcan.poju.rapid-continuation-acceptance");
+                AdvisorRapidContinuationProbe.Install(harmony);
+                harmony.Patch(AccessTools.Method(type, "CompleteCardInput"),
+                    postfix: new HarmonyMethod(typeof(PlayerAdvisorProbe), nameof(ObserveRapidInput)));
+            }
+        }
+
+        private static void ObserveRapidInput(bool accepted, object? input)
+        {
+            if (!accepted || input == null || RollingAdviceScenario.Records.Count != 2 ||
+                !(bool)AccessTools.Field(input.GetType(), "DirectHandPlay").GetValue(input)) return;
+            bool pending = Field<object?>("displayed") == null || Field<Text>("statusLabel").text.Contains("待确认");
+            RapidSecondAcceptedWhileBlocked = AdvisorRapidContinuationProbe.Blocked && CurrentIsNull() && pending;
         }
 
         private static void ObserveOffRouteInput(bool accepted, object? input)

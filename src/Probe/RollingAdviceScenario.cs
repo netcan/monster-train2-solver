@@ -47,6 +47,8 @@ namespace MonsterTrain2Poju.Probe
         internal static bool DeploymentOnly => Environment.GetEnvironmentVariable("MT2_PROBE_PLAYER_DEPLOYMENT_ONLY") == "1";
         internal static bool OffRouteEnabled => Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR_OFF_ROUTE") == "1";
         private static long offRouteSearches;
+        private static long rapidSearches;
+        private static int rapidPublications;
 #endif
         private static bool Replay => (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_ROLLING_INPUT"))
 #if DEVELOPMENT_PROBE
@@ -236,6 +238,10 @@ namespace MonsterTrain2Poju.Probe
                 }
                 if (Replay && Records.Count == 0 && PlayerAdvisorProbe.ReplayFloorBrowsing(preparedPrefix?.Archive)) return true;
                 if (waiting) Observe(PlayerAdvisorProbe.Capture(), false);
+                if (AdvisorRapidContinuationProbe.Enabled && Records.Count == 1)
+                    return AdvisorRapidContinuationProbe.AwaitingBarrier();
+                if (AdvisorRapidContinuationProbe.Enabled && Records.Count == 2)
+                    AdvisorRapidContinuationProbe.Release();
                 if (ResumeRequested && !resumed && Records.Count == FrozenCount)
                 {
                     resumeGeneration = PlayerAdvisorProbe.ResumeAfterFrozenPrefix();
@@ -265,6 +271,23 @@ namespace MonsterTrain2Poju.Probe
 #endif
             if (Records.Count >= DecisionLimit) throw new InvalidOperationException("Rolling advice exceeded the battle decision limit.");
             Decision decision;
+#if DEVELOPMENT_PROBE
+            if (AdvisorRapidContinuationProbe.Enabled && Records.Count == 1)
+            {
+                Decision original = Records[0];
+                if (!AdvisorRapidContinuationProbe.Blocked || original.Actual == null)
+                    throw new InvalidOperationException("Native continuation verification did not reach the test barrier.");
+                var second = original.PlanSteps[1].Action!;
+                BattleActionResult predicted = BattleActionModel.PlayCard(root, second);
+                if (!predicted.Supported) throw new InvalidOperationException(predicted.Reason);
+                decision = new Decision { Mode = "rapid-continuation", Root = root, Action = second,
+                    Expected = predicted.State!, Outcome = predicted.Outcome, Generation = original.Generation,
+                    PlanSteps = original.PlanSteps, Planned = original.Planned, PlannedOutcome = original.PlannedOutcome,
+                    Score = original.Score, RequestedHorizon = original.RequestedHorizon, TurnsPlanned = original.TurnsPlanned,
+                    UsedShorterHorizon = original.UsedShorterHorizon, PolicyBaselineScore = original.PolicyBaselineScore };
+            }
+            else
+#endif
             if (Replay)
             {
                 decision = ReplayDecision();
@@ -305,6 +328,16 @@ namespace MonsterTrain2Poju.Probe
                     RequestedHorizon = plan.RequestedTurns, TurnsPlanned = plan.TurnsCompleted, UsedShorterHorizon = plan.UsedShorterHorizon,
                     Generation = timing.Generation, Timing = timing };
 #if DEVELOPMENT_PROBE
+                if (AdvisorRapidContinuationProbe.Enabled)
+                {
+                    if (Records.Count != 0 || root.Spawn.Turn != 0 || steps.Length <= 2 ||
+                        steps.Take(2).Any(step => step.IsEndTurn || step.Action is not { ActivatorUnitId: 0 } action ||
+                            action.RecursionSelections.Count != 0 || action.MixSelections.Count != 0 || action.SummonSelections.Count != 0))
+                        throw new InvalidOperationException("The rapid-continuation test needs two original advised deployment card plays.");
+                    rapidSearches = PlayerAdvisorProbe.SearchCount;
+                    rapidPublications = PlayerAdvisorProbe.PublicationCount;
+                    AdvisorRapidContinuationProbe.Arm();
+                }
                 if (OffRouteEnabled)
                 {
                     if (Records.Count != 0 || root.Spawn.Turn != 0 || steps[0].Action is not { } advised ||
@@ -350,6 +383,40 @@ namespace MonsterTrain2Poju.Probe
         }
 
 #if DEVELOPMENT_PROBE
+        internal static bool WriteRapidContinuationObservation()
+        {
+            if (!AdvisorRapidContinuationProbe.Enabled || Records.Count != 2) return false;
+            BattleAdvice final = PlayerAdvisorProbe.Advice;
+            BattleAdvisorOverlay.Publication timing = PlayerAdvisorProbe.LatestTiming;
+            BattleTurnState native = PlayerAdvisorProbe.Capture();
+            using var keys = new BattleStateKeys();
+            using var boundaryKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
+            string nativeRootKey = keys.Key(native);
+            if (waiting || Records.Any(row => row.Actual == null || row.Difference != null || row.Outcome != RoomOutcome.Exchanged) ||
+                !PlayerAdvisorProbe.RapidSecondAcceptedWhileBlocked || timing.Generation <= Records[0].Generation ||
+                PlayerAdvisorProbe.SearchCount != rapidSearches || PlayerAdvisorProbe.PublicationCount != rapidPublications + 1 ||
+                !final.ReusedContinuation || final.Plan.Steps.Count != Records[0].PlanSteps.Count - 2 ||
+                nativeRootKey != final.RootKey || boundaryKeys.Key(Records[1].Actual!) != boundaryKeys.Key(final.Root) ||
+                FullBattleTrace.Active!.CaptureFailures != 0 || FullBattleTrace.Active.Pending != 0)
+                throw new InvalidOperationException("Rapid native inputs did not publish exactly one verified continuation of the original forecast.");
+            using var document = NativeFixtureCapture.Capture(new
+            {
+                Schema = 1, EvidenceKind = "NativePlayerAdvisorRapidContinuation", GameVersion = UnityEngine.Application.version,
+                GameModuleMvid = typeof(CardState).Module.ModuleVersionId, Inputs = Records,
+                OriginalGeneration = Records[0].Generation, FinalGeneration = timing.Generation,
+                OriginalSearches = rapidSearches, FinalSearches = PlayerAdvisorProbe.SearchCount,
+                OriginalPublications = rapidPublications, FinalPublications = PlayerAdvisorProbe.PublicationCount,
+                AdvisorRapidContinuationProbe.VerificationThread, AdvisorRapidContinuationProbe.MainThread,
+                SecondAcceptedWhileBlocked = PlayerAdvisorProbe.RapidSecondAcceptedWhileBlocked,
+                FinalRoot = final.Root, FinalRootKey = final.RootKey, FinalNativeRoot = native,
+                FinalNativeRootKey = nativeRootKey, FinalPlan = final.Plan
+            });
+            using var stream = new FileStream(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                "player-advisor-rapid-continuation.mt2f"), FileMode.CreateNew, FileAccess.Write);
+            document.Write(stream);
+            return true;
+        }
+
         internal static bool WriteOffRouteObservation()
         {
             if (!OffRouteEnabled || Records.Count != 1) return false;
