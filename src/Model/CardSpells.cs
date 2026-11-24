@@ -275,9 +275,13 @@ namespace MonsterTrain2Poju.Model
                     if (ActorIsLive(unit)) settledActors.Remove(unit.Id);
                     else settledActors[unit.Id] = unit;
             }
-            RoomCombatResult FinishQueue(RoomCombatState frame)
+            RoomCombatResult FinishQueue(RoomCombatResult checkpoint)
             {
-                state = ReplaceRoom(state, frame);
+                state = ReplaceRoom(state, checkpoint.State!);
+                MergeBorrowed(checkpoint, borrowedTargets);
+                if (externalAttacker)
+                    state = ReplaceExternalActor(state, attackerRoom!.RoomIndex,
+                        checkpoint.RetainedUnits.Single(unit => unit.Id == attackerUnitId));
                 if (drainQueuedTriggers != null)
                 {
                     TrainCombatState? drainedState = drainQueuedTriggers(state);
@@ -344,12 +348,7 @@ namespace MonsterTrain2Poju.Model
             }
             RoomCombatResult SettleDamageCallbacks(RoomCombatResult checkpoint)
             {
-                state = ReplaceRoom(state, checkpoint.State!);
-                MergeBorrowed(checkpoint, borrowedTargets);
-                if (externalAttacker)
-                    state = ReplaceExternalActor(state, attackerRoom!.RoomIndex,
-                        checkpoint.RetainedUnits.Single(unit => unit.Id == attackerUnitId));
-                RoomCombatResult settled = FinishQueue(checkpoint.State!);
+                RoomCombatResult settled = FinishQueue(checkpoint);
                 if (!settled.Supported) return settled;
                 var removed = new List<CombatUnit>();
                 var unfinished = new List<CombatUnit>();
@@ -375,7 +374,7 @@ namespace MonsterTrain2Poju.Model
             }
             var applied = RoomCombatModel.ApplyNativeCardDamageAfterTraits(initial, targetId, damage, sourceCardId,
                 attackerUnitId,
-                pendingDeaths.Count == 0 ? null : (Func<RoomCombatState, RoomCombatResult>)FinishQueue, refreshPyre: Refresh,
+                pendingDeaths.Count == 0 ? null : FinishQueue, refreshPyre: Refresh,
                 externalActor: externalAttacker ? attacker : null,
                 externalActorRoomIndex: externalAttacker ? attackerRoom!.RoomIndex : -1,
                 enqueueCharacterTrigger: externalAttacker ? enqueueCharacterTrigger : null, externalTargets: borrowedTargets,

@@ -971,7 +971,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static RoomCombatResult ApplyNativeCardDamageAfterTraits(RoomCombatState state, int targetId, int damage, int sourceCardId,
             int attackerUnitId = 0,
-            Func<RoomCombatState, RoomCombatResult>? finishDamageQueue = null, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
+            Func<RoomCombatResult, RoomCombatResult>? finishDamageQueue = null, Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
             CombatUnit? externalActor = null, int externalActorRoomIndex = -1,
             Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool captureAllDispatches = false,
             bool piercing = false, IReadOnlyList<(int RoomIndex, CombatUnit Unit)>? externalTargets = null,
@@ -2039,7 +2039,7 @@ namespace MonsterTrain2Poju.Model
             private bool triggeredCommand;
             private bool ordinaryPyreAttack;
             private int observedPyrePreviewVictimId;
-            private readonly Func<RoomCombatState, RoomCombatResult>? finishDamageQueue;
+            private readonly Func<RoomCombatResult, RoomCombatResult>? finishDamageQueue;
             private readonly Func<RoomCombatResult, RoomCombatResult>? settleDamageCallbacks;
             private readonly Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre;
             private readonly Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase;
@@ -2070,7 +2070,7 @@ namespace MonsterTrain2Poju.Model
             internal Engine(RoomCombatState source, List<CombatEvent> events, bool deferSpawnerExhaustion = false, int pendingSummonCardId = 0,
                 Action<QueuedCharacterTrigger>? enqueueCharacterTrigger = null, bool resetPreviewTriggers = true, bool deferAbilityCallbacks = false,
                 bool nativeCardDamage = false,
-                Func<RoomCombatState, RoomCombatResult>? finishDamageQueue = null,
+                Func<RoomCombatResult, RoomCombatResult>? finishDamageQueue = null,
                 Func<CombatContext, bool, RelicPyreAttackRefreshResult>? refreshPyre = null,
                 CombatUnit? externalActor = null, int externalActorRoomIndex = -1, bool externalActorInRoom = true,
                 Func<RoomCombatState, CardActionEffect, int, MoonPhaseTransitionResult>? moonPhase = null,
@@ -3706,10 +3706,7 @@ namespace MonsterTrain2Poju.Model
                 }
                 else if (nativeCardDamage && !runningTriggerQueue && finishDamageQueue != null)
                 {
-                    var frame = new RoomCombatState(source.RoomIndex, source.Deployment,
-                        units.Where(unit => !unit.Removed && unit.InRoom).Select(unit => unit.Freeze()).ToArray(),
-                        source.ExternalInteractions, context, source.Preview, CompanionBossSnapshot());
-                    RoomCombatResult drained = finishDamageQueue(frame);
+                    RoomCombatResult drained = finishDamageQueue(DamageCheckpoint());
                     if (!drained.Supported) { unsupportedReason = drained.UnsupportedReason; return; }
                     MergeSummon(drained);
                 }
@@ -3764,20 +3761,25 @@ namespace MonsterTrain2Poju.Model
 
             private bool SettleExternalDamageCallbacks()
             {
-                var frame = new RoomCombatState(source.RoomIndex, source.Deployment,
-                    units.Where(unit => !unit.Removed && unit.InRoom).Select(unit => unit.Freeze()).ToArray(),
-                    source.ExternalInteractions, context, source.Preview, CompanionBossSnapshot());
-                var checkpoint = new RoomCombatResult(frame, battleWon ? RoomOutcome.BattleWon : RoomOutcome.Exchanged,
-                    0, new List<CombatEvent>(), retainedUnits: units.Where(unit => externalTurnActorIds.Contains(unit.Source.Id))
-                        .Select(unit => unit.Freeze()).ToArray());
+                RoomCombatResult checkpoint = DamageCheckpoint();
                 RoomCombatResult settled = settleDamageCallbacks!(checkpoint);
                 if (!settled.Supported) { unsupportedReason = settled.UnsupportedReason; return false; }
                 MergeSummon(settled);
-                RetireRemovedUnits(frame, settled.State!);
+                RetireRemovedUnits(checkpoint.State!, settled.State!);
                 // The global queue has already completed these physical deaths;
                 // do not export another removal request when this engine returns.
                 deferredDamageDeaths.RemoveAll(dead => dead.Unit.Removed);
                 return true;
+            }
+
+            private RoomCombatResult DamageCheckpoint()
+            {
+                var frame = new RoomCombatState(source.RoomIndex, source.Deployment,
+                    units.Where(unit => !unit.Removed && unit.InRoom).Select(unit => unit.Freeze()).ToArray(),
+                    source.ExternalInteractions, context, source.Preview, CompanionBossSnapshot());
+                return new RoomCombatResult(frame, battleWon ? RoomOutcome.BattleWon : RoomOutcome.Exchanged,
+                    0, new List<CombatEvent>(), retainedUnits: units.Where(unit => externalTurnActorIds.Contains(unit.Source.Id))
+                        .Select(unit => unit.Freeze()).ToArray());
             }
 
             private void RetireRemovedUnits(RoomCombatState before, RoomCombatState after)
