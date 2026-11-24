@@ -18,14 +18,13 @@ namespace MonsterTrain2Poju.Probe
         private const string UpgradeId = "dd5e71e2-6e0d-44fc-a6d9-00fee69cf093";
         private const string AbilityId = "26aafce5-a9c7-4244-84f2-b24b99a92f87";
         private const string Boundary = "OriginalZarielPain";
-        private const int ControlDamage = 2;
+        private const int StartingPain = 10;
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_ZARIEL_PAIN_WITNESS") == "1";
         private static CardState? champion, ability;
         private static object? authored;
-        private static bool turnAdvanced, controlStarted, controlFinished;
-        private static int healthBeforeControl, painBeforeControl;
-        private static BattleTurnState? beforeDeployment, afterDeployment, beforeControl, before;
+        private static bool turnAdvanced;
+        private static BattleTurnState? beforeDeployment, afterDeployment, before;
         private static PlayCardAction? deployment, action;
         private static DamageSample? sample;
         private static bool observing;
@@ -71,29 +70,18 @@ namespace MonsterTrain2Poju.Probe
             List<CharacterState> actors = new List<CharacterState>();
             room.AddCharactersToList(actors, Team.Type.Monsters);
             CharacterState zariel = actors.Single(unit => ReferenceEquals(unit.GetSpawnerCard(), champion));
-            if (!controlStarted)
-            {
-                beforeControl = trace.CaptureDecision();
-                healthBeforeControl = zariel.GetHP();
-                painBeforeControl = zariel.GetStatusEffectStacks("pain");
-                if (healthBeforeControl <= ControlDamage || painBeforeControl != 0)
-                    throw new InvalidOperationException("Expected a healthy original Zariel before the Bloodshed control.");
-                controlStarted = true;
-                save.StartCoroutine(TriggerBloodshed(combat, zariel));
-                return false;
-            }
-            if (!controlFinished) return false;
             if (before == null)
             {
                 int pain = zariel.GetStatusEffectStacks("pain");
                 ability = zariel.GetUnitAbilityCardState();
-                if (pain <= painBeforeControl || zariel.GetHP() != healthBeforeControl - ControlDamage ||
+                log.LogInfo($"ORIGINAL-ZARIEL-PAIN READY card={trace.CardId(champion)} health={zariel.GetHP()}/{zariel.GetMaxHP()} pain={pain} ability={ability?.GetCardDataID()}");
+                if (pain != StartingPain ||
                     ability?.GetCardDataID() != AbilityId || !zariel.CanActivateUnitAbility() || !zariel.CanTargetUnitAbilityInRoom(0))
-                    throw new InvalidOperationException("The original Bloodshed did not supply pain and the native ability.");
+                    throw new InvalidOperationException("Expected the original starting Pain and available Tier I ability.");
                 var enemies = new List<CharacterState>();
                 room.AddCharactersToList(enemies, Team.Type.Heroes);
-                var target = enemies.FirstOrDefault(item => item.IsAlive && item.GetHP() > pain && item.GetSpawnPoint() != null)
-                    ?? throw new InvalidOperationException("Expected an original first-wave target that survives Tier I pain damage.");
+                var target = enemies.FirstOrDefault(item => item.IsAlive && item.GetSpawnPoint() != null)
+                    ?? throw new InvalidOperationException("Expected a living original first-wave target.");
                 before = trace.CaptureDecision();
                 action = new PlayCardAction(trace.CardId(ability), 0, targetUnitId: trace.UnitId(target), activatorUnitId: trace.UnitId(zariel));
                 if (!cards.PlayAnyCard(ability, out var error, zariel, target.GetSpawnPoint(), ignoreCost: false,
@@ -103,16 +91,17 @@ namespace MonsterTrain2Poju.Probe
             }
 
             BattleTurnState after = trace.CaptureDecision();
-            if (sample is not { Completed: true, Coefficient: 1 } || sample.Pain <= 0 ||
+            if (sample is not { Completed: true, Coefficient: 1, Pain: StartingPain } ||
                 sample.ActorId != action!.ActivatorUnitId || sample.TargetId != action.TargetUnitId ||
-                sample.Requested != sample.Pain || sample.TargetHealthAfter != sample.TargetHealthBefore - sample.Requested ||
+                sample.Requested != sample.Pain ||
+                sample.TargetHealthAfter != Math.Max(0, sample.TargetHealthBefore - sample.Requested) ||
                 before.Energy != after.Energy)
                 throw new InvalidOperationException("Original Zariel damage did not settle as the paid Tier I pain-scaled ability.");
             using var document = NativeFixtureCapture.Capture(new
             {
                 Schema = 1, Boundary, GameVersion = Application.version, GameModuleMvid = Module,
                 Authored = authored, DeploymentBefore = beforeDeployment, Deployment = deployment, DeploymentAfter = afterDeployment,
-                BeforeControl = beforeControl, ControlDamage, HealthBeforeControl = healthBeforeControl, PainBeforeControl = painBeforeControl,
+                StartingPain,
                 Before = before, Action = action, After = after, Damage = sample
             });
             using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "zariel-pain-tier1.mt2f"));
@@ -145,6 +134,9 @@ namespace MonsterTrain2Poju.Probe
             extraState.Setup(extra ?? throw new InvalidOperationException("The original damage effect lost its auxiliary upgrade parameter."));
             var state = new CardUpgradeState();
             state.Setup(rank);
+            var startingStatuses = state.GetStatusEffectUpgrades();
+            if (startingStatuses.Count != 1 || startingStatuses[0].statusId != "pain" || startingStatuses[0].count != StartingPain)
+                throw new InvalidOperationException("The original Zariel Tier I starting Pain changed.");
             var card = cards.GetHand().FirstOrDefault(item => item.GetCardDataID() == ChampionId) ??
                 cards.AddNewCard(definition, CardPile.HandPile, false, false, animate: false)
                 ?? throw new InvalidOperationException("Original Zariel could not enter the placement hand.");
@@ -159,12 +151,6 @@ namespace MonsterTrain2Poju.Probe
             return card;
         }
 
-        private static IEnumerator TriggerBloodshed(CombatManager combat, CharacterState zariel)
-        {
-            yield return combat.ApplyDamageToTarget(ControlDamage, zariel, new CombatManager.ApplyDamageToTargetParameters());
-            controlFinished = true;
-        }
-
         private sealed class DamageSample
         {
             public int ActorId { get; set; }
@@ -174,6 +160,7 @@ namespace MonsterTrain2Poju.Probe
             public int Requested { get; set; }
             public int TargetHealthBefore { get; set; }
             public int TargetHealthAfter { get; set; }
+            public bool TargetDestroyed { get; set; }
             public bool Completed { get; set; }
         }
 
@@ -200,7 +187,8 @@ namespace MonsterTrain2Poju.Probe
                 try
                 {
                     while (native.MoveNext()) yield return native.Current;
-                    sample.TargetHealthAfter = target.GetHP();
+                    sample.TargetDestroyed = target.IsDestroyed;
+                    sample.TargetHealthAfter = sample.TargetDestroyed ? 0 : target.GetHP();
                     sample.Completed = true;
                 }
                 finally { observing = false; (native as IDisposable)?.Dispose(); }
