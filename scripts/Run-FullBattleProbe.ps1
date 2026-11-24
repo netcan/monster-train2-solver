@@ -667,6 +667,8 @@ param(
 
     [ValidateSet('Double', 'Half')]
     [string] $OriginalGoldRewardMultiplier = '',
+
+    [switch] $OriginalSavageryDeckUpgrade,
     [switch] $CampaignDraftCalibration,
     [switch] $CampaignPostBattleCalibration,
     [switch] $CampaignBattleResourceCalibration,
@@ -970,6 +972,14 @@ if ($OriginalGoldRewardMultiplier) {
         'SkipBuild', 'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
         throw 'Original gold reward multiplier requires an isolated stock opening and binary capture.'
+    }
+    $Policy = 'units-spells-and-junk'
+}
+if ($OriginalSavageryDeckUpgrade) {
+    $allowed = @('OriginalSavageryDeckUpgrade', 'BinaryCapture', 'NativeWorker', 'NativeBuildRoot',
+        'SkipBuild', 'GameSpeed', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
+        throw 'Original Savagery deck upgrade requires an isolated stock opening and binary capture.'
     }
     $Policy = 'units-spells-and-junk'
 }
@@ -2850,7 +2860,7 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     $OriginalHealOnAscendWitness -or $OriginalFrontReanimationWitness -or $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle -or $OriginalLonelyRoomsBattle -or
     $OriginalShuffleUnitsWitness -or $OriginalShuffleUnitsBattle -or $OriginalDoubleFriendlyHealthWitness -or $OriginalDoubleFriendlyHealthBattle -or
     $OriginalBothSidesUnitsWitness -or $OriginalBothSidesUnitsBattle -or $OriginalSkullCollectorsWitness -or
-    $OriginalDominionMothersRemnantWitness -or $OriginalGoldRewardMultiplier) {
+    $OriginalDominionMothersRemnantWitness -or $OriginalGoldRewardMultiplier -or $OriginalSavageryDeckUpgrade) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -2865,6 +2875,9 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     }
     if ($OriginalDominionMothersRemnantWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original Dominion paid-copy witness requires the pinned 2.3.1 native module.'
+    }
+    if ($OriginalSavageryDeckUpgrade -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'Original Savagery deck upgrade requires the pinned 2.3.1 native module.'
     }
     if ($OriginalGoldRewardMultiplier -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original gold reward multiplier requires the pinned 2.3.1 native module.'
@@ -3412,6 +3425,7 @@ $environment = @{
     MT2_PROBE_PERCENTAGE_STATS_BATCH = $(if ($PercentageStatsMechanism) { '1' } else { '0' })
     MT2_PROBE_LATE_ATTACK_BATCH = $(if ($LateAttackMechanism) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_RELICS = $(if ($CampaignRelicCalibration) { '1' } else { '0' })
+    MT2_PROBE_ORIGINAL_SAVAGERY_DECK_UPGRADE = $(if ($OriginalSavageryDeckUpgrade) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_GOLD_MULTIPLIER = $(if ($OriginalGoldRewardMultiplier -eq 'Double') { 'Double' } elseif ($OriginalGoldRewardMultiplier) { 'Half' } else { '' })
     MT2_PROBE_CAMPAIGN_DRAFTS = $(if ($CampaignDraftCalibration) { '1' } else { '0' })
     MT2_PROBE_CAMPAIGN_POST_BATTLE = $(if ($CampaignPostBattleCalibration) { '1' } else { '0' })
@@ -4341,6 +4355,16 @@ if ($CapturePlayerDeploymentOnly) {
     [pscustomobject]@{ Profile=$profile; NativeDeploymentCaptured=$true; InputProfileUnchanged=$true;
         OriginalFilesUnchanged=$true; Trace=$capturePath; SHA256=(Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash } |
         ConvertTo-Json
+    return
+}
+if ($OriginalSavageryDeckUpgrade) {
+    $capturePath = Join-Path $profile 'original-savagery-deck-upgrade.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Savagery deck upgrades captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original Savagery deck upgrade failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-SAVAGERY-DECK-UPGRADE PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalGoldRewardMultiplier) {

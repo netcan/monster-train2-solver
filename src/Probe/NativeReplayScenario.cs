@@ -942,6 +942,12 @@ namespace MonsterTrain2Poju.Probe
                         OriginalPyreAbilityCooldownWitness.Prepare(save);
 #endif
 #if DEVELOPMENT_PROBE
+                    if (fullBattle && CampaignRelicCalibration.SavageryEnabled)
+                    {
+                        CampaignRelicCalibration.CaptureSavagery(managers!);
+                        Finish(true, "Original Savagery deck upgrades captured.");
+                        return;
+                    }
                     if (fullBattle && OriginalEndlessEnemyScalingWitness.Enabled) OriginalEndlessEnemyScalingWitness.Arm(save);
 #endif
                     if (ReplayManager.TryClickButton(intro.GetFightButton())) Enter(Stage.Battle, 120f);

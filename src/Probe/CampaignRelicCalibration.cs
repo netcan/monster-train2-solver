@@ -125,6 +125,109 @@ namespace MonsterTrain2Poju.Probe
         }
         private static void Set(object target, string field, object? value) => AccessTools.Field(target.GetType(), field).SetValue(target, value);
 #if DEVELOPMENT_PROBE
+        internal static bool SavageryEnabled => Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_SAVAGERY_DECK_UPGRADE") == "1";
+
+        internal static void CaptureSavagery(AllGameManagers managers)
+        {
+            const string OwnerId = "8a0237aa-438f-4c76-8391-949c5e369d4b";
+            const string OwnerKey = "Echoes_ChampionUnitsGetSavageryBuffs";
+            SaveManager save = managers.GetSaveManager();
+            Guid module = typeof(SaveManager).Module.ModuleVersionId;
+            if (UnityEngine.Application.version != "2.3.1" || module != new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d") ||
+                save.PreviewMode || save.InTestScenario || save.GetGameSequence() != SaveData.GameSequence.BattleIntro ||
+                save.GetCurrentDistance() != 0 || save.GetCovenants().Count != 0 || save.GetMutators().Count != 0)
+                throw new InvalidOperationException("Expected the original isolated opening BattleIntro for Savagery.");
+
+            AllGameData data = save.GetAllGameData();
+            MutatorData owner = data.FindMutatorData(OwnerId)
+                ?? throw new InvalidOperationException("Original Savagery mutator is unavailable.");
+            if (owner.name != OwnerKey || owner.DisallowInDeploymentPhase || !save.IsDlcAvailableWhenStartingRun(owner.GetRequiredDLC()) ||
+                owner.GetEffects() is not [var effect] || effect.GetEffectClassName() != nameof(RelicEffectAddStartingUpgradeToUnitCards) ||
+                effect.GetEffectConditions().Count != 0 || effect.GetParamInt2() != (int)UnitEnhancerPoolSelection.SelectAll ||
+                effect.GetParamCardFilter() is not { name: "OnlyChampions" } filter || effect.GetParamEnhancerPool() is not EnhancerPool pool)
+                throw new InvalidOperationException("The original Savagery mutator payload changed.");
+
+            var choices = new List<EnhancerData>();
+            pool.GetAllChoices(choices);
+            var originalPool = choices.Select(choice => new
+            {
+                Id = choice.GetID(), Key = choice.name,
+                Effects = choice.GetEffects().Select(entry => new
+                {
+                    Type = entry.GetEffectClassName(), CardType = entry.GetParamCardType().ToString(),
+                    UpgradeId = entry.GetParamCardUpgradeData()?.GetID(), FilterCount = entry.GetParamCardUpgradeData()?.GetFilters().Count
+                }).ToArray()
+            }).ToArray();
+            if (originalPool.Length == 0)
+                throw new InvalidOperationException("The original Savagery enhancer pool is empty.");
+
+            CardState[] originalDeck = save.GetDeckState().ToArray();
+            CardState[] sources =
+            [
+                originalDeck.First(card => card.IsChampionCard()),
+                originalDeck.First(card => card.GetCardType() == CardType.Monster && !card.IsChampionCard()),
+                originalDeck.First(card => card.GetCardType() == CardType.Spell)
+            ];
+            var definitions = sources.Select(card => data.FindCardData(card.GetCardDataID())
+                ?? throw new InvalidOperationException("A starting card is missing its original definition.")).ToArray();
+            var baseline = definitions.Select(AddCard).ToArray();
+            var cardsBeforeAcquire = save.GetDeckState().ToDictionary(card => card, Upgrades);
+            JObject beforeAcquireRng = RngStates();
+            save.AddMutator(owner);
+            JObject afterAcquireRng = RngStates();
+            MutatorState active = save.GetMutators().Single();
+            if (active.GetRelicDataID() != OwnerId || active.GetEffects() is not [RelicEffectAddStartingUpgradeToUnitCards] ||
+                !cardsBeforeAcquire.All(row => row.Value.SequenceEqual(Upgrades(row.Key))))
+                throw new InvalidOperationException("Original Savagery did not activate or changed a pre-existing card.");
+
+            var owned = definitions.Select(AddCard).ToArray();
+            if (!cardsBeforeAcquire.All(row => row.Value.SequenceEqual(Upgrades(row.Key))) ||
+                !baseline[1].Upgrades.SequenceEqual(owned[1].Upgrades) || !baseline[2].Upgrades.SequenceEqual(owned[2].Upgrades) ||
+                owned[0].Upgrades.Length <= baseline[0].Upgrades.Length ||
+                !owned[0].Upgrades.Take(baseline[0].Upgrades.Length).SequenceEqual(baseline[0].Upgrades))
+                throw new InvalidOperationException("Native Savagery champion additions or control cards differed.");
+            string[] appended = owned[0].Upgrades.Skip(baseline[0].Upgrades.Length).ToArray();
+            bool allChoicesAppended = originalPool.All(choice => choice.Effects is [{ CardType: "Monster", UpgradeId: not null }]) &&
+                appended.SequenceEqual(originalPool.Select(choice => choice.Effects[0].UpgradeId));
+
+            using var document = NativeFixtureCapture.Capture(new
+            {
+                Schema = 1, Boundary = "OriginalSavageryChampionDeckUpgrade",
+                GameVersion = UnityEngine.Application.version, GameModuleMvid = module,
+                Owner = new { Id = active.GetRelicDataID(), Key = active.GetAssetName(), Effect = effect.GetEffectClassName(),
+                    Filter = filter.name, Selection = UnitEnhancerPoolSelection.SelectAll.ToString() },
+                OriginalPool = originalPool, AppendedChampionUpgradeIds = appended, AllPoolChoicesAppended = allChoicesAppended,
+                DeckCountBefore = originalDeck.Length, DeckCountAfter = save.GetDeckState().Count,
+                BeforeAcquireRng = beforeAcquireRng, AfterAcquireRng = afterAcquireRng,
+                Cards = definitions.Select((definition, index) => new
+                {
+                    Id = definition.GetID(), Key = definition.name, Type = definition.GetCardType().ToString(),
+                    Champion = sources[index].IsChampionCard(),
+                    BaselineUpgrades = baseline[index].Upgrades, OwnedUpgrades = owned[index].Upgrades,
+                    BaselineRngBefore = baseline[index].Before, BaselineRngAfter = baseline[index].After,
+                    OwnedRngBefore = owned[index].Before, OwnedRngAfter = owned[index].After
+                }).ToArray()
+            });
+            using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                "original-savagery-deck-upgrade.mt2f"));
+            document.Write(stream);
+
+            (string[] Upgrades, JObject Before, JObject After) AddCard(CardData definition)
+            {
+                int count = save.GetDeckState().Count;
+                JObject before = RngStates();
+                CardState added = save.AddCardToDeck(definition, showAnimation: false);
+                JObject after = RngStates();
+                if (save.GetDeckState().Count != count + 1 || !ReferenceEquals(save.GetDeckState().Last(), added) ||
+                    added.GetCardDataID() != definition.GetID())
+                    throw new InvalidOperationException("The native deck did not gain the exact original card.");
+                return (Upgrades(added), before, after);
+            }
+
+            static string[] Upgrades(CardState card) => card.GetCardStateModifiers().GetCardUpgrades()
+                .Select(upgrade => upgrade.GetCardUpgradeDataId()).ToArray();
+        }
+
         internal static bool GoldMultiplierEnabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_GOLD_MULTIPLIER"));
 
         internal static void CaptureGoldMultiplier(AllGameManagers managers)
