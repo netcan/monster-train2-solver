@@ -191,12 +191,20 @@ namespace MonsterTrain2Poju.Model
             bool allowAdditionalRefreshes = false)
         {
             if (!source.BattlePreviewEnabled || !observed.BattlePreviewEnabled || source.Spawn.Turn != observed.Spawn.Turn ||
-                source.PlayRules == null || source.Spawn.Train.Context?.SpawnPoints?.NextPreviewCopyId is not int priorCopy ||
-                observed.Spawn.Train.Context?.SpawnPoints?.NextPreviewCopyId is not int actualCopy || actualCopy <= priorCopy)
+                observed.Spawn.Train.Context?.SpawnPoints?.NextPreviewCopyId is not int actualCopy)
                 return null;
-            if (source.SelectedRoom != observed.SelectedRoom)
+            return ReplayObservedPreview(source, observed.SelectedRoom, actualCopy, allowAdditionalRefreshes);
+        }
+
+        internal static BattleTurnState? ReplayObservedPreview(BattleTurnState source, int room, int actualCopy,
+            bool allowAdditionalRefreshes = false)
+        {
+            if (!source.BattlePreviewEnabled || source.PlayRules == null ||
+                source.Spawn.Train.Context?.SpawnPoints?.NextPreviewCopyId is not int priorCopy || actualCopy <= priorCopy)
+                return null;
+            if (source.SelectedRoom != room)
             {
-                BattleTurnState? focused = SelectRoom(source, observed.SelectedRoom).State;
+                BattleTurnState? focused = SelectRoom(source, room).State;
                 if (!allowAdditionalRefreshes || focused == null) return focused;
                 source = focused;
             }

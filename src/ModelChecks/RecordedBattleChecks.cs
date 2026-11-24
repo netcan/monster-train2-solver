@@ -19,6 +19,7 @@ internal static class RecordedBattleChecks
         FixtureValue actions = root.GetProperty("Actions"), turns = root.GetProperty("Turns");
         Require(actions.GetArrayLength() + turns.GetArrayLength() > 0, "Recorded battle contains no actions or EndTurns.");
         bool trackPreviewPosition = TracksPreviewPosition(root);
+        FixtureValue[] previewScheduling = ReadPreviewScheduling(root, trackPreviewPosition);
         var failures = new List<(string Status, string Reason, bool EndTurn, int Index, int Turn)>();
         foreach (FixtureValue action in actions.EnumerateArray()) Check(action, endTurn: false);
         foreach (FixtureValue turn in turns.EnumerateArray()) Check(turn, endTurn: true);
@@ -46,7 +47,7 @@ internal static class RecordedBattleChecks
             string? unsupportedReason;
             if (endTurn)
             {
-                BattleTurnResult result = BattleTurnModel.EndTurn(before, Decisions(row));
+                BattleTurnResult result = ResolveEndTurn(before, row, previewScheduling);
                 (predicted, outcome, unsupportedReason) = (result.State, result.Outcome, result.UnsupportedReason);
             }
             else
@@ -96,6 +97,7 @@ internal static class RecordedBattleChecks
             return turn >= firstTurn && turn <= lastTurn;
         }
         bool trackPreviewPosition = TracksPreviewPosition(root);
+        FixtureValue[] previewScheduling = ReadPreviewScheduling(root, trackPreviewPosition);
         Require(actions.Length > 0 || turns.Length > 0, "Recorded battle contains no actions or EndTurns.");
         BattleTurnState initial = (actions.Length > 0 ? actions[0] : turns[0])
             .GetProperty("Before").Deserialize<BattleTurnState>()!;
@@ -113,7 +115,7 @@ internal static class RecordedBattleChecks
                     Play(actionIndex++);
                 string label = $"EndTurn {number}";
                 state = RecordedBoundary(state, turn.GetProperty("Before"), terminal: false, "before " + label, trackPreviewPosition);
-                BattleTurnResult next = BattleTurnModel.EndTurn(state, Decisions(turn));
+                BattleTurnResult next = ResolveEndTurn(state, turn, previewScheduling);
                 Require(next.Supported, label + ": " + (next.UnsupportedReason ?? "Unsupported."));
                 Require(next.Outcome == turn.GetProperty("ActualOutcome").Deserialize<RoomOutcome>(), label + ": Outcome differs.");
                 state = RecordedBoundary(next.State!, turn.GetProperty("Actual"), Terminal(next.Outcome), "after " + label, trackPreviewPosition);
@@ -139,6 +141,53 @@ internal static class RecordedBattleChecks
     internal static int DecisionTurn(FixtureValue row) => row.GetProperty("Before").GetProperty("Spawn").GetProperty("Turn").GetInt32();
     private static bool TracksPreviewPosition(FixtureValue root) => root.TryGetProperty("NativeRunInput", out FixtureValue run) &&
         run.ValueKind == FixtureKind.Object && run.TryGetProperty("RunType", out FixtureValue runType) && runType.GetString() == "RegionRun";
+    private static FixtureValue[] ReadPreviewScheduling(FixtureValue root, bool trackPreviewPosition) =>
+        trackPreviewPosition && root.TryGetProperty("PreviewScheduling", out var scheduling) && scheduling.ValueKind == FixtureKind.Array
+            ? scheduling.EnumerateArray().ToArray() : [];
+
+    private static BattleTurnResult ResolveEndTurn(BattleTurnState source, FixtureValue row, FixtureValue[] scheduling)
+    {
+        RelentlessDecision[]? decisions = Decisions(row);
+        BattleTurnResult result = BattleTurnModel.EndTurn(source, decisions);
+        if (!result.Supported || Terminal(result.Outcome) || scheduling.Length == 0 ||
+            source.Spawn.Train.Context?.SpawnPoints?.NextPreviewCopyId is not int startCopy)
+            return result;
+        var expected = row.GetProperty("Actual").GetProperty("Spawn").GetProperty("Train").GetProperty("Context");
+        if (!expected.TryGetProperty("SpawnPoints", out var points) || points.ValueKind != FixtureKind.Object ||
+            !points.TryGetProperty("NextPreviewCopyId", out var nextCopy) || nextCopy.ValueKind != FixtureKind.Number ||
+            result.State!.Spawn.Train.Context?.SpawnPoints?.NextPreviewCopyId is not int modeledCopy || modeledCopy >= nextCopy.GetInt32())
+            return result;
+
+        // Hand animation can request a refresh in the last player frame before combat.
+        // The original scheduling receipt identifies when it belongs before EndTurn.
+        for (int index = 0; index + 2 < scheduling.Length; index++)
+        {
+            FixtureValue begin = scheduling[index], complete = scheduling[index + 1], close = scheduling[index + 2];
+            if (!InSourceRoom(begin) || !InSourceRoom(complete) || !InSourceRoom(close) ||
+                begin.GetProperty("Operation").GetString() != "Battle:Calculating" ||
+                complete.GetProperty("Operation").GetString() != "Battle:On" ||
+                close.GetProperty("Operation").GetString() != "Battle:Off" ||
+                !begin.GetProperty("PlayerControl").GetBoolean() || !complete.GetProperty("PlayerControl").GetBoolean() ||
+                close.GetProperty("PlayerControl").GetBoolean() ||
+                begin.GetProperty("ActionCount").GetInt32() != complete.GetProperty("ActionCount").GetInt32() ||
+                complete.GetProperty("ActionCount").GetInt32() != close.GetProperty("ActionCount").GetInt32() ||
+                CopyId(begin) != startCopy || CopyId(complete) is not int afterCopy || afterCopy <= startCopy || CopyId(close) != afterCopy)
+                continue;
+            BattleTurnState? refreshed = BattleTurnModel.ReplayObservedPreview(source, source.SelectedRoom, afterCopy);
+            if (refreshed == null) return result;
+            BattleTurnResult replayed = BattleTurnModel.EndTurn(refreshed, decisions);
+            BattleTurnState actual = row.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+            return replayed.Outcome == result.Outcome && replayed.State is BattleTurnState child && child.SelectedRoom == actual.SelectedRoom &&
+                child.Spawn.Train.Context?.SpawnPoints?.NextPreviewCopyId == nextCopy.GetInt32() && Difference(child, actual, false) == null
+                ? replayed : result;
+        }
+        return result;
+
+        bool InSourceRoom(FixtureValue item) => item.GetProperty("Turn").GetInt32() == source.Spawn.Turn &&
+            item.GetProperty("Room").GetInt32() == source.SelectedRoom;
+        static int? CopyId(FixtureValue item) => item.TryGetProperty("NextPreviewCopyId", out var copy) && copy.ValueKind == FixtureKind.Number
+            ? copy.GetInt32() : null;
+    }
     private static bool Terminal(RoomOutcome outcome) => outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated;
     internal static RelentlessDecision[]? Decisions(FixtureValue row) => row.TryGetProperty("RelentlessDecisions", out var choices) &&
         choices.ValueKind != FixtureKind.Null ? choices.Deserialize<RelentlessDecision[]>() : null;
