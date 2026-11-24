@@ -23,6 +23,7 @@ param(
     [switch] $AdvisorUndo,
     [switch] $AdvisorMixPrompt,
     [switch] $AdvisorUnitMixPrompt,
+    [switch] $AdvisorSummonPrompt,
     [switch] $RollingAdvice,
     [switch] $ContinueToNextRing,
     [switch] $PreviewAttackTrace,
@@ -1450,6 +1451,22 @@ if ($AdvisorUnitMixPrompt) {
     $PrimaryClan = 'Banished'
     $SecondaryClan = 'Pyreborne'
     $Seed = 424242
+    $Policy = 'units-spells-and-junk'
+}
+if ($AdvisorSummonPrompt) {
+    $allowed = @('AdvisorSummonPrompt', 'PlayerAdvisor', 'RollingAdvice', 'BinaryCapture', 'InputProfile', 'BattleDistance',
+        'PlannerWholeBattle', 'PlannerSearchWorkers', 'PlannerTimeLimitMs', 'GameSpeed', 'NativeWorker',
+        'NativeBuildRoot', 'SkipBuild', 'TimeoutSeconds', 'Verbose', 'Debug', 'ErrorAction')
+    if (-not ($PlayerAdvisor -and $RollingAdvice -and $BinaryCapture -and $InputProfile) -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count) {
+        throw 'AdvisorSummonPrompt requires a licensed original GrimFlight BattleIntro checkpoint and binary PlayerAdvisor rolling mode.'
+    }
+    $summonCheckpoint = & (Join-Path $PSScriptRoot 'Check-Game231SummonChoiceBattle.ps1') -AdvisorCheckpoint $InputProfile | ConvertFrom-Json
+    if ($PSBoundParameters.ContainsKey('BattleDistance') -and $BattleDistance -ne $summonCheckpoint.BattleDistance) {
+        throw 'AdvisorSummonPrompt BattleDistance differs from the original GrimFlight checkpoint.'
+    }
+    $BattleDistance = $summonCheckpoint.BattleDistance
+    $InputProfile = $summonCheckpoint.InputProfile
     $Policy = 'units-spells-and-junk'
 }
 if ($RoomMoonSpellThresholdRelic) {
@@ -2985,7 +3002,7 @@ $gameRoot = Join-Path $workspace $(if ($NativeWorker -gt 1) { ".sandbox-game-wor
 if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll') -PathType Leaf)) {
     throw "Native worker $NativeWorker is not initialized; run scripts/Initialize-NativeWorker.ps1 -Worker $NativeWorker first."
 }
-if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorRestart -or $AdvisorUndo -or $AdvisorMixPrompt -or $AdvisorUnitMixPrompt -or
+if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorRestart -or $AdvisorUndo -or $AdvisorMixPrompt -or $AdvisorUnitMixPrompt -or $AdvisorSummonPrompt -or
     $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth -or $OriginalFunguyDeckScalingDoubleUnits -or
     $OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness -or
     $OriginalPyreAbilityCooldownWitness -or $OriginalPyreStewardDamageWitness -or $OriginalZarielPainWitness -or $OriginalZarielDevotionWitness -or $OriginalEmbeddedRoomWitness -or $OriginalEndlessEnemyScalingWitness -or $EndlessEnemyScalingFactorBatch -or
@@ -3074,7 +3091,7 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     if ($OriginalEntropyDrawWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original Entropy draw requires the pinned 2.3.1 game module.'
     }
-    if (($AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorRestart -or $AdvisorUndo -or $AdvisorMixPrompt -or $AdvisorUnitMixPrompt) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+    if (($AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorRestart -or $AdvisorUndo -or $AdvisorMixPrompt -or $AdvisorUnitMixPrompt -or $AdvisorSummonPrompt) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "The player advisor observation requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
     }
     if (($OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
@@ -3318,6 +3335,12 @@ if ($InputProfile) {
         }
         $restartInputSignature = Get-OriginalSignature $checkpoint
     }
+    if ($AdvisorSummonPrompt) {
+        if ((Get-FileHash -LiteralPath (Join-Path $checkpoint 'saves/save-singlePlayer.json') -Algorithm SHA256).Hash -cne $summonCheckpoint.SaveSHA256) {
+            throw 'The original GrimFlight checkpoint changed after native preflight.'
+        }
+        $summonInputSignature = Get-OriginalSignature $checkpoint
+    }
     if ($OriginalUnrulyWitness -or $OriginalUnrulyBattle) { $unrulyInputSignature = Get-OriginalSignature $checkpoint }
     if ($OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness) {
         if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
@@ -3479,6 +3502,7 @@ $environment = @{
     MT2_PROBE_ADVISOR_RESTART = $(if ($AdvisorRestart) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_UNDO = $(if ($AdvisorUndo) { '1' } else { '0' })
     MT2_PROBE_ADVISOR_MIX_PROMPT = $(if ($AdvisorUnitMixPrompt) { 'unit' } elseif ($AdvisorMixPrompt) { '1' } else { '0' })
+    MT2_PROBE_ADVISOR_SUMMON_PROMPT = $(if ($AdvisorSummonPrompt) { '1' } else { '0' })
     MT2_ADVISOR_SCREENSHOT = $(if ($Advisor) { '1' } else { '0' })
     MT2_PROBE_SEED = "$Seed"
     MT2_PROBE_PLANNER_TURN = "$PlannerTurn"
@@ -3657,6 +3681,10 @@ $environment = @{
     MT2_PROBE_DAMAGE_REACTION_FINAL_DEATH = $(if ($DamageReactionFinalDeathOnly) { '1' } else { '0' })
     MT2_PROBE_ENCHANTMENT_WORLD = $(if ($EnchantmentWorld) { '1' } else { '0' })
     MT2_PROBE_TRIGGER_REPEATS = $(if ($TriggerRepeats) { '1' } else { '0' })
+}
+if ($AdvisorSummonPrompt) {
+    $environment['MT2_PROBE_GRIM_FLIGHT_RANK'] = [string]$summonCheckpoint.GrimFlightRank
+    $environment['MT2_PROBE_ADVISOR_SUMMON_CHECKPOINT_SHA256'] = $summonCheckpoint.SaveSHA256
 }
 if ($ContinueToNextRing) {
     $environment.MT2_PROBE_CAMPAIGN_AFTER_REPLAY = '0'
@@ -4472,13 +4500,15 @@ if ($OriginalEquilibriusDrawWitness) {
     Write-Output "NATIVE-EQUIBRIUS-T3-DRAW PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath).Hash)"
     return
 }
-if ($AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorMixPrompt -or $AdvisorUnitMixPrompt) {
-    $captureName = if ($AdvisorUnitMixPrompt) { 'player-advisor-unit-mix-prompt.mt2f' }
+if ($AdvisorOffRoute -or $AdvisorRapidContinuation -or $AdvisorMixPrompt -or $AdvisorUnitMixPrompt -or $AdvisorSummonPrompt) {
+    $captureName = if ($AdvisorSummonPrompt) { 'player-advisor-summon-prompt.mt2f' }
+        elseif ($AdvisorUnitMixPrompt) { 'player-advisor-unit-mix-prompt.mt2f' }
         elseif ($AdvisorMixPrompt) { 'player-advisor-mix-prompt.mt2f' }
         elseif ($AdvisorRapidContinuation) { 'player-advisor-rapid-continuation.mt2f' } else { 'player-advisor-off-route.mt2f' }
     $capturePath = Join-Path $profile $captureName
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
-        (Get-OriginalSignature) -cne $originalBefore) {
+        (Get-OriginalSignature) -cne $originalBefore -or
+        ($AdvisorSummonPrompt -and (Get-OriginalSignature $checkpoint) -cne $summonInputSignature)) {
         throw "Player advisor observation failed. Expected $captureName. Inspect $unityLog"
     }
     [pscustomobject]@{ Profile=$profile; NativeComponentCaptured=$true; OriginalFilesUnchanged=$true;

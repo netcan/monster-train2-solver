@@ -99,8 +99,17 @@ pwsh -NoProfile -File scripts/Check-Game231SummonChoiceBattle.ps1 `
     -AdvisorCheckpoint .probe-runs/<checkpoint>
 ```
 
-正版验收还需由已登录的原版游戏确认安装和本局启用状态。使用发布包中的三个 DLL，从该检查点部署
-冠军，等待顾问建议使用 GrimFlight，并按建议选择落点。在同层有空物理站位且无碎片时，原版
-召唤弹窗应显示与建议定义唯一匹配的选项名称和实际序号。确认原版选项后，提示应消失，结算状态
-和 RNG 应与该步预测相同。随后核对下一条建议的起点。现有 `-OriginalSummonChoice` 是开发场景，
-其历史归档的原版平台标识为未安装。正版弹窗与发布版顾问的配对证据仍待采集。
+自动验收会从检查点的副本继续战斗。原版接口在恢复战斗前确认安装与本局启用状态。完成部署并
+搜索到 GrimFlight 后，验收程序确认唯一匹配的原版选项，记录实际提示、完整结算、随机流和下一次
+顾问发布。
+
+```powershell
+pwsh -NoProfile -File scripts/Run-FullBattleProbe.ps1 -AdvisorSummonPrompt -PlayerAdvisor -RollingAdvice `
+    -BinaryCapture -InputProfile '.probe-runs/<checkpoint>' -GameSpeed Instant -NativeWorker 4
+dotnet build src/ModelChecks/ModelChecks.csproj -c Release
+dotnet src/ModelChecks/bin/Release/net8.0/ModelChecks.dll --player-advisor-summon-prompt-only '<Trace>'
+```
+
+`<Trace>` 使用启动器输出的 `player-advisor-summon-prompt.mt2f` 路径。定向检查独立复放该步和
+下一条计划。旧 `-OriginalSummonChoice` 开发场景的历史归档中，原版平台标识为未安装。
+正版弹窗与发布版顾问的配对证据仍待采集。

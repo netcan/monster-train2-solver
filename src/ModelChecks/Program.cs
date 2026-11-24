@@ -7901,6 +7901,13 @@ if (args.Length == 2 && args[0] is "--player-advisor-mix-prompt-only" or "--play
     return;
 }
 
+if (args.Length == 2 && args[0] == "--player-advisor-summon-prompt-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    RollingAdviceChecks.SummonPrompt(fixture.RootElement);
+    return;
+}
+
 if (args.Length == 2 && args[0] == "--player-advisor-rapid-continuation-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

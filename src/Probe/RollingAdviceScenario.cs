@@ -383,9 +383,11 @@ namespace MonsterTrain2Poju.Probe
         }
 
 #if DEVELOPMENT_PROBE
-        internal static bool WriteMixPromptObservation()
+        internal static bool WriteElixirPromptObservation()
         {
-            if (!PlayerAdvisorProbe.MixPromptWitness || PlayerAdvisorProbe.MixPromptRows.Count == 0) return false;
+            bool summon = PlayerAdvisorProbe.SummonPromptWitness;
+            if (summon ? PlayerAdvisorProbe.SummonPrompt == null :
+                !PlayerAdvisorProbe.MixPromptWitness || PlayerAdvisorProbe.MixPromptRows.Count == 0) return false;
             Decision input = Records.Last();
             PlayCardAction action = input.Action!;
             BattleAdvice final = PlayerAdvisorProbe.Advice;
@@ -394,12 +396,29 @@ namespace MonsterTrain2Poju.Probe
             using var keys = new BattleStateKeys();
             using var boundaryKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
             string nativeRootKey = keys.Key(native);
+            bool promptSettled = summon ? action.SummonSelections.Count == 1 && PlayerAdvisorProbe.SummonPromptCleared :
+                action.MixSelections.Count == PlayerAdvisorProbe.MixPromptRows.Count && PlayerAdvisorProbe.MixPromptCleared;
             if (waiting || input.Actual == null || input.Difference != null || input.Outcome != RoomOutcome.Exchanged ||
-                action.MixSelections.Count != PlayerAdvisorProbe.MixPromptRows.Count ||
-                !PlayerAdvisorProbe.MixPromptCleared || timing.Generation <= input.Generation ||
+                !promptSettled || timing.Generation <= input.Generation ||
                 nativeRootKey != final.RootKey || boundaryKeys.Key(input.Actual) != boundaryKeys.Key(final.Root) ||
                 FullBattleTrace.Active!.CaptureFailures != 0 || FullBattleTrace.Active.Pending != 0)
-                throw new InvalidOperationException("Native Mix prompt did not settle into a fresh verified advisor publication.");
+                throw new InvalidOperationException("Native draft prompt did not settle into a fresh verified advisor publication.");
+            if (summon)
+            {
+                using var receipt = NativeFixtureCapture.Capture(new
+                {
+                    Schema = 1, EvidenceKind = "NativePlayerAdvisorSummonPrompt", GameVersion = UnityEngine.Application.version,
+                    GameModuleMvid = typeof(CardState).Module.ModuleVersionId, PlayerAdvisor = PlayerAdvisorProbe.Evidence,
+                    Entitlement = PlayerAdvisorProbe.SummonEntitlement, Input = input, Prompt = PlayerAdvisorProbe.SummonPrompt,
+                    NormalPromptRestored = PlayerAdvisorProbe.SummonPromptCleared, FinalGeneration = timing.Generation,
+                    FinalRoot = final.Root, FinalRootKey = final.RootKey, FinalNativeRoot = native,
+                    FinalNativeRootKey = nativeRootKey, FinalPlan = final.Plan
+                });
+                using var output = new FileStream(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                    "player-advisor-summon-prompt.mt2f"), FileMode.CreateNew, FileAccess.Write);
+                receipt.Write(output);
+                return true;
+            }
             using var document = NativeFixtureCapture.Capture(new
             {
                 Schema = 1, EvidenceKind = PlayerAdvisorProbe.UnitMixPromptWitness ? "NativePlayerAdvisorUnitMixPrompt" : "NativePlayerAdvisorMixPrompt",

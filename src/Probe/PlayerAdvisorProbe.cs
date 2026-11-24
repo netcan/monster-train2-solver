@@ -17,7 +17,7 @@ namespace MonsterTrain2Poju.Probe
 {
     // Isolated driver only: observe the separately loaded, unmodified player
     // assembly. Never substitute the development overlay or its search result.
-    internal static class PlayerAdvisorProbe
+    internal static partial class PlayerAdvisorProbe
     {
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_PLAYER_ADVISOR") == "1";
         internal static bool ObserveEndlessLoop2 => Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_LOOP2_ADVISOR_OBSERVATION") == "1";
@@ -745,6 +745,7 @@ namespace MonsterTrain2Poju.Probe
             }
             foreach (ElixirMixSelection selection in action.MixSelections.OrderBy(item => item.EffectIndex).ThenBy(item => item.MixNumber))
                 expectedMixChoices.Enqueue(selection);
+            if (SummonPromptWitness) ArmSummonPrompt(action, Unit(action.ActivatorUnitId));
             CardRecursionSelection[] choices = action.RecursionSelections.Select(selection =>
                 new CardRecursionSelection(selection.EffectIndex, selection.CardInstanceIds.Select(Card).ToArray())).ToArray();
             expectedChoiceCards.AddRange(choices.OrderBy(choice => choice.EffectIndex).SelectMany(choice => choice.CardInstanceIds));
@@ -786,8 +787,8 @@ namespace MonsterTrain2Poju.Probe
             {
                 int ordinal = input!.MixSelections.Count - expectedMixChoices.Count - 1;
                 prompt = AdvisorForecastPresentation.MixChoice(ordinal, choice.ChoiceIndex);
-                for (int frame = 0; frame < 12 && !VisibleMixPrompt(prompt); frame++) yield return null;
-                Require(VisibleMixPrompt(prompt), "the production Mix prompt is absent from the active original viewport");
+                for (int frame = 0; frame < 12 && !VisibleElixirPrompt(prompt); frame++) yield return null;
+                Require(VisibleElixirPrompt(prompt), "the production Mix prompt is absent from the active original viewport");
                 promptFrame = Time.frameCount;
             }
             string offers = string.Join(",", items.Cast<CardUI>().Select(item =>
@@ -810,7 +811,7 @@ namespace MonsterTrain2Poju.Probe
             }
         }
 
-        private static bool VisibleMixPrompt(string expected)
+        private static bool VisibleElixirPrompt(string expected)
         {
             Text body = Field<Text>("body");
             if (!CurrentIsNull() || !Field<bool>("showingCardChoice") || !body.isActiveAndEnabled ||

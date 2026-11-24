@@ -430,6 +430,9 @@ namespace MonsterTrain2Poju.Probe
                         throw new InvalidOperationException("A resumed battle requires a matching native BattleIntro checkpoint.");
                     if (runType == RunType.RegionRun && (!save.IsDlcInstalled(DLC.Railforged) || save.InTestScenario || SaveManager.WasDevCheatUsed))
                         throw new InvalidOperationException("Expected the installed original Soul Savior campaign.");
+#if DEVELOPMENT_PROBE
+                    if (PlayerAdvisorProbe.SummonPromptWitness) PlayerAdvisorProbe.CheckSummonPromptCheckpoint(save);
+#endif
                     if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_ANGEL_DUO")) ||
                         !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MT2_PROBE_ORIGINAL_EARLY_OUTER_BOSS")))
                         OriginalOuterBossRoute.ArmResume(save, targetDistance, log);
@@ -4195,9 +4198,10 @@ namespace MonsterTrain2Poju.Probe
                 BattleTurnState root = FullBattleTrace.Active!.CaptureDecision();
                 if (RollingAdviceScenario.AwaitingAdvice(root)) return;
 #if DEVELOPMENT_PROBE
-                if (RollingAdviceScenario.WriteMixPromptObservation())
+                if (RollingAdviceScenario.WriteElixirPromptObservation())
                 {
-                    Finish(true, "Player advisor Mix choice shown and native successor verified.");
+                    Finish(true, PlayerAdvisorProbe.SummonPromptWitness ? "Player advisor official summon choice shown and native successor verified." :
+                        "Player advisor Mix choice shown and native successor verified.");
                     return;
                 }
                 if (RollingAdviceScenario.WriteRapidContinuationObservation())

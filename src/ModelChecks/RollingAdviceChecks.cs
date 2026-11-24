@@ -170,13 +170,83 @@ internal static class RollingAdviceChecks
                 actor.Ability?.DataId == "798142fe-fdf3-4f4f-8af7-dbc5dbc333c6",
                 "Expected the original Spikedriver Factory's Craft Spike activation.");
         }
+        long finalGeneration = CheckElixirPromptSettlement(fixture, input, action, root, actual);
+        Console.WriteLine($"PLAYER-ADVISOR-MIX-PROMPT PASS. {prompts.Length} native selections, exact paid successor and next generation {finalGeneration}.");
+
+        static bool OfferIdentity(string offer)
+        {
+            string[] parts = offer.Split(':');
+            return parts.Length == 2 && Guid.TryParseExact(parts[0], "D", out Guid card) && card != Guid.Empty &&
+                (parts[1] == "none" || Guid.TryParseExact(parts[1], "D", out Guid upgrade) && upgrade != Guid.Empty);
+        }
+    }
+
+    internal static void SummonPrompt(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("Schema").GetInt32() == 1 &&
+            fixture.GetProperty("EvidenceKind").GetString() == "NativePlayerAdvisorSummonPrompt" &&
+            fixture.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            fixture.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            fixture.GetProperty("PlayerAdvisor").GetProperty("Assembly").GetString() == "MonsterTrain2Poju.Advisor",
+            "Expected a summon receipt from the pinned original build and player advisor.");
+        FixtureValue entitlement = fixture.GetProperty("Entitlement");
+        string champion = entitlement.GetProperty("ChampionId").GetString()!;
+        string ability = entitlement.GetProperty("AbilityId").GetString()!;
+        string rank = entitlement.GetProperty("RankId").GetString()!;
+        string checkpoint = entitlement.GetProperty("CheckpointSha256").GetString()!;
+        Require(entitlement.GetProperty("Installed").GetBoolean() && entitlement.GetProperty("EnabledInRun").GetBoolean() &&
+            champion == "c58f8d77-8578-4d97-bcf1-beb4cdbe2f27" && entitlement.GetProperty("Rank").GetInt32() is >= 1 and <= 3 &&
+            Guid.TryParseExact(ability, "D", out Guid abilityId) && abilityId != Guid.Empty &&
+            Guid.TryParseExact(rank, "D", out Guid rankId) && rankId != Guid.Empty &&
+            checkpoint.Length == 64 && checkpoint.All(Uri.IsHexDigit),
+            "The original DLC, champion and checkpoint provenance is missing.");
+
+        FixtureValue input = fixture.GetProperty("Input");
+        BattleSearchStep step = ReadStep(input);
+        Require(input.GetProperty("Mode").GetString() == "rolling" && !step.IsEndTurn &&
+            step.Action is { ActivatorUnitId: > 0, ActivatorRoomIndex: null, TargetUnitId: 0, TargetSpawnPointIndex: >= 0,
+                RecursionSelections.Count: 0, MixSelections.Count: 0, SummonSelections.Count: 1 } &&
+            SameStep(input.GetProperty("PlanSteps")[0], input) && input.GetProperty("Difference").ValueKind == FixtureKind.Null,
+            "Expected the first published physical summon as an exact settled native input.");
+        PlayCardAction action = step.Action!;
+        var root = State(input.GetProperty("Root"));
+        var actual = State(input.GetProperty("Actual"));
+        CombatUnit actor = root.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.ActivatorUnitId);
+        var context = root.Spawn.Train.Context!;
+        var ownedChampion = context.FindCard(actor.SpawnerCardId);
+        Require(actor.Ability?.DataId == ability && ownedChampion?.DataId == champion &&
+            ownedChampion.Permanent.Upgrades.Any(upgrade => upgrade.DataId == rank) &&
+            context.FindCard(action.CardInstanceId)?.DataId == ability, "GrimFlight actor or ability identity changed.");
+
+        FixtureValue prompt = fixture.GetProperty("Prompt");
+        SummonChoiceSelection choice = action.SummonSelections.Single();
+        string?[] offers = prompt.GetProperty("Offers").EnumerateArray().Select(offer => offer.GetString()).ToArray();
+        int position = prompt.GetProperty("ChoiceIndex").GetInt32();
+        int opened = prompt.GetProperty("PromptFrame").GetInt32();
+        Require(prompt.GetProperty("DraftType").GetString() == "SummonChoice" &&
+            offers.Length == 3 && offers.All(offer => Guid.TryParseExact(offer, "D", out Guid id) && id != Guid.Empty) &&
+            position >= 0 && position == AdvisorForecastPresentation.SummonOfferIndex(offers, choice.CardDataId) &&
+            prompt.GetProperty("EffectIndex").GetInt32() == choice.EffectIndex &&
+            prompt.GetProperty("CardDataId").GetString() == choice.CardDataId &&
+            prompt.GetProperty("Text").GetString() is string text && text.EndsWith(" · 第 " + (position + 1) + " 项", StringComparison.Ordinal) &&
+            opened >= 0 && prompt.GetProperty("ConfirmationFrame").GetInt32() >= opened &&
+            prompt.GetProperty("HiddenAfterConfirmation").GetBoolean() && fixture.GetProperty("NormalPromptRestored").GetBoolean(),
+            "The original option, prompt position or confirmation evidence differs from the published summon.");
+
+        long finalGeneration = CheckElixirPromptSettlement(fixture, input, action, root, actual);
+        Console.WriteLine($"PLAYER-ADVISOR-SUMMON-PROMPT PASS. Exact selected offer, paid successor and next generation {finalGeneration}.");
+    }
+
+    private static long CheckElixirPromptSettlement(FixtureValue fixture, FixtureValue input, PlayCardAction action,
+        BattleTurnState root, BattleTurnState actual)
+    {
         string parent = JsonSerializer.Serialize(root);
         BattleActionResult played = BattleActionModel.PlayCard(root, action);
         Require(played.Supported && played.Outcome == RoomOutcome.Exchanged &&
             played.Outcome == input.GetProperty("Outcome").Deserialize<RoomOutcome>() &&
             Key(played.State!) == Key(State(input.GetProperty("Expected"))) &&
             Key(played.State!) == Key(actual) && JsonSerializer.Serialize(root) == parent,
-            "The paid native Mix successor differs from independent replay or replay mutated its root.");
+            "The paid native draft successor differs from independent replay or replay mutated its root.");
 
         FixtureValue publication = fixture.GetProperty("FinalRoot");
         FixtureValue native = fixture.GetProperty("FinalNativeRoot");
@@ -206,14 +276,7 @@ internal static class RollingAdviceChecks
             steps.Count(item => item.IsEndTurn) == plan.GetProperty("TurnsCompleted").GetInt32() &&
             JsonSerializer.Serialize(finalRoot) == finalParent,
             "The next forecast differs on independent replay or replay mutated its root.");
-        Console.WriteLine($"PLAYER-ADVISOR-MIX-PROMPT PASS. {prompts.Length} native selections, exact paid successor and next generation {finalGeneration}.");
-
-        static bool OfferIdentity(string offer)
-        {
-            string[] parts = offer.Split(':');
-            return parts.Length == 2 && Guid.TryParseExact(parts[0], "D", out Guid card) && card != Guid.Empty &&
-                (parts[1] == "none" || Guid.TryParseExact(parts[1], "D", out Guid upgrade) && upgrade != Guid.Empty);
-        }
+        return finalGeneration;
     }
 
     internal static void OffRoute(FixtureValue fixture)
