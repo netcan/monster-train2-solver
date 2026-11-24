@@ -1368,6 +1368,12 @@ pwsh -NoProfile -File scripts/Get-MechanismInventory.ps1 -SkipBuild -Check
 [一层复生对照](../tests/compatibility/game-2.3.1/mechanics/front-reanimation/native-tier2-settled.mt2f) ·
 [两层复生对照](../tests/compatibility/game-2.3.1/mechanics/front-reanimation/native-tier3-settled.mt2f)
 
+原版 Zariel 的三档技能从 10 层 Pain 分别获得 10、20、30 点伤害。目标初始为 25 护甲、5 生命。
+前两档结算后护甲分别剩 15、5，第三档结算时目标移出战场。三档部署与技能后继均通过精确复放，技能各消耗 0 余烬并进入 1 回合冷却。
+[一档对照](../tests/compatibility/game-2.3.1/mechanics/zariel-pain/native-tier1-observation.mt2f) ·
+[二档对照](../tests/compatibility/game-2.3.1/mechanics/zariel-pain/native-tier2-observation.mt2f) ·
+[三档对照](../tests/compatibility/game-2.3.1/mechanics/zariel-pain/native-tier3-observation.mt2f)
+
 Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者共筛出 58 张，六次抽牌后
 实际生成和随机状态均与模型一致。原版胜局的五次出牌、七次 EndTurn 和十六条独立分支
 通过，旧版 348 张卡池也通过专项回归。隔离实例尚无法启用 Punished DLC，

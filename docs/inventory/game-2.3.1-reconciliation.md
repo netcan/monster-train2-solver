@@ -10,15 +10,15 @@
 | --- | ---: | ---: | ---: |
 | known-gap | 1 | 1 | 1 |
 | inspect-no-code-link | 8 | 8 | 8 |
-| inspect-inherited-code | 6 | 6 | 6 |
+| inspect-inherited-code | 5 | 5 | 5 |
 | inspect-projection-normalization | 54 | 54 | 54 |
 | inspect-guard-links | 43 | 43 | 43 |
 | review-existing-code | 226 | 226 | 226 |
 | resolve-reference-only | 7 | 7 | 0 |
 | resolve-entry | 282 | 0 | 0 |
-| scoped-review-recorded | 107 | 103 | 103 |
+| scoped-review-recorded | 108 | 104 | 104 |
 
-总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 110 项有边界的人工审查，仍未将任何类自动判为完整完成。
+总计 734 个具体类，448 类有目录引用；102 个状态类取得原生 StatusId。已记录 111 项有边界的人工审查，仍未将任何类自动判为完整完成。
 
 `known-gap` 是源码审查确认的有边界缺口；`inspect-no-code-link` 优先核对入口与别名；`inspect-inherited-code` 只有父类的模型链接；`inspect-projection-normalization` 核对采集端是否已转为通用模型动作；`inspect-guard-links` 仅提示所有直接模型引用都落在按名称识别的保护方法，需人工确认。无链接不等于未实现。`resolve-entry` 没有捕获目录引用，仍需查动态入口和未捕获定义。
 
@@ -42,6 +42,7 @@
 | CardEffectDamageByPercentRemainingHealth | shared-path | Original Beeziebub OnCast targets the Pyre, floors ten percent of actual remaining HP, and supplies no card damage attribution or trait scaling. Three isolated wins prove HP 80 to 72 and exact search successors. Randomized ranges, round-up and non-Pyre targets remain guarded. |
 | CardEffectDamageFloorByFloor | shared-path | Original current Heavenfall installs its native full-moon 80 enemy floor sweep and executes through the shared OnCast and floor-damage pipeline. The current win verifies both moon phases, full successors, sixteen branches, recorded frontiers and serial/parallel plan replay. The older native Moon archive still passes with its tower damage payload. This battle's positive damage targets occupy one floor. |
 | CardEffectDamagePerPyreAttack | shared-path | The original Pyre Steward ability requests damage in order 3, 45 and 45. Its two Slay heals return the Pyre from 77 to 79 to 80. Complete paid successor, gameplay RNG and preview allocation match. A model control exercises a saved plus-seven attack offset. The scope covers the unchanged authored room effect. |
+| CardEffectDamagePerStatusEffect | shared-path | The original Zariel ability ranks read ten Pain and request 10, 20 and 30 damage through the existing caster status and Armor pipeline. The high rank kills and removes the armored target. The complete paid and deployment successors match for all three ranks, including zero Ember, one cooldown and the captured RNG. |
 | CardEffectFloorRearrange | shared-path | The original Railforged Unruly SniperAdvance OnAttacking effect moves a living rear attacked actor to the front. A lone target keeps its position and the lethal control records no applied movement callback. The original whole battle matches 34 plays, seven EndTurns and both candidate frontiers. This review covers the exact living-target payload. |
 | CardEffectPlayUnitTrigger | shared-path | The exact original FavoredChild_2 post-combat payload queues one self OnFeed after room capacity decreases and applies three Rage. The component verifies the full queue result and RNG and rejects edited capacity. Other nested replay payloads retain their existing guards. |
 | CardEffectRewardGold | shared-path | Three physical hits on the original owner path give 2, 1, 0, and 0 gold across four states. Native actor damage and RNG match the shared signed-gold path. Changed conditional or random costs are rejected. |
@@ -152,22 +153,22 @@
 | RelicEffectPurify | inspect-no-code-link | 1 | 1 | 无直接链接 |
 | RelicEffectReplaceChampion | inspect-no-code-link | 1 | 1 | 无直接链接 |
 | RelicEffectTrainRoomAttachmentsAlwaysEmbedded | inspect-no-code-link | 1 | 1 | 无直接链接 |
-| CardEffectDamagePerStatusEffect | inspect-inherited-code | 4 | 4 | [MonsterTrain2Poju.Model.CardSpareTriggerModel+<>c.<Validate>b__1_1](../../src/Model/CardSpareTriggers.cs:27) |
 | CardEffectAddStatusEffectPerMissingHp | inspect-inherited-code | 2 | 2 | [MonsterTrain2Poju.Model.CardJuiceModel+<>c.<SimpleUpgrade>b__12_2](../../src/Model/CardJuice.cs:51) |
 | CardEffectAddStatusToRoomScalingByCasterStatusCount | inspect-inherited-code | 2 | 2 | [MonsterTrain2Poju.Model.CardJuiceModel+<>c.<SimpleUpgrade>b__12_2](../../src/Model/CardJuice.cs:51) |
 | CardEffectDiscardHandAddStatusEffectPerCard | inspect-inherited-code | 1 | 6 | [MonsterTrain2Poju.Model.CardJuiceModel+<>c.<SimpleUpgrade>b__12_2](../../src/Model/CardJuice.cs:51) |
 | CardEffectAddStatusEffectPerFriendlyMissingHp | inspect-inherited-code | 1 | 1 | [MonsterTrain2Poju.Model.CardJuiceModel+<>c.<SimpleUpgrade>b__12_2](../../src/Model/CardJuice.cs:51) |
 | CardEffectDamagePerDevotionLevel | inspect-inherited-code | 1 | 1 | [MonsterTrain2Poju.Model.CardSpareTriggerModel+<>c.<Validate>b__1_1](../../src/Model/CardSpareTriggers.cs:27) |
 | CardEffectAttachTrainRoomAttachment | inspect-projection-normalization | 34 | 34 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
+| CardEffectAttackWithUnit | inspect-projection-normalization | 13 | 13 | [MonsterTrain2Poju.Probe.BattleActionProbe..cctor](../../src/Probe/BattleActionProbe.cs:12) |
 
 ## 可重建输入
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `a79fcd1f6577b37832f3f1e7184dc12823b718a964f579125337b3feb6f096e2`。
+- 人工审查索引 SHA-256: `c15500a130584c3e8bdf01d75c197ed3e772e44ae0513e3944aa3c5282e16f76`。
 - Model: PDB 校验过的项目源码集合 `1ab4671e38f86ce94ee65e938b43047c873604f70401809651664bf1813e3276`。
-- Probe: PDB 校验过的项目源码集合 `68b2123efeec889e43fbd5895c8ff386b197b93d1dbeb566d18fe1a38cf4640c`。
-- ModelChecks: PDB 校验过的项目源码集合 `c50d9940eb947edf2e06b8792cdb50277b59e5ff5204d6a31d7552601733ce62`。
+- Probe: PDB 校验过的项目源码集合 `5b8bdecd7a363cbd3d2455aedf76fd3e25fb8b5c947925e462a5e079e46c081c`。
+- ModelChecks: PDB 校验过的项目源码集合 `a9d7d87e2220024d8dcfd89917c4b8504b9390aa61a4b21691d8ea8339bccd09`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
