@@ -30,12 +30,32 @@ namespace MonsterTrain2Poju.Model
 
     public static class BattleTriggerReplayModel
     {
+        private const string OriginalAggressiveImp = "5a8399dd-a958-4317-b814-de0e2972ca3d";
         internal static bool Calibrated(CombatEffect effect) =>
             effect.Type == "CardEffectRewardGold" && effect.Value >= 0 ||
             effect.UnitUpgrade is CardActionEffect upgrade && upgrade.Type == "UnitUpgrade" &&
             upgrade.Target == "Self" && !upgrade.ScaleUpgrade && upgrade.Range == null &&
             upgrade.Lifetime == "TemporaryUntilUnitDeath" && upgrade.Upgrade?.ExternalInteractions.Count == 0 &&
-            (upgrade.Upgrade.TriggerUpgrades == null || upgrade.Upgrade.TriggerUpgrades.Count == 0);
+            (upgrade.Upgrade.TriggerUpgrades == null || upgrade.Upgrade.TriggerUpgrades.Count == 0) ||
+            FixedAggressiveImpRage(effect);
+
+        // Original Fledgling Imp's fixed OnSpawn payload, as captured in the 2.3.1 card catalog.
+        private static bool FixedAggressiveImpRage(CombatEffect effect) =>
+            effect.Type == "CardEffectAddStatusEffect" && effect.Value == 0 && effect.Counter == 0 &&
+            effect.Count == 0 && effect.CardPool.Count == 0 && effect.Generation == null &&
+            effect.UnitUpgrade == null && effect.Summon == null && effect.Enchantment == null &&
+            effect.DamageStatusMultiplier == null && effect.BoxedPool == null &&
+            effect.StatusScaling is { ActorStatus: null, MissingHealth: false, MagicPower: false,
+                IgnoreDualism: false, Subtype.Length: 0, HealthChoicePercent: null, HealthChoiceAbove: false } &&
+            effect.Action is { Type: "AddStatus", Target: "Room", Value: 0, AllowEnemy: false,
+                AllowPlayer: true, Range: null, Statuses.Count: 1, Upgrade: null, Generation: null,
+                OnlyIfNoEnemies: false, UseSelectedRoom: false, CountStatusOnlyOnTargets: false,
+                DisallowStatusStackModifiers: false, IgnoreDualism: false } action &&
+            action.Statuses[0] is { Id: "buff", Stacks: 5, ParamInt: 2, Stackable: true } &&
+            action.Tests is { ShouldTest: true, FailToCast: false, CancelSubsequent: false,
+                StrictTargets: false, MustHaveValidTargets: false } &&
+            action.Filters is { Health: "Both", IgnoreBosses: false, Subtype.Length: 0,
+                RequiredStatuses.Count: 0, ExcludedStatuses.Count: 0, ExcludedSubtypes.Count: 0 };
         public static TrainSpellResult Apply(TrainCombatState source, int roomIndex, string kind, int selfUnitId,
             BattlePlayRules? definitions = null)
         {
@@ -49,6 +69,8 @@ namespace MonsterTrain2Poju.Model
             var events = new List<CombatEvent>();
             foreach (BattleTriggerBatch batch in history.Batches.Where(batch => batch.Team == CombatTeam.Player && batch.Kind == kind))
             {
+                CardInstanceState? spawner = state.Context!.FindCard(batch.SpawnerCardId);
+                if (spawner == null) return Unsupported("Missing retained trigger spawner card.");
                 var effects = new List<CardActionEffect>();
                 foreach (CombatEffect effect in batch.Effects)
                 {
@@ -58,10 +80,10 @@ namespace MonsterTrain2Poju.Model
                             Array.Empty<CombatStatus>(), goldCostRequired: false));
                     else if (effect.UnitUpgrade is CardActionEffect upgrade)
                         effects.Add(upgrade);
+                    else if (FixedAggressiveImpRage(effect) && spawner.DataId == OriginalAggressiveImp)
+                        effects.Add(effect.Action!);
                     else return Unsupported("Uncalibrated or stateful cached trigger effect " + effect.Type);
                 }
-                CardInstanceState? spawner = state.Context!.FindCard(batch.SpawnerCardId);
-                if (spawner == null) return Unsupported("Missing retained trigger spawner card.");
                 if (spawner.PlayedRoomUnitIds != null)
                     state = CardSpellModel.WithContext(state, state.Context.WithCard(spawner.WithPlayedRoomUnits(
                         state.Rooms.Single(room => room.RoomIndex == roomIndex).Units.Where(unit => unit.Health > 0 && unit.IsSpawning != true)

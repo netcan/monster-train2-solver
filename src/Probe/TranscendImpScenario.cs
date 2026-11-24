@@ -12,6 +12,7 @@ namespace MonsterTrain2Poju.Probe
     {
         internal const string Name = "transcend-imp";
         internal const string DataId = "57c1d696-f48d-48a3-9ac5-e868f3f669fe";
+        internal const string AggressiveImpDataId = "5a8399dd-a958-4317-b814-de0e2972ca3d";
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_MODIFIERS") == Name;
         internal static bool Prepared { get; private set; }
         internal static int[] CardIds { get; private set; } = Array.Empty<int>();
@@ -44,10 +45,11 @@ namespace MonsterTrain2Poju.Probe
             foreach (CardState card in cards.GetAllCards(new List<CardState>()).Where(card => card.GetCardDataID() == steward.GetID())) card.Setup(steward, save);
             foreach (CardState card in cards.GetHand().ToArray()) cards.MoveCardFromHandToTopOfDeck(card);
             CardIds = Enumerable.Range(0, 3).Select(_ => FullBattleTrace.Active!.CardId(cards.AddNewCard(all.FindCardData(DataId)!, CardPile.HandPile, false, false, animate: false))).ToArray();
-            SourceCardIds = Enumerable.Range(0, 2).Select(_ => FullBattleTrace.Active!.CardId(cards.AddNewCard(steward, CardPile.HandPile, false, false, animate: false))).ToArray();
+            SourceCardIds = Enumerable.Range(0, 2).Select(_ => FullBattleTrace.Active!.CardId(cards.AddNewCard(steward, CardPile.HandPile, false, false, animate: false)))
+                .Concat(new[] { FullBattleTrace.Active!.CardId(cards.AddNewCard(all.FindCardData(AggressiveImpDataId)!, CardPile.HandPile, false, false, animate: false)) }).ToArray();
             RecallCardId = FullBattleTrace.Active!.CardId(cards.AddNewCard(all.FindCardData(MagneticRelayScenario.DataId)!, CardPile.HandPile, false, false, animate: false));
             managers.GetPlayerManager().AddEnergy(12); Prepared = true;
-            log.LogInfo("TRANSCEND-IMP-PREPARED three original Imps: empty history, ordered gold/self upgrades, retained history after original source recall; natural waves/boss retained.");
+            log.LogInfo("TRANSCEND-IMP-PREPARED three original Transcend Imps and one original Fledgling Imp: empty history, ordered gold/self upgrades and room Rage, retained history after source recall; natural waves/boss retained.");
         }
         internal static PlayCardAction? Choose(BattleTurnState source, int[] imps, int[] units, int recall)
         {
@@ -82,7 +84,8 @@ namespace MonsterTrain2Poju.Probe
                         if (type == "CardEffectRewardGold" && (effect.GetParamBool() || effect.GetTargetMode() != TargetMode.Room || effect.GetTargetTeamType() != Team.Type.None))
                             type = "UncalibratedReplayGold";
                         return new CombatEffect(type, value, 0, "", effect.GetAdditionalParamInt(), Array.Empty<string>(), effect.GetParamBool2(),
-                            unitUpgrade: UnitTriggerUpgradeProbe.Capture(effect, interactions), action: UnitTriggerActionProbe.Capture(effect));
+                            unitUpgrade: UnitTriggerUpgradeProbe.Capture(effect, interactions), action: UnitTriggerActionProbe.Capture(effect),
+                            statusScaling: type == "CardEffectAddStatusEffect" ? UnitTriggerActionProbe.Scaling(effect) : null);
                     }).ToArray();
                     if (interactions.Count > 0) throw new NotSupportedException(string.Join("; ", interactions));
                     rows.Add(new BattleTriggerBatch(team == Team.Type.Monsters ? CombatTeam.Player : CombatTeam.Enemy, "OnSpawn",

@@ -960,6 +960,11 @@ Transcend Imp 随后按原有顺序重放召唤历史，被召回的单位可重
 16 条独立分支和两类候选通过。
 [`transcend-imp-physical-recall.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/transcend-imp-physical-recall.mt2f)
 
+加入原版 Fledgling Imp 后，复放按历史顺序完成金币、自身临时升级和同层友军的 5 层 Rage。
+三次原版重放覆盖空历史、三个有序来源及其中一个来源被召回后的历史。两次有效重放保留不同楼层、
+敌军和随机流的对照。8 次出牌、5 次结束回合、两类候选和并行独立复放通过。
+[`transcend-imp-original-fledgling-rage.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/transcend-imp-original-fledgling-rage.mt2f)
+
 原版 Hallowed Halls 牺牲同层友军，并从预置耗尽堆重建六名升级单位。专项核对 Standby、
 站位和容量。5 次出牌、6 次结束回合及两类候选通过。
 [`hallowed-halls.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/hallowed-halls.mt2f)

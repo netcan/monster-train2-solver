@@ -5,6 +5,7 @@ using MonsterTrain2Poju.Model;
 internal static class TranscendImpChecks
 {
     private const string DataId = "57c1d696-f48d-48a3-9ac5-e868f3f669fe";
+    private const string AggressiveImpDataId = "5a8399dd-a958-4317-b814-de0e2972ca3d";
     internal static PlayCardAction? Choose(BattleTurnState source, int[] imps, int[] units, int recall)
     {
         CombatContext context = source.Spawn.Train.Context!; var plays = BattleActionModel.EnumerateSupportedPlays(source);
@@ -28,6 +29,8 @@ internal static class TranscendImpChecks
         foreach (string key in new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" })
             Require(root.GetProperty(key).GetInt32() == 0, "Nonzero " + key);
         int[] sources = root.GetProperty("TranscendImpSourceCardIds").Deserialize<int[]>()!;
+        Require(sources.Length is 2 or 3, "Unexpected original replay source count.");
+        bool hasOriginalRage = sources.Length == 3;
         int index = 0;
         foreach (FixtureValue row in root.GetProperty("TranscendImpRecords").EnumerateArray())
         {
@@ -37,7 +40,19 @@ internal static class TranscendImpChecks
             int self = row.GetProperty("SelfId").GetInt32(), room = row.GetProperty("RoomIndex").GetInt32();
             string kind = row.GetProperty("Kind").GetString()!;
             BattleTriggerHistory history = before.Context!.TriggerCounts!.ReplayHistory!;
-            Require(kind == "OnSpawn" && history.Batches.Count == (index == 0 ? 0 : 2), "Missing empty/ordered positive history.");
+            Require(kind == "OnSpawn" && history.Batches.Count == (index == 0 ? 0 : sources.Length), "Missing empty/ordered positive history.");
+            if (index > 0 && hasOriginalRage)
+            {
+                CombatEffect rage = history.Batches[2].Effects.Single();
+                Require(before.Context.FindCard(sources[2])?.DataId == AggressiveImpDataId &&
+                    history.Batches[2].SpawnerCardId == sources[2] && BattleTriggerReplayModel.Calibrated(rage),
+                    "Missing original Fledgling Imp Rage source and fixed payload.");
+                Require(!BattleTriggerReplayModel.Calibrated(rage.WithAction(rage.Action!.WithStatuses(
+                    new[] { rage.Action.Statuses[0].WithStacks(6) }))) &&
+                    !BattleTriggerReplayModel.Calibrated(new CombatEffect(rage.Type, rage.Value, rage.Counter,
+                        rage.Destination, rage.Count, rage.CardPool, rage.SkipDuplicateInHand, action: rage.Action)),
+                    "Altered Rage stacks or uncaptured scaling must remain unsupported.");
+            }
             string parent = JsonSerializer.Serialize(before, ModelJson.Options);
             void Replay()
             {
@@ -56,6 +71,18 @@ internal static class TranscendImpChecks
                 Require(after.Context.Gold - before.Context.Gold == 10 && newSelf.BaseAttack - oldSelf.BaseAttack == 6 &&
                     newSelf.MaxHealth - oldSelf.MaxHealth == 8 && history.Batches.Select(batch => batch.SpawnerCardId).SequenceEqual(sources),
                     "Replay lost ordering, gold or retargeted Self upgrades.");
+                if (hasOriginalRage)
+                {
+                    Require((newSelf.Status("buff")?.Stacks ?? 0) - (oldSelf.Status("buff")?.Stacks ?? 0) == 5,
+                        "Original Fledgling Imp Rage did not reach replay self.");
+                    foreach (CombatUnit old in before.Rooms.SelectMany(item => item.Units))
+                    {
+                        CombatUnit next = after.Rooms.SelectMany(item => item.Units).Single(unit => unit.Id == old.Id);
+                        int expected = old.Team == CombatTeam.Player && before.Rooms.Single(item => item.RoomIndex == room).Units.Any(unit => unit.Id == old.Id) ? 5 : 0;
+                        Require((next.Status("buff")?.Stacks ?? 0) - (old.Status("buff")?.Stacks ?? 0) == expected,
+                            "Original Fledgling Imp Rage affected the wrong room or team.");
+                    }
+                }
                 if (index == 2) Require(before.Rooms.SelectMany(item => item.Units).All(unit => unit.SpawnerCardId != sources[0]) &&
                     before.Context.Cards.Hand.Any(card => card.InstanceId == sources[0]), "Missing retained history after source recall.");
             }
@@ -65,7 +92,9 @@ internal static class TranscendImpChecks
         }
         Require(index == 3, "Missing three original replay casts.");
         RecordedBattleChecks.Native(root);
-        Console.WriteLine("TRANSCEND-IMP PASS: original empty/ordered OnSpawn replay, retained source history after recall, Self upgrades, no recursive history growth, immutable parallel contexts and full action chains.");
+        Console.WriteLine("TRANSCEND-IMP PASS: original empty/ordered OnSpawn replay, retained source history after recall, Self upgrades" +
+            (hasOriginalRage ? ", original Fledgling Imp room Rage" : "") +
+            ", no recursive history growth, immutable parallel contexts and full action chains.");
     }
     private static void Equal<T>(T predicted, T actual, string label)
     {
