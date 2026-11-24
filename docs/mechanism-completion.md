@@ -1459,9 +1459,16 @@ Surgical Strike 的三次原版付费击杀核对了复制回调。普通 Dreg �
 [常规整战](../tests/compatibility/game-2.3.1/mechanics/all-unit-subtypes/native-battle.mt2f) ·
 [Surgical Strike 整战](../tests/compatibility/game-2.3.1/mechanics/all-unit-subtypes/native-surgical-strike-battle.mt2f)
 
+Hallowed Halls 同场原版胜局另验证了六名友军复活，5 次出牌、6 次结束回合和两类候选均匹配。
+[Hallowed Halls 整战](../tests/compatibility/game-2.3.1/mechanics/all-unit-subtypes/native-hallowed-halls-battle.mt2f)
+
 阶段回放在 `f5e6a8de` 上通过 509 场已结算战斗，其中 488 场连续、21 场分段。
 共核对 7,797 次战斗操作和 3,024 次结束回合，失败为 0。
 [整战阶段报告](../results/recorded-chain-triage-20261125-061727-27b8edfb/report.tsv)
+
+`86de931c` 通过阶段求解验收，包含上述三场突变专项、多回合搜索、原版回放和串并行对照。
+盘点覆盖范围内的 601 张收藏卡均有定义匹配的原版出牌，236 件收藏遗物均有有序效果匹配的在场记录。
+[阶段求解日志](../results/solver-completion-86de931c-20261125.log)
 
 2.3.1 原版 `DoubleStatusEffects` 已接入共享状态层数管线。原版 SpikePotion 支付 1 余烬，
 使火车乘务员获得 20 层尖刺，完整出牌后继和随机流通过复放。七项查询对照覆盖冷却、无目标、
