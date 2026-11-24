@@ -613,6 +613,7 @@ param(
     [switch] $OriginalDisabledRoomPreviewBattle,
     [switch] $OriginalMoreTreasureUnitsBattle,
     [switch] $OriginalSkullCollectorsWitness,
+    [ValidateRange(1, 3)] [int] $SkullCollectorsTier = 1,
     [ValidateSet('Combined', 'Stock', 'Ephemeral')]
     [string] $OriginalHandAndEmberWitness = '',
     [switch] $OriginalPlacementMutatorsWitness,
@@ -1028,14 +1029,19 @@ if ($OriginalPersistentMonsterHpWitness -or $OriginalPersistentMonsterHpBattle) 
     $PhysicalSpawnPoints = $true
     $Policy = 'units-spells-and-junk'
 }
+if ($PSBoundParameters.ContainsKey('SkullCollectorsTier') -and -not $OriginalSkullCollectorsWitness) {
+    throw 'SkullCollectorsTier requires OriginalSkullCollectorsWitness.'
+}
 if ($OriginalMoreTreasureUnitsBattle -or $OriginalSkullCollectorsWitness) {
     $treasureArguments = @('OriginalMoreTreasureUnitsBattle', 'OriginalSkullCollectorsWitness', 'InputProfile', 'BattleDistance',
         'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild',
         'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
-    if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne 1 -or
+    if ($OriginalSkullCollectorsWitness) { $treasureArguments += 'SkullCollectorsTier' }
+    $treasureDistance = if ($OriginalSkullCollectorsWitness) { @(1, 3, 6)[$SkullCollectorsTier - 1] } else { 1 }
+    if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne $treasureDistance -or
         ($OriginalMoreTreasureUnitsBattle -and $OriginalSkullCollectorsWitness) -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $treasureArguments }).Count) {
-        throw 'Select one original treasure test with a Ring 2 checkpoint and binary capture.'
+        throw "Select one original treasure test with a Ring $($treasureDistance + 1) checkpoint and binary capture."
     }
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
@@ -2953,9 +2959,14 @@ if ($InputProfile) {
     }
     if ($OriginalMoreTreasureUnitsBattle -or $OriginalSkullCollectorsWitness) {
         if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
-            $checkpointData.wasDevCheatUsed -ne $false -or $checkpointData.runState.numBattlesCompleted -ne 1 -or
+            $checkpointData.wasDevCheatUsed -ne $false -or $checkpointData.runState.numBattlesCompleted -ne $treasureDistance -or
             $checkpointData.startingConditions.ascensionLevel -ne 0) {
-            throw 'The original treasure test requires a standard Rank 0 Ring 2 checkpoint.'
+            throw "The original treasure test requires a standard Rank 0 Ring $($treasureDistance + 1) checkpoint."
+        }
+        if ($OriginalSkullCollectorsWitness -and ($checkpointData.gameSequence -ne 6 -or
+            $checkpointData.runState.distance -ne $treasureDistance -or
+            @($checkpointData.startingConditions.mutators).Count -ne 0 -or @($checkpointData.startingConditions.covenants).Count -ne 0)) {
+            throw 'SkullCollectors requires an original BattleIntro without existing mutators or Covenants.'
         }
         $treasureInputSignature = Get-OriginalSignature $checkpoint
     }
@@ -3184,7 +3195,7 @@ $environment = @{
     MT2_PROBE_HEAL_ON_ASCEND = $(if ($OriginalHealOnAscendWitness) { '1' } else { '0' })
     MT2_PROBE_DISABLED_ROOM_PREVIEW = $(if ($OriginalDisabledRoomPreviewBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_MORE_TREASURE_UNITS = $(if ($OriginalMoreTreasureUnitsBattle) { '1' } else { '0' })
-    MT2_PROBE_SKULL_COLLECTORS = $(if ($OriginalSkullCollectorsWitness) { '1' } else { '0' })
+    MT2_PROBE_SKULL_COLLECTORS = $(if ($OriginalSkullCollectorsWitness) { [string]$SkullCollectorsTier } else { '0' })
     MT2_PROBE_HAND_AND_EMBER_WITNESS = $OriginalHandAndEmberWitness
     MT2_PROBE_PLACEMENT_MUTATORS_WITNESS = $(if ($PlacementSummonBlockOnly) { 'block' } elseif ($OriginalPlacementMutatorsWitness) { '1' } else { '0' })
     MT2_PROBE_BIG_MONSTERS_CREATION = $(if ($OriginalBigMonstersCreationWitness) { '1' } else { '0' })

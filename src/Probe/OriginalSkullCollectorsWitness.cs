@@ -13,7 +13,19 @@ namespace MonsterTrain2Poju.Probe
         private const string OwnerId = "32d52c9d-cc1d-4f01-931a-8c232b687a35";
         private const string OwnerKey = "SkullCollectors";
         private static readonly Guid Module = new Guid("bf93f060-beda-46b1-b808-95ebf1e9a99d");
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_SKULL_COLLECTORS") == "1";
+        private static readonly int Tier = Environment.GetEnvironmentVariable("MT2_PROBE_SKULL_COLLECTORS") switch
+        {
+            "1" => 1, "2" => 2, "3" => 3, _ => 0
+        };
+        internal static bool Enabled => Tier != 0;
+        private static int SettledTurn => Tier == 1 ? 2 : 3;
+        private static (int Distance, string Scenario, string StockKey) ExpectedSource => Tier switch
+        {
+            1 => (1, "Level2BattleJunker", "TreasureBagLvl1Gold"),
+            2 => (3, "Level4BattleHunterAttackers", "TreasureBagLvl2Gold"),
+            3 => (6, "Level7BattleHordeSilence", "TreasureBagLvl3Gold"),
+            _ => throw new InvalidOperationException("Missing native SkullCollectors witness tier.")
+        };
         private static object? ownerDefinition;
         internal static bool Acquired => ownerDefinition != null;
         private static CharacterSubstitution? substitutions;
@@ -22,10 +34,12 @@ namespace MonsterTrain2Poju.Probe
 
         internal static void Acquire(SaveManager save)
         {
+            var expected = ExpectedSource;
             if (Application.version != "2.3.1" || typeof(HeroManager).Module.ModuleVersionId != Module ||
-                save.PreviewMode || save.InTestScenario || save.IsRegionRun || save.GetCurrentDistance() != 1 ||
+                save.PreviewMode || save.InTestScenario || save.IsRegionRun || save.GetCurrentDistance() != expected.Distance ||
+                save.GetCurrentScenarioData()?.name != expected.Scenario ||
                 save.GetCovenants().Count != 0 || save.GetMutators().Count != 0)
-                throw new InvalidOperationException("Expected an untouched original rank-zero Ring 2 BattleIntro.");
+                throw new InvalidOperationException($"Expected an untouched original rank-zero Ring {expected.Distance + 1} {expected.Scenario} BattleIntro.");
             var definition = save.GetAllGameData().FindMutatorData(OwnerId)
                 ?? throw new InvalidOperationException("Missing original SkullCollectors mutator.");
             var effects = definition.GetEffects();
@@ -68,6 +82,7 @@ namespace MonsterTrain2Poju.Probe
         internal static void ObserveCreation(int actorId, CharacterData requested, CharacterData? original, CharacterState actor, CharacterData resolved)
         {
             if (!Acquired || birth != null || original == null || ReferenceEquals(original, requested) ||
+                original.GetAssetKey() != ExpectedSource.StockKey ||
                 !substitutions!.Entries.Any(entry => ReferenceEquals(entry.UnitBefore, original) &&
                     ReferenceEquals(entry.UnitAfter, requested))) return;
             birth = new Birth(actorId, original, requested, resolved, actor.GetOriginalCharacterData(), actor.GetSourceCharacterData());
@@ -75,7 +90,7 @@ namespace MonsterTrain2Poju.Probe
 
         internal static void ObserveSpawn(EnemySpawningProbe.Record record)
         {
-            if (birth == null || spawn != null || !record.IncludeTreasure || record.Before.Turn != 1 ||
+            if (birth == null || spawn != null || !record.IncludeTreasure || record.Before.Turn != SettledTurn - 1 ||
                 record.Actual == null || record.Before.TreasuresRemaining != record.Actual.TreasuresRemaining + 1 ||
                 record.Before.Train.Rooms.Any(room => room.Units.Any(unit => unit.Id == birth.ActorId)) ||
                 !record.Actual.Train.Rooms.Any(room => room.Units.Any(unit => unit.Id == birth.ActorId))) return;
@@ -86,12 +101,12 @@ namespace MonsterTrain2Poju.Probe
         {
             if (!Acquired) throw new InvalidOperationException("Original SkullCollectors was missing at the first native decision.");
             int turn = managers.GetCombatManager().GetTurnCount();
-            if (turn < 2)
+            if (turn < SettledTurn)
             {
                 advanceTurn();
                 return false;
             }
-            if (turn != 2 || birth == null || spawn?.Actual == null ||
+            if (turn != SettledTurn || birth == null || spawn?.Actual == null ||
                 !ReferenceEquals(birth.Original, birth.ActorOriginal) ||
                 !ReferenceEquals(birth.Requested, birth.Resolved) ||
                 !ReferenceEquals(birth.Resolved, birth.ActorSource))
