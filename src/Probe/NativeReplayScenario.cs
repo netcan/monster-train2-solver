@@ -767,6 +767,7 @@ namespace MonsterTrain2Poju.Probe
                     if (fullBattle && OriginalAfterDrawSpawnScenario.Enabled && !OriginalAfterDrawSpawnScenario.Acquired)
                         OriginalAfterDrawSpawnScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle) OriginalSupportSpellsScenario.AcquireHallExtraSpawn(managers!, log);
+                    if (fullBattle) OriginalEchoVaultSilverScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle) OriginalHallowedHallsDraftRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalHoldoverGrantScenario.Enabled && !OriginalHoldoverGrantScenario.Acquired)
                         OriginalHoldoverGrantScenario.AcquireBeforeBattle(managers!, log);
@@ -969,6 +970,7 @@ namespace MonsterTrain2Poju.Probe
                     if (fullBattle && OriginalAfterDrawSpawnScenario.Enabled && !OriginalAfterDrawSpawnScenario.Acquired)
                         OriginalAfterDrawSpawnScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle) OriginalSupportSpellsScenario.AcquireHallExtraSpawn(managers!, log);
+                    if (fullBattle) OriginalEchoVaultSilverScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle) OriginalHallowedHallsDraftRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalHoldoverGrantScenario.Enabled && !OriginalHoldoverGrantScenario.Acquired)
                         OriginalHoldoverGrantScenario.AcquireBeforeBattle(managers!, log);

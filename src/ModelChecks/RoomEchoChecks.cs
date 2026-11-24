@@ -63,7 +63,57 @@ internal static class RoomEchoChecks
             damageWitnesses++;
         }
         Require(copies.Count >= 2 && controls > 0 && replays > 0 && damageWitnesses > 0, "Missing overwrite, other-floor control or positive Echo replay.");
+        CheckPassiveSilverBoundary(root);
         Console.WriteLine($"ORIGINAL-ROOM-ECHO PASS: {copies.Count} independent copies, {controls} other-floor controls and {replays} native free replays with cache cleanup.");
+    }
+    private static void CheckPassiveSilverBoundary(FixtureValue root)
+    {
+        FixtureValue row = root.GetProperty("Actions").EnumerateArray().First(value =>
+        {
+            BattleTurnState turn = value.GetProperty("Before").Deserialize<BattleTurnState>()!;
+            PlayCardAction play = value.GetProperty("Action").Deserialize<PlayCardAction>()!;
+            return turn.Spawn.Train.Context!.RoomCapacities!.Any(room => room.RoomIndex == play.RoomIndex &&
+                room.Attachments?.Any(attachment => attachment.Echo?.CopyCardId > 0) == true) &&
+                turn.PlayRules!.Cards.Any(rule => rule.DataId == turn.Spawn.Train.Context.FindCard(play.CardInstanceId)!.DataId &&
+                    rule.CardType == "Spell");
+        });
+        BattleTurnState before = row.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        PlayCardAction action = row.GetProperty("Action").Deserialize<PlayCardAction>()!;
+        CombatContext context = before.Spawn.Train.Context!;
+        CardPlayRule rule = before.PlayRules!.Cards.Single(value => value.DataId == context.FindCard(action.CardInstanceId)!.DataId);
+        CombatRelicState Silver(int ember = 1, string? id = null) => new(
+            id ?? "1a69fbff-9f1d-4c98-92ff-a63e0ac520c5", "SilverIncreasedEmber",
+            [RelicResourceModel.Energy, RelicResourceModel.DeploymentEnergy], isCovenant: false,
+            disallowedInPlacementPhase: false, resourceEffects:
+            [new RelicResourceEffect(0, RelicResourceModel.Energy, ember, 0, ember, false),
+                new RelicResourceEffect(1, RelicResourceModel.DeploymentEnergy, 1, 0, 1, false)]);
+        CombatRelicState silver = Silver();
+        Require(RoomEchoModel.PassiveSilverIncreasedEmber(silver) &&
+            !RoomEchoModel.PassiveSilverIncreasedEmber(Silver(2)) &&
+            !RoomEchoModel.PassiveSilverIncreasedEmber(Silver(id: "unknown-relic")),
+            "Only the original one-Ember Silver resource signature may bypass the Echo callback guard.");
+        TrainCombatState WithRelics(params CombatRelicState[] relics) =>
+            CardSpellModel.WithContext(before.Spawn.Train, context.WithRelics(relics));
+        Require(RoomEchoModel.Remember(WithRelics(silver), before, action, rule).Supported,
+            "Original Silver resource effects must permit the remembered Echo spell.");
+        Require(!RoomEchoModel.Remember(WithRelics(Silver(2)), before, action, rule).Supported &&
+            !RoomEchoModel.Remember(WithRelics(new CombatRelicState("unknown-relic", "UnknownRelic",
+                ["RelicEffectAddTrigger"])), before, action, rule).Supported,
+            "Modified Silver and unrelated callback relics must retain the Echo replay guard.");
+
+        if (context.Relics?.Any(RoomEchoModel.PassiveSilverIncreasedEmber) == true)
+        {
+            TrainCombatState preCombat = root.GetProperty("RoomPreCombatRecords").EnumerateArray()
+                .Select(value => value.GetProperty("Before").Deserialize<TrainCombatState>()!)
+                .First(train => train.Context!.RoomCapacities!.Any(room => room.Attachments?.Any(attachment =>
+                    attachment.Echo?.CopyCardId > 0) == true));
+            RoomCombatState echoRoom = preCombat.Rooms.Single(room => room.RoomIndex == 0);
+            RoomCombatResult Recast(params CombatRelicState[] relics) =>
+                RoomEchoModel.PreCombat(echoRoom.WithContext(echoRoom.Context!.WithRelics(relics)));
+            Require(Recast(silver).Supported && !Recast(Silver(2)).Supported &&
+                !Recast(new CombatRelicState("unknown-relic", "UnknownRelic", ["RelicEffectAddTrigger"])).Supported,
+                "Only pinned Silver may pass the free Echo recast callback guard.");
+        }
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 }

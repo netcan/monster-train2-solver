@@ -1019,6 +1019,11 @@ Transcend Imp 随后按原有顺序重放召唤历史，被召回的单位可重
 专项同时用原版 Carriage Jack 作为有战斗回调的反例，确认顾问仍会拒绝该组合。
 [`hallowed-halls-allied-draft-relic.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/hallowed-halls-allied-draft-relic.mt2f)
 
+原版 Echo Vault 与 `SilverIncreasedEmber` 同场时，普通法术仍可被记忆并在房间开战前免费重施。
+对照记录火炬重施打掉 3 点护甲、回响缓存清空、8 次出牌、5 次结束回合和 16 条独立分支。
+改动遗物数值或加入未知战斗回调的反例继续触发保护。
+[`native-echo-vault-silver.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/native-echo-vault-silver.mt2f)
+
 Pyreblooded 的后续实机对照在同层记录友军 10 层、两名敌军各 4 层 Pyregel。原版技能
 消耗 0 余烬并进入 3 层冷却，自身攻击由 5 提升至 23。8 次出牌或技能、5 次结束回合、
 16 条独立分支和候选检查通过。专项也复放零层、缺少楼层快照和跨楼层的对照。

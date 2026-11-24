@@ -307,6 +307,7 @@ param(
     [switch] $OriginalMovementSpells,
     [switch] $OriginalRearrangeSpells,
     [switch] $OriginalSupportSpells,
+    [switch] $OriginalEchoVaultSilver,
     [switch] $OriginalHallowedHallsDraftRelic,
     [string[]] $OriginalIsolatedSpellIds = @(),
     [string[]] $OriginalIsolatedSpellUpgrades = @(),
@@ -2125,6 +2126,13 @@ if ($OriginalHallowedHallsDraftRelic) {
         throw 'Hallowed Halls/AlliedClassRelic requires its own binary Ring 1 spell batch.'
     }
     $OriginalIsolatedSpellIds = @('c6484604-b077-43ce-84a4-0179d2f36352')
+    $PhysicalSpawnPoints = $true
+}
+if ($OriginalEchoVaultSilver) {
+    if ($OriginalIsolatedSpellIds.Count -gt 0) { throw 'Echo Vault/Silver selects its own pinned original spell batch.' }
+    $OriginalIsolatedSpellIds = @('d74c257e-d38b-44da-b3d4-0a67934803a7',
+        '64beabe3-0260-44e2-a47a-b07192b52f25', 'f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b',
+        'f9f20326-dccb-44af-894b-467534afab4a')
     $PhysicalSpawnPoints = $true
 }
 if ($OriginalDoubleUnitsFirstShield -and $OriginalDoubleUnitsSpawnArmor) { throw 'Select one original DoubleUnits relic observation.' }
@@ -4051,6 +4059,7 @@ if ($OriginalHallGraftedBirth) {
     $environment['MT2_PROBE_DOUBLE_UNITS_SPAWN_OR_STATUS'] = $(if ($OriginalDoubleUnitsSpawnOrStatus) { '1' } else { '0' })
 }
 if ($OriginalIsolatedSpellIds.Count -gt 0) { $environment['MT2_PROBE_MODIFIERS'] = 'original-isolated-spells:' + ($OriginalIsolatedSpellIds -join ',') }
+if ($OriginalEchoVaultSilver) { $environment['MT2_PROBE_ECHO_VAULT_SILVER'] = '1' }
 if ($OriginalHallowedHallsDraftRelic) { $environment['MT2_PROBE_HALLOWED_HALLS_DRAFT_RELIC'] = '1' }
 if ($OriginalIsolatedSpellUpgrades.Count -gt 0) {
     if ($OriginalIsolatedSpellIds.Count -eq 0) { throw 'Isolated spell upgrades require an isolated spell batch.' }
@@ -8438,6 +8447,37 @@ if ($OriginalHallowedHallsDraftRelic) {
             @($_.EffectTypes).Count -eq 1 -and $_.EffectTypes[0] -eq 'RelicEffectOverrideCardDraftClassType'
         }).Count -ne 1) {
         throw 'Missing the pinned original Hallowed Halls cast with AlliedClassRelic.'
+    }
+}
+if ($OriginalEchoVaultSilver) {
+    if ($trace.GameVersion -ne '2.3.1' -or $trace.GameModuleMvid -ne 'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'Echo Vault/Silver witness is not from the pinned original game.'
+    }
+    $silver = @($trace.Actions[0].Before.Spawn.Train.Context.Relics | Where-Object {
+        $_.DataId -eq '1a69fbff-9f1d-4c98-92ff-a63e0ac520c5' -and
+        $_.AssetKey -eq 'SilverIncreasedEmber' -and @($_.EffectTypes).Count -eq 2 -and
+        $_.EffectTypes[0] -eq 'RelicEffectModifyEnergy' -and
+        $_.EffectTypes[1] -eq 'RelicEffectModifyEnergyDuringDeployment'
+    })
+    $torchEcho = @($trace.Actions | Where-Object {
+        $row = $_
+        $row.Action.RoomIndex -eq 0 -and
+        @($row.Before.Spawn.Train.Context.Cards.Hand | Where-Object {
+            $_.InstanceId -eq $row.Action.CardInstanceId -and
+            $_.DataId -eq 'f1dbd7d5-74fc-4507-aba1-dc1a8ec9393b'
+        }).Count -eq 1 -and
+        @($row.Actual.Spawn.Train.Context.RoomCapacities[0].Attachments | Where-Object {
+            $_.Echo.CopyCardId -gt 0 -and $_.Echo.OriginalCardId -eq $row.Action.CardInstanceId
+        }).Count -eq 1
+    })
+    $echoPreCombat = @($trace.RoomPreCombatRecords | Where-Object {
+        $row = $_
+        $row.Completed -and
+        @( $row.Before.Context.RoomCapacities | Where-Object { $_.RoomIndex -eq 0 } |
+            ForEach-Object { $_.Attachments } | Where-Object { $_.Echo.CopyCardId -gt 0 } ).Count -gt 0
+    })
+    if ($silver.Count -ne 1 -or $torchEcho.Count -ne 1 -or $echoPreCombat.Count -eq 0) {
+        throw 'Echo Vault/Silver lacks the exact relic, remembered original Torch or native pre-combat replay.'
     }
 }
 if ($OriginalRearrangeSpells -and (-not $trace.OriginalRearrangeSpellsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 19)) {

@@ -39,7 +39,8 @@ namespace MonsterTrain2Poju.Model
                 bool justCause = EchoJustCauseModel.Known(card, rule.Effects) && EchoJuiceSpikeModel.KnownRelics(context);
                 bool remnantPact = EchoRemnantPactModel.Known(card, rule.Effects) && EchoJuiceSpikeModel.KnownRelics(context);
                 if (!juice && rule.OnCastEffects.Count > 0 || rule.OnUnplayedNegativeEffects.Count > 0 || rule.ExternalInteractions.Count > 0 ||
-                    !waxen && !juice && !justCause && !remnantPact && (CardBranchMaskModel.Resolve(card).Traits.Any(trait => trait != "CardTraitFreeze") || context.Relics?.Any(relic => relic.EffectTypes.Count > 0) == true))
+                    !waxen && !juice && !justCause && !remnantPact && (CardBranchMaskModel.Resolve(card).Traits.Any(trait => trait != "CardTraitFreeze") ||
+                        context.Relics?.Any(relic => relic.EffectTypes.Count > 0 && !PassiveSilverIncreasedEmber(relic)) == true))
                     return Fail("Echo replay needs native calibration: onCast=" + rule.OnCastEffects.Count + ", unplayed=" +
                         rule.OnUnplayedNegativeEffects.Count + ", interactions=" + string.Join(";", rule.ExternalInteractions) +
                         ", traits=" + string.Join(";", CardBranchMaskModel.Resolve(card).Traits) + ", relics=" +
@@ -59,6 +60,14 @@ namespace MonsterTrain2Poju.Model
             }
             return new TrainSpellResult(CardSpellModel.WithContext(source, context), RoomOutcome.Exchanged, Array.Empty<CombatEvent>());
         }
+        internal static bool PassiveSilverIncreasedEmber(CombatRelicState relic) =>
+            relic.DataId == "1a69fbff-9f1d-4c98-92ff-a63e0ac520c5" && relic.AssetKey == "SilverIncreasedEmber" &&
+            relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false &&
+            relic.EffectTypes.SequenceEqual(new[] { RelicResourceModel.Energy, RelicResourceModel.DeploymentEnergy }) &&
+            relic.ResourceEffects is { Count: 2 } resources && RelicResourceModel.Validate(relic) == null &&
+            resources.All(effect => effect.ParamInt == 1 && effect.ParamInt2 == 0 && effect.ParamMinInt == 0 &&
+                effect.Amount == 1 && !effect.CanApplyInPreviewMode && effect.RequiredMutatorId == null &&
+                effect.Conditions.Count == 0);
         private static CombatContext Put(CombatContext context, int roomIndex, RoomCapacityAttachmentState owner, RoomEchoState echo) =>
             context.WithRoomCapacities(context.RoomCapacities!.Select(room => room.RoomIndex != roomIndex ? room :
                 new RoomCapacityState(room.RoomIndex, room.PlayerMaximum, room.EnemyMaximum, room.IsPyre, room.Corruption,

@@ -47,6 +47,11 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Original Hallowed Halls with AlliedClassRelic failed.' }
     dotnet $checks --hallowed-halls-draft-relic-only "$hallowed/hallowed-halls.mt2f" "$current/configured-opening-relics/native-draft-and-deck-owners.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Original Hallowed Halls relic callback guard controls failed.' }
+    $echoVaultSilver = "$current/controlled-isolated-spells/native-echo-vault-silver.mt2f"
+    dotnet $checks --original-support-spells-only $echoVaultSilver
+    if ($LASTEXITCODE -ne 0) { throw 'Original Echo Vault with Silver Increased Ember failed.' }
+    dotnet $checks --battle-frontier-only $echoVaultSilver
+    if ($LASTEXITCODE -ne 0) { throw 'Original Echo Vault with Silver Increased Ember candidate frontier failed.' }
     foreach ($rank in @('i', 'ii', 'iii')) {
         dotnet $checks --native-lazarus-devour-only "$current/lazarus-devour/native-devour-$rank.mt2f"
         if ($LASTEXITCODE -ne 0) { throw "Original Lazarus Devour ability failed at rank $rank." }
