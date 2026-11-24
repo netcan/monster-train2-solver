@@ -151,6 +151,7 @@ namespace MonsterTrain2Poju.Model
             else ids = owned.Select(card => card.InstanceId).ToArray();
             CombatContext context = source.WithStatistics(source.Statistics.RefreshOwnedCards(ids));
             BattleStatistics statistics = context.Statistics!;
+            bool allSubtypes = OriginalAllSubtypesModel.Active(context, deployment: frame?.Turn == 0);
             string? dataError = null;
             string? DataId(int id)
             {
@@ -159,7 +160,17 @@ namespace MonsterTrain2Poju.Model
                 return data;
             }
             bool TypeMatches(int id) => query.TypeMatchDataIds == null || query.TypeMatchDataIds.Count > 0 && query.TypeMatchDataIds.Contains(DataId(id)!);
-            bool SubtypeMatches(int id) => query.SubtypeMatchDataIds?.Count > 0 && query.SubtypeMatchDataIds.Contains(DataId(id)!);
+            bool SubtypeMatches(int id)
+            {
+                if (!allSubtypes) return query.SubtypeMatchDataIds?.Count > 0 && query.SubtypeMatchDataIds.Contains(DataId(id)!);
+                var definition = context.FindCard(id)?.MaskDescriptor?.Definition;
+                if (query.Subtype == null || definition == null)
+                {
+                    dataError = "All-unit subtype statistics require the query key and captured card definition for " + id;
+                    return false;
+                }
+                return OriginalAllSubtypesModel.MatchesDeckCard(definition, query.Subtype, allSubtypes);
+            }
             int[] Pile(string name) => source.OtherPiles.Where(pile => pile.Name == name).SelectMany(pile => pile.Cards)
                 .Select(card => card.InstanceId).ToArray();
             StatisticQueryResult Finish(int value) => dataError == null ? new StatisticQueryResult(context, value) : Unsupported(dataError);
@@ -204,6 +215,8 @@ namespace MonsterTrain2Poju.Model
             if (query.Type == "MonsterSubtypePlayed")
             {
                 if (query.Subtype == null) return Unsupported("Monster subtype spawn queries require a subtype key.");
+                if (!previous && allSubtypes)
+                    return Finish(Sum(floors.Select(count => count.Value)));
                 IReadOnlyList<StatisticCount> counts = query.Duration == "ThisBattle" ? statistics.SubtypesSpawnedThisBattle : statistics.SubtypesSpawnedThisTurn;
                 return Finish(previous ? 0 : counts.FirstOrDefault(count => count.Key == query.Subtype)?.Value ?? 0);
             }

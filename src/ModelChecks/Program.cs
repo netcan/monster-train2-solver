@@ -583,6 +583,12 @@ if (args.Length == 2 && args[0] == "--native-second-floor-enemy-opening-only")
     SecondFloorEnemyOpeningChecks.Native(args[1]);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-all-unit-subtypes-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalAllSubtypesChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-prevent-monster-damage-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

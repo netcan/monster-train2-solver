@@ -71,6 +71,8 @@ try {
     }
     dotnet $checks --original-support-spells-only "$campaignOnly/echo-vault.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Original Echo Vault with both campaign-only relics failed.' }
+    dotnet $checks --native-all-unit-subtypes-only "$current/all-unit-subtypes/queries.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Original AllUnitsAllSubtypes query receipts failed.' }
     foreach ($rank in @('i', 'ii', 'iii')) {
         dotnet $checks --native-lazarus-devour-only "$current/lazarus-devour/native-devour-$rank.mt2f"
         if ($LASTEXITCODE -ne 0) { throw "Original Lazarus Devour ability failed at rank $rank." }

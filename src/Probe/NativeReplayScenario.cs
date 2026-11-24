@@ -1554,6 +1554,13 @@ namespace MonsterTrain2Poju.Probe
                     }
                 }
             }
+            if (fullBattle && OriginalAllSubtypesWitness.Enabled)
+            {
+                OriginalAllSubtypesWitness.Tick(FullBattleTrace.Active!, managers, () => AdvanceTurn(combat!, record: false));
+                if (OriginalAllSubtypesWitness.Completed)
+                    Finish(true, "Original all-unit subtype queries captured.");
+                return;
+            }
             if (fullBattle && OriginalSecondFloorEnemyOpeningWitness.Enabled)
             {
                 if (combat!.GetTurnCount() == 0)

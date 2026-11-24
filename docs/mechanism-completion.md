@@ -1444,6 +1444,11 @@ GrimFlight 验收程序已就绪，正向运行需要原版客户端确认 Punis
 依次清掉暂时离开牌堆的单位牌统计。模型按同一时机刷新，6 次出牌和 6 次结束回合对照通过。
 [原版归档](../tests/compatibility/game-2.3.1/mechanics/campaign-only-combat-relics/manifest.tsv)
 
+`AllUnitsAllSubtypes` 用原版 2.3.1 对照了 42 项单位匹配、10 项牌堆筛选、8 项升级筛选和 20 组召唤统计。
+普通友军及死亡回调保留 Horde 例外，牌堆统计保留 Champion 例外。查询前后原始子类型与随机流一致。
+整局战斗准入仍待补齐其他子类型调用点。
+[原版查询归档](../tests/compatibility/game-2.3.1/mechanics/all-unit-subtypes/queries.mt2f)
+
 2.3.1 原版 `DoubleStatusEffects` 已接入共享状态层数管线。原版 SpikePotion 支付 1 余烬，
 使火车乘务员获得 20 层尖刺，完整出牌后继和随机流通过复放。七项查询对照覆盖冷却、无目标、
 永久升级、延迟加法和转移来源。四项原版移除调用依次将尖刺从 20 变为 18、14、10、12，

@@ -612,6 +612,7 @@ param(
     [string] $EffectOwnerType,
     [switch] $OriginalPreventMonsterDamageWitness,
     [switch] $OriginalLoseMoneyOnHitWitness,
+    [switch] $OriginalAllSubtypesWitness,
     [switch] $OriginalDoubleStatusEffectsWitness,
     [switch] $OriginalDoubleStatusEffectsBattle,
     [switch] $OriginalLonelyRoomsBattle,
@@ -1409,7 +1410,7 @@ if ($OriginalSpellDamageMoveWitness) {
 if ($PlacementSummonBlockOnly -and -not $OriginalPlacementMutatorsWitness) {
     throw 'PlacementSummonBlockOnly requires OriginalPlacementMutatorsWitness.'
 }
-$originalMutatorArguments = @('OriginalLoseMoneyOnHitWitness', 'OriginalDoubleStatusEffectsWitness',
+$originalMutatorArguments = @('OriginalLoseMoneyOnHitWitness', 'OriginalAllSubtypesWitness', 'OriginalDoubleStatusEffectsWitness',
     'OriginalDoubleStatusEffectsBattle', 'OriginalLonelyRoomsBattle', 'OriginalShuffleUnitsWitness',
     'OriginalShuffleUnitsBattle', 'OriginalDoubleFriendlyHealthWitness', 'OriginalDoubleFriendlyHealthBattle',
     'OriginalBothSidesUnitsWitness', 'OriginalBothSidesUnitsBattle')
@@ -1419,7 +1420,7 @@ if ($ShuffleUnitsThreeHosts -and -not $OriginalShuffleUnitsWitness) {
 if ($BothSidesUnitsCardless -and -not $OriginalBothSidesUnitsWitness) {
     throw 'BothSidesUnitsCardless requires OriginalBothSidesUnitsWitness.'
 }
-$selectedOriginalMutatorTests = @($OriginalLoseMoneyOnHitWitness, $OriginalDoubleStatusEffectsWitness,
+$selectedOriginalMutatorTests = @($OriginalLoseMoneyOnHitWitness, $OriginalAllSubtypesWitness, $OriginalDoubleStatusEffectsWitness,
     $OriginalDoubleStatusEffectsBattle, $OriginalLonelyRoomsBattle, $OriginalShuffleUnitsWitness,
     $OriginalShuffleUnitsBattle, $OriginalDoubleFriendlyHealthWitness, $OriginalDoubleFriendlyHealthBattle,
     $OriginalBothSidesUnitsWitness, $OriginalBothSidesUnitsBattle).Where({ $_ })
@@ -3709,6 +3710,7 @@ $environment = @{
     MT2_PROBE_EFFECT_OWNER_TYPE = $EffectOwnerType
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_WITNESS = $(if ($OriginalPreventMonsterDamageWitness) { '1' } else { '0' })
     MT2_PROBE_LOSE_MONEY_ON_HIT = $(if ($OriginalLoseMoneyOnHitWitness) { '1' } else { '0' })
+    MT2_PROBE_ALL_UNIT_SUBTYPES = $(if ($OriginalAllSubtypesWitness) { '1' } else { '0' })
     MT2_PROBE_DOUBLE_STATUS_EFFECTS = $(if ($OriginalDoubleStatusEffectsWitness) { '1' } else { '0' })
     MT2_PROBE_DOUBLE_STATUS_EFFECTS_BATTLE = $(if ($OriginalDoubleStatusEffectsBattle) { '1' } else { '0' })
     MT2_PROBE_LONELY_ROOMS_BATTLE = $(if ($OriginalLonelyRoomsBattle) { '1' } else { '0' })
@@ -4923,6 +4925,16 @@ if ($OriginalLoseMoneyOnHitWitness) {
         throw "Original LoseMoneyOnHit witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-LOSE-MONEY-ON-HIT PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalAllSubtypesWitness) {
+    $capturePath = Join-Path $profile 'all-unit-subtypes.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original all-unit subtype queries captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original all-unit subtype query witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-ALL-UNIT-SUBTYPES PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalDoubleStatusEffectsWitness) {

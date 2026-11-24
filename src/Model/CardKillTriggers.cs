@@ -99,10 +99,12 @@ namespace MonsterTrain2Poju.Model
             CardSourceTrait? suppression = card.MaskDescriptor?.SourceTraits?.FirstOrDefault(trait => trait.Type == SuppressTrait);
             if (suppression != null)
             {
-                if (context.Relics?.Any(relic => relic.EffectTypes.Contains("RelicEffectMonstersAreAllSubtypes")) == true)
+                if (context.Relics?.Any(relic => relic.EffectTypes.Contains(OriginalAllSubtypesModel.Effect) &&
+                    !OriginalAllSubtypesModel.IsOwner(relic)) == true)
                 { error = "Card OnKill subtype suppression with all-subtype relic rules requires native calibration."; return context; }
                 bool team = dying.Team == CombatTeam.Player ? suppression.KillTargetTeam!.Contains("Monsters") : suppression.KillTargetTeam!.Contains("Heroes");
-                bool subtype = suppression.KillTargetSubtype == "" ? dying.Team != CombatTeam.Player || !dying.IsPyre : dying.Subtypes.Contains(suppression.KillTargetSubtype!);
+                bool subtype = OriginalAllSubtypesModel.MatchesCharacter(dying.Team, dying.IsPyre, dying.Subtypes,
+                    suppression.KillTargetSubtype, pyreSubtype: false, allSubtypes: OriginalAllSubtypesModel.Active(context, deployment));
                 if (team && subtype) return context;
             }
             foreach (var trigger in triggers)
