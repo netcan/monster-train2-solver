@@ -130,6 +130,8 @@ param(
     [switch] $ObserveRedCrownEquipment,
     [string] $InputProfile = '',
     [switch] $RegionRunInput,
+    [string] $RegionAlternateSource = '',
+    [string] $RegionAlternate = '',
     [switch] $OriginalEquilibriusDrawWitness,
     [switch] $OriginalSproutWitness,
     [ValidateRange(1, 3)] [int] $OriginalSproutTier = 1,
@@ -2629,6 +2631,20 @@ if ($CampaignBattlePolicy -and (!$RegionRunInput -or
 if ($ObserveRegionPreviewScheduling -and !$RegionRunInput) {
     throw 'ObserveRegionPreviewScheduling requires RegionRunInput.'
 }
+if ($PSBoundParameters.ContainsKey('RegionAlternateSource') -or $PSBoundParameters.ContainsKey('RegionAlternate')) {
+    if (!$RegionRunInput -or !$CampaignBattlePolicy -or !$RegionAlternateSource -or
+        $RegionAlternate -cnotmatch '^[0-9]+,[1-9][0-9]*,[0-2],[1-9][0-9]*$') {
+        throw 'RegionAlternate requires RegionRunInput, CampaignBattlePolicy, a source archive, and decision,card,room,target IDs.'
+    }
+    $regionAlternateIds = foreach ($field in $RegionAlternate.Split(',')) {
+        $number = 0
+        if (![int]::TryParse($field, [ref]$number)) { throw 'RegionAlternate IDs must fit an integer.' }
+        $number
+    }
+    $RegionAlternateSource = (Resolve-Path -LiteralPath $RegionAlternateSource).Path
+    if (!(Test-Path -LiteralPath $RegionAlternateSource -PathType Leaf)) { throw 'RegionAlternateSource must be a file.' }
+    $regionAlternateSourceHash = (Get-FileHash -LiteralPath $RegionAlternateSource -Algorithm SHA256).Hash
+}
 if ($OriginalEquilibriusDrawWitness -and (!$RegionRunInput -or $BattleDistance -ne 3 -or $CampaignBattlePolicy -or $ObserveRegionPreviewScheduling)) {
     throw 'OriginalEquilibriusDrawWitness requires the native RegionRun distance-three input and isolated draw capture.'
 }
@@ -2640,7 +2656,7 @@ if ($PSBoundParameters.ContainsKey('OriginalSproutTier') -and !$OriginalSproutWi
     throw 'OriginalSproutTier requires OriginalSproutWitness.'
 }
 if ($RegionRunInput) {
-    $regionArguments = @('RegionRunInput', 'OriginalEquilibriusDrawWitness', 'OriginalSproutWitness', 'OriginalSproutTier', 'CampaignBattlePolicy', 'ObserveRegionPreviewScheduling', 'InputProfile', 'BattleDistance', 'Policy', 'BinaryCapture', 'NativeWorker',
+    $regionArguments = @('RegionRunInput', 'RegionAlternateSource', 'RegionAlternate', 'OriginalEquilibriusDrawWitness', 'OriginalSproutWitness', 'OriginalSproutTier', 'CampaignBattlePolicy', 'ObserveRegionPreviewScheduling', 'InputProfile', 'BattleDistance', 'Policy', 'BinaryCapture', 'NativeWorker',
         'GameSpeed', 'TimeoutSeconds', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (!$InputProfile -or !$BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $regionArguments }).Count) {
         throw 'RegionRunInput requires a native Soul Savior BattleIntro checkpoint and binary capture.'
@@ -2941,6 +2957,8 @@ $environment = @{
     MT2_PROBE_CAPTURE_PROFILE = $(if ($ProfileCapture) { '1' } else { '0' })
     MT2_PROBE_RESUME_RUN = $(if ($InputProfile) { '1' } else { '0' })
     MT2_PROBE_REGION_RUN_INPUT = $(if ($RegionRunInput) { '1' } else { '0' })
+    MT2_PROBE_REGION_ALTERNATE_SOURCE = $RegionAlternateSource
+    MT2_PROBE_REGION_ALTERNATE_ACTION = $RegionAlternate
     MT2_PROBE_EQUILIBRIUS_DRAW = $(if ($OriginalEquilibriusDrawWitness) { '1' } else { '0' })
     MT2_PROBE_SPROUT_WITNESS = $(if ($OriginalSproutWitness) { $OriginalSproutTier.ToString() } else { '0' })
     MT2_PROBE_CAMPAIGN_BATTLE_POLICY = $(if ($CampaignBattlePolicy) { '1' } else { '0' })
@@ -4872,6 +4890,36 @@ if ($ConduitMovement) {
             @($captured.Previews).Count -ne 3 -or [bool]$captured.EnemyCarrier -ne [bool]$ConduitEnemyMovement) { throw 'Incomplete Conduit movement calibration.' }
     } finally { $component.Dispose() }
     [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; Rows = 38; Previews = 3; OriginalFilesUnchanged = $true; ModelAcceptance = 'Pending independent focused checker'; Trace = $componentPath } | ConvertTo-Json
+    return
+}
+if ($RegionAlternateSource) {
+    $componentPath = Join-Path $profile 'region-run-alternate.mt2f'
+    if ($process.ExitCode -ne 0 -or !(Test-Path -LiteralPath $componentPath -PathType Leaf) -or
+        !(Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original RegionRun alternate captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore -or (Get-OriginalSignature $checkpoint) -cne $regionInputSignature -or
+        (Get-FileHash -LiteralPath $RegionAlternateSource -Algorithm SHA256).Hash -cne $regionAlternateSourceHash) {
+        throw "Native RegionRun alternate capture failed; inspect $unityLog"
+    }
+    $catalogAssembly = Join-Path $nativeBuildWorkspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll'
+    Add-Type -Path $catalogAssembly
+    $alternateDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($componentPath)
+    try {
+        $alternate = $alternateDocument.RootElement
+        $action = $alternate.GetProperty('Action')
+        if ($alternate.GetProperty('Boundary').GetString() -cne 'NativeRegionRunAlternate' -or
+            !$alternate.GetProperty('NativeCompleted').GetBoolean() -or
+            [Guid]$alternate.GetProperty('GameModuleMvid').GetString() -ne $nativeModule -or
+            $alternate.GetProperty('SourceSHA256').GetString() -ine $regionAlternateSourceHash -or
+            $alternate.GetProperty('DecisionIndex').GetInt32() -ne $regionAlternateIds[0] -or
+            $action.GetProperty('CardInstanceId').GetInt32() -ne $regionAlternateIds[1] -or
+            $action.GetProperty('RoomIndex').GetInt32() -ne $regionAlternateIds[2] -or
+            $action.GetProperty('TargetUnitId').GetInt32() -ne $regionAlternateIds[3] -or
+            $alternate.GetProperty('Before').ValueKind -ne 'Object' -or $alternate.GetProperty('Actual').ValueKind -ne 'Object') {
+            throw "Native RegionRun alternate receipt differs from the requested observation; inspect $unityLog"
+        }
+    } finally { $alternateDocument.Dispose() }
+    [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; OriginalFilesUnchanged = $true;
+        GameModuleMvid = $nativeModule; SourceSHA256 = $regionAlternateSourceHash; Trace = $componentPath } | ConvertTo-Json
     return
 }
 if ($UnsupportedBranchInput) {

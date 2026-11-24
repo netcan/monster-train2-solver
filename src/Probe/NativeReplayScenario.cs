@@ -203,6 +203,13 @@ namespace MonsterTrain2Poju.Probe
                 try
                 {
 #if DEVELOPMENT_PROBE
+                    if (RegionRunAlternateObservation.Active is RegionRunAlternateObservation alternate)
+                    {
+                        if (!alternate.WriteIfSettled(trace))
+                            throw new InvalidOperationException("The native battle ended before the requested RegionRun alternate settled.");
+                        Finish(true, "Original RegionRun alternate captured.");
+                        return;
+                    }
                     if (OriginalLifemotherDebuffsWitness.Enabled)
                     {
                         OriginalLifemotherDebuffsWitness.Write();
@@ -3843,6 +3850,8 @@ namespace MonsterTrain2Poju.Probe
                 var input = campaignBattlePolicy.PlayBattle(managers, save, FullBattleTrace.Active!);
                 if (input == CampaignProgressScenario.BattleInput.Card) Enter(Stage.PlayingCard, 30f);
                 else if (input == CampaignProgressScenario.BattleInput.EndTurn) AdvanceTurn(combat);
+                else if (input == CampaignProgressScenario.BattleInput.AlternateComplete)
+                    Finish(true, "Original RegionRun alternate captured.");
                 return;
             }
             if (IsUnitAndJunkPolicy())

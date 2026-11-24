@@ -20,7 +20,7 @@ namespace MonsterTrain2Poju.Probe
     // claim model equivalence: strict battle probes run separately from checkpoints.
     internal sealed class CampaignProgressScenario
     {
-        internal enum BattleInput { Waiting, SelectedRoom, Card, EndTurn }
+        internal enum BattleInput { Waiting, SelectedRoom, Card, EndTurn, AlternateComplete }
         internal static bool ObservedBattlePolicy { get; private set; }
 
         private static CampaignProgressScenario? active;
@@ -524,6 +524,10 @@ namespace MonsterTrain2Poju.Probe
                 m.GetReplayManager().IsCardPlaying() || (m.GetHandUI()?.AreAnyCardsAnimating() ?? false) ||
                 save.GetBattlePreviewEnabled() && (bool)AccessTools.Field(typeof(CombatManager), "combatStateChanged").GetValue(combat))
                 return BattleInput.Waiting;
+#if DEVELOPMENT_PROBE
+            var alternate = trace == null ? null : RegionRunAlternateObservation.Active;
+            if (alternate != null && alternate.WriteIfSettled(trace!)) return BattleInput.AlternateComplete;
+#endif
             RoomManager rooms = m.GetRoomManager();
             if (selectingRoom.HasValue)
             {
@@ -611,9 +615,30 @@ namespace MonsterTrain2Poju.Probe
                 }
             }
             var best = choices.OrderByDescending(x => x.score).FirstOrDefault();
+#if DEVELOPMENT_PROBE
+            bool forceAlternate = alternate?.IsBoundary(trace!, combat.GetTurnCount()) == true;
+            if (forceAlternate)
+            {
+                PlayCardAction action = alternate!.Action;
+                int matches = 0;
+                foreach (var candidate in choices)
+                {
+                    if (candidate.room != action.RoomIndex || candidate.card.GetCardType() == CardType.Monster ||
+                        trace!.CardId(candidate.card) != action.CardInstanceId ||
+                        candidate.drop?.GetCharacterState() is not CharacterState target || trace.UnitId(target) != action.TargetUnitId)
+                        continue;
+                    best = candidate;
+                    matches++;
+                }
+                if (matches != 1)
+                    throw new InvalidOperationException("The exact RegionRun alternate is not an available native policy candidate.");
+            }
+#else
+            const bool forceAlternate = false;
+#endif
             // Deployment precedes abilities; useful abilities precede ordinary
             // spells so that those spells cannot spend all of their ember first.
-            if (best.card == null || best.card.GetCardType() != CardType.Monster)
+            if (!forceAlternate && (best.card == null || best.card.GetCardType() != CardType.Monster))
             {
                 BattleInput input = PlayAbility(m, save, combat, cards, trace);
                 if (input != BattleInput.Waiting) return input;

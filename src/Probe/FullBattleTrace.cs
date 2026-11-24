@@ -27,6 +27,9 @@ namespace MonsterTrain2Poju.Probe
         private readonly BattleActionProbe actions;
 #if DEVELOPMENT_PROBE
         internal int ObservedActionCount => actions.Records.Count;
+        internal IReadOnlyList<BattleActionProbe.Record> ObservedActions => actions.Records;
+        internal IReadOnlyList<BattleTurnProbe.Record> ObservedTurns => turns.Records;
+        internal object? ObservedRunInput => nativeRunInput;
 #endif
         private readonly Dictionary<CharacterState, int> identities = new Dictionary<CharacterState, int>();
         private readonly Dictionary<CharacterState, Dictionary<CharacterTriggerState, int>> triggerIdentities =
