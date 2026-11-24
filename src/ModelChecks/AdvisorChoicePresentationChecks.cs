@@ -82,6 +82,53 @@ internal static class AdvisorChoicePresentationChecks
         Console.WriteLine("ADVISOR-DUPLICATE-CHOICE PASS: native Metallurgy alternatives resolve to different actionable hand labels.");
     }
 
+    internal static void MixModal(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            fixture.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d" &&
+            fixture.GetProperty("ModifierScenario").GetString() == "original-secret-ingredient-mix",
+            "Expected the pinned original Secret Ingredient witness.");
+        FixtureValue entry = fixture.GetProperty("Actions").EnumerateArray().First(row =>
+            row.GetProperty("Action").TryGetProperty("MixSelections", out FixtureValue picks) && picks.GetArrayLength() > 0);
+        var before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var nativeAfter = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        var action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
+        var card = before.Spawn.Train.Context!.FindCard(action.CardInstanceId)!;
+        var replay = BattleActionModel.PlayCard(before, action);
+        Require(card.DataId == "f4cf7469-4d84-40e9-94f6-6b743973f2ad" && before.Energy - nativeAfter.Energy == 1 &&
+            action.ActivatorUnitId == 0 && action.MixSelections.All(pick => pick.ChoiceIndex is >= 0 and < 2) &&
+            replay.Supported && BattleTurnChecks.Comparable(replay.State!) == BattleTurnChecks.Comparable(nativeAfter),
+            "Expected a strictly replayable original paid Mix action and two offered options.");
+
+        BattleSearchStep[] steps = [new BattleSearchStep(action, false), new BattleSearchStep(null, true)];
+        Require(ReferenceEquals(TentativeAdviceProgress.MatchedCard(steps, 0, action.CardInstanceId,
+                action.RoomIndex, -1, action.TargetUnitId), action) &&
+            TentativeAdviceProgress.MatchedCard(steps, 0, action.CardInstanceId, (action.RoomIndex + 1) % 3, -1, action.TargetUnitId) == null &&
+            !TentativeAdviceProgress.Matches(steps, 0, action.CardInstanceId, action.RoomIndex, -1, action.TargetUnitId, true),
+            "Only the matching paid play may retain the modal choice, without advancing the displayed forecast.");
+
+        var pending = new AdvisorMixChoice(action);
+        Require(pending.Prompt(true, 2) == null, "A paid input alone must not display a choice.");
+        var picks = action.MixSelections.OrderBy(pick => pick.EffectIndex).ThenBy(pick => pick.MixNumber).ToArray();
+        for (int i = 0; i < picks.Length; i++)
+        {
+            Require(pending.Open() && !pending.Open() && pending.Prompt(false, 2) == null &&
+                pending.Prompt(true, picks[i].ChoiceIndex) == null &&
+                pending.Prompt(true, 2) == AdvisorForecastPresentation.MixChoice(i, picks[i].ChoiceIndex),
+                "The prompt is limited to the matching active native draft with a valid option index.");
+            Require(pending.Choose(picks[i].ChoiceIndex) == (i < picks.Length - 1) && pending.Prompt(true, 2) == null,
+                "The previous choice must be hidden once the native option was accepted.");
+        }
+        Require(!pending.Open(), "The completed input cannot claim a later native draft.");
+        foreach (int wrongChoice in new[] { -1, 1 - picks[0].ChoiceIndex })
+        {
+            var diverged = new AdvisorMixChoice(action);
+            Require(diverged.Open() && !diverged.Choose(wrongChoice) && diverged.Prompt(true, 2) == null && !diverged.Open(),
+                "A canceled or divergent choice must clear the whole pending draft.");
+        }
+        Console.WriteLine($"ADVISOR-MIX-MODAL PASS: {picks.Length} original paid draft choices, inactive/invalid screen, divergent target and native skip controls.");
+    }
+
     private static string UnexpectedSummon(string id) => throw new InvalidDataException("Unexpected summon choice " + id);
     private static string UnexpectedCard(int id) => throw new InvalidDataException("Unexpected card choice " + id);
     private static void Require(bool condition, string message) => TrueFinalBossChecks.Require(condition, message);
