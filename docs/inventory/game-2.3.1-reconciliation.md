@@ -90,7 +90,7 @@
 | RelicEffectDamagePyreOnMerchantPurchase | input-only | Native MerchantScreen.TryPurchase and merchant reward completion call ApplyPyreDamageForMerchantPurchaseIfNecessary. The HP change and its relic notifications settle during the purchase. A later battle reads the resulting health and relic state. |
 | RelicEffectDisableRoomPreview | shared-path | The pinned NoCombatPreviews mutator disables the native room forecast across all recorded decision states. The original win matches 21 plays, seven EndTurns, both candidate frontiers and 16 independent branches. Verified by --native-disabled-room-preview-only and the recorded battle checks. |
 | RelicEffectDrawCardAfterEachClanPlayed | shared-path | Pinned two-round control verifies seven paid cards, first distinct clan pairing each turn, no repeat bonus and two native resets. The unchanged opening win matches 39 plays, seven EndTurns and both candidate frontiers. |
-| RelicEffectEndlessScalingOnSpawn | shared-path | Original victory and controlled entries reach the same loop-one opening wave. The addon projects native baseline values and balance queries for the three observed births, including fixed damage, buff and heal values. The complete first EndTurn and RNG match. Other birth shapes and later-loop providers remain guarded. |
+| RelicEffectEndlessScalingOnSpawn | shared-path | Original victory and controlled entries reach the same opening wave. The addon reads native baseline and balance inputs for four observed actor shapes. Six EndTurns match 21 ordered births, including the ordinary Relentless boss. The original loss replays 36 plays, nine EndTurns and both recorded frontiers. Uncalibrated shapes and later-loop providers remain guarded. |
 | RelicEffectExtraSpawnsFirstUnitPerTurn | shared-path | Original DoubleUnits queries match across deployment, ordinary turns, a triggered hatch and deck-scaled Funguy. Additional grafted Hall births, first-unit shield and room Armor each have a pinned original control. The checked consumers preserve native allocation order and RNG. |
 | RelicEffectForceBonusEnemyCovenant | shared-path | The unchanged RandomizeWaveOrder mutator supplies the pinned Covenant02_BattlesNewEnemies definition. Native group resolution and spawning match for the scoped Rank 0 owner. Mixed or changed Covenant configurations retain guards. |
 | RelicEffectGrantRewardStartOfRun | input-only | Native SaveManager.SetupRun invokes ApplyStartOfRunRelicEffects and RelicManager.ApplyStartOfRunCardEffects, which copies these entries into the opening reward queue. The settled battle uses the resulting deck and run resources. |
@@ -172,10 +172,10 @@
 
 - 原版 DLL SHA-256: `49c71329eb27ae77462e6e59e1fd300d6a249dba95af5b22f9aea766432e27b9`。
 - 原生类清单 SHA-256: `cd905d8ab02624ad9411a8138d0043360ebcdccecb9bafc5ce1f439eb5c9d7ab`。
-- 人工审查索引 SHA-256: `5fa56e1a3ee296ef7b383f4e8e0650b79da5a43311e0c6dbd1568c6f1000f7d0`。
-- Model: PDB 校验过的项目源码集合 `970c52c311d5708c19659e634ac1ad6706d7f425753c3a411f3c4b79a6e19ddd`。
-- Probe: PDB 校验过的项目源码集合 `3668b16b993ddaea5d482a7a5e3077e97ddda969d7d104e238495324bce565a9`。
-- ModelChecks: PDB 校验过的项目源码集合 `e652f370cde673b6ae67728f7712327bf3c95ec3b1a63fafa363a478afcd9a44`。
+- 人工审查索引 SHA-256: `90c518f694ad34617eb85c7d2c2c4bbc1e1882c2805b635f5b3ac488f0282357`。
+- Model: PDB 校验过的项目源码集合 `4625e3e07e28854db2b39e88c1d056b25914e67401d1fb035c31f622fe6b9c14`。
+- Probe: PDB 校验过的项目源码集合 `3e0f9b118d193f290158f133328cac190fafc9fe7794164f31093525a548b4fc`。
+- ModelChecks: PDB 校验过的项目源码集合 `6edda4f205faf51bae36afc871b26cdf43ef10cc0de45a804b0f94fcf2b64e68`。
 
 源码集合摘要排除 obj/bin 生成文件；这些文件仍校验 PDB，但 Git 提交号写入 AssemblyInfo 不会使源码审查清单反复失效。运行时继续严格比较消费者 DLL 的真实字节，绝不以源码摘要替代依赖一致性检查。
 
