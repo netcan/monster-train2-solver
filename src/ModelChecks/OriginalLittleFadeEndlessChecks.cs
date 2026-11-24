@@ -8,6 +8,9 @@ internal static class OriginalLittleFadeEndlessChecks
     private const string Upgrade = "f5b3eaea-c18e-4ffc-ab45-2bedb8da557e";
     private const string FriendlyRank = "eb4f67b9-f3ad-40db-9212-4ed647e17296";
     private const string FriendlyUpgrade = "42849eec-c299-40ce-a344-3fc490ee052b";
+    private const string SpikesRank = "08749cab-1cdb-451b-9164-b60be12c4b52";
+    private const string SpikesUpgrade = "be6a64f5-e88e-42d6-aa29-9e21cff98428";
+    private const string EndlessSupport = "2aade38c-4687-40ce-9507-2a9e80cb139c";
 
     internal static void Native(FixtureValue receipt)
     {
@@ -104,6 +107,44 @@ internal static class OriginalLittleFadeEndlessChecks
         static BattleTurnState Read(FixtureValue node, string field) => node.GetProperty(field).Deserialize<BattleTurnState>()!;
         static CombatUnit Unit(FixtureValue node, string field) => node.GetProperty(field).Deserialize<CombatUnit[]>()!.Single();
         static int Stacks(CombatUnit unit) => unit.Status("ephemeral")?.Stacks ?? 0;
+    }
+
+    internal static void NativePermanentSpikes(FixtureValue receipt)
+    {
+        Require(Number(receipt, "Schema") == 1 && Text(receipt, "Boundary") == "OriginalLittleFadePermanentSpikes" &&
+            Text(receipt, "GameVersion") == "2.3.1" && Text(receipt, "GameModuleMvid") == Game231FixtureCatalog.Module &&
+            Text(receipt, "ChampionId") == Champion && Text(receipt, "RankId") == SpikesRank && Text(receipt, "UpgradeId") == SpikesUpgrade &&
+            Text(receipt, "EndlessSupportUpgradeId") == EndlessSupport, "Expected the original Little Fade Spikes rank and Endless shop upgrade.");
+
+        var deployed = BattleActionModel.PlayCard(State("DeploymentBefore"), receipt.GetProperty("Deployment").Deserialize<PlayCardAction>()!);
+        Require(deployed.Supported, "Little Fade Spikes deployment was rejected: " + deployed.Reason);
+        Compare(deployed.State!, State("DeploymentAfter"), "Spikes deployment");
+
+        int actor = Number(receipt, "ActorId"), card = Number(receipt, "CardInstanceId");
+        var slay = receipt.GetProperty("UpgradeCallback");
+        string[] earlier = slay.GetProperty("PermanentUpgradesBefore").Deserialize<string[]>()!;
+        string[] updated = slay.GetProperty("PermanentUpgradesAfter").Deserialize<string[]>()!;
+        Require(Text(receipt, "AuthoredTrigger") == "OnKill" && Text(slay, "Trigger") == "OnKill" && Number(slay, "SourceActorId") == actor &&
+            slay.GetProperty("Targets").Deserialize<int[]>()!.SequenceEqual(new[] { actor }) &&
+            earlier.Contains(SpikesRank) && earlier.Contains(EndlessSupport) && !earlier.Contains(SpikesUpgrade) &&
+            updated.SequenceEqual(earlier.Append(SpikesUpgrade)) && receipt.GetProperty("PermanentUpgrades").Deserialize<string[]>()!.SequenceEqual(updated),
+            "The original native self-trigger did not retain the permanent Spikes upgrade.");
+        Require(Number(receipt, "SpikesBeforeDeath") == 7 && Number(receipt, "SpikesAfterReturn") == 9 &&
+            Number(slay, "SpikesAfter") == Number(slay, "SpikesBefore") + 2 &&
+            Number(slay, "AttackAfter") == Number(slay, "AttackBefore") + 2 &&
+            Number(receipt, "AttackAfterReturn") == Number(receipt, "AttackBeforeDeath") + 2 && receipt.GetProperty("SameCardInHand").GetBoolean(),
+            "The original Endless return must preserve the same card with two additional attack and Spikes.");
+
+        var before = State("Before");
+        var after = State("After");
+        var settled = BattleTurnModel.EndTurn(before);
+        Require(settled.Supported && after.Spawn.Turn == before.Spawn.Turn + 1 &&
+            after.Spawn.Train.Context!.Cards.Hand.Any(token => token.InstanceId == card && token.DataId == Champion),
+            "The original Spikes death turn and hand return were rejected: " + settled.UnsupportedReason);
+        Compare(settled.State!, after, "permanent Spikes and Endless return");
+        Console.WriteLine("ORIGINAL-LITTLE-FADE-PERMANENT-SPIKES PASS: exact Slay upgrade, original card return and native RNG.");
+
+        BattleTurnState State(string name) => receipt.GetProperty(name).Deserialize<BattleTurnState>()!;
     }
 
     private static void Compare(BattleTurnState predicted, BattleTurnState native, string action)

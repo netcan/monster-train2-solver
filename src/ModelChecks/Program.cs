@@ -504,6 +504,12 @@ if (args.Length == 2 && args[0] == "--native-little-fade-buff-friendly-only")
     OriginalLittleFadeEndlessChecks.NativeBuffFriendly(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-little-fade-permanent-spikes-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalLittleFadeEndlessChecks.NativePermanentSpikes(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-lose-money-on-hit-only")
 {
     LoseMoneyOnHitChecks.Native(args[1]);

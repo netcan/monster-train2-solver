@@ -1547,8 +1547,9 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (OriginalLittleFadeCostWitness.Tick(FullBattleTrace.Active!, managers, log,
                     () => AdvanceTurn(combat!, record: false)))
-                    Finish(true, OriginalLittleFadeCostWitness.BuffFriendly
-                        ? "Original Little Fade BuffFriendly captured." : "Original Little Fade Endless cost captured.");
+                    Finish(true, OriginalLittleFadeCostWitness.BuffFriendly ? "Original Little Fade BuffFriendly captured." :
+                        OriginalLittleFadeCostWitness.PermanentSpikes ? "Original Little Fade PermanentSpikes captured." :
+                        "Original Little Fade Endless cost captured.");
                 return;
             }
             if (fullBattle && OriginalLoseMoneyOnHitWitness.Enabled)
