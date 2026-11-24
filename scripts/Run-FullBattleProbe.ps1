@@ -605,6 +605,7 @@ param(
     [switch] $OriginalDoubleFriendlyHealthBattle,
     [switch] $OriginalBothSidesUnitsWitness,
     [switch] $OriginalBothSidesUnitsBattle,
+    [switch] $BothSidesUnitsCardless,
     [switch] $OriginalPreventMonsterDamageBattle,
     [switch] $OriginalSecondFloorEnemyOpening,
     [switch] $OriginalHealOnAscendWitness,
@@ -1114,6 +1115,9 @@ $originalMutatorArguments = @('OriginalLoseMoneyOnHitWitness', 'OriginalDoubleSt
 if ($ShuffleUnitsThreeHosts -and -not $OriginalShuffleUnitsWitness) {
     throw 'ShuffleUnitsThreeHosts requires OriginalShuffleUnitsWitness.'
 }
+if ($BothSidesUnitsCardless -and -not $OriginalBothSidesUnitsWitness) {
+    throw 'BothSidesUnitsCardless requires OriginalBothSidesUnitsWitness.'
+}
 $selectedOriginalMutatorTests = @($OriginalLoseMoneyOnHitWitness, $OriginalDoubleStatusEffectsWitness,
     $OriginalDoubleStatusEffectsBattle, $OriginalLonelyRoomsBattle, $OriginalShuffleUnitsWitness,
     $OriginalShuffleUnitsBattle, $OriginalDoubleFriendlyHealthWitness, $OriginalDoubleFriendlyHealthBattle,
@@ -1122,6 +1126,7 @@ if ($selectedOriginalMutatorTests.Count -gt 0) {
     $witnessArguments = $originalMutatorArguments + @('GameSpeed', 'NativeWorker', 'TimeoutSeconds',
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if ($OriginalShuffleUnitsWitness) { $witnessArguments += 'ShuffleUnitsThreeHosts' }
+    if ($OriginalBothSidesUnitsWitness) { $witnessArguments += 'BothSidesUnitsCardless' }
     if (-not $BinaryCapture -or $selectedOriginalMutatorTests.Count -ne 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
         throw 'Select one original mutator test with isolated binary capture.'
@@ -3161,6 +3166,7 @@ $environment = @{
     MT2_PROBE_DOUBLE_FRIENDLY_HEALTH_BATTLE = $(if ($OriginalDoubleFriendlyHealthBattle) { '1' } else { '0' })
     MT2_PROBE_BOTH_SIDES_UNITS_WITNESS = $(if ($OriginalBothSidesUnitsWitness) { '1' } else { '0' })
     MT2_PROBE_BOTH_SIDES_UNITS_BATTLE = $(if ($OriginalBothSidesUnitsBattle) { '1' } else { '0' })
+    MT2_PROBE_BOTH_SIDES_UNITS_CARDLESS = $(if ($BothSidesUnitsCardless) { '1' } else { '0' })
     MT2_PROBE_PYRE_ABILITY_COOLDOWN_WITNESS = $OriginalPyreAbilityCooldownWitness
     MT2_PROBE_ORIGINAL_PACT_DRAW = $(if ($OriginalPactDrawWitness) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_PACT_BATTLE = $(if ($OriginalPactDrawBattle) { '1' } else { '0' })
@@ -4188,7 +4194,7 @@ if ($OriginalDoubleFriendlyHealthWitness) {
     return
 }
 if ($OriginalBothSidesUnitsWitness) {
-    $capturePath = Join-Path $profile 'both-sides-units.mt2f'
+    $capturePath = Join-Path $profile $(if ($BothSidesUnitsCardless) { 'both-sides-units-cardless.mt2f' } else { 'both-sides-units.mt2f' })
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original BothSidesUnitsAreStronger captured' -Quiet) -or
         (Get-OriginalSignature) -cne $originalBefore) {

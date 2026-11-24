@@ -31,14 +31,15 @@ namespace MonsterTrain2Poju.Probe
         };
         internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_BOTH_SIDES_UNITS_WITNESS") == "1";
         internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_BOTH_SIDES_UNITS_BATTLE") == "1";
+        internal static bool Cardless => Environment.GetEnvironmentVariable("MT2_PROBE_BOTH_SIDES_UNITS_CARDLESS") == "1";
         internal static bool Acquired => ownerDefinition != null;
         private static object? ownerDefinition;
         private static readonly Dictionary<IRelicEffect, int> Installed = new();
         private static readonly List<BirthSample> Births = new();
-        private static CardState? steward;
+        private static CardState? playedCard;
         private static BattleTurnState? beforePlay, beforeEndTurn;
         private static object? beforePyre;
-        private static bool observingWave;
+        private static bool observingBirths;
 
         internal static void Acquire(SaveManager save)
         {
@@ -92,49 +93,46 @@ namespace MonsterTrain2Poju.Probe
                 save.StartCoroutine(rooms.GetRoomUI().SetSelectedRoom(0));
                 return false;
             }
+            if (Cardless) return TickCardless(trace, managers, log);
             if (beforePlay == null)
             {
                 if (!combat.IsPlacementPhase)
                     throw new InvalidOperationException("Expected the original turn-zero placement hand.");
-                steward = cards.GetHand().FirstOrDefault(card => card.GetCardDataID() == StewardId)
+                playedCard = cards.GetHand().FirstOrDefault(card => card.GetCardDataID() == StewardId)
                     ?? throw new InvalidOperationException("No original Train Steward in the native placement hand.");
                 var point = rooms.GetRoom(0).GetFirstEmptyMonsterPoint()
                     ?? throw new InvalidOperationException("No native floor-zero placement point.");
-                if (!cards.CanPlayHandCard(steward, 0, point, null, null, out var error))
+                if (!cards.CanPlayHandCard(playedCard, 0, point, null, null, out var error))
                     throw new InvalidOperationException("Original Train Steward was unavailable: " + error);
                 beforePlay = trace.CaptureDecision();
                 beforePyre = CapturePyre(managers);
-                if (!cards.PlayCard(cards.GetHand().IndexOf(steward), point, ref error))
+                if (!cards.PlayCard(cards.GetHand().IndexOf(playedCard), point, ref error))
                     throw new InvalidOperationException("Original Train Steward was rejected: " + error);
                 return false;
             }
 
-            var action = new PlayCardAction(trace.CardId(steward!), 0);
+            var action = new PlayCardAction(trace.CardId(playedCard!), 0);
             if (beforeEndTurn == null)
             {
                 beforeEndTurn = trace.CaptureDecision();
                 var priorCard = beforePlay.Spawn.Train.Context!.FindCard(action.CardInstanceId);
                 var actor = beforeEndTurn.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0).Units
                     .Single(unit => unit.SpawnerCardId == action.CardInstanceId);
-                if (!combat.IsPlacementPhase || cards.GetHand().Contains(steward!) ||
+                if (!combat.IsPlacementPhase || cards.GetHand().Contains(playedCard!) ||
                     priorCard?.Temporary.Offsets.Damage != 5 || priorCard?.Temporary.Offsets.Health != 10 ||
                     actor.Attack != 13 || actor.Health != 35 || actor.MaxHealth != 35)
                     throw new InvalidOperationException("Original paid Train Steward did not inherit +5 attack and +10 health.");
                 save.MarkOneTimeMessageComplete(OneTimeMessage.EndTurnWithoutPlayingChampion);
-                observingWave = true;
+                observingBirths = true;
                 advanceTurn();
                 return false;
             }
 
-            observingWave = false;
+            observingBirths = false;
             var afterWave = trace.CaptureDecision();
             var enemyIds = afterWave.Spawn.Train.Rooms.SelectMany(room => room.Units)
                 .Where(actor => actor.Team == CombatTeam.Enemy).Select(actor => actor.Id).ToHashSet();
-            var births = Births.Select(row => new
-            {
-                UnitId = trace.UnitId(row.Actor), AssetKey = row.Actor.GetSourceCharacterData().GetAssetKey(),
-                row.EffectIndex, row.Trigger, row.FromCard, row.Before, row.After
-            }).ToArray();
+            var births = CaptureBirths(trace);
             if (combat.GetTurnCount() != 1 || enemyIds.Count == 0 ||
                 !births.Any(health => health.EffectIndex == 0 && enemyIds.Contains(health.UnitId) &&
                     health.After.Health - health.Before.Health == 10 && health.After.MaxHealth - health.Before.MaxHealth == 10 &&
@@ -150,6 +148,58 @@ namespace MonsterTrain2Poju.Probe
             using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "both-sides-units.mt2f"));
             archive.Write(stream);
             log.LogInfo("ORIGINAL-BOTH-SIDES-UNITS OBSERVED paid Steward, enemy callback pairs=" + births.Length + ", native Pyre base query");
+            return true;
+        }
+
+        private static bool TickCardless(FullBattleTrace trace, AllGameManagers managers, ManualLogSource log)
+        {
+            var cards = managers.GetCardManager();
+            if (!managers.GetCombatManager().IsPlacementPhase)
+                throw new InvalidOperationException("Expected the original turn-zero placement hand.");
+            if (beforePlay == null)
+            {
+                CardData definition = managers.GetAllGameData().FindCardData(OriginalEagerConscriptScenario.CardId)
+                    ?? throw new InvalidOperationException("Original Eager Conscript was missing.");
+                CardEffectData effect = definition.GetEffects().Single();
+                if (definition.name != "EagerConscript" || definition.GetCardType() != CardType.Spell || definition.GetCost() != 1 ||
+                    effect.GetEffectStateName() != nameof(CardEffectSpawnMonsterOrAddStatusEffect) ||
+                    effect.GetTargetMode() != TargetMode.Room || effect.GetTargetTeamType() != Team.Type.Monsters ||
+                    effect.GetTargetCharacterSubtype()?.Key != "SubtypesData_Horde" ||
+                    effect.GetParamCharacterData()?.name != "MonsterFunguy" ||
+                    effect.GetParamStatusEffects() is not [{ statusId: "horde", count: 1 }])
+                    throw new InvalidOperationException("Original Eager Conscript authored birth changed.");
+                playedCard = cards.GetHand().FirstOrDefault(card => card.GetCardDataID() == definition.GetID()) ??
+                    cards.AddNewCard(definition, CardPile.HandPile, false, false, animate: false)
+                    ?? throw new InvalidOperationException("Original Eager Conscript could not enter the native hand.");
+                if (!cards.CanPlayHandCard(playedCard, 0, null, null, null, out var error))
+                    throw new InvalidOperationException("Original Eager Conscript was unavailable: " + error);
+                beforePlay = trace.CaptureDecision();
+                observingBirths = true;
+                if (!cards.PlayCard(cards.GetHand().IndexOf(playedCard), null, ref error))
+                    throw new InvalidOperationException("Original Eager Conscript was rejected: " + error);
+                return false;
+            }
+
+            observingBirths = false;
+            var after = trace.CaptureDecision();
+            var action = new PlayCardAction(trace.CardId(playedCard!), 0);
+            var births = CaptureBirths(trace);
+            var fungus = after.Spawn.Train.Rooms.Single(room => room.RoomIndex == 0).Units.Single(unit => unit.AssetKey == "MonsterFunguy");
+            if (beforePlay.Energy - after.Energy != 1 || cards.GetHand().Contains(playedCard!) ||
+                fungus.SpawnerCardId != 0 || fungus.Status("cardless")?.Stacks != 1 || fungus.Status("horde")?.Stacks != 1 ||
+                fungus.Modifiers?.IsClone != false ||
+                !births.Select(row => row.EffectIndex).SequenceEqual(new[] { 1, 4, 3 }) ||
+                births.Any(row => row.UnitId != fungus.Id || row.FromCard))
+                throw new InvalidOperationException("Original paid Eager Conscript did not settle the three cardless birth callbacks.");
+            using var archive = NativeFixtureCapture.Capture(new
+            {
+                Schema = 1, Boundary = OwnerKey + "Cardless", GameVersion = Application.version, GameModuleMvid = Module,
+                Owner = ownerDefinition, DonorCardDataId = OriginalEagerConscriptScenario.CardId, BeforePlay = beforePlay,
+                Play = action, AfterPlay = after, Births = births
+            });
+            using var stream = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "both-sides-units-cardless.mt2f"));
+            archive.Write(stream);
+            log.LogInfo("ORIGINAL-BOTH-SIDES-UNITS OBSERVED paid Eager Conscript cardless birth with three callback states");
             return true;
         }
 
@@ -198,9 +248,35 @@ namespace MonsterTrain2Poju.Probe
             public ActorStats Before = null!, After = null!;
         }
 
-        private static bool ObserveEnemy(IRelicEffect effect, CharacterState actor, int effectIndex, ICoreGameManagers managers) =>
-            observingWave && Installed.TryGetValue(effect, out var index) && index == effectIndex &&
-            !managers.GetSaveManager().PreviewMode && !actor.PreviewMode && actor.GetTeamType() == Team.Type.Heroes;
+        private sealed class CapturedBirth
+        {
+            public int UnitId { get; }
+            public string AssetKey { get; }
+            public int EffectIndex { get; }
+            public string Trigger { get; }
+            public bool FromCard { get; }
+            public ActorStats Before { get; }
+            public ActorStats After { get; }
+            public CapturedBirth(FullBattleTrace trace, BirthSample sample)
+            {
+                UnitId = trace.UnitId(sample.Actor);
+                AssetKey = sample.Actor.GetSourceCharacterData().GetAssetKey();
+                EffectIndex = sample.EffectIndex;
+                Trigger = sample.Trigger;
+                FromCard = sample.FromCard;
+                Before = sample.Before;
+                After = sample.After;
+            }
+        }
+
+        private static CapturedBirth[] CaptureBirths(FullBattleTrace trace) => Births.Select(row =>
+            new CapturedBirth(trace, row)).ToArray();
+
+        private static bool ObserveActor(IRelicEffect effect, CharacterState actor, int effectIndex, ICoreGameManagers managers) =>
+            observingBirths && Installed.TryGetValue(effect, out var index) && index == effectIndex &&
+            !managers.GetSaveManager().PreviewMode && !actor.PreviewMode &&
+            (Cardless ? actor.GetTeamType() == Team.Type.Monsters && actor.HasStatusEffect("cardless") :
+                actor.GetTeamType() == Team.Type.Heroes);
 
         private static IEnumerator Observe(IEnumerator native, CharacterState actor, int index, string trigger, bool fromCard)
         {
@@ -220,8 +296,20 @@ namespace MonsterTrain2Poju.Probe
             private static void Postfix(RelicEffectModifyCharacterMaxHealth __instance, CharacterState character,
                 CardState? fromCard, ICoreGameManagers coreGameManagers, ref IEnumerator __result)
             {
-                if (ObserveEnemy(__instance, character, 0, coreGameManagers))
-                    __result = Observe(__result, character, 0, nameof(RelicEffectModifyCharacterMaxHealth.OnCharacterAdded), fromCard != null);
+                int index = Cardless ? 1 : 0;
+                if (ObserveActor(__instance, character, index, coreGameManagers))
+                    __result = Observe(__result, character, index, nameof(RelicEffectModifyCharacterMaxHealth.OnCharacterAdded), fromCard != null);
+            }
+        }
+
+        [HarmonyPatch(typeof(RelicEffectModifyCardAttack), nameof(RelicEffectModifyCardAttack.OnCharacterAdded))]
+        private static class CardAttackPatch
+        {
+            private static void Postfix(RelicEffectModifyCardAttack __instance, CharacterState character,
+                CardState? fromCard, ICoreGameManagers coreGameManagers, ref IEnumerator __result)
+            {
+                if (Cardless && ObserveActor(__instance, character, 4, coreGameManagers))
+                    __result = Observe(__result, character, 4, nameof(RelicEffectModifyCardAttack.OnCharacterAdded), fromCard != null);
             }
         }
 
@@ -232,9 +320,10 @@ namespace MonsterTrain2Poju.Probe
                 ICoreGameManagers coreGameManagers, ref IEnumerator __result)
             {
                 var actor = relicEffectParams.characterState;
-                if (actor != null && relicEffectParams.trigger == CharacterTriggerData.Trigger.OnSpawn &&
-                    ObserveEnemy(__instance, actor, 2, coreGameManagers))
-                    __result = Observe(__result, actor, 2, relicEffectParams.trigger.ToString(), false);
+                int index = Cardless ? 3 : 2;
+                var trigger = Cardless ? CharacterTriggerData.Trigger.OnSpawnNotFromCard : CharacterTriggerData.Trigger.OnSpawn;
+                if (actor != null && relicEffectParams.trigger == trigger && ObserveActor(__instance, actor, index, coreGameManagers))
+                    __result = Observe(__result, actor, index, trigger.ToString(), actor.GetSpawnerCard() != null);
             }
         }
     }
