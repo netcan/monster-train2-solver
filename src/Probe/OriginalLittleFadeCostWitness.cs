@@ -12,12 +12,13 @@ using UnityEngine;
 
 namespace MonsterTrain2Poju.Probe
 {
-    internal static class OriginalLittleFadeCostWitness
+    internal static partial class OriginalLittleFadeCostWitness
     {
         private const string ChampionId = "d2a5feba-4ecd-4d5d-a206-ec2ebfb96667";
         private const string RankId = "738b4ac0-d62b-4d79-8340-e6dc154b1b5f";
         private static readonly Guid Module = new("bf93f060-beda-46b1-b808-95ebf1e9a99d");
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_LITTLE_FADE_COST_WITNESS") == "1";
+        private static string? Mode => Environment.GetEnvironmentVariable("MT2_PROBE_LITTLE_FADE_COST_WITNESS");
+        internal static bool Enabled => Mode is "1" or "BuffFriendly";
         internal static bool Prepared => rank != null;
         private static CardUpgradeData? rank, costUpgrade;
         private static CardState? champion;
@@ -49,27 +50,35 @@ namespace MonsterTrain2Poju.Probe
             CharacterData character = card.GetSpawnCharacterData();
             CardUpgradeTreeData tree = ChampionUpgradeRewardData.GetUpgradeTree(character, save.GetBalanceData());
             CardUpgradeData chosen = tree.GetUpgradeTrees().Select(path => path.GetCardUpgrades().FirstOrDefault())
-                .Single(candidate => candidate?.GetID() == RankId)!;
-            CardEffectData effect = chosen.GetCharacterTriggerUpgrades()
-                .Single(trigger => trigger.GetTrigger() == CharacterTriggerData.Trigger.OnDeath).GetEffects()
-                .Single(data => data.GetEffectStateName() == nameof(CardEffectAddTempCardUpgradeToUnits));
-            CardUpgradeData upgrade = effect.GetParamCardUpgradeData();
-            var interactions = new List<string>();
-            authoredEffect = UnitTriggerUpgradeProbe.Definition(effect, interactions);
-            if (character.GetAssetKey() != "MonsterFirstWaxer" || upgrade?.name != "RemnantChampIncreaseCost1" ||
-                authoredEffect is not { Target: "Self", Upgrade: not null } || interactions.Count != 0 ||
-                authoredEffect.Upgrade.Stats is not { Damage: 15, Health: 1, Cost: 0 } ||
-                !chosen.GetStatusEffectUpgrades().Any(status => status.statusId == "endless" && status.count > 0))
-                throw new InvalidOperationException("The attached Little Fade death-upgrade payload changed.");
+                .Single(candidate => candidate != null && (BuffFriendly ? candidate.name == BuffFriendlyRank : candidate.GetID() == RankId))!;
+            if (character.GetAssetKey() != "MonsterFirstWaxer")
+                throw new InvalidOperationException("Expected the pinned original Little Fade character.");
+            if (BuffFriendly) PrepareBuffFriendly(chosen);
+            else PrepareEndless(chosen);
             if (card.GetCardStateModifiers().GetCardUpgrades().Count != 0)
                 throw new InvalidOperationException("Expected no existing Little Fade rank before stock upgrade.");
             var modifier = new CardUpgradeState();
             modifier.Setup(chosen);
             card.ApplyPermanentUpgrade(modifier, save, ignoreUpgradeAnimation: true);
             card.RemoveEarlierTreeUpgrades(modifier, tree);
-            if (card.GetCardStateModifiers().GetCardUpgrades().Single().GetCardUpgradeDataId() != RankId)
+            if (card.GetCardStateModifiers().GetCardUpgrades().Single().GetCardUpgradeDataId() != chosen.GetID())
                 throw new InvalidOperationException("The native Little Fade rank did not settle on the original card.");
             rank = chosen;
+        }
+
+        private static void PrepareEndless(CardUpgradeData chosen)
+        {
+            CardEffectData effect = chosen.GetCharacterTriggerUpgrades()
+                .Single(trigger => trigger.GetTrigger() == CharacterTriggerData.Trigger.OnDeath).GetEffects()
+                .Single(data => data.GetEffectStateName() == nameof(CardEffectAddTempCardUpgradeToUnits));
+            CardUpgradeData upgrade = effect.GetParamCardUpgradeData();
+            var interactions = new List<string>();
+            authoredEffect = UnitTriggerUpgradeProbe.Definition(effect, interactions);
+            if (upgrade?.name != "RemnantChampIncreaseCost1" ||
+                authoredEffect is not { Target: "Self", Upgrade: not null } || interactions.Count != 0 ||
+                authoredEffect.Upgrade.Stats is not { Damage: 15, Health: 1, Cost: 0 } ||
+                !chosen.GetStatusEffectUpgrades().Any(status => status.statusId == "endless" && status.count > 0))
+                throw new InvalidOperationException("The attached Little Fade death-upgrade payload changed.");
             costUpgrade = upgrade;
         }
 
@@ -85,15 +94,12 @@ namespace MonsterTrain2Poju.Probe
                 save.StartCoroutine(rooms.GetRoomUI().SetSelectedRoom(0));
                 return false;
             }
+            if (BuffFriendly) return TickBuffFriendly(trace, managers, room, log, advanceTurn);
             if (champion == null)
             {
                 champion = cards.GetHand().Single(card => card.GetCardDataID() == ChampionId);
-                var point = room.GetFirstEmptyMonsterPoint() ?? throw new InvalidOperationException("Expected native Little Fade placement.");
                 deploymentBefore = trace.CaptureDecision();
-                deployment = new PlayCardAction(trace.CardId(champion), 0, playerPosition: point.GetIndexInRoom());
-                if (!cards.CanPlayHandCard(champion, 0, point, null, null, out var error) ||
-                    !cards.PlayCard(cards.GetHand().IndexOf(champion), point, ref error))
-                    throw new InvalidOperationException("Native Little Fade deployment was rejected: " + error);
+                deployment = PlayDeployment(trace, cards, room, champion);
                 return false;
             }
             if (deploymentAfter == null)
@@ -146,6 +152,16 @@ namespace MonsterTrain2Poju.Probe
             return true;
         }
 
+        private static PlayCardAction PlayDeployment(FullBattleTrace trace, CardManager cards, RoomState room, CardState card)
+        {
+            var point = room.GetFirstEmptyMonsterPoint() ?? throw new InvalidOperationException("Expected an open native deployment point.");
+            var input = new PlayCardAction(trace.CardId(card), 0, playerPosition: point.GetIndexInRoom());
+            if (!cards.CanPlayHandCard(card, 0, point, null, null, out var error) ||
+                !cards.PlayCard(cards.GetHand().IndexOf(card), point, ref error))
+                throw new InvalidOperationException("Native Little Fade witness deployment was rejected: " + error);
+            return input;
+        }
+
         private static (int Cost, int Attack, int Health) CardStats(AllGameManagers managers, CardState card) =>
             (card.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(), managers.GetRelicManager()),
                 card.GetTotalAttackDamage(), (int)Math.Round(card.GetHealth()));
@@ -162,6 +178,13 @@ namespace MonsterTrain2Poju.Probe
             private static void Postfix(CardEffectState cardEffectState, CardEffectParams cardEffectParams, ref IEnumerator __result)
             {
                 var managers = AllGameManagers.Instance;
+                if (ObservingBuffFriendly && ReferenceEquals(cardEffectParams.selfTarget, actor) &&
+                    cardEffectParams.sourceCharacterTriggerState?.GetTrigger() == CharacterTriggerData.Trigger.OnDeath &&
+                    ReferenceEquals(cardEffectState.GetSourceCardEffectData(), buffEffect))
+                {
+                    __result = ObserveBuffFriendly(__result, "OnDeathUpgrade", actor!, cardEffectParams.targets.ToArray());
+                    return;
+                }
                 if (awaitingReturn && managers != null && !managers.GetSaveManager().PreviewMode &&
                     ReferenceEquals(cardEffectParams.selfTarget, actor) &&
                     cardEffectParams.sourceCharacterTriggerState?.GetTrigger() == CharacterTriggerData.Trigger.OnDeath &&

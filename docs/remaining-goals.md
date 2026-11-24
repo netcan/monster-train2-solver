@@ -4,6 +4,8 @@
 
 - 2026-11-24：Little Fade 当前可选的一阶死亡升级让同一张牌带着临时 +15 攻击、+1 生命经 Endless 回手，费用保持 0。原版部署和触发死亡的结束回合均通过完整状态与随机流复放。[原版回手归档](../tests/compatibility/game-2.3.1/mechanics/little-fade-endless/native-rank-one-return.mt2f)
 
+- 2026-11-24：Little Fade 一阶友军强化路线死亡时，先给同层乘务员 +5 攻击和 +5 最大生命，再施加 2 层 Ephemeral。随后原版回调将层数降至 1。两次部署与两次结束回合均通过完整状态和随机流复放。[原版同层回调归档](../tests/compatibility/game-2.3.1/mechanics/little-fade-endless/native-rank-one-buff-friendly.mt2f)
+
 - 2026-11-24：CultLeader 与 Lonely Rooms 的原版胜局覆盖了抽牌后召唤的满层重试和禁用楼层。首个普通回合重试两层满员楼层后，在空层召唤一名 Follower，消耗六次战斗随机数。第 5 回合跳过禁用的空层并耗尽其他候选，未召唤，消耗五次战斗随机数。1 次出牌、7 次结束回合、16 条独立分支、两类候选和串并行计划复放通过。[满层整战归档](../tests/compatibility/game-2.3.1/mechanics/after-draw-spawn/cult-leader-lonely-rooms.mt2f)
 
 - 2026-11-24：CultLeader 与 Echoes Morsels 同场记录了 10 次有序回调和 20 次召唤。每回合 Morsels 接收 CultLeader 结算后的战斗随机状态。原版胜局的 3 次出牌、5 次结束回合、两类候选、16 条独立分支和串并行计划复放通过。[同场整战归档](../tests/compatibility/game-2.3.1/mechanics/after-draw-spawn/cult-leader-morsels.mt2f)
