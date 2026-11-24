@@ -1411,6 +1411,10 @@ Zariel 的 Devotion 路线在法术支付并结算后读取当前等级。原版
 [第 3 环首波](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-ring3-first-wave.mt2f) ·
 [Arkion 出生](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-ring3-arkion-birth.mt2f)
 
+沿同一受控起点连续执行 4 次 EndTurn 到原版败局。完整复放核对 Arkion 行动控制器、物理位置、随机流及结算，
+16 条独立分支和结束回合候选通过。该路线只使用结束回合。
+[第 3 环原版败局](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-ring3-arkion-defeat.mt2f)
+
 主菜单的原版查询批量记录无尽前 3 轮共 24 个环位，每个环位核对攻击、生命、状态、增益、治疗和伤害六个倍率。
 90 种状态中有 26 种带无尽缩放资格，查询前后确定性随机流一致。
 [原版倍率归档](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-balance-factors.mt2f)
