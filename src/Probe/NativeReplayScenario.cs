@@ -312,6 +312,10 @@ namespace MonsterTrain2Poju.Probe
                     bool passed = trace.CaptureFailures == 0 && trace.Pending == 0 && trace.Mismatches == 0 && trace.Unsupported == 0;
                     bool campaignReplay = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_AFTER_REPLAY") == "1";
                     bool campaignRolling = Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_AFTER_ROLLING") == "1";
+#if DEVELOPMENT_PROBE
+                    if (passed && OriginalPersistentMonsterHpCampaignScenario.Continue)
+                        OriginalPersistentMonsterHpCampaignScenario.RequireTerminal(trace);
+#endif
                     if (passed && (campaignReplay || (campaignRolling && trace.NativeWon == true)))
                     {
                         bool defeat = campaignReplay && Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_COMPLETE_DEFEAT") == "1";
@@ -418,6 +422,10 @@ namespace MonsterTrain2Poju.Probe
                     RunType runType = Environment.GetEnvironmentVariable("MT2_PROBE_REGION_RUN_INPUT") == "1"
                         ? RunType.RegionRun : RunType.Class;
                     save.SetActiveRunType(runType);
+#if DEVELOPMENT_PROBE
+                    if (OriginalPersistentMonsterHpCampaignScenario.Reload)
+                        OriginalPersistentMonsterHpCampaignScenario.ValidateReloadInput(save);
+#endif
                     bool canOpenBattle = save.GetGameSequence() == SaveData.GameSequence.BattleIntro;
 #if DEVELOPMENT_PROBE
                     canOpenBattle |= OriginalEndlessEnemyScalingWitness.Enabled &&
@@ -1547,6 +1555,24 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (OriginalPersistentMonsterHpWitness.Tick(FullBattleTrace.Active!, managers, log))
                     Finish(true, "Original persistent monster health component captured.");
+                return;
+            }
+            if (fullBattle && OriginalPersistentMonsterHpCampaignScenario.Reload)
+            {
+                var step = OriginalPersistentMonsterHpCampaignScenario.TickReload(FullBattleTrace.Active!, managers, out pendingPlay);
+                if (step == OriginalPersistentMonsterHpCampaignScenario.ReloadStep.EndTurn)
+                    AdvanceTurn(combat!, record: false);
+                else if (step == OriginalPersistentMonsterHpCampaignScenario.ReloadStep.Play)
+                {
+                    if (managers.GetRoomManager().GetSelectedRoom() != pendingPlay!.RoomIndex)
+                    {
+                        save.StartCoroutine(managers.GetRoomManager().GetRoomUI().SetSelectedRoom(pendingPlay.RoomIndex));
+                        Enter(Stage.SelectingRoom, 20f);
+                    }
+                    else PlayPendingPolicyCard(managers, cards!);
+                }
+                else if (step == OriginalPersistentMonsterHpCampaignScenario.ReloadStep.Complete)
+                    Finish(true, "Original persistent monster HP survived save/reload and paid deployment.");
                 return;
             }
             if (fullBattle && OriginalSaviorChampionWitness.Enabled)
@@ -4488,6 +4514,10 @@ namespace MonsterTrain2Poju.Probe
                     bool fixedUnitPolicy = modifierScenario is OriginalSupportUnitsScenario.Name or OriginalBaseChampionsScenario.Name;
                     pendingPlay = playerPlan || fixedUnitPolicy ? null : modifierScenario == OriginalStingRelicBatchScenario.Name
                         ? OriginalStingRelicBatchScenario.Choose(decision)
+#if DEVELOPMENT_PROBE
+                        : OriginalPersistentMonsterHpCampaignScenario.Continue
+                            ? OriginalPersistentMonsterHpCampaignScenario.ChooseFirstBattle(decision)
+#endif
                         : Environment.GetEnvironmentVariable("MT2_PROBE_FULL_BATTLE_POLICY") == "units-spells-and-junk"
                             ? BattleActionModel.ChooseUnitSpellAndJunkPlay(decision) : BattleActionModel.ChooseUnitAndJunkPlay(decision);
                 }

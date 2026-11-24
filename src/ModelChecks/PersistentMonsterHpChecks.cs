@@ -84,6 +84,56 @@ internal static class PersistentMonsterHpChecks
         Console.WriteLine($"NATIVE-PERSISTENT-MONSTER-HP PASS: paid births, nonlethal hit and {operation}, permanent card ownership, RNG, immutable inputs.");
     }
 
+    internal static void Campaign(FixtureValue battle, FixtureValue checkpoint, FixtureValue reload)
+    {
+        Require(battle.GetProperty("NativeWon").GetBoolean() && battle.GetProperty("TerminalEffectsSettled").GetBoolean() &&
+            battle.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.All(name => Int(battle, name) == 0),
+            "Expected an exact settled original first-battle victory.");
+        VerifyReceipt(checkpoint, "OriginalPersistentMonsterHealthCampaignCheckpoint");
+        VerifyReceipt(reload, "OriginalPersistentMonsterHealthCampaignReload");
+        string? saveHash = checkpoint.GetProperty("SaveSha256").GetString();
+        string? runId = checkpoint.GetProperty("RunId").GetString();
+        int health = Int(checkpoint, "SavedHealth");
+        int preEndTurnHealth = Int(checkpoint, "PreEndTurnHealth");
+        string cardId = checkpoint.GetProperty("CardDataId").GetString()!;
+        Require(saveHash is { Length: 64 } && saveHash.All(Uri.IsHexDigit) && !string.IsNullOrWhiteSpace(runId) &&
+            saveHash == reload.GetProperty("SaveSha256").GetString() && runId == reload.GetProperty("RunId").GetString() &&
+            checkpoint.GetProperty("DlcAvailable").GetBoolean() && Int(checkpoint, "Battles") == 1 && Int(checkpoint, "Distance") == 1 &&
+            reload.GetProperty("CardDataId").GetString() == cardId && health > 0 && health <= preEndTurnHealth &&
+            health == Int(reload, "StoredHealth") && Int(checkpoint, "EndOfBattleMatchedWrites") == 1 &&
+            checkpoint.GetProperty("StoredHealth").EnumerateArray().Select(value => value.GetInt32()).Order().SequenceEqual([0, health]),
+            "The second battle must reload the original checkpoint and its unique persisted card health.");
+
+        FixtureValue finalTurn = battle.GetProperty("Turns").EnumerateArray().Last();
+        var terminalInput = finalTurn.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        int reserved = Int(checkpoint, "ReservedCardId");
+        Require(Card(terminalInput, reserved, cardId).Permanent.PersistentHealth == 0 &&
+            terminalInput.Spawn.Train.Rooms.SelectMany(room => room.Units).Any(unit =>
+                unit.Team == CombatTeam.Player && unit.SpawnerCardId == reserved && unit.Health == preEndTurnHealth),
+            "The final original turn must begin with the retained live unit before writing its card's persistent health.");
+
+        var before = reload.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var after = reload.GetProperty("After").Deserialize<BattleTurnState>()!;
+        PlayCardAction action = reload.GetProperty("Action").Deserialize<PlayCardAction>()!;
+        Require(before.Spawn.Turn == Int(reload, "Turn") && before.Spawn.Turn == after.Spawn.Turn &&
+            before.Spawn.Train.Context!.Relics!.Any(relic => relic.DataId == OwnerId && relic.AssetKey == OwnerKey &&
+                relic.EffectTypes.SequenceEqual([Effect])) &&
+            Card(before, action.CardInstanceId, cardId).Permanent.PersistentHealth == health &&
+            Card(after, action.CardInstanceId, cardId).Permanent.PersistentHealth == health &&
+            Int(reload, "ActorHealth") == health &&
+            Actor(after, action, Int(reload, "ActorId"), health).MaxHealth == Int(reload, "ActorMaxHealth"),
+            "The reloaded paid deployment did not restore the checkpoint's saved health on the same card.");
+        ReplayPlay("reloaded paid deployment", before, action, after);
+        Console.WriteLine($"NATIVE-PERSISTENT-MONSTER-HP-CAMPAIGN PASS: victory wrote {health} HP; the original Ring 2 checkpoint restored it on paid deployment.");
+
+        static void VerifyReceipt(FixtureValue receipt, string boundary) => Require(
+            Int(receipt, "Schema") == 1 && receipt.GetProperty("Boundary").GetString() == boundary &&
+            receipt.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
+            receipt.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
+            receipt.GetProperty("OwnerId").GetString() == OwnerId, "Expected the pinned campaign health receipt.");
+    }
+
     private static void ReplayPlay(string label, BattleTurnState before, PlayCardAction action, BattleTurnState actual)
     {
         string parent = Json(before);

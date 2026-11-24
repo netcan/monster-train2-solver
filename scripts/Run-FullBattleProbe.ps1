@@ -665,6 +665,8 @@ param(
     [switch] $OriginalPersistentMonsterHpWitness,
     [switch] $PersistentMonsterHpAboveMaxAndDeath,
     [switch] $OriginalPersistentMonsterHpBattle,
+    [switch] $PersistentMonsterHpCampaignContinuation,
+    [switch] $OriginalPersistentMonsterHpReload,
     [ValidateSet(2, 3)][int] $OriginalSaviorChampionRank,
     [switch] $OriginalLittleFadeCostWitness,
     [switch] $OriginalLittleFadeBuffFriendlyWitness,
@@ -1236,10 +1238,26 @@ if ($OriginalLittleFadeCostWitness -or $OriginalLittleFadeBuffFriendlyWitness -o
 }
 if ($OriginalPersistentMonsterHpWitness -or $OriginalPersistentMonsterHpBattle) {
     $witnessArguments = @('OriginalPersistentMonsterHpWitness', 'OriginalPersistentMonsterHpBattle', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
-        'PersistentMonsterHpAboveMaxAndDeath', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+        'PersistentMonsterHpAboveMaxAndDeath', 'PersistentMonsterHpCampaignContinuation', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild',
+        'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (-not $BinaryCapture -or ($OriginalPersistentMonsterHpWitness -and $OriginalPersistentMonsterHpBattle) -or
+        ($PersistentMonsterHpCampaignContinuation -and -not $OriginalPersistentMonsterHpBattle) -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
         throw 'Select one stock persistent monster health test with binary capture.'
+    }
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($PersistentMonsterHpCampaignContinuation -and -not $OriginalPersistentMonsterHpBattle) {
+    throw 'PersistentMonsterHpCampaignContinuation requires OriginalPersistentMonsterHpBattle.'
+}
+if ($OriginalPersistentMonsterHpReload) {
+    $allowed = @('OriginalPersistentMonsterHpReload', 'InputProfile', 'BattleDistance', 'GameSpeed', 'NativeWorker',
+        'TimeoutSeconds', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not ($InputProfile -and $BinaryCapture) -or $BattleDistance -ne 1 -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $allowed }).Count -gt 0) {
+        throw 'OriginalPersistentMonsterHpReload requires only a Ring 2 InputProfile and binary capture.'
     }
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
@@ -3024,6 +3042,7 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     $OriginalHealOnAscendWitness -or $OriginalFrontReanimationWitness -or $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle -or $OriginalLonelyRoomsBattle -or
     $OriginalShuffleUnitsWitness -or $OriginalShuffleUnitsBattle -or $OriginalDoubleFriendlyHealthWitness -or $OriginalDoubleFriendlyHealthBattle -or
     $OriginalBothSidesUnitsWitness -or $OriginalBothSidesUnitsBattle -or $OriginalSkullCollectorsWitness -or
+    $PersistentMonsterHpCampaignContinuation -or $OriginalPersistentMonsterHpReload -or
     $OriginalDominionMothersRemnantWitness -or $OriginalGoldRewardMultiplier -or $OriginalSavageryDeckUpgrade -or $OriginalBattleSetupWitness -or
     $OriginalSaviorChampionRank -or $OriginalLittleFadeCostWitness -or $OriginalLittleFadeBuffFriendlyWitness -or $OriginalLittleFadePermanentSpikesWitness) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
@@ -3037,6 +3056,10 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     } finally { $nativeDllStream.Dispose() }
     if ($RegionRunInput -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'RegionRunInput requires the pinned 2.3.1 native module.'
+    }
+    if (($PersistentMonsterHpCampaignContinuation -or $OriginalPersistentMonsterHpReload) -and
+        $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'Persistent HP campaign continuation requires the pinned 2.3.1 native module.'
     }
     if ($OriginalDominionMothersRemnantWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original Dominion paid-copy witness requires the pinned 2.3.1 native module.'
@@ -3302,6 +3325,39 @@ if ($InputProfile) {
             throw 'Original second-floor enemy opening requires a standard native Rank 0 Ring 2 checkpoint.'
         }
         $secondFloorInputSignature = Get-OriginalSignature $checkpoint
+    }
+    if ($OriginalPersistentMonsterHpReload) {
+        $ownerId = '4d5b56f1-65b8-4206-ace7-3629d623e0ec'
+        $cardId = 'd14a50f3-728d-43e1-87f0-ef1b013f6678'
+        $cardHealth = @($checkpointData.deckState | Where-Object cardDataID -CEQ $cardId |
+            ForEach-Object { [int]$_.cardModifiers.persistentHP })
+        if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
+            $checkpointData.wasDevCheatUsed -ne $false -or $checkpointData.runState.numBattlesCompleted -ne 1 -or
+            @($checkpointData.completedBattles).Count -ne 1 -or $checkpointData.completedBattles[0].bossHPRemaining -ne 0 -or
+            @($checkpointData.startingConditions.mutators | Where-Object { $_ -ceq $ownerId }).Count -ne 1 -or
+            $cardHealth.Count -ne 2 -or @($cardHealth | Where-Object { $_ -gt 0 }).Count -ne 1 -or
+            @($cardHealth | Where-Object { $_ -eq 0 }).Count -ne 1 -or
+            -not (Test-Path -LiteralPath (Join-Path $checkpoint 'persistent-monster-hp-campaign-checkpoint.mt2f') -PathType Leaf)) {
+            throw 'Persistent HP reload requires the controlled native Ring 2 checkpoint with one saved original Steward.'
+        }
+        $persistentInputSignature = Get-OriginalSignature $checkpoint
+        $persistentInputSaveHash = (Get-FileHash -LiteralPath $checkpointSave -Algorithm SHA256).Hash.ToLowerInvariant()
+        $persistentInputRunId = [string]$checkpointData.id
+        Add-Type -Path (Join-Path $nativeBuildWorkspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+        $donorDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read(
+            (Join-Path $checkpoint 'persistent-monster-hp-campaign-checkpoint.mt2f'))
+        try {
+            $donor = $donorDocument.RootElement
+            if ($donor.GetProperty('Boundary').GetString() -cne 'OriginalPersistentMonsterHealthCampaignCheckpoint' -or
+                [Guid]$donor.GetProperty('GameModuleMvid').GetString() -ne $nativeModule -or
+                $donor.GetProperty('SaveSha256').GetString() -cne $persistentInputSaveHash -or
+                $donor.GetProperty('RunId').GetString() -cne $persistentInputRunId -or
+                -not $donor.GetProperty('DlcAvailable').GetBoolean() -or
+                $donor.GetProperty('SavedHealth').GetInt32() -ne ($cardHealth | Where-Object { $_ -gt 0 } | Select-Object -First 1) -or
+                $donor.GetProperty('EndOfBattleMatchedWrites').GetInt32() -ne 1) {
+                throw 'The persistent HP input differs from its original native post-victory receipt.'
+            }
+        } finally { $donorDocument.Dispose() }
     }
     if ($OriginalHealOnAscendWitness -or $OriginalFrontReanimationWitness) {
         if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
@@ -3610,6 +3666,10 @@ $environment = @{
     MT2_PROBE_RANDOM_JUST_CAUSE_WITNESS = $(if ($OriginalRandomJustCauseWitness) { '1' } else { '0' })
     MT2_PROBE_PERSISTENT_MONSTER_HP_WITNESS = $(if ($OriginalPersistentMonsterHpWitness) { '1' } else { '0' })
     MT2_PROBE_PERSISTENT_MONSTER_HP_BATTLE = $(if ($OriginalPersistentMonsterHpBattle) { '1' } else { '0' })
+    MT2_PROBE_PERSISTENT_HP_CAMPAIGN = $(if ($PersistentMonsterHpCampaignContinuation) { '1' } else { '0' })
+    MT2_PROBE_PERSISTENT_HP_RELOAD = $(if ($OriginalPersistentMonsterHpReload) { '1' } else { '0' })
+    MT2_PROBE_PERSISTENT_HP_INPUT_SHA256 = $(if ($OriginalPersistentMonsterHpReload) { $persistentInputSaveHash } else { '' })
+    MT2_PROBE_PERSISTENT_HP_INPUT_RUN_ID = $(if ($OriginalPersistentMonsterHpReload) { $persistentInputRunId } else { '' })
     MT2_PROBE_PERSISTENT_HP_ABOVE_MAX_AND_DEATH = $(if ($PersistentMonsterHpAboveMaxAndDeath) { '1' } else { '0' })
     MT2_PROBE_SAVIOR_CHAMPION_RANK = [string]$OriginalSaviorChampionRank
     MT2_PROBE_LITTLE_FADE_COST_WITNESS = $(if ($OriginalLittleFadeBuffFriendlyWitness) { 'BuffFriendly' }
@@ -3705,6 +3765,10 @@ if ($AdvisorSummonPrompt) {
 if ($ContinueToNextRing) {
     $environment.MT2_PROBE_CAMPAIGN_AFTER_REPLAY = '0'
     $environment.MT2_PROBE_CAMPAIGN_STOP_RING = [string]($BattleDistance + 2)
+}
+if ($PersistentMonsterHpCampaignContinuation) {
+    $environment.MT2_PROBE_CAMPAIGN_AFTER_REPLAY = '1'
+    $environment.MT2_PROBE_CAMPAIGN_STOP_RING = '2'
 }
 if ($EquipmentBuff) { $environment['MT2_PROBE_MODIFIERS'] = 'equipment-buff' }
 if ($ForgePointsEffects) { $environment['MT2_PROBE_MODIFIERS'] = 'forge-points' }
@@ -4637,6 +4701,29 @@ if ($OriginalPersistentMonsterHpWitness) {
         throw "Original persistent monster health witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-PERSISTENT-MONSTER-HP PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalPersistentMonsterHpReload) {
+    $capturePath = Join-Path $profile 'persistent-monster-hp-campaign-reload.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -SimpleMatch 'DEPTH-PASS Original persistent monster HP survived save/reload and paid deployment.' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore -or (Get-OriginalSignature $checkpoint) -cne $persistentInputSignature) {
+        throw "Original persistent monster HP reload failed. Inspect $unityLog"
+    }
+    Add-Type -Path (Join-Path $nativeBuildWorkspace 'src/FixtureArchive/bin/Release/net8.0/FixtureArchive.dll')
+    $document = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($capturePath)
+    try {
+        $root = $document.RootElement
+        if ($root.GetProperty('Boundary').GetString() -cne 'OriginalPersistentMonsterHealthCampaignReload' -or
+            [Guid]$root.GetProperty('GameModuleMvid').GetString() -ne $nativeModule -or
+            $root.GetProperty('SaveSha256').GetString() -cne $persistentInputSaveHash -or
+            $root.GetProperty('RunId').GetString() -cne $persistentInputRunId -or
+            $root.GetProperty('StoredHealth').GetInt32() -le 0 -or
+            $root.GetProperty('ActorHealth').GetInt32() -ne $root.GetProperty('StoredHealth').GetInt32()) {
+            throw 'The original paid birth did not restore the reloaded positive HP.'
+        }
+    } finally { $document.Dispose() }
+    Write-Output "NATIVE-PERSISTENT-HP-RELOAD PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalSaviorChampionRank) {
@@ -6625,6 +6712,57 @@ if ($ContinueToNextRing) {
         if ((Test-Path -LiteralPath $auditPath) -or (Test-Path -LiteralPath $expectedProfile)) { throw 'A defeated battle unexpectedly entered campaign continuation.' }
         Write-Output 'CAMPAIGN-NEXT-SKIPPED native defeat'
     }
+}
+if ($PersistentMonsterHpCampaignContinuation) {
+    $nextInputProfile = "$profile-before-ring2"
+    $nextSave = Join-Path $nextInputProfile 'saves/save-singlePlayer.json'
+    $receiptPath = Join-Path $nextInputProfile 'persistent-monster-hp-campaign-checkpoint.mt2f'
+    $auditPath = Join-Path $profile 'campaign-audit.jsonl'
+    if ($process.ExitCode -ne 0 -or $trace.NativeWon -ne $true -or -not $terminalSettled -or
+        $trace.CaptureFailures -ne 0 -or $trace.Pending -ne 0 -or $trace.Mismatches -ne 0 -or $trace.Unsupported -ne 0 -or
+        -not (Test-Path -LiteralPath $nextSave -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $receiptPath -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $auditPath -PathType Leaf)) {
+        throw "Original persistent HP campaign did not complete the Ring 2 checkpoint. Inspect $unityLog"
+    }
+    $audit = @(Get-Content -LiteralPath $auditPath | ForEach-Object { $_ | ConvertFrom-Json })
+    $complete = @($audit | Where-Object kind -CEQ 'complete')
+    $outcome = @($audit | Where-Object kind -CEQ 'battle-outcome')
+    $checkpoint = @($audit | Where-Object kind -CEQ 'checkpoint')
+    $saved = Get-Content -LiteralPath $nextSave -Raw | ConvertFrom-Json
+    $ownerId = '4d5b56f1-65b8-4206-ace7-3629d623e0ec'
+    $cardId = 'd14a50f3-728d-43e1-87f0-ef1b013f6678'
+    $cardHealth = @($saved.deckState | Where-Object cardDataID -CEQ $cardId |
+        ForEach-Object { [int]$_.cardModifiers.persistentHP })
+    $saveHash = (Get-FileHash -LiteralPath $nextSave -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($audit[-1].kind -cne 'complete' -or $complete.Count -ne 1 -or $outcome.Count -ne 1 -or
+        $outcome[0].data.won -ne $true -or $outcome[0].data.distance -ne 0 -or
+        $checkpoint.Count -ne 1 -or $checkpoint[0].data.ring -ne 2 -or
+        $checkpoint[0].data.sha256.ToLowerInvariant() -cne $saveHash -or
+        $saved.gameSequence -ne 6 -or $saved.runState.distance -ne 1 -or
+        $saved.runState.numBattlesCompleted -ne 1 -or @($saved.completedBattles).Count -ne 1 -or
+        $saved.completedBattles[0].bossHPRemaining -ne 0 -or $saved.wasDevCheatUsed -ne $false -or
+        @($saved.startingConditions.mutators | Where-Object { $_ -ceq $ownerId }).Count -ne 1 -or
+        $cardHealth.Count -ne 2 -or @($cardHealth | Where-Object { $_ -gt 0 }).Count -ne 1 -or
+        @($cardHealth | Where-Object { $_ -eq 0 }).Count -ne 1) {
+        throw "The native Ring 2 save lacks one positive original Steward health value. Inspect $nextSave"
+    }
+    $receiptDocument = [MonsterTrain2Poju.Fixtures.FixtureDocument]::Read($receiptPath)
+    try {
+        $receipt = $receiptDocument.RootElement
+        if ($receipt.GetProperty('Boundary').GetString() -cne 'OriginalPersistentMonsterHealthCampaignCheckpoint' -or
+            [Guid]$receipt.GetProperty('GameModuleMvid').GetString() -ne $nativeModule -or
+            $receipt.GetProperty('SaveSha256').GetString() -cne $saveHash -or
+            $receipt.GetProperty('RunId').GetString() -cne $saved.id -or
+            -not $receipt.GetProperty('DlcAvailable').GetBoolean() -or
+            $receipt.GetProperty('PreEndTurnHealth').GetInt32() -lt ($cardHealth | Where-Object { $_ -gt 0 } | Select-Object -First 1) -or
+            $receipt.GetProperty('SavedHealth').GetInt32() -ne ($cardHealth | Where-Object { $_ -gt 0 } | Select-Object -First 1) -or
+            $receipt.GetProperty('EndOfBattleMatchedWrites').GetInt32() -ne 1) {
+            throw 'The original post-victory writeback receipt differs from the saved campaign card.'
+        }
+        $requiredDlc = $receipt.GetProperty('RequiredDlc').GetString()
+    } finally { $receiptDocument.Dispose() }
+    Write-Output "NATIVE-PERSISTENT-HP-CAMPAIGN PASS profile=$nextInputProfile savedHp=$($cardHealth | Where-Object { $_ -gt 0 }) requiredDlc=$requiredDlc receipt=$receiptPath sha256=$((Get-FileHash -LiteralPath $receiptPath -Algorithm SHA256).Hash)"
 }
 if ($EquipmentBuff -and ($trace.ModifierScenario -ne 'equipment-buff' -or
     -not (Select-String -LiteralPath $unityLog -Pattern 'EQUIPMENT-PREPARED .*buff=True' -Quiet))) {

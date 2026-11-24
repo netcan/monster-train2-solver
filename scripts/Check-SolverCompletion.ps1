@@ -47,6 +47,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Native undo advice acceptance failed.' }
     dotnet $checks --native-advisor-end-turn-only "$current/player-advisor-rolling/native-end-turn-confirmation.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Native EndTurn confirmation advice acceptance failed.' }
+    $persistentHealth = "$current/persistent-monster-health/campaign"
+    dotnet $checks --native-persistent-monster-hp-campaign-only "$persistentHealth/campaign-battle-replay.mt2f" `
+        "$persistentHealth/persistent-monster-hp-campaign-checkpoint.mt2f" "$persistentHealth/persistent-monster-hp-campaign-reload.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Native campaign persistent health acceptance failed.' }
     $devoteArchive = "$current/devote-battle/player-advisor/player-advisor-controlled-helper.mt2f"
     pwsh -NoProfile -File (Join-Path $PSScriptRoot 'Check-AdvisorDevoteArchive.ps1') -Archive $devoteArchive
     if ($LASTEXITCODE -ne 0) { throw 'Native Devote player advice acceptance failed.' }

@@ -41,6 +41,8 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("Expected the original 2.3.1 run before battle.");
             MutatorData definition = save.GetAllGameData().FindMutatorData(OwnerId)
                 ?? throw new InvalidOperationException("Original persistent-health mutator is missing.");
+            if (OriginalPersistentMonsterHpCampaignScenario.Continue)
+                OriginalPersistentMonsterHpCampaignScenario.RequireAvailable(save, definition);
             RelicEffectData effect = definition.GetEffects().Single();
             if (definition.name != OwnerKey || definition.DisallowInDeploymentPhase ||
                 effect.GetEffectClassName() != nameof(RelicEffectPersistMonsterHp) || effect.GetEffectConditions().Count != 0 ||

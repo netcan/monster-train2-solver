@@ -853,6 +853,10 @@ namespace MonsterTrain2Poju.Probe
             string hash = CopyCheckpointProfile(root, destination, saveName: regionRun ? "save-regionRun.json" : "save-singlePlayer.json");
             if (Environment.GetEnvironmentVariable("MT2_PROBE_CAMPAIGN_AFTER_REPLAY") == "1")
                 File.Copy(Path.Combine(root, "full-battle.mt2f"), Path.Combine(destination, "campaign-battle-replay.mt2f"));
+#if DEVELOPMENT_PROBE
+            if (OriginalPersistentMonsterHpCampaignScenario.Continue)
+                OriginalPersistentMonsterHpCampaignScenario.CaptureCheckpoint(AllGameManagers.Instance.GetSaveManager(), destination, hash);
+#endif
             // Read the native pool as well as its stored index: different run
             // definitions need not use the same index for the same final boss.
             SaveManager save = AllGameManagers.Instance.GetSaveManager();

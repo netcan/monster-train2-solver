@@ -282,7 +282,11 @@ Echoes 的友军伤害限制在隔离原版用同一变异器分别录制了伤�
 Echoes 的留存生命效果按单位的来源卡记录。原版专项中，列车员受击后写回 24 点生命，
 以 24/25 部署的单位治疗后写回 25 点，预置 26 点的单位以 26/26 部署并在死亡时清零。
 部署、受击、治疗和死亡的分支回放通过。原版开局整战的 21 次出牌、7 次结束回合及两类候选检查通过。
-常规战役胜利后的存档写入在战斗终局采样之后发生，跨战存档生命周期仍待实机核对。
+另一次隔离实机继续走完战后奖励和地图，原版战后回调给幸存的盾牌乘务员写回 4 点生命，
+另一张同名卡的留存值为 0。独立进程加载原版第 2 环存档，支付费用打出同一张牌，单位以
+4 点生命入场。第 1 环的 20 次操作、7 次结束回合和两类候选，以及第 2 环的部署后继与随机流均通过。
+该变异器由隔离采样程序调用原版接口加入，原版定义的 DLC 要求为 `None`。
+[跨战二进制归档](../tests/compatibility/game-2.3.1/mechanics/persistent-monster-health/campaign/manifest.tsv)
 [受击、部署与治疗](../tests/compatibility/game-2.3.1/mechanics/persistent-monster-health/hit-birth-heal.mt2f) ·
 [提高生命上限与死亡](../tests/compatibility/game-2.3.1/mechanics/persistent-monster-health/maximum-birth-death.mt2f) ·
 [原版整战](../tests/compatibility/game-2.3.1/mechanics/persistent-monster-health/native-battle.mt2f)

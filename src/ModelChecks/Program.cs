@@ -480,6 +480,14 @@ if (args.Length == 2 && args[0] == "--native-persistent-monster-hp-only")
     PersistentMonsterHpChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 4 && args[0] == "--native-persistent-monster-hp-campaign-only")
+{
+    using var battle = ModelJson.ReadFixture(args[1]);
+    using var checkpoint = ModelJson.ReadFixture(args[2]);
+    using var reload = ModelJson.ReadFixture(args[3]);
+    PersistentMonsterHpChecks.Campaign(battle.RootElement, checkpoint.RootElement, reload.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-savior-champion-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
