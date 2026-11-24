@@ -118,6 +118,12 @@ internal static class Game231RecordedChainTriage
                     OriginalMoonPhaseRoomsGainMagicPowerChecks.ReplayPreparedTurns(battle, rawMismatch);
                     detail = "Verified all seven turns and six recorded original-card hand setups.";
                 }
+                else if (archive.Path == "mechanics/true-final-boss-spell-slot/relentless.mt2f" &&
+                    rawMismatch.StartsWith("before EndTurn 1: ", StringComparison.Ordinal))
+                {
+                    TrueFinalBossRelentlessChecks.Native(battle);
+                    detail = "Replayed the recorded original Relentless and wave-queue preparation between deployment and turn 1.";
+                }
                 else
                 {
                     if (!HasDocumentedTurnOneSetup(archive.Path, battle, rawMismatch)) throw;
@@ -158,7 +164,8 @@ internal static class Game231RecordedChainTriage
             "mechanics/friendly-trigger-damage/eaten.mt2f" => "OriginalEatenDamage",
             _ => null
         };
-        bool earlyEntropy = archive == "mechanics/lifelink-early-sacrifice/entropy-bottom-battle.mt2f";
+        bool earlyEntropy = archive is "mechanics/lifelink-early-sacrifice/entropy-bottom-battle.mt2f" or
+            "mechanics/true-final-boss-spell-slot/early-entropy.mt2f";
         bool lifeLinkSetup = earlyEntropy || archive == "mechanics/lifelink-maximum/full-battle.mt2f" ||
             archive.StartsWith("mechanics/lifelink-sacrifice/", StringComparison.Ordinal);
         if (friendlySetup == null && !lifeLinkSetup) return false;
