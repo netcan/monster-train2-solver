@@ -6912,6 +6912,12 @@ if (args.Length == 2 && args[0] == "--offering-token-frontier-only")
     OfferingTokenFrontierChecks.Run(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--stardust-heal-draw-frontier-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    StardustHealDrawFrontierChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-moon-ritual-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

@@ -672,6 +672,7 @@ param(
     [ValidateSet(1, 2, 3)][int] $OriginalLazarusDevourRank,
     [switch] $OriginalGluttonOnFeedWitness,
     [switch] $OriginalBlightedTotemWitness,
+    [switch] $OriginalStardustHealDrawWitness,
     [switch] $OriginalLittleFadeCostWitness,
     [switch] $OriginalLittleFadeBuffFriendlyWitness,
     [switch] $OriginalLittleFadePermanentSpikesWitness,
@@ -1257,6 +1258,18 @@ if ($OriginalBlightedTotemWitness) {
     }
     $PrimaryClan = 'Stygian'
     $SecondaryClan = 'Hellhorned'
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($OriginalStardustHealDrawWitness) {
+    $witnessArguments = @('OriginalStardustHealDrawWitness', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+        'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
+        throw 'Select only the original Stardust heal-draw witness with binary capture.'
+    }
+    $PrimaryClan = 'LunaCoven'
+    $SecondaryClan = 'Awoken'
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
     $Policy = 'units-spells-and-junk'
@@ -3087,7 +3100,7 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     $OriginalBothSidesUnitsWitness -or $OriginalBothSidesUnitsBattle -or $OriginalSkullCollectorsWitness -or
     $PersistentMonsterHpCampaignContinuation -or $OriginalPersistentMonsterHpReload -or
     $OriginalDominionMothersRemnantWitness -or $OriginalGoldRewardMultiplier -or $OriginalSavageryDeckUpgrade -or $OriginalBattleSetupWitness -or
-    $OriginalSaviorChampionRank -or $OriginalLazarusDevourRank -or $OriginalGluttonOnFeedWitness -or $OriginalBlightedTotemWitness -or
+    $OriginalSaviorChampionRank -or $OriginalLazarusDevourRank -or $OriginalGluttonOnFeedWitness -or $OriginalBlightedTotemWitness -or $OriginalStardustHealDrawWitness -or
     $OriginalLittleFadeCostWitness -or $OriginalLittleFadeBuffFriendlyWitness -or $OriginalLittleFadePermanentSpikesWitness) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
@@ -3162,6 +3175,9 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     }
     if ($OriginalEmbeddedRoomWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original embedded rooms require the pinned 2.3.1 game module.'
+    }
+    if ($OriginalStardustHealDrawWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'Original Stardust heal-draw requires the pinned 2.3.1 game module.'
     }
     if (($OriginalEndlessEnemyScalingWitness -or $EndlessEnemyScalingFactorBatch) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original Endless scaling requires the pinned 2.3.1 game module.'
@@ -3719,6 +3735,7 @@ $environment = @{
     MT2_PROBE_LAZARUS_DEVOUR_RANK = [string]$OriginalLazarusDevourRank
     MT2_PROBE_GLUTTON_ONFEED = $(if ($OriginalGluttonOnFeedWitness) { '1' } else { '0' })
     MT2_PROBE_BLIGHTED_TOTEM = $(if ($OriginalBlightedTotemWitness) { '1' } else { '0' })
+    MT2_PROBE_STARDUST_HEAL_DRAW = $(if ($OriginalStardustHealDrawWitness) { '1' } else { '0' })
     MT2_PROBE_LITTLE_FADE_COST_WITNESS = $(if ($OriginalLittleFadeBuffFriendlyWitness) { 'BuffFriendly' }
         elseif ($OriginalLittleFadePermanentSpikesWitness) { 'PermanentSpikes' } elseif ($OriginalLittleFadeCostWitness) { '1' } else { '0' })
     MT2_PROBE_CARD_CATALOG = $(if ($CardCatalog) { '1' } else { '0' })
@@ -4814,6 +4831,16 @@ if ($OriginalBlightedTotemWitness) {
         throw "Original Blighted Totem witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-BLIGHTED-TOTEM PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalStardustHealDrawWitness) {
+    $capturePath = Join-Path $profile 'stardust-heal-draw.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Stardust heal-draw hand choice captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original Stardust heal-draw witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-STARDUST-HEAL-DRAW PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalLittleFadeCostWitness -or $OriginalLittleFadeBuffFriendlyWitness -or $OriginalLittleFadePermanentSpikesWitness) {

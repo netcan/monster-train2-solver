@@ -661,6 +661,11 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 时，刚抽到的牌仍能进入候选。
 [原版弃掉新抽牌归档](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/offering-token-discard-drawn.mt2f)
 
+隔离的 Luna Coven／Awoken 对局用原版月相治疗和治疗抽牌遗物验证 Stardust Invocation。
+月相变化先治疗乘务员并抽到 Bloody Moon，随后原版复制选择同时列出这张牌和手中的 Witchweave。
+求解器现已枚举两张牌。实际选中 Bloody Moon 的完整后继和随机流与原版一致，另一条候选也能独立复放。
+[Stardust 施放中抽牌归档](../tests/compatibility/game-2.3.1/mechanics/stardust-heal-draw/native-stardust-heal-draw.mt2f)
+
 原版 Lazarus 冠军的三级 Devour 分别从 3 攻击的 Overworked Assistant 转移 3、6、9 点攻击。
 随后牺牲消耗助手的 1 层 Undying，原单位以 1 点生命留场。测试通过原版升级接口选定技能等级，
 在隔离手牌加入一张原版助手。三个等级的合法目标、结算后继和随机流均通过精确复放。

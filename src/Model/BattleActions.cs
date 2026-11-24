@@ -425,7 +425,7 @@ namespace MonsterTrain2Poju.Model
             => PlayCard(source, action, null);
 
         internal static BattleActionResult PlayCard(BattleTurnState source, PlayCardAction action, BattleSearchWorkspace? workspace,
-            Action<int, CardActionEffect, CombatContext>? observeChooseDiscard = null)
+            Action<int, CardActionEffect, CombatContext>? observeCardChoice = null)
         {
             if (action.Operation != null) return action.Operation == DevoteModel.Operation
                 ? DevoteModel.Apply(source, action) : Unsupported("Unknown battle operation: " + action.Operation);
@@ -960,7 +960,7 @@ namespace MonsterTrain2Poju.Model
                         .Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray(),
                     mixSelections: action.MixSelections.Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray(),
                     summonSelections: action.SummonSelections.Where(selection => selection.EffectIndex < rule.Effects.Count).ToArray(),
-                    observeChooseDiscard: observeChooseDiscard);
+                    observeCardChoice: observeCardChoice);
                 if (!result.Supported) return result.IllegalChoice ? Illegal(result.UnsupportedReason!) : Unsupported(result.UnsupportedReason!);
                 foreach (CombatEvent damage in result.Events.Where(item => item.Kind == "Spell" && item.Amount > 0))
                     lastDamagedUnitIds.Add(damage.Target);
@@ -1013,8 +1013,8 @@ namespace MonsterTrain2Poju.Model
                     retainedDropTarget: retainedSpellUnits.LastOrDefault(unit => unit.Id == action.TargetUnitId),
                     summonSelections: action.SummonSelections.Where(selection => selection.EffectIndex >= rule.Effects.Count)
                         .Select(selection => new SummonChoiceSelection(selection.EffectIndex - rule.Effects.Count, selection.CardDataId)).ToArray(),
-                    observeChooseDiscard: observeChooseDiscard == null ? null :
-                        (index, effect, atChoice) => observeChooseDiscard(rule.Effects.Count + index, effect, atChoice));
+                    observeCardChoice: observeCardChoice == null ? null :
+                        (index, effect, atChoice) => observeCardChoice(rule.Effects.Count + index, effect, atChoice));
                 if (!result.Supported) return result.IllegalChoice ? Illegal(result.UnsupportedReason!) : Unsupported(result.UnsupportedReason!);
                 foreach (CombatEvent damage in result.Events.Where(item => item.Kind == "Spell" && item.Amount > 0))
                     lastDamagedUnitIds.Add(damage.Target);
@@ -1611,16 +1611,19 @@ namespace MonsterTrain2Poju.Model
                 }
                 string? error = null;
                 IReadOnlyList<int> eligible;
-                bool liveHand = effect.Type == "ChooseDiscard" && firstDraw < effectIndex && rule.Effect == "Spell" &&
-                    action.ActivatorUnitId == 0 && !action.ActivatorRoomIndex.HasValue;
+                bool liveHand = rule.Effect == "Spell" && action.ActivatorUnitId == 0 && !action.ActivatorRoomIndex.HasValue &&
+                    (effect.Type == "ChooseDiscard" && firstDraw < effectIndex ||
+                     effect.Type == "DuplicateCard" && effectIndex > 0);
                 if (liveHand)
                 {
-                    // Draw and its callbacks must settle before the chooser sees the hand.
+                    // Earlier effects and their callbacks can change the cards offered by the chooser.
                     eligible = Array.Empty<int>();
                     PlayCard(source, WithSelections(), null, (index, liveEffect, atChoice) =>
                     {
                         if (index == effectIndex)
-                            eligible = CardChooseDiscardModel.EligibleCards(atChoice, liveEffect, action.CardInstanceId, out error);
+                            eligible = effect.Type == "DuplicateCard"
+                                ? CardDuplicateModel.EligibleCards(atChoice, liveEffect, action.CardInstanceId, out error)
+                                : CardChooseDiscardModel.EligibleCards(atChoice, liveEffect, action.CardInstanceId, out error);
                     });
                 }
                 else

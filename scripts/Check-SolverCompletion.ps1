@@ -40,6 +40,8 @@ try {
     }
     dotnet $checks --original-offering-token-draw-discard-only "$offeringToken/offering-token-discard-drawn.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Original Offering Token newly drawn discard failed.' }
+    dotnet $checks --stardust-heal-draw-frontier-only "$current/stardust-heal-draw/native-stardust-heal-draw.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Original Stardust heal-and-draw duplication frontier failed.' }
     foreach ($rank in @('i', 'ii', 'iii')) {
         dotnet $checks --native-lazarus-devour-only "$current/lazarus-devour/native-devour-$rank.mt2f"
         if ($LASTEXITCODE -ne 0) { throw "Original Lazarus Devour ability failed at rank $rank." }

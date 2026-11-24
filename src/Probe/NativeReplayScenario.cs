@@ -787,6 +787,10 @@ namespace MonsterTrain2Poju.Probe
                         OriginalFunguyDeckScalingScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCardDrawOnHealScenario.Enabled && !OriginalCardDrawOnHealScenario.Acquired)
                         OriginalCardDrawOnHealScenario.AcquireBeforeBattle(managers!, log);
+#if DEVELOPMENT_PROBE
+                    if (fullBattle && OriginalStardustHealDrawWitness.Enabled)
+                        OriginalStardustHealDrawWitness.AcquireBeforeBattle(managers!, log);
+#endif
                     if (fullBattle && OriginalBrokenRailScenario.Enabled && !OriginalBrokenRailScenario.Acquired)
                         OriginalBrokenRailScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalHephsBlueprintsScenario.Enabled && !OriginalHephsBlueprintsScenario.Acquired)
@@ -1604,6 +1608,13 @@ namespace MonsterTrain2Poju.Probe
                 if (OriginalBlightedTotemWitness.Tick(FullBattleTrace.Active!, managers, log,
                     () => AdvanceTurn(combat!, record: false)))
                     Finish(true, "Original Blighted Totem CardSpellPlayed captured.");
+                return;
+            }
+            if (fullBattle && OriginalStardustHealDrawWitness.Enabled)
+            {
+                if (OriginalStardustHealDrawWitness.Tick(FullBattleTrace.Active!, managers, log,
+                    () => AdvanceTurn(combat!, record: false)))
+                    Finish(true, "Original Stardust heal-draw hand choice captured.");
                 return;
             }
             if (fullBattle && OriginalLittleFadeCostWitness.Enabled)
