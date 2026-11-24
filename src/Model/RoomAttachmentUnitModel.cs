@@ -296,7 +296,8 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static bool OriginalHellfurnace(RoomCapacityAttachmentState attachment) =>
-            attachment is { AssetKey: "Hellfurnace", DataId: "5d34a8d1-be5c-44e0-bd7e-b6cd576df0bb", AttachmentType: 0,
+            attachment is { AssetKey: "Hellfurnace", DataId: "5d34a8d1-be5c-44e0-bd7e-b6cd576df0bb",
+                AttachmentType: RoomCapacityModel.PrimaryAttachment or RoomCapacityModel.EmbeddedAttachment,
                 CapacityDelta: 0, AffectsHeroes: true, AffectsMonsters: true, IgnoreBosses: false,
                 SpellCostDelta: 0, EnergyPerTurnDelta: 0, MoonPhase: null, PreCombat: null, PostCombat: null,
                 CharacterFilters.Count: 0, CharacterUpgrades.Count: 1,
@@ -366,7 +367,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static bool OriginalTriggerRoom(RoomCapacityAttachmentState attachment)
         {
-            if (attachment is not { AttachmentType: 0, CapacityDelta: 0, AffectsHeroes: true,
+            if (attachment is not { AttachmentType: RoomCapacityModel.PrimaryAttachment or RoomCapacityModel.EmbeddedAttachment,
+                CapacityDelta: 0, AffectsHeroes: true,
                 AffectsMonsters: true, IgnoreBosses: false, SpellCostDelta: 0, EnergyPerTurnDelta: 0,
                 MoonPhase: null, CharacterFilters.Count: 0, CharacterUpgrades.Count: 1,
                 PostCombat: null, PreCombat: null, StatusStackBonuses: null, SpawnCopySubtype: null,
@@ -432,7 +434,8 @@ namespace MonsterTrain2Poju.Model
 
         internal static bool OriginalBatchRoom(RoomCapacityAttachmentState attachment)
         {
-            if (attachment is not { AttachmentType: 0, CapacityDelta: 0, AffectsHeroes: true,
+            if (attachment is not { AttachmentType: RoomCapacityModel.PrimaryAttachment or RoomCapacityModel.EmbeddedAttachment,
+                CapacityDelta: 0, AffectsHeroes: true,
                 IgnoreBosses: false, EnergyPerTurnDelta: 0, MoonPhase: null, PreCombat: null, PostCombat: null,
                 CharacterFilters.Count: 0, CharacterUpgrades.Count: 1, StatusStackBonuses: null,
                 SpawnCopySubtype: null, CorruptionModifier: null, Echo: null }) return false;

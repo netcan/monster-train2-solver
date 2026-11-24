@@ -246,6 +246,15 @@ namespace MonsterTrain2Poju.Model
         internal const string DisableRoomPreview = "RelicEffectDisableRoomPreview";
         internal const string DisableRoomPreviewOwnerId = "d32fad27-7d66-4d6e-8db7-6f35bcba988c";
         internal const string DisableRoomPreviewOwnerKey = "NoCombatPreviews";
+        internal const string AlwaysEmbeddedRoomsEffect = "RelicEffectTrainRoomAttachmentsAlwaysEmbedded";
+        internal const string AlwaysEmbeddedRoomsOwnerId = "c6f4df71-db09-4006-9d92-5035b78d1152";
+        internal const string AlwaysEmbeddedRoomsOwnerKey = "Echoes_NoRoomOverriding";
+
+        internal static bool IsOriginalAlwaysEmbeddedRooms(CombatRelicState owner) => owner is
+        {
+            DataId: AlwaysEmbeddedRoomsOwnerId, AssetKey: AlwaysEmbeddedRoomsOwnerKey, IsCovenant: false,
+            DisallowedInPlacementPhase: false, EffectTypes: [AlwaysEmbeddedRoomsEffect]
+        };
         internal const string BigMonstersEffect = "RelicEffectModifyMonsterCapacity";
         internal const string BigMonstersOwnerId = "af623737-a208-4b85-bce3-e1066b4f4bcd";
         internal const string BigMonstersOwnerKey = "BigMonsters";
@@ -361,6 +370,8 @@ namespace MonsterTrain2Poju.Model
                         relics.Count(RelicSkullCollectorsModel.IsOriginal) == 1) continue;
                     if (effect == RelicSecondFloorEnemyOpeningModel.Effect && RelicSecondFloorEnemyOpeningModel.IsOriginal(relic) &&
                         relics.Count(RelicSecondFloorEnemyOpeningModel.IsOriginal) == 1) continue;
+                    if (effect == AlwaysEmbeddedRoomsEffect && IsOriginalAlwaysEmbeddedRooms(relic) &&
+                        relics.Count(IsOriginalAlwaysEmbeddedRooms) == 1) continue;
                     // Native IOverrideDraftRarityRelicEffect is consulted only by
                     // reward drafts. Its acquired deck is already in battle state.
                     if (effect == "RelicEffectOverrideCardDraftRarity") continue;

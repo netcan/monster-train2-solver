@@ -66,6 +66,12 @@ namespace MonsterTrain2Poju.Model
             new RoomCapacityAttachmentState(DataId, AssetKey, AttachmentType, CapacityDelta, CharacterUpgrades,
                 AffectsHeroes, AffectsMonsters, IgnoreBosses, AttachmentId, SpellCostDelta, MoonPhase,
                 EnergyPerTurnDelta, CharacterFilters, PostCombat, PreCombat, StatusStackBonuses, SpawnCopySubtype, SpellUpgrade, DeathEffect, Ability, CorruptionModifier, value, EnemyEntry);
+
+        internal RoomCapacityAttachmentState AsEmbedded() =>
+            new RoomCapacityAttachmentState(DataId, AssetKey, RoomCapacityModel.EmbeddedAttachment, CapacityDelta, CharacterUpgrades,
+                AffectsHeroes, AffectsMonsters, IgnoreBosses, AttachmentId, SpellCostDelta, MoonPhase,
+                EnergyPerTurnDelta, CharacterFilters, PostCombat, PreCombat, StatusStackBonuses, SpawnCopySubtype,
+                SpellUpgrade, DeathEffect, Ability, CorruptionModifier, Echo, EnemyEntry);
     }
 
     public sealed class RoomCapacityState
@@ -104,6 +110,11 @@ namespace MonsterTrain2Poju.Model
     }
     public static class RoomCapacityModel
     {
+        internal const int PrimaryAttachment = 0;
+        internal const int EmbeddedAttachment = 1;
+        internal static bool HasEmbeddedAttachment(RoomCapacityState room) =>
+            room.Attachments?.Any(attachment => attachment.AttachmentType == EmbeddedAttachment) == true;
+
         public static bool SupportsCharacterStatus(string id, int stacks) =>
             (id is "multistrike" or "silenced" or "endless") && stacks == 1 || id == "conduit" && stacks == 5;
         public static string? ValidateCharacterFilters(IReadOnlyList<CardUpgradeMaskRule>? filters) =>
@@ -129,7 +140,8 @@ namespace MonsterTrain2Poju.Model
             return context.RoomCapacities.Any(room => room.RoomIndex < 0 || room.PlayerMaximum < 0 || room.EnemyMaximum < 0 || room.Corruption < 0 || room.AttachmentsAddedFromCards < 0) ||
                 context.RoomCapacities.Select(room => room.RoomIndex).Distinct().Count() != context.RoomCapacities.Count ||
                 context.RoomCapacities.Any(room => room.Attachments?.Any(attachment => string.IsNullOrEmpty(attachment.DataId) ||
-                    string.IsNullOrEmpty(attachment.AssetKey) || attachment.AttachmentType != 0 && !RelicShowtimeModel.IsAttachment(attachment) ||
+                    string.IsNullOrEmpty(attachment.AssetKey) ||
+                    attachment.AttachmentType is not (PrimaryAttachment or EmbeddedAttachment) && !RelicShowtimeModel.IsAttachment(attachment) ||
                     attachment.SpellCostDelta != 0 && attachment.SpellCostDelta != -1 ||
                     attachment.EnergyPerTurnDelta != 0 && attachment.EnergyPerTurnDelta != 1 ||
                     ValidateCharacterFilters(attachment.CharacterFilters) != null ||
@@ -157,9 +169,9 @@ namespace MonsterTrain2Poju.Model
 
         public static bool TestAttachment(RoomCombatState? room, CardActionEffect effect)
         {
-            if (room == null || room.Preview || effect.RoomAttachment?.AttachmentType != 0) return false;
+            if (room == null || room.Preview || effect.RoomAttachment?.AttachmentType != PrimaryAttachment) return false;
             RoomCapacityState? capacity = room.Context?.RoomCapacities?.FirstOrDefault(item => item.RoomIndex == room.RoomIndex);
-            return capacity?.IsPyre == false && capacity.Attachments != null;
+            return capacity is { IsPyre: false, Attachments: not null } && !HasEmbeddedAttachment(capacity);
         }
 
         public static RoomCapacityResult Attach(CombatContext context, int roomIndex, RoomCapacityAttachmentState attachment)
@@ -167,8 +179,11 @@ namespace MonsterTrain2Poju.Model
             string? error = Validate(context);
             if (error != null) return new RoomCapacityResult(null, 0, error);
             RoomCapacityState? selected = context.RoomCapacities!.FirstOrDefault(room => room.RoomIndex == roomIndex);
-            if (selected == null || selected.IsPyre || selected.Attachments == null || attachment.AttachmentType != 0)
+            if (selected == null || selected.IsPyre || selected.Attachments == null || attachment.AttachmentType != PrimaryAttachment)
                 return new RoomCapacityResult(null, 0, "Invalid capacity attachment target or type.");
+            if (HasEmbeddedAttachment(selected)) return new RoomCapacityResult(context, 0);
+            if (context.Relics?.Any(RelicModel.IsOriginalAlwaysEmbeddedRooms) == true)
+                attachment = attachment.AsEmbedded();
             RoomCapacityAttachmentState[] attachments = selected.Attachments?.ToArray() ?? Array.Empty<RoomCapacityAttachmentState>();
             int? attachmentsAddedFromCards = selected.AttachmentsAddedFromCards.HasValue
                 ? unchecked(selected.AttachmentsAddedFromCards.Value + 1) : null;

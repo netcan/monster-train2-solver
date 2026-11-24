@@ -103,6 +103,33 @@ internal static class RelicRoomAttachmentReplicationChecks
         Require(RelicModel.Validate([malformed])?.Contains("room-attachment replication", StringComparison.Ordinal) == true,
             "An uncaptured room-attachment relic payload passed validation.");
         Require(JsonSerializer.Serialize(parent) == parentJson, "Room-attachment branches mutated their shared parent.");
+        var embeddedOwner = new CombatRelicState(RelicModel.AlwaysEmbeddedRoomsOwnerId, RelicModel.AlwaysEmbeddedRoomsOwnerKey,
+            [RelicModel.AlwaysEmbeddedRoomsEffect], isCovenant: false, disallowedInPlacementPhase: false);
+        Require(RelicModel.Validate([embeddedOwner]) == null &&
+            RelicModel.Validate([new CombatRelicState("other", "changed", [RelicModel.AlwaysEmbeddedRoomsEffect])]) != null,
+            "Only the exact original embedded-room mutator may enable the rule.");
+        CombatContext ordinaryPrimary = RoomCapacityModel.Attach(parent, 2, attachment).Context!;
+        CombatContext withMutator = ordinaryPrimary.WithRelics([embeddedOwner, relic]);
+        CombatContext replacedPrimary = RoomCapacityModel.Attach(withMutator, 2, attachment).Context!;
+        RoomCapacityState installed = replacedPrimary.RoomCapacities!.Single(room => room.RoomIndex == 2);
+        Require(installed.Attachments?.Single().AttachmentType == RoomCapacityModel.EmbeddedAttachment &&
+            installed.PlayerMaximum == 11 && installed.AttachmentsAddedFromCards == 2 &&
+            !RoomCapacityModel.TestAttachment(new RoomCombatState(2, false, [], [], replacedPrimary), attachmentEffect) &&
+            ReferenceEquals(RoomCapacityModel.Attach(replacedPrimary, 2, attachment).Context, replacedPrimary),
+            "An existing ordinary primary must be replaced once, then the embedded slot must block paid and direct replacements.");
+
+        var preinstalled = new RoomCapacityState(2, 11, 7, false,
+            attachments: installed.Attachments, attachmentsAddedFromCards: 0);
+        CombatContext crowded = parent.WithRelics([relic, embeddedOwner])
+            .WithRoomCapacities(parent.RoomCapacities!.Select(room => room.RoomIndex == 2 ? preinstalled : room).ToArray());
+        CombatContext directlyAttached = RoomCapacityModel.Attach(crowded, 0, attachment).Context!;
+        RelicCardPlayMagicPowerResult spread = RelicCardPlayMagicPowerModel.Apply(directlyAttached, 1, rules, selectedRoomIndex: 0);
+        Require(spread.Supported && spread.Context.RoomCapacities!.Select(room => room.PlayerMaximum).SequenceEqual([9, 10, 11, 0]) &&
+            spread.Context.RoomCapacities.Select(room => room.AttachmentsAddedFromCards).SequenceEqual<int?>([1, 1, 0, 0]) &&
+            spread.Context.RoomCapacities.Where(room => !room.IsPyre)
+                .All(room => room.Attachments?.Single().AttachmentType == RoomCapacityModel.EmbeddedAttachment) &&
+            ReferenceEquals(spread.Context.RoomCapacities[2], preinstalled),
+            "Replication must embed its open-floor copy and leave the preinstalled embedded floor unchanged.");
         Console.WriteLine("RELIC-ROOM-ATTACHMENT-REPLICATION-CHECKS PASS: once-per-battle trigger budget, non-Pyre copies, cumulative count gate, Limited Range, immutable parent and missing payload.");
     }
 

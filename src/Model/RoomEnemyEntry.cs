@@ -23,7 +23,8 @@ namespace MonsterTrain2Poju.Model
         // entry and exit even when their only room effect is an entry status.
         // Keep that path separate from moon overrides and actor callbacks.
         internal static bool IsStatusOnly(RoomCapacityAttachmentState attachment) =>
-            attachment is { AttachmentType: 0, CapacityDelta: 0, AffectsHeroes: true, AffectsMonsters: false,
+            attachment is { AttachmentType: RoomCapacityModel.PrimaryAttachment or RoomCapacityModel.EmbeddedAttachment,
+                CapacityDelta: 0, AffectsHeroes: true, AffectsMonsters: false,
                 IgnoreBosses: false, SpellCostDelta: 0, EnergyPerTurnDelta: 0, MoonPhase: null,
                 CharacterFilters.Count: 0, CharacterUpgrades.Count: 1, PostCombat: null, PreCombat: null,
                 StatusStackBonuses: null, SpawnCopySubtype: null, SpellUpgrade: null, DeathEffect: null,

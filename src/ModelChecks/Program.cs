@@ -6,6 +6,12 @@ if (args.Length == 2 && args[0] == "--original-zariel-devotion-only")
     OriginalZarielDevotionChecks.Native(document.RootElement);
     return;
 }
+if (args.Length == 1 && args[0] == "--original-embedded-room-model-only")
+{
+    RoomCapacityChecks.Run();
+    RelicRoomAttachmentReplicationChecks.Run();
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-zariel-pain-only")
 {
     using var document = ModelJson.ReadFixture(args[1]);

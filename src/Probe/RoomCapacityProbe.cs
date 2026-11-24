@@ -31,7 +31,9 @@ namespace MonsterTrain2Poju.Probe
             {
                 bool showtime = (int)attachment.AttachType == RelicShowtimeModel.HiddenAttachment && attachment.CardState == null &&
                     attachment.UpgradeStates.Count == 1 && RelicShowtimeModel.AttachmentCapacity(attachment.UpgradeStates[0].Item2.GetID()) > 0;
-                if (!attachment.IsActive || (int)attachment.AttachType != 0 && !showtime || attachment.UpgradeStates.Count == 0 ||
+                if (!attachment.IsActive ||
+                    attachment.AttachType is not (TrainRoomAttachmentType.Primary or TrainRoomAttachmentType.Primary_Embedded) && !showtime ||
+                    attachment.UpgradeStates.Count == 0 ||
                     attachment.CardState == null && attachment.UpgradeStates.Count != 1) return null;
                 int delta = 0;
                 RoomMoonPhaseRule? moon = null;

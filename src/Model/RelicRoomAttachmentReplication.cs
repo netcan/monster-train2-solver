@@ -110,7 +110,8 @@ namespace MonsterTrain2Poju.Model
                 return Fail("Room-attachment replication requires the selected non-Pyre floor.");
 
             int replicated = 0;
-            foreach (RoomCapacityState room in rooms.Where(room => room.RoomIndex != selectedRoomIndex && !room.IsPyre))
+            foreach (RoomCapacityState room in rooms.Where(room => room.RoomIndex != selectedRoomIndex &&
+                !room.IsPyre && !RoomCapacityModel.HasEmbeddedAttachment(room)))
             {
                 RoomCapacityResult attached = RoomCapacityModel.Attach(context, room.RoomIndex, attachment);
                 if (!attached.Supported) return Fail(attached.UnsupportedReason!);

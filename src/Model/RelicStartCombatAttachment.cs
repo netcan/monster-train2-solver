@@ -72,7 +72,8 @@ namespace MonsterTrain2Poju.Model
                 if (room?.IsPyre != false || attachments.Length != 1)
                     return "Incomplete original start-of-combat room attachment state.";
                 RoomCapacityAttachmentState attachment = attachments[0];
-                if (attachment.AttachmentType != 0 || attachment.CapacityDelta != 0 ||
+                if (attachment.AttachmentType is not (RoomCapacityModel.PrimaryAttachment or RoomCapacityModel.EmbeddedAttachment) ||
+                    attachment.CapacityDelta != 0 ||
                     attachment.SpellCostDelta != (floor2 ? -1 : 0) ||
                     (floor3 ? attachment.AffectsHeroes || !attachment.AffectsMonsters : !attachment.AffectsHeroes || !attachment.AffectsMonsters) ||
                     !Guid.TryParse(attachment.AttachmentId, out Guid id) || id == Guid.Empty ||
@@ -100,7 +101,8 @@ namespace MonsterTrain2Poju.Model
         }
 
         private static bool HasCardReplacement(CombatContext context, RoomCapacityState? room) =>
-            room is { IsPyre: false, AttachmentsAddedFromCards: > 0, Attachments: [{ AttachmentType: 0 } attachment] } &&
+            room is { IsPyre: false, AttachmentsAddedFromCards: > 0, Attachments:
+                [{ AttachmentType: RoomCapacityModel.PrimaryAttachment or RoomCapacityModel.EmbeddedAttachment } attachment] } &&
             context.CardInstances?.Any(card => card.DataId == attachment.DataId) == true;
 
         private static string? ValidateInfernoRooms(CombatContext context)
@@ -112,7 +114,8 @@ namespace MonsterTrain2Poju.Model
             {
                 RoomCapacityState? room = context.RoomCapacities!.FirstOrDefault(item => item.RoomIndex == floor);
                 if (HasCardReplacement(context, room)) continue;
-                if (room?.IsPyre != false || room.Attachments?.Where(attachment => attachment.AttachmentType == 0).ToArray() is not
+                if (room?.IsPyre != false || room.Attachments?.Where(attachment =>
+                    attachment.AttachmentType is RoomCapacityModel.PrimaryAttachment or RoomCapacityModel.EmbeddedAttachment).ToArray() is not
                     [{ DataId: InfernoUpgradeId, AssetKey: InfernoUpgradeKey, CapacityDelta: 0, SpellCostDelta: 0,
                        EnergyPerTurnDelta: 0, AffectsHeroes: true, AffectsMonsters: true, IgnoreBosses: false,
                        MoonPhase: null, PostCombat: null, DeathEffect: null, SpellUpgrade: null, Ability: null,
