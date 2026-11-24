@@ -671,6 +671,10 @@ ExtraSpawnTrigger 实际将出生回调次数从 1 增至 2，无卡出生的升
 的完整后继和随机流一致，求解器也枚举到了这三步。测试将未修改的原版卡加入隔离手牌后付费执行。
 [MonsterGlutton 进食归档](../tests/compatibility/game-2.3.1/mechanics/glutton-onfeed/native-glutton-onfeed.mt2f)
 
+原版 Blighted Totem 在同层付费施放 Torch 后触发 `CardSpellPlayed`，给两名自然出场的敌人
+各施加 2 层 Poison，友方单位未受影响。原版触发标记、完整状态、随机流和求解候选均匹配。
+[Blighted Totem 施法归档](../tests/compatibility/game-2.3.1/mechanics/blighted-totem/native-blighted-totem.mt2f)
+
 原版 Starter Frostbite Discard 零费对敌方前排施加 8 层霜寒，并从合格手牌中随机弃一张。
 2 次出牌、5 次结束回合、16 条独立分支和两类候选通过。
 [`starter-frostbite-discard.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-isolated-spells/starter-frostbite-discard.mt2f)

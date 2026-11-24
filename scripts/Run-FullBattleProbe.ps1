@@ -671,6 +671,7 @@ param(
     [ValidateSet(2, 3)][int] $OriginalSaviorChampionRank,
     [ValidateSet(1, 2, 3)][int] $OriginalLazarusDevourRank,
     [switch] $OriginalGluttonOnFeedWitness,
+    [switch] $OriginalBlightedTotemWitness,
     [switch] $OriginalLittleFadeCostWitness,
     [switch] $OriginalLittleFadeBuffFriendlyWitness,
     [switch] $OriginalLittleFadePermanentSpikesWitness,
@@ -1243,6 +1244,18 @@ if ($OriginalGluttonOnFeedWitness) {
         throw 'Select only the original Glutton OnFeed witness with binary capture.'
     }
     $PrimaryClan = 'Umbra'
+    $SecondaryClan = 'Hellhorned'
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($OriginalBlightedTotemWitness) {
+    $witnessArguments = @('OriginalBlightedTotemWitness', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+        'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
+        throw 'Select only the original Blighted Totem witness with binary capture.'
+    }
+    $PrimaryClan = 'Stygian'
     $SecondaryClan = 'Hellhorned'
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
@@ -3074,7 +3087,7 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     $OriginalBothSidesUnitsWitness -or $OriginalBothSidesUnitsBattle -or $OriginalSkullCollectorsWitness -or
     $PersistentMonsterHpCampaignContinuation -or $OriginalPersistentMonsterHpReload -or
     $OriginalDominionMothersRemnantWitness -or $OriginalGoldRewardMultiplier -or $OriginalSavageryDeckUpgrade -or $OriginalBattleSetupWitness -or
-    $OriginalSaviorChampionRank -or $OriginalLazarusDevourRank -or $OriginalGluttonOnFeedWitness -or
+    $OriginalSaviorChampionRank -or $OriginalLazarusDevourRank -or $OriginalGluttonOnFeedWitness -or $OriginalBlightedTotemWitness -or
     $OriginalLittleFadeCostWitness -or $OriginalLittleFadeBuffFriendlyWitness -or $OriginalLittleFadePermanentSpikesWitness) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
@@ -3705,6 +3718,7 @@ $environment = @{
     MT2_PROBE_SAVIOR_CHAMPION_RANK = [string]$OriginalSaviorChampionRank
     MT2_PROBE_LAZARUS_DEVOUR_RANK = [string]$OriginalLazarusDevourRank
     MT2_PROBE_GLUTTON_ONFEED = $(if ($OriginalGluttonOnFeedWitness) { '1' } else { '0' })
+    MT2_PROBE_BLIGHTED_TOTEM = $(if ($OriginalBlightedTotemWitness) { '1' } else { '0' })
     MT2_PROBE_LITTLE_FADE_COST_WITNESS = $(if ($OriginalLittleFadeBuffFriendlyWitness) { 'BuffFriendly' }
         elseif ($OriginalLittleFadePermanentSpikesWitness) { 'PermanentSpikes' } elseif ($OriginalLittleFadeCostWitness) { '1' } else { '0' })
     MT2_PROBE_CARD_CATALOG = $(if ($CardCatalog) { '1' } else { '0' })
@@ -4790,6 +4804,16 @@ if ($OriginalGluttonOnFeedWitness) {
         throw "Original Glutton OnFeed witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-GLUTTON-ONFEED PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalBlightedTotemWitness) {
+    $capturePath = Join-Path $profile 'blighted-totem-spell.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Blighted Totem CardSpellPlayed captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original Blighted Totem witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-BLIGHTED-TOTEM PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalLittleFadeCostWitness -or $OriginalLittleFadeBuffFriendlyWitness -or $OriginalLittleFadePermanentSpikesWitness) {

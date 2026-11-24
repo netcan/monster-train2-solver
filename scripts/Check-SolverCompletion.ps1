@@ -46,6 +46,8 @@ try {
     }
     dotnet $checks --native-glutton-onfeed-only "$current/glutton-onfeed/native-glutton-onfeed.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Original MonsterGlutton OnFeed failed.' }
+    dotnet $checks --native-blighted-totem-only "$current/blighted-totem/native-blighted-totem.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Original Blighted Totem CardSpellPlayed failed.' }
     dotnet $checks --parallel-shorter-fallback-only "$current/player-advisor-rolling/unlocked-covenant0-ring5-healing-route-defeat.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Parallel whole-battle cutoff acceptance failed.' }
     dotnet $checks --relentless-battle-pair-only "$current/relentless-battle/abandon.mt2f" "$current/relentless-battle/continue.mt2f"

@@ -1599,6 +1599,13 @@ namespace MonsterTrain2Poju.Probe
                     Finish(true, "Original Glutton OnFeed captured.");
                 return;
             }
+            if (fullBattle && OriginalBlightedTotemWitness.Enabled)
+            {
+                if (OriginalBlightedTotemWitness.Tick(FullBattleTrace.Active!, managers, log,
+                    () => AdvanceTurn(combat!, record: false)))
+                    Finish(true, "Original Blighted Totem CardSpellPlayed captured.");
+                return;
+            }
             if (fullBattle && OriginalLittleFadeCostWitness.Enabled)
             {
                 if (OriginalLittleFadeCostWitness.Tick(FullBattleTrace.Active!, managers, log,

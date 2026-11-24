@@ -506,6 +506,12 @@ if (args.Length == 2 && args[0] == "--native-glutton-onfeed-only")
     OriginalGluttonOnFeedChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-blighted-totem-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    OriginalBlightedTotemChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] is "--native-advisor-restart-only" or "--native-advisor-undo-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
