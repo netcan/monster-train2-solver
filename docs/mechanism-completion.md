@@ -1336,6 +1336,10 @@ pwsh -NoProfile -File scripts/Get-MechanismInventory.ps1 -SkipBuild -Check
 定义匹配的原版成功出牌，236 件收藏遗物都有有序效果一致的在场记录。整战回归和专项触发证据见各自入口。
 [六场定向报告](../results/recorded-chain-triage-20261124-220236-2f1a671e/report.tsv)
 
+Windows 包通过隔离验收后，阶段回放核对全部 489 场已结算战斗，其中 470 场连续通过，19 场分段通过。
+共核对 7,611 次出牌或技能、2,920 次结束回合，失败为 0。另有 273 份组件及未结算归档按清单跳过。
+[整战阶段报告](../results/recorded-chain-triage-20261124-232728-007d6281/report.tsv)
+
 2.3.1 原版 `DoubleStatusEffects` 已接入共享状态层数管线。原版 SpikePotion 支付 1 余烬，
 使火车乘务员获得 20 层尖刺，完整出牌后继和随机流通过复放。七项查询对照覆盖冷却、无目标、
 永久升级、延迟加法和转移来源。四项原版移除调用依次将尖刺从 20 变为 18、14、10、12，
