@@ -5514,8 +5514,7 @@ namespace MonsterTrain2Poju.Model
                     .Select(unit => unit.Freeze()).ToArray();
                 // The nested upgrade runs while a dying actor is already absent from the visible room.
                 IReadOnlyList<string> interactions = source.ExternalInteractions;
-                if (source.RoomIndex == 1 && source.Context?.QueryFrame?.Turn == 3 &&
-                    interactions.Any(HivemindTurnUpgrade.IsKnownMarker))
+                if (interactions.Any(HivemindTurnUpgrade.IsKnownMarker))
                     interactions = interactions.Where(marker =>
                         !source.Units.Any(unit => HivemindTurnUpgrade.Marker(unit) == marker &&
                             HivemindTurnUpgrade.IsScaledRoomCombatDeath(source, unit) &&

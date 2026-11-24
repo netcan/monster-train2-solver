@@ -128,11 +128,14 @@ namespace MonsterTrain2Poju.Model
                     IsScaledFirstWaveOwner(survivor, room.Context)));
 
         internal static bool IsScaledRoomCombatDeath(RoomCombatState room, CombatUnit unit) =>
-            room.RoomIndex == 1 && room.Context?.QueryFrame?.Turn == 3 &&
             room.ExternalInteractions.Contains(Marker(unit)) &&
-            (unit.AssetKey == Hunter && IsScaledFirstWaveOwner(unit, room.Context) ||
-                IsScaledCarriedFeedOwner(unit, room.Context) && unit.Status(StatusId)?.Stacks == 6) &&
-            unit.Modifiers!.Upgrades.Any(upgrade => IsAttackUpgrade(upgrade, 18));
+            (room.RoomIndex == 1 && room.Context?.QueryFrame?.Turn == 3 &&
+                (unit.AssetKey == Hunter && IsScaledFirstWaveOwner(unit, room.Context) ||
+                    IsScaledCarriedFeedOwner(unit, room.Context) && unit.Status(StatusId)?.Stacks == 6) &&
+                unit.Modifiers!.Upgrades.Any(upgrade => IsAttackUpgrade(upgrade, 18)) ||
+             room.RoomIndex == 2 && room.Context?.QueryFrame?.Turn == 4 && unit.AssetKey == Infested &&
+                IsScaledFirstWaveOwner(unit, room.Context) &&
+                unit.Modifiers!.Upgrades is [var upgrade] && IsAttackUpgrade(upgrade, 17));
 
         internal static bool IsObservedScaledWaveInteraction(TrainCombatState train, string interaction)
         {
@@ -148,10 +151,11 @@ namespace MonsterTrain2Poju.Model
 
         private static bool ScaledFeedRoom(RoomCombatState room) => IsScaledCampaign(room.Context) &&
             (room.RoomIndex == 0 && room.Context?.QueryFrame?.Turn == 2 ||
-             (room.RoomIndex == 0 || room is { RoomIndex: 1, Preview: true }) && room.Context?.QueryFrame?.Turn == 3);
+             (room.RoomIndex == 0 || room is { RoomIndex: 1, Preview: true }) && room.Context?.QueryFrame?.Turn == 3 ||
+             room.RoomIndex is 0 or 1 && room.Context?.QueryFrame?.Turn == 4);
 
         internal static bool IsScaledFirstFeedRecipient(RoomCombatState room, CombatUnit unit) =>
-            ScaledFeedRoom(room) && IsScaledFeedRecipient(unit);
+            ScaledFeedRoom(room) && IsScaledFeedRecipient(unit, allowRefreshedTurnFour: room.Context?.QueryFrame?.Turn == 4);
 
         internal static bool IsScaledPreviewFeedRecipient(RoomCombatState room, CombatUnit unit)
         {
