@@ -25,6 +25,12 @@ journal kept Firebrand's explicit target as unit 2 with caster 3 on both uses. F
 uses it recorded Fel as caster 2 and left the selected target empty. The diagnostic change
 is in `369e5fc1`. The source battle is [the Ring 3 rolling archive](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/current-ring3.mt2f).
 
+The Windows release Advisor also passed the original Restart Battle action at Covenant 0.
+One paid deployment reached a separate publication. Restart retired that publication immediately
+and restored the opening hand, combat state and RNG. The restored opening matched the original
+publication with the preview copy allocator excluded. A fresh search supplied new advice.
+[Restart observation](../tests/compatibility/game-2.3.1/mechanics/player-advisor-rolling/native-restart-restored-deployment.mt2f)
+
 On 2026-11-21 the current Windows build completed a rolling player-advisor battle in an isolated
 2.3.1 instance (seed 424242, one search worker, 1,000 ms per recommendation). The production
 advisor published 27 recommendations. The driver sent 18 card plays and seven EndTurn inputs

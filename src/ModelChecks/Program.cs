@@ -486,6 +486,12 @@ if (args.Length == 2 && args[0] == "--native-savior-champion-only")
     OriginalSaviorChampionChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--native-advisor-restart-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    NativeAdvisorRestartChecks.Native(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--native-lose-money-on-hit-only")
 {
     LoseMoneyOnHitChecks.Native(args[1]);

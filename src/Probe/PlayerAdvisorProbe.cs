@@ -22,6 +22,14 @@ namespace MonsterTrain2Poju.Probe
         internal static bool ObserveEndlessLoop2 => Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_LOOP2_ADVISOR_OBSERVATION") == "1";
         internal static bool ObserveEndlessLoop2Handoff => Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_LOOP2_ADVISOR_HANDOFF") == "1";
         internal static bool ObserveEndlessLoop2FirstEndTurn => Environment.GetEnvironmentVariable("MT2_PROBE_ENDLESS_LOOP2_ADVISOR_FIRST_END_TURN") == "1";
+        internal static bool ObserveRestart => Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR_RESTART") == "1";
+        internal static bool RestartPaymentStarted => restartOpening != null;
+        private static BattleTurnState? restartOpening;
+        private static BattleAdvice? restartInitialAdvice, restartPaidAdvice;
+        private static BattleActionProbe.Record? restartInput;
+        private static long restartGeneration, restartSearches;
+        private static int restartPublications, restartCount, runRestartCount;
+        private static bool restartRetired;
         internal static bool EndlessLoop2HandoffStarted => loop2OriginalAdvice != null;
         private static string? loop2DeploymentStamp;
         private static BattleAdvice? loop2OriginalAdvice;
@@ -211,6 +219,119 @@ namespace MonsterTrain2Poju.Probe
         {
             Resolve();
             return (BattleTurnState)Call("CaptureReadOnly", AllGameManagers.Instance)!;
+        }
+
+        internal static bool TryPrepareRestartPayment(AllGameManagers managers, FullBattleTrace trace, out PlayCardAction? action)
+        {
+            action = null;
+            Resolve();
+            var combat = managers.GetCombatManager();
+            var save = managers.GetSaveManager();
+            Require(save.GetRunType() == RunType.Class && save.GetCurrentDistance() == 0 && !save.IsEndlessRun &&
+                save.GetCovenants().Count == 0 && combat.IsPlacementPhase && combat.GetTurnCount() == 0 &&
+                save.GetNumRestartsPerBattle() != 0 && trace.ObservedActionCount == 0 && trace.ObservedTurns.Count == 0,
+                "restart requires the original Covenant 0 Ring 1 deployment");
+            if (!TryReadRestartPublication(out var opening, out var initialAdvice)) return false;
+
+            CardManager cards = managers.GetCardManager();
+            RoomManager rooms = managers.GetRoomManager();
+            int selected = rooms.GetSelectedRoom();
+            RoomState room = rooms.GetRoom(selected);
+            SpawnPoint drop = room.GetFirstEmptyMonsterPoint()
+                ?? throw new InvalidOperationException("The original deployment room has no empty position.");
+            CardState card = cards.GetHand().FirstOrDefault(candidate => candidate.GetCardType() == CardType.Monster &&
+                candidate.GetCost(managers.GetCardStatistics(), managers.GetMonsterManager(), managers.GetRelicManager(), room) > 0 &&
+                cards.CanPlayHandCard(candidate, selected, drop, null, null, out _))
+                ?? throw new InvalidOperationException("No original paid unit is legal on the selected deployment floor.");
+            action = new PlayCardAction(trace.CardId(card), selected, playerPosition: drop.GetIndexInRoom());
+            restartOpening = opening;
+            restartInitialAdvice = initialAdvice;
+            return true;
+        }
+
+        internal static bool TryRestartAfterPayment(AllGameManagers managers, FullBattleTrace trace)
+        {
+            Require(trace.ObservedActionCount == 1 && trace.ObservedTurns.Count == 0, "expected exactly one original paid input");
+            BattleActionProbe.Record input = trace.ObservedActions.Single();
+            Require(input.Actual != null && input.ActualOutcome == RoomOutcome.Exchanged && input.Predicted.Supported &&
+                input.Difference == null && input.Before.Energy > input.Actual.Energy,
+                "the original paid deployment did not settle as predicted");
+            if (!TryReadRestartPublication(out var paidRoot, out var paidAdvice)) return false;
+            Require(paidRoot!.Energy == input.Actual!.Energy && paidRoot.Spawn.Train.Rooms
+                .SelectMany(room => room.Units).Count(unit => unit.Team == CombatTeam.Player && !unit.IsPyre) == 1 &&
+                !ReferenceEquals(restartInitialAdvice, paidAdvice) && Get<long>("DiagnosticCardInputs") == 1,
+                "the accepted deployment did not reach a distinct published root");
+
+            var save = managers.GetSaveManager();
+            restartInput = input;
+            restartPaidAdvice = paidAdvice;
+            restartGeneration = GetGeneration();
+            restartSearches = SearchCount;
+            restartPublications = PublicationCount;
+            restartCount = save.GetReplayData().GetNumRestartsUsedThisBattle();
+            runRestartCount = save.GetReplayData().GetNumRestartsUsedThisRun();
+            save.RestartBattle();
+            restartRetired = CurrentIsNull() && Field<BattleAdvice?>("displayed") == null &&
+                Field<int>("tentativeSteps") == 0 && GetGeneration() > restartGeneration;
+            Require(restartRetired, "the original restart left the paid advice visible or reusable");
+            return true;
+        }
+
+        internal static bool TryCaptureRestart(AllGameManagers managers)
+        {
+            if (!TryReadRestartPublication(out var restored, out var advice)) return false;
+            var save = managers.GetSaveManager();
+            var replay = save.GetReplayData();
+            using var restoredKeys = new BattleStateKeys(ignorePreviewCopyAllocator: true);
+            string openingKey = restoredKeys.Key(restartOpening!);
+            string restoredKey = restoredKeys.Key(restored!);
+            Require(openingKey == restoredKey, "restart did not restore the original deployment and RNG: " +
+                UnitPlayModelProbe.FirstDifference(JObject.FromObject(restartOpening!), JObject.FromObject(restored!), "$"));
+            Require(restartRetired && replay.GetNumRestartsUsedThisBattle() == restartCount + 1 &&
+                replay.GetNumRestartsUsedThisRun() == runRestartCount + 1 && GetGeneration() > restartGeneration &&
+                SearchCount > restartSearches && PublicationCount > restartPublications &&
+                !advice!.ReusedContinuation && !advice.ReusedSelection && !ReferenceEquals(restartPaidAdvice, advice) &&
+                Get<long>("DiagnosticCardInputs") == 1,
+                "a new searched publication or one exact original restart was missing");
+
+            using var document = MonsterTrain2Poju.Capture.NativeFixtureCapture.Capture(new
+            {
+                Schema = 1, EvidenceKind = "NativeAdvisorRestart", GameVersion = Application.version,
+                GameModuleMvid = typeof(CardState).Module.ModuleVersionId, Scenario = save.GetCurrentScenarioData()?.name,
+                Assembly = type!.Assembly.GetName().Name, Version = type.Assembly.GetName().Version?.ToString(),
+                Opening = restartOpening, OpeningPublication = restartInitialAdvice!.Root, OpeningRootKey = restartInitialAdvice.RootKey,
+                OpeningFirstStep = restartInitialAdvice.Plan.Steps[0], Input = restartInput,
+                PaidPublication = restartPaidAdvice!.Root, PaidRootKey = restartPaidAdvice.RootKey,
+                PriorPublicationRetired = restartRetired, Restored = restored, RestoredPublication = advice.Root,
+                RestoredRootKey = advice.RootKey, RestoredFirstStep = advice.Plan.Steps[0],
+                RestartCountBefore = restartCount, RestartCountAfter = replay.GetNumRestartsUsedThisBattle(),
+                RunRestartCountBefore = runRestartCount, RunRestartCountAfter = replay.GetNumRestartsUsedThisRun(),
+                GenerationBefore = restartGeneration, GenerationAfter = GetGeneration(),
+                SearchesBefore = restartSearches, SearchesAfter = SearchCount,
+                PublicationsBefore = restartPublications, PublicationsAfter = PublicationCount,
+                AcceptedCardInputs = Get<long>("DiagnosticCardInputs"), Failures = Get<int>("Failures"), PurityFailures = Get<int>("PurityFailures")
+            });
+            using var output = System.IO.File.Create(System.IO.Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
+                "player-advisor-restart.mt2f"));
+            document.Write(output);
+            return true;
+        }
+
+        private static bool TryReadRestartPublication(out BattleTurnState? root, out BattleAdvice? advice)
+        {
+            root = null;
+            advice = null;
+            BattleAdviceSession session = Field<BattleAdviceSession>("session");
+            if (!PublicationSettled(session)) return false;
+            root = Capture();
+            advice = Advice;
+            using var keys = new BattleStateKeys();
+            string key = keys.Key(root);
+            Require(root.Spawn.Turn == 0 && key == advice.RootKey && keys.Key(advice.Root) == key &&
+                session.MatchesCurrentRoot(root) && (bool)Call("ReadyFor", root)! && advice.Plan.Steps.Count > 0 &&
+                Field<Text>("body").isActiveAndEnabled && Get<int>("Failures") == 0 && Get<int>("PurityFailures") == 0,
+                "the displayed recommendation did not match the independently captured native placement");
+            return true;
         }
 
         internal static object CaptureIdentityCorrespondence()

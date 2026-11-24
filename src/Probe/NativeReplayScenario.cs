@@ -1013,6 +1013,14 @@ namespace MonsterTrain2Poju.Probe
                 {
                     return;
                 }
+#if DEVELOPMENT_PROBE
+                if (PlayerAdvisorProbe.ObserveRestart)
+                {
+                    if (PlayerAdvisorProbe.TryCaptureRestart(managers))
+                        Finish(true, "Player Advisor restored original deployment after restart.");
+                    return;
+                }
+#endif
                 log.LogInfo("DEPTH-RESTART-MS " + (int)((Time.realtimeSinceStartup - restartStarted) * 1000f));
                 string restored = Capture("restarted-0", managers, save, combat, cards!);
                 if (restored != sourceSignatures[0])
@@ -1193,6 +1201,17 @@ namespace MonsterTrain2Poju.Probe
                 return;
             }
 #if DEVELOPMENT_PROBE
+            if (fullBattle && PlayerAdvisorProbe.ObserveRestart)
+            {
+                if (PlayerAdvisorProbe.RestartPaymentStarted)
+                {
+                    if (PlayerAdvisorProbe.TryRestartAfterPayment(managers, FullBattleTrace.Active!))
+                        Enter(Stage.Restarting, 180f);
+                }
+                else if (PlayerAdvisorProbe.TryPrepareRestartPayment(managers, FullBattleTrace.Active!, out pendingPlay))
+                    PlayPendingPolicyCard(managers, cards!);
+                return;
+            }
             if (fullBattle && OriginalBattleSetupWitness.Enabled)
             {
                 OriginalBattleSetupWitness.Capture(managers, FullBattleTrace.Active!);
