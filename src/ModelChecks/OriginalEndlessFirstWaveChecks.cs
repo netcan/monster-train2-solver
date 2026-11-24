@@ -3,6 +3,19 @@ using MonsterTrain2Poju.Model;
 
 internal static class OriginalEndlessFirstWaveChecks
 {
+    internal static void ArkionTerminal(FixtureValue archive)
+    {
+        FixtureValue run = archive.GetProperty("NativeRunInput");
+        Require(Text(archive, "GameVersion") == Game231FixtureCatalog.Version &&
+            Text(run, "Scenario") == "TestEndless_Level3Battle1" && Number(run, "Distance") == 2 &&
+            Text(run, "RunType") == "Class" && !Flag(run, "WasDevCheatUsed") &&
+            Flag(archive, "TerminalEffectsSettled") && !Flag(archive, "NativeWon") &&
+            archive.GetProperty("Actions").GetArrayLength() == 0,
+            "Expected the settled original Ring 3 Arkion defeat without paid card actions.");
+        OuterBossTurnChecks.Deployment(archive, "Boss_Level3_Arkion_PushAttack", minimumTurns: 2,
+            module: Game231FixtureCatalog.Module);
+    }
+
     internal static void Factors(FixtureValue archive)
     {
         Require(Text(archive, "GameVersion") == Game231FixtureCatalog.Version &&

@@ -4,10 +4,11 @@ using MonsterTrain2Poju.Model;
 
 internal static class OuterBossTurnChecks
 {
-    internal static void Deployment(FixtureValue fixture, string expectedBoss = "Boss_Level8_AllyBuffer", int minimumTurns = 5)
+    internal static void Deployment(FixtureValue fixture, string expectedBoss = "Boss_Level8_AllyBuffer", int minimumTurns = 5,
+        string module = "8fb07b96-f4db-4d2b-884d-c00536d6ccf4")
     {
         Require(fixture.GetProperty("OuterBossTurnsEnabled").GetBoolean() &&
-            fixture.GetProperty("GameModuleMvid").GetString() == "8fb07b96-f4db-4d2b-884d-c00536d6ccf4" &&
+            fixture.GetProperty("GameModuleMvid").GetString() == module &&
             new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.All(name => fixture.GetProperty(name).GetInt32() == 0),
             "Complete outer-boss deployment requires an original native capture with four zero failure counters.");
         FixtureValue[] turns = fixture.GetProperty("Turns").EnumerateArray().ToArray();
