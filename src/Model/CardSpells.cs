@@ -3690,16 +3690,16 @@ namespace MonsterTrain2Poju.Model
                 var context = state.Context.WithSpawnPoints(moved.State!);
                 var ordered = BattleSpawnPointModel.Order(context.SpawnPoints, state.RoomIndex, state.Units);
                 context = ConduitModel.Order(context, state.RoomIndex, ordered)!;
-                return Unchanged(new RoomCombatState(state.RoomIndex, state.Deployment,
+                return Unchanged(EnchantmentWorldModel.Sync(new RoomCombatState(state.RoomIndex, state.Deployment,
                     ordered, state.ExternalInteractions, context,
-                    state.Preview, state.ActiveCompanionBossIds));
+                    state.Preview, state.ActiveCompanionBossIds)));
             }
             team.Remove(target); team.Insert(effect.Value == 0 ? 0 : team.Count, target);
             CombatUnit[] enemies = target.Team == CombatTeam.Enemy ? team.ToArray() : state.Units.Where(unit => unit.Team == CombatTeam.Enemy).ToArray();
             CombatUnit[] players = target.Team == CombatTeam.Player ? team.ToArray() : state.Units.Where(unit => unit.Team == CombatTeam.Player).ToArray();
             var reordered = enemies.Concat(players).ToArray();
-            return Unchanged(new RoomCombatState(state.RoomIndex, state.Deployment, reordered,
-                state.ExternalInteractions, ConduitModel.Order(state.Context, state.RoomIndex, reordered), state.Preview, state.ActiveCompanionBossIds));
+            return Unchanged(EnchantmentWorldModel.Sync(new RoomCombatState(state.RoomIndex, state.Deployment, reordered,
+                state.ExternalInteractions, ConduitModel.Order(state.Context, state.RoomIndex, reordered), state.Preview, state.ActiveCompanionBossIds)));
         }
 
         internal static CombatUnit Copy(CombatUnit unit, int health, IReadOnlyList<CombatStatus> statuses) =>
