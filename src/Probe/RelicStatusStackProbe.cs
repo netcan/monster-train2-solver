@@ -61,6 +61,10 @@ namespace MonsterTrain2Poju.Probe
             private static void Postfix(StatusEffectStackData statusEffectStackData, CharacterState? onCharacter,
                 Type? fromEffectType, bool includeAdders, bool deferred, int __result)
             {
+#if DEVELOPMENT_PROBE
+                OriginalDoubleStatusEffectsWitness.ObserveStackQuery(statusEffectStackData, onCharacter, fromEffectType,
+                    includeAdders, deferred, __result);
+#endif
                 if (!OriginalStatusRelicBatchScenario.Prepared && !OriginalDecayRelicBatchScenario.Prepared) return;
                 CombatTeam? team = onCharacter == null ? (CombatTeam?)null : onCharacter.GetTeamType() == Team.Type.Monsters ? CombatTeam.Player : CombatTeam.Enemy;
                 bool has = onCharacter?.HasStatusEffect(statusEffectStackData.statusId) == true;

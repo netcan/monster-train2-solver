@@ -595,6 +595,7 @@ param(
     [string] $EffectOwnerType,
     [switch] $OriginalPreventMonsterDamageWitness,
     [switch] $OriginalLoseMoneyOnHitWitness,
+    [switch] $OriginalDoubleStatusEffectsWitness,
     [switch] $OriginalPreventMonsterDamageBattle,
     [switch] $OriginalSecondFloorEnemyOpening,
     [switch] $OriginalHealOnAscendWitness,
@@ -1097,11 +1098,12 @@ if ($OriginalSpellDamageMoveWitness) {
 if ($PlacementSummonBlockOnly -and -not $OriginalPlacementMutatorsWitness) {
     throw 'PlacementSummonBlockOnly requires OriginalPlacementMutatorsWitness.'
 }
-if ($OriginalLoseMoneyOnHitWitness) {
+if ($OriginalLoseMoneyOnHitWitness -or $OriginalDoubleStatusEffectsWitness) {
     $witnessArguments = @('OriginalLoseMoneyOnHitWitness', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
-        'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
-    if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
-        throw 'Original LoseMoneyOnHit witness requires an isolated binary capture.'
+        'OriginalDoubleStatusEffectsWitness', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not $BinaryCapture -or ($OriginalLoseMoneyOnHitWitness -and $OriginalDoubleStatusEffectsWitness) -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
+        throw 'Select one original mutator witness with isolated binary capture.'
     }
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
@@ -2678,7 +2680,7 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth -or $OriginalFunguyDeckScalingDoubleUnits -or
     $OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness -or
     $OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle -or $OriginalHandAndEmberWitness -or $OriginalFecundityOnCast -or
-    $OriginalHealOnAscendWitness) {
+    $OriginalHealOnAscendWitness -or $OriginalDoubleStatusEffectsWitness) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -2702,6 +2704,9 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     }
     if ($OriginalHealOnAscendWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original Ascend healing trial requires the pinned 2.3.1 game module.'
+    }
+    if ($OriginalDoubleStatusEffectsWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'Original DoubleStatusEffects witness requires the pinned 2.3.1 game module.'
     }
     if (($OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original Pyre witness requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
@@ -3104,6 +3109,7 @@ $environment = @{
     MT2_PROBE_EFFECT_OWNER_TYPE = $EffectOwnerType
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_WITNESS = $(if ($OriginalPreventMonsterDamageWitness) { '1' } else { '0' })
     MT2_PROBE_LOSE_MONEY_ON_HIT = $(if ($OriginalLoseMoneyOnHitWitness) { '1' } else { '0' })
+    MT2_PROBE_DOUBLE_STATUS_EFFECTS = $(if ($OriginalDoubleStatusEffectsWitness) { '1' } else { '0' })
     MT2_PROBE_PYRE_ABILITY_COOLDOWN_WITNESS = $OriginalPyreAbilityCooldownWitness
     MT2_PROBE_ORIGINAL_PACT_DRAW = $(if ($OriginalPactDrawWitness) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_PACT_BATTLE = $(if ($OriginalPactDrawBattle) { '1' } else { '0' })
@@ -4098,6 +4104,16 @@ if ($OriginalLoseMoneyOnHitWitness) {
         throw "Original LoseMoneyOnHit witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-LOSE-MONEY-ON-HIT PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalDoubleStatusEffectsWitness) {
+    $capturePath = Join-Path $profile 'double-status-effects.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original DoubleStatusEffects component captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original DoubleStatusEffects witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-DOUBLE-STATUS-EFFECTS PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalSecondFloorEnemyOpening) {

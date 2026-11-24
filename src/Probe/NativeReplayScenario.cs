@@ -534,6 +534,8 @@ namespace MonsterTrain2Poju.Probe
                         OriginalPreventMonsterDamageWitness.Acquire(save);
                     if (fullBattle && OriginalLoseMoneyOnHitWitness.Enabled && !OriginalLoseMoneyOnHitWitness.Acquired)
                         OriginalLoseMoneyOnHitWitness.Acquire(save);
+                    if (fullBattle && OriginalDoubleStatusEffectsWitness.Enabled && !OriginalDoubleStatusEffectsWitness.Acquired)
+                        OriginalDoubleStatusEffectsWitness.Acquire(save);
                     if (fullBattle && (OriginalPersistentMonsterHpWitness.Enabled || OriginalPersistentMonsterHpWitness.FullBattle) &&
                         !OriginalPersistentMonsterHpWitness.Acquired)
                         OriginalPersistentMonsterHpWitness.Acquire(save);
@@ -1209,6 +1211,13 @@ namespace MonsterTrain2Poju.Probe
                     Finish(false, OriginalLoseMoneyOnHitWitness.Failure);
                 if (OriginalLoseMoneyOnHitWitness.Completed)
                     Finish(true, "Original LoseMoneyOnHit component captured.");
+                return;
+            }
+            if (fullBattle && OriginalDoubleStatusEffectsWitness.Enabled)
+            {
+                if (OriginalDoubleStatusEffectsWitness.Tick(FullBattleTrace.Active!, managers, log,
+                    () => AdvanceTurn(combat!, record: false)))
+                    Finish(true, "Original DoubleStatusEffects component captured.");
                 return;
             }
             if (fullBattle && OriginalPreventMonsterDamageWitness.Enabled)
