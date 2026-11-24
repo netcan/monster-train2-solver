@@ -94,7 +94,7 @@ namespace MonsterTrain2Poju.Model
 
         private static bool ScaledFeedRoom(RoomCombatState room) => IsScaledCampaign(room.Context) &&
             (room.RoomIndex == 0 && room.Context?.QueryFrame?.Turn == 2 ||
-             room is { RoomIndex: 0 or 1, Preview: true } && room.Context?.QueryFrame?.Turn == 3);
+             (room.RoomIndex == 0 || room is { RoomIndex: 1, Preview: true }) && room.Context?.QueryFrame?.Turn == 3);
 
         internal static bool IsScaledFirstFeedRecipient(RoomCombatState room, CombatUnit unit) =>
             ScaledFeedRoom(room) && IsScaledFeedRecipient(unit);
@@ -475,7 +475,7 @@ namespace MonsterTrain2Poju.Model
 
         internal static bool PublishesAtCombat(RoomCombatState room) =>
             !room.Preview && (IsFirstCombat(room) || IsSecondCombat(room) || IsThirdCombat(room) || IsObservedPyreCombat(room) ||
-                ScaledFeedRoom(room));
+                ScaledFeedRoom(room) || room.Units.Any(unit => IsScaledRoomCombatDeath(room, unit)));
 
         internal static bool PublishesAtAscension(TrainCombatState train) =>
             train.Context?.QueryFrame?.Turn is >= 1 and <= 3 && train.Rooms.All(room => !room.Preview) &&
