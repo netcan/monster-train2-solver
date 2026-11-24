@@ -48,10 +48,13 @@ namespace MonsterTrain2Poju.Probe
             return true;
         }
 
-        private void OpenElixirDraft(ElixirDraftScreen screen, bool infusion, bool summon)
+        private void OpenElixirDraft(ElixirDraftScreen screen, ElixirDraftScreen.DraftType type, bool cardChoice)
         {
             if (!HasPendingElixirChoice) return;
-            bool matched = pendingMixChoice != null ? infusion && pendingMixChoice.Open() : summon && elixirChoiceScreen == null;
+            bool matched = pendingMixChoice != null
+                ? !cardChoice && (type is ElixirDraftScreen.DraftType.Infusion or ElixirDraftScreen.DraftType.CraftedSpike) &&
+                    pendingMixChoice.Open(type == ElixirDraftScreen.DraftType.CraftedSpike)
+                : cardChoice && type == ElixirDraftScreen.DraftType.SummonChoice && elixirChoiceScreen == null;
             if (!matched)
             {
                 ClearElixirChoice();
@@ -84,8 +87,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (AllGameManagers.Instance?.GetSaveManager()?.PreviewMode != false || PreviewRngIsolation.Active) return;
                 bool cardChoice = __originalMethod.Name == nameof(ElixirDraftScreen.SetupForCardChoice);
-                Active?.OpenElixirDraft(__instance, draftType == ElixirDraftScreen.DraftType.Infusion &&
-                    !cardChoice, draftType == ElixirDraftScreen.DraftType.SummonChoice && cardChoice);
+                Active?.OpenElixirDraft(__instance, draftType, cardChoice);
             }
         }
 

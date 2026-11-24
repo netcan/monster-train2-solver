@@ -727,6 +727,12 @@ Dutiful Child 自然胜局通过 39 次出牌或技能、7 次结束回合及出
 原版确认后提示立即消失，独立复放核对了完整付费后继、随机流和下一条建议的起点。
 [原版调配记录](../tests/compatibility/game-2.3.1/mechanics/player-advisor-mix/native-prompt.mt2f)
 
+尖刺工厂的原版单位技能也通过了发布版顾问验收。第一回合的第 9 次决定触发两个
+原版 Crafted Spike 选项，顾问在弹窗中显示第 1 项。确认后提示消失，完整后继、
+随机流和下一条建议的起点通过独立复放。定向对照同时拒绝不同技能、施法单位、
+楼层、目标和弹窗类型。
+[原版技能弹窗记录](../tests/compatibility/game-2.3.1/mechanics/player-advisor-mix/native-unit-prompt.mt2f)
+
 GrimFlight 的召唤建议按施法者、技能卡和物理落点关联到原版弹窗，再按定义匹配唯一选项。
 12 次召唤的原版归档通过离线复放，覆盖落点不符、选项缺失、重复和重排。发布版实际弹窗待实机验证。
 [原版召唤对照](../tests/compatibility/game-2.3.1/mechanics/summon-choice-battle/battle.mt2f)

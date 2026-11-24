@@ -112,18 +112,22 @@ internal static class RollingAdviceChecks
         }
     }
 
-    internal static void MixPrompt(FixtureValue fixture)
+    internal static void MixPrompt(FixtureValue fixture, bool unitAbility = false)
     {
+        string evidenceKind = unitAbility ? "NativePlayerAdvisorUnitMixPrompt" : "NativePlayerAdvisorMixPrompt";
         Require(fixture.GetProperty("Schema").GetInt32() == 1 &&
-            fixture.GetProperty("EvidenceKind").GetString() == "NativePlayerAdvisorMixPrompt" &&
+            fixture.GetProperty("EvidenceKind").GetString() == evidenceKind &&
             fixture.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
             fixture.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
             fixture.GetProperty("PlayerAdvisor").GetProperty("Assembly").GetString() == "MonsterTrain2Poju.Advisor",
             "Expected a Mix prompt receipt from the pinned native build and player advisor.");
         FixtureValue input = fixture.GetProperty("Input");
         BattleSearchStep step = ReadStep(input);
+        bool rightSource = unitAbility
+            ? step.Action is { ActivatorUnitId: > 0, ActivatorRoomIndex: null }
+            : step.Action is { ActivatorUnitId: 0, ActivatorRoomIndex: null };
         Require(input.GetProperty("Mode").GetString() == "rolling" && !step.IsEndTurn &&
-            step.Action is { ActivatorUnitId: 0, ActivatorRoomIndex: null } &&
+            rightSource &&
             SameStep(input.GetProperty("PlanSteps")[0], input) &&
             input.GetProperty("Difference").ValueKind == FixtureKind.Null,
             "Expected an accepted direct card matching the first published action.");
@@ -144,6 +148,8 @@ internal static class RollingAdviceChecks
             int opened = prompt.GetProperty("PromptFrame").GetInt32();
             int confirmed = prompt.GetProperty("ConfirmationFrame").GetInt32();
             Require(prompt.GetProperty("Kind").GetString() is "new" or "upgrade" &&
+                (!unitAbility || (prompt.GetProperty("Kind").GetString() == "new" &&
+                    prompt.GetProperty("DraftType").GetString() == "CraftedSpike" && offers.Length == 2)) &&
                 prompt.GetProperty("EffectIndex").GetInt32() == choice.EffectIndex &&
                 prompt.GetProperty("MixNumber").GetInt32() == choice.MixNumber &&
                 prompt.GetProperty("ChoiceIndex").GetInt32() == choice.ChoiceIndex &&
@@ -157,6 +163,13 @@ internal static class RollingAdviceChecks
 
         BattleTurnState root = State(input.GetProperty("Root"));
         BattleTurnState actual = State(input.GetProperty("Actual"));
+        if (unitAbility)
+        {
+            var actor = root.Spawn.Train.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == action.ActivatorUnitId);
+            Require(choices.Length == 1 && actor.AssetKey == "MonsterSpikedriverFactory" &&
+                actor.Ability?.DataId == "798142fe-fdf3-4f4f-8af7-dbc5dbc333c6",
+                "Expected the original Spikedriver Factory's Craft Spike activation.");
+        }
         string parent = JsonSerializer.Serialize(root);
         BattleActionResult played = BattleActionModel.PlayCard(root, action);
         Require(played.Supported && played.Outcome == RoomOutcome.Exchanged &&

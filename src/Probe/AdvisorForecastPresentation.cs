@@ -75,15 +75,19 @@ namespace MonsterTrain2Poju.Probe
     internal sealed class AdvisorMixChoice
     {
         private readonly ElixirMixSelection[] ordered;
+        private readonly bool craftedSpike;
         private int index;
         private bool open;
 
-        internal AdvisorMixChoice(PlayCardAction action) => ordered = action.MixSelections
-            .OrderBy(choice => choice.EffectIndex).ThenBy(choice => choice.MixNumber).ToArray();
-
-        internal bool Open()
+        internal AdvisorMixChoice(PlayCardAction action, bool craftedSpike = false)
         {
-            if (open || index >= ordered.Length) return false;
+            ordered = action.MixSelections.OrderBy(choice => choice.EffectIndex).ThenBy(choice => choice.MixNumber).ToArray();
+            this.craftedSpike = craftedSpike;
+        }
+
+        internal bool Open(bool isCraftedSpike = false)
+        {
+            if (isCraftedSpike != craftedSpike || open || index >= ordered.Length) return false;
             open = true;
             return true;
         }

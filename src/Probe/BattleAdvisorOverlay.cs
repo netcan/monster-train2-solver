@@ -875,7 +875,7 @@ namespace MonsterTrain2Poju.Probe
             internal CardRecursionSelection? CardChoice;
             internal AdvisorMixChoice? MixChoice;
             internal string? SummonChoice;
-            internal bool ObservedSummonAbility;
+            internal bool ObservedElixirAbility;
         }
 
         private CardInputState PrepareCardInput(CardState card, CharacterState selfTarget, SpawnPoint drop,
@@ -893,14 +893,33 @@ namespace MonsterTrain2Poju.Probe
                 (tentativeSteps == 0 && !ReferenceEquals(displayed, session.Current))) return input;
             if (actor != null)
             {
-                var step = displayed.Plan.Steps[tentativeSteps];
-                input.ObservedSummonAbility = step.Action?.SummonSelections.Count > 0;
+                var action = displayed.Plan.Steps[tentativeSteps].Action;
+                input.ObservedElixirAbility = action?.SummonSelections.Count > 0 || action?.MixSelections.Count > 0;
+                if (!input.ObservedElixirAbility || !trace.TryGetUnitId(actor, out int actorId) ||
+                    !trace.TryGetCardId(card, out int abilityCardId)) return input;
                 var destination = drop?.GetRoomOwner();
-                if (input.ObservedSummonAbility && drop != null && destination != null && drop.GetTeam() == Team.Type.Monsters &&
-                    trace.TryGetUnitId(actor, out int actorId) && trace.TryGetCardId(card, out int abilityCardId) &&
-                    (!managers.GetRoomManager().IsValidRoomIndex(roomOverride) || roomOverride == destination.GetRoomIndex()))
-                    input.SummonChoice = TentativeAdviceProgress.MatchedSummonAbility(displayed.Plan.Steps, tentativeSteps, abilityCardId,
-                        actorId, destination.GetRoomIndex(), drop.GetIndexInRoom())?.CardDataId;
+                RoomManager rooms = managers.GetRoomManager();
+                bool hasRoomOverride = rooms.IsValidRoomIndex(roomOverride);
+                if (action!.SummonSelections.Count > 0)
+                {
+                    if (drop != null && destination != null && drop.GetTeam() == Team.Type.Monsters &&
+                        (!hasRoomOverride || roomOverride == destination.GetRoomIndex()))
+                        input.SummonChoice = TentativeAdviceProgress.MatchedSummonAbility(displayed.Plan.Steps, tentativeSteps, abilityCardId,
+                            actorId, destination.GetRoomIndex(), drop.GetIndexInRoom())?.CardDataId;
+                    return input;
+                }
+                if (hasRoomOverride && destination != null && roomOverride != destination.GetRoomIndex()) return input;
+                int abilityRoom = hasRoomOverride ? roomOverride : card.GetTargetless() || card.GetTargetsRoom()
+                    ? rooms.GetSelectedRoom() : destination?.GetRoomIndex() ?? actor.GetCurrentRoomIndex();
+                bool targetsCharacter = card.DoesAnyEffectTarget(TargetMode.DropTargetCharacter);
+                CharacterState? abilityTarget = AdviceDiagnosticInput.TargetCharacter(true, targetsCharacter, drop?.GetCharacterState(), selfTarget);
+                int abilityTargetId = abilityTarget == null ? 0 : trace.TryGetUnitId(abilityTarget, out int unitId) ? unitId : -1;
+                int targetPoint = targetsCharacter ? -1 : drop?.GetIndexInRoom() ?? -1;
+                PlayCardAction? plannedAbility = TentativeAdviceProgress.MatchedMixAbility(displayed.Plan.Steps, tentativeSteps,
+                    abilityCardId, actorId, abilityRoom, targetPoint, abilityTargetId);
+                if (plannedAbility != null)
+                    input.MixChoice = new AdvisorMixChoice(plannedAbility,
+                        card.GetEffects().Any(effect => effect.GetEffectStateName() == "CardEffectCraftSpike"));
                 return input;
             }
             if (!input.DirectHandPlay || !trace.TryGetCardId(card, out int cardId)) return input;
@@ -967,7 +986,7 @@ namespace MonsterTrain2Poju.Probe
         {
             if (input == null) return;
             if (accepted && input.Diagnostic != null) journal?.Record(input.Diagnostic);
-            if (!accepted || (!input.DirectHandPlay && !input.ObservedSummonAbility)) return;
+            if (!accepted || (!input.DirectHandPlay && !input.ObservedElixirAbility)) return;
             pendingCardChoice = null;
             ClearElixirChoice();
             if (input.Advice == null || !ReferenceEquals(displayed, input.Advice) || tentativeSteps != input.Offset ||

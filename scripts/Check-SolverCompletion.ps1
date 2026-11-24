@@ -39,6 +39,12 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Current advisor dialog plan failed to replay.' }
     dotnet $checks --advisor-future-target-only "$current/player-advisor-rolling/current-ring9-advisor-deadline.mt2f"
     if ($LASTEXITCODE -ne 0) { throw 'Verified future-target advice failed.' }
+    dotnet $checks --player-advisor-mix-prompt-only "$current/player-advisor-mix/native-prompt.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Original hand-card Mix prompt acceptance failed.' }
+    dotnet $checks --advisor-unit-mix-modal-only "$current/controlled-original-support-units/opening-ability-activations.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Original unit ability Mix prompt matching failed.' }
+    dotnet $checks --player-advisor-unit-mix-prompt-only "$current/player-advisor-mix/native-unit-prompt.mt2f"
+    if ($LASTEXITCODE -ne 0) { throw 'Original unit ability Mix prompt acceptance failed.' }
     $output = Join-Path '.probe-runs' ('solver-completion-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
     $null = New-Item -ItemType Directory -Path $output
     dotnet $tools solve-exact $original (Join-Path $output 'node-cutoff.mt2f') 1 30000 1

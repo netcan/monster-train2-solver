@@ -120,7 +120,9 @@ namespace MonsterTrain2Poju.Probe
         internal static bool OffRouteInputInvalidated { get; private set; }
         internal static bool RapidSecondAcceptedWhileBlocked { get; private set; }
         internal static int PublicationCount => Get<int>("Published");
-        internal static bool MixPromptWitness => Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR_MIX_PROMPT") == "1";
+        private static string? MixPromptMode => Environment.GetEnvironmentVariable("MT2_PROBE_ADVISOR_MIX_PROMPT");
+        internal static bool MixPromptWitness => MixPromptMode is "1" or "unit";
+        internal static bool UnitMixPromptWitness => MixPromptMode == "unit";
         internal static List<object> MixPromptRows { get; } = new List<object>();
         internal static bool MixPromptCleared => Field<object?>("pendingMixChoice") == null && !Field<bool>("showingCardChoice");
         internal static BattleAdvisorOverlay.Publication LatestTiming =>
@@ -765,7 +767,7 @@ namespace MonsterTrain2Poju.Probe
         private static bool MixChoiceActive => Enabled && expectedMixChoices.Count > 0 &&
             AllGameManagers.Instance?.GetSaveManager()?.PreviewMode == false;
 
-        private static IEnumerator SelectMixDraft(ElixirDraftScreen screen, string kind)
+        private static IEnumerator SelectMixDraft(ElixirDraftScreen screen, string kind, ElixirDraftScreen.DraftType? draftType = null)
         {
             yield return null;
             Require(MixChoiceActive, "native draft opened without a pending published choice");
@@ -775,7 +777,9 @@ namespace MonsterTrain2Poju.Probe
                 "published draft choice is absent from the original offers");
             var selected = (CardUI)items[choice.ChoiceIndex];
             PlayCardAction? input = RollingAdviceScenario.Records.LastOrDefault()?.Action;
-            bool observePrompt = MixPromptWitness && input is { ActivatorUnitId: 0, ActivatorRoomIndex: null };
+            bool observePrompt = UnitMixPromptWitness ? input is { ActivatorUnitId: > 0, ActivatorRoomIndex: null } &&
+                draftType == ElixirDraftScreen.DraftType.CraftedSpike :
+                MixPromptWitness && input is { ActivatorUnitId: 0, ActivatorRoomIndex: null };
             string? prompt = null;
             int promptFrame = -1;
             if (observePrompt)
@@ -798,7 +802,7 @@ namespace MonsterTrain2Poju.Probe
             {
                 bool hiddenAfterConfirmation = !Field<bool>("showingCardChoice") && Field<Text>("body").text == "正在核对局面…";
                 Require(hiddenAfterConfirmation, "the completed native draft left a visible production choice prompt");
-                MixPromptRows.Add(new { Kind = kind, choice.EffectIndex, choice.MixNumber, choice.ChoiceIndex,
+                MixPromptRows.Add(new { Kind = kind, DraftType = draftType?.ToString(), choice.EffectIndex, choice.MixNumber, choice.ChoiceIndex,
                     Text = prompt, PromptFrame = promptFrame, ConfirmationFrame = Time.frameCount, Offers = offers,
                     SelectedCard = selectedCard, SelectedUpgrade = selectedUpgrade,
                     HiddenAfterConfirmation = hiddenAfterConfirmation });
@@ -821,9 +825,9 @@ namespace MonsterTrain2Poju.Probe
         private static class NewMixDraftPatch
         {
             [HarmonyPostfix]
-            private static void Postfix(ElixirDraftScreen __instance)
+            private static void Postfix(ElixirDraftScreen __instance, ElixirDraftScreen.DraftType draftType)
             {
-                if (MixChoiceActive) __instance.StartCoroutine(SelectMixDraft(__instance, "new"));
+                if (MixChoiceActive) __instance.StartCoroutine(SelectMixDraft(__instance, "new", draftType));
             }
         }
 
@@ -831,9 +835,9 @@ namespace MonsterTrain2Poju.Probe
         private static class UpgradeMixDraftPatch
         {
             [HarmonyPostfix]
-            private static void Postfix(ElixirDraftScreen __instance)
+            private static void Postfix(ElixirDraftScreen __instance, ElixirDraftScreen.DraftType draftType)
             {
-                if (MixChoiceActive) __instance.StartCoroutine(SelectMixDraft(__instance, "upgrade"));
+                if (MixChoiceActive) __instance.StartCoroutine(SelectMixDraft(__instance, "upgrade", draftType));
             }
         }
 

@@ -562,6 +562,12 @@ if (args.Length == 2 && args[0] == "--advisor-mix-modal-only")
     AdvisorChoicePresentationChecks.MixModal(fixture.RootElement);
     return;
 }
+if (args.Length == 2 && args[0] == "--advisor-unit-mix-modal-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    AdvisorChoicePresentationChecks.UnitMixModal(fixture.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--advisor-summon-modal-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
@@ -7888,10 +7894,10 @@ if (args.Length == 2 && args[0] == "--player-advisor-off-route-only")
     return;
 }
 
-if (args.Length == 2 && args[0] == "--player-advisor-mix-prompt-only")
+if (args.Length == 2 && args[0] is "--player-advisor-mix-prompt-only" or "--player-advisor-unit-mix-prompt-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);
-    RollingAdviceChecks.MixPrompt(fixture.RootElement);
+    RollingAdviceChecks.MixPrompt(fixture.RootElement, unitAbility: args[0] == "--player-advisor-unit-mix-prompt-only");
     return;
 }
 

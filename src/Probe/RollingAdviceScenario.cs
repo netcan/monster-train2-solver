@@ -402,14 +402,16 @@ namespace MonsterTrain2Poju.Probe
                 throw new InvalidOperationException("Native Mix prompt did not settle into a fresh verified advisor publication.");
             using var document = NativeFixtureCapture.Capture(new
             {
-                Schema = 1, EvidenceKind = "NativePlayerAdvisorMixPrompt", GameVersion = UnityEngine.Application.version,
+                Schema = 1, EvidenceKind = PlayerAdvisorProbe.UnitMixPromptWitness ? "NativePlayerAdvisorUnitMixPrompt" : "NativePlayerAdvisorMixPrompt",
+                GameVersion = UnityEngine.Application.version,
                 GameModuleMvid = typeof(CardState).Module.ModuleVersionId, PlayerAdvisor = PlayerAdvisorProbe.Evidence,
                 Input = input, Prompts = PlayerAdvisorProbe.MixPromptRows, NormalPromptRestored = PlayerAdvisorProbe.MixPromptCleared,
                 FinalGeneration = timing.Generation, FinalRoot = final.Root, FinalRootKey = final.RootKey,
                 FinalNativeRoot = native, FinalNativeRootKey = nativeRootKey, FinalPlan = final.Plan
             });
+            string archive = PlayerAdvisorProbe.UnitMixPromptWitness ? "player-advisor-unit-mix-prompt.mt2f" : "player-advisor-mix-prompt.mt2f";
             using var stream = new FileStream(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!,
-                "player-advisor-mix-prompt.mt2f"), FileMode.CreateNew, FileAccess.Write);
+                archive), FileMode.CreateNew, FileAccess.Write);
             document.Write(stream);
             return true;
         }

@@ -129,6 +129,45 @@ internal static class AdvisorChoicePresentationChecks
         Console.WriteLine($"ADVISOR-MIX-MODAL PASS: {picks.Length} original paid draft choices, inactive/invalid screen, divergent target and native skip controls.");
     }
 
+    internal static void UnitMixModal(FixtureValue fixture)
+    {
+        Require(fixture.GetProperty("GameVersion").GetString() == "2.3.1" &&
+            fixture.GetProperty("GameModuleMvid").GetString() == "bf93f060-beda-46b1-b808-95ebf1e9a99d",
+            "Expected the pinned original Spikedriver Factory witness.");
+        FixtureValue entry = fixture.GetProperty("Actions").EnumerateArray().Single(row =>
+            row.GetProperty("Action").GetProperty("ActivatorUnitId").GetInt32() > 0 &&
+            row.GetProperty("Action").GetProperty("MixSelections").GetArrayLength() > 0);
+        var action = entry.GetProperty("Action").Deserialize<PlayCardAction>()!;
+        var before = entry.GetProperty("Before").Deserialize<BattleTurnState>()!;
+        var actual = entry.GetProperty("Actual").Deserialize<BattleTurnState>()!;
+        var replay = BattleActionModel.PlayCard(before, action);
+        var card = before.Spawn.Train.Context!.FindCard(action.CardInstanceId);
+        var pick = action.MixSelections.Single();
+        Require(card?.DataId == "798142fe-fdf3-4f4f-8af7-dbc5dbc333c6" && action.TargetUnitId == 0 &&
+            action.TargetSpawnPointIndex == -1 && replay.Supported &&
+            BattleTurnChecks.Comparable(replay.State!) == BattleTurnChecks.Comparable(actual),
+            "Expected the original untargeted Factory activation and its complete successor.");
+
+        BattleSearchStep[] steps = [new BattleSearchStep(action, false)];
+        PlayCardAction? Match(int cardId, int actorId, int room, int drop = -1, int target = 0) =>
+            TentativeAdviceProgress.MatchedMixAbility(steps, 0, cardId, actorId, room, drop, target);
+        Require(ReferenceEquals(Match(action.CardInstanceId, action.ActivatorUnitId, action.RoomIndex), action) &&
+            Match(action.CardInstanceId + 1, action.ActivatorUnitId, action.RoomIndex) == null &&
+            Match(action.CardInstanceId, action.ActivatorUnitId + 1, action.RoomIndex) == null &&
+            Match(action.CardInstanceId, action.ActivatorUnitId, (action.RoomIndex + 1) % 3) == null &&
+            Match(action.CardInstanceId, action.ActivatorUnitId, action.RoomIndex, drop: 0) == null &&
+            Match(action.CardInstanceId, action.ActivatorUnitId, action.RoomIndex, target: action.ActivatorUnitId) == null,
+            "Only the exact original spell, caster, room and target may retain the choice.");
+
+        var pending = new AdvisorMixChoice(action, craftedSpike: true);
+        Require(!pending.Open() && pending.Open(isCraftedSpike: true) &&
+            pending.Prompt(true, 2) == AdvisorForecastPresentation.MixChoice(0, pick.ChoiceIndex) &&
+            !pending.Choose(pick.ChoiceIndex) && pending.Prompt(true, 2) == null &&
+            !new AdvisorMixChoice(action).Open(isCraftedSpike: true),
+            "The crafted Spike prompt must follow the matching native draft type and clear after selection.");
+        Console.WriteLine("ADVISOR-UNIT-MIX-MODAL PASS: original Factory successor, exact activation and native draft type.");
+    }
+
     internal static void SummonModal(FixtureValue fixture)
     {
         Require(fixture.GetProperty("GameVersion").GetString() == "2.3.1" &&
