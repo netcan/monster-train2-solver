@@ -1338,6 +1338,12 @@ pwsh -NoProfile -File scripts/Get-MechanismInventory.ps1 -SkipBuild -Check
 同一变异器的原版胜局中，21 次出牌、7 次结束回合和两类候选枚举均匹配，结算时薪火剩余 66 HP。
 [原版整战归档](../tests/compatibility/game-2.3.1/mechanics/double-friendly-health/native-win.mt2f)
 
+原版 `ShuffleUnits` 的部署结束回合保持原阵型。进入普通回合后，两单位对照覆盖友军和敌军换位，
+三单位对照记录顶层槽位从 `[2, 3, 4]` 变为 `[4, 2, 3]`，并保留每次抽样和移动回调。
+两组的部署结束与普通结束回合均通过完整后继对照，移动回调分别记录 8 和 10 次。
+[双单位对照](../tests/compatibility/game-2.3.1/mechanics/shuffle-units/native-first-turn-projected.mt2f) ·
+[三单位对照](../tests/compatibility/game-2.3.1/mechanics/shuffle-units/native-three-hosts.mt2f)
+
 Garfield 的新版遗物使用 378 张原生有序卡池。地狱魔族和觉者共筛出 58 张，六次抽牌后
 实际生成和随机状态均与模型一致。原版胜局的五次出牌、七次 EndTurn 和十六条独立分支
 通过，旧版 348 张卡池也通过专项回归。隔离实例尚无法启用 Punished DLC，

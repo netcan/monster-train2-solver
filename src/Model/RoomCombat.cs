@@ -2361,22 +2361,21 @@ namespace MonsterTrain2Poju.Model
                         unit.Source.Team == team && !unit.Source.IsPyre && !unit.Has("immobile") &&
                         physical?.Units.FirstOrDefault(point => point.UnitId == unit.Source.Id)?.OuterBoss != true).ToArray();
                     if (movable.Length < 2) continue;
-                    if (movable.Length != 2 || physical == null || physical.ActiveCopies.Count != 0 ||
+                    if (physical == null || physical.ActiveCopies.Count != 0 ||
                         context.Relics!.Any(owner => owner.EffectTypes.Any(type => type == RelicEndTurnHealthModel.Effect ||
                             type == RelicOccupiedFloorDrawModel.Effect || type == RelicFreezeHandUpgradeModel.Effect)))
                     {
-                        unsupportedReason = "ShuffleUnits requires a calibrated same-team pair with primary physical points.";
+                        unsupportedReason = "ShuffleUnits requires primary physical points and a supported end-of-turn relic order.";
                         return;
                     }
                     SpawnPointGroupState? group = physical.SelectedGroup(source.RoomIndex, team);
-                    int first = group?.Occupants.ToList().IndexOf(movable[0].Source.Id) ?? -1;
-                    int second = group?.Occupants.ToList().IndexOf(movable[1].Source.Id) ?? -1;
-                    if (first < 0 || second < 0 || first == second)
+                    var byId = movable.ToDictionary(unit => unit.Source.Id);
+                    int[] orderedIds = group?.Occupants.Take(group.GroupCount).Where(byId.ContainsKey).ToArray() ?? Array.Empty<int>();
+                    if (orderedIds.Length != movable.Length || orderedIds.Distinct().Count() != movable.Length)
                     {
-                        unsupportedReason = "ShuffleUnits could not resolve both original physical slots.";
+                        unsupportedReason = "ShuffleUnits could not resolve the original physical slots.";
                         return;
                     }
-                    if (first > second) (movable[0], movable[1]) = (movable[1], movable[0]);
 
                     UnityRng rng = context.BattleRng;
                     if (rng.Equals(default))
@@ -2384,24 +2383,37 @@ namespace MonsterTrain2Poju.Model
                         unsupportedReason = "ShuffleUnits requires a valid captured Battle RNG state.";
                         return;
                     }
-                    RngDraw draw;
-                    do
+                    // The chooser retains the initial roster and visits each initiator once.
+                    // A unit previously chosen as a partner can be selected again.
+                    var remaining = orderedIds.ToHashSet();
+                    var shifted = new List<int>(orderedIds.Length);
+                    foreach (int initiator in orderedIds)
                     {
-                        draw = rng.Range(0, movable.Length);
-                        rng = draw.State;
-                    } while (draw.Value == 0);
+                        if (!remaining.Remove(initiator)) continue;
+                        int partner;
+                        do
+                        {
+                            RngDraw draw = rng.Range(0, orderedIds.Length);
+                            rng = draw.State;
+                            partner = orderedIds[draw.Value];
+                        } while (partner == initiator);
 
-                    BattleSpawnPointResult swapped = BattleSpawnPointModel.Apply(physical, room, "Swap", team,
-                        index: first, targetIndex: second);
-                    if (!swapped.Supported) { unsupportedReason = swapped.Error; return; }
-                    context = context.WithBattleRng(rng).WithSpawnPoints(swapped.State!);
+                        List<int> positions = physical.SelectedGroup(source.RoomIndex, team)!.Occupants.ToList();
+                        BattleSpawnPointResult swapped = BattleSpawnPointModel.Apply(physical, room, "Swap", team,
+                            index: positions.IndexOf(initiator), targetIndex: positions.IndexOf(partner));
+                        if (!swapped.Supported) { unsupportedReason = swapped.Error; return; }
+                        physical = swapped.State!;
+                        shifted.Add(initiator);
+                        if (remaining.Remove(partner)) shifted.Add(partner);
+                    }
+                    context = context.WithBattleRng(rng).WithSpawnPoints(physical);
                     OrderPhysicalUnits();
                     context = ConduitModel.Order(context, source.RoomIndex, CurrentRoom().Units);
                     SelectNotificationRoom(source.RoomIndex);
                     if (unsupportedReason != null) return;
-                    foreach (WorkingUnit actor in movable)
+                    foreach (int actor in shifted)
                     {
-                        FireTriggers(actor, "OnShift");
+                        FireTriggers(byId[actor], "OnShift");
                         if (unsupportedReason != null || battleWon) return;
                     }
                 }

@@ -7,7 +7,9 @@ internal static class OriginalShuffleUnitsChecks
     internal static void Native(FixtureValue witness)
     {
         FixtureValue owner = witness.GetProperty("Owner");
-        Require(witness.GetProperty("Schema").GetInt32() == 1 &&
+        int schema = witness.GetProperty("Schema").GetInt32();
+        bool trio = schema == 2;
+        Require(schema is 1 or 2 &&
             witness.GetProperty("Boundary").GetString() == "OriginalShuffleUnits" &&
             witness.GetProperty("GameVersion").GetString() == Game231FixtureCatalog.Version &&
             witness.GetProperty("GameModuleMvid").GetString() == Game231FixtureCatalog.Module &&
@@ -32,18 +34,19 @@ internal static class OriginalShuffleUnitsChecks
             applications.Select(Room).SequenceEqual(new[] { 2, 0 }) &&
             tests.Concat(applications).All(row => row.GetProperty("Turn").GetInt32() == 1 &&
                 !row.GetProperty("Preview").GetBoolean()),
-            "Expected ordinary top-to-bottom native tests with a positive friendly and enemy pair and empty/Pyre controls.");
+            "Expected ordinary top-to-bottom native tests with friendly and enemy shuffles and empty/Pyre controls.");
         FixtureValue[] pyre = tests[0].GetProperty("Roster").EnumerateArray().ToArray();
         Require(pyre.Length == 1 && !pyre[0].GetProperty("Movable").GetBoolean() &&
             before.Spawn.Train.Rooms.Single(room => room.RoomIndex == 3).Units.Single().IsPyre &&
             !tests[2].GetProperty("Roster").EnumerateArray().Any(), "Expected the immovable Pyre and empty floor controls.");
 
-        var friendlyActors = CheckPair(tests[1], applications[0], "Monsters", draws: 2);
-        var enemyActors = CheckPair(tests[3], applications[1], "Heroes", draws: 1);
-        Require(PhysicalPair(deployment, 2, CombatTeam.Player).SequenceEqual(friendlyActors) &&
-            PhysicalPair(before, 2, CombatTeam.Player).SequenceEqual(friendlyActors) &&
-            PhysicalPair(after, 2, CombatTeam.Player).SequenceEqual(friendlyActors.Reverse()) &&
-            PhysicalPair(before, 0, CombatTeam.Enemy).SequenceEqual(enemyActors),
+        var friendly = CheckShuffle(tests[1], applications[0], "Monsters",
+            destinationPoints: trio ? [1, 2, 0] : [1, 0], draws: trio ? [1, 1] : [0, 1]);
+        var enemy = CheckShuffle(tests[3], applications[1], "Heroes", destinationPoints: [1, 0], draws: [1]);
+        Require(PhysicalRoster(deployment, 2, CombatTeam.Player).SequenceEqual(friendly.Before) &&
+            PhysicalRoster(before, 2, CombatTeam.Player).SequenceEqual(friendly.Before) &&
+            PhysicalRoster(after, 2, CombatTeam.Player).SequenceEqual(friendly.After) &&
+            PhysicalRoster(before, 0, CombatTeam.Enemy).SequenceEqual(enemy.Before),
             "Original callback actors must agree with the decision snapshots' primary physical slots.");
         Require(Rng(applications[0], "RngBefore").Equals(before.Spawn.Train.Context!.BattleRng) &&
             Rng(applications[0], "RngAfter").Next().Equals(Rng(applications[1], "RngBefore")) &&
@@ -52,40 +55,46 @@ internal static class OriginalShuffleUnitsChecks
 
         Replay(deployment, before, "Original ShuffleUnits deployment control");
         Replay(before, after, "Original ShuffleUnits ordinary EndTurn");
-        Console.WriteLine("NATIVE-SHUFFLE-UNITS PASS. Deployment and ordinary EndTurn match, both pairs swap, eight native callbacks and exact Battle RNG.");
+        Console.WriteLine($"NATIVE-SHUFFLE-UNITS PASS. Deployment and ordinary EndTurn match with {friendly.Before.Length} friendly units, two enemy units, {2 * (friendly.Before.Length + enemy.Before.Length)} native callbacks and exact Battle RNG.");
     }
 
-    private static int[] CheckPair(FixtureValue test, FixtureValue application, string team, int draws)
+    private static (int[] Before, int[] After) CheckShuffle(FixtureValue test, FixtureValue application,
+        string team, int[] destinationPoints, int[] draws)
     {
         int room = Room(application);
         FixtureValue original = application.GetProperty("Before");
         FixtureValue[] entering = original.EnumerateArray().ToArray();
         FixtureValue[] exiting = application.GetProperty("After").EnumerateArray().ToArray();
-        Require(test.GetProperty("Roster").ContentEquals(original) && entering.Length == 2 && exiting.Length == 2 &&
+        Require(test.GetProperty("Roster").ContentEquals(original) &&
+            entering.Length == destinationPoints.Length && exiting.Length == entering.Length &&
             entering.Concat(exiting).All(row => row.GetProperty("Team").GetString() == team &&
                 row.GetProperty("Movable").GetBoolean() && row.GetProperty("Alive").GetBoolean()),
-            $"Expected an alive movable {team} pair in original floor {room}.");
+            $"Expected the original alive movable {team} roster in floor {room}.");
         int[] actors = entering.Select(Actor).ToArray();
         int[] points = entering.Select(Point).ToArray();
-        Require(actors[0] > 0 && actors[1] > 0 && actors[0] != actors[1] && points.SequenceEqual(new[] { 0, 1 }) &&
-            exiting.Select(Actor).SequenceEqual(actors.Reverse()) && exiting.Select(Point).SequenceEqual(points),
-            $"Expected the original physical pair to exchange slots in floor {room}.");
+        int[] exitActors = exiting.Select(Actor).ToArray();
+        int[] expectedExit = actors.Select((actor, index) => (Actor: actor, Point: destinationPoints[index]))
+            .OrderBy(unit => unit.Point).Select(unit => unit.Actor).ToArray();
+        Require(actors.All(actor => actor > 0) && actors.Distinct().Count() == actors.Length &&
+            points.SequenceEqual(Enumerable.Range(0, actors.Length)) &&
+            exitActors.SequenceEqual(expectedExit) && exiting.Select(Point).SequenceEqual(points),
+            $"Expected the original physical permutation in floor {room}.");
 
         var observedCallbacks = application.GetProperty("Callbacks").EnumerateArray()
             .Select(row => (row.GetProperty("Kind").GetString(), Actor(row), Point(row)));
         var expectedCallbacks = new[] { "CharacterFloorRearranged", "ShiftCharacterTrigger" }
-            .SelectMany(kind => actors.Select((actor, index) => (kind, actor, points[1 - index])));
+            .SelectMany(kind => actors.Select((actor, index) => (kind, actor, destinationPoints[index])));
         Require(observedCallbacks.SequenceEqual(expectedCallbacks), $"Native callback order or destination differs in floor {room}.");
 
         UnityRng rng = Rng(application, "RngBefore");
-        for (int index = 0; index < draws; index++)
+        foreach (int expected in draws)
         {
             RngDraw draw = rng.Range(0, actors.Length);
-            Require(draw.Value == (index == draws - 1 ? 1 : 0), $"Native Battle RNG retry differs in floor {room}.");
+            Require(draw.Value == expected, $"Native Battle RNG target draw differs in floor {room}.");
             rng = draw.State;
         }
         Require(rng.Equals(Rng(application, "RngAfter")), $"Native Battle RNG successor differs in floor {room}.");
-        return actors;
+        return (actors, exitActors);
     }
 
     private static void Replay(BattleTurnState before, BattleTurnState actual, string label)
@@ -101,7 +110,7 @@ internal static class OriginalShuffleUnitsChecks
     private static int Room(FixtureValue row) => row.GetProperty("Room").GetInt32();
     private static int Actor(FixtureValue row) => row.GetProperty("Actor").GetInt32();
     private static int Point(FixtureValue row) => row.GetProperty("Point").GetInt32();
-    private static IEnumerable<int> PhysicalPair(BattleTurnState state, int floor, CombatTeam team) =>
+    private static IEnumerable<int> PhysicalRoster(BattleTurnState state, int floor, CombatTeam team) =>
         state.Spawn.Train.Context!.SpawnPoints!.SelectedGroup(floor, team)!.Occupants.Where(id => id > 0);
 
     private static UnityRng Rng(FixtureValue row, string key)
