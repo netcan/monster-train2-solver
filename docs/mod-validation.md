@@ -6,6 +6,14 @@ installed player payload. The installation evidence below predates the game
 update and does not establish 2.3.1 player compatibility. See
 [the current migration evidence](game-2.3.1.md).
 
+On 2026-11-24 the separately built Windows Advisor rendered a partial forecast at the original
+Endless Loop 2 deployment in an isolated profile. The observation recorded zero battle inputs and
+unchanged battle state and RNG. In a second run the native game accepted one matching deployment.
+The panel immediately showed the tentative next step and then retained the remaining 16 steps after
+settlement. The total search count stayed at one.
+[Deployment observation](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-loop2-advisor.mt2f) ·
+[Matching deployment](../tests/compatibility/game-2.3.1/mechanics/endless-enemy-scaling/native-controlled-loop2-advisor-handoff.mt2f)
+
 On 2026-11-21 the current Windows build completed a rolling player-advisor battle in an isolated
 2.3.1 instance (seed 424242, one search worker, 1,000 ms per recommendation). The production
 advisor published 27 recommendations. The driver sent 18 card plays and seven EndTurn inputs
