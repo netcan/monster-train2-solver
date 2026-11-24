@@ -21,8 +21,10 @@ namespace MonsterTrain2Poju.Probe
             AccessTools.FieldRefAccess<CombatManager, int>("turnCountModifier");
         private static readonly List<Phase> phases = new List<Phase>();
         private static BattleTurnState? deployment;
-        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_SECOND_FLOOR_ENEMY_OPENING") == "1";
+        internal static bool Enabled => Environment.GetEnvironmentVariable("MT2_PROBE_SECOND_FLOOR_ENEMY_OPENING") is "1" or "battle";
+        internal static bool FullBattle => Environment.GetEnvironmentVariable("MT2_PROBE_SECOND_FLOOR_ENEMY_OPENING") == "battle";
         internal static bool Acquired { get; private set; }
+        internal static bool Captured { get; private set; }
 
         internal static void Acquire(SaveManager save)
         {
@@ -63,6 +65,7 @@ namespace MonsterTrain2Poju.Probe
             });
             using var output = File.Create(Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, FileName));
             archive.Write(output);
+            Captured = true;
         }
 
         private sealed class Phase(string name, Snapshot before, Snapshot actual)

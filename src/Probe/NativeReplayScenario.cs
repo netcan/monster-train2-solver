@@ -1569,19 +1569,22 @@ namespace MonsterTrain2Poju.Probe
                     Finish(true, "Original all-unit subtype queries captured.");
                 return;
             }
-            if (fullBattle && OriginalSecondFloorEnemyOpeningWitness.Enabled)
+            if (fullBattle && OriginalSecondFloorEnemyOpeningWitness.Enabled && !OriginalSecondFloorEnemyOpeningWitness.Captured)
             {
+                var trace = FullBattleTrace.Active!;
                 if (combat!.GetTurnCount() == 0)
                 {
-                    OriginalSecondFloorEnemyOpeningWitness.CaptureDeployment(FullBattleTrace.Active!);
-                    AdvanceTurn(combat, record: false);
+                    OriginalSecondFloorEnemyOpeningWitness.CaptureDeployment(trace);
+                    AdvanceTurn(combat, record: OriginalSecondFloorEnemyOpeningWitness.FullBattle);
+                    return;
                 }
-                else
+                OriginalSecondFloorEnemyOpeningWitness.Write(trace);
+                if (!OriginalSecondFloorEnemyOpeningWitness.FullBattle)
                 {
-                    OriginalSecondFloorEnemyOpeningWitness.Write(FullBattleTrace.Active!);
                     Finish(true, "Original second-floor enemy opening captured.");
+                    return;
                 }
-                return;
+                trace.CompleteEndTurn(RoomOutcome.Exchanged);
             }
             if (fullBattle && OriginalPersistentMonsterHpWitness.Enabled)
             {

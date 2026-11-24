@@ -628,6 +628,7 @@ param(
     [switch] $BothSidesUnitsCardless,
     [switch] $OriginalPreventMonsterDamageBattle,
     [switch] $OriginalSecondFloorEnemyOpening,
+    [switch] $SecondFloorEnemyOpeningFullBattle,
     [switch] $OriginalHealOnAscendWitness,
     [ValidateSet('Tier2', 'Tier3')] [string] $OriginalFrontReanimationWitness = '',
     [switch] $OriginalRandomizedWavesBattle,
@@ -1342,8 +1343,11 @@ if ($OriginalMoreTreasureUnitsBattle -or $OriginalSkullCollectorsWitness) {
     $PhysicalSpawnPoints = $true
     $Policy = 'units-spells-and-junk'
 }
+if ($SecondFloorEnemyOpeningFullBattle -and -not $OriginalSecondFloorEnemyOpening) {
+    throw 'SecondFloorEnemyOpeningFullBattle requires OriginalSecondFloorEnemyOpening.'
+}
 if ($OriginalSecondFloorEnemyOpening) {
-    $openingArguments = @('OriginalSecondFloorEnemyOpening', 'InputProfile', 'BattleDistance',
+    $openingArguments = @('OriginalSecondFloorEnemyOpening', 'SecondFloorEnemyOpeningFullBattle', 'InputProfile', 'BattleDistance',
         'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild',
         'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne 1 -or
@@ -3754,7 +3758,7 @@ $environment = @{
     MT2_PROBE_ORIGINAL_FHYRA_BATTLE = $(if ($OriginalFhyraGoldBattle) { '1' } else { '0' })
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_BATTLE = $(if ($OriginalPreventMonsterDamageBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_RANDOMIZED_WAVES = $(if ($OriginalRandomizedWavesBattle) { '1' } else { '0' })
-    MT2_PROBE_SECOND_FLOOR_ENEMY_OPENING = $(if ($OriginalSecondFloorEnemyOpening) { '1' } else { '0' })
+    MT2_PROBE_SECOND_FLOOR_ENEMY_OPENING = $(if ($SecondFloorEnemyOpeningFullBattle) { 'battle' } elseif ($OriginalSecondFloorEnemyOpening) { '1' } else { '0' })
     MT2_PROBE_HEAL_ON_ASCEND = $(if ($OriginalHealOnAscendWitness) { '1' } else { '0' })
     MT2_PROBE_FRONT_REANIMATION = $OriginalFrontReanimationWitness
     MT2_PROBE_DISABLED_ROOM_PREVIEW = $(if ($OriginalDisabledRoomPreviewBattle) { '1' } else { '0' })
@@ -5005,7 +5009,7 @@ if ($OriginalBothSidesUnitsWitness) {
     Write-Output "NATIVE-BOTH-SIDES-UNITS PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
-if ($OriginalSecondFloorEnemyOpening) {
+if ($OriginalSecondFloorEnemyOpening -and -not $SecondFloorEnemyOpeningFullBattle) {
     $capturePath = Join-Path $profile 'second-floor-enemy-opening.mt2f'
     if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
         -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original second-floor enemy opening captured' -Quiet) -or
@@ -6536,6 +6540,11 @@ if ($OriginalMoreTreasureUnitsBattle) {
 }
 $terminalSettled = $trace.TerminalCaptureBoundary -eq 'AfterStopCombatLoop' -and $trace.TerminalEffectsSettled -eq $true
 $originalUnchanged = (Get-OriginalSignature) -ceq $originalBefore
+if ($SecondFloorEnemyOpeningFullBattle -and (
+    -not (Test-Path -LiteralPath (Join-Path $profile 'second-floor-enemy-opening.mt2f') -PathType Leaf) -or
+    (Get-OriginalSignature $checkpoint) -cne $secondFloorInputSignature)) {
+    throw 'The original second-floor battle requires a captured opening and unchanged donor checkpoint.'
+}
 if ($RegionRunInput -and ((Get-OriginalSignature $checkpoint) -cne $regionInputSignature -or
     $trace.NativeRunInput.RunType -cne 'RegionRun' -or $trace.NativeRunInput.WasDevCheatUsed -ne $false -or
     $trace.NativeRunInput.Distance -ne $BattleDistance -or $trace.NativeRunInput.Seed -ne $checkpointData.startingConditions.seed -or
