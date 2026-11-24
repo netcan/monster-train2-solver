@@ -6924,6 +6924,13 @@ if (args.Length == 2 && args[0] == "--stardust-heal-draw-frontier-only")
     StardustHealDrawFrontierChecks.Native(fixture.RootElement);
     return;
 }
+if (args.Length is 2 or 3 && args[0] == "--hallowed-halls-draft-relic-only")
+{
+    using var fixture = ModelJson.ReadFixture(args[1]);
+    using var donor = args.Length == 3 ? ModelJson.ReadFixture(args[2]) : null;
+    HallowedHallsDraftRelicChecks.Run(fixture.RootElement, donor?.RootElement);
+    return;
+}
 if (args.Length == 2 && args[0] == "--original-moon-ritual-only")
 {
     using var fixture = ModelJson.ReadFixture(args[1]);

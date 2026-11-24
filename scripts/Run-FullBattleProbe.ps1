@@ -307,6 +307,7 @@ param(
     [switch] $OriginalMovementSpells,
     [switch] $OriginalRearrangeSpells,
     [switch] $OriginalSupportSpells,
+    [switch] $OriginalHallowedHallsDraftRelic,
     [string[]] $OriginalIsolatedSpellIds = @(),
     [string[]] $OriginalIsolatedSpellUpgrades = @(),
     [string] $OriginalUnitAbilityId = '',
@@ -2119,6 +2120,13 @@ if ($OriginalIsolatedEquipmentIds.Count -gt 0) {
     $BranchCardMasks = $true; $PhysicalSpawnPoints = $true; $Policy = 'units-spells-and-junk'
 }
 if ($OriginalSupportSpells) { $BranchCardMasks = $true; $Policy = 'units-spells-and-junk' }
+if ($OriginalHallowedHallsDraftRelic) {
+    if (!$BinaryCapture -or $BattleDistance -ne 0 -or $OriginalIsolatedSpellIds.Count -or $OriginalOpeningRelicRosterIds.Count) {
+        throw 'Hallowed Halls/AlliedClassRelic requires its own binary Ring 1 spell batch.'
+    }
+    $OriginalIsolatedSpellIds = @('c6484604-b077-43ce-84a4-0179d2f36352')
+    $PhysicalSpawnPoints = $true
+}
 if ($OriginalDoubleUnitsFirstShield -and $OriginalDoubleUnitsSpawnArmor) { throw 'Select one original DoubleUnits relic observation.' }
 if ($OriginalDoubleUnitsFirstShield -or $OriginalDoubleUnitsSpawnArmor) { $OriginalDoubleUnitsOrdinary = $true }
 if ($OriginalDoubleUnitsOrdinary -and $OriginalDoubleUnitsSpawnOrStatus) {
@@ -4043,6 +4051,7 @@ if ($OriginalHallGraftedBirth) {
     $environment['MT2_PROBE_DOUBLE_UNITS_SPAWN_OR_STATUS'] = $(if ($OriginalDoubleUnitsSpawnOrStatus) { '1' } else { '0' })
 }
 if ($OriginalIsolatedSpellIds.Count -gt 0) { $environment['MT2_PROBE_MODIFIERS'] = 'original-isolated-spells:' + ($OriginalIsolatedSpellIds -join ',') }
+if ($OriginalHallowedHallsDraftRelic) { $environment['MT2_PROBE_HALLOWED_HALLS_DRAFT_RELIC'] = '1' }
 if ($OriginalIsolatedSpellUpgrades.Count -gt 0) {
     if ($OriginalIsolatedSpellIds.Count -eq 0) { throw 'Isolated spell upgrades require an isolated spell batch.' }
     $OriginalIsolatedSpellUpgrades = @($OriginalIsolatedSpellUpgrades | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim().ToLowerInvariant() } | Where-Object { $_ })
@@ -8415,6 +8424,21 @@ if ($OriginalUnitAbilityId -and ($trace.OriginalUnitAbilityId -ne $OriginalUnitA
 if ($OriginalIsolatedSpellIds.Count -gt 0 -and ($trace.ModifierScenario -ne ('original-isolated-spells:' + ($OriginalIsolatedSpellIds -join ',')) -or
     -not $trace.OriginalSupportSpellsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne (4 + $OriginalIsolatedSpellIds.Count + $returnedCorruptRecastCount + $isolatedRoomAbilityCount))) {
     throw 'Isolated spell batch lacks three hosts, energy and every requested original spell play.'
+}
+if ($OriginalHallowedHallsDraftRelic) {
+    $cast = @($trace.Actions | Where-Object {
+        $row = $_
+        @($row.Before.Spawn.Train.Context.Cards.Hand | Where-Object {
+            $_.InstanceId -eq $row.Action.CardInstanceId -and $_.DataId -eq $OriginalIsolatedSpellIds[0]
+        }).Count -eq 1
+    })
+    if ($trace.GameVersion -ne '2.3.1' -or $trace.GameModuleMvid -ne 'bf93f060-beda-46b1-b808-95ebf1e9a99d' -or
+        $cast.Count -ne 1 -or @($cast[0].Before.Spawn.Train.Context.Relics | Where-Object {
+            $_.DataId -eq '656861c9-a96d-4c99-988c-390b75e5d8d4' -and $_.AssetKey -eq 'AlliedClassRelic' -and
+            @($_.EffectTypes).Count -eq 1 -and $_.EffectTypes[0] -eq 'RelicEffectOverrideCardDraftClassType'
+        }).Count -ne 1) {
+        throw 'Missing the pinned original Hallowed Halls cast with AlliedClassRelic.'
+    }
 }
 if ($OriginalRearrangeSpells -and (-not $trace.OriginalRearrangeSpellsPrepared -or -not $trace.NativeWon -or @($trace.Actions).Count -ne 19)) {
     throw 'Original rearrange spell witness lacks eleven unchanged originals and positive composition controls.'

@@ -1014,6 +1014,11 @@ Transcend Imp 随后按原有顺序重放召唤历史，被召回的单位可重
 站位和容量。5 次出牌、6 次结束回合及两类候选通过。
 [`hallowed-halls.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/hallowed-halls.mt2f)
 
+2.3.1 隔离对照通过原版接口获取 `AlliedClassRelic` 后实际施放 Hallowed Halls。
+该遗物只参与战后选牌的氏族筛选。5 次出牌、6 次结束回合、出牌候选和结束回合候选均通过完整状态和随机流对照。
+专项同时用原版 Carriage Jack 作为有战斗回调的反例，确认顾问仍会拒绝该组合。
+[`hallowed-halls-allied-draft-relic.mt2f`](../tests/compatibility/game-2.3.1/mechanics/controlled-original-support-units/hallowed-halls-allied-draft-relic.mt2f)
+
 Pyreblooded 的后续实机对照在同层记录友军 10 层、两名敌军各 4 层 Pyregel。原版技能
 消耗 0 余烬并进入 3 层冷却，自身攻击由 5 提升至 23。8 次出牌或技能、5 次结束回合、
 16 条独立分支和候选检查通过。专项也复放零层、缺少楼层快照和跨楼层的对照。

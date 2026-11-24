@@ -183,6 +183,11 @@ namespace MonsterTrain2Poju.Model
 
     internal static class RelicModel
     {
+        internal static bool IsOriginalAlliedDraftOwner(CombatRelicState relic) =>
+            relic.DataId == "656861c9-a96d-4c99-988c-390b75e5d8d4" && relic.AssetKey == "AlliedClassRelic" &&
+            relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false &&
+            relic.EffectTypes.Count == 1 && relic.EffectTypes[0] == "RelicEffectOverrideCardDraftClassType";
+
         internal const string AbilityIncant = "RelicEffectIncantTriggeredByUnitAbilities";
         internal const string ModifyTriggerCount = "RelicEffectModifyTriggerCount";
         internal const string AddStatusOnSpawn = "RelicEffectAddStatusEffectOnSpawn";
@@ -414,9 +419,9 @@ namespace MonsterTrain2Poju.Model
                     if (effect == "RelicEffectOverrideCardDraftRarity") continue;
                     // These original draft and post-battle owners are consumed by
                     // the campaign after the captured combat terminal boundary.
+                    if (IsOriginalAlliedDraftOwner(relic)) continue;
                     if (relic.EffectTypes.Count == 1 && relic.IsCovenant == false && relic.DisallowedInPlacementPhase == false &&
                         (effect, relic.DataId, relic.AssetKey) is
-                            ("RelicEffectOverrideCardDraftClassType", "656861c9-a96d-4c99-988c-390b75e5d8d4", "AlliedClassRelic") or
                             ("RelicEffectChangeNumCardsToApplyRandomDraftEnhancerTo", "9427e610-0c7b-4430-ab1f-c84049097168", "DrawOnCorruption") or
                             ("RelicEffectCopyRandomCardFromDeckEndOfBattle", "8ee399d2-4ee4-409d-af95-319bcd6accc4", "MothersRemnant1Relic")) continue;
                     // Sealed IAddStartingUpgradeToCardDrafts is called only

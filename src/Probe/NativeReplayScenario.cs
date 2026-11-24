@@ -767,6 +767,7 @@ namespace MonsterTrain2Poju.Probe
                     if (fullBattle && OriginalAfterDrawSpawnScenario.Enabled && !OriginalAfterDrawSpawnScenario.Acquired)
                         OriginalAfterDrawSpawnScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle) OriginalSupportSpellsScenario.AcquireHallExtraSpawn(managers!, log);
+                    if (fullBattle) OriginalHallowedHallsDraftRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalHoldoverGrantScenario.Enabled && !OriginalHoldoverGrantScenario.Acquired)
                         OriginalHoldoverGrantScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalCorruptedAngelsScenario.Enabled && !OriginalCorruptedAngelsScenario.Acquired)
@@ -968,6 +969,7 @@ namespace MonsterTrain2Poju.Probe
                     if (fullBattle && OriginalAfterDrawSpawnScenario.Enabled && !OriginalAfterDrawSpawnScenario.Acquired)
                         OriginalAfterDrawSpawnScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle) OriginalSupportSpellsScenario.AcquireHallExtraSpawn(managers!, log);
+                    if (fullBattle) OriginalHallowedHallsDraftRelicScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalHoldoverGrantScenario.Enabled && !OriginalHoldoverGrantScenario.Acquired)
                         OriginalHoldoverGrantScenario.AcquireBeforeBattle(managers!, log);
                     if (fullBattle && OriginalPriorityRelicBattleScenario.Enabled && !OriginalPriorityRelicBattleScenario.Acquired)
