@@ -388,10 +388,11 @@ namespace MonsterTrain2Poju.Model
                 throw new InvalidOperationException("No complete verified continuation within the planning budget. turns=" +
                     plan.TurnsCompleted + " nodes=" + plan.ExpandedNodes + " elapsedMs=" + plan.Elapsed.TotalMilliseconds +
                     " reasons=" + string.Join("; ", plan.UnsupportedAttempts.Select(attempt => attempt.Reason)));
+            if (plan.TurnsCompleted != plan.Steps.Count(step => step.IsEndTurn))
+                throw new InvalidOperationException("Advice turn count differs from its EndTurn steps.");
             if (plan.UsedShorterHorizon && (plan.CompletedHorizon || plan.TurnsCompleted < 1 ||
                 plan.TurnsCompleted >= plan.RequestedTurns || (!plan.TimedOut && !plan.ReachedNodeLimit && !plan.ReachedStepLimit) ||
                 plan.PolicyBaselineScore.HasValue || !plan.Steps[plan.Steps.Count - 1].IsEndTurn ||
-                plan.Steps.Count(step => step.IsEndTurn) != plan.TurnsCompleted ||
                 plan.Outcome is RoomOutcome.BattleWon or RoomOutcome.PlayerDefeated or RoomOutcome.Stalemate))
                 throw new InvalidOperationException("Invalid shorter planning window.");
             if (plan.Steps.Count > plan.MaxSteps || plan.SearchedToBattleEnd && plan.CompletedHorizon &&

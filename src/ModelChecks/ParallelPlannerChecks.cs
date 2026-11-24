@@ -158,8 +158,24 @@ internal static class ParallelPlannerChecks
         var cancelled = ParallelBattlePlanner.ExploreTerminalRoutes(root, Options(2), null, new CancellationToken(true));
         Require(cancelled.Cancelled && !cancelled.UsedShorterHorizon && cancelled.Steps.Count == 0,
             "A cancelled exact worker published a shorter forecast.");
+
+        var ordinary = ParallelBattlePlanner.Plan(root, new BattlePlannerOptions(4, maxTurns: 1, beamWidth: 8,
+            timeLimit: TimeSpan.FromSeconds(10)), maxWorkers: 1);
+        Require(ordinary.CompletedHorizon && ordinary.TurnsCompleted == 1 && ordinary.Outcome == RoomOutcome.Exchanged,
+            "Expected a complete one-turn ordinary forecast from this root.");
+        BattleAdviceSession.Verify(root, ordinary);
+        var incorrectTurnCount = new BattlePlanResult(ordinary.State, ordinary.Outcome, ordinary.Steps, ordinary.Score,
+            99, ordinary.ExpandedNodes, ordinary.DuplicateStates, ordinary.BeamPruned, ordinary.Elapsed,
+            ordinary.TimedOut, ordinary.Cancelled, ordinary.ReachedNodeLimit, ordinary.ReachedActionLimit,
+            ordinary.CompletedHorizon, ordinary.UnsupportedAttempts, ordinary.PolicyBaselineScore, ordinary.RequestedTurns);
+        bool rejected = false;
+        try { BattleAdviceSession.Verify(root, incorrectTurnCount); }
+        catch (InvalidOperationException error) when (error.Message == "Advice turn count differs from its EndTurn steps.")
+        { rejected = true; }
+        Require(rejected, "A verified one-turn forecast accepted an inflated turn count.");
+
         Require(keys.Key(root) == rootKey, "The exact forecast mutated its native root.");
-        Console.WriteLine("PARALLEL-SHORTER-FALLBACK PASS: two verified EndTurns from the original Ring 5 root, complete state/RNG, strict and cancelled exclusions.");
+        Console.WriteLine("PARALLEL-SHORTER-FALLBACK PASS: two verified EndTurns from the original Ring 5 root, complete state/RNG, strict and cancelled exclusions, incorrect ordinary turn count rejected.");
 
         void VerifyPrefix(BattlePlanResult forecast, int budget)
         {
