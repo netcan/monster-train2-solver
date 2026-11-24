@@ -810,6 +810,8 @@ namespace MonsterTrain2Poju.Probe
                     if (fullBattle && OriginalStatusMagnitudeWitness.Enabled)
                         OriginalStatusMagnitudeWitness.AcquireBeforeBattle(managers!);
 #if DEVELOPMENT_PROBE
+                    if (fullBattle && OriginalHealOnAscendWitness.Enabled && !OriginalHealOnAscendWitness.Acquired)
+                        OriginalHealOnAscendWitness.Acquire(save);
                     if (fullBattle && OriginalSecondFloorEnemyOpeningWitness.Enabled && !OriginalSecondFloorEnemyOpeningWitness.Acquired)
                         OriginalSecondFloorEnemyOpeningWitness.Acquire(save);
                     if (fullBattle && OriginalOpeningRelicsScenario.Enabled)
@@ -1143,6 +1145,12 @@ namespace MonsterTrain2Poju.Probe
             {
                 if (OriginalRandomJustCauseWitness.Tick(FullBattleTrace.Active!, managers, log))
                     Finish(true, "Original random Just Cause component captured.");
+                return;
+            }
+            if (fullBattle && OriginalHealOnAscendWitness.Enabled)
+            {
+                if (OriginalHealOnAscendWitness.Tick(FullBattleTrace.Active!, managers, () => AdvanceTurn(combat!, record: false)))
+                    Finish(true, "Original Ascend healing trial captured.");
                 return;
             }
             if (fullBattle && OriginalSecondFloorEnemyOpeningWitness.Enabled)

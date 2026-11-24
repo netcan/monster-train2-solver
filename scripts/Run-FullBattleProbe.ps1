@@ -590,6 +590,7 @@ param(
     [switch] $OriginalLoseMoneyOnHitWitness,
     [switch] $OriginalPreventMonsterDamageBattle,
     [switch] $OriginalSecondFloorEnemyOpening,
+    [switch] $OriginalHealOnAscendWitness,
     [switch] $OriginalRandomizedWavesBattle,
     [switch] $OriginalDisabledRoomPreviewBattle,
     [switch] $OriginalMoreTreasureUnitsBattle,
@@ -1027,6 +1028,18 @@ if ($OriginalSecondFloorEnemyOpening) {
     if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne 1 -or
         @($PSBoundParameters.Keys | Where-Object { $_ -notin $openingArguments }).Count) {
         throw 'Original second-floor enemy opening requires a stock Ring 2 checkpoint and binary capture.'
+    }
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($OriginalHealOnAscendWitness) {
+    $healArguments = @('OriginalHealOnAscendWitness', 'InputProfile', 'BattleDistance',
+        'GameSpeed', 'NativeWorker', 'TimeoutSeconds', 'BinaryCapture', 'NativeBuildRoot', 'SkipBuild',
+        'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not ($BinaryCapture -and $InputProfile) -or $BattleDistance -ne 1 -or
+        @($PSBoundParameters.Keys | Where-Object { $_ -notin $healArguments }).Count) {
+        throw 'Original Ascend healing witness requires a stock Ring 2 checkpoint and binary capture.'
     }
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
@@ -2632,7 +2645,8 @@ if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll'
 if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $AdvisorOffRoute -or
     $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth -or $OriginalFunguyDeckScalingDoubleUnits -or
     $OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness -or
-    $OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle -or $OriginalHandAndEmberWitness -or $OriginalFecundityOnCast) {
+    $OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle -or $OriginalHandAndEmberWitness -or $OriginalFecundityOnCast -or
+    $OriginalHealOnAscendWitness) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -2653,6 +2667,9 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     }
     if ($OriginalFecundityOnCast -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original Fecundity paid cast requires the pinned 2.3.1 game module.'
+    }
+    if ($OriginalHealOnAscendWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'Original Ascend healing trial requires the pinned 2.3.1 game module.'
     }
     if (($OriginalPyreAbilityCooldownWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original Pyre witness requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
@@ -2828,6 +2845,14 @@ if ($InputProfile) {
             throw 'Original second-floor enemy opening requires a standard native Rank 0 Ring 2 checkpoint.'
         }
         $secondFloorInputSignature = Get-OriginalSignature $checkpoint
+    }
+    if ($OriginalHealOnAscendWitness) {
+        if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
+            $checkpointData.wasDevCheatUsed -ne $false -or $checkpointData.runState.numBattlesCompleted -ne 1 -or
+            $checkpointData.startingConditions.ascensionLevel -ne 0) {
+            throw 'Original Ascend healing witness requires a standard native Rank 0 Ring 2 checkpoint.'
+        }
+        $healInputSignature = Get-OriginalSignature $checkpoint
     }
     if ($OriginalRandomizedWavesBattle) {
         if ($checkpointData.runType -cne 'Class' -or $checkpointData.isEndless -or $checkpointData.isRegionRun -or
@@ -3051,6 +3076,7 @@ $environment = @{
     MT2_PROBE_PREVENT_MONSTER_DAMAGE_BATTLE = $(if ($OriginalPreventMonsterDamageBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_RANDOMIZED_WAVES = $(if ($OriginalRandomizedWavesBattle) { '1' } else { '0' })
     MT2_PROBE_SECOND_FLOOR_ENEMY_OPENING = $(if ($OriginalSecondFloorEnemyOpening) { '1' } else { '0' })
+    MT2_PROBE_HEAL_ON_ASCEND = $(if ($OriginalHealOnAscendWitness) { '1' } else { '0' })
     MT2_PROBE_DISABLED_ROOM_PREVIEW = $(if ($OriginalDisabledRoomPreviewBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_MORE_TREASURE_UNITS = $(if ($OriginalMoreTreasureUnitsBattle) { '1' } else { '0' })
     MT2_PROBE_HAND_AND_EMBER_WITNESS = $OriginalHandAndEmberWitness
@@ -4025,6 +4051,16 @@ if ($OriginalSecondFloorEnemyOpening) {
         throw "Original second-floor enemy opening capture failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-SECOND-FLOOR-ENEMY-OPENING PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalHealOnAscendWitness) {
+    $capturePath = Join-Path $profile 'heal-on-ascend.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Ascend healing trial captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore -or (Get-OriginalSignature $checkpoint) -cne $healInputSignature) {
+        throw "Original Ascend healing witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-HEAL-ON-ASCEND PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalPreventMonsterDamageWitness) {
