@@ -92,7 +92,8 @@ namespace MonsterTrain2Poju.Model
             interaction is "CardTraitPersistent Discard callback" or "CardTraitPersistent discard routing" or "CardTraitFreeze discard routing";
 
         internal static IReadOnlyList<string> ActionInteractions(BattleTurnState source) =>
-            source.ExternalInteractions.Where(interaction => !IsDeferredPersistentDiscard(interaction)).ToArray();
+            source.ExternalInteractions.Where(interaction => !IsDeferredPersistentDiscard(interaction) &&
+                !HivemindTurnUpgrade.IsObservedScaledWaveInteraction(source.Spawn.Train, interaction)).ToArray();
 
         internal static IReadOnlyList<string> AfterActionInteractions(BattleTurnState source, CombatContext context)
         {

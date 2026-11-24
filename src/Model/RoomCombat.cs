@@ -3876,6 +3876,7 @@ namespace MonsterTrain2Poju.Model
             {
                 if (target.DeathFinished) return;
                 if (target.Source.Status(HivemindTurnUpgrade.StatusId) != null &&
+                    !HivemindTurnUpgrade.IsObservedScaledWaveDeath(source, target.Source, sourceCardId) &&
                     !HivemindTurnUpgrade.IsObservedInfestedHordeDeath(source, target.Source, sourceCardId) &&
                     !HivemindTurnUpgrade.IsObservedThirdFeedDeath(source, target.Source.Id, actor?.Source.Id) &&
                     !HivemindTurnUpgrade.IsObservedPyreHunterDeath(source, target.Source.Id, actor?.Source.IsPyre == true))
