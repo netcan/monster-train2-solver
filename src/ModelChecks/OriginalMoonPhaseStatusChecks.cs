@@ -92,6 +92,15 @@ internal static class OriginalMoonPhaseStatusChecks
             JsonSerializer.Serialize(source, ModelJson.Options) == parent,
             "Moon-phase armor did not respect the New-only team/subtype/target filters or immutable parent state.");
 
+        var allSubtypes = new CombatRelicState(OriginalAllSubtypesModel.OwnerId, OriginalAllSubtypesModel.OwnerKey,
+            [OriginalAllSubtypesModel.Effect], isCovenant: false, disallowedInPlacementPhase: false);
+        TrainCombatState combined = CardSpellModel.WithContext(source, source.Context!.WithRelics([owner, allSubtypes]));
+        RelicMoonPhaseStatusResult combinedArmor = RelicMoonPhaseStatusModel.Apply(combined, 1);
+        Require(combinedArmor.Supported &&
+            combinedArmor.State!.Rooms.SelectMany(room => room.Units).Single(unit => unit.Id == 6).Status("armor")?.Stacks == 10 &&
+            combinedArmor.State.Context!.BattleRng.Equals(source.Context.BattleRng),
+            "The all-subtypes owner did not admit the non-Silent ally to New Moon armor.");
+
         MoonPhaseTransitionResult full = MoonPhaseTransitionModel.Apply(source,
             new CardActionEffect("SetMoonPhase", "Room", 2, false, false, []));
         MoonPhaseTransitionResult nextNew = MoonPhaseTransitionModel.Apply(full.State!,

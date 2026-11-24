@@ -81,6 +81,7 @@ namespace MonsterTrain2Poju.Model
         internal static string? ValidateTransition(TrainCombatState source, int phase, bool preview, bool placement)
         {
             if (source.Context?.Relics == null) return null;
+            bool allSubtypes = OriginalAllSubtypesModel.Active(source.Context, placement);
             foreach (CombatRelicState relic in source.Context.Relics)
             {
                 string? error = Validate(relic);
@@ -93,9 +94,9 @@ namespace MonsterTrain2Poju.Model
                         (rule.MoonPhaseMask & phase) == 0) continue;
                     foreach (RoomCombatState room in source.Rooms)
                     {
-                        if (room.ExternalInteractions.Count != 0 && room.Units.Any(unit => IsTarget(unit, rule)))
+                        if (room.ExternalInteractions.Count != 0 && room.Units.Any(unit => IsTarget(unit, rule, allSubtypes)))
                             return "Moon-phase status with room external interactions is not modeled.";
-                        foreach (CombatUnit unit in room.Units.Where(unit => IsTarget(unit, rule)))
+                        foreach (CombatUnit unit in room.Units.Where(unit => IsTarget(unit, rule, allSubtypes)))
                         {
                             if (unit.Triggers.Any(trigger => trigger.Kind is "OnStatusEffectChanged" or "OnArmorAdded" or "OnNewStatusEffectAdded"))
                                 return "Moon-phase status target callbacks are not modeled.";
@@ -112,6 +113,7 @@ namespace MonsterTrain2Poju.Model
             string? error = ValidateTransition(source, phase, preview, placement);
             if (error != null) return new RelicMoonPhaseStatusResult(null, error);
             if (source.Context?.Relics == null) return new RelicMoonPhaseStatusResult(source);
+            bool allSubtypes = OriginalAllSubtypesModel.Active(source.Context, placement);
             TrainCombatState state = source;
             foreach (CombatRelicState relic in source.Context.Relics)
             {
@@ -122,7 +124,7 @@ namespace MonsterTrain2Poju.Model
                     if (resource.Type != Effect || rule == null || preview && !resource.CanApplyInPreviewMode ||
                         (rule.MoonPhaseMask & phase) == 0) continue;
                     int[] targetIds = state.Rooms.OrderBy(room => room.RoomIndex).SelectMany(room => room.Units
-                        .Where(unit => IsTarget(unit, rule)).Select(unit => unit.Id)).ToArray();
+                        .Where(unit => IsTarget(unit, rule, allSubtypes)).Select(unit => unit.Id)).ToArray();
                     var rooms = state.Rooms.ToArray();
                     var callbacks = new List<RoomCombatModel.QueuedCharacterTrigger>();
                     foreach (int targetId in targetIds)
@@ -154,9 +156,9 @@ namespace MonsterTrain2Poju.Model
             return new RelicMoonPhaseStatusResult(state);
         }
 
-        private static bool IsTarget(CombatUnit unit, RelicMoonPhaseStatusRule rule) =>
+        private static bool IsTarget(CombatUnit unit, RelicMoonPhaseStatusRule rule, bool allSubtypes) =>
             rule.SourceTeam == "Monsters" && unit.Team == CombatTeam.Player && !unit.IsPyre && unit.Health > 0 &&
             unit.DeathState?.IsDestroyed != true && unit.Status("untouchable") == null &&
-            unit.Subtypes.Contains(rule.RequiredSubtype!, StringComparer.Ordinal);
+            OriginalAllSubtypesModel.MatchesCharacter(unit, rule.RequiredSubtype!, allSubtypes);
     }
 }
