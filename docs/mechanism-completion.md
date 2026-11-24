@@ -1406,6 +1406,12 @@ Fecundity 的原版升级回调会把全额减费值改为目标卡当前的实�
 专项回归逐项匹配两次出生与对应随机流。该场整战仍有月相采集差异。
 [寻宝单位出生归档](../tests/compatibility/game-2.3.1/mechanics/more-treasure-units/two-collector-births.mt2f)
 
+`SkullCollectors` 在已验证的原版第 2、4、7 环路线分别替换三级寻宝单位。原版结算分别为
+10 攻 41 血、25 攻 83 血和 45 攻 125 血。完整出生后继、物理位置、寻宝计数和 Spawning RNG 全部匹配。
+[一级对照](../tests/compatibility/game-2.3.1/mechanics/skull-collectors/native-first-treasure.mt2f) ·
+[二级对照](../tests/compatibility/game-2.3.1/mechanics/skull-collectors/native-tier2-projected.mt2f) ·
+[三级对照](../tests/compatibility/game-2.3.1/mechanics/skull-collectors/native-tier3-projected.mt2f)
+
 第二层开局突变在首个可操作决策前多结算一次移层和出生。专项对照匹配了首波移至第二层、
 第二波在底层生成、寻宝单位生成及出生随机流的重置。支持范围由该开局的原版状态约束。
 [第二层开局归档](../tests/compatibility/game-2.3.1/mechanics/second-floor-enemy-opening/first-decision.mt2f)
