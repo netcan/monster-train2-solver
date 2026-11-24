@@ -624,6 +624,7 @@ param(
     [ValidateSet('WithOwner', 'WithoutOwner', 'WithOwnerReuse', 'WithoutOwnerReuse')]
     [string] $OriginalPyreAbilityCooldownWitness = '',
     [switch] $OriginalPyreStewardDamageWitness,
+    [switch] $OriginalZarielPainWitness,
     [switch] $OriginalPactDrawWitness,
     [switch] $OriginalEntropyDrawWitness,
     [switch] $OriginalPactDrawBattle,
@@ -1008,6 +1009,16 @@ if ($OriginalPyreStewardDamageWitness) {
         'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
         throw 'Original Pyre Steward damage requires a stock opening battle and binary capture.'
+    }
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($OriginalZarielPainWitness) {
+    $witnessArguments = @('OriginalZarielPainWitness', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+        'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
+        throw 'Original Zariel Tier I pain damage requires an isolated opening battle and binary capture.'
     }
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
@@ -2730,7 +2741,8 @@ if (-not (Test-Path -LiteralPath (Join-Path $gameRoot 'BepInEx/core/BepInEx.dll'
 if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $UnsupportedBranchInput -or $EffectOwnerType -or $CapturePlayerDeploymentOnly -or $AdvisorOffRoute -or
     $OriginalOpeningRelicIds.Count -or $OriginalOpeningPhaseRelics -or $OriginalOpeningRelicRosterIds.Count -or $OriginalOpeningPassiveRelics -or $OriginalHallGraftedBirth -or $OriginalFunguyDeckScalingDoubleUnits -or
     $OriginalPactDrawWitness -or $OriginalPactDrawBattle -or $OriginalEntropyDrawWitness -or
-    $OriginalPyreAbilityCooldownWitness -or $OriginalPyreStewardDamageWitness -or $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle -or $OriginalHandAndEmberWitness -or $OriginalFecundityOnCast -or
+    $OriginalPyreAbilityCooldownWitness -or $OriginalPyreStewardDamageWitness -or $OriginalZarielPainWitness -or
+    $OriginalFhyraGoldWitness -or $OriginalFhyraGoldBattle -or $OriginalHandAndEmberWitness -or $OriginalFecundityOnCast -or
     $OriginalHealOnAscendWitness -or $OriginalFrontReanimationWitness -or $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle -or $OriginalLonelyRoomsBattle -or
     $OriginalShuffleUnitsWitness -or $OriginalShuffleUnitsBattle -or $OriginalDoubleFriendlyHealthWitness -or $OriginalDoubleFriendlyHealthBattle -or
     $OriginalBothSidesUnitsWitness -or $OriginalBothSidesUnitsBattle -or $OriginalSkullCollectorsWitness) {
@@ -2785,6 +2797,9 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     }
     if ($OriginalPyreStewardDamageWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw 'Original Pyre Steward damage requires the pinned 2.3.1 game module.'
+    }
+    if ($OriginalZarielPainWitness -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
+        throw 'Original Zariel damage requires the pinned 2.3.1 game module.'
     }
     if (($OriginalPactDrawWitness -or $OriginalPactDrawBattle) -and $nativeModule -ne [Guid]'bf93f060-beda-46b1-b808-95ebf1e9a99d') {
         throw "Original Pact draw requires the pinned 2.3.1 module. Worker $NativeWorker has module $nativeModule."
@@ -3207,6 +3222,7 @@ $environment = @{
     MT2_PROBE_BOTH_SIDES_UNITS_CARDLESS = $(if ($BothSidesUnitsCardless) { '1' } else { '0' })
     MT2_PROBE_PYRE_ABILITY_COOLDOWN_WITNESS = $OriginalPyreAbilityCooldownWitness
     MT2_PROBE_PYRE_STEWARD_DAMAGE = $(if ($OriginalPyreStewardDamageWitness) { '1' } else { '0' })
+    MT2_PROBE_ZARIEL_PAIN_WITNESS = $(if ($OriginalZarielPainWitness) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_PACT_DRAW = $(if ($OriginalPactDrawWitness) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_PACT_BATTLE = $(if ($OriginalPactDrawBattle) { '1' } else { '0' })
     MT2_PROBE_ORIGINAL_ENTROPY_DRAW = $(if ($OriginalEntropyDrawWitness) { '1' } else { '0' })
@@ -4374,6 +4390,16 @@ if ($OriginalPyreStewardDamageWitness) {
         throw "Original Pyre Steward damage witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-PYRE-STEWARD-DAMAGE PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalZarielPainWitness) {
+    $capturePath = Join-Path $profile 'zariel-pain-tier1.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Zariel Tier I pain damage captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original Zariel damage witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-ZARIEL-PAIN PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalHandAndEmberWitness) {

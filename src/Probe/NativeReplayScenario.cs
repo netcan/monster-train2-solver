@@ -1222,6 +1222,13 @@ namespace MonsterTrain2Poju.Probe
                     Finish(true, "Original Pyre Steward damage captured.");
                 return;
             }
+            if (fullBattle && OriginalZarielPainWitness.Enabled)
+            {
+                if (OriginalZarielPainWitness.Tick(FullBattleTrace.Active!, managers, log,
+                    () => AdvanceTurn(combat!, record: false)))
+                    Finish(true, "Original Zariel Tier I pain damage captured.");
+                return;
+            }
             if (fullBattle && OriginalSecondFloorEnemyOpeningWitness.Enabled)
             {
                 if (combat!.GetTurnCount() == 0)
