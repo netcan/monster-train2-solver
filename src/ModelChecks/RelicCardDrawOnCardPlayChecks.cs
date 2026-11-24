@@ -15,12 +15,13 @@ internal static class RelicCardDrawOnCardPlayChecks
             cardDrawOnCardPlayModifiers: [new RelicCardDrawOnCardPlayModifier(0, 1, "Invalid", [condition])]);
         Require(RelicModel.Validate([relic]) == null, "Valid card-draw-on-play relic was rejected.");
 
-        CardInstanceState Card(int id, string type, string[]? subtypes = null) => new(id, "card-" + id, CardModifiers.Empty(), CardModifiers.Empty(),
+        CardInstanceState Card(int id, string type, string[]? subtypes = null, bool spawnData = false) => new(id, "card-" + id, CardModifiers.Empty(), CardModifiers.Empty(),
             0, 0, 0, [], maskDescriptor: new CardMaskDescriptor(new CardMaskDefinition("card-" + id,
-                type, "Common", false, false, false, subtypes ?? [], [], [], [], null, false, 0, 0, false, false, false),
+                type, "Common", spawnData, spawnData, false, subtypes ?? [], [], [], [], null, false, 0, 0, false, false, false),
                 1, [], []));
         CombatRelicState[] relics = [relic];
-        CardInstanceState[] instances = [Card(1, "Monster", ["SubtypesData_Snack"]), Card(2, "Spell"), Card(3, "Spell"), Card(4, "Monster")];
+        CardInstanceState[] instances = [Card(1, "Monster", ["SubtypesData_Snack"], spawnData: true), Card(2, "Spell"),
+            Card(3, "Spell"), Card(4, "Monster", spawnData: true), Card(5, "Monster")];
         BattleStatistics stats = new([new CardStatisticValue(1, "ThisTurn", "TimesPlayed", 2)], [], [], [], [], [], [],
             0, 0, 0, 0, 0, [1, 2, 3], [1, 2, 3], [1, 2, 3]);
         CombatContext Context(BattleStatistics statistics, CombatRelicState[] currentRelics) => new(
@@ -81,6 +82,16 @@ internal static class RelicCardDrawOnCardPlayChecks
             otherMonsterPlay.Supported && otherMonsterPlay.Context.Cards.Hand.Count == 0 &&
             otherTypePlay.Supported && otherTypePlay.Context.Cards.Hand.Count == 0,
             "The relic's native played-card subtype or trigger-count condition was not respected.");
+
+        var allSubtypes = new CombatRelicState(OriginalAllSubtypesModel.OwnerId, "AllUnitsAllSubtypes", [OriginalAllSubtypesModel.Effect],
+            isCovenant: false, disallowedInPlacementPhase: false);
+        CombatContext withMutator = Context(stats, [snackOnly, allSubtypes]);
+        RelicCardPlayMagicPowerResult effectiveSnack = RelicCardPlayMagicPowerModel.Apply(withMutator, 4, currentTurn: 0);
+        RelicCardPlayMagicPowerResult missingSpawnData = RelicCardPlayMagicPowerModel.Apply(withMutator, 5, currentTurn: 0);
+        Require(effectiveSnack.Supported && effectiveSnack.Context.Cards.Hand.Count == 1 &&
+            effectiveSnack.Context.Relics![0].CardDrawOnCardPlayModifiers![0].Conditions[0].Triggered &&
+            missingSpawnData.Supported && missingSpawnData.Context.Cards.Hand.Count == 0,
+            "Native subtype draw must use the active owner and require an actual card spawn template.");
 
         var missingDefinition = new CombatRelicState("bad", "MissingCardDrawDefinition", [RelicModel.CardDrawOnCardPlay]);
         var traitFiltered = new CombatRelicState("trait", "DrawCardWhenConsumePlayed", [RelicModel.CardDrawOnCardPlay],

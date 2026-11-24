@@ -96,7 +96,8 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static CardInstanceState? Apply(CardInstanceState source, RelicCardAttackModifier effect,
-            out bool returned, out string? error, out IReadOnlyList<RelicCardFilterResult> filters, IReadOnlyList<CombatRelicState>? owners = null)
+            out bool returned, out string? error, out IReadOnlyList<RelicCardFilterResult> filters,
+            IReadOnlyList<CombatRelicState>? owners = null, bool allSubtypes = false)
         {
             returned = false; error = null;
             filters = Array.Empty<RelicCardFilterResult>();
@@ -121,7 +122,14 @@ namespace MonsterTrain2Poju.Model
                 filters = new[] { new RelicCardFilterResult(effect.CardFilter.AssetKey, accepted) };
                 if (!accepted) return source;
             }
-            bool matches = effect.CharacterSubtypeKey.Length > 0
+            bool matches;
+            if (allSubtypes && effect.CharacterSubtypeKey.Length > 0)
+            {
+                if (!OriginalAllSubtypesModel.TryMatchesSpawnMonsterEffect(descriptor.Definition,
+                    effect.CharacterSubtypeKey, out matches))
+                { error = "Subtype-filtered relic attack needs an unambiguous captured spawn effect."; return null; }
+            }
+            else matches = effect.CharacterSubtypeKey.Length > 0
                 ? descriptor.Definition.Subtypes.Contains(effect.CharacterSubtypeKey, StringComparer.Ordinal)
                 : descriptor.Definition.CardType == effect.CardType;
             if (!matches) return source;

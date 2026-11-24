@@ -92,7 +92,8 @@ namespace MonsterTrain2Poju.Model
                 if (effect.CardType != "Invalid" && played.MaskDescriptor.Definition.CardType != effect.CardType)
                     return new RelicCardDrawOnCardPlayResult(context);
                 if (!string.IsNullOrEmpty(effect.RequiredSubtype) &&
-                    !played.MaskDescriptor.Definition.Subtypes.Contains(effect.RequiredSubtype))
+                    !OriginalAllSubtypesModel.MatchesCardTemplate(played.MaskDescriptor.Definition, effect.RequiredSubtype,
+                        OriginalAllSubtypesModel.Active(context, deployment: currentTurn == 0)))
                     return new RelicCardDrawOnCardPlayResult(context);
             }
 

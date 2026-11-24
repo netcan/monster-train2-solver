@@ -29,6 +29,7 @@ internal static class RelicCardAttackChecks
         RelicCardModifierResult mismatch = RelicCardModifierModel.Apply(otherCard, [relic]);
         Require(mismatch.Supported && mismatch.Card!.Temporary.Offsets.Damage == 0 &&
             mismatch.Dispatches.All(item => !item.Returned), "Nonmatching spawned subtype received a relic attack modifier.");
+        TemplateSubtypeChecks(otherCard, relic.CardAttackModifiers![0]);
 
         CombatRelicState unsupported = new("scaled-attack", "ScaledAttack", [RelicModel.ModifyCardAttack],
             cardAttackModifiers: [new RelicCardAttackModifier(0, "", "", 0, 1.5f, 0, "Monster",
@@ -224,6 +225,47 @@ internal static class RelicCardAttackChecks
 
     private static CardMaskDefinition Definition(string id, string subtype) => new(id, "Spell", "Common",
         true, true, true, [subtype], [], [], ["CardEffectSpawnMonster"], null, false, 1, 0, false, false, false);
+
+    private static void TemplateSubtypeChecks(CardInstanceState card, RelicCardAttackModifier attack)
+    {
+        var health = new RelicCardHealthModifier(0, "", attack.CharacterSubtypeKey, 3, 0, "Monster", false);
+        CardInstanceState? buffedAttack = RelicCardAttackModel.Apply(card, attack, out bool attackReturned,
+            out string? attackError, out _, allSubtypes: true);
+        CardInstanceState? buffedHealth = RelicCardHealthModel.Apply(card, health, null, out bool healthReturned,
+            out string? healthError, allSubtypes: true);
+        Require(attackError == null && attackReturned && buffedAttack?.Temporary.Offsets.Damage == 8 &&
+            healthError == null && healthReturned && buffedHealth?.Temporary.Offsets.Health == 3,
+            "Projected spawn effect did not match the native template subtype for relic card attack and health.");
+
+        CardMaskDefinition template = card.MaskDescriptor!.Definition;
+        Require(OriginalAllSubtypesModel.MatchesCardTemplate(template, "SubtypesData_Champion", true) &&
+            OriginalAllSubtypesModel.MatchesCardTemplate(template, "SubtypesData_Pyre", true) &&
+            !OriginalAllSubtypesModel.MatchesCardTemplate(template, "SubtypesData_Horde", true) &&
+            OriginalAllSubtypesModel.MatchesCardTemplate(Definition("horde", "SubtypesData_Horde"), "SubtypesData_Horde", true),
+            "Relic card-template matches used the deck or live-actor subtype policy.");
+
+        CardInstanceState WithEffects(bool spawnData, string[] effectNames) => new(3, template.DataId,
+            CardModifiers.Empty(), CardModifiers.Empty(), 0, 0, 0, [],
+            maskDescriptor: new CardMaskDescriptor(new CardMaskDefinition(template.DataId, "Spell", "Common",
+                true, spawnData, true, [], [], [], effectNames, null, false, 1, 0, false, false, false), 0, [], []));
+        CardInstanceState alternateSpawner = WithEffects(true, ["CardEffectSpawnMonsterOrAddStatusEffect"]);
+        CardInstanceState missingTemplate = WithEffects(false, ["CardEffectSpawnMonster"]);
+        foreach (CardInstanceState ineligible in new[] { alternateSpawner, missingTemplate })
+        {
+            Require(ReferenceEquals(RelicCardAttackModel.Apply(ineligible, attack, out attackReturned, out attackError,
+                out _, allSubtypes: true), ineligible) && !attackReturned && attackError == null &&
+                ReferenceEquals(RelicCardHealthModel.Apply(ineligible, health, null, out healthReturned,
+                    out healthError, allSubtypes: true), ineligible) && !healthReturned && healthError == null,
+                "A missing eligible main spawn received a template-based relic modifier.");
+        }
+
+        CardInstanceState ambiguous = WithEffects(true, ["CardEffectSpawnMonsterOrAddStatusEffect", "CardEffectSpawnMonster"]);
+        Require(RelicCardAttackModel.Apply(ambiguous, attack, out _, out attackError, out _, allSubtypes: true) == null &&
+            RelicCardHealthModel.Apply(ambiguous, health, null, out _, out healthError, allSubtypes: true) == null &&
+            attackError?.Contains("unambiguous", StringComparison.Ordinal) == true &&
+            healthError?.Contains("unambiguous", StringComparison.Ordinal) == true,
+            "A different main spawner supplied metadata for a subtype-filtered relic.");
+    }
 
     private static void Require(bool condition, string message)
     {

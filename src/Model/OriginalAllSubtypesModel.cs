@@ -35,5 +35,25 @@ namespace MonsterTrain2Poju.Model
         internal static bool MatchesDeckCard(CardMaskDefinition card, string subtype, bool allSubtypes) =>
             card.HasSpawnData && (card.Subtypes.Contains(subtype) ||
                 (allSubtypes && subtype != RelicStartTurnHealModel.ChampionSubtype));
+
+        internal static bool MatchesCardTemplate(CardMaskDefinition card, string? subtype, bool allSubtypes)
+        {
+            if (string.IsNullOrEmpty(subtype) || subtype == None) return true;
+            return card.HasSpawnData && (card.Subtypes.Contains(subtype) || (allSubtypes && subtype != Horde));
+        }
+
+        internal static bool TryMatchesSpawnMonsterEffect(CardMaskDefinition card, string subtype, out bool matches)
+        {
+            matches = false;
+            const string spawnMonster = "CardEffectSpawnMonster";
+            if (!card.MainEffectNames.Contains(spawnMonster)) return true;
+            // The card projection records GetSpawnCharacterData, which selects the first character spawner.
+            string firstSpawner = card.MainEffectNames.First(name =>
+                name is spawnMonster or "CardEffectSpawnMonsterOrAddStatusEffect");
+            if (firstSpawner != spawnMonster || card.MainEffectNames.Count(name => name == spawnMonster) != 1)
+                return false;
+            matches = MatchesCardTemplate(card, subtype, allSubtypes: true);
+            return true;
+        }
     }
 }

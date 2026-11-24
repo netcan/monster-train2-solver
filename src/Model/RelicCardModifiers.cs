@@ -438,7 +438,7 @@ namespace MonsterTrain2Poju.Model
                     {
                         if (!healthEffects.TryGetValue(effectIndex, out RelicCardHealthModifier? healthEffect))
                             return Fail("Missing ordered relic card-health definition.");
-                        card = RelicCardHealthModel.Apply(card, healthEffect!, context, out bool returned, out error)!;
+                        card = RelicCardHealthModel.Apply(card, healthEffect!, context, out bool returned, out error, allSubtypes)!;
                         if (card == null) return Fail(error!);
                         dispatches.Add(new RelicCardModifierDispatch(relicIndex, healthEffect!.EffectIndex, returned,
                             false, Array.Empty<RelicCardFilterResult>()));
@@ -464,7 +464,8 @@ namespace MonsterTrain2Poju.Model
                         if (!attackEffects.TryGetValue(effectIndex, out RelicCardAttackModifier? attackEffect))
                             return Fail("Missing ordered relic card-attack definition.");
                         CardInstanceState beforeAttack = card;
-                        card = RelicCardAttackModel.Apply(card, attackEffect!, out bool returned, out error, out var filters, workingRelics)!;
+                        card = RelicCardAttackModel.Apply(card, attackEffect!, out bool returned, out error, out var filters,
+                            workingRelics, allSubtypes)!;
                         if (card == null) return Fail(error!);
                         if (returned && attackEffect!.AppliedCardAttacks != null)
                         {
@@ -723,7 +724,7 @@ namespace MonsterTrain2Poju.Model
         }
 
         internal static CardInstanceState? Apply(CardInstanceState source, RelicCardHealthModifier effect,
-            CombatContext? context, out bool returned, out string? error)
+            CombatContext? context, out bool returned, out string? error, bool allSubtypes = false)
         {
             returned = false; error = null;
             CardMaskDescriptor? descriptor = source.MaskDescriptor;
@@ -752,7 +753,14 @@ namespace MonsterTrain2Poju.Model
                 amount = unchecked(amount * count);
             }
             bool matches;
-            if (effect.CharacterSubtypeKey.Length > 0)
+            if (allSubtypes && effect.CharacterSubtypeKey.Length > 0)
+            {
+                if (amount == 0) return source;
+                if (!OriginalAllSubtypesModel.TryMatchesSpawnMonsterEffect(descriptor.Definition,
+                    effect.CharacterSubtypeKey, out matches))
+                { error = "Subtype-filtered relic health needs an unambiguous captured spawn effect."; return null; }
+            }
+            else if (effect.CharacterSubtypeKey.Length > 0)
             {
                 matches = descriptor.Definition.Subtypes.Contains(effect.CharacterSubtypeKey, StringComparer.Ordinal);
                 if (matches && descriptor.Definition.MainEffectNames.Count(name => name == "CardEffectSpawnMonster") != 1)
