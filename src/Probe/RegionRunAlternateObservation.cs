@@ -19,7 +19,10 @@ namespace MonsterTrain2Poju.Probe
         private readonly string sourceSha256;
         private readonly int actionIndex;
         private readonly int turn;
+        private readonly bool includeEndTurn = Environment.GetEnvironmentVariable("MT2_PROBE_REGION_ALTERNATE_END_TURN") == "1";
         private bool prefixVerified;
+        private int prefixEndTurns;
+        private (int Stages, int TrainPhases, int Spawns, int CardCycles)? endTurnPhases;
 
         internal static RegionRunAlternateObservation? Active =>
             Environment.GetEnvironmentVariable("MT2_PROBE_REGION_ALTERNATE_SOURCE") is { Length: > 0 } path
@@ -71,23 +74,50 @@ namespace MonsterTrain2Poju.Probe
             return true;
         }
 
-        internal bool WriteIfSettled(FullBattleTrace trace)
+        internal bool ReachedAlternate(FullBattleTrace trace) =>
+            prefixVerified && trace.ObservedActionCount == actionIndex + 1;
+
+        internal bool RequestEndTurn(FullBattleTrace trace)
         {
-            if (!prefixVerified || trace.ObservedActionCount != actionIndex + 1 ||
+            if (!includeEndTurn || endTurnPhases.HasValue || SettledAction(trace) == null) return false;
+            if (trace.NativeWon.HasValue || trace.ObservedTurns.Count != prefixEndTurns)
+                throw new InvalidOperationException("The paid RegionRun alternate did not leave a native EndTurn available.");
+            endTurnPhases = trace.ObservedPhaseCounts;
+            return true;
+        }
+
+        private BattleActionProbe.Record? SettledAction(FullBattleTrace trace)
+        {
+            if (!ReachedAlternate(trace) ||
                 trace.PendingActionIndex.HasValue || trace.PendingTurnIndex.HasValue)
-                return false;
+                return null;
             BattleActionProbe.Record row = trace.ObservedActions[actionIndex];
             if (!JToken.DeepEquals(JToken.FromObject(row.Action), JToken.FromObject(Action)) ||
                 row.Actual == null || trace.CaptureFailures != 0 || trace.Pending != 0)
                 throw new InvalidOperationException("The native RegionRun alternate did not settle as the requested action.");
+            return row;
+        }
+
+        internal bool WriteIfSettled(FullBattleTrace trace)
+        {
+            BattleActionProbe.Record? row = SettledAction(trace);
+            if (row == null || includeEndTurn && !endTurnPhases.HasValue) return false;
+            int expectedTurns = prefixEndTurns + (includeEndTurn ? 1 : 0);
+            if (trace.ObservedTurns.Count != expectedTurns)
+                throw new InvalidOperationException("The native RegionRun alternate recorded an unexpected EndTurn count.");
+            BattleTurnProbe.Record? endTurn = includeEndTurn ? trace.ObservedTurns[prefixEndTurns] : null;
+            if (endTurn != null && (endTurn.Actual == null || endTurn.Before.Spawn.Turn != turn))
+                throw new InvalidOperationException("The native RegionRun alternate EndTurn did not settle at the requested turn.");
             using var document = NativeFixtureCapture.Capture(new
             {
                 Schema = 1, Boundary = "NativeRegionRunAlternate", NativeCompleted = true,
                 GameVersion = Application.version, GameModuleMvid = typeof(CardState).Module.ModuleVersionId,
                 SourceSHA256 = sourceSha256, DecisionIndex = actionIndex, PrefixPlays = actionIndex,
-                PrefixEndTurns = trace.ObservedTurns.Count, NativeRunInput = trace.ObservedRunInput,
+                PrefixEndTurns = prefixEndTurns, NativeRunInput = trace.ObservedRunInput,
                 ReplacedAction = PlannerReplayScenario.Read<PlayCardAction>(source.GetProperty("Actions")[actionIndex].GetProperty("Action")),
                 row.Action, row.Before, row.Actual, row.ActualOutcome,
+                EndTurn = endTurn == null ? null : new { endTurn.Before, endTurn.Actual, endTurn.ActualOutcome, endTurn.RelentlessDecisions },
+                EndTurnPhases = endTurnPhases.HasValue ? trace.CaptureObservedPhases(endTurnPhases.Value) : null,
                 trace.CaptureFailures, trace.Pending
             });
             string path = Path.Combine(Environment.GetEnvironmentVariable("MT2_PROBE_DATA_DIR")!, "region-run-alternate.mt2f");
@@ -124,6 +154,7 @@ namespace MonsterTrain2Poju.Probe
                     !PlannerReplayScenario.SameChoices(observed.RelentlessDecisions, PlannerReplayScenario.ReadChoices(expected)))
                     throw new InvalidOperationException("The original RegionRun EndTurn prefix differs at index " + index);
             }
+            prefixEndTurns = turns.Length;
         }
 
         private static bool SameAction(PlayCardAction action, FixtureValue recorded) =>

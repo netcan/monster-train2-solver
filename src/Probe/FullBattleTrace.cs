@@ -30,6 +30,15 @@ namespace MonsterTrain2Poju.Probe
         internal IReadOnlyList<BattleActionProbe.Record> ObservedActions => actions.Records;
         internal IReadOnlyList<BattleTurnProbe.Record> ObservedTurns => turns.Records;
         internal object? ObservedRunInput => nativeRunInput;
+        internal (int Stages, int TrainPhases, int Spawns, int CardCycles) ObservedPhaseCounts =>
+            (stages.Count, trainCombat.Records.Count, spawning.Records.Count, cardCycles.Records.Count);
+        internal object CaptureObservedPhases((int Stages, int TrainPhases, int Spawns, int CardCycles) start) => new
+        {
+            Stages = stages.Skip(start.Stages).ToArray(),
+            TrainPhases = trainCombat.Records.Skip(start.TrainPhases).ToArray(),
+            Spawns = spawning.Records.Skip(start.Spawns).ToArray(),
+            CardCycles = cardCycles.Records.Skip(start.CardCycles).ToArray()
+        };
 #endif
         private readonly Dictionary<CharacterState, int> identities = new Dictionary<CharacterState, int>();
         private readonly Dictionary<CharacterState, Dictionary<CharacterTriggerState, int>> triggerIdentities =

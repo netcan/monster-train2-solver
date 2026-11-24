@@ -526,7 +526,12 @@ namespace MonsterTrain2Poju.Probe
                 return BattleInput.Waiting;
 #if DEVELOPMENT_PROBE
             var alternate = trace == null ? null : RegionRunAlternateObservation.Active;
-            if (alternate != null && alternate.WriteIfSettled(trace!)) return BattleInput.AlternateComplete;
+            if (alternate != null && alternate.ReachedAlternate(trace!))
+            {
+                if (alternate.WriteIfSettled(trace!)) return BattleInput.AlternateComplete;
+                if (alternate.RequestEndTurn(trace!)) return BattleInput.EndTurn;
+                return BattleInput.Waiting;
+            }
 #endif
             RoomManager rooms = m.GetRoomManager();
             if (selectingRoom.HasValue)

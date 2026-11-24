@@ -132,6 +132,7 @@ param(
     [switch] $RegionRunInput,
     [string] $RegionAlternateSource = '',
     [string] $RegionAlternate = '',
+    [switch] $RegionAlternateEndTurn,
     [switch] $OriginalEquilibriusDrawWitness,
     [switch] $OriginalSproutWitness,
     [ValidateRange(1, 3)] [int] $OriginalSproutTier = 1,
@@ -2631,7 +2632,7 @@ if ($CampaignBattlePolicy -and (!$RegionRunInput -or
 if ($ObserveRegionPreviewScheduling -and !$RegionRunInput) {
     throw 'ObserveRegionPreviewScheduling requires RegionRunInput.'
 }
-if ($PSBoundParameters.ContainsKey('RegionAlternateSource') -or $PSBoundParameters.ContainsKey('RegionAlternate')) {
+if ($PSBoundParameters.ContainsKey('RegionAlternateSource') -or $PSBoundParameters.ContainsKey('RegionAlternate') -or $RegionAlternateEndTurn) {
     if (!$RegionRunInput -or !$CampaignBattlePolicy -or !$RegionAlternateSource -or
         $RegionAlternate -cnotmatch '^[0-9]+,[1-9][0-9]*,[0-2],[1-9][0-9]*$') {
         throw 'RegionAlternate requires RegionRunInput, CampaignBattlePolicy, a source archive, and decision,card,room,target IDs.'
@@ -2656,7 +2657,7 @@ if ($PSBoundParameters.ContainsKey('OriginalSproutTier') -and !$OriginalSproutWi
     throw 'OriginalSproutTier requires OriginalSproutWitness.'
 }
 if ($RegionRunInput) {
-    $regionArguments = @('RegionRunInput', 'RegionAlternateSource', 'RegionAlternate', 'OriginalEquilibriusDrawWitness', 'OriginalSproutWitness', 'OriginalSproutTier', 'CampaignBattlePolicy', 'ObserveRegionPreviewScheduling', 'InputProfile', 'BattleDistance', 'Policy', 'BinaryCapture', 'NativeWorker',
+    $regionArguments = @('RegionRunInput', 'RegionAlternateSource', 'RegionAlternate', 'RegionAlternateEndTurn', 'OriginalEquilibriusDrawWitness', 'OriginalSproutWitness', 'OriginalSproutTier', 'CampaignBattlePolicy', 'ObserveRegionPreviewScheduling', 'InputProfile', 'BattleDistance', 'Policy', 'BinaryCapture', 'NativeWorker',
         'GameSpeed', 'TimeoutSeconds', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
     if (!$InputProfile -or !$BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $regionArguments }).Count) {
         throw 'RegionRunInput requires a native Soul Savior BattleIntro checkpoint and binary capture.'
@@ -2959,6 +2960,7 @@ $environment = @{
     MT2_PROBE_REGION_RUN_INPUT = $(if ($RegionRunInput) { '1' } else { '0' })
     MT2_PROBE_REGION_ALTERNATE_SOURCE = $RegionAlternateSource
     MT2_PROBE_REGION_ALTERNATE_ACTION = $RegionAlternate
+    MT2_PROBE_REGION_ALTERNATE_END_TURN = $(if ($RegionAlternateEndTurn) { '1' } else { '0' })
     MT2_PROBE_EQUILIBRIUS_DRAW = $(if ($OriginalEquilibriusDrawWitness) { '1' } else { '0' })
     MT2_PROBE_SPROUT_WITNESS = $(if ($OriginalSproutWitness) { $OriginalSproutTier.ToString() } else { '0' })
     MT2_PROBE_CAMPAIGN_BATTLE_POLICY = $(if ($CampaignBattlePolicy) { '1' } else { '0' })
@@ -4916,6 +4918,15 @@ if ($RegionAlternateSource) {
             $action.GetProperty('TargetUnitId').GetInt32() -ne $regionAlternateIds[3] -or
             $alternate.GetProperty('Before').ValueKind -ne 'Object' -or $alternate.GetProperty('Actual').ValueKind -ne 'Object') {
             throw "Native RegionRun alternate receipt differs from the requested observation; inspect $unityLog"
+        }
+        if ($RegionAlternateEndTurn) {
+            $endTurn = $alternate.GetProperty('EndTurn')
+            if ($endTurn.ValueKind -ne 'Object' -or $endTurn.GetProperty('Before').ValueKind -ne 'Object' -or
+                $endTurn.GetProperty('Actual').ValueKind -ne 'Object' -or
+                $endTurn.GetProperty('ActualOutcome').ValueKind -ne 'Number' -or
+                $alternate.GetProperty('EndTurnPhases').ValueKind -ne 'Object') {
+                throw "Native RegionRun alternate did not record the requested EndTurn; inspect $unityLog"
+            }
         }
     } finally { $alternateDocument.Dispose() }
     [pscustomobject]@{ Profile = $profile; NativeComponentCaptured = $true; OriginalFilesUnchanged = $true;

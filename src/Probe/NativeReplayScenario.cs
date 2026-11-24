@@ -205,6 +205,11 @@ namespace MonsterTrain2Poju.Probe
 #if DEVELOPMENT_PROBE
                     if (RegionRunAlternateObservation.Active is RegionRunAlternateObservation alternate)
                     {
+                        if (!CardAnimationSettlement.Ready())
+                        {
+                            if (Time.realtimeSinceStartup > deadline) Finish(false, "Terminal card animations did not settle before capture.");
+                            return;
+                        }
                         if (!alternate.WriteIfSettled(trace))
                             throw new InvalidOperationException("The native battle ended before the requested RegionRun alternate settled.");
                         Finish(true, "Original RegionRun alternate captured.");
