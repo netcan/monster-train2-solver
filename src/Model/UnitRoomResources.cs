@@ -48,8 +48,14 @@ namespace MonsterTrain2Poju.Model
             return amount != 0 && EligibleForHealingCost(rule, card) ? amount : 0;
         }
 
-        internal static int UnitCostDelta(TrainCombatState train, int roomIndex, CardPlayRule rule) =>
-            rule.CardType == "Monster" && rule.SpawnUnit?.Subtypes.Contains(CardShardtailImpCostModel.Subtype) == true
-                ? Amount(train, SubtypeCost, roomIndex) : 0;
+        internal static int UnitCostDelta(TrainCombatState train, int roomIndex, CardPlayRule rule)
+        {
+            if (rule.CardType != "Monster" || rule.SpawnUnit == null) return 0;
+            int amount = Amount(train, SubtypeCost, roomIndex);
+            if (amount == 0) return 0;
+            bool deployment = train.Rooms.Any(room => room.Deployment);
+            return rule.SpawnUnit.Subtypes.Contains(CardShardtailImpCostModel.Subtype) ||
+                OriginalAllSubtypesModel.Active(train.Context, deployment) ? amount : 0;
+        }
     }
 }

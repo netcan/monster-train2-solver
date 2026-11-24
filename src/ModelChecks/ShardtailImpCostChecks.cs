@@ -44,6 +44,17 @@ internal static class ShardtailImpCostChecks
         var champion = state.Spawn.Train.Rooms.Single(room => room.RoomIndex == floor).Units.Single(unit => unit.SpawnerCardId == card.InstanceId);
         Require(champion.Modifiers!.RoomResources!.Single() is { Type: UnitRoomResourceModel.SubtypeCost, Amount: -1,
             DisallowedInDeployment: false, Subtype: CardShardtailImpCostModel.Subtype }, "Projected native champion birth lacks its imp aura.");
+        var train = state.Spawn.Train;
+        int controlId = deployed.GetProperty("Control").GetProperty("Card").GetInt32();
+        string controlDataId = train.Context!.FindCard(controlId)!.DataId;
+        var control = state.PlayRules!.Cards.Single(rule => rule.DataId == controlDataId);
+        var allSubtypes = new CombatRelicState(OriginalAllSubtypesModel.OwnerId, OriginalAllSubtypesModel.OwnerKey,
+            [OriginalAllSubtypesModel.Effect], isCovenant: false, disallowedInPlacementPhase: false);
+        var mutatedTrain = CardSpellModel.WithContext(train, train.Context!.WithRelics(train.Context.Relics!.Append(allSubtypes).ToArray()));
+        Require(control.CardType == "Monster" && UnitRoomResourceModel.UnitCostDelta(train, floor, control) == 0 &&
+            UnitRoomResourceModel.UnitCostDelta(mutatedTrain, floor, control) == -1 &&
+            UnitRoomResourceModel.UnitCostDelta(mutatedTrain, alternateFloor, control) == 0,
+            "The native aura must include a non-Imp Monster card template only on its own floor under the original mutator.");
         int combatTurn = beforeImp.GetProperty("Turn").GetInt32();
         while (state.Spawn.Turn < combatTurn)
         {
