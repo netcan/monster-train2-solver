@@ -661,6 +661,7 @@ param(
     [switch] $PersistentMonsterHpAboveMaxAndDeath,
     [switch] $OriginalPersistentMonsterHpBattle,
     [ValidateSet(2, 3)][int] $OriginalSaviorChampionRank,
+    [switch] $OriginalLittleFadeCostWitness,
     [switch] $SummonChoiceCalibration,
     [switch] $RoomHealthMechanismBatch,
     [switch] $JuiceMechanismBatch,
@@ -1206,6 +1207,18 @@ if ($OriginalSaviorChampionRank) {
         throw 'Select one original Savior champion rank with binary capture.'
     }
     $PrimaryClan = 'Banished'
+    $SecondaryClan = 'Hellhorned'
+    $BranchCardMasks = $true
+    $PhysicalSpawnPoints = $true
+    $Policy = 'units-spells-and-junk'
+}
+if ($OriginalLittleFadeCostWitness) {
+    $witnessArguments = @('OriginalLittleFadeCostWitness', 'GameSpeed', 'NativeWorker', 'TimeoutSeconds',
+        'BinaryCapture', 'NativeBuildRoot', 'SkipBuild', 'Verbose', 'Debug', 'ErrorAction', 'WarningAction')
+    if (-not $BinaryCapture -or @($PSBoundParameters.Keys | Where-Object { $_ -notin $witnessArguments }).Count -gt 0) {
+        throw 'Select the original Little Fade cost witness with binary capture.'
+    }
+    $PrimaryClan = 'Remnant'
     $SecondaryClan = 'Hellhorned'
     $BranchCardMasks = $true
     $PhysicalSpawnPoints = $true
@@ -2960,7 +2973,8 @@ if ($RegionRunInput -or $OriginalThikDeckChange -or $OriginalThikBattle -or $Uns
     $OriginalHealOnAscendWitness -or $OriginalFrontReanimationWitness -or $OriginalDoubleStatusEffectsWitness -or $OriginalDoubleStatusEffectsBattle -or $OriginalLonelyRoomsBattle -or
     $OriginalShuffleUnitsWitness -or $OriginalShuffleUnitsBattle -or $OriginalDoubleFriendlyHealthWitness -or $OriginalDoubleFriendlyHealthBattle -or
     $OriginalBothSidesUnitsWitness -or $OriginalBothSidesUnitsBattle -or $OriginalSkullCollectorsWitness -or
-    $OriginalDominionMothersRemnantWitness -or $OriginalGoldRewardMultiplier -or $OriginalSavageryDeckUpgrade -or $OriginalBattleSetupWitness -or $OriginalSaviorChampionRank) {
+    $OriginalDominionMothersRemnantWitness -or $OriginalGoldRewardMultiplier -or $OriginalSavageryDeckUpgrade -or $OriginalBattleSetupWitness -or
+    $OriginalSaviorChampionRank -or $OriginalLittleFadeCostWitness) {
     $nativeDll = Join-Path $gameRoot 'MonsterTrain2_Data/Managed/Assembly-CSharp.dll'
     $nativeDllStream = [IO.File]::OpenRead($nativeDll)
     try {
@@ -3537,6 +3551,7 @@ $environment = @{
     MT2_PROBE_PERSISTENT_MONSTER_HP_BATTLE = $(if ($OriginalPersistentMonsterHpBattle) { '1' } else { '0' })
     MT2_PROBE_PERSISTENT_HP_ABOVE_MAX_AND_DEATH = $(if ($PersistentMonsterHpAboveMaxAndDeath) { '1' } else { '0' })
     MT2_PROBE_SAVIOR_CHAMPION_RANK = [string]$OriginalSaviorChampionRank
+    MT2_PROBE_LITTLE_FADE_COST_WITNESS = $(if ($OriginalLittleFadeCostWitness) { '1' } else { '0' })
     MT2_PROBE_CARD_CATALOG = $(if ($CardCatalog) { '1' } else { '0' })
     MT2_PROBE_SUMMON_CHOICE_CALIBRATION = $(if ($SummonChoiceCalibration) { '1' } else { '0' })
     MT2_PROBE_ROOM_HEALTH_MECHANISM_BATCH = $(if ($RoomHealthMechanismBatch) { '1' } else { '0' })
@@ -4555,6 +4570,16 @@ if ($OriginalSaviorChampionRank) {
         throw "Original Savior champion ability witness failed. Inspect $unityLog"
     }
     Write-Output "NATIVE-SAVIOR-CHAMPION PASS rank=$OriginalSaviorChampionRank trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
+    return
+}
+if ($OriginalLittleFadeCostWitness) {
+    $capturePath = Join-Path $profile 'little-fade-endless-cost.mt2f'
+    if ($process.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $capturePath -PathType Leaf) -or
+        -not (Select-String -LiteralPath $unityLog -Pattern 'DEPTH-PASS Original Little Fade Endless cost captured' -Quiet) -or
+        (Get-OriginalSignature) -cne $originalBefore) {
+        throw "Original Little Fade Endless cost witness failed. Inspect $unityLog"
+    }
+    Write-Output "NATIVE-LITTLE-FADE-ENDLESS-COST PASS trace=$capturePath sha256=$((Get-FileHash -LiteralPath $capturePath -Algorithm SHA256).Hash)"
     return
 }
 if ($OriginalRandomJustCauseWitness) {
