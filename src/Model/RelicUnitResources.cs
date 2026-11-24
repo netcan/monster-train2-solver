@@ -58,7 +58,9 @@ namespace MonsterTrain2Poju.Model
             if (!evaluation.Supported) return Fail(evaluation.UnsupportedReason!);
             var context = evaluation.Context; var rule = effect.UnitTrigger!;
             bool team = unit.Team == CombatTeam.Player ? rule.Team == "Monsters" : rule.Team == "Heroes";
-            bool subtype = rule.Subtype == null ? unit.Team == CombatTeam.Enemy || !unit.IsPyre : unit.Subtypes.Contains(rule.Subtype);
+            bool subtype = rule.Subtype == null ? unit.Team == CombatTeam.Enemy || !unit.IsPyre :
+                OriginalAllSubtypesModel.MatchesCharacter(unit, rule.Subtype,
+                    OriginalAllSubtypesModel.Active(context, placement));
             if (!evaluation.Passed || rule.Trigger != trigger || !team || effect.Type == Ember && !subtype ||
                 rule.RequiredStatuses.Any(status => !(unit.Status(status)?.Stacks > 0)) ||
                 trigger == "OnDeath" && alive && (effect.Type == Ember || paramInt != 1))

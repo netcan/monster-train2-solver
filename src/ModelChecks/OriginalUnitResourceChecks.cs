@@ -48,6 +48,7 @@ internal static class OriginalUnitResourceChecks
             root.GetProperty("NativeWon").GetBoolean() && root.GetProperty("TerminalEffectsSettled").GetBoolean() &&
             new[] { "CaptureFailures", "Mismatches", "Unsupported", "Pending" }.All(name => root.GetProperty(name).GetInt32() == 0), "Unit resource battle failed acceptance.");
         var positives = Owners.ToDictionary(owner => owner.Id, _ => 0); int count = 0, teamControls = 0, subtypeControls = 0, conditionControls = 0, ablations = 0;
+        bool allSubtypeControl = false;
         foreach (var row in root.GetProperty("RelicUnitResources").EnumerateArray())
         {
             Require(row.GetProperty("Completed").GetBoolean(), "Unfinished native unit resource callback.");
@@ -92,11 +93,26 @@ internal static class OriginalUnitResourceChecks
             }
             if (actor.Team == CombatTeam.Enemy && kind == "OnDeath") { Require(result.Events.Count == 0, "Enemy death received player resource."); teamControls++; }
             if (actor.Team == CombatTeam.Player && kind == "OnDeath" && !actor.Subtypes.Contains("SubtypesData_Tomb"))
-            { Require(result.Events.All(item => item.RelicId != Owners[1].Id), "Non-Tomb received Tomb energy."); subtypeControls++; }
+            {
+                Require(result.Events.All(item => item.RelicId != Owners[1].Id), "Non-Tomb received Tomb energy.");
+                subtypeControls++;
+                if (!alive && !allSubtypeControl)
+                {
+                    var allSubtypes = new CombatRelicState(OriginalAllSubtypesModel.OwnerId, OriginalAllSubtypesModel.OwnerKey,
+                        [OriginalAllSubtypesModel.Effect], isCovenant: false, disallowedInPlacementPhase: true);
+                    var combined = before.WithRelics(before.Relics!.Append(allSubtypes).ToArray());
+                    var enabled = RelicUnitResourceModel.ApplyOne(combined, Owners[1].Id, 0, actor, kind, alive, param);
+                    var disabled = RelicUnitResourceModel.ApplyOne(combined, Owners[1].Id, 0, actor, kind, alive, param, placement: true);
+                    Require(enabled.Supported && enabled.Value == Owners[1].Amount && enabled.Context!.BattleRng.Equals(before.BattleRng) &&
+                        disabled.Supported && disabled.Events.Count == 0, "Tomb Ember did not use the phase-active all-subtypes owner.");
+                    allSubtypeControl = true;
+                }
+            }
             if (kind == "OnEquipmentAdded" && result.Events.Count == 0) conditionControls++;
             Require(parent == JsonSerializer.Serialize(before, ModelJson.Options), "Unit resource consumer mutated parent state."); count++;
         }
-        Require(count > 20 && positives.Values.All(value => value > 0) && teamControls > 0 && subtypeControls > 0 && conditionControls > 0 && ablations >= 3,
+        Require(count > 20 && positives.Values.All(value => value > 0) && teamControls > 0 && subtypeControls > 0 && conditionControls > 0 && ablations >= 3 &&
+            allSubtypeControl,
             $"Missing original resource controls: rows={count}, positives={string.Join('/', positives.Values)}, enemy={teamControls}, subtype={subtypeControls}, conditions={conditionControls}, ablations={ablations}.");
         BattleActionChecks.Native(root);
         Console.WriteLine($"ORIGINAL-UNIT-RESOURCES-NATIVE PASS: three unchanged owners, {count} exact manager contexts, positives {string.Join('/', positives.Values)}, {teamControls} enemy deaths, {subtypeControls} non-Tomb deaths, {conditionControls} equipment-condition controls, {ablations} positive ablations; exact gold/energy/conditions/RNG and independent policy replay.");
